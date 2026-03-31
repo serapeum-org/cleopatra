@@ -58,9 +58,9 @@ docs = [
 
 
 [project.urls]
-Homepage = "https://github.com/MAfarrag/cleopatra"
-Documentation = "https://mafarrag.github.io/cleopatra/"
-Repository = "https://github.com/MAfarrag/cleopatra"
+Homepage = "https://github.com/serapeum-org/cleopatra"
+Documentation = "https://serapeum-org.github.io/cleopatra/"
+Repository = "https://github.com/serapeum-org/cleopatra"
 
 
 [tool.hatch.build.targets.wheel]
