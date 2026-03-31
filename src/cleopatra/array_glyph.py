@@ -903,7 +903,7 @@ class ArrayGlyph:
         list:
             list of the text object
         """
-        # https://github.com/Serapieum-of-alex/cleopatra/issues/75
+        # https://github.com/serapeum-org/cleopatra/issues/75
         # add text for the cell values
         add_text = lambda elem: ax.text(
             elem[1],

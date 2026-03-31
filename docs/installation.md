@@ -6,7 +6,7 @@
 
 - Python (3.11 or later)
 - [numpy](https://www.numpy.org/) (2.0.0 or later)
-- [hpc](https://github.com/Serapieum-of-alex/hpc) (0.1.4 or later)
+- [hpc](https://github.com/serapeum-org/hpc) (0.1.4 or later)
 - [matplotlib](https://matplotlib.org/) (3.8.4 or later)
 - [ffmpeg-python](https://github.com/kkroening/ffmpeg-python/) (0.2.0 or later)
 
@@ -72,18 +72,18 @@ pip install cleopatra=={release}
 
 ## From sources
 
-The sources for HapiSM can be downloaded from the [Github repo](https://github.com/Serapieum-of-alex/cleopatra).
+The sources for HapiSM can be downloaded from the [Github repo](https://github.com/serapeum-org/cleopatra).
 
 You can either clone the public repository:
 
 ```bash
-git clone git://github.com/Serapieum-of-alex/cleopatra
+git clone git://github.com/serapeum-org/cleopatra
 ```
 
-Or download the [tarball](https://github.com/Serapieum-of-alex/cleopatra/tarball/master):
+Or download the [tarball](https://github.com/serapeum-org/cleopatra/tarball/master):
 
 ```bash
-curl -OJL https://github.com/Serapieum-of-alex/cleopatra/tarball/main
+curl -OJL https://github.com/serapeum-org/cleopatra/tarball/main
 ```
 
 Once you have a copy of the source, you can install it with:
@@ -95,13 +95,13 @@ python pip install .
 To install directly from GitHub (from the HEAD of the master branch):
 
 ```bash
-pip install git+https://github.com/Serapieum-of-alex/cleopatra.git
+pip install git+https://github.com/serapeum-org/cleopatra.git
 ```
 
 or from Github from a specific release:
 
 ```bash
-pip install git+https://github.com/Serapieum-of-alex/cleopatra.git@{release}
+pip install git+https://github.com/serapeum-org/cleopatra.git@{release}
 ```
 
 Now you should be able to start this environment's Python with `python`, try
@@ -117,7 +117,7 @@ instead create a link in your Python installation pointing to the folder you ins
 it from, such that any changes you make there are directly reflected in your install.
 
 ```bash
-git clone https://github.com/Serapieum-of-alex/cleopatra.git
+git clone https://github.com/serapeum-org/cleopatra.git
 cd cleopatra
 activate cleopatra
 pip install -e .
@@ -125,8 +125,8 @@ pip install -e .
 
 Alternatively, if you want to avoid using `git` and simply want to test the latest
 version from the `main` branch, you can replace the first line with downloading
-a zip archive from GitHub: https://github.com/Serapieum-of-alex/cleopatra/archive/master.zip
-[libraries.io](https://libraries.io/github/Serapieum-of-alex/cleopatra).
+a zip archive from GitHub: https://github.com/serapeum-org/cleopatra/archive/master.zip
+[libraries.io](https://libraries.io/github/serapeum-org/cleopatra).
 
 ## Install using pip
 
@@ -138,7 +138,7 @@ use the conda package manager:
 conda install numpy gdal
 ```
 
-you can check [libraries.io](https://libraries.io/github/Serapieum-of-alex/cleopatra) to check versions of the libraries
+you can check [libraries.io](https://libraries.io/github/serapeum-org/cleopatra) to check versions of the libraries
 
 Then install a release {release} of cleopatra (available from release 2018.1) with pip:
 

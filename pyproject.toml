@@ -58,13 +58,9 @@ docs = [
 
 
 [project.urls]
-Homepage = "https://github.com/MAfarrag/cleopatra"
-Documentation = "https://mafarrag.github.io/cleopatra/"
-Repository = "https://github.com/MAfarrag/cleopatra"
-
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/cleopatra"]
+Homepage = "https://github.com/serapeum-org/cleopatra"
+Documentation = "https://serapeum-org.github.io/cleopatra/"
+Repository = "https://github.com/serapeum-org/cleopatra"
 
 
 [tool.commitizen]
@@ -82,6 +78,11 @@ schema = "<type>: <body>"
 schema_pattern = "(feat|fix|refactor|perf|build|ci|chore)(\\(.+\\))?: (.+)"
 changelog_pattern = "^(feat|fix|refactor|perf|build|ci|chore)(\\(.+\\))?(!)?:"
 change_type_order = ["BREAKING CHANGE", "feat", "fix", "refactor", "perf", "build", "ci", "chore"]
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cleopatra"]
+
 
 [tool.flake8]
 ignore = "E203, E266, E501, W503, D403, D414, C901, E731"

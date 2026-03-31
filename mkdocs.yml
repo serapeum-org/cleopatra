@@ -1,8 +1,8 @@
 site_name: Cleopatra
 site_description: Visualization package
-site_url: https://serapieum-of-alex.github.io/cleopatra/
-repo_url: https://github.com/Serapieum-of-alex/cleopatra
-repo_name: Serapieum-of-alex/cleopatra
+site_url: https://serapeum-org.github.io/cleopatra/
+repo_url: https://github.com/serapeum-org/cleopatra
+repo_name: serapeum-org/cleopatra
 
 theme:
   name: material
@@ -120,7 +120,7 @@ nav:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/Serapieum-of-alex/cleopatra
+      link: https://github.com/serapeum-org/cleopatra
   version:
       provider: mike
   version_selector: true
