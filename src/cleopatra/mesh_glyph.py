@@ -283,18 +283,7 @@ class MeshGlyph:
         """
         counts = self.nodes_per_face
         valid = counts >= 3
-        n_triangles = int(np.sum(counts[valid] - 2))
-        tri_values = np.empty(n_triangles)
-
-        tri_idx = 0
-        for face_idx in range(self.n_faces):
-            if counts[face_idx] < 3:
-                continue
-            n_tris = counts[face_idx] - 2
-            tri_values[tri_idx : tri_idx + n_tris] = face_values[face_idx]
-            tri_idx += n_tris
-
-        return tri_values
+        return np.repeat(face_values[valid], counts[valid] - 2)
 
     def plot(
         self,
