@@ -230,8 +230,16 @@ class MeshGlyph:
         if self._cached_tri_array is not None:
             return self._cached_tri_array
 
-        triangles: list[list[int]] = []
+        counts = self.nodes_per_face
 
+        if not np.any(counts >= 3):
+            raise ValueError("Cannot create triangulation: no faces with 3+ nodes.")
+
+        if np.all(counts == 3):
+            self._cached_tri_array = self._face_nodes.copy()
+            return self._cached_tri_array
+
+        triangles: list[list[int]] = []
         for i in range(self.n_faces):
             row = self._face_nodes[i]
             nodes = row[row != self._fill_value]
@@ -240,9 +248,6 @@ class MeshGlyph:
                 continue
             for j in range(1, n - 1):
                 triangles.append([int(nodes[0]), int(nodes[j]), int(nodes[j + 1])])
-
-        if not triangles:
-            raise ValueError("Cannot create triangulation: no faces with 3+ nodes.")
 
         self._cached_tri_array = np.array(triangles, dtype=np.intp)
         return self._cached_tri_array
