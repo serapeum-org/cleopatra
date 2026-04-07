@@ -337,7 +337,9 @@ class MeshGlyph:
         Returns
         -------
         tuple[Figure, Axes]
-            The matplotlib Figure and Axes objects.
+            The matplotlib Figure and Axes objects. When ``ax`` is
+            None, a new figure is created. Call ``plt.close(fig)``
+            after saving to avoid memory leaks in batch processing.
 
         Raises
         ------
@@ -442,7 +444,9 @@ class MeshGlyph:
         Returns
         -------
         tuple[Figure, Axes]
-            The matplotlib Figure and Axes objects.
+            The matplotlib Figure and Axes objects. When ``ax`` is
+            None, a new figure is created. Call ``plt.close(fig)``
+            after saving to avoid memory leaks in batch processing.
 
         Examples
         --------
