@@ -33,8 +33,17 @@ import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 import numpy as np
 
+from cleopatra.glyph import Glyph
+from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
-class MeshGlyph:
+MESH_DEFAULT_OPTIONS = {
+    "vmin": None,
+    "vmax": None,
+}
+MESH_DEFAULT_OPTIONS = STYLE_DEFAULTS | MESH_DEFAULT_OPTIONS
+
+
+class MeshGlyph(Glyph):
     """Visualization class for unstructured mesh data.
 
     Wraps matplotlib's triangulation-based rendering to plot data on
@@ -95,7 +104,13 @@ class MeshGlyph:
         face_node_connectivity: np.ndarray,
         fill_value: int = -1,
         edge_node_connectivity: np.ndarray | None = None,
+        fig=None,
+        ax=None,
+        **kwargs,
     ):
+        super().__init__(
+            default_options=MESH_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs
+        )
         self._node_x = np.asarray(node_x, dtype=np.float64)
         self._node_y = np.asarray(node_y, dtype=np.float64)
         self._face_nodes = np.asarray(face_node_connectivity, dtype=np.intp)

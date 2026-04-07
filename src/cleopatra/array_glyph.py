@@ -41,6 +41,7 @@ from matplotlib.image import AxesImage
 from matplotlib.ticker import LogFormatter
 from PIL import Image
 
+from cleopatra.glyph import Glyph, SUPPORTED_VIDEO_FORMAT
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import MidpointNormalize
 
@@ -55,10 +56,9 @@ DEFAULT_OPTIONS = {
     "precision": 2,
 }
 DEFAULT_OPTIONS = STYLE_DEFAULTS | DEFAULT_OPTIONS
-SUPPORTED_VIDEO_FORMAT = ["gif", "mov", "avi", "mp4"]
 
 
-class ArrayGlyph:
+class ArrayGlyph(Glyph):
     """A class to handle arrays and perform various visualization operations on them.
 
     The ArrayGlyph class provides functionality for visualizing 2D and 3D arrays with
@@ -215,16 +215,7 @@ class ArrayGlyph:
 
         ```
         """
-        self._default_options = DEFAULT_OPTIONS.copy()
-
-        for key, val in kwargs.items():
-            if key not in self.default_options.keys():
-                raise ValueError(
-                    f"The given keyword argument:{key} is not correct, possible parameters are,"
-                    f" {DEFAULT_OPTIONS}"
-                )
-            else:
-                self.default_options[key] = val
+        super().__init__(default_options=DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs)
         # first replace the no_data_value by nan
         # convert the array to float32 to be able to replace the no data value with nan
         if exclude_value is not np.nan:
@@ -282,11 +273,6 @@ class ArrayGlyph:
             no_elem = array.count()
 
         self.no_elem = no_elem
-
-        if fig is not None:
-            self.fig, self.ax = fig, ax
-        else:
-            self.fig = None
 
     @property
     def arr(self):
@@ -626,16 +612,6 @@ class ArrayGlyph:
         return message
 
     @property
-    def vmin(self):
-        """min value in the array"""
-        return self._vmin
-
-    @property
-    def vmax(self):
-        """max value in the array"""
-        return self._vmax
-
-    @property
     def exclude_value(self):
         """exclude_value"""
         return self._exclude_value
@@ -643,59 +619,6 @@ class ArrayGlyph:
     @exclude_value.setter
     def exclude_value(self, value):
         self._exclude_value = value
-
-    @property
-    def default_options(self):
-        """Default plot options"""
-        return self._default_options
-
-    @property
-    def anim(self):
-        """Animation function"""
-        if hasattr(self, "_anim"):
-            val = self._anim
-        else:
-            raise ValueError(
-                "Please first use the function animate to create the animation object"
-            )
-        return val
-
-    def create_figure_axes(self) -> Tuple[Figure, Axes]:
-        """Create the figure and the axes.
-
-        Returns
-        -------
-        fig: matplotlib.figure.Figure
-            the created figure.
-        ax: matplotlib.axes.Axes
-            the created axes.
-        """
-        fig, ax = plt.subplots(figsize=self.default_options["figsize"])
-
-        return fig, ax
-
-    def get_ticks(self) -> np.ndarray:
-        """get a list of ticks for the color bar"""
-        ticks_spacing = self.default_options["ticks_spacing"]
-        vmax = self.default_options["vmax"]
-        vmin = self.default_options["vmin"]
-        remainder = np.round(math.remainder(vmax, ticks_spacing), 3)
-        # np.mod(vmax, ticks_spacing) gives float point error, so we use the round function.
-        if remainder == 0:
-            ticks = np.arange(vmin, vmax + ticks_spacing, ticks_spacing)
-        else:
-            try:
-                ticks = np.arange(vmin, vmax + ticks_spacing, ticks_spacing)
-            except ValueError:
-                raise ValueError(
-                    "The number of ticks exceeded the max allowed size, possible errors"
-                    f" is the value of the NodataValue you entered-{self.exclude_value}"
-                )
-            ticks = np.append(
-                ticks,
-                [int(vmax / ticks_spacing) * ticks_spacing + ticks_spacing],
-            )
-        return ticks
 
     def _plot_im_get_cbar_kw(
         self, ax: Axes, arr: np.ndarray, ticks: np.ndarray
@@ -718,67 +641,18 @@ class ArrayGlyph:
         cbar: Dict[str,str]
             color bar keyword arguments.
         """
-        color_scale = self.default_options["color_scale"]
+        norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
         cmap = self.default_options["cmap"]
-        # get the vmin and vmax from the tick instead of the default values.
-        vmin: float = ticks[0]  # self.default_options["vmin"]
-        vmax: float = ticks[-1]  # self.default_options["vmax"]
+        vmin = ticks[0]
+        vmax = ticks[-1]
 
-        if color_scale.lower() == "linear":
-            im = ax.matshow(arr, cmap=cmap, vmin=vmin, vmax=vmax, extent=self.extent)
-            cbar_kw = {"ticks": ticks}
-        elif color_scale.lower() == "power":
-            im = ax.matshow(
-                arr,
-                cmap=cmap,
-                norm=colors.PowerNorm(
-                    gamma=self.default_options["gamma"], vmin=vmin, vmax=vmax
-                ),
-                extent=self.extent,
-            )
-            cbar_kw = {"ticks": ticks}
-        elif color_scale.lower() == "sym-lognorm":
-            im = ax.matshow(
-                arr,
-                cmap=cmap,
-                norm=colors.SymLogNorm(
-                    linthresh=self.default_options["line_threshold"],
-                    linscale=self.default_options["line_scale"],
-                    base=np.e,
-                    vmin=vmin,
-                    vmax=vmax,
-                ),
-                extent=self.extent,
-            )
-            formatter = LogFormatter(10, labelOnlyBase=False)
-            cbar_kw = {"ticks": ticks, "format": formatter}
-        elif color_scale.lower() == "boundary-norm":
-            if not self.default_options["bounds"]:
-                bounds = ticks
-                cbar_kw = {"ticks": ticks}
-            else:
-                bounds = self.default_options["bounds"]
-                cbar_kw = {"ticks": self.default_options["bounds"]}
-            norm = colors.BoundaryNorm(boundaries=bounds, ncolors=256)
-            im = ax.matshow(arr, cmap=cmap, norm=norm, extent=self.extent)
-        elif color_scale.lower() == "midpoint":
+        if self.default_options["color_scale"].lower() == "midpoint":
             arr = arr.filled(np.nan)
-            im = ax.matshow(
-                arr,
-                cmap=cmap,
-                norm=MidpointNormalize(
-                    midpoint=self.default_options["midpoint"],
-                    vmin=vmin,
-                    vmax=vmax,
-                ),
-                extent=self.extent,
-            )
-            cbar_kw = {"ticks": ticks}
+
+        if norm is None:
+            im = ax.matshow(arr, cmap=cmap, vmin=vmin, vmax=vmax, extent=self.extent)
         else:
-            raise ValueError(
-                f"Invalid color scale option: {color_scale}. Use 'linear', 'power', 'power-norm',"
-                "'sym-lognorm', 'boundary-norm'"
-            )
+            im = ax.matshow(arr, cmap=cmap, norm=norm, extent=self.extent)
 
         return im, cbar_kw
 
@@ -915,60 +789,6 @@ class ArrayGlyph:
             fontsize=default_options_dict["num_size"],
         )
         return list(map(add_text, indices))
-
-    @staticmethod
-    def _plot_point_values(ax, point_table: np.ndarray, pid_color, pid_size):
-        write_points = lambda x: ax.text(
-            x[2],
-            x[1],
-            x[0],
-            ha="center",
-            va="center",
-            color=pid_color,
-            fontsize=pid_size,
-        )
-        return list(map(write_points, point_table))
-
-    def create_color_bar(self, ax: Axes, im: AxesImage, cbar_kw: dict) -> Colorbar:
-        """Create Color bar.
-
-        Parameters
-        ----------
-        ax: Axes
-            matplotlib axes.
-        im: AxesImage
-            Image axes.
-        cbar_kw: dict
-            color bar keyword arguments.
-
-        Returns
-        -------
-        Colorbar:
-            colorbar object.
-        """
-        # im or cax is the last image added to the axes
-        # im = ax.images[-1]
-        cbar = ax.figure.colorbar(
-            im,
-            ax=ax,
-            shrink=self.default_options["cbar_length"],
-            orientation=self.default_options["cbar_orientation"],
-            **cbar_kw,
-        )
-        # cbar.ax.set_ylabel(
-        #     self.default_options["cbar_label"],
-        #     rotation=self.default_options["cbar_label_rotation"],
-        #     va=self.default_options["cbar_label_location"],
-        #     fontsize=self.default_options["cbar_label_size"],
-        # )
-        cbar.ax.tick_params(labelsize=10)
-        cbar.set_label(
-            self.default_options["cbar_label"],
-            fontsize=self.default_options["cbar_label_size"],
-            loc=self.default_options["cbar_label_location"],
-        )
-
-        return cbar
 
     def plot(
         self,
@@ -1361,86 +1181,6 @@ class ArrayGlyph:
         plt.show()
         return fig, ax
 
-    def adjust_ticks(
-        self,
-        axis: str,
-        multiply_value: Union[float, int] = 1,
-        add_value: Union[float, int] = 0,
-        fmt: str = "{0:g}",
-        visible: bool = True,
-    ):
-        """Adjust the ticks of the axes.
-
-        Parameters
-        ----------
-        axis: str
-            x or y.
-        multiply_value: Union[float, int]
-            value to be multiplied.
-        add_value: Union[float, int]
-            value to be added.
-        fmt: str, default is "{0:g}".
-            format of the ticks.
-            - 123.456 with the format "{0:f}" will give '123.456000'.
-            - 123.456 with the format "{0:.2f}" will give '123.46'.
-            - 123456.789 with the format "{0:e}" will give '1.234568e+05'.
-            - 123456.789 with the format "{0:.2e}" will give '1.23e+05'.
-            - 123456.789 with the format "{0:g}" will give '123457'.
-            - 123456.789 with the format "{0:.2g}" will give '1.2e+05'.
-            - 123 with the format "{0:d}" will give '123'.
-         visible: bool, optional, default is True.
-            Whether the ticks are visible or not.
-
-        Returns
-        -------
-        None
-
-        Examples
-        --------
-        - Create an array and instantiate the `ArrayGlyph` object:
-            ```python
-            >>> import numpy as np
-            >>> arr = np.array([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]])
-            >>> extent = [34.62, 34.65, 31.82, 31.85]
-            >>> my_glyph = ArrayGlyph(arr, extent=extent)
-            >>> fig, ax = my_glyph.plot()
-
-            ```
-            ![adjust_tick](./../_images/array_glyph/adjust_tick.png)
-
-        - Adjust the ticks of the x-axis:
-            ```python
-            >>> my_glyph.adjust_ticks(axis='x', multiply_value=0.01, add_value=34.62, fmt="{0:.2f}")
-
-            ```
-            ![adjust_tick](./../_images/array_glyph/adjust_tick-x.png)
-
-        - Adjust the ticks of the y-axis:
-            ```python
-            >>> my_glyph.adjust_ticks(axis='y', multiply_value=0.01, add_value=31.82, fmt="{0:.2e}")
-
-            ```
-            ![adjust_tick-y](./../_images/array_glyph/adjust_tick-y.png)
-        """
-        if axis == "x":
-            ticks_x = ticker.FuncFormatter(
-                lambda x, pos: fmt.format(x * multiply_value + add_value)
-            )
-            self.ax.xaxis.set_major_formatter(ticks_x)
-        else:
-            ticks_y = ticker.FuncFormatter(
-                lambda y, pos: fmt.format(y * multiply_value + add_value)
-            )
-            self.ax.yaxis.set_major_formatter(ticks_y)
-
-        if not visible:
-            if axis == "x":
-                self.ax.get_xaxis().set_visible(visible)
-            else:
-                self.ax.get_yaxis().set_visible(visible)
-
-        plt.show()
-
     def animate(
         self,
         time: List[Any],
@@ -1816,84 +1556,6 @@ class ArrayGlyph:
         self._anim = anim
         plt.show()
         return anim
-
-    def save_animation(self, path: str, fps: int = 2):
-        """Save the animation to a file.
-
-        This method saves the animation created by the `animate` method to a file.
-        The format of the output file is determined by the file extension in the path.
-
-        Parameters
-        ----------
-        path : str
-            The file path where the animation will be saved.
-            The file extension determines the output format.
-            Supported formats: gif, mov, avi, mp4.
-        fps : int, optional
-            Frames per second for the saved animation, by default 2.
-            Higher values create faster animations, lower values create slower animations.
-
-        Raises
-        ------
-        ValueError
-            If the file extension is not one of the supported formats.
-        FileNotFoundError
-            If FFmpeg is not installed (required for mov, avi, and mp4 formats).
-
-        Notes
-        -----
-        - For GIF format, the PillowWriter is used.
-        - For MOV, AVI, and MP4 formats, FFMpegWriter is used, which requires FFmpeg to be installed.
-        - You can download FFmpeg from https://ffmpeg.org/
-
-        Examples
-        --------
-        Save an animation as a GIF file:
-        ```python
-        >>> import numpy as np
-        >>> from cleopatra.array_glyph import ArrayGlyph
-        >>> # Create a 3D array with 5 frames, each 10x10
-        >>> arr = np.random.randint(1, 10, size=(5, 10, 10))
-        >>> frame_labels = ["Frame 1", "Frame 2", "Frame 3", "Frame 4", "Frame 5"]
-        >>> animated_array = ArrayGlyph(arr)
-        >>> anim_obj = animated_array.animate(frame_labels)
-        >>> animated_array.save_animation("animation.gif") # doctest: +SKIP
-
-        ```
-        Save with a higher frame rate for a faster animation:
-        ```python
-        >>> animated_array.save_animation("animation.gif", fps=5) # doctest: +SKIP
-
-        ```
-        Save in MP4 format (requires FFmpeg):
-        ```python
-        >>> animated_array.save_animation("animation.mp4", fps=10) # doctest: +SKIP
-
-        ```
-        """
-        video_format = path.split(".")[-1]
-        if video_format not in SUPPORTED_VIDEO_FORMAT:
-            raise ValueError(
-                f"The given extension {video_format} implies a format that is not supported, "
-                f"only {SUPPORTED_VIDEO_FORMAT} are supported"
-            )
-
-        if video_format == "gif":
-            writer_gif = animation.PillowWriter(fps=fps)
-            self.anim.save(path, writer=writer_gif)
-        else:
-            try:
-                if video_format == "avi" or video_format == "mov":
-                    writer_video = animation.FFMpegWriter(fps=fps, bitrate=1800)
-                    self.anim.save(path, writer=writer_video)
-                elif video_format == "mp4":
-                    writer_mp4 = animation.FFMpegWriter(fps=fps, bitrate=1800)
-                    self.anim.save(path, writer=writer_mp4)
-            except FileNotFoundError:
-                print(
-                    "Please visit https://ffmpeg.org/ and download a version of ffmpeg compatible with your operating"
-                    "system, for more details please check the method definition"
-                )
 
     # @staticmethod
     # def plot_type_1(

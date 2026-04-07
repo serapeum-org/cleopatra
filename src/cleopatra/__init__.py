@@ -8,6 +8,7 @@ __all__ = [
     "array_glyph",
     "colors",
     "config",
+    "glyph",
     "mesh_glyph",
     "statistical_glyph",
     "styles",
