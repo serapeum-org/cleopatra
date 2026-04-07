@@ -6,16 +6,13 @@ fan triangulation, face-to-triangle value mapping, and edge cases.
 
 from __future__ import annotations
 
-import matplotlib
 import numpy as np
 import pytest
-
-matplotlib.use("Agg")
 
 from cleopatra.mesh_glyph import MeshGlyph
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def triangle_glyph():
     """MeshGlyph with 2 triangular faces.
 
@@ -24,9 +21,6 @@ def triangle_glyph():
          2---3
         / \\ /
        0---1
-
-    Returns:
-        MeshGlyph with 4 nodes, 2 triangles.
     """
     node_x = np.array([0.0, 1.0, 0.5, 1.5])
     node_y = np.array([0.0, 0.0, 1.0, 1.0])
@@ -34,13 +28,9 @@ def triangle_glyph():
     return MeshGlyph(node_x, node_y, faces)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def mixed_glyph():
-    """MeshGlyph with 1 quad + 2 triangles (mixed mesh).
-
-    Returns:
-        MeshGlyph with 6 nodes, 3 faces (fill_value=-1 for triangles).
-    """
+    """MeshGlyph with 1 quad + 2 triangles (mixed mesh)."""
     node_x = np.array([0.0, 1.0, 2.0, 0.0, 1.0, 2.0])
     node_y = np.array([0.0, 0.0, 0.0, 1.0, 1.0, 1.0])
     faces = np.array(
@@ -53,13 +43,9 @@ def mixed_glyph():
     return MeshGlyph(node_x, node_y, faces, fill_value=-1)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def quad_with_edges():
-    """MeshGlyph with 1 quad and explicit edge connectivity.
-
-    Returns:
-        MeshGlyph with 4 nodes, 1 quad face, 4 edges.
-    """
+    """MeshGlyph with 1 quad and explicit edge connectivity."""
     node_x = np.array([0.0, 1.0, 1.0, 0.0])
     node_y = np.array([0.0, 0.0, 1.0, 1.0])
     faces = np.array([[0, 1, 2, 3]])
