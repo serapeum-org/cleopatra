@@ -56,7 +56,13 @@ docs = [
     "jupyter",
     "commitizen (>=4.8.3,<5.0.0)",
 ]
-
+notebook = [
+    "pip",
+    "jupyterlab",
+    "notebook",
+    "jupyter",
+    "ipykernel"
+]
 
 [project.urls]
 Homepage = "https://github.com/serapeum-org/cleopatra"
