@@ -105,8 +105,9 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Installation: installation.md
-  - Unstructured Mesh Guide: unstructured-mesh-guide.md
-  - API Documentation:
+  - User Guide:
+    - unstructured-mesh-guide.md
+  - Reference:
     - Statistical plots: api/statistics-class.md
     - ArrayGlyph: api/array-glyph-class.md
     - MeshGlyph: api/mesh-glyph-class.md

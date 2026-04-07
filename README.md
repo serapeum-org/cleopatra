@@ -31,7 +31,7 @@ The `Array` class has the following functionalities:
 - Animate the array over time with optional parameters to customize the animation speed and display points.
 - Display the array with optional parameters to customize the appearance and display point IDs.
 
-The `statistical_glyph` module provides a class for creating statistical plots, specifically histograms. The class, 
+The `statistical_glyph` module provides a class for creating statistical plots, specifically histograms. The class,
 `StatisticalGlyph`, is designed to handle both 1D (single-dimensional) and 2D (multi-dimensional) data.
 
 
