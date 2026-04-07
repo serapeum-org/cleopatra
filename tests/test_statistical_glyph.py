@@ -1,9 +1,10 @@
-import numpy as np
 import matplotlib
+import numpy as np
 
 matplotlib.use("agg")
-from matplotlib.figure import Figure
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure
+
 from cleopatra.statistical_glyph import StatisticalGlyph
 
 

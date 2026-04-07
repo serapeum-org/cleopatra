@@ -1,6 +1,7 @@
 import pytest
-from cleopatra.colors import Colors
 from matplotlib.colors import LinearSegmentedColormap
+
+from cleopatra.colors import Colors
 
 
 class TestCreateColors:

@@ -22,28 +22,21 @@ The `Array` class has the following methods:
 - `display`: Display the array with optional parameters.
 """
 
-import math
 from typing import Any, Dict, List, Tuple, Union
 
-import matplotlib.colors as colors
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 import numpy as np
 import numpy.ma as ma
 from hpc.indexing import get_indices2
-from matplotlib import animation
 from matplotlib.animation import FuncAnimation
 from matplotlib.axes import Axes
-from matplotlib.colorbar import Colorbar
 from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
 from matplotlib.image import AxesImage
-from matplotlib.ticker import LogFormatter
 from PIL import Image
 
-from cleopatra.glyph import Glyph, SUPPORTED_VIDEO_FORMAT
+from cleopatra.glyph import Glyph
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
-from cleopatra.styles import MidpointNormalize
 
 DEFAULT_OPTIONS = {
     "vmin": None,
