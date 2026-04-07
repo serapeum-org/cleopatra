@@ -331,8 +331,8 @@ class MeshGlyph:
             Figure size in inches. Default is ``(10, 8)``.
         **kwargs
             Additional keyword arguments passed to ``tripcolor`` or
-            ``tricontourf``. Do not pass ``cmap``, ``levels``,
-            ``vmin``, or ``vmax`` here — use the dedicated parameters.
+            ``tricontourf``. For node-location plots, ``levels`` and
+            ``cmap`` can be overridden via kwargs.
 
         Returns
         -------
@@ -404,7 +404,8 @@ class MeshGlyph:
                 contour_kw["vmin"] = vmin
             if vmax is not None:
                 contour_kw["vmax"] = vmax
-            tpc = ax.tricontourf(tri, data, **contour_kw, **kwargs)
+            contour_kw.update(kwargs)
+            tpc = ax.tricontourf(tri, data, **contour_kw)
 
         if colorbar:
             plt.colorbar(tpc, ax=ax)

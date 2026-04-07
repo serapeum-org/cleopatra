@@ -261,6 +261,19 @@ class TestPlot:
         _, ax_out = triangle_glyph.plot(np.array([1.0, 2.0]), ax=ax)
         assert ax_out is ax, "Should plot on the provided Axes"
 
+    def test_node_plot_custom_levels(self, triangle_glyph):
+        """Test that user can override levels via kwargs without TypeError."""
+        data = np.array([0.0, 1.0, 2.0, 3.0])
+        fig, ax = triangle_glyph.plot(data, location="node", levels=5)
+        assert fig is not None
+
+    def test_colorbar_false(self, triangle_glyph):
+        """Test plot with colorbar=False."""
+        fig, ax = triangle_glyph.plot(
+            np.array([1.0, 2.0]), colorbar=False
+        )
+        assert fig is not None
+
 
 class TestPlotOutline:
     """Tests for MeshGlyph.plot_outline()."""
