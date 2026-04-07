@@ -104,6 +104,33 @@ class MeshGlyph:
             if edge_node_connectivity is not None
             else None
         )
+
+        if self._node_x.ndim != 1:
+            raise ValueError(f"node_x must be 1D, got {self._node_x.ndim}D.")
+        if self._node_x.shape != self._node_y.shape:
+            raise ValueError(
+                f"node_x and node_y must have the same shape, "
+                f"got {self._node_x.shape} and {self._node_y.shape}."
+            )
+        if self._face_nodes.ndim != 2:
+            raise ValueError(
+                f"face_node_connectivity must be 2D, got {self._face_nodes.ndim}D."
+            )
+        valid_indices = self._face_nodes[self._face_nodes != self._fill_value]
+        if len(valid_indices) > 0:
+            if valid_indices.min() < 0 or valid_indices.max() >= self.n_nodes:
+                raise ValueError(
+                    f"face_node_connectivity indices must be in "
+                    f"[0, {self.n_nodes}), got range "
+                    f"[{valid_indices.min()}, {valid_indices.max()}]."
+                )
+        if self._edge_nodes is not None:
+            if self._edge_nodes.ndim != 2 or self._edge_nodes.shape[1] != 2:
+                raise ValueError(
+                    f"edge_node_connectivity must have shape (n_edges, 2), "
+                    f"got {self._edge_nodes.shape}."
+                )
+
         self._cached_triangulation: mtri.Triangulation | None = None
         self._cached_tri_array: np.ndarray | None = None
         self._cached_nodes_per_face: np.ndarray | None = None

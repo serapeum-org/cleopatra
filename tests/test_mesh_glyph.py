@@ -67,6 +67,56 @@ def quad_with_edges():
     return MeshGlyph(node_x, node_y, faces, edge_node_connectivity=edges)
 
 
+class TestConstructorValidation:
+    """Tests for MeshGlyph constructor input validation."""
+
+    def test_mismatched_node_lengths_raises(self):
+        """Test that mismatched node_x and node_y raises ValueError."""
+        with pytest.raises(ValueError, match="same shape"):
+            MeshGlyph(
+                np.array([0.0, 1.0]),
+                np.array([0.0, 1.0, 2.0]),
+                np.array([[0, 1, 2]]),
+            )
+
+    def test_non_1d_node_x_raises(self):
+        """Test that 2D node_x raises ValueError."""
+        with pytest.raises(ValueError, match="1D"):
+            MeshGlyph(
+                np.array([[0.0, 1.0]]),
+                np.array([[0.0, 1.0]]),
+                np.array([[0, 1, 2]]),
+            )
+
+    def test_1d_face_connectivity_raises(self):
+        """Test that 1D face_node_connectivity raises ValueError."""
+        with pytest.raises(ValueError, match="2D"):
+            MeshGlyph(
+                np.array([0.0, 1.0, 2.0]),
+                np.array([0.0, 0.0, 1.0]),
+                np.array([0, 1, 2]),
+            )
+
+    def test_out_of_range_face_indices_raises(self):
+        """Test that out-of-range node indices raise ValueError."""
+        with pytest.raises(ValueError, match="indices must be in"):
+            MeshGlyph(
+                np.array([0.0, 1.0]),
+                np.array([0.0, 0.0]),
+                np.array([[0, 1, 99]]),
+            )
+
+    def test_wrong_edge_shape_raises(self):
+        """Test that edge_node_connectivity with wrong shape raises ValueError."""
+        with pytest.raises(ValueError, match="shape.*n_edges, 2"):
+            MeshGlyph(
+                np.array([0.0, 1.0, 2.0]),
+                np.array([0.0, 0.0, 1.0]),
+                np.array([[0, 1, 2]]),
+                edge_node_connectivity=np.array([0, 1, 2]),
+            )
+
+
 class TestMeshGlyphProperties:
     """Tests for MeshGlyph basic properties."""
 
