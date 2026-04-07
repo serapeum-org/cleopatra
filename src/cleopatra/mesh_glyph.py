@@ -158,8 +158,7 @@ class MeshGlyph:
     @property
     def n_edges(self) -> int:
         """Number of edges (0 if edge connectivity not provided)."""
-        result = self._edge_nodes.shape[0] if self._edge_nodes is not None else 0
-        return result
+        return self._edge_nodes.shape[0] if self._edge_nodes is not None else 0
 
     @property
     def nodes_per_face(self) -> np.ndarray:
@@ -413,8 +412,7 @@ class MeshGlyph:
             ax.set_title(title)
         ax.set_aspect("equal")
 
-        result = (fig, ax)
-        return result
+        return fig, ax
 
     def plot_outline(
         self,
@@ -475,8 +473,7 @@ class MeshGlyph:
         ax.autoscale()
         ax.set_aspect("equal")
 
-        result = (fig, ax)
-        return result
+        return fig, ax
 
     def _build_edge_segments(self) -> np.ndarray:
         """Build line segments for wireframe rendering.
