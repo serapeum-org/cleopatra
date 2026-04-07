@@ -348,7 +348,8 @@ class MeshGlyph:
         Raises
         ------
         ValueError
-            If ``location`` is not ``"face"`` or ``"node"``.
+            If ``location`` is not ``"face"`` or ``"node"``, or if
+            ``data`` length does not match the expected mesh dimension.
 
         Examples
         --------
@@ -369,6 +370,19 @@ class MeshGlyph:
             ...     location="node",
             ... )
         """
+        if location not in ("face", "node"):
+            raise ValueError(
+                f"Plotting not supported for location='{location}'. "
+                f"Use 'face' or 'node'."
+            )
+
+        expected = self.n_faces if location == "face" else self.n_nodes
+        if len(data) != expected:
+            raise ValueError(
+                f"data length ({len(data)}) does not match "
+                f"n_{location}s ({expected})."
+            )
+
         fig = None
         if ax is None:
             fig, ax = plt.subplots(1, 1, figsize=figsize)
@@ -388,18 +402,13 @@ class MeshGlyph:
                 edgecolors=edgecolor,
                 **kwargs,
             )
-        elif location == "node":
+        else:
             contour_kw: dict[str, Any] = {"cmap": cmap, "levels": 20}
             if vmin is not None:
                 contour_kw["vmin"] = vmin
             if vmax is not None:
                 contour_kw["vmax"] = vmax
             tpc = ax.tricontourf(tri, data, **contour_kw, **kwargs)
-        else:
-            raise ValueError(
-                f"Plotting not supported for location='{location}'. "
-                f"Use 'face' or 'node'."
-            )
 
         if colorbar:
             plt.colorbar(tpc, ax=ax)

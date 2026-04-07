@@ -243,6 +243,16 @@ class TestPlot:
         with pytest.raises(ValueError, match="not supported"):
             triangle_glyph.plot(np.array([1.0]), location="edge")
 
+    def test_face_data_wrong_length_raises(self, triangle_glyph):
+        """Test that wrong data length for face location raises ValueError."""
+        with pytest.raises(ValueError, match="data length"):
+            triangle_glyph.plot(np.array([1.0, 2.0, 3.0]), location="face")
+
+    def test_node_data_wrong_length_raises(self, triangle_glyph):
+        """Test that wrong data length for node location raises ValueError."""
+        with pytest.raises(ValueError, match="data length"):
+            triangle_glyph.plot(np.array([1.0, 2.0]), location="node")
+
     def test_existing_axes(self, triangle_glyph):
         """Test plotting on user-provided Axes."""
         import matplotlib.pyplot as plt
