@@ -169,6 +169,31 @@ class MeshGlyph:
         -------
         np.ndarray
             1D integer array of length n_faces.
+
+        Examples
+        --------
+        Pure triangular mesh returns all 3s:
+
+            >>> import numpy as np
+            >>> from cleopatra.mesh_glyph import MeshGlyph
+            >>> mg = MeshGlyph(
+            ...     np.array([0.0, 1.0, 0.5, 1.5]),
+            ...     np.array([0.0, 0.0, 1.0, 1.0]),
+            ...     np.array([[0, 1, 2], [1, 3, 2]]),
+            ... )
+            >>> mg.nodes_per_face
+            array([3, 3])
+
+        Mixed mesh with quads and triangles:
+
+            >>> mg = MeshGlyph(
+            ...     np.array([0.0, 1.0, 2.0, 0.0, 1.0, 2.0]),
+            ...     np.array([0.0, 0.0, 0.0, 1.0, 1.0, 1.0]),
+            ...     np.array([[0, 1, 4, 3], [1, 2, 5, -1]]),
+            ...     fill_value=-1,
+            ... )
+            >>> mg.nodes_per_face
+            array([4, 3])
         """
         if self._cached_nodes_per_face is None:
             self._cached_nodes_per_face = np.sum(
@@ -216,6 +241,10 @@ class MeshGlyph:
 
     def _fan_triangles(self) -> np.ndarray:
         """Compute fan triangulation for mixed-element meshes.
+
+        Each face with N valid nodes is decomposed into (N-2) triangles
+        using fan decomposition from the first vertex. Pure-triangle
+        meshes use a fast path that returns the connectivity directly.
 
         Returns
         -------
@@ -479,14 +508,16 @@ class MeshGlyph:
     def _build_edge_segments(self) -> np.ndarray:
         """Build line segments for wireframe rendering.
 
-        Uses edge_node_connectivity if available, otherwise derives
-        unique edges from face_node_connectivity.
+        Uses edge_node_connectivity if available (vectorized), otherwise
+        derives unique edges from face_node_connectivity using a set for
+        deduplication.
 
         Returns
         -------
         np.ndarray
             Array of shape (n_segments, 2, 2) where each segment is
-            ``[[x1, y1], [x2, y2]]``.
+            ``[[x1, y1], [x2, y2]]``. Returns an empty array with
+            shape (0, 2, 2) if no edges can be derived.
         """
         if self._edge_nodes is not None:
             n1 = self._edge_nodes[:, 0]
