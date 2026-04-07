@@ -138,15 +138,11 @@ class TestMeshGlyphProperties:
 
     def test_node_x_property(self, triangle_glyph):
         """Test node_x property returns the x-coordinates array."""
-        np.testing.assert_array_equal(
-            triangle_glyph.node_x, [0.0, 1.0, 0.5, 1.5]
-        )
+        np.testing.assert_array_equal(triangle_glyph.node_x, [0.0, 1.0, 0.5, 1.5])
 
     def test_node_y_property(self, triangle_glyph):
         """Test node_y property returns the y-coordinates array."""
-        np.testing.assert_array_equal(
-            triangle_glyph.node_y, [0.0, 0.0, 1.0, 1.0]
-        )
+        np.testing.assert_array_equal(triangle_glyph.node_y, [0.0, 0.0, 1.0, 1.0])
 
     def test_n_nodes(self, triangle_glyph):
         """Test node count property."""
@@ -221,9 +217,9 @@ class TestTriangulation:
             fill_value=-1,
         )
         tri = mg.triangulation
-        assert tri.triangles.shape[0] == 1, (
-            f"Expected 1 triangle (degenerate skipped), got {tri.triangles.shape[0]}"
-        )
+        assert (
+            tri.triangles.shape[0] == 1
+        ), f"Expected 1 triangle (degenerate skipped), got {tri.triangles.shape[0]}"
 
     def test_triangle_node_indices_correct(self, triangle_glyph):
         """Test that triangle node indices match input face connectivity."""
@@ -314,9 +310,7 @@ class TestPlot:
     def test_node_plot_with_vmin_vmax(self, triangle_glyph):
         """Test node plot with explicit vmin and vmax parameters."""
         data = np.array([0.0, 1.0, 2.0, 3.0])
-        fig, ax = triangle_glyph.plot(
-            data, location="node", vmin=0.0, vmax=3.0
-        )
+        fig, ax = triangle_glyph.plot(data, location="node", vmin=0.0, vmax=3.0)
         assert fig is not None, "Should return a Figure"
 
     def test_existing_axes(self, triangle_glyph):
@@ -335,18 +329,17 @@ class TestPlot:
 
     def test_colorbar_false(self, triangle_glyph):
         """Test plot with colorbar=False."""
-        fig, ax = triangle_glyph.plot(
-            np.array([1.0, 2.0]), colorbar=False
-        )
+        fig, ax = triangle_glyph.plot(np.array([1.0, 2.0]), colorbar=False)
         assert fig is not None
 
 
 class TestPlotOutline:
     """Tests for MeshGlyph.plot_outline()."""
 
-    def test_wireframe_no_edges(self, triangle_glyph):
+    def test_wireframe_no_edges(self):
         """Test wireframe without explicit edge connectivity."""
-        fig, ax = triangle_glyph.plot_outline()
+        mg = _make_tri_mg()
+        fig, ax = mg.plot_outline()
         assert fig is not None, "Should return a Figure"
         assert len(ax.collections) == 1, "Should have 1 LineCollection"
 
@@ -405,7 +398,20 @@ class TestEdgeSegments:
             fill_value=-1,
         )
         segs = mg._build_edge_segments()
-        assert segs.shape == (0, 2, 2), f"Expected empty segments, got shape {segs.shape}"
+        assert segs.shape == (
+            0,
+            2,
+            2,
+        ), f"Expected empty segments, got shape {segs.shape}"
+
+
+def _make_tri_mg():
+    """Create a fresh 4-node, 2-face triangular MeshGlyph."""
+    return MeshGlyph(
+        np.array([0.0, 1.0, 0.5, 1.5]),
+        np.array([0.0, 0.0, 1.0, 1.0]),
+        np.array([[0, 1, 2], [1, 3, 2]]),
+    )
 
 
 class TestColorScales:
@@ -413,46 +419,29 @@ class TestColorScales:
 
     def test_linear_scale(self):
         """Test default linear color scale."""
-        mg = MeshGlyph(
-            np.array([0.0, 1.0, 0.5, 1.5]),
-            np.array([0.0, 0.0, 1.0, 1.0]),
-            np.array([[0, 1, 2], [1, 3, 2]]),
-        )
-        fig, ax = mg.plot(np.array([1.0, 2.0]), color_scale="linear")
+        fig, ax = _make_tri_mg().plot(np.array([1.0, 2.0]), color_scale="linear")
         assert fig is not None, "Should return a Figure"
 
     def test_power_scale(self):
         """Test power color scale with custom gamma."""
-        mg = MeshGlyph(
-            np.array([0.0, 1.0, 0.5, 1.5]),
-            np.array([0.0, 0.0, 1.0, 1.0]),
-            np.array([[0, 1, 2], [1, 3, 2]]),
-        )
-        fig, ax = mg.plot(
-            np.array([1.0, 2.0]), color_scale="power", gamma=0.3,
+        fig, ax = _make_tri_mg().plot(
+            np.array([1.0, 2.0]),
+            color_scale="power",
+            gamma=0.3,
         )
         assert fig is not None, "Should return a Figure"
 
     def test_sym_lognorm_scale(self):
         """Test symmetrical log-norm color scale."""
-        mg = MeshGlyph(
-            np.array([0.0, 1.0, 0.5, 1.5]),
-            np.array([0.0, 0.0, 1.0, 1.0]),
-            np.array([[0, 1, 2], [1, 3, 2]]),
-        )
-        fig, ax = mg.plot(
-            np.array([1.0, 20.0]), color_scale="sym-lognorm",
+        fig, ax = _make_tri_mg().plot(
+            np.array([1.0, 20.0]),
+            color_scale="sym-lognorm",
         )
         assert fig is not None, "Should return a Figure"
 
     def test_boundary_norm_scale(self):
         """Test boundary-norm color scale with custom bounds."""
-        mg = MeshGlyph(
-            np.array([0.0, 1.0, 0.5, 1.5]),
-            np.array([0.0, 0.0, 1.0, 1.0]),
-            np.array([[0, 1, 2], [1, 3, 2]]),
-        )
-        fig, ax = mg.plot(
+        fig, ax = _make_tri_mg().plot(
             np.array([1.0, 5.0]),
             color_scale="boundary-norm",
             bounds=[0, 2, 4, 6],
@@ -461,12 +450,7 @@ class TestColorScales:
 
     def test_midpoint_scale(self):
         """Test midpoint color scale."""
-        mg = MeshGlyph(
-            np.array([0.0, 1.0, 0.5, 1.5]),
-            np.array([0.0, 0.0, 1.0, 1.0]),
-            np.array([[0, 1, 2], [1, 3, 2]]),
-        )
-        fig, ax = mg.plot(
+        fig, ax = _make_tri_mg().plot(
             np.array([1.0, 5.0]),
             color_scale="midpoint",
             midpoint=3.0,
@@ -476,12 +460,7 @@ class TestColorScales:
 
     def test_node_with_power_scale(self):
         """Test node-centered data with power color scale."""
-        mg = MeshGlyph(
-            np.array([0.0, 1.0, 0.5, 1.5]),
-            np.array([0.0, 0.0, 1.0, 1.0]),
-            np.array([[0, 1, 2], [1, 3, 2]]),
-        )
-        fig, ax = mg.plot(
+        fig, ax = _make_tri_mg().plot(
             np.array([0.0, 1.0, 2.0, 3.0]),
             location="node",
             color_scale="power",
@@ -491,18 +470,50 @@ class TestColorScales:
 
     def test_colorbar_customization(self):
         """Test colorbar label, orientation, and size."""
-        mg = MeshGlyph(
-            np.array([0.0, 1.0, 0.5, 1.5]),
-            np.array([0.0, 0.0, 1.0, 1.0]),
-            np.array([[0, 1, 2], [1, 3, 2]]),
-        )
-        fig, ax = mg.plot(
+        fig, ax = _make_tri_mg().plot(
             np.array([1.0, 2.0]),
             cbar_label="Depth [m]",
             cbar_orientation="horizontal",
             cbar_length=0.5,
         )
         assert fig is not None, "Should return a Figure"
+
+
+class TestPlotReuse:
+    """Tests for calling plot() multiple times on the same instance."""
+
+    def test_vmin_vmax_recomputed_on_different_data(self):
+        """Test that vmin/vmax are recomputed when data range changes."""
+        mg = _make_tri_mg()
+        mg.plot(np.array([1.0, 2.0]))
+        assert mg.vmin == 1.0, f"Expected vmin=1.0, got {mg.vmin}"
+        mg.plot(np.array([10.0, 20.0]))
+        assert mg.vmin == 10.0, f"Expected vmin=10.0 after replot, got {mg.vmin}"
+        assert mg.vmax == 20.0, f"Expected vmax=20.0 after replot, got {mg.vmax}"
+
+    def test_explicit_vmin_vmax_preserved(self):
+        """Test that user-supplied vmin/vmax are not overwritten."""
+        mg = _make_tri_mg()
+        mg.plot(np.array([1.0, 2.0]), vmin=0.0, vmax=5.0)
+        assert mg.vmin == 0.0, f"Expected vmin=0.0, got {mg.vmin}"
+        assert mg.vmax == 5.0, f"Expected vmax=5.0, got {mg.vmax}"
+
+    def test_no_colorbar_accumulation(self):
+        """Test that repeated plot() calls don't stack colorbars."""
+        mg = _make_tri_mg()
+        mg.plot(np.array([1.0, 2.0]))
+        mg.plot(np.array([3.0, 4.0]))
+        # Count axes: main axes + 1 colorbar axes = 2
+        n_axes = len(mg.fig.axes)
+        assert n_axes == 2, f"Expected 2 axes (plot + 1 colorbar), got {n_axes}"
+
+    def test_plot_outline_overlays_on_existing(self):
+        """Test that plot_outline() after plot() uses the same axes."""
+        mg = _make_tri_mg()
+        fig1, ax1 = mg.plot(np.array([1.0, 2.0]))
+        fig2, ax2 = mg.plot_outline()
+        assert fig1 is fig2, "plot_outline should reuse the stored figure"
+        assert ax1 is ax2, "plot_outline should reuse the stored axes"
 
 
 class TestAnimate:
@@ -543,8 +554,11 @@ class TestAnimate:
         )
         frames = np.array([[1.0, 2.0], [3.0, 4.0]])
         anim = mg.animate(
-            frames, time=["t0", "t1"],
-            color_scale="power", gamma=0.5, cmap="coolwarm",
+            frames,
+            time=["t0", "t1"],
+            color_scale="power",
+            gamma=0.5,
+            cmap="coolwarm",
         )
         assert anim is not None, "Should return a FuncAnimation"
 
@@ -557,6 +571,13 @@ class TestAnimate:
         )
         frames = np.array([[1.0], [2.0], [3.0]])
         with pytest.raises(ValueError, match="time length"):
+            mg.animate(frames, time=["t0", "t1"])
+
+    def test_animation_inconsistent_frame_length_raises(self):
+        """Test that frames with different lengths raise ValueError."""
+        mg = _make_tri_mg()
+        frames = [np.array([1.0, 2.0]), np.array([3.0])]  # second frame wrong length
+        with pytest.raises(ValueError, match="Frame 1"):
             mg.animate(frames, time=["t0", "t1"])
 
     def test_save_animation_gif(self, tmp_path):

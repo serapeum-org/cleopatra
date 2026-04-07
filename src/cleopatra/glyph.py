@@ -8,7 +8,7 @@ colorbar creation, tick management, point overlays, and animation.
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Tuple, Union
+from typing import Tuple, Union
 
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
@@ -19,10 +19,8 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.axes import Axes
 from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure
-from matplotlib.image import AxesImage
 from matplotlib.ticker import LogFormatter
 
-from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import MidpointNormalize
 
 SUPPORTED_VIDEO_FORMAT = ["gif", "mov", "avi", "mp4"]
@@ -102,23 +100,6 @@ class Glyph:
             else:
                 self._default_options[key] = val
 
-    def _sync_vmin_vmax_ticks(self, kwargs: dict) -> None:
-        """Sync vmin, vmax, and ticks_spacing from kwargs or instance defaults."""
-        if "ticks_spacing" in kwargs:
-            self._default_options["ticks_spacing"] = kwargs["ticks_spacing"]
-        else:
-            self._default_options["ticks_spacing"] = self.ticks_spacing
-
-        if "vmin" in kwargs:
-            self._default_options["vmin"] = kwargs["vmin"]
-        else:
-            self._default_options["vmin"] = self.vmin
-
-        if "vmax" in kwargs:
-            self._default_options["vmax"] = kwargs["vmax"]
-        else:
-            self._default_options["vmax"] = self.vmax
-
     def create_figure_axes(self) -> Tuple[Figure, Axes]:
         """Create a new figure and axes from default_options.
 
@@ -150,7 +131,7 @@ class Glyph:
             except ValueError:
                 raise ValueError(
                     "The number of ticks exceeded the max allowed size, possible errors"
-                    f" is the value of the NodataValue you entered"
+                    " is the value of the NodataValue you entered"
                 )
             ticks = np.append(
                 ticks,
@@ -217,9 +198,7 @@ class Glyph:
             )
         return norm, cbar_kw
 
-    def create_color_bar(
-        self, ax: Axes, im: AxesImage, cbar_kw: dict
-    ) -> Colorbar:
+    def create_color_bar(self, ax: Axes, im, cbar_kw: dict) -> Colorbar:
         """Create a colorbar with full customization from default_options.
 
         Parameters

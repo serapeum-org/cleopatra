@@ -109,9 +109,7 @@ class MeshGlyph(Glyph):
         ax=None,
         **kwargs,
     ):
-        super().__init__(
-            default_options=MESH_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs
-        )
+        super().__init__(default_options=MESH_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs)
         self._node_x = np.asarray(node_x, dtype=np.float64)
         self._node_y = np.asarray(node_y, dtype=np.float64)
         self._face_nodes = np.asarray(face_node_connectivity, dtype=np.intp)
@@ -330,9 +328,7 @@ class MeshGlyph(Glyph):
         valid = counts >= 3
         return np.repeat(face_values[valid], counts[valid] - 2)
 
-    def _validate_location_and_data(
-        self, data: np.ndarray, location: str
-    ) -> None:
+    def _validate_location_and_data(self, data: np.ndarray, location: str) -> None:
         """Validate location string and data length."""
         if location not in ("face", "node"):
             raise ValueError(
@@ -498,10 +494,10 @@ class MeshGlyph(Glyph):
                 render_kwargs[key] = val
         self._merge_kwargs(option_kwargs)
 
-        # Compute vmin/vmax from data if not set.
-        if self.default_options["vmin"] is None:
+        # Recompute vmin/vmax from data unless user explicitly passed them.
+        if "vmin" not in option_kwargs:
             self.default_options["vmin"] = float(np.nanmin(data))
-        if self.default_options["vmax"] is None:
+        if "vmax" not in option_kwargs:
             self.default_options["vmax"] = float(np.nanmax(data))
         self._vmin = self.default_options["vmin"]
         self._vmax = self.default_options["vmax"]
@@ -520,12 +516,21 @@ class MeshGlyph(Glyph):
         norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
 
         tpc = self._render_mesh(
-            self.ax, data, location, edgecolor=edgecolor,
-            norm=norm, **render_kwargs,
+            self.ax,
+            data,
+            location,
+            edgecolor=edgecolor,
+            norm=norm,
+            **render_kwargs,
         )
 
+        # Remove previous colorbar before adding a new one.
+        if hasattr(self, "_cbar") and self._cbar is not None:
+            self._cbar.remove()
+            self._cbar = None
+
         if colorbar:
-            self.create_color_bar(self.ax, tpc, cbar_kw)
+            self._cbar = self.create_color_bar(self.ax, tpc, cbar_kw)
 
         if self.default_options["title"]:
             self.ax.set_title(
@@ -611,15 +616,21 @@ class MeshGlyph(Glyph):
                 f"time length ({len(time)}) does not match "
                 f"frame count ({n_frames})."
             )
-        self._validate_location_and_data(frames[0], location)
+        expected = self.n_faces if location == "face" else self.n_nodes
+        for i, frame in enumerate(frames):
+            if len(frame) != expected:
+                raise ValueError(
+                    f"Frame {i}: data length ({len(frame)}) does not "
+                    f"match n_{location}s ({expected})."
+                )
 
         self._merge_kwargs(kwargs)
 
-        # Compute global vmin/vmax across all frames if not set.
+        # Compute global vmin/vmax across all frames unless user set them.
         all_data = np.concatenate(frames)
-        if self.default_options["vmin"] is None:
+        if "vmin" not in kwargs:
             self.default_options["vmin"] = float(np.nanmin(all_data))
-        if self.default_options["vmax"] is None:
+        if "vmax" not in kwargs:
             self.default_options["vmax"] = float(np.nanmax(all_data))
         self._vmin = self.default_options["vmin"]
         self._vmax = self.default_options["vmax"]
@@ -634,7 +645,11 @@ class MeshGlyph(Glyph):
 
         # Render the first frame.
         tpc = self._render_mesh(
-            ax, frames[0], location, edgecolor=edgecolor, norm=norm,
+            ax,
+            frames[0],
+            location,
+            edgecolor=edgecolor,
+            norm=norm,
         )
         self.create_color_bar(ax, tpc, cbar_kw)
 
@@ -646,7 +661,9 @@ class MeshGlyph(Glyph):
         ax.set_aspect("equal")
 
         day_text = ax.text(
-            text_loc[0], text_loc[1], " ",
+            text_loc[0],
+            text_loc[1],
+            " ",
             fontsize=self.default_options["cbar_label_size"],
             transform=ax.transAxes,
         )
@@ -656,13 +673,21 @@ class MeshGlyph(Glyph):
             for coll in ax.collections[:]:
                 coll.remove()
             self._render_mesh(
-                ax, frames[i], location, edgecolor=edgecolor, norm=norm,
+                ax,
+                frames[i],
+                location,
+                edgecolor=edgecolor,
+                norm=norm,
             )
             day_text.set_text(str(time[i]))
 
         plt.tight_layout()
         anim = FuncAnimation(
-            fig, _update, frames=n_frames, interval=interval, blit=False,
+            fig,
+            _update,
+            frames=n_frames,
+            interval=interval,
+            blit=False,
         )
         self._anim = anim
         plt.show()
@@ -712,22 +737,22 @@ class MeshGlyph(Glyph):
             ... )
             >>> fig, ax = mg.plot_outline(color="blue")
         """
-        fig = None
-        if ax is None:
-            fig, ax = plt.subplots(1, 1, figsize=figsize)
-        else:
-            fig = ax.get_figure()
+        if ax is not None:
+            self.ax = ax
+            self.fig = ax.get_figure()
+        elif self.fig is None:
+            self.fig, self.ax = plt.subplots(1, 1, figsize=figsize)
 
         segments = self._build_edge_segments()
 
         lc = mcoll.LineCollection(
             segments, colors=color, linewidths=linewidth, **kwargs
         )
-        ax.add_collection(lc)
-        ax.autoscale()
-        ax.set_aspect("equal")
+        self.ax.add_collection(lc)
+        self.ax.autoscale()
+        self.ax.set_aspect("equal")
 
-        return fig, ax
+        return self.fig, self.ax
 
     def _build_edge_segments(self) -> np.ndarray:
         """Build line segments for wireframe rendering.
