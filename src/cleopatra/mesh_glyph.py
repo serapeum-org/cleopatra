@@ -2,8 +2,9 @@
 
 Provides `MeshGlyph` for plotting UGRID-style unstructured mesh data
 using matplotlib triangulation (tripcolor, tricontourf) and wireframe
-rendering via LineCollection. Designed for use with pyramids' Mesh2d
-objects but accepts raw arrays for standalone use.
+rendering via LineCollection. Accepts raw numpy arrays of node
+coordinates and face-node connectivity. Also integrates with
+pyramids-gis ``Mesh2d`` objects for geospatial workflows.
 
 Examples
 --------
