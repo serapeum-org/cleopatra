@@ -102,9 +102,51 @@ class TestConstructorValidation:
                 edge_node_connectivity=np.array([0, 1, 2]),
             )
 
+    def test_all_fill_values_passes_validation(self):
+        """Test that face_nodes with all fill_values passes index validation.
+
+        Test scenario:
+            When all entries are fill_value, valid_indices is empty so
+            index range check is skipped.
+        """
+        mg = MeshGlyph(
+            np.array([0.0, 1.0]),
+            np.array([0.0, 0.0]),
+            np.array([[-1, -1, -1]], dtype=np.intp),
+            fill_value=-1,
+        )
+        assert mg.n_faces == 1, f"Expected 1 face, got {mg.n_faces}"
+
+    def test_negative_index_without_fill_raises(self):
+        """Test that negative indices (not fill_value) raise ValueError.
+
+        Test scenario:
+            fill_value=0, so -1 is treated as a real index, which is
+            out of range.
+        """
+        with pytest.raises(ValueError, match="indices must be in"):
+            MeshGlyph(
+                np.array([0.0, 1.0, 2.0]),
+                np.array([0.0, 0.0, 1.0]),
+                np.array([[0, 1, -1]]),
+                fill_value=0,
+            )
+
 
 class TestMeshGlyphProperties:
     """Tests for MeshGlyph basic properties."""
+
+    def test_node_x_property(self, triangle_glyph):
+        """Test node_x property returns the x-coordinates array."""
+        np.testing.assert_array_equal(
+            triangle_glyph.node_x, [0.0, 1.0, 0.5, 1.5]
+        )
+
+    def test_node_y_property(self, triangle_glyph):
+        """Test node_y property returns the y-coordinates array."""
+        np.testing.assert_array_equal(
+            triangle_glyph.node_y, [0.0, 0.0, 1.0, 1.0]
+        )
 
     def test_n_nodes(self, triangle_glyph):
         """Test node count property."""
@@ -158,6 +200,36 @@ class TestTriangulation:
         t1 = triangle_glyph.triangulation
         t2 = triangle_glyph.triangulation
         assert t1 is t2, "Triangulation should be cached"
+
+    def test_fan_triangles_cached(self):
+        """Test that _fan_triangles returns cached array on second call."""
+        mg = MeshGlyph(
+            np.array([0.0, 1.0, 0.5, 1.5, 0.0, 1.0]),
+            np.array([0.0, 0.0, 1.0, 1.0, 2.0, 2.0]),
+            np.array([[0, 1, 3, 2], [2, 3, 5, 4]]),
+        )
+        first = mg._fan_triangles()
+        second = mg._fan_triangles()
+        assert first is second, "Should return cached array"
+
+    def test_mixed_mesh_with_degenerate_faces(self):
+        """Test that faces with < 3 valid nodes are skipped in triangulation."""
+        mg = MeshGlyph(
+            np.array([0.0, 1.0, 0.5, 2.0]),
+            np.array([0.0, 0.0, 1.0, 0.0]),
+            np.array([[0, 1, 2, -1], [0, 3, -1, -1]], dtype=np.intp),
+            fill_value=-1,
+        )
+        tri = mg.triangulation
+        assert tri.triangles.shape[0] == 1, (
+            f"Expected 1 triangle (degenerate skipped), got {tri.triangles.shape[0]}"
+        )
+
+    def test_triangle_node_indices_correct(self, triangle_glyph):
+        """Test that triangle node indices match input face connectivity."""
+        tri = triangle_glyph.triangulation
+        expected = np.array([[0, 1, 2], [1, 3, 2]])
+        np.testing.assert_array_equal(tri.triangles, expected)
 
     def test_empty_mesh_raises(self):
         """Test that mesh with no valid faces raises ValueError."""
@@ -239,6 +311,14 @@ class TestPlot:
         with pytest.raises(ValueError, match="data length"):
             triangle_glyph.plot(np.array([1.0, 2.0]), location="node")
 
+    def test_node_plot_with_vmin_vmax(self, triangle_glyph):
+        """Test node plot with explicit vmin and vmax parameters."""
+        data = np.array([0.0, 1.0, 2.0, 3.0])
+        fig, ax = triangle_glyph.plot(
+            data, location="node", vmin=0.0, vmax=3.0
+        )
+        assert fig is not None, "Should return a Figure"
+
     def test_existing_axes(self, triangle_glyph):
         """Test plotting on user-provided Axes."""
         import matplotlib.pyplot as plt
@@ -311,3 +391,18 @@ class TestEdgeSegments:
             key = (tuple(seg[0]), tuple(seg[1]))
             assert key not in edge_set, f"Duplicate edge: {key}"
             edge_set.add(key)
+
+    def test_empty_edges_from_faces(self):
+        """Test _build_edge_segments returns empty array when no valid edges.
+
+        Test scenario:
+            All face entries are fill_value so no edges can be derived.
+        """
+        mg = MeshGlyph(
+            np.array([0.0, 1.0]),
+            np.array([0.0, 0.0]),
+            np.array([[-1, -1, -1]], dtype=np.intp),
+            fill_value=-1,
+        )
+        segs = mg._build_edge_segments()
+        assert segs.shape == (0, 2, 2), f"Expected empty segments, got shape {segs.shape}"
