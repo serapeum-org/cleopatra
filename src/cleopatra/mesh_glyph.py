@@ -26,12 +26,13 @@ Plot a wireframe outline:
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, List
 
 import matplotlib.collections as mcoll
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 import numpy as np
+from matplotlib.animation import FuncAnimation
 
 from cleopatra.glyph import Glyph
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
@@ -329,18 +330,88 @@ class MeshGlyph(Glyph):
         valid = counts >= 3
         return np.repeat(face_values[valid], counts[valid] - 2)
 
+    def _validate_location_and_data(
+        self, data: np.ndarray, location: str
+    ) -> None:
+        """Validate location string and data length."""
+        if location not in ("face", "node"):
+            raise ValueError(
+                f"Plotting not supported for location='{location}'. "
+                f"Use 'face' or 'node'."
+            )
+        expected = self.n_faces if location == "face" else self.n_nodes
+        if len(data) != expected:
+            raise ValueError(
+                f"data length ({len(data)}) does not match "
+                f"n_{location}s ({expected})."
+            )
+
+    def _render_mesh(
+        self,
+        ax,
+        data: np.ndarray,
+        location: str,
+        edgecolor: str = "none",
+        norm=None,
+        **render_kwargs,
+    ):
+        """Render mesh data on axes and return the mappable.
+
+        Parameters
+        ----------
+        ax : Axes
+            Matplotlib axes.
+        data : np.ndarray
+            1D data array.
+        location : str
+            ``"face"`` or ``"node"``.
+        edgecolor : str, optional
+            Edge color for face rendering.
+        norm : matplotlib.colors.Normalize or None
+            Color normalization.
+        **render_kwargs
+            Passed to tripcolor or tricontourf.
+
+        Returns
+        -------
+        ScalarMappable
+            The tripcolor or tricontourf result.
+        """
+        tri = self.triangulation
+        cmap = self.default_options["cmap"]
+        vmin = self.default_options["vmin"]
+        vmax = self.default_options["vmax"]
+
+        if location == "face":
+            tri_values = self._map_face_to_triangle_values(data)
+            kw: dict[str, Any] = {"cmap": cmap, "edgecolors": edgecolor}
+            if norm is not None:
+                kw["norm"] = norm
+            else:
+                kw["vmin"] = vmin
+                kw["vmax"] = vmax
+            kw.update(render_kwargs)
+            return ax.tripcolor(tri, facecolors=tri_values, **kw)
+
+        contour_kw: dict[str, Any] = {"cmap": cmap, "levels": 20}
+        if norm is not None:
+            contour_kw["norm"] = norm
+        else:
+            if vmin is not None:
+                contour_kw["vmin"] = vmin
+            if vmax is not None:
+                contour_kw["vmax"] = vmax
+        contour_kw.update(render_kwargs)
+        return ax.tricontourf(tri, data, **contour_kw)
+
     def plot(
         self,
         data: np.ndarray,
         location: str = "face",
         ax: Any = None,
-        cmap: str = "viridis",
-        vmin: float | None = None,
-        vmax: float | None = None,
         edgecolor: str = "none",
         colorbar: bool = True,
         title: str | None = None,
-        figsize: tuple[int, int] = (10, 8),
         **kwargs: Any,
     ) -> tuple[plt.Figure, plt.Axes]:
         """Plot mesh data using matplotlib triangulation.
@@ -348,6 +419,9 @@ class MeshGlyph(Glyph):
         For face-centered data, uses ``tripcolor`` where each triangle
         is colored by the value of its parent face. For node-centered
         data, uses ``tricontourf`` for smooth interpolated contours.
+
+        Supports all 5 color scale types from ``default_options``:
+        linear, power, sym-lognorm, boundary-norm, and midpoint.
 
         Parameters
         ----------
@@ -358,32 +432,25 @@ class MeshGlyph(Glyph):
             Mesh element location: ``"face"`` or ``"node"``.
             Default is ``"face"``.
         ax : matplotlib.axes.Axes or None, optional
-            Axes to plot on. If None, a new figure is created.
-        cmap : str, optional
-            Matplotlib colormap name. Default is ``"viridis"``.
-        vmin : float or None, optional
-            Minimum color scale value.
-        vmax : float or None, optional
-            Maximum color scale value.
+            Axes to plot on. If None, uses stored axes or creates new.
         edgecolor : str, optional
             Edge color for face rendering. Default is ``"none"``.
         colorbar : bool, optional
             Whether to add a colorbar. Default is True.
         title : str or None, optional
-            Plot title.
-        figsize : tuple[int, int], optional
-            Figure size in inches. Default is ``(10, 8)``.
+            Plot title. Overrides ``default_options["title"]``.
         **kwargs
-            Additional keyword arguments passed to ``tripcolor`` or
-            ``tricontourf``. For node-location plots, ``levels`` and
-            ``cmap`` can be overridden via kwargs.
+            Override any key in ``default_options`` (cmap, vmin, vmax,
+            color_scale, gamma, midpoint, bounds, ticks_spacing,
+            cbar_orientation, cbar_label, figsize, etc.) or pass extra
+            rendering kwargs (levels for tricontourf).
 
         Returns
         -------
         tuple[Figure, Axes]
-            The matplotlib Figure and Axes objects. When ``ax`` is
-            None, a new figure is created. Call ``plt.close(fig)``
-            after saving to avoid memory leaks in batch processing.
+            The matplotlib Figure and Axes objects. When no axes exist,
+            a new figure is created. Call ``plt.close(fig)`` after
+            saving to avoid memory leaks in batch processing.
 
         Raises
         ------
@@ -409,55 +476,197 @@ class MeshGlyph(Glyph):
             ...     np.array([0.0, 1.0, 2.0, 3.0]),
             ...     location="node",
             ... )
+
+        Plot with power color scale:
+
+            >>> mg2 = MeshGlyph(node_x, node_y, faces)
+            >>> fig, ax = mg2.plot(
+            ...     np.array([1.0, 2.0]),
+            ...     color_scale="power",
+            ...     gamma=0.5,
+            ...     cmap="coolwarm",
+            ... )
         """
-        if location not in ("face", "node"):
-            raise ValueError(
-                f"Plotting not supported for location='{location}'. "
-                f"Use 'face' or 'node'."
-            )
+        self._validate_location_and_data(data, location)
+        # Separate rendering kwargs (e.g. levels) from default_options kwargs.
+        render_kwargs: dict[str, Any] = {}
+        option_kwargs: dict[str, Any] = {}
+        for key, val in kwargs.items():
+            if key in self.default_options:
+                option_kwargs[key] = val
+            else:
+                render_kwargs[key] = val
+        self._merge_kwargs(option_kwargs)
 
-        expected = self.n_faces if location == "face" else self.n_nodes
-        if len(data) != expected:
-            raise ValueError(
-                f"data length ({len(data)}) does not match "
-                f"n_{location}s ({expected})."
-            )
+        # Compute vmin/vmax from data if not set.
+        if self.default_options["vmin"] is None:
+            self.default_options["vmin"] = float(np.nanmin(data))
+        if self.default_options["vmax"] is None:
+            self.default_options["vmax"] = float(np.nanmax(data))
+        self._vmin = self.default_options["vmin"]
+        self._vmax = self.default_options["vmax"]
+        self.ticks_spacing = (self._vmax - self._vmin) / 10
 
-        fig = None
-        if ax is None:
-            fig, ax = plt.subplots(1, 1, figsize=figsize)
-        else:
-            fig = ax.get_figure()
+        if title is not None:
+            self.default_options["title"] = title
 
-        tri = self.triangulation
+        if ax is not None:
+            self.ax = ax
+            self.fig = ax.get_figure()
+        elif self.fig is None:
+            self.fig, self.ax = self.create_figure_axes()
 
-        if location == "face":
-            tri_values = self._map_face_to_triangle_values(data)
-            tpc = ax.tripcolor(
-                tri,
-                facecolors=tri_values,
-                cmap=cmap,
-                vmin=vmin,
-                vmax=vmax,
-                edgecolors=edgecolor,
-                **kwargs,
-            )
-        else:
-            contour_kw: dict[str, Any] = {"cmap": cmap, "levels": 20}
-            if vmin is not None:
-                contour_kw["vmin"] = vmin
-            if vmax is not None:
-                contour_kw["vmax"] = vmax
-            contour_kw.update(kwargs)
-            tpc = ax.tricontourf(tri, data, **contour_kw)
+        ticks = self.get_ticks()
+        norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
+
+        tpc = self._render_mesh(
+            self.ax, data, location, edgecolor=edgecolor,
+            norm=norm, **render_kwargs,
+        )
 
         if colorbar:
-            plt.colorbar(tpc, ax=ax)
-        if title:
-            ax.set_title(title)
+            self.create_color_bar(self.ax, tpc, cbar_kw)
+
+        if self.default_options["title"]:
+            self.ax.set_title(
+                self.default_options["title"],
+                fontsize=self.default_options["title_size"],
+            )
+        self.ax.set_aspect("equal")
+
+        return self.fig, self.ax
+
+    def animate(
+        self,
+        data: np.ndarray | List[np.ndarray],
+        time: List[Any],
+        location: str = "face",
+        edgecolor: str = "none",
+        interval: int = 200,
+        text_loc: list | None = None,
+        **kwargs: Any,
+    ) -> FuncAnimation:
+        """Create an animation from time-varying mesh data.
+
+        Iterates over the first dimension of ``data`` (or elements of a
+        list), rendering each frame on the fixed mesh topology.
+
+        Parameters
+        ----------
+        data : np.ndarray or list[np.ndarray]
+            Sequence of data arrays. If a 2D ndarray of shape
+            ``(n_frames, n_elements)``, each row is one frame. If a
+            list, each element is a 1D array for one frame.
+        time : list
+            Labels for each frame (timestamps, strings, etc.).
+            Length must match the number of frames.
+        location : str, optional
+            ``"face"`` or ``"node"``. Default is ``"face"``.
+        edgecolor : str, optional
+            Edge color for face rendering. Default is ``"none"``.
+        interval : int, optional
+            Milliseconds between frames. Default is 200.
+        text_loc : list or None, optional
+            ``[x, y]`` position for the time label text.
+            Default is ``[0.1, 0.2]``.
+        **kwargs
+            Override any key in ``default_options`` (cmap, vmin, vmax,
+            color_scale, gamma, midpoint, ticks_spacing, cbar_label,
+            cbar_orientation, figsize, title, etc.).
+
+        Returns
+        -------
+        FuncAnimation
+            The animation object. Use ``save_animation()`` to export.
+
+        Raises
+        ------
+        ValueError
+            If ``data`` frames don't match mesh topology or ``time``
+            length doesn't match frame count.
+
+        Examples
+        --------
+            >>> import numpy as np
+            >>> from cleopatra.mesh_glyph import MeshGlyph
+            >>> node_x = np.array([0.0, 1.0, 0.5, 1.5])
+            >>> node_y = np.array([0.0, 0.0, 1.0, 1.0])
+            >>> faces = np.array([[0, 1, 2], [1, 3, 2]])
+            >>> mg = MeshGlyph(node_x, node_y, faces)
+            >>> frames = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+            >>> anim = mg.animate(frames, time=["t0", "t1", "t2"])
+        """
+        if text_loc is None:
+            text_loc = [0.1, 0.2]
+
+        # Normalize data to a list of 1D arrays.
+        if isinstance(data, np.ndarray) and data.ndim == 2:
+            frames = [data[i] for i in range(data.shape[0])]
+        else:
+            frames = list(data)
+
+        n_frames = len(frames)
+        if len(time) != n_frames:
+            raise ValueError(
+                f"time length ({len(time)}) does not match "
+                f"frame count ({n_frames})."
+            )
+        self._validate_location_and_data(frames[0], location)
+
+        self._merge_kwargs(kwargs)
+
+        # Compute global vmin/vmax across all frames if not set.
+        all_data = np.concatenate(frames)
+        if self.default_options["vmin"] is None:
+            self.default_options["vmin"] = float(np.nanmin(all_data))
+        if self.default_options["vmax"] is None:
+            self.default_options["vmax"] = float(np.nanmax(all_data))
+        self._vmin = self.default_options["vmin"]
+        self._vmax = self.default_options["vmax"]
+        self.ticks_spacing = (self._vmax - self._vmin) / 10
+
+        if self.fig is None:
+            self.fig, self.ax = self.create_figure_axes()
+        fig, ax = self.fig, self.ax
+
+        ticks = self.get_ticks()
+        norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
+
+        # Render the first frame.
+        tpc = self._render_mesh(
+            ax, frames[0], location, edgecolor=edgecolor, norm=norm,
+        )
+        self.create_color_bar(ax, tpc, cbar_kw)
+
+        if self.default_options["title"]:
+            ax.set_title(
+                self.default_options["title"],
+                fontsize=self.default_options["title_size"],
+            )
         ax.set_aspect("equal")
 
-        return fig, ax
+        day_text = ax.text(
+            text_loc[0], text_loc[1], " ",
+            fontsize=self.default_options["cbar_label_size"],
+            transform=ax.transAxes,
+        )
+
+        def _update(i):
+            """Update the plot for frame i."""
+            for coll in ax.collections[:]:
+                coll.remove()
+            self._render_mesh(
+                ax, frames[i], location, edgecolor=edgecolor, norm=norm,
+            )
+            day_text.set_text(str(time[i]))
+
+        plt.tight_layout()
+        anim = FuncAnimation(
+            fig, _update, frames=n_frames, interval=interval, blit=False,
+        )
+        self._anim = anim
+        plt.show()
+        return anim
 
     def plot_outline(
         self,

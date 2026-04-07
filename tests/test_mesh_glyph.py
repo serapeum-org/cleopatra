@@ -406,3 +406,168 @@ class TestEdgeSegments:
         )
         segs = mg._build_edge_segments()
         assert segs.shape == (0, 2, 2), f"Expected empty segments, got shape {segs.shape}"
+
+
+class TestColorScales:
+    """Tests for color scale support in MeshGlyph.plot()."""
+
+    def test_linear_scale(self):
+        """Test default linear color scale."""
+        mg = MeshGlyph(
+            np.array([0.0, 1.0, 0.5, 1.5]),
+            np.array([0.0, 0.0, 1.0, 1.0]),
+            np.array([[0, 1, 2], [1, 3, 2]]),
+        )
+        fig, ax = mg.plot(np.array([1.0, 2.0]), color_scale="linear")
+        assert fig is not None, "Should return a Figure"
+
+    def test_power_scale(self):
+        """Test power color scale with custom gamma."""
+        mg = MeshGlyph(
+            np.array([0.0, 1.0, 0.5, 1.5]),
+            np.array([0.0, 0.0, 1.0, 1.0]),
+            np.array([[0, 1, 2], [1, 3, 2]]),
+        )
+        fig, ax = mg.plot(
+            np.array([1.0, 2.0]), color_scale="power", gamma=0.3,
+        )
+        assert fig is not None, "Should return a Figure"
+
+    def test_sym_lognorm_scale(self):
+        """Test symmetrical log-norm color scale."""
+        mg = MeshGlyph(
+            np.array([0.0, 1.0, 0.5, 1.5]),
+            np.array([0.0, 0.0, 1.0, 1.0]),
+            np.array([[0, 1, 2], [1, 3, 2]]),
+        )
+        fig, ax = mg.plot(
+            np.array([1.0, 20.0]), color_scale="sym-lognorm",
+        )
+        assert fig is not None, "Should return a Figure"
+
+    def test_boundary_norm_scale(self):
+        """Test boundary-norm color scale with custom bounds."""
+        mg = MeshGlyph(
+            np.array([0.0, 1.0, 0.5, 1.5]),
+            np.array([0.0, 0.0, 1.0, 1.0]),
+            np.array([[0, 1, 2], [1, 3, 2]]),
+        )
+        fig, ax = mg.plot(
+            np.array([1.0, 5.0]),
+            color_scale="boundary-norm",
+            bounds=[0, 2, 4, 6],
+        )
+        assert fig is not None, "Should return a Figure"
+
+    def test_midpoint_scale(self):
+        """Test midpoint color scale."""
+        mg = MeshGlyph(
+            np.array([0.0, 1.0, 0.5, 1.5]),
+            np.array([0.0, 0.0, 1.0, 1.0]),
+            np.array([[0, 1, 2], [1, 3, 2]]),
+        )
+        fig, ax = mg.plot(
+            np.array([1.0, 5.0]),
+            color_scale="midpoint",
+            midpoint=3.0,
+            cmap="coolwarm",
+        )
+        assert fig is not None, "Should return a Figure"
+
+    def test_node_with_power_scale(self):
+        """Test node-centered data with power color scale."""
+        mg = MeshGlyph(
+            np.array([0.0, 1.0, 0.5, 1.5]),
+            np.array([0.0, 0.0, 1.0, 1.0]),
+            np.array([[0, 1, 2], [1, 3, 2]]),
+        )
+        fig, ax = mg.plot(
+            np.array([0.0, 1.0, 2.0, 3.0]),
+            location="node",
+            color_scale="power",
+            gamma=0.5,
+        )
+        assert fig is not None, "Should return a Figure"
+
+    def test_colorbar_customization(self):
+        """Test colorbar label, orientation, and size."""
+        mg = MeshGlyph(
+            np.array([0.0, 1.0, 0.5, 1.5]),
+            np.array([0.0, 0.0, 1.0, 1.0]),
+            np.array([[0, 1, 2], [1, 3, 2]]),
+        )
+        fig, ax = mg.plot(
+            np.array([1.0, 2.0]),
+            cbar_label="Depth [m]",
+            cbar_orientation="horizontal",
+            cbar_length=0.5,
+        )
+        assert fig is not None, "Should return a Figure"
+
+
+class TestAnimate:
+    """Tests for MeshGlyph.animate()."""
+
+    def test_basic_animation(self):
+        """Test basic face-centered animation."""
+        mg = MeshGlyph(
+            np.array([0.0, 1.0, 0.5, 1.5]),
+            np.array([0.0, 0.0, 1.0, 1.0]),
+            np.array([[0, 1, 2], [1, 3, 2]]),
+        )
+        frames = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+        anim = mg.animate(frames, time=["t0", "t1", "t2"])
+        assert anim is not None, "Should return a FuncAnimation"
+        assert mg.anim is anim, "Should store animation on instance"
+
+    def test_node_animation(self):
+        """Test node-centered animation."""
+        mg = MeshGlyph(
+            np.array([0.0, 1.0, 0.5, 1.5]),
+            np.array([0.0, 0.0, 1.0, 1.0]),
+            np.array([[0, 1, 2], [1, 3, 2]]),
+        )
+        frames = [
+            np.array([0.0, 1.0, 2.0, 3.0]),
+            np.array([3.0, 2.0, 1.0, 0.0]),
+        ]
+        anim = mg.animate(frames, time=["t0", "t1"], location="node")
+        assert anim is not None, "Should return a FuncAnimation"
+
+    def test_animation_with_color_scale(self):
+        """Test animation with power color scale."""
+        mg = MeshGlyph(
+            np.array([0.0, 1.0, 0.5, 1.5]),
+            np.array([0.0, 0.0, 1.0, 1.0]),
+            np.array([[0, 1, 2], [1, 3, 2]]),
+        )
+        frames = np.array([[1.0, 2.0], [3.0, 4.0]])
+        anim = mg.animate(
+            frames, time=["t0", "t1"],
+            color_scale="power", gamma=0.5, cmap="coolwarm",
+        )
+        assert anim is not None, "Should return a FuncAnimation"
+
+    def test_animation_time_mismatch_raises(self):
+        """Test that mismatched time length raises ValueError."""
+        mg = MeshGlyph(
+            np.array([0.0, 1.0, 0.5]),
+            np.array([0.0, 0.0, 1.0]),
+            np.array([[0, 1, 2]]),
+        )
+        frames = np.array([[1.0], [2.0], [3.0]])
+        with pytest.raises(ValueError, match="time length"):
+            mg.animate(frames, time=["t0", "t1"])
+
+    def test_save_animation_gif(self, tmp_path):
+        """Test saving mesh animation as GIF."""
+        mg = MeshGlyph(
+            np.array([0.0, 1.0, 0.5, 1.5]),
+            np.array([0.0, 0.0, 1.0, 1.0]),
+            np.array([[0, 1, 2], [1, 3, 2]]),
+        )
+        frames = np.array([[1.0, 2.0], [3.0, 4.0]])
+        mg.animate(frames, time=["t0", "t1"])
+        path = str(tmp_path / "test.gif")
+        mg.save_animation(path, fps=2)
+        assert (tmp_path / "test.gif").exists(), "GIF file should be created"
