@@ -105,13 +105,16 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Installation: installation.md
+  - Unstructured Mesh Guide: unstructured-mesh-guide.md
   - API Documentation:
     - Statistical plots: api/statistics-class.md
     - ArrayGlyph: api/array-glyph-class.md
+    - MeshGlyph: api/mesh-glyph-class.md
     - Colors: api/colors-class.md
     - Styles: api/styles-class.md
   - Examples:
     - ArrayGlyph: notebooks/array_glyph/array_glyph_examples.ipynb
+    - MeshGlyph: notebooks/mesh_glyph/mesh_glyph_examples.ipynb
     - Statistics: notebooks/statistics/statistics_examples.ipynb
     - Colors: notebooks/colors/colors_examples.ipynb
     - Styles: notebooks/styles/styles_examples.ipynb
