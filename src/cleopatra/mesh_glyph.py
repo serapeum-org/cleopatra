@@ -479,9 +479,7 @@ class MeshGlyph:
         result = (fig, ax)
         return result
 
-    def _build_edge_segments(
-        self,
-    ) -> list[list[tuple[float, float]]]:
+    def _build_edge_segments(self) -> np.ndarray:
         """Build line segments for wireframe rendering.
 
         Uses edge_node_connectivity if available, otherwise derives
@@ -489,37 +487,32 @@ class MeshGlyph:
 
         Returns
         -------
-        list[list[tuple[float, float]]]
-            List of [(x1, y1), (x2, y2)] segments.
+        np.ndarray
+            Array of shape (n_segments, 2, 2) where each segment is
+            ``[[x1, y1], [x2, y2]]``.
         """
-        segments: list[list[tuple[float, float]]] = []
-
         if self._edge_nodes is not None:
-            for i in range(self._edge_nodes.shape[0]):
-                n1 = int(self._edge_nodes[i, 0])
-                n2 = int(self._edge_nodes[i, 1])
-                segments.append(
-                    [
-                        (self._node_x[n1], self._node_y[n1]),
-                        (self._node_x[n2], self._node_y[n2]),
-                    ]
-                )
-        else:
-            seen: set[tuple[int, int]] = set()
-            for i in range(self.n_faces):
-                row = self._face_nodes[i]
-                nodes = row[row != self._fill_value]
-                n = len(nodes)
-                for j in range(n):
-                    n1, n2 = int(nodes[j]), int(nodes[(j + 1) % n])
-                    key = (min(n1, n2), max(n1, n2))
-                    if key not in seen:
-                        seen.add(key)
-                        segments.append(
-                            [
-                                (self._node_x[n1], self._node_y[n1]),
-                                (self._node_x[n2], self._node_y[n2]),
-                            ]
-                        )
+            n1 = self._edge_nodes[:, 0]
+            n2 = self._edge_nodes[:, 1]
+            starts = np.column_stack([self._node_x[n1], self._node_y[n1]])
+            ends = np.column_stack([self._node_x[n2], self._node_y[n2]])
+            return np.stack([starts, ends], axis=1)
 
-        return segments
+        edges: set[tuple[int, int]] = set()
+        for i in range(self.n_faces):
+            row = self._face_nodes[i]
+            nodes = row[row != self._fill_value]
+            n = len(nodes)
+            for j in range(n):
+                a, b = int(nodes[j]), int(nodes[(j + 1) % n])
+                key = (min(a, b), max(a, b))
+                edges.add(key)
+
+        if not edges:
+            return np.empty((0, 2, 2), dtype=np.float64)
+
+        edge_arr = np.array(list(edges), dtype=np.intp)
+        n1, n2 = edge_arr[:, 0], edge_arr[:, 1]
+        starts = np.column_stack([self._node_x[n1], self._node_y[n1]])
+        ends = np.column_stack([self._node_x[n2], self._node_y[n2]])
+        return np.stack([starts, ends], axis=1)

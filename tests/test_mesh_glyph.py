@@ -296,20 +296,19 @@ class TestEdgeSegments:
     def test_segments_from_faces(self, triangle_glyph):
         """Test edge segments derived from face connectivity."""
         segs = triangle_glyph._build_edge_segments()
-        assert len(segs) > 0, "Should produce edge segments"
-        for seg in segs:
-            assert len(seg) == 2, "Each segment should have 2 endpoints"
+        assert segs.shape[0] > 0, "Should produce edge segments"
+        assert segs.shape[1:] == (2, 2), "Each segment should be [[x1,y1],[x2,y2]]"
 
     def test_segments_from_edges(self, quad_with_edges):
         """Test edge segments from explicit edge connectivity."""
         segs = quad_with_edges._build_edge_segments()
-        assert len(segs) == 4, f"Expected 4 segments, got {len(segs)}"
+        assert segs.shape[0] == 4, f"Expected 4 segments, got {segs.shape[0]}"
 
     def test_no_duplicate_edges(self, triangle_glyph):
         """Test that face-derived edges are deduplicated."""
         segs = triangle_glyph._build_edge_segments()
         edge_set = set()
         for seg in segs:
-            key = (seg[0], seg[1])
+            key = (tuple(seg[0]), tuple(seg[1]))
             assert key not in edge_set, f"Duplicate edge: {key}"
             edge_set.add(key)
