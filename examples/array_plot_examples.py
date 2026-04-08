@@ -4,8 +4,10 @@ import numpy.ma as ma
 from cleopatra.config import Config
 
 Config.set_matplotlib_backend()
-from cleopatra.array_glyph import ArrayGlyph
 import matplotlib.pyplot as plt
+
+from cleopatra.array_glyph import ArrayGlyph
+
 # from matplotlib.transforms import blended_transform_factory
 # %% create the glyph from a masked array
 arr = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])

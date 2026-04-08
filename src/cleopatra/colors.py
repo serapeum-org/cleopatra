@@ -14,26 +14,17 @@ class Colors:
     RGB colors (with values between 0 and 255). It supports validation, conversion,
     and manipulation of colors.
 
-    Attributes
-    ----------
-    color_value : Union[List[str], List[Tuple[float, float, float]]]
-        The color values stored in the class, can be hex strings or RGB tuples.
+    Attributes:
+        color_value: The color values stored in the class, can be hex strings or RGB tuples.
 
-    Methods
-    -------
-    get_type()
-        Determine the type of each color (hex, rgb, rgb-normalized).
-    to_hex()
-        Convert all colors to hexadecimal format.
-    to_rgb(normalized=True)
-        Convert all colors to RGB format.
-    is_valid_hex()
-        Check if each color is a valid hex color.
-    is_valid_rgb()
-        Check if each color is a valid RGB color.
+    Methods:
+        get_type(): Determine the type of each color (hex, rgb, rgb-normalized).
+        to_hex(): Convert all colors to hexadecimal format.
+        to_rgb(normalized=True): Convert all colors to RGB format.
+        is_valid_hex(): Check if each color is a valid hex color.
+        is_valid_rgb(): Check if each color is a valid RGB color.
 
-    Examples
-    --------
+    Examples:
     Create a Colors object with a hex color:
     ```python
     >>> from cleopatra.colors import Colors
@@ -81,30 +72,24 @@ class Colors:
     ):
         """Initialize a Colors object with the given color value(s).
 
-        Parameters
-        ----------
-        color_value : Union[List[str], str, Tuple[float, float, float], List[Tuple[float, float, float]]]
-            The color value(s) to initialize the object with. Can be:
-            - A single hex color string (e.g., "#ff0000" or "ff0000")
-            - A single RGB tuple with values between 0-1 (e.g., (1.0, 0.0, 0.0))
-            - A single RGB tuple with values between 0-255 (e.g., (255, 0, 0))
-            - A list of hex color strings
-            - A list of RGB tuples
+        Args:
+            color_value: The color value(s) to initialize the object with. Can be:
+                - A single hex color string (e.g., "#ff0000" or "ff0000")
+                - A single RGB tuple with values between 0-1 (e.g., (1.0, 0.0, 0.0))
+                - A single RGB tuple with values between 0-255 (e.g., (255, 0, 0))
+                - A list of hex color strings
+                - A list of RGB tuples
 
-        Raises
-        ------
-        ValueError
-            If the color_value is not a string, tuple, or list of strings/tuples.
+        Raises:
+            ValueError: If the color_value is not a string, tuple, or list of strings/tuples.
 
-        Notes
-        -----
+        Notes:
         - Hex colors can be provided with or without the leading "#"
         - RGB tuples with float values between 0-1 are treated as normalized RGB
         - RGB tuples with integer values between 0-255 are treated as standard RGB
         - The class automatically detects the type of color format provided
 
-        Examples
-        --------
+        Examples:
         - Initialize with a hex color:
 
             ```python
@@ -170,25 +155,18 @@ class Colors:
 
         if you have an image of a color ramp, and you want to extract the colors from it, you can use this method.
 
-        ![color-ramp](./../_images/colors/color-ramp.png)
+        ![color-ramp](./../images/colors/color-ramp.png)
 
-        Parameters
-        ----------
-        path : str
-            The path to the image file.
+        Args:
+            path: The path to the image file.
 
-        Returns
-        -------
-        Colors
-            A color object.
+        Returns:
+            Colors: A color object.
 
-        Raises
-        ------
-        FileNotFoundError
-            If the file does not exist.
+        Raises:
+            FileNotFoundError: If the file does not exist.
 
-        Examples
-        --------
+        Examples:
         ```python
         >>> path = "examples/data/colors/color-ramp.png"
         >>> colors = Colors.create_from_image(path)
@@ -214,24 +192,20 @@ class Colors:
         This method analyzes each color value stored in the object and determines
         its type: hex, rgb (values 0-255), or rgb-normalized (values 0-1).
 
-        Returns
-        -------
-        List[str]
-            A list of strings indicating the type of each color value.
-            Possible values are:
-            - 'hex': Hexadecimal color string
-            - 'rgb': RGB tuple with values between 0-255
-            - 'rgb-normalized': RGB tuple with values between 0-1
+        Returns:
+            List[str]: A list of strings indicating the type of each color value.
+                Possible values are:
+                - 'hex': Hexadecimal color string
+                - 'rgb': RGB tuple with values between 0-255
+                - 'rgb-normalized': RGB tuple with values between 0-1
 
-        Notes
-        -----
-        The method uses the following criteria to determine color types:
-        - If the value is a string and is a valid hex color, it's classified as 'hex'
-        - If the value is a tuple of 3 floats between 0-1, it's classified as 'rgb-normalized'
-        - If the value is a tuple of 3 integers between 0-255, it's classified as 'rgb'
+        Notes:
+            The method uses the following criteria to determine color types:
+            - If the value is a string and is a valid hex color, it's classified as 'hex'
+            - If the value is a tuple of 3 floats between 0-1, it's classified as 'rgb-normalized'
+            - If the value is a tuple of 3 integers between 0-255, it's classified as 'rgb'
 
-        Examples
-        --------
+        Examples:
         - Determine the type of a hex color:
 
             ```python
@@ -289,16 +263,13 @@ class Colors:
         RGB tuples with values between 0-255, or normalized RGB tuples with values
         between 0-1.
 
-        Returns
-        -------
-        Union[List[str], List[Tuple[float, float, float]]]
-            A list containing the color values. Each element can be:
-            - A hex color string (e.g., "#ff0000" or "ff0000")
-            - An RGB tuple with values between 0-255 (e.g., (255, 0, 0))
-            - A normalized RGB tuple with values between 0-1 (e.g., (1.0, 0.0, 0.0))
+        Returns:
+            Union[List[str], List[Tuple[float, float, float]]]: A list containing the color values. Each element can be:
+                - A hex color string (e.g., "#ff0000" or "ff0000")
+                - An RGB tuple with values between 0-255 (e.g., (255, 0, 0))
+                - A normalized RGB tuple with values between 0-1 (e.g., (1.0, 0.0, 0.0))
 
-        Examples
-        --------
+        Examples:
         Get color values from a Colors object with hex colors:
         ```python
         >>> from cleopatra.colors import Colors
@@ -332,20 +303,16 @@ class Colors:
         RGB tuples (both normalized and 0-255 range) are converted to their hex equivalents.
         Hex colors remain unchanged.
 
-        Returns
-        -------
-        List[str]
-            A list of hexadecimal color strings. Each string is in the format '#RRGGBB'.
+        Returns:
+            List[str]: A list of hexadecimal color strings. Each string is in the format '#RRGGBB'.
 
-        Notes
-        -----
-        - RGB tuples with values between 0-255 are first normalized to 0-1 range before conversion
-        - RGB tuples with values already between 0-1 are directly converted
-        - Existing hex colors are returned as-is
-        - All returned hex colors include the leading '#' character
+        Notes:
+            - RGB tuples with values between 0-255 are first normalized to 0-1 range before conversion
+            - RGB tuples with values already between 0-1 are directly converted
+            - Existing hex colors are returned as-is
+            - All returned hex colors include the leading '#' character
 
-        Examples
-        --------
+        Examples:
         Convert RGB colors to hex:
         ```python
         >>> from cleopatra.colors import Colors
@@ -395,20 +362,16 @@ class Colors:
         This method checks each color value stored in the object to determine
         if it is a valid hexadecimal color string.
 
-        Returns
-        -------
-        List[bool]
-            A list of boolean values, one for each color value in the object.
-            True indicates the color is a valid hex color, False otherwise.
+        Returns:
+            List[bool]: A list of boolean values, one for each color value in the object.
+                True indicates the color is a valid hex color, False otherwise.
 
-        Notes
-        -----
-        - The method uses matplotlib's is_color_like function to validate hex colors
-        - Both formats with and without the leading '#' are supported
-        - RGB tuples will return False as they are not hex colors
+        Notes:
+            - The method uses matplotlib's is_color_like function to validate hex colors
+            - Both formats with and without the leading '#' are supported
+            - RGB tuples will return False as they are not hex colors
 
-        Examples
-        --------
+        Examples:
         Check if hex colors are valid:
         ```python
         >>> from cleopatra.colors import Colors
@@ -441,25 +404,19 @@ class Colors:
         This static method checks if the provided color value is a valid
         hexadecimal color string.
 
-        Parameters
-        ----------
-        hex_color : str
-            A color string to validate as a hexadecimal color.
-            Can be in the format "#RRGGBB" or "RRGGBB".
+        Args:
+            hex_color: A color string to validate as a hexadecimal color.
+                Can be in the format "#RRGGBB" or "RRGGBB".
 
-        Returns
-        -------
-        bool
-            True if the color is a valid hexadecimal color, False otherwise.
+        Returns:
+            bool: True if the color is a valid hexadecimal color, False otherwise.
 
-        Notes
-        -----
-        - The method uses matplotlib's is_color_like function to validate hex colors
-        - Both formats with and without the leading '#' are supported
-        - Non-string values will return False
+        Notes:
+            - The method uses matplotlib's is_color_like function to validate hex colors
+            - Both formats with and without the leading '#' are supported
+            - Non-string values will return False
 
-        Examples
-        --------
+        Examples:
         Check valid hex colors:
         ```python
         >>> from cleopatra.colors import Colors
@@ -495,20 +452,16 @@ class Colors:
         if it is a valid RGB color tuple (either with values between 0-255 or
         normalized values between 0-1).
 
-        Returns
-        -------
-        List[bool]
-            A list of boolean values, one for each color value in the object.
-            True indicates the color is a valid RGB tuple, False otherwise.
+        Returns:
+            List[bool]: A list of boolean values, one for each color value in the object.
+                True indicates the color is a valid RGB tuple, False otherwise.
 
-        Notes
-        -----
-        - The method checks for both RGB formats: values between 0-255 and normalized values between 0-1
-        - A valid RGB tuple must have exactly 3 values (R, G, B)
-        - Hex color strings will return False as they are not RGB tuples
+        Notes:
+            - The method checks for both RGB formats: values between 0-255 and normalized values between 0-1
+            - A valid RGB tuple must have exactly 3 values (R, G, B)
+            - Hex color strings will return False as they are not RGB tuples
 
-        Examples
-        --------
+        Examples:
         Check if RGB colors are valid:
         ```python
         >>> from cleopatra.colors import Colors
@@ -550,20 +503,15 @@ class Colors:
         This static method checks if the provided value is a valid RGB tuple with
         integer values between 0 and 255.
 
-        Parameters
-        ----------
-        rgb_tuple : Any
-            The value to check. Should be a tuple of 3 integers between 0 and 255
-            to be considered valid.
+        Args:
+            rgb_tuple: The value to check. Should be a tuple of 3 integers between 0 and 255
+                to be considered valid.
 
-        Returns
-        -------
-        bool
-            True if the value is a valid RGB tuple with values between 0-255,
-            False otherwise.
+        Returns:
+            bool: True if the value is a valid RGB tuple with values between 0-255,
+                False otherwise.
 
-        Examples
-        --------
+        Examples:
         Check valid RGB tuples (0-255 range):
         ```python
         >>> from cleopatra.colors import Colors
@@ -600,20 +548,15 @@ class Colors:
         This static method checks if the provided value is a valid RGB tuple with
         float values between 0.0 and 1.0.
 
-        Parameters
-        ----------
-        rgb_tuple : Any
-            The value to check. Should be a tuple of 3 floats between 0.0 and 1.0
-            to be considered valid.
+        Args:
+            rgb_tuple: The value to check. Should be a tuple of 3 floats between 0.0 and 1.0
+                to be considered valid.
 
-        Returns
-        -------
-        bool
-            True if the value is a valid normalized RGB tuple with values between 0.0-1.0,
-            False otherwise.
+        Returns:
+            bool: True if the value is a valid normalized RGB tuple with values between 0.0-1.0,
+                False otherwise.
 
-        Examples
-        --------
+        Examples:
         Check valid normalized RGB tuples:
         ```python
         >>> from cleopatra.colors import Colors
@@ -652,23 +595,19 @@ class Colors:
         Hex colors are converted to their RGB equivalents. RGB colors remain unchanged
         but may be normalized or denormalized based on the 'normalized' parameter.
 
-        Parameters
-        ----------
-        normalized : bool, optional
-            Whether to return normalized RGB values (between 0 and 1) or standard RGB values
-            (between 0 and 255), by default True.
-            - If True, returns RGB values scaled between 0 and 1
-            - If False, returns RGB values scaled between 0 and 255
+        Args:
+            normalized: Whether to return normalized RGB values (between 0 and 1) or standard RGB values
+                (between 0 and 255). Defaults to True.
+                - If True, returns RGB values scaled between 0 and 1
+                - If False, returns RGB values scaled between 0 and 255
 
-        Returns
-        -------
-        List[Tuple[Union[int, float], Union[int, float], Union[int, float]]]
-            A list of RGB tuples. Each tuple contains three values (R, G, B).
-            - If normalized=True, values are floats between 0.0 and 1.0
-            - If normalized=False, values are integers between 0 and 255
+        Returns:
+            List[Tuple[Union[int, float], Union[int, float], Union[int, float]]]: A list of RGB tuples.
+                Each tuple contains three values (R, G, B).
+                - If normalized=True, values are floats between 0.0 and 1.0
+                - If normalized=False, values are integers between 0 and 255
 
-        Examples
-        --------
+        Examples:
         - Convert hex colors to normalized RGB (0-1 range):
             ```python
             >>> from cleopatra.colors import Colors
@@ -736,18 +675,13 @@ class Colors:
     def get_color_map(self, name: str = None) -> Colormap:
         """Get color ramp from a color values in stored in the object.
 
-        Parameters
-        ----------
-        name: str, Default is None.
-            The name of the color ramp.
+        Args:
+            name: The name of the color ramp. Defaults to None.
 
-        Returns
-        -------
-        Colormap:
-            A color map.
+        Returns:
+            Colormap: A color map.
 
-        Examples
-        --------
+        Examples:
         - Create a color object from an image and get the color ramp:
             ```python
             >>> path = "examples/data/colors/color-ramp.png"

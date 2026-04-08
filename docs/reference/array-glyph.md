@@ -28,7 +28,7 @@ array_glyph = ArrayGlyph(array)
 fig, ax, im, cbar = array_glyph.plot()
 ```
 
-![Array Plot Example](../_images/array-plot.png)
+![Array Plot Example](../images/array_glyph/array-plot.png)
 
 ### Display Cell Values
 
@@ -37,7 +37,7 @@ fig, ax, im, cbar = array_glyph.plot()
 fig, ax, im, cbar = array_glyph.plot(display_cell_values=True)
 ```
 
-![Display Cell Values Example](../_images/display-cell-values.png)
+![Display Cell Values Example](../images/array_glyph/display-cell-values.png)
 
 ### Display Points
 
@@ -49,7 +49,7 @@ points = np.array([[2, 3, 1], [5, 7, 2], [8, 1, 3]])
 fig, ax, im, cbar = array_glyph.plot(points=points)
 ```
 
-![Display Points Example](../_images/display-points.png)
+![Display Points Example](../images/array_glyph/display-points.png)
 
 ### Animation
 
@@ -71,4 +71,4 @@ anim = array_glyph.animate(time=time_labels, points=points)
 array_glyph.save_animation("animation.gif", fps=2)
 ```
 
-![Animation Example](../_images/animated_array.gif)
+![Animation Example](../images/array_glyph/animated_array.gif)

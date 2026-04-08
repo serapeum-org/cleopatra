@@ -14,13 +14,9 @@ class Config:
 
         Set the matplotlib backend based on the user's environment or explicitly provided backend.
 
-        Parameters
-        ----------
-        backend : str, optional
-            The name of the matplotlib backend to use. If None, the backend is chosen based on the environment.
-
-        interactive : bool, optional
-            If True, use an interactive backend in Jupyter notebooks. Default is False (static backend).
+        Args:
+            backend: The name of the matplotlib backend to use. If None, the backend is chosen based on the environment.
+            interactive: If True, use an interactive backend in Jupyter notebooks. Default is False (static backend).
         """
         # close all open figures
         plt.close("all")

@@ -32,7 +32,7 @@ stat_plot_1d = StatisticalGlyph(data_1d)
 fig_1d, ax_1d, hist_1d = stat_plot_1d.histogram()
 ```
 
-![One Histogram Example](../_images/one-histogram.png)
+![One Histogram Example](../images/statistical_glyph/one-histogram.png)
 
 ### 2D Data Example
 
@@ -47,4 +47,4 @@ stat_plot_2d = StatisticalGlyph(data_2d, color=["red", "green", "blue"], alpha=0
 fig_2d, ax_2d, hist_2d = stat_plot_2d.histogram()
 ```
 
-![Three Histogram Example](../_images/three-histogram.png)
+![Three Histogram Example](../images/statistical_glyph/three-histogram.png)

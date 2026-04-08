@@ -1,9 +1,10 @@
 import os
-from typing import List
+import shutil
 
-import numpy as np
+import pytest
 
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.animation import FuncAnimation
 from matplotlib.figure import Figure
 from PIL import Image
@@ -88,7 +89,7 @@ class TestPlotArray:
         arr: np.ndarray,
         no_data_value: float,
         cmap: str,
-        color_scale: List[int],
+        color_scale: list,
         ticks_spacing: int,
     ):
         array = ArrayGlyph(arr, exclude_value=[no_data_value])
@@ -103,7 +104,7 @@ class TestPlotArray:
         no_data_value: float,
         cmap: str,
         color_scale_2_gamma: float,
-        color_scale: List[int],
+        color_scale: list,
         ticks_spacing: int,
     ):
         array = ArrayGlyph(arr, exclude_value=[no_data_value])
@@ -120,7 +121,7 @@ class TestPlotArray:
         arr: np.ndarray,
         no_data_value: float,
         cmap: str,
-        color_scale: List[int],
+        color_scale: list,
         ticks_spacing: int,
         color_scale_3_linscale: float,
         color_scale_3_linthresh: float,
@@ -141,7 +142,7 @@ class TestPlotArray:
         arr: np.ndarray,
         no_data_value: float,
         cmap: str,
-        color_scale: List[int],
+        color_scale: list,
         ticks_spacing: int,
     ):
         array = ArrayGlyph(arr, exclude_value=[no_data_value])
@@ -153,7 +154,7 @@ class TestPlotArray:
         self,
         rhine_dem_arr: np.ndarray,
         cmap: str,
-        color_scale: List[int],
+        color_scale: list,
         ticks_spacing: int,
         bounds: list,
         rhine_no_data_val: float,
@@ -173,7 +174,7 @@ class TestPlotArray:
         arr: np.ndarray,
         no_data_value: float,
         cmap: str,
-        color_scale: List[int],
+        color_scale: list,
         ticks_spacing: int,
         midpoint: int,
     ):
@@ -264,6 +265,9 @@ class TestAnimate:
         # assert Path(path).exists()
         # os.remove(path)
 
+    @pytest.mark.skipif(
+        shutil.which("ffmpeg") is None, reason="FFmpeg not installed"
+    )
     def test_save_animation_avi(
         self,
         coello_data: np.ndarray,
@@ -281,6 +285,9 @@ class TestAnimate:
         # assert Path(path).exists()
         # os.remove(path)
 
+    @pytest.mark.skipif(
+        shutil.which("ffmpeg") is None, reason="FFmpeg not installed"
+    )
     def test_save_animation_mp4(
         self,
         coello_data: np.ndarray,
@@ -298,6 +305,9 @@ class TestAnimate:
         # assert Path(path).exists()
         # os.remove(path)
 
+    @pytest.mark.skipif(
+        shutil.which("ffmpeg") is None, reason="FFmpeg not installed"
+    )
     def test_save_animation_mov(
         self,
         coello_data: np.ndarray,

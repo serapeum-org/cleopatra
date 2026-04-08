@@ -4,7 +4,15 @@ cleopatra - visualization package
 
 from cleopatra.config import Config
 
-__all__ = ["array_glyph", "colors", "config", "statistical_glyph", "styles"]
+__all__ = [
+    "array_glyph",
+    "colors",
+    "config",
+    "glyph",
+    "mesh_glyph",
+    "statistical_glyph",
+    "styles",
+]
 
 try:
     from importlib.metadata import PackageNotFoundError  # type: ignore
