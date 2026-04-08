@@ -715,7 +715,7 @@ class ArrayGlyph(Glyph):
         points: np.ndarray = None,
         point_color: str = "red",
         point_size: Union[int, float] = 100,
-        pid_color="blue",
+        pid_color: str = "blue",
         pid_size: Union[int, float] = 10,
         **kwargs,
     ) -> Tuple[Figure, Axes]:
@@ -1089,15 +1089,15 @@ class ArrayGlyph(Glyph):
         self,
         time: List[Any],
         points: np.ndarray = None,
-        text_colors=("white", "black"),
-        interval=200,
+        text_colors: tuple[str, str] = ("white", "black"),
+        interval: int = 200,
         text_loc: list[Any, Any] = None,
-        point_color="red",
-        point_size=100,
-        pid_color="blue",
-        pid_size=10,
+        point_color: str = "red",
+        point_size: int = 100,
+        pid_color: str = "blue",
+        pid_size: int = 10,
         **kwargs,
-    ):
+    ) -> FuncAnimation:
         """Create an animation from a 3D array.
 
         This method creates an animation by iterating through the first dimension of a 3D array.

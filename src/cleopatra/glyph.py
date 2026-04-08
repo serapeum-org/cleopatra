@@ -7,6 +7,8 @@ colorbar creation, tick management, point overlays, and animation.
 
 from __future__ import annotations
 
+from typing import Any
+
 import math
 
 import matplotlib.colors as colors
@@ -247,7 +249,7 @@ class Glyph:
             )
         return norm, cbar_kw
 
-    def create_color_bar(self, ax: Axes, im, cbar_kw: dict) -> Colorbar:
+    def create_color_bar(self, ax: Axes, im: Any, cbar_kw: dict) -> Colorbar:
         """Create a colorbar with full customization from default_options.
 
         Reads ``cbar_length``, ``cbar_orientation``, ``cbar_label``,

@@ -52,7 +52,7 @@ fig_2d, ax_2d, hist_2d = stat_plot_2d.histogram()
 ```
 """
 
-from typing import Dict, List, Union
+from typing import Dict, List, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -284,7 +284,7 @@ class StatisticalGlyph:
         """
         return self._default_options
 
-    def histogram(self, **kwargs) -> [Figure, Axes, Dict]:
+    def histogram(self, **kwargs) -> Tuple[Figure, Axes, Dict]:
         """Create a histogram from the stored numerical values.
 
         This method generates a histogram visualization of the numerical values stored

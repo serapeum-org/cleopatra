@@ -1,7 +1,9 @@
 """style related functionality"""
 
+from __future__ import annotations
+
 from collections import OrderedDict
-from typing import Union
+from typing import Callable
 
 import matplotlib.colors as colors
 import numpy as np
@@ -107,7 +109,7 @@ class Styles:
     ]
 
     @staticmethod
-    def get_line_style(style: Union[str, int] = "loosely dotted"):
+    def get_line_style(style: str | int = "loosely dotted") -> tuple[int, tuple[int, ...]] | None:
         """Get a matplotlib line style tuple by name or index.
 
         This method retrieves a line style tuple that can be used with matplotlib
@@ -185,7 +187,7 @@ class Styles:
             return list(Styles.line_styles.items())[style][1]
 
     @staticmethod
-    def get_marker_style(style: int):
+    def get_marker_style(style: int) -> str:
         """Get a matplotlib marker style string by index.
 
         This method retrieves a marker style string that can be used with matplotlib
@@ -296,7 +298,7 @@ class Scale:
         pass
 
     @staticmethod
-    def log_scale(val):
+    def log_scale(val: float | np.ndarray) -> np.floating | np.ndarray:
         """Apply logarithmic (base 10) scaling to a value or array.
 
         This method computes the base-10 logarithm of the input value(s),
@@ -338,7 +340,7 @@ class Scale:
         return np.log10(val)
 
     @staticmethod
-    def power_scale(min_val) -> callable:
+    def power_scale(min_val: float) -> Callable:
         """Create a power scaling function based on a minimum value.
 
         This method returns a function that applies power scaling to its input.
@@ -394,7 +396,7 @@ class Scale:
         return scalar
 
     @staticmethod
-    def identity_scale(min_val, max_val):
+    def identity_scale(min_val: float, max_val: float) -> Callable:
         """Create a constant scaling function that always returns 2.
 
         This method returns a function that ignores its input and always returns
@@ -446,7 +448,7 @@ class Scale:
         return scalar
 
     @staticmethod
-    def rescale(old_value, old_min, old_max, new_min, new_max):
+    def rescale(old_value: float | np.ndarray, old_min: float, old_max: float, new_min: float, new_max: float) -> float | np.ndarray:
         """Rescale a value from one range to another.
 
         This method performs linear rescaling of a value from an original range
@@ -595,7 +597,7 @@ class MidpointNormalize(colors.Normalize):
     ```
     """
 
-    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+    def __init__(self, vmin: float | None = None, vmax: float | None = None, midpoint: float | None = None, clip: bool = False) -> None:
         """Initialize a MidpointNormalize instance.
 
         Args:
@@ -633,7 +635,7 @@ class MidpointNormalize(colors.Normalize):
         self.midpoint = midpoint
         colors.Normalize.__init__(self, vmin, vmax, clip)
 
-    def __call__(self, value, clip=None):
+    def __call__(self, value: float | np.ndarray, clip: bool | None = None) -> np.ma.MaskedArray:
         """Normalize data values to the [0, 1] range with a fixed midpoint.
 
         This method implements the normalization logic, mapping input values to
