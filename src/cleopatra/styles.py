@@ -557,11 +557,12 @@ class MidpointNormalize(colors.Normalize):
     >>> plt.tight_layout()  # doctest: +SKIP
 
     ```
-    Create a normalization with a non-zero midpoint:
+    Create a normalization with a non-zero midpoint (5):
     ```python
-    >>> # Create a normalization with midpoint at 5
     >>> norm = MidpointNormalize(vmin=0, vmax=10, midpoint=5)
-    >>> # Values below midpoint are mapped to [0, 0.5]
+    ```
+    - Values below midpoint are mapped to [0, 0.5]
+    ```python
     >>> norm(0)
     masked_array(data=0.,
                  mask=False,
@@ -570,12 +571,18 @@ class MidpointNormalize(colors.Normalize):
     masked_array(data=0.25,
                  mask=False,
            fill_value=1e+20)
-    >>> # Midpoint is mapped to 0.5
+
+    ```
+    - Midpoint is mapped to 0.5
+    ```python
     >>> norm(5)
     masked_array(data=0.5,
                  mask=False,
            fill_value=1e+20)
-    >>> # Values above midpoint are mapped to [0.5, 1]
+
+    ```
+    - Values above midpoint are mapped to [0.5, 1]
+    ```python
     >>> norm(7.5)
     masked_array(data=0.75,
                  mask=False,
@@ -614,6 +621,7 @@ class MidpointNormalize(colors.Normalize):
         >>> from cleopatra.styles import MidpointNormalize
         >>> norm = MidpointNormalize()  # vmin, vmax, midpoint will be determined from data
 
+        ```
         Create a normalization with specific range and midpoint:
         ```python
         >>> norm = MidpointNormalize(vmin=-10, vmax=10, midpoint=0)
@@ -654,7 +662,7 @@ class MidpointNormalize(colors.Normalize):
             always at 0.5 in the normalized range.
 
         Examples:
-        Normalize values with a zero midpoint:
+        - Normalize values with a zero midpoint:
         ```python
         >>> from cleopatra.styles import MidpointNormalize
         >>> norm = MidpointNormalize(vmin=-10, vmax=10, midpoint=0)
@@ -667,12 +675,18 @@ class MidpointNormalize(colors.Normalize):
         masked_array(data=0.25,
                      mask=False,
                fill_value=1e+20)
-        >>> # Midpoint maps to 0.5
+
+        ```
+        - Midpoint maps to 0.5
+        ```python
         >>> norm(0)
         masked_array(data=0.5,
                      mask=False,
                fill_value=1e+20)
-        >>> # Values above midpoint are mapped to [0.5, 1]
+
+        ```
+        - Values above midpoint are mapped to [0.5, 1]
+        ```python
         >>> norm(5)    # halfway between midpoint and vmax maps to 0.75
         masked_array(data=0.75,
                      mask=False,
