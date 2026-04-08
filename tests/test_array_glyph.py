@@ -1,5 +1,8 @@
 import os
+import shutil
 from typing import List
+
+import pytest
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -263,6 +266,9 @@ class TestAnimate:
         # assert Path(path).exists()
         # os.remove(path)
 
+    @pytest.mark.skipif(
+        shutil.which("ffmpeg") is None, reason="FFmpeg not installed"
+    )
     def test_save_animation_avi(
         self,
         coello_data: np.ndarray,
@@ -280,6 +286,9 @@ class TestAnimate:
         # assert Path(path).exists()
         # os.remove(path)
 
+    @pytest.mark.skipif(
+        shutil.which("ffmpeg") is None, reason="FFmpeg not installed"
+    )
     def test_save_animation_mp4(
         self,
         coello_data: np.ndarray,
@@ -297,6 +306,9 @@ class TestAnimate:
         # assert Path(path).exists()
         # os.remove(path)
 
+    @pytest.mark.skipif(
+        shutil.which("ffmpeg") is None, reason="FFmpeg not installed"
+    )
     def test_save_animation_mov(
         self,
         coello_data: np.ndarray,

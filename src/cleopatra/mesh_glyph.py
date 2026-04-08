@@ -28,7 +28,7 @@ Examples:
 
 from __future__ import annotations
 
-from typing import Any, List
+from typing import Any
 
 import matplotlib.collections as mcoll
 import matplotlib.pyplot as plt
@@ -142,6 +142,7 @@ class MeshGlyph(Glyph):
         self._cached_triangulation: mtri.Triangulation | None = None
         self._cached_tri_array: np.ndarray | None = None
         self._cached_nodes_per_face: np.ndarray | None = None
+        self._cbar = None
 
     @property
     def node_x(self) -> np.ndarray:
@@ -529,7 +530,7 @@ class MeshGlyph(Glyph):
         )
 
         # Remove previous colorbar before adding a new one.
-        if hasattr(self, "_cbar") and self._cbar is not None:
+        if self._cbar is not None:
             self._cbar.remove()
             self._cbar = None
 
@@ -547,8 +548,8 @@ class MeshGlyph(Glyph):
 
     def animate(
         self,
-        data: np.ndarray | List[np.ndarray],
-        time: List[Any],
+        data: np.ndarray | list[np.ndarray],
+        time: list[Any],
         location: str = "face",
         edgecolor: str = "none",
         interval: int = 200,
@@ -674,11 +675,18 @@ class MeshGlyph(Glyph):
             transform=ax.transAxes,
         )
 
+        # Track the current mappable so we can remove it cleanly.
+        current_mappable = [tpc]
+
         def _update(i):
             """Update the plot for frame i."""
-            for coll in ax.collections[:]:
-                coll.remove()
-            self._render_mesh(
+            prev = current_mappable[0]
+            if hasattr(prev, "collections"):
+                for coll in prev.collections:
+                    coll.remove()
+            elif hasattr(prev, "remove"):
+                prev.remove()
+            current_mappable[0] = self._render_mesh(
                 ax,
                 frames[i],
                 location,
@@ -696,7 +704,6 @@ class MeshGlyph(Glyph):
             blit=False,
         )
         self._anim = anim
-        plt.show()
         return anim
 
     def plot_outline(

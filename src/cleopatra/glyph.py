@@ -8,7 +8,6 @@ colorbar creation, tick management, point overlays, and animation.
 from __future__ import annotations
 
 import math
-from typing import Tuple, Union
 
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
@@ -114,7 +113,7 @@ class Glyph:
     @property
     def anim(self) -> FuncAnimation:
         """Animation object created by ``animate()``."""
-        if hasattr(self, "_anim"):
+        if hasattr(self, "_anim") and self._anim is not None:
             return self._anim
         raise ValueError(
             "Please first use the animate method to create the animation object"
@@ -131,7 +130,7 @@ class Glyph:
             else:
                 self._default_options[key] = val
 
-    def create_figure_axes(self) -> Tuple[Figure, Axes]:
+    def create_figure_axes(self) -> tuple[Figure, Axes]:
         """Create a new figure and axes from default_options.
 
         Uses the ``figsize`` key from ``default_options`` to set the
@@ -182,17 +181,10 @@ class Glyph:
         ticks_spacing = self.default_options["ticks_spacing"]
         vmax = self.default_options["vmax"]
         vmin = self.default_options["vmin"]
+        ticks = np.arange(vmin, vmax + ticks_spacing, ticks_spacing)
+        # If vmax is not evenly divisible by spacing, append one more tick.
         remainder = np.round(math.remainder(vmax, ticks_spacing), 3)
-        if remainder == 0:
-            ticks = np.arange(vmin, vmax + ticks_spacing, ticks_spacing)
-        else:
-            try:
-                ticks = np.arange(vmin, vmax + ticks_spacing, ticks_spacing)
-            except ValueError:
-                raise ValueError(
-                    "The number of ticks exceeded the max allowed size, possible errors"
-                    " is the value of the NodataValue you entered"
-                )
+        if remainder != 0:
             ticks = np.append(
                 ticks,
                 [int(vmax / ticks_spacing) * ticks_spacing + ticks_spacing],
@@ -201,7 +193,7 @@ class Glyph:
 
     def _create_norm_and_cbar_kw(
         self, ticks: np.ndarray
-    ) -> Tuple[colors.Normalize | None, dict]:
+    ) -> tuple[colors.Normalize | None, dict]:
         """Create a matplotlib Normalize and colorbar kwargs.
 
         Args:
@@ -307,8 +299,8 @@ class Glyph:
     def adjust_ticks(
         self,
         axis: str,
-        multiply_value: Union[float, int] = 1,
-        add_value: Union[float, int] = 0,
+        multiply_value: float | int = 1,
+        add_value: float | int = 0,
         fmt: str = "{0:g}",
         visible: bool = True,
     ) -> None:
@@ -358,8 +350,6 @@ class Glyph:
                 self.ax.get_xaxis().set_visible(visible)
             else:
                 self.ax.get_yaxis().set_visible(visible)
-
-        plt.show()
 
     @staticmethod
     def _plot_point_values(ax, point_table: np.ndarray, pid_color, pid_size):
@@ -412,8 +402,8 @@ class Glyph:
             try:
                 writer_video = animation.FFMpegWriter(fps=fps, bitrate=1800)
                 self.anim.save(path, writer=writer_video)
-            except FileNotFoundError:
-                print(
-                    "Please visit https://ffmpeg.org/ and download a version "
-                    "of ffmpeg compatible with your operating system"
-                )
+            except FileNotFoundError as e:
+                raise FileNotFoundError(
+                    "FFmpeg not found. Please visit https://ffmpeg.org/ "
+                    "and download a version compatible with your OS."
+                ) from e

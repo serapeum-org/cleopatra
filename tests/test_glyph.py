@@ -417,7 +417,7 @@ class TestSaveAnimation:
         """
         g = Glyph(default_options=_make_options())
         g._anim = None
-        with pytest.raises(AttributeError):
+        with pytest.raises(ValueError, match="animate"):
             g.save_animation(f"output.{ext}")
 
 
