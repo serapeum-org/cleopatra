@@ -22,7 +22,9 @@ The `Array` class has the following methods:
 - `display`: Display the array with optional parameters.
 """
 
-from typing import Any, Dict, List, Tuple, Union
+from __future__ import annotations
+
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -105,7 +107,7 @@ class ArrayGlyph(Glyph):
         array: np.ndarray,
         exclude_value: List = np.nan,
         extent: List = None,
-        rgb: List[int] = None,
+        rgb: list[int] = None,
         surface_reflectance: int = None,
         cutoff: List = None,
         ax: Axes = None,
@@ -255,7 +257,7 @@ class ArrayGlyph(Glyph):
     def prepare_array(
         self,
         array: np.ndarray,
-        rgb: List[int] = None,
+        rgb: list[int] = None,
         surface_reflectance: int = None,
         cutoff: List = None,
         percentile: int = None,
@@ -412,7 +414,7 @@ class ArrayGlyph(Glyph):
     def _prepare_sentinel_rgb(
         self,
         array: np.ndarray,
-        rgb: List[int] = None,
+        rgb: list[int] = None,
         surface_reflectance: int = 10000,
         cutoff: List = None,
     ) -> np.ndarray:
@@ -564,7 +566,7 @@ class ArrayGlyph(Glyph):
 
     def _plot_im_get_cbar_kw(
         self, ax: Axes, arr: np.ndarray, ticks: np.ndarray
-    ) -> Tuple[AxesImage, Dict[str, str]]:
+    ) -> tuple[AxesImage, dict[str, str]]:
         """Plot a single image and get color bar keyword arguments.
 
         Args:
@@ -573,7 +575,7 @@ class ArrayGlyph(Glyph):
             ticks: color bar ticks.
 
         Returns:
-            Tuple[AxesImage, Dict[str, str]]: A tuple containing:
+            tuple[AxesImage, dict[str, str]]: A tuple containing:
                 im: image axes.
                 cbar: color bar keyword arguments.
         """
@@ -592,7 +594,7 @@ class ArrayGlyph(Glyph):
 
         return im, cbar_kw
 
-    def apply_colormap(self, cmap: Union[Colormap, str]) -> np.ndarray:
+    def apply_colormap(self, cmap: Colormap | str) -> np.ndarray:
         """Apply a matplotlib colormap to an array.
 
             Create an RGB channel from the given array using the given colormap.
@@ -714,11 +716,11 @@ class ArrayGlyph(Glyph):
         self,
         points: np.ndarray = None,
         point_color: str = "red",
-        point_size: Union[int, float] = 100,
+        point_size: int | float = 100,
         pid_color: str = "blue",
-        pid_size: Union[int, float] = 10,
+        pid_size: int | float = 10,
         **kwargs,
-    ) -> Tuple[Figure, Axes]:
+    ) -> tuple[Figure, Axes]:
         """Plot the array with customizable visualization options.
 
         This method creates a visualization of the array with various customization options
@@ -804,7 +806,7 @@ class ArrayGlyph(Glyph):
                         If None, uses max(array)/2 as the threshold.
 
         Returns:
-            Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: A tuple containing:
+            tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: A tuple containing:
                 - fig: The matplotlib Figure object
                 - ax: The matplotlib Axes object
 
@@ -1087,7 +1089,7 @@ class ArrayGlyph(Glyph):
 
     def animate(
         self,
-        time: List[Any],
+        time: list[Any],
         points: np.ndarray = None,
         text_colors: tuple[str, str] = ("white", "black"),
         interval: int = 200,
@@ -1318,20 +1320,7 @@ class ArrayGlyph(Glyph):
         im, cbar_kw = self._plot_im_get_cbar_kw(ax, array[0, :, :], ticks)
 
         # Create colorbar
-        cbar = ax.figure.colorbar(
-            im,
-            ax=ax,
-            shrink=self.default_options["cbar_length"],
-            orientation=self.default_options["cbar_orientation"],
-            **cbar_kw,
-        )
-        cbar.ax.set_ylabel(
-            self.default_options["cbar_label"],
-            rotation=self.default_options["cbar_label_rotation"],
-            va=self.default_options["cbar_label_location"],
-            fontsize=self.default_options["cbar_label_size"],
-        )
-        cbar.ax.tick_params(labelsize=10)
+        cbar = self.create_color_bar(ax, im, cbar_kw)
 
         ax.set_title(
             self.default_options["title"], fontsize=self.default_options["title_size"]

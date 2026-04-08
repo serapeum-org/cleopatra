@@ -1,4 +1,4 @@
-from typing import List
+from __future__ import annotations
 
 import numpy as np
 import pytest
@@ -34,7 +34,7 @@ def cmap() -> str:
 
 
 @pytest.fixture(scope="module")
-def color_scale() -> List[str]:
+def color_scale() -> list[str]:
     return ["linear", "power", "sym-lognorm", "boundary-norm", "midpoint"]
 
 

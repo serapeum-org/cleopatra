@@ -1,6 +1,5 @@
 import os
 import shutil
-from typing import List
 
 import pytest
 
@@ -90,7 +89,7 @@ class TestPlotArray:
         arr: np.ndarray,
         no_data_value: float,
         cmap: str,
-        color_scale: List[int],
+        color_scale: list,
         ticks_spacing: int,
     ):
         array = ArrayGlyph(arr, exclude_value=[no_data_value])
@@ -105,7 +104,7 @@ class TestPlotArray:
         no_data_value: float,
         cmap: str,
         color_scale_2_gamma: float,
-        color_scale: List[int],
+        color_scale: list,
         ticks_spacing: int,
     ):
         array = ArrayGlyph(arr, exclude_value=[no_data_value])
@@ -122,7 +121,7 @@ class TestPlotArray:
         arr: np.ndarray,
         no_data_value: float,
         cmap: str,
-        color_scale: List[int],
+        color_scale: list,
         ticks_spacing: int,
         color_scale_3_linscale: float,
         color_scale_3_linthresh: float,
@@ -143,7 +142,7 @@ class TestPlotArray:
         arr: np.ndarray,
         no_data_value: float,
         cmap: str,
-        color_scale: List[int],
+        color_scale: list,
         ticks_spacing: int,
     ):
         array = ArrayGlyph(arr, exclude_value=[no_data_value])
@@ -155,7 +154,7 @@ class TestPlotArray:
         self,
         rhine_dem_arr: np.ndarray,
         cmap: str,
-        color_scale: List[int],
+        color_scale: list,
         ticks_spacing: int,
         bounds: list,
         rhine_no_data_val: float,
@@ -175,7 +174,7 @@ class TestPlotArray:
         arr: np.ndarray,
         no_data_value: float,
         cmap: str,
-        color_scale: List[int],
+        color_scale: list,
         ticks_spacing: int,
         midpoint: int,
     ):
