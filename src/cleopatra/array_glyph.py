@@ -58,31 +58,22 @@ class ArrayGlyph(Glyph):
     various customization options. It supports plotting single arrays, RGB arrays,
     and creating animations from 3D arrays.
 
-    Attributes
-    ----------
-    fig : matplotlib.figure.Figure
-        The matplotlib figure object.
-    ax : matplotlib.axes.Axes
-        The matplotlib axes object.
-    extent : List
-        The extent of the array [xmin, xmax, ymin, ymax].
-    rgb : bool
-        Whether the array is an RGB array.
-    no_elem : int
-        The number of elements in the array.
-    anim : matplotlib.animation.FuncAnimation
-        The animation object if created.
+    Attributes:
+        fig (matplotlib.figure.Figure): The matplotlib figure object.
+        ax (matplotlib.axes.Axes): The matplotlib axes object.
+        extent (List): The extent of the array [xmin, xmax, ymin, ymax].
+        rgb (bool): Whether the array is an RGB array.
+        no_elem (int): The number of elements in the array.
+        anim (matplotlib.animation.FuncAnimation): The animation object if created.
 
-    Notes
-    -----
-    This class provides methods for:
-    - Plotting arrays with customizable color scales, color bars, and annotations
-    - Creating animations from 3D arrays
-    - Displaying point values on arrays
-    - Customizing plot appearance
+    Notes:
+        This class provides methods for:
+        - Plotting arrays with customizable color scales, color bars, and annotations
+        - Creating animations from 3D arrays
+        - Displaying point values on arrays
+        - Customizing plot appearance
 
-    Examples
-    --------
+    Examples:
     - Create a simple array plot:
         ```python
         >>> import numpy as np
@@ -124,61 +115,46 @@ class ArrayGlyph(Glyph):
     ):
         """Initialize the ArrayGlyph object with an array and optional parameters.
 
-        Parameters
-        ----------
-        array : np.ndarray
-            The array to be visualized. Can be a 2D array for single plots or a 3D array for RGB plots or animations.
-        exclude_value : List or numeric, optional
-            Value(s) used to mask cells out of the domain, by default np.nan.
-            Can be a single value or a list of values to exclude.
-        extent : List, optional
-            The extent of the array in the format [xmin, ymin, xmax, ymax], by default None.
-            If provided, the array will be plotted with these spatial boundaries.
-        rgb : List[int], optional
-            The indices of the red, green, and blue bands in the given array, by default None.
-            If provided, the array will be treated as an RGB image.
-            Can be a list of three values [r, g, b], or four values if alpha band is included [r, g, b, a].
-        surface_reflectance : int, optional
-            Surface reflectance value for normalizing satellite data, by default None.
-            Typically 10000 for Sentinel-2 data.
-        cutoff : List, optional
-            Clip the range of pixel values for each band, by default None.
-            Takes only pixel values from 0 to the value of the cutoff and scales them back to between 0 and 1.
-            Should be a list with one value per band.
-        ax : matplotlib.axes.Axes, optional
-            A pre-existing axes to plot on, by default None.
-            If None, a new axes will be created.
-        fig : matplotlib.figure.Figure, optional
-            A pre-existing figure to plot on, by default None.
-            If None, a new figure will be created.
-        percentile : int, optional
-            The percentile value to be used for scaling the array values, by default None.
-            Used to enhance contrast by stretching the histogram.
-        **kwargs : dict
-            Additional keyword arguments for customizing the plot.
-            Supported arguments include:
-                figsize : tuple, optional
-                    Figure size, by default (8, 8).
-                vmin : float, optional
-                    Minimum value for color scaling, by default min(array).
-                vmax : float, optional
-                    Maximum value for color scaling, by default max(array).
-                title : str, optional
-                    Title of the plot, by default 'Array Plot'.
-                title_size : int, optional
-                    Title font size, by default 15.
-                cmap : str, optional
-                    Colormap name, by default 'coolwarm_r'.
+        Args:
+            array: The array to be visualized. Can be a 2D array for single plots or a 3D array for RGB plots or animations.
+            exclude_value: Value(s) used to mask cells out of the domain, by default np.nan.
+                Can be a single value or a list of values to exclude.
+            extent: The extent of the array in the format [xmin, ymin, xmax, ymax], by default None.
+                If provided, the array will be plotted with these spatial boundaries.
+            rgb: The indices of the red, green, and blue bands in the given array, by default None.
+                If provided, the array will be treated as an RGB image.
+                Can be a list of three values [r, g, b], or four values if alpha band is included [r, g, b, a].
+            surface_reflectance: Surface reflectance value for normalizing satellite data, by default None.
+                Typically 10000 for Sentinel-2 data.
+            cutoff: Clip the range of pixel values for each band, by default None.
+                Takes only pixel values from 0 to the value of the cutoff and scales them back to between 0 and 1.
+                Should be a list with one value per band.
+            ax: A pre-existing axes to plot on, by default None.
+                If None, a new axes will be created.
+            fig: A pre-existing figure to plot on, by default None.
+                If None, a new figure will be created.
+            percentile: The percentile value to be used for scaling the array values, by default None.
+                Used to enhance contrast by stretching the histogram.
+            **kwargs: Additional keyword arguments for customizing the plot.
+                Supported arguments include:
+                    figsize : tuple, optional
+                        Figure size, by default (8, 8).
+                    vmin : float, optional
+                        Minimum value for color scaling, by default min(array).
+                    vmax : float, optional
+                        Maximum value for color scaling, by default max(array).
+                    title : str, optional
+                        Title of the plot, by default 'Array Plot'.
+                    title_size : int, optional
+                        Title font size, by default 15.
+                    cmap : str, optional
+                        Colormap name, by default 'coolwarm_r'.
 
-        Raises
-        ------
-        ValueError
-            If an invalid keyword argument is provided.
-        ValueError
-            If rgb is provided but the array doesn't have enough dimensions.
+        Raises:
+            ValueError: If an invalid keyword argument is provided.
+            ValueError: If rgb is provided but the array doesn't have enough dimensions.
 
-        Examples
-        --------
+        Examples:
         Basic initialization with a 2D array:
         ```python
         >>> import numpy as np
@@ -289,44 +265,33 @@ class ArrayGlyph(Glyph):
         This method processes a multi-band array to create an RGB image suitable for visualization.
         It can normalize the data using either percentile-based scaling or surface reflectance values.
 
-        Parameters
-        ----------
-        array : np.ndarray
-            The input array containing multiple bands. For RGB visualization,
-            this should be a 3D array where the first dimension represents the bands.
-        rgb : List[int], optional
-            The indices of the red, green, and blue bands in the given array, by default None.
-            If None, assumes the order is [3, 2, 1] (common for Sentinel-2 data).
-        surface_reflectance : int, optional
-            Surface reflectance value for normalizing satellite data, by default None.
-            Typically 10000 for Sentinel-2 data or 255 for 8-bit imagery.
-            Used to scale values to the range [0, 1].
-        cutoff : List, optional
-            Clip the range of pixel values for each band, by default None.
-            Takes only pixel values from 0 to the value of the cutoff and scales them back to between 0 and 1.
-            Should be a list with one value per band.
-        percentile : int, optional
-            The percentile value to be used for scaling the array values, by default None.
-            Used to enhance contrast by stretching the histogram.
-            If provided, this takes precedence over surface_reflectance.
+        Args:
+            array: The input array containing multiple bands. For RGB visualization,
+                this should be a 3D array where the first dimension represents the bands.
+            rgb: The indices of the red, green, and blue bands in the given array, by default None.
+                If None, assumes the order is [3, 2, 1] (common for Sentinel-2 data).
+            surface_reflectance: Surface reflectance value for normalizing satellite data, by default None.
+                Typically 10000 for Sentinel-2 data or 255 for 8-bit imagery.
+                Used to scale values to the range [0, 1].
+            cutoff: Clip the range of pixel values for each band, by default None.
+                Takes only pixel values from 0 to the value of the cutoff and scales them back to between 0 and 1.
+                Should be a list with one value per band.
+            percentile: The percentile value to be used for scaling the array values, by default None.
+                Used to enhance contrast by stretching the histogram.
+                If provided, this takes precedence over surface_reflectance.
 
-        Returns
-        -------
-        np.ndarray
-            The prepared array with shape (height, width, 3) suitable for RGB visualization.
-            Values are normalized to the range [0, 1].
-            the rgb 3d array is converted into 2d array to be plotted using the plt.imshow function.
-            a float32 array normalized between 0 and 1 using the `percentile` values or the `surface_reflectance`.
-            if the `percentile` or `surface_reflectance` values are not given, the function just reorders the values
-            to have the red-green-blue order.
+        Returns:
+            np.ndarray: The prepared array with shape (height, width, 3) suitable for RGB visualization.
+                Values are normalized to the range [0, 1].
+                the rgb 3d array is converted into 2d array to be plotted using the plt.imshow function.
+                a float32 array normalized between 0 and 1 using the `percentile` values or the `surface_reflectance`.
+                if the `percentile` or `surface_reflectance` values are not given, the function just reorders the values
+                to have the red-green-blue order.
 
-        Raises
-        ------
-        ValueError
-            If the array shape is incompatible with the provided RGB indices.
+        Raises:
+            ValueError: If the array shape is incompatible with the provided RGB indices.
 
-        Notes
-        -----
+        Notes:
             - The `prepare_array` function is called in the constructor of the `ArrayGlyph` class to prepare the array,
               so you can provide the same parameters of the `prepare_array` function to the `ArrayGlyph constructor`.
             - The prepare function moves the first axes (the channel axis) to the last axes, and then scales the array
@@ -334,8 +299,7 @@ class ArrayGlyph(Glyph):
               surface reflectance values. If the surface reflectance is not given, the function scales the array using
               the cutoff values. If the cutoff is not given, the function scales the array using the sentinel data
 
-        Examples
-        --------
+        Examples:
         Prepare an array using percentile-based scaling:
             ```python
             >>> import numpy as np
@@ -457,31 +421,23 @@ class ArrayGlyph(Glyph):
         This method specifically handles Sentinel satellite imagery by normalizing the data
         using the provided surface reflectance value and optional cutoff values.
 
-        Parameters
-        ----------
-        array : np.ndarray
-            The input array with shape (height, width, 3) containing RGB bands.
-            This array should already be transposed from the original band-first format.
-        rgb : List[int], optional
-            The indices of the red, green, and blue bands in the original array, by default None.
-            Used only for cutoff application.
-        surface_reflectance : int, optional
-            Surface reflectance value for normalizing satellite data, by default 10000.
-            Sentinel-2 data typically uses 10000 as the maximum reflectance value.
-            Used to scale values to the range [0, 1].
-        cutoff : List, optional
-            Clip the range of pixel values for each band, by default None.
-            Takes only pixel values from 0 to the value of the cutoff and scales them back to between 0 and 1.
-            Should be a list with one value per band.
+        Args:
+            array: The input array with shape (height, width, 3) containing RGB bands.
+                This array should already be transposed from the original band-first format.
+            rgb: The indices of the red, green, and blue bands in the original array, by default None.
+                Used only for cutoff application.
+            surface_reflectance: Surface reflectance value for normalizing satellite data, by default 10000.
+                Sentinel-2 data typically uses 10000 as the maximum reflectance value.
+                Used to scale values to the range [0, 1].
+            cutoff: Clip the range of pixel values for each band, by default None.
+                Takes only pixel values from 0 to the value of the cutoff and scales them back to between 0 and 1.
+                Should be a list with one value per band.
 
-        Returns
-        -------
-        np.ndarray
-            The prepared array with shape (height, width, 3) suitable for RGB visualization.
-            Values are normalized to the range [0, 1].
+        Returns:
+            np.ndarray: The prepared array with shape (height, width, 3) suitable for RGB visualization.
+                Values are normalized to the range [0, 1].
 
-        Examples
-        --------
+        Examples:
         Prepare Sentinel-2 data with default surface reflectance:
         ```python
         >>> import numpy as np
@@ -519,35 +475,28 @@ class ArrayGlyph(Glyph):
         based on percentile values. It calculates the lower and upper percentile values
         for each band and normalizes the data to the range [0, 1].
 
-        Parameters
-        ----------
-        arr : np.ndarray
-            The array to be scaled, with shape (height, width, bands).
-            Typically an RGB image with 3 bands.
-        percentile : int, optional
-            The percentile value to be used for scaling, by default 1.
-            This value determines how much of the histogram tails to exclude.
-            Higher values result in more contrast stretching.
-            Typical values range from 1 to 5.
+        Args:
+            arr: The array to be scaled, with shape (height, width, bands).
+                Typically an RGB image with 3 bands.
+            percentile: The percentile value to be used for scaling, by default 1.
+                This value determines how much of the histogram tails to exclude.
+                Higher values result in more contrast stretching.
+                Typical values range from 1 to 5.
 
-        Returns
-        -------
-        np.ndarray
-            The scaled array, normalized between 0 and 1, with the same shape as input.
-            Data type is float32.
+        Returns:
+            np.ndarray: The scaled array, normalized between 0 and 1, with the same shape as input.
+                Data type is float32.
 
-        Notes
-        -----
-        The method works by:
-        1. Computing the lower percentile value for each band
-        2. Computing the upper percentile value (100 - percentile) for each band
-        3. Normalizing each band using these percentile values
-        4. Clipping values to the range [0, 1]
+        Notes:
+            The method works by:
+            1. Computing the lower percentile value for each band
+            2. Computing the upper percentile value (100 - percentile) for each band
+            3. Normalizing each band using these percentile values
+            4. Clipping values to the range [0, 1]
 
-        This is particularly useful for visualizing satellite imagery with high dynamic range.
+            This is particularly useful for visualizing satellite imagery with high dynamic range.
 
-        Examples
-        --------
+        Examples:
         Scale a single-band array:
         ```python
         >>> import numpy as np
@@ -618,21 +567,15 @@ class ArrayGlyph(Glyph):
     ) -> Tuple[AxesImage, Dict[str, str]]:
         """Plot a single image and get color bar keyword arguments.
 
-        Parameters
-        ----------
-        ax: [axes]
-            matplotlib figure axes.
-        arr: [array]
-            numpy array.
-        ticks: [list]
-            color bar ticks.
+        Args:
+            ax: matplotlib figure axes.
+            arr: numpy array.
+            ticks: color bar ticks.
 
-        Returns
-        -------
-        im: AxesImage
-            image axes.
-        cbar: Dict[str,str]
-            color bar keyword arguments.
+        Returns:
+            Tuple[AxesImage, Dict[str, str]]: A tuple containing:
+                im: image axes.
+                cbar: color bar keyword arguments.
         """
         norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
         cmap = self.default_options["cmap"]
@@ -654,18 +597,13 @@ class ArrayGlyph(Glyph):
 
             Create an RGB channel from the given array using the given colormap.
 
-        Parameters
-        ----------
-        cmap: Colormap/str
-            colormap.
+        Args:
+            cmap: colormap.
 
-        Returns
-        -------
-        np.ndarray: 8-bit array
-            the array with the colormap applied.
+        Returns:
+            np.ndarray: 8-bit array with the colormap applied.
 
-        Examples
-        --------
+        Examples:
         - Create an array and instantiate the `Array` object:
         ```python
         >>> import numpy as np
@@ -698,13 +636,10 @@ class ArrayGlyph(Glyph):
 
             convert the array to an image.
 
-        Parameters
-        ----------
-        arr: np.ndarray, default is None.
-            array. if None, the array in the object will be used.
+        Args:
+            arr: array. if None, the array in the object will be used.
 
-        Examples
-        --------
+        Examples:
         ```python
         >>> import numpy as np
         >>> arr = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
@@ -724,13 +659,10 @@ class ArrayGlyph(Glyph):
     def scale_to_rgb(self, arr: np.ndarray = None) -> np.ndarray:
         """Create an RGB image.
 
-        Parameters
-        ----------
-        arr: np.ndarray, default is None.
-            array. if None, the array in the object will be used.
+        Args:
+            arr: array. if None, the array in the object will be used.
 
-        Examples
-        --------
+        Examples:
         ```python
         >>> import numpy as np
         >>> arr = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
@@ -756,19 +688,14 @@ class ArrayGlyph(Glyph):
     ) -> list:
         """plot values as a text in each cell.
 
-        Parameters
-        ----------
-        ax:[matplotlib ax]
-            matplotlib axes
-        indices: [array]
-            array with columns, (row, col)
-        default_options_dict: Dict
-            default options dictionary after updating the options.
+        Args:
+            ax: matplotlib axes.
+            arr: numpy array.
+            indices: array with columns, (row, col).
+            default_options_dict: default options dictionary after updating the options.
 
-        Returns
-        -------
-        list:
-            list of the text object
+        Returns:
+            list: list of the text object.
         """
         # https://github.com/serapeum-org/cleopatra/issues/75
         # add text for the cell values
@@ -798,109 +725,93 @@ class ArrayGlyph(Glyph):
         including color scales, color bars, cell value display, and point annotations.
         It supports both regular arrays and RGB arrays.
 
-        Parameters
-        ----------
-        points : np.ndarray, optional
-            Points to display on the array, by default None.
-            Should be a 3-column array where:
-            - First column: values to display for each point
-            - Second column: row indices of the points in the array
-            - Third column: column indices of the points in the array
-        point_color : str, optional
-            Color of the points, by default "red".
-            Any valid matplotlib color string.
-        point_size : Union[int, float], optional
-            Size of the points, by default 100.
-            Controls the marker size.
-        pid_color : str, optional
-            Color of the point value annotations, by default "blue".
-            Any valid matplotlib color string.
-        pid_size : Union[int, float], optional
-            Size of the point value annotations, by default 10.
-            Controls the font size of the annotations.
-        **kwargs : dict
-            Additional keyword arguments for customizing the plot.
+        Args:
+            points: Points to display on the array, by default None.
+                Should be a 3-column array where:
+                - First column: values to display for each point
+                - Second column: row indices of the points in the array
+                - Third column: column indices of the points in the array
+            point_color: Color of the points, by default "red".
+                Any valid matplotlib color string.
+            point_size: Size of the points, by default 100.
+                Controls the marker size.
+            pid_color: Color of the point value annotations, by default "blue".
+                Any valid matplotlib color string.
+            pid_size: Size of the point value annotations, by default 10.
+                Controls the font size of the annotations.
+            **kwargs: Additional keyword arguments for customizing the plot.
 
-            Plot appearance:
-            ---------------
-            title : str, optional
-                Title of the plot, by default 'Array Plot'.
-            title_size : int, optional
-                Title font size, by default 15.
-            cmap : str, optional
-                Colormap name, by default 'coolwarm_r'.
-            vmin : float, optional
-                Minimum value for color scaling, by default min(array).
-            vmax : float, optional
-                Maximum value for color scaling, by default max(array).
+                Plot appearance:
+                    title : str, optional
+                        Title of the plot, by default 'Array Plot'.
+                    title_size : int, optional
+                        Title font size, by default 15.
+                    cmap : str, optional
+                        Colormap name, by default 'coolwarm_r'.
+                    vmin : float, optional
+                        Minimum value for color scaling, by default min(array).
+                    vmax : float, optional
+                        Maximum value for color scaling, by default max(array).
 
-            Color bar options:
-            ----------------
-            cbar_orientation : str, optional
-                Orientation of the color bar, by default 'vertical'.
-                Can be 'horizontal' or 'vertical'.
-            cbar_label_rotation : float, optional
-                Rotation angle of the color bar label, by default -90.
-            cbar_label_location : str, optional
-                Location of the color bar label, by default 'bottom'.
-                Options: 'top', 'bottom', 'center', 'baseline', 'center_baseline'.
-            cbar_length : float, optional
-                Ratio to control the height/width of the color bar, by default 0.75.
-            ticks_spacing : int, optional
-                Spacing between ticks on the color bar, by default 2.
-            cbar_label_size : int, optional
-                Font size of the color bar label, by default 12.
-            cbar_label : str, optional
-                Label text for the color bar, by default 'Value'.
+                Color bar options:
+                    cbar_orientation : str, optional
+                        Orientation of the color bar, by default 'vertical'.
+                        Can be 'horizontal' or 'vertical'.
+                    cbar_label_rotation : float, optional
+                        Rotation angle of the color bar label, by default -90.
+                    cbar_label_location : str, optional
+                        Location of the color bar label, by default 'bottom'.
+                        Options: 'top', 'bottom', 'center', 'baseline', 'center_baseline'.
+                    cbar_length : float, optional
+                        Ratio to control the height/width of the color bar, by default 0.75.
+                    ticks_spacing : int, optional
+                        Spacing between ticks on the color bar, by default 2.
+                    cbar_label_size : int, optional
+                        Font size of the color bar label, by default 12.
+                    cbar_label : str, optional
+                        Label text for the color bar, by default 'Value'.
 
-            Color scale options:
-            ------------------
-            color_scale : str, optional
-                Type of color scaling to use, by default 'linear'.
-                Options:
-                - 'linear': Linear scale
-                - 'power': Power-law normalization
-                - 'sym-lognorm': Symmetrical logarithmic scale
-                - 'boundary-norm': Discrete intervals based on boundaries
-                - 'midpoint': Scale split at a specified midpoint
-            gamma : float, optional
-                Exponent for 'power' color scale, by default 0.5.
-                Values < 1 emphasize lower values, values > 1 emphasize higher values.
-            line_threshold : float, optional
-                Threshold for 'sym-lognorm' color scale, by default 0.0001.
-            line_scale : float, optional
-                Scale factor for 'sym-lognorm' color scale, by default 0.001.
-            bounds : List, optional
-                Boundaries for 'boundary-norm' color scale, by default None.
-                Defines the discrete intervals for color mapping.
-            midpoint : float, optional
-                Midpoint value for 'midpoint' color scale, by default 0.
+                Color scale options:
+                    color_scale : str, optional
+                        Type of color scaling to use, by default 'linear'.
+                        Options:
+                        - 'linear': Linear scale
+                        - 'power': Power-law normalization
+                        - 'sym-lognorm': Symmetrical logarithmic scale
+                        - 'boundary-norm': Discrete intervals based on boundaries
+                        - 'midpoint': Scale split at a specified midpoint
+                    gamma : float, optional
+                        Exponent for 'power' color scale, by default 0.5.
+                        Values < 1 emphasize lower values, values > 1 emphasize higher values.
+                    line_threshold : float, optional
+                        Threshold for 'sym-lognorm' color scale, by default 0.0001.
+                    line_scale : float, optional
+                        Scale factor for 'sym-lognorm' color scale, by default 0.001.
+                    bounds : List, optional
+                        Boundaries for 'boundary-norm' color scale, by default None.
+                        Defines the discrete intervals for color mapping.
+                    midpoint : float, optional
+                        Midpoint value for 'midpoint' color scale, by default 0.
 
-            Cell value display options:
-            -------------------------
-            display_cell_value : bool, optional
-                Whether to display the values of cells as text, by default False.
-            num_size : int, optional
-                Font size of the cell value text, by default 8.
-            background_color_threshold : float, optional
-                Threshold for cell value text color, by default None.
-                If cell value > threshold, text is black; otherwise, text is white.
-                If None, uses max(array)/2 as the threshold.
+                Cell value display options:
+                    display_cell_value : bool, optional
+                        Whether to display the values of cells as text, by default False.
+                    num_size : int, optional
+                        Font size of the cell value text, by default 8.
+                    background_color_threshold : float, optional
+                        Threshold for cell value text color, by default None.
+                        If cell value > threshold, text is black; otherwise, text is white.
+                        If None, uses max(array)/2 as the threshold.
 
-        Returns
-        -------
-        Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]
-            A tuple containing:
-            - fig: The matplotlib Figure object
-            - ax: The matplotlib Axes object
+        Returns:
+            Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: A tuple containing:
+                - fig: The matplotlib Figure object
+                - ax: The matplotlib Axes object
 
-        Raises
-        ------
-        ValueError
-            If an invalid keyword argument is provided.
+        Raises:
+            ValueError: If an invalid keyword argument is provided.
 
-        Examples
-        --------
+        Examples:
         - Basic array plot:
 
             ```python
@@ -1193,138 +1104,117 @@ class ArrayGlyph(Glyph):
         Each slice of the array becomes a frame in the animation, with optional time labels,
         point annotations, and cell value displays.
 
-        Parameters
-        ----------
-        time : List[Any]
-            A list containing labels for each frame in the animation.
-            These could be timestamps, frame numbers, or any other identifiers.
-            The length of this list should match the first dimension of the array.
-        points : np.ndarray, optional
-            Points to display on the array, by default None.
-            Should be a 3-column array where:
-            - First column: values to display for each point
-            - Second column: row indices of the points in the array
-            - Third column: column indices of the points in the array
-        text_colors : Tuple[str, str], optional
-            Two colors to be used for cell value text, by default ("white", "black").
-            The first color is used when the cell value is below the background_color_threshold,
-            and the second color is used when the cell value is above the threshold.
-        interval : int, optional
-            Delay between frames in milliseconds, by default 200.
-            Controls the speed of the animation (smaller values = faster animation).
-        text_loc : list[Any, Any], optional
-            Location of the time label text as [x, y] coordinates, by default None.
-            If None, defaults to [0.1, 0.2].
-        point_color : str, optional
-            Color of the points, by default "red".
-            Any valid matplotlib color string.
-        point_size : int, optional
-            Size of the points, by default 100.
-            Controls the marker size.
-        pid_color : str, optional
-            Color of the point value annotations, by default "blue".
-            Any valid matplotlib color string.
-        pid_size : int, optional
-            Size of the point value annotations, by default 10.
-            Controls the font size of the annotations.
-        **kwargs : dict
-            Additional keyword arguments for customizing the animation.
+        Args:
+            time: A list containing labels for each frame in the animation.
+                These could be timestamps, frame numbers, or any other identifiers.
+                The length of this list should match the first dimension of the array.
+            points: Points to display on the array, by default None.
+                Should be a 3-column array where:
+                - First column: values to display for each point
+                - Second column: row indices of the points in the array
+                - Third column: column indices of the points in the array
+            text_colors: Two colors to be used for cell value text, by default ("white", "black").
+                The first color is used when the cell value is below the background_color_threshold,
+                and the second color is used when the cell value is above the threshold.
+            interval: Delay between frames in milliseconds, by default 200.
+                Controls the speed of the animation (smaller values = faster animation).
+            text_loc: Location of the time label text as [x, y] coordinates, by default None.
+                If None, defaults to [0.1, 0.2].
+            point_color: Color of the points, by default "red".
+                Any valid matplotlib color string.
+            point_size: Size of the points, by default 100.
+                Controls the marker size.
+            pid_color: Color of the point value annotations, by default "blue".
+                Any valid matplotlib color string.
+            pid_size: Size of the point value annotations, by default 10.
+                Controls the font size of the annotations.
+            **kwargs: Additional keyword arguments for customizing the animation.
 
-            Plot appearance:
-            ---------------
-            title : str, optional
-                Title of the plot, by default 'Array Plot'.
-            title_size : int, optional
-                Title font size, by default 15.
-            cmap : str, optional
-                Colormap name, by default 'coolwarm_r'.
-            vmin : float, optional
-                Minimum value for color scaling, by default min(array).
-            vmax : float, optional
-                Maximum value for color scaling, by default max(array).
+                Plot appearance:
+                    title : str, optional
+                        Title of the plot, by default 'Array Plot'.
+                    title_size : int, optional
+                        Title font size, by default 15.
+                    cmap : str, optional
+                        Colormap name, by default 'coolwarm_r'.
+                    vmin : float, optional
+                        Minimum value for color scaling, by default min(array).
+                    vmax : float, optional
+                        Maximum value for color scaling, by default max(array).
 
-            Color bar options:
-            ----------------
-            cbar_orientation : str, optional
-                Orientation of the color bar, by default 'vertical'.
-                Can be 'horizontal' or 'vertical'.
-            cbar_label_rotation : float, optional
-                Rotation angle of the color bar label, by default -90.
-            cbar_label_location : str, optional
-                Location of the color bar label, by default 'bottom'.
-                Options: 'top', 'bottom', 'center', 'baseline', 'center_baseline'.
-            cbar_length : float, optional
-                Ratio to control the height/width of the color bar, by default 0.75.
-            ticks_spacing : int, optional
-                Spacing between ticks on the color bar, by default 2.
-            cbar_label_size : int, optional
-                Font size of the color bar label, by default 12.
-            cbar_label : str, optional
-                Label text for the color bar, by default 'Value'.
+                Color bar options:
+                    cbar_orientation : str, optional
+                        Orientation of the color bar, by default 'vertical'.
+                        Can be 'horizontal' or 'vertical'.
+                    cbar_label_rotation : float, optional
+                        Rotation angle of the color bar label, by default -90.
+                    cbar_label_location : str, optional
+                        Location of the color bar label, by default 'bottom'.
+                        Options: 'top', 'bottom', 'center', 'baseline', 'center_baseline'.
+                    cbar_length : float, optional
+                        Ratio to control the height/width of the color bar, by default 0.75.
+                    ticks_spacing : int, optional
+                        Spacing between ticks on the color bar, by default 2.
+                    cbar_label_size : int, optional
+                        Font size of the color bar label, by default 12.
+                    cbar_label : str, optional
+                        Label text for the color bar, by default 'Value'.
 
-            Color scale options:
-            ------------------
-            color_scale : str, optional
-                Type of color scaling to use, by default 'linear'.
-                Options:
-                - 'linear': Linear scale
-                - 'power': Power-law normalization
-                - 'sym-lognorm': Symmetrical logarithmic scale
-                - 'boundary-norm': Discrete intervals based on boundaries
-                - 'midpoint': Scale split at a specified midpoint
-            gamma : float, optional
-                Exponent for 'power' color scale, by default 0.5.
-                Values < 1 emphasize lower values, values > 1 emphasize higher values.
-            line_threshold : float, optional
-                Threshold for 'sym-lognorm' color scale, by default 0.0001.
-            line_scale : float, optional
-                Scale factor for 'sym-lognorm' color scale, by default 0.001.
-            bounds : List, optional
-                Boundaries for 'boundary-norm' color scale, by default None.
-                Defines the discrete intervals for color mapping.
-            midpoint : float, optional
-                Midpoint value for 'midpoint' color scale, by default 0.
+                Color scale options:
+                    color_scale : str, optional
+                        Type of color scaling to use, by default 'linear'.
+                        Options:
+                        - 'linear': Linear scale
+                        - 'power': Power-law normalization
+                        - 'sym-lognorm': Symmetrical logarithmic scale
+                        - 'boundary-norm': Discrete intervals based on boundaries
+                        - 'midpoint': Scale split at a specified midpoint
+                    gamma : float, optional
+                        Exponent for 'power' color scale, by default 0.5.
+                        Values < 1 emphasize lower values, values > 1 emphasize higher values.
+                    line_threshold : float, optional
+                        Threshold for 'sym-lognorm' color scale, by default 0.0001.
+                    line_scale : float, optional
+                        Scale factor for 'sym-lognorm' color scale, by default 0.001.
+                    bounds : List, optional
+                        Boundaries for 'boundary-norm' color scale, by default None.
+                        Defines the discrete intervals for color mapping.
+                    midpoint : float, optional
+                        Midpoint value for 'midpoint' color scale, by default 0.
 
-            Cell value display options:
-            -------------------------
-            display_cell_value : bool, optional
-                Whether to display the values of cells as text, by default False.
-            num_size : int, optional
-                Font size of the cell value text, by default 8.
-            background_color_threshold : float, optional
-                Threshold for cell value text color, by default None.
-                If cell value > threshold, text is black; otherwise, text is white.
-                If None, uses max(array)/2 as the threshold.
+                Cell value display options:
+                    display_cell_value : bool, optional
+                        Whether to display the values of cells as text, by default False.
+                    num_size : int, optional
+                        Font size of the cell value text, by default 8.
+                    background_color_threshold : float, optional
+                        Threshold for cell value text color, by default None.
+                        If cell value > threshold, text is black; otherwise, text is white.
+                        If None, uses max(array)/2 as the threshold.
 
-        Returns
-        -------
-        matplotlib.animation.FuncAnimation
-            The animation object that can be displayed in a notebook or saved to a file.
+        Returns:
+            matplotlib.animation.FuncAnimation: The animation object that can be displayed
+                in a notebook or saved to a file.
 
-        Raises
-        ------
-        ValueError
-            If an invalid keyword argument is provided.
-        ValueError
-            If the length of the time list doesn't match the first dimension of the array.
+        Raises:
+            ValueError: If an invalid keyword argument is provided.
+            ValueError: If the length of the time list doesn't match the first dimension of the array.
 
-        Notes
-        -----
-        The animation is created by iterating through the first dimension of the array.
-        For example, if the array has shape (10, 20, 30), the animation will have 10 frames,
-        each showing a 20x30 slice of the array.
+        Notes:
+            The animation is created by iterating through the first dimension of the array.
+            For example, if the array has shape (10, 20, 30), the animation will have 10 frames,
+            each showing a 20x30 slice of the array.
 
-        To display the animation in a Jupyter notebook, you may need to use:
-        ```python
-        from IPython.display import HTML
-        HTML(anim_obj.to_jshtml())
-        ```
+            To display the animation in a Jupyter notebook, you may need to use:
+            ```python
+            from IPython.display import HTML
+            HTML(anim_obj.to_jshtml())
+            ```
 
-        To save the animation to a file, use the `save_animation` method after creating
-        the animation.
+            To save the animation to a file, use the `save_animation` method after creating
+            the animation.
 
-        Examples
-        --------
+        Examples:
         Basic animation from a 3D array:
         ```python
         >>> import numpy as np
