@@ -1,27 +1,26 @@
 """Unstructured mesh visualization.
 
-Provides `MeshGlyph` for plotting UGRID-style unstructured mesh data
+Provides ``MeshGlyph`` for plotting UGRID-style unstructured mesh data
 using matplotlib triangulation (tripcolor, tricontourf) and wireframe
 rendering via LineCollection. Accepts raw numpy arrays of node
 coordinates and face-node connectivity. Also integrates with
 pyramids-gis ``Mesh2d`` objects for geospatial workflows.
 
-Examples
---------
-Plot face-centered data on a triangular mesh:
+Examples:
+    Plot face-centered data on a triangular mesh:
 
-    >>> import numpy as np
-    >>> from cleopatra.mesh_glyph import MeshGlyph
-    >>> node_x = np.array([0.0, 1.0, 0.5, 1.5])
-    >>> node_y = np.array([0.0, 0.0, 1.0, 1.0])
-    >>> face_nodes = np.array([[0, 1, 2], [1, 3, 2]])
-    >>> face_data = np.array([10.0, 20.0])
-    >>> mg = MeshGlyph(node_x, node_y, face_nodes)
-    >>> fig, ax = mg.plot(face_data, location="face", title="Water Level")
+        >>> import numpy as np
+        >>> from cleopatra.mesh_glyph import MeshGlyph
+        >>> node_x = np.array([0.0, 1.0, 0.5, 1.5])
+        >>> node_y = np.array([0.0, 0.0, 1.0, 1.0])
+        >>> face_nodes = np.array([[0, 1, 2], [1, 3, 2]])
+        >>> face_data = np.array([10.0, 20.0])
+        >>> mg = MeshGlyph(node_x, node_y, face_nodes)
+        >>> fig, ax = mg.plot(face_data, location="face", title="Water Level")
 
-Plot a wireframe outline:
+    Plot a wireframe outline:
 
-    >>> fig, ax = mg.plot_outline(color="blue", linewidth=0.5)
+        >>> fig, ax = mg.plot_outline(color="blue", linewidth=0.5)
 """
 
 from __future__ import annotations
@@ -52,50 +51,39 @@ class MeshGlyph(Glyph):
     Handles fan triangulation for mixed meshes and maps face-centered
     values to individual triangles.
 
-    Parameters
-    ----------
-    node_x : np.ndarray
-        1D array of node x-coordinates (n_nodes,).
-    node_y : np.ndarray
-        1D array of node y-coordinates (n_nodes,).
-    face_node_connectivity : np.ndarray
-        2D array of node indices per face (n_faces, max_nodes_per_face).
-        Use ``fill_value`` to pad rows for faces with fewer nodes.
-    fill_value : int, optional
-        Padding value in ``face_node_connectivity`` for mixed meshes.
-        Default is -1.
-    edge_node_connectivity : np.ndarray or None, optional
-        2D array of node indices per edge (n_edges, 2). If provided,
-        used for efficient wireframe rendering. If None, edges are
-        derived from face connectivity. Default is None.
+    Args:
+        node_x: 1D array of node x-coordinates (n_nodes,).
+        node_y: 1D array of node y-coordinates (n_nodes,).
+        face_node_connectivity: 2D array of node indices per face
+            (n_faces, max_nodes_per_face). Use ``fill_value`` to pad
+            rows for faces with fewer nodes.
+        fill_value: Padding value in ``face_node_connectivity`` for
+            mixed meshes. Default is -1.
+        edge_node_connectivity: 2D array of node indices per edge
+            (n_edges, 2). If provided, used for efficient wireframe
+            rendering. If None, edges are derived from face
+            connectivity. Default is None.
 
-    Attributes
-    ----------
-    node_x : np.ndarray
-        Node x-coordinates.
-    node_y : np.ndarray
-        Node y-coordinates.
-    n_faces : int
-        Number of faces in the mesh.
-    n_nodes : int
-        Number of nodes in the mesh.
-    n_edges : int
-        Number of edges (0 if edge connectivity not provided).
+    Attributes:
+        node_x: Node x-coordinates.
+        node_y: Node y-coordinates.
+        n_faces: Number of faces in the mesh.
+        n_nodes: Number of nodes in the mesh.
+        n_edges: Number of edges (0 if edge connectivity not provided).
 
-    Examples
-    --------
-    Create a MeshGlyph from a simple triangular mesh:
+    Examples:
+        Create a MeshGlyph from a simple triangular mesh:
 
-        >>> import numpy as np
-        >>> from cleopatra.mesh_glyph import MeshGlyph
-        >>> node_x = np.array([0.0, 1.0, 0.5])
-        >>> node_y = np.array([0.0, 0.0, 1.0])
-        >>> faces = np.array([[0, 1, 2]])
-        >>> mg = MeshGlyph(node_x, node_y, faces)
-        >>> mg.n_faces
-        1
-        >>> mg.n_nodes
-        3
+            >>> import numpy as np
+            >>> from cleopatra.mesh_glyph import MeshGlyph
+            >>> node_x = np.array([0.0, 1.0, 0.5])
+            >>> node_y = np.array([0.0, 0.0, 1.0])
+            >>> faces = np.array([[0, 1, 2]])
+            >>> mg = MeshGlyph(node_x, node_y, faces)
+            >>> mg.n_faces
+            1
+            >>> mg.n_nodes
+            3
     """
 
     def __init__(
@@ -179,14 +167,11 @@ class MeshGlyph(Glyph):
     def nodes_per_face(self) -> np.ndarray:
         """Number of valid nodes per face (excluding fill values).
 
-        Returns
-        -------
-        np.ndarray
-            1D integer array of length n_faces.
+        Returns:
+            np.ndarray: 1D integer array of length n_faces.
 
-        Examples
-        --------
-        Pure triangular mesh returns all 3s:
+        Examples:
+            Pure triangular mesh returns all 3s:
 
             >>> import numpy as np
             >>> from cleopatra.mesh_glyph import MeshGlyph
@@ -223,18 +208,14 @@ class MeshGlyph(Glyph):
         triangles by fanning from the first vertex. Faces with
         fewer than 3 valid nodes are skipped.
 
-        Returns
-        -------
-        matplotlib.tri.Triangulation
-            Triangulation ready for tripcolor/tricontourf.
+        Returns:
+            matplotlib.tri.Triangulation: Triangulation ready for
+                tripcolor/tricontourf.
 
-        Raises
-        ------
-        ValueError
-            If no faces have 3 or more valid nodes.
+        Raises:
+            ValueError: If no faces have 3 or more valid nodes.
 
-        Examples
-        --------
+        Examples:
             >>> import numpy as np
             >>> from cleopatra.mesh_glyph import MeshGlyph
             >>> mg = MeshGlyph(
@@ -260,15 +241,11 @@ class MeshGlyph(Glyph):
         using fan decomposition from the first vertex. Pure-triangle
         meshes use a fast path that returns the connectivity directly.
 
-        Returns
-        -------
-        np.ndarray
-            (n_triangles, 3) array of node indices.
+        Returns:
+            np.ndarray: (n_triangles, 3) array of node indices.
 
-        Raises
-        ------
-        ValueError
-            If no valid triangles can be formed.
+        Raises:
+            ValueError: If no valid triangles can be formed.
         """
         if self._cached_tri_array is not None:
             return self._cached_tri_array
@@ -302,18 +279,13 @@ class MeshGlyph(Glyph):
         decomposition. All triangles from the same face receive
         the same data value.
 
-        Parameters
-        ----------
-        face_values : np.ndarray
-            1D array of values, one per face.
+        Args:
+            face_values: 1D array of values, one per face.
 
-        Returns
-        -------
-        np.ndarray
-            1D array of values, one per triangle.
+        Returns:
+            np.ndarray: 1D array of values, one per triangle.
 
-        Examples
-        --------
+        Examples:
             >>> import numpy as np
             >>> from cleopatra.mesh_glyph import MeshGlyph
             >>> mg = MeshGlyph(
@@ -353,25 +325,16 @@ class MeshGlyph(Glyph):
     ):
         """Render mesh data on axes and return the mappable.
 
-        Parameters
-        ----------
-        ax : Axes
-            Matplotlib axes.
-        data : np.ndarray
-            1D data array.
-        location : str
-            ``"face"`` or ``"node"``.
-        edgecolor : str, optional
-            Edge color for face rendering.
-        norm : matplotlib.colors.Normalize or None
-            Color normalization.
-        **render_kwargs
-            Passed to tripcolor or tricontourf.
+        Args:
+            ax: Matplotlib axes.
+            data: 1D data array.
+            location: ``"face"`` or ``"node"``.
+            edgecolor: Edge color for face rendering.
+            norm: Color normalization.
+            **render_kwargs: Passed to tripcolor or tricontourf.
 
-        Returns
-        -------
-        ScalarMappable
-            The tripcolor or tricontourf result.
+        Returns:
+            ScalarMappable: The tripcolor or tricontourf result.
         """
         tri = self.triangulation
         cmap = self.default_options["cmap"]
@@ -419,44 +382,36 @@ class MeshGlyph(Glyph):
         Supports all 5 color scale types from ``default_options``:
         linear, power, sym-lognorm, boundary-norm, and midpoint.
 
-        Parameters
-        ----------
-        data : np.ndarray
-            1D data array. Length must match face count (location="face")
-            or node count (location="node").
-        location : str, optional
-            Mesh element location: ``"face"`` or ``"node"``.
-            Default is ``"face"``.
-        ax : matplotlib.axes.Axes or None, optional
-            Axes to plot on. If None, uses stored axes or creates new.
-        edgecolor : str, optional
-            Edge color for face rendering. Default is ``"none"``.
-        colorbar : bool, optional
-            Whether to add a colorbar. Default is True.
-        title : str or None, optional
-            Plot title. Overrides ``default_options["title"]``.
-        **kwargs
-            Override any key in ``default_options`` (cmap, vmin, vmax,
-            color_scale, gamma, midpoint, bounds, ticks_spacing,
-            cbar_orientation, cbar_label, figsize, etc.) or pass extra
-            rendering kwargs (levels for tricontourf).
+        Args:
+            data: 1D data array. Length must match face count
+                (location="face") or node count (location="node").
+            location: Mesh element location: ``"face"`` or ``"node"``.
+                Default is ``"face"``.
+            ax: Axes to plot on. If None, uses stored axes or creates
+                new.
+            edgecolor: Edge color for face rendering. Default is
+                ``"none"``.
+            colorbar: Whether to add a colorbar. Default is True.
+            title: Plot title. Overrides ``default_options["title"]``.
+            **kwargs: Override any key in ``default_options`` (cmap,
+                vmin, vmax, color_scale, gamma, midpoint, bounds,
+                ticks_spacing, cbar_orientation, cbar_label, figsize,
+                etc.) or pass extra rendering kwargs (levels for
+                tricontourf).
 
-        Returns
-        -------
-        tuple[Figure, Axes]
-            The matplotlib Figure and Axes objects. When no axes exist,
-            a new figure is created. Call ``plt.close(fig)`` after
-            saving to avoid memory leaks in batch processing.
+        Returns:
+            tuple[Figure, Axes]: The matplotlib Figure and Axes objects.
+                When no axes exist, a new figure is created. Call
+                ``plt.close(fig)`` after saving to avoid memory leaks
+                in batch processing.
 
-        Raises
-        ------
-        ValueError
-            If ``location`` is not ``"face"`` or ``"node"``, or if
-            ``data`` length does not match the expected mesh dimension.
+        Raises:
+            ValueError: If ``location`` is not ``"face"`` or ``"node"``,
+                or if ``data`` length does not match the expected mesh
+                dimension.
 
-        Examples
-        --------
-        Plot face-centered data:
+        Examples:
+            Plot face-centered data:
 
             >>> import numpy as np
             >>> from cleopatra.mesh_glyph import MeshGlyph
@@ -556,42 +511,32 @@ class MeshGlyph(Glyph):
         Iterates over the first dimension of ``data`` (or elements of a
         list), rendering each frame on the fixed mesh topology.
 
-        Parameters
-        ----------
-        data : np.ndarray or list[np.ndarray]
-            Sequence of data arrays. If a 2D ndarray of shape
-            ``(n_frames, n_elements)``, each row is one frame. If a
-            list, each element is a 1D array for one frame.
-        time : list
-            Labels for each frame (timestamps, strings, etc.).
-            Length must match the number of frames.
-        location : str, optional
-            ``"face"`` or ``"node"``. Default is ``"face"``.
-        edgecolor : str, optional
-            Edge color for face rendering. Default is ``"none"``.
-        interval : int, optional
-            Milliseconds between frames. Default is 200.
-        text_loc : list or None, optional
-            ``[x, y]`` position for the time label text.
-            Default is ``[0.1, 0.2]``.
-        **kwargs
-            Override any key in ``default_options`` (cmap, vmin, vmax,
-            color_scale, gamma, midpoint, ticks_spacing, cbar_label,
-            cbar_orientation, figsize, title, etc.).
+        Args:
+            data: Sequence of data arrays. If a 2D ndarray of shape
+                ``(n_frames, n_elements)``, each row is one frame.
+                If a list, each element is a 1D array for one frame.
+            time: Labels for each frame (timestamps, strings, etc.).
+                Length must match the number of frames.
+            location: ``"face"`` or ``"node"``. Default is ``"face"``.
+            edgecolor: Edge color for face rendering. Default is
+                ``"none"``.
+            interval: Milliseconds between frames. Default is 200.
+            text_loc: ``[x, y]`` position for the time label text.
+                Default is ``[0.1, 0.2]``.
+            **kwargs: Override any key in ``default_options`` (cmap,
+                vmin, vmax, color_scale, gamma, midpoint,
+                ticks_spacing, cbar_label, cbar_orientation, figsize,
+                title, etc.).
 
-        Returns
-        -------
-        FuncAnimation
-            The animation object. Use ``save_animation()`` to export.
+        Returns:
+            FuncAnimation: The animation object. Use
+                ``save_animation()`` to export.
 
-        Raises
-        ------
-        ValueError
-            If ``data`` frames don't match mesh topology or ``time``
-            length doesn't match frame count.
+        Raises:
+            ValueError: If ``data`` frames don't match mesh topology
+                or ``time`` length doesn't match frame count.
 
-        Examples
-        --------
+        Examples:
             >>> import numpy as np
             >>> from cleopatra.mesh_glyph import MeshGlyph
             >>> node_x = np.array([0.0, 1.0, 0.5, 1.5])
@@ -706,28 +651,22 @@ class MeshGlyph(Glyph):
         Uses ``matplotlib.collections.LineCollection`` for efficient
         rendering of thousands of edges.
 
-        Parameters
-        ----------
-        ax : matplotlib.axes.Axes or None, optional
-            Axes to plot on. If None, a new figure is created.
-        color : str, optional
-            Edge color. Default is ``"black"``.
-        linewidth : float, optional
-            Edge line width. Default is ``0.3``.
-        figsize : tuple[int, int], optional
-            Figure size in inches. Default is ``(10, 8)``.
-        **kwargs
-            Additional keyword arguments passed to ``LineCollection``.
+        Args:
+            ax: Axes to plot on. If None, uses stored axes or creates
+                new.
+            color: Edge color. Default is ``"black"``.
+            linewidth: Edge line width. Default is ``0.3``.
+            figsize: Figure size in inches. Default is ``(10, 8)``.
+            **kwargs: Additional keyword arguments passed to
+                ``LineCollection``.
 
-        Returns
-        -------
-        tuple[Figure, Axes]
-            The matplotlib Figure and Axes objects. When ``ax`` is
-            None, a new figure is created. Call ``plt.close(fig)``
-            after saving to avoid memory leaks in batch processing.
+        Returns:
+            tuple[Figure, Axes]: The matplotlib Figure and Axes objects.
+                When ``ax`` is None, a new figure is created. Call
+                ``plt.close(fig)`` after saving to avoid memory leaks
+                in batch processing.
 
-        Examples
-        --------
+        Examples:
             >>> import numpy as np
             >>> from cleopatra.mesh_glyph import MeshGlyph
             >>> mg = MeshGlyph(
@@ -761,12 +700,10 @@ class MeshGlyph(Glyph):
         derives unique edges from face_node_connectivity using a set for
         deduplication.
 
-        Returns
-        -------
-        np.ndarray
-            Array of shape (n_segments, 2, 2) where each segment is
-            ``[[x1, y1], [x2, y2]]``. Returns an empty array with
-            shape (0, 2, 2) if no edges can be derived.
+        Returns:
+            np.ndarray: Array of shape (n_segments, 2, 2) where each
+                segment is ``[[x1, y1], [x2, y2]]``. Returns an empty
+                array with shape (0, 2, 2) if no edges can be derived.
         """
         if self._edge_nodes is not None:
             n1 = self._edge_nodes[:, 0]

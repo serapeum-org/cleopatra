@@ -33,45 +33,38 @@ class Glyph:
     normalization, colorbar creation, tick control, point overlays,
     and animation saving. Subclasses implement the actual rendering.
 
-    Parameters
-    ----------
-    default_options : dict
-        Default plot options dict. Subclasses provide their own
-        defaults merged with ``STYLE_DEFAULTS``.
-    fig : Figure or None, optional
-        Pre-existing matplotlib figure. Default is None.
-    ax : Axes or None, optional
-        Pre-existing matplotlib axes. Default is None.
-    **kwargs
-        Override any key in ``default_options``.
+    Args:
+        default_options: Default plot options dict. Subclasses provide
+            their own defaults merged with ``STYLE_DEFAULTS``.
+        fig: Pre-existing matplotlib figure. Default is None.
+        ax: Pre-existing matplotlib axes. Default is None.
+        **kwargs: Override any key in ``default_options``.
 
-    Examples
-    --------
-    Create a Glyph with default options and override the colormap:
+    Examples:
+        Create a Glyph with default options and override the colormap:
 
-        >>> from cleopatra.glyph import Glyph
-        >>> from cleopatra.styles import DEFAULT_OPTIONS
-        >>> opts = DEFAULT_OPTIONS.copy()
-        >>> opts["vmin"] = None
-        >>> opts["vmax"] = None
-        >>> g = Glyph(default_options=opts, cmap="plasma")
-        >>> g.default_options["cmap"]
-        'plasma'
+            >>> from cleopatra.glyph import Glyph
+            >>> from cleopatra.styles import DEFAULT_OPTIONS
+            >>> opts = DEFAULT_OPTIONS.copy()
+            >>> opts["vmin"] = None
+            >>> opts["vmax"] = None
+            >>> g = Glyph(default_options=opts, cmap="plasma")
+            >>> g.default_options["cmap"]
+            'plasma'
 
-    Provide a pre-existing figure and axes:
+        Provide a pre-existing figure and axes:
 
-        >>> import matplotlib.pyplot as plt
-        >>> fig, ax = plt.subplots()
-        >>> g = Glyph(default_options=opts, fig=fig, ax=ax)
-        >>> g.fig is fig
-        True
-        >>> g.ax is ax
-        True
+            >>> import matplotlib.pyplot as plt
+            >>> fig, ax = plt.subplots()
+            >>> g = Glyph(default_options=opts, fig=fig, ax=ax)
+            >>> g.fig is fig
+            True
+            >>> g.ax is ax
+            True
 
-    See Also
-    --------
-    cleopatra.array_glyph.ArrayGlyph : Glyph subclass for 2D/3D arrays.
-    cleopatra.mesh_glyph.MeshGlyph : Glyph subclass for unstructured meshes.
+    See Also:
+        cleopatra.array_glyph.ArrayGlyph: Glyph subclass for 2D/3D arrays.
+        cleopatra.mesh_glyph.MeshGlyph: Glyph subclass for unstructured meshes.
     """
 
     def __init__(
@@ -134,13 +127,10 @@ class Glyph:
         Uses the ``figsize`` key from ``default_options`` to set the
         figure dimensions.
 
-        Returns
-        -------
-        tuple[Figure, Axes]
-            The created figure and axes.
+        Returns:
+            tuple[Figure, Axes]: The created figure and axes.
 
-        Examples
-        --------
+        Examples:
             >>> from cleopatra.glyph import Glyph
             >>> from cleopatra.styles import DEFAULT_OPTIONS
             >>> opts = DEFAULT_OPTIONS.copy()
@@ -159,13 +149,10 @@ class Glyph:
         Uses ``vmin``, ``vmax``, and ``ticks_spacing`` from
         ``default_options`` to generate evenly-spaced tick positions.
 
-        Returns
-        -------
-        np.ndarray
-            Array of tick positions.
+        Returns:
+            np.ndarray: Array of tick positions.
 
-        Examples
-        --------
+        Examples:
             >>> from cleopatra.glyph import Glyph
             >>> from cleopatra.styles import DEFAULT_OPTIONS
             >>> opts = DEFAULT_OPTIONS.copy()
@@ -199,15 +186,12 @@ class Glyph:
     ) -> Tuple[colors.Normalize | None, dict]:
         """Create a matplotlib Normalize and colorbar kwargs.
 
-        Parameters
-        ----------
-        ticks : np.ndarray
-            Tick positions for the colorbar.
+        Args:
+            ticks: Tick positions for the colorbar.
 
-        Returns
-        -------
-        tuple[Normalize or None, dict]
-            The norm (None for linear) and colorbar keyword arguments.
+        Returns:
+            tuple[Normalize or None, dict]: The norm (None for linear)
+                and colorbar keyword arguments.
         """
         color_scale = self.default_options["color_scale"]
         vmin = ticks[0]
@@ -260,22 +244,15 @@ class Glyph:
         ``cbar_label_size``, and ``cbar_label_location`` from
         ``default_options`` to configure the colorbar.
 
-        Parameters
-        ----------
-        ax : Axes
-            Matplotlib axes.
-        im : ScalarMappable
-            The mappable (image or contour) to attach the colorbar to.
-        cbar_kw : dict
-            Colorbar keyword arguments (ticks, format, etc.).
+        Args:
+            ax: Matplotlib axes.
+            im: The mappable (image or contour) to attach the colorbar to.
+            cbar_kw: Colorbar keyword arguments (ticks, format, etc.).
 
-        Returns
-        -------
-        Colorbar
-            The created colorbar.
+        Returns:
+            Colorbar: The created colorbar.
 
-        Examples
-        --------
+        Examples:
             >>> import numpy as np
             >>> import matplotlib.pyplot as plt
             >>> from cleopatra.glyph import Glyph
@@ -318,21 +295,14 @@ class Glyph:
         tick, formatted with ``fmt``. Useful for converting pixel
         coordinates to real-world units.
 
-        Parameters
-        ----------
-        axis : str
-            ``"x"`` or ``"y"``.
-        multiply_value : float or int, optional
-            Multiplier for tick values. Default is 1.
-        add_value : float or int, optional
-            Offset added to tick values. Default is 0.
-        fmt : str, optional
-            Format string for tick labels. Default is ``"{0:g}"``.
-        visible : bool, optional
-            Whether the axis is visible. Default is True.
+        Args:
+            axis: ``"x"`` or ``"y"``.
+            multiply_value: Multiplier for tick values. Default is 1.
+            add_value: Offset added to tick values. Default is 0.
+            fmt: Format string for tick labels. Default is ``"{0:g}"``.
+            visible: Whether the axis is visible. Default is True.
 
-        Examples
-        --------
+        Examples:
             >>> import matplotlib.pyplot as plt
             >>> from cleopatra.glyph import Glyph
             >>> from cleopatra.styles import DEFAULT_OPTIONS
@@ -383,21 +353,15 @@ class Glyph:
         The output format is determined by the file extension. GIF uses
         ``PillowWriter``; mov/avi/mp4 require FFmpeg to be installed.
 
-        Parameters
-        ----------
-        path : str
-            Output file path. Extension determines format.
-            Supported: gif, mov, avi, mp4.
-        fps : int, optional
-            Frames per second. Default is 2.
+        Args:
+            path: Output file path. Extension determines format.
+                Supported: gif, mov, avi, mp4.
+            fps: Frames per second. Default is 2.
 
-        Raises
-        ------
-        ValueError
-            If the file format is not supported.
+        Raises:
+            ValueError: If the file format is not supported.
 
-        Examples
-        --------
+        Examples:
             >>> from cleopatra.glyph import SUPPORTED_VIDEO_FORMAT
             >>> sorted(SUPPORTED_VIDEO_FORMAT)
             ['avi', 'gif', 'mov', 'mp4']
