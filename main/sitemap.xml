@@ -2,46 +2,62 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/main/</loc>
-         <lastmod>2026-03-31</lastmod>
+         <lastmod>2026-04-08</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/main/change-log/</loc>
-         <lastmod>2026-03-31</lastmod>
+         <lastmod>2026-04-08</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/main/installation/</loc>
-         <lastmod>2026-03-31</lastmod>
+         <lastmod>2026-04-08</lastmod>
     </url>
     <url>
-         <loc>https://serapeum-org.github.io/cleopatra/main/api/array-glyph-class/</loc>
-         <lastmod>2026-03-31</lastmod>
-    </url>
-    <url>
-         <loc>https://serapeum-org.github.io/cleopatra/main/api/colors-class/</loc>
-         <lastmod>2026-03-31</lastmod>
-    </url>
-    <url>
-         <loc>https://serapeum-org.github.io/cleopatra/main/api/statistics-class/</loc>
-         <lastmod>2026-03-31</lastmod>
-    </url>
-    <url>
-         <loc>https://serapeum-org.github.io/cleopatra/main/api/styles-class/</loc>
-         <lastmod>2026-03-31</lastmod>
+         <loc>https://serapeum-org.github.io/cleopatra/main/unstructured-mesh-guide/</loc>
+         <lastmod>2026-04-08</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/main/notebooks/array_glyph/array_glyph_examples/</loc>
-         <lastmod>2026-03-31</lastmod>
+         <lastmod>2026-04-08</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/main/notebooks/colors/colors_examples/</loc>
-         <lastmod>2026-03-31</lastmod>
+         <lastmod>2026-04-08</lastmod>
+    </url>
+    <url>
+         <loc>https://serapeum-org.github.io/cleopatra/main/notebooks/mesh_glyph/mesh_glyph_examples/</loc>
+         <lastmod>2026-04-08</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/main/notebooks/statistics/statistics_examples/</loc>
-         <lastmod>2026-03-31</lastmod>
+         <lastmod>2026-04-08</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/main/notebooks/styles/styles_examples/</loc>
-         <lastmod>2026-03-31</lastmod>
+         <lastmod>2026-04-08</lastmod>
+    </url>
+    <url>
+         <loc>https://serapeum-org.github.io/cleopatra/main/reference/array-glyph/</loc>
+         <lastmod>2026-04-08</lastmod>
+    </url>
+    <url>
+         <loc>https://serapeum-org.github.io/cleopatra/main/reference/colors-glyph/</loc>
+         <lastmod>2026-04-08</lastmod>
+    </url>
+    <url>
+         <loc>https://serapeum-org.github.io/cleopatra/main/reference/glyph/</loc>
+         <lastmod>2026-04-08</lastmod>
+    </url>
+    <url>
+         <loc>https://serapeum-org.github.io/cleopatra/main/reference/mesh-glyph/</loc>
+         <lastmod>2026-04-08</lastmod>
+    </url>
+    <url>
+         <loc>https://serapeum-org.github.io/cleopatra/main/reference/statistics-glyph/</loc>
+         <lastmod>2026-04-08</lastmod>
+    </url>
+    <url>
+         <loc>https://serapeum-org.github.io/cleopatra/main/reference/styles-glyph/</loc>
+         <lastmod>2026-04-08</lastmod>
     </url>
 </urlset>
