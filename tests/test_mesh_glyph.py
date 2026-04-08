@@ -515,6 +515,51 @@ class TestPlotReuse:
         assert fig1 is fig2, "plot_outline should reuse the stored figure"
         assert ax1 is ax2, "plot_outline should reuse the stored axes"
 
+    def test_ticks_spacing_written_to_default_options(self):
+        """Test that computed ticks_spacing is written to default_options.
+
+        Regression test for C1: get_ticks() reads from default_options,
+        so the computed spacing must be written there.
+        """
+        mg = _make_tri_mg()
+        mg.plot(np.array([0.0, 0.1]))
+        assert mg.default_options["ticks_spacing"] == pytest.approx(0.01), (
+            f"Expected ticks_spacing=0.01, got {mg.default_options['ticks_spacing']}"
+        )
+
+    def test_constant_data_does_not_crash(self):
+        """Test that plotting constant data (vmin==vmax) does not crash.
+
+        Regression test for H1: zero ticks_spacing must be guarded.
+        """
+        mg = _make_tri_mg()
+        fig, ax = mg.plot(np.array([5.0, 5.0]))
+        assert fig is not None, "Should return a Figure for constant data"
+
+    def test_all_nan_data_raises(self):
+        """Test that all-NaN data raises a clear ValueError.
+
+        Regression test for H2: np.nanmin on all-NaN returns nan
+        which crashes downstream.
+        """
+        mg = _make_tri_mg()
+        with pytest.raises(ValueError, match="entirely NaN"):
+            mg.plot(np.array([np.nan, np.nan]))
+
+    def test_kwargs_not_persisted_across_plot_calls(self):
+        """Test that kwargs from one plot() call don't leak to the next.
+
+        Regression test for H3: default_options must be reset on each
+        plot() call so module-scoped fixtures aren't polluted.
+        """
+        mg = _make_tri_mg()
+        mg.plot(np.array([1.0, 2.0]), cmap="plasma")
+        assert mg.default_options["cmap"] == "plasma", "Should be plasma after first call"
+        mg.plot(np.array([3.0, 4.0]))
+        assert mg.default_options["cmap"] == "coolwarm_r", (
+            f"Should reset to default coolwarm_r, got {mg.default_options['cmap']}"
+        )
+
 
 class TestAnimate:
     """Tests for MeshGlyph.animate()."""

@@ -472,6 +472,17 @@ class MeshGlyph(Glyph):
                 ```
         """
         self._validate_location_and_data(data, location)
+
+        # Guard against all-NaN data.
+        if np.all(np.isnan(data)):
+            raise ValueError(
+                "data is entirely NaN, cannot determine color range."
+            )
+
+        # Reset default_options to a fresh copy so repeated plot() calls
+        # on the same instance don't accumulate stale overrides.
+        self._default_options = MESH_DEFAULT_OPTIONS.copy()
+
         # Separate rendering kwargs (e.g. levels) from default_options kwargs.
         render_kwargs: dict[str, Any] = {}
         option_kwargs: dict[str, Any] = {}
@@ -489,7 +500,12 @@ class MeshGlyph(Glyph):
             self.default_options["vmax"] = float(np.nanmax(data))
         self._vmin = self.default_options["vmin"]
         self._vmax = self.default_options["vmax"]
-        self.ticks_spacing = (self._vmax - self._vmin) / 10
+
+        # Compute ticks_spacing and write it to default_options for get_ticks().
+        if "ticks_spacing" not in option_kwargs:
+            spacing = (self._vmax - self._vmin) / 10
+            self.default_options["ticks_spacing"] = max(spacing, 1e-10)
+        self.ticks_spacing = self.default_options["ticks_spacing"]
 
         if title is not None:
             self.default_options["title"] = title
@@ -606,17 +622,25 @@ class MeshGlyph(Glyph):
                     f"match n_{location}s ({expected})."
                 )
 
+        # Reset default_options to a fresh copy.
+        self._default_options = MESH_DEFAULT_OPTIONS.copy()
         self._merge_kwargs(kwargs)
 
         # Compute global vmin/vmax across all frames unless user set them.
-        all_data = np.concatenate(frames)
         if "vmin" not in kwargs:
-            self.default_options["vmin"] = float(np.nanmin(all_data))
+            global_min = min(float(np.nanmin(f)) for f in frames)
+            self.default_options["vmin"] = global_min
         if "vmax" not in kwargs:
-            self.default_options["vmax"] = float(np.nanmax(all_data))
+            global_max = max(float(np.nanmax(f)) for f in frames)
+            self.default_options["vmax"] = global_max
         self._vmin = self.default_options["vmin"]
         self._vmax = self.default_options["vmax"]
-        self.ticks_spacing = (self._vmax - self._vmin) / 10
+
+        # Compute ticks_spacing and write it to default_options for get_ticks().
+        if "ticks_spacing" not in kwargs:
+            spacing = (self._vmax - self._vmin) / 10
+            self.default_options["ticks_spacing"] = max(spacing, 1e-10)
+        self.ticks_spacing = self.default_options["ticks_spacing"]
 
         if self.fig is None:
             self.fig, self.ax = self.create_figure_axes()
