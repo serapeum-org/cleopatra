@@ -1,6 +1,6 @@
 [project]
 name = "cleopatra"
-version = "0.6.0"
+version = "0.7.0"
 description = "visualization package"
 readme = "README.md"
 requires-python = ">=3.11,<4"
