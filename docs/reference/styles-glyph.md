@@ -51,7 +51,7 @@ ax2.set_title('Log-Scaled Data')
 plt.tight_layout()
 ```
 
-![Log Scale Example](../../_images/log-scale.png)
+![Log Scale Example](../images/log-scale.png)
 
 ### Power Scale
 
@@ -68,7 +68,7 @@ ax2.set_title('Power-Scaled Data (gamma=0.5)')
 plt.tight_layout()
 ```
 
-![Power Scale Example](../../_images/power-scale.png)
+![Power Scale Example](../images/power-scale.png)
 
 ### Midpoint Normalize
 
@@ -97,4 +97,4 @@ plt.colorbar(im2, ax=ax2)
 plt.tight_layout()
 ```
 
-![Midpoint Scale Example](../../_images/midpoint-scale.png)
+![Midpoint Scale Example](./../images/midpoint-scale.png)

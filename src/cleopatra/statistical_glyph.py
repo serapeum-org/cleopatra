@@ -131,7 +131,7 @@ class StatisticalGlyph:
                            7.79248856])], 'patches': [<BarContainer object of 15 artists>]}
 
         ```
-        ![one-histogram](./../_images/statistical_glyph/one-histogram.png)
+        ![one-histogram](./../images/statistical_glyph/one-histogram.png)
     """
 
     def __init__(
@@ -345,7 +345,7 @@ class StatisticalGlyph:
                            5.31090682, 5.80722317, 6.30353952, 6.79985587, 7.29617221,
                            7.79248856])], 'patches': [<BarContainer object of 15 artists>]}
                     ```
-                    ![one-histogram](./../_images/statistical_glyph/one-histogram.png)
+                    ![one-histogram](./../images/statistical_glyph/one-histogram.png)
 
                 - Create a histogram with custom bin count and labels:
 
@@ -384,7 +384,7 @@ class StatisticalGlyph:
                            8.54628567])], 'patches': [<BarContainer object of 15 artists>,
                            <BarContainer object of 15 artists>, <BarContainer object of 15 artists>]}
                     ```
-                    ![three-histogram](./../_images/statistical_glyph/three-histogram.png)
+                    ![three-histogram](./../images/statistical_glyph/three-histogram.png)
 
                 Access the histogram data:
 

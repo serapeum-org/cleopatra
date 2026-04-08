@@ -822,7 +822,7 @@ class ArrayGlyph(Glyph):
             >>> fig, ax = array.plot()
 
             ```
-        ![array-plot](./../_images/array_glyph/array-plot.png)
+        ![array-plot](./../images/array_glyph/array-plot.png)
 
         - Color bar customization:
 
@@ -842,7 +842,7 @@ class ArrayGlyph(Glyph):
                 ... )
 
                 ```
-                ![color-bar-customization](./../_images/array_glyph/color-bar-customization.png)
+                ![color-bar-customization](./../images/array_glyph/color-bar-customization.png)
 
         - Display values for each cell:
 
@@ -857,7 +857,7 @@ class ArrayGlyph(Glyph):
                 ... )
 
                 ```
-                ![display-cell-values](./../_images/array_glyph/display-cell-values.png)
+                ![display-cell-values](./../images/array_glyph/display-cell-values.png)
 
         - Plot points at specific locations in the array:
 
@@ -880,7 +880,7 @@ class ArrayGlyph(Glyph):
                 ... )
 
                 ```
-                ![display-points](./../_images/array_glyph/display-points.png)
+                ![display-points](./../images/array_glyph/display-points.png)
 
         - Color scale customization:
 
@@ -898,7 +898,7 @@ class ArrayGlyph(Glyph):
                     ... )
 
                     ```
-                    ![power-scale](./../_images/array_glyph/power-scale.png)
+                    ![power-scale](./../images/array_glyph/power-scale.png)
 
                 - change the gamma of 0.8 (emphasizes higher values less).
 
@@ -913,7 +913,7 @@ class ArrayGlyph(Glyph):
                     ... )
 
                     ```
-                    ![power-scale-gamma-0.8](./../_images/array_glyph/power-scale-gamma-0.8.png)
+                    ![power-scale-gamma-0.8](./../images/array_glyph/power-scale-gamma-0.8.png)
 
                 - change the gamma of 0.1 (emphasizes higher values more).
 
@@ -928,7 +928,7 @@ class ArrayGlyph(Glyph):
                     ... )
 
                     ```
-                    ![power-scale-gamma-0.1](./../_images/array_glyph/power-scale-gamma-0.1.png)
+                    ![power-scale-gamma-0.1](./../images/array_glyph/power-scale-gamma-0.1.png)
 
             - Logarithmic scale.
 
@@ -944,7 +944,7 @@ class ArrayGlyph(Glyph):
                     ... )
 
                     ```
-                    ![log-scale](./../_images/array_glyph/log-scale.png)
+                    ![log-scale](./../images/array_glyph/log-scale.png)
 
                 - you can change the `line_threshold` and `line_scale` values.
                     ```python
@@ -961,7 +961,7 @@ class ArrayGlyph(Glyph):
                     ... )
 
                     ```
-                    ![log-scale](./../_images/array_glyph/log-scale-custom-parameters.png)
+                    ![log-scale](./../images/array_glyph/log-scale-custom-parameters.png)
 
             - Defined boundary scale.
                 ```python
@@ -974,7 +974,7 @@ class ArrayGlyph(Glyph):
                 ... )
 
                 ```
-                ![boundary-scale](./../_images/array_glyph/boundary-scale.png)
+                ![boundary-scale](./../images/array_glyph/boundary-scale.png)
 
                 - You can also define the boundaries.
                     ```python
@@ -991,7 +991,7 @@ class ArrayGlyph(Glyph):
                     ... )
 
                     ```
-                    ![boundary-scale-defined-bounds](./../_images/array_glyph/boundary-scale-defined-bounds.png)
+                    ![boundary-scale-defined-bounds](./../images/array_glyph/boundary-scale-defined-bounds.png)
 
             - Midpoint scale.
 
@@ -1007,7 +1007,7 @@ class ArrayGlyph(Glyph):
                 ... )
 
                 ```
-                ![midpoint-scale-costom-parameters](./../_images/array_glyph/midpoint-scale-costom-parameters.png)
+                ![midpoint-scale-costom-parameters](./../images/array_glyph/midpoint-scale-costom-parameters.png)
         """
         for key, val in kwargs.items():
             if key not in self.default_options.keys():
@@ -1265,7 +1265,7 @@ class ArrayGlyph(Glyph):
         ... )
 
         ```
-        ![animated_array](./../_images/array_glyph/animated_array.gif)
+        ![animated_array](./../images/array_glyph/animated_array.gif)
 
         Saving the animation to a file:
         ```python
