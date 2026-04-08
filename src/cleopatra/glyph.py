@@ -41,8 +41,8 @@ class Glyph:
         **kwargs: Override any key in ``default_options``.
 
     Examples:
-        Create a Glyph with default options and override the colormap:
-
+        - Create a Glyph and override the colormap:
+            ```python
             >>> from cleopatra.glyph import Glyph
             >>> from cleopatra.styles import DEFAULT_OPTIONS
             >>> opts = DEFAULT_OPTIONS.copy()
@@ -52,9 +52,15 @@ class Glyph:
             >>> g.default_options["cmap"]
             'plasma'
 
-        Provide a pre-existing figure and axes:
-
+            ```
+        - Provide a pre-existing figure and axes:
+            ```python
             >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.glyph import Glyph
+            >>> from cleopatra.styles import DEFAULT_OPTIONS
+            >>> opts = DEFAULT_OPTIONS.copy()
+            >>> opts["vmin"] = None
+            >>> opts["vmax"] = None
             >>> fig, ax = plt.subplots()
             >>> g = Glyph(default_options=opts, fig=fig, ax=ax)
             >>> g.fig is fig
@@ -62,9 +68,13 @@ class Glyph:
             >>> g.ax is ax
             True
 
+            ```
+
     See Also:
-        cleopatra.array_glyph.ArrayGlyph: Glyph subclass for 2D/3D arrays.
-        cleopatra.mesh_glyph.MeshGlyph: Glyph subclass for unstructured meshes.
+        cleopatra.array_glyph.ArrayGlyph: Glyph subclass for
+            2D/3D arrays.
+        cleopatra.mesh_glyph.MeshGlyph: Glyph subclass for
+            unstructured meshes.
     """
 
     def __init__(
@@ -131,14 +141,18 @@ class Glyph:
             tuple[Figure, Axes]: The created figure and axes.
 
         Examples:
-            >>> from cleopatra.glyph import Glyph
-            >>> from cleopatra.styles import DEFAULT_OPTIONS
-            >>> opts = DEFAULT_OPTIONS.copy()
-            >>> opts.update({"vmin": None, "vmax": None})
-            >>> g = Glyph(default_options=opts, figsize=(12, 4))
-            >>> fig, ax = g.create_figure_axes()
-            >>> fig.get_size_inches()
-            array([12.,  4.])
+            - Create a figure with custom size:
+                ```python
+                >>> from cleopatra.glyph import Glyph
+                >>> from cleopatra.styles import DEFAULT_OPTIONS
+                >>> opts = DEFAULT_OPTIONS.copy()
+                >>> opts.update({"vmin": None, "vmax": None})
+                >>> g = Glyph(default_options=opts, figsize=(12, 4))
+                >>> fig, ax = g.create_figure_axes()
+                >>> fig.get_size_inches()
+                array([12.,  4.])
+
+                ```
         """
         fig, ax = plt.subplots(figsize=self.default_options["figsize"])
         return fig, ax
@@ -153,13 +167,17 @@ class Glyph:
             np.ndarray: Array of tick positions.
 
         Examples:
-            >>> from cleopatra.glyph import Glyph
-            >>> from cleopatra.styles import DEFAULT_OPTIONS
-            >>> opts = DEFAULT_OPTIONS.copy()
-            >>> opts.update({"vmin": 0.0, "vmax": 10.0, "ticks_spacing": 2.0})
-            >>> g = Glyph(default_options=opts)
-            >>> g.get_ticks()
-            array([ 0.,  2.,  4.,  6.,  8., 10.])
+            - Compute ticks for a 0-10 range with spacing of 2:
+                ```python
+                >>> from cleopatra.glyph import Glyph
+                >>> from cleopatra.styles import DEFAULT_OPTIONS
+                >>> opts = DEFAULT_OPTIONS.copy()
+                >>> opts.update({"vmin": 0.0, "vmax": 10.0, "ticks_spacing": 2.0})
+                >>> g = Glyph(default_options=opts)
+                >>> g.get_ticks()
+                array([ 0.,  2.,  4.,  6.,  8., 10.])
+
+                ```
         """
         ticks_spacing = self.default_options["ticks_spacing"]
         vmax = self.default_options["vmax"]
@@ -246,25 +264,30 @@ class Glyph:
 
         Args:
             ax: Matplotlib axes.
-            im: The mappable (image or contour) to attach the colorbar to.
+            im: The mappable (image or contour) to attach the
+                colorbar to.
             cbar_kw: Colorbar keyword arguments (ticks, format, etc.).
 
         Returns:
             Colorbar: The created colorbar.
 
         Examples:
-            >>> import numpy as np
-            >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.glyph import Glyph
-            >>> from cleopatra.styles import DEFAULT_OPTIONS
-            >>> opts = DEFAULT_OPTIONS.copy()
-            >>> opts.update({"vmin": None, "vmax": None})
-            >>> g = Glyph(default_options=opts, cbar_label="Depth [m]")
-            >>> fig, ax = plt.subplots()
-            >>> im = ax.imshow(np.arange(9).reshape(3, 3))
-            >>> cbar = g.create_color_bar(ax, im, {"ticks": [0, 4, 8]})
-            >>> cbar.orientation
-            'vertical'
+            - Create a colorbar with a custom label:
+                ```python
+                >>> import numpy as np
+                >>> import matplotlib.pyplot as plt
+                >>> from cleopatra.glyph import Glyph
+                >>> from cleopatra.styles import DEFAULT_OPTIONS
+                >>> opts = DEFAULT_OPTIONS.copy()
+                >>> opts.update({"vmin": None, "vmax": None})
+                >>> g = Glyph(default_options=opts, cbar_label="Depth [m]")
+                >>> fig, ax = plt.subplots()
+                >>> im = ax.imshow(np.arange(9).reshape(3, 3))
+                >>> cbar = g.create_color_bar(ax, im, {"ticks": [0, 4, 8]})
+                >>> cbar.orientation
+                'vertical'
+
+                ```
         """
         cbar = ax.figure.colorbar(
             im,
@@ -299,20 +322,25 @@ class Glyph:
             axis: ``"x"`` or ``"y"``.
             multiply_value: Multiplier for tick values. Default is 1.
             add_value: Offset added to tick values. Default is 0.
-            fmt: Format string for tick labels. Default is ``"{0:g}"``.
+            fmt: Format string for tick labels.
+                Default is ``"{0:g}"``.
             visible: Whether the axis is visible. Default is True.
 
         Examples:
-            >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.glyph import Glyph
-            >>> from cleopatra.styles import DEFAULT_OPTIONS
-            >>> opts = DEFAULT_OPTIONS.copy()
-            >>> opts.update({"vmin": None, "vmax": None})
-            >>> g = Glyph(default_options=opts)
-            >>> fig, ax = plt.subplots()
-            >>> _ = ax.plot([0, 1, 2], [0, 1, 2])
-            >>> g.fig, g.ax = fig, ax
-            >>> g.adjust_ticks(axis="x", multiply_value=100, add_value=5)
+            - Scale x-axis ticks by 100 and offset by 5:
+                ```python
+                >>> import matplotlib.pyplot as plt
+                >>> from cleopatra.glyph import Glyph
+                >>> from cleopatra.styles import DEFAULT_OPTIONS
+                >>> opts = DEFAULT_OPTIONS.copy()
+                >>> opts.update({"vmin": None, "vmax": None})
+                >>> g = Glyph(default_options=opts)
+                >>> fig, ax = plt.subplots()
+                >>> _ = ax.plot([0, 1, 2], [0, 1, 2])
+                >>> g.fig, g.ax = fig, ax
+                >>> g.adjust_ticks(axis="x", multiply_value=100, add_value=5)
+
+                ```
         """
         if axis == "x":
             ticks_fn = ticker.FuncFormatter(
@@ -362,9 +390,13 @@ class Glyph:
             ValueError: If the file format is not supported.
 
         Examples:
-            >>> from cleopatra.glyph import SUPPORTED_VIDEO_FORMAT
-            >>> sorted(SUPPORTED_VIDEO_FORMAT)
-            ['avi', 'gif', 'mov', 'mp4']
+            - Check the supported video formats:
+                ```python
+                >>> from cleopatra.glyph import SUPPORTED_VIDEO_FORMAT
+                >>> sorted(SUPPORTED_VIDEO_FORMAT)
+                ['avi', 'gif', 'mov', 'mp4']
+
+                ```
         """
         video_format = path.split(".")[-1]
         if video_format not in SUPPORTED_VIDEO_FORMAT:

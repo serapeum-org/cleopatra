@@ -7,8 +7,8 @@ coordinates and face-node connectivity. Also integrates with
 pyramids-gis ``Mesh2d`` objects for geospatial workflows.
 
 Examples:
-    Plot face-centered data on a triangular mesh:
-
+    - Plot face-centered data on a triangular mesh:
+        ```python
         >>> import numpy as np
         >>> from cleopatra.mesh_glyph import MeshGlyph
         >>> node_x = np.array([0.0, 1.0, 0.5, 1.5])
@@ -18,9 +18,12 @@ Examples:
         >>> mg = MeshGlyph(node_x, node_y, face_nodes)
         >>> fig, ax = mg.plot(face_data, location="face", title="Water Level")
 
-    Plot a wireframe outline:
-
+        ```
+    - Plot a wireframe outline:
+        ```python
         >>> fig, ax = mg.plot_outline(color="blue", linewidth=0.5)
+
+        ```
 """
 
 from __future__ import annotations
@@ -72,8 +75,8 @@ class MeshGlyph(Glyph):
         n_edges: Number of edges (0 if edge connectivity not provided).
 
     Examples:
-        Create a MeshGlyph from a simple triangular mesh:
-
+        - Create a MeshGlyph and inspect its topology:
+            ```python
             >>> import numpy as np
             >>> from cleopatra.mesh_glyph import MeshGlyph
             >>> node_x = np.array([0.0, 1.0, 0.5])
@@ -84,6 +87,8 @@ class MeshGlyph(Glyph):
             1
             >>> mg.n_nodes
             3
+
+            ```
     """
 
     def __init__(
@@ -171,28 +176,33 @@ class MeshGlyph(Glyph):
             np.ndarray: 1D integer array of length n_faces.
 
         Examples:
-            Pure triangular mesh returns all 3s:
+            - Pure triangular mesh returns all 3s:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.mesh_glyph import MeshGlyph
+                >>> mg = MeshGlyph(
+                ...     np.array([0.0, 1.0, 0.5, 1.5]),
+                ...     np.array([0.0, 0.0, 1.0, 1.0]),
+                ...     np.array([[0, 1, 2], [1, 3, 2]]),
+                ... )
+                >>> mg.nodes_per_face
+                array([3, 3])
 
-            >>> import numpy as np
-            >>> from cleopatra.mesh_glyph import MeshGlyph
-            >>> mg = MeshGlyph(
-            ...     np.array([0.0, 1.0, 0.5, 1.5]),
-            ...     np.array([0.0, 0.0, 1.0, 1.0]),
-            ...     np.array([[0, 1, 2], [1, 3, 2]]),
-            ... )
-            >>> mg.nodes_per_face
-            array([3, 3])
+                ```
+            - Mixed mesh with quads and triangles:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.mesh_glyph import MeshGlyph
+                >>> mg = MeshGlyph(
+                ...     np.array([0.0, 1.0, 2.0, 0.0, 1.0, 2.0]),
+                ...     np.array([0.0, 0.0, 0.0, 1.0, 1.0, 1.0]),
+                ...     np.array([[0, 1, 4, 3], [1, 2, 5, -1]]),
+                ...     fill_value=-1,
+                ... )
+                >>> mg.nodes_per_face
+                array([4, 3])
 
-        Mixed mesh with quads and triangles:
-
-            >>> mg = MeshGlyph(
-            ...     np.array([0.0, 1.0, 2.0, 0.0, 1.0, 2.0]),
-            ...     np.array([0.0, 0.0, 0.0, 1.0, 1.0, 1.0]),
-            ...     np.array([[0, 1, 4, 3], [1, 2, 5, -1]]),
-            ...     fill_value=-1,
-            ... )
-            >>> mg.nodes_per_face
-            array([4, 3])
+                ```
         """
         if self._cached_nodes_per_face is None:
             self._cached_nodes_per_face = np.sum(
@@ -216,16 +226,20 @@ class MeshGlyph(Glyph):
             ValueError: If no faces have 3 or more valid nodes.
 
         Examples:
-            >>> import numpy as np
-            >>> from cleopatra.mesh_glyph import MeshGlyph
-            >>> mg = MeshGlyph(
-            ...     np.array([0.0, 1.0, 0.5]),
-            ...     np.array([0.0, 0.0, 1.0]),
-            ...     np.array([[0, 1, 2]]),
-            ... )
-            >>> tri = mg.triangulation
-            >>> tri.triangles.shape
-            (1, 3)
+            - Build a triangulation and check its shape:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.mesh_glyph import MeshGlyph
+                >>> mg = MeshGlyph(
+                ...     np.array([0.0, 1.0, 0.5]),
+                ...     np.array([0.0, 0.0, 1.0]),
+                ...     np.array([[0, 1, 2]]),
+                ... )
+                >>> tri = mg.triangulation
+                >>> tri.triangles.shape
+                (1, 3)
+
+                ```
         """
         if self._cached_triangulation is None:
             tri_array = self._fan_triangles()
@@ -286,15 +300,19 @@ class MeshGlyph(Glyph):
             np.ndarray: 1D array of values, one per triangle.
 
         Examples:
-            >>> import numpy as np
-            >>> from cleopatra.mesh_glyph import MeshGlyph
-            >>> mg = MeshGlyph(
-            ...     np.array([0.0, 1.0, 1.0, 0.0]),
-            ...     np.array([0.0, 0.0, 1.0, 1.0]),
-            ...     np.array([[0, 1, 2, 3]]),
-            ... )
-            >>> mg._map_face_to_triangle_values(np.array([42.0]))
-            array([42., 42.])
+            - Quad face produces 2 triangles with the same value:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.mesh_glyph import MeshGlyph
+                >>> mg = MeshGlyph(
+                ...     np.array([0.0, 1.0, 1.0, 0.0]),
+                ...     np.array([0.0, 0.0, 1.0, 1.0]),
+                ...     np.array([[0, 1, 2, 3]]),
+                ... )
+                >>> mg._map_face_to_triangle_values(np.array([42.0]))
+                array([42., 42.])
+
+                ```
         """
         counts = self.nodes_per_face
         valid = counts >= 3
@@ -411,32 +429,47 @@ class MeshGlyph(Glyph):
                 dimension.
 
         Examples:
-            Plot face-centered data:
+            - Plot face-centered data:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.mesh_glyph import MeshGlyph
+                >>> node_x = np.array([0.0, 1.0, 0.5, 1.5])
+                >>> node_y = np.array([0.0, 0.0, 1.0, 1.0])
+                >>> faces = np.array([[0, 1, 2], [1, 3, 2]])
+                >>> mg = MeshGlyph(node_x, node_y, faces)
+                >>> fig, ax = mg.plot(np.array([1.0, 2.0]))
 
-            >>> import numpy as np
-            >>> from cleopatra.mesh_glyph import MeshGlyph
-            >>> node_x = np.array([0.0, 1.0, 0.5, 1.5])
-            >>> node_y = np.array([0.0, 0.0, 1.0, 1.0])
-            >>> faces = np.array([[0, 1, 2], [1, 3, 2]])
-            >>> mg = MeshGlyph(node_x, node_y, faces)
-            >>> fig, ax = mg.plot(np.array([1.0, 2.0]))
+                ```
+            - Plot node-centered data:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.mesh_glyph import MeshGlyph
+                >>> node_x = np.array([0.0, 1.0, 0.5, 1.5])
+                >>> node_y = np.array([0.0, 0.0, 1.0, 1.0])
+                >>> faces = np.array([[0, 1, 2], [1, 3, 2]])
+                >>> mg = MeshGlyph(node_x, node_y, faces)
+                >>> fig, ax = mg.plot(
+                ...     np.array([0.0, 1.0, 2.0, 3.0]),
+                ...     location="node",
+                ... )
 
-        Plot node-centered data:
+                ```
+            - Plot with power color scale:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.mesh_glyph import MeshGlyph
+                >>> node_x = np.array([0.0, 1.0, 0.5, 1.5])
+                >>> node_y = np.array([0.0, 0.0, 1.0, 1.0])
+                >>> faces = np.array([[0, 1, 2], [1, 3, 2]])
+                >>> mg = MeshGlyph(node_x, node_y, faces)
+                >>> fig, ax = mg.plot(
+                ...     np.array([1.0, 2.0]),
+                ...     color_scale="power",
+                ...     gamma=0.5,
+                ...     cmap="coolwarm",
+                ... )
 
-            >>> fig, ax = mg.plot(
-            ...     np.array([0.0, 1.0, 2.0, 3.0]),
-            ...     location="node",
-            ... )
-
-        Plot with power color scale:
-
-            >>> mg2 = MeshGlyph(node_x, node_y, faces)
-            >>> fig, ax = mg2.plot(
-            ...     np.array([1.0, 2.0]),
-            ...     color_scale="power",
-            ...     gamma=0.5,
-            ...     cmap="coolwarm",
-            ... )
+                ```
         """
         self._validate_location_and_data(data, location)
         # Separate rendering kwargs (e.g. levels) from default_options kwargs.
@@ -537,14 +570,18 @@ class MeshGlyph(Glyph):
                 or ``time`` length doesn't match frame count.
 
         Examples:
-            >>> import numpy as np
-            >>> from cleopatra.mesh_glyph import MeshGlyph
-            >>> node_x = np.array([0.0, 1.0, 0.5, 1.5])
-            >>> node_y = np.array([0.0, 0.0, 1.0, 1.0])
-            >>> faces = np.array([[0, 1, 2], [1, 3, 2]])
-            >>> mg = MeshGlyph(node_x, node_y, faces)
-            >>> frames = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
-            >>> anim = mg.animate(frames, time=["t0", "t1", "t2"])
+            - Animate face data over 3 time steps:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.mesh_glyph import MeshGlyph
+                >>> node_x = np.array([0.0, 1.0, 0.5, 1.5])
+                >>> node_y = np.array([0.0, 0.0, 1.0, 1.0])
+                >>> faces = np.array([[0, 1, 2], [1, 3, 2]])
+                >>> mg = MeshGlyph(node_x, node_y, faces)
+                >>> frames = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+                >>> anim = mg.animate(frames, time=["t0", "t1", "t2"])
+
+                ```
         """
         if text_loc is None:
             text_loc = [0.1, 0.2]
@@ -667,14 +704,18 @@ class MeshGlyph(Glyph):
                 in batch processing.
 
         Examples:
-            >>> import numpy as np
-            >>> from cleopatra.mesh_glyph import MeshGlyph
-            >>> mg = MeshGlyph(
-            ...     np.array([0.0, 1.0, 0.5]),
-            ...     np.array([0.0, 0.0, 1.0]),
-            ...     np.array([[0, 1, 2]]),
-            ... )
-            >>> fig, ax = mg.plot_outline(color="blue")
+            - Render a triangular mesh wireframe:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.mesh_glyph import MeshGlyph
+                >>> mg = MeshGlyph(
+                ...     np.array([0.0, 1.0, 0.5]),
+                ...     np.array([0.0, 0.0, 1.0]),
+                ...     np.array([[0, 1, 2]]),
+                ... )
+                >>> fig, ax = mg.plot_outline(color="blue")
+
+                ```
         """
         if ax is not None:
             self.ax = ax
