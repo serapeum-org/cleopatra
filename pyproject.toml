@@ -115,9 +115,6 @@ markers = [
     "plot: test plotting function optional package (deselect with '-m \"not plot\"')"
 ]
 
-[tool.uv]
-managed = false
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
