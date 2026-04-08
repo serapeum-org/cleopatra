@@ -108,6 +108,7 @@ nav:
   - User Guide:
     - unstructured-mesh-guide.md
   - Reference:
+    - Glyph (base): reference/glyph.md
     - Statistical plots: reference/statistics-glyph.md
     - ArrayGlyph: reference/array-glyph.md
     - MeshGlyph: reference/mesh-glyph.md
