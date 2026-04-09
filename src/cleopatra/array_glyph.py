@@ -105,11 +105,11 @@ class ArrayGlyph(Glyph):
     def __init__(
         self,
         array: np.ndarray,
-        exclude_value: List = np.nan,
-        extent: List = None,
+        exclude_value: list = np.nan,
+        extent: list = None,
         rgb: list[int] = None,
         surface_reflectance: int = None,
-        cutoff: List = None,
+        cutoff: list = None,
         ax: Axes = None,
         fig: Figure = None,
         percentile: int = None,
@@ -259,7 +259,7 @@ class ArrayGlyph(Glyph):
         array: np.ndarray,
         rgb: list[int] = None,
         surface_reflectance: int = None,
-        cutoff: List = None,
+        cutoff: list = None,
         percentile: int = None,
     ) -> np.ndarray:
         """Prepare an array for RGB visualization.
@@ -416,7 +416,7 @@ class ArrayGlyph(Glyph):
         array: np.ndarray,
         rgb: list[int] = None,
         surface_reflectance: int = 10000,
-        cutoff: List = None,
+        cutoff: list = None,
     ) -> np.ndarray:
         """Prepare Sentinel satellite data for RGB visualization.
 
@@ -789,7 +789,7 @@ class ArrayGlyph(Glyph):
                         Threshold for 'sym-lognorm' color scale, by default 0.0001.
                     line_scale : float, optional
                         Scale factor for 'sym-lognorm' color scale, by default 0.001.
-                    bounds : List, optional
+                    bounds : list, optional
                         Boundaries for 'boundary-norm' color scale, by default None.
                         Defines the discrete intervals for color mapping.
                     midpoint : float, optional
@@ -1178,7 +1178,7 @@ class ArrayGlyph(Glyph):
                         Threshold for 'sym-lognorm' color scale, by default 0.0001.
                     line_scale : float, optional
                         Scale factor for 'sym-lognorm' color scale, by default 0.001.
-                    bounds : List, optional
+                    bounds : list, optional
                         Boundaries for 'boundary-norm' color scale, by default None.
                         Defines the discrete intervals for color mapping.
                     midpoint : float, optional
