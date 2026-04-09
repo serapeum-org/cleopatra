@@ -283,11 +283,14 @@ class Glyph:
 
                 ```
         """
-        cbar = ax.figure.colorbar(
+        fig = ax.figure
+        is_subplot = len(fig.axes) > 1
+        cbar = fig.colorbar(
             im,
             ax=ax,
             shrink=self.default_options["cbar_length"],
             orientation=self.default_options["cbar_orientation"],
+            use_gridspec=not is_subplot,
             **cbar_kw,
         )
         cbar.ax.tick_params(labelsize=10)
