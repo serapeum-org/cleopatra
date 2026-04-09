@@ -6,6 +6,7 @@ fan triangulation, face-to-triangle value mapping, and edge cases.
 
 from __future__ import annotations
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
@@ -403,6 +404,67 @@ class TestEdgeSegments:
             2,
             2,
         ), f"Expected empty segments, got shape {segs.shape}"
+
+
+class TestMeshGlyphSubplots:
+    """Tests for MeshGlyph.plot on shared subplot figures."""
+
+    def test_two_mesh_plots_on_subplots(self, triangle_glyph):
+        """Test two mesh plots on a 1x2 subplot layout.
+
+        Test scenario:
+            Both axes should have rendered content after plotting
+            on separate subplots of the same figure.
+        """
+        fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+        data = np.array([1.0, 2.0])
+
+        mg1 = MeshGlyph(
+            triangle_glyph.node_x,
+            triangle_glyph.node_y,
+            triangle_glyph._face_nodes,
+        )
+        mg1.plot(data, location="face", ax=axes[0], title="Left")
+
+        mg2 = MeshGlyph(
+            triangle_glyph.node_x,
+            triangle_glyph.node_y,
+            triangle_glyph._face_nodes,
+        )
+        mg2.plot(data * 2, location="face", ax=axes[1], title="Right")
+
+        assert axes[0].get_title() == "Left", (
+            f"Expected 'Left', got '{axes[0].get_title()}'"
+        )
+        assert axes[1].get_title() == "Right", (
+            f"Expected 'Right', got '{axes[1].get_title()}'"
+        )
+        assert len(fig.axes) >= 2, (
+            f"Expected at least 2 axes, got {len(fig.axes)}"
+        )
+        plt.close(fig)
+
+    def test_mesh_plot_and_outline_on_subplots(self, triangle_glyph):
+        """Test mesh data plot and wireframe on shared subplots.
+
+        Test scenario:
+            Left subplot gets face data, right gets wireframe.
+            Both should render without interfering.
+        """
+        fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+
+        mg1 = MeshGlyph(
+            triangle_glyph.node_x,
+            triangle_glyph.node_y,
+            triangle_glyph._face_nodes,
+        )
+        mg1.plot(np.array([1.0, 2.0]), location="face", ax=axes[0])
+        mg1.plot_outline(ax=axes[1], color="blue")
+
+        assert len(axes[1].collections) >= 1, (
+            "Right axes should have a LineCollection"
+        )
+        plt.close(fig)
 
 
 def _make_tri_mg():
