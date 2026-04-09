@@ -309,6 +309,115 @@ class TestCreateColorBar:
         plt.close(fig)
 
 
+    def test_single_axes_uses_gridspec(self):
+        """Test that single-axes figure uses gridspec for colorbar.
+
+        Test scenario:
+            A figure with one axes should use use_gridspec=True
+            for optimal colorbar layout.
+        """
+        g = Glyph(default_options=_make_options())
+        fig, ax = plt.subplots()
+        im = ax.imshow(np.arange(9).reshape(3, 3))
+        cbar = g.create_color_bar(ax, im, {"ticks": np.array([0, 4, 8])})
+        assert cbar is not None, "Colorbar should be created"
+        plt.close(fig)
+
+    def test_subplot_colorbar_does_not_steal_space(self):
+        """Test that colorbar on subplot doesn't break sibling axes.
+
+        Test scenario:
+            Create a 1x2 subplot, add an image and colorbar to each.
+            Both axes should retain their images — the second colorbar
+            should not steal space from the first axes via gridspec.
+        """
+        g = Glyph(default_options=_make_options())
+        fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+
+        im1 = axes[0].imshow(np.arange(9).reshape(3, 3))
+        g.create_color_bar(axes[0], im1, {"ticks": np.array([0, 4, 8])})
+
+        im2 = axes[1].imshow(np.arange(9, 0, -1).reshape(3, 3))
+        g.create_color_bar(axes[1], im2, {"ticks": np.array([1, 5, 9])})
+
+        assert len(axes[0].images) == 1, (
+            f"First axes should have 1 image, got {len(axes[0].images)}"
+        )
+        assert len(axes[1].images) == 1, (
+            f"Second axes should have 1 image, got {len(axes[1].images)}"
+        )
+        assert len(fig.axes) == 4, (
+            f"Expected 4 axes (2 plot + 2 colorbar), got {len(fig.axes)}"
+        )
+        plt.close(fig)
+
+    def test_subplot_colorbars_independent(self):
+        """Test that each subplot's colorbar is independent.
+
+        Test scenario:
+            Two subplots with different data ranges should each get
+            their own colorbar with correct tick values.
+        """
+        g1 = Glyph(default_options=_make_options())
+        g2 = Glyph(default_options=_make_options())
+        fig, axes = plt.subplots(1, 2)
+
+        im1 = axes[0].imshow(np.zeros((3, 3)))
+        ticks1 = np.array([0.0])
+        cbar1 = g1.create_color_bar(axes[0], im1, {"ticks": ticks1})
+
+        im2 = axes[1].imshow(np.ones((3, 3)) * 100)
+        ticks2 = np.array([100.0])
+        cbar2 = g2.create_color_bar(axes[1], im2, {"ticks": ticks2})
+
+        assert cbar1 is not cbar2, "Colorbars should be different objects"
+        plt.close(fig)
+
+    def test_three_subplots_all_visible(self):
+        """Test colorbar works correctly with 3+ subplots.
+
+        Test scenario:
+            1x3 subplot layout, each with an image and colorbar.
+            All 3 axes should retain their images.
+        """
+        g = Glyph(default_options=_make_options())
+        fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+
+        for i, ax in enumerate(axes):
+            data = np.random.RandomState(i).rand(5, 5)
+            im = ax.imshow(data)
+            g.create_color_bar(ax, im, {"ticks": np.array([0.0, 0.5, 1.0])})
+
+        for i, ax in enumerate(axes):
+            assert len(ax.images) == 1, (
+                f"Axes {i} should have 1 image, got {len(ax.images)}"
+            )
+        assert len(fig.axes) == 6, (
+            f"Expected 6 axes (3 plot + 3 colorbar), got {len(fig.axes)}"
+        )
+        plt.close(fig)
+
+    def test_2x2_grid_subplots(self):
+        """Test colorbar on a 2x2 grid of subplots.
+
+        Test scenario:
+            4 subplots in a 2x2 grid, each with colorbar.
+            All should render independently.
+        """
+        g = Glyph(default_options=_make_options())
+        fig, axes = plt.subplots(2, 2, figsize=(10, 10))
+
+        for ax in axes.flat:
+            im = ax.imshow(np.random.RandomState(42).rand(4, 4))
+            g.create_color_bar(ax, im, {"ticks": np.array([0.0, 0.5, 1.0])})
+
+        for i, ax in enumerate(axes.flat):
+            assert len(ax.images) == 1, (
+                f"Axes {i} should have 1 image, got {len(ax.images)}"
+            )
+        plt.close(fig)
+
+
 class TestAdjustTicks:
     """Tests for Glyph.adjust_ticks."""
 
