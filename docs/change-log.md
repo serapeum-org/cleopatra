@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.7.1 (2026-04-09)
+
+### fix
+
+- **glyph**: set `use_gridspec=False` for colorbar on subplot figures
+  so colorbars allocate space locally instead of stealing from sibling
+  axes (#109)
+
+### chore
+
+- remove dead boilerplate from `__init__.py` (unused author metadata,
+  empty hard-dependency checker, redundant module docstring)
+- replace deprecated `typing.List` with builtin `list` in
+  `array_glyph.py` parameter annotations and docstrings
+
+### test
+
+- add subplot colorbar tests for single-axes, 1x2, 1x3, and 2x2
+  grid layouts in `test_glyph.py`
+- add MeshGlyph subplot rendering tests in `test_mesh_glyph.py`
+
+### docs
+
+- update README
+
 ## 0.7.0 (2026-04-08)
 
 ### feat

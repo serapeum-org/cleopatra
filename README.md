@@ -1,64 +1,120 @@
-[![Python Versions](https://img.shields.io/pypi/pyversions/cleopatra.png)](https://img.shields.io/pypi/pyversions/cleopatra)
+# Cleopatra
+
+[![PyPI version](https://badge.fury.io/py/cleopatra.svg)](https://badge.fury.io/py/cleopatra)
+[![Python Versions](https://img.shields.io/pypi/pyversions/cleopatra.png)](https://pypi.org/project/cleopatra)
+[![Conda Version](https://img.shields.io/conda/vn/conda-forge/cleopatra.svg)](https://anaconda.org/conda-forge/cleopatra)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
-[![Docs](https://img.shields.io/badge/docs-latest-blue)](https://serapeum-org.github.io/cleopatra/latest/)
 [![codecov](https://codecov.io/github/serapeum-org/cleopatra/branch/main/graph/badge.svg?token=gHxH7ljIC3)](https://codecov.io/github/serapeum-org/cleopatra)
 
+[![Docs](https://img.shields.io/badge/docs-latest-blue)](https://serapeum-org.github.io/cleopatra/latest/)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 ![GitHub last commit](https://img.shields.io/github/last-commit/serapeum-org/cleopatra)
-![GitHub forks](https://img.shields.io/github/forks/serapeum-org/cleopatra?style=social)
 ![GitHub Repo stars](https://img.shields.io/github/stars/serapeum-org/cleopatra?style=social)
 
+**Cleopatra** is a matplotlib utility package for visualizing 2D/3D numpy arrays, unstructured meshes, and statistical
+histograms. It targets scientific and research users working with geospatial and raster data, providing a high-level API
+over matplotlib with sensible defaults and rich customization.
 
-Current release info
-====================
+## Main Features
 
-| Name                                                                                                                   | Downloads                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Version                                                                                                                                                                                                                                                                                                                                                       | Platforms                                                                                                                   |
-|------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
-| [![Conda Recipe](https://img.shields.io/badge/recipe-cleopatra-green.svg)](https://anaconda.org/conda-forge/cleopatra) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/cleopatra.svg)](https://anaconda.org/conda-forge/cleopatra) [![Downloads](https://pepy.tech/badge/cleopatra)](https://pepy.tech/project/cleopatra) [![Downloads](https://pepy.tech/badge/cleopatra/month)](https://pepy.tech/project/cleopatra)  [![Downloads](https://pepy.tech/badge/cleopatra/week)](https://pepy.tech/project/cleopatra)  ![PyPI - Downloads](https://img.shields.io/pypi/dd/cleopatra?color=blue&style=flat-square) ![GitHub all releases](https://img.shields.io/github/downloads/serapeum-org/cleopatra/total) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/cleopatra.svg)](https://anaconda.org/conda-forge/cleopatra) [![PyPI version](https://badge.fury.io/py/cleopatra.svg)](https://badge.fury.io/py/cleopatra) [![Anaconda-Server Badge](https://anaconda.org/conda-forge/cleopatra/badges/version.svg)](https://anaconda.org/conda-forge/cleopatra) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/cleopatra.svg)](https://anaconda.org/conda-forge/cleopatra) |
+### ArrayGlyph -- Raster / Array Visualization
+- Plot 2D numpy arrays with automatic colorbar and customizable color scales (linear, power, symmetric log-norm,
+  boundary-norm, midpoint).
+- Display cell values and overlay point markers on the plot.
+- Animate 3D arrays over time and export to GIF, MP4, MOV, or AVI (via ffmpeg).
 
-cleopatra - matplotlib utility package
-=====================================================================
-**cleopatra** is a Python package providing fast and flexible way to build visualize data using matplotlib. it
-provides functionalities to handle 3D arrays and perform various operations on them,
-such as plotting, animating, and displaying the array. it also provides functionalities for creating statistical plots,
+<p align="center">
+  <img src="docs/images/array_glyph/array-plot.png" width="45%" alt="Array Plot" />
+  <img src="docs/images/array_glyph/animated_array.gif" width="45%" alt="Animated Array" />
+</p>
 
+### MeshGlyph -- Unstructured Mesh Visualization
+- Visualize UGRID-style unstructured mesh data using triangulation (`tripcolor`, `tricontourf`).
+- Render wireframe outlines via `LineCollection`.
+- Accepts raw numpy arrays of node coordinates and face-node connectivity.
+- Animate time-varying mesh data.
 
-Main Features
--------------
-The `Array` class has the following functionalities:
-- Initialize an array object with the provided parameters.
-- Plot the array with optional parameters to customize the appearance and display cell values.
-- Animate the array over time with optional parameters to customize the animation speed and display points.
-- Display the array with optional parameters to customize the appearance and display point IDs.
+### StatisticalGlyph -- Histogram Plots
+- Create histograms for 1D and 2D datasets with customizable bins, colors, and transparency.
 
-The `statistical_glyph` module provides a class for creating statistical plots, specifically histograms. The class,
-`StatisticalGlyph`, is designed to handle both 1D (single-dimensional) and 2D (multi-dimensional) data.
+<p align="center">
+  <img src="docs/images/statistical_glyph/one-histogram.png" width="45%" alt="Histogram" />
+  <img src="docs/images/statistical_glyph/three-histogram.png" width="45%" alt="Multi-Histogram" />
+</p>
 
+### Colors -- Color Utilities
+- Convert between hex, RGB (0-255), and normalized RGB (0-1) formats.
+- Extract color ramps from images and create custom matplotlib colormaps.
 
+## Installation
 
-Installing cleopatra
-===============
+### pip
 
-Installing `cleopatra` from the `conda-forge` channel can be achieved by:
-
+```bash
+pip install cleopatra
 ```
+
+### conda
+
+```bash
 conda install -c conda-forge cleopatra
 ```
 
-It is possible to list all the versions of `cleopatra` available on your platform with:
+### From source (latest development version)
 
-```
-conda search cleopatra --channel conda-forge
-```
-
-## Install from GitHub
-to install the last development to time, you can install the library from GitHub
-```
+```bash
 pip install git+https://github.com/serapeum-org/cleopatra
 ```
 
-## pip
-to install the last release, you can easily use pip
+## Quick Start
+
+### Plot a 2D array
+
+```python
+import numpy as np
+from cleopatra.array_glyph import ArrayGlyph
+
+arr = np.random.rand(10, 10)
+glyph = ArrayGlyph(arr)
+fig, ax = glyph.plot(title="Random Array")
 ```
-pip install cleopatra
+
+### Create a histogram
+
+```python
+import numpy as np
+from cleopatra.statistical_glyph import StatisticalGlyph
+
+data = np.random.normal(0, 1, 1000)
+stat = StatisticalGlyph(data)
+fig, ax = stat.histogram(bins=30)
 ```
+
+### Plot an unstructured mesh
+
+```python
+import numpy as np
+from cleopatra.mesh_glyph import MeshGlyph
+
+node_x = np.array([0.0, 1.0, 0.5, 1.5])
+node_y = np.array([0.0, 0.0, 1.0, 1.0])
+face_nodes = np.array([[0, 1, 2], [1, 3, 2]])
+face_data = np.array([10.0, 20.0])
+
+mg = MeshGlyph(node_x, node_y, face_nodes)
+fig, ax = mg.plot(face_data, location="face", title="Mesh Data")
+```
+
+## Requirements
+
+- Python >= 3.11
+- numpy >= 2.0.0
+- matplotlib >= 3.8.4
+
+## Documentation
+
+Full documentation is available at [serapeum-org.github.io/cleopatra](https://serapeum-org.github.io/cleopatra/latest/).
+
+## License
+
+Cleopatra is licensed under the [GNU General Public License v3](https://www.gnu.org/licenses/gpl-3.0).
