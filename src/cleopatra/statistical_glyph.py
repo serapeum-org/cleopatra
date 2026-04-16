@@ -137,6 +137,8 @@ class StatisticalGlyph:
     def __init__(
         self,
         values: Union[List, np.ndarray],
+        fig: Figure = None,
+        ax: Axes = None,
         **kwargs,
     ):
         """Initialize the Statistic object with values and optional customization parameters.
@@ -145,6 +147,11 @@ class StatisticalGlyph:
             values: The numerical values to be plotted as histograms. Can be:
                 - 1D array/list for a single histogram
                 - 2D array/list for multiple histograms (one per column)
+            fig: Pre-existing matplotlib Figure to draw on. If None, a new
+                figure is created when ``histogram()`` is called.
+            ax: Pre-existing matplotlib Axes to draw on. If None, new axes
+                are created when ``histogram()`` is called. When supplied,
+                the histogram is composed into the given axes.
             **kwargs: Additional keyword arguments to customize the histogram appearance.
                 Supported arguments include:
                 - figsize: Figure size as (width, height) in inches, by default (5, 5).
@@ -196,8 +203,20 @@ class StatisticalGlyph:
             ... )
 
             ```
+            Compose into a pre-existing axes:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> fig, ax = plt.subplots()
+            >>> stat = StatisticalGlyph(x, fig=fig, ax=ax)
+            >>> fig2, ax2, hist = stat.histogram()
+            >>> ax2 is ax
+            True
+
+            ```
         """
         self._values = values
+        self._fig = fig
+        self._ax = ax
         options_dict = DEFAULT_OPTIONS.copy()
         options_dict.update(kwargs)
         self._default_options = options_dict
@@ -405,7 +424,11 @@ class StatisticalGlyph:
             else:
                 self.default_options[key] = val
 
-        fig, ax = plt.subplots(figsize=self.default_options["figsize"])
+        if self._ax is not None:
+            ax = self._ax
+            fig = self._fig if self._fig is not None else ax.get_figure()
+        else:
+            fig, ax = plt.subplots(figsize=self.default_options["figsize"])
 
         n = []
         bins = []
@@ -440,19 +463,16 @@ class StatisticalGlyph:
             bins.append(bins_i)
             patches.append(patches_i)
 
-        plt.grid(axis="y", alpha=self.default_options["grid_alpha"])
-        plt.xlabel(
+        ax.grid(axis="y", alpha=self.default_options["grid_alpha"])
+        ax.set_xlabel(
             self.default_options["xlabel"],
             fontsize=self.default_options["xlabel_font_size"],
         )
-        plt.ylabel(
+        ax.set_ylabel(
             self.default_options["ylabel"],
             fontsize=self.default_options["ylabel_font_size"],
         )
-        plt.xticks(fontsize=self.default_options["xtick_font_size"])
-        plt.yticks(fontsize=self.default_options["ytick_font_size"])
+        ax.tick_params(axis="x", labelsize=self.default_options["xtick_font_size"])
+        ax.tick_params(axis="y", labelsize=self.default_options["ytick_font_size"])
         hist = {"n": n, "bins": bins, "patches": patches}
-        # ax.yaxis.label.set_color("#27408B")
-        # ax1.tick_params(axis="y", color="#27408B")
-        plt.show()
         return fig, ax, hist

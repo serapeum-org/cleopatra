@@ -1084,7 +1084,6 @@ class ArrayGlyph(Glyph):
         #     im.norm(self.default_options["background_color_threshold"])
         # else:
         #     im.norm(self.vmax) / 2.0
-        plt.show()
         return fig, ax
 
     def animate(
@@ -1426,7 +1425,6 @@ class ArrayGlyph(Glyph):
             blit=True,
         )
         self._anim = anim
-        plt.show()
         return anim
 
     # @staticmethod
