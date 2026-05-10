@@ -666,3 +666,431 @@ class TestColourKwargs:
         fig, ax = glyph.plot(kind="pcolormesh")
         assert isinstance(fig, Figure)
         assert len(ax.collections) >= 1
+
+
+@pytest.mark.plot
+class TestValidateExtend:
+    """Tests for :py:meth:`ArrayGlyph._validate_extend` static method."""
+
+    def test_none_is_accepted(self):
+        """``extend=None`` returns silently (auto-resolve at render time)."""
+        result = ArrayGlyph._validate_extend(None)
+        assert result is None, f"Expected None, got {result!r}"
+
+    @pytest.mark.parametrize(
+        "value", ["neither", "both", "min", "max"]
+    )
+    def test_allowed_values_accepted(self, value):
+        """Each allowed string returns silently.
+
+        Args:
+            value: A valid ``extend`` keyword.
+        """
+        ArrayGlyph._validate_extend(value)
+
+    @pytest.mark.parametrize("bogus", ["always", "MIN", "", "neither2", "extend"])
+    def test_invalid_string_raises(self, bogus):
+        """Any other string raises ``ValueError`` listing the allowed set.
+
+        Args:
+            bogus: An invalid extend value to reject.
+        """
+        with pytest.raises(ValueError, match="Invalid extend"):
+            ArrayGlyph._validate_extend(bogus)
+
+    def test_invalid_extend_in_constructor_raises(self):
+        """Passing ``extend='banana'`` to ``__init__`` raises ``ValueError``."""
+        with pytest.raises(ValueError, match="Invalid extend"):
+            ArrayGlyph(np.arange(9).reshape(3, 3), extend="banana")
+
+    def test_invalid_extend_in_plot_raises(self):
+        """Passing ``extend='banana'`` to ``plot`` raises ``ValueError``."""
+        glyph = ArrayGlyph(np.arange(9).reshape(3, 3))
+        with pytest.raises(ValueError, match="Invalid extend"):
+            glyph.plot(extend="banana")
+
+
+@pytest.mark.plot
+class TestRobustLimits:
+    """Tests for :py:meth:`ArrayGlyph._robust_limits` static method."""
+
+    def test_basic_array(self):
+        """A plain array returns 2nd / 98th percentile floats."""
+        rng = np.random.default_rng(1337)
+        arr = rng.normal(size=10000)
+        vmin_r, vmax_r = ArrayGlyph._robust_limits(arr)
+        assert vmin_r > arr.min(), "Robust vmin should exceed full min"
+        assert vmax_r < arr.max(), "Robust vmax should fall under full max"
+
+    def test_all_nan_raises(self):
+        """An all-NaN array surfaces as ``ValueError``."""
+        arr = np.full((5, 5), np.nan)
+        with pytest.raises(ValueError, match="no finite values"):
+            ArrayGlyph._robust_limits(arr)
+
+    def test_all_inf_raises(self):
+        """An all-Inf array (no finite cells) surfaces as ``ValueError``."""
+        arr = np.full((5, 5), np.inf)
+        with pytest.raises(ValueError, match="no finite values"):
+            ArrayGlyph._robust_limits(arr)
+
+    def test_masked_array_uses_compressed_values(self):
+        """Masked entries are excluded from the percentile computation."""
+        import numpy.ma as ma
+
+        data = np.array([1.0, 2.0, 3.0, 4.0, 1e6])
+        mask = np.array([False, False, False, False, True])
+        marr = ma.array(data, mask=mask)
+        _, vmax_r = ArrayGlyph._robust_limits(marr)
+        assert vmax_r < 1e6, "Outlier masked cell must be ignored"
+
+
+@pytest.mark.plot
+class TestCenterLimits:
+    """Tests for :py:meth:`ArrayGlyph._center_limits` static method."""
+
+    def test_symmetric_around_zero(self):
+        """A skewed range becomes symmetric around zero using the larger half."""
+        vmin, vmax = ArrayGlyph._center_limits(-3.0, 7.0, 0.0)
+        assert vmin == pytest.approx(-7.0)
+        assert vmax == pytest.approx(7.0)
+
+    def test_symmetric_around_nonzero(self):
+        """Centring on a nonzero value still uses the larger half-range."""
+        vmin, vmax = ArrayGlyph._center_limits(0.0, 10.0, 4.0)
+        half = max(abs(0.0 - 4.0), abs(10.0 - 4.0))
+        assert vmin == pytest.approx(4.0 - half)
+        assert vmax == pytest.approx(4.0 + half)
+
+    def test_already_symmetric(self):
+        """An already-symmetric range is preserved."""
+        vmin, vmax = ArrayGlyph._center_limits(-5.0, 5.0, 0.0)
+        assert vmin == pytest.approx(-5.0)
+        assert vmax == pytest.approx(5.0)
+
+
+class TestPrepareArrayValidation:
+    """Tests for ``ArrayGlyph.prepare_array`` and RGB constructor validation."""
+
+    def test_too_few_bands_raises(self):
+        """An RGB array with fewer than 3 bands raises ``ValueError``."""
+        arr = np.zeros((2, 4, 4), dtype=np.float32)
+        with pytest.raises(ValueError, match="3 arrays"):
+            ArrayGlyph(arr, rgb=[0, 1])
+
+    def test_prepare_array_with_cutoff_only(self):
+        """``cutoff`` is applied via the surface-reflectance branch."""
+        arr = np.random.default_rng(0).integers(
+            0, 10000, size=(3, 5, 5)
+        ).astype(np.float32)
+        glyph = ArrayGlyph(np.zeros((1, 1)))
+        result = glyph.prepare_array(
+            arr, rgb=[0, 1, 2], surface_reflectance=10000, cutoff=[5000, 5000, 5000]
+        )
+        assert result.shape == (5, 5, 3)
+        assert np.all((0.0 <= result) & (result <= 1.0))
+
+    def test_prepare_array_no_normalisation(self):
+        """No percentile and no surface_reflectance -> only reorder bands."""
+        arr = np.arange(27, dtype=np.float32).reshape(3, 3, 3)
+        glyph = ArrayGlyph(np.zeros((1, 1)))
+        result = glyph.prepare_array(arr, rgb=[0, 1, 2])
+        assert result.shape == (3, 3, 3)
+        np.testing.assert_array_equal(result[..., 0], arr[0])
+
+    def test_prepare_sentinel_rgb_no_cutoff(self):
+        """``_prepare_sentinel_rgb`` returns clipped data with no cutoff path."""
+        arr = np.random.default_rng(0).integers(
+            0, 10000, size=(3, 5, 5)
+        ).astype(np.float32)
+        glyph = ArrayGlyph(np.zeros((1, 1)))
+        result = glyph.prepare_array(
+            arr, rgb=[0, 1, 2], surface_reflectance=10000
+        )
+        assert result.shape == (5, 5, 3)
+        assert np.all((0.0 <= result) & (result <= 1.0))
+
+
+class TestPlotImGetCbarKwInvalidKind:
+    """Tests for :py:meth:`ArrayGlyph._plot_im_get_cbar_kw` invalid-kind branch."""
+
+    def test_invalid_kind_raises(self):
+        """An unsupported kind in the helper raises ``ValueError``.
+
+        Test scenario:
+            ``ArrayGlyph.plot`` validates the kind before calling
+            ``_plot_im_get_cbar_kw``; reaching the helper directly with
+            a bogus kind exercises the defensive branch in the helper.
+        """
+        glyph = ArrayGlyph(np.arange(25, dtype=float).reshape(5, 5))
+        fig, ax = glyph.create_figure_axes()
+        try:
+            glyph.default_options["vmin"] = 0.0
+            glyph.default_options["vmax"] = 24.0
+            glyph.default_options["ticks_spacing"] = 5.0
+            ticks = glyph.get_ticks()
+            with pytest.raises(ValueError, match="Invalid kind"):
+                glyph._plot_im_get_cbar_kw(ax, glyph.arr, ticks, kind="banana")
+        finally:
+            plt.close(fig)
+
+
+class TestArrSetter:
+    """Tests for the ``arr`` property setter."""
+
+    def test_setter_replaces_array(self):
+        """Assigning to ``arr`` swaps out the internal masked array."""
+        a = np.arange(9).reshape(3, 3)
+        glyph = ArrayGlyph(a)
+        new = np.zeros((4, 4))
+        glyph.arr = new
+        assert glyph.arr is new, "Setter should store the new array reference"
+
+
+class TestExcludeValueProperty:
+    """Tests for the ``exclude_value`` getter/setter."""
+
+    def test_default_is_nan(self):
+        """The default ``exclude_value`` is ``np.nan``."""
+        glyph = ArrayGlyph(np.arange(9).reshape(3, 3))
+        # exclude_value comparison: nan is nan via identity
+        assert glyph.exclude_value is np.nan or (
+            isinstance(glyph.exclude_value, float)
+            and np.isnan(glyph.exclude_value)
+        )
+
+    def test_setter_updates_value(self):
+        """Setter updates the stored exclude value."""
+        glyph = ArrayGlyph(np.arange(9).reshape(3, 3))
+        glyph.exclude_value = -9999
+        assert glyph.exclude_value == -9999
+
+
+@pytest.mark.plot
+class TestPlotRecomputeBranch:
+    """Tests for the recompute-on-plot path in :py:meth:`ArrayGlyph.plot`."""
+
+    def test_passing_robust_in_plot_recomputes_limits(self):
+        """``plot(robust=True)`` recomputes vmin/vmax from the percentile path."""
+        rng = np.random.default_rng(1337)
+        body = rng.random(98)
+        arr = np.concatenate([body, [-1000.0, 1000.0]]).reshape(10, 10)
+        glyph = ArrayGlyph(arr)
+        before_vmin = glyph.vmin
+        glyph.plot(robust=True)
+        assert glyph.vmin > before_vmin, (
+            "Robust pass on plot should clip the lower outlier"
+        )
+        assert glyph.vmax < 1000.0, (
+            "Robust pass on plot should clip the upper outlier"
+        )
+
+    def test_passing_center_in_plot_switches_cmap(self):
+        """``plot(center=0)`` selects ``RdBu_r`` when no explicit cmap is given."""
+        arr = np.linspace(-3.0, 5.0, 25).reshape(5, 5)
+        glyph = ArrayGlyph(arr)
+        glyph.plot(center=0.0)
+        assert glyph.default_options["cmap"] == "RdBu_r"
+
+    def test_passing_center_in_plot_with_explicit_cmap_keeps_user_choice(self):
+        """``plot(center=0, cmap='viridis')`` keeps the explicit cmap."""
+        arr = np.linspace(-3.0, 5.0, 25).reshape(5, 5)
+        glyph = ArrayGlyph(arr)
+        glyph.plot(center=0.0, cmap="viridis")
+        assert glyph.default_options["cmap"] == "viridis"
+
+    def test_passing_explicit_vmin_vmax_in_plot_overrides_constructor(self):
+        """``plot(vmin=, vmax=)`` overrides constructor-derived limits."""
+        arr = np.arange(25, dtype=float).reshape(5, 5)
+        glyph = ArrayGlyph(arr)
+        glyph.plot(vmin=5.0, vmax=15.0)
+        assert glyph.vmin == 5.0
+        assert glyph.vmax == 15.0
+
+    def test_invalid_kwarg_raises(self):
+        """Plotting with an unknown kwarg raises ``ValueError``."""
+        glyph = ArrayGlyph(np.arange(9).reshape(3, 3))
+        with pytest.raises(ValueError, match="not correct"):
+            glyph.plot(banana_count=12)
+
+    def test_recompute_with_explicit_ticks_spacing(self):
+        """``plot(robust=True, ticks_spacing=...)`` keeps the user's spacing."""
+        rng = np.random.default_rng(1337)
+        body = rng.random(98)
+        arr = np.concatenate([body, [-1000.0, 1000.0]]).reshape(10, 10)
+        glyph = ArrayGlyph(arr)
+        glyph.plot(robust=True, ticks_spacing=0.1)
+        assert glyph.default_options["ticks_spacing"] == 0.1, (
+            "Explicit ticks_spacing must win over the recompute path"
+        )
+
+
+@pytest.mark.plot
+class TestPlotIdempotenceAndPurity:
+    """Tests confirming repeated plot calls remain safe."""
+
+    def test_replot_same_kind_does_not_raise(self):
+        """Calling ``plot(kind="contour")`` twice produces equivalent state."""
+        arr = np.arange(25, dtype=float).reshape(5, 5)
+        glyph = ArrayGlyph(arr)
+        fig1, ax1 = glyph.plot(kind="contour")
+        # Reset fig/ax so the second call creates a fresh axes (the
+        # method does not auto-create a new fig if one exists).
+        glyph.fig = None
+        glyph.ax = None
+        fig2, ax2 = glyph.plot(kind="contour")
+        assert isinstance(fig1, Figure)
+        assert isinstance(fig2, Figure)
+        assert len(ax1.collections) >= 1
+        assert len(ax2.collections) >= 1
+
+
+@pytest.mark.plot
+class TestPlotRoundTripSavefig:
+    """Round-trip test: rendered figure -> savefig -> non-empty PNG file."""
+
+    def test_savefig_produces_nonempty_png(self, tmp_path):
+        """Rendering and saving a figure yields a non-empty PNG file."""
+        arr = np.arange(25, dtype=float).reshape(5, 5)
+        glyph = ArrayGlyph(arr)
+        fig, ax = glyph.plot()
+        out = tmp_path / "array.png"
+        try:
+            fig.savefig(out)
+            assert out.exists(), f"Expected {out} to exist after savefig"
+            assert out.stat().st_size > 0, "PNG should be non-empty"
+        finally:
+            plt.close(fig)
+
+
+@pytest.mark.plot
+class TestAnimateEdgeCases:
+    """Edge cases for :py:meth:`ArrayGlyph.animate`."""
+
+    def test_invalid_kwarg_raises(self, coello_data: np.ndarray, animate_time_list: list):
+        """An unknown kwarg to ``animate`` raises ``ValueError``."""
+        glyph = ArrayGlyph(coello_data)
+        with pytest.raises(ValueError, match="not correct"):
+            glyph.animate(animate_time_list, banana=42)
+
+    def test_explicit_vmin_vmax_in_animate(
+        self, coello_data: np.ndarray, animate_time_list: list, no_data_value: float
+    ):
+        """``animate(vmin=, vmax=)`` overrides constructor-derived limits."""
+        glyph = ArrayGlyph(coello_data, exclude_value=[no_data_value])
+        anim = glyph.animate(animate_time_list, vmin=10.0, vmax=200.0)
+        assert anim is not None
+        assert glyph.default_options["vmin"] == 10.0
+        assert glyph.default_options["vmax"] == 200.0
+
+    def test_animate_with_points(
+        self,
+        coello_data: np.ndarray,
+        animate_time_list: list,
+        no_data_value: float,
+    ):
+        """``animate(points=...)`` adds scatter overlays without raising."""
+        glyph = ArrayGlyph(coello_data, exclude_value=[no_data_value])
+        points = np.array([[1.0, 0, 0], [2.0, 1, 1]])
+        anim = glyph.animate(animate_time_list, points=points)
+        assert anim is not None
+
+    def test_animate_with_explicit_ticks_spacing(
+        self,
+        coello_data: np.ndarray,
+        animate_time_list: list,
+        no_data_value: float,
+    ):
+        """``animate(ticks_spacing=...)`` overrides the auto-computed spacing."""
+        glyph = ArrayGlyph(coello_data, exclude_value=[no_data_value])
+        anim = glyph.animate(animate_time_list, ticks_spacing=50.0)
+        assert anim is not None
+        assert glyph.default_options["ticks_spacing"] == 50.0
+
+
+class TestExcludeValueMultiValue:
+    """Cover the ``len(exclude_value) > 1`` constructor branch."""
+
+    def test_two_exclude_values_masks_both(self):
+        """Two exclude values should mask both target cells via ``logical_or``."""
+        arr = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
+        glyph = ArrayGlyph(arr, exclude_value=[1.0, 9.0])
+        assert glyph.arr.mask[0, 0], "Cell with value 1 must be masked"
+        assert glyph.arr.mask[2, 2], "Cell with value 9 must be masked"
+        assert not glyph.arr.mask[1, 1], "Middle cell must remain unmasked"
+
+
+class TestPrepareArrayPercentilePath:
+    """Cover the ``percentile`` branch in ``prepare_array``."""
+
+    def test_percentile_drives_scaling(self):
+        """``percentile=2`` triggers the ``scale_percentile`` branch."""
+        rng = np.random.default_rng(1337)
+        arr = rng.integers(0, 10000, size=(3, 4, 4)).astype(np.float32)
+        glyph = ArrayGlyph(np.zeros((1, 1)))
+        result = glyph.prepare_array(arr, rgb=[0, 1, 2], percentile=2)
+        assert result.shape == (4, 4, 3)
+        assert np.all((0.0 <= result) & (result <= 1.0))
+
+
+@pytest.mark.plot
+class TestContourLevelsAndNorm:
+    """Cover contour/contourf branches with norm and levels."""
+
+    def test_contour_with_norm_and_levels(self):
+        """``contour`` with a non-None norm and integer levels uses both paths."""
+        arr = np.linspace(0.0, 1.0, 100).reshape(10, 10)
+        glyph = ArrayGlyph(arr)
+        fig, ax = glyph.plot(
+            kind="contour",
+            color_scale="power",
+            levels=4,
+        )
+        assert isinstance(fig, Figure)
+        assert len(ax.collections) >= 1
+
+    def test_contourf_with_explicit_levels(self):
+        """``contourf`` with explicit edges uses the ``level_edges`` branch."""
+        arr = np.linspace(0.0, 1.0, 100).reshape(10, 10)
+        glyph = ArrayGlyph(arr)
+        fig, ax = glyph.plot(
+            kind="contourf",
+            levels=[0.0, 0.25, 0.5, 0.75, 1.0],
+        )
+        assert isinstance(fig, Figure)
+        assert len(ax.collections) >= 1
+
+    def test_contour_with_masked_array(self):
+        """A masked-array input is filled with NaN before contour rendering."""
+        arr = np.linspace(0.0, 1.0, 100).reshape(10, 10)
+        # Use exclude_value path so the constructor builds a masked array.
+        arr[0, 0] = -999.0
+        glyph = ArrayGlyph(arr, exclude_value=[-999.0])
+        fig, ax = glyph.plot(kind="contour")
+        assert isinstance(fig, Figure)
+
+    def test_contour_with_midpoint_already_filled(self):
+        """``color_scale='midpoint'`` pre-fills the array; contour skips the mask branch."""
+        arr = np.linspace(-1.0, 1.0, 100).reshape(10, 10)
+        glyph = ArrayGlyph(arr)
+        fig, ax = glyph.plot(kind="contour", color_scale="midpoint", midpoint=0.0)
+        assert isinstance(fig, Figure)
+        assert len(ax.collections) >= 1
+
+
+@pytest.mark.plot
+class TestCenterCmapDoesNotApplyToRgb:
+    """RGB compositing path skips the center/cmap auto-switch logic."""
+
+    def test_rgb_arr_renders_without_norm(self):
+        """An RGB array renders via ``imshow`` and ignores center logic."""
+        rgb_arr = np.random.default_rng(0).integers(
+            0, 255, size=(3, 8, 8)
+        ).astype(np.float32)
+        glyph = ArrayGlyph(rgb_arr, rgb=[0, 1, 2])
+        fig, ax = glyph.plot()
+        assert isinstance(fig, Figure)
+        # No colorbar is created on the RGB path; ``cbar`` is unset.
+        assert not hasattr(glyph, "cbar"), (
+            "RGB compositing should not create a colorbar"
+        )

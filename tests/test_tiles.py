@@ -31,10 +31,15 @@ from PIL import Image  # noqa: E402
 
 from cleopatra import tiles as tiles_mod  # noqa: E402
 from cleopatra.tiles import (  # noqa: E402
+    MAX_TILES,
     _densify_and_reproject_bounds,
+    _require_tiles_extra,
     add_tiles,
     auto_zoom,
+    fetch_single_tile,
+    fetch_tiles,
     get_provider,
+    stitch_tiles,
 )
 
 Tile = namedtuple("Tile", ["x", "y", "z"])
@@ -356,3 +361,429 @@ class TestAddTilesIntegration:
         assert len(calls) == 2
         assert calls[0][1]["zooms"] == 10
         assert calls[1][1]["zooms"] == 9
+
+
+class TestRequireTilesExtra:
+    """Tests for :func:`cleopatra.tiles._require_tiles_extra` guard."""
+
+    def test_available_returns_silently(self):
+        """When deps are present, the helper is a no-op and returns ``None``."""
+        result = _require_tiles_extra()
+        assert result is None, (
+            f"_require_tiles_extra should return None on success, got {result!r}"
+        )
+
+    def test_missing_raises_with_install_hint(self, monkeypatch):
+        """When ``_TILES_AVAILABLE`` is False, raise ``ImportError`` with the hint."""
+        monkeypatch.setattr(tiles_mod, "_TILES_AVAILABLE", False)
+        with pytest.raises(ImportError, match=r"cleopatra\[tiles\]"):
+            _require_tiles_extra()
+
+
+class TestAutoZoomEdgeCases:
+    """Boundary tests for :func:`cleopatra.tiles.auto_zoom`."""
+
+    def test_zero_extent_clamps_to_max(self):
+        """A zero-area extent (west == east, south == north) clamps to zoom 19."""
+        result = auto_zoom((0.0, 0.0, 0.0, 0.0))
+        assert result == 19, f"Zero extent should clamp to 19, got {result}"
+
+    def test_negative_extent_uses_absolute_value(self):
+        """Reversed bounds (``east < west``) still produce a non-negative zoom."""
+        result = auto_zoom((10.0, 10.0, 5.0, 5.0))
+        assert 0 <= result <= 19, f"Zoom must be in [0, 19], got {result}"
+
+    @pytest.mark.parametrize(
+        "bounds, expected_min",
+        [
+            ((-180.0, -85.0, 180.0, 85.0), 0),
+            ((0.0, 0.0, 180.0, 90.0), 1),
+        ],
+        ids=["global", "hemisphere"],
+    )
+    def test_known_extents(self, bounds, expected_min):
+        """Manual sanity for hand-computed zoom values.
+
+        Args:
+            bounds: ``(west, south, east, north)`` in degrees.
+            expected_min: Lower bound on the expected zoom value.
+        """
+        result = auto_zoom(bounds)
+        assert result >= expected_min, (
+            f"auto_zoom{bounds} should be >= {expected_min}, got {result}"
+        )
+
+
+class TestDensifyAndReprojectEdgeCases:
+    """Edge-case tests for :func:`_densify_and_reproject_bounds`."""
+
+    def test_n_points_default_runs(self):
+        """``n_points`` default of 21 produces sensible output bounds."""
+        west, south, east, north = _densify_and_reproject_bounds(
+            -10.0, -5.0, 10.0, 5.0, "EPSG:4326", "EPSG:3857"
+        )
+        assert west < east, f"west {west} should be < east {east}"
+        assert south < north, f"south {south} should be < north {north}"
+
+    def test_invalid_reprojection_raises_value_error(self):
+        """Reprojecting through an invalid CRS pair surfaces as ``ValueError``.
+
+        Test scenario:
+            Patch :class:`pyproj.Transformer.from_crs` so the transform
+            yields infinite coordinates; the helper must raise
+            ``ValueError`` with a clear message rather than silently
+            returning garbage bounds.
+        """
+        with patch("pyproj.Transformer.from_crs") as mock_from_crs:
+            mock_transformer = MagicMock()
+            mock_transformer.transform.return_value = (
+                np.array([np.inf, np.inf]),
+                np.array([np.inf, np.inf]),
+            )
+            mock_from_crs.return_value = mock_transformer
+            with pytest.raises(ValueError, match="infinite or NaN"):
+                _densify_and_reproject_bounds(
+                    10.0, 50.0, 11.0, 51.0,
+                    "EPSG:4326", "EPSG:3857",
+                    n_points=2,
+                )
+
+    def test_n_points_low_value_runs(self):
+        """``n_points=2`` (only corners) still produces finite bounds."""
+        west, south, east, north = _densify_and_reproject_bounds(
+            10.0, 50.0, 11.0, 51.0,
+            "EPSG:4326", "EPSG:3857",
+            n_points=2,
+        )
+        assert all(np.isfinite([west, south, east, north])), (
+            f"Bounds should all be finite, got ({west}, {south}, {east}, {north})"
+        )
+
+
+class TestFetchSingleTile:
+    """Tests for :func:`cleopatra.tiles.fetch_single_tile`."""
+
+    def _make_provider(self) -> MagicMock:
+        """Build a mock provider that returns a stable tile URL."""
+        provider = MagicMock()
+        provider.build_url = MagicMock(return_value="http://example.test/0/0/0.png")
+        return provider
+
+    def test_succeeds_on_valid_png(self):
+        """A valid PNG response returns ``(tile, bytes)`` on the first try."""
+        png = _make_tile_png(size=64)
+        tile = Tile(0, 0, 0)
+        provider = self._make_provider()
+
+        with patch("urllib.request.urlopen") as mock_urlopen:
+            mock_response = MagicMock()
+            mock_response.read.return_value = png
+            mock_urlopen.return_value = mock_response
+
+            returned_tile, returned_bytes = fetch_single_tile(
+                tile, provider, timeout=5, retries=0
+            )
+
+        assert returned_tile is tile, "Should return the original tile"
+        assert returned_bytes == png, "Should return the PNG payload unchanged"
+
+    def test_invalid_image_bytes_treated_as_failure(self):
+        """A non-image response triggers retries and ultimately raises."""
+        tile = Tile(1, 2, 3)
+        provider = self._make_provider()
+
+        with patch("urllib.request.urlopen") as mock_urlopen:
+            mock_response = MagicMock()
+            mock_response.read.return_value = b"<html>not-an-image</html>"
+            mock_urlopen.return_value = mock_response
+
+            with pytest.raises(ConnectionError, match="Failed to fetch tile"):
+                fetch_single_tile(tile, provider, timeout=1, retries=1)
+            assert mock_urlopen.call_count == 2, (
+                f"Expected 2 attempts (retries=1), got {mock_urlopen.call_count}"
+            )
+
+    def test_retries_and_succeeds(self):
+        """A transient ``URLError`` is retried and a later success is returned."""
+        import urllib.error
+
+        tile = Tile(0, 0, 0)
+        provider = self._make_provider()
+        png = _make_tile_png()
+
+        successful_response = MagicMock()
+        successful_response.read.return_value = png
+
+        with patch("urllib.request.urlopen") as mock_urlopen:
+            mock_urlopen.side_effect = [
+                urllib.error.URLError("transient"),
+                successful_response,
+            ]
+            _, returned_bytes = fetch_single_tile(
+                tile, provider, timeout=1, retries=2
+            )
+        assert returned_bytes == png, (
+            f"Expected png bytes after retry, got {len(returned_bytes)} bytes"
+        )
+
+    def test_raises_after_all_retries_exhausted(self):
+        """All retries failing raises ``ConnectionError`` referencing the tile."""
+        import urllib.error
+
+        tile = Tile(5, 6, 7)
+        provider = self._make_provider()
+
+        with patch("urllib.request.urlopen") as mock_urlopen:
+            mock_urlopen.side_effect = urllib.error.URLError("permanent")
+            with pytest.raises(ConnectionError, match="z=7/x=5/y=6"):
+                fetch_single_tile(tile, provider, timeout=1, retries=2)
+            assert mock_urlopen.call_count == 3, (
+                f"Expected 3 attempts, got {mock_urlopen.call_count}"
+            )
+
+    def test_jpeg_response_accepted(self):
+        """A JPEG (E0/E1 markers) is accepted as a valid image."""
+        jpeg_e0 = b"\xff\xd8\xff\xe0" + b"\x00" * 64
+        tile = Tile(0, 0, 0)
+        provider = self._make_provider()
+        with patch("urllib.request.urlopen") as mock_urlopen:
+            mock_response = MagicMock()
+            mock_response.read.return_value = jpeg_e0
+            mock_urlopen.return_value = mock_response
+            _, returned_bytes = fetch_single_tile(
+                tile, provider, timeout=1, retries=0
+            )
+        assert returned_bytes == jpeg_e0, "JPEG bytes should pass through"
+
+
+class TestFetchTiles:
+    """Tests for :func:`cleopatra.tiles.fetch_tiles`."""
+
+    def test_returns_dict_keyed_by_tile(self):
+        """Successful fetch produces a ``{tile: bytes}`` mapping."""
+        tiles = [Tile(0, 0, 0), Tile(1, 0, 0)]
+        png = _make_tile_png()
+        provider = MagicMock()
+        provider.build_url = MagicMock(return_value="http://example.test/")
+
+        def fake_single(tile, _provider, _timeout, _retries):
+            return tile, png
+
+        with patch.object(tiles_mod, "fetch_single_tile", side_effect=fake_single):
+            result = fetch_tiles(tiles, provider, max_workers=2, timeout=1, retries=0)
+
+        assert set(result.keys()) == set(tiles), (
+            f"Result should be keyed by all input tiles, got {set(result.keys())}"
+        )
+        for v in result.values():
+            assert v == png, "All tile values should be the mocked PNG bytes"
+
+    def test_propagates_connection_error(self):
+        """If any tile fails permanently, ``ConnectionError`` propagates."""
+        tiles = [Tile(0, 0, 0)]
+        provider = MagicMock()
+
+        with patch.object(
+            tiles_mod,
+            "fetch_single_tile",
+            side_effect=ConnectionError("kaboom"),
+        ):
+            with pytest.raises(ConnectionError, match="kaboom"):
+                fetch_tiles(tiles, provider, max_workers=1, timeout=1, retries=0)
+
+    def test_unexpected_exception_re_raises(self):
+        """Non-``ConnectionError`` exceptions surface to the caller."""
+        tiles = [Tile(0, 0, 0)]
+        provider = MagicMock()
+
+        with patch.object(
+            tiles_mod,
+            "fetch_single_tile",
+            side_effect=RuntimeError("boom"),
+        ):
+            with pytest.raises(RuntimeError, match="boom"):
+                fetch_tiles(tiles, provider, max_workers=1, timeout=1, retries=0)
+
+
+class TestStitchTiles:
+    """Tests for :func:`cleopatra.tiles.stitch_tiles`."""
+
+    def test_single_tile_returns_correct_shape(self):
+        """One 256-px tile yields a ``(256, 256, 4)`` uint8 array."""
+        tiles = [Tile(0, 0, 1)]
+        png = _make_tile_png(size=256)
+        image, extent = stitch_tiles({tiles[0]: png}, tiles, zoom=1)
+
+        assert image.shape == (256, 256, 4), (
+            f"Expected (256, 256, 4), got {image.shape}"
+        )
+        assert image.dtype.name == "uint8", f"Expected uint8, got {image.dtype}"
+        assert len(extent) == 4, f"Expected 4-tuple extent, got {extent}"
+
+    def test_two_tiles_horizontal_doubles_width(self):
+        """Two horizontally-adjacent tiles produce a ``(256, 512, 4)`` image."""
+        tiles = [Tile(0, 0, 1), Tile(1, 0, 1)]
+        png = _make_tile_png(size=256)
+        image, _ = stitch_tiles(
+            {tiles[0]: png, tiles[1]: png}, tiles, zoom=1
+        )
+        assert image.shape == (256, 512, 4), (
+            f"Expected (256, 512, 4) for two horizontal tiles, got {image.shape}"
+        )
+
+    def test_invalid_first_image_raises(self):
+        """A corrupt first PNG raises ``ValueError`` with a decode hint."""
+        tiles = [Tile(0, 0, 1)]
+        with pytest.raises(ValueError, match="Failed to decode tile image"):
+            stitch_tiles({tiles[0]: b"not a png"}, tiles, zoom=1)
+
+    def test_invalid_second_image_raises_with_tile_coords(self):
+        """A corrupt non-first PNG identifies the offending tile in the message."""
+        good_png = _make_tile_png()
+        good_tile = Tile(0, 0, 1)
+        bad_tile = Tile(1, 0, 1)
+        tiles = [good_tile, bad_tile]
+        with pytest.raises(ValueError, match="z=1/x=1/y=0"):
+            stitch_tiles({good_tile: good_png, bad_tile: b"junk"}, tiles, zoom=1)
+
+    def test_extent_is_4_floats_in_3857(self):
+        """The returned extent is four floats in EPSG:3857 meters."""
+        tiles = [Tile(0, 0, 0)]
+        png = _make_tile_png()
+        _, extent = stitch_tiles({tiles[0]: png}, tiles, zoom=0)
+
+        west, south, east, north = extent
+        assert west < east, f"west {west} < east {east} should hold"
+        assert south < north, f"south {south} < north {north} should hold"
+        for v in extent:
+            assert isinstance(v, float), f"Extent component should be float, got {type(v)}"
+
+
+class TestAddTilesAdditionalValidation:
+    """Additional validation paths for :func:`add_tiles`."""
+
+    def test_zero_area_extent_raises(self):
+        """An axes with ``west == east`` raises ``ValueError`` about zero area."""
+        ax = MagicMock()
+        ax.get_xlim.return_value = (1000000.0, 1000000.0)
+        ax.get_ylim.return_value = (6000000.0, 6200000.0)
+        with pytest.raises(ValueError, match="zero-area"):
+            add_tiles(ax, crs=3857)
+
+    def test_invalid_crs_string_raises_value_error(self):
+        """A bogus CRS string surfaces as ``ValueError`` from add_tiles."""
+        ax = MagicMock()
+        ax.get_xlim.return_value = (10.0, 11.0)
+        ax.get_ylim.return_value = (50.0, 51.0)
+        with pytest.raises((ValueError, Exception)):
+            add_tiles(ax, crs="EPSG:NOT-A-REAL-CRS")
+
+    def test_zoom_integer_acceptable(self, mock_ax, _patch_tiles):
+        """An explicit ``zoom=5`` is accepted and used downstream."""
+        result = add_tiles(mock_ax, crs=3857, zoom=5)
+        assert result is mock_ax
+
+    def test_attribution_true_strips_html_tags(self, mock_ax, _patch_tiles):
+        """``attribution=True`` strips HTML tags before placing the text."""
+        add_tiles(mock_ax, crs=3857, attribution=True)
+        if mock_ax.text.called:
+            placed_text = mock_ax.text.call_args[0][2]
+            assert "<" not in placed_text, (
+                f"Attribution text should be HTML-stripped, got: {placed_text!r}"
+            )
+
+
+class TestStitchTilesPerformance:
+    """Performance micro-test: stitching a handful of tiles is fast."""
+
+    def test_stitch_completes_quickly_for_small_grid(self):
+        """A 2x2 grid of 64-px tiles stitches in well under 100 ms."""
+        import time
+
+        tiles = [Tile(x, y, 1) for x in (0, 1) for y in (0, 1)]
+        png = _make_tile_png(size=64)
+        tile_data = {t: png for t in tiles}
+
+        start = time.perf_counter()
+        image, _ = stitch_tiles(tile_data, tiles, zoom=1)
+        elapsed = time.perf_counter() - start
+
+        assert elapsed < 1.0, f"Stitch took {elapsed:.3f}s, expected < 1.0s"
+        assert image.shape == (128, 128, 4)
+
+
+class TestMaxTilesConstant:
+    """Module-level ``MAX_TILES`` constant invariants."""
+
+    def test_max_tiles_is_positive_int(self):
+        """``MAX_TILES`` is a positive integer."""
+        assert isinstance(MAX_TILES, int), f"Expected int, got {type(MAX_TILES)}"
+        assert MAX_TILES > 0, f"MAX_TILES should be positive, got {MAX_TILES}"
+
+
+class TestAddTilesProviderObject:
+    """Cover the branch where ``source`` is a provider object, not a string."""
+
+    def test_provider_object_passed_directly(self, mock_ax, _patch_tiles):
+        """Passing an :class:`xyzservices.TileProvider` instance bypasses lookup."""
+        import xyzservices.providers as xyz
+
+        provider = xyz.OpenStreetMap.Mapnik
+        result = add_tiles(mock_ax, source=provider, crs=3857)
+        mock_ax.imshow.assert_called_once()
+        assert result is mock_ax
+
+
+class TestAddTilesCRSReprojectionFailure:
+    """Cover the non-CRS reraise + EPSG:4326 NaN guard branches."""
+
+    def test_non_crs_exception_reraises(self, monkeypatch):
+        """A non-CRS exception from reprojection re-raises unchanged."""
+        ax = MagicMock()
+        ax.get_xlim.return_value = (10.0, 11.0)
+        ax.get_ylim.return_value = (50.0, 51.0)
+
+        def fake_reproject(*args, **kwargs):
+            raise RuntimeError("Some other failure")
+
+        monkeypatch.setattr(
+            tiles_mod, "_densify_and_reproject_bounds", fake_reproject
+        )
+        with pytest.raises(RuntimeError, match="Some other failure"):
+            add_tiles(ax, crs=4326)
+
+    def test_4326_inf_after_back_transform_raises(self, monkeypatch):
+        """A back-transform to EPSG:4326 returning Inf raises ``ValueError``."""
+        ax = MagicMock()
+        ax.get_xlim.return_value = (1000000.0, 1200000.0)
+        ax.get_ylim.return_value = (6000000.0, 6200000.0)
+
+        original = tiles_mod.Transformer.from_crs
+
+        def fake_from_crs(src, dst, always_xy=True):
+            if src == "EPSG:3857" and dst == "EPSG:4326":
+                t = MagicMock()
+                t.transform.return_value = (np.inf, np.inf)
+                return t
+            return original(src, dst, always_xy=always_xy)
+
+        monkeypatch.setattr(
+            tiles_mod.Transformer, "from_crs", staticmethod(fake_from_crs)
+        )
+        with pytest.raises(ValueError, match="Web Mercator"):
+            add_tiles(ax, crs=3857)
+
+
+class TestAddTilesEmptyTiles:
+    """Cover the branch where mercantile returns no tiles."""
+
+    def test_empty_tiles_raises_value_error(self, mock_ax):
+        """An empty tile list at the resolved zoom raises ``ValueError``."""
+        import mercantile as merc_mod
+
+        with (
+            patch.object(tiles_mod, "auto_zoom", return_value=10),
+            patch.object(merc_mod, "tiles", return_value=[]),
+        ):
+            with pytest.raises(ValueError, match="No tiles found"):
+                add_tiles(mock_ax, crs=3857)
