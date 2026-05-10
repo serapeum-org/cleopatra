@@ -10,7 +10,7 @@ from matplotlib.colors import BoundaryNorm
 from matplotlib.figure import Figure
 from PIL import Image
 
-from cleopatra.array_glyph import ArrayGlyph
+from cleopatra.array_glyph import ArrayGlyph, FacetGrid
 
 
 class TestProperties:
@@ -1197,3 +1197,111 @@ class TestCoordsCurvilinear:
         # No coords -> auto resolves to imshow, which produces an
         # AxesImage rather than a QuadMesh.
         assert len(ax.get_images()) >= 1
+
+
+@pytest.mark.plot
+class TestFaceting:
+    """Tests for the faceting API introduced in CLEO-4 (``ArrayGlyph.facet``)."""
+
+    @staticmethod
+    def _stack_3d(n: int = 4, h: int = 10, w: int = 10) -> np.ndarray:
+        """Build a 3-D ``(n, h, w)`` stack of distinct frames."""
+        rng = np.random.default_rng(seed=42)
+        return rng.uniform(0.0, 1.0, size=(n, h, w))
+
+    @staticmethod
+    def _stack_4d(
+        n_col: int = 2, n_row: int = 3, h: int = 10, w: int = 10
+    ) -> np.ndarray:
+        """Build a 4-D ``(n_col, n_row, h, w)`` stack."""
+        rng = np.random.default_rng(seed=43)
+        return rng.uniform(0.0, 1.0, size=(n_col, n_row, h, w))
+
+    def test_3d_col_only_builds_single_row(self):
+        """3-D stack with ``col="t"`` yields a 1xN grid of subplots."""
+        stack = self._stack_3d(n=4)
+        result = ArrayGlyph(stack).facet(col="t")
+        assert isinstance(result, FacetGrid)
+        assert result.axes.shape == (1, 4)
+        # Each subplot has rendered an artist (imshow -> images).
+        for ax in result.axes.ravel():
+            assert len(ax.get_images()) >= 1
+
+    def test_col_wrap_produces_wrapped_grid(self):
+        """``col_wrap=3`` on 6 panels yields a 2x3 grid."""
+        stack = self._stack_3d(n=6)
+        result = ArrayGlyph(stack).facet(col="t", col_wrap=3)
+        assert result.axes.shape == (2, 3)
+        # All 6 panels visible.
+        visible = [ax for ax in result.axes.ravel() if ax.get_visible()]
+        assert len(visible) == 6
+
+    def test_4d_col_row_grid(self):
+        """4-D stack with ``col`` + ``row`` yields a NrowxNcol grid."""
+        stack = self._stack_4d(n_col=2, n_row=3)
+        result = ArrayGlyph(stack).facet(col="t", row="level")
+        # nrows=3 (from n_row), ncols=2 (from n_col).
+        assert result.axes.shape == (3, 2)
+        assert len(result.name_dicts) == 6
+
+    def test_shared_vmin_vmax_across_subplots(self):
+        """Every subplot must share the same ``norm.vmin``/``norm.vmax``."""
+        stack = self._stack_3d(n=4)
+        # Pin explicit limits so the assertion is robust to the
+        # internal stack-wide computation.
+        result = ArrayGlyph(stack).facet(col="t", vmin=0.0, vmax=1.0)
+        first = result.axes.ravel()[0].get_images()[0]
+        for ax in result.axes.ravel():
+            ims = ax.get_images()
+            assert len(ims) >= 1
+            assert ims[0].norm.vmin == first.norm.vmin
+            assert ims[0].norm.vmax == first.norm.vmax
+        assert first.norm.vmin == 0.0
+        assert first.norm.vmax == 1.0
+
+    def test_shared_colorbar_attached(self):
+        """The returned ``FacetGrid`` exposes a single shared colorbar."""
+        stack = self._stack_3d(n=3)
+        result = ArrayGlyph(stack).facet(col="t")
+        # ``cbar`` is taken from the first rendered subplot; not None
+        # for the non-RGB path.
+        assert result.cbar is not None
+
+    def test_coord_aware_titles(self):
+        """``col_coords`` plugs into the per-subplot title and name_dicts."""
+        stack = self._stack_3d(n=4)
+        coords = [0, 6, 12, 18]
+        result = ArrayGlyph(stack).facet(col="hour", col_coords=coords)
+        # Each title must reference the coord value, not the index.
+        for ax, want in zip(result.axes.ravel(), coords):
+            assert str(want) in ax.get_title()
+        # And ``name_dicts`` mirrors xarray's structure.
+        assert result.name_dicts[0] == {"hour": 0}
+        assert result.name_dicts[-1] == {"hour": 18}
+
+    def test_no_col_no_row_raises(self):
+        """Calling ``facet()`` without ``col`` or ``row`` raises ``ValueError``."""
+        stack = self._stack_3d(n=3)
+        with pytest.raises(ValueError, match="at least one of"):
+            ArrayGlyph(stack).facet()
+
+    def test_savefig_roundtrip(self, tmp_path):
+        """Rendering and saving a facet figure yields a non-empty PNG."""
+        stack = self._stack_3d(n=4)
+        result = ArrayGlyph(stack).facet(col="t")
+        out = tmp_path / "facet.png"
+        try:
+            result.fig.savefig(out)
+            assert out.exists()
+            assert out.stat().st_size > 0
+        finally:
+            plt.close(result.fig)
+
+    def test_col_wrap_hides_trailing_empty_slots(self):
+        """When ``col_wrap`` does not divide N, trailing axes are hidden."""
+        stack = self._stack_3d(n=5)
+        result = ArrayGlyph(stack).facet(col="t", col_wrap=3)
+        # Layout: 3 cols x 2 rows = 6 slots, 5 panels rendered.
+        assert result.axes.shape == (2, 3)
+        hidden = [ax for ax in result.axes.ravel() if not ax.get_visible()]
+        assert len(hidden) == 1

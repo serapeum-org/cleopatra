@@ -24,7 +24,8 @@ The `Array` class has the following methods:
 
 from __future__ import annotations
 
-from typing import Any
+from math import ceil
+from typing import Any, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -32,6 +33,7 @@ import numpy.ma as ma
 from hpc.indexing import get_indices2
 from matplotlib.animation import FuncAnimation
 from matplotlib.axes import Axes
+from matplotlib.colorbar import Colorbar
 from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
 from PIL import Image
@@ -67,6 +69,55 @@ DIVERGING_DEFAULT_CMAP = "RdBu_r"
 ROBUST_LOWER_PERCENTILE = 2.0
 #: Upper percentile (98.0) used by xarray-style ``robust=True`` colour limits.
 ROBUST_UPPER_PERCENTILE = 98.0
+
+
+class FacetGrid:
+    """Result object for a multi-subplot facet plot.
+
+    Mirrors xarray's :class:`xarray.plot.facetgrid.FacetGrid` return
+    shape so downstream code that already targets xarray can be reused
+    without changes. Produced by :meth:`ArrayGlyph.facet`; do not
+    construct directly.
+
+    Attributes:
+        fig: The shared :class:`matplotlib.figure.Figure`.
+        axes: 2-D ``ndarray`` of :class:`matplotlib.axes.Axes`. Empty
+            subplot slots (when ``col_wrap`` does not divide the stack
+            evenly) are hidden via :meth:`Axes.set_visible`.
+        cbar: The shared :class:`matplotlib.colorbar.Colorbar` attached
+            to the first rendered subplot. ``None`` when faceting an
+            RGB stack (no colorbar in the RGB path).
+        name_dicts: List of ``{dim_name: coord_value}`` dicts, one per
+            rendered subplot. Mirrors
+            :attr:`xarray.plot.facetgrid.FacetGrid.name_dicts` so
+            callers can map subplot index to facet coordinate.
+
+    Examples:
+        - Inspect the grid shape returned by :meth:`ArrayGlyph.facet`:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.array_glyph import ArrayGlyph
+            >>> stack = np.arange(4 * 5 * 5, dtype=float).reshape(4, 5, 5)
+            >>> g = ArrayGlyph(stack).facet(col="t")
+            >>> g.axes.shape
+            (1, 4)
+            >>> len(g.name_dicts)
+            4
+
+            ```
+    """
+
+    def __init__(
+        self,
+        fig: Figure,
+        axes: np.ndarray,
+        cbar: Colorbar | None,
+        name_dicts: list[dict[str, Any]],
+    ) -> None:
+        self.fig = fig
+        self.axes = axes
+        self.cbar = cbar
+        self.name_dicts = name_dicts
 
 
 class ArrayGlyph(Glyph):
@@ -1881,6 +1932,237 @@ class ArrayGlyph(Glyph):
         #     im.norm(self.vmax) / 2.0
         plt.show()
         return fig, ax
+
+    def facet(
+        self,
+        *,
+        col: str | None = None,
+        row: str | None = None,
+        col_wrap: int | None = None,
+        col_coords: Sequence[Any] | None = None,
+        row_coords: Sequence[Any] | None = None,
+        kind: str = "auto",
+        figsize: tuple[float, float] | None = None,
+        **kwargs,
+    ) -> FacetGrid:
+        """Render a grid of subplots from a 3-D or 4-D stack.
+
+        Mirrors xarray's :class:`xarray.plot.facetgrid.FacetGrid` API.
+        ``self.arr`` must be 3-D ``(N, H, W)`` when only ``col`` is set,
+        or 4-D ``(N, M, H, W)`` when both ``col`` and ``row`` are set.
+        All subplots share a common colour scale (``vmin``/``vmax``
+        computed over the full stack unless the user passed explicit
+        limits) and a single shared colorbar attached to the first
+        rendered subplot.
+
+        Args:
+            col: Name of the column-facet dimension (e.g. ``"time"``).
+                Used as a label in the per-subplot title and in
+                :attr:`FacetGrid.name_dicts`. Required when ``row`` is
+                not given.
+            row: Name of the row-facet dimension (e.g. ``"level"``).
+                Required when faceting a 4-D stack.
+            col_wrap: When only ``col`` is given, wrap the N subplots
+                into ``col_wrap`` columns × ``ceil(N/col_wrap)`` rows.
+                Ignored when ``row`` is set.
+            col_coords: Optional sequence of coordinate labels for the
+                column dimension. Length must match the column axis of
+                the stack. When given, the per-subplot title contains
+                the coord value instead of the integer index.
+            row_coords: Optional sequence of coordinate labels for the
+                row dimension. Length must match the row axis of the
+                stack. Only honoured when ``row`` is set.
+            kind: Render kind, forwarded to the per-subplot dispatch.
+                One of ``"auto"``, ``"imshow"``, ``"pcolormesh"``,
+                ``"contour"``, ``"contourf"``. Default ``"auto"``.
+            figsize: Optional ``(width, height)`` for the shared figure.
+                Defaults to ``(4 * ncols, 3.5 * nrows)``.
+            **kwargs: Forwarded to each subplot. Recognised keys
+                include the same colour / colorbar / level kwargs as
+                :meth:`plot`. ``vmin`` / ``vmax`` win over the
+                stack-wide auto-computed limits.
+
+        Returns:
+            FacetGrid: Result object exposing ``fig``, ``axes``,
+                ``cbar``, and ``name_dicts``.
+
+        Raises:
+            ValueError: If neither ``col`` nor ``row`` is given, if the
+                array shape does not match the requested facet
+                dimensions, or if ``col_coords`` / ``row_coords``
+                lengths are wrong.
+
+        Examples:
+            - Facet a 3-D stack into a 1xN row of subplots:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> stack = np.arange(4 * 5 * 5, dtype=float).reshape(4, 5, 5)
+                >>> g = ArrayGlyph(stack).facet(col="t")
+                >>> g.axes.shape
+                (1, 4)
+                >>> g.name_dicts[0]
+                {'t': 0}
+
+                ```
+            - Wrap N=6 panels into a 2x3 grid with ``col_wrap=3``:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> stack = np.arange(6 * 5 * 5, dtype=float).reshape(6, 5, 5)
+                >>> g = ArrayGlyph(stack).facet(col="t", col_wrap=3)
+                >>> g.axes.shape
+                (2, 3)
+
+                ```
+        """
+        if col is None and row is None:
+            raise ValueError(
+                "at least one of `col`/`row` must be given"
+            )
+
+        arr = self.arr
+        if row is None:
+            if arr.ndim != 3:
+                raise ValueError(
+                    "Faceting on `col` alone requires a 3-D array "
+                    f"(N, H, W); got shape {arr.shape}."
+                )
+            n_col = arr.shape[0]
+            if col_wrap is not None:
+                if not isinstance(col_wrap, (int, np.integer)) or col_wrap < 1:
+                    raise ValueError(
+                        f"`col_wrap` must be a positive int, got {col_wrap!r}."
+                    )
+                ncols = int(col_wrap)
+                nrows = int(ceil(n_col / ncols))
+            else:
+                ncols = n_col
+                nrows = 1
+            if col_coords is not None and len(col_coords) != n_col:
+                raise ValueError(
+                    f"`col_coords` length {len(col_coords)} does not match "
+                    f"the column axis size {n_col}."
+                )
+            panel_indices = [(i, None) for i in range(n_col)]
+            n_panels = n_col
+        else:
+            if col is None:
+                raise ValueError(
+                    "Faceting on `row` requires `col` as well."
+                )
+            if arr.ndim != 4:
+                raise ValueError(
+                    "Faceting on `row`+`col` requires a 4-D array "
+                    f"(Ncol, Nrow, H, W); got shape {arr.shape}."
+                )
+            n_col, n_row = arr.shape[0], arr.shape[1]
+            ncols = n_col
+            nrows = n_row
+            if col_coords is not None and len(col_coords) != n_col:
+                raise ValueError(
+                    f"`col_coords` length {len(col_coords)} does not match "
+                    f"the column axis size {n_col}."
+                )
+            if row_coords is not None and len(row_coords) != n_row:
+                raise ValueError(
+                    f"`row_coords` length {len(row_coords)} does not match "
+                    f"the row axis size {n_row}."
+                )
+            panel_indices = [
+                (i, j) for j in range(n_row) for i in range(n_col)
+            ]
+            n_panels = n_col * n_row
+
+        if figsize is None:
+            figsize = (4.0 * ncols, 3.5 * nrows)
+        fig, axes = plt.subplots(
+            nrows=nrows, ncols=ncols, figsize=figsize, squeeze=False
+        )
+
+        vmin_user = kwargs.get("vmin")
+        vmax_user = kwargs.get("vmax")
+        if vmin_user is None or vmax_user is None:
+            finite_arr = arr
+            if isinstance(arr, ma.MaskedArray):
+                finite = arr.compressed()
+            else:
+                finite = np.asarray(arr).ravel()
+            finite = finite[np.isfinite(finite)]
+            if finite.size == 0:
+                stack_min = 0.0
+                stack_max = 1.0
+            else:
+                stack_min = float(finite.min())
+                stack_max = float(finite.max())
+            shared_vmin = stack_min if vmin_user is None else float(vmin_user)
+            shared_vmax = stack_max if vmax_user is None else float(vmax_user)
+        else:
+            shared_vmin = float(vmin_user)
+            shared_vmax = float(vmax_user)
+
+        per_subplot_kwargs = dict(kwargs)
+        per_subplot_kwargs["vmin"] = shared_vmin
+        per_subplot_kwargs["vmax"] = shared_vmax
+
+        name_dicts: list[dict[str, Any]] = []
+        cbar: Colorbar | None = None
+        flat_axes = axes.ravel()
+
+        for panel_idx, (col_idx, row_idx) in enumerate(panel_indices):
+            ax = flat_axes[panel_idx]
+            if row is None:
+                panel_arr = np.asarray(arr[col_idx])
+            else:
+                panel_arr = np.asarray(arr[col_idx, row_idx])
+
+            # ``self.extent`` is already stored in matplotlib's
+            # ``[xmin, xmax, ymin, ymax]`` order. The constructor expects
+            # the user-facing ``[xmin, ymin, xmax, ymax]`` order, so
+            # convert back when forwarding to the per-subplot glyph.
+            if self.extent is None:
+                sub_extent = None
+            else:
+                sub_extent = [
+                    self.extent[0],  # xmin
+                    self.extent[2],  # ymin
+                    self.extent[1],  # xmax
+                    self.extent[3],  # ymax
+                ]
+            sub = ArrayGlyph(
+                panel_arr,
+                coords=self._coords,
+                extent=sub_extent,
+                fig=fig,
+                ax=ax,
+                **per_subplot_kwargs,
+            )
+            sub.plot(kind=kind)
+
+            col_label = (
+                col_coords[col_idx] if col_coords is not None else col_idx
+            )
+            name_dict: dict[str, Any] = {col: col_label}
+            if row is not None:
+                row_label = (
+                    row_coords[row_idx] if row_coords is not None else row_idx
+                )
+                name_dict[row] = row_label
+                title = f"{col}={col_label}, {row}={row_label}"
+            else:
+                title = f"{col}={col_label}"
+            ax.set_title(title)
+            name_dicts.append(name_dict)
+
+            if panel_idx == 0 and getattr(sub, "cbar", None) is not None:
+                cbar = sub.cbar
+
+        for hidden_idx in range(n_panels, nrows * ncols):
+            flat_axes[hidden_idx].set_visible(False)
+
+        fig.tight_layout()
+        result = FacetGrid(fig=fig, axes=axes, cbar=cbar, name_dicts=name_dicts)
+        return result
 
     def animate(
         self,
