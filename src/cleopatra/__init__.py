@@ -1,5 +1,14 @@
-"""
-cleopatra - visualization package
+"""cleopatra - visualization package.
+
+Re-exports the most commonly used entry points so they can be imported
+straight from the package root:
+
+* :func:`cleopatra.tiles.add_tiles` — overlay an XYZ web-tile basemap
+  on an existing matplotlib axes.
+
+The submodules ``array_glyph``, ``glyph``, ``mesh_glyph``,
+``statistical_glyph``, ``colors``, ``styles``, ``tiles``, and ``config``
+are also publicly importable.
 """
 
 from cleopatra.config import Config

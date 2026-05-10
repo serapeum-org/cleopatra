@@ -97,18 +97,34 @@ def get_provider(name: str | None = None) -> Any:
         ValueError: If the provider name cannot be resolved.
 
     Examples:
-        Resolve the default OpenStreetMap provider:
+        - Resolve the default OpenStreetMap provider and inspect its
+            URL template:
+            ```python
+            >>> from cleopatra.tiles import get_provider
+            >>> provider = get_provider()
+            >>> provider.name
+            'OpenStreetMap.Mapnik'
+            >>> "{z}" in provider.url and "{x}" in provider.url
+            True
 
-        >>> provider = get_provider()  # doctest: +SKIP
-        >>> provider.name  # doctest: +SKIP
-        'OpenStreetMap.Mapnik'
+            ```
+        - Resolve a named provider via dot-path syntax:
+            ```python
+            >>> from cleopatra.tiles import get_provider
+            >>> provider = get_provider("CartoDB.Positron")
+            >>> provider.name
+            'CartoDB.Positron'
 
-        Invalid provider name raises ``ValueError``:
+            ```
+        - Invalid provider names raise :class:`ValueError`:
+            ```python
+            >>> from cleopatra.tiles import get_provider
+            >>> get_provider("NonExistent.Provider")
+            Traceback (most recent call last):
+                ...
+            ValueError: Unknown tile provider: 'NonExistent.Provider'. Failed at 'NonExistent'. Use xyzservices.providers to list available providers.
 
-        >>> get_provider("NonExistent.Provider")  # doctest: +SKIP
-        Traceback (most recent call last):
-            ...
-        ValueError: Unknown tile provider: 'NonExistent.Provider'...
+            ```
     """
     _require_tiles_extra()
     import xyzservices.providers as xyz
@@ -146,10 +162,27 @@ def auto_zoom(bounds_4326: tuple[float, float, float, float]) -> int:
         int: Zoom level between 0 and 19.
 
     Examples:
-        >>> auto_zoom((-180, -85, 180, 85))
-        0
-        >>> auto_zoom((13.0, 52.4, 13.6, 52.6))
-        10
+        - Worldwide extent maps to zoom 0:
+            ```python
+            >>> from cleopatra.tiles import auto_zoom
+            >>> auto_zoom((-180, -85, 180, 85))
+            0
+
+            ```
+        - A 0.6 by 0.2 degree window over Berlin yields zoom 10:
+            ```python
+            >>> from cleopatra.tiles import auto_zoom
+            >>> auto_zoom((13.0, 52.4, 13.6, 52.6))
+            10
+
+            ```
+        - Tiny extents are clamped to the maximum zoom (19):
+            ```python
+            >>> from cleopatra.tiles import auto_zoom
+            >>> auto_zoom((0.0, 0.0, 1e-9, 1e-9))
+            19
+
+            ```
     """
     west, south, east, north = bounds_4326
     lon_extent = abs(east - west)
@@ -193,6 +226,36 @@ def _densify_and_reproject_bounds(
     Raises:
         ValueError: If the reprojection produces infinite or NaN
             coordinates.
+
+    Examples:
+        - Reproject a small bounding box from EPSG:4326 to EPSG:3857
+            (Web Mercator) and verify the bounds are sane:
+            ```python
+            >>> from cleopatra.tiles import _densify_and_reproject_bounds
+            >>> bounds = _densify_and_reproject_bounds(
+            ...     13.0, 52.4, 13.6, 52.6, "EPSG:4326", "EPSG:3857"
+            ... )
+            >>> w, s, e, n = bounds
+            >>> w < e and s < n
+            True
+            >>> int(round(w)), int(round(s))
+            (1447153, 6872776)
+
+            ```
+        - The same box round-tripped back to EPSG:4326 recovers the
+            input bounds:
+            ```python
+            >>> from cleopatra.tiles import _densify_and_reproject_bounds
+            >>> w, s, e, n = _densify_and_reproject_bounds(
+            ...     13.0, 52.4, 13.6, 52.6, "EPSG:4326", "EPSG:3857"
+            ... )
+            >>> w2, s2, e2, n2 = _densify_and_reproject_bounds(
+            ...     w, s, e, n, "EPSG:3857", "EPSG:4326"
+            ... )
+            >>> round(w2, 4), round(s2, 4), round(e2, 4), round(n2, 4)
+            (13.0, 52.4, 13.6, 52.6)
+
+            ```
     """
     from pyproj import Transformer
 
@@ -256,6 +319,41 @@ def fetch_single_tile(
     Raises:
         ConnectionError: If the tile cannot be fetched after all
             retries are exhausted.
+
+    Examples:
+        - Fetch a single OpenStreetMap tile (network-dependent, hence
+            skipped under doctest):
+            ```python
+            >>> import mercantile
+            >>> from cleopatra.tiles import fetch_single_tile, get_provider
+            >>> tile = mercantile.Tile(0, 0, 0)
+            >>> provider = get_provider("OpenStreetMap.Mapnik")
+            >>> tile_obj, data = fetch_single_tile(  # doctest: +SKIP
+            ...     tile, provider, timeout=10, retries=2
+            ... )
+            >>> data[:4] in (b"\\x89PNG", b"\\xff\\xd8\\xff\\xe0", b"\\xff\\xd8\\xff\\xe1")  # doctest: +SKIP
+            True
+
+            ```
+        - Tile failures raise :class:`ConnectionError` after retries
+            are exhausted:
+            ```python
+            >>> import mercantile
+            >>> from cleopatra.tiles import fetch_single_tile
+            >>> from xyzservices import TileProvider
+            >>> bad = TileProvider(
+            ...     name="bad",
+            ...     url="http://127.0.0.1:1/{z}/{x}/{y}.png",
+            ...     attribution="",
+            ... )
+            >>> fetch_single_tile(  # doctest: +SKIP
+            ...     mercantile.Tile(0, 0, 0), bad, timeout=1, retries=0
+            ... )
+            Traceback (most recent call last):
+                ...
+            ConnectionError: Failed to fetch tile z=0/x=0/y=0 ...
+
+            ```
     """
     url = provider.build_url(x=tile.x, y=tile.y, z=tile.z)
     last_error: Exception | None = None
@@ -324,6 +422,28 @@ def fetch_tiles(
     Raises:
         ConnectionError: If any tile cannot be fetched after all
             retries.
+
+    Examples:
+        - Fetch a small tile grid in parallel (network-dependent, hence
+            skipped under doctest):
+            ```python
+            >>> import mercantile
+            >>> from cleopatra.tiles import fetch_tiles, get_provider
+            >>> tiles = list(mercantile.tiles(13.0, 52.4, 13.6, 52.6, zooms=10))
+            >>> provider = get_provider("OpenStreetMap.Mapnik")
+            >>> data = fetch_tiles(tiles, provider, max_workers=4)  # doctest: +SKIP
+            >>> len(data) == len(tiles)  # doctest: +SKIP
+            True
+
+            ```
+        - Pass an empty list to short-circuit and get an empty dict:
+            ```python
+            >>> from cleopatra.tiles import fetch_tiles, get_provider
+            >>> provider = get_provider("OpenStreetMap.Mapnik")
+            >>> fetch_tiles([], provider)
+            {}
+
+            ```
     """
     tile_data: dict[Any, bytes] = {}
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -370,6 +490,54 @@ def stitch_tiles(
         stitched RGBA image with shape ``(H, W, 4)`` and dtype
         ``uint8``, plus ``(west, south, east, north)`` in EPSG:3857
         meters.
+
+    Raises:
+        ValueError: If any tile bytes cannot be decoded as an image.
+
+    Examples:
+        - Stitch a single synthetic tile into a 256x256 RGBA image:
+            ```python
+            >>> import io
+            >>> import mercantile
+            >>> from PIL import Image
+            >>> from cleopatra.tiles import stitch_tiles
+            >>> buf = io.BytesIO()
+            >>> Image.new("RGBA", (256, 256), (255, 0, 0, 255)).save(buf, "PNG")
+            >>> tile = mercantile.Tile(0, 0, 0)
+            >>> image, extent = stitch_tiles({tile: buf.getvalue()}, [tile], 0)
+            >>> image.shape
+            (256, 256, 4)
+            >>> image.dtype.name
+            'uint8'
+
+            ```
+        - The returned EPSG:3857 extent comes from
+            :func:`mercantile.xy_bounds` on the corner tiles:
+            ```python
+            >>> import io
+            >>> import mercantile
+            >>> from PIL import Image
+            >>> from cleopatra.tiles import stitch_tiles
+            >>> buf = io.BytesIO()
+            >>> Image.new("RGBA", (256, 256), (0, 255, 0, 255)).save(buf, "PNG")
+            >>> tile = mercantile.Tile(0, 0, 0)
+            >>> _, (w, s, e, n) = stitch_tiles({tile: buf.getvalue()}, [tile], 0)
+            >>> w < e and s < n
+            True
+
+            ```
+        - Invalid tile bytes raise :class:`ValueError`:
+            ```python
+            >>> import mercantile
+            >>> from cleopatra.tiles import stitch_tiles
+            >>> tile = mercantile.Tile(0, 0, 0)
+            >>> try:
+            ...     stitch_tiles({tile: b"not an image"}, [tile], 0)
+            ... except ValueError as exc:
+            ...     str(exc).startswith("Failed to decode tile image:")
+            True
+
+            ```
     """
     _require_tiles_extra()
     import mercantile

@@ -228,6 +228,45 @@ class Glyph:
         Returns:
             tuple[Normalize or None, dict]: The norm (None for linear)
                 and colorbar keyword arguments.
+
+        Examples:
+            - Linear colour scale with no levels gives ``norm=None``
+                and ticks forwarded straight through:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyph import Glyph
+                >>> from cleopatra.styles import DEFAULT_OPTIONS
+                >>> opts = DEFAULT_OPTIONS.copy()
+                >>> opts.update({"vmin": 0.0, "vmax": 10.0})
+                >>> g = Glyph(default_options=opts)
+                >>> norm, cbar_kw = g._create_norm_and_cbar_kw(np.array([0.0, 5.0, 10.0]))
+                >>> norm is None
+                True
+                >>> cbar_kw["extend"]
+                'neither'
+                >>> [float(t) for t in cbar_kw["ticks"]]
+                [0.0, 5.0, 10.0]
+
+                ```
+            - With ``levels`` set and the default linear scale, a
+                ``BoundaryNorm`` is built and ``extend`` defaults to
+                ``"both"``:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyph import Glyph
+                >>> from cleopatra.styles import DEFAULT_OPTIONS
+                >>> opts = DEFAULT_OPTIONS.copy()
+                >>> opts.update({"vmin": 0.0, "vmax": 10.0, "levels": 5})
+                >>> g = Glyph(default_options=opts)
+                >>> norm, cbar_kw = g._create_norm_and_cbar_kw(np.array([0.0, 5.0, 10.0]))
+                >>> norm is None
+                False
+                >>> cbar_kw["extend"]
+                'both'
+                >>> [float(t) for t in cbar_kw["ticks"]]
+                [0.0, 2.5, 5.0, 7.5, 10.0]
+
+                ```
         """
         color_scale = self.default_options["color_scale"]
         vmin = ticks[0]
@@ -316,6 +355,28 @@ class Glyph:
         Returns:
             np.ndarray or None: Sorted ascending array of bin edges, or
                 ``None`` when ``levels`` is ``None``.
+
+        Examples:
+            - Integer ``levels`` becomes a ``linspace`` between
+                ``vmin`` and ``vmax``:
+                ```python
+                >>> from cleopatra.glyph import Glyph
+                >>> bounds = Glyph._levels_to_bounds(5, 0.0, 10.0)
+                >>> [float(b) for b in bounds]
+                [0.0, 2.5, 5.0, 7.5, 10.0]
+
+                ```
+            - A sequence is sorted ascending and returned as a float
+                ``ndarray``; ``None`` short-circuits to ``None``:
+                ```python
+                >>> from cleopatra.glyph import Glyph
+                >>> bounds = Glyph._levels_to_bounds([10.0, 0.0, 5.0], 0.0, 10.0)
+                >>> [float(b) for b in bounds]
+                [0.0, 5.0, 10.0]
+                >>> Glyph._levels_to_bounds(None, 0.0, 10.0) is None
+                True
+
+                ```
         """
         bounds: np.ndarray | None
         if levels is None:
@@ -339,6 +400,14 @@ class Glyph:
         defaults so the user wins on any collision (e.g. ``label``,
         ``shrink``, ``orientation``, ``ticks``, ``extend``).
 
+        ``cbar_kwargs`` is read from ``self.default_options["cbar_kwargs"]``.
+        Set it via the constructor or :meth:`plot` kwargs of the calling
+        glyph subclass. Keys recognised by :func:`matplotlib.pyplot.colorbar`
+        — ``label``, ``shrink``, ``aspect``, ``orientation``, ``pad``,
+        ``ticks``, ``extend`` — are forwarded; ``label`` is special-cased
+        so that label-size and label-location styling from
+        ``default_options`` are still applied.
+
         Args:
             ax: Matplotlib axes.
             im: The mappable (image or contour) to attach the
@@ -349,6 +418,10 @@ class Glyph:
 
         Returns:
             Colorbar: The created colorbar.
+
+        Raises:
+            TypeError: If ``default_options["cbar_kwargs"]`` is set
+                but is not a ``dict``.
 
         Examples:
             - Create a colorbar with a custom label:
@@ -365,6 +438,46 @@ class Glyph:
                 >>> cbar = g.create_color_bar(ax, im, {"ticks": [0, 4, 8]})
                 >>> cbar.orientation
                 'vertical'
+
+                ```
+            - User-supplied ``cbar_kwargs`` win on collision and
+                ``label`` is applied via :meth:`set_label`:
+                ```python
+                >>> import numpy as np
+                >>> import matplotlib.pyplot as plt
+                >>> from cleopatra.glyph import Glyph
+                >>> from cleopatra.styles import DEFAULT_OPTIONS
+                >>> opts = DEFAULT_OPTIONS.copy()
+                >>> opts.update({
+                ...     "vmin": None,
+                ...     "vmax": None,
+                ...     "cbar_kwargs": {"label": "User Label", "orientation": "horizontal"},
+                ... })
+                >>> g = Glyph(default_options=opts, cbar_label="Default Label")
+                >>> fig, ax = plt.subplots()
+                >>> im = ax.imshow(np.arange(9).reshape(3, 3))
+                >>> cbar = g.create_color_bar(ax, im, {"ticks": [0, 4, 8]})
+                >>> cbar.orientation
+                'horizontal'
+                >>> cbar.ax.get_xlabel() or cbar.ax.get_ylabel()
+                'User Label'
+
+                ```
+            - Non-dict ``cbar_kwargs`` raises :class:`TypeError`:
+                ```python
+                >>> import numpy as np
+                >>> import matplotlib.pyplot as plt
+                >>> from cleopatra.glyph import Glyph
+                >>> from cleopatra.styles import DEFAULT_OPTIONS
+                >>> opts = DEFAULT_OPTIONS.copy()
+                >>> opts.update({"vmin": None, "vmax": None, "cbar_kwargs": "oops"})
+                >>> g = Glyph(default_options=opts)
+                >>> fig, ax = plt.subplots()
+                >>> im = ax.imshow(np.arange(9).reshape(3, 3))
+                >>> g.create_color_bar(ax, im, {"ticks": [0, 4, 8]})
+                Traceback (most recent call last):
+                    ...
+                TypeError: cbar_kwargs must be a dict of colorbar keyword arguments, got str.
 
                 ```
         """

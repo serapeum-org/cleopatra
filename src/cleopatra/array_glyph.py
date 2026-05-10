@@ -57,10 +57,15 @@ DEFAULT_OPTIONS = {
 }
 DEFAULT_OPTIONS = STYLE_DEFAULTS | DEFAULT_OPTIONS
 
+#: Tuple of accepted ``kind=`` values for :meth:`ArrayGlyph.plot`.
 VALID_PLOT_KINDS = ("auto", "imshow", "pcolormesh", "contour", "contourf")
+#: Tuple of accepted values for the xarray-aligned ``extend`` colorbar kwarg.
 VALID_EXTEND_VALUES = ("neither", "both", "min", "max")
+#: Default colormap auto-selected when ``center`` is set without an explicit ``cmap``.
 DIVERGING_DEFAULT_CMAP = "RdBu_r"
+#: Lower percentile (2.0) used by xarray-style ``robust=True`` colour limits.
 ROBUST_LOWER_PERCENTILE = 2.0
+#: Upper percentile (98.0) used by xarray-style ``robust=True`` colour limits.
 ROBUST_UPPER_PERCENTILE = 98.0
 
 
@@ -162,10 +167,42 @@ class ArrayGlyph(Glyph):
                         Title font size, by default 15.
                     cmap : str, optional
                         Colormap name, by default 'coolwarm_r'.
+                    kind : str, optional
+                        Render kind. One of ``"auto"``, ``"imshow"``,
+                        ``"pcolormesh"``, ``"contour"``, ``"contourf"``.
+                        Default ``"auto"`` (currently equivalent to
+                        ``"imshow"``). Stored on the instance and used
+                        as the default for :meth:`plot`.
+                    robust : bool, optional
+                        When True, ``vmin`` / ``vmax`` are computed from
+                        the 2nd and 98th percentile of the unmasked data
+                        (xarray-aligned). An explicit ``vmin`` / ``vmax``
+                        wins over ``robust``. Default False.
+                    center : float, optional
+                        Diverging-colormap centring value. When set,
+                        ``(vmin, vmax)`` is made symmetric around
+                        ``center`` and the cmap auto-switches to
+                        ``"RdBu_r"`` if no explicit ``cmap`` was passed.
+                        Default None (no centring).
+                    levels : int or sequence, optional
+                        Discrete colour levels (xarray-aligned). An
+                        ``int`` selects N linearly-spaced edges between
+                        ``vmin`` and ``vmax``; a sequence is used as
+                        explicit edges. Default None.
+                    extend : str, optional
+                        Colorbar arrow extension. One of ``"neither"``,
+                        ``"both"``, ``"min"``, ``"max"``, or None to
+                        auto-resolve at render time. Default None.
+                    cbar_kwargs : dict, optional
+                        Extra keyword arguments forwarded to
+                        ``fig.colorbar``; user keys win over cleopatra's
+                        defaults on collision. Default None.
 
         Raises:
             ValueError: If an invalid keyword argument is provided.
             ValueError: If rgb is provided but the array doesn't have enough dimensions.
+            ValueError: If ``extend`` is set to a value outside
+                ``{"neither", "both", "min", "max"}``.
 
         Examples:
         Basic initialization with a 2D array:
@@ -194,6 +231,62 @@ class ArrayGlyph(Glyph):
         ```python
         >>> array_glyph = ArrayGlyph(arr, extent=[0, 0, 10, 10])
         >>> fig, ax = array_glyph.plot()
+
+        ```
+        Robust colour limits (xarray-aligned ``robust=True`` clips the
+        2nd/98th percentile so a few outliers do not dominate the
+        scale):
+        ```python
+        >>> import numpy as np
+        >>> from cleopatra.array_glyph import ArrayGlyph
+        >>> data = np.arange(100, dtype=float).reshape(10, 10)
+        >>> data[0, 0] = 1e6  # outlier
+        >>> glyph = ArrayGlyph(data, robust=True)
+        >>> round(glyph.vmin, 1), round(glyph.vmax, 1)
+        (3.0, 98.0)
+
+        ```
+        Centring on a value for diverging data (auto-switches the cmap
+        to ``"RdBu_r"`` when no ``cmap`` is passed):
+        ```python
+        >>> import numpy as np
+        >>> from cleopatra.array_glyph import ArrayGlyph
+        >>> anomaly = np.linspace(-3.0, 8.0, 25).reshape(5, 5)
+        >>> glyph = ArrayGlyph(anomaly, center=0.0)
+        >>> glyph.vmin, glyph.vmax
+        (-8.0, 8.0)
+        >>> glyph.default_options["cmap"]
+        'RdBu_r'
+
+        ```
+        Combining ``levels``, ``extend`` and ``cbar_kwargs`` (forwarded
+        to :class:`matplotlib.colorbar.Colorbar`):
+        ```python
+        >>> import numpy as np
+        >>> from cleopatra.array_glyph import ArrayGlyph
+        >>> arr = np.arange(25, dtype=float).reshape(5, 5)
+        >>> glyph = ArrayGlyph(
+        ...     arr,
+        ...     levels=5,
+        ...     extend="both",
+        ...     cbar_kwargs={"shrink": 0.6},
+        ... )
+        >>> glyph.default_options["levels"]
+        5
+        >>> glyph.default_options["extend"]
+        'both'
+        >>> glyph.default_options["cbar_kwargs"]
+        {'shrink': 0.6}
+
+        ```
+        Invalid ``extend`` is rejected at construction time:
+        ```python
+        >>> import numpy as np
+        >>> from cleopatra.array_glyph import ArrayGlyph
+        >>> ArrayGlyph(np.array([[0.0, 1.0]]), extend="up")
+        Traceback (most recent call last):
+            ...
+        ValueError: Invalid extend='up'. Valid values are ('neither', 'both', 'min', 'max') or None.
 
         ```
         """
@@ -604,6 +697,26 @@ class ArrayGlyph(Glyph):
         Raises:
             ValueError: When ``extend`` is not one of the accepted
                 strings (or ``None``).
+
+        Examples:
+            - Accepted values return ``None`` silently:
+                ```python
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> ArrayGlyph._validate_extend("both") is None
+                True
+                >>> ArrayGlyph._validate_extend(None) is None
+                True
+
+                ```
+            - Unsupported values raise :class:`ValueError`:
+                ```python
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> ArrayGlyph._validate_extend("up")
+                Traceback (most recent call last):
+                    ...
+                ValueError: Invalid extend='up'. Valid values are ('neither', 'both', 'min', 'max') or None.
+
+                ```
         """
         if extend is None:
             return
@@ -630,6 +743,33 @@ class ArrayGlyph(Glyph):
 
         Raises:
             ValueError: If the array contains no finite values.
+
+        Examples:
+            - Outliers are clipped to the 2nd/98th percentile:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> arr = np.arange(100, dtype=float)
+                >>> arr[0] = -1e6  # extreme low outlier
+                >>> arr[-1] = 1e6  # extreme high outlier
+                >>> vmin, vmax = ArrayGlyph._robust_limits(arr)
+                >>> round(vmin, 1), round(vmax, 1)
+                (2.0, 97.0)
+
+                ```
+            - Masked and NaN entries are excluded from the percentile
+                computation:
+                ```python
+                >>> import numpy as np
+                >>> import numpy.ma as ma
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> raw = np.array([np.nan, 0.0, 1.0, 2.0, 3.0, 4.0])
+                >>> arr = ma.array(raw, mask=[True, False, False, False, False, False])
+                >>> vmin, vmax = ArrayGlyph._robust_limits(arr)
+                >>> round(vmin, 2), round(vmax, 2)
+                (0.08, 3.92)
+
+                ```
         """
         if isinstance(arr, ma.MaskedArray):
             values = arr.compressed()
@@ -667,6 +807,27 @@ class ArrayGlyph(Glyph):
         Returns:
             tuple[float, float]: Symmetric ``(vmin, vmax)`` around
                 ``center``.
+
+        Examples:
+            - Centring around zero expands the smaller side to match
+                the larger one:
+                ```python
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> ArrayGlyph._center_limits(-3.0, 8.0, 0.0)
+                (-8.0, 8.0)
+
+                ```
+            - Centring around a non-zero value (e.g. an anomaly base
+                of 5.0):
+                ```python
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> low, high = ArrayGlyph._center_limits(2.0, 12.0, 5.0)
+                >>> low, high
+                (-2.0, 12.0)
+                >>> (low + high) / 2  # centred on 5.0
+                5.0
+
+                ```
         """
         half = max(abs(vmin - center), abs(vmax - center))
         return center - half, center + half
@@ -707,6 +868,46 @@ class ArrayGlyph(Glyph):
 
         Returns:
             tuple[float, float]: Final ``(vmin, vmax)``.
+
+        Examples:
+            - Default path: full data range, no robust clipping, no
+                centring:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> data = np.arange(25, dtype=float).reshape(5, 5)
+                >>> glyph = ArrayGlyph(data)
+                >>> glyph._resolve_color_limits(
+                ...     data,
+                ...     vmin_kw=None,
+                ...     vmax_kw=None,
+                ...     robust=False,
+                ...     center=None,
+                ...     vmin_explicit=False,
+                ...     vmax_explicit=False,
+                ... )
+                (0.0, 24.0)
+
+                ```
+            - Explicit ``vmax`` overrides the data-driven upper limit
+                and ``center`` then symmetrises around the centre:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> data = np.arange(25, dtype=float).reshape(5, 5)
+                >>> glyph = ArrayGlyph(data)
+                >>> glyph._resolve_color_limits(
+                ...     data,
+                ...     vmin_kw=None,
+                ...     vmax_kw=10.0,
+                ...     robust=False,
+                ...     center=0.0,
+                ...     vmin_explicit=False,
+                ...     vmax_explicit=True,
+                ... )
+                (-10.0, 10.0)
+
+                ```
         """
         if robust:
             vmin_base, vmax_base = self._robust_limits(arr)
@@ -1295,6 +1496,98 @@ class ArrayGlyph(Glyph):
 
                 ```
                 ![midpoint-scale-costom-parameters](./../images/array_glyph/midpoint-scale-costom-parameters.png)
+
+        - Render kinds (``kind=``):
+
+            - ``"pcolormesh"`` for a quadrilateral mesh render. Note
+                that ``pcolormesh`` does not honour ``extent``, so the
+                axes are drawn in array index space.
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> arr = np.arange(25, dtype=float).reshape(5, 5)
+                >>> glyph = ArrayGlyph(arr)
+                >>> fig, ax = glyph.plot(kind="pcolormesh")  # doctest: +SKIP
+
+                ```
+            - ``"contourf"`` for filled contours. When ``levels`` is set
+                the level edges line up with the colorbar boundaries.
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> arr = np.arange(25, dtype=float).reshape(5, 5)
+                >>> glyph = ArrayGlyph(arr, levels=5)
+                >>> fig, ax = glyph.plot(kind="contourf")  # doctest: +SKIP
+
+                ```
+            - Invalid kinds are rejected with a clear error:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> arr = np.arange(9, dtype=float).reshape(3, 3)
+                >>> ArrayGlyph(arr).plot(kind="heatmap")
+                Traceback (most recent call last):
+                    ...
+                ValueError: Invalid kind='heatmap'. Valid kinds are ('auto', 'imshow', 'pcolormesh', 'contour', 'contourf').
+
+                ```
+
+        - xarray-aligned colour kwargs:
+
+            - ``robust=True`` clips ``vmin`` / ``vmax`` to the
+                2nd/98th percentile so a single outlier no longer
+                dominates the colour scale:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> data = np.arange(100, dtype=float).reshape(10, 10)
+                >>> data[0, 0] = 1e6  # outlier
+                >>> glyph = ArrayGlyph(data, robust=True)
+                >>> fig, ax = glyph.plot(robust=True)  # doctest: +SKIP
+                >>> round(glyph.vmin, 1), round(glyph.vmax, 1)
+                (3.0, 98.0)
+
+                ```
+            - ``center=0`` symmetrises the limits around zero and
+                auto-switches the cmap to ``"RdBu_r"`` (xarray-style
+                diverging default):
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> anomaly = np.linspace(-3.0, 8.0, 25).reshape(5, 5)
+                >>> glyph = ArrayGlyph(anomaly, center=0.0)
+                >>> fig, ax = glyph.plot(center=0.0)  # doctest: +SKIP
+                >>> glyph.vmin, glyph.vmax
+                (-8.0, 8.0)
+                >>> glyph.default_options["cmap"]
+                'RdBu_r'
+
+                ```
+            - ``levels`` discretises the colour scale and ``extend``
+                controls the colorbar arrows:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> arr = np.arange(25, dtype=float).reshape(5, 5)
+                >>> glyph = ArrayGlyph(arr, levels=6, extend="both")
+                >>> fig, ax = glyph.plot()  # doctest: +SKIP
+                >>> glyph.default_options["levels"], glyph.default_options["extend"]
+                (6, 'both')
+
+                ```
+            - ``cbar_kwargs`` forwards extra keyword arguments to the
+                underlying :func:`matplotlib.pyplot.colorbar` call;
+                user keys win on collision:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> arr = np.arange(9, dtype=float).reshape(3, 3)
+                >>> glyph = ArrayGlyph(arr, cbar_kwargs={"shrink": 0.5})
+                >>> fig, ax = glyph.plot()  # doctest: +SKIP
+                >>> glyph.default_options["cbar_kwargs"]
+                {'shrink': 0.5}
+
+                ```
         """
         if kind not in VALID_PLOT_KINDS:
             raise ValueError(
