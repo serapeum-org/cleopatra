@@ -403,3 +403,114 @@ def test_adjust_ticks():
     ax = my_glyph.ax
     values = [val.get_text() for val in ax.xaxis.get_ticklabels()]
     assert values == ["3100", "3200", "3300", "3400", "3500"]
+
+
+@pytest.mark.plot
+class TestPlotKindDispatch:
+    """Tests for ``ArrayGlyph.plot(kind=...)`` dispatch.
+
+    Covers the ``kind`` enum introduced in CLEO-1:
+    ``"auto" | "imshow" | "pcolormesh" | "contour" | "contourf"``.
+    """
+
+    @staticmethod
+    def _sample_arr() -> np.ndarray:
+        """Return a small 2-D array suitable for every kind."""
+        return np.arange(25, dtype=float).reshape(5, 5)
+
+    def test_default_kind_is_backward_compatible(self):
+        """``plot()`` with no kind kwarg still returns (fig, ax) with an image."""
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot()
+        assert isinstance(fig, Figure)
+        assert len(ax.get_images()) >= 1
+
+    def test_kind_imshow(self):
+        """``kind="imshow"`` renders via ``ax.imshow``/``matshow``."""
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(kind="imshow")
+        assert isinstance(fig, Figure)
+        assert len(ax.get_images()) >= 1
+
+    def test_kind_pcolormesh(self):
+        """``kind="pcolormesh"`` runs and adds a ``QuadMesh`` to ``ax``."""
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(kind="pcolormesh")
+        assert isinstance(fig, Figure)
+        assert len(ax.collections) >= 1
+
+    def test_kind_contour(self):
+        """``kind="contour"`` runs and adds contour collections to ``ax``."""
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(kind="contour")
+        assert isinstance(fig, Figure)
+        assert len(ax.collections) >= 1
+
+    def test_kind_contourf(self):
+        """``kind="contourf"`` runs and adds filled contour collections."""
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(kind="contourf")
+        assert isinstance(fig, Figure)
+        assert len(ax.collections) >= 1
+
+    def test_invalid_kind_raises(self):
+        """``kind="bogus"`` raises ``ValueError`` listing the valid kinds."""
+        glyph = ArrayGlyph(self._sample_arr())
+        with pytest.raises(ValueError) as exc:
+            glyph.plot(kind="bogus")
+        msg = str(exc.value)
+        # The message must mention every supported kind so users can fix
+        # the typo without consulting the docs.
+        for kind in ("auto", "imshow", "pcolormesh", "contour", "contourf"):
+            assert kind in msg
+
+    def test_rgb_with_non_imshow_kind_raises(self):
+        """RGB compositing is imshow-only — other kinds must raise."""
+        rgb_arr = np.random.randint(0, 255, size=(3, 8, 8)).astype(np.float32)
+        glyph = ArrayGlyph(rgb_arr, rgb=[0, 1, 2])
+        with pytest.raises(ValueError, match="RGB"):
+            glyph.plot(kind="pcolormesh")
+
+    def test_color_scale_linear_with_auto(self):
+        """Linear color_scale works under the default kind."""
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(color_scale="linear")
+        assert isinstance(fig, Figure)
+
+    def test_color_scale_power_with_auto(self):
+        """Power color_scale works under the default kind."""
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(color_scale="power")
+        assert isinstance(fig, Figure)
+
+    def test_color_scale_linear_with_pcolormesh(self):
+        """Linear color_scale works under kind=pcolormesh."""
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(kind="pcolormesh", color_scale="linear")
+        assert isinstance(fig, Figure)
+        assert len(ax.collections) >= 1
+
+    def test_color_scale_power_with_pcolormesh(self):
+        """Power color_scale works under kind=pcolormesh."""
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(kind="pcolormesh", color_scale="power")
+        assert isinstance(fig, Figure)
+        assert len(ax.collections) >= 1
+
+    def test_imshow_with_display_cell_value(self):
+        """``kind="imshow", display_cell_value=True`` still draws cell text."""
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(kind="imshow", display_cell_value=True)
+        assert isinstance(fig, Figure)
+        # Each cell of the 5x5 grid yields one Text artist; allow >= 25
+        # because matplotlib also creates axis label/title Text objects.
+        cell_texts = [t for t in ax.texts]
+        assert len(cell_texts) >= 25
+
+    def test_contour_skips_cell_value_silently(self):
+        """``display_cell_value=True`` is skipped for ``kind="contour"``."""
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(kind="contour", display_cell_value=True)
+        assert isinstance(fig, Figure)
+        # No per-cell text annotations should have been emitted.
+        assert len(ax.texts) == 0

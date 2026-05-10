@@ -34,7 +34,6 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
-from matplotlib.image import AxesImage
 from PIL import Image
 
 from cleopatra.glyph import Glyph
@@ -49,8 +48,12 @@ DEFAULT_OPTIONS = {
     "id_color": "green",
     "id_size": 20,
     "precision": 2,
+    "kind": "auto",
+    "levels": None,
 }
 DEFAULT_OPTIONS = STYLE_DEFAULTS | DEFAULT_OPTIONS
+
+VALID_PLOT_KINDS = ("auto", "imshow", "pcolormesh", "contour", "contourf")
 
 
 class ArrayGlyph(Glyph):
@@ -565,32 +568,87 @@ class ArrayGlyph(Glyph):
         self._exclude_value = value
 
     def _plot_im_get_cbar_kw(
-        self, ax: Axes, arr: np.ndarray, ticks: np.ndarray
-    ) -> tuple[AxesImage, dict[str, str]]:
-        """Plot a single image and get color bar keyword arguments.
+        self,
+        ax: Axes,
+        arr: np.ndarray,
+        ticks: np.ndarray,
+        kind: str = "imshow",
+    ) -> tuple[Any, dict[str, str]]:
+        """Render the array on ``ax`` and return the artist plus cbar kwargs.
+
+        Builds the matplotlib norm from ``default_options["color_scale"]``
+        and dispatches to the requested ``kind`` of plot. All four kinds
+        share the same norm/vmin/vmax resolution path so the existing
+        ``color_scale`` enum (linear/power/sym-lognorm/boundary-norm/
+        midpoint) works identically for every render kind.
 
         Args:
             ax: matplotlib figure axes.
-            arr: numpy array.
+            arr: numpy (masked) array.
             ticks: color bar ticks.
+            kind: render kind. One of ``"imshow"``, ``"pcolormesh"``,
+                ``"contour"``, ``"contourf"``. Default is ``"imshow"``
+                (preserves the historical animate/legacy call path).
 
         Returns:
-            tuple[AxesImage, dict[str, str]]: A tuple containing:
-                im: image axes.
-                cbar: color bar keyword arguments.
+            tuple: ``(artist, cbar_kw)`` where ``artist`` is the
+                matplotlib mappable (``AxesImage`` for ``imshow``,
+                ``QuadMesh`` for ``pcolormesh``, ``QuadContourSet`` for
+                contour/contourf) and ``cbar_kw`` is the colorbar
+                keyword-argument dict.
         """
         norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
         cmap = self.default_options["cmap"]
         vmin = ticks[0]
         vmax = ticks[-1]
 
+        # midpoint normalization needs unmasked NaN-filled data; the
+        # other kinds can handle a masked array directly but contour /
+        # contourf misbehave on masked arrays as well, so fill there too.
+        plot_arr = arr
         if self.default_options["color_scale"].lower() == "midpoint":
-            arr = arr.filled(np.nan)
+            plot_arr = arr.filled(np.nan)
 
-        if norm is None:
-            im = ax.matshow(arr, cmap=cmap, vmin=vmin, vmax=vmax, extent=self.extent)
+        levels = self.default_options.get("levels")
+
+        if kind == "imshow":
+            if norm is None:
+                im = ax.matshow(
+                    plot_arr, cmap=cmap, vmin=vmin, vmax=vmax, extent=self.extent
+                )
+            else:
+                im = ax.matshow(plot_arr, cmap=cmap, norm=norm, extent=self.extent)
+        elif kind == "pcolormesh":
+            if norm is None:
+                im = ax.pcolormesh(
+                    plot_arr,
+                    cmap=cmap,
+                    vmin=vmin,
+                    vmax=vmax,
+                    shading="auto",
+                )
+            else:
+                im = ax.pcolormesh(plot_arr, cmap=cmap, norm=norm, shading="auto")
+        elif kind in ("contour", "contourf"):
+            # contour/contourf cannot consume masked arrays cleanly;
+            # convert to a NaN-filled view if we're holding a mask.
+            if isinstance(plot_arr, ma.MaskedArray):
+                plot_arr = plot_arr.filled(np.nan)
+            plot_fn = ax.contour if kind == "contour" else ax.contourf
+            contour_kwargs = {"cmap": cmap}
+            if norm is None:
+                contour_kwargs["vmin"] = vmin
+                contour_kwargs["vmax"] = vmax
+            else:
+                contour_kwargs["norm"] = norm
+            if levels is not None:
+                im = plot_fn(plot_arr, levels, **contour_kwargs)
+            else:
+                im = plot_fn(plot_arr, **contour_kwargs)
         else:
-            im = ax.matshow(arr, cmap=cmap, norm=norm, extent=self.extent)
+            raise ValueError(
+                f"Invalid kind={kind!r}. Valid kinds are {VALID_PLOT_KINDS}."
+            )
 
         return im, cbar_kw
 
@@ -719,6 +777,7 @@ class ArrayGlyph(Glyph):
         point_size: int | float = 100,
         pid_color: str = "blue",
         pid_size: int | float = 10,
+        kind: str = "auto",
         **kwargs,
     ) -> tuple[Figure, Axes]:
         """Plot the array with customizable visualization options.
@@ -741,6 +800,26 @@ class ArrayGlyph(Glyph):
                 Any valid matplotlib color string.
             pid_size: Size of the point value annotations, by default 10.
                 Controls the font size of the annotations.
+            kind: Render kind, by default ``"auto"``. One of:
+
+                - ``"auto"`` — picks the best renderer for the data. For
+                  now this is equivalent to ``"imshow"``; curvilinear
+                  coordinate dispatch lands in a later release.
+                - ``"imshow"`` — pixel-grid raster render via
+                  ``ax.imshow``/``matshow``. Honours ``extent``.
+                - ``"pcolormesh"`` — quadrilateral mesh render via
+                  ``ax.pcolormesh`` with ``shading="auto"``. Does not
+                  honour ``extent``.
+                - ``"contour"`` — line contours via ``ax.contour``.
+                  Honours ``levels`` from kwargs when set.
+                - ``"contourf"`` — filled contours via ``ax.contourf``.
+                  Honours ``levels`` from kwargs when set.
+
+                Cell-value display and point overlays only apply to
+                ``"imshow"`` and ``"pcolormesh"``; they are silently
+                skipped for ``"contour"`` and ``"contourf"`` (which have
+                no per-cell grid). RGB compositing requires
+                ``kind="imshow"``.
             **kwargs: Additional keyword arguments for customizing the plot.
 
                 Plot appearance:
@@ -794,6 +873,11 @@ class ArrayGlyph(Glyph):
                         Defines the discrete intervals for color mapping.
                     midpoint : float, optional
                         Midpoint value for 'midpoint' color scale, by default 0.
+                    levels : int or sequence, optional
+                        Contour levels for ``kind="contour"`` and
+                        ``kind="contourf"``, by default None. Ignored by
+                        ``imshow`` / ``pcolormesh``. When ``None``,
+                        matplotlib picks the levels automatically.
 
                 Cell value display options:
                     display_cell_value : bool, optional
@@ -1011,6 +1095,16 @@ class ArrayGlyph(Glyph):
                 ```
                 ![midpoint-scale-costom-parameters](./../images/array_glyph/midpoint-scale-costom-parameters.png)
         """
+        if kind not in VALID_PLOT_KINDS:
+            raise ValueError(
+                f"Invalid kind={kind!r}. Valid kinds are {VALID_PLOT_KINDS}."
+            )
+        if self.rgb and kind not in ("imshow", "auto"):
+            raise ValueError(
+                "RGB compositing requires kind='imshow'. "
+                f"Got kind={kind!r}."
+            )
+
         for key, val in kwargs.items():
             if key not in self.default_options.keys():
                 raise ValueError(
@@ -1019,6 +1113,12 @@ class ArrayGlyph(Glyph):
                 )
             else:
                 self.default_options[key] = val
+
+        self.default_options["kind"] = kind
+        # Resolve "auto" — for now auto == imshow. Curvilinear-coord
+        # dispatch (auto -> pcolormesh when 2-D coords are present) lands
+        # in CLEO-2; here we keep every existing test green.
+        effective_kind = "imshow" if kind == "auto" else kind
 
         if self.fig is None:
             self.fig, self.ax = self.create_figure_axes()
@@ -1047,7 +1147,9 @@ class ArrayGlyph(Glyph):
 
             # creating the ticks/bounds
             ticks = self.get_ticks()
-            im, cbar_kw = self._plot_im_get_cbar_kw(ax, arr, ticks)
+            im, cbar_kw = self._plot_im_get_cbar_kw(
+                ax, arr, ticks, kind=effective_kind
+            )
 
             # Create colorbar
             self.create_color_bar(ax, im, cbar_kw)
@@ -1056,20 +1158,25 @@ class ArrayGlyph(Glyph):
             self.default_options["title"], fontsize=self.default_options["title_size"]
         )
 
-        if self.extent is None:
+        if self.extent is None and effective_kind == "imshow":
             ax.set_xticklabels([])
             ax.set_yticklabels([])
             ax.set_xticks([])
             ax.set_yticks([])
 
+        # Cell-value annotations and point overlays are only meaningful
+        # for raster-style renderings (imshow / pcolormesh). For contour
+        # / contourf they are skipped silently — there is no per-cell
+        # grid to annotate.
+        supports_overlay = effective_kind in ("imshow", "pcolormesh")
         optional_display = {}
-        if self.default_options["display_cell_value"]:
+        if self.default_options["display_cell_value"] and supports_overlay:
             indices = get_indices2(arr, [np.nan])
             optional_display["cell_text_value"] = self._plot_text(
                 ax, arr, indices, self.default_options
             )
 
-        if points is not None:
+        if points is not None and supports_overlay:
             row = points[:, 1]
             col = points[:, 2]
             optional_display["points_scatter"] = ax.scatter(
