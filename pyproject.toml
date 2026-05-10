@@ -68,6 +68,14 @@ Homepage = "https://github.com/serapeum-org/cleopatra"
 Documentation = "https://serapeum-org.github.io/cleopatra/"
 Repository = "https://github.com/serapeum-org/cleopatra"
 
+[project.optional-dependencies]
+tiles = [
+    "mercantile>=1.2.1",
+    "pillow>=12.1.1",
+    "pyproj>=3.7.2",
+    "xyzservices>=2026.3.0",
+]
+
 
 [tool.commitizen]
 name = "cz_customize"

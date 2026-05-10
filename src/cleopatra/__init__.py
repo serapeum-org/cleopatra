@@ -3,8 +3,10 @@ cleopatra - visualization package
 """
 
 from cleopatra.config import Config
+from cleopatra.tiles import add_tiles
 
 __all__ = [
+    "add_tiles",
     "array_glyph",
     "colors",
     "config",
@@ -12,6 +14,7 @@ __all__ = [
     "mesh_glyph",
     "statistical_glyph",
     "styles",
+    "tiles",
 ]
 
 try:
