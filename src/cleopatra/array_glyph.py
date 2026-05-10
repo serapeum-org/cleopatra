@@ -50,10 +50,18 @@ DEFAULT_OPTIONS = {
     "precision": 2,
     "kind": "auto",
     "levels": None,
+    "robust": False,
+    "center": None,
+    "extend": None,
+    "cbar_kwargs": None,
 }
 DEFAULT_OPTIONS = STYLE_DEFAULTS | DEFAULT_OPTIONS
 
 VALID_PLOT_KINDS = ("auto", "imshow", "pcolormesh", "contour", "contourf")
+VALID_EXTEND_VALUES = ("neither", "both", "min", "max")
+DIVERGING_DEFAULT_CMAP = "RdBu_r"
+ROBUST_LOWER_PERCENTILE = 2.0
+ROBUST_UPPER_PERCENTILE = 98.0
 
 
 class ArrayGlyph(Glyph):
@@ -229,13 +237,30 @@ class ArrayGlyph(Glyph):
             self.rgb = False
 
         self._exclude_value = exclude_value
+        # Validate the extend kwarg once at construction time so users get
+        # a clear error before the first render call.
+        self._validate_extend(self.default_options.get("extend"))
 
-        self._vmax = (
-            np.nanmax(array) if kwargs.get("vmax") is None else kwargs.get("vmax")
+        explicit_keys = set(kwargs.keys())
+        self._vmin, self._vmax = self._resolve_color_limits(
+            array,
+            vmin_kw=kwargs.get("vmin"),
+            vmax_kw=kwargs.get("vmax"),
+            robust=bool(self.default_options.get("robust", False)),
+            center=self.default_options.get("center"),
+            vmin_explicit="vmin" in explicit_keys,
+            vmax_explicit="vmax" in explicit_keys,
         )
-        self._vmin = (
-            np.nanmin(array) if kwargs.get("vmin") is None else kwargs.get("vmin")
-        )
+        # Auto-switch the colormap to a diverging default when ``center`` is
+        # set and the user did not pick a cmap explicitly. ``cmap`` always
+        # exists in ``default_options`` (it has a non-None default of
+        # ``"coolwarm_r"``), so the explicit-vs-default check must rely on
+        # whether the user actually passed it.
+        if (
+            self.default_options.get("center") is not None
+            and "cmap" not in explicit_keys
+        ):
+            self.default_options["cmap"] = DIVERGING_DEFAULT_CMAP
 
         self._arr = array
         # get the tick spacing that has 10 ticks only
@@ -567,6 +592,142 @@ class ArrayGlyph(Glyph):
     def exclude_value(self, value):
         self._exclude_value = value
 
+    @staticmethod
+    def _validate_extend(extend: str | None) -> None:
+        """Validate the ``extend`` kwarg against the allowed values.
+
+        Args:
+            extend: User-provided value for the colorbar extension. May
+                be ``None`` (auto-resolve at render time) or one of
+                ``"neither"``, ``"both"``, ``"min"``, ``"max"``.
+
+        Raises:
+            ValueError: When ``extend`` is not one of the accepted
+                strings (or ``None``).
+        """
+        if extend is None:
+            return
+        if extend not in VALID_EXTEND_VALUES:
+            raise ValueError(
+                f"Invalid extend={extend!r}. Valid values are "
+                f"{VALID_EXTEND_VALUES} or None."
+            )
+
+    @staticmethod
+    def _robust_limits(arr: np.ndarray) -> tuple[float, float]:
+        """Compute xarray-style robust ``(vmin, vmax)`` from the data.
+
+        Returns the 2nd and 98th percentile of the unmasked, finite
+        values in ``arr`` — the same convention as xarray's
+        ``robust=True``. Masked entries and NaNs are excluded from the
+        percentile computation.
+
+        Args:
+            arr: Input array. May be a plain ndarray or a masked array.
+
+        Returns:
+            tuple[float, float]: ``(vmin_robust, vmax_robust)``.
+
+        Raises:
+            ValueError: If the array contains no finite values.
+        """
+        if isinstance(arr, ma.MaskedArray):
+            values = arr.compressed()
+        else:
+            values = np.asarray(arr).ravel()
+        values = values[np.isfinite(values)]
+        if values.size == 0:
+            raise ValueError(
+                "Cannot compute robust vmin/vmax: array has no finite "
+                "values."
+            )
+        vmin_robust = float(
+            np.nanpercentile(values, ROBUST_LOWER_PERCENTILE)
+        )
+        vmax_robust = float(
+            np.nanpercentile(values, ROBUST_UPPER_PERCENTILE)
+        )
+        return vmin_robust, vmax_robust
+
+    @staticmethod
+    def _center_limits(
+        vmin: float, vmax: float, center: float
+    ) -> tuple[float, float]:
+        """Make ``(vmin, vmax)`` symmetric around ``center``.
+
+        Implements xarray's diverging-cmap centring: the larger of
+        ``|vmin - center|`` and ``|vmax - center|`` becomes the half-
+        range, and the result is ``(center - half, center + half)``.
+
+        Args:
+            vmin: Lower colour limit before symmetrisation.
+            vmax: Upper colour limit before symmetrisation.
+            center: Value to centre the diverging colormap on.
+
+        Returns:
+            tuple[float, float]: Symmetric ``(vmin, vmax)`` around
+                ``center``.
+        """
+        half = max(abs(vmin - center), abs(vmax - center))
+        return center - half, center + half
+
+    def _resolve_color_limits(
+        self,
+        arr: np.ndarray,
+        vmin_kw: float | None,
+        vmax_kw: float | None,
+        robust: bool,
+        center: float | None,
+        vmin_explicit: bool,
+        vmax_explicit: bool,
+    ) -> tuple[float, float]:
+        """Resolve final ``(vmin, vmax)`` for colour scaling.
+
+        Resolution order matches xarray:
+
+        1. Start from robust (2nd/98th percentile) limits when
+           ``robust=True``, else from the full data range.
+        2. Override either end with an explicit ``vmin`` / ``vmax`` if
+           the user provided one.
+        3. If ``center`` is set, symmetrise around it.
+
+        Args:
+            arr: Data array (plain or masked).
+            vmin_kw: Value of ``vmin`` from the caller's kwargs, or
+                ``None`` if not supplied.
+            vmax_kw: Value of ``vmax`` from the caller's kwargs, or
+                ``None`` if not supplied.
+            robust: Whether to use the 2nd/98th percentile range.
+            center: Value to centre a diverging colormap on. ``None``
+                disables symmetrisation.
+            vmin_explicit: Whether the caller explicitly passed
+                ``vmin`` (even if its value was ``None``).
+            vmax_explicit: Whether the caller explicitly passed
+                ``vmax``.
+
+        Returns:
+            tuple[float, float]: Final ``(vmin, vmax)``.
+        """
+        if robust:
+            vmin_base, vmax_base = self._robust_limits(arr)
+        else:
+            vmin_base = float(np.nanmin(arr))
+            vmax_base = float(np.nanmax(arr))
+
+        vmin_final = (
+            vmin_kw if vmin_explicit and vmin_kw is not None else vmin_base
+        )
+        vmax_final = (
+            vmax_kw if vmax_explicit and vmax_kw is not None else vmax_base
+        )
+
+        if center is not None:
+            vmin_final, vmax_final = self._center_limits(
+                vmin_final, vmax_final, center
+            )
+
+        return float(vmin_final), float(vmax_final)
+
     def _plot_im_get_cbar_kw(
         self,
         ax: Axes,
@@ -641,8 +802,12 @@ class ArrayGlyph(Glyph):
                 contour_kwargs["vmax"] = vmax
             else:
                 contour_kwargs["norm"] = norm
-            if levels is not None:
-                im = plot_fn(plot_arr, levels, **contour_kwargs)
+            # Pass the resolved level edges when ``levels`` is set so the
+            # contour rings line up with the colorbar boundaries computed
+            # in ``_create_norm_and_cbar_kw``.
+            level_edges = self._levels_to_bounds(levels, vmin, vmax)
+            if level_edges is not None:
+                im = plot_fn(plot_arr, level_edges, **contour_kwargs)
             else:
                 im = plot_fn(plot_arr, **contour_kwargs)
         else:
@@ -874,10 +1039,46 @@ class ArrayGlyph(Glyph):
                     midpoint : float, optional
                         Midpoint value for 'midpoint' color scale, by default 0.
                     levels : int or sequence, optional
-                        Contour levels for ``kind="contour"`` and
-                        ``kind="contourf"``, by default None. Ignored by
-                        ``imshow`` / ``pcolormesh``. When ``None``,
-                        matplotlib picks the levels automatically.
+                        Discrete colour levels (xarray-aligned), by
+                        default None. An ``int`` selects N
+                        linearly-spaced edges between ``vmin`` and
+                        ``vmax``; a sequence is used as explicit edges
+                        (sorted ascending). When set under the default
+                        ``color_scale="linear"`` the norm is switched
+                        to a ``BoundaryNorm`` so ``imshow`` /
+                        ``pcolormesh`` are also discretised; under
+                        ``color_scale="boundary-norm"`` ``levels`` acts
+                        as the bin edges when ``bounds`` is unset.
+                        Always forwarded as the level array to
+                        ``contour`` / ``contourf``.
+
+                Xarray-aligned colour kwargs:
+                    robust : bool, optional
+                        When True, use the 2nd and 98th percentile of
+                        the unmasked data for ``vmin`` / ``vmax``,
+                        matching xarray's ``robust=True`` default. An
+                        explicit ``vmin`` / ``vmax`` always wins. By
+                        default False.
+                    center : float, optional
+                        Diverging-colormap centring value. When set,
+                        ``vmin`` / ``vmax`` are made symmetric around
+                        ``center`` (after ``robust`` has been applied),
+                        and the cmap auto-switches to ``"RdBu_r"`` if
+                        the caller did not pass an explicit ``cmap``.
+                        By default None (no centring).
+                    extend : str, optional
+                        Colorbar arrow extension. One of ``"neither"``,
+                        ``"both"``, ``"min"``, ``"max"``, or None to
+                        auto-resolve (``"both"`` when ``levels`` is
+                        set, otherwise ``"neither"``). By default
+                        None.
+                    cbar_kwargs : dict, optional
+                        Extra keyword arguments forwarded to
+                        ``fig.colorbar``. Merges over the defaults
+                        computed by cleopatra so user keys win on
+                        collision. Common keys: ``label``, ``shrink``,
+                        ``aspect``, ``orientation``, ``pad``,
+                        ``ticks``. By default None.
 
                 Cell value display options:
                     display_cell_value : bool, optional
@@ -1114,6 +1315,8 @@ class ArrayGlyph(Glyph):
             else:
                 self.default_options[key] = val
 
+        self._validate_extend(self.default_options.get("extend"))
+
         self.default_options["kind"] = kind
         # Resolve "auto" — for now auto == imshow. Curvilinear-coord
         # dispatch (auto -> pcolormesh when 2-D coords are present) lands
@@ -1135,15 +1338,41 @@ class ArrayGlyph(Glyph):
             else:
                 self.default_options["ticks_spacing"] = self.ticks_spacing
 
-            if "vmin" in kwargs.keys():
-                self.default_options["vmin"] = kwargs["vmin"]
-            else:
-                self.default_options["vmin"] = self.vmin
+            # Recompute (vmin, vmax) for this plot call if any of the
+            # xarray-aligned colour kwargs (``robust``, ``center``) or the
+            # explicit ``vmin``/``vmax`` were passed here. We honour the
+            # values stashed on ``self`` from the constructor when none of
+            # these are present in *this* call.
+            recompute_keys = {"robust", "center", "vmin", "vmax"}
+            if recompute_keys.intersection(kwargs.keys()):
+                vmin_final, vmax_final = self._resolve_color_limits(
+                    arr,
+                    vmin_kw=kwargs.get("vmin"),
+                    vmax_kw=kwargs.get("vmax"),
+                    robust=bool(self.default_options.get("robust", False)),
+                    center=self.default_options.get("center"),
+                    vmin_explicit="vmin" in kwargs,
+                    vmax_explicit="vmax" in kwargs,
+                )
+                self._vmin = vmin_final
+                self._vmax = vmax_final
+                # Keep ticks_spacing in sync with the new colour range
+                # unless the caller pinned it explicitly.
+                if "ticks_spacing" not in kwargs:
+                    self.ticks_spacing = (vmax_final - vmin_final) / 10
+                    self.default_options["ticks_spacing"] = self.ticks_spacing
 
-            if "vmax" in kwargs.keys():
-                self.default_options["vmax"] = kwargs["vmax"]
-            else:
-                self.default_options["vmax"] = self.vmax
+            # Auto-switch the colormap to a diverging default when the
+            # caller passes ``center`` here without an explicit cmap.
+            if (
+                "center" in kwargs
+                and kwargs["center"] is not None
+                and "cmap" not in kwargs
+            ):
+                self.default_options["cmap"] = DIVERGING_DEFAULT_CMAP
+
+            self.default_options["vmin"] = self.vmin
+            self.default_options["vmax"] = self.vmax
 
             # creating the ticks/bounds
             ticks = self.get_ticks()
@@ -1152,7 +1381,7 @@ class ArrayGlyph(Glyph):
             )
 
             # Create colorbar
-            self.create_color_bar(ax, im, cbar_kw)
+            self.cbar = self.create_color_bar(ax, im, cbar_kw)
 
         ax.set_title(
             self.default_options["title"], fontsize=self.default_options["title_size"]

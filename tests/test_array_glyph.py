@@ -6,6 +6,7 @@ import pytest
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
+from matplotlib.colors import BoundaryNorm
 from matplotlib.figure import Figure
 from PIL import Image
 
@@ -514,3 +515,154 @@ class TestPlotKindDispatch:
         assert isinstance(fig, Figure)
         # No per-cell text annotations should have been emitted.
         assert len(ax.texts) == 0
+
+
+@pytest.mark.plot
+class TestColourKwargs:
+    """Tests for the xarray-aligned colour kwargs introduced in CLEO-3.
+
+    Covers ``robust``, ``center``, ``levels``, ``extend``, and
+    ``cbar_kwargs`` on :class:`ArrayGlyph`. Each kwarg is tested both in
+    isolation and (where relevant) in combination with the existing
+    ``color_scale`` enum and the ``kind=`` dispatch from CLEO-1.
+    """
+
+    @staticmethod
+    def _arr_with_outliers() -> np.ndarray:
+        """Build a 10x10 array of normal values plus extreme outliers.
+
+        The bulk of the values sit in ``[0, 1)``; two cells hold large
+        negative and positive outliers so ``robust=True`` has something
+        to clip.
+        """
+        rng = np.random.default_rng(seed=0)
+        body = rng.random(98)
+        full = np.concatenate([body, [-1000.0, 1000.0]])
+        return full.reshape(10, 10)
+
+    def test_robust_clips_vmin_vmax(self):
+        """``robust=True`` uses the 2nd/98th percentile, ignoring outliers."""
+        arr = self._arr_with_outliers()
+        glyph = ArrayGlyph(arr, robust=True)
+        full_min = float(np.nanmin(arr))
+        full_max = float(np.nanmax(arr))
+        # The robust limits must be tighter than the data range — that
+        # is the whole point of clipping the 2nd/98th percentile.
+        assert glyph.vmin > full_min
+        assert glyph.vmax < full_max
+        # And much tighter than the outliers themselves (they sit at
+        # +/-1000; the bulk lives in [0, 1)).
+        assert abs(glyph.vmin) < 5.0
+        assert abs(glyph.vmax) < 5.0
+
+    def test_robust_does_not_override_explicit_vmin_vmax(self):
+        """An explicit ``vmin``/``vmax`` always wins over ``robust=True``."""
+        arr = self._arr_with_outliers()
+        glyph = ArrayGlyph(arr, robust=True, vmin=0.0, vmax=1.0)
+        assert glyph.vmin == 0.0
+        assert glyph.vmax == 1.0
+
+    def test_center_zero_makes_vmin_vmax_symmetric(self):
+        """``center=0`` symmetrises around zero using the larger half-range."""
+        arr = np.linspace(-3.0, 7.0, 30).reshape(5, 6)
+        glyph = ArrayGlyph(arr, center=0.0)
+        assert glyph.vmin == pytest.approx(-7.0)
+        assert glyph.vmax == pytest.approx(7.0)
+
+    def test_center_switches_default_cmap_to_rdbu_r(self):
+        """``center=...`` without an explicit cmap selects ``RdBu_r``."""
+        arr = np.linspace(-2.0, 2.0, 16).reshape(4, 4)
+        glyph = ArrayGlyph(arr, center=0.0)
+        assert glyph.default_options["cmap"] == "RdBu_r"
+
+    def test_center_does_not_override_explicit_cmap(self):
+        """An explicit ``cmap=`` always wins over the diverging default."""
+        arr = np.linspace(-2.0, 2.0, 16).reshape(4, 4)
+        glyph = ArrayGlyph(arr, center=0.0, cmap="viridis")
+        assert glyph.default_options["cmap"] == "viridis"
+
+    def test_levels_int_creates_discretised_norm(self):
+        """``levels=N`` switches the linear norm to a ``BoundaryNorm``."""
+        arr = np.linspace(0.0, 1.0, 100).reshape(10, 10)
+        glyph = ArrayGlyph(arr)
+        fig, ax = glyph.plot(kind="imshow", levels=5)
+        assert isinstance(fig, Figure)
+        images = ax.get_images()
+        assert images, "expected at least one AxesImage from imshow"
+        norm = images[0].norm
+        assert isinstance(norm, BoundaryNorm), (
+            f"levels=int should switch to BoundaryNorm, got {type(norm)}"
+        )
+        assert len(norm.boundaries) == 5
+
+    def test_levels_list_uses_explicit_edges(self):
+        """``levels=[...]`` is forwarded as explicit bin edges."""
+        arr = np.linspace(0.0, 1.0, 100).reshape(10, 10)
+        glyph = ArrayGlyph(arr)
+        edges = [0.0, 0.25, 0.5, 0.75, 1.0]
+        fig, ax = glyph.plot(kind="imshow", levels=edges)
+        assert isinstance(fig, Figure)
+        norm = ax.get_images()[0].norm
+        assert isinstance(norm, BoundaryNorm)
+        np.testing.assert_array_almost_equal(norm.boundaries, edges)
+
+    def test_extend_both_when_levels_set_and_extend_none(self):
+        """``levels=[...], extend=None`` auto-resolves ``extend`` to ``both``."""
+        arr = np.linspace(0.0, 1.0, 100).reshape(10, 10)
+        glyph = ArrayGlyph(arr)
+        edges = [0.0, 0.5, 1.0]
+        fig, ax = glyph.plot(kind="imshow", levels=edges)
+        # The cbar is attached to the image's mappable; resolve via
+        # the glyph attribute we expose at create_color_bar time.
+        cbar = glyph.cbar
+        assert cbar.extend == "both"
+
+    def test_extend_explicit_overrides_auto(self):
+        """An explicit ``extend="min"`` is preserved despite ``levels``."""
+        arr = np.linspace(0.0, 1.0, 100).reshape(10, 10)
+        glyph = ArrayGlyph(arr)
+        edges = [0.0, 0.5, 1.0]
+        fig, ax = glyph.plot(kind="imshow", levels=edges, extend="min")
+        assert glyph.cbar.extend == "min"
+
+    def test_cbar_kwargs_merge_overrides_defaults(self):
+        """``cbar_kwargs`` merges over the defaults; user keys win."""
+        arr = np.linspace(0.0, 1.0, 100).reshape(10, 10)
+        glyph = ArrayGlyph(arr)
+        fig, ax = glyph.plot(
+            kind="imshow",
+            cbar_kwargs={"label": "Custom", "shrink": 0.5},
+        )
+        cbar = glyph.cbar
+        # The label set via cbar_kwargs flows through ``set_label`` and
+        # surfaces on the underlying ``YAxis`` label artist.
+        assert cbar.ax.get_ylabel() == "Custom"
+        # And the shrink override flows through to the figure colorbar
+        # creation — verify by reading the colorbar axes bbox height
+        # ratio relative to the parent.
+        parent_h = ax.get_position().height
+        cbar_h = cbar.ax.get_position().height
+        assert cbar_h <= parent_h * 0.75, (
+            "shrink=0.5 should produce a shorter colorbar than the "
+            "default shrink=0.75"
+        )
+
+    def test_robust_combined_with_center(self):
+        """``robust=True, center=0`` clips outliers then symmetrises."""
+        rng = np.random.default_rng(seed=1)
+        body = rng.uniform(-10.0, 5.0, size=98)
+        arr = np.concatenate([body, [-100.0, 50.0]]).reshape(10, 10)
+        glyph = ArrayGlyph(arr, robust=True, center=0.0)
+        # Symmetric around zero.
+        assert glyph.vmin == pytest.approx(-glyph.vmax)
+        # And much tighter than the full [-100, 100] symmetric range.
+        assert abs(glyph.vmin) < 50.0
+        assert abs(glyph.vmax) < 50.0
+
+    def test_robust_works_with_kind_pcolormesh(self):
+        """``robust=True, kind="pcolormesh"`` renders a QuadMesh."""
+        arr = self._arr_with_outliers()
+        glyph = ArrayGlyph(arr, robust=True)
+        fig, ax = glyph.plot(kind="pcolormesh")
+        assert isinstance(fig, Figure)
+        assert len(ax.collections) >= 1

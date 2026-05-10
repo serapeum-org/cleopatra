@@ -198,6 +198,30 @@ class Glyph:
     ) -> tuple[colors.Normalize | None, dict]:
         """Create a matplotlib Normalize and colorbar kwargs.
 
+        Honours the ``color_scale`` enum (linear/power/sym-lognorm/
+        boundary-norm/midpoint) and the xarray-aligned ``levels`` and
+        ``extend`` options when present in ``default_options``.
+
+        Behaviour for ``levels``:
+
+        * ``levels`` is ``None`` (default) — continuous norm based on
+          ``color_scale``.
+        * ``levels`` is an ``int`` and ``color_scale`` is the default
+          ``"linear"`` — switch to a ``BoundaryNorm`` with ``levels``
+          linearly-spaced edges between ``vmin`` and ``vmax``.
+        * ``levels`` is a sequence and ``color_scale`` is ``"linear"`` —
+          use the sequence as explicit bin edges in a ``BoundaryNorm``.
+        * ``levels`` is set and ``color_scale`` is ``"boundary-norm"``
+          with no explicit ``bounds`` — treat ``levels`` as the bounds.
+        * Otherwise (``color_scale`` is some other enum value) — the
+          user's choice wins; ``levels`` is left for the caller to
+          forward to ``contour`` / ``contourf``.
+
+        Behaviour for ``extend``: when present and non-None, the value
+        is forwarded to the colorbar via ``cbar_kw["extend"]``. The
+        auto-resolution (``"both"`` when ``levels`` is set, else
+        ``"neither"``) happens here only when ``extend`` is ``None``.
+
         Args:
             ticks: Tick positions for the colorbar.
 
@@ -208,10 +232,18 @@ class Glyph:
         color_scale = self.default_options["color_scale"]
         vmin = ticks[0]
         vmax = ticks[-1]
+        levels = self.default_options.get("levels")
+        bounds_from_levels = self._levels_to_bounds(levels, vmin, vmax)
 
         if color_scale.lower() == "linear":
-            norm = None
-            cbar_kw = {"ticks": ticks}
+            if bounds_from_levels is not None:
+                norm = colors.BoundaryNorm(
+                    boundaries=bounds_from_levels, ncolors=256
+                )
+                cbar_kw = {"ticks": bounds_from_levels}
+            else:
+                norm = None
+                cbar_kw = {"ticks": ticks}
         elif color_scale.lower() == "power":
             norm = colors.PowerNorm(
                 gamma=self.default_options["gamma"], vmin=vmin, vmax=vmax
@@ -228,12 +260,16 @@ class Glyph:
             formatter = LogFormatter(10, labelOnlyBase=False)
             cbar_kw = {"ticks": ticks, "format": formatter}
         elif color_scale.lower() == "boundary-norm":
-            if not self.default_options["bounds"]:
+            explicit_bounds = self.default_options["bounds"]
+            if explicit_bounds:
+                bounds = explicit_bounds
+                cbar_kw = {"ticks": explicit_bounds}
+            elif bounds_from_levels is not None:
+                bounds = bounds_from_levels
+                cbar_kw = {"ticks": bounds_from_levels}
+            else:
                 bounds = ticks
                 cbar_kw = {"ticks": ticks}
-            else:
-                bounds = self.default_options["bounds"]
-                cbar_kw = {"ticks": self.default_options["bounds"]}
             norm = colors.BoundaryNorm(boundaries=bounds, ncolors=256)
         elif color_scale.lower() == "midpoint":
             norm = MidpointNormalize(
@@ -247,20 +283,69 @@ class Glyph:
                 f"Invalid color scale option: {color_scale}. Use 'linear', "
                 "'power', 'sym-lognorm', 'boundary-norm', 'midpoint'"
             )
+
+        extend = self.default_options.get("extend")
+        if extend is None:
+            extend_effective = "both" if levels is not None else "neither"
+        else:
+            extend_effective = extend
+        cbar_kw["extend"] = extend_effective
+
         return norm, cbar_kw
+
+    @staticmethod
+    def _levels_to_bounds(
+        levels: int | list[float] | np.ndarray | None,
+        vmin: float,
+        vmax: float,
+    ) -> np.ndarray | None:
+        """Convert the ``levels`` option to an array of bin edges.
+
+        Returns ``None`` when no levels are configured, signalling that
+        the caller should fall back to the continuous norm path.
+
+        Args:
+            levels: Number of levels (``int``), explicit edges
+                (``list`` / ``ndarray``), or ``None`` for no
+                discretisation.
+            vmin: Lower colour limit. Used when ``levels`` is an int to
+                build the linspace.
+            vmax: Upper colour limit. Used when ``levels`` is an int to
+                build the linspace.
+
+        Returns:
+            np.ndarray or None: Sorted ascending array of bin edges, or
+                ``None`` when ``levels`` is ``None``.
+        """
+        bounds: np.ndarray | None
+        if levels is None:
+            bounds = None
+        elif isinstance(levels, (int, np.integer)) and not isinstance(
+            levels, bool
+        ):
+            bounds = np.linspace(float(vmin), float(vmax), int(levels))
+        else:
+            bounds = np.sort(np.asarray(levels, dtype=float))
+        return bounds
 
     def create_color_bar(self, ax: Axes, im: Any, cbar_kw: dict) -> Colorbar:
         """Create a colorbar with full customization from default_options.
 
         Reads ``cbar_length``, ``cbar_orientation``, ``cbar_label``,
         ``cbar_label_size``, and ``cbar_label_location`` from
-        ``default_options`` to configure the colorbar.
+        ``default_options`` to configure the colorbar. When the optional
+        ``cbar_kwargs`` entry is present in ``default_options`` (an
+        xarray-aligned dict-of-overrides), its keys are merged over the
+        defaults so the user wins on any collision (e.g. ``label``,
+        ``shrink``, ``orientation``, ``ticks``, ``extend``).
 
         Args:
             ax: Matplotlib axes.
             im: The mappable (image or contour) to attach the
                 colorbar to.
-            cbar_kw: Colorbar keyword arguments (ticks, format, etc.).
+            cbar_kw: Colorbar keyword arguments (ticks, format,
+                extend, etc.) computed by
+                :meth:`_create_norm_and_cbar_kw`.
 
         Returns:
             Colorbar: The created colorbar.
@@ -285,17 +370,32 @@ class Glyph:
         """
         fig = ax.figure
         is_subplot = len(fig.axes) > 1
-        cbar = fig.colorbar(
-            im,
-            ax=ax,
-            shrink=self.default_options["cbar_length"],
-            orientation=self.default_options["cbar_orientation"],
-            use_gridspec=not is_subplot,
-            **cbar_kw,
-        )
+        merged_kw = {
+            "shrink": self.default_options["cbar_length"],
+            "orientation": self.default_options["cbar_orientation"],
+            "use_gridspec": not is_subplot,
+        }
+        merged_kw.update(cbar_kw)
+        # Pull the user-supplied ``label`` (if any) out of cbar_kwargs
+        # before forwarding to ``fig.colorbar`` so we can apply it via
+        # ``cbar.set_label`` and preserve label-size/location styling.
+        user_kwargs = self.default_options.get("cbar_kwargs") or {}
+        if not isinstance(user_kwargs, dict):
+            raise TypeError(
+                "cbar_kwargs must be a dict of colorbar keyword "
+                f"arguments, got {type(user_kwargs).__name__}."
+            )
+        user_kwargs = dict(user_kwargs)
+        user_label = user_kwargs.pop("label", None)
+        merged_kw.update(user_kwargs)
+        cbar = fig.colorbar(im, ax=ax, **merged_kw)
         cbar.ax.tick_params(labelsize=10)
+        label_text = (
+            user_label if user_label is not None
+            else self.default_options["cbar_label"]
+        )
         cbar.set_label(
-            self.default_options["cbar_label"],
+            label_text,
             fontsize=self.default_options["cbar_label_size"],
             loc=self.default_options["cbar_label_location"],
         )
