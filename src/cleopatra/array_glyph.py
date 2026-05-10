@@ -114,6 +114,50 @@ class FacetGrid:
         cbar: Colorbar | None,
         name_dicts: list[dict[str, Any]],
     ) -> None:
+        """Initialise the :class:`FacetGrid` result object.
+
+        :meth:`ArrayGlyph.facet` is the only intended caller. End users
+        receive an already-populated instance and should not invoke
+        this constructor directly.
+
+        Args:
+            fig: The shared :class:`matplotlib.figure.Figure` that owns
+                every subplot.
+            axes: 2-D ``ndarray`` of :class:`matplotlib.axes.Axes` with
+                shape ``(nrows, ncols)``. Empty slots (when ``col_wrap``
+                does not divide the panel count evenly) are kept in the
+                array but hidden with :meth:`Axes.set_visible(False)`.
+            cbar: The shared :class:`matplotlib.colorbar.Colorbar` for
+                the grid, attached to the first rendered subplot;
+                ``None`` for an RGB facet that has no colorbar.
+            name_dicts: One ``{dim_name: coord_value}`` dict per
+                rendered subplot, in row-major (left-to-right,
+                top-to-bottom) order, mirroring
+                :attr:`xarray.plot.facetgrid.FacetGrid.name_dicts`.
+
+        Examples:
+            - The result-object fields line up with the keyword args
+                used to construct it:
+                ```python
+                >>> import matplotlib.pyplot as plt
+                >>> from cleopatra.array_glyph import FacetGrid
+                >>> fig, axes = plt.subplots(1, 2, squeeze=False)
+                >>> grid = FacetGrid(
+                ...     fig=fig,
+                ...     axes=axes,
+                ...     cbar=None,
+                ...     name_dicts=[{"t": 0}, {"t": 1}],
+                ... )
+                >>> grid.axes.shape
+                (1, 2)
+                >>> grid.cbar is None
+                True
+                >>> [d["t"] for d in grid.name_dicts]
+                [0, 1]
+                >>> plt.close(fig)
+
+                ```
+        """
         self.fig = fig
         self.axes = axes
         self.cbar = cbar
@@ -878,7 +922,46 @@ class ArrayGlyph(Glyph):
 
     @property
     def coords(self) -> tuple[np.ndarray, np.ndarray] | None:
-        """Optional ``(x, y)`` coordinate arrays for curvilinear grids."""
+        """Optional ``(x, y)`` coordinate arrays for curvilinear grids.
+
+        Returns the validated coordinate pair stored at construction
+        time, or ``None`` when the glyph was built without ``coords``
+        (regular pixel-grid render). When non-``None``, ``plot(kind=
+        "auto")`` routes to ``pcolormesh`` so the (x, y) arrays are
+        honoured.
+
+        Returns:
+            tuple[np.ndarray, np.ndarray] or None: The ``(x, y)`` pair
+                as stored on the instance (each cast to
+                :class:`numpy.ndarray`), or ``None``.
+
+        Examples:
+            - A glyph built without ``coords`` reports ``None``:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> glyph = ArrayGlyph(np.zeros((3, 4)))
+                >>> glyph.coords is None
+                True
+
+                ```
+            - A glyph built with 1-D centres exposes the validated
+                arrays back through the property:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> arr = np.zeros((3, 4))
+                >>> x = np.linspace(0.0, 3.0, 4)
+                >>> y = np.linspace(0.0, 2.0, 3)
+                >>> glyph = ArrayGlyph(arr, coords=(x, y))
+                >>> xs, ys = glyph.coords
+                >>> xs.shape, ys.shape
+                ((4,), (3,))
+                >>> float(xs[-1]), float(ys[-1])
+                (3.0, 2.0)
+
+                ```
+        """
         return self._coords
 
     @staticmethod
@@ -1140,6 +1223,13 @@ class ArrayGlyph(Glyph):
         ``color_scale`` enum (linear/power/sym-lognorm/boundary-norm/
         midpoint) works identically for every render kind.
 
+        When ``self._coords`` is set (curvilinear / non-uniform grid),
+        the ``(x, y)`` arrays are forwarded as the first positional
+        args to ``pcolormesh`` / ``contour`` / ``contourf``. ``kind=
+        "imshow"`` is incompatible with ``coords`` and raises
+        :class:`ValueError` — callers should use ``kind="auto"`` or
+        ``kind="pcolormesh"`` instead.
+
         Args:
             ax: matplotlib figure axes.
             arr: numpy (masked) array.
@@ -1154,6 +1244,11 @@ class ArrayGlyph(Glyph):
                 ``QuadMesh`` for ``pcolormesh``, ``QuadContourSet`` for
                 contour/contourf) and ``cbar_kw`` is the colorbar
                 keyword-argument dict.
+
+        Raises:
+            ValueError: If ``kind`` is ``"imshow"`` while ``self._coords``
+                is set (incompatible combination), or if ``kind`` is not
+                one of the recognised values in :data:`VALID_PLOT_KINDS`.
         """
         norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
         cmap = self.default_options["cmap"]
@@ -2368,6 +2463,24 @@ class ArrayGlyph(Glyph):
         >>> animated_array.save_animation("animation.gif", fps=2)
 
         ```
+        Lazy frame streaming via ``data_getter`` (the callback supplies
+        frame ``i`` on demand — useful for NetCDF time slabs or any
+        source where eager loading is too expensive). The data array
+        on the glyph acts as a shape template; only its last two axes
+        are read.
+        ```python
+        >>> import numpy as np
+        >>> from cleopatra.array_glyph import ArrayGlyph
+        >>> template = np.arange(36, dtype=float).reshape(1, 6, 6)
+        >>> glyph = ArrayGlyph(template, figsize=(4, 4), title="Lazy")
+        >>> labels = ["t0", "t1", "t2"]
+        >>> def get_frame(i):
+        ...     return np.full((6, 6), float(i)) + np.arange(36).reshape(6, 6)
+        >>> anim_obj = glyph.animate(labels, data_getter=get_frame)
+        >>> anim_obj._fig is glyph.fig
+        True
+
+        ```
         """
         if text_loc is None:
             text_loc = [0.1, 0.2]
@@ -2478,7 +2591,28 @@ class ArrayGlyph(Glyph):
         )
 
         def _fetch_frame(i: int) -> np.ndarray:
-            """Resolve frame ``i`` via the callback or the eager array."""
+            """Resolve frame ``i`` for the animation step.
+
+            Routes between the eager ``self.arr[i]`` path and the lazy
+            ``data_getter(i)`` callback added in CLEO-7. The returned
+            frame must always match ``self.arr.shape[-2:]``; the
+            callback variant re-validates per call to catch upstream
+            shape drift (e.g. a NetCDF slab that changed size between
+            frames).
+
+            Args:
+                i: Zero-based frame index. Must be a valid index into
+                    the time axis (``0 <= i < n_frames``).
+
+            Returns:
+                np.ndarray: The 2-D frame for index ``i``, with shape
+                    equal to ``self.arr.shape[-2:]``.
+
+            Raises:
+                ValueError: If ``data_getter`` is set and the callback
+                    returns an array whose shape does not match the
+                    expected ``(H, W)``.
+            """
             if data_getter is None:
                 frame = array[i, :, :]
             else:
