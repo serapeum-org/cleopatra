@@ -1305,3 +1305,82 @@ class TestFaceting:
         assert result.axes.shape == (2, 3)
         hidden = [ax for ax in result.axes.ravel() if not ax.get_visible()]
         assert len(hidden) == 1
+
+
+@pytest.mark.plot
+class TestAnimateDataGetter:
+    """Tests for the ``data_getter`` callback added to ``animate`` (CLEO-7)."""
+
+    @staticmethod
+    def _stack(n: int = 4, h: int = 5, w: int = 5) -> np.ndarray:
+        rng = np.random.default_rng(seed=7)
+        return rng.uniform(0.0, 1.0, size=(n, h, w))
+
+    def test_data_getter_supplies_frames(self):
+        """With ``data_getter`` set, the callback drives the animation."""
+        stack = self._stack(n=4)
+        # 2-D template — the animate path uses it only for shape.
+        template = stack[0]
+        glyph = ArrayGlyph(template)
+        anim = glyph.animate(
+            time=list(range(4)),
+            data_getter=lambda i: stack[i],
+        )
+        assert isinstance(anim, FuncAnimation)
+
+    def test_data_getter_wrong_shape_raises(self):
+        """A callback that returns the wrong shape raises ``ValueError``."""
+        stack = self._stack(n=4)
+        template = stack[0]
+        glyph = ArrayGlyph(template)
+        with pytest.raises(ValueError, match="expected"):
+            glyph.animate(
+                time=list(range(4)),
+                data_getter=lambda i: np.zeros((99, 99)),
+            )
+
+    def test_data_getter_none_falls_back_to_self_arr(
+        self,
+        coello_data: np.ndarray,
+        animate_time_list: list,
+        no_data_value: float,
+    ):
+        """``data_getter=None`` preserves the existing 3-D arr path."""
+        glyph = ArrayGlyph(coello_data, exclude_value=[no_data_value])
+        anim = glyph.animate(animate_time_list, data_getter=None)
+        assert isinstance(anim, FuncAnimation)
+
+    def test_2d_arr_without_data_getter_raises(self):
+        """A 2-D ``self.arr`` without a callback raises ``ValueError``."""
+        glyph = ArrayGlyph(np.zeros((5, 5)))
+        with pytest.raises(ValueError, match="3-D arr or a data_getter"):
+            glyph.animate(time=list(range(3)))
+
+    def test_data_getter_invocation_count(self, tmp_path):
+        """``data_getter`` is invoked once per rendered frame.
+
+        Save the animation to a temp GIF to force matplotlib to walk
+        every frame; the closure counter must reach ``len(time)``.
+        """
+        stack = self._stack(n=4)
+        template = stack[0]
+        glyph = ArrayGlyph(template)
+        counter = {"n": 0}
+
+        def getter(i):
+            counter["n"] += 1
+            return stack[i]
+
+        anim = glyph.animate(
+            time=list(range(4)),
+            data_getter=getter,
+        )
+        out = tmp_path / "anim.gif"
+        try:
+            glyph.save_animation(str(out), fps=2)
+            assert counter["n"] >= 4, (
+                f"`data_getter` should be invoked at least once per frame; "
+                f"got {counter['n']} calls for 4 frames"
+            )
+        finally:
+            plt.close(anim._fig)

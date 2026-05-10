@@ -25,7 +25,7 @@ The `Array` class has the following methods:
 from __future__ import annotations
 
 from math import ceil
-from typing import Any, Sequence
+from typing import Any, Callable, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -2175,6 +2175,8 @@ class ArrayGlyph(Glyph):
         point_size: int = 100,
         pid_color: str = "blue",
         pid_size: int = 10,
+        *,
+        data_getter: Callable[[int], np.ndarray] | None = None,
         **kwargs,
     ) -> FuncAnimation:
         """Create an animation from a 3D array.
@@ -2207,6 +2209,15 @@ class ArrayGlyph(Glyph):
                 Any valid matplotlib color string.
             pid_size: Size of the point value annotations, by default 10.
                 Controls the font size of the annotations.
+            data_getter: Optional callable ``f(i) -> ndarray`` that
+                returns the 2-D frame for index ``i``, by default
+                None. When set, ``self.arr`` is no longer iterated;
+                each frame is fetched lazily through the callback —
+                useful for streaming frames from a remote / lazy
+                source (e.g. a NetCDF time slab). The returned array
+                must have shape ``self.arr.shape[-2:]``. When None
+                (default) the existing behaviour is preserved and
+                ``self.arr[i]`` supplies frame ``i``.
             **kwargs: Additional keyword arguments for customizing the animation.
 
                 Plot appearance:
@@ -2278,6 +2289,8 @@ class ArrayGlyph(Glyph):
         Raises:
             ValueError: If an invalid keyword argument is provided.
             ValueError: If the length of the time list doesn't match the first dimension of the array.
+            ValueError: If ``data_getter`` is None and ``self.arr``
+                is 2-D (no time axis to iterate over).
 
         Notes:
             The animation is created by iterating through the first dimension of the array.
@@ -2388,13 +2401,37 @@ class ArrayGlyph(Glyph):
         precision = self.default_options["precision"]
         array = self.arr
 
+        # ``data_getter`` is the lazy-frame escape hatch added in
+        # CLEO-7. When ``None`` (default) we fall back to the eager
+        # ``self.arr[i]`` path. We require a 3-D arr in the eager
+        # path; with a callback, ``self.arr`` is used only for the
+        # frame shape so a 2-D template is fine.
+        if data_getter is None:
+            if array.ndim != 3:
+                raise ValueError(
+                    "animate requires either a 3-D arr or a "
+                    "data_getter callback"
+                )
+            frame_0 = array[0, :, :]
+            n_frames = np.shape(array)[0]
+        else:
+            n_frames = len(time)
+            frame_0 = np.asarray(data_getter(0))
+            expected_shape = tuple(array.shape[-2:])
+            if frame_0.shape != expected_shape:
+                raise ValueError(
+                    f"`data_getter` returned shape {frame_0.shape}, "
+                    f"expected {expected_shape} (matching the data "
+                    "array's last two axes)."
+                )
+
         if self.fig is None:
             self.fig, self.ax = self.create_figure_axes()
 
         fig, ax = self.fig, self.ax
 
         ticks = self.get_ticks()
-        im, cbar_kw = self._plot_im_get_cbar_kw(ax, array[0, :, :], ticks)
+        im, cbar_kw = self._plot_im_get_cbar_kw(ax, frame_0, ticks)
 
         # Create colorbar
         cbar = self.create_color_bar(ax, im, cbar_kw)
@@ -2409,9 +2446,9 @@ class ArrayGlyph(Glyph):
         ax.set_yticks([])
 
         if self.default_options["display_cell_value"]:
-            indices = get_indices2(array[0, :, :], [np.nan])
+            indices = get_indices2(frame_0, [np.nan])
             cell_text_value = self._plot_text(
-                ax, array[0, :, :], indices, self.default_options
+                ax, frame_0, indices, self.default_options
             )
             indices = np.array(indices)
 
@@ -2421,13 +2458,17 @@ class ArrayGlyph(Glyph):
             points_scatter = ax.scatter(col, row, color=point_color, s=point_size)
             points_id = self._plot_point_values(ax, points, pid_color, pid_size)
 
-        # Normalize the threshold to the image color range.
+        # Normalize the threshold to the image color range. With a
+        # lazy ``data_getter`` we only have ``frame_0`` available
+        # cheaply, so fall back to its max — callers who care can
+        # set ``background_color_threshold`` explicitly.
         if self.default_options["background_color_threshold"] is not None:
             background_color_threshold = im.norm(
                 self.default_options["background_color_threshold"]
             )
         else:
-            background_color_threshold = im.norm(np.nanmax(array)) / 2.0
+            ref_for_threshold = array if data_getter is None else frame_0
+            background_color_threshold = im.norm(np.nanmax(ref_for_threshold)) / 2.0
 
         day_text = ax.text(
             text_loc[0],
@@ -2436,9 +2477,22 @@ class ArrayGlyph(Glyph):
             fontsize=self.default_options["cbar_label_size"],
         )
 
+        def _fetch_frame(i: int) -> np.ndarray:
+            """Resolve frame ``i`` via the callback or the eager array."""
+            if data_getter is None:
+                frame = array[i, :, :]
+            else:
+                frame = np.asarray(data_getter(i))
+                if frame.shape != tuple(array.shape[-2:]):
+                    raise ValueError(
+                        f"`data_getter` returned shape {frame.shape}, "
+                        f"expected {tuple(array.shape[-2:])}."
+                    )
+            return frame
+
         def init():
-            """initialize the plot with the first array"""
-            im.set_data(array[0, :, :])
+            """initialize the plot with the cached first frame"""
+            im.set_data(frame_0)
             day_text.set_text("")
             output = [im, day_text]
 
@@ -2451,7 +2505,7 @@ class ArrayGlyph(Glyph):
                 output += points_id
 
             if self.default_options["display_cell_value"]:
-                vals = array[0, indices[:, 0], indices[:, 1]]
+                vals = frame_0[indices[:, 0], indices[:, 1]]
                 update_cell_value = lambda x: cell_text_value[x].set_text(vals[x])
                 list(map(update_cell_value, range(self.no_elem)))
                 output += cell_text_value
@@ -2460,7 +2514,8 @@ class ArrayGlyph(Glyph):
 
         def animate_a(i):
             """plot for each element in the iterable."""
-            im.set_data(array[i, :, :])
+            frame = _fetch_frame(i)
+            im.set_data(frame)
             day_text.set_text("Date = " + str(time[i])[0:10])
             output = [im, day_text]
 
@@ -2474,7 +2529,7 @@ class ArrayGlyph(Glyph):
                 output += points_id
 
             if self.default_options["display_cell_value"]:
-                vals = array[i, indices[:, 0], indices[:, 1]]
+                vals = frame[indices[:, 0], indices[:, 1]]
 
                 def update_cell_value(x):
                     """Update cell value"""
@@ -2498,7 +2553,7 @@ class ArrayGlyph(Glyph):
             fig,
             animate_a,
             init_func=init,
-            frames=np.shape(array)[0],
+            frames=n_frames,
             interval=interval,
             blit=True,
         )
