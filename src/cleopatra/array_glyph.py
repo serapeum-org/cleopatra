@@ -123,6 +123,7 @@ class ArrayGlyph(Glyph):
         array: np.ndarray,
         exclude_value: list = np.nan,
         extent: list = None,
+        coords: tuple[np.ndarray, np.ndarray] | list[np.ndarray] | None = None,
         rgb: list[int] = None,
         surface_reflectance: int = None,
         cutoff: list = None,
@@ -139,6 +140,14 @@ class ArrayGlyph(Glyph):
                 Can be a single value or a list of values to exclude.
             extent: The extent of the array in the format [xmin, ymin, xmax, ymax], by default None.
                 If provided, the array will be plotted with these spatial boundaries.
+                Mutually exclusive with ``coords``.
+            coords: Optional ``(x, y)`` coordinate arrays for curvilinear
+                or non-uniform grids, by default None. Each element is
+                either a 1-D array of cell centres (length matches the
+                last/second-to-last axis of ``array``) or a 2-D array
+                matching the last two axes of ``array``. When set,
+                ``kind="auto"`` routes to ``pcolormesh`` instead of
+                ``imshow``. Mutually exclusive with ``extent``.
             rgb: The indices of the red, green, and blue bands in the given array, by default None.
                 If provided, the array will be treated as an RGB image.
                 Can be a list of three values [r, g, b], or four values if alpha band is included [r, g, b, a].
@@ -203,6 +212,11 @@ class ArrayGlyph(Glyph):
             ValueError: If rgb is provided but the array doesn't have enough dimensions.
             ValueError: If ``extend`` is set to a value outside
                 ``{"neither", "both", "min", "max"}``.
+            ValueError: If both ``extent`` and ``coords`` are supplied,
+                or if a ``coords`` element has a shape that does not
+                match ``array``.
+            TypeError: If ``coords`` is not a length-2 sequence of
+                ndarrays.
 
         Examples:
         Basic initialization with a 2D array:
@@ -289,6 +303,32 @@ class ArrayGlyph(Glyph):
         ValueError: Invalid extend='up'. Valid values are ('neither', 'both', 'min', 'max') or None.
 
         ```
+        Curvilinear coords (1-D centres) auto-route to
+        ``pcolormesh``:
+        ```python
+        >>> import numpy as np
+        >>> from cleopatra.array_glyph import ArrayGlyph
+        >>> arr = np.arange(12, dtype=float).reshape(3, 4)
+        >>> x = np.linspace(0.0, 10.0, 4)
+        >>> y = np.linspace(0.0, 5.0, 3)
+        >>> glyph = ArrayGlyph(arr, coords=(x, y))
+        >>> glyph.coords[0].shape, glyph.coords[1].shape
+        ((4,), (3,))
+
+        ```
+        ``extent`` and ``coords`` are mutually exclusive:
+        ```python
+        >>> import numpy as np
+        >>> from cleopatra.array_glyph import ArrayGlyph
+        >>> arr = np.zeros((3, 4))
+        >>> x = np.linspace(0.0, 10.0, 4)
+        >>> y = np.linspace(0.0, 5.0, 3)
+        >>> ArrayGlyph(arr, extent=[0, 0, 1, 1], coords=(x, y))
+        Traceback (most recent call last):
+            ...
+        ValueError: `extent` and `coords` are mutually exclusive — pass one or the other.
+
+        ```
         """
         super().__init__(default_options=DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs)
         # first replace the no_data_value by nan
@@ -306,9 +346,17 @@ class ArrayGlyph(Glyph):
             array = ma.array(array)
 
         # convert the extent from [xmin, ymin, xmax, ymax] to [xmin, xmax, ymin, ymax] as required by matplotlib.
+        if extent is not None and coords is not None:
+            raise ValueError(
+                "`extent` and `coords` are mutually exclusive — pass one or the other."
+            )
         if extent is not None:
             extent = [extent[0], extent[2], extent[1], extent[3]]
         self.extent = extent
+
+        # Validate and normalise ``coords`` (curvilinear / non-uniform support).
+        # Stored as ``self._coords = (x, y)`` or ``None``.
+        self._coords = self._validate_coords(coords, array)
 
         if rgb is not None:
             self.rgb = True
@@ -686,6 +734,103 @@ class ArrayGlyph(Glyph):
         self._exclude_value = value
 
     @staticmethod
+    def _validate_coords(
+        coords: tuple[np.ndarray, np.ndarray] | list[np.ndarray] | None,
+        array: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray] | None:
+        """Validate the ``coords`` kwarg and return a normalised ``(x, y)`` tuple.
+
+        Args:
+            coords: User-provided coordinates. ``None`` (no curvilinear
+                support), or a length-2 tuple/list of arrays. Each
+                element is either 1-D (length matches the last axis of
+                ``array`` for ``x`` and the second-to-last for ``y``)
+                or 2-D with shape ``array.shape[-2:]``.
+            array: The data array used to validate coordinate shapes.
+
+        Returns:
+            tuple[np.ndarray, np.ndarray] or None: The validated
+                ``(x, y)`` pair, with each element cast to ``np.ndarray``.
+
+        Raises:
+            TypeError: If ``coords`` is not ``None`` and not a length-2
+                sequence.
+            ValueError: If a coordinate array has a shape that does not
+                match the data array.
+
+        Examples:
+            - ``None`` short-circuits to ``None``:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> ArrayGlyph._validate_coords(None, np.zeros((3, 4))) is None
+                True
+
+                ```
+            - 1-D centres matching ``array.shape[-1]`` (x) and
+                ``array.shape[-2]`` (y) are accepted:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> arr = np.zeros((3, 4))
+                >>> x = np.array([0.0, 1.0, 2.0, 3.0])
+                >>> y = np.array([0.0, 1.0, 2.0])
+                >>> xs, ys = ArrayGlyph._validate_coords((x, y), arr)
+                >>> xs.shape, ys.shape
+                ((4,), (3,))
+
+                ```
+            - A non-tuple raises :class:`TypeError`:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> ArrayGlyph._validate_coords("oops", np.zeros((3, 4)))
+                Traceback (most recent call last):
+                    ...
+                TypeError: `coords` must be a length-2 sequence of arrays (x, y), got str.
+
+                ```
+        """
+        if coords is None:
+            result = None
+        else:
+            if not isinstance(coords, (tuple, list)) or len(coords) != 2:
+                raise TypeError(
+                    "`coords` must be a length-2 sequence of arrays "
+                    f"(x, y), got {type(coords).__name__}."
+                )
+            x_in, y_in = coords
+            x_arr = np.asarray(x_in)
+            y_arr = np.asarray(y_in)
+            data_shape = array.shape[-2:]
+            rows, cols = data_shape
+            x_ok = (x_arr.ndim == 1 and x_arr.shape[0] == cols) or (
+                x_arr.ndim == 2 and x_arr.shape == data_shape
+            )
+            y_ok = (y_arr.ndim == 1 and y_arr.shape[0] == rows) or (
+                y_arr.ndim == 2 and y_arr.shape == data_shape
+            )
+            if not x_ok:
+                raise ValueError(
+                    f"Coord array shape {x_arr.shape} doesn't match data "
+                    f"shape {data_shape} (expected 1-D length {cols} or "
+                    f"2-D {data_shape})."
+                )
+            if not y_ok:
+                raise ValueError(
+                    f"Coord array shape {y_arr.shape} doesn't match data "
+                    f"shape {data_shape} (expected 1-D length {rows} or "
+                    f"2-D {data_shape})."
+                )
+            result = (x_arr, y_arr)
+        return result
+
+    @property
+    def coords(self) -> tuple[np.ndarray, np.ndarray] | None:
+        """Optional ``(x, y)`` coordinate arrays for curvilinear grids."""
+        return self._coords
+
+    @staticmethod
     def _validate_extend(extend: str | None) -> None:
         """Validate the ``extend`` kwarg against the allowed values.
 
@@ -973,7 +1118,13 @@ class ArrayGlyph(Glyph):
 
         levels = self.default_options.get("levels")
 
+        coords = self._coords
+
         if kind == "imshow":
+            if coords is not None:
+                raise ValueError(
+                    "`coords` requires kind='pcolormesh' or 'auto'."
+                )
             if norm is None:
                 im = ax.matshow(
                     plot_arr, cmap=cmap, vmin=vmin, vmax=vmax, extent=self.extent
@@ -981,16 +1132,19 @@ class ArrayGlyph(Glyph):
             else:
                 im = ax.matshow(plot_arr, cmap=cmap, norm=norm, extent=self.extent)
         elif kind == "pcolormesh":
+            pcm_args = (coords[0], coords[1], plot_arr) if coords is not None else (plot_arr,)
             if norm is None:
                 im = ax.pcolormesh(
-                    plot_arr,
+                    *pcm_args,
                     cmap=cmap,
                     vmin=vmin,
                     vmax=vmax,
                     shading="auto",
                 )
             else:
-                im = ax.pcolormesh(plot_arr, cmap=cmap, norm=norm, shading="auto")
+                im = ax.pcolormesh(
+                    *pcm_args, cmap=cmap, norm=norm, shading="auto"
+                )
         elif kind in ("contour", "contourf"):
             # contour/contourf cannot consume masked arrays cleanly;
             # convert to a NaN-filled view if we're holding a mask.
@@ -1007,10 +1161,17 @@ class ArrayGlyph(Glyph):
             # contour rings line up with the colorbar boundaries computed
             # in ``_create_norm_and_cbar_kw``.
             level_edges = self._levels_to_bounds(levels, vmin, vmax)
-            if level_edges is not None:
-                im = plot_fn(plot_arr, level_edges, **contour_kwargs)
+            # When curvilinear coords are present forward them as the
+            # first two positional args (matplotlib contour signature is
+            # ``contour([X, Y,] Z, [levels], **kwargs)``).
+            if coords is not None:
+                base_args = (coords[0], coords[1], plot_arr)
             else:
-                im = plot_fn(plot_arr, **contour_kwargs)
+                base_args = (plot_arr,)
+            if level_edges is not None:
+                im = plot_fn(*base_args, level_edges, **contour_kwargs)
+            else:
+                im = plot_fn(*base_args, **contour_kwargs)
         else:
             raise ValueError(
                 f"Invalid kind={kind!r}. Valid kinds are {VALID_PLOT_KINDS}."
@@ -1168,14 +1329,16 @@ class ArrayGlyph(Glyph):
                 Controls the font size of the annotations.
             kind: Render kind, by default ``"auto"``. One of:
 
-                - ``"auto"`` — picks the best renderer for the data. For
-                  now this is equivalent to ``"imshow"``; curvilinear
-                  coordinate dispatch lands in a later release.
+                - ``"auto"`` — picks the best renderer for the data.
+                  Routes to ``"pcolormesh"`` when curvilinear /
+                  non-uniform ``coords`` were passed to the
+                  constructor, otherwise falls back to ``"imshow"``.
                 - ``"imshow"`` — pixel-grid raster render via
                   ``ax.imshow``/``matshow``. Honours ``extent``.
+                  Incompatible with ``coords``.
                 - ``"pcolormesh"`` — quadrilateral mesh render via
-                  ``ax.pcolormesh`` with ``shading="auto"``. Does not
-                  honour ``extent``.
+                  ``ax.pcolormesh`` with ``shading="auto"``. Honours
+                  ``coords`` (1-D centres or 2-D curvilinear).
                 - ``"contour"`` — line contours via ``ax.contour``.
                   Honours ``levels`` from kwargs when set.
                 - ``"contourf"`` — filled contours via ``ax.contourf``.
@@ -1611,10 +1774,13 @@ class ArrayGlyph(Glyph):
         self._validate_extend(self.default_options.get("extend"))
 
         self.default_options["kind"] = kind
-        # Resolve "auto" — for now auto == imshow. Curvilinear-coord
-        # dispatch (auto -> pcolormesh when 2-D coords are present) lands
-        # in CLEO-2; here we keep every existing test green.
-        effective_kind = "imshow" if kind == "auto" else kind
+        # Resolve "auto": when curvilinear / non-uniform coords are set
+        # we route to ``pcolormesh`` (it honours the (x, y) arrays);
+        # otherwise we fall back to the original ``imshow`` path.
+        if kind == "auto":
+            effective_kind = "pcolormesh" if self._coords is not None else "imshow"
+        else:
+            effective_kind = kind
 
         if self.fig is None:
             self.fig, self.ax = self.create_figure_axes()

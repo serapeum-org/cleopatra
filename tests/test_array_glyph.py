@@ -1094,3 +1094,106 @@ class TestCenterCmapDoesNotApplyToRgb:
         assert not hasattr(glyph, "cbar"), (
             "RGB compositing should not create a colorbar"
         )
+
+
+@pytest.mark.plot
+class TestCoordsCurvilinear:
+    """Tests for curvilinear / non-uniform ``coords=(x, y)`` support (CLEO-2).
+
+    Covers the ``coords`` constructor kwarg introduced in C-2, the
+    automatic ``kind="auto"`` -> ``pcolormesh`` dispatch when coords
+    are present, mutual exclusivity with ``extent``, and shape
+    validation.
+    """
+
+    @staticmethod
+    def _arr_3x4() -> np.ndarray:
+        """Small ``(3 rows, 4 cols)`` test array."""
+        return np.arange(12, dtype=float).reshape(3, 4)
+
+    def test_1d_coords_auto_routes_to_pcolormesh(self):
+        """1-D ``coords`` + ``kind="auto"`` renders as a ``QuadMesh``."""
+        arr = self._arr_3x4()
+        x = np.linspace(0.0, 10.0, 4)
+        y = np.linspace(0.0, 5.0, 3)
+        glyph = ArrayGlyph(arr, coords=(x, y))
+        fig, ax = glyph.plot(kind="auto")
+        assert isinstance(fig, Figure)
+        # ``pcolormesh`` produces a QuadMesh that lives in ax.collections.
+        assert len(ax.collections) >= 1
+        # And not an image (imshow would have been the wrong path).
+        assert len(ax.get_images()) == 0
+
+    def test_2d_meshgrid_coords_render_via_pcolormesh(self):
+        """2-D ``(X, Y)`` from ``np.meshgrid`` renders via ``pcolormesh``."""
+        arr = self._arr_3x4()
+        x1d = np.linspace(0.0, 10.0, 4)
+        y1d = np.linspace(0.0, 5.0, 3)
+        x2d, y2d = np.meshgrid(x1d, y1d)
+        glyph = ArrayGlyph(arr, coords=(x2d, y2d))
+        fig, ax = glyph.plot(kind="pcolormesh")
+        assert isinstance(fig, Figure)
+        assert len(ax.collections) >= 1
+
+    def test_imshow_with_coords_raises(self):
+        """``kind="imshow"`` together with ``coords`` raises ``ValueError``.
+
+        Document the design choice: imshow renders on the array's
+        index grid and cannot honour arbitrary (x, y) coordinate
+        arrays. Callers must use ``kind="pcolormesh"`` or
+        ``kind="auto"`` instead.
+        """
+        arr = self._arr_3x4()
+        x = np.linspace(0.0, 10.0, 4)
+        y = np.linspace(0.0, 5.0, 3)
+        glyph = ArrayGlyph(arr, coords=(x, y))
+        with pytest.raises(ValueError, match="coords"):
+            glyph.plot(kind="imshow")
+
+    def test_coord_shape_mismatch_raises(self):
+        """A coord array whose shape does not match the data raises."""
+        arr = self._arr_3x4()
+        x_bad = np.linspace(0.0, 10.0, 99)  # length mismatch
+        y = np.linspace(0.0, 5.0, 3)
+        with pytest.raises(ValueError, match="doesn't match data shape"):
+            ArrayGlyph(arr, coords=(x_bad, y))
+
+    def test_extent_and_coords_together_raises(self):
+        """Passing both ``extent`` and ``coords`` raises ``ValueError``."""
+        arr = self._arr_3x4()
+        x = np.linspace(0.0, 10.0, 4)
+        y = np.linspace(0.0, 5.0, 3)
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            ArrayGlyph(
+                arr,
+                extent=[0.0, 0.0, 10.0, 5.0],
+                coords=(x, y),
+            )
+
+    def test_coords_not_two_tuple_raises(self):
+        """``coords`` must be a length-2 sequence; otherwise ``TypeError``."""
+        arr = self._arr_3x4()
+        with pytest.raises(TypeError, match="length-2 sequence"):
+            ArrayGlyph(arr, coords="oops")
+
+    def test_2d_coords_with_contourf(self):
+        """Curvilinear 2-D coords also forward through ``kind="contourf"``."""
+        arr = self._arr_3x4()
+        x1d = np.linspace(0.0, 10.0, 4)
+        y1d = np.linspace(0.0, 5.0, 3)
+        x2d, y2d = np.meshgrid(x1d, y1d)
+        glyph = ArrayGlyph(arr, coords=(x2d, y2d))
+        fig, ax = glyph.plot(kind="contourf")
+        assert isinstance(fig, Figure)
+        assert len(ax.collections) >= 1
+
+    def test_backward_compat_no_coords_renders_imshow(self):
+        """An ``ArrayGlyph(arr)`` with no coords still renders via imshow."""
+        arr = self._arr_3x4()
+        glyph = ArrayGlyph(arr)
+        assert glyph.coords is None
+        fig, ax = glyph.plot()
+        assert isinstance(fig, Figure)
+        # No coords -> auto resolves to imshow, which produces an
+        # AxesImage rather than a QuadMesh.
+        assert len(ax.get_images()) >= 1
