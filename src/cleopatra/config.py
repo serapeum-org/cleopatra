@@ -39,14 +39,10 @@ class Config:
                         "Matplotlib backend set to inline for static plots in Jupyter notebook"
                     )
             else:
-                try:
-                    # Running in an IDE or script
-                    # plt.switch_backend("TkAgg")
-                    matplotlib.use("TkAgg")
-                    print("Matplotlib backend set to TkAgg for script or IDE")
-                except ImportError:
-                    plt.switch_backend("Agg")
-                    print("Matplotlib backend set to Agg (non-interactive)")
+                # TEMP: defaulting to Agg until the netcdf-plotting refactor on branch
+                # `netcdf/add-netcdf-plotting-logic` is finished. Revert to TkAgg afterwards.
+                matplotlib.use("Agg")
+                print("Matplotlib backend set to Agg (non-interactive default)")
 
 
 def is_notebook():
