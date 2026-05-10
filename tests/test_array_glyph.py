@@ -1384,3 +1384,984 @@ class TestAnimateDataGetter:
             )
         finally:
             plt.close(anim._fig)
+
+
+@pytest.mark.plot
+class TestCoordsCurvilinearEdgeCases:
+    """Edge-case coverage for the curvilinear ``coords=(x, y)`` path (Phase 2 / CLEO-2).
+
+    Complements :class:`TestCoordsCurvilinear` with NaN handling, descending
+    coordinates, dtype variants, small/degenerate grids, and an explicit
+    ``kind="pcolormesh"`` + ``coords=None`` round-trip.
+    """
+
+    @staticmethod
+    def _arr_3x4() -> np.ndarray:
+        """Build a small ``(3, 4)`` array suitable for curvilinear tests."""
+        return np.arange(12, dtype=float).reshape(3, 4)
+
+    def test_1d_coords_with_nan_rejected_by_matplotlib(self) -> None:
+        """1-D coords with NaN cell centres are rejected at render time.
+
+        Test scenario:
+            ``_validate_coords`` happily stores NaN-containing arrays
+            (it only checks shapes), but matplotlib's ``pcolormesh``
+            raises on non-finite coordinates. This documents that
+            contract.
+        """
+        arr = self._arr_3x4()
+        x = np.array([0.0, 1.0, np.nan, 3.0])
+        y = np.array([0.0, 1.0, 2.0])
+        glyph = ArrayGlyph(arr, coords=(x, y))
+        with pytest.raises(ValueError, match="non-finite"):
+            glyph.plot(kind="auto")
+
+    def test_descending_1d_coords_render(self) -> None:
+        """Descending coordinates (e.g. lat N->S) are accepted and rendered.
+
+        Test scenario:
+            Latitude often runs north-to-south in NetCDF data;
+            ``pcolormesh`` handles descending centres without raising.
+        """
+        arr = self._arr_3x4()
+        x = np.linspace(10.0, 0.0, 4)
+        y = np.linspace(5.0, 0.0, 3)
+        glyph = ArrayGlyph(arr, coords=(x, y))
+        fig, ax = glyph.plot(kind="auto")
+        try:
+            assert isinstance(fig, Figure), "descending coords must still produce a Figure"
+            assert len(ax.collections) >= 1, "expected at least one mesh artist"
+        finally:
+            plt.close(fig)
+
+    def test_1d_coords_corner_length_rejected(self) -> None:
+        """Corner-length 1-D coords (``shape[-1]+1``) are rejected.
+
+        Test scenario:
+            ``_validate_coords`` requires 1-D coord length to match the
+            data axis (cell-centre semantics); passing the +1 corner
+            count raises ``ValueError``.
+        """
+        arr = self._arr_3x4()
+        x_corner = np.linspace(0.0, 10.0, 5)
+        y_corner = np.linspace(0.0, 5.0, 4)
+        with pytest.raises(ValueError, match="doesn't match data shape"):
+            ArrayGlyph(arr, coords=(x_corner, y_corner))
+
+    def test_minimal_2x2_grid_renders(self) -> None:
+        """A degenerate ``2x2`` grid with 1-D coords renders cleanly.
+
+        Test scenario:
+            The smallest meaningful pcolormesh case is a 2x2 grid; the
+            curvilinear path must not assume a minimum size.
+        """
+        arr = np.array([[1.0, 2.0], [3.0, 4.0]])
+        x = np.array([0.0, 1.0])
+        y = np.array([0.0, 1.0])
+        glyph = ArrayGlyph(arr, coords=(x, y))
+        fig, ax = glyph.plot(kind="auto")
+        try:
+            assert isinstance(fig, Figure), "2x2 grid must render"
+            assert len(ax.collections) >= 1, "expected mesh on 2x2 grid"
+        finally:
+            plt.close(fig)
+
+    def test_single_row_array_renders(self) -> None:
+        """A ``(1, N)`` single-row array renders via pcolormesh.
+
+        Test scenario:
+            Degenerate single-row inputs occur for transect-style data;
+            the curvilinear path must accept them.
+        """
+        arr = np.arange(4, dtype=float).reshape(1, 4)
+        x = np.linspace(0.0, 10.0, 4)
+        y = np.array([0.0])
+        glyph = ArrayGlyph(arr, coords=(x, y))
+        fig, ax = glyph.plot(kind="auto")
+        try:
+            assert isinstance(fig, Figure), "single-row array must render"
+            assert len(ax.collections) >= 1, "expected pcolormesh on single row"
+        finally:
+            plt.close(fig)
+
+    def test_single_column_array_renders(self) -> None:
+        """A ``(N, 1)`` single-column array renders via pcolormesh.
+
+        Test scenario:
+            Single-column profile data (e.g. depth profile) is a valid
+            curvilinear input.
+        """
+        arr = np.arange(3, dtype=float).reshape(3, 1)
+        x = np.array([0.0])
+        y = np.linspace(0.0, 5.0, 3)
+        glyph = ArrayGlyph(arr, coords=(x, y))
+        fig, ax = glyph.plot(kind="auto")
+        try:
+            assert isinstance(fig, Figure), "single-column array must render"
+            assert len(ax.collections) >= 1, "expected pcolormesh on single column"
+        finally:
+            plt.close(fig)
+
+    def test_pcolormesh_explicit_without_coords(self) -> None:
+        """``kind="pcolormesh"`` with ``coords=None`` falls back to array indices.
+
+        Test scenario:
+            Choosing pcolormesh explicitly while leaving coords unset
+            must render on the array's index grid (no coord forwarding).
+        """
+        arr = self._arr_3x4()
+        glyph = ArrayGlyph(arr)
+        assert glyph.coords is None, "coords must default to None"
+        fig, ax = glyph.plot(kind="pcolormesh")
+        try:
+            assert isinstance(fig, Figure), "explicit pcolormesh must render"
+            assert len(ax.collections) >= 1, "expected QuadMesh artist"
+        finally:
+            plt.close(fig)
+
+    @pytest.mark.parametrize(
+        "dtype",
+        [np.int32, np.int64, np.float32, np.float64],
+        ids=["int32", "int64", "float32", "float64"],
+    )
+    def test_coords_dtype_variants(self, dtype) -> None:
+        """Integer and float coord dtypes both render via pcolormesh.
+
+        Args:
+            dtype: numpy dtype applied to the coordinate arrays.
+
+        Test scenario:
+            Coordinate arrays may arrive as integer indices or 32/64-bit
+            floats from upstream readers; the curvilinear path must
+            not narrow the accepted dtype.
+        """
+        arr = self._arr_3x4()
+        x = np.array([0, 1, 2, 3], dtype=dtype)
+        y = np.array([0, 1, 2], dtype=dtype)
+        glyph = ArrayGlyph(arr, coords=(x, y))
+        fig, ax = glyph.plot(kind="auto")
+        try:
+            assert isinstance(fig, Figure), f"dtype {dtype} must render"
+            assert glyph.coords[0].dtype == np.dtype(dtype), (
+                f"coord dtype must be preserved; got {glyph.coords[0].dtype}"
+            )
+        finally:
+            plt.close(fig)
+
+    def test_coords_unmasked_masked_array(self) -> None:
+        """Unmasked masked-array coords flow through ``np.asarray`` and render.
+
+        Test scenario:
+            Coordinates from netCDF readers are sometimes wrapped in
+            ``numpy.ma.MaskedArray`` with no actual mask. ``np.asarray``
+            in ``_validate_coords`` keeps the underlying values intact
+            and pcolormesh accepts them.
+        """
+        arr = self._arr_3x4()
+        x_raw = np.array([0.0, 1.0, 2.0, 3.0])
+        x_ma = np.ma.array(x_raw, mask=False)
+        y = np.linspace(0.0, 2.0, 3)
+        glyph = ArrayGlyph(arr, coords=(x_ma, y))
+        fig, ax = glyph.plot(kind="auto")
+        try:
+            assert isinstance(fig, Figure), "unmasked MaskedArray must render"
+            assert len(ax.collections) >= 1, "expected mesh artist"
+        finally:
+            plt.close(fig)
+
+    def test_coords_contourf_roundtrip_savefig(self, tmp_path) -> None:
+        """Curvilinear + contourf round-trips to a non-empty PNG.
+
+        Args:
+            tmp_path: pytest temp-directory fixture.
+
+        Test scenario:
+            ``coords`` + ``kind="contourf"`` must produce a saveable
+            figure that lands a non-zero-byte PNG on disk.
+        """
+        arr = self._arr_3x4()
+        x1d = np.linspace(0.0, 10.0, 4)
+        y1d = np.linspace(0.0, 5.0, 3)
+        glyph = ArrayGlyph(arr, coords=(x1d, y1d))
+        fig, ax = glyph.plot(kind="contourf")
+        out = tmp_path / "coords_contourf.png"
+        try:
+            fig.savefig(out)
+            assert out.exists(), "savefig must write a file"
+            assert out.stat().st_size > 0, "PNG must be non-empty"
+        finally:
+            plt.close(fig)
+
+    def test_coord_y_shape_mismatch_raises(self) -> None:
+        """A y-coord with wrong shape raises ``ValueError`` (covers x_ok branch).
+
+        Test scenario:
+            ``_validate_coords`` validates x and y independently; a
+            valid x with an invalid y must hit the y_ok branch and
+            raise a descriptive error.
+        """
+        arr = self._arr_3x4()
+        x_good = np.linspace(0.0, 10.0, 4)
+        y_bad = np.linspace(0.0, 5.0, 7)
+        with pytest.raises(ValueError, match="doesn't match data shape"):
+            ArrayGlyph(arr, coords=(x_good, y_bad))
+
+
+@pytest.mark.plot
+class TestFacetingEdgeCases:
+    """Edge-case coverage for ``ArrayGlyph.facet`` (Phase 2 / CLEO-4).
+
+    Complements :class:`TestFaceting` with degenerate stack sizes,
+    coord-aware globals, robust + faceting interaction, name_dicts
+    integrity, and a savefig round-trip on a 2x3 grid.
+    """
+
+    @staticmethod
+    def _stack(n: int = 4, h: int = 6, w: int = 6, seed: int = 1337) -> np.ndarray:
+        """Build a deterministic 3-D stack ``(n, h, w)`` for facet tests.
+
+        Args:
+            n: First-axis length.
+            h: Height (penultimate axis).
+            w: Width (last axis).
+            seed: ``np.random.default_rng`` seed for reproducibility.
+
+        Returns:
+            Float ``(n, h, w)`` uniform-random array.
+        """
+        rng = np.random.default_rng(seed)
+        return rng.uniform(0.0, 1.0, size=(n, h, w))
+
+    def test_single_facet_n1(self) -> None:
+        """A 3-D stack with ``N=1`` produces a single 1x1 grid.
+
+        Test scenario:
+            Degenerate single-frame stack: shape ``(1, H, W)`` must
+            yield ``axes.shape == (1, 1)`` and a single ``name_dict``.
+        """
+        stack = self._stack(n=1)
+        result = ArrayGlyph(stack).facet(col="t")
+        try:
+            assert result.axes.shape == (1, 1), (
+                f"single facet must yield (1, 1); got {result.axes.shape}"
+            )
+            assert len(result.name_dicts) == 1, "expected one name_dict"
+        finally:
+            plt.close(result.fig)
+
+    def test_wide_grid_with_col_wrap(self) -> None:
+        """``N=20`` with ``col_wrap=4`` lays out a 5x4 grid.
+
+        Test scenario:
+            Confirms the integer-ceiling rows computation for a wide
+            stack and that all 20 panels remain visible.
+        """
+        stack = self._stack(n=20, h=4, w=4)
+        result = ArrayGlyph(stack).facet(col="t", col_wrap=4)
+        try:
+            assert result.axes.shape == (5, 4), (
+                f"expected 5x4 grid; got {result.axes.shape}"
+            )
+            visible = [ax for ax in result.axes.ravel() if ax.get_visible()]
+            assert len(visible) == 20, (
+                f"all 20 panels must be visible; got {len(visible)}"
+            )
+        finally:
+            plt.close(result.fig)
+
+    def test_col_wrap_larger_than_n(self) -> None:
+        """``col_wrap`` larger than N still works (single-row layout).
+
+        Test scenario:
+            With ``N=3`` and ``col_wrap=10``: nrows = ceil(3/10) = 1,
+            ncols = 10; 3 visible + 7 hidden trailing slots.
+        """
+        stack = self._stack(n=3)
+        result = ArrayGlyph(stack).facet(col="t", col_wrap=10)
+        try:
+            assert result.axes.shape == (1, 10), (
+                f"expected 1x10 grid; got {result.axes.shape}"
+            )
+            visible = [ax for ax in result.axes.ravel() if ax.get_visible()]
+            hidden = [ax for ax in result.axes.ravel() if not ax.get_visible()]
+            assert len(visible) == 3, f"expected 3 visible; got {len(visible)}"
+            assert len(hidden) == 7, f"expected 7 hidden; got {len(hidden)}"
+        finally:
+            plt.close(result.fig)
+
+    def test_invalid_col_wrap_zero_raises(self) -> None:
+        """``col_wrap=0`` raises ``ValueError`` (positive-int guard).
+
+        Test scenario:
+            ``col_wrap`` must be a positive int; zero or negative
+            values raise.
+        """
+        stack = self._stack(n=4)
+        with pytest.raises(ValueError, match="positive int"):
+            ArrayGlyph(stack).facet(col="t", col_wrap=0)
+
+    def test_invalid_col_wrap_negative_raises(self) -> None:
+        """A negative ``col_wrap`` is rejected."""
+        stack = self._stack(n=4)
+        with pytest.raises(ValueError, match="positive int"):
+            ArrayGlyph(stack).facet(col="t", col_wrap=-2)
+
+    def test_invalid_col_wrap_type_raises(self) -> None:
+        """A non-int ``col_wrap`` is rejected (string).
+
+        Test scenario:
+            ``col_wrap`` must be int-typed; strings hit the
+            ``isinstance`` guard.
+        """
+        stack = self._stack(n=4)
+        with pytest.raises(ValueError, match="positive int"):
+            ArrayGlyph(stack).facet(col="t", col_wrap="three")
+
+    def test_col_with_2d_array_raises(self) -> None:
+        """Faceting a 2-D array on ``col`` alone raises ``ValueError``.
+
+        Test scenario:
+            Faceting on ``col`` requires a 3-D ``(N, H, W)`` stack;
+            a 2-D input must raise a shape error.
+        """
+        arr2d = np.zeros((5, 5))
+        with pytest.raises(ValueError, match="3-D array"):
+            ArrayGlyph(arr2d).facet(col="t")
+
+    def test_row_without_col_raises(self) -> None:
+        """Passing ``row`` without ``col`` raises ``ValueError``.
+
+        Test scenario:
+            The col+row branch requires both names; ``row="lev"`` alone
+            is rejected.
+        """
+        stack = self._stack(n=4)
+        with pytest.raises(ValueError, match="`col` as well"):
+            ArrayGlyph(stack).facet(row="lev")
+
+    def test_row_with_3d_arr_raises(self) -> None:
+        """Faceting on row+col with a 3-D arr raises ``ValueError``.
+
+        Test scenario:
+            The 4-D branch demands a 4-D stack; 3-D input must
+            surface a shape error.
+        """
+        stack = self._stack(n=4)
+        with pytest.raises(ValueError, match="4-D array"):
+            ArrayGlyph(stack).facet(col="t", row="lev")
+
+    def test_col_coords_length_mismatch_raises(self) -> None:
+        """``col_coords`` whose length differs from N raises ``ValueError``."""
+        stack = self._stack(n=4)
+        with pytest.raises(ValueError, match="`col_coords` length"):
+            ArrayGlyph(stack).facet(col="t", col_coords=[0, 1, 2])
+
+    def test_col_coords_length_mismatch_4d_raises(self) -> None:
+        """``col_coords`` length wrong on a 4-D stack raises."""
+        rng = np.random.default_rng(1337)
+        stack = rng.uniform(0.0, 1.0, size=(2, 3, 4, 4))
+        with pytest.raises(ValueError, match="`col_coords` length"):
+            ArrayGlyph(stack).facet(col="t", row="lev", col_coords=[0])
+
+    def test_row_coords_length_mismatch_raises(self) -> None:
+        """``row_coords`` whose length differs from Nrow raises."""
+        rng = np.random.default_rng(1337)
+        stack = rng.uniform(0.0, 1.0, size=(2, 3, 4, 4))
+        with pytest.raises(ValueError, match="`row_coords` length"):
+            ArrayGlyph(stack).facet(
+                col="t", row="lev", col_coords=[0, 1], row_coords=[0]
+            )
+
+    def test_shared_vmin_vmax_global_min_max(self) -> None:
+        """Stack-wide ``vmin``/``vmax`` reflect the *global* min/max across frames.
+
+        Test scenario:
+            Build two frames with disjoint ranges; the shared colorbar
+            limits must equal the global ``(min, max)`` of the whole
+            stack, not any single frame.
+        """
+        frame_lo = np.linspace(0.0, 1.0, 16).reshape(4, 4)
+        frame_hi = np.linspace(50.0, 100.0, 16).reshape(4, 4)
+        stack = np.stack([frame_lo, frame_hi], axis=0)
+        result = ArrayGlyph(stack).facet(col="t")
+        try:
+            first = result.axes.ravel()[0].get_images()[0]
+            assert first.norm.vmin == pytest.approx(0.0), (
+                f"global vmin must be 0; got {first.norm.vmin}"
+            )
+            assert first.norm.vmax == pytest.approx(100.0), (
+                f"global vmax must be 100; got {first.norm.vmax}"
+            )
+        finally:
+            plt.close(result.fig)
+
+    def test_empty_col_coords_falls_back_to_index(self) -> None:
+        """``col_coords=None`` titles use the integer panel index.
+
+        Test scenario:
+            With no coord list, subplot titles encode the integer
+            facet index (``t=0``, ``t=1``, ...).
+        """
+        stack = self._stack(n=3)
+        result = ArrayGlyph(stack).facet(col="t", col_coords=None)
+        try:
+            titles = [ax.get_title() for ax in result.axes.ravel()]
+            assert "t=0" in titles[0], f"expected 't=0'; got {titles[0]!r}"
+            assert "t=2" in titles[-1], f"expected 't=2'; got {titles[-1]!r}"
+        finally:
+            plt.close(result.fig)
+
+    def test_timestamp_col_coords(self) -> None:
+        """String / timestamp ``col_coords`` are forwarded into titles.
+
+        Test scenario:
+            Time-axis coords often arrive as ``str`` (or
+            ``datetime``); the facet title must include the coord
+            value verbatim.
+        """
+        stack = self._stack(n=3)
+        coords = ["2024-01", "2024-02", "2024-03"]
+        result = ArrayGlyph(stack).facet(col="month", col_coords=coords)
+        try:
+            titles = [ax.get_title() for ax in result.axes.ravel()]
+            for want, title in zip(coords, titles):
+                assert want in title, f"expected {want!r} in {title!r}"
+            assert result.name_dicts[1] == {"month": "2024-02"}
+        finally:
+            plt.close(result.fig)
+
+    def test_name_dicts_only_for_rendered_panels(self) -> None:
+        """``name_dicts`` length matches the number of rendered panels.
+
+        Test scenario:
+            With ``N=5`` and ``col_wrap=3``, 5 panels are rendered
+            (one slot hidden); ``name_dicts`` must have length 5,
+            not 6.
+        """
+        stack = self._stack(n=5)
+        result = ArrayGlyph(stack).facet(col="t", col_wrap=3)
+        try:
+            assert len(result.name_dicts) == 5, (
+                f"name_dicts must match rendered count; got {len(result.name_dicts)}"
+            )
+        finally:
+            plt.close(result.fig)
+
+    def test_name_dicts_4d_contents(self) -> None:
+        """Each 4-D ``name_dict`` carries both ``col`` and ``row`` keys.
+
+        Test scenario:
+            For a 4-D facet, every dict has both keys; with explicit
+            coords, the values come from the coord sequence.
+        """
+        rng = np.random.default_rng(1337)
+        stack = rng.uniform(0.0, 1.0, size=(2, 2, 4, 4))
+        result = ArrayGlyph(stack).facet(
+            col="t", row="lev", col_coords=["A", "B"], row_coords=[10, 20]
+        )
+        try:
+            assert len(result.name_dicts) == 4, (
+                f"expected 4 panels; got {len(result.name_dicts)}"
+            )
+            for nd in result.name_dicts:
+                assert set(nd.keys()) == {"t", "lev"}, (
+                    f"every name_dict must carry both keys; got {nd}"
+                )
+            assert result.name_dicts[0] == {"t": "A", "lev": 10}, (
+                f"first panel must use col[0]/row[0]; got {result.name_dicts[0]}"
+            )
+        finally:
+            plt.close(result.fig)
+
+    def test_robust_with_faceting_global(self) -> None:
+        """``robust=True`` + faceting uses a global percentile over the stack.
+
+        Test scenario:
+            Per-frame robust would yield different colour limits per
+            subplot. The shared global path should compute a single
+            ``(vmin, vmax)`` over the whole stack.
+        """
+        rng = np.random.default_rng(1337)
+        stack = rng.uniform(0.0, 1.0, size=(3, 5, 5))
+        stack[0, 0, 0] = 1e6
+        result = ArrayGlyph(stack).facet(col="t", robust=True)
+        try:
+            first = result.axes.ravel()[0].get_images()[0]
+            for ax in result.axes.ravel():
+                ims = ax.get_images()
+                assert ims[0].norm.vmin == first.norm.vmin, (
+                    f"vmin must be shared; got {ims[0].norm.vmin} vs {first.norm.vmin}"
+                )
+                assert ims[0].norm.vmax == first.norm.vmax, (
+                    f"vmax must be shared; got {ims[0].norm.vmax} vs {first.norm.vmax}"
+                )
+        finally:
+            plt.close(result.fig)
+
+    def test_center_with_faceting_global(self) -> None:
+        """``center`` + faceting symmetrises limits over the whole stack.
+
+        Test scenario:
+            Pass ``center=0`` to ``facet`` for a stack spanning negative
+            and positive values; every subplot must share a symmetric
+            ``(vmin, vmax)`` around 0.
+        """
+        rng = np.random.default_rng(1337)
+        stack = rng.uniform(-2.0, 4.0, size=(3, 5, 5))
+        result = ArrayGlyph(stack).facet(col="t", center=0.0)
+        try:
+            first = result.axes.ravel()[0].get_images()[0]
+            for ax in result.axes.ravel():
+                ims = ax.get_images()
+                assert ims[0].norm.vmin == first.norm.vmin, (
+                    f"vmin not shared across subplots: {ims[0].norm.vmin}"
+                )
+                assert ims[0].norm.vmax == first.norm.vmax, (
+                    f"vmax not shared across subplots: {ims[0].norm.vmax}"
+                )
+            assert first.norm.vmin == pytest.approx(-first.norm.vmax), (
+                "centring around 0 must yield symmetric limits"
+            )
+        finally:
+            plt.close(result.fig)
+
+    def test_facet_2x3_savefig_roundtrip(self, tmp_path) -> None:
+        """A 2x3 facet grid round-trips to a non-empty PNG via savefig.
+
+        Args:
+            tmp_path: pytest temp-directory fixture.
+
+        Test scenario:
+            Explicit 2x3 layout (N=6, col_wrap=3) saves to disk and the
+            resulting PNG has non-zero size.
+        """
+        stack = self._stack(n=6)
+        result = ArrayGlyph(stack).facet(col="t", col_wrap=3)
+        out = tmp_path / "facet_2x3.png"
+        try:
+            result.fig.savefig(out)
+            assert out.exists(), "savefig must write the file"
+            assert out.stat().st_size > 0, "PNG must be non-empty"
+        finally:
+            plt.close(result.fig)
+
+    def test_facet_explicit_figsize(self) -> None:
+        """An explicit ``figsize`` overrides the default panel-based sizing.
+
+        Test scenario:
+            ``facet(figsize=(12, 4))`` must produce a figure whose
+            dimensions reflect the caller's choice.
+        """
+        stack = self._stack(n=3)
+        result = ArrayGlyph(stack).facet(col="t", figsize=(12.0, 4.0))
+        try:
+            w, h = result.fig.get_size_inches()
+            assert w == pytest.approx(12.0), f"width must be 12; got {w}"
+            assert h == pytest.approx(4.0), f"height must be 4; got {h}"
+        finally:
+            plt.close(result.fig)
+
+    def test_facet_with_extent_propagates_to_subplots(self) -> None:
+        """A parent ``extent`` propagates to each sub-glyph during faceting.
+
+        Test scenario:
+            When the parent ArrayGlyph carries an ``extent``, the facet
+            path must convert from matplotlib's stored order back to
+            the constructor's ``[xmin, ymin, xmax, ymax]`` and forward
+            it to every per-subplot ArrayGlyph. The rendered images
+            must show that extent on every subplot.
+        """
+        stack = self._stack(n=3)
+        extent = [0.0, 0.0, 10.0, 5.0]
+        result = ArrayGlyph(stack, extent=extent).facet(col="t")
+        try:
+            for ax in result.axes.ravel():
+                if ax.get_visible():
+                    images = ax.get_images()
+                    assert images, "every visible subplot must have an AxesImage"
+                    got = list(images[0].get_extent())
+                    assert got == [extent[0], extent[2], extent[1], extent[3]], (
+                        f"subplot extent must match parent; got {got}"
+                    )
+        finally:
+            plt.close(result.fig)
+
+    def test_facet_masked_stack_uses_compressed(self) -> None:
+        """A masked-array facet input routes through ``arr.compressed()``.
+
+        Test scenario:
+            When the parent ArrayGlyph builds a masked array (via
+            ``exclude_value``), faceting computes the shared vmin/vmax
+            from ``compressed()`` rather than the raw view.
+        """
+        rng = np.random.default_rng(1337)
+        stack = rng.uniform(0.0, 1.0, size=(3, 4, 4))
+        stack[:, 0, 0] = -999.0
+        glyph = ArrayGlyph(stack, exclude_value=[-999.0])
+        result = glyph.facet(col="t")
+        try:
+            first = result.axes.ravel()[0].get_images()[0]
+            assert first.norm.vmin > -999.0, (
+                "masked values must be excluded from global vmin"
+            )
+        finally:
+            plt.close(result.fig)
+
+    def test_facet_all_nan_stack_falls_back_to_unit_range(self) -> None:
+        """A stack with no finite values defaults to ``(0.0, 1.0)`` limits.
+
+        Test scenario:
+            When every value is non-finite (all NaN), the
+            ``finite.size == 0`` branch of ``facet`` returns
+            ``(0.0, 1.0)`` so the subplots still render without
+            an arithmetic error.
+        """
+        nan_stack = np.full((2, 3, 3), np.nan)
+        result = ArrayGlyph(nan_stack).facet(col="t")
+        try:
+            first = result.axes.ravel()[0].get_images()[0]
+            assert first.norm.vmin == pytest.approx(0.0), (
+                f"expected vmin=0.0 fallback; got {first.norm.vmin}"
+            )
+            assert first.norm.vmax == pytest.approx(1.0), (
+                f"expected vmax=1.0 fallback; got {first.norm.vmax}"
+            )
+        finally:
+            plt.close(result.fig)
+
+    def test_facet_returns_array_of_axes(self) -> None:
+        """``FacetGrid.axes`` is always a 2-D ndarray (``squeeze=False``).
+
+        Test scenario:
+            Even for a 1xN layout, ``axes`` is a 2-D ``ndarray``, never
+            a 1-D vector or bare ``Axes``.
+        """
+        stack = self._stack(n=4)
+        result = ArrayGlyph(stack).facet(col="t")
+        try:
+            assert isinstance(result.axes, np.ndarray), "axes must be ndarray"
+            assert result.axes.ndim == 2, f"axes must be 2-D; got {result.axes.ndim}"
+        finally:
+            plt.close(result.fig)
+
+
+@pytest.mark.plot
+class TestFacetingCrossFeature:
+    """Cross-cutting tests combining facet + coords / kind dispatch."""
+
+    @staticmethod
+    def _stack4d() -> np.ndarray:
+        """Build a deterministic 4-D ``(2, 2, 4, 5)`` stack."""
+        rng = np.random.default_rng(1337)
+        return rng.uniform(0.0, 1.0, size=(2, 2, 4, 5))
+
+    def test_facet_4d_with_curvilinear_coords(self) -> None:
+        """Faceting a 4-D stack with shared 2-D coords forwards to every subplot.
+
+        Test scenario:
+            ``coords=(x_2d, y_2d)`` on a 4-D facet routes every panel
+            through ``pcolormesh`` (the curvilinear path).
+        """
+        stack = self._stack4d()
+        h, w = stack.shape[-2:]
+        x1d = np.linspace(0.0, 10.0, w)
+        y1d = np.linspace(0.0, 5.0, h)
+        x2d, y2d = np.meshgrid(x1d, y1d)
+        glyph = ArrayGlyph(stack, coords=(x2d, y2d))
+        result = glyph.facet(col="t", row="lev", kind="pcolormesh")
+        try:
+            for ax in result.axes.ravel():
+                if ax.get_visible():
+                    assert len(ax.collections) >= 1, (
+                        "every visible panel must hold a QuadMesh"
+                    )
+                    assert len(ax.get_images()) == 0, (
+                        "pcolormesh path must not produce AxesImages"
+                    )
+        finally:
+            plt.close(result.fig)
+
+    def test_facet_then_savefig_no_error(self, tmp_path) -> None:
+        """Calling savefig on a facet result completes without error.
+
+        Test scenario:
+            Smoke test confirming the facet API surface yields a
+            saveable figure suitable for downstream report pipelines.
+        """
+        rng = np.random.default_rng(1337)
+        stack = rng.uniform(0.0, 1.0, size=(4, 5, 5))
+        result = ArrayGlyph(stack).facet(col="t")
+        out = tmp_path / "facet_smoke.png"
+        try:
+            result.fig.savefig(out)
+            assert out.exists(), "expected facet PNG to land on disk"
+        finally:
+            plt.close(result.fig)
+
+
+@pytest.mark.plot
+class TestAnimateDataGetterEdgeCases:
+    """Edge-case coverage for the ``animate(data_getter=...)`` callback (Phase 2 / CLEO-7).
+
+    Complements :class:`TestAnimateDataGetter` with masked-array
+    return values, callback exceptions, dtype divergence, and the
+    interaction with ``display_cell_value=False``.
+    """
+
+    @staticmethod
+    def _stack(n: int = 4, h: int = 5, w: int = 5) -> np.ndarray:
+        """Build a deterministic ``(n, h, w)`` stack for animate tests."""
+        rng = np.random.default_rng(1337)
+        return rng.uniform(0.0, 1.0, size=(n, h, w))
+
+    def test_data_getter_positional_arg_signature(self) -> None:
+        """``data_getter`` is invoked with a single positional ``int`` arg.
+
+        Test scenario:
+            The callback contract uses positional invocation
+            (``data_getter(i)``); a getter that asserts on positional
+            int input must not see kwargs.
+        """
+        stack = self._stack(n=3)
+        observed: list = []
+
+        def getter(i):
+            observed.append(i)
+            assert isinstance(i, int), f"i must be int; got {type(i)}"
+            return stack[i]
+
+        glyph = ArrayGlyph(stack[0])
+        anim = glyph.animate(time=list(range(3)), data_getter=getter)
+        try:
+            assert isinstance(anim, FuncAnimation), "animate must return FuncAnimation"
+            assert observed, "getter must be invoked at least once during init"
+            assert all(isinstance(x, int) for x in observed), (
+                f"all calls must be positional ints; got {observed}"
+            )
+        finally:
+            plt.close(glyph.fig)
+
+    def test_data_getter_returns_masked_array(self) -> None:
+        """A getter returning a masked array still renders.
+
+        Test scenario:
+            Masked arrays are common upstream of NetCDF readers;
+            ``np.asarray`` strips the mask in ``_fetch_frame`` and the
+            animation must complete without raising.
+        """
+        stack = self._stack(n=3)
+        mask = np.zeros_like(stack[0], dtype=bool)
+        mask[0, 0] = True
+
+        def getter(i):
+            return np.ma.array(stack[i], mask=mask)
+
+        glyph = ArrayGlyph(stack[0])
+        anim = glyph.animate(time=list(range(3)), data_getter=getter)
+        try:
+            assert isinstance(anim, FuncAnimation), "masked-array frames must animate"
+        finally:
+            plt.close(glyph.fig)
+
+    def test_data_getter_returns_nan_array(self) -> None:
+        """A getter returning NaN-laden frames renders without error."""
+        stack = self._stack(n=3)
+        stack[0, 0, 0] = np.nan
+
+        def getter(i):
+            frame = stack[i].copy()
+            frame[0, 0] = np.nan
+            return frame
+
+        glyph = ArrayGlyph(stack[0])
+        anim = glyph.animate(time=list(range(3)), data_getter=getter)
+        try:
+            assert isinstance(anim, FuncAnimation), "NaN frames must animate"
+        finally:
+            plt.close(glyph.fig)
+
+    def test_data_getter_raises_propagates(self, tmp_path) -> None:
+        """An exception inside ``data_getter`` propagates to the caller.
+
+        Args:
+            tmp_path: pytest temp-directory fixture.
+
+        Test scenario:
+            The first frame is fetched eagerly in ``animate`` for shape
+            validation; a getter that raises on ``i=0`` must surface
+            the original ``RuntimeError`` unchanged.
+        """
+        glyph = ArrayGlyph(np.zeros((5, 5)))
+
+        def bad_getter(i):
+            raise RuntimeError(f"boom at i={i}")
+
+        with pytest.raises(RuntimeError, match="boom at i=0"):
+            glyph.animate(time=list(range(3)), data_getter=bad_getter)
+
+    def test_data_getter_called_per_time_entry(self, tmp_path) -> None:
+        """``n_frames`` equals ``len(time)`` when ``data_getter`` is set.
+
+        Args:
+            tmp_path: pytest temp-directory fixture.
+
+        Test scenario:
+            With a ``time`` list longer than the underlying stack, the
+            callback governs the frame count; rendering the saved GIF
+            must invoke the getter for every time entry.
+        """
+        stack = self._stack(n=4)
+        calls: list = []
+
+        def getter(i):
+            calls.append(i)
+            return stack[i % stack.shape[0]]
+
+        glyph = ArrayGlyph(stack[0])
+        anim = glyph.animate(time=list(range(6)), data_getter=getter)
+        out = tmp_path / "long_time.gif"
+        try:
+            glyph.save_animation(str(out), fps=2)
+            unique_indices = set(calls)
+            assert max(unique_indices) >= 5, (
+                f"getter must see the trailing time index; saw {sorted(unique_indices)}"
+            )
+        finally:
+            plt.close(anim._fig)
+
+    def test_data_getter_dtype_cast(self) -> None:
+        """A getter returning a different dtype is silently coerced.
+
+        Test scenario:
+            The first frame is ``float64``; a getter returning
+            ``float32`` must not raise — ``np.asarray`` produces a
+            compatible view for ``im.set_data``.
+        """
+        stack = self._stack(n=3).astype(np.float64)
+
+        def getter(i):
+            return stack[i].astype(np.float32)
+
+        glyph = ArrayGlyph(stack[0])
+        anim = glyph.animate(time=list(range(3)), data_getter=getter)
+        try:
+            assert isinstance(anim, FuncAnimation), "dtype mismatch must not raise"
+        finally:
+            plt.close(glyph.fig)
+
+    def test_data_getter_with_display_cell_value_false(self) -> None:
+        """``data_getter`` + ``display_cell_value=False`` works (default path).
+
+        Test scenario:
+            The pre-existing ``display_cell_value=True`` interaction is
+            known-broken with a lazy callback; this confirms the
+            default ``False`` path still functions.
+        """
+        stack = self._stack(n=3)
+        glyph = ArrayGlyph(stack[0])
+        anim = glyph.animate(
+            time=list(range(3)),
+            data_getter=lambda i: stack[i],
+            display_cell_value=False,
+        )
+        try:
+            assert isinstance(anim, FuncAnimation), (
+                "data_getter + display_cell_value=False must animate"
+            )
+        finally:
+            plt.close(glyph.fig)
+
+    def test_data_getter_explicit_vmin_vmax(self) -> None:
+        """``data_getter`` honours explicit ``vmin`` / ``vmax``."""
+        stack = self._stack(n=3)
+        glyph = ArrayGlyph(stack[0])
+        anim = glyph.animate(
+            time=list(range(3)),
+            data_getter=lambda i: stack[i],
+            vmin=-0.5,
+            vmax=1.5,
+        )
+        try:
+            assert glyph.default_options["vmin"] == -0.5, (
+                f"vmin must be -0.5; got {glyph.default_options['vmin']}"
+            )
+            assert glyph.default_options["vmax"] == 1.5, (
+                f"vmax must be 1.5; got {glyph.default_options['vmax']}"
+            )
+        finally:
+            plt.close(glyph.fig)
+
+    def test_data_getter_inconsistent_shape_after_first(self, tmp_path) -> None:
+        """A getter that changes shape on a later frame raises inside ``_fetch_frame``.
+
+        Args:
+            tmp_path: pytest temp-directory fixture.
+
+        Test scenario:
+            The first frame validates at construction time; the
+            per-frame shape guard in ``_fetch_frame`` catches a callback
+            that misbehaves on frame ``i>=1``. Saving the GIF forces
+            execution of the closure and surfaces the error.
+        """
+        stack = self._stack(n=3)
+        glyph = ArrayGlyph(stack[0])
+
+        def getter(i):
+            if i == 0:
+                return stack[0]
+            return np.zeros((99, 99))
+
+        anim = glyph.animate(time=list(range(3)), data_getter=getter)
+        out = tmp_path / "bad_shape.gif"
+        try:
+            with pytest.raises(ValueError, match="data_getter` returned shape"):
+                glyph.save_animation(str(out), fps=2)
+        finally:
+            plt.close(anim._fig)
+
+    def test_data_getter_explicit_text_loc(self) -> None:
+        """A user-supplied ``text_loc`` skips the default-init branch.
+
+        Test scenario:
+            Default ``text_loc=None`` is rewritten to ``[0.1, 0.2]``;
+            passing an explicit value covers the alternate branch where
+            the rewrite is skipped.
+        """
+        stack = self._stack(n=3)
+        glyph = ArrayGlyph(stack[0])
+        anim = glyph.animate(
+            time=list(range(3)),
+            data_getter=lambda i: stack[i],
+            text_loc=[0.05, 0.05],
+        )
+        try:
+            assert isinstance(anim, FuncAnimation), (
+                "explicit text_loc must produce an animation"
+            )
+        finally:
+            plt.close(glyph.fig)
+
+    def test_data_getter_background_color_threshold_set(self) -> None:
+        """Setting ``background_color_threshold`` exercises the if-branch.
+
+        Test scenario:
+            The default-None branch computes the threshold from the
+            frame; an explicit value must go through ``im.norm(...)``
+            directly. This covers the ``if ... is not None`` path of
+            the lazy animate body.
+        """
+        stack = self._stack(n=3)
+        glyph = ArrayGlyph(stack[0])
+        anim = glyph.animate(
+            time=list(range(3)),
+            data_getter=lambda i: stack[i],
+            background_color_threshold=0.5,
+        )
+        try:
+            assert isinstance(anim, FuncAnimation), (
+                "explicit threshold must not break the animate path"
+            )
+        finally:
+            plt.close(glyph.fig)
+
+
