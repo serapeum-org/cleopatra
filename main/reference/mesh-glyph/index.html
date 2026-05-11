@@ -2679,9 +2679,9 @@ connectivity. Default is None.</p>
 <a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">        node_x: 1D array of node x-coordinates (n_nodes,).</span>
 <a id="__codelineno-0-59" name="__codelineno-0-59"></a><span class="sd">        node_y: 1D array of node y-coordinates (n_nodes,).</span>
 <a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">        face_node_connectivity: 2D array of node indices per face</span>
-<a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">            (n_faces, max_nodes_per_face). Use ``fill_value`` to pad</span>
+<a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">            (n_faces, max_nodes_per_face). Use `fill_value` to pad</span>
 <a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="sd">            rows for faces with fewer nodes.</span>
-<a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="sd">        fill_value: Padding value in ``face_node_connectivity`` for</span>
+<a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="sd">        fill_value: Padding value in `face_node_connectivity` for</span>
 <a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="sd">            mixed meshes. Default is -1.</span>
 <a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="sd">        edge_node_connectivity: 2D array of node indices per edge</span>
 <a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="sd">            (n_edges, 2). If provided, used for efficient wireframe</span>
@@ -2968,7 +2968,7 @@ connectivity. Default is None.</p>
 <a id="__codelineno-0-347" name="__codelineno-0-347"></a><span class="sd">        Args:</span>
 <a id="__codelineno-0-348" name="__codelineno-0-348"></a><span class="sd">            ax: Matplotlib axes.</span>
 <a id="__codelineno-0-349" name="__codelineno-0-349"></a><span class="sd">            data: 1D data array.</span>
-<a id="__codelineno-0-350" name="__codelineno-0-350"></a><span class="sd">            location: ``&quot;face&quot;`` or ``&quot;node&quot;``.</span>
+<a id="__codelineno-0-350" name="__codelineno-0-350"></a><span class="sd">            location: `&quot;face&quot;` or `&quot;node&quot;`.</span>
 <a id="__codelineno-0-351" name="__codelineno-0-351"></a><span class="sd">            edgecolor: Edge color for face rendering.</span>
 <a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="sd">            norm: Color normalization.</span>
 <a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="sd">            **render_kwargs: Passed to tripcolor or tricontourf.</span>
@@ -3015,25 +3015,25 @@ connectivity. Default is None.</p>
 <a id="__codelineno-0-394" name="__codelineno-0-394"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">plt</span><span class="o">.</span><span class="n">Figure</span><span class="p">,</span> <span class="n">plt</span><span class="o">.</span><span class="n">Axes</span><span class="p">]:</span>
 <a id="__codelineno-0-395" name="__codelineno-0-395"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot mesh data using matplotlib triangulation.</span>
 <a id="__codelineno-0-396" name="__codelineno-0-396"></a>
-<a id="__codelineno-0-397" name="__codelineno-0-397"></a><span class="sd">        For face-centered data, uses ``tripcolor`` where each triangle</span>
+<a id="__codelineno-0-397" name="__codelineno-0-397"></a><span class="sd">        For face-centered data, uses `tripcolor` where each triangle</span>
 <a id="__codelineno-0-398" name="__codelineno-0-398"></a><span class="sd">        is colored by the value of its parent face. For node-centered</span>
-<a id="__codelineno-0-399" name="__codelineno-0-399"></a><span class="sd">        data, uses ``tricontourf`` for smooth interpolated contours.</span>
+<a id="__codelineno-0-399" name="__codelineno-0-399"></a><span class="sd">        data, uses `tricontourf` for smooth interpolated contours.</span>
 <a id="__codelineno-0-400" name="__codelineno-0-400"></a>
-<a id="__codelineno-0-401" name="__codelineno-0-401"></a><span class="sd">        Supports all 5 color scale types from ``default_options``:</span>
+<a id="__codelineno-0-401" name="__codelineno-0-401"></a><span class="sd">        Supports all 5 color scale types from `default_options`:</span>
 <a id="__codelineno-0-402" name="__codelineno-0-402"></a><span class="sd">        linear, power, sym-lognorm, boundary-norm, and midpoint.</span>
 <a id="__codelineno-0-403" name="__codelineno-0-403"></a>
 <a id="__codelineno-0-404" name="__codelineno-0-404"></a><span class="sd">        Args:</span>
 <a id="__codelineno-0-405" name="__codelineno-0-405"></a><span class="sd">            data: 1D data array. Length must match face count</span>
 <a id="__codelineno-0-406" name="__codelineno-0-406"></a><span class="sd">                (location=&quot;face&quot;) or node count (location=&quot;node&quot;).</span>
-<a id="__codelineno-0-407" name="__codelineno-0-407"></a><span class="sd">            location: Mesh element location: ``&quot;face&quot;`` or ``&quot;node&quot;``.</span>
-<a id="__codelineno-0-408" name="__codelineno-0-408"></a><span class="sd">                Default is ``&quot;face&quot;``.</span>
+<a id="__codelineno-0-407" name="__codelineno-0-407"></a><span class="sd">            location: Mesh element location: `&quot;face&quot;` or `&quot;node&quot;`.</span>
+<a id="__codelineno-0-408" name="__codelineno-0-408"></a><span class="sd">                Default is `&quot;face&quot;`.</span>
 <a id="__codelineno-0-409" name="__codelineno-0-409"></a><span class="sd">            ax: Axes to plot on. If None, uses stored axes or creates</span>
 <a id="__codelineno-0-410" name="__codelineno-0-410"></a><span class="sd">                new.</span>
 <a id="__codelineno-0-411" name="__codelineno-0-411"></a><span class="sd">            edgecolor: Edge color for face rendering. Default is</span>
-<a id="__codelineno-0-412" name="__codelineno-0-412"></a><span class="sd">                ``&quot;none&quot;``.</span>
+<a id="__codelineno-0-412" name="__codelineno-0-412"></a><span class="sd">                `&quot;none&quot;`.</span>
 <a id="__codelineno-0-413" name="__codelineno-0-413"></a><span class="sd">            colorbar: Whether to add a colorbar. Default is True.</span>
-<a id="__codelineno-0-414" name="__codelineno-0-414"></a><span class="sd">            title: Plot title. Overrides ``default_options[&quot;title&quot;]``.</span>
-<a id="__codelineno-0-415" name="__codelineno-0-415"></a><span class="sd">            **kwargs: Override any key in ``default_options`` (cmap,</span>
+<a id="__codelineno-0-414" name="__codelineno-0-414"></a><span class="sd">            title: Plot title. Overrides `default_options[&quot;title&quot;]`.</span>
+<a id="__codelineno-0-415" name="__codelineno-0-415"></a><span class="sd">            **kwargs: Override any key in `default_options` (cmap,</span>
 <a id="__codelineno-0-416" name="__codelineno-0-416"></a><span class="sd">                vmin, vmax, color_scale, gamma, midpoint, bounds,</span>
 <a id="__codelineno-0-417" name="__codelineno-0-417"></a><span class="sd">                ticks_spacing, cbar_orientation, cbar_label, figsize,</span>
 <a id="__codelineno-0-418" name="__codelineno-0-418"></a><span class="sd">                etc.) or pass extra rendering kwargs (levels for</span>
@@ -3042,12 +3042,12 @@ connectivity. Default is None.</p>
 <a id="__codelineno-0-421" name="__codelineno-0-421"></a><span class="sd">        Returns:</span>
 <a id="__codelineno-0-422" name="__codelineno-0-422"></a><span class="sd">            tuple[Figure, Axes]: The matplotlib Figure and Axes objects.</span>
 <a id="__codelineno-0-423" name="__codelineno-0-423"></a><span class="sd">                When no axes exist, a new figure is created. Call</span>
-<a id="__codelineno-0-424" name="__codelineno-0-424"></a><span class="sd">                ``plt.close(fig)`` after saving to avoid memory leaks</span>
+<a id="__codelineno-0-424" name="__codelineno-0-424"></a><span class="sd">                `plt.close(fig)` after saving to avoid memory leaks</span>
 <a id="__codelineno-0-425" name="__codelineno-0-425"></a><span class="sd">                in batch processing.</span>
 <a id="__codelineno-0-426" name="__codelineno-0-426"></a>
 <a id="__codelineno-0-427" name="__codelineno-0-427"></a><span class="sd">        Raises:</span>
-<a id="__codelineno-0-428" name="__codelineno-0-428"></a><span class="sd">            ValueError: If ``location`` is not ``&quot;face&quot;`` or ``&quot;node&quot;``,</span>
-<a id="__codelineno-0-429" name="__codelineno-0-429"></a><span class="sd">                or if ``data`` length does not match the expected mesh</span>
+<a id="__codelineno-0-428" name="__codelineno-0-428"></a><span class="sd">            ValueError: If `location` is not `&quot;face&quot;` or `&quot;node&quot;`,</span>
+<a id="__codelineno-0-429" name="__codelineno-0-429"></a><span class="sd">                or if `data` length does not match the expected mesh</span>
 <a id="__codelineno-0-430" name="__codelineno-0-430"></a><span class="sd">                dimension.</span>
 <a id="__codelineno-0-431" name="__codelineno-0-431"></a>
 <a id="__codelineno-0-432" name="__codelineno-0-432"></a><span class="sd">        Examples:</span>
@@ -3179,33 +3179,33 @@ connectivity. Default is None.</p>
 <a id="__codelineno-0-558" name="__codelineno-0-558"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FuncAnimation</span><span class="p">:</span>
 <a id="__codelineno-0-559" name="__codelineno-0-559"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Create an animation from time-varying mesh data.</span>
 <a id="__codelineno-0-560" name="__codelineno-0-560"></a>
-<a id="__codelineno-0-561" name="__codelineno-0-561"></a><span class="sd">        Iterates over the first dimension of ``data`` (or elements of a</span>
+<a id="__codelineno-0-561" name="__codelineno-0-561"></a><span class="sd">        Iterates over the first dimension of `data` (or elements of a</span>
 <a id="__codelineno-0-562" name="__codelineno-0-562"></a><span class="sd">        list), rendering each frame on the fixed mesh topology.</span>
 <a id="__codelineno-0-563" name="__codelineno-0-563"></a>
 <a id="__codelineno-0-564" name="__codelineno-0-564"></a><span class="sd">        Args:</span>
 <a id="__codelineno-0-565" name="__codelineno-0-565"></a><span class="sd">            data: Sequence of data arrays. If a 2D ndarray of shape</span>
-<a id="__codelineno-0-566" name="__codelineno-0-566"></a><span class="sd">                ``(n_frames, n_elements)``, each row is one frame.</span>
+<a id="__codelineno-0-566" name="__codelineno-0-566"></a><span class="sd">                `(n_frames, n_elements)`, each row is one frame.</span>
 <a id="__codelineno-0-567" name="__codelineno-0-567"></a><span class="sd">                If a list, each element is a 1D array for one frame.</span>
 <a id="__codelineno-0-568" name="__codelineno-0-568"></a><span class="sd">            time: Labels for each frame (timestamps, strings, etc.).</span>
 <a id="__codelineno-0-569" name="__codelineno-0-569"></a><span class="sd">                Length must match the number of frames.</span>
-<a id="__codelineno-0-570" name="__codelineno-0-570"></a><span class="sd">            location: ``&quot;face&quot;`` or ``&quot;node&quot;``. Default is ``&quot;face&quot;``.</span>
+<a id="__codelineno-0-570" name="__codelineno-0-570"></a><span class="sd">            location: `&quot;face&quot;` or `&quot;node&quot;`. Default is `&quot;face&quot;`.</span>
 <a id="__codelineno-0-571" name="__codelineno-0-571"></a><span class="sd">            edgecolor: Edge color for face rendering. Default is</span>
-<a id="__codelineno-0-572" name="__codelineno-0-572"></a><span class="sd">                ``&quot;none&quot;``.</span>
+<a id="__codelineno-0-572" name="__codelineno-0-572"></a><span class="sd">                `&quot;none&quot;`.</span>
 <a id="__codelineno-0-573" name="__codelineno-0-573"></a><span class="sd">            interval: Milliseconds between frames. Default is 200.</span>
-<a id="__codelineno-0-574" name="__codelineno-0-574"></a><span class="sd">            text_loc: ``[x, y]`` position for the time label text.</span>
-<a id="__codelineno-0-575" name="__codelineno-0-575"></a><span class="sd">                Default is ``[0.1, 0.2]``.</span>
-<a id="__codelineno-0-576" name="__codelineno-0-576"></a><span class="sd">            **kwargs: Override any key in ``default_options`` (cmap,</span>
+<a id="__codelineno-0-574" name="__codelineno-0-574"></a><span class="sd">            text_loc: `[x, y]` position for the time label text.</span>
+<a id="__codelineno-0-575" name="__codelineno-0-575"></a><span class="sd">                Default is `[0.1, 0.2]`.</span>
+<a id="__codelineno-0-576" name="__codelineno-0-576"></a><span class="sd">            **kwargs: Override any key in `default_options` (cmap,</span>
 <a id="__codelineno-0-577" name="__codelineno-0-577"></a><span class="sd">                vmin, vmax, color_scale, gamma, midpoint,</span>
 <a id="__codelineno-0-578" name="__codelineno-0-578"></a><span class="sd">                ticks_spacing, cbar_label, cbar_orientation, figsize,</span>
 <a id="__codelineno-0-579" name="__codelineno-0-579"></a><span class="sd">                title, etc.).</span>
 <a id="__codelineno-0-580" name="__codelineno-0-580"></a>
 <a id="__codelineno-0-581" name="__codelineno-0-581"></a><span class="sd">        Returns:</span>
 <a id="__codelineno-0-582" name="__codelineno-0-582"></a><span class="sd">            FuncAnimation: The animation object. Use</span>
-<a id="__codelineno-0-583" name="__codelineno-0-583"></a><span class="sd">                ``save_animation()`` to export.</span>
+<a id="__codelineno-0-583" name="__codelineno-0-583"></a><span class="sd">                `save_animation()` to export.</span>
 <a id="__codelineno-0-584" name="__codelineno-0-584"></a>
 <a id="__codelineno-0-585" name="__codelineno-0-585"></a><span class="sd">        Raises:</span>
-<a id="__codelineno-0-586" name="__codelineno-0-586"></a><span class="sd">            ValueError: If ``data`` frames don&#39;t match mesh topology</span>
-<a id="__codelineno-0-587" name="__codelineno-0-587"></a><span class="sd">                or ``time`` length doesn&#39;t match frame count.</span>
+<a id="__codelineno-0-586" name="__codelineno-0-586"></a><span class="sd">            ValueError: If `data` frames don&#39;t match mesh topology</span>
+<a id="__codelineno-0-587" name="__codelineno-0-587"></a><span class="sd">                or `time` length doesn&#39;t match frame count.</span>
 <a id="__codelineno-0-588" name="__codelineno-0-588"></a>
 <a id="__codelineno-0-589" name="__codelineno-0-589"></a><span class="sd">        Examples:</span>
 <a id="__codelineno-0-590" name="__codelineno-0-590"></a><span class="sd">            - Animate face data over 3 time steps:</span>
@@ -3337,22 +3337,22 @@ connectivity. Default is None.</p>
 <a id="__codelineno-0-716" name="__codelineno-0-716"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">plt</span><span class="o">.</span><span class="n">Figure</span><span class="p">,</span> <span class="n">plt</span><span class="o">.</span><span class="n">Axes</span><span class="p">]:</span>
 <a id="__codelineno-0-717" name="__codelineno-0-717"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot mesh edges as a wireframe.</span>
 <a id="__codelineno-0-718" name="__codelineno-0-718"></a>
-<a id="__codelineno-0-719" name="__codelineno-0-719"></a><span class="sd">        Uses ``matplotlib.collections.LineCollection`` for efficient</span>
+<a id="__codelineno-0-719" name="__codelineno-0-719"></a><span class="sd">        Uses `matplotlib.collections.LineCollection` for efficient</span>
 <a id="__codelineno-0-720" name="__codelineno-0-720"></a><span class="sd">        rendering of thousands of edges.</span>
 <a id="__codelineno-0-721" name="__codelineno-0-721"></a>
 <a id="__codelineno-0-722" name="__codelineno-0-722"></a><span class="sd">        Args:</span>
 <a id="__codelineno-0-723" name="__codelineno-0-723"></a><span class="sd">            ax: Axes to plot on. If None, uses stored axes or creates</span>
 <a id="__codelineno-0-724" name="__codelineno-0-724"></a><span class="sd">                new.</span>
-<a id="__codelineno-0-725" name="__codelineno-0-725"></a><span class="sd">            color: Edge color. Default is ``&quot;black&quot;``.</span>
-<a id="__codelineno-0-726" name="__codelineno-0-726"></a><span class="sd">            linewidth: Edge line width. Default is ``0.3``.</span>
-<a id="__codelineno-0-727" name="__codelineno-0-727"></a><span class="sd">            figsize: Figure size in inches. Default is ``(10, 8)``.</span>
+<a id="__codelineno-0-725" name="__codelineno-0-725"></a><span class="sd">            color: Edge color. Default is `&quot;black&quot;`.</span>
+<a id="__codelineno-0-726" name="__codelineno-0-726"></a><span class="sd">            linewidth: Edge line width. Default is `0.3`.</span>
+<a id="__codelineno-0-727" name="__codelineno-0-727"></a><span class="sd">            figsize: Figure size in inches. Default is `(10, 8)`.</span>
 <a id="__codelineno-0-728" name="__codelineno-0-728"></a><span class="sd">            **kwargs: Additional keyword arguments passed to</span>
-<a id="__codelineno-0-729" name="__codelineno-0-729"></a><span class="sd">                ``LineCollection``.</span>
+<a id="__codelineno-0-729" name="__codelineno-0-729"></a><span class="sd">                `LineCollection`.</span>
 <a id="__codelineno-0-730" name="__codelineno-0-730"></a>
 <a id="__codelineno-0-731" name="__codelineno-0-731"></a><span class="sd">        Returns:</span>
 <a id="__codelineno-0-732" name="__codelineno-0-732"></a><span class="sd">            tuple[Figure, Axes]: The matplotlib Figure and Axes objects.</span>
-<a id="__codelineno-0-733" name="__codelineno-0-733"></a><span class="sd">                When ``ax`` is None, a new figure is created. Call</span>
-<a id="__codelineno-0-734" name="__codelineno-0-734"></a><span class="sd">                ``plt.close(fig)`` after saving to avoid memory leaks</span>
+<a id="__codelineno-0-733" name="__codelineno-0-733"></a><span class="sd">                When `ax` is None, a new figure is created. Call</span>
+<a id="__codelineno-0-734" name="__codelineno-0-734"></a><span class="sd">                `plt.close(fig)` after saving to avoid memory leaks</span>
 <a id="__codelineno-0-735" name="__codelineno-0-735"></a><span class="sd">                in batch processing.</span>
 <a id="__codelineno-0-736" name="__codelineno-0-736"></a>
 <a id="__codelineno-0-737" name="__codelineno-0-737"></a><span class="sd">        Examples:</span>
@@ -3395,7 +3395,7 @@ connectivity. Default is None.</p>
 <a id="__codelineno-0-774" name="__codelineno-0-774"></a>
 <a id="__codelineno-0-775" name="__codelineno-0-775"></a><span class="sd">        Returns:</span>
 <a id="__codelineno-0-776" name="__codelineno-0-776"></a><span class="sd">            np.ndarray: Array of shape (n_segments, 2, 2) where each</span>
-<a id="__codelineno-0-777" name="__codelineno-0-777"></a><span class="sd">                segment is ``[[x1, y1], [x2, y2]]``. Returns an empty</span>
+<a id="__codelineno-0-777" name="__codelineno-0-777"></a><span class="sd">                segment is `[[x1, y1], [x2, y2]]`. Returns an empty</span>
 <a id="__codelineno-0-778" name="__codelineno-0-778"></a><span class="sd">                array with shape (0, 2, 2) if no edges can be derived.</span>
 <a id="__codelineno-0-779" name="__codelineno-0-779"></a><span class="sd">        &quot;&quot;&quot;</span>
 <a id="__codelineno-0-780" name="__codelineno-0-780"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_edge_nodes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -4097,33 +4097,33 @@ or <code>time</code> length doesn't match frame count.</p>
 <a id="__codelineno-0-558" name="__codelineno-0-558"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FuncAnimation</span><span class="p">:</span>
 <a id="__codelineno-0-559" name="__codelineno-0-559"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Create an animation from time-varying mesh data.</span>
 <a id="__codelineno-0-560" name="__codelineno-0-560"></a>
-<a id="__codelineno-0-561" name="__codelineno-0-561"></a><span class="sd">    Iterates over the first dimension of ``data`` (or elements of a</span>
+<a id="__codelineno-0-561" name="__codelineno-0-561"></a><span class="sd">    Iterates over the first dimension of `data` (or elements of a</span>
 <a id="__codelineno-0-562" name="__codelineno-0-562"></a><span class="sd">    list), rendering each frame on the fixed mesh topology.</span>
 <a id="__codelineno-0-563" name="__codelineno-0-563"></a>
 <a id="__codelineno-0-564" name="__codelineno-0-564"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-565" name="__codelineno-0-565"></a><span class="sd">        data: Sequence of data arrays. If a 2D ndarray of shape</span>
-<a id="__codelineno-0-566" name="__codelineno-0-566"></a><span class="sd">            ``(n_frames, n_elements)``, each row is one frame.</span>
+<a id="__codelineno-0-566" name="__codelineno-0-566"></a><span class="sd">            `(n_frames, n_elements)`, each row is one frame.</span>
 <a id="__codelineno-0-567" name="__codelineno-0-567"></a><span class="sd">            If a list, each element is a 1D array for one frame.</span>
 <a id="__codelineno-0-568" name="__codelineno-0-568"></a><span class="sd">        time: Labels for each frame (timestamps, strings, etc.).</span>
 <a id="__codelineno-0-569" name="__codelineno-0-569"></a><span class="sd">            Length must match the number of frames.</span>
-<a id="__codelineno-0-570" name="__codelineno-0-570"></a><span class="sd">        location: ``&quot;face&quot;`` or ``&quot;node&quot;``. Default is ``&quot;face&quot;``.</span>
+<a id="__codelineno-0-570" name="__codelineno-0-570"></a><span class="sd">        location: `&quot;face&quot;` or `&quot;node&quot;`. Default is `&quot;face&quot;`.</span>
 <a id="__codelineno-0-571" name="__codelineno-0-571"></a><span class="sd">        edgecolor: Edge color for face rendering. Default is</span>
-<a id="__codelineno-0-572" name="__codelineno-0-572"></a><span class="sd">            ``&quot;none&quot;``.</span>
+<a id="__codelineno-0-572" name="__codelineno-0-572"></a><span class="sd">            `&quot;none&quot;`.</span>
 <a id="__codelineno-0-573" name="__codelineno-0-573"></a><span class="sd">        interval: Milliseconds between frames. Default is 200.</span>
-<a id="__codelineno-0-574" name="__codelineno-0-574"></a><span class="sd">        text_loc: ``[x, y]`` position for the time label text.</span>
-<a id="__codelineno-0-575" name="__codelineno-0-575"></a><span class="sd">            Default is ``[0.1, 0.2]``.</span>
-<a id="__codelineno-0-576" name="__codelineno-0-576"></a><span class="sd">        **kwargs: Override any key in ``default_options`` (cmap,</span>
+<a id="__codelineno-0-574" name="__codelineno-0-574"></a><span class="sd">        text_loc: `[x, y]` position for the time label text.</span>
+<a id="__codelineno-0-575" name="__codelineno-0-575"></a><span class="sd">            Default is `[0.1, 0.2]`.</span>
+<a id="__codelineno-0-576" name="__codelineno-0-576"></a><span class="sd">        **kwargs: Override any key in `default_options` (cmap,</span>
 <a id="__codelineno-0-577" name="__codelineno-0-577"></a><span class="sd">            vmin, vmax, color_scale, gamma, midpoint,</span>
 <a id="__codelineno-0-578" name="__codelineno-0-578"></a><span class="sd">            ticks_spacing, cbar_label, cbar_orientation, figsize,</span>
 <a id="__codelineno-0-579" name="__codelineno-0-579"></a><span class="sd">            title, etc.).</span>
 <a id="__codelineno-0-580" name="__codelineno-0-580"></a>
 <a id="__codelineno-0-581" name="__codelineno-0-581"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-582" name="__codelineno-0-582"></a><span class="sd">        FuncAnimation: The animation object. Use</span>
-<a id="__codelineno-0-583" name="__codelineno-0-583"></a><span class="sd">            ``save_animation()`` to export.</span>
+<a id="__codelineno-0-583" name="__codelineno-0-583"></a><span class="sd">            `save_animation()` to export.</span>
 <a id="__codelineno-0-584" name="__codelineno-0-584"></a>
 <a id="__codelineno-0-585" name="__codelineno-0-585"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-586" name="__codelineno-0-586"></a><span class="sd">        ValueError: If ``data`` frames don&#39;t match mesh topology</span>
-<a id="__codelineno-0-587" name="__codelineno-0-587"></a><span class="sd">            or ``time`` length doesn&#39;t match frame count.</span>
+<a id="__codelineno-0-586" name="__codelineno-0-586"></a><span class="sd">        ValueError: If `data` frames don&#39;t match mesh topology</span>
+<a id="__codelineno-0-587" name="__codelineno-0-587"></a><span class="sd">            or `time` length doesn&#39;t match frame count.</span>
 <a id="__codelineno-0-588" name="__codelineno-0-588"></a>
 <a id="__codelineno-0-589" name="__codelineno-0-589"></a><span class="sd">    Examples:</span>
 <a id="__codelineno-0-590" name="__codelineno-0-590"></a><span class="sd">        - Animate face data over 3 time steps:</span>
@@ -4671,25 +4671,25 @@ dimension.</p>
 <a id="__codelineno-0-394" name="__codelineno-0-394"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">plt</span><span class="o">.</span><span class="n">Figure</span><span class="p">,</span> <span class="n">plt</span><span class="o">.</span><span class="n">Axes</span><span class="p">]:</span>
 <a id="__codelineno-0-395" name="__codelineno-0-395"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot mesh data using matplotlib triangulation.</span>
 <a id="__codelineno-0-396" name="__codelineno-0-396"></a>
-<a id="__codelineno-0-397" name="__codelineno-0-397"></a><span class="sd">    For face-centered data, uses ``tripcolor`` where each triangle</span>
+<a id="__codelineno-0-397" name="__codelineno-0-397"></a><span class="sd">    For face-centered data, uses `tripcolor` where each triangle</span>
 <a id="__codelineno-0-398" name="__codelineno-0-398"></a><span class="sd">    is colored by the value of its parent face. For node-centered</span>
-<a id="__codelineno-0-399" name="__codelineno-0-399"></a><span class="sd">    data, uses ``tricontourf`` for smooth interpolated contours.</span>
+<a id="__codelineno-0-399" name="__codelineno-0-399"></a><span class="sd">    data, uses `tricontourf` for smooth interpolated contours.</span>
 <a id="__codelineno-0-400" name="__codelineno-0-400"></a>
-<a id="__codelineno-0-401" name="__codelineno-0-401"></a><span class="sd">    Supports all 5 color scale types from ``default_options``:</span>
+<a id="__codelineno-0-401" name="__codelineno-0-401"></a><span class="sd">    Supports all 5 color scale types from `default_options`:</span>
 <a id="__codelineno-0-402" name="__codelineno-0-402"></a><span class="sd">    linear, power, sym-lognorm, boundary-norm, and midpoint.</span>
 <a id="__codelineno-0-403" name="__codelineno-0-403"></a>
 <a id="__codelineno-0-404" name="__codelineno-0-404"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-405" name="__codelineno-0-405"></a><span class="sd">        data: 1D data array. Length must match face count</span>
 <a id="__codelineno-0-406" name="__codelineno-0-406"></a><span class="sd">            (location=&quot;face&quot;) or node count (location=&quot;node&quot;).</span>
-<a id="__codelineno-0-407" name="__codelineno-0-407"></a><span class="sd">        location: Mesh element location: ``&quot;face&quot;`` or ``&quot;node&quot;``.</span>
-<a id="__codelineno-0-408" name="__codelineno-0-408"></a><span class="sd">            Default is ``&quot;face&quot;``.</span>
+<a id="__codelineno-0-407" name="__codelineno-0-407"></a><span class="sd">        location: Mesh element location: `&quot;face&quot;` or `&quot;node&quot;`.</span>
+<a id="__codelineno-0-408" name="__codelineno-0-408"></a><span class="sd">            Default is `&quot;face&quot;`.</span>
 <a id="__codelineno-0-409" name="__codelineno-0-409"></a><span class="sd">        ax: Axes to plot on. If None, uses stored axes or creates</span>
 <a id="__codelineno-0-410" name="__codelineno-0-410"></a><span class="sd">            new.</span>
 <a id="__codelineno-0-411" name="__codelineno-0-411"></a><span class="sd">        edgecolor: Edge color for face rendering. Default is</span>
-<a id="__codelineno-0-412" name="__codelineno-0-412"></a><span class="sd">            ``&quot;none&quot;``.</span>
+<a id="__codelineno-0-412" name="__codelineno-0-412"></a><span class="sd">            `&quot;none&quot;`.</span>
 <a id="__codelineno-0-413" name="__codelineno-0-413"></a><span class="sd">        colorbar: Whether to add a colorbar. Default is True.</span>
-<a id="__codelineno-0-414" name="__codelineno-0-414"></a><span class="sd">        title: Plot title. Overrides ``default_options[&quot;title&quot;]``.</span>
-<a id="__codelineno-0-415" name="__codelineno-0-415"></a><span class="sd">        **kwargs: Override any key in ``default_options`` (cmap,</span>
+<a id="__codelineno-0-414" name="__codelineno-0-414"></a><span class="sd">        title: Plot title. Overrides `default_options[&quot;title&quot;]`.</span>
+<a id="__codelineno-0-415" name="__codelineno-0-415"></a><span class="sd">        **kwargs: Override any key in `default_options` (cmap,</span>
 <a id="__codelineno-0-416" name="__codelineno-0-416"></a><span class="sd">            vmin, vmax, color_scale, gamma, midpoint, bounds,</span>
 <a id="__codelineno-0-417" name="__codelineno-0-417"></a><span class="sd">            ticks_spacing, cbar_orientation, cbar_label, figsize,</span>
 <a id="__codelineno-0-418" name="__codelineno-0-418"></a><span class="sd">            etc.) or pass extra rendering kwargs (levels for</span>
@@ -4698,12 +4698,12 @@ dimension.</p>
 <a id="__codelineno-0-421" name="__codelineno-0-421"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-422" name="__codelineno-0-422"></a><span class="sd">        tuple[Figure, Axes]: The matplotlib Figure and Axes objects.</span>
 <a id="__codelineno-0-423" name="__codelineno-0-423"></a><span class="sd">            When no axes exist, a new figure is created. Call</span>
-<a id="__codelineno-0-424" name="__codelineno-0-424"></a><span class="sd">            ``plt.close(fig)`` after saving to avoid memory leaks</span>
+<a id="__codelineno-0-424" name="__codelineno-0-424"></a><span class="sd">            `plt.close(fig)` after saving to avoid memory leaks</span>
 <a id="__codelineno-0-425" name="__codelineno-0-425"></a><span class="sd">            in batch processing.</span>
 <a id="__codelineno-0-426" name="__codelineno-0-426"></a>
 <a id="__codelineno-0-427" name="__codelineno-0-427"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-428" name="__codelineno-0-428"></a><span class="sd">        ValueError: If ``location`` is not ``&quot;face&quot;`` or ``&quot;node&quot;``,</span>
-<a id="__codelineno-0-429" name="__codelineno-0-429"></a><span class="sd">            or if ``data`` length does not match the expected mesh</span>
+<a id="__codelineno-0-428" name="__codelineno-0-428"></a><span class="sd">        ValueError: If `location` is not `&quot;face&quot;` or `&quot;node&quot;`,</span>
+<a id="__codelineno-0-429" name="__codelineno-0-429"></a><span class="sd">            or if `data` length does not match the expected mesh</span>
 <a id="__codelineno-0-430" name="__codelineno-0-430"></a><span class="sd">            dimension.</span>
 <a id="__codelineno-0-431" name="__codelineno-0-431"></a>
 <a id="__codelineno-0-432" name="__codelineno-0-432"></a><span class="sd">    Examples:</span>
@@ -5051,22 +5051,22 @@ in batch processing.</p>
 <a id="__codelineno-0-716" name="__codelineno-0-716"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">plt</span><span class="o">.</span><span class="n">Figure</span><span class="p">,</span> <span class="n">plt</span><span class="o">.</span><span class="n">Axes</span><span class="p">]:</span>
 <a id="__codelineno-0-717" name="__codelineno-0-717"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot mesh edges as a wireframe.</span>
 <a id="__codelineno-0-718" name="__codelineno-0-718"></a>
-<a id="__codelineno-0-719" name="__codelineno-0-719"></a><span class="sd">    Uses ``matplotlib.collections.LineCollection`` for efficient</span>
+<a id="__codelineno-0-719" name="__codelineno-0-719"></a><span class="sd">    Uses `matplotlib.collections.LineCollection` for efficient</span>
 <a id="__codelineno-0-720" name="__codelineno-0-720"></a><span class="sd">    rendering of thousands of edges.</span>
 <a id="__codelineno-0-721" name="__codelineno-0-721"></a>
 <a id="__codelineno-0-722" name="__codelineno-0-722"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-723" name="__codelineno-0-723"></a><span class="sd">        ax: Axes to plot on. If None, uses stored axes or creates</span>
 <a id="__codelineno-0-724" name="__codelineno-0-724"></a><span class="sd">            new.</span>
-<a id="__codelineno-0-725" name="__codelineno-0-725"></a><span class="sd">        color: Edge color. Default is ``&quot;black&quot;``.</span>
-<a id="__codelineno-0-726" name="__codelineno-0-726"></a><span class="sd">        linewidth: Edge line width. Default is ``0.3``.</span>
-<a id="__codelineno-0-727" name="__codelineno-0-727"></a><span class="sd">        figsize: Figure size in inches. Default is ``(10, 8)``.</span>
+<a id="__codelineno-0-725" name="__codelineno-0-725"></a><span class="sd">        color: Edge color. Default is `&quot;black&quot;`.</span>
+<a id="__codelineno-0-726" name="__codelineno-0-726"></a><span class="sd">        linewidth: Edge line width. Default is `0.3`.</span>
+<a id="__codelineno-0-727" name="__codelineno-0-727"></a><span class="sd">        figsize: Figure size in inches. Default is `(10, 8)`.</span>
 <a id="__codelineno-0-728" name="__codelineno-0-728"></a><span class="sd">        **kwargs: Additional keyword arguments passed to</span>
-<a id="__codelineno-0-729" name="__codelineno-0-729"></a><span class="sd">            ``LineCollection``.</span>
+<a id="__codelineno-0-729" name="__codelineno-0-729"></a><span class="sd">            `LineCollection`.</span>
 <a id="__codelineno-0-730" name="__codelineno-0-730"></a>
 <a id="__codelineno-0-731" name="__codelineno-0-731"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-732" name="__codelineno-0-732"></a><span class="sd">        tuple[Figure, Axes]: The matplotlib Figure and Axes objects.</span>
-<a id="__codelineno-0-733" name="__codelineno-0-733"></a><span class="sd">            When ``ax`` is None, a new figure is created. Call</span>
-<a id="__codelineno-0-734" name="__codelineno-0-734"></a><span class="sd">            ``plt.close(fig)`` after saving to avoid memory leaks</span>
+<a id="__codelineno-0-733" name="__codelineno-0-733"></a><span class="sd">            When `ax` is None, a new figure is created. Call</span>
+<a id="__codelineno-0-734" name="__codelineno-0-734"></a><span class="sd">            `plt.close(fig)` after saving to avoid memory leaks</span>
 <a id="__codelineno-0-735" name="__codelineno-0-735"></a><span class="sd">            in batch processing.</span>
 <a id="__codelineno-0-736" name="__codelineno-0-736"></a>
 <a id="__codelineno-0-737" name="__codelineno-0-737"></a><span class="sd">    Examples:</span>
