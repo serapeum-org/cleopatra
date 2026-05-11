@@ -95,15 +95,20 @@ class TestImportSafety:
             f"{before!r} -> {after!r}"
         )
 
-    def test_config_is_singleton_attribute(self):
-        """`cleopatra.config` is a `Config` instance, not the module."""
+    def test_config_is_the_submodule(self):
+        """`cleopatra.config` is the config submodule, exposing `Config`/helpers."""
         import cleopatra
+        import cleopatra.config as config_mod
         from cleopatra.config import Config
 
-        assert isinstance(cleopatra.config, Config), (
-            f"cleopatra.config should be a Config instance, "
+        assert cleopatra.config is config_mod, (
+            f"cleopatra.config should be the config submodule, "
             f"got {type(cleopatra.config)}"
         )
+        assert cleopatra.config.Config is Config
+        assert callable(cleopatra.config.is_notebook)
+        # Config carries no instance state — set_matplotlib_backend is static.
+        assert callable(Config.set_matplotlib_backend)
 
 
 @pytest.mark.parametrize(

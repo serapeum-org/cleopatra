@@ -16,7 +16,9 @@ want the old convenience behaviour (`%matplotlib inline` in a notebook,
 yourself.
 """
 
-from cleopatra.config import Config
+# Importing this binds the `config` submodule as `cleopatra.config` (used in
+# `__all__`) and re-exports the `Config` class as `cleopatra.Config`.
+from cleopatra.config import Config  # noqa: F401
 from cleopatra.tiles import add_tiles
 
 __all__ = [
@@ -43,10 +45,4 @@ try:
     __version__ = version(__name__)
 except PackageNotFoundError:  # pragma: no cover
     __version__ = "unknown"
-
-#: Process-wide `cleopatra.config.Config` instance. Constructing it
-#: has no side effects — in particular it does *not* touch the matplotlib
-#: backend. Call `config.set_matplotlib_backend(...)` explicitly if you
-#: want cleopatra to pick one for you.
-config = Config()
 
