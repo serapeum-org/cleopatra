@@ -46,29 +46,9 @@ from typing import Any
 
 import numpy as np
 
+from cleopatra import __version__
+
 logger = logging.getLogger(__name__)
-
-
-def _resolve_version() -> str:
-    """Return the installed cleopatra version, or `"unknown"`.
-
-    Uses `importlib.metadata` (querying installed package metadata,
-    not the `cleopatra` module) so this stays free of an import-time
-    circular dependency on the package `__init__`.
-
-    Returns:
-        str: The distribution version string, or `"unknown"` when the
-        package is not installed (e.g. running from a source checkout
-        without `pip install -e .`).
-    """
-    try:
-        from importlib.metadata import PackageNotFoundError, version
-    except ImportError:  # pragma: no cover - Python < 3.8 fallback
-        from importlib_metadata import PackageNotFoundError, version  # type: ignore
-    try:
-        return version("cleopatra")
-    except PackageNotFoundError:  # pragma: no cover
-        return "unknown"
 
 
 #: Default `User-Agent` sent on every tile request. Includes the cleopatra
@@ -76,10 +56,7 @@ def _resolve_version() -> str:
 #: whose usage policy requires an identifiable agent) can attribute and, if
 #: necessary, throttle or reach out about traffic. Override per call via the
 #: `user_agent` argument of `add_tiles`.
-USER_AGENT = (
-    f"cleopatra/{_resolve_version()} "
-    "(+https://github.com/serapeum-org/cleopatra)"
-)
+USER_AGENT = f"cleopatra/{__version__} (+https://github.com/serapeum-org/cleopatra)"
 
 MAX_TILES = 256
 
