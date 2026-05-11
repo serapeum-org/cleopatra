@@ -1,14 +1,13 @@
 """cleopatra - visualization package.
 
-Re-exports the most commonly used entry points so they can be imported
-straight from the package root:
+The package root deliberately re-exports nothing: import the public
+classes/functions from their submodules, e.g.
+`from cleopatra.array_glyph import ArrayGlyph`,
+`from cleopatra.tiles import add_tiles`,
+`from cleopatra.config import Config`.
 
-* `cleopatra.tiles.add_tiles` — overlay an XYZ web-tile basemap
-  on an existing matplotlib axes.
-
-The submodules `array_glyph`, `glyph`, `mesh_glyph`,
-`statistical_glyph`, `colors`, `styles`, `tiles`, and `config`
-are also publicly importable.
+Submodules: `array_glyph`, `glyph`, `mesh_glyph`, `statistical_glyph`,
+`colors`, `styles`, `tiles`, `config`.
 
 Importing cleopatra does not change the active matplotlib backend. If you
 want the old convenience behaviour (`%matplotlib inline` in a notebook,
@@ -16,33 +15,15 @@ want the old convenience behaviour (`%matplotlib inline` in a notebook,
 yourself.
 """
 
-# Importing this binds the `config` submodule as `cleopatra.config` (used in
-# `__all__`) and re-exports the `Config` class as `cleopatra.Config`.
-from cleopatra.config import Config  # noqa: F401
-from cleopatra.tiles import add_tiles
-
-__all__ = [
-    "add_tiles",
-    "array_glyph",
-    "colors",
-    "config",
-    "glyph",
-    "mesh_glyph",
-    "statistical_glyph",
-    "styles",
-    "tiles",
-]
-
 try:
-    from importlib.metadata import PackageNotFoundError  # type: ignore
-    from importlib.metadata import version
+    from importlib.metadata import PackageNotFoundError, version
 except ImportError:  # pragma: no cover
-    from importlib_metadata import PackageNotFoundError  # type: ignore
-    from importlib_metadata import version
-
+    from importlib_metadata import PackageNotFoundError, version  # type: ignore
 
 try:
     __version__ = version(__name__)
 except PackageNotFoundError:  # pragma: no cover
     __version__ = "unknown"
 
+# Keep the package namespace minimal — nothing is re-exported here.
+del PackageNotFoundError, version

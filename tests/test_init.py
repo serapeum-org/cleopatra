@@ -1,9 +1,10 @@
 """Tests for the `cleopatra` package surface.
 
-Validates the package re-exports introduced alongside the tiles module
-(`add_tiles`), the `__all__` membership, that `__version__` is
-defined, and that importing `cleopatra` has no side effects on the
-matplotlib backend.
+The package root deliberately re-exports nothing — public names live in
+the submodules. These tests check that `__version__` is defined, that no
+symbols leak into the top-level namespace, that importing `cleopatra` has
+no side effects on the matplotlib backend, and that every submodule
+imports cleanly.
 """
 
 from __future__ import annotations
@@ -14,48 +15,21 @@ import sys
 
 import pytest
 
+#: Submodules the package is expected to ship.
+_SUBMODULES = [
+    "array_glyph",
+    "colors",
+    "config",
+    "glyph",
+    "mesh_glyph",
+    "statistical_glyph",
+    "styles",
+    "tiles",
+]
 
-class TestPackageReExports:
-    """Tests for top-level cleopatra package re-exports."""
 
-    def test_add_tiles_is_importable(self):
-        """`cleopatra.add_tiles` is the same callable as `cleopatra.tiles.add_tiles`."""
-        import cleopatra
-        from cleopatra.tiles import add_tiles as tiles_add_tiles
-
-        assert hasattr(cleopatra, "add_tiles"), (
-            "cleopatra.add_tiles re-export is missing"
-        )
-        assert cleopatra.add_tiles is tiles_add_tiles, (
-            "cleopatra.add_tiles must be the exact callable from cleopatra.tiles"
-        )
-
-    def test_all_contains_add_tiles(self):
-        """`__all__` advertises `add_tiles` so `from cleopatra import *` works."""
-        import cleopatra
-
-        assert "add_tiles" in cleopatra.__all__, (
-            f"__all__ should include 'add_tiles', got {cleopatra.__all__!r}"
-        )
-
-    def test_all_lists_known_modules(self):
-        """`__all__` lists every public submodule the package re-exports."""
-        import cleopatra
-
-        expected = {
-            "add_tiles",
-            "array_glyph",
-            "colors",
-            "config",
-            "glyph",
-            "mesh_glyph",
-            "statistical_glyph",
-            "styles",
-            "tiles",
-        }
-        assert set(cleopatra.__all__) == expected, (
-            f"__all__ mismatch: {set(cleopatra.__all__)} != {expected}"
-        )
+class TestPackageSurface:
+    """Tests for the top-level `cleopatra` namespace."""
 
     def test_version_attribute_exists(self):
         """`cleopatra.__version__` is defined and is a string."""
@@ -65,6 +39,30 @@ class TestPackageReExports:
         assert isinstance(cleopatra.__version__, str), (
             f"__version__ should be str, got {type(cleopatra.__version__)}"
         )
+
+    def test_no_top_level_reexports(self):
+        """The package root does not re-export classes/functions or `__all__`.
+
+        Public API lives in the submodules; importing `cleopatra` alone
+        should not give you `add_tiles`, `Config`, etc.
+        """
+        import cleopatra
+
+        for name in ("add_tiles", "Config", "ArrayGlyph"):
+            assert not hasattr(cleopatra, name), (
+                f"cleopatra should not re-export {name!r}"
+            )
+        assert not hasattr(cleopatra, "__all__"), (
+            "cleopatra.__init__ should not define __all__"
+        )
+        # Only dunders and the submodule attributes Python binds on import
+        # should be present — nothing else leaked from __init__.py.
+        leaked = [
+            n
+            for n in vars(cleopatra)
+            if not n.startswith("__") and n not in _SUBMODULES
+        ]
+        assert not leaked, f"unexpected names in cleopatra namespace: {leaked}"
 
 
 class TestImportSafety:
@@ -95,40 +93,23 @@ class TestImportSafety:
             f"{before!r} -> {after!r}"
         )
 
-    def test_config_is_the_submodule(self):
-        """`cleopatra.config` is the config submodule, exposing `Config`/helpers."""
-        import cleopatra
+    def test_config_submodule_exposes_helpers(self):
+        """`cleopatra.config` resolves to the config submodule with its API."""
         import cleopatra.config as config_mod
         from cleopatra.config import Config
 
-        assert cleopatra.config is config_mod, (
-            f"cleopatra.config should be the config submodule, "
-            f"got {type(cleopatra.config)}"
-        )
-        assert cleopatra.config.Config is Config
-        assert callable(cleopatra.config.is_notebook)
+        assert config_mod.Config is Config
+        assert callable(config_mod.is_notebook)
         # Config carries no instance state — set_matplotlib_backend is static.
         assert callable(Config.set_matplotlib_backend)
 
 
-@pytest.mark.parametrize(
-    "submodule",
-    [
-        "cleopatra.array_glyph",
-        "cleopatra.colors",
-        "cleopatra.config",
-        "cleopatra.glyph",
-        "cleopatra.mesh_glyph",
-        "cleopatra.statistical_glyph",
-        "cleopatra.styles",
-        "cleopatra.tiles",
-    ],
-)
+@pytest.mark.parametrize("submodule", _SUBMODULES)
 def test_submodule_imports_cleanly(submodule: str):
     """Each declared submodule imports without raising.
 
     Args:
-        submodule: Dotted path to import.
+        submodule: Submodule name under the `cleopatra` package.
     """
-    mod = importlib.import_module(submodule)
-    assert mod is not None, f"Failed to import {submodule}"
+    mod = importlib.import_module(f"cleopatra.{submodule}")
+    assert mod is not None, f"Failed to import cleopatra.{submodule}"
