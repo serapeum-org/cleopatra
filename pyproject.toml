@@ -1,6 +1,6 @@
 [project]
 name = "cleopatra"
-version = "0.7.1"
+version = "0.8.0"
 description = "visualization package"
 readme = "README.md"
 requires-python = ">=3.11,<4"
@@ -28,6 +28,14 @@ dependencies = [
     "matplotlib>=3.8.4",
     "ffmpeg-python",
     "hpc-utils>=0.1.4",
+]
+
+[project.optional-dependencies]
+tiles = [
+    "mercantile>=1.2.1",
+    "pillow>=12.1.1",
+    "pyproj>=3.7.2",
+    "xyzservices>=2026.3.0",
 ]
 
 [dependency-groups]
@@ -67,6 +75,7 @@ notebook = [
 Homepage = "https://github.com/serapeum-org/cleopatra"
 Documentation = "https://serapeum-org.github.io/cleopatra/"
 Repository = "https://github.com/serapeum-org/cleopatra"
+
 
 
 [tool.commitizen]

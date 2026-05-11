@@ -10,22 +10,48 @@
 - [matplotlib](https://matplotlib.org/) (3.8.4 or later)
 - [ffmpeg-python](https://github.com/kkroening/ffmpeg-python/) (0.2.0 or later)
 
+### Optional dependencies — the `tiles` extra
+
+The web-tile basemap helper (`cleopatra.tiles.add_tiles`) needs four extra packages.
+They are bundled in the `cleopatra[tiles]` extra (pip) / the `cleopatra-tiles` package
+(conda) and are otherwise not installed:
+
+- [mercantile](https://github.com/mapbox/mercantile) (1.2.1 or later)
+- [pillow](https://python-pillow.org/) (12.1.1 or later)
+- [pyproj](https://pyproj4.github.io/pyproj/) (3.7.2 or later)
+- [xyzservices](https://xyzservices.readthedocs.io/) (2026.3.0 or later)
+
 ## Stable release
 
 Please install `cleopatra` in a Virtual environment so that its requirements don't tamper with your system's python.
 
 ## conda
 
-The easiest way to install `cleopatra` is using `conda` package manager. `cleopatra` is available in the
-[conda-forge](https://conda-forge.org/) channel. To install
-you can use the following command:
+The easiest way to install `cleopatra` is using the `conda` package manager. `cleopatra` is available in the
+[conda-forge](https://conda-forge.org/) channel:
 
 ```bash
 conda install -c conda-forge cleopatra
+
+# with the optional web-tile basemap support
+conda install -c conda-forge cleopatra-tiles
 ```
+
+The conda packages are built from the
+[cleopatra-feedstock](https://github.com/conda-forge/cleopatra-feedstock); the
+`cleopatra-tiles` output simply pulls in `cleopatra` plus the four `[tiles]` dependencies.
 
 If this works it will install `cleopatra` with all dependencies including Python, and you skip the rest of the
 installation instructions.
+
+## pip
+
+```bash
+pip install cleopatra
+
+# with the optional web-tile basemap support (cleopatra.tiles.add_tiles)
+pip install "cleopatra[tiles]"
+```
 
 ## Installing Python and gdal dependencies
 

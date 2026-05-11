@@ -1,32 +1,29 @@
-"""
-cleopatra - visualization package
-"""
+"""cleopatra - visualization package.
 
-from cleopatra.config import Config
+The package root deliberately re-exports nothing: import the public
+classes/functions from their submodules, e.g.
+`from cleopatra.array_glyph import ArrayGlyph`,
+`from cleopatra.tiles import add_tiles`,
+`from cleopatra.config import Config`.
 
-__all__ = [
-    "array_glyph",
-    "colors",
-    "config",
-    "glyph",
-    "mesh_glyph",
-    "statistical_glyph",
-    "styles",
-]
+Submodules: `array_glyph`, `glyph`, `mesh_glyph`, `statistical_glyph`,
+`colors`, `styles`, `tiles`, `config`.
+
+Importing cleopatra does not change the active matplotlib backend. If you
+want the old convenience behaviour (`%matplotlib inline` in a notebook,
+`Agg` in scripts) call `cleopatra.config.Config.set_matplotlib_backend()`
+yourself.
+"""
 
 try:
-    from importlib.metadata import PackageNotFoundError  # type: ignore
-    from importlib.metadata import version
+    from importlib.metadata import PackageNotFoundError, version
 except ImportError:  # pragma: no cover
-    from importlib_metadata import PackageNotFoundError  # type: ignore
-    from importlib_metadata import version
-
+    from importlib_metadata import PackageNotFoundError, version  # type: ignore
 
 try:
     __version__ = version(__name__)
 except PackageNotFoundError:  # pragma: no cover
     __version__ = "unknown"
 
-config = Config()
-config.set_matplotlib_backend()
-
+# Keep the package namespace minimal — nothing is re-exported here.
+del PackageNotFoundError, version

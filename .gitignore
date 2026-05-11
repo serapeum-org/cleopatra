@@ -134,3 +134,6 @@ dmypy.json
 *.mov
 *.mp4
 .run/*
+
+# Local-only project guidance for Claude Code (not tracked)
+CLAUDE.md

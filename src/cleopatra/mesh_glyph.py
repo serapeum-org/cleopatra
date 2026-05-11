@@ -1,10 +1,10 @@
 """Unstructured mesh visualization.
 
-Provides ``MeshGlyph`` for plotting UGRID-style unstructured mesh data
+Provides `MeshGlyph` for plotting UGRID-style unstructured mesh data
 using matplotlib triangulation (tripcolor, tricontourf) and wireframe
 rendering via LineCollection. Accepts raw numpy arrays of node
 coordinates and face-node connectivity. Also integrates with
-pyramids-gis ``Mesh2d`` objects for geospatial workflows.
+pyramids-gis `Mesh2d` objects for geospatial workflows.
 
 Examples:
     - Plot face-centered data on a triangular mesh:
@@ -58,9 +58,9 @@ class MeshGlyph(Glyph):
         node_x: 1D array of node x-coordinates (n_nodes,).
         node_y: 1D array of node y-coordinates (n_nodes,).
         face_node_connectivity: 2D array of node indices per face
-            (n_faces, max_nodes_per_face). Use ``fill_value`` to pad
+            (n_faces, max_nodes_per_face). Use `fill_value` to pad
             rows for faces with fewer nodes.
-        fill_value: Padding value in ``face_node_connectivity`` for
+        fill_value: Padding value in `face_node_connectivity` for
             mixed meshes. Default is -1.
         edge_node_connectivity: 2D array of node indices per edge
             (n_edges, 2). If provided, used for efficient wireframe
@@ -347,7 +347,7 @@ class MeshGlyph(Glyph):
         Args:
             ax: Matplotlib axes.
             data: 1D data array.
-            location: ``"face"`` or ``"node"``.
+            location: `"face"` or `"node"`.
             edgecolor: Edge color for face rendering.
             norm: Color normalization.
             **render_kwargs: Passed to tripcolor or tricontourf.
@@ -394,25 +394,25 @@ class MeshGlyph(Glyph):
     ) -> tuple[plt.Figure, plt.Axes]:
         """Plot mesh data using matplotlib triangulation.
 
-        For face-centered data, uses ``tripcolor`` where each triangle
+        For face-centered data, uses `tripcolor` where each triangle
         is colored by the value of its parent face. For node-centered
-        data, uses ``tricontourf`` for smooth interpolated contours.
+        data, uses `tricontourf` for smooth interpolated contours.
 
-        Supports all 5 color scale types from ``default_options``:
+        Supports all 5 color scale types from `default_options`:
         linear, power, sym-lognorm, boundary-norm, and midpoint.
 
         Args:
             data: 1D data array. Length must match face count
                 (location="face") or node count (location="node").
-            location: Mesh element location: ``"face"`` or ``"node"``.
-                Default is ``"face"``.
+            location: Mesh element location: `"face"` or `"node"`.
+                Default is `"face"`.
             ax: Axes to plot on. If None, uses stored axes or creates
                 new.
             edgecolor: Edge color for face rendering. Default is
-                ``"none"``.
+                `"none"`.
             colorbar: Whether to add a colorbar. Default is True.
-            title: Plot title. Overrides ``default_options["title"]``.
-            **kwargs: Override any key in ``default_options`` (cmap,
+            title: Plot title. Overrides `default_options["title"]`.
+            **kwargs: Override any key in `default_options` (cmap,
                 vmin, vmax, color_scale, gamma, midpoint, bounds,
                 ticks_spacing, cbar_orientation, cbar_label, figsize,
                 etc.) or pass extra rendering kwargs (levels for
@@ -421,12 +421,12 @@ class MeshGlyph(Glyph):
         Returns:
             tuple[Figure, Axes]: The matplotlib Figure and Axes objects.
                 When no axes exist, a new figure is created. Call
-                ``plt.close(fig)`` after saving to avoid memory leaks
+                `plt.close(fig)` after saving to avoid memory leaks
                 in batch processing.
 
         Raises:
-            ValueError: If ``location`` is not ``"face"`` or ``"node"``,
-                or if ``data`` length does not match the expected mesh
+            ValueError: If `location` is not `"face"` or `"node"`,
+                or if `data` length does not match the expected mesh
                 dimension.
 
         Examples:
@@ -558,33 +558,33 @@ class MeshGlyph(Glyph):
     ) -> FuncAnimation:
         """Create an animation from time-varying mesh data.
 
-        Iterates over the first dimension of ``data`` (or elements of a
+        Iterates over the first dimension of `data` (or elements of a
         list), rendering each frame on the fixed mesh topology.
 
         Args:
             data: Sequence of data arrays. If a 2D ndarray of shape
-                ``(n_frames, n_elements)``, each row is one frame.
+                `(n_frames, n_elements)`, each row is one frame.
                 If a list, each element is a 1D array for one frame.
             time: Labels for each frame (timestamps, strings, etc.).
                 Length must match the number of frames.
-            location: ``"face"`` or ``"node"``. Default is ``"face"``.
+            location: `"face"` or `"node"`. Default is `"face"`.
             edgecolor: Edge color for face rendering. Default is
-                ``"none"``.
+                `"none"`.
             interval: Milliseconds between frames. Default is 200.
-            text_loc: ``[x, y]`` position for the time label text.
-                Default is ``[0.1, 0.2]``.
-            **kwargs: Override any key in ``default_options`` (cmap,
+            text_loc: `[x, y]` position for the time label text.
+                Default is `[0.1, 0.2]`.
+            **kwargs: Override any key in `default_options` (cmap,
                 vmin, vmax, color_scale, gamma, midpoint,
                 ticks_spacing, cbar_label, cbar_orientation, figsize,
                 title, etc.).
 
         Returns:
             FuncAnimation: The animation object. Use
-                ``save_animation()`` to export.
+                `save_animation()` to export.
 
         Raises:
-            ValueError: If ``data`` frames don't match mesh topology
-                or ``time`` length doesn't match frame count.
+            ValueError: If `data` frames don't match mesh topology
+                or `time` length doesn't match frame count.
 
         Examples:
             - Animate face data over 3 time steps:
@@ -716,22 +716,22 @@ class MeshGlyph(Glyph):
     ) -> tuple[plt.Figure, plt.Axes]:
         """Plot mesh edges as a wireframe.
 
-        Uses ``matplotlib.collections.LineCollection`` for efficient
+        Uses `matplotlib.collections.LineCollection` for efficient
         rendering of thousands of edges.
 
         Args:
             ax: Axes to plot on. If None, uses stored axes or creates
                 new.
-            color: Edge color. Default is ``"black"``.
-            linewidth: Edge line width. Default is ``0.3``.
-            figsize: Figure size in inches. Default is ``(10, 8)``.
+            color: Edge color. Default is `"black"`.
+            linewidth: Edge line width. Default is `0.3`.
+            figsize: Figure size in inches. Default is `(10, 8)`.
             **kwargs: Additional keyword arguments passed to
-                ``LineCollection``.
+                `LineCollection`.
 
         Returns:
             tuple[Figure, Axes]: The matplotlib Figure and Axes objects.
-                When ``ax`` is None, a new figure is created. Call
-                ``plt.close(fig)`` after saving to avoid memory leaks
+                When `ax` is None, a new figure is created. Call
+                `plt.close(fig)` after saving to avoid memory leaks
                 in batch processing.
 
         Examples:
@@ -774,7 +774,7 @@ class MeshGlyph(Glyph):
 
         Returns:
             np.ndarray: Array of shape (n_segments, 2, 2) where each
-                segment is ``[[x1, y1], [x2, y2]]``. Returns an empty
+                segment is `[[x1, y1], [x2, y2]]`. Returns an empty
                 array with shape (0, 2, 2) if no edges can be derived.
         """
         if self._edge_nodes is not None:
