@@ -18,6 +18,21 @@ The `styles` module provides classes and functions for styling plots, including 
       show_source: true
       heading_level: 3
 
+## ColorScale Enum
+
+`ColorScale` is the `StrEnum` of accepted `color_scale` values — `linear` / `power` /
+`sym-lognorm` / `boundary-norm` / `midpoint`. Members are real strings (so
+`ColorScale.LINEAR == "linear"`) and lookup is case-insensitive. `ArrayGlyph` /
+`MeshGlyph` coerce `color_scale` through it, so an unrecognised value (or a non-string
+such as an int) raises a clear `ValueError` instead of an obscure `AttributeError`. It is
+also re-exported from `cleopatra.array_glyph`.
+
+::: cleopatra.styles.ColorScale
+    options:
+      show_root_heading: true
+      show_source: true
+      heading_level: 3
+
 ## MidpointNormalize Class
 
 ::: cleopatra.styles.MidpointNormalize
