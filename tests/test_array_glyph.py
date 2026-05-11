@@ -27,9 +27,16 @@ class TestCreateArray:
         assert isinstance(array.arr, np.ndarray)
         # check if the first element is masked
         assert array.arr.mask[0, 0]
-        assert array.no_elem == 89
+        assert array.num_domain_cells == 89
         assert array.vmin == 0
         assert array.vmax == 88
+
+    def test_no_elem_is_deprecated_alias(self, arr: np.ndarray, no_data_value: float):
+        """The legacy ``no_elem`` attribute still works but warns."""
+        array = ArrayGlyph(arr, exclude_value=[no_data_value])
+        with pytest.warns(DeprecationWarning, match="num_domain_cells"):
+            value = array.no_elem
+        assert value == array.num_domain_cells == 89
 
 
 class TestRGB:
@@ -1006,6 +1013,82 @@ class TestAnimateEdgeCases:
         anim = glyph.animate(animate_time_list, ticks_spacing=50.0)
         assert anim is not None
         assert glyph.default_options["ticks_spacing"] == 50.0
+
+
+@pytest.mark.plot
+class TestNanNoDataConvention:
+    """The NaN-as-nodata convention: a float raster (NetCDF float var, float
+    GeoTIFF, …) that uses ``np.nan`` for no-data, loaded with the natural
+    ``ArrayGlyph(arr)`` call (no ``exclude_value`` → defaults to ``np.nan``).
+
+    By design the NaN cells are *not* added to the mask (``array == np.nan`` is
+    ``False`` anyway, and matplotlib already renders NaN as blank), but
+    ``num_domain_cells`` and the per-cell value artists must still agree on the
+    count of display-eligible cells so ``animate(display_cell_value=True)`` does
+    not blow up with an ``IndexError`` (regression for P1).
+    """
+
+    @staticmethod
+    def _nan_raster(n: int = 4, h: int = 5, w: int = 5) -> np.ndarray:
+        """Float stack of distinct values with two NaN no-data cells in
+        frame 0 (the NaN-as-nodata convention)."""
+        rng = np.random.default_rng(0)
+        arr = rng.random((n, h, w)) * 100.0
+        arr[0, 0, 0] = np.nan
+        arr[0, 1, 1] = np.nan
+        return arr
+
+    def test_default_exclude_value_leaves_nan_unmasked(self):
+        """The default ``exclude_value`` (``np.nan``) intentionally does not add
+        the NaN cells to the mask — matplotlib renders NaN as blank, and the
+        colour limits already go through ``np.nanmin`` / ``np.nanmax``."""
+        arr = self._nan_raster(n=1)
+        glyph = ArrayGlyph(arr)
+        mask = np.ma.getmaskarray(glyph.arr)
+        assert not mask.any(), (
+            f"NaN cells should be left unmasked by the default exclude_value; "
+            f"mask has {int(mask.sum())} masked cell(s)"
+        )
+
+    def test_num_domain_cells_excludes_nan_cells(self):
+        """``num_domain_cells`` counts cells in the domain — neither masked nor
+        NaN — so a 5x5 frame with 2 NaN no-data cells reports 23, matching the
+        number of per-cell ``Text`` artists ``plot`` / ``animate`` create."""
+        arr = self._nan_raster(n=1)  # 1x5x5, frame 0 has 2 NaN cells
+        glyph = ArrayGlyph(arr)
+        expected = arr[0].size - 2  # 23
+        assert glyph.num_domain_cells == expected, (
+            f"num_domain_cells should exclude the 2 NaN no-data cells "
+            f"(expected {expected}), got {glyph.num_domain_cells}"
+        )
+
+    def test_animate_display_cell_value_true_with_nan_nodata(self):
+        """``animate(display_cell_value=True)`` on a NaN-nodata stack runs
+        without ``IndexError`` (the cell-update loop iterates the artist list,
+        not ``num_domain_cells``). Regression for P1."""
+        arr = self._nan_raster(n=4)
+        glyph = ArrayGlyph(arr)
+        anim = glyph.animate(time=list(range(4)), display_cell_value=True)
+        assert isinstance(anim, FuncAnimation)
+        plt.close(glyph.fig)
+
+    def test_plot_display_cell_value_true_with_nan_nodata(self):
+        """``plot(display_cell_value=True)`` on the same raster renders one
+        ``Text`` artist per non-NaN cell and does not crash."""
+        arr = self._nan_raster(n=1)[0]  # 2-D 5x5 frame
+        glyph = ArrayGlyph(arr)
+        fig, ax = glyph.plot(display_cell_value=True)
+        try:
+            assert isinstance(fig, Figure)
+            n_nan = int(np.isnan(arr).sum())
+            # ax.texts holds the per-cell value annotations (title / axis
+            # labels live elsewhere); one per non-NaN cell.
+            assert len(ax.texts) == arr.size - n_nan, (
+                f"expected {arr.size - n_nan} cell-value texts (NaN cells "
+                f"skipped), got {len(ax.texts)}"
+            )
+        finally:
+            plt.close(fig)
 
 
 class TestExcludeValueMultiValue:

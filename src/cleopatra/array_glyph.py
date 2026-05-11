@@ -24,6 +24,7 @@ The `Array` class has the following methods:
 
 from __future__ import annotations
 
+import warnings
 from math import ceil
 from typing import Any, Callable, Sequence
 
@@ -176,7 +177,11 @@ class ArrayGlyph(Glyph):
         ax (matplotlib.axes.Axes): The matplotlib axes object.
         extent (List): The extent of the array [xmin, xmax, ymin, ymax].
         rgb (bool): Whether the array is an RGB array.
-        no_elem (int): The number of elements in the array.
+        num_domain_cells (int): Number of cells in the data domain — cells
+            that are neither masked (via ``exclude_value``) nor NaN. For a
+            3-D stack this is counted on the first frame. Equals the number
+            of per-cell value labels drawn when ``display_cell_value=True``.
+            (The legacy alias ``no_elem`` still works but is deprecated.)
         anim (matplotlib.animation.FuncAnimation): The animation object if created.
 
     Notes:
@@ -502,12 +507,11 @@ class ArrayGlyph(Glyph):
         # get the tick spacing that has 10 ticks only
         self.ticks_spacing = (self._vmax - self._vmin) / 10
         shape = array.shape
-        if len(shape) == 3:
-            no_elem = array[0, :, :].count()
-        else:
-            no_elem = array.count()
-
-        self.no_elem = no_elem
+        # Cells in the data domain (not masked, not NaN). Use the same
+        # predicate plot/animate use to place per-cell labels so the counts
+        # match; ``MaskedArray.count()`` would miss NaN cells.
+        first_frame = array[0, :, :] if len(shape) == 3 else array
+        self.num_domain_cells = len(get_indices2(first_frame, [np.nan]))
 
     @property
     def arr(self):
@@ -517,6 +521,23 @@ class ArrayGlyph(Glyph):
     @arr.setter
     def arr(self, value):
         self._arr = value
+
+    @property
+    def no_elem(self) -> int:
+        """Deprecated alias for :attr:`num_domain_cells`.
+
+        Kept for backward compatibility; emits a :class:`DeprecationWarning`.
+        Will be removed in a future release.
+
+        Returns:
+            int: Same value as :attr:`num_domain_cells`.
+        """
+        warnings.warn(
+            "`ArrayGlyph.no_elem` is deprecated; use `num_domain_cells` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.num_domain_cells
 
     def prepare_array(
         self,
@@ -2644,7 +2665,10 @@ class ArrayGlyph(Glyph):
             if self.default_options["display_cell_value"]:
                 vals = frame_0[indices[:, 0], indices[:, 1]]
                 update_cell_value = lambda x: cell_text_value[x].set_text(vals[x])
-                list(map(update_cell_value, range(self.no_elem)))
+                # Iterate over the actual artist list, not
+                # ``self.num_domain_cells`` — keep the loop bound tied to the
+                # thing being indexed so it can never raise ``IndexError``.
+                list(map(update_cell_value, range(len(cell_text_value))))
                 output += cell_text_value
 
             return output
@@ -2679,7 +2703,9 @@ class ArrayGlyph(Glyph):
                     cell_text_value[x].update(kw)
                     cell_text_value[x].set_text(val)
 
-                list(map(update_cell_value, range(self.no_elem)))
+                # See ``init`` above: iterate the artist list, not
+                # ``self.num_domain_cells``, so the bound matches the index.
+                list(map(update_cell_value, range(len(cell_text_value))))
 
                 output += cell_text_value
 
