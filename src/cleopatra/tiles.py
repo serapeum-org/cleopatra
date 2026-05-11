@@ -1,12 +1,12 @@
 """Web-tile basemap helper for matplotlib axes.
 
-Provides :func:`add_tiles` -- a single entry point that fetches XYZ web
+Provides `add_tiles` -- a single entry point that fetches XYZ web
 tiles for the current axes extent, stitches them into a composite image
 with Pillow, and renders the image underneath the existing data layer.
 
-The implementation is a pure-Python port of the ``pyramids.basemap``
+The implementation is a pure-Python port of the `pyramids.basemap`
 module (basemap.py + tiles.py). It supports any XYZ provider listed in
-:mod:`xyzservices`. CRS handling is done with :mod:`pyproj` -- there is
+`xyzservices`. CRS handling is done with `pyproj` -- there is
 no GDAL dependency, so the module is safe to use in environments that
 only have matplotlib + numpy installed.
 
@@ -34,6 +34,7 @@ Examples:
 from __future__ import annotations
 
 import html
+import importlib.util
 import io
 import logging
 import math
@@ -49,16 +50,16 @@ logger = logging.getLogger(__name__)
 
 
 def _resolve_version() -> str:
-    """Return the installed cleopatra version, or ``"unknown"``.
+    """Return the installed cleopatra version, or `"unknown"`.
 
-    Uses :mod:`importlib.metadata` (querying installed package metadata,
-    not the ``cleopatra`` module) so this stays free of an import-time
-    circular dependency on the package ``__init__``.
+    Uses `importlib.metadata` (querying installed package metadata,
+    not the `cleopatra` module) so this stays free of an import-time
+    circular dependency on the package `__init__`.
 
     Returns:
-        str: The distribution version string, or ``"unknown"`` when the
+        str: The distribution version string, or `"unknown"` when the
         package is not installed (e.g. running from a source checkout
-        without ``pip install -e .``).
+        without `pip install -e .`).
     """
     try:
         from importlib.metadata import PackageNotFoundError, version
@@ -70,11 +71,11 @@ def _resolve_version() -> str:
         return "unknown"
 
 
-#: Default ``User-Agent`` sent on every tile request. Includes the cleopatra
+#: Default `User-Agent` sent on every tile request. Includes the cleopatra
 #: version and a contact URL so tile providers (OpenStreetMap in particular,
 #: whose usage policy requires an identifiable agent) can attribute and, if
 #: necessary, throttle or reach out about traffic. Override per call via the
-#: ``user_agent`` argument of :func:`add_tiles`.
+#: `user_agent` argument of `add_tiles`.
 USER_AGENT = (
     f"cleopatra/{_resolve_version()} "
     "(+https://github.com/serapeum-org/cleopatra)"
@@ -87,19 +88,21 @@ _TILES_EXTRA_HINT = (
     "Install with `pip install cleopatra[tiles]`."
 )
 
-try:
-    import mercantile  # noqa: F401
-    import xyzservices  # noqa: F401
-    from PIL import Image  # noqa: F401
-    from pyproj import Transformer  # noqa: F401
+#: Import names of the packages the `[tiles]` extra provides ("PIL" is
+#: Pillow's import name).
+_TILES_EXTRA_MODULES = ("mercantile", "xyzservices", "PIL", "pyproj")
 
-    _TILES_AVAILABLE = True
-except ImportError:
-    _TILES_AVAILABLE = False
+#: True when every `[tiles]`-extra dependency is importable. Probed with
+#: `importlib.util.find_spec` so importing this module does not pull
+#: those packages in when nobody calls `add_tiles`; the modules are
+#: imported lazily inside the functions that use them.
+_TILES_AVAILABLE = all(
+    importlib.util.find_spec(_m) is not None for _m in _TILES_EXTRA_MODULES
+)
 
 
 def _require_tiles_extra() -> None:
-    """Raise :class:`ImportError` if the tiles extra is not installed.
+    """Raise `ImportError` if the tiles extra is not installed.
 
     Returns:
         None
@@ -116,16 +119,16 @@ def get_provider(name: str | None = None) -> Any:
     """Resolve an XYZ tile provider by name.
 
     Args:
-        name: Dot-separated provider name (e.g. ``"OpenStreetMap.Mapnik"``,
-            ``"CartoDB.Positron"``, ``"Esri.WorldImagery"``). ``None``
-            returns the default (``OpenStreetMap.Mapnik``).
+        name: Dot-separated provider name (e.g. `"OpenStreetMap.Mapnik"`,
+            `"CartoDB.Positron"`, `"Esri.WorldImagery"`). `None`
+            returns the default (`OpenStreetMap.Mapnik`).
 
     Returns:
         xyzservices.TileProvider: The resolved tile provider with
-        ``url`` template and ``attribution`` metadata.
+        `url` template and `attribution` metadata.
 
     Raises:
-        ImportError: If the ``[tiles]`` extra is not installed.
+        ImportError: If the `[tiles]` extra is not installed.
         ValueError: If the provider name cannot be resolved.
 
     Examples:
@@ -148,7 +151,7 @@ def get_provider(name: str | None = None) -> Any:
             'CartoDB.Positron'
 
             ```
-        - Invalid provider names raise :class:`ValueError`:
+        - Invalid provider names raise `ValueError`:
             ```python
             >>> from cleopatra.tiles import get_provider
             >>> get_provider("NonExistent.Provider")
@@ -184,20 +187,20 @@ def auto_zoom(bounds_4326: tuple[float, float, float, float]) -> int:
     """Compute a default zoom level for the given bounds in EPSG:4326.
 
     Uses the formula
-    ``zoom = ceil(log2(360 / max(lon_extent, lat_extent)))`` clamped to
+    `zoom = ceil(log2(360 / max(lon_extent, lat_extent)))` clamped to
     the range 0--19.
 
     This is a coarse heuristic that treats degrees of longitude and
     latitude as interchangeable; it does **not** account for Web
     Mercator's latitude distortion, so the result tends to be
     conservative (under-zoomed) for extents far from the equator. For
-    high-latitude data, pass an explicit ``zoom=`` to :func:`add_tiles`
-    rather than relying on the auto value. The :data:`MAX_TILES` cap in
-    :func:`add_tiles` will still step the zoom back down if the chosen
+    high-latitude data, pass an explicit `zoom=` to `add_tiles`
+    rather than relying on the auto value. The `MAX_TILES` cap in
+    `add_tiles` will still step the zoom back down if the chosen
     level would require too many tiles.
 
     Args:
-        bounds_4326: ``(west, south, east, north)`` in EPSG:4326 degrees.
+        bounds_4326: `(west, south, east, north)` in EPSG:4326 degrees.
 
     Returns:
         int: Zoom level between 0 and 19.
@@ -255,13 +258,13 @@ def _densify_and_reproject_bounds(
         south: Southern bound in the source CRS.
         east: Eastern bound in the source CRS.
         north: Northern bound in the source CRS.
-        src_crs: Source CRS identifier (e.g. ``"EPSG:4326"``).
-        dst_crs: Target CRS identifier (e.g. ``"EPSG:3857"``).
+        src_crs: Source CRS identifier (e.g. `"EPSG:4326"`).
+        dst_crs: Target CRS identifier (e.g. `"EPSG:3857"`).
         n_points: Number of sample points per edge. 21 balances
             accuracy and performance for typical warps.
 
     Returns:
-        tuple[float, float, float, float]: ``(west, south, east, north)``
+        tuple[float, float, float, float]: `(west, south, east, north)`
         in the target CRS.
 
     Raises:
@@ -298,6 +301,8 @@ def _densify_and_reproject_bounds(
 
             ```
     """
+    from pyproj import Transformer
+
     transformer = Transformer.from_crs(src_crs, dst_crs, always_xy=True)
 
     t = np.linspace(0, 1, n_points)
@@ -339,12 +344,12 @@ def _densify_and_reproject_bounds(
 
 
 def _looks_like_image(data: bytes) -> bool:
-    """Return True if ``data`` begins with a known raster-image signature.
+    """Return True if `data` begins with a known raster-image signature.
 
     Recognises PNG, JPEG (any APPn / SOFn / DQT variant via the 3-byte
     SOI marker `\\xff\\xd8\\xff`), GIF, and WebP — the formats XYZ tile
     servers serve. This is only a cheap "is this an image at all?" gate
-    before Pillow does the real decoding in :func:`stitch_tiles`; it is
+    before Pillow does the real decoding in `stitch_tiles`; it is
     not a full validation.
 
     Args:
@@ -397,12 +402,12 @@ def fetch_single_tile(
     """Fetch a single tile, retrying on transient failures.
 
     Args:
-        tile: Tile to fetch (has ``x``, ``y``, ``z`` attributes).
-        provider: ``xyzservices.TileProvider`` with a URL template.
+        tile: Tile to fetch (has `x`, `y`, `z` attributes).
+        provider: `xyzservices.TileProvider` with a URL template.
         timeout: HTTP request timeout in seconds.
         retries: Number of retry attempts on failure.
-        user_agent: ``User-Agent`` header sent on every request. Defaults
-            to :data:`USER_AGENT` (``cleopatra/<version> (+repo-url)``).
+        user_agent: `User-Agent` header sent on every request. Defaults
+            to `USER_AGENT` (`cleopatra/<version> (+repo-url)`).
 
     Returns:
         tuple[Any, bytes]: The original tile and its PNG/JPEG bytes.
@@ -427,7 +432,7 @@ def fetch_single_tile(
             True
 
             ```
-        - Tile failures raise :class:`ConnectionError` after retries
+        - Tile failures raise `ConnectionError` after retries
             are exhausted:
             ```python
             >>> import mercantile
@@ -493,21 +498,21 @@ def fetch_tiles(
 ) -> dict:
     """Fetch tile images in parallel over HTTP.
 
-    Uses :class:`concurrent.futures.ThreadPoolExecutor` for parallel
+    Uses `concurrent.futures.ThreadPoolExecutor` for parallel
     downloads. Each tile URL is constructed via the provider's
-    ``build_url()``. A ``User-Agent`` header (``cleopatra/<version>
-    (+repo-url)`` by default) is sent on every request so tile providers
-    can attribute the traffic — OpenStreetMap's usage policy requires an
-    identifiable agent.
+    `build_url()`. A `User-Agent` header (`cleopatra/<version> (+repo-url)`
+    by default) is sent on every request so tile providers can attribute
+    the traffic — OpenStreetMap's usage policy requires an identifiable
+    agent.
 
     Args:
-        tiles: Tiles to fetch (each has ``x``, ``y``, ``z`` attributes).
-        provider: ``xyzservices.TileProvider`` with a URL template.
+        tiles: Tiles to fetch (each has `x`, `y`, `z` attributes).
+        provider: `xyzservices.TileProvider` with a URL template.
         max_workers: Maximum concurrent HTTP connections.
         timeout: Per-tile HTTP request timeout in seconds.
         retries: Per-tile retry count on failure.
-        user_agent: ``User-Agent`` header sent on every request. Defaults
-            to :data:`USER_AGENT`.
+        user_agent: `User-Agent` header sent on every request. Defaults
+            to `USER_AGENT`.
 
     Returns:
         dict: Mapping of Tile to PNG/JPEG bytes.
@@ -569,21 +574,21 @@ def stitch_tiles(
 ) -> tuple[np.ndarray, tuple[float, float, float, float]]:
     """Stitch tile images into a single RGBA array.
 
-    Arranges tiles in a grid based on their ``x``, ``y`` positions. The
+    Arranges tiles in a grid based on their `x`, `y` positions. The
     tile size is read from the first decoded image (typically 256 or
     512 px). Computes the geographic extent of the stitched image in
-    EPSG:3857 using :func:`mercantile.xy_bounds` on the corner tiles.
+    EPSG:3857 using `mercantile.xy_bounds` on the corner tiles.
 
     Args:
         tile_data: Mapping of Tile to PNG bytes (from
-            :func:`fetch_tiles`).
+            `fetch_tiles`).
         tiles: All tiles in the grid, defining grid dimensions.
         zoom: Zoom level of the tiles.
 
     Returns:
         tuple[numpy.ndarray, tuple[float, float, float, float]]: The
-        stitched RGBA image with shape ``(H, W, 4)`` and dtype
-        ``uint8``, plus ``(west, south, east, north)`` in EPSG:3857
+        stitched RGBA image with shape `(H, W, 4)` and dtype
+        `uint8`, plus `(west, south, east, north)` in EPSG:3857
         meters.
 
     Raises:
@@ -607,7 +612,7 @@ def stitch_tiles(
 
             ```
         - The returned EPSG:3857 extent comes from
-            :func:`mercantile.xy_bounds` on the corner tiles:
+            `mercantile.xy_bounds` on the corner tiles:
             ```python
             >>> import io
             >>> import mercantile
@@ -621,7 +626,7 @@ def stitch_tiles(
             True
 
             ```
-        - Invalid tile bytes raise :class:`ValueError`:
+        - Invalid tile bytes raise `ValueError`:
             ```python
             >>> import mercantile
             >>> from cleopatra.tiles import stitch_tiles
@@ -698,45 +703,45 @@ def add_tiles(
     acceptable for small extents.
 
     Args:
-        ax: Matplotlib :class:`~matplotlib.axes.Axes` to add the
+        ax: Matplotlib `matplotlib.axes.Axes` to add the
             basemap to. Data must already be plotted so the axis
             limits define the geographic extent.
-        source: Tile provider. ``None`` defaults to
-            ``OpenStreetMap.Mapnik``. A dot-separated string such as
-            ``"CartoDB.Positron"`` is resolved via
-            :func:`get_provider`. An ``xyzservices.TileProvider`` is
+        source: Tile provider. `None` defaults to
+            `OpenStreetMap.Mapnik`. A dot-separated string such as
+            `"CartoDB.Positron"` is resolved via
+            `get_provider`. An `xyzservices.TileProvider` is
             used directly.
-        crs: CRS of the data on ``ax``. An integer is interpreted as an
-            EPSG code; a string is passed through (``"EPSG:XXXX"`` or
-            WKT). ``None`` is treated as EPSG:3857.
-        zoom: Tile zoom level. ``"auto"`` derives a level from the
-            axes extent. Integers must be in ``[0, 19]``.
-        alpha: Opacity of the basemap (``0.0``--``1.0``).
-        attribution: ``True`` adds the provider's attribution text, a
-            string overrides it, ``False`` skips it.
-        zorder: Matplotlib zorder for the basemap (``-1`` puts it
+        crs: CRS of the data on `ax`. An integer is interpreted as an
+            EPSG code; a string is passed through (`"EPSG:XXXX"` or
+            WKT). `None` is treated as EPSG:3857.
+        zoom: Tile zoom level. `"auto"` derives a level from the
+            axes extent. Integers must be in `[0, 19]`.
+        alpha: Opacity of the basemap (`0.0`--`1.0`).
+        attribution: `True` adds the provider's attribution text, a
+            string overrides it, `False` skips it.
+        zorder: Matplotlib zorder for the basemap (`-1` puts it
             behind all data).
-        interpolation: Interpolation method passed to ``ax.imshow``.
+        interpolation: Interpolation method passed to `ax.imshow`.
         timeout: Per-tile HTTP timeout in seconds.
         retries: Per-tile retry count.
-        user_agent: ``User-Agent`` header to send on tile requests.
-            ``None`` (default) uses :data:`USER_AGENT`
-            (``cleopatra/<version> (+repo-url)``). Pass your own string
+        user_agent: `User-Agent` header to send on tile requests.
+            `None` (default) uses `USER_AGENT`
+            (`cleopatra/<version> (+repo-url)`). Pass your own string
             when embedding cleopatra in an application so the traffic is
             attributed to *that* app (recommended for production use, and
             required by some providers' usage policies).
-        max_tiles: Cap on how many tiles to fetch. If the chosen ``zoom``
+        max_tiles: Cap on how many tiles to fetch. If the chosen `zoom`
             would need more than this, the zoom is stepped down until the
-            count fits (or reaches 0). Defaults to :data:`MAX_TILES`
-            (``256``). Must be a positive int.
+            count fits (or reaches 0). Defaults to `MAX_TILES`
+            (`256`). Must be a positive int.
 
     Returns:
         matplotlib.axes.Axes: The same axes, for chaining.
 
     Raises:
-        ImportError: If the ``[tiles]`` extra is not installed.
-        TypeError: If ``ax`` is not a matplotlib Axes.
-        ValueError: If the axes have no data extent or ``zoom`` is
+        ImportError: If the `[tiles]` extra is not installed.
+        TypeError: If `ax` is not a matplotlib Axes.
+        ValueError: If the axes have no data extent or `zoom` is
             invalid.
         ConnectionError: If tiles cannot be fetched from the provider.
 
@@ -893,8 +898,8 @@ def add_tiles(
             provider, "html_attribution", ""
         )
         if raw:
-            # Strip HTML tags, then unescape entities (``&copy;`` -> ``©``,
-            # ``&amp;`` -> ``&``, ...) so the placed text reads cleanly.
+            # Strip HTML tags, then unescape entities (`&copy;` -> `©`,
+            # `&amp;` -> `&`, ...) so the placed text reads cleanly.
             attr_text = html.unescape(re.sub(r"<[^>]+>", "", raw)).strip() or None
         else:
             attr_text = None
