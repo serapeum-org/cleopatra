@@ -2652,8 +2652,8 @@ class ArrayGlyph(Glyph):
         ticks = self.get_ticks()
         im, cbar_kw = self._plot_im_get_cbar_kw(ax, frame_0, ticks)
 
-        # Create colorbar
-        cbar = self.create_color_bar(ax, im, cbar_kw)
+        # Create colorbar (stored on the instance, mirroring ``plot``).
+        self.cbar = self.create_color_bar(ax, im, cbar_kw)
 
         ax.set_title(
             self.default_options["title"], fontsize=self.default_options["title_size"]

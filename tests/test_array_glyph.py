@@ -1452,6 +1452,42 @@ class TestFaceting:
         finally:
             plt.close(result.fig)
 
+    def test_preserves_dtype_per_panel(self):
+        """Per-panel slices keep the stack's dtype — no `np.asarray` upcast (M6)."""
+        stack = np.arange(2 * 4 * 4, dtype=np.uint8).reshape(2, 4, 4)
+        result = ArrayGlyph(stack).facet(col="t")
+        try:
+            for panel_idx, ax in enumerate(result.axes.flat):
+                arr_on_ax = ax.get_images()[0].get_array()
+                assert arr_on_ax.dtype == np.uint8, (
+                    f"panel {panel_idx} dtype changed to {arr_on_ax.dtype}, "
+                    "expected uint8"
+                )
+        finally:
+            plt.close(result.fig)
+
+
+@pytest.mark.plot
+class TestAnimateCbarAttribute:
+    """`animate` exposes the colorbar on the instance, like `plot` (M5)."""
+
+    def test_animate_sets_cbar(
+        self,
+        coello_data: np.ndarray,
+        animate_time_list: list,
+        no_data_value: float,
+    ):
+        """After `animate(...)` the glyph has a `.cbar` (a matplotlib Colorbar)."""
+        from matplotlib.colorbar import Colorbar
+
+        glyph = ArrayGlyph(coello_data, exclude_value=[no_data_value])
+        anim = glyph.animate(animate_time_list)
+        try:
+            assert hasattr(glyph, "cbar"), "animate should set glyph.cbar"
+            assert isinstance(glyph.cbar, Colorbar)
+        finally:
+            plt.close(anim._fig)
+
 
 @pytest.mark.plot
 class TestFacetExtents:
