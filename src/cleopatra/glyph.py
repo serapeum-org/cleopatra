@@ -26,6 +26,11 @@ from cleopatra.styles import ColorScale, MidpointNormalize
 
 SUPPORTED_VIDEO_FORMAT = ["gif", "mov", "avi", "mp4"]
 
+#: Upper bound for an integer ``levels`` value (number of discrete colour
+#: levels / contour lines). A larger request is almost certainly a mistake
+#: and `np.linspace` with a huge count would exhaust memory.
+MAX_DISCRETE_LEVELS = 1000
+
 
 class Glyph:
     """Base class for cleopatra visualization glyphs.
@@ -370,6 +375,12 @@ class Glyph:
             np.ndarray or None: Sorted ascending array of bin edges, or
                 ``None`` when ``levels`` is ``None``.
 
+        Raises:
+            ValueError: If ``levels`` is an integer outside the range
+                ``[2, MAX_DISCRETE_LEVELS]`` (a single edge cannot form a
+                ``BoundaryNorm``, and an enormous count would OOM
+                ``np.linspace``).
+
         Examples:
             - Integer ``levels`` becomes a ``linspace`` between
                 ``vmin`` and ``vmax``:
@@ -398,7 +409,13 @@ class Glyph:
         elif isinstance(levels, (int, np.integer)) and not isinstance(
             levels, bool
         ):
-            bounds = np.linspace(float(vmin), float(vmax), int(levels))
+            n = int(levels)
+            if not 2 <= n <= MAX_DISCRETE_LEVELS:
+                raise ValueError(
+                    f"`levels` as an integer must be between 2 and "
+                    f"{MAX_DISCRETE_LEVELS}, got {n}."
+                )
+            bounds = np.linspace(float(vmin), float(vmax), n)
         else:
             bounds = np.sort(np.asarray(levels, dtype=float))
         return bounds

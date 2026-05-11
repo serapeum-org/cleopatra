@@ -14,7 +14,7 @@ import pytest
 from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure
 
-from cleopatra.glyph import SUPPORTED_VIDEO_FORMAT, Glyph
+from cleopatra.glyph import MAX_DISCRETE_LEVELS, SUPPORTED_VIDEO_FORMAT, Glyph
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import ColorScale, MidpointNormalize
 
@@ -595,6 +595,23 @@ class TestLevelsToBounds:
         """Explicit edges spanning negative-to-positive values are sorted ascending."""
         result = Glyph._levels_to_bounds([3.0, -2.0, 1.0, -5.0], -10.0, 10.0)
         np.testing.assert_array_equal(result, [-5.0, -2.0, 1.0, 3.0])
+
+    @pytest.mark.parametrize("bad", [0, 1, -3, MAX_DISCRETE_LEVELS + 1, 10**9])
+    def test_int_levels_out_of_range_raises(self, bad):
+        """An integer ``levels`` outside ``[2, MAX_DISCRETE_LEVELS]`` raises.
+
+        Args:
+            bad: An integer level count that should be rejected.
+        """
+        with pytest.raises(ValueError, match=r"`levels` as an integer must be between"):
+            Glyph._levels_to_bounds(bad, 0.0, 1.0)
+
+    def test_int_levels_at_bounds_ok(self):
+        """The min (2) and max (``MAX_DISCRETE_LEVELS``) integer levels are accepted."""
+        assert len(Glyph._levels_to_bounds(2, 0.0, 1.0)) == 2
+        assert len(Glyph._levels_to_bounds(MAX_DISCRETE_LEVELS, 0.0, 1.0)) == (
+            MAX_DISCRETE_LEVELS
+        )
 
 
 class TestCreateNormAndCbarKwLevelsExtend:

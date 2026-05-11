@@ -33,6 +33,7 @@ Examples:
 
 from __future__ import annotations
 
+import html
 import io
 import logging
 import math
@@ -186,6 +187,15 @@ def auto_zoom(bounds_4326: tuple[float, float, float, float]) -> int:
     ``zoom = ceil(log2(360 / max(lon_extent, lat_extent)))`` clamped to
     the range 0--19.
 
+    This is a coarse heuristic that treats degrees of longitude and
+    latitude as interchangeable; it does **not** account for Web
+    Mercator's latitude distortion, so the result tends to be
+    conservative (under-zoomed) for extents far from the equator. For
+    high-latitude data, pass an explicit ``zoom=`` to :func:`add_tiles`
+    rather than relying on the auto value. The :data:`MAX_TILES` cap in
+    :func:`add_tiles` will still step the zoom back down if the chosen
+    level would require too many tiles.
+
     Args:
         bounds_4326: ``(west, south, east, north)`` in EPSG:4326 degrees.
 
@@ -288,8 +298,6 @@ def _densify_and_reproject_bounds(
 
             ```
     """
-    from pyproj import Transformer
-
     transformer = Transformer.from_crs(src_crs, dst_crs, always_xy=True)
 
     t = np.linspace(0, 1, n_points)
@@ -677,6 +685,7 @@ def add_tiles(
     timeout: int = 10,
     retries: int = 2,
     user_agent: str | None = None,
+    max_tiles: int = MAX_TILES,
 ) -> Any:
     """Overlay a web-tile basemap on a matplotlib axes.
 
@@ -716,6 +725,10 @@ def add_tiles(
             when embedding cleopatra in an application so the traffic is
             attributed to *that* app (recommended for production use, and
             required by some providers' usage policies).
+        max_tiles: Cap on how many tiles to fetch. If the chosen ``zoom``
+            would need more than this, the zoom is stepped down until the
+            count fits (or reaches 0). Defaults to :data:`MAX_TILES`
+            (``256``). Must be a positive int.
 
     Returns:
         matplotlib.axes.Axes: The same axes, for chaining.
@@ -746,6 +759,9 @@ def add_tiles(
             "ax must be a matplotlib.axes.Axes instance, "
             f"got {type(ax).__name__}"
         )
+
+    if not isinstance(max_tiles, int) or isinstance(max_tiles, bool) or max_tiles < 1:
+        raise ValueError(f"max_tiles must be a positive int, got {max_tiles!r}.")
 
     x0, x1 = ax.get_xlim()
     y0, y1 = ax.get_ylim()
@@ -821,7 +837,7 @@ def add_tiles(
     original_zoom = tile_zoom
     tiles = list(mercantile.tiles(w4326, s4326, e4326, n4326, zooms=tile_zoom))
 
-    while len(tiles) > MAX_TILES and tile_zoom > 0:
+    while len(tiles) > max_tiles and tile_zoom > 0:
         tile_zoom -= 1
         tiles = list(mercantile.tiles(w4326, s4326, e4326, n4326, zooms=tile_zoom))
 
@@ -830,7 +846,7 @@ def add_tiles(
             "Zoom reduced from %d to %d (extent requires > %d tiles).",
             original_zoom,
             tile_zoom,
-            MAX_TILES,
+            max_tiles,
         )
 
     if not tiles:
@@ -876,7 +892,12 @@ def add_tiles(
         raw = getattr(provider, "attribution", None) or getattr(
             provider, "html_attribution", ""
         )
-        attr_text = re.sub(r"<[^>]+>", "", raw) if raw else None
+        if raw:
+            # Strip HTML tags, then unescape entities (``&copy;`` -> ``©``,
+            # ``&amp;`` -> ``&``, ...) so the placed text reads cleanly.
+            attr_text = html.unescape(re.sub(r"<[^>]+>", "", raw)).strip() or None
+        else:
+            attr_text = None
     elif isinstance(attribution, str):
         attr_text = attribution
     else:

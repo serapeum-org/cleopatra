@@ -71,6 +71,13 @@ DIVERGING_DEFAULT_CMAP = "RdBu_r"
 ROBUST_LOWER_PERCENTILE = 2.0
 #: Upper percentile (98.0) used by xarray-style ``robust=True`` colour limits.
 ROBUST_UPPER_PERCENTILE = 98.0
+#: Invariant phrase in the ``ValueError`` raised by :meth:`ArrayGlyph._validate_coords`
+#: when a coord array's shape does not match the data array. Kept stable so tests
+#: can match against it without coupling to the full (shape-interpolated) message.
+_COORD_SHAPE_MISMATCH = "coord array shape does not match the data array"
+#: Invariant phrase in the ``ValueError`` raised by :meth:`ArrayGlyph._validate_coords`
+#: when a coord array has a non-numeric dtype.
+_COORD_DTYPE_MISMATCH = "coord arrays must be numeric (integer or float)"
 
 
 class FacetGrid:
@@ -873,7 +880,8 @@ class ArrayGlyph(Glyph):
             TypeError: If ``coords`` is not ``None`` and not a length-2
                 sequence.
             ValueError: If a coordinate array has a shape that does not
-                match the data array.
+                match the data array, or a non-numeric dtype (bool,
+                complex, object, …).
 
         Examples:
             - ``None`` short-circuits to ``None``:
@@ -919,6 +927,15 @@ class ArrayGlyph(Glyph):
             x_in, y_in = coords
             x_arr = np.asarray(x_in)
             y_arr = np.asarray(y_in)
+            for name, arr_ in (("x", x_arr), ("y", y_arr)):
+                if not (
+                    np.issubdtype(arr_.dtype, np.integer)
+                    or np.issubdtype(arr_.dtype, np.floating)
+                ):
+                    raise ValueError(
+                        f"{name}: {_COORD_DTYPE_MISMATCH}; got dtype "
+                        f"{arr_.dtype}."
+                    )
             data_shape = array.shape[-2:]
             rows, cols = data_shape
             x_ok = (x_arr.ndim == 1 and x_arr.shape[0] == cols) or (
@@ -929,15 +946,13 @@ class ArrayGlyph(Glyph):
             )
             if not x_ok:
                 raise ValueError(
-                    f"Coord array shape {x_arr.shape} doesn't match data "
-                    f"shape {data_shape} (expected 1-D length {cols} or "
-                    f"2-D {data_shape})."
+                    f"x {_COORD_SHAPE_MISMATCH}: got shape {x_arr.shape}, "
+                    f"expected 1-D length {cols} or 2-D {data_shape}."
                 )
             if not y_ok:
                 raise ValueError(
-                    f"Coord array shape {y_arr.shape} doesn't match data "
-                    f"shape {data_shape} (expected 1-D length {rows} or "
-                    f"2-D {data_shape})."
+                    f"y {_COORD_SHAPE_MISMATCH}: got shape {y_arr.shape}, "
+                    f"expected 1-D length {rows} or 2-D {data_shape}."
                 )
             result = (x_arr, y_arr)
         return result
@@ -2278,7 +2293,6 @@ class ArrayGlyph(Glyph):
         vmin_user = kwargs.get("vmin")
         vmax_user = kwargs.get("vmax")
         if vmin_user is None or vmax_user is None:
-            finite_arr = arr
             if isinstance(arr, ma.MaskedArray):
                 finite = arr.compressed()
             else:

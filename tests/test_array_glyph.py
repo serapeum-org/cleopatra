@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 
 import pytest
@@ -10,7 +11,12 @@ from matplotlib.colors import BoundaryNorm
 from matplotlib.figure import Figure
 from PIL import Image
 
-from cleopatra.array_glyph import ArrayGlyph, FacetGrid
+from cleopatra.array_glyph import (
+    _COORD_DTYPE_MISMATCH,
+    _COORD_SHAPE_MISMATCH,
+    ArrayGlyph,
+    FacetGrid,
+)
 
 
 class TestProperties:
@@ -1282,7 +1288,7 @@ class TestCoordsCurvilinear:
         arr = self._arr_3x4()
         x_bad = np.linspace(0.0, 10.0, 99)  # length mismatch
         y = np.linspace(0.0, 5.0, 3)
-        with pytest.raises(ValueError, match="doesn't match data shape"):
+        with pytest.raises(ValueError, match=re.escape(_COORD_SHAPE_MISMATCH)):
             ArrayGlyph(arr, coords=(x_bad, y))
 
     def test_extent_and_coords_together_raises(self):
@@ -1723,7 +1729,7 @@ class TestCoordsCurvilinearEdgeCases:
         arr = self._arr_3x4()
         x_corner = np.linspace(0.0, 10.0, 5)
         y_corner = np.linspace(0.0, 5.0, 4)
-        with pytest.raises(ValueError, match="doesn't match data shape"):
+        with pytest.raises(ValueError, match=re.escape(_COORD_SHAPE_MISMATCH)):
             ArrayGlyph(arr, coords=(x_corner, y_corner))
 
     def test_minimal_2x2_grid_renders(self) -> None:
@@ -1847,6 +1853,26 @@ class TestCoordsCurvilinearEdgeCases:
         finally:
             plt.close(fig)
 
+    @pytest.mark.parametrize(
+        "bad_x",
+        [
+            np.array([True, False, True, False]),
+            np.array([0, 1, 2, 3], dtype=complex),
+            np.array(["a", "b", "c", "d"], dtype=object),
+        ],
+        ids=["bool", "complex", "object"],
+    )
+    def test_non_numeric_coords_rejected(self, bad_x) -> None:
+        """Non-numeric coord dtypes (bool / complex / object) raise ``ValueError`` (L6).
+
+        Args:
+            bad_x: An x-coord array with a dtype that should be rejected.
+        """
+        arr = self._arr_3x4()
+        y = np.linspace(0.0, 2.0, 3)
+        with pytest.raises(ValueError, match=re.escape(_COORD_DTYPE_MISMATCH)):
+            ArrayGlyph(arr, coords=(bad_x, y))
+
     def test_coords_contourf_roundtrip_savefig(self, tmp_path) -> None:
         """Curvilinear + contourf round-trips to a non-empty PNG.
 
@@ -1881,7 +1907,7 @@ class TestCoordsCurvilinearEdgeCases:
         arr = self._arr_3x4()
         x_good = np.linspace(0.0, 10.0, 4)
         y_bad = np.linspace(0.0, 5.0, 7)
-        with pytest.raises(ValueError, match="doesn't match data shape"):
+        with pytest.raises(ValueError, match=re.escape(_COORD_SHAPE_MISMATCH)):
             ArrayGlyph(arr, coords=(x_good, y_bad))
 
 

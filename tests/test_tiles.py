@@ -380,6 +380,42 @@ class TestAddTilesIntegration:
         assert calls[0][1]["zooms"] == 10
         assert calls[1][1]["zooms"] == 9
 
+    def test_custom_max_tiles_relaxes_reduction(self, mock_ax):
+        """A higher ``max_tiles=`` avoids the zoom reduction (N2)."""
+        import mercantile as merc_mod
+
+        fake_image = np.zeros((256, 256, 4), dtype=np.uint8)
+        # 400 tiles at the requested zoom — over the default 256, under 500.
+        many_tiles = [Tile(x=i, y=j, z=10) for i in range(20) for j in range(20)]
+
+        with (
+            patch.object(tiles_mod, "auto_zoom", return_value=10),
+            patch.object(
+                tiles_mod, "fetch_tiles", return_value={Tile(0, 0, 10): _make_tile_png()}
+            ),
+            patch.object(
+                tiles_mod,
+                "stitch_tiles",
+                return_value=(fake_image, (1e6, 6e6, 1.2e6, 6.2e6)),
+            ),
+            patch.object(merc_mod, "tiles", side_effect=[many_tiles]) as mock_tiles,
+        ):
+            add_tiles(mock_ax, crs=3857, max_tiles=500)
+
+        # Only one call: 400 <= max_tiles=500, so no reduction.
+        assert len(mock_tiles.call_args_list) == 1
+        assert mock_tiles.call_args_list[0][1]["zooms"] == 10
+
+    @pytest.mark.parametrize("bad", [0, -1, 2.5, True, "8"])
+    def test_invalid_max_tiles_raises(self, mock_ax, bad):
+        """``max_tiles`` must be a positive int (N2).
+
+        Args:
+            bad: A value that should be rejected.
+        """
+        with pytest.raises(ValueError, match="max_tiles must be a positive int"):
+            add_tiles(mock_ax, crs=3857, max_tiles=bad)
+
 
 class TestRequireTilesExtra:
     """Tests for :func:`cleopatra.tiles._require_tiles_extra` guard."""
@@ -821,6 +857,20 @@ class TestAddTilesAdditionalValidation:
             assert "<" not in placed_text, (
                 f"Attribution text should be HTML-stripped, got: {placed_text!r}"
             )
+
+    def test_attribution_unescapes_html_entities(self, mock_ax, _patch_tiles):
+        """``attribution=True`` strips tags *and* unescapes HTML entities."""
+        from types import SimpleNamespace
+
+        provider = SimpleNamespace(
+            attribution="&copy; <a href='x'>OpenStreetMap</a> &amp; contributors"
+        )
+        add_tiles(mock_ax, source=provider, crs=3857, attribution=True)
+        mock_ax.text.assert_called_once()
+        placed = mock_ax.text.call_args[0][2]
+        assert placed == "© OpenStreetMap & contributors", (
+            f"expected entities unescaped, got {placed!r}"
+        )
 
 
 class TestStitchTilesPerformance:
