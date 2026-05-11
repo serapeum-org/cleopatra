@@ -1169,6 +1169,11 @@ class ArrayGlyph(Glyph):
         Returns:
             tuple[float, float]: Final ``(vmin, vmax)``.
 
+        Raises:
+            ValueError: If the resolved limits are not finite — e.g. the
+                array has no finite values (all NaN / fully masked) and no
+                explicit ``vmin`` / ``vmax`` was supplied to fall back on.
+
         Examples:
             - Default path: full data range, no robust clipping, no
                 centring:
@@ -1212,8 +1217,14 @@ class ArrayGlyph(Glyph):
         if robust:
             vmin_base, vmax_base = self._robust_limits(arr)
         else:
-            vmin_base = float(np.nanmin(arr))
-            vmax_base = float(np.nanmax(arr))
+            # nanmin/nanmax on an all-NaN / fully-masked array return NaN
+            # (with a RuntimeWarning). Compute quietly and validate the
+            # resolved limits below — an unusable colour range should fail
+            # loudly here, not later inside ``get_ticks()``/matplotlib.
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", RuntimeWarning)
+                vmin_base = np.nanmin(arr)
+                vmax_base = np.nanmax(arr)
 
         vmin_final = (
             vmin_kw if vmin_explicit and vmin_kw is not None else vmin_base
@@ -1221,6 +1232,13 @@ class ArrayGlyph(Glyph):
         vmax_final = (
             vmax_kw if vmax_explicit and vmax_kw is not None else vmax_base
         )
+
+        if not (np.isfinite(vmin_final) and np.isfinite(vmax_final)):
+            raise ValueError(
+                "Cannot determine vmin/vmax: the array has no finite "
+                "values. Pass explicit vmin and vmax, or filter the array "
+                "first."
+            )
 
         if center is not None:
             vmin_final, vmax_final = self._center_limits(
@@ -2059,6 +2077,7 @@ class ArrayGlyph(Glyph):
         row_coords: Sequence[Any] | None = None,
         kind: str = "auto",
         figsize: tuple[float, float] | None = None,
+        extents: Sequence[Sequence[float]] | None = None,
         **kwargs,
     ) -> FacetGrid:
         """Render a grid of subplots from a 3-D or 4-D stack.
@@ -2070,6 +2089,15 @@ class ArrayGlyph(Glyph):
         computed over the full stack unless the user passed explicit
         limits) and a single shared colorbar attached to the first
         rendered subplot.
+
+        Spatial extent: every panel is a slice of the *same* array, so by
+        default they all share the parent glyph's ``extent`` (one spatial
+        domain — exactly like xarray's ``FacetGrid``, which facets a single
+        ``DataArray`` over a coordinate dimension). If your slices are
+        same-shape grids covering *different* windows, pass ``extents`` —
+        one ``[xmin, ymin, xmax, ymax]`` per panel. (If the slices are
+        genuinely different datasets, build separate :class:`ArrayGlyph`
+        instances into your own ``plt.subplots`` grid instead.)
 
         Args:
             col: Name of the column-facet dimension (e.g. ``"time"``).
@@ -2093,6 +2121,15 @@ class ArrayGlyph(Glyph):
                 ``"contour"``, ``"contourf"``. Default ``"auto"``.
             figsize: Optional ``(width, height)`` for the shared figure.
                 Defaults to ``(4 * ncols, 3.5 * nrows)``.
+            extents: Optional per-panel spatial extents — one
+                ``[xmin, ymin, xmax, ymax]`` (user-facing order) for each
+                rendered subplot, in row-major order (``extents[k]``
+                applies to ``result.axes.flat[k]``). Length must equal the
+                number of panels. Mutually exclusive with the parent
+                glyph's ``extent`` and with ``coords``. ``None`` (default)
+                reuses the parent's ``extent`` on every panel (or index
+                space when the parent has none).
+
             **kwargs: Forwarded to each subplot. Recognised keys
                 include the same colour / colorbar / level kwargs as
                 :meth:`plot`. ``vmin`` / ``vmax`` win over the
@@ -2105,8 +2142,10 @@ class ArrayGlyph(Glyph):
         Raises:
             ValueError: If neither ``col`` nor ``row`` is given, if the
                 array shape does not match the requested facet
-                dimensions, or if ``col_coords`` / ``row_coords``
-                lengths are wrong.
+                dimensions, if ``col_coords`` / ``row_coords`` lengths
+                are wrong, if ``extents`` is combined with the parent's
+                ``extent`` or ``coords``, or if ``extents`` has the wrong
+                length or a non-length-4 element.
 
         Examples:
             - Facet a 3-D stack into a 1xN row of subplots:
@@ -2131,11 +2170,42 @@ class ArrayGlyph(Glyph):
                 (2, 3)
 
                 ```
+            - Per-panel extents for same-shape grids over different
+                windows (one ``[xmin, ymin, xmax, ymax]`` per subplot):
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> stack = np.arange(2 * 4 * 4, dtype=float).reshape(2, 4, 4)
+                >>> g = ArrayGlyph(stack).facet(
+                ...     col="region",
+                ...     extents=[[0, 0, 10, 10], [10, 0, 20, 10]],
+                ... )
+                >>> [tuple(int(v) for v in im.get_extent()) for im in
+                ...  (ax.get_images()[0] for ax in g.axes.flat)]
+                [(0, 10, 0, 10), (10, 20, 0, 10)]
+
+                ```
         """
         if col is None and row is None:
             raise ValueError(
                 "at least one of `col`/`row` must be given"
             )
+        if extents is not None:
+            if self.extent is not None:
+                raise ValueError(
+                    "`extents` (per-panel) and the glyph's `extent` "
+                    "(one shared domain) are mutually exclusive."
+                )
+            if self._coords is not None:
+                raise ValueError(
+                    "`extents` and `coords` are mutually exclusive."
+                )
+            for k, e in enumerate(extents):
+                if len(e) != 4:
+                    raise ValueError(
+                        f"`extents[{k}]` must be a length-4 sequence "
+                        f"[xmin, ymin, xmax, ymax], got {e!r}."
+                    )
 
         arr = self.arr
         if row is None:
@@ -2190,6 +2260,12 @@ class ArrayGlyph(Glyph):
             ]
             n_panels = n_col * n_row
 
+        if extents is not None and len(extents) != n_panels:
+            raise ValueError(
+                f"`extents` has {len(extents)} entries but there are "
+                f"{n_panels} panels."
+            )
+
         if figsize is None:
             figsize = (4.0 * ncols, 3.5 * nrows)
         fig, axes = plt.subplots(
@@ -2235,11 +2311,14 @@ class ArrayGlyph(Glyph):
             else:
                 panel_arr = arr[col_idx, row_idx]
 
-            # ``self.extent`` is already stored in matplotlib's
-            # ``[xmin, xmax, ymin, ymax]`` order. The constructor expects
-            # the user-facing ``[xmin, ymin, xmax, ymax]`` order, so
-            # convert back when forwarding to the per-subplot glyph.
-            if self.extent is None:
+            # Per-panel ``extents`` win if given (already in the
+            # user-facing ``[xmin, ymin, xmax, ymax]`` order the
+            # constructor wants). Otherwise reuse the parent's ``extent``,
+            # which is stored in matplotlib's ``[xmin, xmax, ymin, ymax]``
+            # order — convert it back before forwarding.
+            if extents is not None:
+                sub_extent = list(extents[panel_idx])
+            elif self.extent is None:
                 sub_extent = None
             else:
                 sub_extent = [
@@ -2302,7 +2381,10 @@ class ArrayGlyph(Glyph):
 
         This method creates an animation by iterating through the first dimension of a 3D array.
         Each slice of the array becomes a frame in the animation, with optional time labels,
-        point annotations, and cell value displays.
+        point annotations, and cell value displays. Every frame is a slice of the *same* array,
+        so they all share the glyph's single ``extent`` (one spatial domain) — there is no
+        per-frame extent. For data spanning different domains, build one :class:`ArrayGlyph`
+        per domain instead of stacking them into a single 3-D array.
 
         Args:
             time: A list containing labels for each frame in the animation.

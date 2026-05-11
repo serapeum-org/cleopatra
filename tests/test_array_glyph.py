@@ -776,6 +776,36 @@ class TestCenterLimits:
         assert vmax == pytest.approx(5.0)
 
 
+class TestAllNaNColorLimits:
+    """Constructing from an array with no finite values fails loudly (M2)."""
+
+    def test_all_nan_array_raises(self):
+        """`ArrayGlyph(all_nan)` raises `ValueError`, not a NaN colour range."""
+        with pytest.raises(ValueError, match="no finite values"):
+            ArrayGlyph(np.full((5, 5), np.nan))
+
+    def test_fully_masked_array_raises(self):
+        """A fully-masked array (every cell == exclude_value) raises too."""
+        arr = np.full((4, 4), -9999.0)
+        with pytest.raises(ValueError, match="no finite values"):
+            ArrayGlyph(arr, exclude_value=[-9999.0])
+
+    def test_robust_all_nan_raises(self):
+        """The `robust=True` path also raises on an all-NaN array."""
+        with pytest.raises(ValueError, match="no finite"):
+            ArrayGlyph(np.full((5, 5), np.nan), robust=True)
+
+    def test_explicit_vmin_vmax_override_makes_all_nan_usable(self):
+        """Passing explicit `vmin`/`vmax` lets an all-NaN array through.
+
+        This is what `facet` relies on for its 0-1 fallback on an all-NaN
+        stack panel.
+        """
+        glyph = ArrayGlyph(np.full((5, 5), np.nan), vmin=0.0, vmax=1.0)
+        assert glyph.vmin == 0.0
+        assert glyph.vmax == 1.0
+
+
 class TestPrepareArrayValidation:
     """Tests for ``ArrayGlyph.prepare_array`` and RGB constructor validation."""
 
@@ -1419,6 +1449,88 @@ class TestFaceting:
                     f"panel {panel_idx} should keep sentinel cell "
                     f"({panel_idx}, {panel_idx}) masked; mask={mask}"
                 )
+        finally:
+            plt.close(result.fig)
+
+
+@pytest.mark.plot
+class TestFacetExtents:
+    """Per-panel ``extents=`` on :py:meth:`ArrayGlyph.facet` (M4)."""
+
+    @staticmethod
+    def _stack(n: int = 2, h: int = 4, w: int = 4) -> np.ndarray:
+        return np.arange(n * h * w, dtype=float).reshape(n, h, w)
+
+    def test_per_panel_extents_applied(self):
+        """Each panel's image gets its own ``[xmin, ymin, xmax, ymax]``."""
+        stack = self._stack(n=2)
+        result = ArrayGlyph(stack).facet(
+            col="region", extents=[[0, 0, 10, 10], [10, 0, 20, 10]]
+        )
+        try:
+            extents = [
+                tuple(ax.get_images()[0].get_extent())
+                for ax in result.axes.flat
+            ]
+            # matplotlib reports extent as (xmin, xmax, ymin, ymax).
+            assert extents == [(0.0, 10.0, 0.0, 10.0), (10.0, 20.0, 0.0, 10.0)]
+        finally:
+            plt.close(result.fig)
+
+    def test_per_panel_extents_4d(self):
+        """``extents`` covers all panels of a 4-D (col x row) grid, row-major."""
+        stack = np.arange(2 * 2 * 3 * 3, dtype=float).reshape(2, 2, 3, 3)
+        ex = [[0, 0, 1, 1], [1, 0, 2, 1], [0, 1, 1, 2], [1, 1, 2, 2]]
+        result = ArrayGlyph(stack).facet(col="c", row="r", extents=ex)
+        try:
+            got = [
+                tuple(ax.get_images()[0].get_extent())
+                for ax in result.axes.flat
+            ]
+            assert got == [(0.0, 1.0, 0.0, 1.0), (1.0, 2.0, 0.0, 1.0),
+                           (0.0, 1.0, 1.0, 2.0), (1.0, 2.0, 1.0, 2.0)]
+        finally:
+            plt.close(result.fig)
+
+    def test_extents_wrong_length_raises(self):
+        """An ``extents`` list whose length != n_panels raises ``ValueError``."""
+        stack = self._stack(n=3)
+        with pytest.raises(ValueError, match="3 panels"):
+            ArrayGlyph(stack).facet(col="t", extents=[[0, 0, 1, 1]])
+
+    def test_extents_non_length4_element_raises(self):
+        """An ``extents`` entry that isn't length-4 raises ``ValueError``."""
+        stack = self._stack(n=2)
+        with pytest.raises(ValueError, match=r"extents\[1\].*length-4"):
+            ArrayGlyph(stack).facet(col="t", extents=[[0, 0, 1, 1], [0, 0, 1]])
+
+    def test_extents_with_parent_extent_raises(self):
+        """``extents`` and the glyph's own ``extent`` are mutually exclusive."""
+        stack = self._stack(n=2)
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            ArrayGlyph(stack, extent=[0, 0, 4, 4]).facet(
+                col="t", extents=[[0, 0, 1, 1], [1, 0, 2, 1]]
+            )
+
+    def test_extents_with_coords_raises(self):
+        """``extents`` and ``coords`` are mutually exclusive."""
+        stack = self._stack(n=2, h=3, w=4)
+        x = np.linspace(0.0, 10.0, 4)
+        y = np.linspace(0.0, 5.0, 3)
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            ArrayGlyph(stack, coords=(x, y)).facet(
+                col="t", extents=[[0, 0, 1, 1], [1, 0, 2, 1]]
+            )
+
+    def test_no_extents_reuses_parent_extent(self):
+        """Without ``extents`` every panel inherits the parent's ``extent``."""
+        stack = self._stack(n=3)
+        result = ArrayGlyph(stack, extent=[0, 0, 4, 8]).facet(col="t")
+        try:
+            for ax in result.axes.flat:
+                # parent extent [xmin, ymin, xmax, ymax] -> matplotlib
+                # (xmin, xmax, ymin, ymax)
+                assert tuple(ax.get_images()[0].get_extent()) == (0.0, 4.0, 0.0, 8.0)
         finally:
             plt.close(result.fig)
 
@@ -2123,25 +2235,34 @@ class TestFacetingEdgeCases:
         finally:
             plt.close(result.fig)
 
-    def test_facet_all_nan_stack_falls_back_to_unit_range(self) -> None:
-        """A stack with no finite values defaults to ``(0.0, 1.0)`` limits.
+    def test_facet_all_nan_stack_rejected_at_construction(self) -> None:
+        """An all-NaN stack fails at ``ArrayGlyph(...)`` (M2), before ``facet``.
 
         Test scenario:
-            When every value is non-finite (all NaN), the
-            ``finite.size == 0`` branch of ``facet`` returns
-            ``(0.0, 1.0)`` so the subplots still render without
-            an arithmetic error.
+            With no finite values and no explicit ``vmin``/``vmax`` the
+            constructor cannot derive a colour range, so it raises a clear
+            ``ValueError`` rather than producing a NaN range that breaks
+            later. ``facet`` is therefore never reached on such input.
         """
         nan_stack = np.full((2, 3, 3), np.nan)
-        result = ArrayGlyph(nan_stack).facet(col="t")
+        with pytest.raises(ValueError, match="no finite values"):
+            ArrayGlyph(nan_stack).facet(col="t")
+
+    def test_facet_all_nan_stack_with_explicit_limits(self) -> None:
+        """Explicit ``vmin``/``vmax`` let an all-NaN stack be faceted anyway.
+
+        Test scenario:
+            Passing colour limits up front bypasses the M2 guard, so a
+            placeholder all-NaN stack still lays out and the shared
+            ``(vmin, vmax)`` is the one the caller supplied.
+        """
+        nan_stack = np.full((2, 3, 3), np.nan)
+        result = ArrayGlyph(nan_stack, vmin=0.0, vmax=1.0).facet(col="t")
         try:
-            first = result.axes.ravel()[0].get_images()[0]
-            assert first.norm.vmin == pytest.approx(0.0), (
-                f"expected vmin=0.0 fallback; got {first.norm.vmin}"
-            )
-            assert first.norm.vmax == pytest.approx(1.0), (
-                f"expected vmax=1.0 fallback; got {first.norm.vmax}"
-            )
+            for ax in result.axes.ravel():
+                im = ax.get_images()[0]
+                assert im.norm.vmin == pytest.approx(0.0)
+                assert im.norm.vmax == pytest.approx(1.0)
         finally:
             plt.close(result.fig)
 
