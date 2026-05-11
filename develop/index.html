@@ -491,6 +491,67 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Main Features">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#arrayglyph-raster-array-visualization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ArrayGlyph — raster / array visualization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#meshglyph-unstructured-mesh-visualization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshGlyph — unstructured mesh visualization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#statisticalglyph-histograms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        StatisticalGlyph — histograms
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cleopatratiles-web-tile-basemaps-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cleopatra.tiles — web-tile basemaps (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#colors-styles-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Colors, styles, config
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -629,6 +690,10 @@
   
     
     
+      
+        
+      
+        
       
         
       
@@ -808,6 +873,34 @@
   
   
     <li class="md-nav__item">
+      <a href="reference/tiles.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tiles (basemaps)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="reference/colors-glyph/" class="md-nav__link">
         
   
@@ -844,6 +937,34 @@
     
   
     Styles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/config.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config
   
 
     
@@ -1150,6 +1271,67 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Main Features">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#arrayglyph-raster-array-visualization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ArrayGlyph — raster / array visualization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#meshglyph-unstructured-mesh-visualization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshGlyph — unstructured mesh visualization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#statisticalglyph-histograms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        StatisticalGlyph — histograms
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cleopatratiles-web-tile-basemaps-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cleopatra.tiles — web-tile basemaps (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#colors-styles-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Colors, styles, config
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1225,15 +1407,45 @@ and displaying the array. It also provides functionalities for creating statisti
   / <code>ColorScale</code>, and the matplotlib-backend helper).</li>
 </ul>
 <h2 id="main-features"><a class="toclink" href="#main-features">Main Features</a><a class="headerlink" href="#main-features" title="Permanent link">#</a></h2>
-<p>The <code>Array</code> class has the following functionalities:</p>
+<h3 id="arrayglyph-raster-array-visualization"><a class="toclink" href="#arrayglyph-raster-array-visualization"><code>ArrayGlyph</code> — raster / array visualization</a><a class="headerlink" href="#arrayglyph-raster-array-visualization" title="Permanent link">#</a></h3>
 <ul>
-<li>Initialize an array object with the provided parameters.</li>
-<li>Plot the array with optional parameters to customize the appearance and display cell values.</li>
-<li>Animate the array over time with optional parameters to customize the animation speed and display points.</li>
-<li>Display the array with optional parameters to customize the appearance and display point IDs.</li>
+<li>Plot 2-D and 3-D <code>numpy</code> arrays with automatic colorbars and selectable colour scales
+  (<code>linear</code>, <code>power</code>, <code>sym-lognorm</code>, <code>boundary-norm</code>, <code>midpoint</code>), rendered via <code>imshow</code>,
+  <code>pcolormesh</code>, <code>contour</code>, or <code>contourf</code> (<code>plot(kind=...)</code>).</li>
+<li>xarray-aligned colour options: <code>robust</code>, <code>center</code>, <code>levels</code>, <code>extend</code>, <code>cbar_kwargs</code>.</li>
+<li>Curvilinear / non-uniform grids with <code>coords=(x, y)</code>; faceted grids of subplots with
+  <code>facet(col=, row=, col_wrap=, extents=)</code> → <code>FacetGrid</code>.</li>
+<li>Animate 3-D arrays over time (with an optional lazy <code>data_getter</code> for streaming frames)
+  and export to GIF / MP4 / MOV / AVI (via ffmpeg).</li>
+<li>Overlay point markers and per-cell value labels.</li>
 </ul>
-<p>The <code>Statistic</code> module provides a class for creating statistical plots, specifically histograms.
-The class, <code>Statistic</code>, is designed to handle both 1D (single-dimensional) and 2D (multi-dimensional) data.</p>
+<p>See the <a href="reference/array-glyph/">ArrayGlyph reference</a>.</p>
+<h3 id="meshglyph-unstructured-mesh-visualization"><a class="toclink" href="#meshglyph-unstructured-mesh-visualization"><code>MeshGlyph</code> — unstructured mesh visualization</a><a class="headerlink" href="#meshglyph-unstructured-mesh-visualization" title="Permanent link">#</a></h3>
+<ul>
+<li>Visualise UGRID-style unstructured meshes with <code>tripcolor</code> / <code>tricontourf</code> and
+  wireframe outlines; animate time-varying mesh data.</li>
+</ul>
+<p>See the <a href="reference/mesh-glyph/">MeshGlyph reference</a>.</p>
+<h3 id="statisticalglyph-histograms"><a class="toclink" href="#statisticalglyph-histograms"><code>StatisticalGlyph</code> — histograms</a><a class="headerlink" href="#statisticalglyph-histograms" title="Permanent link">#</a></h3>
+<ul>
+<li>1-D and 2-D histograms with customizable bins, colours, and transparency.</li>
+</ul>
+<p>See the <a href="reference/statistics-glyph/">Statistical plots reference</a>.</p>
+<h3 id="cleopatratiles-web-tile-basemaps-optional"><a class="toclink" href="#cleopatratiles-web-tile-basemaps-optional"><code>cleopatra.tiles</code> — web-tile basemaps (optional)</a><a class="headerlink" href="#cleopatratiles-web-tile-basemaps-optional" title="Permanent link">#</a></h3>
+<ul>
+<li><code>add_tiles(ax, ...)</code> overlays an XYZ web-tile basemap (OpenStreetMap, CartoDB, Esri, …)
+  underneath your data — pure Python, no GDAL. Behind the <code>cleopatra[tiles]</code> extra
+  (<code>conda install -c conda-forge cleopatra-tiles</code>).</li>
+</ul>
+<p>See the <a href="reference/tiles.md">Tiles reference</a>.</p>
+<h3 id="colors-styles-config"><a class="toclink" href="#colors-styles-config"><code>Colors</code>, <code>styles</code>, <code>config</code></a><a class="headerlink" href="#colors-styles-config" title="Permanent link">#</a></h3>
+<ul>
+<li><code>Colors</code> — convert between hex / RGB(0–255) / normalized-RGB(0–1) and build colormaps
+  from images.</li>
+<li><code>styles</code> — predefined line/marker styles, <code>ColorScale</code>, and <code>MidpointNormalize</code>.</li>
+<li><code>config</code> — an opt-in helper for picking the matplotlib backend (importing <code>cleopatra</code>
+  does not change it).</li>
+</ul>
 
 
 
