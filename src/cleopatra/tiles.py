@@ -299,6 +299,55 @@ def _densify_and_reproject_bounds(
     return result
 
 
+def _looks_like_image(data: bytes) -> bool:
+    """Return True if ``data`` begins with a known raster-image signature.
+
+    Recognises PNG, JPEG (any APPn / SOFn / DQT variant via the 3-byte
+    SOI marker `\\xff\\xd8\\xff`), GIF, and WebP — the formats XYZ tile
+    servers serve. This is only a cheap "is this an image at all?" gate
+    before Pillow does the real decoding in :func:`stitch_tiles`; it is
+    not a full validation.
+
+    Args:
+        data: The raw HTTP response body.
+
+    Returns:
+        bool: True if the leading bytes match a known image format.
+
+    Examples:
+        - A PNG header passes; an HTML error page does not:
+            ```python
+            >>> from cleopatra.tiles import _looks_like_image
+            >>> _looks_like_image(b"\\x89PNG\\r\\n\\x1a\\n" + b"\\x00" * 8)
+            True
+            >>> _looks_like_image(b"<html>error</html>")
+            False
+            >>> _looks_like_image(b"")
+            False
+
+            ```
+        - JPEGs with any APPn marker (`\\xe0`..`\\xef`) or a bare SOI
+            followed by a DQT/SOFn byte pass:
+            ```python
+            >>> from cleopatra.tiles import _looks_like_image
+            >>> all(
+            ...     _looks_like_image(b"\\xff\\xd8\\xff" + bytes([m]) + b"\\x00" * 8)
+            ...     for m in (0xE0, 0xE1, 0xE2, 0xE8, 0xEF, 0xDB, 0xC0)
+            ... )
+            True
+
+            ```
+    """
+    if not data:
+        return False
+    return (
+        data[:4] == b"\x89PNG"  # PNG
+        or data[:3] == b"\xff\xd8\xff"  # JPEG (baseline, progressive, EXIF, ...)
+        or data[:6] in (b"GIF87a", b"GIF89a")  # GIF
+        or (data[:4] == b"RIFF" and data[8:12] == b"WEBP")  # WebP
+    )
+
+
 def fetch_single_tile(
     tile: Any,
     provider: Any,
@@ -331,7 +380,8 @@ def fetch_single_tile(
             >>> tile_obj, data = fetch_single_tile(  # doctest: +SKIP
             ...     tile, provider, timeout=10, retries=2
             ... )
-            >>> data[:4] in (b"\\x89PNG", b"\\xff\\xd8\\xff\\xe0", b"\\xff\\xd8\\xff\\xe1")  # doctest: +SKIP
+            >>> from cleopatra.tiles import _looks_like_image
+            >>> _looks_like_image(data)  # doctest: +SKIP
             True
 
             ```
@@ -366,11 +416,7 @@ def fetch_single_tile(
             )
             response = urllib.request.urlopen(request, timeout=timeout)
             data = response.read()
-            if not data or data[:4] not in (
-                b"\x89PNG",
-                b"\xff\xd8\xff\xe0",
-                b"\xff\xd8\xff\xe1",
-            ):
+            if not _looks_like_image(data):
                 raise OSError(
                     f"Tile response is not a valid image "
                     f"({len(data)} bytes, starts with "

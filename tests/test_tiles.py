@@ -33,6 +33,7 @@ from cleopatra import tiles as tiles_mod  # noqa: E402
 from cleopatra.tiles import (  # noqa: E402
     MAX_TILES,
     _densify_and_reproject_bounds,
+    _looks_like_image,
     _require_tiles_extra,
     add_tiles,
     auto_zoom,
@@ -541,19 +542,92 @@ class TestFetchSingleTile:
                 f"Expected 3 attempts, got {mock_urlopen.call_count}"
             )
 
-    def test_jpeg_response_accepted(self):
-        """A JPEG (E0/E1 markers) is accepted as a valid image."""
-        jpeg_e0 = b"\xff\xd8\xff\xe0" + b"\x00" * 64
+    @pytest.mark.parametrize(
+        "header",
+        [
+            b"\xff\xd8\xff\xe0",  # JFIF
+            b"\xff\xd8\xff\xe1",  # EXIF
+            b"\xff\xd8\xff\xe2",  # ICC / SPIFF APP2
+            b"\xff\xd8\xff\xe8",  # SPIFF APP8
+            b"\xff\xd8\xff\xef",  # APP15
+            b"\xff\xd8\xff\xdb",  # bare SOI + DQT (some progressive JPEGs)
+            b"\xff\xd8\xff\xc0",  # bare SOI + SOF0
+            b"GIF89a",  # GIF
+            b"RIFF\x00\x00\x00\x00WEBP",  # WebP
+        ],
+        ids=[
+            "jpeg-app0", "jpeg-app1", "jpeg-app2", "jpeg-app8", "jpeg-app15",
+            "jpeg-dqt", "jpeg-sof0", "gif", "webp",
+        ],
+    )
+    def test_non_png_image_headers_accepted(self, header):
+        """Tile bodies starting with any common image signature pass through.
+
+        Regression for the bug where only `\\xff\\xd8\\xff\\xe0`/`\\xe1` JPEG
+        markers were accepted, so progressive/EXIF/ICC JPEGs (and GIF/WebP)
+        were treated as fetch failures and retried into a ``ConnectionError``.
+
+        Args:
+            header: A leading byte sequence for a valid image format.
+        """
+        body = header + b"\x00" * 64
         tile = Tile(0, 0, 0)
         provider = self._make_provider()
         with patch("urllib.request.urlopen") as mock_urlopen:
             mock_response = MagicMock()
-            mock_response.read.return_value = jpeg_e0
+            mock_response.read.return_value = body
             mock_urlopen.return_value = mock_response
             _, returned_bytes = fetch_single_tile(
                 tile, provider, timeout=1, retries=0
             )
-        assert returned_bytes == jpeg_e0, "JPEG bytes should pass through"
+        assert returned_bytes == body, "image bytes should pass through unchanged"
+
+
+class TestLooksLikeImage:
+    """Unit tests for :func:`cleopatra.tiles._looks_like_image`."""
+
+    @pytest.mark.parametrize(
+        "data",
+        [
+            b"\x89PNG\r\n\x1a\n" + b"\x00" * 8,
+            b"\xff\xd8\xff\xe0" + b"\x00" * 8,
+            b"\xff\xd8\xff\xe2" + b"\x00" * 8,
+            b"\xff\xd8\xff\xdb" + b"\x00" * 8,
+            b"\xff\xd8\xff\xc0" + b"\x00" * 8,
+            b"GIF87a" + b"\x00" * 8,
+            b"GIF89a" + b"\x00" * 8,
+            b"RIFF\x00\x00\x00\x00WEBP\x00\x00\x00\x00",
+        ],
+        ids=["png", "jpeg-app0", "jpeg-app2", "jpeg-dqt", "jpeg-sof0",
+             "gif87a", "gif89a", "webp"],
+    )
+    def test_accepts_known_signatures(self, data):
+        """Every recognised raster signature returns True.
+
+        Args:
+            data: A byte string that begins with a known image signature.
+        """
+        assert _looks_like_image(data) is True
+
+    @pytest.mark.parametrize(
+        "data",
+        [
+            b"",
+            b"<html><body>404 Not Found</body></html>",
+            b"{\"error\": \"forbidden\"}",
+            b"\x00\x00\x00\x00",
+            b"RIFF\x00\x00\x00\x00WAVE",  # RIFF but not WebP
+            b"\xff\xd8",  # truncated SOI, not enough bytes
+        ],
+        ids=["empty", "html", "json", "zeros", "riff-not-webp", "truncated-soi"],
+    )
+    def test_rejects_non_images(self, data):
+        """Empty bodies, error pages and non-image payloads return False.
+
+        Args:
+            data: A byte string that is not a recognised image.
+        """
+        assert _looks_like_image(data) is False
 
 
 class TestFetchTiles:
