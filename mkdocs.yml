@@ -112,8 +112,10 @@ nav:
     - Statistical plots: reference/statistics-glyph.md
     - ArrayGlyph: reference/array-glyph.md
     - MeshGlyph: reference/mesh-glyph.md
+    - Tiles (basemaps): reference/tiles.md
     - Colors: reference/colors-glyph.md
     - Styles: reference/styles-glyph.md
+    - Config: reference/config.md
   - Examples:
     - ArrayGlyph: notebooks/array_glyph/array_glyph_examples.ipynb
     - MeshGlyph: notebooks/mesh_glyph/mesh_glyph_examples.ipynb
