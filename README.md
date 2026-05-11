@@ -52,13 +52,24 @@ over matplotlib with sensible defaults and rich customization.
 
 ```bash
 pip install cleopatra
+
+# with the optional web-tile basemap support (cleopatra.tiles.add_tiles)
+pip install "cleopatra[tiles]"
 ```
 
 ### conda
 
 ```bash
 conda install -c conda-forge cleopatra
+
+# with the optional web-tile basemap support
+conda install -c conda-forge cleopatra-tiles
 ```
+
+The conda packages are built from the
+[cleopatra-feedstock](https://github.com/conda-forge/cleopatra-feedstock)
+(the `cleopatra-tiles` output bundles `mercantile`, `pillow`, `pyproj`, and
+`xyzservices`).
 
 ### From source (latest development version)
 
