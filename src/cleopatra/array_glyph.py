@@ -2637,8 +2637,8 @@ class ArrayGlyph(Glyph):
         precision = self.default_options["precision"]
         array = self.arr
 
-        # `data_getter` is the lazy-frame escape hatch added in
-        # CLEO-7. When `None` (default) we fall back to the eager
+        # `data_getter` is the lazy-frame escape hatch
+        # When `None` (default) we fall back to the eager
         # `self.arr[i]` path. We require a 3-D arr in the eager
         # path; with a callback, `self.arr` is used only for the
         # frame shape so a 2-D template is fine.
