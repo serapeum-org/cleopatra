@@ -17,6 +17,32 @@
 It provides functionalities to handle 3D arrays and perform various operations on them, such as plotting, animating,
 and displaying the array. It also provides functionalities for creating statistical plots.
 
+## Package Layout
+
+```mermaid
+graph TD
+    cleopatra["cleopatra"]
+
+    cleopatra --> glyph["glyph<br/>Glyph (base class)"]
+    cleopatra --> array_glyph["array_glyph<br/>ArrayGlyph, FacetGrid"]
+    cleopatra --> mesh_glyph["mesh_glyph<br/>MeshGlyph"]
+    cleopatra --> statistical_glyph["statistical_glyph<br/>StatisticalGlyph"]
+    cleopatra --> tiles["tiles<br/>add_tiles + helpers (optional 'tiles' extra)"]
+    cleopatra --> colors["colors<br/>Colors"]
+    cleopatra --> styles["styles<br/>Styles, Scale, ColorScale, MidpointNormalize"]
+    cleopatra --> config["config<br/>Config (matplotlib backend helper)"]
+
+    array_glyph -. extends .-> glyph
+    mesh_glyph -. extends .-> glyph
+```
+
+- `glyph` provides the shared `Glyph` base class (figure/axes lifecycle, colorbars, color norms, ticks, animation).
+- `array_glyph` (`ArrayGlyph`, `FacetGrid`), `mesh_glyph` (`MeshGlyph`), and `statistical_glyph` (`StatisticalGlyph`)
+  are the user-facing visualizers; `ArrayGlyph` and `MeshGlyph` subclass `Glyph`, `StatisticalGlyph` stands alone.
+- `tiles` adds the optional web-tile basemap helper (`cleopatra.tiles.add_tiles`), behind the `cleopatra[tiles]` extra.
+- `colors`, `styles`, and `config` are supporting utilities (colour conversions, predefined styles / `MidpointNormalize`
+  / `ColorScale`, and the matplotlib-backend helper).
+
 ## Main Features
 
 The `Array` class has the following functionalities:
