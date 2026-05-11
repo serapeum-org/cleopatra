@@ -30,6 +30,14 @@ dependencies = [
     "hpc-utils>=0.1.4",
 ]
 
+[project.optional-dependencies]
+tiles = [
+    "mercantile>=1.2.1",
+    "pillow>=12.1.1",
+    "pyproj>=3.7.2",
+    "xyzservices>=2026.3.0",
+]
+
 [dependency-groups]
 dev = [
     "pytest>=8.2.2",
@@ -67,6 +75,7 @@ notebook = [
 Homepage = "https://github.com/serapeum-org/cleopatra"
 Documentation = "https://serapeum-org.github.io/cleopatra/"
 Repository = "https://github.com/serapeum-org/cleopatra"
+
 
 
 [tool.commitizen]
