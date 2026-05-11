@@ -283,6 +283,23 @@ class TestAddTilesBehaviour:
         assert call_kwargs["alpha"] == 0.5
         assert call_kwargs["zorder"] == -2
 
+    def test_default_user_agent_propagates_to_fetch_tiles(self, mock_ax, _patch_tiles):
+        """With no ``user_agent`` the module default is forwarded to ``fetch_tiles``."""
+        from cleopatra.tiles import USER_AGENT
+
+        _, mock_fetch, _ = _patch_tiles
+        add_tiles(mock_ax, crs=3857)
+        assert mock_fetch.call_args.kwargs.get("user_agent") == USER_AGENT
+
+    def test_custom_user_agent_propagates_to_fetch_tiles(self, mock_ax, _patch_tiles):
+        """``add_tiles(user_agent=...)`` is forwarded verbatim to ``fetch_tiles``."""
+        _, mock_fetch, _ = _patch_tiles
+        add_tiles(mock_ax, crs=3857, user_agent="myapp/1.0 (+https://example.test)")
+        assert (
+            mock_fetch.call_args.kwargs.get("user_agent")
+            == "myapp/1.0 (+https://example.test)"
+        )
+
 
 class TestAddTilesIntegration:
     """End-to-end integration tests against a real matplotlib axes."""
@@ -582,6 +599,45 @@ class TestFetchSingleTile:
             )
         assert returned_bytes == body, "image bytes should pass through unchanged"
 
+    def _captured_user_agent(self, mock_urlopen) -> str:
+        """Extract the User-Agent header from the Request passed to urlopen."""
+        request = mock_urlopen.call_args[0][0]
+        # exactly one header is set on the request
+        return next(iter(request.headers.values()))
+
+    def test_default_user_agent_is_versioned(self):
+        """The default User-Agent identifies cleopatra with a version and URL."""
+        from cleopatra.tiles import USER_AGENT
+
+        png = _make_tile_png(size=32)
+        provider = self._make_provider()
+        with patch("urllib.request.urlopen") as mock_urlopen:
+            mock_response = MagicMock()
+            mock_response.read.return_value = png
+            mock_urlopen.return_value = mock_response
+            fetch_single_tile(Tile(0, 0, 0), provider, timeout=1, retries=0)
+        ua = self._captured_user_agent(mock_urlopen)
+        assert ua == USER_AGENT
+        assert ua.startswith("cleopatra/"), f"UA should start with 'cleopatra/': {ua!r}"
+        assert "github.com/serapeum-org/cleopatra" in ua, (
+            f"UA should carry a contact URL: {ua!r}"
+        )
+        assert ua != "cleopatra/Python", "the old placeholder UA must be gone"
+
+    def test_custom_user_agent_is_sent_verbatim(self):
+        """A `user_agent=` override is sent on the request unchanged."""
+        png = _make_tile_png(size=32)
+        provider = self._make_provider()
+        custom = "myapp/2.0 (+https://example.test)"
+        with patch("urllib.request.urlopen") as mock_urlopen:
+            mock_response = MagicMock()
+            mock_response.read.return_value = png
+            mock_urlopen.return_value = mock_response
+            fetch_single_tile(
+                Tile(0, 0, 0), provider, timeout=1, retries=0, user_agent=custom
+            )
+        assert self._captured_user_agent(mock_urlopen) == custom
+
 
 class TestLooksLikeImage:
     """Unit tests for :func:`cleopatra.tiles._looks_like_image`."""
@@ -640,7 +696,7 @@ class TestFetchTiles:
         provider = MagicMock()
         provider.build_url = MagicMock(return_value="http://example.test/")
 
-        def fake_single(tile, _provider, _timeout, _retries):
+        def fake_single(tile, _provider, _timeout, _retries, _user_agent=None):
             return tile, png
 
         with patch.object(tiles_mod, "fetch_single_tile", side_effect=fake_single):

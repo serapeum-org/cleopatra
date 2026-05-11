@@ -46,7 +46,38 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-USER_AGENT = "cleopatra/Python"
+
+def _resolve_version() -> str:
+    """Return the installed cleopatra version, or ``"unknown"``.
+
+    Uses :mod:`importlib.metadata` (querying installed package metadata,
+    not the ``cleopatra`` module) so this stays free of an import-time
+    circular dependency on the package ``__init__``.
+
+    Returns:
+        str: The distribution version string, or ``"unknown"`` when the
+        package is not installed (e.g. running from a source checkout
+        without ``pip install -e .``).
+    """
+    try:
+        from importlib.metadata import PackageNotFoundError, version
+    except ImportError:  # pragma: no cover - Python < 3.8 fallback
+        from importlib_metadata import PackageNotFoundError, version  # type: ignore
+    try:
+        return version("cleopatra")
+    except PackageNotFoundError:  # pragma: no cover
+        return "unknown"
+
+
+#: Default ``User-Agent`` sent on every tile request. Includes the cleopatra
+#: version and a contact URL so tile providers (OpenStreetMap in particular,
+#: whose usage policy requires an identifiable agent) can attribute and, if
+#: necessary, throttle or reach out about traffic. Override per call via the
+#: ``user_agent`` argument of :func:`add_tiles`.
+USER_AGENT = (
+    f"cleopatra/{_resolve_version()} "
+    "(+https://github.com/serapeum-org/cleopatra)"
+)
 
 MAX_TILES = 256
 
@@ -353,6 +384,7 @@ def fetch_single_tile(
     provider: Any,
     timeout: int,
     retries: int,
+    user_agent: str = USER_AGENT,
 ) -> tuple[Any, bytes]:
     """Fetch a single tile, retrying on transient failures.
 
@@ -361,6 +393,8 @@ def fetch_single_tile(
         provider: ``xyzservices.TileProvider`` with a URL template.
         timeout: HTTP request timeout in seconds.
         retries: Number of retry attempts on failure.
+        user_agent: ``User-Agent`` header sent on every request. Defaults
+            to :data:`USER_AGENT` (``cleopatra/<version> (+repo-url)``).
 
     Returns:
         tuple[Any, bytes]: The original tile and its PNG/JPEG bytes.
@@ -412,7 +446,7 @@ def fetch_single_tile(
         try:
             request = urllib.request.Request(
                 url,
-                headers={"User-Agent": USER_AGENT},
+                headers={"User-Agent": user_agent},
             )
             response = urllib.request.urlopen(request, timeout=timeout)
             data = response.read()
@@ -447,13 +481,16 @@ def fetch_tiles(
     max_workers: int = 8,
     timeout: int = 10,
     retries: int = 2,
+    user_agent: str = USER_AGENT,
 ) -> dict:
     """Fetch tile images in parallel over HTTP.
 
     Uses :class:`concurrent.futures.ThreadPoolExecutor` for parallel
     downloads. Each tile URL is constructed via the provider's
-    ``build_url()``. A ``User-Agent`` header (``cleopatra/Python``) is
-    sent on every request to comply with tile provider policy.
+    ``build_url()``. A ``User-Agent`` header (``cleopatra/<version>
+    (+repo-url)`` by default) is sent on every request so tile providers
+    can attribute the traffic — OpenStreetMap's usage policy requires an
+    identifiable agent.
 
     Args:
         tiles: Tiles to fetch (each has ``x``, ``y``, ``z`` attributes).
@@ -461,6 +498,8 @@ def fetch_tiles(
         max_workers: Maximum concurrent HTTP connections.
         timeout: Per-tile HTTP request timeout in seconds.
         retries: Per-tile retry count on failure.
+        user_agent: ``User-Agent`` header sent on every request. Defaults
+            to :data:`USER_AGENT`.
 
     Returns:
         dict: Mapping of Tile to PNG/JPEG bytes.
@@ -494,7 +533,9 @@ def fetch_tiles(
     tile_data: dict[Any, bytes] = {}
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {
-            executor.submit(fetch_single_tile, tile, provider, timeout, retries): tile
+            executor.submit(
+                fetch_single_tile, tile, provider, timeout, retries, user_agent
+            ): tile
             for tile in tiles
         }
         try:
@@ -635,6 +676,7 @@ def add_tiles(
     interpolation: str = "bilinear",
     timeout: int = 10,
     retries: int = 2,
+    user_agent: str | None = None,
 ) -> Any:
     """Overlay a web-tile basemap on a matplotlib axes.
 
@@ -668,6 +710,12 @@ def add_tiles(
         interpolation: Interpolation method passed to ``ax.imshow``.
         timeout: Per-tile HTTP timeout in seconds.
         retries: Per-tile retry count.
+        user_agent: ``User-Agent`` header to send on tile requests.
+            ``None`` (default) uses :data:`USER_AGENT`
+            (``cleopatra/<version> (+repo-url)``). Pass your own string
+            when embedding cleopatra in an application so the traffic is
+            attributed to *that* app (recommended for production use, and
+            required by some providers' usage policies).
 
     Returns:
         matplotlib.axes.Axes: The same axes, for chaining.
@@ -792,7 +840,13 @@ def add_tiles(
             f"coverage."
         )
 
-    tile_data = fetch_tiles(tiles, provider, timeout=timeout, retries=retries)
+    tile_data = fetch_tiles(
+        tiles,
+        provider,
+        timeout=timeout,
+        retries=retries,
+        user_agent=user_agent if user_agent is not None else USER_AGENT,
+    )
     image, extent_3857 = stitch_tiles(tile_data, tiles, tile_zoom)
 
     if is_3857:
