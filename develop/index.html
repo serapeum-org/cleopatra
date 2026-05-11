@@ -472,6 +472,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#package-layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Package Layout
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#main-features" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1120,6 +1131,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#package-layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Package Layout
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#main-features" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1179,6 +1201,29 @@
 <p><strong>cleopatra</strong> is a Python package providing a fast and flexible way to build visualize data using matplotlib.
 It provides functionalities to handle 3D arrays and perform various operations on them, such as plotting, animating,
 and displaying the array. It also provides functionalities for creating statistical plots.</p>
+<h2 id="package-layout"><a class="toclink" href="#package-layout">Package Layout</a><a class="headerlink" href="#package-layout" title="Permanent link">#</a></h2>
+<pre class="mermaid"><code>graph TD
+    cleopatra["cleopatra"]
+
+    cleopatra --&gt; glyph["glyph&lt;br/&gt;Glyph (base class)"]
+    cleopatra --&gt; array_glyph["array_glyph&lt;br/&gt;ArrayGlyph, FacetGrid"]
+    cleopatra --&gt; mesh_glyph["mesh_glyph&lt;br/&gt;MeshGlyph"]
+    cleopatra --&gt; statistical_glyph["statistical_glyph&lt;br/&gt;StatisticalGlyph"]
+    cleopatra --&gt; tiles["tiles&lt;br/&gt;add_tiles + helpers (optional 'tiles' extra)"]
+    cleopatra --&gt; colors["colors&lt;br/&gt;Colors"]
+    cleopatra --&gt; styles["styles&lt;br/&gt;Styles, Scale, ColorScale, MidpointNormalize"]
+    cleopatra --&gt; config["config&lt;br/&gt;Config (matplotlib backend helper)"]
+
+    array_glyph -. extends .-&gt; glyph
+    mesh_glyph -. extends .-&gt; glyph</code></pre>
+<ul>
+<li><code>glyph</code> provides the shared <code>Glyph</code> base class (figure/axes lifecycle, colorbars, color norms, ticks, animation).</li>
+<li><code>array_glyph</code> (<code>ArrayGlyph</code>, <code>FacetGrid</code>), <code>mesh_glyph</code> (<code>MeshGlyph</code>), and <code>statistical_glyph</code> (<code>StatisticalGlyph</code>)
+  are the user-facing visualizers; <code>ArrayGlyph</code> and <code>MeshGlyph</code> subclass <code>Glyph</code>, <code>StatisticalGlyph</code> stands alone.</li>
+<li><code>tiles</code> adds the optional web-tile basemap helper (<code>cleopatra.tiles.add_tiles</code>), behind the <code>cleopatra[tiles]</code> extra.</li>
+<li><code>colors</code>, <code>styles</code>, and <code>config</code> are supporting utilities (colour conversions, predefined styles / <code>MidpointNormalize</code>
+  / <code>ColorScale</code>, and the matplotlib-backend helper).</li>
+</ul>
 <h2 id="main-features"><a class="toclink" href="#main-features">Main Features</a><a class="headerlink" href="#main-features" title="Permanent link">#</a></h2>
 <p>The <code>Array</code> class has the following functionalities:</p>
 <ul>
