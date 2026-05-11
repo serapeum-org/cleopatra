@@ -61,21 +61,21 @@ DEFAULT_OPTIONS = {
 }
 DEFAULT_OPTIONS = STYLE_DEFAULTS | DEFAULT_OPTIONS
 
-#: Tuple of accepted ``kind=`` values for :meth:`ArrayGlyph.plot`.
+#: Tuple of accepted `kind=` values for `ArrayGlyph.plot`.
 VALID_PLOT_KINDS = ("auto", "imshow", "pcolormesh", "contour", "contourf")
-#: Tuple of accepted values for the xarray-aligned ``extend`` colorbar kwarg.
+#: Tuple of accepted values for the xarray-aligned `extend` colorbar kwarg.
 VALID_EXTEND_VALUES = ("neither", "both", "min", "max")
-#: Default colormap auto-selected when ``center`` is set without an explicit ``cmap``.
+#: Default colormap auto-selected when `center` is set without an explicit `cmap`.
 DIVERGING_DEFAULT_CMAP = "RdBu_r"
-#: Lower percentile (2.0) used by xarray-style ``robust=True`` colour limits.
+#: Lower percentile (2.0) used by xarray-style `robust=True` colour limits.
 ROBUST_LOWER_PERCENTILE = 2.0
-#: Upper percentile (98.0) used by xarray-style ``robust=True`` colour limits.
+#: Upper percentile (98.0) used by xarray-style `robust=True` colour limits.
 ROBUST_UPPER_PERCENTILE = 98.0
-#: Invariant phrase in the ``ValueError`` raised by :meth:`ArrayGlyph._validate_coords`
+#: Invariant phrase in the `ValueError` raised by `ArrayGlyph._validate_coords`
 #: when a coord array's shape does not match the data array. Kept stable so tests
 #: can match against it without coupling to the full (shape-interpolated) message.
 _COORD_SHAPE_MISMATCH = "coord array shape does not match the data array"
-#: Invariant phrase in the ``ValueError`` raised by :meth:`ArrayGlyph._validate_coords`
+#: Invariant phrase in the `ValueError` raised by `ArrayGlyph._validate_coords`
 #: when a coord array has a non-numeric dtype.
 _COORD_DTYPE_MISMATCH = "coord arrays must be numeric (integer or float)"
 
@@ -83,26 +83,26 @@ _COORD_DTYPE_MISMATCH = "coord arrays must be numeric (integer or float)"
 class FacetGrid:
     """Result object for a multi-subplot facet plot.
 
-    Mirrors xarray's :class:`xarray.plot.facetgrid.FacetGrid` return
+    Mirrors xarray's `xarray.plot.facetgrid.FacetGrid` return
     shape so downstream code that already targets xarray can be reused
-    without changes. Produced by :meth:`ArrayGlyph.facet`; do not
+    without changes. Produced by `ArrayGlyph.facet`; do not
     construct directly.
 
     Attributes:
-        fig: The shared :class:`matplotlib.figure.Figure`.
-        axes: 2-D ``ndarray`` of :class:`matplotlib.axes.Axes`. Empty
-            subplot slots (when ``col_wrap`` does not divide the stack
-            evenly) are hidden via :meth:`Axes.set_visible`.
-        cbar: The shared :class:`matplotlib.colorbar.Colorbar` attached
-            to the first rendered subplot. ``None`` when faceting an
+        fig: The shared `matplotlib.figure.Figure`.
+        axes: 2-D `ndarray` of `matplotlib.axes.Axes`. Empty
+            subplot slots (when `col_wrap` does not divide the stack
+            evenly) are hidden via `Axes.set_visible`.
+        cbar: The shared `matplotlib.colorbar.Colorbar` attached
+            to the first rendered subplot. `None` when faceting an
             RGB stack (no colorbar in the RGB path).
-        name_dicts: List of ``{dim_name: coord_value}`` dicts, one per
+        name_dicts: List of `{dim_name: coord_value}` dicts, one per
             rendered subplot. Mirrors
-            :attr:`xarray.plot.facetgrid.FacetGrid.name_dicts` so
+            `xarray.plot.facetgrid.FacetGrid.name_dicts` so
             callers can map subplot index to facet coordinate.
 
     Examples:
-        - Inspect the grid shape returned by :meth:`ArrayGlyph.facet`:
+        - Inspect the grid shape returned by `ArrayGlyph.facet`:
             ```python
             >>> import numpy as np
             >>> from cleopatra.array_glyph import ArrayGlyph
@@ -123,26 +123,26 @@ class FacetGrid:
         cbar: Colorbar | None,
         name_dicts: list[dict[str, Any]],
     ) -> None:
-        """Initialise the :class:`FacetGrid` result object.
+        """Initialise the `FacetGrid` result object.
 
-        :meth:`ArrayGlyph.facet` is the only intended caller. End users
+        `ArrayGlyph.facet` is the only intended caller. End users
         receive an already-populated instance and should not invoke
         this constructor directly.
 
         Args:
-            fig: The shared :class:`matplotlib.figure.Figure` that owns
+            fig: The shared `matplotlib.figure.Figure` that owns
                 every subplot.
-            axes: 2-D ``ndarray`` of :class:`matplotlib.axes.Axes` with
-                shape ``(nrows, ncols)``. Empty slots (when ``col_wrap``
+            axes: 2-D `ndarray` of `matplotlib.axes.Axes` with
+                shape `(nrows, ncols)`. Empty slots (when `col_wrap`
                 does not divide the panel count evenly) are kept in the
-                array but hidden with :meth:`Axes.set_visible(False)`.
-            cbar: The shared :class:`matplotlib.colorbar.Colorbar` for
+                array but hidden with `Axes.set_visible(False)`.
+            cbar: The shared `matplotlib.colorbar.Colorbar` for
                 the grid, attached to the first rendered subplot;
-                ``None`` for an RGB facet that has no colorbar.
-            name_dicts: One ``{dim_name: coord_value}`` dict per
+                `None` for an RGB facet that has no colorbar.
+            name_dicts: One `{dim_name: coord_value}` dict per
                 rendered subplot, in row-major (left-to-right,
                 top-to-bottom) order, mirroring
-                :attr:`xarray.plot.facetgrid.FacetGrid.name_dicts`.
+                `xarray.plot.facetgrid.FacetGrid.name_dicts`.
 
         Examples:
             - The result-object fields line up with the keyword args
@@ -186,10 +186,10 @@ class ArrayGlyph(Glyph):
         extent (List): The extent of the array [xmin, xmax, ymin, ymax].
         rgb (bool): Whether the array is an RGB array.
         num_domain_cells (int): Number of cells in the data domain — cells
-            that are neither masked (via ``exclude_value``) nor NaN. For a
+            that are neither masked (via `exclude_value`) nor NaN. For a
             3-D stack this is counted on the first frame. Equals the number
-            of per-cell value labels drawn when ``display_cell_value=True``.
-            (The legacy alias ``no_elem`` still works but is deprecated.)
+            of per-cell value labels drawn when `display_cell_value=True`.
+            (The legacy alias `no_elem` still works but is deprecated.)
         anim (matplotlib.animation.FuncAnimation): The animation object if created.
 
     Notes:
@@ -248,14 +248,14 @@ class ArrayGlyph(Glyph):
                 Can be a single value or a list of values to exclude.
             extent: The extent of the array in the format [xmin, ymin, xmax, ymax], by default None.
                 If provided, the array will be plotted with these spatial boundaries.
-                Mutually exclusive with ``coords``.
-            coords: Optional ``(x, y)`` coordinate arrays for curvilinear
+                Mutually exclusive with `coords`.
+            coords: Optional `(x, y)` coordinate arrays for curvilinear
                 or non-uniform grids, by default None. Each element is
                 either a 1-D array of cell centres (length matches the
-                last/second-to-last axis of ``array``) or a 2-D array
-                matching the last two axes of ``array``. When set,
-                ``kind="auto"`` routes to ``pcolormesh`` instead of
-                ``imshow``. Mutually exclusive with ``extent``.
+                last/second-to-last axis of `array`) or a 2-D array
+                matching the last two axes of `array`. When set,
+                `kind="auto"` routes to `pcolormesh` instead of
+                `imshow`. Mutually exclusive with `extent`.
             rgb: The indices of the red, green, and blue bands in the given array, by default None.
                 If provided, the array will be treated as an RGB image.
                 Can be a list of three values [r, g, b], or four values if alpha band is included [r, g, b, a].
@@ -285,45 +285,45 @@ class ArrayGlyph(Glyph):
                     cmap : str, optional
                         Colormap name, by default 'coolwarm_r'.
                     kind : str, optional
-                        Render kind. One of ``"auto"``, ``"imshow"``,
-                        ``"pcolormesh"``, ``"contour"``, ``"contourf"``.
-                        Default ``"auto"`` (currently equivalent to
-                        ``"imshow"``). Stored on the instance and used
-                        as the default for :meth:`plot`.
+                        Render kind. One of `"auto"`, `"imshow"`,
+                        `"pcolormesh"`, `"contour"`, `"contourf"`.
+                        Default `"auto"` (currently equivalent to
+                        `"imshow"`). Stored on the instance and used
+                        as the default for `plot`.
                     robust : bool, optional
-                        When True, ``vmin`` / ``vmax`` are computed from
+                        When True, `vmin` / `vmax` are computed from
                         the 2nd and 98th percentile of the unmasked data
-                        (xarray-aligned). An explicit ``vmin`` / ``vmax``
-                        wins over ``robust``. Default False.
+                        (xarray-aligned). An explicit `vmin` / `vmax`
+                        wins over `robust`. Default False.
                     center : float, optional
                         Diverging-colormap centring value. When set,
-                        ``(vmin, vmax)`` is made symmetric around
-                        ``center`` and the cmap auto-switches to
-                        ``"RdBu_r"`` if no explicit ``cmap`` was passed.
+                        `(vmin, vmax)` is made symmetric around
+                        `center` and the cmap auto-switches to
+                        `"RdBu_r"` if no explicit `cmap` was passed.
                         Default None (no centring).
                     levels : int or sequence, optional
                         Discrete colour levels (xarray-aligned). An
-                        ``int`` selects N linearly-spaced edges between
-                        ``vmin`` and ``vmax``; a sequence is used as
+                        `int` selects N linearly-spaced edges between
+                        `vmin` and `vmax`; a sequence is used as
                         explicit edges. Default None.
                     extend : str, optional
-                        Colorbar arrow extension. One of ``"neither"``,
-                        ``"both"``, ``"min"``, ``"max"``, or None to
+                        Colorbar arrow extension. One of `"neither"`,
+                        `"both"`, `"min"`, `"max"`, or None to
                         auto-resolve at render time. Default None.
                     cbar_kwargs : dict, optional
                         Extra keyword arguments forwarded to
-                        ``fig.colorbar``; user keys win over cleopatra's
+                        `fig.colorbar`; user keys win over cleopatra's
                         defaults on collision. Default None.
 
         Raises:
             ValueError: If an invalid keyword argument is provided.
             ValueError: If rgb is provided but the array doesn't have enough dimensions.
-            ValueError: If ``extend`` is set to a value outside
-                ``{"neither", "both", "min", "max"}``.
-            ValueError: If both ``extent`` and ``coords`` are supplied,
-                or if a ``coords`` element has a shape that does not
-                match ``array``.
-            TypeError: If ``coords`` is not a length-2 sequence of
+            ValueError: If `extend` is set to a value outside
+                `{"neither", "both", "min", "max"}`.
+            ValueError: If both `extent` and `coords` are supplied,
+                or if a `coords` element has a shape that does not
+                match `array`.
+            TypeError: If `coords` is not a length-2 sequence of
                 ndarrays.
 
         Examples:
@@ -355,7 +355,7 @@ class ArrayGlyph(Glyph):
         >>> fig, ax = array_glyph.plot()
 
         ```
-        Robust colour limits (xarray-aligned ``robust=True`` clips the
+        Robust colour limits (xarray-aligned `robust=True` clips the
         2nd/98th percentile so a few outliers do not dominate the
         scale):
         ```python
@@ -369,7 +369,7 @@ class ArrayGlyph(Glyph):
 
         ```
         Centring on a value for diverging data (auto-switches the cmap
-        to ``"RdBu_r"`` when no ``cmap`` is passed):
+        to `"RdBu_r"` when no `cmap` is passed):
         ```python
         >>> import numpy as np
         >>> from cleopatra.array_glyph import ArrayGlyph
@@ -381,8 +381,8 @@ class ArrayGlyph(Glyph):
         'RdBu_r'
 
         ```
-        Combining ``levels``, ``extend`` and ``cbar_kwargs`` (forwarded
-        to :class:`matplotlib.colorbar.Colorbar`):
+        Combining `levels`, `extend` and `cbar_kwargs` (forwarded
+        to `matplotlib.colorbar.Colorbar`):
         ```python
         >>> import numpy as np
         >>> from cleopatra.array_glyph import ArrayGlyph
@@ -401,7 +401,7 @@ class ArrayGlyph(Glyph):
         {'shrink': 0.6}
 
         ```
-        Invalid ``extend`` is rejected at construction time:
+        Invalid `extend` is rejected at construction time:
         ```python
         >>> import numpy as np
         >>> from cleopatra.array_glyph import ArrayGlyph
@@ -412,7 +412,7 @@ class ArrayGlyph(Glyph):
 
         ```
         Curvilinear coords (1-D centres) auto-route to
-        ``pcolormesh``:
+        `pcolormesh`:
         ```python
         >>> import numpy as np
         >>> from cleopatra.array_glyph import ArrayGlyph
@@ -424,7 +424,7 @@ class ArrayGlyph(Glyph):
         ((4,), (3,))
 
         ```
-        ``extent`` and ``coords`` are mutually exclusive:
+        `extent` and `coords` are mutually exclusive:
         ```python
         >>> import numpy as np
         >>> from cleopatra.array_glyph import ArrayGlyph
@@ -462,8 +462,8 @@ class ArrayGlyph(Glyph):
             extent = [extent[0], extent[2], extent[1], extent[3]]
         self.extent = extent
 
-        # Validate and normalise ``coords`` (curvilinear / non-uniform support).
-        # Stored as ``self._coords = (x, y)`` or ``None``.
+        # Validate and normalise `coords` (curvilinear / non-uniform support).
+        # Stored as `self._coords = (x, y)` or `None`.
         self._coords = self._validate_coords(coords, array)
 
         if rgb is not None:
@@ -500,10 +500,10 @@ class ArrayGlyph(Glyph):
             vmin_explicit="vmin" in explicit_keys,
             vmax_explicit="vmax" in explicit_keys,
         )
-        # Auto-switch the colormap to a diverging default when ``center`` is
-        # set and the user did not pick a cmap explicitly. ``cmap`` always
-        # exists in ``default_options`` (it has a non-None default of
-        # ``"coolwarm_r"``), so the explicit-vs-default check must rely on
+        # Auto-switch the colormap to a diverging default when `center` is
+        # set and the user did not pick a cmap explicitly. `cmap` always
+        # exists in `default_options` (it has a non-None default of
+        # `"coolwarm_r"`), so the explicit-vs-default check must rely on
         # whether the user actually passed it.
         if (
             self.default_options.get("center") is not None
@@ -517,7 +517,7 @@ class ArrayGlyph(Glyph):
         shape = array.shape
         # Cells in the data domain (not masked, not NaN). Use the same
         # predicate plot/animate use to place per-cell labels so the counts
-        # match; ``MaskedArray.count()`` would miss NaN cells.
+        # match; `MaskedArray.count()` would miss NaN cells.
         first_frame = array[0, :, :] if len(shape) == 3 else array
         self.num_domain_cells = len(get_indices2(first_frame, [np.nan]))
 
@@ -532,13 +532,13 @@ class ArrayGlyph(Glyph):
 
     @property
     def no_elem(self) -> int:
-        """Deprecated alias for :attr:`num_domain_cells`.
+        """Deprecated alias for `num_domain_cells`.
 
-        Kept for backward compatibility; emits a :class:`DeprecationWarning`.
+        Kept for backward compatibility; emits a `DeprecationWarning`.
         Will be removed in a future release.
 
         Returns:
-            int: Same value as :attr:`num_domain_cells`.
+            int: Same value as `num_domain_cells`.
         """
         warnings.warn(
             "`ArrayGlyph.no_elem` is deprecated; use `num_domain_cells` instead.",
@@ -862,29 +862,29 @@ class ArrayGlyph(Glyph):
         coords: tuple[np.ndarray, np.ndarray] | list[np.ndarray] | None,
         array: np.ndarray,
     ) -> tuple[np.ndarray, np.ndarray] | None:
-        """Validate the ``coords`` kwarg and return a normalised ``(x, y)`` tuple.
+        """Validate the `coords` kwarg and return a normalised `(x, y)` tuple.
 
         Args:
-            coords: User-provided coordinates. ``None`` (no curvilinear
+            coords: User-provided coordinates. `None` (no curvilinear
                 support), or a length-2 tuple/list of arrays. Each
                 element is either 1-D (length matches the last axis of
-                ``array`` for ``x`` and the second-to-last for ``y``)
-                or 2-D with shape ``array.shape[-2:]``.
+                `array` for `x` and the second-to-last for `y`)
+                or 2-D with shape `array.shape[-2:]`.
             array: The data array used to validate coordinate shapes.
 
         Returns:
             tuple[np.ndarray, np.ndarray] or None: The validated
-                ``(x, y)`` pair, with each element cast to ``np.ndarray``.
+                `(x, y)` pair, with each element cast to `np.ndarray`.
 
         Raises:
-            TypeError: If ``coords`` is not ``None`` and not a length-2
+            TypeError: If `coords` is not `None` and not a length-2
                 sequence.
             ValueError: If a coordinate array has a shape that does not
                 match the data array, or a non-numeric dtype (bool,
                 complex, object, …).
 
         Examples:
-            - ``None`` short-circuits to ``None``:
+            - `None` short-circuits to `None`:
                 ```python
                 >>> import numpy as np
                 >>> from cleopatra.array_glyph import ArrayGlyph
@@ -892,8 +892,8 @@ class ArrayGlyph(Glyph):
                 True
 
                 ```
-            - 1-D centres matching ``array.shape[-1]`` (x) and
-                ``array.shape[-2]`` (y) are accepted:
+            - 1-D centres matching `array.shape[-1]` (x) and
+                `array.shape[-2]` (y) are accepted:
                 ```python
                 >>> import numpy as np
                 >>> from cleopatra.array_glyph import ArrayGlyph
@@ -905,7 +905,7 @@ class ArrayGlyph(Glyph):
                 ((4,), (3,))
 
                 ```
-            - A non-tuple raises :class:`TypeError`:
+            - A non-tuple raises `TypeError`:
                 ```python
                 >>> import numpy as np
                 >>> from cleopatra.array_glyph import ArrayGlyph
@@ -959,21 +959,20 @@ class ArrayGlyph(Glyph):
 
     @property
     def coords(self) -> tuple[np.ndarray, np.ndarray] | None:
-        """Optional ``(x, y)`` coordinate arrays for curvilinear grids.
+        """Optional `(x, y)` coordinate arrays for curvilinear grids.
 
         Returns the validated coordinate pair stored at construction
-        time, or ``None`` when the glyph was built without ``coords``
-        (regular pixel-grid render). When non-``None``, ``plot(kind=
-        "auto")`` routes to ``pcolormesh`` so the (x, y) arrays are
-        honoured.
+        time, or `None` when the glyph was built without `coords`
+        (regular pixel-grid render). When non-`None`, `plot(kind="auto")`
+        routes to `pcolormesh` so the (x, y) arrays are honoured.
 
         Returns:
-            tuple[np.ndarray, np.ndarray] or None: The ``(x, y)`` pair
+            tuple[np.ndarray, np.ndarray] or None: The `(x, y)` pair
                 as stored on the instance (each cast to
-                :class:`numpy.ndarray`), or ``None``.
+                `numpy.ndarray`), or `None`.
 
         Examples:
-            - A glyph built without ``coords`` reports ``None``:
+            - A glyph built without `coords` reports `None`:
                 ```python
                 >>> import numpy as np
                 >>> from cleopatra.array_glyph import ArrayGlyph
@@ -1003,19 +1002,19 @@ class ArrayGlyph(Glyph):
 
     @staticmethod
     def _validate_extend(extend: str | None) -> None:
-        """Validate the ``extend`` kwarg against the allowed values.
+        """Validate the `extend` kwarg against the allowed values.
 
         Args:
             extend: User-provided value for the colorbar extension. May
-                be ``None`` (auto-resolve at render time) or one of
-                ``"neither"``, ``"both"``, ``"min"``, ``"max"``.
+                be `None` (auto-resolve at render time) or one of
+                `"neither"`, `"both"`, `"min"`, `"max"`.
 
         Raises:
-            ValueError: When ``extend`` is not one of the accepted
-                strings (or ``None``).
+            ValueError: When `extend` is not one of the accepted
+                strings (or `None`).
 
         Examples:
-            - Accepted values return ``None`` silently:
+            - Accepted values return `None` silently:
                 ```python
                 >>> from cleopatra.array_glyph import ArrayGlyph
                 >>> ArrayGlyph._validate_extend("both") is None
@@ -1024,7 +1023,7 @@ class ArrayGlyph(Glyph):
                 True
 
                 ```
-            - Unsupported values raise :class:`ValueError`:
+            - Unsupported values raise `ValueError`:
                 ```python
                 >>> from cleopatra.array_glyph import ArrayGlyph
                 >>> ArrayGlyph._validate_extend("up")
@@ -1044,18 +1043,18 @@ class ArrayGlyph(Glyph):
 
     @staticmethod
     def _robust_limits(arr: np.ndarray) -> tuple[float, float]:
-        """Compute xarray-style robust ``(vmin, vmax)`` from the data.
+        """Compute xarray-style robust `(vmin, vmax)` from the data.
 
         Returns the 2nd and 98th percentile of the unmasked, finite
-        values in ``arr`` — the same convention as xarray's
-        ``robust=True``. Masked entries and NaNs are excluded from the
+        values in `arr` — the same convention as xarray's
+        `robust=True`. Masked entries and NaNs are excluded from the
         percentile computation.
 
         Args:
             arr: Input array. May be a plain ndarray or a masked array.
 
         Returns:
-            tuple[float, float]: ``(vmin_robust, vmax_robust)``.
+            tuple[float, float]: `(vmin_robust, vmax_robust)`.
 
         Raises:
             ValueError: If the array contains no finite values.
@@ -1109,11 +1108,11 @@ class ArrayGlyph(Glyph):
     def _center_limits(
         vmin: float, vmax: float, center: float
     ) -> tuple[float, float]:
-        """Make ``(vmin, vmax)`` symmetric around ``center``.
+        """Make `(vmin, vmax)` symmetric around `center`.
 
         Implements xarray's diverging-cmap centring: the larger of
-        ``|vmin - center|`` and ``|vmax - center|`` becomes the half-
-        range, and the result is ``(center - half, center + half)``.
+        `|vmin - center|` and `|vmax - center|` becomes the half-
+        range, and the result is `(center - half, center + half)`.
 
         Args:
             vmin: Lower colour limit before symmetrisation.
@@ -1121,8 +1120,8 @@ class ArrayGlyph(Glyph):
             center: Value to centre the diverging colormap on.
 
         Returns:
-            tuple[float, float]: Symmetric ``(vmin, vmax)`` around
-                ``center``.
+            tuple[float, float]: Symmetric `(vmin, vmax)` around
+                `center`.
 
         Examples:
             - Centring around zero expands the smaller side to match
@@ -1158,37 +1157,37 @@ class ArrayGlyph(Glyph):
         vmin_explicit: bool,
         vmax_explicit: bool,
     ) -> tuple[float, float]:
-        """Resolve final ``(vmin, vmax)`` for colour scaling.
+        """Resolve final `(vmin, vmax)` for colour scaling.
 
         Resolution order matches xarray:
 
         1. Start from robust (2nd/98th percentile) limits when
-           ``robust=True``, else from the full data range.
-        2. Override either end with an explicit ``vmin`` / ``vmax`` if
+           `robust=True`, else from the full data range.
+        2. Override either end with an explicit `vmin` / `vmax` if
            the user provided one.
-        3. If ``center`` is set, symmetrise around it.
+        3. If `center` is set, symmetrise around it.
 
         Args:
             arr: Data array (plain or masked).
-            vmin_kw: Value of ``vmin`` from the caller's kwargs, or
-                ``None`` if not supplied.
-            vmax_kw: Value of ``vmax`` from the caller's kwargs, or
-                ``None`` if not supplied.
+            vmin_kw: Value of `vmin` from the caller's kwargs, or
+                `None` if not supplied.
+            vmax_kw: Value of `vmax` from the caller's kwargs, or
+                `None` if not supplied.
             robust: Whether to use the 2nd/98th percentile range.
-            center: Value to centre a diverging colormap on. ``None``
+            center: Value to centre a diverging colormap on. `None`
                 disables symmetrisation.
             vmin_explicit: Whether the caller explicitly passed
-                ``vmin`` (even if its value was ``None``).
+                `vmin` (even if its value was `None`).
             vmax_explicit: Whether the caller explicitly passed
-                ``vmax``.
+                `vmax`.
 
         Returns:
-            tuple[float, float]: Final ``(vmin, vmax)``.
+            tuple[float, float]: Final `(vmin, vmax)`.
 
         Raises:
             ValueError: If the resolved limits are not finite — e.g. the
                 array has no finite values (all NaN / fully masked) and no
-                explicit ``vmin`` / ``vmax`` was supplied to fall back on.
+                explicit `vmin` / `vmax` was supplied to fall back on.
 
         Examples:
             - Default path: full data range, no robust clipping, no
@@ -1210,8 +1209,8 @@ class ArrayGlyph(Glyph):
                 (0.0, 24.0)
 
                 ```
-            - Explicit ``vmax`` overrides the data-driven upper limit
-                and ``center`` then symmetrises around the centre:
+            - Explicit `vmax` overrides the data-driven upper limit
+                and `center` then symmetrises around the centre:
                 ```python
                 >>> import numpy as np
                 >>> from cleopatra.array_glyph import ArrayGlyph
@@ -1236,7 +1235,7 @@ class ArrayGlyph(Glyph):
             # nanmin/nanmax on an all-NaN / fully-masked array return NaN
             # (with a RuntimeWarning). Compute quietly and validate the
             # resolved limits below — an unusable colour range should fail
-            # loudly here, not later inside ``get_ticks()``/matplotlib.
+            # loudly here, not later inside `get_ticks()`/matplotlib.
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", RuntimeWarning)
                 vmin_base = np.nanmin(arr)
@@ -1270,40 +1269,39 @@ class ArrayGlyph(Glyph):
         ticks: np.ndarray,
         kind: str = "imshow",
     ) -> tuple[Any, dict[str, str]]:
-        """Render the array on ``ax`` and return the artist plus cbar kwargs.
+        """Render the array on `ax` and return the artist plus cbar kwargs.
 
-        Builds the matplotlib norm from ``default_options["color_scale"]``
-        and dispatches to the requested ``kind`` of plot. All four kinds
+        Builds the matplotlib norm from `default_options["color_scale"]`
+        and dispatches to the requested `kind` of plot. All four kinds
         share the same norm/vmin/vmax resolution path so the existing
-        ``color_scale`` enum (linear/power/sym-lognorm/boundary-norm/
+        `color_scale` enum (linear/power/sym-lognorm/boundary-norm/
         midpoint) works identically for every render kind.
 
-        When ``self._coords`` is set (curvilinear / non-uniform grid),
-        the ``(x, y)`` arrays are forwarded as the first positional
-        args to ``pcolormesh`` / ``contour`` / ``contourf``. ``kind=
-        "imshow"`` is incompatible with ``coords`` and raises
-        :class:`ValueError` — callers should use ``kind="auto"`` or
-        ``kind="pcolormesh"`` instead.
+        When `self._coords` is set (curvilinear / non-uniform grid),
+        the `(x, y)` arrays are forwarded as the first positional
+        args to `pcolormesh` / `contour` / `contourf`. `kind="imshow"`
+        is incompatible with `coords` and raises `ValueError` — callers
+        should use `kind="auto"` or `kind="pcolormesh"` instead.
 
         Args:
             ax: matplotlib figure axes.
             arr: numpy (masked) array.
             ticks: color bar ticks.
-            kind: render kind. One of ``"imshow"``, ``"pcolormesh"``,
-                ``"contour"``, ``"contourf"``. Default is ``"imshow"``
+            kind: render kind. One of `"imshow"`, `"pcolormesh"`,
+                `"contour"`, `"contourf"`. Default is `"imshow"`
                 (preserves the historical animate/legacy call path).
 
         Returns:
-            tuple: ``(artist, cbar_kw)`` where ``artist`` is the
-                matplotlib mappable (``AxesImage`` for ``imshow``,
-                ``QuadMesh`` for ``pcolormesh``, ``QuadContourSet`` for
-                contour/contourf) and ``cbar_kw`` is the colorbar
+            tuple: `(artist, cbar_kw)` where `artist` is the
+                matplotlib mappable (`AxesImage` for `imshow`,
+                `QuadMesh` for `pcolormesh`, `QuadContourSet` for
+                contour/contourf) and `cbar_kw` is the colorbar
                 keyword-argument dict.
 
         Raises:
-            ValueError: If ``kind`` is ``"imshow"`` while ``self._coords``
-                is set (incompatible combination), or if ``kind`` is not
-                one of the recognised values in :data:`VALID_PLOT_KINDS`.
+            ValueError: If `kind` is `"imshow"` while `self._coords`
+                is set (incompatible combination), or if `kind` is not
+                one of the recognised values in `VALID_PLOT_KINDS`.
         """
         norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
         cmap = self.default_options["cmap"]
@@ -1358,13 +1356,13 @@ class ArrayGlyph(Glyph):
                 contour_kwargs["vmax"] = vmax
             else:
                 contour_kwargs["norm"] = norm
-            # Pass the resolved level edges when ``levels`` is set so the
+            # Pass the resolved level edges when `levels` is set so the
             # contour rings line up with the colorbar boundaries computed
-            # in ``_create_norm_and_cbar_kw``.
+            # in `_create_norm_and_cbar_kw`.
             level_edges = self._levels_to_bounds(levels, vmin, vmax)
             # When curvilinear coords are present forward them as the
             # first two positional args (matplotlib contour signature is
-            # ``contour([X, Y,] Z, [levels], **kwargs)``).
+            # `contour([X, Y,] Z, [levels], **kwargs)`).
             if coords is not None:
                 base_args = (coords[0], coords[1], plot_arr)
             else:
@@ -1528,28 +1526,28 @@ class ArrayGlyph(Glyph):
                 Any valid matplotlib color string.
             pid_size: Size of the point value annotations, by default 10.
                 Controls the font size of the annotations.
-            kind: Render kind, by default ``"auto"``. One of:
+            kind: Render kind, by default `"auto"`. One of:
 
-                - ``"auto"`` — picks the best renderer for the data.
-                  Routes to ``"pcolormesh"`` when curvilinear /
-                  non-uniform ``coords`` were passed to the
-                  constructor, otherwise falls back to ``"imshow"``.
-                - ``"imshow"`` — pixel-grid raster render via
-                  ``ax.imshow``/``matshow``. Honours ``extent``.
-                  Incompatible with ``coords``.
-                - ``"pcolormesh"`` — quadrilateral mesh render via
-                  ``ax.pcolormesh`` with ``shading="auto"``. Honours
-                  ``coords`` (1-D centres or 2-D curvilinear).
-                - ``"contour"`` — line contours via ``ax.contour``.
-                  Honours ``levels`` from kwargs when set.
-                - ``"contourf"`` — filled contours via ``ax.contourf``.
-                  Honours ``levels`` from kwargs when set.
+                - `"auto"` — picks the best renderer for the data.
+                  Routes to `"pcolormesh"` when curvilinear /
+                  non-uniform `coords` were passed to the
+                  constructor, otherwise falls back to `"imshow"`.
+                - `"imshow"` — pixel-grid raster render via
+                  `ax.imshow`/`matshow`. Honours `extent`.
+                  Incompatible with `coords`.
+                - `"pcolormesh"` — quadrilateral mesh render via
+                  `ax.pcolormesh` with `shading="auto"`. Honours
+                  `coords` (1-D centres or 2-D curvilinear).
+                - `"contour"` — line contours via `ax.contour`.
+                  Honours `levels` from kwargs when set.
+                - `"contourf"` — filled contours via `ax.contourf`.
+                  Honours `levels` from kwargs when set.
 
                 Cell-value display and point overlays only apply to
-                ``"imshow"`` and ``"pcolormesh"``; they are silently
-                skipped for ``"contour"`` and ``"contourf"`` (which have
+                `"imshow"` and `"pcolormesh"`; they are silently
+                skipped for `"contour"` and `"contourf"` (which have
                 no per-cell grid). RGB compositing requires
-                ``kind="imshow"``.
+                `kind="imshow"`.
             **kwargs: Additional keyword arguments for customizing the plot.
 
                 Plot appearance:
@@ -1585,9 +1583,9 @@ class ArrayGlyph(Glyph):
                 Color scale options:
                     color_scale : ColorScale or str, optional
                         Type of color scaling to use, by default 'linear'.
-                        Accepts a :class:`cleopatra.styles.ColorScale`
+                        Accepts a `cleopatra.styles.ColorScale`
                         member or its string value (case-insensitive). An
-                        unrecognised value raises ``ValueError``. Options:
+                        unrecognised value raises `ValueError`. Options:
                         - 'linear': Linear scale
                         - 'power': Power-law normalization
                         - 'sym-lognorm': Symmetrical logarithmic scale
@@ -1607,45 +1605,45 @@ class ArrayGlyph(Glyph):
                         Midpoint value for 'midpoint' color scale, by default 0.
                     levels : int or sequence, optional
                         Discrete colour levels (xarray-aligned), by
-                        default None. An ``int`` selects N
-                        linearly-spaced edges between ``vmin`` and
-                        ``vmax``; a sequence is used as explicit edges
+                        default None. An `int` selects N
+                        linearly-spaced edges between `vmin` and
+                        `vmax`; a sequence is used as explicit edges
                         (sorted ascending). When set under the default
-                        ``color_scale="linear"`` the norm is switched
-                        to a ``BoundaryNorm`` so ``imshow`` /
-                        ``pcolormesh`` are also discretised; under
-                        ``color_scale="boundary-norm"`` ``levels`` acts
-                        as the bin edges when ``bounds`` is unset.
+                        `color_scale="linear"` the norm is switched
+                        to a `BoundaryNorm` so `imshow` /
+                        `pcolormesh` are also discretised; under
+                        `color_scale="boundary-norm"` `levels` acts
+                        as the bin edges when `bounds` is unset.
                         Always forwarded as the level array to
-                        ``contour`` / ``contourf``.
+                        `contour` / `contourf`.
 
                 Xarray-aligned colour kwargs:
                     robust : bool, optional
                         When True, use the 2nd and 98th percentile of
-                        the unmasked data for ``vmin`` / ``vmax``,
-                        matching xarray's ``robust=True`` default. An
-                        explicit ``vmin`` / ``vmax`` always wins. By
+                        the unmasked data for `vmin` / `vmax`,
+                        matching xarray's `robust=True` default. An
+                        explicit `vmin` / `vmax` always wins. By
                         default False.
                     center : float, optional
                         Diverging-colormap centring value. When set,
-                        ``vmin`` / ``vmax`` are made symmetric around
-                        ``center`` (after ``robust`` has been applied),
-                        and the cmap auto-switches to ``"RdBu_r"`` if
-                        the caller did not pass an explicit ``cmap``.
+                        `vmin` / `vmax` are made symmetric around
+                        `center` (after `robust` has been applied),
+                        and the cmap auto-switches to `"RdBu_r"` if
+                        the caller did not pass an explicit `cmap`.
                         By default None (no centring).
                     extend : str, optional
-                        Colorbar arrow extension. One of ``"neither"``,
-                        ``"both"``, ``"min"``, ``"max"``, or None to
-                        auto-resolve (``"both"`` when ``levels`` is
-                        set, otherwise ``"neither"``). By default
+                        Colorbar arrow extension. One of `"neither"`,
+                        `"both"`, `"min"`, `"max"`, or None to
+                        auto-resolve (`"both"` when `levels` is
+                        set, otherwise `"neither"`). By default
                         None.
                     cbar_kwargs : dict, optional
                         Extra keyword arguments forwarded to
-                        ``fig.colorbar``. Merges over the defaults
+                        `fig.colorbar`. Merges over the defaults
                         computed by cleopatra so user keys win on
-                        collision. Common keys: ``label``, ``shrink``,
-                        ``aspect``, ``orientation``, ``pad``,
-                        ``ticks``. By default None.
+                        collision. Common keys: `label`, `shrink`,
+                        `aspect`, `orientation`, `pad`,
+                        `ticks`. By default None.
 
                 Cell value display options:
                     display_cell_value : bool, optional
@@ -1863,10 +1861,10 @@ class ArrayGlyph(Glyph):
                 ```
                 ![midpoint-scale-costom-parameters](./../images/array_glyph/midpoint-scale-costom-parameters.png)
 
-        - Render kinds (``kind=``):
+        - Render kinds (`kind=`):
 
-            - ``"pcolormesh"`` for a quadrilateral mesh render. Note
-                that ``pcolormesh`` does not honour ``extent``, so the
+            - `"pcolormesh"` for a quadrilateral mesh render. Note
+                that `pcolormesh` does not honour `extent`, so the
                 axes are drawn in array index space.
                 ```python
                 >>> import numpy as np
@@ -1876,7 +1874,7 @@ class ArrayGlyph(Glyph):
                 >>> fig, ax = glyph.plot(kind="pcolormesh")  # doctest: +SKIP
 
                 ```
-            - ``"contourf"`` for filled contours. When ``levels`` is set
+            - `"contourf"` for filled contours. When `levels` is set
                 the level edges line up with the colorbar boundaries.
                 ```python
                 >>> import numpy as np
@@ -1900,7 +1898,7 @@ class ArrayGlyph(Glyph):
 
         - xarray-aligned colour kwargs:
 
-            - ``robust=True`` clips ``vmin`` / ``vmax`` to the
+            - `robust=True` clips `vmin` / `vmax` to the
                 2nd/98th percentile so a single outlier no longer
                 dominates the colour scale:
                 ```python
@@ -1914,8 +1912,8 @@ class ArrayGlyph(Glyph):
                 (3.0, 98.0)
 
                 ```
-            - ``center=0`` symmetrises the limits around zero and
-                auto-switches the cmap to ``"RdBu_r"`` (xarray-style
+            - `center=0` symmetrises the limits around zero and
+                auto-switches the cmap to `"RdBu_r"` (xarray-style
                 diverging default):
                 ```python
                 >>> import numpy as np
@@ -1929,7 +1927,7 @@ class ArrayGlyph(Glyph):
                 'RdBu_r'
 
                 ```
-            - ``levels`` discretises the colour scale and ``extend``
+            - `levels` discretises the colour scale and `extend`
                 controls the colorbar arrows:
                 ```python
                 >>> import numpy as np
@@ -1941,8 +1939,8 @@ class ArrayGlyph(Glyph):
                 (6, 'both')
 
                 ```
-            - ``cbar_kwargs`` forwards extra keyword arguments to the
-                underlying :func:`matplotlib.pyplot.colorbar` call;
+            - `cbar_kwargs` forwards extra keyword arguments to the
+                underlying `matplotlib.pyplot.colorbar` call;
                 user keys win on collision:
                 ```python
                 >>> import numpy as np
@@ -1978,8 +1976,8 @@ class ArrayGlyph(Glyph):
 
         self.default_options["kind"] = kind
         # Resolve "auto": when curvilinear / non-uniform coords are set
-        # we route to ``pcolormesh`` (it honours the (x, y) arrays);
-        # otherwise we fall back to the original ``imshow`` path.
+        # we route to `pcolormesh` (it honours the (x, y) arrays);
+        # otherwise we fall back to the original `imshow` path.
         if kind == "auto":
             effective_kind = "pcolormesh" if self._coords is not None else "imshow"
         else:
@@ -2001,9 +1999,9 @@ class ArrayGlyph(Glyph):
                 self.default_options["ticks_spacing"] = self.ticks_spacing
 
             # Recompute (vmin, vmax) for this plot call if any of the
-            # xarray-aligned colour kwargs (``robust``, ``center``) or the
-            # explicit ``vmin``/``vmax`` were passed here. We honour the
-            # values stashed on ``self`` from the constructor when none of
+            # xarray-aligned colour kwargs (`robust`, `center`) or the
+            # explicit `vmin`/`vmax` were passed here. We honour the
+            # values stashed on `self` from the constructor when none of
             # these are present in *this* call.
             recompute_keys = {"robust", "center", "vmin", "vmax"}
             if recompute_keys.intersection(kwargs.keys()):
@@ -2025,7 +2023,7 @@ class ArrayGlyph(Glyph):
                     self.default_options["ticks_spacing"] = self.ticks_spacing
 
             # Auto-switch the colormap to a diverging default when the
-            # caller passes ``center`` here without an explicit cmap.
+            # caller passes `center` here without an explicit cmap.
             if (
                 "center" in kwargs
                 and kwargs["center"] is not None
@@ -2100,69 +2098,69 @@ class ArrayGlyph(Glyph):
     ) -> FacetGrid:
         """Render a grid of subplots from a 3-D or 4-D stack.
 
-        Mirrors xarray's :class:`xarray.plot.facetgrid.FacetGrid` API.
-        ``self.arr`` must be 3-D ``(N, H, W)`` when only ``col`` is set,
-        or 4-D ``(N, M, H, W)`` when both ``col`` and ``row`` are set.
-        All subplots share a common colour scale (``vmin``/``vmax``
+        Mirrors xarray's `xarray.plot.facetgrid.FacetGrid` API.
+        `self.arr` must be 3-D `(N, H, W)` when only `col` is set,
+        or 4-D `(N, M, H, W)` when both `col` and `row` are set.
+        All subplots share a common colour scale (`vmin`/`vmax`
         computed over the full stack unless the user passed explicit
         limits) and a single shared colorbar attached to the first
         rendered subplot.
 
         Spatial extent: every panel is a slice of the *same* array, so by
-        default they all share the parent glyph's ``extent`` (one spatial
-        domain — exactly like xarray's ``FacetGrid``, which facets a single
-        ``DataArray`` over a coordinate dimension). If your slices are
-        same-shape grids covering *different* windows, pass ``extents`` —
-        one ``[xmin, ymin, xmax, ymax]`` per panel. (If the slices are
-        genuinely different datasets, build separate :class:`ArrayGlyph`
-        instances into your own ``plt.subplots`` grid instead.)
+        default they all share the parent glyph's `extent` (one spatial
+        domain — exactly like xarray's `FacetGrid`, which facets a single
+        `DataArray` over a coordinate dimension). If your slices are
+        same-shape grids covering *different* windows, pass `extents` —
+        one `[xmin, ymin, xmax, ymax]` per panel. (If the slices are
+        genuinely different datasets, build separate `ArrayGlyph`
+        instances into your own `plt.subplots` grid instead.)
 
         Args:
-            col: Name of the column-facet dimension (e.g. ``"time"``).
+            col: Name of the column-facet dimension (e.g. `"time"`).
                 Used as a label in the per-subplot title and in
-                :attr:`FacetGrid.name_dicts`. Required when ``row`` is
+                `FacetGrid.name_dicts`. Required when `row` is
                 not given.
-            row: Name of the row-facet dimension (e.g. ``"level"``).
+            row: Name of the row-facet dimension (e.g. `"level"`).
                 Required when faceting a 4-D stack.
-            col_wrap: When only ``col`` is given, wrap the N subplots
-                into ``col_wrap`` columns × ``ceil(N/col_wrap)`` rows.
-                Ignored when ``row`` is set.
+            col_wrap: When only `col` is given, wrap the N subplots
+                into `col_wrap` columns × `ceil(N/col_wrap)` rows.
+                Ignored when `row` is set.
             col_coords: Optional sequence of coordinate labels for the
                 column dimension. Length must match the column axis of
                 the stack. When given, the per-subplot title contains
                 the coord value instead of the integer index.
             row_coords: Optional sequence of coordinate labels for the
                 row dimension. Length must match the row axis of the
-                stack. Only honoured when ``row`` is set.
+                stack. Only honoured when `row` is set.
             kind: Render kind, forwarded to the per-subplot dispatch.
-                One of ``"auto"``, ``"imshow"``, ``"pcolormesh"``,
-                ``"contour"``, ``"contourf"``. Default ``"auto"``.
-            figsize: Optional ``(width, height)`` for the shared figure.
-                Defaults to ``(4 * ncols, 3.5 * nrows)``.
+                One of `"auto"`, `"imshow"`, `"pcolormesh"`,
+                `"contour"`, `"contourf"`. Default `"auto"`.
+            figsize: Optional `(width, height)` for the shared figure.
+                Defaults to `(4 * ncols, 3.5 * nrows)`.
             extents: Optional per-panel spatial extents — one
-                ``[xmin, ymin, xmax, ymax]`` (user-facing order) for each
-                rendered subplot, in row-major order (``extents[k]``
-                applies to ``result.axes.flat[k]``). Length must equal the
+                `[xmin, ymin, xmax, ymax]` (user-facing order) for each
+                rendered subplot, in row-major order (`extents[k]`
+                applies to `result.axes.flat[k]`). Length must equal the
                 number of panels. Mutually exclusive with the parent
-                glyph's ``extent`` and with ``coords``. ``None`` (default)
-                reuses the parent's ``extent`` on every panel (or index
+                glyph's `extent` and with `coords`. `None` (default)
+                reuses the parent's `extent` on every panel (or index
                 space when the parent has none).
 
             **kwargs: Forwarded to each subplot. Recognised keys
                 include the same colour / colorbar / level kwargs as
-                :meth:`plot`. ``vmin`` / ``vmax`` win over the
+                `plot`. `vmin` / `vmax` win over the
                 stack-wide auto-computed limits.
 
         Returns:
-            FacetGrid: Result object exposing ``fig``, ``axes``,
-                ``cbar``, and ``name_dicts``.
+            FacetGrid: Result object exposing `fig`, `axes`,
+                `cbar`, and `name_dicts`.
 
         Raises:
-            ValueError: If neither ``col`` nor ``row`` is given, if the
+            ValueError: If neither `col` nor `row` is given, if the
                 array shape does not match the requested facet
-                dimensions, if ``col_coords`` / ``row_coords`` lengths
-                are wrong, if ``extents`` is combined with the parent's
-                ``extent`` or ``coords``, or if ``extents`` has the wrong
+                dimensions, if `col_coords` / `row_coords` lengths
+                are wrong, if `extents` is combined with the parent's
+                `extent` or `coords`, or if `extents` has the wrong
                 length or a non-length-4 element.
 
         Examples:
@@ -2178,7 +2176,7 @@ class ArrayGlyph(Glyph):
                 {'t': 0}
 
                 ```
-            - Wrap N=6 panels into a 2x3 grid with ``col_wrap=3``:
+            - Wrap N=6 panels into a 2x3 grid with `col_wrap=3`:
                 ```python
                 >>> import numpy as np
                 >>> from cleopatra.array_glyph import ArrayGlyph
@@ -2189,7 +2187,7 @@ class ArrayGlyph(Glyph):
 
                 ```
             - Per-panel extents for same-shape grids over different
-                windows (one ``[xmin, ymin, xmax, ymax]`` per subplot):
+                windows (one `[xmin, ymin, xmax, ymax]` per subplot):
                 ```python
                 >>> import numpy as np
                 >>> from cleopatra.array_glyph import ArrayGlyph
@@ -2320,18 +2318,18 @@ class ArrayGlyph(Glyph):
 
         for panel_idx, (col_idx, row_idx) in enumerate(panel_indices):
             ax = flat_axes[panel_idx]
-            # Use plain slicing so ``numpy.ma.MaskedArray`` inputs keep
-            # their mask on each per-panel sub-array. ``np.asarray``
+            # Use plain slicing so `numpy.ma.MaskedArray` inputs keep
+            # their mask on each per-panel sub-array. `np.asarray`
             # would drop the mask and render masked cells as data.
             if row is None:
                 panel_arr = arr[col_idx]
             else:
                 panel_arr = arr[col_idx, row_idx]
 
-            # Per-panel ``extents`` win if given (already in the
-            # user-facing ``[xmin, ymin, xmax, ymax]`` order the
-            # constructor wants). Otherwise reuse the parent's ``extent``,
-            # which is stored in matplotlib's ``[xmin, xmax, ymin, ymax]``
+            # Per-panel `extents` win if given (already in the
+            # user-facing `[xmin, ymin, xmax, ymax]` order the
+            # constructor wants). Otherwise reuse the parent's `extent`,
+            # which is stored in matplotlib's `[xmin, xmax, ymin, ymax]`
             # order — convert it back before forwarding.
             if extents is not None:
                 sub_extent = list(extents[panel_idx])
@@ -2399,8 +2397,8 @@ class ArrayGlyph(Glyph):
         This method creates an animation by iterating through the first dimension of a 3D array.
         Each slice of the array becomes a frame in the animation, with optional time labels,
         point annotations, and cell value displays. Every frame is a slice of the *same* array,
-        so they all share the glyph's single ``extent`` (one spatial domain) — there is no
-        per-frame extent. For data spanning different domains, build one :class:`ArrayGlyph`
+        so they all share the glyph's single `extent` (one spatial domain) — there is no
+        per-frame extent. For data spanning different domains, build one `ArrayGlyph`
         per domain instead of stacking them into a single 3-D array.
 
         Args:
@@ -2427,15 +2425,15 @@ class ArrayGlyph(Glyph):
                 Any valid matplotlib color string.
             pid_size: Size of the point value annotations, by default 10.
                 Controls the font size of the annotations.
-            data_getter: Optional callable ``f(i) -> ndarray`` that
-                returns the 2-D frame for index ``i``, by default
-                None. When set, ``self.arr`` is no longer iterated;
+            data_getter: Optional callable `f(i) -> ndarray` that
+                returns the 2-D frame for index `i`, by default
+                None. When set, `self.arr` is no longer iterated;
                 each frame is fetched lazily through the callback —
                 useful for streaming frames from a remote / lazy
                 source (e.g. a NetCDF time slab). The returned array
-                must have shape ``self.arr.shape[-2:]``. When None
+                must have shape `self.arr.shape[-2:]`. When None
                 (default) the existing behaviour is preserved and
-                ``self.arr[i]`` supplies frame ``i``.
+                `self.arr[i]` supplies frame `i`.
             **kwargs: Additional keyword arguments for customizing the animation.
 
                 Plot appearance:
@@ -2471,9 +2469,9 @@ class ArrayGlyph(Glyph):
                 Color scale options:
                     color_scale : ColorScale or str, optional
                         Type of color scaling to use, by default 'linear'.
-                        Accepts a :class:`cleopatra.styles.ColorScale`
+                        Accepts a `cleopatra.styles.ColorScale`
                         member or its string value (case-insensitive). An
-                        unrecognised value raises ``ValueError``. Options:
+                        unrecognised value raises `ValueError`. Options:
                         - 'linear': Linear scale
                         - 'power': Power-law normalization
                         - 'sym-lognorm': Symmetrical logarithmic scale
@@ -2509,7 +2507,7 @@ class ArrayGlyph(Glyph):
         Raises:
             ValueError: If an invalid keyword argument is provided.
             ValueError: If the length of the time list doesn't match the first dimension of the array.
-            ValueError: If ``data_getter`` is None and ``self.arr``
+            ValueError: If `data_getter` is None and `self.arr`
                 is 2-D (no time axis to iterate over).
 
         Notes:
@@ -2588,8 +2586,8 @@ class ArrayGlyph(Glyph):
         >>> animated_array.save_animation("animation.gif", fps=2)
 
         ```
-        Lazy frame streaming via ``data_getter`` (the callback supplies
-        frame ``i`` on demand — useful for NetCDF time slabs or any
+        Lazy frame streaming via `data_getter` (the callback supplies
+        frame `i` on demand — useful for NetCDF time slabs or any
         source where eager loading is too expensive). The data array
         on the glyph acts as a shape template; only its last two axes
         are read.
@@ -2639,10 +2637,10 @@ class ArrayGlyph(Glyph):
         precision = self.default_options["precision"]
         array = self.arr
 
-        # ``data_getter`` is the lazy-frame escape hatch added in
-        # CLEO-7. When ``None`` (default) we fall back to the eager
-        # ``self.arr[i]`` path. We require a 3-D arr in the eager
-        # path; with a callback, ``self.arr`` is used only for the
+        # `data_getter` is the lazy-frame escape hatch added in
+        # CLEO-7. When `None` (default) we fall back to the eager
+        # `self.arr[i]` path. We require a 3-D arr in the eager
+        # path; with a callback, `self.arr` is used only for the
         # frame shape so a 2-D template is fine.
         if data_getter is None:
             if array.ndim != 3:
@@ -2671,7 +2669,7 @@ class ArrayGlyph(Glyph):
         ticks = self.get_ticks()
         im, cbar_kw = self._plot_im_get_cbar_kw(ax, frame_0, ticks)
 
-        # Create colorbar (stored on the instance, mirroring ``plot``).
+        # Create colorbar (stored on the instance, mirroring `plot`).
         self.cbar = self.create_color_bar(ax, im, cbar_kw)
 
         ax.set_title(
@@ -2697,9 +2695,9 @@ class ArrayGlyph(Glyph):
             points_id = self._plot_point_values(ax, points, pid_color, pid_size)
 
         # Normalize the threshold to the image color range. With a
-        # lazy ``data_getter`` we only have ``frame_0`` available
+        # lazy `data_getter` we only have `frame_0` available
         # cheaply, so fall back to its max — callers who care can
-        # set ``background_color_threshold`` explicitly.
+        # set `background_color_threshold` explicitly.
         if self.default_options["background_color_threshold"] is not None:
             background_color_threshold = im.norm(
                 self.default_options["background_color_threshold"]
@@ -2716,27 +2714,27 @@ class ArrayGlyph(Glyph):
         )
 
         def _fetch_frame(i: int) -> np.ndarray:
-            """Resolve frame ``i`` for the animation step.
+            """Resolve frame `i` for the animation step.
 
-            Routes between the eager ``self.arr[i]`` path and the lazy
-            ``data_getter(i)`` callback added in CLEO-7. The returned
-            frame must always match ``self.arr.shape[-2:]``; the
+            Routes between the eager `self.arr[i]` path and the lazy
+            `data_getter(i)` callback added in CLEO-7. The returned
+            frame must always match `self.arr.shape[-2:]`; the
             callback variant re-validates per call to catch upstream
             shape drift (e.g. a NetCDF slab that changed size between
             frames).
 
             Args:
                 i: Zero-based frame index. Must be a valid index into
-                    the time axis (``0 <= i < n_frames``).
+                    the time axis (`0 <= i < n_frames`).
 
             Returns:
-                np.ndarray: The 2-D frame for index ``i``, with shape
-                    equal to ``self.arr.shape[-2:]``.
+                np.ndarray: The 2-D frame for index `i`, with shape
+                    equal to `self.arr.shape[-2:]`.
 
             Raises:
-                ValueError: If ``data_getter`` is set and the callback
+                ValueError: If `data_getter` is set and the callback
                     returns an array whose shape does not match the
-                    expected ``(H, W)``.
+                    expected `(H, W)`.
             """
             if data_getter is None:
                 frame = array[i, :, :]
@@ -2767,8 +2765,8 @@ class ArrayGlyph(Glyph):
                 vals = frame_0[indices[:, 0], indices[:, 1]]
                 update_cell_value = lambda x: cell_text_value[x].set_text(vals[x])
                 # Iterate over the actual artist list, not
-                # ``self.num_domain_cells`` — keep the loop bound tied to the
-                # thing being indexed so it can never raise ``IndexError``.
+                # `self.num_domain_cells` — keep the loop bound tied to the
+                # thing being indexed so it can never raise `IndexError`.
                 list(map(update_cell_value, range(len(cell_text_value))))
                 output += cell_text_value
 
@@ -2804,8 +2802,8 @@ class ArrayGlyph(Glyph):
                     cell_text_value[x].update(kw)
                     cell_text_value[x].set_text(val)
 
-                # See ``init`` above: iterate the artist list, not
-                # ``self.num_domain_cells``, so the bound matches the index.
+                # See `init` above: iterate the artist list, not
+                # `self.num_domain_cells`, so the bound matches the index.
                 list(map(update_cell_value, range(len(cell_text_value))))
 
                 output += cell_text_value

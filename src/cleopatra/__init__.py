@@ -3,11 +3,11 @@
 Re-exports the most commonly used entry points so they can be imported
 straight from the package root:
 
-* :func:`cleopatra.tiles.add_tiles` — overlay an XYZ web-tile basemap
+* `cleopatra.tiles.add_tiles` — overlay an XYZ web-tile basemap
   on an existing matplotlib axes.
 
-The submodules ``array_glyph``, ``glyph``, ``mesh_glyph``,
-``statistical_glyph``, ``colors``, ``styles``, ``tiles``, and ``config``
+The submodules `array_glyph`, `glyph`, `mesh_glyph`,
+`statistical_glyph`, `colors`, `styles`, `tiles`, and `config`
 are also publicly importable.
 
 Importing cleopatra does not change the active matplotlib backend. If you
@@ -44,9 +44,9 @@ try:
 except PackageNotFoundError:  # pragma: no cover
     __version__ = "unknown"
 
-#: Process-wide :class:`~cleopatra.config.Config` instance. Constructing it
+#: Process-wide `cleopatra.config.Config` instance. Constructing it
 #: has no side effects — in particular it does *not* touch the matplotlib
-#: backend. Call ``config.set_matplotlib_backend(...)`` explicitly if you
+#: backend. Call `config.set_matplotlib_backend(...)` explicitly if you
 #: want cleopatra to pick one for you.
 config = Config()
 

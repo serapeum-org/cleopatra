@@ -1,8 +1,8 @@
-"""Tests for the :mod:`cleopatra` package surface.
+"""Tests for the `cleopatra` package surface.
 
 Validates the package re-exports introduced alongside the tiles module
-(``add_tiles``), the ``__all__`` membership, that ``__version__`` is
-defined, and that importing :mod:`cleopatra` has no side effects on the
+(`add_tiles`), the `__all__` membership, that `__version__` is
+defined, and that importing `cleopatra` has no side effects on the
 matplotlib backend.
 """
 
@@ -19,7 +19,7 @@ class TestPackageReExports:
     """Tests for top-level cleopatra package re-exports."""
 
     def test_add_tiles_is_importable(self):
-        """``cleopatra.add_tiles`` is the same callable as ``cleopatra.tiles.add_tiles``."""
+        """`cleopatra.add_tiles` is the same callable as `cleopatra.tiles.add_tiles`."""
         import cleopatra
         from cleopatra.tiles import add_tiles as tiles_add_tiles
 
@@ -31,7 +31,7 @@ class TestPackageReExports:
         )
 
     def test_all_contains_add_tiles(self):
-        """``__all__`` advertises ``add_tiles`` so ``from cleopatra import *`` works."""
+        """`__all__` advertises `add_tiles` so `from cleopatra import *` works."""
         import cleopatra
 
         assert "add_tiles" in cleopatra.__all__, (
@@ -39,7 +39,7 @@ class TestPackageReExports:
         )
 
     def test_all_lists_known_modules(self):
-        """``__all__`` lists every public submodule the package re-exports."""
+        """`__all__` lists every public submodule the package re-exports."""
         import cleopatra
 
         expected = {
@@ -58,7 +58,7 @@ class TestPackageReExports:
         )
 
     def test_version_attribute_exists(self):
-        """``cleopatra.__version__`` is defined and is a string."""
+        """`cleopatra.__version__` is defined and is a string."""
         import cleopatra
 
         assert hasattr(cleopatra, "__version__"), "Missing __version__"
@@ -71,11 +71,11 @@ class TestImportSafety:
     """Tests that importing cleopatra does not mutate the matplotlib backend."""
 
     def test_import_does_not_change_backend(self):
-        """``import cleopatra`` must not change matplotlib's active backend.
+        """`import cleopatra` must not change matplotlib's active backend.
 
         Picking a backend is the application's job; a library must not do
         it at import time. Run in a fresh subprocess (the test session's
-        ``conftest.py`` pins ``Agg``, so an in-process check would be
+        `conftest.py` pins `Agg`, so an in-process check would be
         vacuous) and compare the backend before vs. after the import.
         """
         code = (
@@ -96,7 +96,7 @@ class TestImportSafety:
         )
 
     def test_config_is_singleton_attribute(self):
-        """``cleopatra.config`` is a :class:`Config` instance, not the module."""
+        """`cleopatra.config` is a `Config` instance, not the module."""
         import cleopatra
         from cleopatra.config import Config
 

@@ -260,14 +260,14 @@ class TestCreateNormAndCbarKw:
         )
 
     def test_invalid_color_scale_string_raises(self, glyph):
-        """An unrecognised color_scale string raises ``ValueError``."""
+        """An unrecognised color_scale string raises `ValueError`."""
         glyph._default_options["color_scale"] = "rainbow-magic"
         ticks = np.array([0.0, 5.0, 10.0])
         with pytest.raises(ValueError, match="Invalid color_scale"):
             glyph._create_norm_and_cbar_kw(ticks)
 
     def test_non_string_color_scale_raises_valueerror_not_attributeerror(self, glyph):
-        """A non-string color_scale (e.g. an int) raises ``ValueError``, not ``AttributeError``.
+        """A non-string color_scale (e.g. an int) raises `ValueError`, not `AttributeError`.
 
         Regression for the case where `color_scale.lower()` blew up with
         `AttributeError: 'int' object has no attribute 'lower'`.
@@ -278,7 +278,7 @@ class TestCreateNormAndCbarKw:
             glyph._create_norm_and_cbar_kw(ticks)
 
     def test_colorscale_member_accepted(self, glyph):
-        """Passing a :class:`ColorScale` member directly works."""
+        """Passing a `ColorScale` member directly works."""
         glyph._default_options["color_scale"] = ColorScale.POWER
         ticks = np.array([0.0, 5.0, 10.0])
         norm, cbar_kw = glyph._create_norm_and_cbar_kw(ticks)
@@ -560,15 +560,15 @@ class TestSupportedVideoFormat:
 
 
 class TestLevelsToBounds:
-    """Tests for ``Glyph._levels_to_bounds`` static method."""
+    """Tests for `Glyph._levels_to_bounds` static method."""
 
     def test_none_returns_none(self):
-        """``levels=None`` produces ``None``: continuous-norm path is selected."""
+        """`levels=None` produces `None`: continuous-norm path is selected."""
         result = Glyph._levels_to_bounds(None, 0.0, 1.0)
         assert result is None, f"Expected None for levels=None, got {result!r}"
 
     def test_int_creates_linspace(self):
-        """``levels=int`` produces ``int`` linearly-spaced edges between vmin/vmax."""
+        """`levels=int` produces `int` linearly-spaced edges between vmin/vmax."""
         result = Glyph._levels_to_bounds(5, 0.0, 1.0)
         assert result is not None, "int levels should produce an array"
         assert len(result) == 5, f"Expected 5 edges, got {len(result)}"
@@ -587,7 +587,7 @@ class TestLevelsToBounds:
         assert result.dtype == np.float64
 
     def test_int_with_negative_range(self):
-        """``levels=int`` works for negative-to-positive vmin/vmax."""
+        """`levels=int` works for negative-to-positive vmin/vmax."""
         result = Glyph._levels_to_bounds(3, -1.0, 1.0)
         np.testing.assert_array_almost_equal(result, [-1.0, 0.0, 1.0])
 
@@ -598,7 +598,7 @@ class TestLevelsToBounds:
 
     @pytest.mark.parametrize("bad", [0, 1, -3, MAX_DISCRETE_LEVELS + 1, 10**9])
     def test_int_levels_out_of_range_raises(self, bad):
-        """An integer ``levels`` outside ``[2, MAX_DISCRETE_LEVELS]`` raises.
+        """An integer `levels` outside `[2, MAX_DISCRETE_LEVELS]` raises.
 
         Args:
             bad: An integer level count that should be rejected.
@@ -607,7 +607,7 @@ class TestLevelsToBounds:
             Glyph._levels_to_bounds(bad, 0.0, 1.0)
 
     def test_int_levels_at_bounds_ok(self):
-        """The min (2) and max (``MAX_DISCRETE_LEVELS``) integer levels are accepted."""
+        """The min (2) and max (`MAX_DISCRETE_LEVELS`) integer levels are accepted."""
         assert len(Glyph._levels_to_bounds(2, 0.0, 1.0)) == 2
         assert len(Glyph._levels_to_bounds(MAX_DISCRETE_LEVELS, 0.0, 1.0)) == (
             MAX_DISCRETE_LEVELS
@@ -623,7 +623,7 @@ class TestCreateNormAndCbarKwLevelsExtend:
         return Glyph(default_options=_make_options())
 
     def test_levels_int_under_linear_creates_boundary_norm(self, glyph):
-        """``color_scale='linear', levels=4`` switches to a ``BoundaryNorm``."""
+        """`color_scale='linear', levels=4` switches to a `BoundaryNorm`."""
         glyph._default_options["color_scale"] = "linear"
         glyph._default_options["levels"] = 4
         ticks = np.array([0.0, 5.0, 10.0])
@@ -634,7 +634,7 @@ class TestCreateNormAndCbarKwLevelsExtend:
         assert len(cbar_kw["ticks"]) == 4
 
     def test_levels_list_under_linear(self, glyph):
-        """A list of edges under ``linear`` produces a ``BoundaryNorm``."""
+        """A list of edges under `linear` produces a `BoundaryNorm`."""
         glyph._default_options["color_scale"] = "linear"
         glyph._default_options["levels"] = [0.0, 0.5, 1.0]
         ticks = np.array([0.0, 0.5, 1.0])
@@ -643,7 +643,7 @@ class TestCreateNormAndCbarKwLevelsExtend:
         np.testing.assert_array_almost_equal(cbar_kw["ticks"], [0.0, 0.5, 1.0])
 
     def test_levels_under_boundary_norm_with_explicit_bounds_wins(self, glyph):
-        """``boundary-norm`` with explicit ``bounds`` ignores ``levels``."""
+        """`boundary-norm` with explicit `bounds` ignores `levels`."""
         glyph._default_options["color_scale"] = "boundary-norm"
         glyph._default_options["bounds"] = [0, 10, 20]
         glyph._default_options["levels"] = [0, 5, 10, 15]
@@ -653,7 +653,7 @@ class TestCreateNormAndCbarKwLevelsExtend:
         np.testing.assert_array_equal(cbar_kw["ticks"], [0, 10, 20])
 
     def test_levels_under_boundary_norm_no_explicit_bounds(self, glyph):
-        """``boundary-norm`` with no ``bounds`` falls through to ``levels``."""
+        """`boundary-norm` with no `bounds` falls through to `levels`."""
         glyph._default_options["color_scale"] = "boundary-norm"
         glyph._default_options["bounds"] = None
         glyph._default_options["levels"] = [0, 1, 2]
@@ -663,7 +663,7 @@ class TestCreateNormAndCbarKwLevelsExtend:
         np.testing.assert_array_equal(cbar_kw["ticks"], [0.0, 1.0, 2.0])
 
     def test_extend_auto_resolves_to_neither_when_no_levels(self, glyph):
-        """``extend=None, levels=None`` -> ``cbar_kw['extend'] == 'neither'``."""
+        """`extend=None, levels=None` -> `cbar_kw['extend'] == 'neither'`."""
         glyph._default_options["color_scale"] = "linear"
         glyph._default_options["levels"] = None
         glyph._default_options["extend"] = None
@@ -672,7 +672,7 @@ class TestCreateNormAndCbarKwLevelsExtend:
         assert cbar_kw["extend"] == "neither"
 
     def test_extend_auto_resolves_to_both_when_levels_set(self, glyph):
-        """``extend=None, levels=[...]`` -> ``cbar_kw['extend'] == 'both'``."""
+        """`extend=None, levels=[...]` -> `cbar_kw['extend'] == 'both'`."""
         glyph._default_options["color_scale"] = "linear"
         glyph._default_options["levels"] = [0.0, 0.5, 1.0]
         glyph._default_options["extend"] = None
@@ -684,7 +684,7 @@ class TestCreateNormAndCbarKwLevelsExtend:
         "explicit", ["neither", "both", "min", "max"]
     )
     def test_extend_explicit_value_passes_through(self, glyph, explicit):
-        """Any allowed explicit ``extend`` value is forwarded as-is.
+        """Any allowed explicit `extend` value is forwarded as-is.
 
         Args:
             explicit: One of the allowed extend keywords.
@@ -697,10 +697,10 @@ class TestCreateNormAndCbarKwLevelsExtend:
 
 
 class TestCreateColorBarKwargsMerge:
-    """Tests for ``create_color_bar`` merging of ``cbar_kwargs``."""
+    """Tests for `create_color_bar` merging of `cbar_kwargs`."""
 
     def test_user_label_replaces_default(self):
-        """``cbar_kwargs={'label': ...}`` flows through ``cbar.set_label``."""
+        """`cbar_kwargs={'label': ...}` flows through `cbar.set_label`."""
         g = Glyph(
             default_options=_make_options(
                 cbar_label="Default", cbar_kwargs={"label": "Custom"}
@@ -715,7 +715,7 @@ class TestCreateColorBarKwargsMerge:
         plt.close(fig)
 
     def test_user_shrink_overrides_default(self):
-        """User-supplied ``shrink`` survives the defaults merge."""
+        """User-supplied `shrink` survives the defaults merge."""
         g = Glyph(
             default_options=_make_options(
                 cbar_length=0.9, cbar_kwargs={"shrink": 0.3}
@@ -733,7 +733,7 @@ class TestCreateColorBarKwargsMerge:
         plt.close(fig)
 
     def test_invalid_cbar_kwargs_type_raises(self):
-        """Non-dict ``cbar_kwargs`` raises a clear ``TypeError``."""
+        """Non-dict `cbar_kwargs` raises a clear `TypeError`."""
         g = Glyph(
             default_options=_make_options(cbar_kwargs="not-a-dict")
         )
@@ -744,7 +744,7 @@ class TestCreateColorBarKwargsMerge:
         plt.close(fig)
 
     def test_none_cbar_kwargs_is_noop(self):
-        """``cbar_kwargs=None`` falls back to the cleopatra defaults."""
+        """`cbar_kwargs=None` falls back to the cleopatra defaults."""
         g = Glyph(default_options=_make_options(cbar_kwargs=None))
         fig, ax = plt.subplots()
         im = ax.imshow(np.arange(9).reshape(3, 3))
@@ -754,10 +754,10 @@ class TestCreateColorBarKwargsMerge:
 
 
 class TestSaveAnimationVideoBranch:
-    """Tests covering the FFmpeg fallback path of ``save_animation``."""
+    """Tests covering the FFmpeg fallback path of `save_animation`."""
 
     def test_ffmpeg_missing_raises_friendly_error(self, monkeypatch, tmp_path):
-        """A missing FFmpeg binary surfaces as ``FileNotFoundError`` with URL."""
+        """A missing FFmpeg binary surfaces as `FileNotFoundError` with URL."""
         from matplotlib.animation import FuncAnimation
         from unittest.mock import MagicMock
 

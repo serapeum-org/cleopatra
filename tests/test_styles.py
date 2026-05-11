@@ -11,7 +11,7 @@ def test_create_instance():
 
 
 class TestColorScale:
-    """Tests for the :class:`cleopatra.styles.ColorScale` ``StrEnum``."""
+    """Tests for the `cleopatra.styles.ColorScale` `StrEnum`."""
 
     def test_members_are_strings(self):
         """Each member equals (and stringifies to) its lowercase value."""
@@ -38,17 +38,17 @@ class TestColorScale:
         ],
     )
     def test_construction_is_case_insensitive(self, given, expected):
-        """``ColorScale(...)`` accepts any case and existing members.
+        """`ColorScale(...)` accepts any case and existing members.
 
         Args:
-            given: Input passed to ``ColorScale(...)``.
+            given: Input passed to `ColorScale(...)`.
             expected: The member it should resolve to.
         """
         assert ColorScale(given) is expected
 
     @pytest.mark.parametrize("bad", ["rainbow", "", "lin ear", 1, 2.0, None])
     def test_invalid_inputs_raise_valueerror(self, bad):
-        """Anything that isn't a recognised value raises ``ValueError``.
+        """Anything that isn't a recognised value raises `ValueError`.
 
         Args:
             bad: An input that should not resolve to a member.

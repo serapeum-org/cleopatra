@@ -26,7 +26,7 @@ from cleopatra.styles import ColorScale, MidpointNormalize
 
 SUPPORTED_VIDEO_FORMAT = ["gif", "mov", "avi", "mp4"]
 
-#: Upper bound for an integer ``levels`` value (number of discrete colour
+#: Upper bound for an integer `levels` value (number of discrete colour
 #: levels / contour lines). A larger request is almost certainly a mistake
 #: and `np.linspace` with a huge count would exhaust memory.
 MAX_DISCRETE_LEVELS = 1000
@@ -41,10 +41,10 @@ class Glyph:
 
     Args:
         default_options: Default plot options dict. Subclasses provide
-            their own defaults merged with ``STYLE_DEFAULTS``.
+            their own defaults merged with `STYLE_DEFAULTS`.
         fig: Pre-existing matplotlib figure. Default is None.
         ax: Pre-existing matplotlib axes. Default is None.
-        **kwargs: Override any key in ``default_options``.
+        **kwargs: Override any key in `default_options`.
 
     Examples:
         - Create a Glyph and override the colormap:
@@ -119,7 +119,7 @@ class Glyph:
 
     @property
     def anim(self) -> FuncAnimation:
-        """Animation object created by ``animate()``."""
+        """Animation object created by `animate()`."""
         if hasattr(self, "_anim") and self._anim is not None:
             return self._anim
         raise ValueError(
@@ -140,7 +140,7 @@ class Glyph:
     def create_figure_axes(self) -> tuple[Figure, Axes]:
         """Create a new figure and axes from default_options.
 
-        Uses the ``figsize`` key from ``default_options`` to set the
+        Uses the `figsize` key from `default_options` to set the
         figure dimensions.
 
         Returns:
@@ -166,8 +166,8 @@ class Glyph:
     def get_ticks(self) -> np.ndarray:
         """Compute colorbar tick locations from default_options.
 
-        Uses ``vmin``, ``vmax``, and ``ticks_spacing`` from
-        ``default_options`` to generate evenly-spaced tick positions.
+        Uses `vmin`, `vmax`, and `ticks_spacing` from
+        `default_options` to generate evenly-spaced tick positions.
 
         Returns:
             np.ndarray: Array of tick positions.
@@ -203,32 +203,32 @@ class Glyph:
     ) -> tuple[colors.Normalize | None, dict]:
         """Create a matplotlib Normalize and colorbar kwargs.
 
-        Honours the ``color_scale`` option — a :class:`cleopatra.styles.ColorScale`
-        member or its string value (case-insensitive): ``linear`` / ``power`` /
-        ``sym-lognorm`` / ``boundary-norm`` / ``midpoint`` — and the
-        xarray-aligned ``levels`` and ``extend`` options when present in
-        ``default_options``. An unrecognised ``color_scale`` (including a
-        non-string such as an int) raises :class:`ValueError`.
+        Honours the `color_scale` option — a `cleopatra.styles.ColorScale`
+        member or its string value (case-insensitive): `linear` / `power` /
+        `sym-lognorm` / `boundary-norm` / `midpoint` — and the
+        xarray-aligned `levels` and `extend` options when present in
+        `default_options`. An unrecognised `color_scale` (including a
+        non-string such as an int) raises `ValueError`.
 
-        Behaviour for ``levels``:
+        Behaviour for `levels`:
 
-        * ``levels`` is ``None`` (default) — continuous norm based on
-          ``color_scale``.
-        * ``levels`` is an ``int`` and ``color_scale`` is the default
-          ``"linear"`` — switch to a ``BoundaryNorm`` with ``levels``
-          linearly-spaced edges between ``vmin`` and ``vmax``.
-        * ``levels`` is a sequence and ``color_scale`` is ``"linear"`` —
-          use the sequence as explicit bin edges in a ``BoundaryNorm``.
-        * ``levels`` is set and ``color_scale`` is ``"boundary-norm"``
-          with no explicit ``bounds`` — treat ``levels`` as the bounds.
-        * Otherwise (``color_scale`` is some other enum value) — the
-          user's choice wins; ``levels`` is left for the caller to
-          forward to ``contour`` / ``contourf``.
+        * `levels` is `None` (default) — continuous norm based on
+          `color_scale`.
+        * `levels` is an `int` and `color_scale` is the default
+          `"linear"` — switch to a `BoundaryNorm` with `levels`
+          linearly-spaced edges between `vmin` and `vmax`.
+        * `levels` is a sequence and `color_scale` is `"linear"` —
+          use the sequence as explicit bin edges in a `BoundaryNorm`.
+        * `levels` is set and `color_scale` is `"boundary-norm"`
+          with no explicit `bounds` — treat `levels` as the bounds.
+        * Otherwise (`color_scale` is some other enum value) — the
+          user's choice wins; `levels` is left for the caller to
+          forward to `contour` / `contourf`.
 
-        Behaviour for ``extend``: when present and non-None, the value
-        is forwarded to the colorbar via ``cbar_kw["extend"]``. The
-        auto-resolution (``"both"`` when ``levels`` is set, else
-        ``"neither"``) happens here only when ``extend`` is ``None``.
+        Behaviour for `extend`: when present and non-None, the value
+        is forwarded to the colorbar via `cbar_kw["extend"]`. The
+        auto-resolution (`"both"` when `levels` is set, else
+        `"neither"`) happens here only when `extend` is `None`.
 
         Args:
             ticks: Tick positions for the colorbar.
@@ -238,11 +238,11 @@ class Glyph:
                 and colorbar keyword arguments.
 
         Raises:
-            ValueError: If ``default_options["color_scale"]`` is not a
-                recognised :class:`cleopatra.styles.ColorScale` value.
+            ValueError: If `default_options["color_scale"]` is not a
+                recognised `cleopatra.styles.ColorScale` value.
 
         Examples:
-            - Linear colour scale with no levels gives ``norm=None``
+            - Linear colour scale with no levels gives `norm=None`
                 and ticks forwarded straight through:
                 ```python
                 >>> import numpy as np
@@ -260,9 +260,9 @@ class Glyph:
                 [0.0, 5.0, 10.0]
 
                 ```
-            - With ``levels`` set and the default linear scale, a
-                ``BoundaryNorm`` is built and ``extend`` defaults to
-                ``"both"``:
+            - With `levels` set and the default linear scale, a
+                `BoundaryNorm` is built and `extend` defaults to
+                `"both"`:
                 ```python
                 >>> import numpy as np
                 >>> from cleopatra.glyph import Glyph
@@ -357,33 +357,33 @@ class Glyph:
         vmin: float,
         vmax: float,
     ) -> np.ndarray | None:
-        """Convert the ``levels`` option to an array of bin edges.
+        """Convert the `levels` option to an array of bin edges.
 
-        Returns ``None`` when no levels are configured, signalling that
+        Returns `None` when no levels are configured, signalling that
         the caller should fall back to the continuous norm path.
 
         Args:
-            levels: Number of levels (``int``), explicit edges
-                (``list`` / ``ndarray``), or ``None`` for no
+            levels: Number of levels (`int`), explicit edges
+                (`list` / `ndarray`), or `None` for no
                 discretisation.
-            vmin: Lower colour limit. Used when ``levels`` is an int to
+            vmin: Lower colour limit. Used when `levels` is an int to
                 build the linspace.
-            vmax: Upper colour limit. Used when ``levels`` is an int to
+            vmax: Upper colour limit. Used when `levels` is an int to
                 build the linspace.
 
         Returns:
             np.ndarray or None: Sorted ascending array of bin edges, or
-                ``None`` when ``levels`` is ``None``.
+                `None` when `levels` is `None`.
 
         Raises:
-            ValueError: If ``levels`` is an integer outside the range
-                ``[2, MAX_DISCRETE_LEVELS]`` (a single edge cannot form a
-                ``BoundaryNorm``, and an enormous count would OOM
-                ``np.linspace``).
+            ValueError: If `levels` is an integer outside the range
+                `[2, MAX_DISCRETE_LEVELS]` (a single edge cannot form a
+                `BoundaryNorm`, and an enormous count would OOM
+                `np.linspace`).
 
         Examples:
-            - Integer ``levels`` becomes a ``linspace`` between
-                ``vmin`` and ``vmax``:
+            - Integer `levels` becomes a `linspace` between
+                `vmin` and `vmax`:
                 ```python
                 >>> from cleopatra.glyph import Glyph
                 >>> bounds = Glyph._levels_to_bounds(5, 0.0, 10.0)
@@ -392,7 +392,7 @@ class Glyph:
 
                 ```
             - A sequence is sorted ascending and returned as a float
-                ``ndarray``; ``None`` short-circuits to ``None``:
+                `ndarray`; `None` short-circuits to `None`:
                 ```python
                 >>> from cleopatra.glyph import Glyph
                 >>> bounds = Glyph._levels_to_bounds([10.0, 0.0, 5.0], 0.0, 10.0)
@@ -423,21 +423,21 @@ class Glyph:
     def create_color_bar(self, ax: Axes, im: Any, cbar_kw: dict) -> Colorbar:
         """Create a colorbar with full customization from default_options.
 
-        Reads ``cbar_length``, ``cbar_orientation``, ``cbar_label``,
-        ``cbar_label_size``, and ``cbar_label_location`` from
-        ``default_options`` to configure the colorbar. When the optional
-        ``cbar_kwargs`` entry is present in ``default_options`` (an
+        Reads `cbar_length`, `cbar_orientation`, `cbar_label`,
+        `cbar_label_size`, and `cbar_label_location` from
+        `default_options` to configure the colorbar. When the optional
+        `cbar_kwargs` entry is present in `default_options` (an
         xarray-aligned dict-of-overrides), its keys are merged over the
-        defaults so the user wins on any collision (e.g. ``label``,
-        ``shrink``, ``orientation``, ``ticks``, ``extend``).
+        defaults so the user wins on any collision (e.g. `label`,
+        `shrink`, `orientation`, `ticks`, `extend`).
 
-        ``cbar_kwargs`` is read from ``self.default_options["cbar_kwargs"]``.
-        Set it via the constructor or :meth:`plot` kwargs of the calling
-        glyph subclass. Keys recognised by :func:`matplotlib.pyplot.colorbar`
-        — ``label``, ``shrink``, ``aspect``, ``orientation``, ``pad``,
-        ``ticks``, ``extend`` — are forwarded; ``label`` is special-cased
+        `cbar_kwargs` is read from `self.default_options["cbar_kwargs"]`.
+        Set it via the constructor or `plot` kwargs of the calling
+        glyph subclass. Keys recognised by `matplotlib.pyplot.colorbar`
+        — `label`, `shrink`, `aspect`, `orientation`, `pad`,
+        `ticks`, `extend` — are forwarded; `label` is special-cased
         so that label-size and label-location styling from
-        ``default_options`` are still applied.
+        `default_options` are still applied.
 
         Args:
             ax: Matplotlib axes.
@@ -445,14 +445,14 @@ class Glyph:
                 colorbar to.
             cbar_kw: Colorbar keyword arguments (ticks, format,
                 extend, etc.) computed by
-                :meth:`_create_norm_and_cbar_kw`.
+                `_create_norm_and_cbar_kw`.
 
         Returns:
             Colorbar: The created colorbar.
 
         Raises:
-            TypeError: If ``default_options["cbar_kwargs"]`` is set
-                but is not a ``dict``.
+            TypeError: If `default_options["cbar_kwargs"]` is set
+                but is not a `dict`.
 
         Examples:
             - Create a colorbar with a custom label:
@@ -471,8 +471,8 @@ class Glyph:
                 'vertical'
 
                 ```
-            - User-supplied ``cbar_kwargs`` win on collision and
-                ``label`` is applied via :meth:`set_label`:
+            - User-supplied `cbar_kwargs` win on collision and
+                `label` is applied via `set_label`:
                 ```python
                 >>> import numpy as np
                 >>> import matplotlib.pyplot as plt
@@ -494,7 +494,7 @@ class Glyph:
                 'User Label'
 
                 ```
-            - Non-dict ``cbar_kwargs`` raises :class:`TypeError`:
+            - Non-dict `cbar_kwargs` raises `TypeError`:
                 ```python
                 >>> import numpy as np
                 >>> import matplotlib.pyplot as plt
@@ -520,9 +520,9 @@ class Glyph:
             "use_gridspec": not is_subplot,
         }
         merged_kw.update(cbar_kw)
-        # Pull the user-supplied ``label`` (if any) out of cbar_kwargs
-        # before forwarding to ``fig.colorbar`` so we can apply it via
-        # ``cbar.set_label`` and preserve label-size/location styling.
+        # Pull the user-supplied `label` (if any) out of cbar_kwargs
+        # before forwarding to `fig.colorbar` so we can apply it via
+        # `cbar.set_label` and preserve label-size/location styling.
         user_kwargs = self.default_options.get("cbar_kwargs") or {}
         if not isinstance(user_kwargs, dict):
             raise TypeError(
@@ -555,16 +555,16 @@ class Glyph:
     ) -> None:
         """Adjust the axis tick labels with a linear transformation.
 
-        Applies ``tick_value * multiply_value + add_value`` to each
-        tick, formatted with ``fmt``. Useful for converting pixel
+        Applies `tick_value * multiply_value + add_value` to each
+        tick, formatted with `fmt`. Useful for converting pixel
         coordinates to real-world units.
 
         Args:
-            axis: ``"x"`` or ``"y"``.
+            axis: `"x"` or `"y"`.
             multiply_value: Multiplier for tick values. Default is 1.
             add_value: Offset added to tick values. Default is 0.
             fmt: Format string for tick labels.
-                Default is ``"{0:g}"``.
+                Default is `"{0:g}"`.
             visible: Whether the axis is visible. Default is True.
 
         Examples:
@@ -618,7 +618,7 @@ class Glyph:
         """Save the animation to a file.
 
         The output format is determined by the file extension. GIF uses
-        ``PillowWriter``; mov/avi/mp4 require FFmpeg to be installed.
+        `PillowWriter`; mov/avi/mp4 require FFmpeg to be installed.
 
         Args:
             path: Output file path. Extension determines format.
