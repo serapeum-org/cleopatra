@@ -1306,6 +1306,39 @@ class TestFaceting:
         hidden = [ax for ax in result.axes.ravel() if not ax.get_visible()]
         assert len(hidden) == 1
 
+    def test_masked_stack_preserves_mask_per_panel(self):
+        """Masked-array stacks keep their per-panel mask in ``facet``.
+
+        Regression for H1: ``np.asarray(arr[col_idx])`` previously
+        dropped the mask, so cells excluded via ``exclude_value`` were
+        rendered as real data on every subplot.
+        """
+        import numpy.ma as ma
+
+        stack = self._stack_3d(n=3)
+        sentinel = -9999.0
+        stack[0, 0, 0] = sentinel
+        stack[1, 1, 1] = sentinel
+        stack[2, 2, 2] = sentinel
+
+        result = ArrayGlyph(stack, exclude_value=[sentinel]).facet(col="t")
+        try:
+            for panel_idx, ax in enumerate(result.axes.ravel()):
+                images = ax.get_images()
+                assert images, f"panel {panel_idx} must have an AxesImage"
+                arr_on_ax = images[0].get_array()
+                assert isinstance(arr_on_ax, ma.MaskedArray), (
+                    f"panel {panel_idx} lost its MaskedArray wrapper; "
+                    f"got {type(arr_on_ax).__name__}"
+                )
+                mask = ma.getmaskarray(arr_on_ax)
+                assert mask[panel_idx, panel_idx], (
+                    f"panel {panel_idx} should keep sentinel cell "
+                    f"({panel_idx}, {panel_idx}) masked; mask={mask}"
+                )
+        finally:
+            plt.close(result.fig)
+
 
 @pytest.mark.plot
 class TestAnimateDataGetter:

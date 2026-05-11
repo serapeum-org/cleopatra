@@ -2206,10 +2206,13 @@ class ArrayGlyph(Glyph):
 
         for panel_idx, (col_idx, row_idx) in enumerate(panel_indices):
             ax = flat_axes[panel_idx]
+            # Use plain slicing so ``numpy.ma.MaskedArray`` inputs keep
+            # their mask on each per-panel sub-array. ``np.asarray``
+            # would drop the mask and render masked cells as data.
             if row is None:
-                panel_arr = np.asarray(arr[col_idx])
+                panel_arr = arr[col_idx]
             else:
-                panel_arr = np.asarray(arr[col_idx, row_idx])
+                panel_arr = arr[col_idx, row_idx]
 
             # ``self.extent`` is already stored in matplotlib's
             # ``[xmin, xmax, ymin, ymax]`` order. The constructor expects
