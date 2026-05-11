@@ -16,7 +16,7 @@ from matplotlib.figure import Figure
 
 from cleopatra.glyph import SUPPORTED_VIDEO_FORMAT, Glyph
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
-from cleopatra.styles import MidpointNormalize
+from cleopatra.styles import ColorScale, MidpointNormalize
 
 
 def _make_options(**overrides) -> dict:
@@ -259,12 +259,30 @@ class TestCreateNormAndCbarKw:
             f"Expected MidpointNormalize, got {type(norm)}"
         )
 
-    def test_invalid_color_scale_raises(self, glyph):
-        """Test that unknown color_scale raises ValueError."""
+    def test_invalid_color_scale_string_raises(self, glyph):
+        """An unrecognised color_scale string raises ``ValueError``."""
         glyph._default_options["color_scale"] = "rainbow-magic"
         ticks = np.array([0.0, 5.0, 10.0])
-        with pytest.raises(ValueError, match="Invalid color scale"):
+        with pytest.raises(ValueError, match="Invalid color_scale"):
             glyph._create_norm_and_cbar_kw(ticks)
+
+    def test_non_string_color_scale_raises_valueerror_not_attributeerror(self, glyph):
+        """A non-string color_scale (e.g. an int) raises ``ValueError``, not ``AttributeError``.
+
+        Regression for the case where `color_scale.lower()` blew up with
+        `AttributeError: 'int' object has no attribute 'lower'`.
+        """
+        glyph._default_options["color_scale"] = 1
+        ticks = np.array([0.0, 5.0, 10.0])
+        with pytest.raises(ValueError, match="Invalid color_scale"):
+            glyph._create_norm_and_cbar_kw(ticks)
+
+    def test_colorscale_member_accepted(self, glyph):
+        """Passing a :class:`ColorScale` member directly works."""
+        glyph._default_options["color_scale"] = ColorScale.POWER
+        ticks = np.array([0.0, 5.0, 10.0])
+        norm, cbar_kw = glyph._create_norm_and_cbar_kw(ticks)
+        assert isinstance(norm, mcolors.PowerNorm)
 
     @pytest.mark.parametrize(
         "scale",

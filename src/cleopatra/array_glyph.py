@@ -41,6 +41,7 @@ from PIL import Image
 
 from cleopatra.glyph import Glyph
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
+from cleopatra.styles import ColorScale  # re-exported for convenience  # noqa: F401
 
 DEFAULT_OPTIONS = {
     "vmin": None,
@@ -1567,9 +1568,11 @@ class ArrayGlyph(Glyph):
                         Label text for the color bar, by default 'Value'.
 
                 Color scale options:
-                    color_scale : str, optional
+                    color_scale : ColorScale or str, optional
                         Type of color scaling to use, by default 'linear'.
-                        Options:
+                        Accepts a :class:`cleopatra.styles.ColorScale`
+                        member or its string value (case-insensitive). An
+                        unrecognised value raises ``ValueError``. Options:
                         - 'linear': Linear scale
                         - 'power': Power-law normalization
                         - 'sym-lognorm': Symmetrical logarithmic scale
@@ -2452,9 +2455,11 @@ class ArrayGlyph(Glyph):
                         Label text for the color bar, by default 'Value'.
 
                 Color scale options:
-                    color_scale : str, optional
+                    color_scale : ColorScale or str, optional
                         Type of color scaling to use, by default 'linear'.
-                        Options:
+                        Accepts a :class:`cleopatra.styles.ColorScale`
+                        member or its string value (case-insensitive). An
+                        unrecognised value raises ``ValueError``. Options:
                         - 'linear': Linear scale
                         - 'power': Power-law normalization
                         - 'sym-lognorm': Symmetrical logarithmic scale

@@ -3,10 +3,74 @@
 from __future__ import annotations
 
 from collections import OrderedDict
+from enum import StrEnum
 from typing import Callable
 
 import matplotlib.colors as colors
 import numpy as np
+
+
+class ColorScale(StrEnum):
+    """Accepted values for the ``color_scale`` option of cleopatra glyphs.
+
+    Members are plain strings (``StrEnum``), so ``ColorScale.LINEAR ==
+    "linear"`` holds and any code that treats the value as a string keeps
+    working whether the caller passes the enum member or the bare string.
+    Lookup is case-insensitive: ``ColorScale("Linear") is ColorScale.LINEAR``.
+
+    Examples:
+        - The members behave like their string values:
+            ```python
+            >>> from cleopatra.styles import ColorScale
+            >>> ColorScale.LINEAR == "linear"
+            True
+            >>> str(ColorScale.POWER)
+            'power'
+
+            ```
+        - Construction is case-insensitive; bad values raise ``ValueError``:
+            ```python
+            >>> from cleopatra.styles import ColorScale
+            >>> ColorScale("Boundary-Norm") is ColorScale.BOUNDARY_NORM
+            True
+            >>> ColorScale("nope")
+            Traceback (most recent call last):
+                ...
+            ValueError: 'nope' is not a valid ColorScale
+
+            ```
+    """
+
+    LINEAR = "linear"
+    POWER = "power"
+    SYM_LOGNORM = "sym-lognorm"
+    BOUNDARY_NORM = "boundary-norm"
+    MIDPOINT = "midpoint"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "ColorScale | None":
+        """Resolve a case-insensitive string to a member, else ``None``.
+
+        Called by :class:`enum.Enum` when a direct value lookup fails. Only
+        strings are coerced (lower-cased and re-matched); anything else
+        (an int, ``None``, …) returns ``None`` so ``ColorScale(value)``
+        raises the usual ``ValueError``.
+
+        Args:
+            value: The value passed to ``ColorScale(value)`` that did not
+                match a member directly.
+
+        Returns:
+            ColorScale or None: The matching member, or ``None`` to let
+                ``Enum`` raise ``ValueError``.
+        """
+        if isinstance(value, str):
+            lowered = value.lower()
+            for member in cls:
+                if member.value == lowered:
+                    return member
+        return None
+
 
 DEFAULT_OPTIONS = {
     "figsize": (8, 8),

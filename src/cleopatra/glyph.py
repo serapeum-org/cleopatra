@@ -22,7 +22,7 @@ from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure
 from matplotlib.ticker import LogFormatter
 
-from cleopatra.styles import MidpointNormalize
+from cleopatra.styles import ColorScale, MidpointNormalize
 
 SUPPORTED_VIDEO_FORMAT = ["gif", "mov", "avi", "mp4"]
 
@@ -198,9 +198,12 @@ class Glyph:
     ) -> tuple[colors.Normalize | None, dict]:
         """Create a matplotlib Normalize and colorbar kwargs.
 
-        Honours the ``color_scale`` enum (linear/power/sym-lognorm/
-        boundary-norm/midpoint) and the xarray-aligned ``levels`` and
-        ``extend`` options when present in ``default_options``.
+        Honours the ``color_scale`` option — a :class:`cleopatra.styles.ColorScale`
+        member or its string value (case-insensitive): ``linear`` / ``power`` /
+        ``sym-lognorm`` / ``boundary-norm`` / ``midpoint`` — and the
+        xarray-aligned ``levels`` and ``extend`` options when present in
+        ``default_options``. An unrecognised ``color_scale`` (including a
+        non-string such as an int) raises :class:`ValueError`.
 
         Behaviour for ``levels``:
 
@@ -228,6 +231,10 @@ class Glyph:
         Returns:
             tuple[Normalize or None, dict]: The norm (None for linear)
                 and colorbar keyword arguments.
+
+        Raises:
+            ValueError: If ``default_options["color_scale"]`` is not a
+                recognised :class:`cleopatra.styles.ColorScale` value.
 
         Examples:
             - Linear colour scale with no levels gives ``norm=None``
@@ -268,13 +275,21 @@ class Glyph:
 
                 ```
         """
-        color_scale = self.default_options["color_scale"]
+        raw_scale = self.default_options["color_scale"]
+        try:
+            color_scale = ColorScale(raw_scale)
+        except ValueError as e:
+            valid = ", ".join(repr(m.value) for m in ColorScale)
+            raise ValueError(
+                f"Invalid color_scale {raw_scale!r}. Expected one of "
+                f"{valid} (or a cleopatra.styles.ColorScale member)."
+            ) from e
         vmin = ticks[0]
         vmax = ticks[-1]
         levels = self.default_options.get("levels")
         bounds_from_levels = self._levels_to_bounds(levels, vmin, vmax)
 
-        if color_scale.lower() == "linear":
+        if color_scale == ColorScale.LINEAR:
             if bounds_from_levels is not None:
                 norm = colors.BoundaryNorm(
                     boundaries=bounds_from_levels, ncolors=256
@@ -283,12 +298,12 @@ class Glyph:
             else:
                 norm = None
                 cbar_kw = {"ticks": ticks}
-        elif color_scale.lower() == "power":
+        elif color_scale == ColorScale.POWER:
             norm = colors.PowerNorm(
                 gamma=self.default_options["gamma"], vmin=vmin, vmax=vmax
             )
             cbar_kw = {"ticks": ticks}
-        elif color_scale.lower() == "sym-lognorm":
+        elif color_scale == ColorScale.SYM_LOGNORM:
             norm = colors.SymLogNorm(
                 linthresh=self.default_options["line_threshold"],
                 linscale=self.default_options["line_scale"],
@@ -298,7 +313,7 @@ class Glyph:
             )
             formatter = LogFormatter(10, labelOnlyBase=False)
             cbar_kw = {"ticks": ticks, "format": formatter}
-        elif color_scale.lower() == "boundary-norm":
+        elif color_scale == ColorScale.BOUNDARY_NORM:
             explicit_bounds = self.default_options["bounds"]
             if explicit_bounds:
                 bounds = explicit_bounds
@@ -310,17 +325,16 @@ class Glyph:
                 bounds = ticks
                 cbar_kw = {"ticks": ticks}
             norm = colors.BoundaryNorm(boundaries=bounds, ncolors=256)
-        elif color_scale.lower() == "midpoint":
+        elif color_scale == ColorScale.MIDPOINT:
             norm = MidpointNormalize(
                 midpoint=self.default_options["midpoint"],
                 vmin=vmin,
                 vmax=vmax,
             )
             cbar_kw = {"ticks": ticks}
-        else:
+        else:  # pragma: no cover - a ColorScale member without a branch
             raise ValueError(
-                f"Invalid color scale option: {color_scale}. Use 'linear', "
-                "'power', 'sym-lognorm', 'boundary-norm', 'midpoint'"
+                f"No norm branch implemented for color_scale={color_scale!r}."
             )
 
         extend = self.default_options.get("extend")

@@ -491,6 +491,20 @@ class TestPlotKindDispatch:
         fig, ax = glyph.plot(color_scale="power")
         assert isinstance(fig, Figure)
 
+    def test_color_scale_enum_member_accepted(self):
+        """`plot(color_scale=ColorScale.POWER)` works (enum member, not str)."""
+        from cleopatra.styles import ColorScale
+
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(color_scale=ColorScale.POWER)
+        assert isinstance(fig, Figure)
+
+    def test_invalid_color_scale_int_raises_valueerror(self):
+        """`plot(color_scale=1)` raises `ValueError` (not `AttributeError`)."""
+        glyph = ArrayGlyph(self._sample_arr())
+        with pytest.raises(ValueError, match="Invalid color_scale"):
+            glyph.plot(color_scale=1)
+
     def test_color_scale_linear_with_pcolormesh(self):
         """Linear color_scale works under kind=pcolormesh."""
         glyph = ArrayGlyph(self._sample_arr())
