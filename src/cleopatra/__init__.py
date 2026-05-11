@@ -9,6 +9,11 @@ straight from the package root:
 The submodules ``array_glyph``, ``glyph``, ``mesh_glyph``,
 ``statistical_glyph``, ``colors``, ``styles``, ``tiles``, and ``config``
 are also publicly importable.
+
+Importing cleopatra does not change the active matplotlib backend. If you
+want the old convenience behaviour (`%matplotlib inline` in a notebook,
+`Agg` in scripts) call `cleopatra.config.Config.set_matplotlib_backend()`
+yourself.
 """
 
 from cleopatra.config import Config
@@ -39,6 +44,9 @@ try:
 except PackageNotFoundError:  # pragma: no cover
     __version__ = "unknown"
 
+#: Process-wide :class:`~cleopatra.config.Config` instance. Constructing it
+#: has no side effects — in particular it does *not* touch the matplotlib
+#: backend. Call ``config.set_matplotlib_backend(...)`` explicitly if you
+#: want cleopatra to pick one for you.
 config = Config()
-config.set_matplotlib_backend()
 

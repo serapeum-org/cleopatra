@@ -2,15 +2,16 @@
 
 Validates the package re-exports introduced alongside the tiles module
 (``add_tiles``), the ``__all__`` membership, that ``__version__`` is
-defined, and that importing :mod:`cleopatra` does not switch matplotlib
-to an interactive backend (the default is Agg as of 08b0728).
+defined, and that importing :mod:`cleopatra` has no side effects on the
+matplotlib backend.
 """
 
 from __future__ import annotations
 
 import importlib
+import subprocess
+import sys
 
-import matplotlib
 import pytest
 
 
@@ -67,22 +68,31 @@ class TestPackageReExports:
 
 
 class TestImportSafety:
-    """Tests that importing cleopatra does not break the matplotlib backend."""
+    """Tests that importing cleopatra does not mutate the matplotlib backend."""
 
-    def test_import_does_not_select_tkagg(self):
-        """Importing :mod:`cleopatra` never leaves matplotlib on ``TkAgg``.
+    def test_import_does_not_change_backend(self):
+        """``import cleopatra`` must not change matplotlib's active backend.
 
-        The package previously defaulted to TkAgg which opened blocking
-        Tk popups on Windows. Commit ``08b0728`` switched the default to
-        ``Agg``. This test guards against a regression by reloading the
-        package and asserting the active backend is non-interactive.
+        Picking a backend is the application's job; a library must not do
+        it at import time. Run in a fresh subprocess (the test session's
+        ``conftest.py`` pins ``Agg``, so an in-process check would be
+        vacuous) and compare the backend before vs. after the import.
         """
-        import cleopatra
-
-        importlib.reload(cleopatra)
-        backend = matplotlib.get_backend()
-        assert backend.lower() != "tkagg", (
-            f"Backend leaked to TkAgg after import: {backend!r}"
+        code = (
+            "import matplotlib; before = matplotlib.get_backend(); "
+            "import cleopatra; after = matplotlib.get_backend(); "
+            "print(before); print(after)"
+        )
+        result = subprocess.run(
+            [sys.executable, "-c", code],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        before, after = result.stdout.split()
+        assert before == after, (
+            f"`import cleopatra` changed the matplotlib backend: "
+            f"{before!r} -> {after!r}"
         )
 
     def test_config_is_singleton_attribute(self):
