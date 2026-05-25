@@ -340,6 +340,66 @@ class TestAnimate:
         # os.remove(path)
 
 
+class TestNoImplicitShow:
+    """Tests that `plot()` and `animate()` do not force an interactive display.
+
+    The branch removed the internal ``plt.show()`` calls so the methods return the
+    Figure/Axes (or animation) for the caller to display or save. These tests pin that
+    contract by failing if ``plt.show`` is ever invoked.
+    """
+
+    def test_plot_does_not_call_plt_show(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        arr: np.ndarray,
+        no_data_value: float,
+    ):
+        """Test that `ArrayGlyph.plot()` returns (fig, ax) without calling `plt.show`.
+
+        Args:
+            monkeypatch: Pytest fixture used to replace ``matplotlib.pyplot.show``.
+            arr: Sample 2D array fixture.
+            no_data_value: Value masked out of the array fixture.
+
+        Test scenario:
+            Patch ``plt.show`` with a counter. After ``plot()`` the counter must be 0,
+            and the method must still return a Figure and an Axes.
+        """
+        calls = []
+        monkeypatch.setattr(plt, "show", lambda *a, **k: calls.append(1))
+        array = ArrayGlyph(arr, exclude_value=[no_data_value])
+        fig, ax = array.plot(title="Flow Accumulation")
+        assert calls == [], f"plot() should not call plt.show(); was called {len(calls)} time(s)"
+        assert isinstance(fig, Figure), f"plot() should return a Figure, got {type(fig)}"
+        assert ax is not None, "plot() should return an Axes alongside the Figure"
+
+    def test_animate_does_not_call_plt_show(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        coello_data: np.ndarray,
+        animate_time_list: list,
+        no_data_value: float,
+    ):
+        """Test that `ArrayGlyph.animate()` returns an animation without calling `plt.show`.
+
+        Args:
+            monkeypatch: Pytest fixture used to replace ``matplotlib.pyplot.show``.
+            coello_data: Sample 3D (time-stacked) array fixture.
+            animate_time_list: Per-frame time labels fixture.
+            no_data_value: Value masked out of the array fixture.
+
+        Test scenario:
+            Patch ``plt.show`` with a counter. After ``animate()`` the counter must be 0,
+            and the method must still return a ``FuncAnimation``.
+        """
+        calls = []
+        monkeypatch.setattr(plt, "show", lambda *a, **k: calls.append(1))
+        array = ArrayGlyph(coello_data, exclude_value=[no_data_value])
+        anim = array.animate(animate_time_list, title="Flow Accumulation")
+        assert calls == [], f"animate() should not call plt.show(); was called {len(calls)} time(s)"
+        assert isinstance(anim, FuncAnimation), f"animate() should return a FuncAnimation, got {type(anim)}"
+
+
 def test_scale_percentile():
     arr = np.array(
         [
