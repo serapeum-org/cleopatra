@@ -1660,14 +1660,14 @@ class ArrayGlyph(Glyph):
                 - fig: The matplotlib Figure object
                 - ax: The matplotlib Axes object
 
+        Raises:
+            ValueError: If an invalid keyword argument is provided.
+
         Notes:
             This method does not call ``plt.show()``; it returns the Figure and Axes so
             the caller can compose, save, or display them. In an interactive session call
             ``plt.show()`` yourself (or ``fig.savefig(...)`` to write the plot to disk)
             after ``plot()`` returns.
-
-        Raises:
-            ValueError: If an invalid keyword argument is provided.
 
         Examples:
         - Basic array plot:
