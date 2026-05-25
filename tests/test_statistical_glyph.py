@@ -23,6 +23,10 @@ def test_module_doctests_execute():
     """
     results = doctest.testmod(statistical_glyph_module, verbose=False)
     assert results.failed == 0, f"{results.failed} doctest example(s) failed in statistical_glyph"
+    assert results.attempted > 0, (
+        "no doctest examples were collected from statistical_glyph; the module's docstring "
+        "examples may have been moved or removed, silently dropping this coverage"
+    )
 
 
 def test_histogram_one_sample():
