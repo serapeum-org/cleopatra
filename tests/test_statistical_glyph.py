@@ -170,6 +170,56 @@ class TestHistogramFigAxInjection:
         assert ax.get_ylabel() == "Counts", f"ylabel not applied to injected axes: {ax.get_ylabel()!r}"
 
 
+class TestStatisticalGlyphValidationAndState:
+    """Tests for the ``values`` setter and ``histogram()`` validation guards."""
+
+    def teardown_method(self):
+        """Close all figures after each test to avoid leaking matplotlib state."""
+        plt.close("all")
+
+    def test_values_setter_replaces_stored_values(self):
+        """Test that assigning ``stat.values`` swaps the underlying data.
+
+        Test scenario:
+            Construct with one 1D sample, assign a differently-shaped array via the
+            ``values`` setter, and confirm the property returns the new array.
+        """
+        np.random.seed(1)
+        stat = StatisticalGlyph(np.random.normal(0, 1, 100))
+        new_values = np.random.normal(5, 2, 50)
+        stat.values = new_values
+        assert stat.values is new_values, "the values setter should store the assigned array"
+        assert stat.values.shape == (50,), f"expected shape (50,), got {stat.values.shape}"
+
+    def test_histogram_invalid_kwarg_raises(self):
+        """Test that an unknown ``histogram()`` keyword raises ``ValueError``.
+
+        Test scenario:
+            Pass a keyword that is not a recognised option; ``histogram()`` must raise
+            ``ValueError`` naming the offending argument.
+        """
+        np.random.seed(1)
+        stat = StatisticalGlyph(np.random.normal(0, 1, 100))
+        with pytest.raises(ValueError, match=r"not correct") as exc:
+            stat.histogram(not_a_real_option=123)
+        assert "not_a_real_option" in str(exc.value), f"error should name the bad kwarg: {exc.value}"
+
+    def test_histogram_color_count_mismatch_raises(self):
+        """Test that 2D data with too few colors raises ``ValueError``.
+
+        Test scenario:
+            Build a 3-column dataset but leave the default single-color option, so the
+            number of colors (1) does not match the number of samples (3). ``histogram()``
+            must raise ``ValueError`` explaining the mismatch.
+        """
+        np.random.seed(1)
+        data_2d = np.random.normal(0, 1, (100, 3))
+        stat = StatisticalGlyph(data_2d)
+        with pytest.raises(ValueError, match=r"number of colors") as exc:
+            stat.histogram()
+        assert "samples:3" in str(exc.value), f"error should report the sample count: {exc.value}"
+
+
 def test_histogram_multiple_sample():
     # make data
     np.random.seed(1)
