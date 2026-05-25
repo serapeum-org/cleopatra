@@ -2,6 +2,7 @@ import doctest
 
 import matplotlib
 import numpy as np
+import pytest
 
 matplotlib.use("agg")
 import matplotlib.pyplot as plt
@@ -94,6 +95,20 @@ class TestHistogramFigAxInjection:
         assert fig is fig0, "histogram() should reuse the supplied figure"
         assert ax in fig0.axes, "the created axes should belong to the supplied figure"
         assert len(ax.patches) > 0, "expected histogram bars on the created axes"
+
+    def test_fig_supplied_without_ax_raises_when_figure_already_has_axes(self):
+        """Test that fig-only mode rejects a figure that already contains axes.
+
+        Test scenario:
+            Pass a ``fig`` that already has a populated 1x2 layout but no ``ax``.
+            ``histogram()`` must raise ``ValueError`` directing the caller to pass ``ax``
+            explicitly, rather than overlaying a full-figure axes on the existing panels.
+        """
+        fig0, _ = plt.subplots(1, 2)
+        stat = StatisticalGlyph(self._data(), fig=fig0)
+        with pytest.raises(ValueError, match=r"already contains axes") as exc:
+            stat.histogram()
+        assert "ax=" in str(exc.value), f"error should point the caller to `ax=`, got: {exc.value}"
 
     def test_no_fig_no_ax_creates_new_figure_and_axes(self):
         """Test that omitting both ``fig`` and ``ax`` creates fresh objects.

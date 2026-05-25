@@ -154,8 +154,11 @@ class StatisticalGlyph:
             fig: Pre-existing matplotlib Figure to draw on. Honoured in two ways
                 by ``histogram()``: if ``ax`` is also given, ``fig`` is returned
                 as-is alongside it; if ``ax`` is None, a new axes is created on
-                this figure (the figure is not replaced). If both ``fig`` and
-                ``ax`` are None, a brand-new figure is created.
+                this figure (the figure is not replaced). In the fig-only case
+                the figure must be empty — if it already contains axes,
+                ``histogram()`` raises ``ValueError`` and asks you to pass the
+                target ``ax`` explicitly. If both ``fig`` and ``ax`` are None, a
+                brand-new figure is created.
             ax: Pre-existing matplotlib Axes to draw on. If None, new axes
                 are created when ``histogram()`` is called. When supplied,
                 the histogram is composed into the given axes and its parent
@@ -347,6 +350,8 @@ class StatisticalGlyph:
             ValueError: If an invalid keyword argument is provided.
             ValueError: If the number of colors provided doesn't match the number of data series
                 (columns) in 2D data.
+            ValueError: If a ``fig`` was supplied without an ``ax`` and that figure already
+                contains axes (pass the target ``ax`` explicitly in that case).
 
         Notes:
             For 2D data, multiple histograms will be overlaid on the same plot with
@@ -359,7 +364,9 @@ class StatisticalGlyph:
               figure is the one explicitly passed as ``fig`` if any, otherwise
               the axes' own parent figure.
             - ``fig`` given without ``ax``: a new axes is added to that figure
-              and used for drawing (the figure is reused, not replaced).
+              and used for drawing (the figure is reused, not replaced). The
+              figure must be empty; if it already contains axes a ``ValueError``
+              is raised so the caller passes the target ``ax`` explicitly.
             - neither given: a new figure and axes are created with ``figsize``.
 
         Examples:
@@ -446,6 +453,12 @@ class StatisticalGlyph:
             fig = self._fig if self._fig is not None else ax.get_figure()
         elif self._fig is not None:
             fig = self._fig
+            if fig.axes:
+                raise ValueError(
+                    "The supplied `fig` already contains axes; pass the target axes via "
+                    "`ax=` so the histogram is drawn on a specific axes instead of being "
+                    "overlaid on the existing ones."
+                )
             ax = fig.add_subplot(111)
         else:
             fig, ax = plt.subplots(figsize=self.default_options["figsize"])
