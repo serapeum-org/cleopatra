@@ -21,7 +21,10 @@ def test_module_doctests_execute():
     ``cleopatra.statistical_glyph`` (including the fig/ax composition example) and
     fails if any example's output no longer matches.
     """
-    results = doctest.testmod(statistical_glyph_module, verbose=False)
+    try:
+        results = doctest.testmod(statistical_glyph_module, verbose=False)
+    finally:
+        plt.close("all")
     assert results.failed == 0, f"{results.failed} doctest example(s) failed in statistical_glyph"
     assert results.attempted > 0, (
         "no doctest examples were collected from statistical_glyph; the module's docstring "
