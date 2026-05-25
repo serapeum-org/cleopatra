@@ -29,6 +29,28 @@ def test_module_doctests_execute():
     )
 
 
+def test_histogram_does_not_call_plt_show(monkeypatch):
+    """Test that `StatisticalGlyph.histogram()` does not force an interactive display.
+
+    Args:
+        monkeypatch: Pytest fixture used to replace ``matplotlib.pyplot.show``.
+
+    Test scenario:
+        Patch ``plt.show`` with a counter. After ``histogram()`` the counter must be 0,
+        and the method must still return its (fig, ax, hist) triple. Pins the contract that
+        histogram() returns its figure for the caller to display rather than showing it.
+    """
+    calls = []
+    monkeypatch.setattr(plt, "show", lambda *a, **k: calls.append(1))
+    np.random.seed(1)
+    x = 4 + np.random.normal(0, 1.5, 200)
+    fig, ax, hist = StatisticalGlyph(x).histogram()
+    assert calls == [], f"histogram() should not call plt.show(); was called {len(calls)} time(s)"
+    assert isinstance(fig, Figure), f"histogram() should return a Figure, got {type(fig)}"
+    assert isinstance(hist, dict), f"histogram() should return a dict of results, got {type(hist)}"
+    plt.close("all")
+
+
 def test_histogram_one_sample():
     # make data
     np.random.seed(1)
