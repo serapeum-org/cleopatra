@@ -1,6 +1,6 @@
 """
-The `Statistic` module provides a class for creating statistical plots, specifically histograms. The class, `Statistic`,
-is designed to handle both 1D (single-dimensional) and 2D (multi-dimensional) data.
+The `statistical_glyph` module provides a class for creating statistical plots, specifically histograms. The class,
+`StatisticalGlyph`, is designed to handle both 1D (single-dimensional) and 2D (multi-dimensional) data.
 
 The class has the following key features:
 
@@ -23,7 +23,7 @@ The class has the following key features:
     The class includes examples demonstrating how to use the histogram method with 1D and 2D data. The examples also
     include doctests to verify the correctness of the code.
 
-Here's an example of how to use the `Statistic` class:
+Here's an example of how to use the `StatisticalGlyph` class:
 
 ```python
 import numpy as np
@@ -145,7 +145,7 @@ class StatisticalGlyph:
         ax: Optional[Axes] = None,
         **kwargs,
     ):
-        """Initialize the Statistic object with values and optional customization parameters.
+        """Initialize the StatisticalGlyph object with values and optional customization parameters.
 
         Args:
             values: The numerical values to be plotted as histograms. Can be:
