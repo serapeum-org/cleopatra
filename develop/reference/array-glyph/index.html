@@ -6184,14 +6184,14 @@ of per-cell value labels drawn when <code>display_cell_value=True</code>.
 <a id="__codelineno-0-1660" name="__codelineno-0-1660"></a><span class="sd">                - fig: The matplotlib Figure object</span>
 <a id="__codelineno-0-1661" name="__codelineno-0-1661"></a><span class="sd">                - ax: The matplotlib Axes object</span>
 <a id="__codelineno-0-1662" name="__codelineno-0-1662"></a>
-<a id="__codelineno-0-1663" name="__codelineno-0-1663"></a><span class="sd">        Notes:</span>
-<a id="__codelineno-0-1664" name="__codelineno-0-1664"></a><span class="sd">            This method does not call ``plt.show()``; it returns the Figure and Axes so</span>
-<a id="__codelineno-0-1665" name="__codelineno-0-1665"></a><span class="sd">            the caller can compose, save, or display them. In an interactive session call</span>
-<a id="__codelineno-0-1666" name="__codelineno-0-1666"></a><span class="sd">            ``plt.show()`` yourself (or ``fig.savefig(...)`` to write the plot to disk)</span>
-<a id="__codelineno-0-1667" name="__codelineno-0-1667"></a><span class="sd">            after ``plot()`` returns.</span>
-<a id="__codelineno-0-1668" name="__codelineno-0-1668"></a>
-<a id="__codelineno-0-1669" name="__codelineno-0-1669"></a><span class="sd">        Raises:</span>
-<a id="__codelineno-0-1670" name="__codelineno-0-1670"></a><span class="sd">            ValueError: If an invalid keyword argument is provided.</span>
+<a id="__codelineno-0-1663" name="__codelineno-0-1663"></a><span class="sd">        Raises:</span>
+<a id="__codelineno-0-1664" name="__codelineno-0-1664"></a><span class="sd">            ValueError: If an invalid keyword argument is provided.</span>
+<a id="__codelineno-0-1665" name="__codelineno-0-1665"></a>
+<a id="__codelineno-0-1666" name="__codelineno-0-1666"></a><span class="sd">        Notes:</span>
+<a id="__codelineno-0-1667" name="__codelineno-0-1667"></a><span class="sd">            This method does not call ``plt.show()``; it returns the Figure and Axes so</span>
+<a id="__codelineno-0-1668" name="__codelineno-0-1668"></a><span class="sd">            the caller can compose, save, or display them. In an interactive session call</span>
+<a id="__codelineno-0-1669" name="__codelineno-0-1669"></a><span class="sd">            ``plt.show()`` yourself (or ``fig.savefig(...)`` to write the plot to disk)</span>
+<a id="__codelineno-0-1670" name="__codelineno-0-1670"></a><span class="sd">            after ``plot()`` returns.</span>
 <a id="__codelineno-0-1671" name="__codelineno-0-1671"></a>
 <a id="__codelineno-0-1672" name="__codelineno-0-1672"></a><span class="sd">        Examples:</span>
 <a id="__codelineno-0-1673" name="__codelineno-0-1673"></a><span class="sd">        - Basic array plot:</span>
@@ -11304,14 +11304,6 @@ no per-cell grid). RGB compositing requires
     </table>
 
 
-<details class="notes" open>
-  <summary>Notes</summary>
-  <p>This method does not call <code>plt.show()</code>; it returns the Figure and Axes so
-the caller can compose, save, or display them. In an interactive session call
-<code>plt.show()</code> yourself (or <code>fig.savefig(...)</code> to write the plot to disk)
-after <code>plot()</code> returns.</p>
-</details>
-
 <p><span class="doc-section-title">Raises:</span></p>
     <table>
       <thead>
@@ -11333,7 +11325,15 @@ after <code>plot()</code> returns.</p>
           </tr>
       </tbody>
     </table>
-        <p>Examples:
+
+
+<details class="notes" open>
+  <summary>Notes</summary>
+  <p>This method does not call <code>plt.show()</code>; it returns the Figure and Axes so
+the caller can compose, save, or display them. In an interactive session call
+<code>plt.show()</code> yourself (or <code>fig.savefig(...)</code> to write the plot to disk)
+after <code>plot()</code> returns.</p>
+</details>        <p>Examples:
 - Basic array plot:</p>
 <div class="highlight"><pre><span></span><code>```python
 &gt;&gt;&gt; import numpy as np
@@ -12371,14 +12371,14 @@ value if 0.0001, and 0.001 respectively.
 <a id="__codelineno-0-1660" name="__codelineno-0-1660"></a><span class="sd">            - fig: The matplotlib Figure object</span>
 <a id="__codelineno-0-1661" name="__codelineno-0-1661"></a><span class="sd">            - ax: The matplotlib Axes object</span>
 <a id="__codelineno-0-1662" name="__codelineno-0-1662"></a>
-<a id="__codelineno-0-1663" name="__codelineno-0-1663"></a><span class="sd">    Notes:</span>
-<a id="__codelineno-0-1664" name="__codelineno-0-1664"></a><span class="sd">        This method does not call ``plt.show()``; it returns the Figure and Axes so</span>
-<a id="__codelineno-0-1665" name="__codelineno-0-1665"></a><span class="sd">        the caller can compose, save, or display them. In an interactive session call</span>
-<a id="__codelineno-0-1666" name="__codelineno-0-1666"></a><span class="sd">        ``plt.show()`` yourself (or ``fig.savefig(...)`` to write the plot to disk)</span>
-<a id="__codelineno-0-1667" name="__codelineno-0-1667"></a><span class="sd">        after ``plot()`` returns.</span>
-<a id="__codelineno-0-1668" name="__codelineno-0-1668"></a>
-<a id="__codelineno-0-1669" name="__codelineno-0-1669"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-1670" name="__codelineno-0-1670"></a><span class="sd">        ValueError: If an invalid keyword argument is provided.</span>
+<a id="__codelineno-0-1663" name="__codelineno-0-1663"></a><span class="sd">    Raises:</span>
+<a id="__codelineno-0-1664" name="__codelineno-0-1664"></a><span class="sd">        ValueError: If an invalid keyword argument is provided.</span>
+<a id="__codelineno-0-1665" name="__codelineno-0-1665"></a>
+<a id="__codelineno-0-1666" name="__codelineno-0-1666"></a><span class="sd">    Notes:</span>
+<a id="__codelineno-0-1667" name="__codelineno-0-1667"></a><span class="sd">        This method does not call ``plt.show()``; it returns the Figure and Axes so</span>
+<a id="__codelineno-0-1668" name="__codelineno-0-1668"></a><span class="sd">        the caller can compose, save, or display them. In an interactive session call</span>
+<a id="__codelineno-0-1669" name="__codelineno-0-1669"></a><span class="sd">        ``plt.show()`` yourself (or ``fig.savefig(...)`` to write the plot to disk)</span>
+<a id="__codelineno-0-1670" name="__codelineno-0-1670"></a><span class="sd">        after ``plot()`` returns.</span>
 <a id="__codelineno-0-1671" name="__codelineno-0-1671"></a>
 <a id="__codelineno-0-1672" name="__codelineno-0-1672"></a><span class="sd">    Examples:</span>
 <a id="__codelineno-0-1673" name="__codelineno-0-1673"></a><span class="sd">    - Basic array plot:</span>

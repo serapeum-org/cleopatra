@@ -1135,56 +1135,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#unreleased" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Unreleased
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Unreleased">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#feat" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        feat
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#fix" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        fix
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#behavior-change" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        behavior change
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#071-2026-04-09" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1197,7 +1147,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fix_1" class="md-nav__link">
+  <a href="#fix" class="md-nav__link">
     <span class="md-ellipsis">
       
         fix
@@ -1258,7 +1208,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#feat_1" class="md-nav__link">
+  <a href="#feat" class="md-nav__link">
     <span class="md-ellipsis">
       
         feat
@@ -1269,7 +1219,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fix_2" class="md-nav__link">
+  <a href="#fix_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         fix
@@ -1656,56 +1606,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#unreleased" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Unreleased
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Unreleased">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#feat" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        feat
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#fix" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        fix
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#behavior-change" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        behavior change
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#071-2026-04-09" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1718,7 +1618,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fix_1" class="md-nav__link">
+  <a href="#fix" class="md-nav__link">
     <span class="md-ellipsis">
       
         fix
@@ -1779,7 +1679,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#feat_1" class="md-nav__link">
+  <a href="#feat" class="md-nav__link">
     <span class="md-ellipsis">
       
         feat
@@ -1790,7 +1690,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fix_2" class="md-nav__link">
+  <a href="#fix_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         fix
@@ -2176,32 +2076,8 @@
 
 
 <h1 id="changelog"><a class="toclink" href="#changelog">Changelog</a><a class="headerlink" href="#changelog" title="Permanent link">#</a></h1>
-<h2 id="unreleased"><a class="toclink" href="#unreleased">Unreleased</a><a class="headerlink" href="#unreleased" title="Permanent link">#</a></h2>
-<h3 id="feat"><a class="toclink" href="#feat">feat</a><a class="headerlink" href="#feat" title="Permanent link">#</a></h3>
-<ul>
-<li><strong>statistical_glyph</strong>: <code>StatisticalGlyph</code> now accepts optional <code>fig</code> and
-  <code>ax</code> arguments so a histogram can be composed into a caller-supplied
-  figure/axes. Supplying <code>ax</code> draws into it (its figure is inferred);
-  supplying <code>fig</code> alone creates the axes on that figure; supplying neither
-  creates a new figure/axes as before.</li>
-</ul>
-<h3 id="fix"><a class="toclink" href="#fix">fix</a><a class="headerlink" href="#fix" title="Permanent link">#</a></h3>
-<ul>
-<li><strong>statistical_glyph</strong>: histogram styling (grid, axis labels, tick sizes)
-  is now applied via the target <code>Axes</code> (<code>ax.*</code>) instead of pyplot
-  (<code>plt.*</code>), so labels land on the intended axes when composing into an
-  existing figure.</li>
-</ul>
-<h3 id="behavior-change"><a class="toclink" href="#behavior-change">behavior change</a><a class="headerlink" href="#behavior-change" title="Permanent link">#</a></h3>
-<ul>
-<li><strong>array_glyph / statistical_glyph</strong>: <code>ArrayGlyph.plot()</code>,
-  <code>ArrayGlyph.animate()</code>, and <code>StatisticalGlyph.histogram()</code> no longer call
-  <code>plt.show()</code> internally. They return the <code>Figure</code>/<code>Axes</code> (and animation)
-  for the caller to display or save. In an interactive session call
-  <code>plt.show()</code> yourself to render the result.</li>
-</ul>
 <h2 id="071-2026-04-09"><a class="toclink" href="#071-2026-04-09">0.7.1 (2026-04-09)</a><a class="headerlink" href="#071-2026-04-09" title="Permanent link">#</a></h2>
-<h3 id="fix_1"><a class="toclink" href="#fix_1">fix</a><a class="headerlink" href="#fix_1" title="Permanent link">#</a></h3>
+<h3 id="fix"><a class="toclink" href="#fix">fix</a><a class="headerlink" href="#fix" title="Permanent link">#</a></h3>
 <ul>
 <li><strong>glyph</strong>: set <code>use_gridspec=False</code> for colorbar on subplot figures
   so colorbars allocate space locally instead of stealing from sibling
@@ -2225,7 +2101,7 @@
 <li>update README</li>
 </ul>
 <h2 id="070-2026-04-08"><a class="toclink" href="#070-2026-04-08">0.7.0 (2026-04-08)</a><a class="headerlink" href="#070-2026-04-08" title="Permanent link">#</a></h2>
-<h3 id="feat_1"><a class="toclink" href="#feat_1">feat</a><a class="headerlink" href="#feat_1" title="Permanent link">#</a></h3>
+<h3 id="feat"><a class="toclink" href="#feat">feat</a><a class="headerlink" href="#feat" title="Permanent link">#</a></h3>
 <ul>
 <li><strong>mesh</strong>: add MeshGlyph class for UGRID unstructured mesh
   visualization with tripcolor/tricontourf rendering, wireframe
@@ -2245,7 +2121,7 @@
 <li>add input validation for constructor arrays, data length, all-NaN
   data, constant data, and animation frame consistency</li>
 </ul>
-<h3 id="fix_2"><a class="toclink" href="#fix_2">fix</a><a class="headerlink" href="#fix_2" title="Permanent link">#</a></h3>
+<h3 id="fix_1"><a class="toclink" href="#fix_1">fix</a><a class="headerlink" href="#fix_1" title="Permanent link">#</a></h3>
 <ul>
 <li><strong>ci</strong>: correct PyPI release workflow (#94)</li>
 <li>fix ticks_spacing not propagated to <code>default_options</code>, causing
