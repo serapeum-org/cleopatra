@@ -146,7 +146,8 @@ class TestHistogramFigAxInjection:
         other_fig, other_ax = plt.subplots()
         stat = StatisticalGlyph(self._data())
         fig, ax, _ = stat.histogram()
-        assert isinstance(fig, Figure) and isinstance(ax, Axes)
+        assert isinstance(fig, Figure), f"histogram() should return a Figure, got {type(fig)}"
+        assert isinstance(ax, Axes), f"histogram() should return an Axes, got {type(ax)}"
         assert fig is not other_fig, "a new figure should have been created"
         assert ax is not other_ax, "a new axes should have been created"
 
