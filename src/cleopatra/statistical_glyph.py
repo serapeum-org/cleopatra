@@ -29,14 +29,15 @@ Here's an example of how to use the `Statistic` class:
 import numpy as np
 import matplotlib
 matplotlib.use("TkAgg")
-from cleopatra.statistics import Statistic
+import matplotlib.pyplot as plt
+from cleopatra.statistical_glyph import StatisticalGlyph
 
 # Create some random 1D data
 np.random.seed(1)
 data_1d = 4 + np.random.normal(0, 1.5, 200)
 
-# Create a Statistic object with the 1D data
-stat_plot_1d = Statistic(data_1d)
+# Create a StatisticalGlyph object with the 1D data
+stat_plot_1d = StatisticalGlyph(data_1d)
 
 # Generate a histogram plot for the 1D data
 fig_1d, ax_1d, hist_1d = stat_plot_1d.histogram()
@@ -44,15 +45,18 @@ fig_1d, ax_1d, hist_1d = stat_plot_1d.histogram()
 # Create some random 2D data
 data_2d = 4 + np.random.normal(0, 1.5, (200, 3))
 
-# Create a Statistic object with the 2D data
-stat_plot_2d = Statistic(data_2d, color=["red", "green", "blue"], alpha=0.4, rwidth=0.8)
+# Create a StatisticalGlyph object with the 2D data
+stat_plot_2d = StatisticalGlyph(data_2d, color=["red", "green", "blue"], alpha=0.4, rwidth=0.8)
 
 # Generate a histogram plot for the 2D data
 fig_2d, ax_2d, hist_2d = stat_plot_2d.histogram()
+
+# histogram() no longer calls plt.show() for you; display the figures yourself.
+plt.show()
 ```
 """
 
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -137,8 +141,8 @@ class StatisticalGlyph:
     def __init__(
         self,
         values: Union[List, np.ndarray],
-        fig: Figure = None,
-        ax: Axes = None,
+        fig: Optional[Figure] = None,
+        ax: Optional[Axes] = None,
         **kwargs,
     ):
         """Initialize the Statistic object with values and optional customization parameters.
@@ -147,11 +151,15 @@ class StatisticalGlyph:
             values: The numerical values to be plotted as histograms. Can be:
                 - 1D array/list for a single histogram
                 - 2D array/list for multiple histograms (one per column)
-            fig: Pre-existing matplotlib Figure to draw on. If None, a new
-                figure is created when ``histogram()`` is called.
+            fig: Pre-existing matplotlib Figure to draw on. Honoured in two ways
+                by ``histogram()``: if ``ax`` is also given, ``fig`` is returned
+                as-is alongside it; if ``ax`` is None, a new axes is created on
+                this figure (the figure is not replaced). If both ``fig`` and
+                ``ax`` are None, a brand-new figure is created.
             ax: Pre-existing matplotlib Axes to draw on. If None, new axes
                 are created when ``histogram()`` is called. When supplied,
-                the histogram is composed into the given axes.
+                the histogram is composed into the given axes and its parent
+                figure is inferred (unless ``fig`` is also passed explicitly).
             **kwargs: Additional keyword arguments to customize the histogram appearance.
                 Supported arguments include:
                 - figsize: Figure size as (width, height) in inches, by default (5, 5).
@@ -345,6 +353,15 @@ class StatisticalGlyph:
             different colors. The transparency (alpha) can be adjusted to make overlapping
             regions visible.
 
+            The figure and axes used depend on what was passed to ``__init__``:
+
+            - ``ax`` given: the histogram is drawn into that axes; the returned
+              figure is the one explicitly passed as ``fig`` if any, otherwise
+              the axes' own parent figure.
+            - ``fig`` given without ``ax``: a new axes is added to that figure
+              and used for drawing (the figure is reused, not replaced).
+            - neither given: a new figure and axes are created with ``figsize``.
+
         Examples:
             - 1D data.
 
@@ -413,7 +430,7 @@ class StatisticalGlyph:
                     >>> # Get the bin edges for the first data series
                     >>> bin_edges = hist['bins'][0]
 
-                    ``
+                    ```
         """
         for key, val in kwargs.items():
             if key not in self.default_options.keys():
@@ -427,6 +444,9 @@ class StatisticalGlyph:
         if self._ax is not None:
             ax = self._ax
             fig = self._fig if self._fig is not None else ax.get_figure()
+        elif self._fig is not None:
+            fig = self._fig
+            ax = fig.add_subplot(111)
         else:
             fig, ax = plt.subplots(figsize=self.default_options["figsize"])
 

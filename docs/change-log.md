@@ -1,5 +1,30 @@
 # Changelog
 
+## Unreleased
+
+### feat
+
+- **statistical_glyph**: `StatisticalGlyph` now accepts optional `fig` and
+  `ax` arguments so a histogram can be composed into a caller-supplied
+  figure/axes. Supplying `ax` draws into it (its figure is inferred);
+  supplying `fig` alone creates the axes on that figure; supplying neither
+  creates a new figure/axes as before.
+
+### fix
+
+- **statistical_glyph**: histogram styling (grid, axis labels, tick sizes)
+  is now applied via the target `Axes` (`ax.*`) instead of pyplot
+  (`plt.*`), so labels land on the intended axes when composing into an
+  existing figure.
+
+### behavior change
+
+- **array_glyph / statistical_glyph**: `ArrayGlyph.plot()`,
+  `ArrayGlyph.animate()`, and `StatisticalGlyph.histogram()` no longer call
+  `plt.show()` internally. They return the `Figure`/`Axes` (and animation)
+  for the caller to display or save. In an interactive session call
+  `plt.show()` yourself to render the result.
+
 ## 0.7.1 (2026-04-09)
 
 ### fix
