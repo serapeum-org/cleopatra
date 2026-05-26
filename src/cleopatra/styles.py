@@ -4,10 +4,13 @@ from __future__ import annotations
 
 from collections import OrderedDict
 from enum import StrEnum
-from typing import Callable
+from typing import Callable, Sequence
 
 import matplotlib.colors as colors
 import numpy as np
+from matplotlib.axes import Axes
+from matplotlib.legend import Legend
+from matplotlib.patches import Patch
 
 
 class ColorScale(StrEnum):
@@ -779,3 +782,91 @@ class MidpointNormalize(colors.Normalize):
         x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
 
         return np.ma.masked_array(np.interp(value, x, y))
+
+
+def disjoint_legend(
+    ax: Axes,
+    colors: Sequence,
+    labels: Sequence[str],
+    *,
+    edgecolor: str = "none",
+    **kwargs,
+) -> Legend:
+    """Attach a categorical (disjoint) swatch legend to an axes.
+
+    Builds one filled rectangle (`matplotlib.patches.Patch`) per
+    category and registers them as a legend on `ax`. This is the
+    discrete counterpart to a colorbar: use it when categories are
+    nominal/disjoint (land-cover classes, region names, ...) rather
+    than samples of a continuous scale, where a colorbar would imply a
+    false ordering.
+
+    Args:
+        ax: The axes the legend is attached to.
+        colors: One color per category, in any matplotlib color form
+            (name, hex, or RGB(A) tuple). Must be the same length as
+            `labels`.
+        labels: The category label drawn next to each swatch. Must be
+            the same length as `colors`.
+        edgecolor: Outline color for every swatch. Defaults to
+            `"none"` (no border), matching cleopatra's flat look.
+        **kwargs: Forwarded verbatim to `Axes.legend` (e.g. `title`,
+            `loc`, `ncol`, `bbox_to_anchor`, `fontsize`).
+
+    Returns:
+        Legend: The created legend artist, already added to `ax`.
+
+    Raises:
+        ValueError: If `colors` and `labels` have different lengths.
+
+    Examples:
+        - Build a three-class legend and read back its labels:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styles import disjoint_legend
+            >>> fig, ax = plt.subplots()
+            >>> legend = disjoint_legend(
+            ...     ax,
+            ...     ["#1b9e77", "#d95f02", "#7570b3"],
+            ...     ["water", "urban", "forest"],
+            ... )
+            >>> [t.get_text() for t in legend.get_texts()]
+            ['water', 'urban', 'forest']
+
+            ```
+        - Forward `Axes.legend` kwargs such as a title and column count:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styles import disjoint_legend
+            >>> fig, ax = plt.subplots()
+            >>> legend = disjoint_legend(
+            ...     ax, ["red", "blue"], ["hot", "cold"], title="Class", ncol=2
+            ... )
+            >>> legend.get_title().get_text()
+            'Class'
+
+            ```
+        - Mismatched lengths raise `ValueError`:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styles import disjoint_legend
+            >>> fig, ax = plt.subplots()
+            >>> disjoint_legend(ax, ["red", "blue"], ["only-one"])
+            Traceback (most recent call last):
+                ...
+            ValueError: colors and labels must have the same length, got 2 and 1.
+
+            ```
+    """
+    colors = list(colors)
+    labels = list(labels)
+    if len(colors) != len(labels):
+        raise ValueError(
+            "colors and labels must have the same length, got "
+            f"{len(colors)} and {len(labels)}."
+        )
+    handles = [
+        Patch(facecolor=color, edgecolor=edgecolor, label=label)
+        for color, label in zip(colors, labels)
+    ]
+    return ax.legend(handles=handles, **kwargs)
