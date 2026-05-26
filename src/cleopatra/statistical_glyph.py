@@ -52,11 +52,13 @@ fig_2d, ax_2d, hist_2d = stat_plot_2d.histogram()
 ```
 """
 
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Sequence, Tuple, Union
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
+from matplotlib.colors import Normalize
 from matplotlib.figure import Figure
 
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
@@ -456,3 +458,275 @@ class StatisticalGlyph:
         # ax1.tick_params(axis="y", color="#27408B")
         plt.show()
         return fig, ax, hist
+
+    def _resolve_fig_ax(
+        self, ax: Axes | None, fig: Figure | None
+    ) -> Tuple[Figure, Axes]:
+        """Return a `(fig, ax)` pair, creating one when none is given.
+
+        Unlike `histogram`, the renderers added in T7.3c compose into a
+        caller-supplied axes when provided (and never call `plt.show()`),
+        so they can be laid out into a larger figure.
+
+        Args:
+            ax: An existing axes to draw on, or None.
+            fig: An existing figure, or None. Ignored when `ax` is given
+                (the axes' own figure is used).
+
+        Returns:
+            Tuple[Figure, Axes]: The figure/axes to render into.
+        """
+        if ax is not None:
+            return ax.figure, ax
+        if fig is not None:
+            return fig, fig.add_subplot(111)
+        return plt.subplots(figsize=self.default_options["figsize"])
+
+    def _columns(self) -> List[np.ndarray]:
+        """Split the stored values into one 1D array per series.
+
+        Returns:
+            List[np.ndarray]: A single-element list for 1D values, or
+                one array per column for 2D values.
+        """
+        values = np.asarray(self.values)
+        if values.ndim == 1:
+            return [values]
+        return [values[:, i] for i in range(values.shape[1])]
+
+    def _apply_axis_labels(self, ax: Axes) -> None:
+        """Apply the styled x/y axis labels from default_options to `ax`."""
+        opts = self.default_options
+        ax.set_xlabel(opts["xlabel"], fontsize=opts["xlabel_font_size"])
+        ax.set_ylabel(opts["ylabel"], fontsize=opts["ylabel_font_size"])
+        ax.tick_params(axis="x", labelsize=opts["xtick_font_size"])
+        ax.tick_params(axis="y", labelsize=opts["ytick_font_size"])
+
+    def boxplot(
+        self,
+        ax: Axes = None,
+        fig: Figure = None,
+        labels: Sequence[str] | None = None,
+        notch: bool = False,
+        showfliers: bool = True,
+        **kwargs,
+    ) -> Tuple[Figure, Axes, Dict]:
+        """Draw a box-and-whisker plot of the stored values.
+
+        One box is drawn for 1D values; for 2D values one box is drawn
+        per column. Boxes are filled with the `color` option (cycled if
+        there are more series than colours). Composes into a supplied
+        `ax`/`fig` and does not call `plt.show()`.
+
+        Args:
+            ax: Axes to draw on. A new figure/axes is created when both
+                `ax` and `fig` are None.
+            fig: Figure to add an axes to when `ax` is None.
+            labels: Tick labels, one per box. Defaults to 1-based
+                series indices.
+            notch: Draw notched boxes (a rough CI around the median).
+                Default is False.
+            showfliers: Draw outlier points beyond the whiskers.
+                Default is True.
+            **kwargs: Forwarded to `Axes.boxplot`.
+
+        Returns:
+            Tuple[Figure, Axes, Dict]: The figure, the axes, and the
+                dict returned by `Axes.boxplot` (keys: `boxes`,
+                `medians`, `whiskers`, ...).
+
+        Examples:
+            - One box per column for 2D data:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.statistical_glyph import StatisticalGlyph
+                >>> np.random.seed(1)
+                >>> data = np.random.normal(0, 1, (50, 3))
+                >>> stat = StatisticalGlyph(data, color=["r", "g", "b"])
+                >>> fig, ax, bp = stat.boxplot()
+                >>> len(bp["boxes"])
+                3
+
+                ```
+        """
+        fig, ax = self._resolve_fig_ax(ax, fig)
+        columns = self._columns()
+        tick_labels = (
+            list(labels) if labels is not None
+            else [str(i + 1) for i in range(len(columns))]
+        )
+        bp = ax.boxplot(
+            columns,
+            notch=notch,
+            showfliers=showfliers,
+            tick_labels=tick_labels,
+            patch_artist=True,
+            **kwargs,
+        )
+        palette = self.default_options["color"]
+        for i, box in enumerate(bp["boxes"]):
+            box.set_facecolor(palette[i % len(palette)])
+            box.set_alpha(self.default_options["alpha"])
+        ax.grid(axis="y", alpha=self.default_options["grid_alpha"])
+        self._apply_axis_labels(ax)
+        return fig, ax, bp
+
+    def multiboxplot(
+        self,
+        positions: Sequence[float] | None = None,
+        labels: Sequence[str] | None = None,
+        ax: Axes = None,
+        fig: Figure = None,
+        widths: float = 0.5,
+        **kwargs,
+    ) -> Tuple[Figure, Axes, Dict]:
+        """Draw grouped boxes at explicit x positions.
+
+        Like `boxplot`, but the boxes are placed at caller-controlled
+        `positions` along the x axis (e.g. lead times, months), which is
+        the layout the earthkit `multiboxplot` uses for ensembles.
+        Requires 2D values (one column per box).
+
+        Args:
+            positions: x positions for the boxes, one per column.
+                Defaults to `1..n`.
+            labels: Tick labels, one per box. Defaults to the string of
+                each position.
+            ax: Axes to draw on. A new figure/axes is created when both
+                `ax` and `fig` are None.
+            fig: Figure to add an axes to when `ax` is None.
+            widths: Box width in data units. Default is 0.5.
+            **kwargs: Forwarded to `Axes.boxplot`.
+
+        Returns:
+            Tuple[Figure, Axes, Dict]: The figure, the axes, and the
+                `Axes.boxplot` dict.
+
+        Raises:
+            ValueError: If the values are not 2D, or if `positions` /
+                `labels` length does not match the number of columns.
+
+        Examples:
+            - Place three boxes at custom positions:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.statistical_glyph import StatisticalGlyph
+                >>> np.random.seed(1)
+                >>> data = np.random.normal(0, 1, (40, 3))
+                >>> stat = StatisticalGlyph(data, color=["r", "g", "b"])
+                >>> fig, ax, bp = stat.multiboxplot(positions=[1, 2, 4])
+                >>> [int(line.get_xdata().mean()) for line in bp["medians"]]
+                [1, 2, 4]
+
+                ```
+        """
+        values = np.asarray(self.values)
+        if values.ndim != 2:
+            raise ValueError(
+                "multiboxplot requires 2D values (one column per box); got "
+                f"{values.ndim}D."
+            )
+        columns = self._columns()
+        n = len(columns)
+        if positions is None:
+            positions = list(range(1, n + 1))
+        if len(positions) != n:
+            raise ValueError(
+                f"positions length ({len(positions)}) must match the number "
+                f"of columns ({n})."
+            )
+        if labels is not None and len(labels) != n:
+            raise ValueError(
+                f"labels length ({len(labels)}) must match the number of "
+                f"columns ({n})."
+            )
+
+        fig, ax = self._resolve_fig_ax(ax, fig)
+        bp = ax.boxplot(
+            columns,
+            positions=list(positions),
+            widths=widths,
+            patch_artist=True,
+            **kwargs,
+        )
+        palette = self.default_options["color"]
+        for i, box in enumerate(bp["boxes"]):
+            box.set_facecolor(palette[i % len(palette)])
+            box.set_alpha(self.default_options["alpha"])
+        ax.set_xticks(list(positions))
+        ax.set_xticklabels(
+            [str(p) for p in positions] if labels is None else list(labels)
+        )
+        ax.grid(axis="y", alpha=self.default_options["grid_alpha"])
+        self._apply_axis_labels(ax)
+        return fig, ax, bp
+
+    def stripes(
+        self,
+        ax: Axes = None,
+        fig: Figure = None,
+        cmap=None,
+        vmin: float | None = None,
+        vmax: float | None = None,
+        **kwargs,
+    ) -> Tuple[Figure, Axes, "mpl.container.BarContainer"]:
+        """Draw a warming-stripes band: one colour bar per value.
+
+        Each stored value becomes a full-height vertical stripe coloured
+        by `cmap` / the resolved `(vmin, vmax)` normalization — the
+        Ed-Hawkins "warming stripes" idiom. Requires 1D values. Composes
+        into a supplied `ax`/`fig` and does not call `plt.show()`.
+
+        Args:
+            ax: Axes to draw on. A new figure/axes is created when both
+                `ax` and `fig` are None.
+            fig: Figure to add an axes to when `ax` is None.
+            cmap: Colormap name or object. Defaults to the `cmap`
+                option.
+            vmin: Lower colour limit. Defaults to the data minimum.
+            vmax: Upper colour limit. Defaults to the data maximum.
+            **kwargs: Forwarded to `Axes.bar`.
+
+        Returns:
+            Tuple[Figure, Axes, BarContainer]: The figure, the axes, and
+                the bar container (one bar per value).
+
+        Raises:
+            ValueError: If the values are not 1D.
+
+        Examples:
+            - One stripe per yearly value:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.statistical_glyph import StatisticalGlyph
+                >>> series = np.array([0.1, 0.3, 0.2, 0.6, 0.9, 0.7])
+                >>> stat = StatisticalGlyph(series)
+                >>> fig, ax, bars = stat.stripes(cmap="coolwarm")
+                >>> len(bars)
+                6
+
+                ```
+        """
+        values = np.asarray(self.values, dtype=float)
+        if values.ndim != 1:
+            raise ValueError(
+                f"stripes requires 1D values; got {values.ndim}D."
+            )
+        fig, ax = self._resolve_fig_ax(ax, fig)
+        cmap = cmap if cmap is not None else self.default_options["cmap"]
+        cmap_obj = mpl.colormaps[cmap] if isinstance(cmap, str) else cmap
+        lo = float(np.nanmin(values)) if vmin is None else vmin
+        hi = float(np.nanmax(values)) if vmax is None else vmax
+        norm = Normalize(vmin=lo, vmax=hi)
+        bar_colors = cmap_obj(norm(values))
+        bars = ax.bar(
+            np.arange(values.size),
+            np.ones(values.size),
+            width=1.0,
+            color=bar_colors,
+            **kwargs,
+        )
+        ax.set_yticks([])
+        ax.set_xlim(-0.5, values.size - 0.5)
+        self._apply_axis_labels(ax)
+        return fig, ax, bars
