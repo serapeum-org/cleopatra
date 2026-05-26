@@ -1,6 +1,6 @@
 """
-The `Statistic` module provides a class for creating statistical plots, specifically histograms. The class, `Statistic`,
-is designed to handle both 1D (single-dimensional) and 2D (multi-dimensional) data.
+The `statistical_glyph` module provides a class for creating statistical plots, specifically histograms. The class,
+`StatisticalGlyph`, is designed to handle both 1D (single-dimensional) and 2D (multi-dimensional) data.
 
 The class has the following key features:
 
@@ -23,20 +23,21 @@ The class has the following key features:
     The class includes examples demonstrating how to use the histogram method with 1D and 2D data. The examples also
     include doctests to verify the correctness of the code.
 
-Here's an example of how to use the `Statistic` class:
+Here's an example of how to use the `StatisticalGlyph` class:
 
 ```python
 import numpy as np
 import matplotlib
 matplotlib.use("TkAgg")
-from cleopatra.statistics import Statistic
+import matplotlib.pyplot as plt
+from cleopatra.statistical_glyph import StatisticalGlyph
 
 # Create some random 1D data
 np.random.seed(1)
 data_1d = 4 + np.random.normal(0, 1.5, 200)
 
-# Create a Statistic object with the 1D data
-stat_plot_1d = Statistic(data_1d)
+# Create a StatisticalGlyph object with the 1D data
+stat_plot_1d = StatisticalGlyph(data_1d)
 
 # Generate a histogram plot for the 1D data
 fig_1d, ax_1d, hist_1d = stat_plot_1d.histogram()
@@ -44,15 +45,18 @@ fig_1d, ax_1d, hist_1d = stat_plot_1d.histogram()
 # Create some random 2D data
 data_2d = 4 + np.random.normal(0, 1.5, (200, 3))
 
-# Create a Statistic object with the 2D data
-stat_plot_2d = Statistic(data_2d, color=["red", "green", "blue"], alpha=0.4, rwidth=0.8)
+# Create a StatisticalGlyph object with the 2D data
+stat_plot_2d = StatisticalGlyph(data_2d, color=["red", "green", "blue"], alpha=0.4, rwidth=0.8)
 
 # Generate a histogram plot for the 2D data
 fig_2d, ax_2d, hist_2d = stat_plot_2d.histogram()
+
+# histogram() no longer calls plt.show() for you; display the figures yourself.
+plt.show()
 ```
 """
 
-from typing import Dict, List, Sequence, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -140,14 +144,28 @@ class StatisticalGlyph:
     def __init__(
         self,
         values: Union[List, np.ndarray],
+        fig: Optional[Figure] = None,
+        ax: Optional[Axes] = None,
         **kwargs,
     ):
-        """Initialize the Statistic object with values and optional customization parameters.
+        """Initialize the StatisticalGlyph object with values and optional customization parameters.
 
         Args:
             values: The numerical values to be plotted as histograms. Can be:
                 - 1D array/list for a single histogram
                 - 2D array/list for multiple histograms (one per column)
+            fig: Pre-existing matplotlib Figure to draw on. Honoured in two ways
+                by ``histogram()``: if ``ax`` is also given, ``fig`` is returned
+                as-is alongside it; if ``ax`` is None, a new axes is created on
+                this figure (the figure is not replaced). In the fig-only case
+                the figure must be empty — if it already contains axes,
+                ``histogram()`` raises ``ValueError`` and asks you to pass the
+                target ``ax`` explicitly. If both ``fig`` and ``ax`` are None, a
+                brand-new figure is created.
+            ax: Pre-existing matplotlib Axes to draw on. If None, new axes
+                are created when ``histogram()`` is called. When supplied,
+                the histogram is composed into the given axes and its parent
+                figure is inferred (unless ``fig`` is also passed explicitly).
             **kwargs: Additional keyword arguments to customize the histogram appearance.
                 Supported arguments include:
                 - figsize: Figure size as (width, height) in inches, by default (5, 5).
@@ -199,8 +217,20 @@ class StatisticalGlyph:
             ... )
 
             ```
+            Compose into a pre-existing axes:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> fig, ax = plt.subplots()
+            >>> stat = StatisticalGlyph(x, fig=fig, ax=ax)
+            >>> fig2, ax2, hist = stat.histogram()
+            >>> ax2 is ax
+            True
+
+            ```
         """
         self._values = values
+        self._fig = fig
+        self._ax = ax
         options_dict = DEFAULT_OPTIONS.copy()
         options_dict.update(kwargs)
         self._default_options = options_dict
@@ -323,11 +353,24 @@ class StatisticalGlyph:
             ValueError: If an invalid keyword argument is provided.
             ValueError: If the number of colors provided doesn't match the number of data series
                 (columns) in 2D data.
+            ValueError: If a ``fig`` was supplied without an ``ax`` and that figure already
+                contains axes (pass the target ``ax`` explicitly in that case).
 
         Notes:
             For 2D data, multiple histograms will be overlaid on the same plot with
             different colors. The transparency (alpha) can be adjusted to make overlapping
             regions visible.
+
+            The figure and axes used depend on what was passed to ``__init__``:
+
+            - ``ax`` given: the histogram is drawn into that axes; the returned
+              figure is the one explicitly passed as ``fig`` if any, otherwise
+              the axes' own parent figure.
+            - ``fig`` given without ``ax``: a new axes is added to that figure
+              and used for drawing (the figure is reused, not replaced). The
+              figure must be empty; if it already contains axes a ``ValueError``
+              is raised so the caller passes the target ``ax`` explicitly.
+            - neither given: a new figure and axes are created with ``figsize``.
 
         Examples:
             - 1D data.
@@ -397,7 +440,7 @@ class StatisticalGlyph:
                     >>> # Get the bin edges for the first data series
                     >>> bin_edges = hist['bins'][0]
 
-                    ``
+                    ```
         """
         for key, val in kwargs.items():
             if key not in self.default_options.keys():
@@ -408,7 +451,20 @@ class StatisticalGlyph:
             else:
                 self.default_options[key] = val
 
-        fig, ax = plt.subplots(figsize=self.default_options["figsize"])
+        if self._ax is not None:
+            ax = self._ax
+            fig = self._fig if self._fig is not None else ax.get_figure()
+        elif self._fig is not None:
+            fig = self._fig
+            if fig.axes:
+                raise ValueError(
+                    "The supplied `fig` already contains axes; pass the target axes via "
+                    "`ax=` so the histogram is drawn on a specific axes instead of being "
+                    "overlaid on the existing ones."
+                )
+            ax = fig.add_subplot(111)
+        else:
+            fig, ax = plt.subplots(figsize=self.default_options["figsize"])
 
         n = []
         bins = []
@@ -443,21 +499,18 @@ class StatisticalGlyph:
             bins.append(bins_i)
             patches.append(patches_i)
 
-        plt.grid(axis="y", alpha=self.default_options["grid_alpha"])
-        plt.xlabel(
+        ax.grid(axis="y", alpha=self.default_options["grid_alpha"])
+        ax.set_xlabel(
             self.default_options["xlabel"],
             fontsize=self.default_options["xlabel_font_size"],
         )
-        plt.ylabel(
+        ax.set_ylabel(
             self.default_options["ylabel"],
             fontsize=self.default_options["ylabel_font_size"],
         )
-        plt.xticks(fontsize=self.default_options["xtick_font_size"])
-        plt.yticks(fontsize=self.default_options["ytick_font_size"])
+        ax.tick_params(axis="x", labelsize=self.default_options["xtick_font_size"])
+        ax.tick_params(axis="y", labelsize=self.default_options["ytick_font_size"])
         hist = {"n": n, "bins": bins, "patches": patches}
-        # ax.yaxis.label.set_color("#27408B")
-        # ax1.tick_params(axis="y", color="#27408B")
-        plt.show()
         return fig, ax, hist
 
     def _resolve_fig_ax(
