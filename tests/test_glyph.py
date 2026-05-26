@@ -983,6 +983,7 @@ class TestArrayGlyphUnchangedByHelper:
         ag = ArrayGlyph(data)
         ag.plot()
         array_ticks = ag.get_ticks()
+        plt.close(ag.fig)
 
         g = _make_glyph()
         g._default_options["ticks_spacing"] = None
