@@ -90,6 +90,16 @@ class TestVectorGlyphInit:
         with pytest.raises(ValueError, match="not correct"):
             VectorGlyph(*field, nope=1)
 
+    def test_cbar_initialized_to_none(self, field):
+        """`cbar` is None before plot (L1 fix).
+
+        Test scenario:
+            Accessing `cbar` on a fresh glyph returns None rather than
+            raising AttributeError, matching ScatterGlyph/PolygonGlyph.
+        """
+        glyph = VectorGlyph(*field)
+        assert glyph.cbar is None, "cbar should be initialized to None in __init__"
+
 
 class TestVectorGlyphPlot:
     """Tests for VectorGlyph.plot."""

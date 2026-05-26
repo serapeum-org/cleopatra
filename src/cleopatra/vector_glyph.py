@@ -110,6 +110,7 @@ class VectorGlyph(Glyph):
                 f"u and v must have the same shape, got {self.u.shape} "
                 f"and {self.v.shape}."
             )
+        self.cbar = None
 
     @property
     def magnitude(self) -> np.ndarray:
