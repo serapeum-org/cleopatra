@@ -22,6 +22,7 @@ _SUBMODULES = [
     "config",
     "glyph",
     "mesh_glyph",
+    "polygon_glyph",
     "scatter_glyph",
     "statistical_glyph",
     "styles",
