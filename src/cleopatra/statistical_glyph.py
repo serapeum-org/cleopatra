@@ -556,6 +556,10 @@ class StatisticalGlyph:
             list(labels) if labels is not None
             else [str(i + 1) for i in range(len(columns))]
         )
+        # Honour a caller-supplied `positions` (forwarded via **kwargs)
+        # so the tick labels below land under the boxes; default is the
+        # 1..n that matplotlib's boxplot uses.
+        positions = list(kwargs.get("positions", range(1, len(columns) + 1)))
         bp = ax.boxplot(
             columns,
             notch=notch,
@@ -567,7 +571,7 @@ class StatisticalGlyph:
         # kwarg, whose name differs across matplotlib versions (`labels`
         # before 3.9, `tick_labels` from 3.9). This keeps the floor at
         # matplotlib 3.8.4 (see pyproject) working.
-        ax.set_xticks(range(1, len(columns) + 1))
+        ax.set_xticks(positions)
         ax.set_xticklabels(tick_labels)
         palette = self.default_options["color"]
         for i, box in enumerate(bp["boxes"]):

@@ -129,6 +129,28 @@ class TestBoxplot:
             "Single series should be labelled '1'"
         )
 
+    def test_positions_via_kwargs_keep_ticks_aligned(self):
+        """Forwarded `positions` keep tick locations under the boxes (L1 fix).
+
+        Test scenario:
+            Passing positions through **kwargs places the boxes at those
+            x positions, and the tick locations follow them (rather than
+            staying at the default 1..n), so labels stay under the boxes.
+        """
+        np.random.seed(1)
+        stat = StatisticalGlyph(
+            np.random.normal(0, 1, (20, 3)), color=["r", "g", "b"]
+        )
+        _, ax, bp = stat.boxplot(positions=[10, 20, 30])
+        box_x = [round(float(line.get_xdata().mean())) for line in bp["medians"]]
+        assert box_x == [10, 20, 30], f"Boxes should sit at positions, got {box_x}"
+        assert list(ax.get_xticks()) == [10, 20, 30], (
+            f"Ticks should follow positions, got {list(ax.get_xticks())}"
+        )
+        assert [t.get_text() for t in ax.get_xticklabels()] == ["1", "2", "3"], (
+            "Default labels should still be 1-based indices"
+        )
+
 
 class TestMultiboxplot:
     """Tests for StatisticalGlyph.multiboxplot (T7.3c)."""
