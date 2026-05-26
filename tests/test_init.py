@@ -26,6 +26,7 @@ _SUBMODULES = [
     "statistical_glyph",
     "styles",
     "tiles",
+    "vector_glyph",
 ]
 
 
