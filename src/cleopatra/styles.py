@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 from collections import OrderedDict
 from enum import StrEnum
 from typing import Callable, Sequence
@@ -1022,7 +1023,11 @@ def histogram_legend(
         cmap if cmap is not None else mpl.colormaps[mpl.rcParams["image.cmap"]]
     )
     if norm is None and mappable is not None:
-        norm = mappable.norm
+        # Copy so that mapping bin centres below cannot mutate the
+        # caller's norm (an unscaled norm would otherwise be
+        # autoscaled in place by the norm(centers) call). copy.copy
+        # preserves the norm subtype (e.g. BoundaryNorm).
+        norm = copy.copy(mappable.norm)
 
     counts, edges = np.histogram(values, bins=bins)
     centers = 0.5 * (edges[:-1] + edges[1:])

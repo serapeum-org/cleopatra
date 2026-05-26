@@ -361,3 +361,45 @@ class TestHistogramLegend:
         """
         with pytest.raises(ValueError, match="orientation must be"):
             histogram_legend(ax, [0.0, 1.0], cmap="viridis", orientation="diagonal")
+
+    def test_does_not_mutate_unscaled_mappable_norm(self, ax):
+        """Building from a mappable does not autoscale its norm (L3 fix).
+
+        Test scenario:
+            A ScalarMappable whose norm has vmin/vmax unset supplies the
+            cmap/norm while values are passed explicitly. histogram_legend
+            must copy the norm so mapping the bin centres does not
+            autoscale the caller's norm in place (vmin/vmax stay None).
+        """
+        from matplotlib.cm import ScalarMappable
+        from matplotlib.colors import Normalize
+
+        sm = ScalarMappable(norm=Normalize(), cmap="viridis")
+        assert sm.norm.vmin is None and sm.norm.vmax is None, "precondition: unscaled"
+
+        histogram_legend(ax, values=[0.0, 1.0, 2.0, 3.0], mappable=sm, bins=3)
+
+        assert sm.norm.vmin is None and sm.norm.vmax is None, (
+            f"mappable norm should remain unscaled, got "
+            f"vmin={sm.norm.vmin}, vmax={sm.norm.vmax}"
+        )
+
+    def test_preserves_boundary_norm_subtype_from_mappable(self, ax):
+        """A BoundaryNorm on the mappable is preserved (copy keeps subtype).
+
+        Test scenario:
+            A scatter coloured with a BoundaryNorm drives the legend; the
+            histogram still renders one bar per bin without raising.
+        """
+        from matplotlib.colors import BoundaryNorm
+
+        fig2, main_ax = plt.subplots()
+        norm = BoundaryNorm([0, 1, 2, 3], ncolors=256)
+        sc = main_ax.scatter(
+            [0, 1, 2, 3], [0, 1, 0, 1], c=[0.5, 1.5, 2.5, 0.5],
+            cmap="viridis", norm=norm,
+        )
+        bars = histogram_legend(ax, mappable=sc, bins=3)
+        assert len(bars) == 3, f"Expected 3 bars, got {len(bars)}"
+        assert norm.vmin == 0 and norm.vmax == 3, "Original BoundaryNorm untouched"
+        plt.close(fig2)
