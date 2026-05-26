@@ -59,6 +59,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.colors import Normalize
+from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
@@ -674,7 +675,7 @@ class StatisticalGlyph:
         vmin: float | None = None,
         vmax: float | None = None,
         **kwargs,
-    ) -> Tuple[Figure, Axes, "mpl.container.BarContainer"]:
+    ) -> Tuple[Figure, Axes, BarContainer]:
         """Draw a warming-stripes band: one colour bar per value.
 
         Each stored value becomes a full-height vertical stripe coloured

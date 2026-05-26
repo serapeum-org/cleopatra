@@ -233,3 +233,18 @@ class TestStripes:
         stat = StatisticalGlyph(np.ones((4, 2)))
         with pytest.raises(ValueError, match="requires 1D"):
             stat.stripes()
+
+    def test_return_annotation_resolves(self):
+        """stripes' return type hint resolves to BarContainer (N1 fix).
+
+        Test scenario:
+            typing.get_type_hints succeeds (the annotation no longer
+            references an unimported submodule) and the return type is
+            matplotlib's BarContainer.
+        """
+        import typing
+
+        hints = typing.get_type_hints(StatisticalGlyph.stripes)
+        assert typing.get_args(hints["return"]) == (Figure, Axes, BarContainer), (
+            f"Unexpected resolved return hint: {hints['return']}"
+        )
