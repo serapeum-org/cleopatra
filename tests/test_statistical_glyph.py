@@ -94,6 +94,41 @@ class TestBoxplot:
         _, ax, _ = stat.boxplot(labels=["A", "B"])
         assert [t.get_text() for t in ax.get_xticklabels()] == ["A", "B"]
 
+    def test_default_labels_are_one_based_indices(self):
+        """With no labels, ticks are labelled 1..n (H1 fix path).
+
+        Test scenario:
+            Labels default to 1-based series indices, set via
+            set_xticklabels (not boxplot's version-specific kwarg), so
+            three columns yield tick labels ["1", "2", "3"] and ticks
+            at [1, 2, 3].
+        """
+        np.random.seed(1)
+        stat = StatisticalGlyph(
+            np.random.normal(0, 1, (30, 3)), color=["r", "g", "b"]
+        )
+        _, ax, bp = stat.boxplot()
+        assert [t.get_text() for t in ax.get_xticklabels()] == ["1", "2", "3"], (
+            "Default labels should be 1-based indices"
+        )
+        assert list(ax.get_xticks()) == [1, 2, 3], (
+            f"Ticks should sit at box positions 1..n, got {list(ax.get_xticks())}"
+        )
+        assert len(bp["boxes"]) == 3, "Three boxes expected for three columns"
+
+    def test_single_series_default_label(self):
+        """A 1D sample gets a single '1' tick label (H1 fix path).
+
+        Test scenario:
+            One series -> one box labelled "1".
+        """
+        np.random.seed(1)
+        stat = StatisticalGlyph(np.random.normal(0, 1, 40))
+        _, ax, _ = stat.boxplot()
+        assert [t.get_text() for t in ax.get_xticklabels()] == ["1"], (
+            "Single series should be labelled '1'"
+        )
+
 
 class TestMultiboxplot:
     """Tests for StatisticalGlyph.multiboxplot (T7.3c)."""

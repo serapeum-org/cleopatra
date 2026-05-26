@@ -559,10 +559,15 @@ class StatisticalGlyph:
             columns,
             notch=notch,
             showfliers=showfliers,
-            tick_labels=tick_labels,
             patch_artist=True,
             **kwargs,
         )
+        # Set tick labels after the fact rather than via boxplot's label
+        # kwarg, whose name differs across matplotlib versions (`labels`
+        # before 3.9, `tick_labels` from 3.9). This keeps the floor at
+        # matplotlib 3.8.4 (see pyproject) working.
+        ax.set_xticks(range(1, len(columns) + 1))
+        ax.set_xticklabels(tick_labels)
         palette = self.default_options["color"]
         for i, box in enumerate(bp["boxes"]):
             box.set_facecolor(palette[i % len(palette)])
