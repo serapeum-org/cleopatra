@@ -9,7 +9,16 @@ import pytest
 from matplotlib.legend import Legend
 from matplotlib.patches import Patch
 
-from cleopatra.styles import ColorScale, Styles, disjoint_legend
+from matplotlib.colorbar import Colorbar
+from matplotlib.container import BarContainer
+
+from cleopatra.styles import (
+    ColorScale,
+    Styles,
+    colorbar_legend,
+    disjoint_legend,
+    histogram_legend,
+)
 
 
 def test_create_instance():
@@ -193,3 +202,162 @@ class TestDiscreteContourfAcceptance:
             f"Colorbar ticks should equal the level edges, got {ticks}"
         )
         plt.close("all")
+
+
+class TestColorbarLegend:
+    """Tests for cleopatra.styles.colorbar_legend (T5.3c)."""
+
+    @pytest.fixture()
+    def scatter(self):
+        """A coloured scatter mappable on its own axes.
+
+        Returns:
+            tuple: (axes, PathCollection) with a value array attached.
+        """
+        fig, ax = plt.subplots()
+        sc = ax.scatter([0, 1, 2], [0, 1, 0], c=[10.0, 20.0, 30.0])
+        yield ax, sc
+        plt.close(fig)
+
+    def test_returns_colorbar(self, scatter):
+        """A Colorbar is created for the mappable.
+
+        Test scenario:
+            The helper returns a matplotlib Colorbar instance.
+        """
+        ax, sc = scatter
+        cbar = colorbar_legend(sc, ax)
+        assert isinstance(cbar, Colorbar), f"Expected Colorbar, got {type(cbar)}"
+
+    def test_label_forwarded(self, scatter):
+        """The label kwarg is forwarded to Figure.colorbar.
+
+        Test scenario:
+            label='depth' surfaces on the colorbar axis.
+        """
+        ax, sc = scatter
+        cbar = colorbar_legend(sc, ax, label="depth")
+        assert cbar.ax.get_ylabel() == "depth", (
+            f"Unexpected colorbar label: {cbar.ax.get_ylabel()}"
+        )
+
+    def test_infers_axes_from_mappable(self, scatter):
+        """With no ax, the mappable's own axes is used.
+
+        Test scenario:
+            Omitting ax still produces a colorbar (axes inferred).
+        """
+        _, sc = scatter
+        cbar = colorbar_legend(sc)
+        assert isinstance(cbar, Colorbar), "Should infer axes from the mappable"
+
+    def test_no_axes_raises(self):
+        """A detached mappable with no ax raises ValueError.
+
+        Test scenario:
+            A ScalarMappable not attached to any axes and ax=None fails.
+        """
+        from matplotlib.cm import ScalarMappable
+
+        sm = ScalarMappable()
+        sm.set_array([0.0, 1.0])
+        with pytest.raises(ValueError, match="determine an axes"):
+            colorbar_legend(sm)
+
+
+class TestHistogramLegend:
+    """Tests for cleopatra.styles.histogram_legend (T5.3c)."""
+
+    @pytest.fixture()
+    def ax(self):
+        """A fresh axes closed after the test."""
+        fig, ax = plt.subplots()
+        yield ax
+        plt.close(fig)
+
+    def test_returns_one_bar_per_bin(self, ax):
+        """A BarContainer with one bar per bin is returned.
+
+        Test scenario:
+            bins=3 -> three bars from the explicit values.
+        """
+        bars = histogram_legend(
+            ax, [0.0, 1.0, 1.0, 2.0, 2.0, 2.0], cmap="viridis", bins=3
+        )
+        assert isinstance(bars, BarContainer), f"Expected BarContainer, got {type(bars)}"
+        assert len(bars) == 3, f"Expected 3 bars, got {len(bars)}"
+
+    def test_bars_coloured_by_cmap(self, ax):
+        """Bars take distinct colours across the colormap.
+
+        Test scenario:
+            The first and last bar differ in colour (cmap applied).
+        """
+        bars = histogram_legend(ax, np.linspace(0, 10, 100), cmap="viridis", bins=5)
+        first = bars.patches[0].get_facecolor()
+        last = bars.patches[-1].get_facecolor()
+        assert first != last, "First and last bars should differ in colour"
+
+    def test_inherits_cmap_norm_and_array_from_mappable(self, ax):
+        """cmap/norm/data are taken from a mappable when values is None.
+
+        Test scenario:
+            A scatter mappable's array drives the histogram (4 points,
+            4 bins -> 4 bars) with no explicit values.
+        """
+        fig2, main_ax = plt.subplots()
+        sc = main_ax.scatter(
+            [0, 1, 2, 3], [0, 1, 0, 1], c=[1.0, 2.0, 3.0, 4.0], cmap="plasma"
+        )
+        bars = histogram_legend(ax, mappable=sc, bins=4)
+        assert len(bars) == 4, f"Expected 4 bars from the mappable array, got {len(bars)}"
+        plt.close(fig2)
+
+    def test_horizontal_orientation(self, ax):
+        """Horizontal orientation draws barh bars.
+
+        Test scenario:
+            orientation='horizontal' still yields one bar per bin.
+        """
+        bars = histogram_legend(
+            ax, [0.0, 1.0, 2.0, 3.0], cmap="viridis", bins=2, orientation="horizontal"
+        )
+        assert len(bars) == 2, f"Expected 2 horizontal bars, got {len(bars)}"
+
+    def test_non_finite_values_dropped(self, ax):
+        """NaN/inf entries are filtered before histogramming.
+
+        Test scenario:
+            A values array with NaNs still histograms the finite part.
+        """
+        bars = histogram_legend(
+            ax, [0.0, np.nan, 1.0, np.inf, 2.0], cmap="viridis", bins=2
+        )
+        assert len(bars) == 2, "Non-finite values should be dropped, not crash"
+
+    def test_no_values_and_no_mappable_raises(self, ax):
+        """Calling with neither values nor a mappable raises ValueError.
+
+        Test scenario:
+            Missing data source is rejected.
+        """
+        with pytest.raises(ValueError, match="Provide `values`"):
+            histogram_legend(ax)
+
+    def test_all_non_finite_raises(self, ax):
+        """All-non-finite values raise ValueError.
+
+        Test scenario:
+            No finite data to histogram is rejected.
+        """
+        with pytest.raises(ValueError, match="No finite values"):
+            histogram_legend(ax, [np.nan, np.inf], cmap="viridis")
+
+    def test_invalid_orientation_raises(self, ax):
+        """An invalid orientation raises ValueError.
+
+        Test scenario:
+            orientation must be vertical or horizontal.
+        """
+        with pytest.raises(ValueError, match="orientation must be"):
+            histogram_legend(ax, [0.0, 1.0], cmap="viridis", orientation="diagonal")

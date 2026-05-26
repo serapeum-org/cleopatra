@@ -6,9 +6,13 @@ from collections import OrderedDict
 from enum import StrEnum
 from typing import Callable, Sequence
 
+import matplotlib as mpl
 import matplotlib.colors as colors
 import numpy as np
 from matplotlib.axes import Axes
+from matplotlib.cm import ScalarMappable
+from matplotlib.colorbar import Colorbar
+from matplotlib.container import BarContainer
 from matplotlib.legend import Legend
 from matplotlib.patches import Patch
 
@@ -870,3 +874,163 @@ def disjoint_legend(
         for color, label in zip(colors, labels)
     ]
     return ax.legend(handles=handles, **kwargs)
+
+
+def colorbar_legend(mappable: ScalarMappable, ax: Axes = None, **kwargs) -> Colorbar:
+    """Attach a continuous colorbar legend for a mappable.
+
+    A thin, glyph-agnostic wrapper over `Figure.colorbar` for callers
+    that already hold a mappable (the artist returned by
+    `scatter` / `imshow` / `quiver` / a glyph's `plot`) and just want a
+    matching colorbar. For full cleopatra colorbar styling (label size,
+    location, shrink) use `Glyph.create_color_bar` instead; this helper
+    is the minimal counterpart that sits alongside `disjoint_legend`
+    and `histogram_legend`.
+
+    Args:
+        mappable: A `matplotlib.cm.ScalarMappable` (e.g. the result of
+            `ax.scatter(..., c=values)`), carrying the cmap/norm to map.
+        ax: Axes to steal space from for the colorbar. Defaults to the
+            mappable's own axes. The parent figure is inferred from
+            whichever axes is used.
+        **kwargs: Forwarded to `Figure.colorbar` (e.g. `label`,
+            `orientation`, `shrink`, `ticks`, `extend`).
+
+    Returns:
+        Colorbar: The created colorbar.
+
+    Raises:
+        ValueError: If no axes can be determined (the mappable is not
+            attached to an axes and `ax` is None).
+
+    Examples:
+        - Build a colorbar for a coloured scatter and read its label:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styles import colorbar_legend
+            >>> fig, ax = plt.subplots()
+            >>> sc = ax.scatter([0, 1, 2], [0, 1, 0], c=[10, 20, 30])
+            >>> cbar = colorbar_legend(sc, ax, label="depth")
+            >>> cbar.ax.get_ylabel()
+            'depth'
+
+            ```
+    """
+    parent_ax = ax if ax is not None else getattr(mappable, "axes", None)
+    if parent_ax is None:
+        raise ValueError(
+            "Cannot determine an axes for the colorbar: pass `ax` or use a "
+            "mappable already attached to an axes."
+        )
+    fig = parent_ax.figure
+    return fig.colorbar(mappable, ax=parent_ax, **kwargs)
+
+
+def histogram_legend(
+    ax: Axes,
+    values: np.ndarray | None = None,
+    *,
+    mappable: ScalarMappable | None = None,
+    cmap=None,
+    norm: colors.Normalize | None = None,
+    bins: int = 20,
+    orientation: str = "vertical",
+    **bar_kwargs,
+) -> BarContainer:
+    """Draw a colour-mapped histogram as a distribution legend.
+
+    Renders a histogram of `values` whose bars are coloured by the same
+    colormap/norm used for the data, so the legend doubles as a
+    distribution plot — the third legend style alongside the continuous
+    colorbar and the categorical `disjoint_legend`. The colour mapping
+    can be taken straight from a `mappable` (so it matches a glyph's
+    plot exactly) or supplied explicitly via `cmap` / `norm`.
+
+    Args:
+        ax: Axes to draw the histogram on (typically a small companion
+            axes beside the main plot).
+        values: 1D data to histogram. Non-finite entries are dropped.
+            Defaults to the mappable's array when `values` is None.
+        mappable: Optional `ScalarMappable` to inherit `cmap`, `norm`,
+            and (when `values` is None) the data array from.
+        cmap: Colormap name or object. Falls back to the mappable's
+            cmap, then to matplotlib's default. Ignored when a
+            `mappable` provides one and `cmap` is None.
+        norm: Normalization for mapping bin centres to colours. Falls
+            back to the mappable's norm, then to a linear norm spanning
+            the data.
+        bins: Number of histogram bins. Default is 20.
+        orientation: `"vertical"` (bars rise with count) or
+            `"horizontal"` (bars extend rightwards). Default is
+            `"vertical"`.
+        **bar_kwargs: Forwarded to `Axes.bar` / `Axes.barh`
+            (e.g. `edgecolor`, `alpha`).
+
+    Returns:
+        BarContainer: The bars drawn, one per bin.
+
+    Raises:
+        ValueError: If neither `values` nor a `mappable` with an array
+            is provided, if there are no finite values, or if
+            `orientation` is not `"vertical"` / `"horizontal"`.
+
+    Examples:
+        - Histogram legend from explicit values and a colormap:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styles import histogram_legend
+            >>> fig, ax = plt.subplots()
+            >>> bars = histogram_legend(
+            ...     ax, [0.0, 1.0, 1.0, 2.0, 2.0, 2.0], cmap="viridis", bins=3
+            ... )
+            >>> len(bars)
+            3
+
+            ```
+        - Inherit cmap/norm/data straight from a mappable:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styles import histogram_legend
+            >>> fig, (ax, legend_ax) = plt.subplots(1, 2)
+            >>> sc = ax.scatter([0, 1, 2, 3], [0, 1, 0, 1], c=[1, 2, 3, 4], cmap="plasma")
+            >>> bars = histogram_legend(legend_ax, mappable=sc, bins=4)
+            >>> len(bars)
+            4
+
+            ```
+    """
+    if orientation not in ("vertical", "horizontal"):
+        raise ValueError(
+            f"orientation must be 'vertical' or 'horizontal', got "
+            f"{orientation!r}."
+        )
+
+    if values is None:
+        if mappable is None or mappable.get_array() is None:
+            raise ValueError(
+                "Provide `values` or a `mappable` carrying a data array."
+            )
+        values = np.asarray(mappable.get_array()).ravel()
+    values = np.asarray(values, dtype=float)
+    values = values[np.isfinite(values)]
+    if values.size == 0:
+        raise ValueError("No finite values to histogram.")
+
+    if cmap is None and mappable is not None:
+        cmap = mappable.cmap
+    cmap_obj = mpl.colormaps[cmap] if isinstance(cmap, str) else (
+        cmap if cmap is not None else mpl.colormaps[mpl.rcParams["image.cmap"]]
+    )
+    if norm is None and mappable is not None:
+        norm = mappable.norm
+
+    counts, edges = np.histogram(values, bins=bins)
+    centers = 0.5 * (edges[:-1] + edges[1:])
+    widths = np.diff(edges)
+    if norm is None:
+        norm = colors.Normalize(vmin=float(edges[0]), vmax=float(edges[-1]))
+    bar_colors = cmap_obj(norm(centers))
+
+    if orientation == "vertical":
+        return ax.bar(centers, counts, width=widths, color=bar_colors, **bar_kwargs)
+    return ax.barh(centers, counts, height=widths, color=bar_colors, **bar_kwargs)
