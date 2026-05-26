@@ -646,8 +646,8 @@ class StatisticalGlyph:
         """Draw grouped boxes at explicit x positions.
 
         Like `boxplot`, but the boxes are placed at caller-controlled
-        `positions` along the x axis (e.g. lead times, months), which is
-        the layout the earthkit `multiboxplot` uses for ensembles.
+        `positions` along the x axis (e.g. lead times, months) — the
+        usual layout for comparing ensembles side by side.
         Requires 2D values (one column per box).
 
         Args:
