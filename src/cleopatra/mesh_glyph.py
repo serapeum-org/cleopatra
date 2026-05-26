@@ -340,6 +340,7 @@ class MeshGlyph(Glyph):
         location: str,
         edgecolor: str = "none",
         norm=None,
+        filled: bool = True,
         **render_kwargs,
     ):
         """Render mesh data on axes and return the mappable.
@@ -350,10 +351,16 @@ class MeshGlyph(Glyph):
             location: `"face"` or `"node"`.
             edgecolor: Edge color for face rendering.
             norm: Color normalization.
-            **render_kwargs: Passed to tripcolor or tricontourf.
+            filled: For node data, whether to draw filled contours
+                (`tricontourf`, the default) or line contours
+                (`tricontour`). Ignored for face data, which always uses
+                `tripcolor`.
+            **render_kwargs: Passed to tripcolor, tricontourf, or
+                tricontour.
 
         Returns:
-            ScalarMappable: The tripcolor or tricontourf result.
+            ScalarMappable: The tripcolor, tricontourf, or tricontour
+                result.
         """
         tri = self.triangulation
         cmap = self.default_options["cmap"]
@@ -380,7 +387,9 @@ class MeshGlyph(Glyph):
             if vmax is not None:
                 contour_kw["vmax"] = vmax
         contour_kw.update(render_kwargs)
-        return ax.tricontourf(tri, data, **contour_kw)
+        if filled:
+            return ax.tricontourf(tri, data, **contour_kw)
+        return ax.tricontour(tri, data, **contour_kw)
 
     def plot(
         self,
@@ -390,13 +399,16 @@ class MeshGlyph(Glyph):
         edgecolor: str = "none",
         colorbar: bool = True,
         title: str | None = None,
+        filled: bool = True,
         **kwargs: Any,
     ) -> tuple[plt.Figure, plt.Axes]:
         """Plot mesh data using matplotlib triangulation.
 
         For face-centered data, uses `tripcolor` where each triangle
         is colored by the value of its parent face. For node-centered
-        data, uses `tricontourf` for smooth interpolated contours.
+        data, uses `tricontourf` for smooth interpolated filled
+        contours, or `tricontour` for line contours when
+        `filled=False`.
 
         Supports all 5 color scale types from `default_options`:
         linear, power, sym-lognorm, boundary-norm, and midpoint.
@@ -412,11 +424,14 @@ class MeshGlyph(Glyph):
                 `"none"`.
             colorbar: Whether to add a colorbar. Default is True.
             title: Plot title. Overrides `default_options["title"]`.
+            filled: For node data, draw filled contours (`tricontourf`,
+                the default) or line contours (`tricontour`) when
+                `False`. Ignored for face data. Default is True.
             **kwargs: Override any key in `default_options` (cmap,
                 vmin, vmax, color_scale, gamma, midpoint, bounds,
                 ticks_spacing, cbar_orientation, cbar_label, figsize,
                 etc.) or pass extra rendering kwargs (levels for
-                tricontourf).
+                tricontourf / tricontour).
 
         Returns:
             tuple[Figure, Axes]: The matplotlib Figure and Axes objects.
@@ -452,6 +467,22 @@ class MeshGlyph(Glyph):
                 >>> fig, ax = mg.plot(
                 ...     np.array([0.0, 1.0, 2.0, 3.0]),
                 ...     location="node",
+                ... )
+
+                ```
+            - Plot node-centered data as line contours
+                (`tricontour`) instead of filled:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.mesh_glyph import MeshGlyph
+                >>> node_x = np.array([0.0, 1.0, 0.5, 1.5])
+                >>> node_y = np.array([0.0, 0.0, 1.0, 1.0])
+                >>> faces = np.array([[0, 1, 2], [1, 3, 2]])
+                >>> mg = MeshGlyph(node_x, node_y, faces)
+                >>> fig, ax = mg.plot(
+                ...     np.array([0.0, 1.0, 2.0, 3.0]),
+                ...     location="node",
+                ...     filled=False,
                 ... )
 
                 ```
@@ -526,6 +557,7 @@ class MeshGlyph(Glyph):
             location,
             edgecolor=edgecolor,
             norm=norm,
+            filled=filled,
             **render_kwargs,
         )
 

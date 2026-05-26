@@ -412,7 +412,7 @@ notebook = [
 requires-dist = [
     { name = "ffmpeg-python" },
     { name = "hpc-utils", specifier = ">=0.1.4" },
-    { name = "matplotlib", specifier = ">=3.8.4" },
+    { name = "matplotlib", specifier = ">=3.9" },
     { name = "mercantile", marker = "extra == 'tiles'", specifier = ">=1.2.1" },
     { name = "numpy", specifier = ">=2.0.0" },
     { name = "pillow", marker = "extra == 'tiles'", specifier = ">=12.1.1" },

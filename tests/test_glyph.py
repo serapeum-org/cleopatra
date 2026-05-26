@@ -769,3 +769,227 @@ class TestSaveAnimationVideoBranch:
         target = tmp_path / "movie.mp4"
         with pytest.raises(FileNotFoundError, match="ffmpeg.org"):
             g.save_animation(str(target))
+
+
+class TestResolveLimits:
+    """Tests for Glyph._resolve_limits (T0.0)."""
+
+    def test_auto_resolves_both_from_data(self):
+        """Both limits unset -> taken from the nan-aware data range.
+
+        Test scenario:
+            vmin/vmax are None, so the finite min/max of the data
+            (1.0, 9.0) are returned as floats.
+        """
+        g = _make_glyph()
+        vmin, vmax = g._resolve_limits(np.array([5.0, 1.0, 9.0]))
+        assert (vmin, vmax) == (1.0, 9.0), f"Expected (1.0, 9.0), got {(vmin, vmax)}"
+        assert isinstance(vmin, float) and isinstance(vmax, float), (
+            "Limits must be returned as plain floats"
+        )
+
+    def test_explicit_vmin_preserved(self):
+        """An explicit vmin is kept; only the missing vmax comes from data.
+
+        Test scenario:
+            vmin=0.0 pinned, vmax=None -> returns (0.0, data_max).
+        """
+        g = _make_glyph()
+        g._default_options["vmin"] = 0.0
+        vmin, vmax = g._resolve_limits(np.array([1.0, 5.0, 9.0]))
+        assert (vmin, vmax) == (0.0, 9.0), f"Expected (0.0, 9.0), got {(vmin, vmax)}"
+
+    def test_explicit_vmax_preserved(self):
+        """An explicit vmax is kept; only the missing vmin comes from data.
+
+        Test scenario:
+            vmax=20.0 pinned, vmin=None -> returns (data_min, 20.0).
+        """
+        g = _make_glyph()
+        g._default_options["vmax"] = 20.0
+        vmin, vmax = g._resolve_limits(np.array([3.0, 5.0, 9.0]))
+        assert (vmin, vmax) == (3.0, 20.0), f"Expected (3.0, 20.0), got {(vmin, vmax)}"
+
+    def test_both_explicit_ignores_data(self):
+        """When both limits are pinned the data range is not consulted.
+
+        Test scenario:
+            vmin=-1.0, vmax=1.0 -> returned verbatim even though the data
+            spans a wider range.
+        """
+        g = _make_glyph()
+        g._default_options["vmin"] = -1.0
+        g._default_options["vmax"] = 1.0
+        vmin, vmax = g._resolve_limits(np.array([-100.0, 100.0]))
+        assert (vmin, vmax) == (-1.0, 1.0), f"Expected (-1.0, 1.0), got {(vmin, vmax)}"
+
+    def test_nan_aware_with_partial_nans(self):
+        """NaNs are ignored when computing the data range.
+
+        Test scenario:
+            A mix of NaN and finite values resolves to the finite min/max.
+        """
+        g = _make_glyph()
+        vmin, vmax = g._resolve_limits(np.array([np.nan, 2.0, np.nan, 8.0]))
+        assert (vmin, vmax) == (2.0, 8.0), f"Expected (2.0, 8.0), got {(vmin, vmax)}"
+
+    def test_all_nan_raises_valueerror(self):
+        """An all-NaN array with unpinned limits raises ValueError.
+
+        Test scenario:
+            No finite values and no explicit limits -> a clear ValueError
+            rather than a downstream NaN crash.
+        """
+        g = _make_glyph()
+        with pytest.raises(ValueError, match="no finite values") as exc:
+            g._resolve_limits(np.array([np.nan, np.nan]))
+        assert "vmin/vmax" in str(exc.value), f"Unexpected message: {exc.value}"
+
+    def test_all_nan_with_explicit_limits_ok(self):
+        """All-NaN data is fine when both limits are pinned explicitly.
+
+        Test scenario:
+            vmin/vmax pinned -> nanmin/nanmax are never consulted, so
+            all-NaN data does not raise.
+        """
+        g = _make_glyph()
+        g._default_options["vmin"] = 0.0
+        g._default_options["vmax"] = 1.0
+        vmin, vmax = g._resolve_limits(np.array([np.nan, np.nan]))
+        assert (vmin, vmax) == (0.0, 1.0), f"Expected (0.0, 1.0), got {(vmin, vmax)}"
+
+
+class TestPrepareScalarMapping:
+    """Tests for Glyph._prepare_scalar_mapping (T0.0)."""
+
+    def test_auto_limits_set_options_and_ticks(self):
+        """Auto limits populate default_options and return matching ticks.
+
+        Test scenario:
+            vmin/vmax/ticks_spacing all unset -> resolved from data,
+            ticks_spacing derived as range/10, and ticks span 0..10.
+        """
+        g = _make_glyph()
+        g._default_options["ticks_spacing"] = None
+        norm, cbar_kw, ticks = g._prepare_scalar_mapping(np.array([0.0, 5.0, 10.0]))
+        assert norm is None, "Linear scale with no levels should give norm=None"
+        assert g.default_options["vmin"] == 0.0, "vmin should be written back"
+        assert g.default_options["vmax"] == 10.0, "vmax should be written back"
+        assert g.default_options["ticks_spacing"] == 1.0, (
+            f"ticks_spacing should be range/10=1.0, got {g.default_options['ticks_spacing']}"
+        )
+        np.testing.assert_array_almost_equal(ticks, np.arange(0.0, 11.0, 1.0))
+
+    def test_vmin_vmax_written_back_for_get_ticks(self):
+        """Resolved limits are visible to get_ticks via default_options.
+
+        Test scenario:
+            After the call, get_ticks() reproduces the same tick array,
+            proving the limits were written into default_options.
+        """
+        g = _make_glyph()
+        g._default_options["ticks_spacing"] = None
+        _, _, ticks = g._prepare_scalar_mapping(np.array([2.0, 12.0]))
+        np.testing.assert_array_almost_equal(ticks, g.get_ticks())
+
+    def test_explicit_ticks_spacing_preserved(self):
+        """A pinned ticks_spacing is not overwritten by the range/10 rule.
+
+        Test scenario:
+            ticks_spacing=5 stays 5 even though range/10 would be 1.0.
+        """
+        g = _make_glyph()
+        g._default_options["ticks_spacing"] = 5.0
+        g._prepare_scalar_mapping(np.array([0.0, 10.0]))
+        assert g.default_options["ticks_spacing"] == 5.0, (
+            f"Explicit ticks_spacing should be preserved, got "
+            f"{g.default_options['ticks_spacing']}"
+        )
+
+    def test_flat_data_ticks_spacing_guard(self):
+        """Flat data does not yield a zero ticks_spacing.
+
+        Test scenario:
+            All values equal -> range is 0, but the `or 1.0` guard keeps
+            ticks_spacing at 1.0 so get_ticks() does not return empty.
+        """
+        g = _make_glyph()
+        g._default_options["ticks_spacing"] = None
+        _, _, ticks = g._prepare_scalar_mapping(np.array([3.0, 3.0, 3.0]))
+        assert g.default_options["ticks_spacing"] == 1.0, (
+            f"Flat-data spacing should be guarded to 1.0, got "
+            f"{g.default_options['ticks_spacing']}"
+        )
+        assert len(ticks) >= 1, "Ticks should not be empty for flat data"
+
+    def test_all_nan_raises_valueerror(self):
+        """All-NaN input propagates the _resolve_limits ValueError.
+
+        Test scenario:
+            No finite values and no explicit limits -> ValueError.
+        """
+        g = _make_glyph()
+        with pytest.raises(ValueError, match="no finite values"):
+            g._prepare_scalar_mapping(np.array([np.nan, np.nan]))
+
+    def test_levels_forwarded_into_norm(self):
+        """An integer `levels` produces a BoundaryNorm via the helper.
+
+        Test scenario:
+            levels=5 under the default linear scale -> BoundaryNorm and a
+            colorbar tick set sized to the levels.
+        """
+        g = _make_glyph()
+        g._default_options["ticks_spacing"] = None
+        g._default_options["levels"] = 5
+        norm, cbar_kw, _ = g._prepare_scalar_mapping(np.array([0.0, 10.0]))
+        assert isinstance(norm, mcolors.BoundaryNorm), (
+            f"levels should yield a BoundaryNorm, got {type(norm)}"
+        )
+        assert cbar_kw["extend"] == "both", (
+            f"levels should default extend to 'both', got {cbar_kw['extend']}"
+        )
+
+    def test_color_scale_forwarded_into_norm(self):
+        """A non-linear color_scale is honoured by the helper.
+
+        Test scenario:
+            color_scale='power' -> the returned norm is a PowerNorm built
+            from the resolved limits.
+        """
+        g = _make_glyph()
+        g._default_options["ticks_spacing"] = None
+        g._default_options["color_scale"] = "power"
+        norm, _, _ = g._prepare_scalar_mapping(np.array([0.0, 10.0]))
+        assert isinstance(norm, mcolors.PowerNorm), (
+            f"color_scale='power' should yield a PowerNorm, got {type(norm)}"
+        )
+
+
+class TestArrayGlyphUnchangedByHelper:
+    """Regression: ArrayGlyph's tick output matches the shared helper (T0.0)."""
+
+    def test_arrayglyph_ticks_match_helper_path(self):
+        """A bare Glyph using the helper reproduces ArrayGlyph's ticks.
+
+        Test scenario:
+            For the same data and auto limits, the helper-driven ticks
+            equal those ArrayGlyph computes for its non-robust/non-center
+            path, confirming the contract is identical.
+        """
+        from cleopatra.array_glyph import ArrayGlyph
+
+        data = np.array([[0.0, 2.0, 4.0], [6.0, 8.0, 10.0]])
+        ag = ArrayGlyph(data)
+        ag.plot()
+        array_ticks = ag.get_ticks()
+        plt.close(ag.fig)
+
+        g = _make_glyph()
+        g._default_options["ticks_spacing"] = None
+        _, _, helper_ticks = g._prepare_scalar_mapping(data)
+        np.testing.assert_array_almost_equal(
+            helper_ticks,
+            array_ticks,
+            err_msg="Helper ticks should match ArrayGlyph's ticks for the same data",
+        )

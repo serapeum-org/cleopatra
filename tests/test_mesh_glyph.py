@@ -334,6 +334,91 @@ class TestPlot:
         assert fig is not None
 
 
+class TestPlotLineContour:
+    """Tests for the node line-contour path (`filled=False`, T4.1c)."""
+
+    def _node_glyph(self):
+        """Build a fresh 2-triangle MeshGlyph for node-data tests.
+
+        Returns:
+            MeshGlyph: A glyph over four nodes / two triangles.
+        """
+        node_x = np.array([0.0, 1.0, 0.5, 1.5])
+        node_y = np.array([0.0, 0.0, 1.0, 1.0])
+        faces = np.array([[0, 1, 2], [1, 3, 2]])
+        return MeshGlyph(node_x, node_y, faces)
+
+    def test_render_mesh_filled_true_is_filled(self):
+        """_render_mesh(filled=True) yields a filled TriContourSet.
+
+        Test scenario:
+            The default node path renders filled contours (`tricontourf`).
+        """
+        mg = self._node_glyph()
+        mg.fig, mg.ax = mg.create_figure_axes()
+        mg.default_options["vmin"], mg.default_options["vmax"] = 0.0, 3.0
+        cs = mg._render_mesh(mg.ax, np.array([0.0, 1.0, 2.0, 3.0]), "node", filled=True)
+        assert cs.filled is True, "filled=True should produce a filled contour set"
+        plt.close(mg.fig)
+
+    def test_render_mesh_filled_false_is_line(self):
+        """_render_mesh(filled=False) yields a line TriContourSet.
+
+        Test scenario:
+            The opt-in node path renders line contours (`tricontour`).
+        """
+        mg = self._node_glyph()
+        mg.fig, mg.ax = mg.create_figure_axes()
+        mg.default_options["vmin"], mg.default_options["vmax"] = 0.0, 3.0
+        cs = mg._render_mesh(mg.ax, np.array([0.0, 1.0, 2.0, 3.0]), "node", filled=False)
+        assert cs.filled is False, "filled=False should produce a line contour set"
+        plt.close(mg.fig)
+
+    def test_plot_filled_false_returns_fig_ax(self):
+        """plot(location='node', filled=False) renders without error.
+
+        Test scenario:
+            The public plot entry point accepts filled=False for node
+            data and returns a Figure/Axes.
+        """
+        mg = self._node_glyph()
+        fig, ax = mg.plot(
+            np.array([0.0, 1.0, 2.0, 3.0]), location="node", filled=False
+        )
+        assert fig is not None and ax is not None, "Should return a Figure and Axes"
+        plt.close(fig)
+
+    def test_plot_filled_false_honours_levels(self):
+        """Line contours honour an explicit `levels` count.
+
+        Test scenario:
+            Passing levels through kwargs reaches tricontour without
+            error (the levels/cmap options are forwarded).
+        """
+        mg = self._node_glyph()
+        fig, ax = mg.plot(
+            np.array([0.0, 1.0, 2.0, 3.0]),
+            location="node",
+            filled=False,
+            levels=4,
+        )
+        assert fig is not None, "Should render line contours with explicit levels"
+        plt.close(fig)
+
+    def test_face_data_ignores_filled_flag(self, triangle_glyph):
+        """Face data always uses tripcolor regardless of `filled`.
+
+        Test scenario:
+            filled=False on face data still renders (tripcolor), proving
+            the flag only affects the node path.
+        """
+        fig, ax = triangle_glyph.plot(
+            np.array([1.0, 2.0]), location="face", filled=False
+        )
+        assert fig is not None, "Face data should render irrespective of filled"
+        plt.close(fig)
+
+
 class TestPlotOutline:
     """Tests for MeshGlyph.plot_outline()."""
 
