@@ -1663,6 +1663,12 @@ class ArrayGlyph(Glyph):
         Raises:
             ValueError: If an invalid keyword argument is provided.
 
+        Notes:
+            This method does not call ``plt.show()``; it returns the Figure and Axes so
+            the caller can compose, save, or display them. In an interactive session call
+            ``plt.show()`` yourself (or ``fig.savefig(...)`` to write the plot to disk)
+            after ``plot()`` returns.
+
         Examples:
         - Basic array plot:
 
@@ -2080,7 +2086,6 @@ class ArrayGlyph(Glyph):
         #     im.norm(self.default_options["background_color_threshold"])
         # else:
         #     im.norm(self.vmax) / 2.0
-        plt.show()
         return fig, ax
 
     def facet(
@@ -2515,6 +2520,10 @@ class ArrayGlyph(Glyph):
             For example, if the array has shape (10, 20, 30), the animation will have 10 frames,
             each showing a 20x30 slice of the array.
 
+            This method does not call ``plt.show()``; it returns the ``FuncAnimation`` so the
+            caller controls display. In an interactive (non-notebook) session call
+            ``plt.show()`` yourself to play it, or use ``save_animation`` to write it to a file.
+
             To display the animation in a Jupyter notebook, you may need to use:
             ```python
             from IPython.display import HTML
@@ -2820,7 +2829,6 @@ class ArrayGlyph(Glyph):
             blit=True,
         )
         self._anim = anim
-        plt.show()
         return anim
 
     # @staticmethod
