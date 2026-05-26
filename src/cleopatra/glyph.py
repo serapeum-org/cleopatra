@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 import math
+import warnings
 
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
@@ -419,6 +420,173 @@ class Glyph:
         else:
             bounds = np.sort(np.asarray(levels, dtype=float))
         return bounds
+
+    def _resolve_limits(self, values: np.ndarray) -> tuple[float, float]:
+        """Resolve `(vmin, vmax)` from options, falling back to the data range.
+
+        Reads `vmin` / `vmax` from `default_options`; whichever is `None`
+        (or absent) is filled from the nan-aware min/max of `values`. This
+        mirrors the simple branch of `ArrayGlyph._resolve_color_limits`
+        (the `robust` / `center` / `percentile` machinery stays an
+        `ArrayGlyph` concern). All-NaN input is detected and rejected here
+        rather than surfacing later as an opaque failure inside
+        `get_ticks()` or matplotlib.
+
+        Args:
+            values: The scalar array that will be colour-mapped. Used to
+                supply data-driven limits when `vmin` / `vmax` are unset.
+
+        Returns:
+            tuple[float, float]: The resolved `(vmin, vmax)` as floats.
+
+        Raises:
+            ValueError: If a limit cannot be resolved to a finite number
+                (e.g. `values` is empty or all-NaN and the corresponding
+                limit was not pinned explicitly).
+
+        Examples:
+            - Auto-resolve both limits from the data:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyph import Glyph
+                >>> from cleopatra.styles import DEFAULT_OPTIONS
+                >>> opts = DEFAULT_OPTIONS.copy()
+                >>> opts.update({"vmin": None, "vmax": None})
+                >>> g = Glyph(default_options=opts)
+                >>> g._resolve_limits(np.array([1.0, 5.0, 9.0]))
+                (1.0, 9.0)
+
+                ```
+            - An explicit limit is preserved; only the missing one is
+                taken from the data:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyph import Glyph
+                >>> from cleopatra.styles import DEFAULT_OPTIONS
+                >>> opts = DEFAULT_OPTIONS.copy()
+                >>> opts.update({"vmin": 0.0, "vmax": None})
+                >>> g = Glyph(default_options=opts)
+                >>> g._resolve_limits(np.array([1.0, 5.0, 9.0]))
+                (0.0, 9.0)
+
+                ```
+            - An all-NaN array with unpinned limits raises `ValueError`:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyph import Glyph
+                >>> from cleopatra.styles import DEFAULT_OPTIONS
+                >>> opts = DEFAULT_OPTIONS.copy()
+                >>> opts.update({"vmin": None, "vmax": None})
+                >>> g = Glyph(default_options=opts)
+                >>> g._resolve_limits(np.array([np.nan, np.nan]))
+                Traceback (most recent call last):
+                    ...
+                ValueError: Cannot determine vmin/vmax: no finite values...
+
+                ```
+        """
+        vmin = self.default_options.get("vmin")
+        vmax = self.default_options.get("vmax")
+        if vmin is None or vmax is None:
+            # nanmin/nanmax on an all-NaN array return NaN with a
+            # RuntimeWarning; compute quietly and validate below so the
+            # failure is a clear ValueError rather than a downstream crash.
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", RuntimeWarning)
+                data_min = np.nanmin(values)
+                data_max = np.nanmax(values)
+            vmin = data_min if vmin is None else vmin
+            vmax = data_max if vmax is None else vmax
+        if not (np.isfinite(vmin) and np.isfinite(vmax)):
+            raise ValueError(
+                "Cannot determine vmin/vmax: no finite values. Pass "
+                "explicit vmin/vmax, or filter the array first."
+            )
+        return float(vmin), float(vmax)
+
+    def _prepare_scalar_mapping(
+        self, values: np.ndarray
+    ) -> tuple[colors.Normalize | None, dict, np.ndarray]:
+        """Build the `(norm, cbar_kw, ticks)` triple shared by coloured glyphs.
+
+        This is the single home for the scalar-mapping contract that every
+        colour-by-value glyph needs. It:
+
+        1. resolves `(vmin, vmax)` from `default_options`, falling back to
+           the data range via `_resolve_limits`;
+        2. derives a sensible `ticks_spacing` of `(vmax - vmin) / 10` when
+           the caller left it unset (`None`), guarding flat data so the
+           spacing is never zero;
+        3. writes `vmin`, `vmax`, and `ticks_spacing` back into
+           `default_options` so the existing `get_ticks()` — which reads
+           from `default_options` — can see them; and
+        4. computes the ticks and forwards them to
+           `_create_norm_and_cbar_kw`, honouring `levels` / `color_scale`.
+
+        Subclasses call this instead of re-deriving the contract (which is
+        easy to get subtly wrong: `get_ticks()` does not read `self._vmin`,
+        and `np.arange(None, None)` raises).
+
+        Args:
+            values: The scalar array to be colour-mapped (e.g. point
+                values, vector magnitudes, per-polygon values).
+
+        Returns:
+            tuple[Normalize or None, dict, np.ndarray]: the matplotlib norm
+                (`None` for a plain linear scale), the colorbar keyword
+                arguments from `_create_norm_and_cbar_kw`, and the computed
+                tick positions.
+
+        Raises:
+            ValueError: Propagated from `_resolve_limits` when no finite
+                limits can be determined.
+
+        Examples:
+            - Auto limits resolve from the data and produce a non-`None`
+                `ticks_spacing` plus continuous-scale ticks:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyph import Glyph
+                >>> from cleopatra.styles import DEFAULT_OPTIONS
+                >>> opts = DEFAULT_OPTIONS.copy()
+                >>> opts.update({"vmin": None, "vmax": None, "ticks_spacing": None})
+                >>> g = Glyph(default_options=opts)
+                >>> norm, cbar_kw, ticks = g._prepare_scalar_mapping(
+                ...     np.array([0.0, 5.0, 10.0])
+                ... )
+                >>> norm is None
+                True
+                >>> g.default_options["ticks_spacing"]
+                1.0
+                >>> [float(t) for t in ticks]
+                [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
+
+                ```
+            - Flat data does not produce a zero spacing:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyph import Glyph
+                >>> from cleopatra.styles import DEFAULT_OPTIONS
+                >>> opts = DEFAULT_OPTIONS.copy()
+                >>> opts.update({"vmin": None, "vmax": None, "ticks_spacing": None})
+                >>> g = Glyph(default_options=opts)
+                >>> _ = g._prepare_scalar_mapping(np.array([3.0, 3.0, 3.0]))
+                >>> g.default_options["ticks_spacing"]
+                1.0
+
+                ```
+        """
+        self._vmin, self._vmax = self._resolve_limits(np.asarray(values))
+        if self.default_options.get("ticks_spacing") is None:
+            # `or 1.0` guards flat data (vmax == vmin -> spacing 0), which
+            # would make get_ticks()'s np.arange produce an empty array.
+            self.ticks_spacing = (self._vmax - self._vmin) / 10 or 1.0
+            self.default_options["ticks_spacing"] = self.ticks_spacing
+        self.default_options["vmin"] = self._vmin
+        self.default_options["vmax"] = self._vmax
+        ticks = self.get_ticks()
+        norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
+        return norm, cbar_kw, ticks
 
     def create_color_bar(self, ax: Axes, im: Any, cbar_kw: dict) -> Colorbar:
         """Create a colorbar with full customization from default_options.
