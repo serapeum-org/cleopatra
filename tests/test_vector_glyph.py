@@ -143,6 +143,41 @@ class TestVectorGlyphPlot:
         assert im.get_array() is not None, "Streamplot lines should carry a colour array"
         assert glyph.cbar is not None, "A colorbar should be attached"
 
+    def test_streamplot_clim_pinned_to_tick_range(self):
+        """streamplot colour limits match the tick range (L2 fix).
+
+        Test scenario:
+            On the linear path, the LineCollection clim equals the
+            colorbar tick range (ticks[0], ticks[-1]) so colours and the
+            colorbar agree — matching the quiver/barbs behaviour.
+        """
+        y, x = np.mgrid[0:5, 0:5].astype(float)
+        u = np.full_like(x, 3.0)
+        v = np.full_like(y, 4.0)
+        glyph = VectorGlyph(x, y, u, v, vmin=0.0, vmax=10.0, ticks_spacing=2.0)
+        _, _, im = glyph.plot(kind="streamplot")
+        ticks = glyph.get_ticks()
+        assert im.get_clim() == (ticks[0], ticks[-1]), (
+            f"streamplot clim should equal the tick range, got {im.get_clim()}"
+        )
+
+    def test_quiver_clim_pinned_to_tick_range(self):
+        """quiver colour limits also match the tick range (parity check).
+
+        Test scenario:
+            quiver's clim equals (ticks[0], ticks[-1]) on the linear
+            path, the behaviour streamplot is aligned to.
+        """
+        x, y = np.meshgrid(np.arange(3.0), np.arange(3.0))
+        u = np.full_like(x, 3.0)
+        v = np.full_like(y, 4.0)
+        glyph = VectorGlyph(x, y, u, v, vmin=0.0, vmax=10.0, ticks_spacing=2.0)
+        _, _, im = glyph.plot(kind="quiver")
+        ticks = glyph.get_ticks()
+        assert im.get_clim() == (ticks[0], ticks[-1]), (
+            f"quiver clim should equal the tick range, got {im.get_clim()}"
+        )
+
     def test_unknown_kind_raises(self, field):
         """An unrecognised kind raises ValueError before drawing.
 

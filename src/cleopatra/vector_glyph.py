@@ -216,6 +216,11 @@ class VectorGlyph(Glyph):
             im = stream.lines
             if im.get_array() is None:
                 im.set_array(np.asarray(mag).ravel())
+            # streamplot has no clim kwarg; pin its LineCollection to the
+            # same tick range quiver/barbs use so colours and colorbar
+            # agree on the linear (norm is None) path.
+            if norm is None:
+                im.set_clim(ticks[0], ticks[-1])
 
         self.cbar = self.create_color_bar(ax, im, cbar_kw)
 
