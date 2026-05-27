@@ -273,22 +273,59 @@ class MeshGlyph(Glyph):
         if not np.any(counts >= 3):
             raise ValueError("Cannot create triangulation: no faces with 3+ nodes.")
 
-        if np.all(counts == 3):
+        # Fast path only when the connectivity is already a clean (n, 3)
+        # array; a wider padded array where every face happens to be a
+        # triangle still needs fill values stripped below.
+        if self._face_nodes.shape[1] == 3 and np.all(counts == 3):
             self._cached_tri_array = self._face_nodes.copy()
             return self._cached_tri_array
 
-        triangles: list[list[int]] = []
-        for i in range(self.n_faces):
-            row = self._face_nodes[i]
-            nodes = row[row != self._fill_value]
-            n = len(nodes)
-            if n < 3:
-                continue
-            for j in range(1, n - 1):
-                triangles.append([int(nodes[0]), int(nodes[j]), int(nodes[j + 1])])
+        # Vectorized fan decomposition for mixed-element meshes. Valid node
+        # indices are compacted in face/row order, so face i occupies the
+        # slice flat_nodes[face_start[i] : face_start[i] + counts[i]].
+        flat_nodes = self._face_nodes[self._face_nodes != self._fill_value].astype(
+            np.intp
+        )
+        face_start = np.cumsum(counts) - counts
 
-        self._cached_tri_array = np.array(triangles, dtype=np.intp)
+        # A face with c valid nodes produces (c - 2) fan triangles.
+        valid = counts >= 3
+        base = np.repeat(face_start[valid], counts[valid] - 2)
+        # Local triangle index t in [0, c-3] for each output triangle, built
+        # as a concatenated per-face arange without a Python loop.
+        t = self._grouped_arange(counts[valid] - 2)
+
+        # Triangle (v0, v_{t+1}, v_{t+2}) fanning from each face's first vertex.
+        first = flat_nodes[base]
+        second = flat_nodes[base + 1 + t]
+        third = flat_nodes[base + 2 + t]
+
+        self._cached_tri_array = np.stack([first, second, third], axis=1)
         return self._cached_tri_array
+
+    @staticmethod
+    def _grouped_arange(sizes: np.ndarray) -> np.ndarray:
+        """Concatenated per-group ranges: ``[0..s0-1, 0..s1-1, ...]``.
+
+        Vectorized equivalent of
+        ``np.concatenate([np.arange(s) for s in sizes])``.
+
+        Args:
+            sizes: 1D array of group sizes. Each entry must be >= 1.
+
+        Returns:
+            np.ndarray: 1D intp array of length ``sizes.sum()``.
+        """
+        sizes = np.asarray(sizes, dtype=np.intp)
+        total = int(sizes.sum())
+        if total == 0:
+            return np.empty(0, dtype=np.intp)
+        # Start with a step of 1 everywhere, then reset to 0 at each group
+        # boundary so the cumulative sum restarts the count per group.
+        steps = np.ones(total, dtype=np.intp)
+        steps[0] = 0
+        steps[np.cumsum(sizes)[:-1]] = 1 - sizes[:-1]
+        return np.cumsum(steps)
 
     def _map_face_to_triangle_values(self, face_values: np.ndarray) -> np.ndarray:
         """Map per-face values to per-triangle values.
@@ -819,21 +856,35 @@ class MeshGlyph(Glyph):
             ends = np.column_stack([self._node_x[n2], self._node_y[n2]])
             return np.stack([starts, ends], axis=1)
 
-        edges: set[tuple[int, int]] = set()
-        for i in range(self.n_faces):
-            row = self._face_nodes[i]
-            nodes = row[row != self._fill_value]
-            n = len(nodes)
-            for j in range(n):
-                a, b = int(nodes[j]), int(nodes[(j + 1) % n])
-                key = (min(a, b), max(a, b))
-                edges.add(key)
-
-        if not edges:
+        counts = self.nodes_per_face
+        # Compacted valid node indices in face/row order; face i occupies the
+        # slice flat_nodes[face_start[i] : face_start[i] + counts[i]].
+        flat_nodes = self._face_nodes[self._face_nodes != self._fill_value].astype(
+            np.intp
+        )
+        if flat_nodes.size == 0:
             return np.empty((0, 2, 2), dtype=np.float64)
 
-        edge_arr = np.array(list(edges), dtype=np.intp)
-        n1, n2 = edge_arr[:, 0], edge_arr[:, 1]
+        face_start = np.cumsum(counts) - counts
+        # Each valid node starts one polygon edge to the next node within the
+        # same face, wrapping from the last node back to the first.
+        next_pos = np.arange(flat_nodes.size, dtype=np.intp) + 1
+        nonempty = counts >= 1
+        last_pos = face_start[nonempty] + counts[nonempty] - 1
+        next_pos[last_pos] = face_start[nonempty]
+
+        a = flat_nodes
+        b = flat_nodes[next_pos]
+        # Undirected edges: order endpoints, then drop duplicates. Encode each
+        # pair as a single int64 key (lo * n_nodes + hi) so deduplication is a
+        # fast 1-D unique rather than a row-wise lexsort.
+        lo = np.minimum(a, b).astype(np.int64)
+        hi = np.maximum(a, b).astype(np.int64)
+        sorted_keys = np.sort(lo * self.n_nodes + hi)
+        keys = sorted_keys[
+            np.concatenate(([True], sorted_keys[1:] != sorted_keys[:-1]))
+        ]
+        n1, n2 = keys // self.n_nodes, keys % self.n_nodes
         starts = np.column_stack([self._node_x[n1], self._node_y[n1]])
         ends = np.column_stack([self._node_x[n2], self._node_y[n2]])
         return np.stack([starts, ends], axis=1)

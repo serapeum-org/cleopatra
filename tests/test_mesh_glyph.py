@@ -239,6 +239,35 @@ class TestTriangulation:
         with pytest.raises(ValueError, match="no faces with 3"):
             _ = mg.triangulation
 
+    def test_padded_all_triangle_strips_fill(self):
+        """Test that triangles in a wider padded array exclude fill values.
+
+        Every face is a triangle but the connectivity array has 4 columns
+        padded with the fill value; the triangulation must not leak ``-1``.
+        """
+        mg = MeshGlyph(
+            np.array([0.0, 1.0, 0.5, 1.5]),
+            np.array([0.0, 0.0, 1.0, 1.0]),
+            np.array([[0, 1, 2, -1], [1, 3, 2, -1]], dtype=np.intp),
+            fill_value=-1,
+        )
+        tris = mg._fan_triangles()
+        assert tris.shape == (2, 3), f"Expected (2, 3), got {tris.shape}"
+        assert tris.min() >= 0, "Fill value leaked into triangulation"
+        np.testing.assert_array_equal(tris, np.array([[0, 1, 2], [1, 3, 2]]))
+
+    def test_mixed_mesh_indices_correct(self, mixed_glyph):
+        """Test fan triangle indices for a known quad + triangle mesh."""
+        expected = np.array(
+            [
+                [0, 1, 4],  # quad [0,1,4,3] -> fan
+                [0, 4, 3],
+                [1, 2, 5],  # triangle
+                [1, 5, 4],  # triangle
+            ]
+        )
+        np.testing.assert_array_equal(mixed_glyph._fan_triangles(), expected)
+
 
 class TestMapFaceToTriangleValues:
     """Tests for face-to-triangle value mapping."""
@@ -489,6 +518,98 @@ class TestEdgeSegments:
             2,
             2,
         ), f"Expected empty segments, got shape {segs.shape}"
+
+
+class TestVectorizedEquivalenceAndPerformance:
+    """Tests that the vectorized triangulation/edge derivation are correct
+    and fast on large mixed-element meshes."""
+
+    @staticmethod
+    def _reference_triangles(face_nodes, fill):
+        """Original Python-loop fan triangulation, used as ground truth."""
+        out = []
+        for row in face_nodes:
+            nodes = row[row != fill]
+            n = len(nodes)
+            for j in range(1, n - 1):
+                out.append((int(nodes[0]), int(nodes[j]), int(nodes[j + 1])))
+        return set(out)
+
+    @staticmethod
+    def _reference_edges(face_nodes, fill):
+        """Original Python-loop edge derivation, used as ground truth."""
+        edges = set()
+        for row in face_nodes:
+            nodes = row[row != fill]
+            n = len(nodes)
+            for j in range(n):
+                a, b = int(nodes[j]), int(nodes[(j + 1) % n])
+                edges.add((min(a, b), max(a, b)))
+        return edges
+
+    def test_vectorized_matches_reference_on_random_meshes(self):
+        """Test vectorized output matches the naive loop on random meshes."""
+        rng = np.random.default_rng(42)
+        for _ in range(100):
+            n_faces = int(rng.integers(1, 8))
+            max_nodes = int(rng.integers(3, 6))
+            n_nodes = int(rng.integers(4, 12))
+            faces = np.full((n_faces, max_nodes), -1, dtype=np.intp)
+            for i in range(n_faces):
+                c = int(rng.integers(0, max_nodes + 1))
+                if c > 0:
+                    faces[i, :c] = rng.integers(0, n_nodes, size=c)
+            node_x = rng.random(n_nodes)
+            node_y = rng.random(n_nodes)
+            counts = np.sum(faces != -1, axis=1)
+
+            if np.any(counts >= 3):
+                tris = MeshGlyph(node_x, node_y, faces)._fan_triangles()
+                got_tris = set(map(tuple, tris.tolist()))
+                assert got_tris == self._reference_triangles(faces, -1)
+
+            segs = MeshGlyph(node_x, node_y, faces)._build_edge_segments()
+            coord_to_idx = {
+                (round(x, 12), round(y, 12)): i
+                for i, (x, y) in enumerate(zip(node_x, node_y))
+            }
+            got_edges = set()
+            for seg in segs:
+                i = coord_to_idx[(round(seg[0, 0], 12), round(seg[0, 1], 12))]
+                j = coord_to_idx[(round(seg[1, 0], 12), round(seg[1, 1], 12))]
+                got_edges.add((min(i, j), max(i, j)))
+            assert got_edges == self._reference_edges(faces, -1)
+
+    def test_large_mixed_mesh_performance(self):
+        """Test 100k mixed-element mesh triangulation/edges run under 100ms."""
+        import time
+
+        n = 100_000
+        rng = np.random.default_rng(0)
+        node_x = rng.random(n * 2)
+        node_y = rng.random(n * 2)
+        faces = np.column_stack(
+            [
+                np.arange(0, n * 2, 2),
+                np.arange(1, n * 2 + 1, 2),
+                np.arange(1, n * 2 + 1, 2) + 1,
+                np.full(n, -1),
+            ]
+        ).astype(np.intp)
+        # Make alternate rows quads so the mesh is genuinely mixed-element.
+        faces[::2, 3] = faces[::2, 2]
+        faces[faces >= n * 2] = n * 2 - 1
+
+        t0 = time.perf_counter()
+        MeshGlyph(node_x, node_y, faces, fill_value=-1)._fan_triangles()
+        tri_ms = (time.perf_counter() - t0) * 1000
+
+        t1 = time.perf_counter()
+        MeshGlyph(node_x, node_y, faces, fill_value=-1)._build_edge_segments()
+        edge_ms = (time.perf_counter() - t1) * 1000
+
+        assert tri_ms < 100, f"_fan_triangles too slow: {tri_ms:.1f}ms"
+        assert edge_ms < 100, f"_build_edge_segments too slow: {edge_ms:.1f}ms"
 
 
 class TestMeshGlyphSubplots:
