@@ -264,6 +264,39 @@ class MeshGlyph(Glyph):
 
         Raises:
             ValueError: If no valid triangles can be formed.
+
+        Examples:
+            - A single quad fans into two triangles from its first vertex:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.mesh_glyph import MeshGlyph
+                >>> mg = MeshGlyph(
+                ...     np.array([0.0, 1.0, 1.0, 0.0]),
+                ...     np.array([0.0, 0.0, 1.0, 1.0]),
+                ...     np.array([[0, 1, 2, 3]]),
+                ... )
+                >>> mg._fan_triangles()
+                array([[0, 1, 2],
+                       [0, 2, 3]])
+
+                ```
+            - A mixed mesh (quad + triangle) keeps faces in order; the
+                quad's two triangles come first, then the triangle:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.mesh_glyph import MeshGlyph
+                >>> mg = MeshGlyph(
+                ...     np.array([0.0, 1.0, 2.0, 0.0, 1.0]),
+                ...     np.array([0.0, 0.0, 0.0, 1.0, 1.0]),
+                ...     np.array([[0, 1, 4, 3], [1, 2, 4, -1]]),
+                ...     fill_value=-1,
+                ... )
+                >>> mg._fan_triangles()
+                array([[0, 1, 4],
+                       [0, 4, 3],
+                       [1, 2, 4]])
+
+                ```
         """
         if self._cached_tri_array is not None:
             return self._cached_tri_array
@@ -273,22 +306,79 @@ class MeshGlyph(Glyph):
         if not np.any(counts >= 3):
             raise ValueError("Cannot create triangulation: no faces with 3+ nodes.")
 
-        if np.all(counts == 3):
+        # Fast path only when the connectivity is already a clean (n, 3)
+        # array; a wider padded array where every face happens to be a
+        # triangle still needs fill values stripped below.
+        if self._face_nodes.shape[1] == 3 and np.all(counts == 3):
             self._cached_tri_array = self._face_nodes.copy()
             return self._cached_tri_array
 
-        triangles: list[list[int]] = []
-        for i in range(self.n_faces):
-            row = self._face_nodes[i]
-            nodes = row[row != self._fill_value]
-            n = len(nodes)
-            if n < 3:
-                continue
-            for j in range(1, n - 1):
-                triangles.append([int(nodes[0]), int(nodes[j]), int(nodes[j + 1])])
+        # Vectorized fan decomposition for mixed-element meshes. Valid node
+        # indices are compacted in face/row order, so face i occupies the
+        # slice flat_nodes[face_start[i] : face_start[i] + counts[i]].
+        # _face_nodes is already np.intp (set in the constructor), so boolean
+        # masking preserves the dtype without an explicit cast.
+        flat_nodes = self._face_nodes[self._face_nodes != self._fill_value]
+        face_start = np.cumsum(counts) - counts
 
-        self._cached_tri_array = np.array(triangles, dtype=np.intp)
+        # A face with c valid nodes produces (c - 2) fan triangles.
+        valid = counts >= 3
+        base = np.repeat(face_start[valid], counts[valid] - 2)
+        # Local triangle index t in [0, c-3] for each output triangle, built
+        # as a concatenated per-face arange without a Python loop.
+        t = self._grouped_arange(counts[valid] - 2)
+
+        # Triangle (v0, v_{t+1}, v_{t+2}) fanning from each face's first vertex.
+        first = flat_nodes[base]
+        second = flat_nodes[base + 1 + t]
+        third = flat_nodes[base + 2 + t]
+
+        self._cached_tri_array = np.stack([first, second, third], axis=1)
         return self._cached_tri_array
+
+    @staticmethod
+    def _grouped_arange(sizes: np.ndarray) -> np.ndarray:
+        """Concatenated per-group ranges: ``[0..s0-1, 0..s1-1, ...]``.
+
+        Vectorized equivalent of
+        ``np.concatenate([np.arange(s) for s in sizes])``. Zero-size groups
+        contribute nothing and are handled correctly.
+
+        Args:
+            sizes: 1D array of non-negative group sizes.
+
+        Returns:
+            np.ndarray: 1D intp array of length ``sizes.sum()``.
+
+        Examples:
+            - Each group ``i`` contributes the range ``0..sizes[i]-1``,
+                concatenated in order:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.mesh_glyph import MeshGlyph
+                >>> MeshGlyph._grouped_arange(np.array([2, 3, 1]))
+                array([0, 1, 0, 1, 2, 0])
+
+                ```
+            - Zero-size groups contribute nothing and do not shift the
+                counter of later groups:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.mesh_glyph import MeshGlyph
+                >>> MeshGlyph._grouped_arange(np.array([2, 0, 3]))
+                array([0, 1, 0, 1, 2])
+
+                ```
+        """
+        sizes = np.asarray(sizes, dtype=np.intp)
+        total = int(sizes.sum())
+        if total == 0:
+            return np.empty(0, dtype=np.intp)
+        # Subtract each element's group-start offset from a global arange so
+        # the counter restarts at 0 within every group. np.repeat emits
+        # nothing for zero-size groups, so empty groups are handled naturally.
+        group_start = np.cumsum(sizes) - sizes
+        return np.arange(total, dtype=np.intp) - np.repeat(group_start, sizes)
 
     def _map_face_to_triangle_values(self, face_values: np.ndarray) -> np.ndarray:
         """Map per-face values to per-triangle values.
@@ -803,14 +893,49 @@ class MeshGlyph(Glyph):
     def _build_edge_segments(self) -> np.ndarray:
         """Build line segments for wireframe rendering.
 
-        Uses edge_node_connectivity if available (vectorized), otherwise
-        derives unique edges from face_node_connectivity using a set for
-        deduplication.
+        Uses edge_node_connectivity if available, otherwise derives the
+        unique polygon edges from face_node_connectivity by walking each
+        face boundary (with wrap-around) and deduplicating undirected
+        edges via a sort. Both paths are fully vectorized.
 
         Returns:
             np.ndarray: Array of shape (n_segments, 2, 2) where each
                 segment is `[[x1, y1], [x2, y2]]`. Returns an empty
                 array with shape (0, 2, 2) if no edges can be derived.
+
+        Examples:
+            - A single triangle yields its three boundary segments, and the
+                first segment connects the two lowest-indexed nodes:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.mesh_glyph import MeshGlyph
+                >>> mg = MeshGlyph(
+                ...     np.array([0.0, 1.0, 0.5]),
+                ...     np.array([0.0, 0.0, 1.0]),
+                ...     np.array([[0, 1, 2]]),
+                ... )
+                >>> segs = mg._build_edge_segments()
+                >>> segs.shape
+                (3, 2, 2)
+                >>> segs[0]
+                array([[0., 0.],
+                       [1., 0.]])
+
+                ```
+            - An edge shared by two faces is emitted only once, so two
+                triangles sharing one edge produce five segments, not six:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.mesh_glyph import MeshGlyph
+                >>> mg = MeshGlyph(
+                ...     np.array([0.0, 1.0, 0.5, 1.5]),
+                ...     np.array([0.0, 0.0, 1.0, 1.0]),
+                ...     np.array([[0, 1, 2], [1, 3, 2]]),
+                ... )
+                >>> mg._build_edge_segments().shape
+                (5, 2, 2)
+
+                ```
         """
         if self._edge_nodes is not None:
             n1 = self._edge_nodes[:, 0]
@@ -819,21 +944,38 @@ class MeshGlyph(Glyph):
             ends = np.column_stack([self._node_x[n2], self._node_y[n2]])
             return np.stack([starts, ends], axis=1)
 
-        edges: set[tuple[int, int]] = set()
-        for i in range(self.n_faces):
-            row = self._face_nodes[i]
-            nodes = row[row != self._fill_value]
-            n = len(nodes)
-            for j in range(n):
-                a, b = int(nodes[j]), int(nodes[(j + 1) % n])
-                key = (min(a, b), max(a, b))
-                edges.add(key)
-
-        if not edges:
+        counts = self.nodes_per_face
+        # Compacted valid node indices in face/row order; face i occupies the
+        # slice flat_nodes[face_start[i] : face_start[i] + counts[i]].
+        # _face_nodes is already np.intp (set in the constructor), so boolean
+        # masking preserves the dtype without an explicit cast.
+        flat_nodes = self._face_nodes[self._face_nodes != self._fill_value]
+        if flat_nodes.size == 0:
             return np.empty((0, 2, 2), dtype=np.float64)
 
-        edge_arr = np.array(list(edges), dtype=np.intp)
-        n1, n2 = edge_arr[:, 0], edge_arr[:, 1]
+        face_start = np.cumsum(counts) - counts
+        # Each valid node starts one polygon edge to the next node within the
+        # same face, wrapping from the last node back to the first.
+        next_pos = np.arange(flat_nodes.size, dtype=np.intp) + 1
+        nonempty = counts >= 1
+        last_pos = face_start[nonempty] + counts[nonempty] - 1
+        next_pos[last_pos] = face_start[nonempty]
+
+        a = flat_nodes
+        b = flat_nodes[next_pos]
+        # Undirected edges: order each endpoint pair, then drop duplicates by
+        # encoding the pair as a single key (lo * n_nodes + hi) and applying a
+        # 1-D sort + adjacent-diff dedup (cheaper than a row-wise lexsort). The
+        # key stays exact in int64 for any realistic mesh; it would only
+        # overflow when n_nodes exceeds ~3e9.
+        n_nodes = np.int64(self.n_nodes)
+        lo = np.minimum(a, b).astype(np.int64)
+        hi = np.maximum(a, b).astype(np.int64)
+        sorted_keys = np.sort(lo * n_nodes + hi)
+        keys = sorted_keys[
+            np.concatenate(([True], sorted_keys[1:] != sorted_keys[:-1]))
+        ]
+        n1, n2 = keys // n_nodes, keys % n_nodes
         starts = np.column_stack([self._node_x[n1], self._node_y[n1]])
         ends = np.column_stack([self._node_x[n2], self._node_y[n2]])
         return np.stack([starts, ends], axis=1)

@@ -6,6 +6,8 @@ fan triangulation, face-to-triangle value mapping, and edge cases.
 
 from __future__ import annotations
 
+import time
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
@@ -238,6 +240,152 @@ class TestTriangulation:
         )
         with pytest.raises(ValueError, match="no faces with 3"):
             _ = mg.triangulation
+
+    def test_padded_all_triangle_strips_fill(self):
+        """Test that triangles in a wider padded array exclude fill values.
+
+        Every face is a triangle but the connectivity array has 4 columns
+        padded with the fill value; the triangulation must not leak ``-1``.
+        """
+        mg = MeshGlyph(
+            np.array([0.0, 1.0, 0.5, 1.5]),
+            np.array([0.0, 0.0, 1.0, 1.0]),
+            np.array([[0, 1, 2, -1], [1, 3, 2, -1]], dtype=np.intp),
+            fill_value=-1,
+        )
+        tris = mg._fan_triangles()
+        assert tris.shape == (2, 3), f"Expected (2, 3), got {tris.shape}"
+        assert tris.min() >= 0, "Fill value leaked into triangulation"
+        np.testing.assert_array_equal(tris, np.array([[0, 1, 2], [1, 3, 2]]))
+
+    def test_mixed_mesh_indices_correct(self, mixed_glyph):
+        """Test fan triangle indices for a known quad + triangle mesh."""
+        expected = np.array(
+            [
+                [0, 1, 4],  # quad [0,1,4,3] -> fan
+                [0, 4, 3],
+                [1, 2, 5],  # triangle
+                [1, 5, 4],  # triangle
+            ]
+        )
+        np.testing.assert_array_equal(mixed_glyph._fan_triangles(), expected)
+
+    def test_pentagon_fans_into_three_triangles(self):
+        """Test a single 5-node face decomposes into 3 fan triangles.
+
+        Test scenario:
+            A pentagon [0,1,2,3,4] must fan from vertex 0 into
+            (0,1,2), (0,2,3), (0,3,4) -- exactly N-2 = 3 triangles.
+        """
+        node_x = np.array([0.0, 1.0, 2.0, 1.5, 0.5])
+        node_y = np.array([0.0, 0.0, 1.0, 2.0, 2.0])
+        mg = MeshGlyph(node_x, node_y, np.array([[0, 1, 2, 3, 4]], dtype=np.intp))
+        expected = np.array([[0, 1, 2], [0, 2, 3], [0, 3, 4]])
+        np.testing.assert_array_equal(mg._fan_triangles(), expected)
+
+    def test_pure_quad_mesh_two_triangles_each(self):
+        """Test a quad-only mesh (no triangles) fans each quad into 2 triangles.
+
+        Test scenario:
+            Two quads should bypass the (n, 3) fast path and produce
+            2 * 2 = 4 triangles via the vectorized mixed-mesh path.
+        """
+        node_x = np.array([0.0, 1.0, 1.0, 0.0, 2.0, 2.0])
+        node_y = np.array([0.0, 0.0, 1.0, 1.0, 0.0, 1.0])
+        faces = np.array([[0, 1, 2, 3], [1, 4, 5, 2]], dtype=np.intp)
+        mg = MeshGlyph(node_x, node_y, faces)
+        tris = mg._fan_triangles()
+        assert tris.shape == (4, 3), f"Expected (4, 3), got {tris.shape}"
+        expected = np.array([[0, 1, 2], [0, 2, 3], [1, 4, 5], [1, 5, 2]])
+        np.testing.assert_array_equal(tris, expected)
+
+
+class TestGroupedArange:
+    """Tests for MeshGlyph._grouped_arange static helper."""
+
+    @pytest.mark.parametrize(
+        "sizes, expected",
+        [
+            ([3], [0, 1, 2]),
+            ([1, 1, 1], [0, 0, 0]),
+            ([2, 3, 1], [0, 1, 0, 1, 2, 0]),
+            ([4], [0, 1, 2, 3]),
+        ],
+    )
+    def test_positive_groups(self, sizes, expected):
+        """Test concatenated per-group ranges for positive group sizes.
+
+        Args:
+            sizes: Group sizes to expand.
+            expected: Concatenated [0..s-1] ranges across groups.
+
+        Test scenario:
+            Each group i contributes range(sizes[i]); the result is their
+            concatenation in order.
+        """
+        result = MeshGlyph._grouped_arange(np.array(sizes))
+        np.testing.assert_array_equal(
+            result, np.array(expected), err_msg=f"sizes={sizes}"
+        )
+
+    def test_empty_input_returns_empty(self):
+        """Test empty sizes yields an empty intp array (total == 0 branch).
+
+        Test scenario:
+            No groups -> length-0 result, exercising the early return.
+        """
+        result = MeshGlyph._grouped_arange(np.array([], dtype=np.intp))
+        assert result.shape == (0,), f"Expected empty, got shape {result.shape}"
+        assert result.dtype == np.intp, f"Expected intp dtype, got {result.dtype}"
+
+    def test_all_zero_sizes_returns_empty(self):
+        """Test all-zero sizes yields an empty array (total == 0 branch).
+
+        Test scenario:
+            Groups that are all empty contribute nothing, so the total is 0.
+        """
+        result = MeshGlyph._grouped_arange(np.array([0, 0, 0]))
+        assert result.shape == (0,), f"Expected empty, got shape {result.shape}"
+
+    def test_interspersed_zero_size_groups(self):
+        """Test zero-size groups are skipped without corrupting later groups.
+
+        Test scenario:
+            sizes [2, 0, 3] -> [0, 1] (group 0), nothing (group 1),
+            [0, 1, 2] (group 2). This is the robustness case the helper must
+            handle: an empty middle group must not shift the counter.
+        """
+        result = MeshGlyph._grouped_arange(np.array([2, 0, 3]))
+        np.testing.assert_array_equal(result, np.array([0, 1, 0, 1, 2]))
+
+    def test_matches_naive_concatenation(self):
+        """Test the vectorized helper matches a naive arange concatenation.
+
+        Test scenario:
+            For randomized size vectors (including zeros), the output equals
+            np.concatenate([np.arange(s) for s in sizes]).
+        """
+        rng = np.random.default_rng(7)
+        for _ in range(50):
+            sizes = rng.integers(0, 6, size=int(rng.integers(0, 8)))
+            naive = (
+                np.concatenate([np.arange(s) for s in sizes])
+                if sizes.sum() > 0
+                else np.empty(0, dtype=np.intp)
+            )
+            result = MeshGlyph._grouped_arange(sizes)
+            np.testing.assert_array_equal(
+                result, naive, err_msg=f"sizes={sizes.tolist()}"
+            )
+
+    def test_result_dtype_is_intp(self):
+        """Test the returned array is intp for use as a fancy index.
+
+        Test scenario:
+            Index arrays must be intp so they can index numpy arrays directly.
+        """
+        result = MeshGlyph._grouped_arange(np.array([2, 3]))
+        assert result.dtype == np.intp, f"Expected intp, got {result.dtype}"
 
 
 class TestMapFaceToTriangleValues:
@@ -489,6 +637,153 @@ class TestEdgeSegments:
             2,
             2,
         ), f"Expected empty segments, got shape {segs.shape}"
+
+    def test_single_triangle_three_edges(self):
+        """Test a lone triangle yields exactly 3 undirected edges.
+
+        Test scenario:
+            Face [0,1,2] has boundary edges (0,1), (1,2), (0,2); none are
+            shared, so all 3 survive deduplication.
+        """
+        node_x = np.array([0.0, 1.0, 0.5])
+        node_y = np.array([0.0, 0.0, 1.0])
+        mg = MeshGlyph(node_x, node_y, np.array([[0, 1, 2]], dtype=np.intp))
+        segs = mg._build_edge_segments()
+        assert segs.shape == (3, 2, 2), f"Expected (3, 2, 2), got {segs.shape}"
+
+    def test_shared_edge_deduplicated_across_faces(self):
+        """Test an edge shared by two faces appears only once.
+
+        Test scenario:
+            Two triangles [0,1,2] and [1,3,2] share edge (1,2). The unique
+            edge set is {(0,1),(0,2),(1,2),(1,3),(2,3)} -> 5 segments, with
+            the shared (1,2) collapsed to a single entry.
+        """
+        node_x = np.array([0.0, 1.0, 0.5, 1.5])
+        node_y = np.array([0.0, 0.0, 1.0, 1.0])
+        faces = np.array([[0, 1, 2], [1, 3, 2]], dtype=np.intp)
+        mg = MeshGlyph(node_x, node_y, faces)
+        segs = mg._build_edge_segments()
+        coord_to_idx = {
+            (round(x, 9), round(y, 9)): i
+            for i, (x, y) in enumerate(zip(node_x, node_y))
+        }
+        edges = {
+            tuple(
+                sorted(
+                    (
+                        coord_to_idx[(round(s[0, 0], 9), round(s[0, 1], 9))],
+                        coord_to_idx[(round(s[1, 0], 9), round(s[1, 1], 9))],
+                    )
+                )
+            )
+            for s in segs
+        }
+        assert edges == {(0, 1), (0, 2), (1, 2), (1, 3), (2, 3)}, (
+            f"Unexpected edge set: {edges}"
+        )
+        assert segs.shape[0] == 5, f"Expected 5 unique edges, got {segs.shape[0]}"
+
+
+class TestVectorizedEquivalenceAndPerformance:
+    """Tests that the vectorized triangulation/edge derivation are correct
+    and fast on large mixed-element meshes."""
+
+    @staticmethod
+    def _reference_triangles(face_nodes, fill):
+        """Original Python-loop fan triangulation, used as ground truth."""
+        out = []
+        for row in face_nodes:
+            nodes = row[row != fill]
+            n = len(nodes)
+            for j in range(1, n - 1):
+                out.append((int(nodes[0]), int(nodes[j]), int(nodes[j + 1])))
+        return set(out)
+
+    @staticmethod
+    def _reference_edges(face_nodes, fill):
+        """Original Python-loop edge derivation, used as ground truth."""
+        edges = set()
+        for row in face_nodes:
+            nodes = row[row != fill]
+            n = len(nodes)
+            for j in range(n):
+                a, b = int(nodes[j]), int(nodes[(j + 1) % n])
+                edges.add((min(a, b), max(a, b)))
+        return edges
+
+    def test_vectorized_matches_reference_on_random_meshes(self):
+        """Test vectorized output matches the naive loop on random meshes."""
+        rng = np.random.default_rng(42)
+        for _ in range(100):
+            n_faces = int(rng.integers(1, 8))
+            max_nodes = int(rng.integers(3, 6))
+            n_nodes = int(rng.integers(4, 12))
+            faces = np.full((n_faces, max_nodes), -1, dtype=np.intp)
+            for i in range(n_faces):
+                c = int(rng.integers(0, max_nodes + 1))
+                if c > 0:
+                    faces[i, :c] = rng.integers(0, n_nodes, size=c)
+            # x-coordinate equals the node index (exactly representable in
+            # float64), so a segment endpoint maps back to its node with no
+            # rounding ambiguity; y is arbitrary and unused for recovery.
+            node_x = np.arange(n_nodes, dtype=float)
+            node_y = rng.random(n_nodes)
+            counts = np.sum(faces != -1, axis=1)
+
+            if np.any(counts >= 3):
+                tris = MeshGlyph(node_x, node_y, faces)._fan_triangles()
+                got_tris = set(map(tuple, tris.tolist()))
+                assert got_tris == self._reference_triangles(faces, -1)
+
+            segs = MeshGlyph(node_x, node_y, faces)._build_edge_segments()
+            got_edges = set()
+            for seg in segs:
+                i = int(seg[0, 0])
+                j = int(seg[1, 0])
+                got_edges.add((min(i, j), max(i, j)))
+            assert got_edges == self._reference_edges(faces, -1)
+
+    def test_large_mixed_mesh_performance(self):
+        """Test 100k mixed-element triangulation/edges stay far from O(n) loop times.
+
+        Guards against accidental reintroduction of a Python-loop
+        implementation rather than asserting a tight millisecond budget, so it
+        stays stable on slow or loaded CI runners. Mesh construction is kept
+        out of the timed region; the vectorized paths complete in tens of
+        milliseconds locally, so the 2-second bound only trips if the per-face
+        Python loop comes back.
+        """
+        n = 100_000
+        rng = np.random.default_rng(0)
+        node_x = rng.random(n * 2)
+        node_y = rng.random(n * 2)
+        faces = np.column_stack(
+            [
+                np.arange(0, n * 2, 2),
+                np.arange(1, n * 2 + 1, 2),
+                np.arange(1, n * 2 + 1, 2) + 1,
+                np.full(n, -1),
+            ]
+        ).astype(np.intp)
+        # Make alternate rows quads so the mesh is genuinely mixed-element.
+        faces[::2, 3] = faces[::2, 2]
+        faces[faces >= n * 2] = n * 2 - 1
+
+        # Separate instances so neither method benefits from the other's cache.
+        tri_glyph = MeshGlyph(node_x, node_y, faces, fill_value=-1)
+        edge_glyph = MeshGlyph(node_x, node_y, faces, fill_value=-1)
+
+        t0 = time.perf_counter()
+        tri_glyph._fan_triangles()
+        tri_s = time.perf_counter() - t0
+
+        t1 = time.perf_counter()
+        edge_glyph._build_edge_segments()
+        edge_s = time.perf_counter() - t1
+
+        assert tri_s < 2.0, f"_fan_triangles too slow: {tri_s * 1000:.1f}ms"
+        assert edge_s < 2.0, f"_build_edge_segments too slow: {edge_s * 1000:.1f}ms"
 
 
 class TestMeshGlyphSubplots:
