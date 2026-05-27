@@ -1326,3 +1326,148 @@ class TestDefaultOptionsAlias:
         assert sg.DEFAULT_OPTIONS is sg.STATISTICAL_DEFAULT_OPTIONS, "alias must be the same object"
         assert sg.StatisticalGlyph.DEFAULT_OPTIONS is sg.STATISTICAL_DEFAULT_OPTIONS, "class attr mismatch"
         assert sg.StatisticalGlyph.option_keys() == set(sg.STATISTICAL_DEFAULT_OPTIONS), "keys mismatch"
+
+
+class TestSubFigureFigureResolution:
+    """`_root_figure` / the mismatch warning behave correctly with SubFigures.
+
+    Regression coverage for the review's N1: an axes living on a SubFigure must
+    resolve to the top-level Figure, and passing either the root figure or the
+    immediate SubFigure as `fig` must not trip the mismatch warning.
+    """
+
+    def test_root_figure_resolves_to_top_level_for_subfigure_axes(self):
+        """`_root_figure(ax)` returns the root Figure, not the SubFigure.
+
+        Test scenario:
+            An axes created on a SubFigure resolves up to the owning top-level
+            Figure (so a host-owned colorbar/figure handle is the real one).
+        """
+        from cleopatra.glyph import _root_figure
+
+        fig = plt.figure()
+        sub = fig.subfigures(1, 1)
+        ax = sub.subplots()
+        try:
+            assert _root_figure(ax) is fig, "should climb to the top-level figure"
+        finally:
+            plt.close(fig)
+
+    def test_root_figure_passed_for_subfigure_axes_does_not_warn(self):
+        """Passing the root Figure with a SubFigure axes does not warn.
+
+        Test scenario:
+            The N1 case — `fig` is the top-level figure that transitively owns
+            an axes on a SubFigure; this is a valid pairing and must be silent.
+        """
+        import warnings as _warnings
+
+        fig = plt.figure()
+        sub = fig.subfigures(1, 1)
+        ax = sub.subplots()
+        try:
+            with _warnings.catch_warnings():
+                _warnings.simplefilter("error")
+                g = Glyph(default_options=_make_options(), fig=fig, ax=ax)
+            assert g.fig is fig, "the explicit root fig should be stored"
+        finally:
+            plt.close(fig)
+
+    def test_immediate_subfigure_passed_does_not_warn(self):
+        """Passing the immediate SubFigure with its own axes does not warn.
+
+        Test scenario:
+            `fig` is the SubFigure the axes is directly attached to — also a
+            valid pairing, so no warning.
+        """
+        import warnings as _warnings
+
+        fig = plt.figure()
+        sub = fig.subfigures(1, 1)
+        ax = sub.subplots()
+        try:
+            with _warnings.catch_warnings():
+                _warnings.simplefilter("error")
+                g = Glyph(default_options=_make_options(), fig=sub, ax=ax)
+            assert g.fig is sub, "the explicit sub-figure should be stored"
+        finally:
+            plt.close(fig)
+
+    def test_unrelated_figure_with_subfigure_axes_still_warns(self):
+        """An unrelated `fig` with a SubFigure axes still warns.
+
+        Test scenario:
+            The warning must still fire for a genuinely unrelated figure, even
+            when the axes lives on a SubFigure.
+        """
+        fig = plt.figure()
+        sub = fig.subfigures(1, 1)
+        ax = sub.subplots()
+        other = plt.figure()
+        try:
+            with pytest.warns(UserWarning, match="not the figure that owns"):
+                Glyph(default_options=_make_options(), fig=other, ax=ax)
+        finally:
+            plt.close(fig)
+            plt.close(other)
+
+
+class TestFigureResolutionInternals:
+    """Branch coverage for the matplotlib-version fallback paths of the helpers.
+
+    On matplotlib >= 3.10 the `root=` path is always taken for real axes, so
+    the legacy (< 3.10) branches are exercised here with small fakes.
+    """
+
+    def test_supports_root_false_when_signature_uninspectable(self):
+        """`_get_figure_supports_root` returns False if the signature can't be read.
+
+        Test scenario:
+            A non-callable (whose signature inspection raises) must yield False
+            rather than propagating the error.
+        """
+        from cleopatra.glyph import _get_figure_supports_root
+
+        assert _get_figure_supports_root(object()) is False, "uninspectable -> False"
+
+    def test_root_figure_climbs_subfigure_on_legacy_path(self):
+        """The legacy path climbs a `SubFigure` to the top-level `Figure`.
+
+        Test scenario:
+            A fake axes whose `get_figure` has no `root` kwarg returns a real
+            SubFigure; `_root_figure` must climb to the owning Figure.
+        """
+        import warnings as _warnings
+
+        from cleopatra.glyph import _root_figure
+
+        fig = plt.figure()
+        sub = fig.subfigures(1, 1)
+
+        class _LegacyAxOnSub:
+            def get_figure(self):
+                return sub
+
+        try:
+            with _warnings.catch_warnings():
+                _warnings.simplefilter("ignore")
+                assert _root_figure(_LegacyAxOnSub()) is fig, "should climb to the root figure"
+        finally:
+            plt.close(fig)
+
+    def test_immediate_figure_legacy_path(self):
+        """`_immediate_figure` uses the bare `get_figure()` on the legacy path.
+
+        Test scenario:
+            A fake axes whose `get_figure` has no `root` kwarg returns its
+            figure directly.
+        """
+        from cleopatra.glyph import _immediate_figure
+
+        sentinel = object()
+
+        class _LegacyAx:
+            def get_figure(self):
+                return sentinel
+
+        assert _immediate_figure(_LegacyAx()) is sentinel, "should return get_figure()"

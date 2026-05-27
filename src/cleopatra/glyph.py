@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import inspect
 import math
 import warnings
 
@@ -20,7 +21,7 @@ from matplotlib import animation
 from matplotlib.animation import FuncAnimation
 from matplotlib.axes import Axes
 from matplotlib.colorbar import Colorbar
-from matplotlib.figure import Figure
+from matplotlib.figure import Figure, SubFigure
 from matplotlib.ticker import LogFormatter
 
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
@@ -34,25 +35,63 @@ SUPPORTED_VIDEO_FORMAT = ["gif", "mov", "avi", "mp4"]
 MAX_DISCRETE_LEVELS = 1000
 
 
+def _get_figure_supports_root(get_figure) -> bool:
+    """Return True if `get_figure` accepts a `root` keyword argument.
+
+    The `root` parameter was added to `Axes.get_figure` in matplotlib 3.10.
+    Detected by signature inspection (rather than a broad `try/except`) so an
+    unrelated `TypeError` from `get_figure` itself is never swallowed.
+    """
+    try:
+        return "root" in inspect.signature(get_figure).parameters
+    except (TypeError, ValueError):
+        return False
+
+
 def _root_figure(ax: Axes) -> Figure:
     """Return the top-level `Figure` that owns `ax`, across matplotlib versions.
 
-    Prefers `Axes.get_figure(root=True)` (matplotlib >= 3.10), which returns
-    the root `Figure` even when the axes lives on a `SubFigure` and avoids the
-    3.10 deprecation warning attached to the bare `get_figure()`. Falls back to
-    the plain `get_figure()` on older matplotlib where the `root` keyword does
-    not exist (the project's 3.8.4 floor).
+    On matplotlib >= 3.10 this uses `Axes.get_figure(root=True)`, which returns
+    the root `Figure` even when the axes lives on a `SubFigure` (and avoids the
+    3.10 deprecation warning attached to the bare `get_figure()`). On older
+    matplotlib (down to the project's 3.8.4 floor) the `root` keyword does not
+    exist, so it climbs out of any `SubFigure` to the owning `Figure` manually.
 
     Args:
-        ax: The axes whose owning figure is wanted.
+        ax: The axes whose top-level figure is wanted.
 
     Returns:
         Figure: The top-level figure for `ax`.
     """
-    try:
-        return ax.get_figure(root=True)
-    except TypeError:
-        return ax.get_figure()
+    get_figure = ax.get_figure
+    if _get_figure_supports_root(get_figure):
+        return get_figure(root=True)
+    fig = get_figure()
+    seen: set[int] = set()
+    while isinstance(fig, SubFigure) and id(fig) not in seen:
+        seen.add(id(fig))
+        fig = fig.figure
+    return fig
+
+
+def _immediate_figure(ax: Axes) -> Figure:
+    """Return the figure `ax` is directly attached to (its immediate parent).
+
+    Deprecation-safe counterpart to `_root_figure`: on matplotlib >= 3.10 it
+    passes `root=False` explicitly; on older matplotlib it calls the bare
+    `get_figure()`. For an axes on a `SubFigure` this is that `SubFigure`; for
+    an ordinary axes it is the same object as `_root_figure(ax)`.
+
+    Args:
+        ax: The axes whose immediate parent figure is wanted.
+
+    Returns:
+        Figure: The figure (or sub-figure) `ax` is directly attached to.
+    """
+    get_figure = ax.get_figure
+    if _get_figure_supports_root(get_figure):
+        return get_figure(root=False)
+    return get_figure()
 
 
 class Glyph:
@@ -165,7 +204,9 @@ class Glyph:
             if fig is not None:
                 # A mismatched (fig, ax) pair leaves self.fig and
                 # self.ax.figure disagreeing — almost always a caller mistake.
-                if fig is not _root_figure(ax):
+                # `fig` is fine if it is either the axes' immediate parent
+                # (e.g. a SubFigure) or its top-level root figure.
+                if fig is not _immediate_figure(ax) and fig is not _root_figure(ax):
                     warnings.warn(
                         "The given `fig` is not the figure that owns `ax`; "
                         "the axes' own figure is what will be drawn on. Pass "
