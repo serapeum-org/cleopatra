@@ -2916,7 +2916,12 @@ connectivity. Default is None.</p>
 <span class="normal"><a href="#__codelineno-0-990">990</a></span>
 <span class="normal"><a href="#__codelineno-0-991">991</a></span>
 <span class="normal"><a href="#__codelineno-0-992">992</a></span>
-<span class="normal"><a href="#__codelineno-0-993">993</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="k">class</span><span class="w"> </span><span class="nc">MeshGlyph</span><span class="p">(</span><span class="n">Glyph</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-993">993</a></span>
+<span class="normal"><a href="#__codelineno-0-994">994</a></span>
+<span class="normal"><a href="#__codelineno-0-995">995</a></span>
+<span class="normal"><a href="#__codelineno-0-996">996</a></span>
+<span class="normal"><a href="#__codelineno-0-997">997</a></span>
+<span class="normal"><a href="#__codelineno-0-998">998</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="k">class</span><span class="w"> </span><span class="nc">MeshGlyph</span><span class="p">(</span><span class="n">Glyph</span><span class="p">):</span>
 <a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Visualization class for unstructured mesh data.</span>
 <a id="__codelineno-0-51" name="__codelineno-0-51"></a>
 <a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">    Wraps matplotlib&#39;s triangulation-based rendering to plot data on</span>
@@ -3737,130 +3742,135 @@ connectivity. Default is None.</p>
 <a id="__codelineno-0-867" name="__codelineno-0-867"></a><span class="sd">                `plt.close(fig)` after saving to avoid memory leaks</span>
 <a id="__codelineno-0-868" name="__codelineno-0-868"></a><span class="sd">                in batch processing.</span>
 <a id="__codelineno-0-869" name="__codelineno-0-869"></a>
-<a id="__codelineno-0-870" name="__codelineno-0-870"></a><span class="sd">        Examples:</span>
-<a id="__codelineno-0-871" name="__codelineno-0-871"></a><span class="sd">            - Render a triangular mesh wireframe:</span>
-<a id="__codelineno-0-872" name="__codelineno-0-872"></a><span class="sd">                ```python</span>
-<a id="__codelineno-0-873" name="__codelineno-0-873"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-874" name="__codelineno-0-874"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.mesh_glyph import MeshGlyph</span>
-<a id="__codelineno-0-875" name="__codelineno-0-875"></a><span class="sd">                &gt;&gt;&gt; mg = MeshGlyph(</span>
-<a id="__codelineno-0-876" name="__codelineno-0-876"></a><span class="sd">                ...     np.array([0.0, 1.0, 0.5]),</span>
-<a id="__codelineno-0-877" name="__codelineno-0-877"></a><span class="sd">                ...     np.array([0.0, 0.0, 1.0]),</span>
-<a id="__codelineno-0-878" name="__codelineno-0-878"></a><span class="sd">                ...     np.array([[0, 1, 2]]),</span>
-<a id="__codelineno-0-879" name="__codelineno-0-879"></a><span class="sd">                ... )</span>
-<a id="__codelineno-0-880" name="__codelineno-0-880"></a><span class="sd">                &gt;&gt;&gt; fig, ax = mg.plot_outline(color=&quot;blue&quot;)</span>
-<a id="__codelineno-0-881" name="__codelineno-0-881"></a>
-<a id="__codelineno-0-882" name="__codelineno-0-882"></a><span class="sd">                ```</span>
-<a id="__codelineno-0-883" name="__codelineno-0-883"></a><span class="sd">        &quot;&quot;&quot;</span>
-<a id="__codelineno-0-884" name="__codelineno-0-884"></a>        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-885" name="__codelineno-0-885"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span>
-<a id="__codelineno-0-886" name="__codelineno-0-886"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_figure</span><span class="p">()</span>
-<a id="__codelineno-0-887" name="__codelineno-0-887"></a>        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-888" name="__codelineno-0-888"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
-<a id="__codelineno-0-889" name="__codelineno-0-889"></a>
-<a id="__codelineno-0-890" name="__codelineno-0-890"></a>        <span class="n">segments</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_edge_segments</span><span class="p">()</span>
-<a id="__codelineno-0-891" name="__codelineno-0-891"></a>
-<a id="__codelineno-0-892" name="__codelineno-0-892"></a>        <span class="n">lc</span> <span class="o">=</span> <span class="n">mcoll</span><span class="o">.</span><span class="n">LineCollection</span><span class="p">(</span>
-<a id="__codelineno-0-893" name="__codelineno-0-893"></a>            <span class="n">segments</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=</span><span class="n">linewidth</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-<a id="__codelineno-0-894" name="__codelineno-0-894"></a>        <span class="p">)</span>
-<a id="__codelineno-0-895" name="__codelineno-0-895"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">add_collection</span><span class="p">(</span><span class="n">lc</span><span class="p">)</span>
-<a id="__codelineno-0-896" name="__codelineno-0-896"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">autoscale</span><span class="p">()</span>
-<a id="__codelineno-0-897" name="__codelineno-0-897"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">&quot;equal&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-898" name="__codelineno-0-898"></a>
-<a id="__codelineno-0-899" name="__codelineno-0-899"></a>        <span class="c1"># An outline carries no scalar mapping, so clear any colour-mapped</span>
-<a id="__codelineno-0-900" name="__codelineno-0-900"></a>        <span class="c1"># artist left on `self.im` by a previous `plot()` call.</span>
-<a id="__codelineno-0-901" name="__codelineno-0-901"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-902" name="__codelineno-0-902"></a>
-<a id="__codelineno-0-903" name="__codelineno-0-903"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span>
-<a id="__codelineno-0-904" name="__codelineno-0-904"></a>
-<a id="__codelineno-0-905" name="__codelineno-0-905"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_build_edge_segments</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<a id="__codelineno-0-906" name="__codelineno-0-906"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Build line segments for wireframe rendering.</span>
+<a id="__codelineno-0-870" name="__codelineno-0-870"></a><span class="sd">        Notes:</span>
+<a id="__codelineno-0-871" name="__codelineno-0-871"></a><span class="sd">            An outline carries no scalar mapping, so this resets `self.im`</span>
+<a id="__codelineno-0-872" name="__codelineno-0-872"></a><span class="sd">            to None (clearing any colour-mapped artist left by a prior</span>
+<a id="__codelineno-0-873" name="__codelineno-0-873"></a><span class="sd">            `plot()` call).</span>
+<a id="__codelineno-0-874" name="__codelineno-0-874"></a>
+<a id="__codelineno-0-875" name="__codelineno-0-875"></a><span class="sd">        Examples:</span>
+<a id="__codelineno-0-876" name="__codelineno-0-876"></a><span class="sd">            - Render a triangular mesh wireframe:</span>
+<a id="__codelineno-0-877" name="__codelineno-0-877"></a><span class="sd">                ```python</span>
+<a id="__codelineno-0-878" name="__codelineno-0-878"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-879" name="__codelineno-0-879"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.mesh_glyph import MeshGlyph</span>
+<a id="__codelineno-0-880" name="__codelineno-0-880"></a><span class="sd">                &gt;&gt;&gt; mg = MeshGlyph(</span>
+<a id="__codelineno-0-881" name="__codelineno-0-881"></a><span class="sd">                ...     np.array([0.0, 1.0, 0.5]),</span>
+<a id="__codelineno-0-882" name="__codelineno-0-882"></a><span class="sd">                ...     np.array([0.0, 0.0, 1.0]),</span>
+<a id="__codelineno-0-883" name="__codelineno-0-883"></a><span class="sd">                ...     np.array([[0, 1, 2]]),</span>
+<a id="__codelineno-0-884" name="__codelineno-0-884"></a><span class="sd">                ... )</span>
+<a id="__codelineno-0-885" name="__codelineno-0-885"></a><span class="sd">                &gt;&gt;&gt; fig, ax = mg.plot_outline(color=&quot;blue&quot;)</span>
+<a id="__codelineno-0-886" name="__codelineno-0-886"></a>
+<a id="__codelineno-0-887" name="__codelineno-0-887"></a><span class="sd">                ```</span>
+<a id="__codelineno-0-888" name="__codelineno-0-888"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-889" name="__codelineno-0-889"></a>        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-890" name="__codelineno-0-890"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span>
+<a id="__codelineno-0-891" name="__codelineno-0-891"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_figure</span><span class="p">()</span>
+<a id="__codelineno-0-892" name="__codelineno-0-892"></a>        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-893" name="__codelineno-0-893"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+<a id="__codelineno-0-894" name="__codelineno-0-894"></a>
+<a id="__codelineno-0-895" name="__codelineno-0-895"></a>        <span class="n">segments</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_edge_segments</span><span class="p">()</span>
+<a id="__codelineno-0-896" name="__codelineno-0-896"></a>
+<a id="__codelineno-0-897" name="__codelineno-0-897"></a>        <span class="n">lc</span> <span class="o">=</span> <span class="n">mcoll</span><span class="o">.</span><span class="n">LineCollection</span><span class="p">(</span>
+<a id="__codelineno-0-898" name="__codelineno-0-898"></a>            <span class="n">segments</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=</span><span class="n">linewidth</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+<a id="__codelineno-0-899" name="__codelineno-0-899"></a>        <span class="p">)</span>
+<a id="__codelineno-0-900" name="__codelineno-0-900"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">add_collection</span><span class="p">(</span><span class="n">lc</span><span class="p">)</span>
+<a id="__codelineno-0-901" name="__codelineno-0-901"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">autoscale</span><span class="p">()</span>
+<a id="__codelineno-0-902" name="__codelineno-0-902"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">&quot;equal&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-903" name="__codelineno-0-903"></a>
+<a id="__codelineno-0-904" name="__codelineno-0-904"></a>        <span class="c1"># An outline carries no scalar mapping, so clear any colour-mapped</span>
+<a id="__codelineno-0-905" name="__codelineno-0-905"></a>        <span class="c1"># artist left on `self.im` by a previous `plot()` call.</span>
+<a id="__codelineno-0-906" name="__codelineno-0-906"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="kc">None</span>
 <a id="__codelineno-0-907" name="__codelineno-0-907"></a>
-<a id="__codelineno-0-908" name="__codelineno-0-908"></a><span class="sd">        Uses edge_node_connectivity if available, otherwise derives the</span>
-<a id="__codelineno-0-909" name="__codelineno-0-909"></a><span class="sd">        unique polygon edges from face_node_connectivity by walking each</span>
-<a id="__codelineno-0-910" name="__codelineno-0-910"></a><span class="sd">        face boundary (with wrap-around) and deduplicating undirected</span>
-<a id="__codelineno-0-911" name="__codelineno-0-911"></a><span class="sd">        edges via a sort. Both paths are fully vectorized.</span>
+<a id="__codelineno-0-908" name="__codelineno-0-908"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span>
+<a id="__codelineno-0-909" name="__codelineno-0-909"></a>
+<a id="__codelineno-0-910" name="__codelineno-0-910"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_build_edge_segments</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<a id="__codelineno-0-911" name="__codelineno-0-911"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Build line segments for wireframe rendering.</span>
 <a id="__codelineno-0-912" name="__codelineno-0-912"></a>
-<a id="__codelineno-0-913" name="__codelineno-0-913"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-914" name="__codelineno-0-914"></a><span class="sd">            np.ndarray: Array of shape (n_segments, 2, 2) where each</span>
-<a id="__codelineno-0-915" name="__codelineno-0-915"></a><span class="sd">                segment is `[[x1, y1], [x2, y2]]`. Returns an empty</span>
-<a id="__codelineno-0-916" name="__codelineno-0-916"></a><span class="sd">                array with shape (0, 2, 2) if no edges can be derived.</span>
+<a id="__codelineno-0-913" name="__codelineno-0-913"></a><span class="sd">        Uses edge_node_connectivity if available, otherwise derives the</span>
+<a id="__codelineno-0-914" name="__codelineno-0-914"></a><span class="sd">        unique polygon edges from face_node_connectivity by walking each</span>
+<a id="__codelineno-0-915" name="__codelineno-0-915"></a><span class="sd">        face boundary (with wrap-around) and deduplicating undirected</span>
+<a id="__codelineno-0-916" name="__codelineno-0-916"></a><span class="sd">        edges via a sort. Both paths are fully vectorized.</span>
 <a id="__codelineno-0-917" name="__codelineno-0-917"></a>
-<a id="__codelineno-0-918" name="__codelineno-0-918"></a><span class="sd">        Examples:</span>
-<a id="__codelineno-0-919" name="__codelineno-0-919"></a><span class="sd">            - A single triangle yields its three boundary segments, and the</span>
-<a id="__codelineno-0-920" name="__codelineno-0-920"></a><span class="sd">                first segment connects the two lowest-indexed nodes:</span>
-<a id="__codelineno-0-921" name="__codelineno-0-921"></a><span class="sd">                ```python</span>
-<a id="__codelineno-0-922" name="__codelineno-0-922"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-923" name="__codelineno-0-923"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.mesh_glyph import MeshGlyph</span>
-<a id="__codelineno-0-924" name="__codelineno-0-924"></a><span class="sd">                &gt;&gt;&gt; mg = MeshGlyph(</span>
-<a id="__codelineno-0-925" name="__codelineno-0-925"></a><span class="sd">                ...     np.array([0.0, 1.0, 0.5]),</span>
-<a id="__codelineno-0-926" name="__codelineno-0-926"></a><span class="sd">                ...     np.array([0.0, 0.0, 1.0]),</span>
-<a id="__codelineno-0-927" name="__codelineno-0-927"></a><span class="sd">                ...     np.array([[0, 1, 2]]),</span>
-<a id="__codelineno-0-928" name="__codelineno-0-928"></a><span class="sd">                ... )</span>
-<a id="__codelineno-0-929" name="__codelineno-0-929"></a><span class="sd">                &gt;&gt;&gt; segs = mg._build_edge_segments()</span>
-<a id="__codelineno-0-930" name="__codelineno-0-930"></a><span class="sd">                &gt;&gt;&gt; segs.shape</span>
-<a id="__codelineno-0-931" name="__codelineno-0-931"></a><span class="sd">                (3, 2, 2)</span>
-<a id="__codelineno-0-932" name="__codelineno-0-932"></a><span class="sd">                &gt;&gt;&gt; segs[0]</span>
-<a id="__codelineno-0-933" name="__codelineno-0-933"></a><span class="sd">                array([[0., 0.],</span>
-<a id="__codelineno-0-934" name="__codelineno-0-934"></a><span class="sd">                       [1., 0.]])</span>
-<a id="__codelineno-0-935" name="__codelineno-0-935"></a>
-<a id="__codelineno-0-936" name="__codelineno-0-936"></a><span class="sd">                ```</span>
-<a id="__codelineno-0-937" name="__codelineno-0-937"></a><span class="sd">            - An edge shared by two faces is emitted only once, so two</span>
-<a id="__codelineno-0-938" name="__codelineno-0-938"></a><span class="sd">                triangles sharing one edge produce five segments, not six:</span>
-<a id="__codelineno-0-939" name="__codelineno-0-939"></a><span class="sd">                ```python</span>
-<a id="__codelineno-0-940" name="__codelineno-0-940"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-941" name="__codelineno-0-941"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.mesh_glyph import MeshGlyph</span>
-<a id="__codelineno-0-942" name="__codelineno-0-942"></a><span class="sd">                &gt;&gt;&gt; mg = MeshGlyph(</span>
-<a id="__codelineno-0-943" name="__codelineno-0-943"></a><span class="sd">                ...     np.array([0.0, 1.0, 0.5, 1.5]),</span>
-<a id="__codelineno-0-944" name="__codelineno-0-944"></a><span class="sd">                ...     np.array([0.0, 0.0, 1.0, 1.0]),</span>
-<a id="__codelineno-0-945" name="__codelineno-0-945"></a><span class="sd">                ...     np.array([[0, 1, 2], [1, 3, 2]]),</span>
-<a id="__codelineno-0-946" name="__codelineno-0-946"></a><span class="sd">                ... )</span>
-<a id="__codelineno-0-947" name="__codelineno-0-947"></a><span class="sd">                &gt;&gt;&gt; mg._build_edge_segments().shape</span>
-<a id="__codelineno-0-948" name="__codelineno-0-948"></a><span class="sd">                (5, 2, 2)</span>
-<a id="__codelineno-0-949" name="__codelineno-0-949"></a>
-<a id="__codelineno-0-950" name="__codelineno-0-950"></a><span class="sd">                ```</span>
-<a id="__codelineno-0-951" name="__codelineno-0-951"></a><span class="sd">        &quot;&quot;&quot;</span>
-<a id="__codelineno-0-952" name="__codelineno-0-952"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_edge_nodes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-953" name="__codelineno-0-953"></a>            <span class="n">n1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_edge_nodes</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
-<a id="__codelineno-0-954" name="__codelineno-0-954"></a>            <span class="n">n2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_edge_nodes</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
-<a id="__codelineno-0-955" name="__codelineno-0-955"></a>            <span class="n">starts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">_node_x</span><span class="p">[</span><span class="n">n1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_node_y</span><span class="p">[</span><span class="n">n1</span><span class="p">]])</span>
-<a id="__codelineno-0-956" name="__codelineno-0-956"></a>            <span class="n">ends</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">_node_x</span><span class="p">[</span><span class="n">n2</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_node_y</span><span class="p">[</span><span class="n">n2</span><span class="p">]])</span>
-<a id="__codelineno-0-957" name="__codelineno-0-957"></a>            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">starts</span><span class="p">,</span> <span class="n">ends</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<a id="__codelineno-0-958" name="__codelineno-0-958"></a>
-<a id="__codelineno-0-959" name="__codelineno-0-959"></a>        <span class="n">counts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes_per_face</span>
-<a id="__codelineno-0-960" name="__codelineno-0-960"></a>        <span class="c1"># Compacted valid node indices in face/row order; face i occupies the</span>
-<a id="__codelineno-0-961" name="__codelineno-0-961"></a>        <span class="c1"># slice flat_nodes[face_start[i] : face_start[i] + counts[i]].</span>
-<a id="__codelineno-0-962" name="__codelineno-0-962"></a>        <span class="c1"># _face_nodes is already np.intp (set in the constructor), so boolean</span>
-<a id="__codelineno-0-963" name="__codelineno-0-963"></a>        <span class="c1"># masking preserves the dtype without an explicit cast.</span>
-<a id="__codelineno-0-964" name="__codelineno-0-964"></a>        <span class="n">flat_nodes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_face_nodes</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_face_nodes</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fill_value</span><span class="p">]</span>
-<a id="__codelineno-0-965" name="__codelineno-0-965"></a>        <span class="k">if</span> <span class="n">flat_nodes</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-966" name="__codelineno-0-966"></a>            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
-<a id="__codelineno-0-967" name="__codelineno-0-967"></a>
-<a id="__codelineno-0-968" name="__codelineno-0-968"></a>        <span class="n">face_start</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">counts</span><span class="p">)</span> <span class="o">-</span> <span class="n">counts</span>
-<a id="__codelineno-0-969" name="__codelineno-0-969"></a>        <span class="c1"># Each valid node starts one polygon edge to the next node within the</span>
-<a id="__codelineno-0-970" name="__codelineno-0-970"></a>        <span class="c1"># same face, wrapping from the last node back to the first.</span>
-<a id="__codelineno-0-971" name="__codelineno-0-971"></a>        <span class="n">next_pos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">flat_nodes</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">intp</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
-<a id="__codelineno-0-972" name="__codelineno-0-972"></a>        <span class="n">nonempty</span> <span class="o">=</span> <span class="n">counts</span> <span class="o">&gt;=</span> <span class="mi">1</span>
-<a id="__codelineno-0-973" name="__codelineno-0-973"></a>        <span class="n">last_pos</span> <span class="o">=</span> <span class="n">face_start</span><span class="p">[</span><span class="n">nonempty</span><span class="p">]</span> <span class="o">+</span> <span class="n">counts</span><span class="p">[</span><span class="n">nonempty</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
-<a id="__codelineno-0-974" name="__codelineno-0-974"></a>        <span class="n">next_pos</span><span class="p">[</span><span class="n">last_pos</span><span class="p">]</span> <span class="o">=</span> <span class="n">face_start</span><span class="p">[</span><span class="n">nonempty</span><span class="p">]</span>
-<a id="__codelineno-0-975" name="__codelineno-0-975"></a>
-<a id="__codelineno-0-976" name="__codelineno-0-976"></a>        <span class="n">a</span> <span class="o">=</span> <span class="n">flat_nodes</span>
-<a id="__codelineno-0-977" name="__codelineno-0-977"></a>        <span class="n">b</span> <span class="o">=</span> <span class="n">flat_nodes</span><span class="p">[</span><span class="n">next_pos</span><span class="p">]</span>
-<a id="__codelineno-0-978" name="__codelineno-0-978"></a>        <span class="c1"># Undirected edges: order each endpoint pair, then drop duplicates by</span>
-<a id="__codelineno-0-979" name="__codelineno-0-979"></a>        <span class="c1"># encoding the pair as a single key (lo * n_nodes + hi) and applying a</span>
-<a id="__codelineno-0-980" name="__codelineno-0-980"></a>        <span class="c1"># 1-D sort + adjacent-diff dedup (cheaper than a row-wise lexsort). The</span>
-<a id="__codelineno-0-981" name="__codelineno-0-981"></a>        <span class="c1"># key stays exact in int64 for any realistic mesh; it would only</span>
-<a id="__codelineno-0-982" name="__codelineno-0-982"></a>        <span class="c1"># overflow when n_nodes exceeds ~3e9.</span>
-<a id="__codelineno-0-983" name="__codelineno-0-983"></a>        <span class="n">n_nodes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_nodes</span><span class="p">)</span>
-<a id="__codelineno-0-984" name="__codelineno-0-984"></a>        <span class="n">lo</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
-<a id="__codelineno-0-985" name="__codelineno-0-985"></a>        <span class="n">hi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
-<a id="__codelineno-0-986" name="__codelineno-0-986"></a>        <span class="n">sorted_keys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">lo</span> <span class="o">*</span> <span class="n">n_nodes</span> <span class="o">+</span> <span class="n">hi</span><span class="p">)</span>
-<a id="__codelineno-0-987" name="__codelineno-0-987"></a>        <span class="n">keys</span> <span class="o">=</span> <span class="n">sorted_keys</span><span class="p">[</span>
-<a id="__codelineno-0-988" name="__codelineno-0-988"></a>            <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(([</span><span class="kc">True</span><span class="p">],</span> <span class="n">sorted_keys</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">!=</span> <span class="n">sorted_keys</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
-<a id="__codelineno-0-989" name="__codelineno-0-989"></a>        <span class="p">]</span>
-<a id="__codelineno-0-990" name="__codelineno-0-990"></a>        <span class="n">n1</span><span class="p">,</span> <span class="n">n2</span> <span class="o">=</span> <span class="n">keys</span> <span class="o">//</span> <span class="n">n_nodes</span><span class="p">,</span> <span class="n">keys</span> <span class="o">%</span> <span class="n">n_nodes</span>
-<a id="__codelineno-0-991" name="__codelineno-0-991"></a>        <span class="n">starts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">_node_x</span><span class="p">[</span><span class="n">n1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_node_y</span><span class="p">[</span><span class="n">n1</span><span class="p">]])</span>
-<a id="__codelineno-0-992" name="__codelineno-0-992"></a>        <span class="n">ends</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">_node_x</span><span class="p">[</span><span class="n">n2</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_node_y</span><span class="p">[</span><span class="n">n2</span><span class="p">]])</span>
-<a id="__codelineno-0-993" name="__codelineno-0-993"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">starts</span><span class="p">,</span> <span class="n">ends</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-0-918" name="__codelineno-0-918"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-0-919" name="__codelineno-0-919"></a><span class="sd">            np.ndarray: Array of shape (n_segments, 2, 2) where each</span>
+<a id="__codelineno-0-920" name="__codelineno-0-920"></a><span class="sd">                segment is `[[x1, y1], [x2, y2]]`. Returns an empty</span>
+<a id="__codelineno-0-921" name="__codelineno-0-921"></a><span class="sd">                array with shape (0, 2, 2) if no edges can be derived.</span>
+<a id="__codelineno-0-922" name="__codelineno-0-922"></a>
+<a id="__codelineno-0-923" name="__codelineno-0-923"></a><span class="sd">        Examples:</span>
+<a id="__codelineno-0-924" name="__codelineno-0-924"></a><span class="sd">            - A single triangle yields its three boundary segments, and the</span>
+<a id="__codelineno-0-925" name="__codelineno-0-925"></a><span class="sd">                first segment connects the two lowest-indexed nodes:</span>
+<a id="__codelineno-0-926" name="__codelineno-0-926"></a><span class="sd">                ```python</span>
+<a id="__codelineno-0-927" name="__codelineno-0-927"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-928" name="__codelineno-0-928"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.mesh_glyph import MeshGlyph</span>
+<a id="__codelineno-0-929" name="__codelineno-0-929"></a><span class="sd">                &gt;&gt;&gt; mg = MeshGlyph(</span>
+<a id="__codelineno-0-930" name="__codelineno-0-930"></a><span class="sd">                ...     np.array([0.0, 1.0, 0.5]),</span>
+<a id="__codelineno-0-931" name="__codelineno-0-931"></a><span class="sd">                ...     np.array([0.0, 0.0, 1.0]),</span>
+<a id="__codelineno-0-932" name="__codelineno-0-932"></a><span class="sd">                ...     np.array([[0, 1, 2]]),</span>
+<a id="__codelineno-0-933" name="__codelineno-0-933"></a><span class="sd">                ... )</span>
+<a id="__codelineno-0-934" name="__codelineno-0-934"></a><span class="sd">                &gt;&gt;&gt; segs = mg._build_edge_segments()</span>
+<a id="__codelineno-0-935" name="__codelineno-0-935"></a><span class="sd">                &gt;&gt;&gt; segs.shape</span>
+<a id="__codelineno-0-936" name="__codelineno-0-936"></a><span class="sd">                (3, 2, 2)</span>
+<a id="__codelineno-0-937" name="__codelineno-0-937"></a><span class="sd">                &gt;&gt;&gt; segs[0]</span>
+<a id="__codelineno-0-938" name="__codelineno-0-938"></a><span class="sd">                array([[0., 0.],</span>
+<a id="__codelineno-0-939" name="__codelineno-0-939"></a><span class="sd">                       [1., 0.]])</span>
+<a id="__codelineno-0-940" name="__codelineno-0-940"></a>
+<a id="__codelineno-0-941" name="__codelineno-0-941"></a><span class="sd">                ```</span>
+<a id="__codelineno-0-942" name="__codelineno-0-942"></a><span class="sd">            - An edge shared by two faces is emitted only once, so two</span>
+<a id="__codelineno-0-943" name="__codelineno-0-943"></a><span class="sd">                triangles sharing one edge produce five segments, not six:</span>
+<a id="__codelineno-0-944" name="__codelineno-0-944"></a><span class="sd">                ```python</span>
+<a id="__codelineno-0-945" name="__codelineno-0-945"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-946" name="__codelineno-0-946"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.mesh_glyph import MeshGlyph</span>
+<a id="__codelineno-0-947" name="__codelineno-0-947"></a><span class="sd">                &gt;&gt;&gt; mg = MeshGlyph(</span>
+<a id="__codelineno-0-948" name="__codelineno-0-948"></a><span class="sd">                ...     np.array([0.0, 1.0, 0.5, 1.5]),</span>
+<a id="__codelineno-0-949" name="__codelineno-0-949"></a><span class="sd">                ...     np.array([0.0, 0.0, 1.0, 1.0]),</span>
+<a id="__codelineno-0-950" name="__codelineno-0-950"></a><span class="sd">                ...     np.array([[0, 1, 2], [1, 3, 2]]),</span>
+<a id="__codelineno-0-951" name="__codelineno-0-951"></a><span class="sd">                ... )</span>
+<a id="__codelineno-0-952" name="__codelineno-0-952"></a><span class="sd">                &gt;&gt;&gt; mg._build_edge_segments().shape</span>
+<a id="__codelineno-0-953" name="__codelineno-0-953"></a><span class="sd">                (5, 2, 2)</span>
+<a id="__codelineno-0-954" name="__codelineno-0-954"></a>
+<a id="__codelineno-0-955" name="__codelineno-0-955"></a><span class="sd">                ```</span>
+<a id="__codelineno-0-956" name="__codelineno-0-956"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-957" name="__codelineno-0-957"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_edge_nodes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-958" name="__codelineno-0-958"></a>            <span class="n">n1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_edge_nodes</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-959" name="__codelineno-0-959"></a>            <span class="n">n2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_edge_nodes</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+<a id="__codelineno-0-960" name="__codelineno-0-960"></a>            <span class="n">starts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">_node_x</span><span class="p">[</span><span class="n">n1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_node_y</span><span class="p">[</span><span class="n">n1</span><span class="p">]])</span>
+<a id="__codelineno-0-961" name="__codelineno-0-961"></a>            <span class="n">ends</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">_node_x</span><span class="p">[</span><span class="n">n2</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_node_y</span><span class="p">[</span><span class="n">n2</span><span class="p">]])</span>
+<a id="__codelineno-0-962" name="__codelineno-0-962"></a>            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">starts</span><span class="p">,</span> <span class="n">ends</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-0-963" name="__codelineno-0-963"></a>
+<a id="__codelineno-0-964" name="__codelineno-0-964"></a>        <span class="n">counts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes_per_face</span>
+<a id="__codelineno-0-965" name="__codelineno-0-965"></a>        <span class="c1"># Compacted valid node indices in face/row order; face i occupies the</span>
+<a id="__codelineno-0-966" name="__codelineno-0-966"></a>        <span class="c1"># slice flat_nodes[face_start[i] : face_start[i] + counts[i]].</span>
+<a id="__codelineno-0-967" name="__codelineno-0-967"></a>        <span class="c1"># _face_nodes is already np.intp (set in the constructor), so boolean</span>
+<a id="__codelineno-0-968" name="__codelineno-0-968"></a>        <span class="c1"># masking preserves the dtype without an explicit cast.</span>
+<a id="__codelineno-0-969" name="__codelineno-0-969"></a>        <span class="n">flat_nodes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_face_nodes</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_face_nodes</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fill_value</span><span class="p">]</span>
+<a id="__codelineno-0-970" name="__codelineno-0-970"></a>        <span class="k">if</span> <span class="n">flat_nodes</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-971" name="__codelineno-0-971"></a>            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+<a id="__codelineno-0-972" name="__codelineno-0-972"></a>
+<a id="__codelineno-0-973" name="__codelineno-0-973"></a>        <span class="n">face_start</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">counts</span><span class="p">)</span> <span class="o">-</span> <span class="n">counts</span>
+<a id="__codelineno-0-974" name="__codelineno-0-974"></a>        <span class="c1"># Each valid node starts one polygon edge to the next node within the</span>
+<a id="__codelineno-0-975" name="__codelineno-0-975"></a>        <span class="c1"># same face, wrapping from the last node back to the first.</span>
+<a id="__codelineno-0-976" name="__codelineno-0-976"></a>        <span class="n">next_pos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">flat_nodes</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">intp</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+<a id="__codelineno-0-977" name="__codelineno-0-977"></a>        <span class="n">nonempty</span> <span class="o">=</span> <span class="n">counts</span> <span class="o">&gt;=</span> <span class="mi">1</span>
+<a id="__codelineno-0-978" name="__codelineno-0-978"></a>        <span class="n">last_pos</span> <span class="o">=</span> <span class="n">face_start</span><span class="p">[</span><span class="n">nonempty</span><span class="p">]</span> <span class="o">+</span> <span class="n">counts</span><span class="p">[</span><span class="n">nonempty</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
+<a id="__codelineno-0-979" name="__codelineno-0-979"></a>        <span class="n">next_pos</span><span class="p">[</span><span class="n">last_pos</span><span class="p">]</span> <span class="o">=</span> <span class="n">face_start</span><span class="p">[</span><span class="n">nonempty</span><span class="p">]</span>
+<a id="__codelineno-0-980" name="__codelineno-0-980"></a>
+<a id="__codelineno-0-981" name="__codelineno-0-981"></a>        <span class="n">a</span> <span class="o">=</span> <span class="n">flat_nodes</span>
+<a id="__codelineno-0-982" name="__codelineno-0-982"></a>        <span class="n">b</span> <span class="o">=</span> <span class="n">flat_nodes</span><span class="p">[</span><span class="n">next_pos</span><span class="p">]</span>
+<a id="__codelineno-0-983" name="__codelineno-0-983"></a>        <span class="c1"># Undirected edges: order each endpoint pair, then drop duplicates by</span>
+<a id="__codelineno-0-984" name="__codelineno-0-984"></a>        <span class="c1"># encoding the pair as a single key (lo * n_nodes + hi) and applying a</span>
+<a id="__codelineno-0-985" name="__codelineno-0-985"></a>        <span class="c1"># 1-D sort + adjacent-diff dedup (cheaper than a row-wise lexsort). The</span>
+<a id="__codelineno-0-986" name="__codelineno-0-986"></a>        <span class="c1"># key stays exact in int64 for any realistic mesh; it would only</span>
+<a id="__codelineno-0-987" name="__codelineno-0-987"></a>        <span class="c1"># overflow when n_nodes exceeds ~3e9.</span>
+<a id="__codelineno-0-988" name="__codelineno-0-988"></a>        <span class="n">n_nodes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_nodes</span><span class="p">)</span>
+<a id="__codelineno-0-989" name="__codelineno-0-989"></a>        <span class="n">lo</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+<a id="__codelineno-0-990" name="__codelineno-0-990"></a>        <span class="n">hi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+<a id="__codelineno-0-991" name="__codelineno-0-991"></a>        <span class="n">sorted_keys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">lo</span> <span class="o">*</span> <span class="n">n_nodes</span> <span class="o">+</span> <span class="n">hi</span><span class="p">)</span>
+<a id="__codelineno-0-992" name="__codelineno-0-992"></a>        <span class="n">keys</span> <span class="o">=</span> <span class="n">sorted_keys</span><span class="p">[</span>
+<a id="__codelineno-0-993" name="__codelineno-0-993"></a>            <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(([</span><span class="kc">True</span><span class="p">],</span> <span class="n">sorted_keys</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">!=</span> <span class="n">sorted_keys</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+<a id="__codelineno-0-994" name="__codelineno-0-994"></a>        <span class="p">]</span>
+<a id="__codelineno-0-995" name="__codelineno-0-995"></a>        <span class="n">n1</span><span class="p">,</span> <span class="n">n2</span> <span class="o">=</span> <span class="n">keys</span> <span class="o">//</span> <span class="n">n_nodes</span><span class="p">,</span> <span class="n">keys</span> <span class="o">%</span> <span class="n">n_nodes</span>
+<a id="__codelineno-0-996" name="__codelineno-0-996"></a>        <span class="n">starts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">_node_x</span><span class="p">[</span><span class="n">n1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_node_y</span><span class="p">[</span><span class="n">n1</span><span class="p">]])</span>
+<a id="__codelineno-0-997" name="__codelineno-0-997"></a>        <span class="n">ends</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">_node_x</span><span class="p">[</span><span class="n">n2</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_node_y</span><span class="p">[</span><span class="n">n2</span><span class="p">]])</span>
+<a id="__codelineno-0-998" name="__codelineno-0-998"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">starts</span><span class="p">,</span> <span class="n">ends</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -5495,6 +5505,13 @@ in batch processing.</p>
     </table>
 
 
+<details class="notes" open>
+  <summary>Notes</summary>
+  <p>An outline carries no scalar mapping, so this resets <code>self.im</code>
+to None (clearing any colour-mapped artist left by a prior
+<code>plot()</code> call).</p>
+</details>
+
 <p><span class="doc-section-title">Examples:</span></p>
     <ul>
 <li>Render a triangular mesh wireframe:
@@ -5573,7 +5590,12 @@ in batch processing.</p>
 <span class="normal"><a href="#__codelineno-0-900">900</a></span>
 <span class="normal"><a href="#__codelineno-0-901">901</a></span>
 <span class="normal"><a href="#__codelineno-0-902">902</a></span>
-<span class="normal"><a href="#__codelineno-0-903">903</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-842" name="__codelineno-0-842"></a><span class="k">def</span><span class="w"> </span><span class="nf">plot_outline</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-903">903</a></span>
+<span class="normal"><a href="#__codelineno-0-904">904</a></span>
+<span class="normal"><a href="#__codelineno-0-905">905</a></span>
+<span class="normal"><a href="#__codelineno-0-906">906</a></span>
+<span class="normal"><a href="#__codelineno-0-907">907</a></span>
+<span class="normal"><a href="#__codelineno-0-908">908</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-842" name="__codelineno-0-842"></a><span class="k">def</span><span class="w"> </span><span class="nf">plot_outline</span><span class="p">(</span>
 <a id="__codelineno-0-843" name="__codelineno-0-843"></a>    <span class="bp">self</span><span class="p">,</span>
 <a id="__codelineno-0-844" name="__codelineno-0-844"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-845" name="__codelineno-0-845"></a>    <span class="n">color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;black&quot;</span><span class="p">,</span>
@@ -5601,40 +5623,45 @@ in batch processing.</p>
 <a id="__codelineno-0-867" name="__codelineno-0-867"></a><span class="sd">            `plt.close(fig)` after saving to avoid memory leaks</span>
 <a id="__codelineno-0-868" name="__codelineno-0-868"></a><span class="sd">            in batch processing.</span>
 <a id="__codelineno-0-869" name="__codelineno-0-869"></a>
-<a id="__codelineno-0-870" name="__codelineno-0-870"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-871" name="__codelineno-0-871"></a><span class="sd">        - Render a triangular mesh wireframe:</span>
-<a id="__codelineno-0-872" name="__codelineno-0-872"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-873" name="__codelineno-0-873"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-874" name="__codelineno-0-874"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.mesh_glyph import MeshGlyph</span>
-<a id="__codelineno-0-875" name="__codelineno-0-875"></a><span class="sd">            &gt;&gt;&gt; mg = MeshGlyph(</span>
-<a id="__codelineno-0-876" name="__codelineno-0-876"></a><span class="sd">            ...     np.array([0.0, 1.0, 0.5]),</span>
-<a id="__codelineno-0-877" name="__codelineno-0-877"></a><span class="sd">            ...     np.array([0.0, 0.0, 1.0]),</span>
-<a id="__codelineno-0-878" name="__codelineno-0-878"></a><span class="sd">            ...     np.array([[0, 1, 2]]),</span>
-<a id="__codelineno-0-879" name="__codelineno-0-879"></a><span class="sd">            ... )</span>
-<a id="__codelineno-0-880" name="__codelineno-0-880"></a><span class="sd">            &gt;&gt;&gt; fig, ax = mg.plot_outline(color=&quot;blue&quot;)</span>
-<a id="__codelineno-0-881" name="__codelineno-0-881"></a>
-<a id="__codelineno-0-882" name="__codelineno-0-882"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-883" name="__codelineno-0-883"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-884" name="__codelineno-0-884"></a>    <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-885" name="__codelineno-0-885"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span>
-<a id="__codelineno-0-886" name="__codelineno-0-886"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_figure</span><span class="p">()</span>
-<a id="__codelineno-0-887" name="__codelineno-0-887"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-888" name="__codelineno-0-888"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
-<a id="__codelineno-0-889" name="__codelineno-0-889"></a>
-<a id="__codelineno-0-890" name="__codelineno-0-890"></a>    <span class="n">segments</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_edge_segments</span><span class="p">()</span>
-<a id="__codelineno-0-891" name="__codelineno-0-891"></a>
-<a id="__codelineno-0-892" name="__codelineno-0-892"></a>    <span class="n">lc</span> <span class="o">=</span> <span class="n">mcoll</span><span class="o">.</span><span class="n">LineCollection</span><span class="p">(</span>
-<a id="__codelineno-0-893" name="__codelineno-0-893"></a>        <span class="n">segments</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=</span><span class="n">linewidth</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-<a id="__codelineno-0-894" name="__codelineno-0-894"></a>    <span class="p">)</span>
-<a id="__codelineno-0-895" name="__codelineno-0-895"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">add_collection</span><span class="p">(</span><span class="n">lc</span><span class="p">)</span>
-<a id="__codelineno-0-896" name="__codelineno-0-896"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">autoscale</span><span class="p">()</span>
-<a id="__codelineno-0-897" name="__codelineno-0-897"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">&quot;equal&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-898" name="__codelineno-0-898"></a>
-<a id="__codelineno-0-899" name="__codelineno-0-899"></a>    <span class="c1"># An outline carries no scalar mapping, so clear any colour-mapped</span>
-<a id="__codelineno-0-900" name="__codelineno-0-900"></a>    <span class="c1"># artist left on `self.im` by a previous `plot()` call.</span>
-<a id="__codelineno-0-901" name="__codelineno-0-901"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-902" name="__codelineno-0-902"></a>
-<a id="__codelineno-0-903" name="__codelineno-0-903"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span>
+<a id="__codelineno-0-870" name="__codelineno-0-870"></a><span class="sd">    Notes:</span>
+<a id="__codelineno-0-871" name="__codelineno-0-871"></a><span class="sd">        An outline carries no scalar mapping, so this resets `self.im`</span>
+<a id="__codelineno-0-872" name="__codelineno-0-872"></a><span class="sd">        to None (clearing any colour-mapped artist left by a prior</span>
+<a id="__codelineno-0-873" name="__codelineno-0-873"></a><span class="sd">        `plot()` call).</span>
+<a id="__codelineno-0-874" name="__codelineno-0-874"></a>
+<a id="__codelineno-0-875" name="__codelineno-0-875"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-876" name="__codelineno-0-876"></a><span class="sd">        - Render a triangular mesh wireframe:</span>
+<a id="__codelineno-0-877" name="__codelineno-0-877"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-878" name="__codelineno-0-878"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-879" name="__codelineno-0-879"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.mesh_glyph import MeshGlyph</span>
+<a id="__codelineno-0-880" name="__codelineno-0-880"></a><span class="sd">            &gt;&gt;&gt; mg = MeshGlyph(</span>
+<a id="__codelineno-0-881" name="__codelineno-0-881"></a><span class="sd">            ...     np.array([0.0, 1.0, 0.5]),</span>
+<a id="__codelineno-0-882" name="__codelineno-0-882"></a><span class="sd">            ...     np.array([0.0, 0.0, 1.0]),</span>
+<a id="__codelineno-0-883" name="__codelineno-0-883"></a><span class="sd">            ...     np.array([[0, 1, 2]]),</span>
+<a id="__codelineno-0-884" name="__codelineno-0-884"></a><span class="sd">            ... )</span>
+<a id="__codelineno-0-885" name="__codelineno-0-885"></a><span class="sd">            &gt;&gt;&gt; fig, ax = mg.plot_outline(color=&quot;blue&quot;)</span>
+<a id="__codelineno-0-886" name="__codelineno-0-886"></a>
+<a id="__codelineno-0-887" name="__codelineno-0-887"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-888" name="__codelineno-0-888"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-889" name="__codelineno-0-889"></a>    <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-890" name="__codelineno-0-890"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span>
+<a id="__codelineno-0-891" name="__codelineno-0-891"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_figure</span><span class="p">()</span>
+<a id="__codelineno-0-892" name="__codelineno-0-892"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-893" name="__codelineno-0-893"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+<a id="__codelineno-0-894" name="__codelineno-0-894"></a>
+<a id="__codelineno-0-895" name="__codelineno-0-895"></a>    <span class="n">segments</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_edge_segments</span><span class="p">()</span>
+<a id="__codelineno-0-896" name="__codelineno-0-896"></a>
+<a id="__codelineno-0-897" name="__codelineno-0-897"></a>    <span class="n">lc</span> <span class="o">=</span> <span class="n">mcoll</span><span class="o">.</span><span class="n">LineCollection</span><span class="p">(</span>
+<a id="__codelineno-0-898" name="__codelineno-0-898"></a>        <span class="n">segments</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=</span><span class="n">linewidth</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+<a id="__codelineno-0-899" name="__codelineno-0-899"></a>    <span class="p">)</span>
+<a id="__codelineno-0-900" name="__codelineno-0-900"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">add_collection</span><span class="p">(</span><span class="n">lc</span><span class="p">)</span>
+<a id="__codelineno-0-901" name="__codelineno-0-901"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">autoscale</span><span class="p">()</span>
+<a id="__codelineno-0-902" name="__codelineno-0-902"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">&quot;equal&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-903" name="__codelineno-0-903"></a>
+<a id="__codelineno-0-904" name="__codelineno-0-904"></a>    <span class="c1"># An outline carries no scalar mapping, so clear any colour-mapped</span>
+<a id="__codelineno-0-905" name="__codelineno-0-905"></a>    <span class="c1"># artist left on `self.im` by a previous `plot()` call.</span>
+<a id="__codelineno-0-906" name="__codelineno-0-906"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-907" name="__codelineno-0-907"></a>
+<a id="__codelineno-0-908" name="__codelineno-0-908"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
