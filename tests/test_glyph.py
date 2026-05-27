@@ -1471,3 +1471,33 @@ class TestFigureResolutionInternals:
                 return sentinel
 
         assert _immediate_figure(_LegacyAx()) is sentinel, "should return get_figure()"
+
+
+class TestGetTicksDegenerateRange:
+    """`get_ticks` must not divide by zero on a degenerate colour range (#4)."""
+
+    def test_zero_spacing_returns_single_tick(self):
+        """`ticks_spacing == 0` yields a single tick at `vmin`.
+
+        Test scenario:
+            A constant-value field gives `vmax == vmin` and a zero spacing;
+            `get_ticks` returns `[vmin]` rather than calling `np.arange` with
+            a zero step.
+        """
+        opts = _make_options()
+        opts.update({"vmin": 5.0, "vmax": 5.0, "ticks_spacing": 0.0})
+        g = Glyph(default_options=opts)
+        ticks = g.get_ticks()
+        assert ticks.tolist() == [5.0], f"expected a single tick, got {ticks.tolist()}"
+
+    def test_normal_range_unaffected(self):
+        """A normal range still produces evenly spaced ticks.
+
+        Test scenario:
+            Regression guard — the degenerate check does not alter the
+            ordinary path.
+        """
+        opts = _make_options()
+        opts.update({"vmin": 0.0, "vmax": 10.0, "ticks_spacing": 2.0})
+        g = Glyph(default_options=opts)
+        assert g.get_ticks().tolist() == [0.0, 2.0, 4.0, 6.0, 8.0, 10.0], "ticks changed"
