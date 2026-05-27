@@ -99,6 +99,37 @@ class TestInit:
         assert g.fig is fig, "explicit fig should be stored as-is"
         plt.close(fig)
 
+    def test_mismatched_fig_ax_warns(self):
+        """A `fig` that does not own `ax` warns the caller.
+
+        Test scenario:
+            Passing an `ax` together with an unrelated `fig` is almost always
+            a mistake (the two figure handles disagree), so the constructor
+            emits a warning while still honouring the explicit `fig`.
+        """
+        fig_a, ax_a = plt.subplots()
+        fig_b = plt.figure()
+        with pytest.warns(UserWarning, match="not the figure that owns"):
+            g = Glyph(default_options=_make_options(), fig=fig_b, ax=ax_a)
+        assert g.fig is fig_b, "explicit fig is still honoured despite the mismatch"
+        plt.close(fig_a)
+        plt.close(fig_b)
+
+    def test_matched_fig_ax_does_not_warn(self):
+        """Passing `ax` with its own parent `fig` does not warn.
+
+        Test scenario:
+            The consistent case (fig owns ax) must stay silent.
+        """
+        import warnings as _warnings
+
+        fig, ax = plt.subplots()
+        with _warnings.catch_warnings():
+            _warnings.simplefilter("error")
+            g = Glyph(default_options=_make_options(), fig=fig, ax=ax)
+        assert g.fig is fig, "matched fig should be stored without warning"
+        plt.close(fig)
+
     def test_kwargs_override_defaults(self):
         """Test that kwargs override default_options values."""
         g = Glyph(default_options=_make_options(), cmap="plasma")

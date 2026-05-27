@@ -68,14 +68,17 @@ from matplotlib.figure import Figure
 
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
-DEFAULT_OPTIONS = {
+STATISTICAL_DEFAULT_OPTIONS = {
     "figsize": (5, 5),
     "bins": 15,
     "color": ["#0504aa"],
     "alpha": 0.7,
     "rwidth": 0.85,
 }
-DEFAULT_OPTIONS = STYLE_DEFAULTS | DEFAULT_OPTIONS
+STATISTICAL_DEFAULT_OPTIONS = STYLE_DEFAULTS | STATISTICAL_DEFAULT_OPTIONS
+#: Backwards-compatible alias for the statistical glyph's default options
+#: (named like the other glyphs' `*_DEFAULT_OPTIONS` constants).
+DEFAULT_OPTIONS = STATISTICAL_DEFAULT_OPTIONS
 
 
 class StatisticalGlyph:
@@ -148,9 +151,8 @@ class StatisticalGlyph:
 
     #: Option keys this glyph accepts, exposed as a class attribute so they
     #: can be introspected/filtered before an instance exists (see
-    #: `option_keys`/`filter_kwargs`). The right-hand side is the
-    #: module-level ``DEFAULT_OPTIONS`` dict.
-    DEFAULT_OPTIONS = DEFAULT_OPTIONS
+    #: `option_keys`/`filter_kwargs`).
+    DEFAULT_OPTIONS = STATISTICAL_DEFAULT_OPTIONS
 
     def __init__(
         self,
@@ -247,7 +249,7 @@ class StatisticalGlyph:
         self._values = values
         self._fig = fig
         self._ax = ax
-        options_dict = DEFAULT_OPTIONS.copy()
+        options_dict = STATISTICAL_DEFAULT_OPTIONS.copy()
         options_dict.update(kwargs)
         self._default_options = options_dict
 
@@ -334,7 +336,7 @@ class StatisticalGlyph:
         return self._default_options
 
     @classmethod
-    def option_keys(cls) -> set:
+    def option_keys(cls) -> set[str]:
         """Return the keyword-argument keys this glyph accepts.
 
         Resolves from the class-level ``DEFAULT_OPTIONS`` so the accepted
@@ -363,7 +365,7 @@ class StatisticalGlyph:
         return set(cls.DEFAULT_OPTIONS)
 
     @classmethod
-    def filter_kwargs(cls, kwargs: Dict) -> Dict:
+    def filter_kwargs(cls, kwargs: dict) -> dict:
         """Return only the subset of ``kwargs`` whose keys this glyph accepts.
 
         Args:

@@ -39,11 +39,11 @@ from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
 from PIL import Image
 
-from cleopatra.glyph import Glyph
+from cleopatra.glyph import Glyph, _root_figure
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import ColorScale  # re-exported for convenience  # noqa: F401
 
-DEFAULT_OPTIONS = {
+ARRAY_DEFAULT_OPTIONS = {
     "vmin": None,
     "vmax": None,
     "num_size": 8,
@@ -60,7 +60,10 @@ DEFAULT_OPTIONS = {
     "cbar_kwargs": None,
     "add_colorbar": True,
 }
-DEFAULT_OPTIONS = STYLE_DEFAULTS | DEFAULT_OPTIONS
+ARRAY_DEFAULT_OPTIONS = STYLE_DEFAULTS | ARRAY_DEFAULT_OPTIONS
+#: Backwards-compatible alias for the array glyph's default options
+#: (named like the other glyphs' `*_DEFAULT_OPTIONS` constants).
+DEFAULT_OPTIONS = ARRAY_DEFAULT_OPTIONS
 
 #: Tuple of accepted `kind=` values for `ArrayGlyph.plot`.
 VALID_PLOT_KINDS = ("auto", "imshow", "pcolormesh", "contour", "contourf")
@@ -236,8 +239,7 @@ class ArrayGlyph(Glyph):
     """
 
     #: Option keys this glyph accepts (see `Glyph.option_keys`/`filter_kwargs`).
-    #: The right-hand side is the module-level ``DEFAULT_OPTIONS`` dict.
-    DEFAULT_OPTIONS = DEFAULT_OPTIONS
+    DEFAULT_OPTIONS = ARRAY_DEFAULT_OPTIONS
 
     def __init__(
         self,
@@ -457,7 +459,9 @@ class ArrayGlyph(Glyph):
 
         ```
         """
-        super().__init__(default_options=DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs)
+        super().__init__(
+            default_options=ARRAY_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs
+        )
         # first replace the no_data_value by nan
         # convert the array to float32 to be able to replace the no data value with nan
         if exclude_value is not np.nan:
@@ -2047,7 +2051,7 @@ class ArrayGlyph(Glyph):
         # (`ax.get_figure()`), keeping `fig` a construction-time binding.
         if ax is not None:
             self.ax = ax
-            self.fig = ax.get_figure()
+            self.fig = _root_figure(ax)
         elif self.fig is None:
             self.fig, self.ax = self.create_figure_axes()
 

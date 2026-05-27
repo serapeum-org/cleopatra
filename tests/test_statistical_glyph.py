@@ -545,6 +545,31 @@ class TestFigParameterRemovedFromRenderers:
         _, out_ax, _ = stat.stripes(cmap="coolwarm")
         assert out_ax is ax, "stripes should reuse the constructor axes"
 
+    def test_multiboxplot_falls_back_to_constructor_axes(self):
+        """`multiboxplot()` resolves the axes from the constructor when omitted.
+
+        Test scenario:
+            Same constructor-axes fallback as boxplot/stripes, for the
+            grouped `multiboxplot` renderer (requires 2D values).
+        """
+        fig, ax = plt.subplots()
+        stat = StatisticalGlyph(np.arange(12, dtype=float).reshape(4, 3), ax=ax)
+        _, out_ax, _ = stat.multiboxplot(positions=[1, 2, 3])
+        assert out_ax is ax, "multiboxplot should reuse the constructor axes"
+
+    def test_multiboxplot_falls_back_to_constructor_figure(self):
+        """`multiboxplot()` with only a constructor `fig` adds an axes to it.
+
+        Test scenario:
+            With no axes anywhere but a constructor figure, the renderer adds
+            a subplot to that figure rather than creating a new one.
+        """
+        fig = plt.figure()
+        stat = StatisticalGlyph(np.arange(12, dtype=float).reshape(4, 3), fig=fig)
+        out_fig, out_ax, _ = stat.multiboxplot(positions=[1, 2, 3])
+        assert out_fig is fig, "multiboxplot should add an axes to the constructor figure"
+        assert out_ax in fig.axes, "the new axes must belong to that figure"
+
 
 class TestOptionKeysAndFilterKwargs:
     """Tests for `StatisticalGlyph.option_keys` / `filter_kwargs` (issue #131).

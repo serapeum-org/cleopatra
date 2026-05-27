@@ -34,6 +34,27 @@ SUPPORTED_VIDEO_FORMAT = ["gif", "mov", "avi", "mp4"]
 MAX_DISCRETE_LEVELS = 1000
 
 
+def _root_figure(ax: Axes) -> Figure:
+    """Return the top-level `Figure` that owns `ax`, across matplotlib versions.
+
+    Prefers `Axes.get_figure(root=True)` (matplotlib >= 3.10), which returns
+    the root `Figure` even when the axes lives on a `SubFigure` and avoids the
+    3.10 deprecation warning attached to the bare `get_figure()`. Falls back to
+    the plain `get_figure()` on older matplotlib where the `root` keyword does
+    not exist (the project's 3.8.4 floor).
+
+    Args:
+        ax: The axes whose owning figure is wanted.
+
+    Returns:
+        Figure: The top-level figure for `ax`.
+    """
+    try:
+        return ax.get_figure(root=True)
+    except TypeError:
+        return ax.get_figure()
+
+
 class Glyph:
     """Base class for cleopatra visualization glyphs.
 
@@ -139,7 +160,19 @@ class Glyph:
         # given); passing neither leaves both unset until render time.
         if ax is not None:
             self.ax = ax
-            self.fig = fig if fig is not None else ax.get_figure()
+            if fig is not None:
+                # A mismatched (fig, ax) pair leaves self.fig and
+                # self.ax.figure disagreeing — almost always a caller mistake.
+                if fig is not _root_figure(ax):
+                    warnings.warn(
+                        "The given `fig` is not the figure that owns `ax`; "
+                        "the axes' own figure is what will be drawn on. Pass "
+                        "only `ax` (its figure is derived automatically).",
+                        stacklevel=2,
+                    )
+                self.fig = fig
+            else:
+                self.fig = _root_figure(ax)
         elif fig is not None:
             self.fig = fig
             self.ax = None
@@ -170,6 +203,14 @@ class Glyph:
         keys can be inspected **without constructing an instance** (and
         therefore without tripping the strict unknown-kwarg check in
         `_merge_kwargs`). The keys differ per glyph subclass.
+
+        This reports the class's *default* option set. For every concrete
+        glyph subclass that equals the instance's accepted keys (each
+        subclass passes the same dict to `__init__`). The base `Glyph`
+        reports the shared `STYLE_DEFAULTS`; an instance built with a
+        custom injected `default_options` is the one case where the two
+        can differ, so base `Glyph` is not part of the introspection
+        contract.
 
         Returns:
             set[str]: The accepted option keys for this glyph class.
