@@ -242,3 +242,37 @@ def test_scatter_default_options_extend_style_defaults():
     """
     assert "figsize" in SCATTER_DEFAULT_OPTIONS, "Should inherit base style keys"
     assert "point_size" in SCATTER_DEFAULT_OPTIONS, "Should add scatter keys"
+
+
+class TestAddColorbarToggle:
+    """`add_colorbar=False` suppresses ScatterGlyph's colorbar (#3)."""
+
+    @staticmethod
+    def _xyv():
+        return np.array([0.0, 1.0, 2.0]), np.array([0.0, 1.0, 2.0]), np.array([1.0, 2.0, 3.0])
+
+    def test_default_draws_colorbar(self):
+        """By default a coloured scatter draws its colorbar (extra axes)."""
+        x, y, v = self._xyv()
+        glyph = ScatterGlyph(x, y, values=v)
+        fig, ax, _ = glyph.plot()
+        try:
+            assert glyph.cbar is not None, "default should draw a colorbar"
+            assert len(fig.axes) == 2, f"expected 2 axes, got {len(fig.axes)}"
+        finally:
+            plt.close(fig)
+
+    def test_add_colorbar_false_suppresses(self):
+        """`add_colorbar=False` leaves cbar None and adds no axes."""
+        x, y, v = self._xyv()
+        glyph = ScatterGlyph(x, y, values=v, add_colorbar=False)
+        fig, ax, _ = glyph.plot()
+        try:
+            assert glyph.cbar is None, "add_colorbar=False should skip the colorbar"
+            assert len(fig.axes) == 1, f"expected 1 axes, got {len(fig.axes)}"
+        finally:
+            plt.close(fig)
+
+    def test_add_colorbar_in_option_keys(self):
+        """`add_colorbar` is an accepted option key (no validation error)."""
+        assert "add_colorbar" in ScatterGlyph.option_keys(), "add_colorbar missing"

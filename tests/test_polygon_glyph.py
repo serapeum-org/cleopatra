@@ -204,3 +204,35 @@ def test_polygon_default_options_extend_style_defaults():
     """
     assert "figsize" in POLYGON_DEFAULT_OPTIONS, "Should inherit base style keys"
     assert "edgecolor" in POLYGON_DEFAULT_OPTIONS, "Should add polygon keys"
+
+
+class TestAddColorbarToggle:
+    """`add_colorbar=False` suppresses PolygonGlyph's colorbar (#3)."""
+
+    @staticmethod
+    def _polys():
+        return [np.array([[0, 0], [1, 0], [1, 1]]), np.array([[1, 1], [2, 1], [2, 2]])]
+
+    def test_default_draws_colorbar(self):
+        """A value-filled polygon layer draws its colorbar by default."""
+        glyph = PolygonGlyph(self._polys(), values=np.array([1.0, 2.0]))
+        fig, ax, _ = glyph.plot()
+        try:
+            assert glyph.cbar is not None, "default should draw a colorbar"
+            assert len(fig.axes) == 2, f"expected 2 axes, got {len(fig.axes)}"
+        finally:
+            plt.close(fig)
+
+    def test_add_colorbar_false_suppresses(self):
+        """`add_colorbar=False` leaves cbar None and adds no axes."""
+        glyph = PolygonGlyph(self._polys(), values=np.array([1.0, 2.0]), add_colorbar=False)
+        fig, ax, _ = glyph.plot()
+        try:
+            assert glyph.cbar is None, "add_colorbar=False should skip the colorbar"
+            assert len(fig.axes) == 1, f"expected 1 axes, got {len(fig.axes)}"
+        finally:
+            plt.close(fig)
+
+    def test_add_colorbar_in_option_keys(self):
+        """`add_colorbar` is an accepted option key."""
+        assert "add_colorbar" in PolygonGlyph.option_keys(), "add_colorbar missing"

@@ -48,6 +48,7 @@ VECTOR_DEFAULT_OPTIONS = {
     "vmax": None,
     "levels": None,
     "ticks_spacing": None,
+    "add_colorbar": True,
 }
 VECTOR_DEFAULT_OPTIONS = STYLE_DEFAULTS | VECTOR_DEFAULT_OPTIONS
 
@@ -69,7 +70,9 @@ class VectorGlyph(Glyph):
         **kwargs: Override any key in `VECTOR_DEFAULT_OPTIONS`
             (e.g. `density`, `scale`, `cmap`, `vmin`, `vmax`, `levels`,
             `color_scale`, `ticks_spacing`, `cbar_label`, `figsize`,
-            `title`).
+            `title`). Set `add_colorbar=False` to suppress the per-glyph
+            colorbar (default True) for shared-axes composition where the
+            host owns a single aggregated colorbar.
 
     Examples:
         - Build a field and inspect the stored magnitude:
@@ -225,7 +228,8 @@ class VectorGlyph(Glyph):
             if norm is None:
                 im.set_clim(ticks[0], ticks[-1])
 
-        self.cbar = self.create_color_bar(ax, im, cbar_kw)
+        if opts["add_colorbar"]:
+            self.cbar = self.create_color_bar(ax, im, cbar_kw)
 
         if opts["title"]:
             ax.set_title(opts["title"], fontsize=opts["title_size"])

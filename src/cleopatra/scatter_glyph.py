@@ -52,6 +52,7 @@ SCATTER_DEFAULT_OPTIONS = {
     "vmax": None,
     "levels": None,
     "ticks_spacing": None,
+    "add_colorbar": True,
 }
 SCATTER_DEFAULT_OPTIONS = STYLE_DEFAULTS | SCATTER_DEFAULT_OPTIONS
 
@@ -76,7 +77,9 @@ class ScatterGlyph(Glyph):
         **kwargs: Override any key in `SCATTER_DEFAULT_OPTIONS`
             (e.g. `marker`, `point_size`, `cmap`, `vmin`, `vmax`,
             `levels`, `color_scale`, `ticks_spacing`, `cbar_label`,
-            `figsize`, `title`).
+            `figsize`, `title`). Set `add_colorbar=False` to suppress the
+            per-glyph colorbar (default True) for shared-axes composition
+            where the host owns a single aggregated colorbar.
 
     Raises:
         ValueError: If `x` and `y` (or `values`, when given) have
@@ -217,7 +220,8 @@ class ScatterGlyph(Glyph):
                 vmin=None if norm else ticks[0],
                 vmax=None if norm else ticks[-1],
             )
-            self.cbar = self.create_color_bar(ax, paths, cbar_kw)
+            if opts["add_colorbar"]:
+                self.cbar = self.create_color_bar(ax, paths, cbar_kw)
 
         if opts["title"]:
             ax.set_title(opts["title"], fontsize=opts["title_size"])
