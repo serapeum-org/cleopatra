@@ -544,3 +544,51 @@ class TestFigParameterRemovedFromRenderers:
         stat = StatisticalGlyph(np.array([0.1, 0.5, 0.9]), ax=ax)
         _, out_ax, _ = stat.stripes(cmap="coolwarm")
         assert out_ax is ax, "stripes should reuse the constructor axes"
+
+
+class TestOptionKeysAndFilterKwargs:
+    """Tests for `StatisticalGlyph.option_keys` / `filter_kwargs` (issue #131).
+
+    StatisticalGlyph is a standalone class (not a Glyph subclass) but exposes
+    the same pre-construction introspection helpers for parity.
+    """
+
+    def test_option_keys_match_default_options(self):
+        """`option_keys()` equals the module-level option dict keys.
+
+        Test scenario:
+            The class attribute is the single source of truth; the accepted
+            keys match `DEFAULT_OPTIONS` and exclude unknown names.
+        """
+        from cleopatra.statistical_glyph import DEFAULT_OPTIONS
+
+        keys = StatisticalGlyph.option_keys()
+        assert keys == set(DEFAULT_OPTIONS), "keys must match DEFAULT_OPTIONS"
+        assert "bins" in keys, "a known histogram key should be present"
+        assert "totally_unknown" not in keys, "unknown keys must be absent"
+
+    def test_filter_kwargs_keeps_accepted_drops_unknown(self):
+        """`filter_kwargs` keeps accepted keys (with values) and drops the rest.
+
+        Test scenario:
+            A mixed bag is filtered to just the accepted keys; values intact.
+        """
+        raw = {"bins": 20, "alpha": 0.5, "bogus": 1}
+        safe = StatisticalGlyph.filter_kwargs(raw)
+        assert sorted(safe) == ["alpha", "bins"], f"unexpected keys: {sorted(safe)}"
+        assert safe["bins"] == 20, "values must be preserved"
+
+    def test_filter_then_histogram_does_not_raise(self):
+        """Pre-filtering lets a forwarded bag flow into histogram() cleanly.
+
+        Test scenario:
+            histogram() validates kwargs strictly; filtering an unknown key
+            out first avoids the ValueError while keeping accepted styling.
+        """
+        raw = {"bins": 10, "totally_unknown": 1}
+        stat = StatisticalGlyph(np.arange(20, dtype=float))
+        with pytest.raises(ValueError, match="totally_unknown"):
+            stat.histogram(**raw)
+        safe = StatisticalGlyph.filter_kwargs(raw)
+        fig, ax, hist = stat.histogram(**safe)
+        assert len(hist["n"]) == 1, "histogram should produce one series"

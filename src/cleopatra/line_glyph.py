@@ -81,6 +81,9 @@ class LineGlyph(Glyph):
             ```
     """
 
+    #: Option keys this glyph accepts (see `Glyph.option_keys`/`filter_kwargs`).
+    DEFAULT_OPTIONS = LINE_DEFAULT_OPTIONS
+
     def __init__(
         self,
         x: np.ndarray,

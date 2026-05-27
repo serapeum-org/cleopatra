@@ -1033,3 +1033,112 @@ class TestArrayGlyphUnchangedByHelper:
             array_ticks,
             err_msg="Helper ticks should match ArrayGlyph's ticks for the same data",
         )
+
+
+class TestOptionKeysAndFilterKwargs:
+    """Tests for `Glyph.option_keys` / `Glyph.filter_kwargs` (issue #131).
+
+    Pre-construction introspection of a glyph's accepted option keys, and a
+    filter helper that drops unknown keys so a forwarded kwargs bag can be
+    used without tripping the strict `_merge_kwargs` validation.
+    """
+
+    def test_option_keys_without_instance(self):
+        """`option_keys()` works on the class, with no instance built.
+
+        Test scenario:
+            The base Glyph exposes the shared style-default keys via a
+            classmethod, so no construction (and no `_merge_kwargs`) is needed.
+        """
+        keys = Glyph.option_keys()
+        assert keys == set(STYLE_DEFAULTS), "base keys should equal STYLE_DEFAULTS"
+        assert "cmap" in keys, "a known style key should be present"
+
+    @pytest.mark.parametrize(
+        "import_path, class_name, const_name",
+        [
+            ("cleopatra.array_glyph", "ArrayGlyph", "DEFAULT_OPTIONS"),
+            ("cleopatra.scatter_glyph", "ScatterGlyph", "SCATTER_DEFAULT_OPTIONS"),
+            ("cleopatra.polygon_glyph", "PolygonGlyph", "POLYGON_DEFAULT_OPTIONS"),
+            ("cleopatra.vector_glyph", "VectorGlyph", "VECTOR_DEFAULT_OPTIONS"),
+            ("cleopatra.line_glyph", "LineGlyph", "LINE_DEFAULT_OPTIONS"),
+            ("cleopatra.mesh_glyph", "MeshGlyph", "MESH_DEFAULT_OPTIONS"),
+        ],
+    )
+    def test_subclass_keys_match_their_option_dict(
+        self, import_path, class_name, const_name
+    ):
+        """Each glyph's `option_keys()` equals its own option-dict keys.
+
+        Args:
+            import_path: Dotted module path of the glyph.
+            class_name: The glyph class to introspect.
+            const_name: Name of that glyph's module-level option dict.
+
+        Test scenario:
+            The class attribute is the single source of truth, so the keys
+            reported per glyph match its `*_DEFAULT_OPTIONS` constant exactly.
+        """
+        import importlib
+
+        module = importlib.import_module(import_path)
+        glyph_cls = getattr(module, class_name)
+        const = getattr(module, const_name)
+        assert glyph_cls.option_keys() == set(const), (
+            f"{glyph_cls.__name__}.option_keys() must match {const_name}"
+        )
+
+    def test_keys_differ_per_glyph(self):
+        """Different glyphs expose different option keys.
+
+        Test scenario:
+            A polygon-specific key (`edgecolor`) is accepted by PolygonGlyph
+            but not by ScatterGlyph, proving the keys are resolved per class.
+        """
+        from cleopatra.polygon_glyph import PolygonGlyph
+        from cleopatra.scatter_glyph import ScatterGlyph
+
+        assert "edgecolor" in PolygonGlyph.option_keys(), "polygon accepts edgecolor"
+        assert "edgecolor" not in ScatterGlyph.option_keys(), "scatter does not"
+
+    def test_filter_kwargs_keeps_accepted_drops_unknown(self):
+        """`filter_kwargs` returns only accepted keys, preserving values.
+
+        Test scenario:
+            A mixed bag of known and unknown keys is filtered to just the
+            known ones, with their values intact.
+        """
+        from cleopatra.polygon_glyph import PolygonGlyph
+
+        raw = {"cmap": "viridis", "edgecolor": "black", "bogus": 1}
+        safe = PolygonGlyph.filter_kwargs(raw)
+        assert sorted(safe) == ["cmap", "edgecolor"], f"unexpected keys: {sorted(safe)}"
+        assert safe["cmap"] == "viridis", "values must be preserved"
+
+    def test_filter_kwargs_empty_returns_empty(self):
+        """Filtering an empty mapping yields an empty mapping.
+
+        Test scenario:
+            Boundary case — no keys in, no keys out.
+        """
+        from cleopatra.scatter_glyph import ScatterGlyph
+
+        assert ScatterGlyph.filter_kwargs({}) == {}, "empty in -> empty out"
+
+    def test_filter_then_construct_does_not_raise(self):
+        """Pre-filtering resolves the catch-22: construction then succeeds.
+
+        Test scenario:
+            Forwarding a bag with an unknown key would raise on construction;
+            filtering first lets the same bag build the glyph cleanly while
+            keeping the accepted styling.
+        """
+        import numpy as np
+        from cleopatra.array_glyph import ArrayGlyph
+
+        raw = {"cmap": "viridis", "totally_unknown": 1}
+        with pytest.raises(ValueError, match="totally_unknown"):
+            ArrayGlyph(np.arange(9.0).reshape(3, 3), **raw)
+        safe = ArrayGlyph.filter_kwargs(raw)
+        glyph = ArrayGlyph(np.arange(9.0).reshape(3, 3), **safe)
+        assert glyph.default_options["cmap"] == "viridis", "accepted key must survive"

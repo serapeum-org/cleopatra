@@ -141,6 +141,12 @@ class StatisticalGlyph:
         ![one-histogram](./../images/statistical_glyph/one-histogram.png)
     """
 
+    #: Option keys this glyph accepts, exposed as a class attribute so they
+    #: can be introspected/filtered before an instance exists (see
+    #: `option_keys`/`filter_kwargs`). The right-hand side is the
+    #: module-level ``DEFAULT_OPTIONS`` dict.
+    DEFAULT_OPTIONS = DEFAULT_OPTIONS
+
     def __init__(
         self,
         values: Union[List, np.ndarray],
@@ -321,6 +327,64 @@ class StatisticalGlyph:
             ```
         """
         return self._default_options
+
+    @classmethod
+    def option_keys(cls) -> set:
+        """Return the keyword-argument keys this glyph accepts.
+
+        Resolves from the class-level ``DEFAULT_OPTIONS`` so the accepted
+        keys can be inspected without constructing an instance. Mirrors
+        ``cleopatra.glyph.Glyph.option_keys`` (``StatisticalGlyph`` is a
+        standalone class, not a ``Glyph`` subclass).
+
+        Returns:
+            set: The accepted option keys for this glyph class.
+
+        Examples:
+            - Inspect the accepted keys before building one:
+                ```python
+                >>> from cleopatra.statistical_glyph import StatisticalGlyph
+                >>> keys = StatisticalGlyph.option_keys()
+                >>> "bins" in keys
+                True
+                >>> "totally_unknown" in keys
+                False
+
+                ```
+
+        See Also:
+            filter_kwargs: Drop the keys this glyph does not accept.
+        """
+        return set(cls.DEFAULT_OPTIONS)
+
+    @classmethod
+    def filter_kwargs(cls, kwargs: Dict) -> Dict:
+        """Return only the subset of ``kwargs`` whose keys this glyph accepts.
+
+        Args:
+            kwargs: A mapping of candidate option keys to values.
+
+        Returns:
+            Dict: The entries of ``kwargs`` whose keys are in ``option_keys()``.
+
+        Examples:
+            - Keep only the accepted keys:
+                ```python
+                >>> from cleopatra.statistical_glyph import StatisticalGlyph
+                >>> raw = {"bins": 20, "alpha": 0.5, "bogus": 1}
+                >>> safe = StatisticalGlyph.filter_kwargs(raw)
+                >>> sorted(safe)
+                ['alpha', 'bins']
+                >>> safe["bins"]
+                20
+
+                ```
+
+        See Also:
+            option_keys: The set of keys this glyph accepts.
+        """
+        keys = cls.option_keys()
+        return {key: val for key, val in kwargs.items() if key in keys}
 
     def histogram(self, **kwargs) -> Tuple[Figure, Axes, Dict]:
         """Create a histogram from the stored numerical values.

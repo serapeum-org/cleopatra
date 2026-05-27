@@ -103,6 +103,9 @@ class ScatterGlyph(Glyph):
             norm/colorbar/ticks pipeline used for the coloured path.
     """
 
+    #: Option keys this glyph accepts (see `Glyph.option_keys`/`filter_kwargs`).
+    DEFAULT_OPTIONS = SCATTER_DEFAULT_OPTIONS
+
     def __init__(
         self,
         x: np.ndarray,

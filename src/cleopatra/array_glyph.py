@@ -235,6 +235,10 @@ class ArrayGlyph(Glyph):
     ```
     """
 
+    #: Option keys this glyph accepts (see `Glyph.option_keys`/`filter_kwargs`).
+    #: The right-hand side is the module-level ``DEFAULT_OPTIONS`` dict.
+    DEFAULT_OPTIONS = DEFAULT_OPTIONS
+
     def __init__(
         self,
         array: np.ndarray,

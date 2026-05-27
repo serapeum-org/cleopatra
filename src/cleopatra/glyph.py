@@ -23,6 +23,7 @@ from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure
 from matplotlib.ticker import LogFormatter
 
+from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import ColorScale, MidpointNormalize
 
 SUPPORTED_VIDEO_FORMAT = ["gif", "mov", "avi", "mp4"]
@@ -106,6 +107,13 @@ class Glyph:
             unstructured meshes.
     """
 
+    #: The option keys this glyph accepts, as a class attribute so they can
+    #: be introspected/filtered *before* an instance exists (see
+    #: `option_keys`/`filter_kwargs`). Each subclass overrides this with its
+    #: own option dict (built as `STYLE_DEFAULTS | <glyph-specific>`); the
+    #: base value is the shared style defaults.
+    DEFAULT_OPTIONS: dict = STYLE_DEFAULTS
+
     def __init__(
         self,
         default_options: dict,
@@ -147,6 +155,83 @@ class Glyph:
     def default_options(self) -> dict:
         """Default plot options."""
         return self._default_options
+
+    @classmethod
+    def option_keys(cls) -> set[str]:
+        """Return the keyword-argument keys this glyph accepts.
+
+        Resolves from the class-level `DEFAULT_OPTIONS`, so the accepted
+        keys can be inspected **without constructing an instance** (and
+        therefore without tripping the strict unknown-kwarg check in
+        `_merge_kwargs`). The keys differ per glyph subclass.
+
+        Returns:
+            set[str]: The accepted option keys for this glyph class.
+
+        Examples:
+            - Inspect the keys a glyph accepts before building one:
+                ```python
+                >>> from cleopatra.scatter_glyph import ScatterGlyph
+                >>> keys = ScatterGlyph.option_keys()
+                >>> "cmap" in keys
+                True
+                >>> "totally_unknown" in keys
+                False
+
+                ```
+            - Different glyphs expose different keys:
+                ```python
+                >>> from cleopatra.polygon_glyph import PolygonGlyph
+                >>> "edgecolor" in PolygonGlyph.option_keys()
+                True
+
+                ```
+
+        See Also:
+            filter_kwargs: Drop the keys a glyph does not accept from a dict.
+        """
+        return set(cls.DEFAULT_OPTIONS)
+
+    @classmethod
+    def filter_kwargs(cls, kwargs: dict) -> dict:
+        """Return only the subset of `kwargs` whose keys this glyph accepts.
+
+        A convenience for callers that forward a bag of user-supplied
+        styling kwargs into a glyph: pre-filtering with this method lets
+        the construction succeed instead of raising on an unknown key.
+        Order and values are preserved; rejected keys are simply dropped.
+
+        Args:
+            kwargs: A mapping of candidate option keys to values.
+
+        Returns:
+            dict: The entries of `kwargs` whose keys are in `option_keys()`.
+
+        Examples:
+            - Keep only the accepted keys, then construct safely:
+                ```python
+                >>> from cleopatra.polygon_glyph import PolygonGlyph
+                >>> raw = {"cmap": "viridis", "edgecolor": "black", "bogus": 1}
+                >>> safe = PolygonGlyph.filter_kwargs(raw)
+                >>> sorted(safe)
+                ['cmap', 'edgecolor']
+                >>> safe["cmap"]
+                'viridis'
+
+                ```
+            - An empty mapping yields an empty mapping:
+                ```python
+                >>> from cleopatra.scatter_glyph import ScatterGlyph
+                >>> ScatterGlyph.filter_kwargs({})
+                {}
+
+                ```
+
+        See Also:
+            option_keys: The set of keys this glyph accepts.
+        """
+        keys = cls.option_keys()
+        return {key: val for key, val in kwargs.items() if key in keys}
 
     @property
     def anim(self) -> FuncAnimation:
