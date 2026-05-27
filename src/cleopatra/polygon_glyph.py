@@ -188,8 +188,11 @@ class PolygonGlyph(Glyph):
 
         if title is not None:
             opts["title"] = title
-        if add_colorbar is not None:
-            opts["add_colorbar"] = add_colorbar
+        # Resolve the colorbar choice for this call only (a plot-time
+        # override does not persist into the glyph's options).
+        draw_colorbar = (
+            opts["add_colorbar"] if add_colorbar is None else add_colorbar
+        )
 
         if outline_only or self.values is None:
             pc = PolyCollection(
@@ -214,7 +217,7 @@ class PolygonGlyph(Glyph):
                 pc.set_clim(ticks[0], ticks[-1])
             ax.add_collection(pc)
             ax.autoscale_view()
-            if opts["add_colorbar"]:
+            if draw_colorbar:
                 self.cbar = self.create_color_bar(ax, pc, cbar_kw)
 
         if opts["title"]:

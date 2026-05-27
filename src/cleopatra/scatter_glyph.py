@@ -204,8 +204,11 @@ class ScatterGlyph(Glyph):
 
         if title is not None:
             opts["title"] = title
-        if add_colorbar is not None:
-            opts["add_colorbar"] = add_colorbar
+        # Resolve the colorbar choice for this call only (a plot-time
+        # override does not persist into the glyph's options).
+        draw_colorbar = (
+            opts["add_colorbar"] if add_colorbar is None else add_colorbar
+        )
 
         if self.values is None:
             paths = ax.scatter(
@@ -227,7 +230,7 @@ class ScatterGlyph(Glyph):
                 vmin=None if norm else ticks[0],
                 vmax=None if norm else ticks[-1],
             )
-            if opts["add_colorbar"]:
+            if draw_colorbar:
                 self.cbar = self.create_color_bar(ax, paths, cbar_kw)
 
         if opts["title"]:

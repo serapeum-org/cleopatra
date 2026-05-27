@@ -203,8 +203,11 @@ class VectorGlyph(Glyph):
 
         if title is not None:
             opts["title"] = title
-        if add_colorbar is not None:
-            opts["add_colorbar"] = add_colorbar
+        # Resolve the colorbar choice for this call only (a plot-time
+        # override does not persist into the glyph's options).
+        draw_colorbar = (
+            opts["add_colorbar"] if add_colorbar is None else add_colorbar
+        )
 
         mag = self.magnitude
         norm, cbar_kw, ticks = self._prepare_scalar_mapping(mag)
@@ -235,7 +238,7 @@ class VectorGlyph(Glyph):
             if norm is None:
                 im.set_clim(ticks[0], ticks[-1])
 
-        if opts["add_colorbar"]:
+        if draw_colorbar:
             self.cbar = self.create_color_bar(ax, im, cbar_kw)
 
         if opts["title"]:

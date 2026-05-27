@@ -1567,6 +1567,9 @@ class ArrayGlyph(Glyph):
                     out[..., band] = 0.0
                     continue
                 out[..., band] = np.clip((values - lo) / (hi - lo), 0.0, 1.0)
+            # Map any residual NaN (e.g. NaN pixels within an otherwise-valid
+            # band) to 0 so the uint8 cast is deterministic and warning-free.
+            out = np.nan_to_num(out, nan=0.0)
             return (out * 255).astype("uint8")
 
         # Legacy global-max scaling. Guard against an all-zero array so a

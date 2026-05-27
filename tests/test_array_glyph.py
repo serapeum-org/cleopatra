@@ -3345,9 +3345,14 @@ class TestScaleToRgbPerBand:
             the full output range (NaN pixels are not asserted on, only that
             the band has real contrast and the call does not raise).
         """
+        import warnings as _warnings
+
         rng = np.random.default_rng(3)
         stack = rng.uniform(10.0, 200.0, size=(6, 6, 3))
         stack[0, 0, 0] = np.nan  # a single NaN pixel in band 0
-        out = ArrayGlyph(np.zeros((4, 4))).scale_to_rgb(stack, per_band=True)
+        with _warnings.catch_warnings():
+            _warnings.simplefilter("error")  # no stray cast warning may surface
+            out = ArrayGlyph(np.zeros((4, 4))).scale_to_rgb(stack, per_band=True)
         assert out.dtype == np.uint8, "expected uint8 output"
         assert int(out[..., 0].max()) == 255, "finite values should still stretch to 255"
+        assert int(out[0, 0, 0]) == 0, "the NaN pixel should map to 0"

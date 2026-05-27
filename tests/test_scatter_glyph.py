@@ -320,6 +320,27 @@ class TestAddColorbarToggle:
         finally:
             plt.close(fig)
 
+    def test_plot_time_override_does_not_persist(self):
+        """A plot-time `add_colorbar` override does not mutate the glyph options.
+
+        Test scenario:
+            `plot(add_colorbar=False)` suppresses the colorbar for that call
+            only; the glyph's `default_options["add_colorbar"]` stays True so a
+            later `plot()` draws again.
+        """
+        x, y, v = self._xyv()
+        glyph = ScatterGlyph(x, y, values=v)
+        fig, ax, _ = glyph.plot(add_colorbar=False)
+        plt.close(fig)
+        assert glyph.default_options["add_colorbar"] is True, (
+            "override must not persist into default_options"
+        )
+        fig, ax, _ = glyph.plot()
+        try:
+            assert glyph.cbar is not None, "a later plot() should draw again"
+        finally:
+            plt.close(fig)
+
     def test_add_colorbar_in_option_keys(self):
         """`add_colorbar` is an accepted option key (no validation error)."""
         assert "add_colorbar" in ScatterGlyph.option_keys(), "add_colorbar missing"
