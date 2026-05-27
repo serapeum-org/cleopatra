@@ -289,6 +289,37 @@ class TestAddColorbarToggle:
         finally:
             plt.close(fig)
 
+    def test_plot_time_override_enables(self):
+        """`plot(add_colorbar=True)` draws even when constructed with False.
+
+        Test scenario:
+            The plot-time override works in both directions — a glyph built
+            with `add_colorbar=False` can still draw a colorbar per-call.
+        """
+        x, y, v = self._xyv()
+        glyph = ScatterGlyph(x, y, values=v, add_colorbar=False)
+        fig, ax, _ = glyph.plot(add_colorbar=True)
+        try:
+            assert glyph.cbar is not None, "plot(add_colorbar=True) should draw"
+            assert len(fig.axes) == 2, f"expected 2 axes, got {len(fig.axes)}"
+        finally:
+            plt.close(fig)
+
+    def test_plot_time_none_keeps_construction_value(self):
+        """`add_colorbar=None` (default) keeps the construction-time setting.
+
+        Test scenario:
+            Omitting the override leaves the constructor's `add_colorbar=False`
+            in force.
+        """
+        x, y, v = self._xyv()
+        glyph = ScatterGlyph(x, y, values=v, add_colorbar=False)
+        fig, ax, _ = glyph.plot()
+        try:
+            assert glyph.cbar is None, "construction-time False should persist"
+        finally:
+            plt.close(fig)
+
     def test_add_colorbar_in_option_keys(self):
         """`add_colorbar` is an accepted option key (no validation error)."""
         assert "add_colorbar" in ScatterGlyph.option_keys(), "add_colorbar missing"

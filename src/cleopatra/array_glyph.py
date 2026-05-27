@@ -1489,7 +1489,9 @@ class ArrayGlyph(Glyph):
           (the last axis of a ``(rows, cols, bands)`` array) independently
           between its `percentile` low/high cut, clip to that range, and map
           to 0-255. This is the contrast stretch typically wanted for true
-          RGB composites where bands have different dynamic ranges.
+          RGB composites where bands have different dynamic ranges. A band
+          with no usable range (all-NaN, or flat where the two cuts coincide)
+          has nothing to stretch and is returned as a flat zero band.
 
         Args:
             arr: Array to scale. If None, the glyph's own array is used.
@@ -1687,6 +1689,10 @@ class ArrayGlyph(Glyph):
                         aggregated color bar; then `self.cbar` stays
                         None and no axes space is taken by a color bar.
                         The mappable is still reachable via `self.im`.
+                        Note: for a constant-value field rendered as line
+                        `contour` there are no contour lines to map, so the
+                        color bar is skipped (with a warning) even when
+                        `add_colorbar` is True, and `self.cbar` stays None.
                     cbar_orientation : str, optional
                         Orientation of the color bar, by default 'vertical'.
                         Can be 'horizontal' or 'vertical'.

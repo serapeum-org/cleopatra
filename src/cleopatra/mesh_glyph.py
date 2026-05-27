@@ -867,6 +867,11 @@ class MeshGlyph(Glyph):
                 `plt.close(fig)` after saving to avoid memory leaks
                 in batch processing.
 
+        Notes:
+            An outline carries no scalar mapping, so this resets `self.im`
+            to None (clearing any colour-mapped artist left by a prior
+            `plot()` call).
+
         Examples:
             - Render a triangular mesh wireframe:
                 ```python

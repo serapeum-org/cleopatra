@@ -3235,6 +3235,24 @@ class TestConstantValueArray:
         finally:
             plt.close(fig)
 
+    def test_constant_contourf_does_not_warn(self):
+        """A constant-field filled `contourf` draws normally without warning.
+
+        Test scenario:
+            The degenerate-contour warning is specific to line `contour`;
+            `contourf` fills a region and keeps its colorbar.
+        """
+        import warnings as _warnings
+
+        glyph = ArrayGlyph(np.full((10, 10), 5.0))
+        with _warnings.catch_warnings():
+            _warnings.simplefilter("error", UserWarning)
+            fig, ax = glyph.plot(kind="contourf")
+        try:
+            assert glyph.cbar is not None, "contourf should still draw a colorbar"
+        finally:
+            plt.close(fig)
+
 
 class TestScaleToRgbPerBand:
     """Per-band percentile stretch option on `scale_to_rgb` (#1 enhancement)."""
@@ -3318,3 +3336,18 @@ class TestScaleToRgbPerBand:
         assert out.dtype == np.uint8, "expected uint8 output"
         assert int(out[..., 0].max()) == 0, "all-NaN band should be zero-filled"
         assert int(out[..., 1].max()) == 0, "flat band has no range -> zero"
+
+    def test_per_band_partial_nan_band_stretches_finite_values(self):
+        """A band with some NaNs stretches its finite values across 0-255.
+
+        Test scenario:
+            NaN pixels do not break the stretch; the finite part still spans
+            the full output range (NaN pixels are not asserted on, only that
+            the band has real contrast and the call does not raise).
+        """
+        rng = np.random.default_rng(3)
+        stack = rng.uniform(10.0, 200.0, size=(6, 6, 3))
+        stack[0, 0, 0] = np.nan  # a single NaN pixel in band 0
+        out = ArrayGlyph(np.zeros((4, 4))).scale_to_rgb(stack, per_band=True)
+        assert out.dtype == np.uint8, "expected uint8 output"
+        assert int(out[..., 0].max()) == 255, "finite values should still stretch to 255"
