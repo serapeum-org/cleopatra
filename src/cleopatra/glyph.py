@@ -394,6 +394,12 @@ class Glyph:
         ticks_spacing = self.default_options["ticks_spacing"]
         vmax = self.default_options["vmax"]
         vmin = self.default_options["vmin"]
+        # A degenerate colour range (e.g. a constant-value array where
+        # vmax == vmin, so ticks_spacing is 0) has no meaningful tick
+        # spacing; return a single tick at the value rather than dividing
+        # by zero in `np.arange` / `math.remainder` below.
+        if not ticks_spacing or vmax <= vmin:
+            return np.array([vmin])
         ticks = np.arange(vmin, vmax + ticks_spacing, ticks_spacing)
         # If vmax is not evenly divisible by spacing, append one more tick.
         remainder = np.round(math.remainder(vmax, ticks_spacing), 3)

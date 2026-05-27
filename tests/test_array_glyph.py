@@ -3181,3 +3181,178 @@ class TestPlotAxAndTitleParams:
             assert out_ax is ax, "ax-only construction must be honoured by plot()"
         finally:
             plt.close(fig)
+
+
+class TestConstantValueArray:
+    """Constant-value (flat) arrays must render without dividing by zero (#61/#4)."""
+
+    @pytest.mark.parametrize("kind", ["imshow", "pcolormesh", "contourf", "contour"])
+    def test_flat_array_plots_without_error(self, kind):
+        """A constant field renders for every kind (no ZeroDivisionError).
+
+        Args:
+            kind: The render kind under test.
+
+        Test scenario:
+            `vmax == vmin` made `ticks_spacing` zero and the tick math raised;
+            the guard now lets a flat array plot for every kind. Line `contour`
+            additionally skips its (degenerate, empty) colorbar.
+        """
+        glyph = ArrayGlyph(np.full((10, 10), 5.0))
+        fig, ax = glyph.plot(kind=kind)
+        try:
+            assert isinstance(fig, Figure), f"kind={kind!r} should render a figure"
+            if kind == "contour":
+                assert glyph.cbar is None, "degenerate contour should skip the colorbar"
+        finally:
+            plt.close(fig)
+
+    def test_all_zero_array_plots(self):
+        """An all-zero array (vmax==vmin==0) also renders without error.
+
+        Test scenario:
+            Boundary of the degenerate case where the value itself is zero.
+        """
+        glyph = ArrayGlyph(np.zeros((5, 5)))
+        fig, ax = glyph.plot(kind="imshow")
+        try:
+            assert isinstance(fig, Figure), "all-zero array should render"
+        finally:
+            plt.close(fig)
+
+    def test_constant_contour_warns_and_skips_colorbar(self):
+        """A constant-field line `contour` warns and draws no colorbar.
+
+        Test scenario:
+            The degenerate contour set cannot back a line colorbar; the glyph
+            warns and leaves `self.cbar` None instead of crashing.
+        """
+        glyph = ArrayGlyph(np.full((10, 10), 5.0))
+        with pytest.warns(UserWarning, match="no contour lines"):
+            fig, ax = glyph.plot(kind="contour")
+        try:
+            assert glyph.cbar is None, "degenerate contour should skip the colorbar"
+        finally:
+            plt.close(fig)
+
+    def test_constant_contourf_does_not_warn(self):
+        """A constant-field filled `contourf` draws normally without warning.
+
+        Test scenario:
+            The degenerate-contour warning is specific to line `contour`;
+            `contourf` fills a region and keeps its colorbar.
+        """
+        import warnings as _warnings
+
+        glyph = ArrayGlyph(np.full((10, 10), 5.0))
+        with _warnings.catch_warnings():
+            _warnings.simplefilter("error", UserWarning)
+            fig, ax = glyph.plot(kind="contourf")
+        try:
+            assert glyph.cbar is not None, "contourf should still draw a colorbar"
+        finally:
+            plt.close(fig)
+
+
+class TestScaleToRgbPerBand:
+    """Per-band percentile stretch option on `scale_to_rgb` (#1 enhancement)."""
+
+    def test_global_default_unchanged(self):
+        """The default global-max path is unchanged and does not mutate input.
+
+        Test scenario:
+            Backward-compatibility: `per_band=False` keeps the legacy scaling
+            and leaves the source array untouched.
+        """
+        arr = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
+        glyph = ArrayGlyph(arr.copy())
+        before = glyph.arr.copy()
+        out = glyph.scale_to_rgb()
+        assert out.dtype == np.uint8, f"expected uint8, got {out.dtype}"
+        assert out[0].tolist() == [28, 56, 85], f"global scaling changed: {out[0]}"
+        assert np.array_equal(glyph.arr, before), "scale_to_rgb must not mutate self.arr"
+
+    def test_per_band_stretches_each_band_to_full_range(self):
+        """`per_band=True` maps each band independently across 0-255.
+
+        Test scenario:
+            A 3-band stack with differing per-band ranges comes back uint8 with
+            each band spanning the full 0-255 range after the percentile cut.
+        """
+        rng = np.random.default_rng(0)
+        stack = rng.uniform(10.0, 200.0, size=(8, 8, 3))
+        out = ArrayGlyph(np.zeros((4, 4))).scale_to_rgb(stack, per_band=True)
+        assert out.shape == (8, 8, 3) and out.dtype == np.uint8, "shape/dtype wrong"
+        for band in range(3):
+            assert int(out[..., band].min()) == 0, f"band {band} min should be 0"
+            assert int(out[..., band].max()) == 255, f"band {band} max should be 255"
+
+    def test_per_band_does_not_mutate_input(self):
+        """The per-band path leaves the source array unmodified.
+
+        Test scenario:
+            Purity — the caller's stack is unchanged after stretching.
+        """
+        stack = np.random.default_rng(1).uniform(0, 100, size=(5, 5, 3))
+        before = stack.copy()
+        ArrayGlyph(np.zeros((4, 4))).scale_to_rgb(stack, per_band=True)
+        assert np.array_equal(stack, before), "input stack must not be mutated"
+
+    def test_per_band_requires_3d(self):
+        """`per_band=True` on a non-3-D array raises a clear ValueError.
+
+        Test scenario:
+            A 2-D array has no band axis, so per-band stretching is rejected.
+        """
+        with pytest.raises(ValueError, match="3-D"):
+            ArrayGlyph(np.zeros((4, 4))).scale_to_rgb(np.zeros((4, 4)), per_band=True)
+
+    def test_all_zero_global_no_zero_division(self):
+        """Global scaling of an all-zero array returns zeros, not a crash.
+
+        Test scenario:
+            `arr.max() == 0` previously divided by zero; the guard returns an
+            all-zero uint8 array instead.
+        """
+        out = ArrayGlyph(np.zeros((3, 3))).scale_to_rgb()
+        assert out.dtype == np.uint8 and int(out.max()) == 0, "expected all-zero uint8"
+
+    def test_per_band_all_nan_band_is_zero_filled_without_warning(self):
+        """An all-NaN (or flat) band yields a zero band and emits no warning.
+
+        Test scenario:
+            `nanpercentile` on an all-NaN band returns NaN cuts; the guard
+            detects the non-finite range, emits a flat zero band, and the
+            `RuntimeWarning` is suppressed (treated as an error here to prove
+            it does not surface).
+        """
+        import warnings as _warnings
+
+        stack = np.full((4, 4, 3), np.nan)
+        stack[..., 1] = 5.0  # band 1 is a flat (no-range) band
+        with _warnings.catch_warnings():
+            _warnings.simplefilter("error")
+            out = ArrayGlyph(np.zeros((4, 4))).scale_to_rgb(stack, per_band=True)
+        assert out.dtype == np.uint8, "expected uint8 output"
+        assert int(out[..., 0].max()) == 0, "all-NaN band should be zero-filled"
+        assert int(out[..., 1].max()) == 0, "flat band has no range -> zero"
+
+    def test_per_band_partial_nan_band_stretches_finite_values(self):
+        """A band with some NaNs stretches its finite values across 0-255.
+
+        Test scenario:
+            NaN pixels do not break the stretch; the finite part still spans
+            the full output range (NaN pixels are not asserted on, only that
+            the band has real contrast and the call does not raise).
+        """
+        import warnings as _warnings
+
+        rng = np.random.default_rng(3)
+        stack = rng.uniform(10.0, 200.0, size=(6, 6, 3))
+        stack[0, 0, 0] = np.nan  # a single NaN pixel in band 0
+        with _warnings.catch_warnings():
+            _warnings.simplefilter("error")  # no stray cast warning may surface
+            out = ArrayGlyph(np.zeros((4, 4))).scale_to_rgb(stack, per_band=True)
+        assert out.dtype == np.uint8, "expected uint8 output"
+        assert int(out[..., 0].max()) == 255, "finite values should still stretch to 255"
+        assert int(out[0, 0, 0]) == 0, "the NaN pixel should map to 0"

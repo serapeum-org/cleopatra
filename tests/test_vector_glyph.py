@@ -269,3 +269,54 @@ def test_vector_default_options_extend_style_defaults():
     """
     assert "figsize" in VECTOR_DEFAULT_OPTIONS, "Should inherit base style keys"
     assert "density" in VECTOR_DEFAULT_OPTIONS, "Should add vector keys"
+
+
+class TestAddColorbarToggle:
+    """`add_colorbar=False` suppresses VectorGlyph's colorbar (#3)."""
+
+    @staticmethod
+    def _field():
+        gx, gy = np.meshgrid(np.arange(5), np.arange(5))
+        return gx, gy, np.ones_like(gx, float), np.ones_like(gx, float)
+
+    def test_default_draws_colorbar(self):
+        """A vector field draws its magnitude colorbar by default."""
+        gx, gy, u, v = self._field()
+        glyph = VectorGlyph(gx, gy, u, v)
+        fig, ax, _ = glyph.plot()
+        try:
+            assert glyph.cbar is not None, "default should draw a colorbar"
+            assert len(fig.axes) == 2, f"expected 2 axes, got {len(fig.axes)}"
+        finally:
+            plt.close(fig)
+
+    def test_add_colorbar_false_suppresses(self):
+        """`add_colorbar=False` leaves cbar None and adds no axes."""
+        gx, gy, u, v = self._field()
+        glyph = VectorGlyph(gx, gy, u, v, add_colorbar=False)
+        fig, ax, _ = glyph.plot()
+        try:
+            assert glyph.cbar is None, "add_colorbar=False should skip the colorbar"
+            assert len(fig.axes) == 1, f"expected 1 axes, got {len(fig.axes)}"
+        finally:
+            plt.close(fig)
+
+    def test_plot_time_override_suppresses(self):
+        """Passing `add_colorbar=False` to `plot` suppresses the colorbar.
+
+        Test scenario:
+            Plot-time override: even with the default construction option,
+            `plot(add_colorbar=False)` draws no colorbar.
+        """
+        gx, gy, u, v = self._field()
+        glyph = VectorGlyph(gx, gy, u, v)
+        fig, ax, _ = glyph.plot(add_colorbar=False)
+        try:
+            assert glyph.cbar is None, "plot(add_colorbar=False) should skip the colorbar"
+            assert len(fig.axes) == 1, f"expected 1 axes, got {len(fig.axes)}"
+        finally:
+            plt.close(fig)
+
+    def test_add_colorbar_in_option_keys(self):
+        """`add_colorbar` is an accepted option key."""
+        assert "add_colorbar" in VectorGlyph.option_keys(), "add_colorbar missing"

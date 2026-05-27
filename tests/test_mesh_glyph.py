@@ -1079,3 +1079,53 @@ class TestAnimate:
         path = str(tmp_path / "test.gif")
         mg.save_animation(path, fps=2)
         assert (tmp_path / "test.gif").exists(), "GIF file should be created"
+
+
+class TestMeshGlyphMappable:
+    """`MeshGlyph` exposes the colour-mapped artist as `self.im` (#2)."""
+
+    @staticmethod
+    def _mesh():
+        from matplotlib.tri import Triangulation
+
+        rng = np.random.default_rng(0)
+        x = rng.random(20)
+        y = rng.random(20)
+        return MeshGlyph(x, y, Triangulation(x, y).triangles), x
+
+    def test_im_none_before_plot(self):
+        """`self.im` is None before the first render."""
+        glyph, _ = self._mesh()
+        assert glyph.im is None, "im should start as None"
+
+    def test_plot_sets_im_to_live_artist(self):
+        """After `plot`, `self.im` is the artist registered on the axes.
+
+        Test scenario:
+            The tricontour/tripcolor mappable is stored on `self.im` so a
+            caller need not scrape `ax.collections[-1]`.
+        """
+        glyph, x = self._mesh()
+        z = np.random.default_rng(1).random(x.size)
+        fig, ax = glyph.plot(z, location="node", colorbar=False)
+        try:
+            assert glyph.im is not None, "im should be set after plot"
+            assert glyph.im in ax.collections, "im must be the artist on the axes"
+        finally:
+            plt.close(fig)
+
+    def test_plot_outline_clears_im(self):
+        """`plot_outline` resets `self.im` (an outline has no scalar mapping).
+
+        Test scenario:
+            After a coloured `plot()` sets `self.im`, an outline-only render
+            must clear it rather than leave a stale mappable.
+        """
+        glyph, x = self._mesh()
+        z = np.random.default_rng(2).random(x.size)
+        fig, ax = glyph.plot(z, location="node", colorbar=False)
+        plt.close(fig)
+        assert glyph.im is not None, "im should be set after a coloured plot"
+        fig, ax = glyph.plot_outline()
+        plt.close(fig)
+        assert glyph.im is None, "plot_outline should clear im"

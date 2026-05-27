@@ -242,3 +242,105 @@ def test_scatter_default_options_extend_style_defaults():
     """
     assert "figsize" in SCATTER_DEFAULT_OPTIONS, "Should inherit base style keys"
     assert "point_size" in SCATTER_DEFAULT_OPTIONS, "Should add scatter keys"
+
+
+class TestAddColorbarToggle:
+    """`add_colorbar=False` suppresses ScatterGlyph's colorbar (#3)."""
+
+    @staticmethod
+    def _xyv():
+        return np.array([0.0, 1.0, 2.0]), np.array([0.0, 1.0, 2.0]), np.array([1.0, 2.0, 3.0])
+
+    def test_default_draws_colorbar(self):
+        """By default a coloured scatter draws its colorbar (extra axes)."""
+        x, y, v = self._xyv()
+        glyph = ScatterGlyph(x, y, values=v)
+        fig, ax, _ = glyph.plot()
+        try:
+            assert glyph.cbar is not None, "default should draw a colorbar"
+            assert len(fig.axes) == 2, f"expected 2 axes, got {len(fig.axes)}"
+        finally:
+            plt.close(fig)
+
+    def test_add_colorbar_false_suppresses(self):
+        """`add_colorbar=False` leaves cbar None and adds no axes."""
+        x, y, v = self._xyv()
+        glyph = ScatterGlyph(x, y, values=v, add_colorbar=False)
+        fig, ax, _ = glyph.plot()
+        try:
+            assert glyph.cbar is None, "add_colorbar=False should skip the colorbar"
+            assert len(fig.axes) == 1, f"expected 1 axes, got {len(fig.axes)}"
+        finally:
+            plt.close(fig)
+
+    def test_plot_time_override_suppresses(self):
+        """Passing `add_colorbar=False` to `plot` suppresses the colorbar.
+
+        Test scenario:
+            Plot-time override mirrors ArrayGlyph: even with the default
+            construction option, `plot(add_colorbar=False)` draws no colorbar.
+        """
+        x, y, v = self._xyv()
+        glyph = ScatterGlyph(x, y, values=v)
+        fig, ax, _ = glyph.plot(add_colorbar=False)
+        try:
+            assert glyph.cbar is None, "plot(add_colorbar=False) should skip the colorbar"
+            assert len(fig.axes) == 1, f"expected 1 axes, got {len(fig.axes)}"
+        finally:
+            plt.close(fig)
+
+    def test_plot_time_override_enables(self):
+        """`plot(add_colorbar=True)` draws even when constructed with False.
+
+        Test scenario:
+            The plot-time override works in both directions — a glyph built
+            with `add_colorbar=False` can still draw a colorbar per-call.
+        """
+        x, y, v = self._xyv()
+        glyph = ScatterGlyph(x, y, values=v, add_colorbar=False)
+        fig, ax, _ = glyph.plot(add_colorbar=True)
+        try:
+            assert glyph.cbar is not None, "plot(add_colorbar=True) should draw"
+            assert len(fig.axes) == 2, f"expected 2 axes, got {len(fig.axes)}"
+        finally:
+            plt.close(fig)
+
+    def test_plot_time_none_keeps_construction_value(self):
+        """`add_colorbar=None` (default) keeps the construction-time setting.
+
+        Test scenario:
+            Omitting the override leaves the constructor's `add_colorbar=False`
+            in force.
+        """
+        x, y, v = self._xyv()
+        glyph = ScatterGlyph(x, y, values=v, add_colorbar=False)
+        fig, ax, _ = glyph.plot()
+        try:
+            assert glyph.cbar is None, "construction-time False should persist"
+        finally:
+            plt.close(fig)
+
+    def test_plot_time_override_does_not_persist(self):
+        """A plot-time `add_colorbar` override does not mutate the glyph options.
+
+        Test scenario:
+            `plot(add_colorbar=False)` suppresses the colorbar for that call
+            only; the glyph's `default_options["add_colorbar"]` stays True so a
+            later `plot()` draws again.
+        """
+        x, y, v = self._xyv()
+        glyph = ScatterGlyph(x, y, values=v)
+        fig, ax, _ = glyph.plot(add_colorbar=False)
+        plt.close(fig)
+        assert glyph.default_options["add_colorbar"] is True, (
+            "override must not persist into default_options"
+        )
+        fig, ax, _ = glyph.plot()
+        try:
+            assert glyph.cbar is not None, "a later plot() should draw again"
+        finally:
+            plt.close(fig)
+
+    def test_add_colorbar_in_option_keys(self):
+        """`add_colorbar` is an accepted option key (no validation error)."""
+        assert "add_colorbar" in ScatterGlyph.option_keys(), "add_colorbar missing"

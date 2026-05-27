@@ -51,6 +51,7 @@ POLYGON_DEFAULT_OPTIONS = {
     "vmax": None,
     "levels": None,
     "ticks_spacing": None,
+    "add_colorbar": True,
 }
 POLYGON_DEFAULT_OPTIONS = STYLE_DEFAULTS | POLYGON_DEFAULT_OPTIONS
 
@@ -76,7 +77,9 @@ class PolygonGlyph(Glyph):
         **kwargs: Override any key in `POLYGON_DEFAULT_OPTIONS`
             (e.g. `edgecolor`, `linewidth`, `cmap`, `vmin`, `vmax`,
             `levels`, `color_scale`, `ticks_spacing`, `cbar_label`,
-            `figsize`, `title`).
+            `figsize`, `title`). Set `add_colorbar=False` to suppress the
+            per-glyph colorbar (default True) for shared-axes composition
+            where the host owns a single aggregated colorbar.
 
     Raises:
         ValueError: If `values` is given but its length does not match
@@ -134,6 +137,7 @@ class PolygonGlyph(Glyph):
         outline_only: bool = False,
         ax: Axes = None,
         title: str | None = None,
+        add_colorbar: bool | None = None,
     ) -> tuple[Figure, Axes, PolyCollection]:
         """Draw the polygons, filling by value when present.
 
@@ -150,6 +154,10 @@ class PolygonGlyph(Glyph):
                 construction, otherwise a new figure/axes is created.
             title: Plot title. Overrides `default_options["title"]`
                 when given.
+            add_colorbar: Override the `add_colorbar` option for this call
+                — True draws the colorbar, False suppresses it (for
+                shared-axes composition). Defaults to None, which keeps the
+                value set at construction.
 
         Returns:
             tuple[Figure, Axes, PolyCollection]: The figure, the axes,
@@ -180,6 +188,11 @@ class PolygonGlyph(Glyph):
 
         if title is not None:
             opts["title"] = title
+        # Resolve the colorbar choice for this call only (a plot-time
+        # override does not persist into the glyph's options).
+        draw_colorbar = (
+            opts["add_colorbar"] if add_colorbar is None else add_colorbar
+        )
 
         if outline_only or self.values is None:
             pc = PolyCollection(
@@ -204,7 +217,8 @@ class PolygonGlyph(Glyph):
                 pc.set_clim(ticks[0], ticks[-1])
             ax.add_collection(pc)
             ax.autoscale_view()
-            self.cbar = self.create_color_bar(ax, pc, cbar_kw)
+            if draw_colorbar:
+                self.cbar = self.create_color_bar(ax, pc, cbar_kw)
 
         if opts["title"]:
             ax.set_title(opts["title"], fontsize=opts["title_size"])

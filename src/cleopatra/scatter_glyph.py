@@ -52,6 +52,7 @@ SCATTER_DEFAULT_OPTIONS = {
     "vmax": None,
     "levels": None,
     "ticks_spacing": None,
+    "add_colorbar": True,
 }
 SCATTER_DEFAULT_OPTIONS = STYLE_DEFAULTS | SCATTER_DEFAULT_OPTIONS
 
@@ -76,7 +77,9 @@ class ScatterGlyph(Glyph):
         **kwargs: Override any key in `SCATTER_DEFAULT_OPTIONS`
             (e.g. `marker`, `point_size`, `cmap`, `vmin`, `vmax`,
             `levels`, `color_scale`, `ticks_spacing`, `cbar_label`,
-            `figsize`, `title`).
+            `figsize`, `title`). Set `add_colorbar=False` to suppress the
+            per-glyph colorbar (default True) for shared-axes composition
+            where the host owns a single aggregated colorbar.
 
     Raises:
         ValueError: If `x` and `y` (or `values`, when given) have
@@ -140,6 +143,7 @@ class ScatterGlyph(Glyph):
         self,
         ax: Axes = None,
         title: str | None = None,
+        add_colorbar: bool | None = None,
     ) -> tuple[Figure, Axes, PathCollection]:
         """Draw the point cloud, colour-mapping by value when present.
 
@@ -154,6 +158,10 @@ class ScatterGlyph(Glyph):
                 construction, otherwise a new figure/axes is created.
             title: Plot title. Overrides `default_options["title"]`
                 when given.
+            add_colorbar: Override the `add_colorbar` option for this call
+                — True draws the colorbar, False suppresses it (for
+                shared-axes composition). Defaults to None, which keeps the
+                value set at construction.
 
         Returns:
             tuple[Figure, Axes, PathCollection]: The figure, the axes,
@@ -196,6 +204,11 @@ class ScatterGlyph(Glyph):
 
         if title is not None:
             opts["title"] = title
+        # Resolve the colorbar choice for this call only (a plot-time
+        # override does not persist into the glyph's options).
+        draw_colorbar = (
+            opts["add_colorbar"] if add_colorbar is None else add_colorbar
+        )
 
         if self.values is None:
             paths = ax.scatter(
@@ -217,7 +230,8 @@ class ScatterGlyph(Glyph):
                 vmin=None if norm else ticks[0],
                 vmax=None if norm else ticks[-1],
             )
-            self.cbar = self.create_color_bar(ax, paths, cbar_kw)
+            if draw_colorbar:
+                self.cbar = self.create_color_bar(ax, paths, cbar_kw)
 
         if opts["title"]:
             ax.set_title(opts["title"], fontsize=opts["title_size"])
