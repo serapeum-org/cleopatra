@@ -1283,10 +1283,8 @@ class TestCenterCmapDoesNotApplyToRgb:
         glyph = ArrayGlyph(rgb_arr, rgb=[0, 1, 2])
         fig, ax = glyph.plot()
         assert isinstance(fig, Figure)
-        # No colorbar is created on the RGB path; `cbar` is unset.
-        assert not hasattr(glyph, "cbar"), (
-            "RGB compositing should not create a colorbar"
-        )
+        # No colorbar is created on the RGB path; `cbar` stays None.
+        assert glyph.cbar is None, "RGB compositing should not create a colorbar"
 
 
 @pytest.mark.plot
@@ -2738,3 +2736,448 @@ class TestAnimateDataGetterEdgeCases:
             plt.close(glyph.fig)
 
 
+
+class TestMappableAndColorbarToggle:
+    """Tests for the exposed mappable (`self.im`) and the `add_colorbar` toggle.
+
+    Covers issues #128 (suppress the built-in colorbar for shared-axes
+    composition) and #129 (expose the colour-mapped artist for a uniform
+    `(glyph, mappable)` contract). Exercises both the `plot` and `animate`
+    render paths, the RGB branch, and the `_merge_kwargs` validation gate.
+    """
+
+    @staticmethod
+    def _sample_arr() -> np.ndarray:
+        """Return a small 2-D array suitable for every kind.
+
+        Returns:
+            np.ndarray: A 5x5 float array of monotonically increasing values.
+        """
+        return np.arange(25, dtype=float).reshape(5, 5)
+
+    @staticmethod
+    def _stack(n: int = 3, h: int = 5, w: int = 5) -> np.ndarray:
+        """Return a 3-D stack of frames for the `animate` path.
+
+        Args:
+            n: Number of frames.
+            h: Frame height.
+            w: Frame width.
+
+        Returns:
+            np.ndarray: An ``(n, h, w)`` float array.
+        """
+        return np.arange(n * h * w, dtype=float).reshape(n, h, w)
+
+    @staticmethod
+    def _rgb_arr() -> np.ndarray:
+        """Return a deterministic 3-band array for the RGB branch.
+
+        Returns:
+            np.ndarray: A ``(3, 8, 8)`` float32 array in the 0-254 range.
+        """
+        rng = np.random.default_rng(seed=1337)
+        return rng.integers(0, 255, size=(3, 8, 8)).astype(np.float32)
+
+    # ---- #129: the mappable is exposed via `self.im` ---------------------
+
+    def test_im_is_none_before_plot(self):
+        """`self.im` exists and is None before the first render.
+
+        Test scenario:
+            A freshly constructed glyph has the public `im` attribute
+            initialised to None, so callers can always reach it.
+        """
+        glyph = ArrayGlyph(self._sample_arr())
+        assert glyph.im is None, f"im should start as None, got {glyph.im!r}"
+
+    @pytest.mark.parametrize(
+        "kind, expected_type_path",
+        [
+            ("auto", "matplotlib.image.AxesImage"),
+            ("imshow", "matplotlib.image.AxesImage"),
+            ("pcolormesh", "matplotlib.collections.QuadMesh"),
+            ("contour", "matplotlib.contour.QuadContourSet"),
+            ("contourf", "matplotlib.contour.QuadContourSet"),
+        ],
+    )
+    def test_im_type_per_kind(self, kind, expected_type_path):
+        """`self.im` holds the artist matching the render kind.
+
+        Args:
+            kind: The `kind=` value passed to `plot`.
+            expected_type_path: Dotted import path of the expected artist type.
+
+        Test scenario:
+            Every non-RGB kind stores its colour-mapped artist on `self.im`
+            (AxesImage for imshow/auto, QuadMesh for pcolormesh,
+            QuadContourSet for contour/contourf).
+        """
+        import importlib
+
+        module_name, _, type_name = expected_type_path.rpartition(".")
+        expected_type = getattr(importlib.import_module(module_name), type_name)
+
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(kind=kind)
+        try:
+            assert isinstance(glyph.im, expected_type), (
+                f"kind={kind!r} should store {type_name} on im, "
+                f"got {type(glyph.im).__name__}"
+            )
+        finally:
+            plt.close(fig)
+
+    def test_im_is_real_artist_on_axes_imshow(self):
+        """For imshow, `self.im` is the live artist on the axes, not a copy.
+
+        Test scenario:
+            The stored mappable must be the same object matplotlib placed in
+            `ax.images`, so a host can drive a colorbar from it.
+        """
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(kind="imshow")
+        try:
+            assert glyph.im in ax.get_images(), "im is not the artist on the axes"
+        finally:
+            plt.close(fig)
+
+    def test_im_is_real_artist_on_axes_pcolormesh(self):
+        """For pcolormesh, `self.im` is the live `QuadMesh` in `ax.collections`.
+
+        Test scenario:
+            The stored mappable is the collection matplotlib registered on the
+            axes, confirming no detached object is handed back.
+        """
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(kind="pcolormesh")
+        try:
+            assert glyph.im in ax.collections, "im is not the artist on the axes"
+        finally:
+            plt.close(fig)
+
+    def test_im_set_for_rgb(self):
+        """The RGB branch also exposes its `AxesImage` and draws no colorbar.
+
+        Test scenario:
+            RGB compositing stores the image artist on `self.im` while leaving
+            `self.cbar` as None (RGB has no scalar mapping to a colorbar).
+        """
+        from matplotlib.image import AxesImage
+
+        glyph = ArrayGlyph(self._rgb_arr(), rgb=[0, 1, 2])
+        fig, ax = glyph.plot(kind="imshow")
+        try:
+            assert isinstance(glyph.im, AxesImage), (
+                f"RGB im should be AxesImage, got {type(glyph.im).__name__}"
+            )
+            assert glyph.cbar is None, "RGB path must not create a colorbar"
+        finally:
+            plt.close(fig)
+
+    def test_im_supports_host_owned_colorbar(self):
+        """A host can build its own colorbar from `self.im` after opting out.
+
+        Test scenario:
+            With `add_colorbar=False` the glyph draws no colorbar, but the
+            exposed mappable is sufficient for the host to call
+            `fig.colorbar(glyph.im, ...)` — the shared-axes composition goal.
+        """
+        from matplotlib.colorbar import Colorbar
+
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(kind="imshow", add_colorbar=False)
+        try:
+            host_cbar = fig.colorbar(glyph.im, ax=ax)
+            assert isinstance(host_cbar, Colorbar), (
+                "host should be able to build a colorbar from glyph.im"
+            )
+        finally:
+            plt.close(fig)
+
+    def test_im_refreshed_on_replot(self):
+        """Re-rendering updates `self.im` to the new artist.
+
+        Test scenario:
+            Calling `plot` a second time (different kind) replaces the stored
+            mappable rather than leaving a stale handle from the first call.
+        """
+        from matplotlib.collections import QuadMesh
+        from matplotlib.image import AxesImage
+
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(kind="imshow")
+        try:
+            assert isinstance(glyph.im, AxesImage)
+            glyph.plot(kind="pcolormesh")
+            assert isinstance(glyph.im, QuadMesh), (
+                "im should reflect the most recent render kind"
+            )
+        finally:
+            plt.close(fig)
+
+    def test_animate_sets_im(self):
+        """`animate` stores the first-frame mappable on `self.im`.
+
+        Test scenario:
+            The animate path mirrors `plot`: after building the animation the
+            glyph exposes the colour-mapped artist via `self.im`.
+        """
+        from matplotlib.image import AxesImage
+
+        glyph = ArrayGlyph(self._stack())
+        anim = glyph.animate(list(range(3)))
+        try:
+            assert isinstance(glyph.im, AxesImage), (
+                f"animate should set im to AxesImage, got {type(glyph.im).__name__}"
+            )
+        finally:
+            plt.close(anim._fig)
+
+    # ---- #128: the built-in colorbar can be suppressed -------------------
+
+    def test_add_colorbar_accepted_without_validation_error(self):
+        """`add_colorbar` passes `_merge_kwargs` and is recorded in options.
+
+        Test scenario:
+            Because the toggle was added to DEFAULT_OPTIONS, passing it does
+            not trip the unknown-kwarg `ValueError`, and the value is stored
+            in `default_options` for the render to read.
+        """
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(kind="imshow", add_colorbar=False)
+        try:
+            assert glyph.default_options["add_colorbar"] is False, (
+                "add_colorbar should be merged into default_options"
+            )
+        finally:
+            plt.close(fig)
+
+    def test_colorbar_drawn_by_default(self):
+        """Default behaviour is unchanged: a colorbar is created.
+
+        Test scenario:
+            With no `add_colorbar` kwarg the glyph still draws its colorbar,
+            which adds a second Axes to the figure.
+        """
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(kind="imshow")
+        try:
+            assert glyph.cbar is not None, "default plot should create a colorbar"
+            assert len(fig.axes) == 2, (
+                f"colorbar should add a second axes, got {len(fig.axes)}"
+            )
+        finally:
+            plt.close(fig)
+
+    @pytest.mark.parametrize("kind", ["imshow", "pcolormesh", "contourf"])
+    def test_add_colorbar_false_draws_no_colorbar(self, kind):
+        """`add_colorbar=False` leaves `self.cbar is None` and adds no axes.
+
+        Args:
+            kind: The render kind under test.
+
+        Test scenario:
+            Across raster and filled-contour kinds, opting out draws no
+            colorbar (no extra axes) yet still exposes the mappable.
+        """
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(kind=kind, add_colorbar=False)
+        try:
+            assert glyph.cbar is None, f"kind={kind!r}: cbar should be None"
+            assert len(fig.axes) == 1, (
+                f"kind={kind!r}: no colorbar axes expected, got {len(fig.axes)}"
+            )
+            assert glyph.im is not None, f"kind={kind!r}: mappable should still be set"
+        finally:
+            plt.close(fig)
+
+    def test_shared_axes_two_layers_no_colorbars(self):
+        """Two ArrayGlyph layers with add_colorbar=False compose cleanly.
+
+        Test scenario:
+            A contourf field plus a contour overlay on one shared axes produce
+            no per-glyph colorbars (no extra axes), and each layer exposes its
+            own mappable for the host to aggregate.
+        """
+        fig, ax = plt.subplots()
+        try:
+            g1 = ArrayGlyph(self._sample_arr(), ax=ax, fig=fig)
+            g1.plot(kind="contourf", add_colorbar=False)
+            g2 = ArrayGlyph(self._sample_arr(), ax=ax, fig=fig)
+            g2.plot(kind="contour", add_colorbar=False)
+
+            assert g1.cbar is None and g2.cbar is None, "no per-glyph colorbars"
+            assert len(fig.axes) == 1, (
+                f"shared axes should stay single, got {len(fig.axes)} axes"
+            )
+            assert g1.im is not None and g2.im is not None, (
+                "each layer must expose its mappable for aggregation"
+            )
+        finally:
+            plt.close(fig)
+
+    @pytest.mark.parametrize("add_colorbar", [True, False])
+    def test_rgb_never_draws_colorbar(self, add_colorbar):
+        """The RGB branch ignores `add_colorbar` and never draws a colorbar.
+
+        Args:
+            add_colorbar: Toggle value under test.
+
+        Test scenario:
+            RGB has no scalar mapping, so `self.cbar` stays None regardless of
+            the toggle, while `self.im` is always populated.
+        """
+        glyph = ArrayGlyph(self._rgb_arr(), rgb=[0, 1, 2])
+        fig, ax = glyph.plot(kind="imshow", add_colorbar=add_colorbar)
+        try:
+            assert glyph.cbar is None, "RGB path must never create a colorbar"
+            assert glyph.im is not None, "RGB path must still expose the mappable"
+        finally:
+            plt.close(fig)
+
+    def test_animate_add_colorbar_false(self):
+        """`animate(add_colorbar=False)` draws no colorbar but exposes the mappable.
+
+        Test scenario:
+            The toggle is honoured on the animate path too: `self.cbar` is None
+            and no colorbar axes is added, while `self.im` is still set.
+        """
+        glyph = ArrayGlyph(self._stack())
+        anim = glyph.animate(list(range(3)), add_colorbar=False)
+        try:
+            assert glyph.cbar is None, "animate add_colorbar=False should skip cbar"
+            assert glyph.im is not None, "animate should still expose the mappable"
+            assert len(anim._fig.axes) == 1, (
+                f"no colorbar axes expected, got {len(anim._fig.axes)}"
+            )
+        finally:
+            plt.close(anim._fig)
+
+class TestPlotAxAndTitleParams:
+    """Tests for `ax=` and `title=` on `ArrayGlyph.plot` (issue #130).
+
+    Verifies parity with the other glyphs: `plot(ax=)` composes onto the
+    given axes (deriving its figure), `plot(title=)` sets the title, and the
+    axes-resolution priority is plot(ax=) > constructor ax > fresh figure.
+    """
+
+    @staticmethod
+    def _arr() -> np.ndarray:
+        """Return a small 2-D array."""
+        return np.arange(25, dtype=float).reshape(5, 5)
+
+    def test_plot_ax_renders_onto_supplied_axes(self):
+        """`plot(ax=ax)` draws on the given axes without making a new figure.
+
+        Test scenario:
+            A glyph constructed with no axes renders onto a caller's axes when
+            it is passed to `plot`, and binds that axes' figure.
+        """
+        fig, ax = plt.subplots()
+        try:
+            glyph = ArrayGlyph(self._arr())
+            out_fig, out_ax = glyph.plot(ax=ax, kind="imshow")
+            assert out_ax is ax, "plot(ax=) must render onto the supplied axes"
+            assert out_fig is ax.get_figure(), "figure must be derived from the axes"
+            assert glyph.ax is ax, "glyph.ax should be bound to the supplied axes"
+        finally:
+            plt.close(fig)
+
+    def test_plot_ax_overrides_constructor_axes(self):
+        """`plot(ax=)` wins over an axes bound at construction.
+
+        Test scenario:
+            Resolution priority: an explicit `plot(ax=)` takes precedence over
+            the constructor-supplied axes.
+        """
+        ctor_fig, ctor_ax = plt.subplots()
+        plot_fig, plot_ax = plt.subplots()
+        try:
+            glyph = ArrayGlyph(self._arr(), ax=ctor_ax, fig=ctor_fig)
+            out_fig, out_ax = glyph.plot(ax=plot_ax, kind="imshow")
+            assert out_ax is plot_ax, "plot(ax=) must override the constructor axes"
+            assert out_ax is not ctor_ax, "constructor axes must not win over plot(ax=)"
+        finally:
+            plt.close(ctor_fig)
+            plt.close(plot_fig)
+
+    def test_plot_uses_constructor_axes_when_no_plot_ax(self):
+        """Without `plot(ax=)`, the constructor axes is used (no fresh figure).
+
+        Test scenario:
+            Resolution priority middle tier: a glyph built with `ax=`/`fig=`
+            renders there when `plot` is called without an `ax`.
+        """
+        fig, ax = plt.subplots()
+        try:
+            glyph = ArrayGlyph(self._arr(), ax=ax, fig=fig)
+            out_fig, out_ax = glyph.plot(kind="imshow")
+            assert out_ax is ax, "constructor axes should be used when plot(ax=) omitted"
+            assert out_fig is fig, "constructor figure should be reused"
+        finally:
+            plt.close(fig)
+
+    def test_plot_creates_figure_when_no_axes_anywhere(self):
+        """With no axes from either source, `plot` creates its own figure/axes.
+
+        Test scenario:
+            Resolution priority fallback: neither constructor nor plot supplies
+            an axes, so a fresh figure/axes is created.
+        """
+        glyph = ArrayGlyph(self._arr())
+        out_fig, out_ax = glyph.plot(kind="imshow")
+        try:
+            assert isinstance(out_fig, Figure), "a fresh Figure should be created"
+            assert out_ax is not None, "a fresh axes should be created"
+        finally:
+            plt.close(out_fig)
+
+    def test_plot_title_sets_axes_title(self):
+        """`plot(title=...)` sets the axes title.
+
+        Test scenario:
+            The convenience `title` parameter is equivalent to the `title`
+            option and is applied to the rendered axes.
+        """
+        fig, ax = plt.subplots()
+        try:
+            glyph = ArrayGlyph(self._arr())
+            _, out_ax = glyph.plot(ax=ax, title="My Field", kind="imshow")
+            assert out_ax.get_title() == "My Field", (
+                f"title should be set, got {out_ax.get_title()!r}"
+            )
+        finally:
+            plt.close(fig)
+
+    def test_plot_title_overrides_constructor_title(self):
+        """`plot(title=)` overrides a title set at construction.
+
+        Test scenario:
+            When a title was given via constructor options, an explicit
+            `plot(title=)` takes precedence.
+        """
+        fig, ax = plt.subplots()
+        try:
+            glyph = ArrayGlyph(self._arr(), title="ctor title")
+            _, out_ax = glyph.plot(ax=ax, title="plot title", kind="imshow")
+            assert out_ax.get_title() == "plot title", (
+                f"plot title should win, got {out_ax.get_title()!r}"
+            )
+        finally:
+            plt.close(fig)
+
+    def test_construct_with_ax_only_keeps_axes(self):
+        """`ArrayGlyph(arr, ax=ax)` (no fig) now renders onto that axes.
+
+        Test scenario:
+            Regression for the old gate that dropped a constructor `ax` when
+            `fig` was omitted; the axes must now be honoured by `plot()`.
+        """
+        fig, ax = plt.subplots()
+        try:
+            glyph = ArrayGlyph(self._arr(), ax=ax)
+            _, out_ax = glyph.plot(kind="imshow")
+            assert out_ax is ax, "ax-only construction must be honoured by plot()"
+        finally:
+            plt.close(fig)

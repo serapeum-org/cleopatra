@@ -467,3 +467,201 @@ class TestStripes:
         assert typing.get_args(hints["return"]) == (Figure, Axes, BarContainer), (
             f"Unexpected resolved return hint: {hints['return']}"
         )
+
+
+class TestFigParameterRemovedFromRenderers:
+    """`fig` is no longer a per-call parameter on the box/stripe renderers.
+
+    The figure is a construction-time binding; `boxplot`/`multiboxplot`/
+    `stripes` resolve it from the method `ax`, then the constructor
+    `ax`/`fig`, then a fresh figure. Passing `fig=` to these methods is a
+    (now removed) keyword and must be rejected.
+    """
+
+    @pytest.mark.parametrize("method", ["boxplot", "multiboxplot", "stripes"])
+    def test_fig_kwarg_rejected(self, method):
+        """Passing `fig=` to a renderer raises TypeError (param removed).
+
+        Args:
+            method: Renderer method name under test.
+
+        Test scenario:
+            The breaking change removed `fig` from these signatures, so
+            `fig=` is now an unexpected keyword argument.
+        """
+        fig, ax = plt.subplots()
+        stat = StatisticalGlyph(np.arange(12, dtype=float).reshape(4, 3))
+        with pytest.raises(TypeError, match="fig"):
+            getattr(stat, method)(fig=fig)
+
+    def test_boxplot_falls_back_to_constructor_axes(self):
+        """`boxplot()` with no `ax` uses the axes bound at construction.
+
+        Test scenario:
+            The renderer resolves `ax` from `self._ax` when the method `ax`
+            argument is omitted, composing onto the constructor's axes.
+        """
+        fig, ax = plt.subplots()
+        stat = StatisticalGlyph(np.arange(9, dtype=float), ax=ax)
+        out_fig, out_ax, _ = stat.boxplot()
+        assert out_ax is ax, "boxplot should reuse the constructor axes"
+        assert out_fig is ax.get_figure(), "figure must come from that axes"
+
+    def test_boxplot_falls_back_to_constructor_figure(self):
+        """`boxplot()` with only a constructor `fig` adds an axes to it.
+
+        Test scenario:
+            With no axes anywhere but a constructor figure, the renderer adds
+            a subplot to that figure rather than creating a new one.
+        """
+        fig = plt.figure()
+        stat = StatisticalGlyph(np.arange(9, dtype=float), fig=fig)
+        out_fig, out_ax, _ = stat.boxplot()
+        assert out_fig is fig, "boxplot should add an axes to the constructor figure"
+        assert out_ax in fig.axes, "the new axes must belong to that figure"
+
+    def test_method_ax_wins_over_constructor_ax(self):
+        """A method `ax=` overrides the axes bound at construction.
+
+        Test scenario:
+            Resolution priority: the explicit `boxplot(ax=)` takes precedence
+            over `self._ax`.
+        """
+        ctor_fig, ctor_ax = plt.subplots()
+        call_fig, call_ax = plt.subplots()
+        stat = StatisticalGlyph(np.arange(9, dtype=float), ax=ctor_ax)
+        _, out_ax, _ = stat.boxplot(ax=call_ax)
+        assert out_ax is call_ax, "method ax should win over constructor ax"
+
+    def test_stripes_falls_back_to_constructor_axes(self):
+        """`stripes()` resolves the axes from the constructor when omitted.
+
+        Test scenario:
+            Same constructor-axes fallback as boxplot, for the 1-D stripes
+            renderer.
+        """
+        fig, ax = plt.subplots()
+        stat = StatisticalGlyph(np.array([0.1, 0.5, 0.9]), ax=ax)
+        _, out_ax, _ = stat.stripes(cmap="coolwarm")
+        assert out_ax is ax, "stripes should reuse the constructor axes"
+
+    def test_multiboxplot_falls_back_to_constructor_axes(self):
+        """`multiboxplot()` resolves the axes from the constructor when omitted.
+
+        Test scenario:
+            Same constructor-axes fallback as boxplot/stripes, for the
+            grouped `multiboxplot` renderer (requires 2D values).
+        """
+        fig, ax = plt.subplots()
+        stat = StatisticalGlyph(np.arange(12, dtype=float).reshape(4, 3), ax=ax)
+        _, out_ax, _ = stat.multiboxplot(positions=[1, 2, 3])
+        assert out_ax is ax, "multiboxplot should reuse the constructor axes"
+
+    def test_multiboxplot_falls_back_to_constructor_figure(self):
+        """`multiboxplot()` with only a constructor `fig` adds an axes to it.
+
+        Test scenario:
+            With no axes anywhere but a constructor figure, the renderer adds
+            a subplot to that figure rather than creating a new one.
+        """
+        fig = plt.figure()
+        stat = StatisticalGlyph(np.arange(12, dtype=float).reshape(4, 3), fig=fig)
+        out_fig, out_ax, _ = stat.multiboxplot(positions=[1, 2, 3])
+        assert out_fig is fig, "multiboxplot should add an axes to the constructor figure"
+        assert out_ax in fig.axes, "the new axes must belong to that figure"
+
+
+class TestOptionKeysAndFilterKwargs:
+    """Tests for `StatisticalGlyph.option_keys` / `filter_kwargs` (issue #131).
+
+    StatisticalGlyph is a standalone class (not a Glyph subclass) but exposes
+    the same pre-construction introspection helpers for parity.
+    """
+
+    def test_option_keys_match_default_options(self):
+        """`option_keys()` equals the module-level option dict keys.
+
+        Test scenario:
+            The class attribute is the single source of truth; the accepted
+            keys match `DEFAULT_OPTIONS` and exclude unknown names.
+        """
+        from cleopatra.statistical_glyph import DEFAULT_OPTIONS
+
+        keys = StatisticalGlyph.option_keys()
+        assert keys == set(DEFAULT_OPTIONS), "keys must match DEFAULT_OPTIONS"
+        assert "bins" in keys, "a known histogram key should be present"
+        assert "totally_unknown" not in keys, "unknown keys must be absent"
+
+    def test_filter_kwargs_keeps_accepted_drops_unknown(self):
+        """`filter_kwargs` keeps accepted keys (with values) and drops the rest.
+
+        Test scenario:
+            A mixed bag is filtered to just the accepted keys; values intact.
+        """
+        raw = {"bins": 20, "alpha": 0.5, "bogus": 1}
+        safe = StatisticalGlyph.filter_kwargs(raw)
+        assert sorted(safe) == ["alpha", "bins"], f"unexpected keys: {sorted(safe)}"
+        assert safe["bins"] == 20, "values must be preserved"
+
+    def test_filter_then_histogram_does_not_raise(self):
+        """Pre-filtering lets a forwarded bag flow into histogram() cleanly.
+
+        Test scenario:
+            histogram() validates kwargs strictly; filtering an unknown key
+            out first avoids the ValueError while keeping accepted styling.
+        """
+        raw = {"bins": 10, "totally_unknown": 1}
+        stat = StatisticalGlyph(np.arange(20, dtype=float))
+        with pytest.raises(ValueError, match="totally_unknown"):
+            stat.histogram(**raw)
+        safe = StatisticalGlyph.filter_kwargs(raw)
+        fig, ax, hist = stat.histogram(**safe)
+        assert len(hist["n"]) == 1, "histogram should produce one series"
+
+    def test_option_keys_returns_independent_set(self):
+        """`option_keys()` returns a fresh set each call; mutation can't leak.
+
+        Test scenario:
+            Mutating the returned set must not corrupt the keys seen by a
+            later call.
+        """
+        first = StatisticalGlyph.option_keys()
+        first.add("totally_unknown")
+        assert "totally_unknown" not in StatisticalGlyph.option_keys(), (
+            "returned set must be independent"
+        )
+
+    def test_option_keys_matches_instance_accepted_keys(self):
+        """Class-level `option_keys()` matches a built instance's option keys.
+
+        Test scenario:
+            The class attribute is the source of truth: with no extra kwargs,
+            an instance's `default_options` keys equal `option_keys()`.
+        """
+        stat = StatisticalGlyph(np.arange(10, dtype=float))
+        assert StatisticalGlyph.option_keys() == set(stat.default_options), (
+            "class option_keys must match the instance's accepted keys"
+        )
+
+    def test_filter_kwargs_does_not_mutate_input(self):
+        """`filter_kwargs` leaves the caller's dict untouched and returns a copy.
+
+        Test scenario:
+            Filtering is pure — the input keeps its keys and a new dict is
+            returned.
+        """
+        raw = {"bins": 20, "bogus": 1}
+        safe = StatisticalGlyph.filter_kwargs(raw)
+        assert raw == {"bins": 20, "bogus": 1}, "input must not be mutated"
+        assert safe is not raw, "a new dict should be returned"
+
+    def test_filter_kwargs_preserves_insertion_order(self):
+        """`filter_kwargs` preserves the order of the accepted keys.
+
+        Test scenario:
+            Accepted keys come back in their original order, with the rejected
+            key dropped in between.
+        """
+        raw = {"bins": 20, "bogus": 1, "alpha": 0.5}
+        safe = StatisticalGlyph.filter_kwargs(raw)
+        assert list(safe) == ["bins", "alpha"], f"order not preserved: {list(safe)}"

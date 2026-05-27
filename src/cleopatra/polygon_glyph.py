@@ -103,6 +103,9 @@ class PolygonGlyph(Glyph):
             norm/colorbar/ticks pipeline used for the filled path.
     """
 
+    #: Option keys this glyph accepts (see `Glyph.option_keys`/`filter_kwargs`).
+    DEFAULT_OPTIONS = POLYGON_DEFAULT_OPTIONS
+
     def __init__(
         self,
         polygons: Sequence[np.ndarray],

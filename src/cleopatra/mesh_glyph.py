@@ -91,6 +91,9 @@ class MeshGlyph(Glyph):
             ```
     """
 
+    #: Option keys this glyph accepts (see `Glyph.option_keys`/`filter_kwargs`).
+    DEFAULT_OPTIONS = MESH_DEFAULT_OPTIONS
+
     def __init__(
         self,
         node_x: np.ndarray,

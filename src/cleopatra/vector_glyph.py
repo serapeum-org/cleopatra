@@ -90,6 +90,9 @@ class VectorGlyph(Glyph):
             norm/colorbar/ticks pipeline used to colour by magnitude.
     """
 
+    #: Option keys this glyph accepts (see `Glyph.option_keys`/`filter_kwargs`).
+    DEFAULT_OPTIONS = VECTOR_DEFAULT_OPTIONS
+
     def __init__(
         self,
         x: np.ndarray,

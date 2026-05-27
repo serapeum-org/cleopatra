@@ -68,14 +68,17 @@ from matplotlib.figure import Figure
 
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
-DEFAULT_OPTIONS = {
+STATISTICAL_DEFAULT_OPTIONS = {
     "figsize": (5, 5),
     "bins": 15,
     "color": ["#0504aa"],
     "alpha": 0.7,
     "rwidth": 0.85,
 }
-DEFAULT_OPTIONS = STYLE_DEFAULTS | DEFAULT_OPTIONS
+STATISTICAL_DEFAULT_OPTIONS = STYLE_DEFAULTS | STATISTICAL_DEFAULT_OPTIONS
+#: Backwards-compatible alias for the statistical glyph's default options
+#: (named like the other glyphs' `*_DEFAULT_OPTIONS` constants).
+DEFAULT_OPTIONS = STATISTICAL_DEFAULT_OPTIONS
 
 
 class StatisticalGlyph:
@@ -83,6 +86,11 @@ class StatisticalGlyph:
 
     This class provides methods for initializing the class with numerical values and optional keyword arguments,
     and for creating histograms from the given values.
+
+    The accepted option keys are exposed via the `DEFAULT_OPTIONS` class
+    attribute and can be inspected or filtered before constructing an
+    instance with the `option_keys` and `filter_kwargs` classmethods
+    (mirroring `cleopatra.glyph.Glyph`, though this is a standalone class).
 
     Attributes:
         values: The numerical values to be plotted as histograms.
@@ -141,6 +149,11 @@ class StatisticalGlyph:
         ![one-histogram](./../images/statistical_glyph/one-histogram.png)
     """
 
+    #: Option keys this glyph accepts, exposed as a class attribute so they
+    #: can be introspected/filtered before an instance exists (see
+    #: `option_keys`/`filter_kwargs`).
+    DEFAULT_OPTIONS = STATISTICAL_DEFAULT_OPTIONS
+
     def __init__(
         self,
         values: Union[List, np.ndarray],
@@ -166,6 +179,11 @@ class StatisticalGlyph:
                 are created when ``histogram()`` is called. When supplied,
                 the histogram is composed into the given axes and its parent
                 figure is inferred (unless ``fig`` is also passed explicitly).
+                The box/stripe renderers (``boxplot``, ``multiboxplot``,
+                ``stripes``) also fall back to this axes when their own
+                ``ax`` argument is omitted. Note these renderers take ``ax``
+                per call but never ``fig`` — the figure is bound here, at
+                construction.
             **kwargs: Additional keyword arguments to customize the histogram appearance.
                 Supported arguments include:
                 - figsize: Figure size as (width, height) in inches, by default (5, 5).
@@ -231,7 +249,7 @@ class StatisticalGlyph:
         self._values = values
         self._fig = fig
         self._ax = ax
-        options_dict = DEFAULT_OPTIONS.copy()
+        options_dict = STATISTICAL_DEFAULT_OPTIONS.copy()
         options_dict.update(kwargs)
         self._default_options = options_dict
 
@@ -316,6 +334,64 @@ class StatisticalGlyph:
             ```
         """
         return self._default_options
+
+    @classmethod
+    def option_keys(cls) -> set[str]:
+        """Return the keyword-argument keys this glyph accepts.
+
+        Resolves from the class-level ``DEFAULT_OPTIONS`` so the accepted
+        keys can be inspected without constructing an instance. Mirrors
+        ``cleopatra.glyph.Glyph.option_keys`` (``StatisticalGlyph`` is a
+        standalone class, not a ``Glyph`` subclass).
+
+        Returns:
+            set: The accepted option keys for this glyph class.
+
+        Examples:
+            - Inspect the accepted keys before building one:
+                ```python
+                >>> from cleopatra.statistical_glyph import StatisticalGlyph
+                >>> keys = StatisticalGlyph.option_keys()
+                >>> "bins" in keys
+                True
+                >>> "totally_unknown" in keys
+                False
+
+                ```
+
+        See Also:
+            filter_kwargs: Drop the keys this glyph does not accept.
+        """
+        return set(cls.DEFAULT_OPTIONS)
+
+    @classmethod
+    def filter_kwargs(cls, kwargs: dict) -> dict:
+        """Return only the subset of ``kwargs`` whose keys this glyph accepts.
+
+        Args:
+            kwargs: A mapping of candidate option keys to values.
+
+        Returns:
+            Dict: The entries of ``kwargs`` whose keys are in ``option_keys()``.
+
+        Examples:
+            - Keep only the accepted keys:
+                ```python
+                >>> from cleopatra.statistical_glyph import StatisticalGlyph
+                >>> raw = {"bins": 20, "alpha": 0.5, "bogus": 1}
+                >>> safe = StatisticalGlyph.filter_kwargs(raw)
+                >>> sorted(safe)
+                ['alpha', 'bins']
+                >>> safe["bins"]
+                20
+
+                ```
+
+        See Also:
+            option_keys: The set of keys this glyph accepts.
+        """
+        keys = cls.option_keys()
+        return {key: val for key, val in kwargs.items() if key in keys}
 
     def histogram(self, **kwargs) -> Tuple[Figure, Axes, Dict]:
         """Create a histogram from the stored numerical values.
@@ -513,27 +589,54 @@ class StatisticalGlyph:
         hist = {"n": n, "bins": bins, "patches": patches}
         return fig, ax, hist
 
-    def _resolve_fig_ax(
-        self, ax: Axes | None, fig: Figure | None
-    ) -> Tuple[Figure, Axes]:
+    @staticmethod
+    def _reject_fig_kwarg(kwargs: dict) -> None:
+        """Reject a per-call `fig=` with a clear migration message.
+
+        `fig` is a construction-time binding, not a renderer parameter.
+        Because the renderers forward `**kwargs` to matplotlib, an absorbed
+        `fig=` would otherwise surface as a confusing downstream error, so
+        catch it explicitly here.
+
+        Args:
+            kwargs: The renderer's forwarded keyword arguments.
+
+        Raises:
+            TypeError: If `fig` is present in `kwargs`.
+        """
+        if "fig" in kwargs:
+            raise TypeError(
+                "`fig` is not a parameter of boxplot/multiboxplot/stripes; "
+                "bind the figure at construction instead: "
+                "StatisticalGlyph(values, fig=...)."
+            )
+
+    def _resolve_fig_ax(self, ax: Axes | None) -> Tuple[Figure, Axes]:
         """Return a `(fig, ax)` pair, creating one when none is given.
 
-        Unlike `histogram`, the renderers added in T7.3c compose into a
-        caller-supplied axes when provided (and never call `plt.show()`),
-        so they can be laid out into a larger figure.
+        These renderers compose into a caller-supplied axes when provided
+        (and never call `plt.show()`), so they can be laid out into a
+        larger figure. The figure is always derived from the axes —
+        `fig` is a construction-time binding (`StatisticalGlyph(..., fig=)`),
+        not a per-call parameter.
+
+        Resolution priority: the method's `ax` argument, then the axes
+        bound at construction (`self._ax`), then a new axes on the
+        figure bound at construction (`self._fig`), otherwise a brand-new
+        figure/axes.
 
         Args:
             ax: An existing axes to draw on, or None.
-            fig: An existing figure, or None. Ignored when `ax` is given
-                (the axes' own figure is used).
 
         Returns:
             Tuple[Figure, Axes]: The figure/axes to render into.
         """
+        if ax is None:
+            ax = self._ax
         if ax is not None:
             return ax.figure, ax
-        if fig is not None:
-            return fig, fig.add_subplot(111)
+        if self._fig is not None:
+            return self._fig, self._fig.add_subplot(111)
         return plt.subplots(figsize=self.default_options["figsize"])
 
     def _columns(self) -> List[np.ndarray]:
@@ -559,7 +662,6 @@ class StatisticalGlyph:
     def boxplot(
         self,
         ax: Axes = None,
-        fig: Figure = None,
         labels: Sequence[str] | None = None,
         notch: bool = False,
         showfliers: bool = True,
@@ -573,9 +675,11 @@ class StatisticalGlyph:
         `ax`/`fig` and does not call `plt.show()`.
 
         Args:
-            ax: Axes to draw on. A new figure/axes is created when both
-                `ax` and `fig` are None.
-            fig: Figure to add an axes to when `ax` is None.
+            ax: Axes to draw on. Falls back to the axes/figure bound at
+                construction (`StatisticalGlyph(..., ax=/fig=)`), and a
+                brand-new figure/axes is created when none is available.
+                `fig` is a construction-time binding, not a parameter
+                here.
             labels: Tick labels, one per box. Defaults to 1-based
                 series indices.
             notch: Draw notched boxes (a rough CI around the median).
@@ -603,7 +707,8 @@ class StatisticalGlyph:
 
                 ```
         """
-        fig, ax = self._resolve_fig_ax(ax, fig)
+        self._reject_fig_kwarg(kwargs)
+        fig, ax = self._resolve_fig_ax(ax)
         columns = self._columns()
         tick_labels = (
             list(labels) if labels is not None
@@ -639,7 +744,6 @@ class StatisticalGlyph:
         positions: Sequence[float] | None = None,
         labels: Sequence[str] | None = None,
         ax: Axes = None,
-        fig: Figure = None,
         widths: float = 0.5,
         **kwargs,
     ) -> Tuple[Figure, Axes, Dict]:
@@ -655,9 +759,10 @@ class StatisticalGlyph:
                 Defaults to `1..n`.
             labels: Tick labels, one per box. Defaults to the string of
                 each position.
-            ax: Axes to draw on. A new figure/axes is created when both
-                `ax` and `fig` are None.
-            fig: Figure to add an axes to when `ax` is None.
+            ax: Axes to draw on. Falls back to the axes/figure bound at
+                construction, and a brand-new figure/axes is created
+                when none is available. `fig` is a construction-time
+                binding, not a parameter here.
             widths: Box width in data units. Default is 0.5.
             **kwargs: Forwarded to `Axes.boxplot`.
 
@@ -683,6 +788,7 @@ class StatisticalGlyph:
 
                 ```
         """
+        self._reject_fig_kwarg(kwargs)
         values = np.asarray(self.values)
         if values.ndim != 2:
             raise ValueError(
@@ -704,7 +810,7 @@ class StatisticalGlyph:
                 f"columns ({n})."
             )
 
-        fig, ax = self._resolve_fig_ax(ax, fig)
+        fig, ax = self._resolve_fig_ax(ax)
         bp = ax.boxplot(
             columns,
             positions=list(positions),
@@ -727,7 +833,6 @@ class StatisticalGlyph:
     def stripes(
         self,
         ax: Axes = None,
-        fig: Figure = None,
         cmap=None,
         vmin: float | None = None,
         vmax: float | None = None,
@@ -741,9 +846,10 @@ class StatisticalGlyph:
         into a supplied `ax`/`fig` and does not call `plt.show()`.
 
         Args:
-            ax: Axes to draw on. A new figure/axes is created when both
-                `ax` and `fig` are None.
-            fig: Figure to add an axes to when `ax` is None.
+            ax: Axes to draw on. Falls back to the axes/figure bound at
+                construction, and a brand-new figure/axes is created
+                when none is available. `fig` is a construction-time
+                binding, not a parameter here.
             cmap: Colormap name or object. Defaults to the `cmap`
                 option.
             vmin: Lower colour limit. Defaults to the data minimum.
@@ -770,12 +876,13 @@ class StatisticalGlyph:
 
                 ```
         """
+        self._reject_fig_kwarg(kwargs)
         values = np.asarray(self.values, dtype=float)
         if values.ndim != 1:
             raise ValueError(
                 f"stripes requires 1D values; got {values.ndim}D."
             )
-        fig, ax = self._resolve_fig_ax(ax, fig)
+        fig, ax = self._resolve_fig_ax(ax)
         cmap = cmap if cmap is not None else self.default_options["cmap"]
         cmap_obj = mpl.colormaps[cmap] if isinstance(cmap, str) else cmap
         lo = float(np.nanmin(values)) if vmin is None else vmin

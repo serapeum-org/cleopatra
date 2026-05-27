@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import inspect
 import math
 import warnings
 
@@ -20,9 +21,10 @@ from matplotlib import animation
 from matplotlib.animation import FuncAnimation
 from matplotlib.axes import Axes
 from matplotlib.colorbar import Colorbar
-from matplotlib.figure import Figure
+from matplotlib.figure import Figure, SubFigure
 from matplotlib.ticker import LogFormatter
 
+from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import ColorScale, MidpointNormalize
 
 SUPPORTED_VIDEO_FORMAT = ["gif", "mov", "avi", "mp4"]
@@ -33,6 +35,65 @@ SUPPORTED_VIDEO_FORMAT = ["gif", "mov", "avi", "mp4"]
 MAX_DISCRETE_LEVELS = 1000
 
 
+def _get_figure_supports_root(get_figure) -> bool:
+    """Return True if `get_figure` accepts a `root` keyword argument.
+
+    The `root` parameter was added to `Axes.get_figure` in matplotlib 3.10.
+    Detected by signature inspection (rather than a broad `try/except`) so an
+    unrelated `TypeError` from `get_figure` itself is never swallowed.
+    """
+    try:
+        return "root" in inspect.signature(get_figure).parameters
+    except (TypeError, ValueError):
+        return False
+
+
+def _root_figure(ax: Axes) -> Figure:
+    """Return the top-level `Figure` that owns `ax`, across matplotlib versions.
+
+    On matplotlib >= 3.10 this uses `Axes.get_figure(root=True)`, which returns
+    the root `Figure` even when the axes lives on a `SubFigure` (and avoids the
+    3.10 deprecation warning attached to the bare `get_figure()`). On older
+    matplotlib (down to the project's 3.8.4 floor) the `root` keyword does not
+    exist, so it climbs out of any `SubFigure` to the owning `Figure` manually.
+
+    Args:
+        ax: The axes whose top-level figure is wanted.
+
+    Returns:
+        Figure: The top-level figure for `ax`.
+    """
+    get_figure = ax.get_figure
+    if _get_figure_supports_root(get_figure):
+        return get_figure(root=True)
+    fig = get_figure()
+    seen: set[int] = set()
+    while isinstance(fig, SubFigure) and id(fig) not in seen:
+        seen.add(id(fig))
+        fig = fig.figure
+    return fig
+
+
+def _immediate_figure(ax: Axes) -> Figure:
+    """Return the figure `ax` is directly attached to (its immediate parent).
+
+    Deprecation-safe counterpart to `_root_figure`: on matplotlib >= 3.10 it
+    passes `root=False` explicitly; on older matplotlib it calls the bare
+    `get_figure()`. For an axes on a `SubFigure` this is that `SubFigure`; for
+    an ordinary axes it is the same object as `_root_figure(ax)`.
+
+    Args:
+        ax: The axes whose immediate parent figure is wanted.
+
+    Returns:
+        Figure: The figure (or sub-figure) `ax` is directly attached to.
+    """
+    get_figure = ax.get_figure
+    if _get_figure_supports_root(get_figure):
+        return get_figure(root=False)
+    return get_figure()
+
+
 class Glyph:
     """Base class for cleopatra visualization glyphs.
 
@@ -40,11 +101,25 @@ class Glyph:
     normalization, colorbar creation, tick control, point overlays,
     and animation saving. Subclasses implement the actual rendering.
 
+    The accepted option keys are exposed per subclass via the
+    `DEFAULT_OPTIONS` class attribute, and can be inspected or filtered
+    *before* constructing an instance with the `option_keys` and
+    `filter_kwargs` classmethods (useful for safely forwarding a bag of
+    user-supplied styling kwargs).
+
     Args:
         default_options: Default plot options dict. Subclasses provide
             their own defaults merged with `STYLE_DEFAULTS`.
-        fig: Pre-existing matplotlib figure. Default is None.
-        ax: Pre-existing matplotlib axes. Default is None.
+        fig: Pre-existing matplotlib figure to bind. Default is None.
+            An `ax` fully determines its figure, so `fig` is optional even
+            when `ax` is given; when both are passed the explicit `fig`
+            is kept as the figure handle. Passing a `fig` that does not own
+            the given `ax` emits a `UserWarning` (the explicit `fig` is
+            still honoured, but the two handles then disagree).
+        ax: Pre-existing matplotlib axes to bind. Default is None. Passing
+            `ax` on its own is supported — its parent figure is derived
+            automatically (the axes is no longer dropped when `fig` is
+            omitted).
         **kwargs: Override any key in `default_options`.
 
     Examples:
@@ -76,6 +151,22 @@ class Glyph:
             True
 
             ```
+        - Provide only an axes; the figure is derived from it:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.glyph import Glyph
+            >>> from cleopatra.styles import DEFAULT_OPTIONS
+            >>> opts = DEFAULT_OPTIONS.copy()
+            >>> opts["vmin"] = None
+            >>> opts["vmax"] = None
+            >>> fig, ax = plt.subplots()
+            >>> g = Glyph(default_options=opts, ax=ax)
+            >>> g.ax is ax
+            True
+            >>> g.fig is ax.get_figure()
+            True
+
+            ```
 
     See Also:
         cleopatra.array_glyph.ArrayGlyph: Glyph subclass for
@@ -83,6 +174,13 @@ class Glyph:
         cleopatra.mesh_glyph.MeshGlyph: Glyph subclass for
             unstructured meshes.
     """
+
+    #: The option keys this glyph accepts, as a class attribute so they can
+    #: be introspected/filtered *before* an instance exists (see
+    #: `option_keys`/`filter_kwargs`). Each subclass overrides this with its
+    #: own option dict (built as `STYLE_DEFAULTS | <glyph-specific>`); the
+    #: base value is the shared style defaults.
+    DEFAULT_OPTIONS: dict = STYLE_DEFAULTS
 
     def __init__(
         self,
@@ -96,9 +194,31 @@ class Glyph:
         self._vmin: float | None = None
         self._vmax: float | None = None
         self.ticks_spacing: float | None = None
-        if fig is not None:
-            self.fig = fig
+        # Resolve the (fig, ax) binding. An `ax` fully determines its
+        # figure, so accept `ax` on its own and derive the figure from it
+        # rather than dropping the axes when `fig` is omitted. An explicit
+        # `fig` is honoured (and wins for the figure handle when both are
+        # given); passing neither leaves both unset until render time.
+        if ax is not None:
             self.ax = ax
+            if fig is not None:
+                # A mismatched (fig, ax) pair leaves self.fig and
+                # self.ax.figure disagreeing — almost always a caller mistake.
+                # `fig` is fine if it is either the axes' immediate parent
+                # (e.g. a SubFigure) or its top-level root figure.
+                if fig is not _immediate_figure(ax) and fig is not _root_figure(ax):
+                    warnings.warn(
+                        "The given `fig` is not the figure that owns `ax`; "
+                        "the axes' own figure is what will be drawn on. Pass "
+                        "only `ax` (its figure is derived automatically).",
+                        stacklevel=2,
+                    )
+                self.fig = fig
+            else:
+                self.fig = _root_figure(ax)
+        elif fig is not None:
+            self.fig = fig
+            self.ax = None
         else:
             self.fig = None
             self.ax = None
@@ -117,6 +237,91 @@ class Glyph:
     def default_options(self) -> dict:
         """Default plot options."""
         return self._default_options
+
+    @classmethod
+    def option_keys(cls) -> set[str]:
+        """Return the keyword-argument keys this glyph accepts.
+
+        Resolves from the class-level `DEFAULT_OPTIONS`, so the accepted
+        keys can be inspected **without constructing an instance** (and
+        therefore without tripping the strict unknown-kwarg check in
+        `_merge_kwargs`). The keys differ per glyph subclass.
+
+        This reports the class's *default* option set. For every concrete
+        glyph subclass that equals the instance's accepted keys (each
+        subclass passes the same dict to `__init__`). The base `Glyph`
+        reports the shared `STYLE_DEFAULTS`; an instance built with a
+        custom injected `default_options` is the one case where the two
+        can differ, so base `Glyph` is not part of the introspection
+        contract.
+
+        Returns:
+            set[str]: The accepted option keys for this glyph class.
+
+        Examples:
+            - Inspect the keys a glyph accepts before building one:
+                ```python
+                >>> from cleopatra.scatter_glyph import ScatterGlyph
+                >>> keys = ScatterGlyph.option_keys()
+                >>> "cmap" in keys
+                True
+                >>> "totally_unknown" in keys
+                False
+
+                ```
+            - Different glyphs expose different keys:
+                ```python
+                >>> from cleopatra.polygon_glyph import PolygonGlyph
+                >>> "edgecolor" in PolygonGlyph.option_keys()
+                True
+
+                ```
+
+        See Also:
+            filter_kwargs: Drop the keys a glyph does not accept from a dict.
+        """
+        return set(cls.DEFAULT_OPTIONS)
+
+    @classmethod
+    def filter_kwargs(cls, kwargs: dict) -> dict:
+        """Return only the subset of `kwargs` whose keys this glyph accepts.
+
+        A convenience for callers that forward a bag of user-supplied
+        styling kwargs into a glyph: pre-filtering with this method lets
+        the construction succeed instead of raising on an unknown key.
+        Order and values are preserved; rejected keys are simply dropped.
+
+        Args:
+            kwargs: A mapping of candidate option keys to values.
+
+        Returns:
+            dict: The entries of `kwargs` whose keys are in `option_keys()`.
+
+        Examples:
+            - Keep only the accepted keys, then construct safely:
+                ```python
+                >>> from cleopatra.polygon_glyph import PolygonGlyph
+                >>> raw = {"cmap": "viridis", "edgecolor": "black", "bogus": 1}
+                >>> safe = PolygonGlyph.filter_kwargs(raw)
+                >>> sorted(safe)
+                ['cmap', 'edgecolor']
+                >>> safe["cmap"]
+                'viridis'
+
+                ```
+            - An empty mapping yields an empty mapping:
+                ```python
+                >>> from cleopatra.scatter_glyph import ScatterGlyph
+                >>> ScatterGlyph.filter_kwargs({})
+                {}
+
+                ```
+
+        See Also:
+            option_keys: The set of keys this glyph accepts.
+        """
+        keys = cls.option_keys()
+        return {key: val for key, val in kwargs.items() if key in keys}
 
     @property
     def anim(self) -> FuncAnimation:

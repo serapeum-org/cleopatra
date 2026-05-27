@@ -39,11 +39,11 @@ from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
 from PIL import Image
 
-from cleopatra.glyph import Glyph
+from cleopatra.glyph import Glyph, _root_figure
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import ColorScale  # re-exported for convenience  # noqa: F401
 
-DEFAULT_OPTIONS = {
+ARRAY_DEFAULT_OPTIONS = {
     "vmin": None,
     "vmax": None,
     "num_size": 8,
@@ -58,8 +58,12 @@ DEFAULT_OPTIONS = {
     "center": None,
     "extend": None,
     "cbar_kwargs": None,
+    "add_colorbar": True,
 }
-DEFAULT_OPTIONS = STYLE_DEFAULTS | DEFAULT_OPTIONS
+ARRAY_DEFAULT_OPTIONS = STYLE_DEFAULTS | ARRAY_DEFAULT_OPTIONS
+#: Backwards-compatible alias for the array glyph's default options
+#: (named like the other glyphs' `*_DEFAULT_OPTIONS` constants).
+DEFAULT_OPTIONS = ARRAY_DEFAULT_OPTIONS
 
 #: Tuple of accepted `kind=` values for `ArrayGlyph.plot`.
 VALID_PLOT_KINDS = ("auto", "imshow", "pcolormesh", "contour", "contourf")
@@ -191,6 +195,14 @@ class ArrayGlyph(Glyph):
             of per-cell value labels drawn when `display_cell_value=True`.
             (The legacy alias `no_elem` still works but is deprecated.)
         anim (matplotlib.animation.FuncAnimation): The animation object if created.
+        im (matplotlib.cm.ScalarMappable): The colour-mapped artist produced by
+            the most recent `plot`/`animate` call (e.g. the `AxesImage` for
+            `imshow`, the `QuadMesh` for `pcolormesh`, the `QuadContourSet`
+            for `contour`/`contourf`, or the RGB `AxesImage`). `None` before
+            the first render. Lets a caller attach a colorbar/legend or query
+            the colour limits without scraping `ax.images`/`ax.collections`.
+        cbar (matplotlib.colorbar.Colorbar): The colorbar drawn by the glyph,
+            or `None` when none was drawn (RGB, or `add_colorbar=False`).
 
     Notes:
         This class provides methods for:
@@ -225,6 +237,9 @@ class ArrayGlyph(Glyph):
 
     ```
     """
+
+    #: Option keys this glyph accepts (see `Glyph.option_keys`/`filter_kwargs`).
+    DEFAULT_OPTIONS = ARRAY_DEFAULT_OPTIONS
 
     def __init__(
         self,
@@ -264,10 +279,16 @@ class ArrayGlyph(Glyph):
             cutoff: Clip the range of pixel values for each band, by default None.
                 Takes only pixel values from 0 to the value of the cutoff and scales them back to between 0 and 1.
                 Should be a list with one value per band.
-            ax: A pre-existing axes to plot on, by default None.
-                If None, a new axes will be created.
-            fig: A pre-existing figure to plot on, by default None.
-                If None, a new figure will be created.
+            ax: A pre-existing axes to plot on, by default None. Bound to
+                the glyph and used by `plot`/`animate` unless `plot(ax=...)`
+                overrides it. Passing `ax` alone is enough — its parent
+                figure is derived automatically; if None (and no axes is
+                given to `plot`), a new axes is created.
+            fig: A pre-existing figure to bind, by default None. `fig` is a
+                construction-time binding only (it is never a `plot`
+                parameter — `plot` derives the figure from its axes). When
+                `ax` is given, `fig` is optional; if both are None a new
+                figure is created at render time.
             percentile: The percentile value to be used for scaling the array values, by default None.
                 Used to enhance contrast by stretching the histogram.
             **kwargs: Additional keyword arguments for customizing the plot.
@@ -438,7 +459,9 @@ class ArrayGlyph(Glyph):
 
         ```
         """
-        super().__init__(default_options=DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs)
+        super().__init__(
+            default_options=ARRAY_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs
+        )
         # first replace the no_data_value by nan
         # convert the array to float32 to be able to replace the no data value with nan
         if exclude_value is not np.nan:
@@ -520,6 +543,11 @@ class ArrayGlyph(Glyph):
         # match; `MaskedArray.count()` would miss NaN cells.
         first_frame = array[0, :, :] if len(shape) == 3 else array
         self.num_domain_cells = len(get_indices2(first_frame, [np.nan]))
+        # Mappable (the colour-mapped artist) and colorbar handles are
+        # populated by `plot`/`animate`. Initialised here so they are always
+        # reachable as public attributes, even before the first render.
+        self.im = None
+        self.cbar = None
 
     @property
     def arr(self):
@@ -1504,6 +1532,8 @@ class ArrayGlyph(Glyph):
         pid_color: str = "blue",
         pid_size: int | float = 10,
         kind: str = "auto",
+        ax: Axes | None = None,
+        title: str | None = None,
         **kwargs,
     ) -> tuple[Figure, Axes]:
         """Plot the array with customizable visualization options.
@@ -1548,6 +1578,17 @@ class ArrayGlyph(Glyph):
                 skipped for `"contour"` and `"contourf"` (which have
                 no per-cell grid). RGB compositing requires
                 `kind="imshow"`.
+            ax: Target axes to draw on, by default None. When given,
+                the plot is composed into this axes (and its parent
+                figure, via `ax.get_figure()`), mirroring the other
+                glyphs' `plot(ax=...)`. Resolution priority is
+                `plot(ax=)` > the axes bound at construction > a fresh
+                figure/axes. `fig` is intentionally not a parameter
+                here — it is a construction-time binding derived from
+                the axes.
+            title: Plot title, by default None. A convenience shortcut
+                equivalent to the `title` option; when given it
+                overrides the `title` set at construction.
             **kwargs: Additional keyword arguments for customizing the plot.
 
                 Plot appearance:
@@ -1563,6 +1604,13 @@ class ArrayGlyph(Glyph):
                         Maximum value for color scaling, by default max(array).
 
                 Color bar options:
+                    add_colorbar : bool, optional
+                        Whether to draw the glyph's own color bar, by
+                        default True. Set to False for shared-axes
+                        composition, where the host owns a single
+                        aggregated color bar; then `self.cbar` stays
+                        None and no axes space is taken by a color bar.
+                        The mappable is still reachable via `self.im`.
                     cbar_orientation : str, optional
                         Orientation of the color bar, by default 'vertical'.
                         Can be 'horizontal' or 'vertical'.
@@ -1659,6 +1707,14 @@ class ArrayGlyph(Glyph):
             tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: A tuple containing:
                 - fig: The matplotlib Figure object
                 - ax: The matplotlib Axes object
+
+            The colour-mapped artist (the ``ScalarMappable`` — e.g. the
+            ``AxesImage`` for ``imshow``, the ``QuadMesh`` for
+            ``pcolormesh``, the ``QuadContourSet`` for
+            ``contour``/``contourf``, or the RGB ``AxesImage``) is also
+            stored on the instance as ``self.im`` after this call, so a
+            caller can attach a colorbar/legend or query the colour
+            limits without scraping ``ax.images``/``ax.collections``.
 
         Raises:
             ValueError: If an invalid keyword argument is provided.
@@ -1989,14 +2045,25 @@ class ArrayGlyph(Glyph):
         else:
             effective_kind = kind
 
-        if self.fig is None:
+        # Axes resolution priority: explicit `plot(ax=)` wins, then the
+        # axes/figure bound at construction, otherwise a fresh figure/axes.
+        # `fig` is never a plot parameter — it is derived from the axes
+        # (`ax.get_figure()`), keeping `fig` a construction-time binding.
+        if ax is not None:
+            self.ax = ax
+            self.fig = _root_figure(ax)
+        elif self.fig is None:
             self.fig, self.ax = self.create_figure_axes()
+
+        if title is not None:
+            self.default_options["title"] = title
 
         arr = self.arr
         fig, ax = self.fig, self.ax
 
         if self.rgb:
-            ax.imshow(arr, extent=self.extent)
+            self.im = ax.imshow(arr, extent=self.extent)
+            self.cbar = None
         else:
             # if user did not input ticks spacing use the calculated one.
             if "ticks_spacing" in kwargs.keys():
@@ -2045,9 +2112,13 @@ class ArrayGlyph(Glyph):
             im, cbar_kw = self._plot_im_get_cbar_kw(
                 ax, arr, ticks, kind=effective_kind
             )
+            self.im = im
 
-            # Create colorbar
-            self.cbar = self.create_color_bar(ax, im, cbar_kw)
+            # Create colorbar, unless the caller opted out (e.g. shared-axes
+            # composition where the host owns a single aggregated colorbar).
+            self.cbar = None
+            if self.default_options["add_colorbar"]:
+                self.cbar = self.create_color_bar(ax, im, cbar_kw)
 
         ax.set_title(
             self.default_options["title"], fontsize=self.default_options["title_size"]
@@ -2454,6 +2525,13 @@ class ArrayGlyph(Glyph):
                         Maximum value for color scaling, by default max(array).
 
                 Color bar options:
+                    add_colorbar : bool, optional
+                        Whether to draw the glyph's own color bar, by
+                        default True. Set to False for shared-axes
+                        composition, where the host owns a single
+                        aggregated color bar; then `self.cbar` stays
+                        None and no axes space is taken by a color bar.
+                        The mappable is still reachable via `self.im`.
                     cbar_orientation : str, optional
                         Orientation of the color bar, by default 'vertical'.
                         Can be 'horizontal' or 'vertical'.
@@ -2508,6 +2586,11 @@ class ArrayGlyph(Glyph):
         Returns:
             matplotlib.animation.FuncAnimation: The animation object that can be displayed
                 in a notebook or saved to a file.
+
+            As with `plot`, the first-frame colour-mapped artist is stored on
+            the instance as ``self.im`` (and the colorbar, when drawn, on
+            ``self.cbar``), so a caller can attach a host-owned
+            colorbar/legend without scraping the axes.
 
         Raises:
             ValueError: If an invalid keyword argument is provided.
@@ -2677,9 +2760,13 @@ class ArrayGlyph(Glyph):
 
         ticks = self.get_ticks()
         im, cbar_kw = self._plot_im_get_cbar_kw(ax, frame_0, ticks)
+        self.im = im
 
-        # Create colorbar (stored on the instance, mirroring `plot`).
-        self.cbar = self.create_color_bar(ax, im, cbar_kw)
+        # Create colorbar (stored on the instance, mirroring `plot`), unless
+        # the caller opted out via `add_colorbar=False`.
+        self.cbar = None
+        if self.default_options["add_colorbar"]:
+            self.cbar = self.create_color_bar(ax, im, cbar_kw)
 
         ax.set_title(
             self.default_options["title"], fontsize=self.default_options["title_size"]

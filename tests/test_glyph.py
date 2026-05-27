@@ -58,6 +58,77 @@ class TestInit:
         g = Glyph(default_options=_make_options(), fig=fig, ax=ax)
         assert g.fig is fig, "Should store the provided figure"
         assert g.ax is ax, "Should store the provided axes"
+        plt.close(fig)
+
+    def test_ax_without_fig_keeps_axes_and_derives_fig(self):
+        """Passing `ax` alone keeps the axes and derives the figure from it.
+
+        Test scenario:
+            Previously an `ax` given without a `fig` was dropped (both set
+            to None). Now the axes is retained and `self.fig` is derived via
+            `ax.get_figure()`, so a caller can bind a target with `ax=` only.
+        """
+        fig, ax = plt.subplots()
+        g = Glyph(default_options=_make_options(), ax=ax)
+        assert g.ax is ax, "ax passed alone must be kept"
+        assert g.fig is ax.get_figure(), "fig must be derived from the axes"
+        plt.close(fig)
+
+    def test_fig_without_ax_keeps_fig_and_leaves_ax_none(self):
+        """Passing `fig` alone keeps the figure and leaves `ax` None.
+
+        Test scenario:
+            A figure with no specific axes binds the figure handle; the axes
+            stays None until render time.
+        """
+        fig = plt.figure()
+        g = Glyph(default_options=_make_options(), fig=fig)
+        assert g.fig is fig, "fig passed alone must be kept"
+        assert g.ax is None, "ax should remain None when only fig is given"
+        plt.close(fig)
+
+    def test_explicit_fig_wins_over_axes_parent(self):
+        """When both `fig` and `ax` are given, the explicit `fig` is stored.
+
+        Test scenario:
+            The explicit figure handle takes precedence for `self.fig` rather
+            than being recomputed from the axes.
+        """
+        fig, ax = plt.subplots()
+        g = Glyph(default_options=_make_options(), fig=fig, ax=ax)
+        assert g.fig is fig, "explicit fig should be stored as-is"
+        plt.close(fig)
+
+    def test_mismatched_fig_ax_warns(self):
+        """A `fig` that does not own `ax` warns the caller.
+
+        Test scenario:
+            Passing an `ax` together with an unrelated `fig` is almost always
+            a mistake (the two figure handles disagree), so the constructor
+            emits a warning while still honouring the explicit `fig`.
+        """
+        fig_a, ax_a = plt.subplots()
+        fig_b = plt.figure()
+        with pytest.warns(UserWarning, match="not the figure that owns"):
+            g = Glyph(default_options=_make_options(), fig=fig_b, ax=ax_a)
+        assert g.fig is fig_b, "explicit fig is still honoured despite the mismatch"
+        plt.close(fig_a)
+        plt.close(fig_b)
+
+    def test_matched_fig_ax_does_not_warn(self):
+        """Passing `ax` with its own parent `fig` does not warn.
+
+        Test scenario:
+            The consistent case (fig owns ax) must stay silent.
+        """
+        import warnings as _warnings
+
+        fig, ax = plt.subplots()
+        with _warnings.catch_warnings():
+            _warnings.simplefilter("error")
+            g = Glyph(default_options=_make_options(), fig=fig, ax=ax)
+        assert g.fig is fig, "matched fig should be stored without warning"
+        plt.close(fig)
 
     def test_kwargs_override_defaults(self):
         """Test that kwargs override default_options values."""
@@ -993,3 +1064,410 @@ class TestArrayGlyphUnchangedByHelper:
             array_ticks,
             err_msg="Helper ticks should match ArrayGlyph's ticks for the same data",
         )
+
+
+class TestOptionKeysAndFilterKwargs:
+    """Tests for `Glyph.option_keys` / `Glyph.filter_kwargs` (issue #131).
+
+    Pre-construction introspection of a glyph's accepted option keys, and a
+    filter helper that drops unknown keys so a forwarded kwargs bag can be
+    used without tripping the strict `_merge_kwargs` validation.
+    """
+
+    def test_option_keys_without_instance(self):
+        """`option_keys()` works on the class, with no instance built.
+
+        Test scenario:
+            The base Glyph exposes the shared style-default keys via a
+            classmethod, so no construction (and no `_merge_kwargs`) is needed.
+        """
+        keys = Glyph.option_keys()
+        assert keys == set(STYLE_DEFAULTS), "base keys should equal STYLE_DEFAULTS"
+        assert "cmap" in keys, "a known style key should be present"
+
+    @pytest.mark.parametrize(
+        "import_path, class_name, const_name",
+        [
+            ("cleopatra.array_glyph", "ArrayGlyph", "DEFAULT_OPTIONS"),
+            ("cleopatra.scatter_glyph", "ScatterGlyph", "SCATTER_DEFAULT_OPTIONS"),
+            ("cleopatra.polygon_glyph", "PolygonGlyph", "POLYGON_DEFAULT_OPTIONS"),
+            ("cleopatra.vector_glyph", "VectorGlyph", "VECTOR_DEFAULT_OPTIONS"),
+            ("cleopatra.line_glyph", "LineGlyph", "LINE_DEFAULT_OPTIONS"),
+            ("cleopatra.mesh_glyph", "MeshGlyph", "MESH_DEFAULT_OPTIONS"),
+        ],
+    )
+    def test_subclass_keys_match_their_option_dict(
+        self, import_path, class_name, const_name
+    ):
+        """Each glyph's `option_keys()` equals its own option-dict keys.
+
+        Args:
+            import_path: Dotted module path of the glyph.
+            class_name: The glyph class to introspect.
+            const_name: Name of that glyph's module-level option dict.
+
+        Test scenario:
+            The class attribute is the single source of truth, so the keys
+            reported per glyph match its `*_DEFAULT_OPTIONS` constant exactly.
+        """
+        import importlib
+
+        module = importlib.import_module(import_path)
+        glyph_cls = getattr(module, class_name)
+        const = getattr(module, const_name)
+        assert glyph_cls.option_keys() == set(const), (
+            f"{glyph_cls.__name__}.option_keys() must match {const_name}"
+        )
+
+    def test_keys_differ_per_glyph(self):
+        """Different glyphs expose different option keys.
+
+        Test scenario:
+            A polygon-specific key (`edgecolor`) is accepted by PolygonGlyph
+            but not by ScatterGlyph, proving the keys are resolved per class.
+        """
+        from cleopatra.polygon_glyph import PolygonGlyph
+        from cleopatra.scatter_glyph import ScatterGlyph
+
+        assert "edgecolor" in PolygonGlyph.option_keys(), "polygon accepts edgecolor"
+        assert "edgecolor" not in ScatterGlyph.option_keys(), "scatter does not"
+
+    def test_filter_kwargs_keeps_accepted_drops_unknown(self):
+        """`filter_kwargs` returns only accepted keys, preserving values.
+
+        Test scenario:
+            A mixed bag of known and unknown keys is filtered to just the
+            known ones, with their values intact.
+        """
+        from cleopatra.polygon_glyph import PolygonGlyph
+
+        raw = {"cmap": "viridis", "edgecolor": "black", "bogus": 1}
+        safe = PolygonGlyph.filter_kwargs(raw)
+        assert sorted(safe) == ["cmap", "edgecolor"], f"unexpected keys: {sorted(safe)}"
+        assert safe["cmap"] == "viridis", "values must be preserved"
+
+    def test_filter_kwargs_empty_returns_empty(self):
+        """Filtering an empty mapping yields an empty mapping.
+
+        Test scenario:
+            Boundary case — no keys in, no keys out.
+        """
+        from cleopatra.scatter_glyph import ScatterGlyph
+
+        assert ScatterGlyph.filter_kwargs({}) == {}, "empty in -> empty out"
+
+    def test_filter_then_construct_does_not_raise(self):
+        """Pre-filtering resolves the catch-22: construction then succeeds.
+
+        Test scenario:
+            Forwarding a bag with an unknown key would raise on construction;
+            filtering first lets the same bag build the glyph cleanly while
+            keeping the accepted styling.
+        """
+        import numpy as np
+        from cleopatra.array_glyph import ArrayGlyph
+
+        raw = {"cmap": "viridis", "totally_unknown": 1}
+        with pytest.raises(ValueError, match="totally_unknown"):
+            ArrayGlyph(np.arange(9.0).reshape(3, 3), **raw)
+        safe = ArrayGlyph.filter_kwargs(raw)
+        glyph = ArrayGlyph(np.arange(9.0).reshape(3, 3), **safe)
+        assert glyph.default_options["cmap"] == "viridis", "accepted key must survive"
+
+    def test_option_keys_returns_independent_set(self):
+        """`option_keys()` returns a fresh set each call; mutation can't leak.
+
+        Test scenario:
+            Mutating the returned set must not corrupt the class option keys
+            seen by a subsequent call (the helper builds a new set from the
+            class dict rather than aliasing it).
+        """
+        first = Glyph.option_keys()
+        first.add("totally_unknown")
+        second = Glyph.option_keys()
+        assert "totally_unknown" not in second, "returned set must be independent"
+
+    def test_option_keys_matches_instance_accepted_keys(self):
+        """Class-level `option_keys()` equals a built instance's option keys.
+
+        Test scenario:
+            The class attribute is the real source of truth: the keys reported
+            without an instance match the keys an actual instance ends up with.
+        """
+        import numpy as np
+        from cleopatra.array_glyph import ArrayGlyph
+
+        glyph = ArrayGlyph(np.arange(9.0).reshape(3, 3))
+        assert ArrayGlyph.option_keys() == set(glyph.default_options), (
+            "class option_keys must match the instance's accepted keys"
+        )
+
+    def test_filter_kwargs_does_not_mutate_input(self):
+        """`filter_kwargs` leaves the caller's dict untouched and returns a copy.
+
+        Test scenario:
+            Filtering is pure — the input mapping keeps all its original keys,
+            and the returned dict is a distinct object.
+        """
+        from cleopatra.scatter_glyph import ScatterGlyph
+
+        raw = {"cmap": "viridis", "bogus": 1}
+        safe = ScatterGlyph.filter_kwargs(raw)
+        assert raw == {"cmap": "viridis", "bogus": 1}, "input must not be mutated"
+        assert safe is not raw, "a new dict should be returned"
+
+    def test_filter_kwargs_preserves_insertion_order(self):
+        """`filter_kwargs` preserves the order of the accepted keys.
+
+        Test scenario:
+            Two accepted keys given in a specific order come back in that same
+            order (rejected keys are dropped without reordering the rest).
+        """
+        from cleopatra.array_glyph import ArrayGlyph
+
+        raw = {"vmax": 5, "bogus": 1, "vmin": 0}
+        safe = ArrayGlyph.filter_kwargs(raw)
+        assert list(safe) == ["vmax", "vmin"], f"order not preserved: {list(safe)}"
+
+    def test_filter_kwargs_all_unknown_returns_empty(self):
+        """A mapping of only unknown keys filters down to nothing.
+
+        Test scenario:
+            Boundary case — when no key is accepted, the result is empty.
+        """
+        from cleopatra.scatter_glyph import ScatterGlyph
+
+        assert ScatterGlyph.filter_kwargs({"nope": 1, "nah": 2}) == {}, (
+            "all-unknown input should yield an empty dict"
+        )
+
+
+class TestRootFigure:
+    """Tests for the module-level `_root_figure` helper."""
+
+    def test_returns_owning_figure_for_normal_axes(self):
+        """`_root_figure(ax)` returns the Figure that owns a normal axes.
+
+        Test scenario:
+            For an axes created by `plt.subplots`, the helper resolves to that
+            same figure object.
+        """
+        from cleopatra.glyph import _root_figure
+
+        fig, ax = plt.subplots()
+        try:
+            assert _root_figure(ax) is fig, "should return the axes' owning figure"
+        finally:
+            plt.close(fig)
+
+    def test_uses_root_kwarg_when_supported(self):
+        """`_root_figure` passes `root=True` when the axes supports it.
+
+        Test scenario:
+            On matplotlib >= 3.10 `get_figure(root=True)` returns the top-level
+            Figure; the helper must use that path. Simulated with a fake axes
+            whose `get_figure` accepts `root`.
+        """
+        from cleopatra.glyph import _root_figure
+
+        root_fig = object()
+
+        class _ModernAx:
+            def get_figure(self, root=False):
+                return root_fig if root else "non-root"
+
+        assert _root_figure(_ModernAx()) is root_fig, "should request the root figure"
+
+    def test_falls_back_when_root_kwarg_unsupported(self):
+        """`_root_figure` falls back to bare `get_figure()` on older matplotlib.
+
+        Test scenario:
+            When `get_figure(root=True)` raises TypeError (no `root` kwarg, as
+            on the 3.8.4 floor), the helper retries without it.
+        """
+        from cleopatra.glyph import _root_figure
+
+        sentinel = object()
+
+        class _LegacyAx:
+            def get_figure(self):
+                return sentinel
+
+        assert _root_figure(_LegacyAx()) is sentinel, "should fall back to get_figure()"
+
+
+class TestDefaultOptionsAlias:
+    """The renamed option dicts keep a backwards-compatible `DEFAULT_OPTIONS` alias."""
+
+    def test_array_alias_is_same_object(self):
+        """`array_glyph.DEFAULT_OPTIONS` aliases `ARRAY_DEFAULT_OPTIONS`.
+
+        Test scenario:
+            The public `DEFAULT_OPTIONS` name still resolves to the renamed
+            constant (same object), and the class attribute / `option_keys`
+            agree with it.
+        """
+        import cleopatra.array_glyph as ag
+
+        assert ag.DEFAULT_OPTIONS is ag.ARRAY_DEFAULT_OPTIONS, "alias must be the same object"
+        assert ag.ArrayGlyph.DEFAULT_OPTIONS is ag.ARRAY_DEFAULT_OPTIONS, "class attr mismatch"
+        assert ag.ArrayGlyph.option_keys() == set(ag.ARRAY_DEFAULT_OPTIONS), "keys mismatch"
+
+    def test_statistical_alias_is_same_object(self):
+        """`statistical_glyph.DEFAULT_OPTIONS` aliases `STATISTICAL_DEFAULT_OPTIONS`.
+
+        Test scenario:
+            The public `DEFAULT_OPTIONS` name still resolves to the renamed
+            constant (same object), and the class attribute / `option_keys`
+            agree with it.
+        """
+        import cleopatra.statistical_glyph as sg
+
+        assert sg.DEFAULT_OPTIONS is sg.STATISTICAL_DEFAULT_OPTIONS, "alias must be the same object"
+        assert sg.StatisticalGlyph.DEFAULT_OPTIONS is sg.STATISTICAL_DEFAULT_OPTIONS, "class attr mismatch"
+        assert sg.StatisticalGlyph.option_keys() == set(sg.STATISTICAL_DEFAULT_OPTIONS), "keys mismatch"
+
+
+class TestSubFigureFigureResolution:
+    """`_root_figure` / the mismatch warning behave correctly with SubFigures.
+
+    Regression coverage for the review's N1: an axes living on a SubFigure must
+    resolve to the top-level Figure, and passing either the root figure or the
+    immediate SubFigure as `fig` must not trip the mismatch warning.
+    """
+
+    def test_root_figure_resolves_to_top_level_for_subfigure_axes(self):
+        """`_root_figure(ax)` returns the root Figure, not the SubFigure.
+
+        Test scenario:
+            An axes created on a SubFigure resolves up to the owning top-level
+            Figure (so a host-owned colorbar/figure handle is the real one).
+        """
+        from cleopatra.glyph import _root_figure
+
+        fig = plt.figure()
+        sub = fig.subfigures(1, 1)
+        ax = sub.subplots()
+        try:
+            assert _root_figure(ax) is fig, "should climb to the top-level figure"
+        finally:
+            plt.close(fig)
+
+    def test_root_figure_passed_for_subfigure_axes_does_not_warn(self):
+        """Passing the root Figure with a SubFigure axes does not warn.
+
+        Test scenario:
+            The N1 case — `fig` is the top-level figure that transitively owns
+            an axes on a SubFigure; this is a valid pairing and must be silent.
+        """
+        import warnings as _warnings
+
+        fig = plt.figure()
+        sub = fig.subfigures(1, 1)
+        ax = sub.subplots()
+        try:
+            with _warnings.catch_warnings():
+                _warnings.simplefilter("error")
+                g = Glyph(default_options=_make_options(), fig=fig, ax=ax)
+            assert g.fig is fig, "the explicit root fig should be stored"
+        finally:
+            plt.close(fig)
+
+    def test_immediate_subfigure_passed_does_not_warn(self):
+        """Passing the immediate SubFigure with its own axes does not warn.
+
+        Test scenario:
+            `fig` is the SubFigure the axes is directly attached to — also a
+            valid pairing, so no warning.
+        """
+        import warnings as _warnings
+
+        fig = plt.figure()
+        sub = fig.subfigures(1, 1)
+        ax = sub.subplots()
+        try:
+            with _warnings.catch_warnings():
+                _warnings.simplefilter("error")
+                g = Glyph(default_options=_make_options(), fig=sub, ax=ax)
+            assert g.fig is sub, "the explicit sub-figure should be stored"
+        finally:
+            plt.close(fig)
+
+    def test_unrelated_figure_with_subfigure_axes_still_warns(self):
+        """An unrelated `fig` with a SubFigure axes still warns.
+
+        Test scenario:
+            The warning must still fire for a genuinely unrelated figure, even
+            when the axes lives on a SubFigure.
+        """
+        fig = plt.figure()
+        sub = fig.subfigures(1, 1)
+        ax = sub.subplots()
+        other = plt.figure()
+        try:
+            with pytest.warns(UserWarning, match="not the figure that owns"):
+                Glyph(default_options=_make_options(), fig=other, ax=ax)
+        finally:
+            plt.close(fig)
+            plt.close(other)
+
+
+class TestFigureResolutionInternals:
+    """Branch coverage for the matplotlib-version fallback paths of the helpers.
+
+    On matplotlib >= 3.10 the `root=` path is always taken for real axes, so
+    the legacy (< 3.10) branches are exercised here with small fakes.
+    """
+
+    def test_supports_root_false_when_signature_uninspectable(self):
+        """`_get_figure_supports_root` returns False if the signature can't be read.
+
+        Test scenario:
+            A non-callable (whose signature inspection raises) must yield False
+            rather than propagating the error.
+        """
+        from cleopatra.glyph import _get_figure_supports_root
+
+        assert _get_figure_supports_root(object()) is False, "uninspectable -> False"
+
+    def test_root_figure_climbs_subfigure_on_legacy_path(self):
+        """The legacy path climbs a `SubFigure` to the top-level `Figure`.
+
+        Test scenario:
+            A fake axes whose `get_figure` has no `root` kwarg returns a real
+            SubFigure; `_root_figure` must climb to the owning Figure.
+        """
+        import warnings as _warnings
+
+        from cleopatra.glyph import _root_figure
+
+        fig = plt.figure()
+        sub = fig.subfigures(1, 1)
+
+        class _LegacyAxOnSub:
+            def get_figure(self):
+                return sub
+
+        try:
+            with _warnings.catch_warnings():
+                _warnings.simplefilter("ignore")
+                assert _root_figure(_LegacyAxOnSub()) is fig, "should climb to the root figure"
+        finally:
+            plt.close(fig)
+
+    def test_immediate_figure_legacy_path(self):
+        """`_immediate_figure` uses the bare `get_figure()` on the legacy path.
+
+        Test scenario:
+            A fake axes whose `get_figure` has no `root` kwarg returns its
+            figure directly.
+        """
+        from cleopatra.glyph import _immediate_figure
+
+        sentinel = object()
+
+        class _LegacyAx:
+            def get_figure(self):
+                return sentinel
+
+        assert _immediate_figure(_LegacyAx()) is sentinel, "should return get_figure()"
