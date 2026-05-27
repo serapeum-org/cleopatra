@@ -146,6 +146,9 @@ class MeshGlyph(Glyph):
         self._cached_tri_array: np.ndarray | None = None
         self._cached_nodes_per_face: np.ndarray | None = None
         self._cbar = None
+        #: Colour-mapped artist from the most recent `plot` call (the
+        #: `tripcolor`/`tricontour(f)` mappable); `None` before first render.
+        self.im = None
 
     @property
     def node_x(self) -> np.ndarray:
@@ -653,6 +656,11 @@ class MeshGlyph(Glyph):
             filled=filled,
             **render_kwargs,
         )
+        # Expose the colour-mapped artist (the `PolyCollection` from
+        # `tripcolor`, or the `TriContourSet` from `tricontour(f)`) so a
+        # caller can attach a colorbar/register the layer without scraping
+        # `ax.collections` (mirrors `ArrayGlyph.im` / the other glyphs).
+        self.im = tpc
 
         # Remove previous colorbar before adding a new one.
         if self._cbar is not None:
