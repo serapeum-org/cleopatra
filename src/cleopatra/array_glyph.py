@@ -192,6 +192,14 @@ class ArrayGlyph(Glyph):
             of per-cell value labels drawn when `display_cell_value=True`.
             (The legacy alias `no_elem` still works but is deprecated.)
         anim (matplotlib.animation.FuncAnimation): The animation object if created.
+        im (matplotlib.cm.ScalarMappable): The colour-mapped artist produced by
+            the most recent `plot`/`animate` call (e.g. the `AxesImage` for
+            `imshow`, the `QuadMesh` for `pcolormesh`, the `QuadContourSet`
+            for `contour`/`contourf`, or the RGB `AxesImage`). `None` before
+            the first render. Lets a caller attach a colorbar/legend or query
+            the colour limits without scraping `ax.images`/`ax.collections`.
+        cbar (matplotlib.colorbar.Colorbar): The colorbar drawn by the glyph,
+            or `None` when none was drawn (RGB, or `add_colorbar=False`).
 
     Notes:
         This class provides methods for:
@@ -2541,6 +2549,11 @@ class ArrayGlyph(Glyph):
         Returns:
             matplotlib.animation.FuncAnimation: The animation object that can be displayed
                 in a notebook or saved to a file.
+
+            As with `plot`, the first-frame colour-mapped artist is stored on
+            the instance as ``self.im`` (and the colorbar, when drawn, on
+            ``self.cbar``), so a caller can attach a host-owned
+            colorbar/legend without scraping the axes.
 
         Raises:
             ValueError: If an invalid keyword argument is provided.
