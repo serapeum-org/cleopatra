@@ -535,8 +535,10 @@ class ArrayGlyph(Glyph):
             self.default_options["cmap"] = DIVERGING_DEFAULT_CMAP
 
         self._arr = array
-        # get the tick spacing that has 10 ticks only
-        self.ticks_spacing = (self._vmax - self._vmin) / 10
+        # get the tick spacing that has 10 ticks only; fall back to 1.0 for a
+        # degenerate range (constant-value array, vmax == vmin) so the tick
+        # math never divides by zero (mirrors the shared scalar-mapping path).
+        self.ticks_spacing = (self._vmax - self._vmin) / 10 or 1.0
         shape = array.shape
         # Cells in the data domain (not masked, not NaN). Use the same
         # predicate plot/animate use to place per-cell labels so the counts
@@ -1470,31 +1472,97 @@ class ArrayGlyph(Glyph):
         arr = arr if arr.dtype == "uint8" else self.scale_to_rgb()
         return Image.fromarray(arr).convert("RGB")
 
-    def scale_to_rgb(self, arr: np.ndarray = None) -> np.ndarray:
-        """Create an RGB image.
+    def scale_to_rgb(
+        self,
+        arr: np.ndarray = None,
+        per_band: bool = False,
+        percentile: tuple[float, float] = (2.0, 98.0),
+    ) -> np.ndarray:
+        """Scale an array to the 0-255 ``uint8`` range for RGB rendering.
+
+        Two modes are available:
+
+        - **Global (default, `per_band=False`):** scale the whole array by a
+          single maximum (`arr * 255 / arr.max()`). Suitable for a single
+          band or when all bands share a range.
+        - **Per-band percentile stretch (`per_band=True`):** stretch each band
+          (the last axis of a ``(rows, cols, bands)`` array) independently
+          between its `percentile` low/high cut, clip to that range, and map
+          to 0-255. This is the contrast stretch typically wanted for true
+          RGB composites where bands have different dynamic ranges.
 
         Args:
-            arr: array. if None, the array in the object will be used.
+            arr: Array to scale. If None, the glyph's own array is used.
+                For `per_band=True` it must be 3-D ``(rows, cols, bands)``.
+            per_band: When True, stretch each band independently using
+                `percentile`. When False (default), use the legacy single
+                global-max scaling. Defaults to False.
+            percentile: ``(low, high)`` percentile cuts for the per-band
+                stretch, by default ``(2.0, 98.0)``. Ignored when
+                `per_band` is False.
+
+        Returns:
+            np.ndarray: A ``uint8`` array of the same shape as the input,
+                with values in 0-255. The input array is not modified.
+
+        Raises:
+            ValueError: If `per_band=True` and `arr` is not a 3-D
+                ``(rows, cols, bands)`` array.
 
         Examples:
-        ```python
-        >>> import numpy as np
-        >>> arr = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
-        >>> array = ArrayGlyph(arr)
-        >>> rgb_array = array.scale_to_rgb()
-        >>> print(rgb_array)
-        [[28 56 85]
-         [113 141 170]
-         [198 226 255]]
-        >>> print(rgb_array.dtype)
-        uint8
+            - Global scaling of a single band (default):
+                ```python
+                >>> import numpy as np
+                >>> arr = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+                >>> array = ArrayGlyph(arr)
+                >>> rgb_array = array.scale_to_rgb()
+                >>> print(rgb_array)
+                [[28 56 85]
+                 [113 141 170]
+                 [198 226 255]]
+                >>> print(rgb_array.dtype)
+                uint8
 
-        ```
+                ```
+            - Per-band percentile stretch of a 3-band composite (each band
+              spans the full 0-255 range independently):
+                ```python
+                >>> import numpy as np
+                >>> rng = np.random.default_rng(0)
+                >>> stack = rng.uniform(10, 200, size=(8, 8, 3))
+                >>> array = ArrayGlyph(np.zeros((4, 4)))   # any 2-D placeholder
+                >>> out = array.scale_to_rgb(stack, per_band=True)
+                >>> out.shape, out.dtype
+                ((8, 8, 3), dtype('uint8'))
+                >>> int(out[..., 0].min()), int(out[..., 0].max())
+                (0, 255)
+
+                ```
         """
         if arr is None:
             arr = self.arr
-        # This is done to scale the values between 0 and 255
-        return (arr * 255 / arr.max()).astype("uint8")
+
+        if per_band:
+            arr = np.asarray(arr, dtype="float64")
+            if arr.ndim != 3:
+                raise ValueError(
+                    "per_band=True requires a 3-D (rows, cols, bands) array; "
+                    f"got {arr.ndim}-D shape {arr.shape}."
+                )
+            lo_p, hi_p = percentile
+            out = np.empty(arr.shape, dtype="float64")
+            for band in range(arr.shape[-1]):
+                values = arr[..., band]
+                lo, hi = np.nanpercentile(values, [lo_p, hi_p])
+                if hi <= lo:
+                    hi = lo + 1.0
+                out[..., band] = np.clip((values - lo) / (hi - lo), 0.0, 1.0)
+            return (out * 255).astype("uint8")
+
+        # Legacy global-max scaling. Guard against an all-zero array so a
+        # max of 0 does not divide by zero (returns all-zeros instead).
+        denominator = arr.max() or 1
+        return (arr * 255 / denominator).astype("uint8")
 
     @staticmethod
     def _plot_text(
@@ -2090,9 +2158,10 @@ class ArrayGlyph(Glyph):
                 self._vmin = vmin_final
                 self._vmax = vmax_final
                 # Keep ticks_spacing in sync with the new colour range
-                # unless the caller pinned it explicitly.
+                # unless the caller pinned it explicitly (fall back to 1.0
+                # for a degenerate range so the tick math stays safe).
                 if "ticks_spacing" not in kwargs:
-                    self.ticks_spacing = (vmax_final - vmin_final) / 10
+                    self.ticks_spacing = (vmax_final - vmin_final) / 10 or 1.0
                     self.default_options["ticks_spacing"] = self.ticks_spacing
 
             # Auto-switch the colormap to a diverging default when the
@@ -2116,8 +2185,15 @@ class ArrayGlyph(Glyph):
 
             # Create colorbar, unless the caller opted out (e.g. shared-axes
             # composition where the host owns a single aggregated colorbar).
+            # A constant-value field rendered as line `contour` has no level
+            # crossings, so matplotlib cannot build a line colorbar from that
+            # degenerate contour set — skip it (nothing to show) rather than
+            # crash. (`contourf`/`imshow`/`pcolormesh` are unaffected.)
             self.cbar = None
-            if self.default_options["add_colorbar"]:
+            degenerate_contour = (
+                effective_kind == "contour" and self._vmax == self._vmin
+            )
+            if self.default_options["add_colorbar"] and not degenerate_contour:
                 self.cbar = self.create_color_bar(ax, im, cbar_kw)
 
         ax.set_title(
