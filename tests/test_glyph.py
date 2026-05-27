@@ -58,6 +58,46 @@ class TestInit:
         g = Glyph(default_options=_make_options(), fig=fig, ax=ax)
         assert g.fig is fig, "Should store the provided figure"
         assert g.ax is ax, "Should store the provided axes"
+        plt.close(fig)
+
+    def test_ax_without_fig_keeps_axes_and_derives_fig(self):
+        """Passing `ax` alone keeps the axes and derives the figure from it.
+
+        Test scenario:
+            Previously an `ax` given without a `fig` was dropped (both set
+            to None). Now the axes is retained and `self.fig` is derived via
+            `ax.get_figure()`, so a caller can bind a target with `ax=` only.
+        """
+        fig, ax = plt.subplots()
+        g = Glyph(default_options=_make_options(), ax=ax)
+        assert g.ax is ax, "ax passed alone must be kept"
+        assert g.fig is ax.get_figure(), "fig must be derived from the axes"
+        plt.close(fig)
+
+    def test_fig_without_ax_keeps_fig_and_leaves_ax_none(self):
+        """Passing `fig` alone keeps the figure and leaves `ax` None.
+
+        Test scenario:
+            A figure with no specific axes binds the figure handle; the axes
+            stays None until render time.
+        """
+        fig = plt.figure()
+        g = Glyph(default_options=_make_options(), fig=fig)
+        assert g.fig is fig, "fig passed alone must be kept"
+        assert g.ax is None, "ax should remain None when only fig is given"
+        plt.close(fig)
+
+    def test_explicit_fig_wins_over_axes_parent(self):
+        """When both `fig` and `ax` are given, the explicit `fig` is stored.
+
+        Test scenario:
+            The explicit figure handle takes precedence for `self.fig` rather
+            than being recomputed from the axes.
+        """
+        fig, ax = plt.subplots()
+        g = Glyph(default_options=_make_options(), fig=fig, ax=ax)
+        assert g.fig is fig, "explicit fig should be stored as-is"
+        plt.close(fig)
 
     def test_kwargs_override_defaults(self):
         """Test that kwargs override default_options values."""

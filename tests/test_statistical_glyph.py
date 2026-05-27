@@ -467,3 +467,80 @@ class TestStripes:
         assert typing.get_args(hints["return"]) == (Figure, Axes, BarContainer), (
             f"Unexpected resolved return hint: {hints['return']}"
         )
+
+
+class TestFigParameterRemovedFromRenderers:
+    """`fig` is no longer a per-call parameter on the box/stripe renderers.
+
+    The figure is a construction-time binding; `boxplot`/`multiboxplot`/
+    `stripes` resolve it from the method `ax`, then the constructor
+    `ax`/`fig`, then a fresh figure. Passing `fig=` to these methods is a
+    (now removed) keyword and must be rejected.
+    """
+
+    @pytest.mark.parametrize("method", ["boxplot", "multiboxplot", "stripes"])
+    def test_fig_kwarg_rejected(self, method):
+        """Passing `fig=` to a renderer raises TypeError (param removed).
+
+        Args:
+            method: Renderer method name under test.
+
+        Test scenario:
+            The breaking change removed `fig` from these signatures, so
+            `fig=` is now an unexpected keyword argument.
+        """
+        fig, ax = plt.subplots()
+        stat = StatisticalGlyph(np.arange(12, dtype=float).reshape(4, 3))
+        with pytest.raises(TypeError, match="fig"):
+            getattr(stat, method)(fig=fig)
+
+    def test_boxplot_falls_back_to_constructor_axes(self):
+        """`boxplot()` with no `ax` uses the axes bound at construction.
+
+        Test scenario:
+            The renderer resolves `ax` from `self._ax` when the method `ax`
+            argument is omitted, composing onto the constructor's axes.
+        """
+        fig, ax = plt.subplots()
+        stat = StatisticalGlyph(np.arange(9, dtype=float), ax=ax)
+        out_fig, out_ax, _ = stat.boxplot()
+        assert out_ax is ax, "boxplot should reuse the constructor axes"
+        assert out_fig is ax.get_figure(), "figure must come from that axes"
+
+    def test_boxplot_falls_back_to_constructor_figure(self):
+        """`boxplot()` with only a constructor `fig` adds an axes to it.
+
+        Test scenario:
+            With no axes anywhere but a constructor figure, the renderer adds
+            a subplot to that figure rather than creating a new one.
+        """
+        fig = plt.figure()
+        stat = StatisticalGlyph(np.arange(9, dtype=float), fig=fig)
+        out_fig, out_ax, _ = stat.boxplot()
+        assert out_fig is fig, "boxplot should add an axes to the constructor figure"
+        assert out_ax in fig.axes, "the new axes must belong to that figure"
+
+    def test_method_ax_wins_over_constructor_ax(self):
+        """A method `ax=` overrides the axes bound at construction.
+
+        Test scenario:
+            Resolution priority: the explicit `boxplot(ax=)` takes precedence
+            over `self._ax`.
+        """
+        ctor_fig, ctor_ax = plt.subplots()
+        call_fig, call_ax = plt.subplots()
+        stat = StatisticalGlyph(np.arange(9, dtype=float), ax=ctor_ax)
+        _, out_ax, _ = stat.boxplot(ax=call_ax)
+        assert out_ax is call_ax, "method ax should win over constructor ax"
+
+    def test_stripes_falls_back_to_constructor_axes(self):
+        """`stripes()` resolves the axes from the constructor when omitted.
+
+        Test scenario:
+            Same constructor-axes fallback as boxplot, for the 1-D stripes
+            renderer.
+        """
+        fig, ax = plt.subplots()
+        stat = StatisticalGlyph(np.array([0.1, 0.5, 0.9]), ax=ax)
+        _, out_ax, _ = stat.stripes(cmap="coolwarm")
+        assert out_ax is ax, "stripes should reuse the constructor axes"

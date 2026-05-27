@@ -43,8 +43,14 @@ class Glyph:
     Args:
         default_options: Default plot options dict. Subclasses provide
             their own defaults merged with `STYLE_DEFAULTS`.
-        fig: Pre-existing matplotlib figure. Default is None.
-        ax: Pre-existing matplotlib axes. Default is None.
+        fig: Pre-existing matplotlib figure to bind. Default is None.
+            An `ax` fully determines its figure, so `fig` is optional even
+            when `ax` is given; when both are passed the explicit `fig`
+            is kept as the figure handle.
+        ax: Pre-existing matplotlib axes to bind. Default is None. Passing
+            `ax` on its own is supported — the figure is derived from it
+            via `ax.get_figure()` (the axes is no longer dropped when
+            `fig` is omitted).
         **kwargs: Override any key in `default_options`.
 
     Examples:
@@ -76,6 +82,22 @@ class Glyph:
             True
 
             ```
+        - Provide only an axes; the figure is derived from it:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.glyph import Glyph
+            >>> from cleopatra.styles import DEFAULT_OPTIONS
+            >>> opts = DEFAULT_OPTIONS.copy()
+            >>> opts["vmin"] = None
+            >>> opts["vmax"] = None
+            >>> fig, ax = plt.subplots()
+            >>> g = Glyph(default_options=opts, ax=ax)
+            >>> g.ax is ax
+            True
+            >>> g.fig is ax.get_figure()
+            True
+
+            ```
 
     See Also:
         cleopatra.array_glyph.ArrayGlyph: Glyph subclass for
@@ -96,9 +118,17 @@ class Glyph:
         self._vmin: float | None = None
         self._vmax: float | None = None
         self.ticks_spacing: float | None = None
-        if fig is not None:
-            self.fig = fig
+        # Resolve the (fig, ax) binding. An `ax` fully determines its
+        # figure, so accept `ax` on its own and derive the figure from it
+        # rather than dropping the axes when `fig` is omitted. An explicit
+        # `fig` is honoured (and wins for the figure handle when both are
+        # given); passing neither leaves both unset until render time.
+        if ax is not None:
             self.ax = ax
+            self.fig = fig if fig is not None else ax.get_figure()
+        elif fig is not None:
+            self.fig = fig
+            self.ax = None
         else:
             self.fig = None
             self.ax = None

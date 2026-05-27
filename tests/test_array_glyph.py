@@ -3053,3 +3053,131 @@ class TestMappableAndColorbarToggle:
             )
         finally:
             plt.close(anim._fig)
+
+class TestPlotAxAndTitleParams:
+    """Tests for `ax=` and `title=` on `ArrayGlyph.plot` (issue #130).
+
+    Verifies parity with the other glyphs: `plot(ax=)` composes onto the
+    given axes (deriving its figure), `plot(title=)` sets the title, and the
+    axes-resolution priority is plot(ax=) > constructor ax > fresh figure.
+    """
+
+    @staticmethod
+    def _arr() -> np.ndarray:
+        """Return a small 2-D array."""
+        return np.arange(25, dtype=float).reshape(5, 5)
+
+    def test_plot_ax_renders_onto_supplied_axes(self):
+        """`plot(ax=ax)` draws on the given axes without making a new figure.
+
+        Test scenario:
+            A glyph constructed with no axes renders onto a caller's axes when
+            it is passed to `plot`, and binds that axes' figure.
+        """
+        fig, ax = plt.subplots()
+        try:
+            glyph = ArrayGlyph(self._arr())
+            out_fig, out_ax = glyph.plot(ax=ax, kind="imshow")
+            assert out_ax is ax, "plot(ax=) must render onto the supplied axes"
+            assert out_fig is ax.get_figure(), "figure must be derived from the axes"
+            assert glyph.ax is ax, "glyph.ax should be bound to the supplied axes"
+        finally:
+            plt.close(fig)
+
+    def test_plot_ax_overrides_constructor_axes(self):
+        """`plot(ax=)` wins over an axes bound at construction.
+
+        Test scenario:
+            Resolution priority: an explicit `plot(ax=)` takes precedence over
+            the constructor-supplied axes.
+        """
+        ctor_fig, ctor_ax = plt.subplots()
+        plot_fig, plot_ax = plt.subplots()
+        try:
+            glyph = ArrayGlyph(self._arr(), ax=ctor_ax, fig=ctor_fig)
+            out_fig, out_ax = glyph.plot(ax=plot_ax, kind="imshow")
+            assert out_ax is plot_ax, "plot(ax=) must override the constructor axes"
+            assert out_ax is not ctor_ax, "constructor axes must not win over plot(ax=)"
+        finally:
+            plt.close(ctor_fig)
+            plt.close(plot_fig)
+
+    def test_plot_uses_constructor_axes_when_no_plot_ax(self):
+        """Without `plot(ax=)`, the constructor axes is used (no fresh figure).
+
+        Test scenario:
+            Resolution priority middle tier: a glyph built with `ax=`/`fig=`
+            renders there when `plot` is called without an `ax`.
+        """
+        fig, ax = plt.subplots()
+        try:
+            glyph = ArrayGlyph(self._arr(), ax=ax, fig=fig)
+            out_fig, out_ax = glyph.plot(kind="imshow")
+            assert out_ax is ax, "constructor axes should be used when plot(ax=) omitted"
+            assert out_fig is fig, "constructor figure should be reused"
+        finally:
+            plt.close(fig)
+
+    def test_plot_creates_figure_when_no_axes_anywhere(self):
+        """With no axes from either source, `plot` creates its own figure/axes.
+
+        Test scenario:
+            Resolution priority fallback: neither constructor nor plot supplies
+            an axes, so a fresh figure/axes is created.
+        """
+        glyph = ArrayGlyph(self._arr())
+        out_fig, out_ax = glyph.plot(kind="imshow")
+        try:
+            assert isinstance(out_fig, Figure), "a fresh Figure should be created"
+            assert out_ax is not None, "a fresh axes should be created"
+        finally:
+            plt.close(out_fig)
+
+    def test_plot_title_sets_axes_title(self):
+        """`plot(title=...)` sets the axes title.
+
+        Test scenario:
+            The convenience `title` parameter is equivalent to the `title`
+            option and is applied to the rendered axes.
+        """
+        fig, ax = plt.subplots()
+        try:
+            glyph = ArrayGlyph(self._arr())
+            _, out_ax = glyph.plot(ax=ax, title="My Field", kind="imshow")
+            assert out_ax.get_title() == "My Field", (
+                f"title should be set, got {out_ax.get_title()!r}"
+            )
+        finally:
+            plt.close(fig)
+
+    def test_plot_title_overrides_constructor_title(self):
+        """`plot(title=)` overrides a title set at construction.
+
+        Test scenario:
+            When a title was given via constructor options, an explicit
+            `plot(title=)` takes precedence.
+        """
+        fig, ax = plt.subplots()
+        try:
+            glyph = ArrayGlyph(self._arr(), title="ctor title")
+            _, out_ax = glyph.plot(ax=ax, title="plot title", kind="imshow")
+            assert out_ax.get_title() == "plot title", (
+                f"plot title should win, got {out_ax.get_title()!r}"
+            )
+        finally:
+            plt.close(fig)
+
+    def test_construct_with_ax_only_keeps_axes(self):
+        """`ArrayGlyph(arr, ax=ax)` (no fig) now renders onto that axes.
+
+        Test scenario:
+            Regression for the old gate that dropped a constructor `ax` when
+            `fig` was omitted; the axes must now be honoured by `plot()`.
+        """
+        fig, ax = plt.subplots()
+        try:
+            glyph = ArrayGlyph(self._arr(), ax=ax)
+            _, out_ax = glyph.plot(kind="imshow")
+            assert out_ax is ax, "ax-only construction must be honoured by plot()"
+        finally:
+            plt.close(fig)

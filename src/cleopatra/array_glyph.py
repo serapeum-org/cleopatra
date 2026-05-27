@@ -273,10 +273,16 @@ class ArrayGlyph(Glyph):
             cutoff: Clip the range of pixel values for each band, by default None.
                 Takes only pixel values from 0 to the value of the cutoff and scales them back to between 0 and 1.
                 Should be a list with one value per band.
-            ax: A pre-existing axes to plot on, by default None.
-                If None, a new axes will be created.
-            fig: A pre-existing figure to plot on, by default None.
-                If None, a new figure will be created.
+            ax: A pre-existing axes to plot on, by default None. Bound to
+                the glyph and used by `plot`/`animate` unless `plot(ax=...)`
+                overrides it. Passing `ax` alone is enough — its parent
+                figure is derived automatically; if None (and no axes is
+                given to `plot`), a new axes is created.
+            fig: A pre-existing figure to bind, by default None. `fig` is a
+                construction-time binding only (it is never a `plot`
+                parameter — `plot` derives the figure from its axes). When
+                `ax` is given, `fig` is optional; if both are None a new
+                figure is created at render time.
             percentile: The percentile value to be used for scaling the array values, by default None.
                 Used to enhance contrast by stretching the histogram.
             **kwargs: Additional keyword arguments for customizing the plot.
@@ -1518,6 +1524,8 @@ class ArrayGlyph(Glyph):
         pid_color: str = "blue",
         pid_size: int | float = 10,
         kind: str = "auto",
+        ax: Axes | None = None,
+        title: str | None = None,
         **kwargs,
     ) -> tuple[Figure, Axes]:
         """Plot the array with customizable visualization options.
@@ -1562,6 +1570,17 @@ class ArrayGlyph(Glyph):
                 skipped for `"contour"` and `"contourf"` (which have
                 no per-cell grid). RGB compositing requires
                 `kind="imshow"`.
+            ax: Target axes to draw on, by default None. When given,
+                the plot is composed into this axes (and its parent
+                figure, via `ax.get_figure()`), mirroring the other
+                glyphs' `plot(ax=...)`. Resolution priority is
+                `plot(ax=)` > the axes bound at construction > a fresh
+                figure/axes. `fig` is intentionally not a parameter
+                here — it is a construction-time binding derived from
+                the axes.
+            title: Plot title, by default None. A convenience shortcut
+                equivalent to the `title` option; when given it
+                overrides the `title` set at construction.
             **kwargs: Additional keyword arguments for customizing the plot.
 
                 Plot appearance:
@@ -2018,8 +2037,18 @@ class ArrayGlyph(Glyph):
         else:
             effective_kind = kind
 
-        if self.fig is None:
+        # Axes resolution priority: explicit `plot(ax=)` wins, then the
+        # axes/figure bound at construction, otherwise a fresh figure/axes.
+        # `fig` is never a plot parameter — it is derived from the axes
+        # (`ax.get_figure()`), keeping `fig` a construction-time binding.
+        if ax is not None:
+            self.ax = ax
+            self.fig = ax.get_figure()
+        elif self.fig is None:
             self.fig, self.ax = self.create_figure_axes()
+
+        if title is not None:
+            self.default_options["title"] = title
 
         arr = self.arr
         fig, ax = self.fig, self.ax
