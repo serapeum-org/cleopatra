@@ -58,6 +58,7 @@ DEFAULT_OPTIONS = {
     "center": None,
     "extend": None,
     "cbar_kwargs": None,
+    "add_colorbar": True,
 }
 DEFAULT_OPTIONS = STYLE_DEFAULTS | DEFAULT_OPTIONS
 
@@ -520,6 +521,11 @@ class ArrayGlyph(Glyph):
         # match; `MaskedArray.count()` would miss NaN cells.
         first_frame = array[0, :, :] if len(shape) == 3 else array
         self.num_domain_cells = len(get_indices2(first_frame, [np.nan]))
+        # Mappable (the colour-mapped artist) and colorbar handles are
+        # populated by `plot`/`animate`. Initialised here so they are always
+        # reachable as public attributes, even before the first render.
+        self.im = None
+        self.cbar = None
 
     @property
     def arr(self):
@@ -1563,6 +1569,13 @@ class ArrayGlyph(Glyph):
                         Maximum value for color scaling, by default max(array).
 
                 Color bar options:
+                    add_colorbar : bool, optional
+                        Whether to draw the glyph's own color bar, by
+                        default True. Set to False for shared-axes
+                        composition, where the host owns a single
+                        aggregated color bar; then `self.cbar` stays
+                        None and no axes space is taken by a color bar.
+                        The mappable is still reachable via `self.im`.
                     cbar_orientation : str, optional
                         Orientation of the color bar, by default 'vertical'.
                         Can be 'horizontal' or 'vertical'.
@@ -1659,6 +1672,14 @@ class ArrayGlyph(Glyph):
             tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: A tuple containing:
                 - fig: The matplotlib Figure object
                 - ax: The matplotlib Axes object
+
+            The colour-mapped artist (the ``ScalarMappable`` — e.g. the
+            ``AxesImage`` for ``imshow``, the ``QuadMesh`` for
+            ``pcolormesh``, the ``QuadContourSet`` for
+            ``contour``/``contourf``, or the RGB ``AxesImage``) is also
+            stored on the instance as ``self.im`` after this call, so a
+            caller can attach a colorbar/legend or query the colour
+            limits without scraping ``ax.images``/``ax.collections``.
 
         Raises:
             ValueError: If an invalid keyword argument is provided.
@@ -1996,7 +2017,8 @@ class ArrayGlyph(Glyph):
         fig, ax = self.fig, self.ax
 
         if self.rgb:
-            ax.imshow(arr, extent=self.extent)
+            self.im = ax.imshow(arr, extent=self.extent)
+            self.cbar = None
         else:
             # if user did not input ticks spacing use the calculated one.
             if "ticks_spacing" in kwargs.keys():
@@ -2045,9 +2067,13 @@ class ArrayGlyph(Glyph):
             im, cbar_kw = self._plot_im_get_cbar_kw(
                 ax, arr, ticks, kind=effective_kind
             )
+            self.im = im
 
-            # Create colorbar
-            self.cbar = self.create_color_bar(ax, im, cbar_kw)
+            # Create colorbar, unless the caller opted out (e.g. shared-axes
+            # composition where the host owns a single aggregated colorbar).
+            self.cbar = None
+            if self.default_options["add_colorbar"]:
+                self.cbar = self.create_color_bar(ax, im, cbar_kw)
 
         ax.set_title(
             self.default_options["title"], fontsize=self.default_options["title_size"]
@@ -2454,6 +2480,13 @@ class ArrayGlyph(Glyph):
                         Maximum value for color scaling, by default max(array).
 
                 Color bar options:
+                    add_colorbar : bool, optional
+                        Whether to draw the glyph's own color bar, by
+                        default True. Set to False for shared-axes
+                        composition, where the host owns a single
+                        aggregated color bar; then `self.cbar` stays
+                        None and no axes space is taken by a color bar.
+                        The mappable is still reachable via `self.im`.
                     cbar_orientation : str, optional
                         Orientation of the color bar, by default 'vertical'.
                         Can be 'horizontal' or 'vertical'.
@@ -2677,9 +2710,13 @@ class ArrayGlyph(Glyph):
 
         ticks = self.get_ticks()
         im, cbar_kw = self._plot_im_get_cbar_kw(ax, frame_0, ticks)
+        self.im = im
 
-        # Create colorbar (stored on the instance, mirroring `plot`).
-        self.cbar = self.create_color_bar(ax, im, cbar_kw)
+        # Create colorbar (stored on the instance, mirroring `plot`), unless
+        # the caller opted out via `add_colorbar=False`.
+        self.cbar = None
+        if self.default_options["add_colorbar"]:
+            self.cbar = self.create_color_bar(ax, im, cbar_kw)
 
         ax.set_title(
             self.default_options["title"], fontsize=self.default_options["title_size"]

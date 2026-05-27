@@ -1283,10 +1283,8 @@ class TestCenterCmapDoesNotApplyToRgb:
         glyph = ArrayGlyph(rgb_arr, rgb=[0, 1, 2])
         fig, ax = glyph.plot()
         assert isinstance(fig, Figure)
-        # No colorbar is created on the RGB path; `cbar` is unset.
-        assert not hasattr(glyph, "cbar"), (
-            "RGB compositing should not create a colorbar"
-        )
+        # No colorbar is created on the RGB path; `cbar` stays None.
+        assert glyph.cbar is None, "RGB compositing should not create a colorbar"
 
 
 @pytest.mark.plot
@@ -2738,3 +2736,117 @@ class TestAnimateDataGetterEdgeCases:
             plt.close(glyph.fig)
 
 
+
+class TestMappableAndColorbarToggle:
+    """Tests for the exposed mappable (`self.im`) and the `add_colorbar` toggle.
+
+    Covers issues #128 (suppress the built-in colorbar for shared-axes
+    composition) and #129 (expose the colour-mapped artist for a uniform
+    `(glyph, mappable)` contract).
+    """
+
+    @staticmethod
+    def _sample_arr() -> np.ndarray:
+        """Return a small 2-D array suitable for every kind."""
+        return np.arange(25, dtype=float).reshape(5, 5)
+
+    # ---- #129: the mappable is exposed via `self.im` ---------------------
+
+    def test_im_is_none_before_plot(self):
+        """`self.im` exists and is None before the first render."""
+        glyph = ArrayGlyph(self._sample_arr())
+        assert glyph.im is None
+
+    def test_im_is_axesimage_for_imshow(self):
+        """`kind="imshow"` stores the actual `AxesImage` on `self.im`."""
+        from matplotlib.image import AxesImage
+
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(kind="imshow")
+        try:
+            assert isinstance(glyph.im, AxesImage)
+            # It is the real artist on the axes, not a detached object.
+            assert glyph.im in ax.get_images()
+        finally:
+            plt.close(fig)
+
+    def test_im_is_quadmesh_for_pcolormesh(self):
+        """`kind="pcolormesh"` stores the `QuadMesh` on `self.im`."""
+        from matplotlib.collections import QuadMesh
+
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(kind="pcolormesh")
+        try:
+            assert isinstance(glyph.im, QuadMesh)
+            assert glyph.im in ax.collections
+        finally:
+            plt.close(fig)
+
+    def test_im_is_contourset_for_contourf(self):
+        """`kind="contourf"` stores the `QuadContourSet` on `self.im`."""
+        from matplotlib.contour import QuadContourSet
+
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(kind="contourf")
+        try:
+            assert isinstance(glyph.im, QuadContourSet)
+        finally:
+            plt.close(fig)
+
+    def test_im_set_for_rgb(self):
+        """The RGB branch also exposes its `AxesImage` and draws no colorbar."""
+        from matplotlib.image import AxesImage
+
+        rgb_arr = np.random.randint(0, 255, size=(3, 8, 8)).astype(np.float32)
+        glyph = ArrayGlyph(rgb_arr, rgb=[0, 1, 2])
+        fig, ax = glyph.plot(kind="imshow")
+        try:
+            assert isinstance(glyph.im, AxesImage)
+            assert glyph.cbar is None
+        finally:
+            plt.close(fig)
+
+    # ---- #128: the built-in colorbar can be suppressed -------------------
+
+    def test_colorbar_drawn_by_default(self):
+        """Default behaviour is unchanged: a colorbar is created."""
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(kind="imshow")
+        try:
+            assert glyph.cbar is not None
+            # A colorbar adds its own Axes to the figure.
+            assert len(fig.axes) == 2
+        finally:
+            plt.close(fig)
+
+    def test_add_colorbar_false_draws_no_colorbar(self):
+        """`add_colorbar=False` leaves `self.cbar is None` and adds no axes."""
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(kind="imshow", add_colorbar=False)
+        try:
+            assert glyph.cbar is None
+            # Only the host axes remains — no colorbar axes was added.
+            assert len(fig.axes) == 1
+            # The mappable is still reachable for a host-owned colorbar.
+            assert glyph.im is not None
+        finally:
+            plt.close(fig)
+
+    def test_shared_axes_two_layers_no_colorbars(self):
+        """Overlaying two ArrayGlyph layers with add_colorbar=False stays clean."""
+        fig, ax = plt.subplots()
+        try:
+            g1 = ArrayGlyph(self._sample_arr(), ax=ax, fig=fig)
+            g1.plot(kind="contourf", add_colorbar=False)
+            g2 = ArrayGlyph(self._sample_arr(), ax=ax, fig=fig)
+            g2.plot(kind="contour", add_colorbar=False)
+
+            assert g1.cbar is None
+            assert g2.cbar is None
+            # No per-glyph colorbar axes were added to the shared figure.
+            assert len(fig.axes) == 1
+            # Each layer still hands back its own mappable for aggregation.
+            assert g1.im is not None
+            assert g2.im is not None
+        finally:
+            plt.close(fig)
