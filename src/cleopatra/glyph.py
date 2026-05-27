@@ -74,11 +74,13 @@ class Glyph:
         fig: Pre-existing matplotlib figure to bind. Default is None.
             An `ax` fully determines its figure, so `fig` is optional even
             when `ax` is given; when both are passed the explicit `fig`
-            is kept as the figure handle.
+            is kept as the figure handle. Passing a `fig` that does not own
+            the given `ax` emits a `UserWarning` (the explicit `fig` is
+            still honoured, but the two handles then disagree).
         ax: Pre-existing matplotlib axes to bind. Default is None. Passing
-            `ax` on its own is supported — the figure is derived from it
-            via `ax.get_figure()` (the axes is no longer dropped when
-            `fig` is omitted).
+            `ax` on its own is supported — its parent figure is derived
+            automatically (the axes is no longer dropped when `fig` is
+            omitted).
         **kwargs: Override any key in `default_options`.
 
     Examples:

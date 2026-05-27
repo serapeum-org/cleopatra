@@ -1240,3 +1240,89 @@ class TestOptionKeysAndFilterKwargs:
         assert ScatterGlyph.filter_kwargs({"nope": 1, "nah": 2}) == {}, (
             "all-unknown input should yield an empty dict"
         )
+
+
+class TestRootFigure:
+    """Tests for the module-level `_root_figure` helper."""
+
+    def test_returns_owning_figure_for_normal_axes(self):
+        """`_root_figure(ax)` returns the Figure that owns a normal axes.
+
+        Test scenario:
+            For an axes created by `plt.subplots`, the helper resolves to that
+            same figure object.
+        """
+        from cleopatra.glyph import _root_figure
+
+        fig, ax = plt.subplots()
+        try:
+            assert _root_figure(ax) is fig, "should return the axes' owning figure"
+        finally:
+            plt.close(fig)
+
+    def test_uses_root_kwarg_when_supported(self):
+        """`_root_figure` passes `root=True` when the axes supports it.
+
+        Test scenario:
+            On matplotlib >= 3.10 `get_figure(root=True)` returns the top-level
+            Figure; the helper must use that path. Simulated with a fake axes
+            whose `get_figure` accepts `root`.
+        """
+        from cleopatra.glyph import _root_figure
+
+        root_fig = object()
+
+        class _ModernAx:
+            def get_figure(self, root=False):
+                return root_fig if root else "non-root"
+
+        assert _root_figure(_ModernAx()) is root_fig, "should request the root figure"
+
+    def test_falls_back_when_root_kwarg_unsupported(self):
+        """`_root_figure` falls back to bare `get_figure()` on older matplotlib.
+
+        Test scenario:
+            When `get_figure(root=True)` raises TypeError (no `root` kwarg, as
+            on the 3.8.4 floor), the helper retries without it.
+        """
+        from cleopatra.glyph import _root_figure
+
+        sentinel = object()
+
+        class _LegacyAx:
+            def get_figure(self):
+                return sentinel
+
+        assert _root_figure(_LegacyAx()) is sentinel, "should fall back to get_figure()"
+
+
+class TestDefaultOptionsAlias:
+    """The renamed option dicts keep a backwards-compatible `DEFAULT_OPTIONS` alias."""
+
+    def test_array_alias_is_same_object(self):
+        """`array_glyph.DEFAULT_OPTIONS` aliases `ARRAY_DEFAULT_OPTIONS`.
+
+        Test scenario:
+            The public `DEFAULT_OPTIONS` name still resolves to the renamed
+            constant (same object), and the class attribute / `option_keys`
+            agree with it.
+        """
+        import cleopatra.array_glyph as ag
+
+        assert ag.DEFAULT_OPTIONS is ag.ARRAY_DEFAULT_OPTIONS, "alias must be the same object"
+        assert ag.ArrayGlyph.DEFAULT_OPTIONS is ag.ARRAY_DEFAULT_OPTIONS, "class attr mismatch"
+        assert ag.ArrayGlyph.option_keys() == set(ag.ARRAY_DEFAULT_OPTIONS), "keys mismatch"
+
+    def test_statistical_alias_is_same_object(self):
+        """`statistical_glyph.DEFAULT_OPTIONS` aliases `STATISTICAL_DEFAULT_OPTIONS`.
+
+        Test scenario:
+            The public `DEFAULT_OPTIONS` name still resolves to the renamed
+            constant (same object), and the class attribute / `option_keys`
+            agree with it.
+        """
+        import cleopatra.statistical_glyph as sg
+
+        assert sg.DEFAULT_OPTIONS is sg.STATISTICAL_DEFAULT_OPTIONS, "alias must be the same object"
+        assert sg.StatisticalGlyph.DEFAULT_OPTIONS is sg.STATISTICAL_DEFAULT_OPTIONS, "class attr mismatch"
+        assert sg.StatisticalGlyph.option_keys() == set(sg.STATISTICAL_DEFAULT_OPTIONS), "keys mismatch"
