@@ -41,6 +41,12 @@ class Glyph:
     normalization, colorbar creation, tick control, point overlays,
     and animation saving. Subclasses implement the actual rendering.
 
+    The accepted option keys are exposed per subclass via the
+    `DEFAULT_OPTIONS` class attribute, and can be inspected or filtered
+    *before* constructing an instance with the `option_keys` and
+    `filter_kwargs` classmethods (useful for safely forwarding a bag of
+    user-supplied styling kwargs).
+
     Args:
         default_options: Default plot options dict. Subclasses provide
             their own defaults merged with `STYLE_DEFAULTS`.

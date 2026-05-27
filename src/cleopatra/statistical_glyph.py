@@ -84,6 +84,11 @@ class StatisticalGlyph:
     This class provides methods for initializing the class with numerical values and optional keyword arguments,
     and for creating histograms from the given values.
 
+    The accepted option keys are exposed via the `DEFAULT_OPTIONS` class
+    attribute and can be inspected or filtered before constructing an
+    instance with the `option_keys` and `filter_kwargs` classmethods
+    (mirroring `cleopatra.glyph.Glyph`, though this is a standalone class).
+
     Attributes:
         values: The numerical values to be plotted as histograms.
         default_options: The default options for creating histograms, including:

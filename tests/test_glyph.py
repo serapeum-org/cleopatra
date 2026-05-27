@@ -1142,3 +1142,70 @@ class TestOptionKeysAndFilterKwargs:
         safe = ArrayGlyph.filter_kwargs(raw)
         glyph = ArrayGlyph(np.arange(9.0).reshape(3, 3), **safe)
         assert glyph.default_options["cmap"] == "viridis", "accepted key must survive"
+
+    def test_option_keys_returns_independent_set(self):
+        """`option_keys()` returns a fresh set each call; mutation can't leak.
+
+        Test scenario:
+            Mutating the returned set must not corrupt the class option keys
+            seen by a subsequent call (the helper builds a new set from the
+            class dict rather than aliasing it).
+        """
+        first = Glyph.option_keys()
+        first.add("totally_unknown")
+        second = Glyph.option_keys()
+        assert "totally_unknown" not in second, "returned set must be independent"
+
+    def test_option_keys_matches_instance_accepted_keys(self):
+        """Class-level `option_keys()` equals a built instance's option keys.
+
+        Test scenario:
+            The class attribute is the real source of truth: the keys reported
+            without an instance match the keys an actual instance ends up with.
+        """
+        import numpy as np
+        from cleopatra.array_glyph import ArrayGlyph
+
+        glyph = ArrayGlyph(np.arange(9.0).reshape(3, 3))
+        assert ArrayGlyph.option_keys() == set(glyph.default_options), (
+            "class option_keys must match the instance's accepted keys"
+        )
+
+    def test_filter_kwargs_does_not_mutate_input(self):
+        """`filter_kwargs` leaves the caller's dict untouched and returns a copy.
+
+        Test scenario:
+            Filtering is pure — the input mapping keeps all its original keys,
+            and the returned dict is a distinct object.
+        """
+        from cleopatra.scatter_glyph import ScatterGlyph
+
+        raw = {"cmap": "viridis", "bogus": 1}
+        safe = ScatterGlyph.filter_kwargs(raw)
+        assert raw == {"cmap": "viridis", "bogus": 1}, "input must not be mutated"
+        assert safe is not raw, "a new dict should be returned"
+
+    def test_filter_kwargs_preserves_insertion_order(self):
+        """`filter_kwargs` preserves the order of the accepted keys.
+
+        Test scenario:
+            Two accepted keys given in a specific order come back in that same
+            order (rejected keys are dropped without reordering the rest).
+        """
+        from cleopatra.array_glyph import ArrayGlyph
+
+        raw = {"vmax": 5, "bogus": 1, "vmin": 0}
+        safe = ArrayGlyph.filter_kwargs(raw)
+        assert list(safe) == ["vmax", "vmin"], f"order not preserved: {list(safe)}"
+
+    def test_filter_kwargs_all_unknown_returns_empty(self):
+        """A mapping of only unknown keys filters down to nothing.
+
+        Test scenario:
+            Boundary case — when no key is accepted, the result is empty.
+        """
+        from cleopatra.scatter_glyph import ScatterGlyph
+
+        assert ScatterGlyph.filter_kwargs({"nope": 1, "nah": 2}) == {}, (
+            "all-unknown input should yield an empty dict"
+        )

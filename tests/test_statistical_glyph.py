@@ -592,3 +592,51 @@ class TestOptionKeysAndFilterKwargs:
         safe = StatisticalGlyph.filter_kwargs(raw)
         fig, ax, hist = stat.histogram(**safe)
         assert len(hist["n"]) == 1, "histogram should produce one series"
+
+    def test_option_keys_returns_independent_set(self):
+        """`option_keys()` returns a fresh set each call; mutation can't leak.
+
+        Test scenario:
+            Mutating the returned set must not corrupt the keys seen by a
+            later call.
+        """
+        first = StatisticalGlyph.option_keys()
+        first.add("totally_unknown")
+        assert "totally_unknown" not in StatisticalGlyph.option_keys(), (
+            "returned set must be independent"
+        )
+
+    def test_option_keys_matches_instance_accepted_keys(self):
+        """Class-level `option_keys()` matches a built instance's option keys.
+
+        Test scenario:
+            The class attribute is the source of truth: with no extra kwargs,
+            an instance's `default_options` keys equal `option_keys()`.
+        """
+        stat = StatisticalGlyph(np.arange(10, dtype=float))
+        assert StatisticalGlyph.option_keys() == set(stat.default_options), (
+            "class option_keys must match the instance's accepted keys"
+        )
+
+    def test_filter_kwargs_does_not_mutate_input(self):
+        """`filter_kwargs` leaves the caller's dict untouched and returns a copy.
+
+        Test scenario:
+            Filtering is pure — the input keeps its keys and a new dict is
+            returned.
+        """
+        raw = {"bins": 20, "bogus": 1}
+        safe = StatisticalGlyph.filter_kwargs(raw)
+        assert raw == {"bins": 20, "bogus": 1}, "input must not be mutated"
+        assert safe is not raw, "a new dict should be returned"
+
+    def test_filter_kwargs_preserves_insertion_order(self):
+        """`filter_kwargs` preserves the order of the accepted keys.
+
+        Test scenario:
+            Accepted keys come back in their original order, with the rejected
+            key dropped in between.
+        """
+        raw = {"bins": 20, "bogus": 1, "alpha": 0.5}
+        safe = StatisticalGlyph.filter_kwargs(raw)
+        assert list(safe) == ["bins", "alpha"], f"order not preserved: {list(safe)}"
