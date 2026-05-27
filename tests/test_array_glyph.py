@@ -3220,6 +3220,21 @@ class TestConstantValueArray:
         finally:
             plt.close(fig)
 
+    def test_constant_contour_warns_and_skips_colorbar(self):
+        """A constant-field line `contour` warns and draws no colorbar.
+
+        Test scenario:
+            The degenerate contour set cannot back a line colorbar; the glyph
+            warns and leaves `self.cbar` None instead of crashing.
+        """
+        glyph = ArrayGlyph(np.full((10, 10), 5.0))
+        with pytest.warns(UserWarning, match="no contour lines"):
+            fig, ax = glyph.plot(kind="contour")
+        try:
+            assert glyph.cbar is None, "degenerate contour should skip the colorbar"
+        finally:
+            plt.close(fig)
+
 
 class TestScaleToRgbPerBand:
     """Per-band percentile stretch option on `scale_to_rgb` (#1 enhancement)."""
@@ -3283,3 +3298,23 @@ class TestScaleToRgbPerBand:
         """
         out = ArrayGlyph(np.zeros((3, 3))).scale_to_rgb()
         assert out.dtype == np.uint8 and int(out.max()) == 0, "expected all-zero uint8"
+
+    def test_per_band_all_nan_band_is_zero_filled_without_warning(self):
+        """An all-NaN (or flat) band yields a zero band and emits no warning.
+
+        Test scenario:
+            `nanpercentile` on an all-NaN band returns NaN cuts; the guard
+            detects the non-finite range, emits a flat zero band, and the
+            `RuntimeWarning` is suppressed (treated as an error here to prove
+            it does not surface).
+        """
+        import warnings as _warnings
+
+        stack = np.full((4, 4, 3), np.nan)
+        stack[..., 1] = 5.0  # band 1 is a flat (no-range) band
+        with _warnings.catch_warnings():
+            _warnings.simplefilter("error")
+            out = ArrayGlyph(np.zeros((4, 4))).scale_to_rgb(stack, per_band=True)
+        assert out.dtype == np.uint8, "expected uint8 output"
+        assert int(out[..., 0].max()) == 0, "all-NaN band should be zero-filled"
+        assert int(out[..., 1].max()) == 0, "flat band has no range -> zero"

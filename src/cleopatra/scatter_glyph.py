@@ -143,6 +143,7 @@ class ScatterGlyph(Glyph):
         self,
         ax: Axes = None,
         title: str | None = None,
+        add_colorbar: bool | None = None,
     ) -> tuple[Figure, Axes, PathCollection]:
         """Draw the point cloud, colour-mapping by value when present.
 
@@ -157,6 +158,10 @@ class ScatterGlyph(Glyph):
                 construction, otherwise a new figure/axes is created.
             title: Plot title. Overrides `default_options["title"]`
                 when given.
+            add_colorbar: Override the `add_colorbar` option for this call
+                — True draws the colorbar, False suppresses it (for
+                shared-axes composition). Defaults to None, which keeps the
+                value set at construction.
 
         Returns:
             tuple[Figure, Axes, PathCollection]: The figure, the axes,
@@ -199,6 +204,8 @@ class ScatterGlyph(Glyph):
 
         if title is not None:
             opts["title"] = title
+        if add_colorbar is not None:
+            opts["add_colorbar"] = add_colorbar
 
         if self.values is None:
             paths = ax.scatter(

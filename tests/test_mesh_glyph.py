@@ -1113,3 +1113,19 @@ class TestMeshGlyphMappable:
             assert glyph.im in ax.collections, "im must be the artist on the axes"
         finally:
             plt.close(fig)
+
+    def test_plot_outline_clears_im(self):
+        """`plot_outline` resets `self.im` (an outline has no scalar mapping).
+
+        Test scenario:
+            After a coloured `plot()` sets `self.im`, an outline-only render
+            must clear it rather than leave a stale mappable.
+        """
+        glyph, x = self._mesh()
+        z = np.random.default_rng(2).random(x.size)
+        fig, ax = glyph.plot(z, location="node", colorbar=False)
+        plt.close(fig)
+        assert glyph.im is not None, "im should be set after a coloured plot"
+        fig, ax = glyph.plot_outline()
+        plt.close(fig)
+        assert glyph.im is None, "plot_outline should clear im"

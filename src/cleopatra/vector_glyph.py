@@ -128,6 +128,7 @@ class VectorGlyph(Glyph):
         kind: str = "quiver",
         ax: Axes = None,
         title: str | None = None,
+        add_colorbar: bool | None = None,
     ):
         """Render the vector field, coloured by magnitude.
 
@@ -142,6 +143,10 @@ class VectorGlyph(Glyph):
                 construction, otherwise a new figure/axes is created.
             title: Plot title. Overrides `default_options["title"]`
                 when given.
+            add_colorbar: Override the `add_colorbar` option for this call
+                — True draws the colorbar, False suppresses it (for
+                shared-axes composition). Defaults to None, which keeps the
+                value set at construction.
 
         Returns:
             tuple[Figure, Axes, Any]: The figure, the axes, and the
@@ -198,6 +203,8 @@ class VectorGlyph(Glyph):
 
         if title is not None:
             opts["title"] = title
+        if add_colorbar is not None:
+            opts["add_colorbar"] = add_colorbar
 
         mag = self.magnitude
         norm, cbar_kw, ticks = self._prepare_scalar_mapping(mag)

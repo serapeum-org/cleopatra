@@ -301,6 +301,22 @@ class TestAddColorbarToggle:
         finally:
             plt.close(fig)
 
+    def test_plot_time_override_suppresses(self):
+        """Passing `add_colorbar=False` to `plot` suppresses the colorbar.
+
+        Test scenario:
+            Plot-time override: even with the default construction option,
+            `plot(add_colorbar=False)` draws no colorbar.
+        """
+        gx, gy, u, v = self._field()
+        glyph = VectorGlyph(gx, gy, u, v)
+        fig, ax, _ = glyph.plot(add_colorbar=False)
+        try:
+            assert glyph.cbar is None, "plot(add_colorbar=False) should skip the colorbar"
+            assert len(fig.axes) == 1, f"expected 1 axes, got {len(fig.axes)}"
+        finally:
+            plt.close(fig)
+
     def test_add_colorbar_in_option_keys(self):
         """`add_colorbar` is an accepted option key."""
         assert "add_colorbar" in VectorGlyph.option_keys(), "add_colorbar missing"

@@ -896,6 +896,10 @@ class MeshGlyph(Glyph):
         self.ax.autoscale()
         self.ax.set_aspect("equal")
 
+        # An outline carries no scalar mapping, so clear any colour-mapped
+        # artist left on `self.im` by a previous `plot()` call.
+        self.im = None
+
         return self.fig, self.ax
 
     def _build_edge_segments(self) -> np.ndarray:

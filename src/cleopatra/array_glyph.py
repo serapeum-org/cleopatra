@@ -1553,9 +1553,17 @@ class ArrayGlyph(Glyph):
             out = np.empty(arr.shape, dtype="float64")
             for band in range(arr.shape[-1]):
                 values = arr[..., band]
-                lo, hi = np.nanpercentile(values, [lo_p, hi_p])
-                if hi <= lo:
-                    hi = lo + 1.0
+                with warnings.catch_warnings():
+                    # An all-NaN band makes `nanpercentile` warn and return
+                    # NaN cuts; handle that below instead of propagating it.
+                    warnings.simplefilter("ignore", RuntimeWarning)
+                    lo, hi = np.nanpercentile(values, [lo_p, hi_p])
+                # A band with no usable range (all-NaN, or flat where the cuts
+                # coincide) has nothing to stretch — emit a flat zero band
+                # rather than dividing by zero / propagating NaN into uint8.
+                if not (np.isfinite(lo) and np.isfinite(hi)) or hi <= lo:
+                    out[..., band] = 0.0
+                    continue
                 out[..., band] = np.clip((values - lo) / (hi - lo), 0.0, 1.0)
             return (out * 255).astype("uint8")
 
@@ -2193,8 +2201,15 @@ class ArrayGlyph(Glyph):
             degenerate_contour = (
                 effective_kind == "contour" and self._vmax == self._vmin
             )
-            if self.default_options["add_colorbar"] and not degenerate_contour:
-                self.cbar = self.create_color_bar(ax, im, cbar_kw)
+            if self.default_options["add_colorbar"]:
+                if degenerate_contour:
+                    warnings.warn(
+                        "Constant-value field has no contour lines; skipping "
+                        "the colorbar for kind='contour'.",
+                        stacklevel=2,
+                    )
+                else:
+                    self.cbar = self.create_color_bar(ax, im, cbar_kw)
 
         ax.set_title(
             self.default_options["title"], fontsize=self.default_options["title_size"]
