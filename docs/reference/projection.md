@@ -30,7 +30,7 @@ meridian = np.column_stack([np.zeros(50), np.linspace(-1, 1, 50)])
 
 fig, ax = plt.subplots()
 # plot your (already reprojected) data first so it can be clipped ...
-ax.imshow(np.random.rand(8, 8), extent=(-1, 1, -1, 1))
+ax.imshow(np.zeros((8, 8)), extent=(-1, 1, -1, 1))
 
 # ... then frame the axes as a globe and clip the data to the boundary
 patch = apply_projection_frame(

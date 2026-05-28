@@ -11,6 +11,8 @@ so runs are deterministic.
 
 from __future__ import annotations
 
+import doctest
+
 import numpy as np
 import pytest
 
@@ -23,6 +25,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.patches import PathPatch  # noqa: E402
 
+from cleopatra import projection as projection_module  # noqa: E402
 from cleopatra.projection import (  # noqa: E402
     DEFAULT_BOUNDARY_KW,
     DEFAULT_GRATICULE_KW,
@@ -551,3 +554,24 @@ class TestApplyProjectionFrame:
                 ylim=(-1, 1),
                 graticule_lines=[meridian, np.arange(6)],
             )
+
+
+class TestModuleDoctests:
+    """Run the module's docstring examples inside the default test suite."""
+
+    def test_doctests_pass(self):
+        """Execute every ``cleopatra.projection`` doctest in-band.
+
+        Test scenario:
+            The default ``pytest`` run (``testpaths = ["tests"]``) does not
+            collect ``--doctest-modules`` from ``src``, so the module and
+            function docstring examples would otherwise go unverified in CI.
+            Running ``doctest.testmod`` here catches example drift as part of
+            the normal suite.
+        """
+        results = doctest.testmod(projection_module, verbose=False)
+        assert results.failed == 0, (
+            f"{results.failed} doctest(s) failed in cleopatra.projection "
+            f"(attempted {results.attempted})"
+        )
+        assert results.attempted > 0, "Expected doctest examples to be collected"
