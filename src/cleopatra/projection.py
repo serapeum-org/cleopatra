@@ -35,7 +35,8 @@ Examples:
 
 from __future__ import annotations
 
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 import numpy as np
 from matplotlib.patches import PathPatch
@@ -62,6 +63,31 @@ def _as_xy(array: Any, name: str) -> np.ndarray:
 
     Raises:
         ValueError: If the input is not 2-D with two columns.
+
+    Examples:
+        - Coerce a nested list of integer pairs to a float array:
+            ```python
+            >>> from cleopatra.projection import _as_xy
+            >>> _as_xy([[1, 0], [0, 1], [-1, 0]], "boundary_xy").tolist()
+            [[1.0, 0.0], [0.0, 1.0], [-1.0, 0.0]]
+
+            ```
+        - A single vertex is a valid ``(1, 2)`` array:
+            ```python
+            >>> from cleopatra.projection import _as_xy
+            >>> _as_xy([[0.5, 0.5]], "graticule_lines[0]").shape
+            (1, 2)
+
+            ```
+        - A 1-D input raises ``ValueError`` naming the argument:
+            ```python
+            >>> from cleopatra.projection import _as_xy
+            >>> _as_xy([1, 2, 3], "boundary_xy")
+            Traceback (most recent call last):
+                ...
+            ValueError: boundary_xy must be an (N, 2) array of x/y coordinates, got shape (3,).
+
+            ```
     """
     xy = np.asarray(array, dtype=float)
     if xy.ndim != 2 or xy.shape[1] != 2:
@@ -91,6 +117,11 @@ def apply_projection_frame(
     and turns the axis decorations off. The boundary geometry, graticule
     polylines, and limits are supplied as plain arrays -- this function
     performs no reprojection and has no PROJ/CRS dependency.
+
+    This is a one-shot helper: each call appends a fresh boundary patch and
+    a fresh set of graticule lines, so calling it twice on the same axes
+    stacks duplicate artists. Apply it once per axes (create a new axes to
+    re-frame).
 
     Args:
         ax: Matplotlib `matplotlib.axes.Axes` to frame. Any data
@@ -122,27 +153,62 @@ def apply_projection_frame(
             ``(N, 2)`` array, or if `xlim`/`ylim` are not 2-tuples.
 
     Examples:
-        Frame an axes as a globe with a graticule and clip an image to
-        the boundary:
+        - Frame a plain axes as a globe and read back the result: the
+            returned patch is registered on the axes and the aspect is equal:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import numpy as np
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.projection import apply_projection_frame
+            >>> theta = np.linspace(0, 2 * np.pi, 200)
+            >>> boundary = np.column_stack([np.cos(theta), np.sin(theta)])
+            >>> fig, ax = plt.subplots()
+            >>> patch = apply_projection_frame(
+            ...     ax, boundary_xy=boundary, xlim=(-1, 1), ylim=(-1, 1)
+            ... )
+            >>> ax.get_aspect()
+            1.0
+            >>> patch in ax.patches
+            True
 
-        >>> import matplotlib
-        >>> matplotlib.use("Agg")
-        >>> import numpy as np
-        >>> import matplotlib.pyplot as plt
-        >>> theta = np.linspace(0, 2 * np.pi, 200)
-        >>> boundary = np.column_stack([np.cos(theta), np.sin(theta)])
-        >>> meridian = np.column_stack([np.zeros(50), np.linspace(-1, 1, 50)])
-        >>> fig, ax = plt.subplots()
-        >>> im = ax.imshow(np.random.rand(8, 8), extent=(-1, 1, -1, 1))
-        >>> patch = apply_projection_frame(
-        ...     ax,
-        ...     boundary_xy=boundary,
-        ...     xlim=(-1, 1),
-        ...     ylim=(-1, 1),
-        ...     graticule_lines=[meridian],
-        ... )
-        >>> im.get_clip_path() is not None
-        True
+            ```
+        - Clip a data image and draw one graticule line (plain lists are
+            accepted): the image gains a clip path and one line is added:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import numpy as np
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.projection import apply_projection_frame
+            >>> boundary = [[1, 0], [0, 1], [-1, 0], [0, -1]]
+            >>> meridian = [[0, -1], [0, 1]]
+            >>> fig, ax = plt.subplots()
+            >>> im = ax.imshow(np.zeros((4, 4)), extent=(-1, 1, -1, 1))
+            >>> patch = apply_projection_frame(
+            ...     ax,
+            ...     boundary_xy=boundary,
+            ...     xlim=(-1, 1),
+            ...     ylim=(-1, 1),
+            ...     graticule_lines=[meridian],
+            ... )
+            >>> im.get_clip_path() is not None
+            True
+            >>> len(ax.lines)
+            1
+
+            ```
+        - Passing a non-Axes object raises ``TypeError``:
+            ```python
+            >>> from cleopatra.projection import apply_projection_frame
+            >>> apply_projection_frame(
+            ...     object(), boundary_xy=[[0, 0], [1, 1]], xlim=(-1, 1), ylim=(-1, 1)
+            ... )
+            Traceback (most recent call last):
+                ...
+            TypeError: ax must be a matplotlib.axes.Axes instance, got object
+
+            ```
     """
     if not hasattr(ax, "set_xlim") or not hasattr(ax, "add_patch"):
         raise TypeError(
@@ -162,6 +228,10 @@ def apply_projection_frame(
     ax.set_xlim(xlim[0], xlim[1])
     ax.set_ylim(ylim[0], ylim[1])
 
+    # The boundary is treated as a closed ring for clipping/fill regardless
+    # of whether its final vertex repeats the first: matplotlib's
+    # point-in-path test implicitly connects the last vertex back to the
+    # first, so an open ring still clips correctly.
     patch = PathPatch(
         Path(boundary),
         facecolor="none",
