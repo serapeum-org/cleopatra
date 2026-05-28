@@ -24,6 +24,7 @@ _SUBMODULES = [
     "line_glyph",
     "mesh_glyph",
     "polygon_glyph",
+    "projection",
     "scatter_glyph",
     "statistical_glyph",
     "styles",
