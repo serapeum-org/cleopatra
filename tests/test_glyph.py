@@ -590,8 +590,17 @@ class TestSaveAnimation:
     """Tests for Glyph.save_animation."""
 
     def test_unsupported_format_raises(self):
-        """Test that unsupported format raises ValueError."""
+        """Test that unsupported format raises ValueError.
+
+        An animation is attached so the format check (not the missing-anim
+        guard) is what fires.
+        """
+        from unittest.mock import MagicMock
+
+        from matplotlib.animation import FuncAnimation
+
         g = Glyph(default_options=_make_options())
+        g._anim = MagicMock(spec=FuncAnimation)
         with pytest.raises(ValueError, match="not supported"):
             g.save_animation("output.webm")
 
@@ -617,6 +626,24 @@ class TestSaveAnimation:
         g._anim = None
         with pytest.raises(ValueError, match="animate"):
             g.save_animation(f"output.{ext}")
+
+    def test_delegates_to_free_function(self, monkeypatch):
+        """`Glyph.save_animation` forwards `self.anim` to the free function."""
+        from unittest.mock import MagicMock
+
+        from matplotlib.animation import FuncAnimation
+
+        import cleopatra.glyph as glyph_mod
+
+        g = Glyph(default_options=_make_options())
+        anim = MagicMock(spec=FuncAnimation)
+        g._anim = anim
+
+        spy = MagicMock()
+        monkeypatch.setattr(glyph_mod, "_save_animation", spy)
+        g.save_animation("movie.gif", fps=5)
+
+        spy.assert_called_once_with(anim, "movie.gif", fps=5)
 
 
 class TestSupportedVideoFormat:

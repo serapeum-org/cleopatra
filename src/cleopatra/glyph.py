@@ -17,17 +17,19 @@ import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
-from matplotlib import animation
 from matplotlib.animation import FuncAnimation
 from matplotlib.axes import Axes
 from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure, SubFigure
 from matplotlib.ticker import LogFormatter
 
+# `SUPPORTED_VIDEO_FORMAT` is re-imported (not redefined) so the constant has
+# a single source of truth in `cleopatra.animation`, while the historical
+# `from cleopatra.glyph import SUPPORTED_VIDEO_FORMAT` path keeps working.
+from cleopatra.animation import SUPPORTED_VIDEO_FORMAT
+from cleopatra.animation import save_animation as _save_animation
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import ColorScale, MidpointNormalize
-
-SUPPORTED_VIDEO_FORMAT = ["gif", "mov", "avi", "mp4"]
 
 #: Upper bound for an integer `levels` value (number of discrete colour
 #: levels / contour lines). A larger request is almost certainly a mistake
@@ -994,10 +996,11 @@ class Glyph:
         return list(map(write_points, point_table))
 
     def save_animation(self, path: str, fps: int = 2) -> None:
-        """Save the animation to a file.
+        """Save this glyph's animation (`self.anim`) to a file.
 
-        The output format is determined by the file extension. GIF uses
-        `PillowWriter`; mov/avi/mp4 require FFmpeg to be installed.
+        Thin wrapper around `cleopatra.animation.save_animation`; the output
+        format is determined by the file extension. GIF uses `PillowWriter`;
+        mov/avi/mp4 require FFmpeg to be installed.
 
         Args:
             path: Output file path. Extension determines format.
@@ -1005,7 +1008,10 @@ class Glyph:
             fps: Frames per second. Default is 2.
 
         Raises:
-            ValueError: If the file format is not supported.
+            ValueError: If `animate()` has not been called yet, or if the
+                file format is not supported.
+            FileNotFoundError: If a video format is requested but FFmpeg is
+                not installed.
 
         Examples:
             - Check the supported video formats:
@@ -1016,22 +1022,4 @@ class Glyph:
 
                 ```
         """
-        video_format = path.split(".")[-1]
-        if video_format not in SUPPORTED_VIDEO_FORMAT:
-            raise ValueError(
-                f"The given extension {video_format} implies a format that is "
-                f"not supported, only {SUPPORTED_VIDEO_FORMAT} are supported"
-            )
-
-        if video_format == "gif":
-            writer_gif = animation.PillowWriter(fps=fps)
-            self.anim.save(path, writer=writer_gif)
-        else:
-            try:
-                writer_video = animation.FFMpegWriter(fps=fps, bitrate=1800)
-                self.anim.save(path, writer=writer_video)
-            except FileNotFoundError as e:
-                raise FileNotFoundError(
-                    "FFmpeg not found. Please visit https://ffmpeg.org/ "
-                    "and download a version compatible with your OS."
-                ) from e
+        _save_animation(self.anim, path, fps=fps)
