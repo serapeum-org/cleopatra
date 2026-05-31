@@ -16,8 +16,12 @@ from __future__ import annotations
 
 import os
 import tempfile
+from typing import TYPE_CHECKING
 
 from matplotlib.animation import FFMpegWriter, FuncAnimation, PillowWriter
+
+if TYPE_CHECKING:  # import only for type checkers; IPython stays optional
+    from IPython.display import Image
 
 #: Container formats `save_animation` can write. GIF uses `PillowWriter`;
 #: the rest require FFmpeg (`FFMpegWriter`).
@@ -99,7 +103,7 @@ def to_gif(anim: FuncAnimation, fps: int = 2) -> bytes:
         os.remove(tmp)
 
 
-def embed_gif(anim: FuncAnimation, fps: int = 2):
+def embed_gif(anim: FuncAnimation, fps: int = 2) -> Image:
     """Return an `IPython.display.Image` of the animation for inline display.
 
     IPython is imported lazily so it stays an optional, notebook-only
