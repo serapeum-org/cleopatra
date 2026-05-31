@@ -72,6 +72,96 @@ class TestSaveAnimation:
         with pytest.raises(FileNotFoundError, match="ffmpeg.org"):
             save_animation(anim, str(tmp_path / "movie.mp4"))
 
+    def test_routes_gif_to_pillow_writer(self, monkeypatch):
+        """The `.gif` branch builds a `PillowWriter(fps=...)` and saves with it.
+
+        Test scenario:
+            A mocked animation and a patched `PillowWriter` confirm the GIF
+            branch is taken, the writer receives the requested ``fps``, and
+            ``anim.save`` is called once with that writer.
+        """
+        import cleopatra.animation as anim_mod
+
+        anim = MagicMock(spec=FuncAnimation)
+        pillow = MagicMock(name="PillowWriter")
+        monkeypatch.setattr(anim_mod, "PillowWriter", pillow)
+
+        result = save_animation(anim, "clip.gif", fps=7)
+
+        pillow.assert_called_once_with(fps=7)
+        anim.save.assert_called_once_with("clip.gif", writer=pillow.return_value)
+        assert result == "clip.gif", f"should return the path, got {result!r}"
+
+    @pytest.mark.parametrize("ext", ["mov", "avi", "mp4"])
+    def test_routes_video_to_ffmpeg_writer(self, ext, monkeypatch):
+        """Non-GIF formats build an `FFMpegWriter(fps=, bitrate=1800)`.
+
+        Args:
+            ext: A supported video container extension.
+
+        Test scenario:
+            For each video extension the else-branch is taken, the writer is
+            constructed with the expected ``fps``/``bitrate``, ``anim.save``
+            is invoked with it, and the written path is returned. Exercises
+            the video success path without requiring FFmpeg.
+        """
+        import cleopatra.animation as anim_mod
+
+        anim = MagicMock(spec=FuncAnimation)
+        ffmpeg = MagicMock(name="FFMpegWriter")
+        monkeypatch.setattr(anim_mod, "FFMpegWriter", ffmpeg)
+
+        result = save_animation(anim, f"clip.{ext}", fps=5)
+
+        ffmpeg.assert_called_once_with(fps=5, bitrate=1800)
+        anim.save.assert_called_once_with(f"clip.{ext}", writer=ffmpeg.return_value)
+        assert result == f"clip.{ext}", f"should return the path, got {result!r}"
+
+    def test_no_extension_raises(self):
+        """A path with no extension is rejected as an unsupported format.
+
+        Test scenario:
+            ``"noext"`` has no dot, so ``rsplit`` yields the whole string,
+            which is not a supported format and raises ``ValueError`` before
+            any save is attempted.
+        """
+        anim = MagicMock(spec=FuncAnimation)
+        with pytest.raises(ValueError, match="not supported"):
+            save_animation(anim, "noext")
+        anim.save.assert_not_called()
+
+    def test_multi_dot_filename_uses_last_segment(self, monkeypatch):
+        """Only the final dot-segment is treated as the extension.
+
+        Test scenario:
+            ``"my.movie.v2.gif"`` resolves to ``gif`` (not ``v2``), so the
+            GIF branch is taken and the full path is preserved on save.
+        """
+        import cleopatra.animation as anim_mod
+
+        anim = MagicMock(spec=FuncAnimation)
+        monkeypatch.setattr(anim_mod, "PillowWriter", MagicMock())
+
+        result = save_animation(anim, "my.movie.v2.gif", fps=2)
+
+        anim.save.assert_called_once()
+        assert result == "my.movie.v2.gif", f"path not preserved: {result!r}"
+
+    def test_default_fps_is_two(self, monkeypatch):
+        """Omitting ``fps`` defaults the writer to 2 frames per second.
+
+        Test scenario:
+            Calling without ``fps`` builds ``PillowWriter(fps=2)``.
+        """
+        import cleopatra.animation as anim_mod
+
+        pillow = MagicMock(name="PillowWriter")
+        monkeypatch.setattr(anim_mod, "PillowWriter", pillow)
+
+        save_animation(MagicMock(spec=FuncAnimation), "clip.gif")
+
+        pillow.assert_called_once_with(fps=2)
+
 
 class TestToGif:
     """Tests for `to_gif`."""
@@ -95,6 +185,54 @@ class TestToGif:
 
         assert before == after, "to_gif left a temp file behind"
 
+    def test_removes_temp_file_on_save_failure(self, tmp_path, monkeypatch):
+        """The temp file is removed even when rendering raises.
+
+        Test scenario:
+            ``save_animation`` is patched to raise; the original error must
+            propagate and the ``finally`` block must still delete the temp
+            file (no leak on the error path).
+        """
+        import cleopatra.animation as anim_mod
+
+        monkeypatch.setattr("tempfile.tempdir", str(tmp_path))
+
+        def boom(*args, **kwargs):
+            raise RuntimeError("render failed")
+
+        monkeypatch.setattr(anim_mod, "save_animation", boom)
+        before = set(tmp_path.iterdir())
+
+        with pytest.raises(RuntimeError, match="render failed"):
+            to_gif(MagicMock(spec=FuncAnimation))
+
+        assert set(tmp_path.iterdir()) == before, "temp file leaked on failure"
+
+    def test_forwards_fps_to_save_animation(self, tmp_path, monkeypatch):
+        """``fps`` is forwarded to ``save_animation`` and bytes are returned.
+
+        Test scenario:
+            ``save_animation`` is patched to record ``fps`` and write known
+            bytes; ``to_gif`` must pass the requested ``fps`` through and
+            return exactly those bytes.
+        """
+        import cleopatra.animation as anim_mod
+
+        monkeypatch.setattr("tempfile.tempdir", str(tmp_path))
+        captured = {}
+
+        def fake_save(anim, path, fps):
+            captured["fps"] = fps
+            Path(path).write_bytes(b"GIF89a-data")
+            return path
+
+        monkeypatch.setattr(anim_mod, "save_animation", fake_save)
+
+        data = to_gif(MagicMock(spec=FuncAnimation), fps=9)
+
+        assert captured["fps"] == 9, f"fps not forwarded, got {captured.get('fps')!r}"
+        assert data == b"GIF89a-data", f"unexpected bytes: {data!r}"
+
 
 class TestEmbedGif:
     """Tests for `embed_gif` (notebook inline display)."""
@@ -108,6 +246,42 @@ class TestEmbedGif:
         assert isinstance(result, Image), "expected an IPython.display.Image"
         assert result.format == "gif"
         assert result.data[:6] in (b"GIF87a", b"GIF89a")
+
+    def test_delegates_to_to_gif_with_fps(self, monkeypatch):
+        """`embed_gif` renders via `to_gif` (forwarding ``fps``) then wraps it.
+
+        Test scenario:
+            ``to_gif`` is patched to return known bytes; ``embed_gif`` must
+            call it with the same animation and ``fps``, and wrap the result
+            in an ``Image`` of format ``gif`` carrying those bytes. Avoids a
+            real render for determinism.
+        """
+        pytest.importorskip("IPython.display")
+        import cleopatra.animation as anim_mod
+
+        fake_to_gif = MagicMock(return_value=b"GIF89a-embed")
+        monkeypatch.setattr(anim_mod, "to_gif", fake_to_gif)
+        anim = MagicMock(spec=FuncAnimation)
+
+        result = anim_mod.embed_gif(anim, fps=4)
+
+        fake_to_gif.assert_called_once_with(anim, fps=4)
+        assert result.format == "gif", f"expected gif, got {result.format!r}"
+        assert result.data == b"GIF89a-embed", f"unexpected bytes: {result.data!r}"
+
+    def test_image_not_imported_at_module_level(self):
+        """IPython stays optional: ``Image`` is not bound at module import.
+
+        Test scenario:
+            The lazy import inside ``embed_gif`` means importing
+            ``cleopatra.animation`` must not expose an ``Image`` attribute,
+            so the package never hard-depends on IPython at load time.
+        """
+        import cleopatra.animation as anim_mod
+
+        assert not hasattr(anim_mod, "Image"), (
+            "IPython Image must not be imported at module load time"
+        )
 
 
 class TestSupportedVideoFormat:
