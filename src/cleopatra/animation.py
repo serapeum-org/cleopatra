@@ -53,7 +53,7 @@ def save_animation(anim: FuncAnimation, path: str, fps: int = 2) -> str:
 
             ```
     """
-    video_format = path.split(".")[-1]
+    video_format = path.rsplit(".", 1)[-1].lower()
     if video_format not in SUPPORTED_VIDEO_FORMAT:
         raise ValueError(
             f"The given extension {video_format} implies a format that is "

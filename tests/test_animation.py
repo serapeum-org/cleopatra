@@ -56,6 +56,14 @@ class TestSaveAnimation:
         with pytest.raises(ValueError, match="not supported"):
             save_animation(tiny_anim, str(tmp_path / "out.webm"))
 
+    def test_extension_is_case_insensitive(self, tiny_anim, tmp_path):
+        """An upper/mixed-case extension is matched the same as lower-case."""
+        path = tmp_path / "out.GIF"
+        save_animation(tiny_anim, str(path), fps=2)
+
+        assert path.exists(), "upper-case .GIF was not written"
+        assert path.read_bytes()[:6] in (b"GIF87a", b"GIF89a")
+
     def test_ffmpeg_missing_raises_friendly_error(self, tmp_path):
         """A missing FFmpeg binary surfaces as `FileNotFoundError` with URL."""
         anim = MagicMock(spec=FuncAnimation)
