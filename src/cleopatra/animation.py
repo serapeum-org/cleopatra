@@ -49,13 +49,62 @@ def save_animation(anim: FuncAnimation, path: str, fps: int = 2) -> str:
             not installed.
 
     Examples:
-        - Check the supported video formats:
+        - Save a tiny animation to a GIF; the call returns the path it wrote:
             ```python
-            >>> from cleopatra.animation import SUPPORTED_VIDEO_FORMAT
-            >>> sorted(SUPPORTED_VIDEO_FORMAT)
-            ['avi', 'gif', 'mov', 'mp4']
+            >>> import os, tempfile, matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from matplotlib.animation import FuncAnimation
+            >>> from cleopatra.animation import save_animation
+            >>> fig, ax = plt.subplots()
+            >>> (line,) = ax.plot([0, 1], [0, 0])
+            >>> anim = FuncAnimation(fig, lambda i: (line,), frames=2)
+            >>> path = os.path.join(tempfile.mkdtemp(), "wave.gif")
+            >>> save_animation(anim, path) == path
+            True
+            >>> from pathlib import Path
+            >>> Path(path).read_bytes()[:6] in (b"GIF87a", b"GIF89a")
+            True
+            >>> plt.close(fig)
 
             ```
+        - The extension is matched case-insensitively, so ``.GIF`` also works:
+            ```python
+            >>> import os, tempfile, matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from matplotlib.animation import FuncAnimation
+            >>> from cleopatra.animation import save_animation
+            >>> fig, ax = plt.subplots()
+            >>> (line,) = ax.plot([0, 1], [0, 0])
+            >>> anim = FuncAnimation(fig, lambda i: (line,), frames=2)
+            >>> path = os.path.join(tempfile.mkdtemp(), "WAVE.GIF")
+            >>> save_animation(anim, path).endswith("WAVE.GIF")
+            True
+            >>> plt.close(fig)
+
+            ```
+        - An unsupported extension raises ``ValueError`` before writing:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from matplotlib.animation import FuncAnimation
+            >>> from cleopatra.animation import save_animation
+            >>> fig, ax = plt.subplots()
+            >>> (line,) = ax.plot([0, 1], [0, 0])
+            >>> anim = FuncAnimation(fig, lambda i: (line,), frames=2)
+            >>> save_animation(anim, "movie.webm")  # doctest: +ELLIPSIS
+            Traceback (most recent call last):
+                ...
+            ValueError: ...not supported...
+            >>> plt.close(fig)
+
+            ```
+
+    See Also:
+        to_gif: Render an animation to in-memory GIF bytes instead of a file.
+        embed_gif: Wrap an animation as an ``IPython.display.Image``.
     """
     video_format = path.rsplit(".", 1)[-1].lower()
     if video_format not in SUPPORTED_VIDEO_FORMAT:
@@ -89,6 +138,47 @@ def to_gif(anim: FuncAnimation, fps: int = 2) -> bytes:
 
     Returns:
         The GIF-encoded bytes of the animation.
+
+    Examples:
+        - Render an animation to GIF bytes and inspect the payload:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from matplotlib.animation import FuncAnimation
+            >>> from cleopatra.animation import to_gif
+            >>> fig, ax = plt.subplots()
+            >>> (line,) = ax.plot([0, 1], [0, 0])
+            >>> anim = FuncAnimation(fig, lambda i: (line,), frames=2)
+            >>> data = to_gif(anim)
+            >>> data[:6] in (b"GIF87a", b"GIF89a")
+            True
+            >>> len(data) > 0
+            True
+            >>> plt.close(fig)
+
+            ```
+        - A higher ``fps`` still yields self-contained bytes you can serve over
+          HTTP or write yourself, without leaving a temp file behind:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from matplotlib.animation import FuncAnimation
+            >>> from cleopatra.animation import to_gif
+            >>> fig, ax = plt.subplots()
+            >>> (line,) = ax.plot([0, 1], [0, 0])
+            >>> anim = FuncAnimation(fig, lambda i: (line,), frames=3)
+            >>> payload = to_gif(anim, fps=5)
+            >>> payload.startswith((b"GIF87a", b"GIF89a"))
+            True
+            >>> plt.close(fig)
+
+            ```
+
+    See Also:
+        save_animation: Write an animation directly to a file path.
+        embed_gif: Wrap these bytes as an ``IPython.display.Image``.
     """
     # Close our handle immediately so the writer can reopen the path; this
     # makes the handle lifecycle explicit (no reliance on GC) and avoids a
@@ -116,6 +206,51 @@ def embed_gif(anim: FuncAnimation, fps: int = 2) -> Image:
     Returns:
         An `IPython.display.Image` wrapping the rendered GIF, ready to be
         returned as the last expression of a notebook cell.
+
+    Raises:
+        ModuleNotFoundError: If IPython is not installed (it is only needed
+            for inline display and is imported lazily).
+
+    Examples:
+        - Wrap an animation as an inline image and read back its payload:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from matplotlib.animation import FuncAnimation
+            >>> from cleopatra.animation import embed_gif
+            >>> fig, ax = plt.subplots()
+            >>> (line,) = ax.plot([0, 1], [0, 0])
+            >>> anim = FuncAnimation(fig, lambda i: (line,), frames=2)
+            >>> img = embed_gif(anim)
+            >>> img.format
+            'gif'
+            >>> img.data[:6] in (b"GIF87a", b"GIF89a")
+            True
+            >>> plt.close(fig)
+
+            ```
+        - Returning the image as a cell's last expression renders it inline;
+          a custom ``fps`` controls playback speed:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from matplotlib.animation import FuncAnimation
+            >>> from cleopatra.animation import embed_gif
+            >>> fig, ax = plt.subplots()
+            >>> (line,) = ax.plot([0, 1], [0, 0])
+            >>> anim = FuncAnimation(fig, lambda i: (line,), frames=2)
+            >>> img = embed_gif(anim, fps=3)
+            >>> len(img.data) > 0
+            True
+            >>> plt.close(fig)
+
+            ```
+
+    See Also:
+        to_gif: Produce the underlying GIF bytes without IPython.
+        save_animation: Write the animation to a file path instead.
     """
     from IPython.display import Image  # optional dep, only for inline display
 
