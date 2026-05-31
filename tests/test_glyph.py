@@ -7,13 +7,17 @@ tick adjustment, point overlay, and animation saving.
 
 from __future__ import annotations
 
+from unittest.mock import MagicMock
+
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from matplotlib.animation import FuncAnimation
 from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure
 
+import cleopatra.glyph as glyph_mod
 from cleopatra.glyph import MAX_DISCRETE_LEVELS, SUPPORTED_VIDEO_FORMAT, Glyph
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import ColorScale, MidpointNormalize
@@ -595,10 +599,6 @@ class TestSaveAnimation:
         An animation is attached so the format check (not the missing-anim
         guard) is what fires.
         """
-        from unittest.mock import MagicMock
-
-        from matplotlib.animation import FuncAnimation
-
         g = Glyph(default_options=_make_options())
         g._anim = MagicMock(spec=FuncAnimation)
         with pytest.raises(ValueError, match="not supported"):
@@ -629,12 +629,6 @@ class TestSaveAnimation:
 
     def test_delegates_to_free_function(self, monkeypatch):
         """`Glyph.save_animation` forwards `self.anim` to the free function."""
-        from unittest.mock import MagicMock
-
-        from matplotlib.animation import FuncAnimation
-
-        import cleopatra.glyph as glyph_mod
-
         g = Glyph(default_options=_make_options())
         anim = MagicMock(spec=FuncAnimation)
         g._anim = anim
@@ -856,9 +850,6 @@ class TestSaveAnimationVideoBranch:
 
     def test_ffmpeg_missing_raises_friendly_error(self, monkeypatch, tmp_path):
         """A missing FFmpeg binary surfaces as `FileNotFoundError` with URL."""
-        from matplotlib.animation import FuncAnimation
-        from unittest.mock import MagicMock
-
         g = Glyph(default_options=_make_options())
         anim = MagicMock(spec=FuncAnimation)
         anim.save = MagicMock(side_effect=FileNotFoundError("ffmpeg not found"))
