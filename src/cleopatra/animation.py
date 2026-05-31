@@ -86,7 +86,11 @@ def to_gif(anim: FuncAnimation, fps: int = 2) -> bytes:
     Returns:
         The GIF-encoded bytes of the animation.
     """
-    tmp = tempfile.NamedTemporaryFile(suffix=".gif", delete=False).name
+    # Close our handle immediately so the writer can reopen the path; this
+    # makes the handle lifecycle explicit (no reliance on GC) and avoids a
+    # PermissionError when reopening on Windows.
+    fd, tmp = tempfile.mkstemp(suffix=".gif")
+    os.close(fd)
     try:
         save_animation(anim, tmp, fps=fps)
         with open(tmp, "rb") as fh:
