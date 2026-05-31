@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import pytest
 from matplotlib.animation import FuncAnimation
 
+import cleopatra.animation as anim_mod
 from cleopatra.animation import (
     SUPPORTED_VIDEO_FORMAT,
     embed_gif,
@@ -80,7 +81,6 @@ class TestSaveAnimation:
             branch is taken, the writer receives the requested ``fps``, and
             ``anim.save`` is called once with that writer.
         """
-        import cleopatra.animation as anim_mod
 
         anim = MagicMock(spec=FuncAnimation)
         pillow = MagicMock(name="PillowWriter")
@@ -105,7 +105,6 @@ class TestSaveAnimation:
             is invoked with it, and the written path is returned. Exercises
             the video success path without requiring FFmpeg.
         """
-        import cleopatra.animation as anim_mod
 
         anim = MagicMock(spec=FuncAnimation)
         ffmpeg = MagicMock(name="FFMpegWriter")
@@ -137,7 +136,6 @@ class TestSaveAnimation:
             ``"my.movie.v2.gif"`` resolves to ``gif`` (not ``v2``), so the
             GIF branch is taken and the full path is preserved on save.
         """
-        import cleopatra.animation as anim_mod
 
         anim = MagicMock(spec=FuncAnimation)
         monkeypatch.setattr(anim_mod, "PillowWriter", MagicMock())
@@ -153,7 +151,6 @@ class TestSaveAnimation:
         Test scenario:
             Calling without ``fps`` builds ``PillowWriter(fps=2)``.
         """
-        import cleopatra.animation as anim_mod
 
         pillow = MagicMock(name="PillowWriter")
         monkeypatch.setattr(anim_mod, "PillowWriter", pillow)
@@ -193,7 +190,6 @@ class TestToGif:
             propagate and the ``finally`` block must still delete the temp
             file (no leak on the error path).
         """
-        import cleopatra.animation as anim_mod
 
         monkeypatch.setattr("tempfile.tempdir", str(tmp_path))
 
@@ -216,7 +212,6 @@ class TestToGif:
             bytes; ``to_gif`` must pass the requested ``fps`` through and
             return exactly those bytes.
         """
-        import cleopatra.animation as anim_mod
 
         monkeypatch.setattr("tempfile.tempdir", str(tmp_path))
         captured = {}
@@ -257,7 +252,6 @@ class TestEmbedGif:
             real render for determinism.
         """
         pytest.importorskip("IPython.display")
-        import cleopatra.animation as anim_mod
 
         fake_to_gif = MagicMock(return_value=b"GIF89a-embed")
         monkeypatch.setattr(anim_mod, "to_gif", fake_to_gif)
@@ -277,7 +271,6 @@ class TestEmbedGif:
             ``cleopatra.animation`` must not expose an ``Image`` attribute,
             so the package never hard-depends on IPython at load time.
         """
-        import cleopatra.animation as anim_mod
 
         assert not hasattr(anim_mod, "Image"), (
             "IPython Image must not be imported at module load time"
