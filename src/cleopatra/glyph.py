@@ -26,7 +26,7 @@ from matplotlib.ticker import LogFormatter
 # `SUPPORTED_VIDEO_FORMAT` is re-imported (not redefined) so the constant has
 # a single source of truth in `cleopatra.animation`, while the historical
 # `from cleopatra.glyph import SUPPORTED_VIDEO_FORMAT` path keeps working.
-from cleopatra.animation import SUPPORTED_VIDEO_FORMAT
+from cleopatra.animation import SUPPORTED_VIDEO_FORMAT  # noqa: F401  (re-export)
 from cleopatra.animation import save_animation as _save_animation
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import ColorScale, MidpointNormalize

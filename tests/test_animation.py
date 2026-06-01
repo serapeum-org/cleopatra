@@ -276,12 +276,38 @@ class TestEmbedGif:
 
         def fake_import(name, *args, **kwargs):
             if name.startswith("IPython"):
-                raise ModuleNotFoundError("No module named 'IPython'")
+                raise ModuleNotFoundError(
+                    "No module named 'IPython'", name="IPython"
+                )
             return real_import(name, *args, **kwargs)
 
         monkeypatch.setattr(builtins, "__import__", fake_import)
 
         with pytest.raises(ModuleNotFoundError, match="pip install ipython"):
+            embed_gif(MagicMock(spec=FuncAnimation))
+
+    def test_missing_subdependency_is_not_remapped(self, monkeypatch):
+        """A missing IPython *sub-dependency* surfaces unchanged, not remapped.
+
+        Test scenario:
+            IPython is importable, but one of its transitive imports raises
+            ``ModuleNotFoundError`` for some other package. ``embed_gif`` must
+            re-raise that original error rather than misattribute it to a
+            missing IPython.
+        """
+        pytest.importorskip("IPython.display")
+        real_import = builtins.__import__
+
+        def fake_import(name, *args, **kwargs):
+            if name == "IPython.display":
+                raise ModuleNotFoundError(
+                    "No module named 'some_dep'", name="some_dep"
+                )
+            return real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", fake_import)
+
+        with pytest.raises(ModuleNotFoundError, match="some_dep"):
             embed_gif(MagicMock(spec=FuncAnimation))
 
     def test_image_not_imported_at_module_level(self):

@@ -51,54 +51,61 @@ def save_animation(anim: FuncAnimation, path: str, fps: int = 2) -> str:
     Examples:
         - Save a tiny animation to a GIF; the call returns the path it wrote:
             ```python
-            >>> import os, tempfile, matplotlib
+            >>> import os, shutil, tempfile, matplotlib
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
+            >>> from pathlib import Path
             >>> from matplotlib.animation import FuncAnimation
             >>> from cleopatra.animation import save_animation
+            >>> tmp = tempfile.mkdtemp()
             >>> fig, ax = plt.subplots()
             >>> (line,) = ax.plot([0, 1], [0, 0])
             >>> anim = FuncAnimation(fig, lambda i: (line,), frames=2)
-            >>> path = os.path.join(tempfile.mkdtemp(), "wave.gif")
+            >>> path = os.path.join(tmp, "wave.gif")
             >>> save_animation(anim, path) == path
             True
-            >>> from pathlib import Path
             >>> Path(path).read_bytes()[:6] in (b"GIF87a", b"GIF89a")
             True
             >>> plt.close(fig)
+            >>> shutil.rmtree(tmp)
 
             ```
         - The extension is matched case-insensitively, so ``.GIF`` also works:
             ```python
-            >>> import os, tempfile, matplotlib
+            >>> import os, shutil, tempfile, matplotlib
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
             >>> from matplotlib.animation import FuncAnimation
             >>> from cleopatra.animation import save_animation
+            >>> tmp = tempfile.mkdtemp()
             >>> fig, ax = plt.subplots()
             >>> (line,) = ax.plot([0, 1], [0, 0])
             >>> anim = FuncAnimation(fig, lambda i: (line,), frames=2)
-            >>> path = os.path.join(tempfile.mkdtemp(), "WAVE.GIF")
-            >>> save_animation(anim, path).endswith("WAVE.GIF")
+            >>> save_animation(anim, os.path.join(tmp, "WAVE.GIF")).endswith("WAVE.GIF")
             True
             >>> plt.close(fig)
+            >>> shutil.rmtree(tmp)
 
             ```
-        - An unsupported extension raises ``ValueError`` before writing:
+        - An unsupported extension raises ``ValueError`` before writing (here
+          the animation is rendered once first, so nothing is left dangling):
             ```python
-            >>> import matplotlib
+            >>> import os, shutil, tempfile, matplotlib
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
             >>> from matplotlib.animation import FuncAnimation
             >>> from cleopatra.animation import save_animation
+            >>> tmp = tempfile.mkdtemp()
             >>> fig, ax = plt.subplots()
             >>> (line,) = ax.plot([0, 1], [0, 0])
             >>> anim = FuncAnimation(fig, lambda i: (line,), frames=2)
+            >>> _ = save_animation(anim, os.path.join(tmp, "ok.gif"))
             >>> save_animation(anim, "movie.webm")  # doctest: +ELLIPSIS
             Traceback (most recent call last):
                 ...
             ValueError: ...not supported...
             >>> plt.close(fig)
+            >>> shutil.rmtree(tmp)
 
             ```
 
@@ -257,6 +264,10 @@ def embed_gif(anim: FuncAnimation, fps: int = 2) -> Image:
     try:
         from IPython.display import Image
     except ModuleNotFoundError as e:
+        # Only remap when IPython itself is missing; if a sub-dependency of
+        # IPython failed to import, surface that original error unchanged.
+        if e.name and e.name.split(".")[0] != "IPython":
+            raise
         raise ModuleNotFoundError(
             "embed_gif requires IPython for inline display. Install it with "
             "`pip install ipython` (already present in any Jupyter/IPython "
