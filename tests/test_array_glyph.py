@@ -1,6 +1,7 @@
 import os
 import re
 import shutil
+import warnings
 
 import pytest
 
@@ -1280,7 +1281,7 @@ class TestContourLabels:
     def _smooth_arr() -> np.ndarray:
         """A smooth 2-D field that yields several labelled isolines."""
         y, x = np.mgrid[-3:3:30j, -3:3:30j]
-        return np.exp(-(x ** 2 + y ** 2))
+        return np.exp(-(x**2 + y**2))
 
     def test_labels_true_draws_and_exposes_text(self):
         """`labels=True` populates `contour_labels` with `Text` artists."""
@@ -1336,6 +1337,25 @@ class TestContourLabels:
         assert glyph.contour_labels is not None
         glyph.plot(kind="imshow")
         assert glyph.contour_labels is None
+
+    def test_labels_on_constant_field_is_empty_list(self):
+        """A labelled contour with no isolines yields [] (not None), no raise."""
+        glyph = ArrayGlyph(np.full((5, 5), 3.0))
+        with warnings.catch_warnings():
+            # A constant field has no contour lines; the colorbar-skip
+            # warning is expected and unrelated to labelling.
+            warnings.simplefilter("ignore")
+            fig, ax = glyph.plot(kind="contour", labels=True)
+        assert isinstance(fig, Figure)
+        assert glyph.contour_labels == []
+
+    def test_label_kw_overrides_cleopatra_defaults(self):
+        """User `label_kw` keys win over cleopatra's clabel defaults."""
+        glyph = ArrayGlyph(self._smooth_arr())
+        # Default fontsize is 8; the user value must take precedence.
+        fig, ax = glyph.plot(kind="contour", labels=True, label_kw={"fontsize": 14})
+        assert len(glyph.contour_labels) > 0
+        assert all(t.get_fontsize() == 14 for t in glyph.contour_labels)
 
 
 @pytest.mark.plot

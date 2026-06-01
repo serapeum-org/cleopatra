@@ -207,8 +207,9 @@ class ArrayGlyph(Glyph):
             or `None` when none was drawn (RGB, or `add_colorbar=False`).
         contour_labels (list): The inline contour-label `Text` artists from
             the most recent `plot(kind="contour", labels=True)`, or `None`
-            when no labels were drawn (the default, and for every kind other
-            than `"contour"`).
+            when labelling was not requested (the default, and for every
+            kind other than `"contour"`). A labelled contour with no
+            isolines (e.g. a constant-value field) yields an empty list.
 
     Notes:
         This class provides methods for:
@@ -1811,7 +1812,8 @@ class ArrayGlyph(Glyph):
                         False. Ignored for `kind="contourf"` and every
                         non-contour kind (filled contours have no lines
                         to label). The label `Text` artists are stored
-                        on the instance as `self.contour_labels`.
+                        on the instance as `self.contour_labels` (an
+                        empty list when the contour has no isolines).
                     label_kw : dict, optional
                         Extra keyword arguments forwarded to
                         `ax.clabel` when `labels=True`, by default None.
@@ -1873,7 +1875,7 @@ class ArrayGlyph(Glyph):
                 ```python
                 >>> from matplotlib.text import Text
                 >>> y, x = np.mgrid[-3:3:30j, -3:3:30j]
-                >>> z = np.exp(-(x ** 2 + y ** 2))
+                >>> z = np.exp(-(x**2 + y**2))
                 >>> glyph = ArrayGlyph(z, figsize=(6, 6))
                 >>> fig, ax = glyph.plot(kind="contour", labels=True, label_kw={"fmt": "%.2f"})
                 >>> bool(glyph.contour_labels) and all(
