@@ -558,8 +558,9 @@ class ArrayGlyph(Glyph):
         self.im = None
         self.cbar = None
         # Inline contour-label artists from the most recent
-        # `plot(kind="contour", labels=True)`, or `None` when no labels
-        # were drawn (the default, and for every non-contour kind).
+        # `plot(kind="contour", labels=True)`, or `None` when labelling
+        # was not requested (the default, and for every non-contour
+        # kind); an empty list when the contour has no isolines.
         self.contour_labels = None
 
     @property
