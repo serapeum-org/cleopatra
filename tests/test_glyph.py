@@ -7,13 +7,17 @@ tick adjustment, point overlay, and animation saving.
 
 from __future__ import annotations
 
+from unittest.mock import MagicMock
+
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from matplotlib.animation import FuncAnimation
 from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure
 
+import cleopatra.glyph as glyph_mod
 from cleopatra.glyph import MAX_DISCRETE_LEVELS, SUPPORTED_VIDEO_FORMAT, Glyph
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import ColorScale, MidpointNormalize
@@ -590,8 +594,13 @@ class TestSaveAnimation:
     """Tests for Glyph.save_animation."""
 
     def test_unsupported_format_raises(self):
-        """Test that unsupported format raises ValueError."""
+        """Test that unsupported format raises ValueError.
+
+        An animation is attached so the format check (not the missing-anim
+        guard) is what fires.
+        """
         g = Glyph(default_options=_make_options())
+        g._anim = MagicMock(spec=FuncAnimation)
         with pytest.raises(ValueError, match="not supported"):
             g.save_animation("output.webm")
 
@@ -617,6 +626,18 @@ class TestSaveAnimation:
         g._anim = None
         with pytest.raises(ValueError, match="animate"):
             g.save_animation(f"output.{ext}")
+
+    def test_delegates_to_free_function(self, monkeypatch):
+        """`Glyph.save_animation` forwards `self.anim` to the free function."""
+        g = Glyph(default_options=_make_options())
+        anim = MagicMock(spec=FuncAnimation)
+        g._anim = anim
+
+        spy = MagicMock()
+        monkeypatch.setattr(glyph_mod, "_save_animation", spy)
+        g.save_animation("movie.gif", fps=5)
+
+        spy.assert_called_once_with(anim, "movie.gif", fps=5)
 
 
 class TestSupportedVideoFormat:
@@ -829,9 +850,6 @@ class TestSaveAnimationVideoBranch:
 
     def test_ffmpeg_missing_raises_friendly_error(self, monkeypatch, tmp_path):
         """A missing FFmpeg binary surfaces as `FileNotFoundError` with URL."""
-        from matplotlib.animation import FuncAnimation
-        from unittest.mock import MagicMock
-
         g = Glyph(default_options=_make_options())
         anim = MagicMock(spec=FuncAnimation)
         anim.save = MagicMock(side_effect=FileNotFoundError("ffmpeg not found"))

@@ -114,6 +114,7 @@ nav:
     - MeshGlyph: reference/mesh-glyph.md
     - Tiles (basemaps): reference/tiles.md
     - Projection (globe frames): reference/projection.md
+    - Animations (save/embed): reference/animation.md
     - Colors: reference/colors-glyph.md
     - Styles: reference/styles-glyph.md
     - Config: reference/config.md
