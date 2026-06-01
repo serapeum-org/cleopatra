@@ -8,7 +8,7 @@ import pytest
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
-from matplotlib.colors import BoundaryNorm
+from matplotlib.colors import BoundaryNorm, to_rgba
 from matplotlib.figure import Figure
 from matplotlib.text import Text
 from PIL import Image
@@ -1356,6 +1356,96 @@ class TestContourLabels:
         fig, ax = glyph.plot(kind="contour", labels=True, label_kw={"fontsize": 14})
         assert len(glyph.contour_labels) > 0
         assert all(t.get_fontsize() == 14 for t in glyph.contour_labels)
+
+    def test_contour_labels_none_before_any_render(self):
+        """`contour_labels` is None on a freshly constructed glyph.
+
+        Test scenario:
+            The attribute is initialised in `__init__`, so it must be
+            reachable and `None` before `plot`/`animate` is ever called.
+        """
+        glyph = ArrayGlyph(self._smooth_arr())
+        assert (
+            glyph.contour_labels is None
+        ), f"Expected None before render, got {glyph.contour_labels!r}"
+
+    @pytest.mark.parametrize("kind", ["imshow", "pcolormesh", "auto"])
+    def test_labels_true_is_noop_for_non_contour_kinds(self, kind):
+        """`labels=True` is silently ignored for every non-contour kind.
+
+        Args:
+            kind: A render kind that draws no isolines.
+
+        Test scenario:
+            `imshow`/`pcolormesh`/`auto` (which routes to `imshow` here)
+            must not draw labels; `contour_labels` stays None. Complements
+            the dedicated `contourf` no-op test.
+        """
+        glyph = ArrayGlyph(self._smooth_arr())
+        fig, ax = glyph.plot(kind=kind, labels=True)
+        assert isinstance(fig, Figure)
+        assert (
+            glyph.contour_labels is None
+        ), f"kind={kind!r} should not draw labels, got {glyph.contour_labels!r}"
+
+    def test_label_kw_forwards_arbitrary_clabel_kwarg(self):
+        """A non-default `label_kw` key (`colors`) reaches `ax.clabel`.
+
+        Test scenario:
+            Proves the passthrough is not limited to `fmt`/`fontsize`: a
+            `colors="red"` entry must colour every label red.
+        """
+        glyph = ArrayGlyph(self._smooth_arr())
+        fig, ax = glyph.plot(
+            kind="contour", labels=True, label_kw={"colors": "red"}
+        )
+        assert len(glyph.contour_labels) > 0
+        red = to_rgba("red")
+        assert all(
+            to_rgba(t.get_color()) == red for t in glyph.contour_labels
+        ), "every label should be red when label_kw={'colors': 'red'}"
+
+    def test_labels_with_curvilinear_coords(self):
+        """`labels=True` works on the `coords=` (curvilinear) contour path.
+
+        Test scenario:
+            With `coords` supplied the contour branch forwards `(x, y, z)`
+            positionally; labelling must still populate `contour_labels`.
+        """
+        arr = self._smooth_arr()
+        ny, nx = arr.shape
+        x = np.linspace(-3.0, 3.0, nx)
+        y = np.linspace(-3.0, 3.0, ny)
+        glyph = ArrayGlyph(arr, coords=(x, y))
+        fig, ax = glyph.plot(kind="contour", labels=True)
+        assert len(glyph.contour_labels) > 0
+        assert all(isinstance(t, Text) for t in glyph.contour_labels)
+
+    def test_labels_with_discrete_levels(self):
+        """`labels=True` works on the `levels=` (level-edges) contour path.
+
+        Test scenario:
+            Setting integer `levels` routes through the `level_edges`
+            branch; labels must still be drawn and exposed.
+        """
+        glyph = ArrayGlyph(self._smooth_arr())
+        fig, ax = glyph.plot(kind="contour", labels=True, levels=5)
+        assert len(glyph.contour_labels) > 0
+        assert all(isinstance(t, Text) for t in glyph.contour_labels)
+
+    def test_labels_with_masked_array(self):
+        """`labels=True` works when the source is a masked array.
+
+        Test scenario:
+            An `exclude_value` builds a masked array that the contour path
+            fills with NaN before drawing; labelling must still succeed.
+        """
+        arr = self._smooth_arr().copy()
+        arr[0, 0] = -999.0
+        glyph = ArrayGlyph(arr, exclude_value=[-999.0])
+        fig, ax = glyph.plot(kind="contour", labels=True)
+        assert len(glyph.contour_labels) > 0
+        assert all(isinstance(t, Text) for t in glyph.contour_labels)
 
 
 @pytest.mark.plot
