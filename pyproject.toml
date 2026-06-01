@@ -128,5 +128,7 @@ markers = [
 #managed = false
 
 [build-system]
-requires = ["hatchling"]
+# Cap below 1.30: hatchling 1.30 emits Metadata-Version 2.5, which twine
+# (<=6.2.0) rejects on upload. Drop the cap once twine supports 2.5.
+requires = ["hatchling<1.30"]
 build-backend = "hatchling.build"
