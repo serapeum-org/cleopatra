@@ -196,8 +196,10 @@ def to_gif(anim: FuncAnimation, fps: int = 2) -> bytes:
 def embed_gif(anim: FuncAnimation, fps: int = 2) -> Image:
     """Return an `IPython.display.Image` of the animation for inline display.
 
-    IPython is imported lazily so it stays an optional, notebook-only
-    dependency.
+    IPython is imported lazily, so importing cleopatra never requires it.
+    IPython ships with Jupyter, so any notebook already has it; outside a
+    notebook the returned `Image` is not renderable anyway — use `to_gif`
+    for raw bytes with no IPython dependency.
 
     Args:
         anim: The animation to embed.
@@ -208,8 +210,8 @@ def embed_gif(anim: FuncAnimation, fps: int = 2) -> Image:
         returned as the last expression of a notebook cell.
 
     Raises:
-        ModuleNotFoundError: If IPython is not installed (it is only needed
-            for inline display and is imported lazily).
+        ModuleNotFoundError: If IPython is not installed, with a hint to
+            `pip install ipython` (or to use `to_gif` instead).
 
     Examples:
         - Wrap an animation as an inline image and read back its payload:
@@ -252,6 +254,13 @@ def embed_gif(anim: FuncAnimation, fps: int = 2) -> Image:
         to_gif: Produce the underlying GIF bytes without IPython.
         save_animation: Write the animation to a file path instead.
     """
-    from IPython.display import Image  # optional dep, only for inline display
+    try:
+        from IPython.display import Image
+    except ModuleNotFoundError as e:
+        raise ModuleNotFoundError(
+            "embed_gif requires IPython for inline display. Install it with "
+            "`pip install ipython` (already present in any Jupyter/IPython "
+            "environment). For raw GIF bytes without IPython, use to_gif()."
+        ) from e
 
     return Image(data=to_gif(anim, fps=fps), format="gif")

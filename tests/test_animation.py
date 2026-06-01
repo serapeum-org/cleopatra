@@ -7,6 +7,7 @@ animation is rendered on the Agg backend (set globally via `MPLBACKEND`).
 
 from __future__ import annotations
 
+import builtins
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -262,6 +263,26 @@ class TestEmbedGif:
         fake_to_gif.assert_called_once_with(anim, fps=4)
         assert result.format == "gif", f"expected gif, got {result.format!r}"
         assert result.data == b"GIF89a-embed", f"unexpected bytes: {result.data!r}"
+
+    def test_missing_ipython_raises_friendly_error(self, monkeypatch):
+        """Without IPython, a clear `ModuleNotFoundError` with a hint is raised.
+
+        Test scenario:
+            The ``IPython.display`` import is forced to fail; ``embed_gif``
+            must surface an actionable message (``pip install ipython`` and a
+            pointer to ``to_gif``) rather than a bare import error.
+        """
+        real_import = builtins.__import__
+
+        def fake_import(name, *args, **kwargs):
+            if name.startswith("IPython"):
+                raise ModuleNotFoundError("No module named 'IPython'")
+            return real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", fake_import)
+
+        with pytest.raises(ModuleNotFoundError, match="pip install ipython"):
+            embed_gif(MagicMock(spec=FuncAnimation))
 
     def test_image_not_imported_at_module_level(self):
         """IPython stays optional: ``Image`` is not bound at module import.
