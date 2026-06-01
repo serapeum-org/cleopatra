@@ -17,6 +17,7 @@ import pytest
 
 #: Submodules the package is expected to ship.
 _SUBMODULES = [
+    "animation",
     "array_glyph",
     "colors",
     "config",
