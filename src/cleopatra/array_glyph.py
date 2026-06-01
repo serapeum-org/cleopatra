@@ -59,6 +59,8 @@ ARRAY_DEFAULT_OPTIONS = {
     "extend": None,
     "cbar_kwargs": None,
     "add_colorbar": True,
+    "labels": False,
+    "label_kw": None,
 }
 ARRAY_DEFAULT_OPTIONS = STYLE_DEFAULTS | ARRAY_DEFAULT_OPTIONS
 #: Backwards-compatible alias for the array glyph's default options
@@ -203,6 +205,11 @@ class ArrayGlyph(Glyph):
             the colour limits without scraping `ax.images`/`ax.collections`.
         cbar (matplotlib.colorbar.Colorbar): The colorbar drawn by the glyph,
             or `None` when none was drawn (RGB, or `add_colorbar=False`).
+        contour_labels (list): The inline contour-label `Text` artists from
+            the most recent `plot(kind="contour", labels=True)`, or `None`
+            when labelling was not requested (the default, and for every
+            kind other than `"contour"`). A labelled contour with no
+            isolines (e.g. a constant-value field) yields an empty list.
 
     Notes:
         This class provides methods for:
@@ -550,14 +557,45 @@ class ArrayGlyph(Glyph):
         # reachable as public attributes, even before the first render.
         self.im = None
         self.cbar = None
+        # Inline contour-label artists from the most recent
+        # `plot(kind="contour", labels=True)`, or `None` when labelling
+        # was not requested (the default, and for every non-contour
+        # kind); an empty list when the contour has no isolines.
+        self.contour_labels = None
 
     @property
     def arr(self):
-        """array"""
+        """The (masked) array held by the glyph.
+
+        The array is stored as a `numpy.ma.MaskedArray`; cells matching
+        `exclude_value` (or NaN) are masked so they are excluded from the
+        colour range and rendered as gaps.
+
+        Returns:
+            numpy.ma.MaskedArray: The array backing this glyph.
+
+        Examples:
+            - Read the array back and inspect its shape and a value:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> glyph = ArrayGlyph(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]))
+                >>> glyph.arr.shape
+                (2, 3)
+                >>> float(glyph.arr[0, 0])
+                1.0
+
+                ```
+        """
         return self._arr
 
     @arr.setter
     def arr(self, value):
+        """Set the backing array.
+
+        Args:
+            value: The new array to store (see the `arr` property).
+        """
         self._arr = value
 
     @property
@@ -569,6 +607,21 @@ class ArrayGlyph(Glyph):
 
         Returns:
             int: Same value as `num_domain_cells`.
+
+        Examples:
+            - The deprecated alias returns the same count as
+                `num_domain_cells`:
+                ```python
+                >>> import warnings
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> glyph = ArrayGlyph(np.array([[1.0, 2.0], [3.0, 4.0]]))
+                >>> with warnings.catch_warnings():
+                ...     warnings.simplefilter("ignore")
+                ...     glyph.no_elem == glyph.num_domain_cells
+                True
+
+                ```
         """
         warnings.warn(
             "`ArrayGlyph.no_elem` is deprecated; use `num_domain_cells` instead.",
@@ -880,11 +933,48 @@ class ArrayGlyph(Glyph):
 
     @property
     def exclude_value(self):
-        """exclude_value"""
+        """Value(s) treated as nodata and masked out of the array.
+
+        Cells equal to `exclude_value` are masked so they are excluded
+        from the colour range and rendered as gaps. Defaults to `nan`.
+
+        Returns:
+            The excluded value, or a list of excluded values.
+
+        Examples:
+            - With no explicit nodata, NaN is excluded by default:
+                ```python
+                >>> import math
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> glyph = ArrayGlyph(np.array([[1.0, 2.0], [3.0, 4.0]]))
+                >>> math.isnan(glyph.exclude_value)
+                True
+
+                ```
+            - Excluding a sentinel masks the matching cells:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> arr = np.array([[1.0, 2.0], [3.0, -9.0]])
+                >>> glyph = ArrayGlyph(arr, exclude_value=[-9.0])
+                >>> glyph.exclude_value
+                [-9.0]
+                >>> int(glyph.arr.mask.sum())
+                1
+
+                ```
+        """
         return self._exclude_value
 
     @exclude_value.setter
     def exclude_value(self, value):
+        """Set the excluded nodata value(s).
+
+        Args:
+            value: The value (or list of values) to mask out (see the
+                `exclude_value` property).
+        """
         self._exclude_value = value
 
     @staticmethod
@@ -1338,6 +1428,11 @@ class ArrayGlyph(Glyph):
         vmin = ticks[0]
         vmax = ticks[-1]
 
+        # Reset any inline contour labels from a previous render; the
+        # contour branch repopulates this when `labels=True`, every other
+        # kind leaves it `None`.
+        self.contour_labels = None
+
         # midpoint normalization needs unmasked NaN-filled data; the
         # other kinds can handle a masked array directly but contour /
         # contourf misbehave on masked arrays as well, so fill there too.
@@ -1401,6 +1496,17 @@ class ArrayGlyph(Glyph):
                 im = plot_fn(*base_args, level_edges, **contour_kwargs)
             else:
                 im = plot_fn(*base_args, **contour_kwargs)
+            # Inline numeric labels on the isolines. Only meaningful for
+            # line `contour` (filled `contourf` has no lines to label), so
+            # `labels=True` is a documented no-op for `contourf`.
+            if kind == "contour" and self.default_options.get("labels"):
+                label_kw = {
+                    "inline": True,
+                    "fontsize": 8,
+                    "fmt": "%g",
+                    **(self.default_options.get("label_kw") or {}),
+                }
+                self.contour_labels = ax.clabel(im, **label_kw)
         else:
             raise ValueError(
                 f"Invalid kind={kind!r}. Valid kinds are {VALID_PLOT_KINDS}."
@@ -1454,6 +1560,10 @@ class ArrayGlyph(Glyph):
 
         Args:
             arr: array. if None, the array in the object will be used.
+
+        Returns:
+            PIL.Image.Image: An RGB image built from the array (values
+                scaled to the 0-255 `uint8` range unless already `uint8`).
 
         Examples:
         ```python
@@ -1778,6 +1888,24 @@ class ArrayGlyph(Glyph):
                         `aspect`, `orientation`, `pad`,
                         `ticks`. By default None.
 
+                Contour options:
+                    labels : bool, optional
+                        Draw inline numeric labels on the isolines of a
+                        line `contour` (via `ax.clabel`), by default
+                        False. Ignored for `kind="contourf"` and every
+                        non-contour kind (filled contours have no lines
+                        to label). The label `Text` artists are stored
+                        on the instance as `self.contour_labels` (an
+                        empty list when the contour has no isolines).
+                    label_kw : dict, optional
+                        Extra keyword arguments forwarded to
+                        `ax.clabel` when `labels=True`, by default None.
+                        Merges over cleopatra's defaults (`inline=True`,
+                        `fontsize=8`, `fmt="%g"`) so user keys win on
+                        collision. Common keys: `levels` (subset of
+                        levels to label), `colors`, `fmt`, `fontsize`,
+                        `inline_spacing`.
+
                 Cell value display options:
                     display_cell_value : bool, optional
                         Whether to display the values of cells as text, by default False.
@@ -1822,6 +1950,32 @@ class ArrayGlyph(Glyph):
 
             ```
         ![array-plot](./../images/array_glyph/array-plot.png)
+
+        - Labelled line contours (`kind="contour"`, `labels=True`):
+
+            - inline numeric labels are drawn on the isolines and the
+                label `Text` artists are kept on `glyph.contour_labels`:
+                ```python
+                >>> from matplotlib.text import Text
+                >>> y, x = np.mgrid[-3:3:30j, -3:3:30j]
+                >>> z = np.exp(-(x**2 + y**2))
+                >>> glyph = ArrayGlyph(z, figsize=(6, 6))
+                >>> fig, ax = glyph.plot(kind="contour", labels=True, label_kw={"fmt": "%.2f"})
+                >>> bool(glyph.contour_labels) and all(
+                ...     isinstance(t, Text) for t in glyph.contour_labels
+                ... )
+                True
+
+                ```
+                Without `labels` (the default) no labels are drawn and
+                `contour_labels` stays `None`:
+                ```python
+                >>> glyph = ArrayGlyph(z, figsize=(6, 6))
+                >>> fig, ax = glyph.plot(kind="contour")
+                >>> glyph.contour_labels is None
+                True
+
+                ```
 
         - Color bar customization:
 
