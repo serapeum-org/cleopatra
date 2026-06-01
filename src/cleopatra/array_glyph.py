@@ -565,11 +565,37 @@ class ArrayGlyph(Glyph):
 
     @property
     def arr(self):
-        """array"""
+        """The (masked) array held by the glyph.
+
+        The array is stored as a `numpy.ma.MaskedArray`; cells matching
+        `exclude_value` (or NaN) are masked so they are excluded from the
+        colour range and rendered as gaps.
+
+        Returns:
+            numpy.ma.MaskedArray: The array backing this glyph.
+
+        Examples:
+            - Read the array back and inspect its shape and a value:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> glyph = ArrayGlyph(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]))
+                >>> glyph.arr.shape
+                (2, 3)
+                >>> float(glyph.arr[0, 0])
+                1.0
+
+                ```
+        """
         return self._arr
 
     @arr.setter
     def arr(self, value):
+        """Set the backing array.
+
+        Args:
+            value: The new array to store (see the `arr` property).
+        """
         self._arr = value
 
     @property
@@ -581,6 +607,21 @@ class ArrayGlyph(Glyph):
 
         Returns:
             int: Same value as `num_domain_cells`.
+
+        Examples:
+            - The deprecated alias returns the same count as
+                `num_domain_cells`:
+                ```python
+                >>> import warnings
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> glyph = ArrayGlyph(np.array([[1.0, 2.0], [3.0, 4.0]]))
+                >>> with warnings.catch_warnings():
+                ...     warnings.simplefilter("ignore")
+                ...     glyph.no_elem == glyph.num_domain_cells
+                True
+
+                ```
         """
         warnings.warn(
             "`ArrayGlyph.no_elem` is deprecated; use `num_domain_cells` instead.",
@@ -892,11 +933,48 @@ class ArrayGlyph(Glyph):
 
     @property
     def exclude_value(self):
-        """exclude_value"""
+        """Value(s) treated as nodata and masked out of the array.
+
+        Cells equal to `exclude_value` are masked so they are excluded
+        from the colour range and rendered as gaps. Defaults to `nan`.
+
+        Returns:
+            The excluded value, or a list of excluded values.
+
+        Examples:
+            - With no explicit nodata, NaN is excluded by default:
+                ```python
+                >>> import math
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> glyph = ArrayGlyph(np.array([[1.0, 2.0], [3.0, 4.0]]))
+                >>> math.isnan(glyph.exclude_value)
+                True
+
+                ```
+            - Excluding a sentinel masks the matching cells:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> arr = np.array([[1.0, 2.0], [3.0, -9.0]])
+                >>> glyph = ArrayGlyph(arr, exclude_value=[-9.0])
+                >>> glyph.exclude_value
+                [-9.0]
+                >>> int(glyph.arr.mask.sum())
+                1
+
+                ```
+        """
         return self._exclude_value
 
     @exclude_value.setter
     def exclude_value(self, value):
+        """Set the excluded nodata value(s).
+
+        Args:
+            value: The value (or list of values) to mask out (see the
+                `exclude_value` property).
+        """
         self._exclude_value = value
 
     @staticmethod
@@ -1482,6 +1560,10 @@ class ArrayGlyph(Glyph):
 
         Args:
             arr: array. if None, the array in the object will be used.
+
+        Returns:
+            PIL.Image.Image: An RGB image built from the array (values
+                scaled to the 0-255 `uint8` range unless already `uint8`).
 
         Examples:
         ```python
