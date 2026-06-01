@@ -1433,8 +1433,10 @@ machinery as <strong>glyph-independent</strong> helpers. They operate on <em>any
   needs FFmpeg installed). The extension is matched <strong>case-insensitively</strong>.</li>
 <li><code>to_gif(anim, fps=2)</code> renders the animation to in-memory <strong>GIF bytes</strong> (handy for serving
   or embedding) with the temporary file cleaned up afterwards.</li>
-<li><code>embed_gif(anim, fps=2)</code> returns an <code>IPython.display.Image</code> for inline notebook display;
-  IPython is imported <strong>lazily</strong>, so it stays an optional, notebook-only dependency.</li>
+<li><code>embed_gif(anim, fps=2)</code> returns an <code>IPython.display.Image</code> for inline notebook display.
+  IPython is imported <strong>lazily</strong> (and is bundled with Jupyter, so any notebook already has
+  it); if it is absent, <code>embed_gif</code> raises a clear <code>ModuleNotFoundError</code> with a
+  <code>pip install ipython</code> hint — or use <code>to_gif</code> for raw bytes with no IPython dependency.</li>
 </ul>
 <p><code>Glyph.save_animation</code> delegates to <code>save_animation</code>, so the writer/format logic has a
 single source of truth. Downstream packages that build their own <code>FuncAnimation</code> can reuse
@@ -1469,7 +1471,8 @@ these helpers instead of re-rolling temp-file + writer + <code>IPython.display</
 (<code>out.GIF</code> works). Video formats (<code>mov</code>/<code>avi</code>/<code>mp4</code>) require FFmpeg on the <code>PATH</code>; if it
 is missing, <code>save_animation</code> raises a <code>FileNotFoundError</code> pointing at
 <a href="https://ffmpeg.org/">https://ffmpeg.org/</a>. An unsupported extension raises a <code>ValueError</code>. <code>embed_gif</code>
-needs IPython, which is imported only when the function is called.</p>
+imports IPython only when called; if IPython is absent it raises a
+<code>ModuleNotFoundError</code> with a <code>pip install ipython</code> hint (use <code>to_gif</code> to avoid IPython).</p>
 </div>
 <h2 id="module-documentation"><a class="toclink" href="#module-documentation">Module Documentation</a><a class="headerlink" href="#module-documentation" title="Permanent link">#</a></h2>
 
