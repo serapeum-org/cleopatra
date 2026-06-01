@@ -9,6 +9,7 @@ import numpy as np
 from matplotlib.animation import FuncAnimation
 from matplotlib.colors import BoundaryNorm
 from matplotlib.figure import Figure
+from matplotlib.text import Text
 from PIL import Image
 
 from cleopatra.array_glyph import (
@@ -1269,6 +1270,72 @@ class TestContourLevelsAndNorm:
         fig, ax = glyph.plot(kind="contour", color_scale="midpoint", midpoint=0.0)
         assert isinstance(fig, Figure)
         assert len(ax.collections) >= 1
+
+
+@pytest.mark.plot
+class TestContourLabels:
+    """`plot(kind="contour", labels=...)` inline label support (issue #148)."""
+
+    @staticmethod
+    def _smooth_arr() -> np.ndarray:
+        """A smooth 2-D field that yields several labelled isolines."""
+        y, x = np.mgrid[-3:3:30j, -3:3:30j]
+        return np.exp(-(x ** 2 + y ** 2))
+
+    def test_labels_true_draws_and_exposes_text(self):
+        """`labels=True` populates `contour_labels` with `Text` artists."""
+        glyph = ArrayGlyph(self._smooth_arr())
+        fig, ax = glyph.plot(kind="contour", labels=True)
+        assert isinstance(fig, Figure)
+        assert isinstance(glyph.contour_labels, list)
+        assert len(glyph.contour_labels) > 0
+        assert all(isinstance(t, Text) for t in glyph.contour_labels)
+        # The label artists are attached to the axes' text list.
+        assert set(glyph.contour_labels).issubset(set(ax.texts))
+
+    def test_labels_default_is_noop(self):
+        """Default (`labels=False`) draws no labels; `contour_labels` is None."""
+        glyph = ArrayGlyph(self._smooth_arr())
+        fig, ax = glyph.plot(kind="contour")
+        assert glyph.contour_labels is None
+        assert len(ax.texts) == 0
+
+    def test_label_kw_forwarded_to_clabel(self):
+        """`label_kw` reaches `ax.clabel` (custom `fmt`/`fontsize` applied)."""
+        glyph = ArrayGlyph(self._smooth_arr())
+        fig, ax = glyph.plot(
+            kind="contour",
+            labels=True,
+            label_kw={"fmt": "%.3f", "fontsize": 6},
+        )
+        assert len(glyph.contour_labels) > 0
+        # The custom fontsize on every label proves label_kw was forwarded.
+        assert all(t.get_fontsize() == 6 for t in glyph.contour_labels)
+        # The "%.3f" format yields three decimal places in every label.
+        assert all(re.search(r"\.\d{3}$", t.get_text()) for t in glyph.contour_labels)
+
+    def test_labels_true_on_contourf_is_noop(self):
+        """`labels=True` is ignored for `contourf` (no isolines to label)."""
+        glyph = ArrayGlyph(self._smooth_arr())
+        fig, ax = glyph.plot(kind="contourf", labels=True)
+        assert isinstance(fig, Figure)
+        assert glyph.contour_labels is None
+
+    def test_replot_without_labels_resets_contour_labels(self):
+        """Re-plotting with `labels=False` clears a prior render's labels."""
+        glyph = ArrayGlyph(self._smooth_arr())
+        glyph.plot(kind="contour", labels=True)
+        assert glyph.contour_labels is not None
+        glyph.plot(kind="contour", labels=False)
+        assert glyph.contour_labels is None
+
+    def test_switching_kind_resets_contour_labels(self):
+        """A subsequent non-contour render clears stale label artists."""
+        glyph = ArrayGlyph(self._smooth_arr())
+        glyph.plot(kind="contour", labels=True)
+        assert glyph.contour_labels is not None
+        glyph.plot(kind="imshow")
+        assert glyph.contour_labels is None
 
 
 @pytest.mark.plot

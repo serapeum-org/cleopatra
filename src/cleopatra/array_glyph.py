@@ -59,6 +59,8 @@ ARRAY_DEFAULT_OPTIONS = {
     "extend": None,
     "cbar_kwargs": None,
     "add_colorbar": True,
+    "labels": False,
+    "label_kw": None,
 }
 ARRAY_DEFAULT_OPTIONS = STYLE_DEFAULTS | ARRAY_DEFAULT_OPTIONS
 #: Backwards-compatible alias for the array glyph's default options
@@ -203,6 +205,10 @@ class ArrayGlyph(Glyph):
             the colour limits without scraping `ax.images`/`ax.collections`.
         cbar (matplotlib.colorbar.Colorbar): The colorbar drawn by the glyph,
             or `None` when none was drawn (RGB, or `add_colorbar=False`).
+        contour_labels (list): The inline contour-label `Text` artists from
+            the most recent `plot(kind="contour", labels=True)`, or `None`
+            when no labels were drawn (the default, and for every kind other
+            than `"contour"`).
 
     Notes:
         This class provides methods for:
@@ -550,6 +556,10 @@ class ArrayGlyph(Glyph):
         # reachable as public attributes, even before the first render.
         self.im = None
         self.cbar = None
+        # Inline contour-label artists from the most recent
+        # `plot(kind="contour", labels=True)`, or `None` when no labels
+        # were drawn (the default, and for every non-contour kind).
+        self.contour_labels = None
 
     @property
     def arr(self):
@@ -1338,6 +1348,11 @@ class ArrayGlyph(Glyph):
         vmin = ticks[0]
         vmax = ticks[-1]
 
+        # Reset any inline contour labels from a previous render; the
+        # contour branch repopulates this when `labels=True`, every other
+        # kind leaves it `None`.
+        self.contour_labels = None
+
         # midpoint normalization needs unmasked NaN-filled data; the
         # other kinds can handle a masked array directly but contour /
         # contourf misbehave on masked arrays as well, so fill there too.
@@ -1401,6 +1416,17 @@ class ArrayGlyph(Glyph):
                 im = plot_fn(*base_args, level_edges, **contour_kwargs)
             else:
                 im = plot_fn(*base_args, **contour_kwargs)
+            # Inline numeric labels on the isolines. Only meaningful for
+            # line `contour` (filled `contourf` has no lines to label), so
+            # `labels=True` is a documented no-op for `contourf`.
+            if kind == "contour" and self.default_options.get("labels"):
+                label_kw = {
+                    "inline": True,
+                    "fontsize": 8,
+                    "fmt": "%g",
+                    **(self.default_options.get("label_kw") or {}),
+                }
+                self.contour_labels = ax.clabel(im, **label_kw)
         else:
             raise ValueError(
                 f"Invalid kind={kind!r}. Valid kinds are {VALID_PLOT_KINDS}."
@@ -1778,6 +1804,23 @@ class ArrayGlyph(Glyph):
                         `aspect`, `orientation`, `pad`,
                         `ticks`. By default None.
 
+                Contour options:
+                    labels : bool, optional
+                        Draw inline numeric labels on the isolines of a
+                        line `contour` (via `ax.clabel`), by default
+                        False. Ignored for `kind="contourf"` and every
+                        non-contour kind (filled contours have no lines
+                        to label). The label `Text` artists are stored
+                        on the instance as `self.contour_labels`.
+                    label_kw : dict, optional
+                        Extra keyword arguments forwarded to
+                        `ax.clabel` when `labels=True`, by default None.
+                        Merges over cleopatra's defaults (`inline=True`,
+                        `fontsize=8`, `fmt="%g"`) so user keys win on
+                        collision. Common keys: `levels` (subset of
+                        levels to label), `colors`, `fmt`, `fontsize`,
+                        `inline_spacing`.
+
                 Cell value display options:
                     display_cell_value : bool, optional
                         Whether to display the values of cells as text, by default False.
@@ -1822,6 +1865,32 @@ class ArrayGlyph(Glyph):
 
             ```
         ![array-plot](./../images/array_glyph/array-plot.png)
+
+        - Labelled line contours (`kind="contour"`, `labels=True`):
+
+            - inline numeric labels are drawn on the isolines and the
+                label `Text` artists are kept on `glyph.contour_labels`:
+                ```python
+                >>> from matplotlib.text import Text
+                >>> y, x = np.mgrid[-3:3:30j, -3:3:30j]
+                >>> z = np.exp(-(x ** 2 + y ** 2))
+                >>> glyph = ArrayGlyph(z, figsize=(6, 6))
+                >>> fig, ax = glyph.plot(kind="contour", labels=True, label_kw={"fmt": "%.2f"})
+                >>> bool(glyph.contour_labels) and all(
+                ...     isinstance(t, Text) for t in glyph.contour_labels
+                ... )
+                True
+
+                ```
+                Without `labels` (the default) no labels are drawn and
+                `contour_labels` stays `None`:
+                ```python
+                >>> glyph = ArrayGlyph(z, figsize=(6, 6))
+                >>> fig, ax = glyph.plot(kind="contour")
+                >>> glyph.contour_labels is None
+                True
+
+                ```
 
         - Color bar customization:
 
