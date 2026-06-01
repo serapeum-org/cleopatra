@@ -1683,14 +1683,7 @@ save_animation: Write the animation to a file path instead.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/cleopatra/animation.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-196">196</a></span>
-<span class="normal"><a href="#__codelineno-0-197">197</a></span>
-<span class="normal"><a href="#__codelineno-0-198">198</a></span>
-<span class="normal"><a href="#__codelineno-0-199">199</a></span>
-<span class="normal"><a href="#__codelineno-0-200">200</a></span>
-<span class="normal"><a href="#__codelineno-0-201">201</a></span>
-<span class="normal"><a href="#__codelineno-0-202">202</a></span>
-<span class="normal"><a href="#__codelineno-0-203">203</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-203">203</a></span>
 <span class="normal"><a href="#__codelineno-0-204">204</a></span>
 <span class="normal"><a href="#__codelineno-0-205">205</a></span>
 <span class="normal"><a href="#__codelineno-0-206">206</a></span>
@@ -1753,77 +1746,92 @@ save_animation: Write the animation to a file path instead.</p>
 <span class="normal"><a href="#__codelineno-0-263">263</a></span>
 <span class="normal"><a href="#__codelineno-0-264">264</a></span>
 <span class="normal"><a href="#__codelineno-0-265">265</a></span>
-<span class="normal"><a href="#__codelineno-0-266">266</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-196" name="__codelineno-0-196"></a><span class="k">def</span><span class="w"> </span><span class="nf">embed_gif</span><span class="p">(</span><span class="n">anim</span><span class="p">:</span> <span class="n">FuncAnimation</span><span class="p">,</span> <span class="n">fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Image</span><span class="p">:</span>
-<a id="__codelineno-0-197" name="__codelineno-0-197"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return an `IPython.display.Image` of the animation for inline display.</span>
-<a id="__codelineno-0-198" name="__codelineno-0-198"></a>
-<a id="__codelineno-0-199" name="__codelineno-0-199"></a><span class="sd">    IPython is imported lazily, so importing cleopatra never requires it.</span>
-<a id="__codelineno-0-200" name="__codelineno-0-200"></a><span class="sd">    IPython ships with Jupyter, so any notebook already has it; outside a</span>
-<a id="__codelineno-0-201" name="__codelineno-0-201"></a><span class="sd">    notebook the returned `Image` is not renderable anyway — use `to_gif`</span>
-<a id="__codelineno-0-202" name="__codelineno-0-202"></a><span class="sd">    for raw bytes with no IPython dependency.</span>
-<a id="__codelineno-0-203" name="__codelineno-0-203"></a>
-<a id="__codelineno-0-204" name="__codelineno-0-204"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-205" name="__codelineno-0-205"></a><span class="sd">        anim: The animation to embed.</span>
-<a id="__codelineno-0-206" name="__codelineno-0-206"></a><span class="sd">        fps: Frames per second. Default is 2.</span>
-<a id="__codelineno-0-207" name="__codelineno-0-207"></a>
-<a id="__codelineno-0-208" name="__codelineno-0-208"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-209" name="__codelineno-0-209"></a><span class="sd">        An `IPython.display.Image` wrapping the rendered GIF, ready to be</span>
-<a id="__codelineno-0-210" name="__codelineno-0-210"></a><span class="sd">        returned as the last expression of a notebook cell.</span>
-<a id="__codelineno-0-211" name="__codelineno-0-211"></a>
-<a id="__codelineno-0-212" name="__codelineno-0-212"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-213" name="__codelineno-0-213"></a><span class="sd">        ModuleNotFoundError: If IPython is not installed, with a hint to</span>
-<a id="__codelineno-0-214" name="__codelineno-0-214"></a><span class="sd">            `pip install ipython` (or to use `to_gif` instead).</span>
-<a id="__codelineno-0-215" name="__codelineno-0-215"></a>
-<a id="__codelineno-0-216" name="__codelineno-0-216"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-217" name="__codelineno-0-217"></a><span class="sd">        - Wrap an animation as an inline image and read back its payload:</span>
-<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">            &gt;&gt;&gt; import matplotlib</span>
-<a id="__codelineno-0-220" name="__codelineno-0-220"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use(&quot;Agg&quot;)</span>
-<a id="__codelineno-0-221" name="__codelineno-0-221"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-222" name="__codelineno-0-222"></a><span class="sd">            &gt;&gt;&gt; from matplotlib.animation import FuncAnimation</span>
-<a id="__codelineno-0-223" name="__codelineno-0-223"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.animation import embed_gif</span>
-<a id="__codelineno-0-224" name="__codelineno-0-224"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
-<a id="__codelineno-0-225" name="__codelineno-0-225"></a><span class="sd">            &gt;&gt;&gt; (line,) = ax.plot([0, 1], [0, 0])</span>
-<a id="__codelineno-0-226" name="__codelineno-0-226"></a><span class="sd">            &gt;&gt;&gt; anim = FuncAnimation(fig, lambda i: (line,), frames=2)</span>
-<a id="__codelineno-0-227" name="__codelineno-0-227"></a><span class="sd">            &gt;&gt;&gt; img = embed_gif(anim)</span>
-<a id="__codelineno-0-228" name="__codelineno-0-228"></a><span class="sd">            &gt;&gt;&gt; img.format</span>
-<a id="__codelineno-0-229" name="__codelineno-0-229"></a><span class="sd">            &#39;gif&#39;</span>
-<a id="__codelineno-0-230" name="__codelineno-0-230"></a><span class="sd">            &gt;&gt;&gt; img.data[:6] in (b&quot;GIF87a&quot;, b&quot;GIF89a&quot;)</span>
-<a id="__codelineno-0-231" name="__codelineno-0-231"></a><span class="sd">            True</span>
-<a id="__codelineno-0-232" name="__codelineno-0-232"></a><span class="sd">            &gt;&gt;&gt; plt.close(fig)</span>
-<a id="__codelineno-0-233" name="__codelineno-0-233"></a>
-<a id="__codelineno-0-234" name="__codelineno-0-234"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-235" name="__codelineno-0-235"></a><span class="sd">        - Returning the image as a cell&#39;s last expression renders it inline;</span>
-<a id="__codelineno-0-236" name="__codelineno-0-236"></a><span class="sd">          a custom ``fps`` controls playback speed:</span>
-<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">            &gt;&gt;&gt; import matplotlib</span>
-<a id="__codelineno-0-239" name="__codelineno-0-239"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use(&quot;Agg&quot;)</span>
-<a id="__codelineno-0-240" name="__codelineno-0-240"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-241" name="__codelineno-0-241"></a><span class="sd">            &gt;&gt;&gt; from matplotlib.animation import FuncAnimation</span>
-<a id="__codelineno-0-242" name="__codelineno-0-242"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.animation import embed_gif</span>
-<a id="__codelineno-0-243" name="__codelineno-0-243"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
-<a id="__codelineno-0-244" name="__codelineno-0-244"></a><span class="sd">            &gt;&gt;&gt; (line,) = ax.plot([0, 1], [0, 0])</span>
-<a id="__codelineno-0-245" name="__codelineno-0-245"></a><span class="sd">            &gt;&gt;&gt; anim = FuncAnimation(fig, lambda i: (line,), frames=2)</span>
-<a id="__codelineno-0-246" name="__codelineno-0-246"></a><span class="sd">            &gt;&gt;&gt; img = embed_gif(anim, fps=3)</span>
-<a id="__codelineno-0-247" name="__codelineno-0-247"></a><span class="sd">            &gt;&gt;&gt; len(img.data) &gt; 0</span>
-<a id="__codelineno-0-248" name="__codelineno-0-248"></a><span class="sd">            True</span>
-<a id="__codelineno-0-249" name="__codelineno-0-249"></a><span class="sd">            &gt;&gt;&gt; plt.close(fig)</span>
-<a id="__codelineno-0-250" name="__codelineno-0-250"></a>
-<a id="__codelineno-0-251" name="__codelineno-0-251"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-252" name="__codelineno-0-252"></a>
-<a id="__codelineno-0-253" name="__codelineno-0-253"></a><span class="sd">    See Also:</span>
-<a id="__codelineno-0-254" name="__codelineno-0-254"></a><span class="sd">        to_gif: Produce the underlying GIF bytes without IPython.</span>
-<a id="__codelineno-0-255" name="__codelineno-0-255"></a><span class="sd">        save_animation: Write the animation to a file path instead.</span>
-<a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-257" name="__codelineno-0-257"></a>    <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-258" name="__codelineno-0-258"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">IPython.display</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
-<a id="__codelineno-0-259" name="__codelineno-0-259"></a>    <span class="k">except</span> <span class="ne">ModuleNotFoundError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-<a id="__codelineno-0-260" name="__codelineno-0-260"></a>        <span class="k">raise</span> <span class="ne">ModuleNotFoundError</span><span class="p">(</span>
-<a id="__codelineno-0-261" name="__codelineno-0-261"></a>            <span class="s2">&quot;embed_gif requires IPython for inline display. Install it with &quot;</span>
-<a id="__codelineno-0-262" name="__codelineno-0-262"></a>            <span class="s2">&quot;`pip install ipython` (already present in any Jupyter/IPython &quot;</span>
-<a id="__codelineno-0-263" name="__codelineno-0-263"></a>            <span class="s2">&quot;environment). For raw GIF bytes without IPython, use to_gif().&quot;</span>
-<a id="__codelineno-0-264" name="__codelineno-0-264"></a>        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
-<a id="__codelineno-0-265" name="__codelineno-0-265"></a>
-<a id="__codelineno-0-266" name="__codelineno-0-266"></a>    <span class="k">return</span> <span class="n">Image</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">to_gif</span><span class="p">(</span><span class="n">anim</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">),</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;gif&quot;</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-266">266</a></span>
+<span class="normal"><a href="#__codelineno-0-267">267</a></span>
+<span class="normal"><a href="#__codelineno-0-268">268</a></span>
+<span class="normal"><a href="#__codelineno-0-269">269</a></span>
+<span class="normal"><a href="#__codelineno-0-270">270</a></span>
+<span class="normal"><a href="#__codelineno-0-271">271</a></span>
+<span class="normal"><a href="#__codelineno-0-272">272</a></span>
+<span class="normal"><a href="#__codelineno-0-273">273</a></span>
+<span class="normal"><a href="#__codelineno-0-274">274</a></span>
+<span class="normal"><a href="#__codelineno-0-275">275</a></span>
+<span class="normal"><a href="#__codelineno-0-276">276</a></span>
+<span class="normal"><a href="#__codelineno-0-277">277</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-203" name="__codelineno-0-203"></a><span class="k">def</span><span class="w"> </span><span class="nf">embed_gif</span><span class="p">(</span><span class="n">anim</span><span class="p">:</span> <span class="n">FuncAnimation</span><span class="p">,</span> <span class="n">fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Image</span><span class="p">:</span>
+<a id="__codelineno-0-204" name="__codelineno-0-204"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return an `IPython.display.Image` of the animation for inline display.</span>
+<a id="__codelineno-0-205" name="__codelineno-0-205"></a>
+<a id="__codelineno-0-206" name="__codelineno-0-206"></a><span class="sd">    IPython is imported lazily, so importing cleopatra never requires it.</span>
+<a id="__codelineno-0-207" name="__codelineno-0-207"></a><span class="sd">    IPython ships with Jupyter, so any notebook already has it; outside a</span>
+<a id="__codelineno-0-208" name="__codelineno-0-208"></a><span class="sd">    notebook the returned `Image` is not renderable anyway — use `to_gif`</span>
+<a id="__codelineno-0-209" name="__codelineno-0-209"></a><span class="sd">    for raw bytes with no IPython dependency.</span>
+<a id="__codelineno-0-210" name="__codelineno-0-210"></a>
+<a id="__codelineno-0-211" name="__codelineno-0-211"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-212" name="__codelineno-0-212"></a><span class="sd">        anim: The animation to embed.</span>
+<a id="__codelineno-0-213" name="__codelineno-0-213"></a><span class="sd">        fps: Frames per second. Default is 2.</span>
+<a id="__codelineno-0-214" name="__codelineno-0-214"></a>
+<a id="__codelineno-0-215" name="__codelineno-0-215"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-216" name="__codelineno-0-216"></a><span class="sd">        An `IPython.display.Image` wrapping the rendered GIF, ready to be</span>
+<a id="__codelineno-0-217" name="__codelineno-0-217"></a><span class="sd">        returned as the last expression of a notebook cell.</span>
+<a id="__codelineno-0-218" name="__codelineno-0-218"></a>
+<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">    Raises:</span>
+<a id="__codelineno-0-220" name="__codelineno-0-220"></a><span class="sd">        ModuleNotFoundError: If IPython is not installed, with a hint to</span>
+<a id="__codelineno-0-221" name="__codelineno-0-221"></a><span class="sd">            `pip install ipython` (or to use `to_gif` instead).</span>
+<a id="__codelineno-0-222" name="__codelineno-0-222"></a>
+<a id="__codelineno-0-223" name="__codelineno-0-223"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-224" name="__codelineno-0-224"></a><span class="sd">        - Wrap an animation as an inline image and read back its payload:</span>
+<a id="__codelineno-0-225" name="__codelineno-0-225"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-226" name="__codelineno-0-226"></a><span class="sd">            &gt;&gt;&gt; import matplotlib</span>
+<a id="__codelineno-0-227" name="__codelineno-0-227"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use(&quot;Agg&quot;)</span>
+<a id="__codelineno-0-228" name="__codelineno-0-228"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-229" name="__codelineno-0-229"></a><span class="sd">            &gt;&gt;&gt; from matplotlib.animation import FuncAnimation</span>
+<a id="__codelineno-0-230" name="__codelineno-0-230"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.animation import embed_gif</span>
+<a id="__codelineno-0-231" name="__codelineno-0-231"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-232" name="__codelineno-0-232"></a><span class="sd">            &gt;&gt;&gt; (line,) = ax.plot([0, 1], [0, 0])</span>
+<a id="__codelineno-0-233" name="__codelineno-0-233"></a><span class="sd">            &gt;&gt;&gt; anim = FuncAnimation(fig, lambda i: (line,), frames=2)</span>
+<a id="__codelineno-0-234" name="__codelineno-0-234"></a><span class="sd">            &gt;&gt;&gt; img = embed_gif(anim)</span>
+<a id="__codelineno-0-235" name="__codelineno-0-235"></a><span class="sd">            &gt;&gt;&gt; img.format</span>
+<a id="__codelineno-0-236" name="__codelineno-0-236"></a><span class="sd">            &#39;gif&#39;</span>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">            &gt;&gt;&gt; img.data[:6] in (b&quot;GIF87a&quot;, b&quot;GIF89a&quot;)</span>
+<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">            True</span>
+<a id="__codelineno-0-239" name="__codelineno-0-239"></a><span class="sd">            &gt;&gt;&gt; plt.close(fig)</span>
+<a id="__codelineno-0-240" name="__codelineno-0-240"></a>
+<a id="__codelineno-0-241" name="__codelineno-0-241"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-242" name="__codelineno-0-242"></a><span class="sd">        - Returning the image as a cell&#39;s last expression renders it inline;</span>
+<a id="__codelineno-0-243" name="__codelineno-0-243"></a><span class="sd">          a custom ``fps`` controls playback speed:</span>
+<a id="__codelineno-0-244" name="__codelineno-0-244"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-245" name="__codelineno-0-245"></a><span class="sd">            &gt;&gt;&gt; import matplotlib</span>
+<a id="__codelineno-0-246" name="__codelineno-0-246"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use(&quot;Agg&quot;)</span>
+<a id="__codelineno-0-247" name="__codelineno-0-247"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-248" name="__codelineno-0-248"></a><span class="sd">            &gt;&gt;&gt; from matplotlib.animation import FuncAnimation</span>
+<a id="__codelineno-0-249" name="__codelineno-0-249"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.animation import embed_gif</span>
+<a id="__codelineno-0-250" name="__codelineno-0-250"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-251" name="__codelineno-0-251"></a><span class="sd">            &gt;&gt;&gt; (line,) = ax.plot([0, 1], [0, 0])</span>
+<a id="__codelineno-0-252" name="__codelineno-0-252"></a><span class="sd">            &gt;&gt;&gt; anim = FuncAnimation(fig, lambda i: (line,), frames=2)</span>
+<a id="__codelineno-0-253" name="__codelineno-0-253"></a><span class="sd">            &gt;&gt;&gt; img = embed_gif(anim, fps=3)</span>
+<a id="__codelineno-0-254" name="__codelineno-0-254"></a><span class="sd">            &gt;&gt;&gt; len(img.data) &gt; 0</span>
+<a id="__codelineno-0-255" name="__codelineno-0-255"></a><span class="sd">            True</span>
+<a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="sd">            &gt;&gt;&gt; plt.close(fig)</span>
+<a id="__codelineno-0-257" name="__codelineno-0-257"></a>
+<a id="__codelineno-0-258" name="__codelineno-0-258"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-259" name="__codelineno-0-259"></a>
+<a id="__codelineno-0-260" name="__codelineno-0-260"></a><span class="sd">    See Also:</span>
+<a id="__codelineno-0-261" name="__codelineno-0-261"></a><span class="sd">        to_gif: Produce the underlying GIF bytes without IPython.</span>
+<a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">        save_animation: Write the animation to a file path instead.</span>
+<a id="__codelineno-0-263" name="__codelineno-0-263"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-264" name="__codelineno-0-264"></a>    <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-265" name="__codelineno-0-265"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">IPython.display</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+<a id="__codelineno-0-266" name="__codelineno-0-266"></a>    <span class="k">except</span> <span class="ne">ModuleNotFoundError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-0-267" name="__codelineno-0-267"></a>        <span class="c1"># Only remap when IPython itself is missing; if a sub-dependency of</span>
+<a id="__codelineno-0-268" name="__codelineno-0-268"></a>        <span class="c1"># IPython failed to import, surface that original error unchanged.</span>
+<a id="__codelineno-0-269" name="__codelineno-0-269"></a>        <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">name</span> <span class="ow">and</span> <span class="n">e</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;IPython&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-270" name="__codelineno-0-270"></a>            <span class="k">raise</span>
+<a id="__codelineno-0-271" name="__codelineno-0-271"></a>        <span class="k">raise</span> <span class="ne">ModuleNotFoundError</span><span class="p">(</span>
+<a id="__codelineno-0-272" name="__codelineno-0-272"></a>            <span class="s2">&quot;embed_gif requires IPython for inline display. Install it with &quot;</span>
+<a id="__codelineno-0-273" name="__codelineno-0-273"></a>            <span class="s2">&quot;`pip install ipython` (already present in any Jupyter/IPython &quot;</span>
+<a id="__codelineno-0-274" name="__codelineno-0-274"></a>            <span class="s2">&quot;environment). For raw GIF bytes without IPython, use to_gif().&quot;</span>
+<a id="__codelineno-0-275" name="__codelineno-0-275"></a>        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+<a id="__codelineno-0-276" name="__codelineno-0-276"></a>
+<a id="__codelineno-0-277" name="__codelineno-0-277"></a>    <span class="k">return</span> <span class="n">Image</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">to_gif</span><span class="p">(</span><span class="n">anim</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">),</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;gif&quot;</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -1970,50 +1978,57 @@ not installed.</p>
 <p><span class="doc-section-title">Examples:</span></p>
     <ul>
 <li>Save a tiny animation to a GIF; the call returns the path it wrote:
-    <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">tempfile</span><span class="o">,</span><span class="w"> </span><span class="nn">matplotlib</span>
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">shutil</span><span class="o">,</span><span class="w"> </span><span class="nn">tempfile</span><span class="o">,</span><span class="w"> </span><span class="nn">matplotlib</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">&quot;Agg&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.animation</span><span class="w"> </span><span class="kn">import</span> <span class="n">FuncAnimation</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.animation</span><span class="w"> </span><span class="kn">import</span> <span class="n">save_animation</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="o">&gt;&gt;&gt;</span> <span class="p">(</span><span class="n">line</span><span class="p">,)</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">anim</span> <span class="o">=</span> <span class="n">FuncAnimation</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">i</span><span class="p">:</span> <span class="p">(</span><span class="n">line</span><span class="p">,),</span> <span class="n">frames</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">(),</span> <span class="s2">&quot;wave.gif&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">save_animation</span><span class="p">(</span><span class="n">anim</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span> <span class="o">==</span> <span class="n">path</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="kc">True</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">()[:</span><span class="mi">6</span><span class="p">]</span> <span class="ow">in</span> <span class="p">(</span><span class="sa">b</span><span class="s2">&quot;GIF87a&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;GIF89a&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="kc">True</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.animation</span><span class="w"> </span><span class="kn">import</span> <span class="n">FuncAnimation</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.animation</span><span class="w"> </span><span class="kn">import</span> <span class="n">save_animation</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">tmp</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">()</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="o">&gt;&gt;&gt;</span> <span class="p">(</span><span class="n">line</span><span class="p">,)</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">anim</span> <span class="o">=</span> <span class="n">FuncAnimation</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">i</span><span class="p">:</span> <span class="p">(</span><span class="n">line</span><span class="p">,),</span> <span class="n">frames</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="s2">&quot;wave.gif&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">save_animation</span><span class="p">(</span><span class="n">anim</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span> <span class="o">==</span> <span class="n">path</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="kc">True</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">()[:</span><span class="mi">6</span><span class="p">]</span> <span class="ow">in</span> <span class="p">(</span><span class="sa">b</span><span class="s2">&quot;GIF87a&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;GIF89a&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="kc">True</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
 </code></pre></div></li>
 <li>The extension is matched case-insensitively, so <code>.GIF</code> also works:
-    <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">tempfile</span><span class="o">,</span><span class="w"> </span><span class="nn">matplotlib</span>
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">shutil</span><span class="o">,</span><span class="w"> </span><span class="nn">tempfile</span><span class="o">,</span><span class="w"> </span><span class="nn">matplotlib</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">&quot;Agg&quot;</span><span class="p">)</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.animation</span><span class="w"> </span><span class="kn">import</span> <span class="n">FuncAnimation</span>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.animation</span><span class="w"> </span><span class="kn">import</span> <span class="n">save_animation</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="o">&gt;&gt;&gt;</span> <span class="p">(</span><span class="n">line</span><span class="p">,)</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">anim</span> <span class="o">=</span> <span class="n">FuncAnimation</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">i</span><span class="p">:</span> <span class="p">(</span><span class="n">line</span><span class="p">,),</span> <span class="n">frames</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">(),</span> <span class="s2">&quot;WAVE.GIF&quot;</span><span class="p">)</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">save_animation</span><span class="p">(</span><span class="n">anim</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;WAVE.GIF&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">tmp</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">()</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="o">&gt;&gt;&gt;</span> <span class="p">(</span><span class="n">line</span><span class="p">,)</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">anim</span> <span class="o">=</span> <span class="n">FuncAnimation</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">i</span><span class="p">:</span> <span class="p">(</span><span class="n">line</span><span class="p">,),</span> <span class="n">frames</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">save_animation</span><span class="p">(</span><span class="n">anim</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="s2">&quot;WAVE.GIF&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;WAVE.GIF&quot;</span><span class="p">)</span>
 <a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="kc">True</span>
 <a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
 </code></pre></div></li>
-<li>An unsupported extension raises <code>ValueError</code> before writing:
-    <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
+<li>An unsupported extension raises <code>ValueError</code> before writing (here
+  the animation is rendered once first, so nothing is left dangling):
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">shutil</span><span class="o">,</span><span class="w"> </span><span class="nn">tempfile</span><span class="o">,</span><span class="w"> </span><span class="nn">matplotlib</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">&quot;Agg&quot;</span><span class="p">)</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.animation</span><span class="w"> </span><span class="kn">import</span> <span class="n">FuncAnimation</span>
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.animation</span><span class="w"> </span><span class="kn">import</span> <span class="n">save_animation</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="o">&gt;&gt;&gt;</span> <span class="p">(</span><span class="n">line</span><span class="p">,)</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">anim</span> <span class="o">=</span> <span class="n">FuncAnimation</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">i</span><span class="p">:</span> <span class="p">(</span><span class="n">line</span><span class="p">,),</span> <span class="n">frames</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">save_animation</span><span class="p">(</span><span class="n">anim</span><span class="p">,</span> <span class="s2">&quot;movie.webm&quot;</span><span class="p">)</span>  <span class="c1"># doctest: +ELLIPSIS</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">Traceback</span> <span class="p">(</span><span class="n">most</span> <span class="n">recent</span> <span class="n">call</span> <span class="n">last</span><span class="p">):</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="o">...</span>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="ne">ValueError</span><span class="p">:</span> <span class="o">...</span><span class="ow">not</span> <span class="n">supported</span><span class="o">...</span>
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">tmp</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">()</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="o">&gt;&gt;&gt;</span> <span class="p">(</span><span class="n">line</span><span class="p">,)</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">anim</span> <span class="o">=</span> <span class="n">FuncAnimation</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">i</span><span class="p">:</span> <span class="p">(</span><span class="n">line</span><span class="p">,),</span> <span class="n">frames</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">_</span> <span class="o">=</span> <span class="n">save_animation</span><span class="p">(</span><span class="n">anim</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="s2">&quot;ok.gif&quot;</span><span class="p">))</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">save_animation</span><span class="p">(</span><span class="n">anim</span><span class="p">,</span> <span class="s2">&quot;movie.webm&quot;</span><span class="p">)</span>  <span class="c1"># doctest: +ELLIPSIS</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">Traceback</span> <span class="p">(</span><span class="n">most</span> <span class="n">recent</span> <span class="n">call</span> <span class="n">last</span><span class="p">):</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="o">...</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="ne">ValueError</span><span class="p">:</span> <span class="o">...</span><span class="ow">not</span> <span class="n">supported</span><span class="o">...</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
 </code></pre></div></li>
 </ul>
 
@@ -2121,7 +2136,14 @@ embed_gif: Wrap an animation as an <code>IPython.display.Image</code>.</p>
 <span class="normal"><a href="#__codelineno-0-123">123</a></span>
 <span class="normal"><a href="#__codelineno-0-124">124</a></span>
 <span class="normal"><a href="#__codelineno-0-125">125</a></span>
-<span class="normal"><a href="#__codelineno-0-126">126</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="k">def</span><span class="w"> </span><span class="nf">save_animation</span><span class="p">(</span><span class="n">anim</span><span class="p">:</span> <span class="n">FuncAnimation</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-126">126</a></span>
+<span class="normal"><a href="#__codelineno-0-127">127</a></span>
+<span class="normal"><a href="#__codelineno-0-128">128</a></span>
+<span class="normal"><a href="#__codelineno-0-129">129</a></span>
+<span class="normal"><a href="#__codelineno-0-130">130</a></span>
+<span class="normal"><a href="#__codelineno-0-131">131</a></span>
+<span class="normal"><a href="#__codelineno-0-132">132</a></span>
+<span class="normal"><a href="#__codelineno-0-133">133</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="k">def</span><span class="w"> </span><span class="nf">save_animation</span><span class="p">(</span><span class="n">anim</span><span class="p">:</span> <span class="n">FuncAnimation</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Save any `FuncAnimation` to a file.</span>
 <a id="__codelineno-0-33" name="__codelineno-0-33"></a>
 <a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">    The output format is determined by the file extension. GIF uses</span>
@@ -2144,79 +2166,86 @@ embed_gif: Wrap an animation as an <code>IPython.display.Image</code>.</p>
 <a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="sd">    Examples:</span>
 <a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">        - Save a tiny animation to a GIF; the call returns the path it wrote:</span>
 <a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-54" name="__codelineno-0-54"></a><span class="sd">            &gt;&gt;&gt; import os, tempfile, matplotlib</span>
+<a id="__codelineno-0-54" name="__codelineno-0-54"></a><span class="sd">            &gt;&gt;&gt; import os, shutil, tempfile, matplotlib</span>
 <a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use(&quot;Agg&quot;)</span>
 <a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            &gt;&gt;&gt; from matplotlib.animation import FuncAnimation</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.animation import save_animation</span>
-<a id="__codelineno-0-59" name="__codelineno-0-59"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
-<a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">            &gt;&gt;&gt; (line,) = ax.plot([0, 1], [0, 0])</span>
-<a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">            &gt;&gt;&gt; anim = FuncAnimation(fig, lambda i: (line,), frames=2)</span>
-<a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="sd">            &gt;&gt;&gt; path = os.path.join(tempfile.mkdtemp(), &quot;wave.gif&quot;)</span>
-<a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="sd">            &gt;&gt;&gt; save_animation(anim, path) == path</span>
-<a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="sd">            True</span>
-<a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="sd">            &gt;&gt;&gt; from pathlib import Path</span>
-<a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="sd">            &gt;&gt;&gt; Path(path).read_bytes()[:6] in (b&quot;GIF87a&quot;, b&quot;GIF89a&quot;)</span>
-<a id="__codelineno-0-67" name="__codelineno-0-67"></a><span class="sd">            True</span>
-<a id="__codelineno-0-68" name="__codelineno-0-68"></a><span class="sd">            &gt;&gt;&gt; plt.close(fig)</span>
-<a id="__codelineno-0-69" name="__codelineno-0-69"></a>
-<a id="__codelineno-0-70" name="__codelineno-0-70"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-71" name="__codelineno-0-71"></a><span class="sd">        - The extension is matched case-insensitively, so ``.GIF`` also works:</span>
-<a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-73" name="__codelineno-0-73"></a><span class="sd">            &gt;&gt;&gt; import os, tempfile, matplotlib</span>
-<a id="__codelineno-0-74" name="__codelineno-0-74"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use(&quot;Agg&quot;)</span>
-<a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="sd">            &gt;&gt;&gt; from matplotlib.animation import FuncAnimation</span>
-<a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.animation import save_animation</span>
-<a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
-<a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="sd">            &gt;&gt;&gt; (line,) = ax.plot([0, 1], [0, 0])</span>
-<a id="__codelineno-0-80" name="__codelineno-0-80"></a><span class="sd">            &gt;&gt;&gt; anim = FuncAnimation(fig, lambda i: (line,), frames=2)</span>
-<a id="__codelineno-0-81" name="__codelineno-0-81"></a><span class="sd">            &gt;&gt;&gt; path = os.path.join(tempfile.mkdtemp(), &quot;WAVE.GIF&quot;)</span>
-<a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="sd">            &gt;&gt;&gt; save_animation(anim, path).endswith(&quot;WAVE.GIF&quot;)</span>
-<a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="sd">            True</span>
-<a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="sd">            &gt;&gt;&gt; plt.close(fig)</span>
-<a id="__codelineno-0-85" name="__codelineno-0-85"></a>
-<a id="__codelineno-0-86" name="__codelineno-0-86"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-87" name="__codelineno-0-87"></a><span class="sd">        - An unsupported extension raises ``ValueError`` before writing:</span>
-<a id="__codelineno-0-88" name="__codelineno-0-88"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-89" name="__codelineno-0-89"></a><span class="sd">            &gt;&gt;&gt; import matplotlib</span>
-<a id="__codelineno-0-90" name="__codelineno-0-90"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use(&quot;Agg&quot;)</span>
-<a id="__codelineno-0-91" name="__codelineno-0-91"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-92" name="__codelineno-0-92"></a><span class="sd">            &gt;&gt;&gt; from matplotlib.animation import FuncAnimation</span>
-<a id="__codelineno-0-93" name="__codelineno-0-93"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.animation import save_animation</span>
-<a id="__codelineno-0-94" name="__codelineno-0-94"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
-<a id="__codelineno-0-95" name="__codelineno-0-95"></a><span class="sd">            &gt;&gt;&gt; (line,) = ax.plot([0, 1], [0, 0])</span>
-<a id="__codelineno-0-96" name="__codelineno-0-96"></a><span class="sd">            &gt;&gt;&gt; anim = FuncAnimation(fig, lambda i: (line,), frames=2)</span>
-<a id="__codelineno-0-97" name="__codelineno-0-97"></a><span class="sd">            &gt;&gt;&gt; save_animation(anim, &quot;movie.webm&quot;)  # doctest: +ELLIPSIS</span>
-<a id="__codelineno-0-98" name="__codelineno-0-98"></a><span class="sd">            Traceback (most recent call last):</span>
-<a id="__codelineno-0-99" name="__codelineno-0-99"></a><span class="sd">                ...</span>
-<a id="__codelineno-0-100" name="__codelineno-0-100"></a><span class="sd">            ValueError: ...not supported...</span>
-<a id="__codelineno-0-101" name="__codelineno-0-101"></a><span class="sd">            &gt;&gt;&gt; plt.close(fig)</span>
-<a id="__codelineno-0-102" name="__codelineno-0-102"></a>
-<a id="__codelineno-0-103" name="__codelineno-0-103"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-104" name="__codelineno-0-104"></a>
-<a id="__codelineno-0-105" name="__codelineno-0-105"></a><span class="sd">    See Also:</span>
-<a id="__codelineno-0-106" name="__codelineno-0-106"></a><span class="sd">        to_gif: Render an animation to in-memory GIF bytes instead of a file.</span>
-<a id="__codelineno-0-107" name="__codelineno-0-107"></a><span class="sd">        embed_gif: Wrap an animation as an ``IPython.display.Image``.</span>
-<a id="__codelineno-0-108" name="__codelineno-0-108"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-109" name="__codelineno-0-109"></a>    <span class="n">video_format</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-<a id="__codelineno-0-110" name="__codelineno-0-110"></a>    <span class="k">if</span> <span class="n">video_format</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">SUPPORTED_VIDEO_FORMAT</span><span class="p">:</span>
-<a id="__codelineno-0-111" name="__codelineno-0-111"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-112" name="__codelineno-0-112"></a>            <span class="sa">f</span><span class="s2">&quot;The given extension </span><span class="si">{</span><span class="n">video_format</span><span class="si">}</span><span class="s2"> implies a format that is &quot;</span>
-<a id="__codelineno-0-113" name="__codelineno-0-113"></a>            <span class="sa">f</span><span class="s2">&quot;not supported, only </span><span class="si">{</span><span class="n">SUPPORTED_VIDEO_FORMAT</span><span class="si">}</span><span class="s2"> are supported&quot;</span>
-<a id="__codelineno-0-114" name="__codelineno-0-114"></a>        <span class="p">)</span>
-<a id="__codelineno-0-115" name="__codelineno-0-115"></a>
-<a id="__codelineno-0-116" name="__codelineno-0-116"></a>    <span class="k">if</span> <span class="n">video_format</span> <span class="o">==</span> <span class="s2">&quot;gif&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-117" name="__codelineno-0-117"></a>        <span class="n">anim</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">writer</span><span class="o">=</span><span class="n">PillowWriter</span><span class="p">(</span><span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">))</span>
-<a id="__codelineno-0-118" name="__codelineno-0-118"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-119" name="__codelineno-0-119"></a>        <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-120" name="__codelineno-0-120"></a>            <span class="n">anim</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">writer</span><span class="o">=</span><span class="n">FFMpegWriter</span><span class="p">(</span><span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">,</span> <span class="n">bitrate</span><span class="o">=</span><span class="mi">1800</span><span class="p">))</span>
-<a id="__codelineno-0-121" name="__codelineno-0-121"></a>        <span class="k">except</span> <span class="ne">FileNotFoundError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-<a id="__codelineno-0-122" name="__codelineno-0-122"></a>            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span>
-<a id="__codelineno-0-123" name="__codelineno-0-123"></a>                <span class="s2">&quot;FFmpeg not found. Please visit https://ffmpeg.org/ &quot;</span>
-<a id="__codelineno-0-124" name="__codelineno-0-124"></a>                <span class="s2">&quot;and download a version compatible with your OS.&quot;</span>
-<a id="__codelineno-0-125" name="__codelineno-0-125"></a>            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
-<a id="__codelineno-0-126" name="__codelineno-0-126"></a>    <span class="k">return</span> <span class="n">path</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">            &gt;&gt;&gt; from pathlib import Path</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">            &gt;&gt;&gt; from matplotlib.animation import FuncAnimation</span>
+<a id="__codelineno-0-59" name="__codelineno-0-59"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.animation import save_animation</span>
+<a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">            &gt;&gt;&gt; tmp = tempfile.mkdtemp()</span>
+<a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="sd">            &gt;&gt;&gt; (line,) = ax.plot([0, 1], [0, 0])</span>
+<a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="sd">            &gt;&gt;&gt; anim = FuncAnimation(fig, lambda i: (line,), frames=2)</span>
+<a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="sd">            &gt;&gt;&gt; path = os.path.join(tmp, &quot;wave.gif&quot;)</span>
+<a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="sd">            &gt;&gt;&gt; save_animation(anim, path) == path</span>
+<a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="sd">            True</span>
+<a id="__codelineno-0-67" name="__codelineno-0-67"></a><span class="sd">            &gt;&gt;&gt; Path(path).read_bytes()[:6] in (b&quot;GIF87a&quot;, b&quot;GIF89a&quot;)</span>
+<a id="__codelineno-0-68" name="__codelineno-0-68"></a><span class="sd">            True</span>
+<a id="__codelineno-0-69" name="__codelineno-0-69"></a><span class="sd">            &gt;&gt;&gt; plt.close(fig)</span>
+<a id="__codelineno-0-70" name="__codelineno-0-70"></a><span class="sd">            &gt;&gt;&gt; shutil.rmtree(tmp)</span>
+<a id="__codelineno-0-71" name="__codelineno-0-71"></a>
+<a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-73" name="__codelineno-0-73"></a><span class="sd">        - The extension is matched case-insensitively, so ``.GIF`` also works:</span>
+<a id="__codelineno-0-74" name="__codelineno-0-74"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="sd">            &gt;&gt;&gt; import os, shutil, tempfile, matplotlib</span>
+<a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use(&quot;Agg&quot;)</span>
+<a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="sd">            &gt;&gt;&gt; from matplotlib.animation import FuncAnimation</span>
+<a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.animation import save_animation</span>
+<a id="__codelineno-0-80" name="__codelineno-0-80"></a><span class="sd">            &gt;&gt;&gt; tmp = tempfile.mkdtemp()</span>
+<a id="__codelineno-0-81" name="__codelineno-0-81"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="sd">            &gt;&gt;&gt; (line,) = ax.plot([0, 1], [0, 0])</span>
+<a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="sd">            &gt;&gt;&gt; anim = FuncAnimation(fig, lambda i: (line,), frames=2)</span>
+<a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="sd">            &gt;&gt;&gt; save_animation(anim, os.path.join(tmp, &quot;WAVE.GIF&quot;)).endswith(&quot;WAVE.GIF&quot;)</span>
+<a id="__codelineno-0-85" name="__codelineno-0-85"></a><span class="sd">            True</span>
+<a id="__codelineno-0-86" name="__codelineno-0-86"></a><span class="sd">            &gt;&gt;&gt; plt.close(fig)</span>
+<a id="__codelineno-0-87" name="__codelineno-0-87"></a><span class="sd">            &gt;&gt;&gt; shutil.rmtree(tmp)</span>
+<a id="__codelineno-0-88" name="__codelineno-0-88"></a>
+<a id="__codelineno-0-89" name="__codelineno-0-89"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-90" name="__codelineno-0-90"></a><span class="sd">        - An unsupported extension raises ``ValueError`` before writing (here</span>
+<a id="__codelineno-0-91" name="__codelineno-0-91"></a><span class="sd">          the animation is rendered once first, so nothing is left dangling):</span>
+<a id="__codelineno-0-92" name="__codelineno-0-92"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-93" name="__codelineno-0-93"></a><span class="sd">            &gt;&gt;&gt; import os, shutil, tempfile, matplotlib</span>
+<a id="__codelineno-0-94" name="__codelineno-0-94"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use(&quot;Agg&quot;)</span>
+<a id="__codelineno-0-95" name="__codelineno-0-95"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-96" name="__codelineno-0-96"></a><span class="sd">            &gt;&gt;&gt; from matplotlib.animation import FuncAnimation</span>
+<a id="__codelineno-0-97" name="__codelineno-0-97"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.animation import save_animation</span>
+<a id="__codelineno-0-98" name="__codelineno-0-98"></a><span class="sd">            &gt;&gt;&gt; tmp = tempfile.mkdtemp()</span>
+<a id="__codelineno-0-99" name="__codelineno-0-99"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-100" name="__codelineno-0-100"></a><span class="sd">            &gt;&gt;&gt; (line,) = ax.plot([0, 1], [0, 0])</span>
+<a id="__codelineno-0-101" name="__codelineno-0-101"></a><span class="sd">            &gt;&gt;&gt; anim = FuncAnimation(fig, lambda i: (line,), frames=2)</span>
+<a id="__codelineno-0-102" name="__codelineno-0-102"></a><span class="sd">            &gt;&gt;&gt; _ = save_animation(anim, os.path.join(tmp, &quot;ok.gif&quot;))</span>
+<a id="__codelineno-0-103" name="__codelineno-0-103"></a><span class="sd">            &gt;&gt;&gt; save_animation(anim, &quot;movie.webm&quot;)  # doctest: +ELLIPSIS</span>
+<a id="__codelineno-0-104" name="__codelineno-0-104"></a><span class="sd">            Traceback (most recent call last):</span>
+<a id="__codelineno-0-105" name="__codelineno-0-105"></a><span class="sd">                ...</span>
+<a id="__codelineno-0-106" name="__codelineno-0-106"></a><span class="sd">            ValueError: ...not supported...</span>
+<a id="__codelineno-0-107" name="__codelineno-0-107"></a><span class="sd">            &gt;&gt;&gt; plt.close(fig)</span>
+<a id="__codelineno-0-108" name="__codelineno-0-108"></a><span class="sd">            &gt;&gt;&gt; shutil.rmtree(tmp)</span>
+<a id="__codelineno-0-109" name="__codelineno-0-109"></a>
+<a id="__codelineno-0-110" name="__codelineno-0-110"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-111" name="__codelineno-0-111"></a>
+<a id="__codelineno-0-112" name="__codelineno-0-112"></a><span class="sd">    See Also:</span>
+<a id="__codelineno-0-113" name="__codelineno-0-113"></a><span class="sd">        to_gif: Render an animation to in-memory GIF bytes instead of a file.</span>
+<a id="__codelineno-0-114" name="__codelineno-0-114"></a><span class="sd">        embed_gif: Wrap an animation as an ``IPython.display.Image``.</span>
+<a id="__codelineno-0-115" name="__codelineno-0-115"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-116" name="__codelineno-0-116"></a>    <span class="n">video_format</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+<a id="__codelineno-0-117" name="__codelineno-0-117"></a>    <span class="k">if</span> <span class="n">video_format</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">SUPPORTED_VIDEO_FORMAT</span><span class="p">:</span>
+<a id="__codelineno-0-118" name="__codelineno-0-118"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-119" name="__codelineno-0-119"></a>            <span class="sa">f</span><span class="s2">&quot;The given extension </span><span class="si">{</span><span class="n">video_format</span><span class="si">}</span><span class="s2"> implies a format that is &quot;</span>
+<a id="__codelineno-0-120" name="__codelineno-0-120"></a>            <span class="sa">f</span><span class="s2">&quot;not supported, only </span><span class="si">{</span><span class="n">SUPPORTED_VIDEO_FORMAT</span><span class="si">}</span><span class="s2"> are supported&quot;</span>
+<a id="__codelineno-0-121" name="__codelineno-0-121"></a>        <span class="p">)</span>
+<a id="__codelineno-0-122" name="__codelineno-0-122"></a>
+<a id="__codelineno-0-123" name="__codelineno-0-123"></a>    <span class="k">if</span> <span class="n">video_format</span> <span class="o">==</span> <span class="s2">&quot;gif&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-124" name="__codelineno-0-124"></a>        <span class="n">anim</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">writer</span><span class="o">=</span><span class="n">PillowWriter</span><span class="p">(</span><span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">))</span>
+<a id="__codelineno-0-125" name="__codelineno-0-125"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-126" name="__codelineno-0-126"></a>        <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-127" name="__codelineno-0-127"></a>            <span class="n">anim</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">writer</span><span class="o">=</span><span class="n">FFMpegWriter</span><span class="p">(</span><span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">,</span> <span class="n">bitrate</span><span class="o">=</span><span class="mi">1800</span><span class="p">))</span>
+<a id="__codelineno-0-128" name="__codelineno-0-128"></a>        <span class="k">except</span> <span class="ne">FileNotFoundError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-0-129" name="__codelineno-0-129"></a>            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span>
+<a id="__codelineno-0-130" name="__codelineno-0-130"></a>                <span class="s2">&quot;FFmpeg not found. Please visit https://ffmpeg.org/ &quot;</span>
+<a id="__codelineno-0-131" name="__codelineno-0-131"></a>                <span class="s2">&quot;and download a version compatible with your OS.&quot;</span>
+<a id="__codelineno-0-132" name="__codelineno-0-132"></a>            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+<a id="__codelineno-0-133" name="__codelineno-0-133"></a>    <span class="k">return</span> <span class="n">path</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2353,14 +2382,7 @@ embed_gif: Wrap these bytes as an <code>IPython.display.Image</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/cleopatra/animation.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-129">129</a></span>
-<span class="normal"><a href="#__codelineno-0-130">130</a></span>
-<span class="normal"><a href="#__codelineno-0-131">131</a></span>
-<span class="normal"><a href="#__codelineno-0-132">132</a></span>
-<span class="normal"><a href="#__codelineno-0-133">133</a></span>
-<span class="normal"><a href="#__codelineno-0-134">134</a></span>
-<span class="normal"><a href="#__codelineno-0-135">135</a></span>
-<span class="normal"><a href="#__codelineno-0-136">136</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-136">136</a></span>
 <span class="normal"><a href="#__codelineno-0-137">137</a></span>
 <span class="normal"><a href="#__codelineno-0-138">138</a></span>
 <span class="normal"><a href="#__codelineno-0-139">139</a></span>
@@ -2417,71 +2439,78 @@ embed_gif: Wrap these bytes as an <code>IPython.display.Image</code>.</p>
 <span class="normal"><a href="#__codelineno-0-190">190</a></span>
 <span class="normal"><a href="#__codelineno-0-191">191</a></span>
 <span class="normal"><a href="#__codelineno-0-192">192</a></span>
-<span class="normal"><a href="#__codelineno-0-193">193</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-129" name="__codelineno-0-129"></a><span class="k">def</span><span class="w"> </span><span class="nf">to_gif</span><span class="p">(</span><span class="n">anim</span><span class="p">:</span> <span class="n">FuncAnimation</span><span class="p">,</span> <span class="n">fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
-<a id="__codelineno-0-130" name="__codelineno-0-130"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Render a `FuncAnimation` to in-memory GIF bytes.</span>
-<a id="__codelineno-0-131" name="__codelineno-0-131"></a>
-<a id="__codelineno-0-132" name="__codelineno-0-132"></a><span class="sd">    Handy for embedding in a notebook or serving over HTTP without leaving</span>
-<a id="__codelineno-0-133" name="__codelineno-0-133"></a><span class="sd">    a file on disk.</span>
-<a id="__codelineno-0-134" name="__codelineno-0-134"></a>
-<a id="__codelineno-0-135" name="__codelineno-0-135"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-136" name="__codelineno-0-136"></a><span class="sd">        anim: The animation to render.</span>
-<a id="__codelineno-0-137" name="__codelineno-0-137"></a><span class="sd">        fps: Frames per second. Default is 2.</span>
+<span class="normal"><a href="#__codelineno-0-193">193</a></span>
+<span class="normal"><a href="#__codelineno-0-194">194</a></span>
+<span class="normal"><a href="#__codelineno-0-195">195</a></span>
+<span class="normal"><a href="#__codelineno-0-196">196</a></span>
+<span class="normal"><a href="#__codelineno-0-197">197</a></span>
+<span class="normal"><a href="#__codelineno-0-198">198</a></span>
+<span class="normal"><a href="#__codelineno-0-199">199</a></span>
+<span class="normal"><a href="#__codelineno-0-200">200</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-136" name="__codelineno-0-136"></a><span class="k">def</span><span class="w"> </span><span class="nf">to_gif</span><span class="p">(</span><span class="n">anim</span><span class="p">:</span> <span class="n">FuncAnimation</span><span class="p">,</span> <span class="n">fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<a id="__codelineno-0-137" name="__codelineno-0-137"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Render a `FuncAnimation` to in-memory GIF bytes.</span>
 <a id="__codelineno-0-138" name="__codelineno-0-138"></a>
-<a id="__codelineno-0-139" name="__codelineno-0-139"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-140" name="__codelineno-0-140"></a><span class="sd">        The GIF-encoded bytes of the animation.</span>
+<a id="__codelineno-0-139" name="__codelineno-0-139"></a><span class="sd">    Handy for embedding in a notebook or serving over HTTP without leaving</span>
+<a id="__codelineno-0-140" name="__codelineno-0-140"></a><span class="sd">    a file on disk.</span>
 <a id="__codelineno-0-141" name="__codelineno-0-141"></a>
-<a id="__codelineno-0-142" name="__codelineno-0-142"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-143" name="__codelineno-0-143"></a><span class="sd">        - Render an animation to GIF bytes and inspect the payload:</span>
-<a id="__codelineno-0-144" name="__codelineno-0-144"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-145" name="__codelineno-0-145"></a><span class="sd">            &gt;&gt;&gt; import matplotlib</span>
-<a id="__codelineno-0-146" name="__codelineno-0-146"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use(&quot;Agg&quot;)</span>
-<a id="__codelineno-0-147" name="__codelineno-0-147"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-148" name="__codelineno-0-148"></a><span class="sd">            &gt;&gt;&gt; from matplotlib.animation import FuncAnimation</span>
-<a id="__codelineno-0-149" name="__codelineno-0-149"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.animation import to_gif</span>
-<a id="__codelineno-0-150" name="__codelineno-0-150"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
-<a id="__codelineno-0-151" name="__codelineno-0-151"></a><span class="sd">            &gt;&gt;&gt; (line,) = ax.plot([0, 1], [0, 0])</span>
-<a id="__codelineno-0-152" name="__codelineno-0-152"></a><span class="sd">            &gt;&gt;&gt; anim = FuncAnimation(fig, lambda i: (line,), frames=2)</span>
-<a id="__codelineno-0-153" name="__codelineno-0-153"></a><span class="sd">            &gt;&gt;&gt; data = to_gif(anim)</span>
-<a id="__codelineno-0-154" name="__codelineno-0-154"></a><span class="sd">            &gt;&gt;&gt; data[:6] in (b&quot;GIF87a&quot;, b&quot;GIF89a&quot;)</span>
-<a id="__codelineno-0-155" name="__codelineno-0-155"></a><span class="sd">            True</span>
-<a id="__codelineno-0-156" name="__codelineno-0-156"></a><span class="sd">            &gt;&gt;&gt; len(data) &gt; 0</span>
-<a id="__codelineno-0-157" name="__codelineno-0-157"></a><span class="sd">            True</span>
-<a id="__codelineno-0-158" name="__codelineno-0-158"></a><span class="sd">            &gt;&gt;&gt; plt.close(fig)</span>
-<a id="__codelineno-0-159" name="__codelineno-0-159"></a>
-<a id="__codelineno-0-160" name="__codelineno-0-160"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-161" name="__codelineno-0-161"></a><span class="sd">        - A higher ``fps`` still yields self-contained bytes you can serve over</span>
-<a id="__codelineno-0-162" name="__codelineno-0-162"></a><span class="sd">          HTTP or write yourself, without leaving a temp file behind:</span>
-<a id="__codelineno-0-163" name="__codelineno-0-163"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-164" name="__codelineno-0-164"></a><span class="sd">            &gt;&gt;&gt; import matplotlib</span>
-<a id="__codelineno-0-165" name="__codelineno-0-165"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use(&quot;Agg&quot;)</span>
-<a id="__codelineno-0-166" name="__codelineno-0-166"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-167" name="__codelineno-0-167"></a><span class="sd">            &gt;&gt;&gt; from matplotlib.animation import FuncAnimation</span>
-<a id="__codelineno-0-168" name="__codelineno-0-168"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.animation import to_gif</span>
-<a id="__codelineno-0-169" name="__codelineno-0-169"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
-<a id="__codelineno-0-170" name="__codelineno-0-170"></a><span class="sd">            &gt;&gt;&gt; (line,) = ax.plot([0, 1], [0, 0])</span>
-<a id="__codelineno-0-171" name="__codelineno-0-171"></a><span class="sd">            &gt;&gt;&gt; anim = FuncAnimation(fig, lambda i: (line,), frames=3)</span>
-<a id="__codelineno-0-172" name="__codelineno-0-172"></a><span class="sd">            &gt;&gt;&gt; payload = to_gif(anim, fps=5)</span>
-<a id="__codelineno-0-173" name="__codelineno-0-173"></a><span class="sd">            &gt;&gt;&gt; payload.startswith((b&quot;GIF87a&quot;, b&quot;GIF89a&quot;))</span>
-<a id="__codelineno-0-174" name="__codelineno-0-174"></a><span class="sd">            True</span>
-<a id="__codelineno-0-175" name="__codelineno-0-175"></a><span class="sd">            &gt;&gt;&gt; plt.close(fig)</span>
-<a id="__codelineno-0-176" name="__codelineno-0-176"></a>
-<a id="__codelineno-0-177" name="__codelineno-0-177"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-178" name="__codelineno-0-178"></a>
-<a id="__codelineno-0-179" name="__codelineno-0-179"></a><span class="sd">    See Also:</span>
-<a id="__codelineno-0-180" name="__codelineno-0-180"></a><span class="sd">        save_animation: Write an animation directly to a file path.</span>
-<a id="__codelineno-0-181" name="__codelineno-0-181"></a><span class="sd">        embed_gif: Wrap these bytes as an ``IPython.display.Image``.</span>
-<a id="__codelineno-0-182" name="__codelineno-0-182"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-183" name="__codelineno-0-183"></a>    <span class="c1"># Close our handle immediately so the writer can reopen the path; this</span>
-<a id="__codelineno-0-184" name="__codelineno-0-184"></a>    <span class="c1"># makes the handle lifecycle explicit (no reliance on GC) and avoids a</span>
-<a id="__codelineno-0-185" name="__codelineno-0-185"></a>    <span class="c1"># PermissionError when reopening on Windows.</span>
-<a id="__codelineno-0-186" name="__codelineno-0-186"></a>    <span class="n">fd</span><span class="p">,</span> <span class="n">tmp</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">(</span><span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.gif&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-187" name="__codelineno-0-187"></a>    <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
-<a id="__codelineno-0-188" name="__codelineno-0-188"></a>    <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-189" name="__codelineno-0-189"></a>        <span class="n">save_animation</span><span class="p">(</span><span class="n">anim</span><span class="p">,</span> <span class="n">tmp</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">)</span>
-<a id="__codelineno-0-190" name="__codelineno-0-190"></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
-<a id="__codelineno-0-191" name="__codelineno-0-191"></a>            <span class="k">return</span> <span class="n">fh</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-<a id="__codelineno-0-192" name="__codelineno-0-192"></a>    <span class="k">finally</span><span class="p">:</span>
-<a id="__codelineno-0-193" name="__codelineno-0-193"></a>        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+<a id="__codelineno-0-142" name="__codelineno-0-142"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-143" name="__codelineno-0-143"></a><span class="sd">        anim: The animation to render.</span>
+<a id="__codelineno-0-144" name="__codelineno-0-144"></a><span class="sd">        fps: Frames per second. Default is 2.</span>
+<a id="__codelineno-0-145" name="__codelineno-0-145"></a>
+<a id="__codelineno-0-146" name="__codelineno-0-146"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-147" name="__codelineno-0-147"></a><span class="sd">        The GIF-encoded bytes of the animation.</span>
+<a id="__codelineno-0-148" name="__codelineno-0-148"></a>
+<a id="__codelineno-0-149" name="__codelineno-0-149"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-150" name="__codelineno-0-150"></a><span class="sd">        - Render an animation to GIF bytes and inspect the payload:</span>
+<a id="__codelineno-0-151" name="__codelineno-0-151"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-152" name="__codelineno-0-152"></a><span class="sd">            &gt;&gt;&gt; import matplotlib</span>
+<a id="__codelineno-0-153" name="__codelineno-0-153"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use(&quot;Agg&quot;)</span>
+<a id="__codelineno-0-154" name="__codelineno-0-154"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-155" name="__codelineno-0-155"></a><span class="sd">            &gt;&gt;&gt; from matplotlib.animation import FuncAnimation</span>
+<a id="__codelineno-0-156" name="__codelineno-0-156"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.animation import to_gif</span>
+<a id="__codelineno-0-157" name="__codelineno-0-157"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-158" name="__codelineno-0-158"></a><span class="sd">            &gt;&gt;&gt; (line,) = ax.plot([0, 1], [0, 0])</span>
+<a id="__codelineno-0-159" name="__codelineno-0-159"></a><span class="sd">            &gt;&gt;&gt; anim = FuncAnimation(fig, lambda i: (line,), frames=2)</span>
+<a id="__codelineno-0-160" name="__codelineno-0-160"></a><span class="sd">            &gt;&gt;&gt; data = to_gif(anim)</span>
+<a id="__codelineno-0-161" name="__codelineno-0-161"></a><span class="sd">            &gt;&gt;&gt; data[:6] in (b&quot;GIF87a&quot;, b&quot;GIF89a&quot;)</span>
+<a id="__codelineno-0-162" name="__codelineno-0-162"></a><span class="sd">            True</span>
+<a id="__codelineno-0-163" name="__codelineno-0-163"></a><span class="sd">            &gt;&gt;&gt; len(data) &gt; 0</span>
+<a id="__codelineno-0-164" name="__codelineno-0-164"></a><span class="sd">            True</span>
+<a id="__codelineno-0-165" name="__codelineno-0-165"></a><span class="sd">            &gt;&gt;&gt; plt.close(fig)</span>
+<a id="__codelineno-0-166" name="__codelineno-0-166"></a>
+<a id="__codelineno-0-167" name="__codelineno-0-167"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-168" name="__codelineno-0-168"></a><span class="sd">        - A higher ``fps`` still yields self-contained bytes you can serve over</span>
+<a id="__codelineno-0-169" name="__codelineno-0-169"></a><span class="sd">          HTTP or write yourself, without leaving a temp file behind:</span>
+<a id="__codelineno-0-170" name="__codelineno-0-170"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-171" name="__codelineno-0-171"></a><span class="sd">            &gt;&gt;&gt; import matplotlib</span>
+<a id="__codelineno-0-172" name="__codelineno-0-172"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use(&quot;Agg&quot;)</span>
+<a id="__codelineno-0-173" name="__codelineno-0-173"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-174" name="__codelineno-0-174"></a><span class="sd">            &gt;&gt;&gt; from matplotlib.animation import FuncAnimation</span>
+<a id="__codelineno-0-175" name="__codelineno-0-175"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.animation import to_gif</span>
+<a id="__codelineno-0-176" name="__codelineno-0-176"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-177" name="__codelineno-0-177"></a><span class="sd">            &gt;&gt;&gt; (line,) = ax.plot([0, 1], [0, 0])</span>
+<a id="__codelineno-0-178" name="__codelineno-0-178"></a><span class="sd">            &gt;&gt;&gt; anim = FuncAnimation(fig, lambda i: (line,), frames=3)</span>
+<a id="__codelineno-0-179" name="__codelineno-0-179"></a><span class="sd">            &gt;&gt;&gt; payload = to_gif(anim, fps=5)</span>
+<a id="__codelineno-0-180" name="__codelineno-0-180"></a><span class="sd">            &gt;&gt;&gt; payload.startswith((b&quot;GIF87a&quot;, b&quot;GIF89a&quot;))</span>
+<a id="__codelineno-0-181" name="__codelineno-0-181"></a><span class="sd">            True</span>
+<a id="__codelineno-0-182" name="__codelineno-0-182"></a><span class="sd">            &gt;&gt;&gt; plt.close(fig)</span>
+<a id="__codelineno-0-183" name="__codelineno-0-183"></a>
+<a id="__codelineno-0-184" name="__codelineno-0-184"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-185" name="__codelineno-0-185"></a>
+<a id="__codelineno-0-186" name="__codelineno-0-186"></a><span class="sd">    See Also:</span>
+<a id="__codelineno-0-187" name="__codelineno-0-187"></a><span class="sd">        save_animation: Write an animation directly to a file path.</span>
+<a id="__codelineno-0-188" name="__codelineno-0-188"></a><span class="sd">        embed_gif: Wrap these bytes as an ``IPython.display.Image``.</span>
+<a id="__codelineno-0-189" name="__codelineno-0-189"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-190" name="__codelineno-0-190"></a>    <span class="c1"># Close our handle immediately so the writer can reopen the path; this</span>
+<a id="__codelineno-0-191" name="__codelineno-0-191"></a>    <span class="c1"># makes the handle lifecycle explicit (no reliance on GC) and avoids a</span>
+<a id="__codelineno-0-192" name="__codelineno-0-192"></a>    <span class="c1"># PermissionError when reopening on Windows.</span>
+<a id="__codelineno-0-193" name="__codelineno-0-193"></a>    <span class="n">fd</span><span class="p">,</span> <span class="n">tmp</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">(</span><span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.gif&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-194" name="__codelineno-0-194"></a>    <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+<a id="__codelineno-0-195" name="__codelineno-0-195"></a>    <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-196" name="__codelineno-0-196"></a>        <span class="n">save_animation</span><span class="p">(</span><span class="n">anim</span><span class="p">,</span> <span class="n">tmp</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">)</span>
+<a id="__codelineno-0-197" name="__codelineno-0-197"></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+<a id="__codelineno-0-198" name="__codelineno-0-198"></a>            <span class="k">return</span> <span class="n">fh</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<a id="__codelineno-0-199" name="__codelineno-0-199"></a>    <span class="k">finally</span><span class="p">:</span>
+<a id="__codelineno-0-200" name="__codelineno-0-200"></a>        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
