@@ -165,27 +165,153 @@ class MeshGlyph(Glyph):
 
     @property
     def node_x(self) -> np.ndarray:
-        """Node x-coordinates."""
+        """Node x-coordinates.
+
+        Returns:
+            np.ndarray: 1D float array of node x-coordinates, in node
+                order (length ``n_nodes``).
+
+        Examples:
+            - Read back the x-coordinates and pick out a single node:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.mesh_glyph import MeshGlyph
+                >>> mg = MeshGlyph(
+                ...     np.array([0.0, 1.0, 0.5]),
+                ...     np.array([0.0, 0.0, 1.0]),
+                ...     np.array([[0, 1, 2]]),
+                ... )
+                >>> mg.node_x
+                array([0. , 1. , 0.5])
+                >>> float(mg.node_x[1])
+                1.0
+
+                ```
+        """
         return self._node_x
 
     @property
     def node_y(self) -> np.ndarray:
-        """Node y-coordinates."""
+        """Node y-coordinates.
+
+        Returns:
+            np.ndarray: 1D float array of node y-coordinates, in node
+                order (length ``n_nodes``).
+
+        Examples:
+            - Read back the y-coordinates and take their maximum:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.mesh_glyph import MeshGlyph
+                >>> mg = MeshGlyph(
+                ...     np.array([0.0, 1.0, 0.5]),
+                ...     np.array([0.0, 0.0, 1.0]),
+                ...     np.array([[0, 1, 2]]),
+                ... )
+                >>> mg.node_y
+                array([0., 0., 1.])
+                >>> float(mg.node_y.max())
+                1.0
+
+                ```
+        """
         return self._node_y
 
     @property
     def n_faces(self) -> int:
-        """Number of faces in the mesh."""
+        """Number of faces in the mesh.
+
+        Returns:
+            int: Count of faces (rows of the face-node connectivity),
+                regardless of how many nodes each face has.
+
+        Examples:
+            - A two-face mesh reports two faces, one row per face:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.mesh_glyph import MeshGlyph
+                >>> mg = MeshGlyph(
+                ...     np.array([0.0, 1.0, 0.5, 1.5]),
+                ...     np.array([0.0, 0.0, 1.0, 1.0]),
+                ...     np.array([[0, 1, 2], [1, 3, 2]]),
+                ... )
+                >>> mg.n_faces
+                2
+
+                ```
+        """
         return self._face_nodes.shape[0]
 
     @property
     def n_nodes(self) -> int:
-        """Number of nodes in the mesh."""
+        """Number of nodes in the mesh.
+
+        Returns:
+            int: Count of nodes, i.e. the length of the coordinate
+                arrays ``node_x``/``node_y``.
+
+        Examples:
+            - The node count matches the coordinate array length:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.mesh_glyph import MeshGlyph
+                >>> mg = MeshGlyph(
+                ...     np.array([0.0, 1.0, 0.5, 1.5]),
+                ...     np.array([0.0, 0.0, 1.0, 1.0]),
+                ...     np.array([[0, 1, 2], [1, 3, 2]]),
+                ... )
+                >>> mg.n_nodes
+                4
+
+                ```
+        """
         return len(self._node_x)
 
     @property
     def n_edges(self) -> int:
-        """Number of edges (0 if edge connectivity not provided)."""
+        """Number of edges (0 if edge connectivity not provided).
+
+        Edges are only counted when explicit ``edge_node_connectivity``
+        was supplied at construction; otherwise this is 0 even though the
+        mesh has implicit polygon edges (which ``plot_outline`` derives on
+        demand).
+
+        Returns:
+            int: Number of rows in ``edge_node_connectivity``, or 0 when
+                no edge connectivity was given.
+
+        Examples:
+            - Without explicit edges the count is 0:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.mesh_glyph import MeshGlyph
+                >>> mg = MeshGlyph(
+                ...     np.array([0.0, 1.0, 0.5]),
+                ...     np.array([0.0, 0.0, 1.0]),
+                ...     np.array([[0, 1, 2]]),
+                ... )
+                >>> mg.n_edges
+                0
+
+                ```
+            - Supplying ``edge_node_connectivity`` makes the count match
+                the number of edge rows:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.mesh_glyph import MeshGlyph
+                >>> mg = MeshGlyph(
+                ...     np.array([0.0, 1.0, 1.0, 0.0]),
+                ...     np.array([0.0, 0.0, 1.0, 1.0]),
+                ...     np.array([[0, 1, 2, 3]]),
+                ...     edge_node_connectivity=np.array(
+                ...         [[0, 1], [1, 2], [2, 3], [3, 0]]
+                ...     ),
+                ... )
+                >>> mg.n_edges
+                4
+
+                ```
+        """
         return self._edge_nodes.shape[0] if self._edge_nodes is not None else 0
 
     @property
@@ -781,6 +907,12 @@ class MeshGlyph(Glyph):
         Raises:
             ValueError: If `data` frames don't match mesh topology
                 or `time` length doesn't match frame count.
+
+        Notes:
+            An animation draws no inline contour labels, so this clears
+            `contour_labels` back to `None`; any label artists left by a
+            previous `plot(filled=False, labels=True)` call do not leak
+            into the animation state.
 
         Examples:
             - Animate face data over 3 time steps:
