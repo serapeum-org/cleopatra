@@ -570,6 +570,26 @@ class TestPlotLineContour:
         assert fig is not None, "Face data should render irrespective of filled"
         plt.close(fig)
 
+    def test_render_mesh_norm_none_unset_vmin_vmax(self):
+        """`_render_mesh` omits vmin/vmax when both are None and norm is None.
+
+        Test scenario:
+            Calling `_render_mesh` directly with `norm=None` while
+            `default_options["vmin"]`/`["vmax"]` are still their unset
+            `None` defaults must skip both colour-limit kwargs (the
+            `else` branch where neither bound is forwarded) and still
+            render a line contour set.
+        """
+        mg = self._node_glyph()
+        mg.fig, mg.ax = mg.create_figure_axes()
+        mg.default_options["vmin"] = None
+        mg.default_options["vmax"] = None
+        cs = mg._render_mesh(
+            mg.ax, np.array([0.0, 1.0, 2.0, 3.0]), "node", filled=False
+        )
+        assert cs.filled is False, "Should render line contours with no vmin/vmax"
+        plt.close(mg.fig)
+
 
 class TestContourLabels:
     """Inline label support for line tricontours (issue #151).
@@ -1165,6 +1185,21 @@ class TestPlotReuse:
         fig, ax = mg.plot(np.array([5.0, 5.0]))
         assert fig is not None, "Should return a Figure for constant data"
 
+    def test_explicit_ticks_spacing_preserved(self):
+        """User-supplied `ticks_spacing` skips auto-computation.
+
+        Test scenario:
+            Passing `ticks_spacing` to plot() must take the explicit
+            value (the branch that does not recompute spacing from the
+            data range) rather than `(vmax - vmin) / 10`.
+        """
+        mg = _make_tri_mg()
+        fig, ax = mg.plot(np.array([0.0, 10.0]), ticks_spacing=2.5)
+        assert mg.ticks_spacing == 2.5, (
+            f"Expected explicit ticks_spacing=2.5, got {mg.ticks_spacing}"
+        )
+        plt.close(fig)
+
     def test_all_nan_data_raises(self):
         """Test that all-NaN data raises a clear ValueError.
 
@@ -1253,6 +1288,57 @@ class TestAnimate:
         frames = [np.array([1.0, 2.0]), np.array([3.0])]  # second frame wrong length
         with pytest.raises(ValueError, match="Frame 1"):
             mg.animate(frames, time=["t0", "t1"])
+
+    def test_animate_explicit_options_and_title(self):
+        """animate honours explicit text_loc, vmin/vmax, ticks_spacing, title.
+
+        Test scenario:
+            Supplying all of `text_loc`, `vmin`, `vmax`, `ticks_spacing`
+            and `title` exercises the non-default branches: the time
+            label uses the given position, the colour limits and tick
+            spacing are taken verbatim (not recomputed from frames), and
+            the axes title is set.
+        """
+        mg = _make_tri_mg()
+        frames = np.array([[1.0, 2.0], [3.0, 4.0]])
+        anim = mg.animate(
+            frames,
+            time=["t0", "t1"],
+            text_loc=[0.5, 0.5],
+            vmin=0.0,
+            vmax=10.0,
+            ticks_spacing=2.0,
+            title="My Animation",
+        )
+        assert anim is not None, "Should return a FuncAnimation"
+        assert mg.vmin == 0.0, f"Expected explicit vmin=0.0, got {mg.vmin}"
+        assert mg.vmax == 10.0, f"Expected explicit vmax=10.0, got {mg.vmax}"
+        assert mg.ticks_spacing == 2.0, (
+            f"Expected explicit ticks_spacing=2.0, got {mg.ticks_spacing}"
+        )
+        assert mg.ax.get_title() == "My Animation", (
+            f"Expected title 'My Animation', got {mg.ax.get_title()!r}"
+        )
+        plt.close(mg.fig)
+
+    def test_animate_update_advances_frame(self):
+        """Driving the frame-update callback re-renders and relabels.
+
+        Test scenario:
+            Invoking the `FuncAnimation` update function for frame 1
+            removes the previous mappable and sets the time-label text,
+            exercising the `_update` closure that a non-rendered
+            animation otherwise never runs.
+        """
+        mg = _make_tri_mg()
+        frames = np.array([[1.0, 2.0], [3.0, 4.0]])
+        anim = mg.animate(frames, time=["t0", "t1"])
+        anim._func(1)
+        time_labels = [
+            t.get_text() for t in mg.ax.texts if t.get_text() == "t1"
+        ]
+        assert time_labels, "Frame update should set the time label to 't1'"
+        plt.close(mg.fig)
 
     def test_save_animation_gif(self, tmp_path):
         """Test saving mesh animation as GIF."""
