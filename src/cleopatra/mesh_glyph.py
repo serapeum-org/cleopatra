@@ -42,6 +42,8 @@ from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 MESH_DEFAULT_OPTIONS = {
     "vmin": None,
     "vmax": None,
+    "labels": False,
+    "label_kw": None,
 }
 MESH_DEFAULT_OPTIONS = STYLE_DEFAULTS | MESH_DEFAULT_OPTIONS
 
@@ -73,6 +75,11 @@ class MeshGlyph(Glyph):
         n_faces: Number of faces in the mesh.
         n_nodes: Number of nodes in the mesh.
         n_edges: Number of edges (0 if edge connectivity not provided).
+        contour_labels: The inline contour-label `Text` artists from the
+            most recent `plot(location="node", filled=False, labels=True)`,
+            or `None` when labelling was not requested (the default, and
+            for `tripcolor`/`tricontourf`). A labelled line tricontour with
+            no isolines (e.g. a constant-value field) yields an empty list.
 
     Examples:
         - Create a MeshGlyph and inspect its topology:
@@ -149,6 +156,12 @@ class MeshGlyph(Glyph):
         #: Colour-mapped artist from the most recent `plot` call (the
         #: `tripcolor`/`tricontour(f)` mappable); `None` before first render.
         self.im = None
+        #: Inline contour-label `Text` artists from the most recent
+        #: `plot(location="node", filled=False, labels=True)`, or `None`
+        #: when labelling was not requested (the default, and for
+        #: `tripcolor`/`tricontourf`); an empty list when the line
+        #: tricontour has no isolines.
+        self.contour_labels = None
 
     @property
     def node_x(self) -> np.ndarray:
@@ -527,7 +540,20 @@ class MeshGlyph(Glyph):
                 vmin, vmax, color_scale, gamma, midpoint, bounds,
                 ticks_spacing, cbar_orientation, cbar_label, figsize,
                 etc.) or pass extra rendering kwargs (levels for
-                tricontourf / tricontour).
+                tricontourf / tricontour). Two label options are
+                honoured **only** for line tricontours
+                (`location="node"`, `filled=False`):
+
+                - `labels` (bool, default `False`): when truthy, draw
+                  inline numeric labels on the isolines via `ax.clabel`
+                  and store the resulting `Text` artists on
+                  `self.contour_labels`. A documented no-op for
+                  `tripcolor` (face data) and `tricontourf`
+                  (`filled=True`), which leave `contour_labels` as `None`.
+                - `label_kw` (dict): forwarded to `ax.clabel`, merged
+                  over cleopatra's defaults (`inline=True`, `fontsize=8`,
+                  `fmt="%g"`) so user keys (`fmt`, `fontsize`, `colors`,
+                  `inline_spacing`, …) win on collision.
 
         Returns:
             tuple[Figure, Axes]: The matplotlib Figure and Axes objects.
@@ -580,6 +606,26 @@ class MeshGlyph(Glyph):
                 ...     location="node",
                 ...     filled=False,
                 ... )
+
+                ```
+            - Label the line tricontours inline (`labels=True`); the
+                `Text` artists are exposed on `glyph.contour_labels`:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.mesh_glyph import MeshGlyph
+                >>> node_x = np.array([0.0, 1.0, 0.5, 1.5])
+                >>> node_y = np.array([0.0, 0.0, 1.0, 1.0])
+                >>> faces = np.array([[0, 1, 2], [1, 3, 2]])
+                >>> mg = MeshGlyph(node_x, node_y, faces)
+                >>> fig, ax = mg.plot(
+                ...     np.array([0.0, 1.0, 2.0, 3.0]),
+                ...     location="node",
+                ...     filled=False,
+                ...     labels=True,
+                ...     label_kw={"fmt": "%.1f"},
+                ... )
+                >>> isinstance(mg.contour_labels, list)
+                True
 
                 ```
             - Plot with power color scale:
@@ -647,6 +693,11 @@ class MeshGlyph(Glyph):
         ticks = self.get_ticks()
         norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
 
+        # Reset any inline contour labels from a previous render; the
+        # line-tricontour branch below repopulates this when `labels=True`,
+        # every other path leaves it `None`.
+        self.contour_labels = None
+
         tpc = self._render_mesh(
             self.ax,
             data,
@@ -661,6 +712,18 @@ class MeshGlyph(Glyph):
         # caller can attach a colorbar/register the layer without scraping
         # `ax.collections` (mirrors `ArrayGlyph.im` / the other glyphs).
         self.im = tpc
+
+        # Inline numeric labels on the isolines. Only meaningful for line
+        # tricontours (`location="node"`, `filled=False`); `labels=True` is
+        # a documented no-op for `tripcolor` (face data) and `tricontourf`.
+        if location == "node" and not filled and self.default_options.get("labels"):
+            label_kw = {
+                "inline": True,
+                "fontsize": 8,
+                "fmt": "%g",
+                **(self.default_options.get("label_kw") or {}),
+            }
+            self.contour_labels = self.ax.clabel(tpc, **label_kw)
 
         # Remove previous colorbar before adding a new one.
         if self._cbar is not None:
