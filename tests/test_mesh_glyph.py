@@ -6,11 +6,15 @@ fan triangulation, face-to-triangle value mapping, and edge cases.
 
 from __future__ import annotations
 
+import re
 import time
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from matplotlib.colors import to_rgba
+from matplotlib.text import Text
 
 from cleopatra.mesh_glyph import MeshGlyph
 
@@ -566,6 +570,209 @@ class TestPlotLineContour:
         assert fig is not None, "Face data should render irrespective of filled"
         plt.close(fig)
 
+    def test_render_mesh_norm_none_unset_vmin_vmax(self):
+        """`_render_mesh` omits vmin/vmax when both are None and norm is None.
+
+        Test scenario:
+            Calling `_render_mesh` directly with `norm=None` while
+            `default_options["vmin"]`/`["vmax"]` are still their unset
+            `None` defaults must skip both colour-limit kwargs (the
+            `else` branch where neither bound is forwarded) and still
+            render a line contour set.
+        """
+        mg = self._node_glyph()
+        mg.fig, mg.ax = mg.create_figure_axes()
+        mg.default_options["vmin"] = None
+        mg.default_options["vmax"] = None
+        cs = mg._render_mesh(
+            mg.ax, np.array([0.0, 1.0, 2.0, 3.0]), "node", filled=False
+        )
+        assert cs.filled is False, "Should render line contours with no vmin/vmax"
+        plt.close(mg.fig)
+
+
+class TestContourLabels:
+    """Inline label support for line tricontours (issue #151).
+
+    Mirrors `ArrayGlyph`'s `plot(kind="contour", labels=True)` (#148/#149)
+    on `MeshGlyph`'s unstructured `tricontour` path.
+    """
+
+    @staticmethod
+    def _grid_glyph(n: int = 12) -> MeshGlyph:
+        """A quad grid mesh over [-3, 3]^2 with `n` nodes per side.
+
+        Args:
+            n: Number of nodes along each axis.
+
+        Returns:
+            MeshGlyph: A glyph whose node field can carry several
+                labelled isolines.
+        """
+        xs = np.linspace(-3.0, 3.0, n)
+        gx, gy = np.meshgrid(xs, xs)
+        node_x = gx.ravel()
+        node_y = gy.ravel()
+        # Quad faces over the structured grid (fanned into triangles
+        # internally by the glyph).
+        i = np.arange(n - 1)
+        j = np.arange(n - 1)
+        jj, ii = np.meshgrid(j, i, indexing="ij")
+        a = (jj * n + ii).ravel()
+        faces = np.column_stack([a, a + 1, a + n + 1, a + n])
+        return MeshGlyph(node_x, node_y, faces)
+
+    @staticmethod
+    def _smooth_field(mg: MeshGlyph) -> np.ndarray:
+        """A smooth Gaussian node field that yields many isolines."""
+        return np.exp(-(mg.node_x**2 + mg.node_y**2))
+
+    def test_labels_true_draws_and_exposes_text(self):
+        """`labels=True` populates `contour_labels` with `Text` artists."""
+        mg = self._grid_glyph()
+        fig, ax = mg.plot(
+            self._smooth_field(mg), location="node", filled=False, labels=True
+        )
+        assert isinstance(mg.contour_labels, list)
+        assert len(mg.contour_labels) > 0
+        assert all(isinstance(t, Text) for t in mg.contour_labels)
+        # The label artists are attached to the axes' text list.
+        assert set(mg.contour_labels).issubset(set(ax.texts))
+        plt.close(fig)
+
+    def test_labels_default_is_noop(self):
+        """Default (`labels=False`) draws no labels; `contour_labels` is None."""
+        mg = self._grid_glyph()
+        fig, ax = mg.plot(self._smooth_field(mg), location="node", filled=False)
+        assert mg.contour_labels is None
+        assert len(ax.texts) == 0
+        plt.close(fig)
+
+    def test_label_kw_forwarded_to_clabel(self):
+        """`label_kw` reaches `ax.clabel` (custom `fmt`/`fontsize` applied)."""
+        mg = self._grid_glyph()
+        fig, ax = mg.plot(
+            self._smooth_field(mg),
+            location="node",
+            filled=False,
+            labels=True,
+            label_kw={"fmt": "%.3f", "fontsize": 6},
+        )
+        assert len(mg.contour_labels) > 0
+        # The custom fontsize on every label proves label_kw was forwarded.
+        assert all(t.get_fontsize() == 6 for t in mg.contour_labels)
+        # The "%.3f" format yields three decimal places in every label.
+        assert all(re.search(r"\.\d{3}$", t.get_text()) for t in mg.contour_labels)
+        plt.close(fig)
+
+    def test_labels_on_tricontourf_is_noop(self):
+        """`labels=True` is ignored for `filled=True` (no isolines to label)."""
+        mg = self._grid_glyph()
+        fig, ax = mg.plot(
+            self._smooth_field(mg), location="node", filled=True, labels=True
+        )
+        assert mg.contour_labels is None
+        plt.close(fig)
+
+    def test_labels_on_face_data_is_noop(self, triangle_glyph):
+        """`labels=True` is ignored for face data (`tripcolor`)."""
+        fig, ax = triangle_glyph.plot(
+            np.array([1.0, 2.0]), location="face", labels=True
+        )
+        assert triangle_glyph.contour_labels is None
+        plt.close(fig)
+
+    def test_replot_without_labels_resets_contour_labels(self):
+        """Re-plotting with `labels=False` clears a prior render's labels."""
+        mg = self._grid_glyph()
+        data = self._smooth_field(mg)
+        mg.plot(data, location="node", filled=False, labels=True)
+        assert mg.contour_labels is not None
+        fig, ax = mg.plot(data, location="node", filled=False)
+        assert mg.contour_labels is None
+        plt.close(fig)
+
+    def test_switching_to_filled_resets_contour_labels(self):
+        """A subsequent filled render clears stale label artists."""
+        mg = self._grid_glyph()
+        data = self._smooth_field(mg)
+        mg.plot(data, location="node", filled=False, labels=True)
+        assert mg.contour_labels is not None
+        fig, ax = mg.plot(data, location="node", filled=True, labels=True)
+        assert mg.contour_labels is None
+        plt.close(fig)
+
+    def test_labels_on_constant_field_is_empty_list(self):
+        """A labelled contour with no isolines yields [] (not None), no raise."""
+        mg = self._grid_glyph()
+        constant = np.full(mg.n_nodes, 3.0)
+        with warnings.catch_warnings():
+            # A constant field has no contour lines; matplotlib's
+            # "no contour levels" warning is expected and unrelated.
+            # `colorbar=False` avoids matplotlib's colorbar choking on a
+            # line set with zero isolines (an orthogonal limitation).
+            warnings.simplefilter("ignore")
+            fig, ax = mg.plot(
+                constant,
+                location="node",
+                filled=False,
+                labels=True,
+                colorbar=False,
+            )
+        assert mg.contour_labels == []
+        plt.close(fig)
+
+    def test_label_kw_overrides_cleopatra_defaults(self):
+        """User `label_kw` keys win over cleopatra's clabel defaults."""
+        mg = self._grid_glyph()
+        # Default fontsize is 8; the user value must take precedence.
+        fig, ax = mg.plot(
+            self._smooth_field(mg),
+            location="node",
+            filled=False,
+            labels=True,
+            label_kw={"fontsize": 14},
+        )
+        assert len(mg.contour_labels) > 0
+        assert all(t.get_fontsize() == 14 for t in mg.contour_labels)
+        plt.close(fig)
+
+    def test_label_kw_forwards_arbitrary_clabel_kwarg(self):
+        """A non-default `label_kw` key (`colors`) reaches `ax.clabel`."""
+        mg = self._grid_glyph()
+        fig, ax = mg.plot(
+            self._smooth_field(mg),
+            location="node",
+            filled=False,
+            labels=True,
+            label_kw={"colors": "red"},
+        )
+        assert len(mg.contour_labels) > 0
+        red = to_rgba("red")
+        assert all(
+            to_rgba(t.get_color()) == red for t in mg.contour_labels
+        ), "every label should be red when label_kw={'colors': 'red'}"
+        plt.close(fig)
+
+    def test_contour_labels_none_before_any_render(self):
+        """`contour_labels` is None on a freshly constructed glyph."""
+        mg = self._grid_glyph()
+        assert (
+            mg.contour_labels is None
+        ), f"Expected None before render, got {mg.contour_labels!r}"
+
+    def test_animate_resets_stale_contour_labels(self):
+        """`animate()` clears labels left by a prior `plot(labels=True)`."""
+        mg = self._grid_glyph()
+        field = self._smooth_field(mg)
+        mg.plot(field, location="node", filled=False, labels=True)
+        assert mg.contour_labels is not None
+        # An animation draws no inline labels; the stale list must be cleared.
+        anim = mg.animate([field, field * 2.0], time=["t0", "t1"], location="node")
+        assert mg.contour_labels is None
+        assert anim is not None
+        plt.close(mg.fig)
+
 
 class TestPlotOutline:
     """Tests for MeshGlyph.plot_outline()."""
@@ -978,6 +1185,21 @@ class TestPlotReuse:
         fig, ax = mg.plot(np.array([5.0, 5.0]))
         assert fig is not None, "Should return a Figure for constant data"
 
+    def test_explicit_ticks_spacing_preserved(self):
+        """User-supplied `ticks_spacing` skips auto-computation.
+
+        Test scenario:
+            Passing `ticks_spacing` to plot() must take the explicit
+            value (the branch that does not recompute spacing from the
+            data range) rather than `(vmax - vmin) / 10`.
+        """
+        mg = _make_tri_mg()
+        fig, ax = mg.plot(np.array([0.0, 10.0]), ticks_spacing=2.5)
+        assert mg.ticks_spacing == 2.5, (
+            f"Expected explicit ticks_spacing=2.5, got {mg.ticks_spacing}"
+        )
+        plt.close(fig)
+
     def test_all_nan_data_raises(self):
         """Test that all-NaN data raises a clear ValueError.
 
@@ -1066,6 +1288,57 @@ class TestAnimate:
         frames = [np.array([1.0, 2.0]), np.array([3.0])]  # second frame wrong length
         with pytest.raises(ValueError, match="Frame 1"):
             mg.animate(frames, time=["t0", "t1"])
+
+    def test_animate_explicit_options_and_title(self):
+        """animate honours explicit text_loc, vmin/vmax, ticks_spacing, title.
+
+        Test scenario:
+            Supplying all of `text_loc`, `vmin`, `vmax`, `ticks_spacing`
+            and `title` exercises the non-default branches: the time
+            label uses the given position, the colour limits and tick
+            spacing are taken verbatim (not recomputed from frames), and
+            the axes title is set.
+        """
+        mg = _make_tri_mg()
+        frames = np.array([[1.0, 2.0], [3.0, 4.0]])
+        anim = mg.animate(
+            frames,
+            time=["t0", "t1"],
+            text_loc=[0.5, 0.5],
+            vmin=0.0,
+            vmax=10.0,
+            ticks_spacing=2.0,
+            title="My Animation",
+        )
+        assert anim is not None, "Should return a FuncAnimation"
+        assert mg.vmin == 0.0, f"Expected explicit vmin=0.0, got {mg.vmin}"
+        assert mg.vmax == 10.0, f"Expected explicit vmax=10.0, got {mg.vmax}"
+        assert mg.ticks_spacing == 2.0, (
+            f"Expected explicit ticks_spacing=2.0, got {mg.ticks_spacing}"
+        )
+        assert mg.ax.get_title() == "My Animation", (
+            f"Expected title 'My Animation', got {mg.ax.get_title()!r}"
+        )
+        plt.close(mg.fig)
+
+    def test_animate_update_advances_frame(self):
+        """Driving the frame-update callback re-renders and relabels.
+
+        Test scenario:
+            Invoking the `FuncAnimation` update function for frame 1
+            removes the previous mappable and sets the time-label text,
+            exercising the `_update` closure that a non-rendered
+            animation otherwise never runs.
+        """
+        mg = _make_tri_mg()
+        frames = np.array([[1.0, 2.0], [3.0, 4.0]])
+        anim = mg.animate(frames, time=["t0", "t1"])
+        anim._func(1)
+        time_labels = [
+            t.get_text() for t in mg.ax.texts if t.get_text() == "t1"
+        ]
+        assert time_labels, "Frame update should set the time label to 't1'"
+        plt.close(mg.fig)
 
     def test_save_animation_gif(self, tmp_path):
         """Test saving mesh animation as GIF."""
