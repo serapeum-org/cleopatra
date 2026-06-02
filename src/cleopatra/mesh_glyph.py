@@ -846,6 +846,11 @@ class MeshGlyph(Glyph):
         ticks = self.get_ticks()
         norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
 
+        # An animation draws no inline contour labels, so clear any left on
+        # `self.contour_labels` by a previous `plot(labels=True)` call rather
+        # than letting stale label artists leak into the animation state.
+        self.contour_labels = None
+
         # Render the first frame.
         tpc = self._render_mesh(
             ax,

@@ -602,8 +602,8 @@ class TestContourLabels:
         faces = np.column_stack([a, a + 1, a + n + 1, a + n])
         return MeshGlyph(node_x, node_y, faces)
 
-    @classmethod
-    def _smooth_field(cls, mg: MeshGlyph) -> np.ndarray:
+    @staticmethod
+    def _smooth_field(mg: MeshGlyph) -> np.ndarray:
         """A smooth Gaussian node field that yields many isolines."""
         return np.exp(-(mg.node_x**2 + mg.node_y**2))
 
@@ -740,6 +740,18 @@ class TestContourLabels:
         assert (
             mg.contour_labels is None
         ), f"Expected None before render, got {mg.contour_labels!r}"
+
+    def test_animate_resets_stale_contour_labels(self):
+        """`animate()` clears labels left by a prior `plot(labels=True)`."""
+        mg = self._grid_glyph()
+        field = self._smooth_field(mg)
+        mg.plot(field, location="node", filled=False, labels=True)
+        assert mg.contour_labels is not None
+        # An animation draws no inline labels; the stale list must be cleared.
+        anim = mg.animate([field, field * 2.0], time=["t0", "t1"], location="node")
+        assert mg.contour_labels is None
+        assert anim is not None
+        plt.close(mg.fig)
 
 
 class TestPlotOutline:
