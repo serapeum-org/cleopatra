@@ -1079,6 +1079,75 @@ def size_legend(
     return ax.legend(handles=handles, **kwargs)
 
 
+def width_legend(
+    ax: Axes,
+    linewidths: Sequence[float],
+    labels: Sequence[str],
+    *,
+    color: str = "0.4",
+    **kwargs,
+) -> Legend:
+    """Attach a legend whose line *widths* encode magnitude.
+
+    The line-width counterpart to `size_legend` (which varies marker size):
+    each entry is a short line drawn at the given `linewidth`, so it is the
+    right legend for a width-scaled flow / Sankey map
+    (e.g. `FlowGlyph(..., widths=...)`).
+
+    Args:
+        ax: The axes the legend is attached to.
+        linewidths: The representative line widths (points), one per legend
+            entry. Must be the same length as `labels`.
+        labels: The text drawn next to each line. Must be the same length as
+            `linewidths`.
+        color: Colour for every proxy line. Defaults to a neutral grey
+            (`"0.4"`) because the legend encodes width, not colour.
+        **kwargs: Forwarded verbatim to `Axes.legend` (e.g. `title`, `loc`,
+            `labelspacing`, `bbox_to_anchor`).
+
+    Returns:
+        Legend: The created legend artist, already added to `ax`.
+
+    Raises:
+        ValueError: If `linewidths` and `labels` have different lengths.
+
+    Examples:
+        - Build a width legend and read back its labels:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styles import width_legend
+            >>> fig, ax = plt.subplots()
+            >>> legend = width_legend(ax, [1.0, 3.0, 5.0], ["low", "mid", "high"])
+            >>> [t.get_text() for t in legend.get_texts()]
+            ['low', 'mid', 'high']
+
+            ```
+        - Larger magnitudes give thicker proxy lines:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styles import width_legend
+            >>> fig, ax = plt.subplots()
+            >>> legend = width_legend(ax, [1.0, 4.0], ["thin", "thick"])
+            >>> handles = legend.legend_handles
+            >>> handles[0].get_linewidth(), handles[1].get_linewidth()
+            (1.0, 4.0)
+
+            ```
+    """
+    linewidths = list(linewidths)
+    labels = list(labels)
+    if len(linewidths) != len(labels):
+        raise ValueError(
+            "linewidths and labels must have the same length, got "
+            f"{len(linewidths)} and {len(labels)}."
+        )
+    handles = [
+        Line2D([], [], color=color, linewidth=lw, label=label)
+        for lw, label in zip(linewidths, labels)
+    ]
+    return ax.legend(handles=handles, **kwargs)
+
+
 def colorbar_legend(mappable: ScalarMappable, ax: Axes = None, **kwargs) -> Colorbar:
     """Attach a continuous colorbar legend for a mappable.
 
