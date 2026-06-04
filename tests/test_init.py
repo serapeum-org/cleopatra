@@ -22,6 +22,7 @@ _SUBMODULES = [
     "colors",
     "config",
     "glyph",
+    "kde_glyph",
     "line_glyph",
     "mesh_glyph",
     "polygon_glyph",
