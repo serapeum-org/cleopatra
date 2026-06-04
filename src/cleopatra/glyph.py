@@ -29,7 +29,7 @@ from matplotlib.ticker import LogFormatter
 from cleopatra.animation import SUPPORTED_VIDEO_FORMAT  # noqa: F401  (re-export)
 from cleopatra.animation import save_animation as _save_animation
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
-from cleopatra.styles import ColorScale, MidpointNormalize
+from cleopatra.styles import ColorScale, MidpointNormalize, classify
 
 #: Upper bound for an integer `levels` value (number of discrete colour
 #: levels / contour lines). A larger request is almost certainly a mistake
@@ -740,6 +740,11 @@ class Glyph:
         easy to get subtly wrong: `get_ticks()` does not read `self._vmin`,
         and `np.arange(None, None)` raises).
 
+        When the `scheme` option is set, the continuous steps above are
+        bypassed: control is handed to `_prepare_classified_mapping`, which
+        bins the data into discrete colour classes (a `BoundaryNorm`).
+        With `scheme` unset (the default) the behaviour is unchanged.
+
         Args:
             values: The scalar array to be colour-mapped (e.g. point
                 values, vector magnitudes, per-polygon values).
@@ -797,9 +802,79 @@ class Glyph:
             self.default_options["ticks_spacing"] = self.ticks_spacing
         self.default_options["vmin"] = self._vmin
         self.default_options["vmax"] = self._vmax
+        scheme = self.default_options.get("scheme")
+        if scheme is not None:
+            # Categorical (classified) colouring short-circuits the
+            # continuous `color_scale` / `levels` machinery: the bin edges
+            # fully determine the discrete `BoundaryNorm` and its ticks.
+            return self._prepare_classified_mapping(values, scheme)
         ticks = self.get_ticks()
         norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
         return norm, cbar_kw, ticks
+
+    def _prepare_classified_mapping(
+        self, values: np.ndarray, scheme: str | list | np.ndarray
+    ) -> tuple[colors.BoundaryNorm, dict, np.ndarray]:
+        """Build the `(norm, cbar_kw, ticks)` triple for classified colouring.
+
+        The discrete sibling of the continuous branch in
+        `_prepare_scalar_mapping`. When the `scheme` option is set, the
+        data is binned into classes by `cleopatra.styles.classify` (using
+        the `k` option for the count/width schemes), and the resulting bin
+        edges drive a `matplotlib.colors.BoundaryNorm` plus a colorbar
+        whose ticks sit on the class boundaries — so `create_color_bar`
+        renders a stepped colorbar. The `color_scale` / `levels` options
+        are intentionally bypassed here; classification owns the norm.
+
+        Args:
+            values: The scalar array to classify and colour-map.
+            scheme: A scheme name accepted by `classify` (e.g.
+                `"quantiles"`, `"equal_interval"`) or an explicit sequence
+                of bin edges.
+
+        Returns:
+            tuple[BoundaryNorm, dict, np.ndarray]: the discrete norm, the
+                colorbar keyword arguments (boundary `ticks` plus
+                `extend`), and the bin edges (returned in the `ticks`
+                slot of the shared contract).
+
+        Raises:
+            ValueError: Propagated from `classify` (unknown scheme,
+                degenerate data, or `k < 1`).
+            ModuleNotFoundError: Propagated from `classify` when a
+                Jenks-family scheme needs the optional `classify` extra.
+
+        Examples:
+            - A quantile scheme yields a `BoundaryNorm` and boundary ticks:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyph import Glyph
+                >>> from cleopatra.styles import DEFAULT_OPTIONS
+                >>> opts = DEFAULT_OPTIONS.copy()
+                >>> opts.update(
+                ...     {"vmin": None, "vmax": None, "scheme": "quantiles", "k": 4}
+                ... )
+                >>> g = Glyph(default_options=opts)
+                >>> norm, cbar_kw, edges = g._prepare_classified_mapping(
+                ...     np.arange(100.0), "quantiles"
+                ... )
+                >>> [float(b) for b in norm.boundaries]
+                [0.0, 24.75, 49.5, 74.25, 99.0]
+                >>> [float(t) for t in cbar_kw["ticks"]]
+                [0.0, 24.75, 49.5, 74.25, 99.0]
+                >>> cbar_kw["extend"]
+                'neither'
+
+                ```
+        """
+        k = self.default_options.get("k", 5)
+        bin_edges, norm = classify(values, scheme, k)
+        extend = self.default_options.get("extend")
+        cbar_kw = {
+            "ticks": bin_edges,
+            "extend": "neither" if extend is None else extend,
+        }
+        return norm, cbar_kw, bin_edges
 
     def create_color_bar(self, ax: Axes, im: Any, cbar_kw: dict) -> Colorbar:
         """Create a colorbar with full customization from default_options.
