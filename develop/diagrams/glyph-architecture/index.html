@@ -1568,9 +1568,8 @@ and size are resolved independently.</p>
   <code>DEFAULT_OPTIONS</code>; they live in <code>CLASSIFY_OPTIONS</code> and are mixed only into the
   glyphs whose renderer is driven purely by the norm, so <code>ArrayGlyph</code> /
   <code>MeshGlyph</code> / <code>KDEGlyph</code> reject <code>scheme</code> instead of silently ignoring it.</li>
-<li><strong>No new hard dependency</strong> — classification, KDE, and rescaling are pure
-  numpy + matplotlib; the Jenks-family schemes are the only thing behind an
-  optional, lazily-imported <code>cleopatra[classify]</code> extra.</li>
+<li><strong>No new dependency at all</strong> — classification (including the Fisher-Jenks
+  natural-breaks optimisation), KDE, and rescaling are pure numpy + matplotlib.</li>
 </ul>
 
 

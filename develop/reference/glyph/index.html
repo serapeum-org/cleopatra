@@ -2772,9 +2772,7 @@ cleopatra.mesh_glyph.MeshGlyph: Glyph subclass for
 <span class="normal"><a href="#__codelineno-0-1111">1111</a></span>
 <span class="normal"><a href="#__codelineno-0-1112">1112</a></span>
 <span class="normal"><a href="#__codelineno-0-1113">1113</a></span>
-<span class="normal"><a href="#__codelineno-0-1114">1114</a></span>
-<span class="normal"><a href="#__codelineno-0-1115">1115</a></span>
-<span class="normal"><a href="#__codelineno-0-1116">1116</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-99" name="__codelineno-0-99"></a><span class="k">class</span><span class="w"> </span><span class="nc">Glyph</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-1114">1114</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-99" name="__codelineno-0-99"></a><span class="k">class</span><span class="w"> </span><span class="nc">Glyph</span><span class="p">:</span>
 <a id="__codelineno-0-100" name="__codelineno-0-100"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for cleopatra visualization glyphs.</span>
 <a id="__codelineno-0-101" name="__codelineno-0-101"></a>
 <a id="__codelineno-0-102" name="__codelineno-0-102"></a><span class="sd">    Handles figure/axes management, default options, color scale</span>
@@ -3519,279 +3517,277 @@ cleopatra.mesh_glyph.MeshGlyph: Glyph subclass for
 <a id="__codelineno-0-841" name="__codelineno-0-841"></a><span class="sd">        Raises:</span>
 <a id="__codelineno-0-842" name="__codelineno-0-842"></a><span class="sd">            ValueError: Propagated from `classify` (unknown scheme,</span>
 <a id="__codelineno-0-843" name="__codelineno-0-843"></a><span class="sd">                degenerate data, or `k &lt; 1`).</span>
-<a id="__codelineno-0-844" name="__codelineno-0-844"></a><span class="sd">            ModuleNotFoundError: Propagated from `classify` when a</span>
-<a id="__codelineno-0-845" name="__codelineno-0-845"></a><span class="sd">                Jenks-family scheme needs the optional `classify` extra.</span>
-<a id="__codelineno-0-846" name="__codelineno-0-846"></a>
-<a id="__codelineno-0-847" name="__codelineno-0-847"></a><span class="sd">        Examples:</span>
-<a id="__codelineno-0-848" name="__codelineno-0-848"></a><span class="sd">            - A quantile scheme yields a `BoundaryNorm` and boundary ticks:</span>
-<a id="__codelineno-0-849" name="__codelineno-0-849"></a><span class="sd">                ```python</span>
-<a id="__codelineno-0-850" name="__codelineno-0-850"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-851" name="__codelineno-0-851"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyph import Glyph</span>
-<a id="__codelineno-0-852" name="__codelineno-0-852"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.styles import DEFAULT_OPTIONS</span>
-<a id="__codelineno-0-853" name="__codelineno-0-853"></a><span class="sd">                &gt;&gt;&gt; opts = DEFAULT_OPTIONS.copy()</span>
-<a id="__codelineno-0-854" name="__codelineno-0-854"></a><span class="sd">                &gt;&gt;&gt; opts.update(</span>
-<a id="__codelineno-0-855" name="__codelineno-0-855"></a><span class="sd">                ...     {&quot;vmin&quot;: None, &quot;vmax&quot;: None, &quot;scheme&quot;: &quot;quantiles&quot;, &quot;k&quot;: 4}</span>
-<a id="__codelineno-0-856" name="__codelineno-0-856"></a><span class="sd">                ... )</span>
-<a id="__codelineno-0-857" name="__codelineno-0-857"></a><span class="sd">                &gt;&gt;&gt; g = Glyph(default_options=opts)</span>
-<a id="__codelineno-0-858" name="__codelineno-0-858"></a><span class="sd">                &gt;&gt;&gt; norm, cbar_kw, edges = g._prepare_classified_mapping(</span>
-<a id="__codelineno-0-859" name="__codelineno-0-859"></a><span class="sd">                ...     np.arange(100.0), &quot;quantiles&quot;</span>
-<a id="__codelineno-0-860" name="__codelineno-0-860"></a><span class="sd">                ... )</span>
-<a id="__codelineno-0-861" name="__codelineno-0-861"></a><span class="sd">                &gt;&gt;&gt; [float(b) for b in norm.boundaries]</span>
+<a id="__codelineno-0-844" name="__codelineno-0-844"></a>
+<a id="__codelineno-0-845" name="__codelineno-0-845"></a><span class="sd">        Examples:</span>
+<a id="__codelineno-0-846" name="__codelineno-0-846"></a><span class="sd">            - A quantile scheme yields a `BoundaryNorm` and boundary ticks:</span>
+<a id="__codelineno-0-847" name="__codelineno-0-847"></a><span class="sd">                ```python</span>
+<a id="__codelineno-0-848" name="__codelineno-0-848"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-849" name="__codelineno-0-849"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyph import Glyph</span>
+<a id="__codelineno-0-850" name="__codelineno-0-850"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.styles import DEFAULT_OPTIONS</span>
+<a id="__codelineno-0-851" name="__codelineno-0-851"></a><span class="sd">                &gt;&gt;&gt; opts = DEFAULT_OPTIONS.copy()</span>
+<a id="__codelineno-0-852" name="__codelineno-0-852"></a><span class="sd">                &gt;&gt;&gt; opts.update(</span>
+<a id="__codelineno-0-853" name="__codelineno-0-853"></a><span class="sd">                ...     {&quot;vmin&quot;: None, &quot;vmax&quot;: None, &quot;scheme&quot;: &quot;quantiles&quot;, &quot;k&quot;: 4}</span>
+<a id="__codelineno-0-854" name="__codelineno-0-854"></a><span class="sd">                ... )</span>
+<a id="__codelineno-0-855" name="__codelineno-0-855"></a><span class="sd">                &gt;&gt;&gt; g = Glyph(default_options=opts)</span>
+<a id="__codelineno-0-856" name="__codelineno-0-856"></a><span class="sd">                &gt;&gt;&gt; norm, cbar_kw, edges = g._prepare_classified_mapping(</span>
+<a id="__codelineno-0-857" name="__codelineno-0-857"></a><span class="sd">                ...     np.arange(100.0), &quot;quantiles&quot;</span>
+<a id="__codelineno-0-858" name="__codelineno-0-858"></a><span class="sd">                ... )</span>
+<a id="__codelineno-0-859" name="__codelineno-0-859"></a><span class="sd">                &gt;&gt;&gt; [float(b) for b in norm.boundaries]</span>
+<a id="__codelineno-0-860" name="__codelineno-0-860"></a><span class="sd">                [0.0, 24.75, 49.5, 74.25, 99.0]</span>
+<a id="__codelineno-0-861" name="__codelineno-0-861"></a><span class="sd">                &gt;&gt;&gt; [float(t) for t in cbar_kw[&quot;ticks&quot;]]</span>
 <a id="__codelineno-0-862" name="__codelineno-0-862"></a><span class="sd">                [0.0, 24.75, 49.5, 74.25, 99.0]</span>
-<a id="__codelineno-0-863" name="__codelineno-0-863"></a><span class="sd">                &gt;&gt;&gt; [float(t) for t in cbar_kw[&quot;ticks&quot;]]</span>
-<a id="__codelineno-0-864" name="__codelineno-0-864"></a><span class="sd">                [0.0, 24.75, 49.5, 74.25, 99.0]</span>
-<a id="__codelineno-0-865" name="__codelineno-0-865"></a><span class="sd">                &gt;&gt;&gt; cbar_kw[&quot;extend&quot;]</span>
-<a id="__codelineno-0-866" name="__codelineno-0-866"></a><span class="sd">                &#39;neither&#39;</span>
-<a id="__codelineno-0-867" name="__codelineno-0-867"></a>
-<a id="__codelineno-0-868" name="__codelineno-0-868"></a><span class="sd">                ```</span>
-<a id="__codelineno-0-869" name="__codelineno-0-869"></a><span class="sd">        &quot;&quot;&quot;</span>
-<a id="__codelineno-0-870" name="__codelineno-0-870"></a>        <span class="c1"># `scheme` owns the norm, so any continuous `color_scale` / `levels`</span>
-<a id="__codelineno-0-871" name="__codelineno-0-871"></a>        <span class="c1"># the caller also set is ignored here. Warn rather than silently drop</span>
-<a id="__codelineno-0-872" name="__codelineno-0-872"></a>        <span class="c1"># it, so a conflicting configuration is visible.</span>
-<a id="__codelineno-0-873" name="__codelineno-0-873"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;color_scale&quot;</span><span class="p">,</span> <span class="s2">&quot;linear&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;linear&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-874" name="__codelineno-0-874"></a>            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-<a id="__codelineno-0-875" name="__codelineno-0-875"></a>                <span class="s2">&quot;`scheme` is set, so `color_scale=&quot;</span>
-<a id="__codelineno-0-876" name="__codelineno-0-876"></a>                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s1">&#39;color_scale&#39;</span><span class="p">]</span><span class="si">!r}</span><span class="s2">` is ignored &quot;</span>
-<a id="__codelineno-0-877" name="__codelineno-0-877"></a>                <span class="s2">&quot;(classification builds its own discrete norm).&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-878" name="__codelineno-0-878"></a>                <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
-<a id="__codelineno-0-879" name="__codelineno-0-879"></a>            <span class="p">)</span>
-<a id="__codelineno-0-880" name="__codelineno-0-880"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;levels&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-881" name="__codelineno-0-881"></a>            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-<a id="__codelineno-0-882" name="__codelineno-0-882"></a>                <span class="s2">&quot;`scheme` is set, so `levels` is ignored (the classification &quot;</span>
-<a id="__codelineno-0-883" name="__codelineno-0-883"></a>                <span class="s2">&quot;scheme determines the bins).&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-884" name="__codelineno-0-884"></a>                <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
-<a id="__codelineno-0-885" name="__codelineno-0-885"></a>            <span class="p">)</span>
-<a id="__codelineno-0-886" name="__codelineno-0-886"></a>        <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;k&quot;</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
-<a id="__codelineno-0-887" name="__codelineno-0-887"></a>        <span class="n">bin_edges</span><span class="p">,</span> <span class="n">norm</span> <span class="o">=</span> <span class="n">classify</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">scheme</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
-<a id="__codelineno-0-888" name="__codelineno-0-888"></a>        <span class="n">extend</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;extend&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-889" name="__codelineno-0-889"></a>        <span class="n">cbar_kw</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-890" name="__codelineno-0-890"></a>            <span class="s2">&quot;ticks&quot;</span><span class="p">:</span> <span class="n">bin_edges</span><span class="p">,</span>
-<a id="__codelineno-0-891" name="__codelineno-0-891"></a>            <span class="s2">&quot;extend&quot;</span><span class="p">:</span> <span class="s2">&quot;neither&quot;</span> <span class="k">if</span> <span class="n">extend</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">extend</span><span class="p">,</span>
-<a id="__codelineno-0-892" name="__codelineno-0-892"></a>        <span class="p">}</span>
-<a id="__codelineno-0-893" name="__codelineno-0-893"></a>        <span class="k">return</span> <span class="n">norm</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">,</span> <span class="n">bin_edges</span>
-<a id="__codelineno-0-894" name="__codelineno-0-894"></a>
-<a id="__codelineno-0-895" name="__codelineno-0-895"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">create_color_bar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span><span class="p">,</span> <span class="n">im</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Colorbar</span><span class="p">:</span>
-<a id="__codelineno-0-896" name="__codelineno-0-896"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a colorbar with full customization from default_options.</span>
-<a id="__codelineno-0-897" name="__codelineno-0-897"></a>
-<a id="__codelineno-0-898" name="__codelineno-0-898"></a><span class="sd">        Reads `cbar_length`, `cbar_orientation`, `cbar_label`,</span>
-<a id="__codelineno-0-899" name="__codelineno-0-899"></a><span class="sd">        `cbar_label_size`, and `cbar_label_location` from</span>
-<a id="__codelineno-0-900" name="__codelineno-0-900"></a><span class="sd">        `default_options` to configure the colorbar. When the optional</span>
-<a id="__codelineno-0-901" name="__codelineno-0-901"></a><span class="sd">        `cbar_kwargs` entry is present in `default_options` (an</span>
-<a id="__codelineno-0-902" name="__codelineno-0-902"></a><span class="sd">        xarray-aligned dict-of-overrides), its keys are merged over the</span>
-<a id="__codelineno-0-903" name="__codelineno-0-903"></a><span class="sd">        defaults so the user wins on any collision (e.g. `label`,</span>
-<a id="__codelineno-0-904" name="__codelineno-0-904"></a><span class="sd">        `shrink`, `orientation`, `ticks`, `extend`).</span>
-<a id="__codelineno-0-905" name="__codelineno-0-905"></a>
-<a id="__codelineno-0-906" name="__codelineno-0-906"></a><span class="sd">        `cbar_kwargs` is read from `self.default_options[&quot;cbar_kwargs&quot;]`.</span>
-<a id="__codelineno-0-907" name="__codelineno-0-907"></a><span class="sd">        Set it via the constructor or `plot` kwargs of the calling</span>
-<a id="__codelineno-0-908" name="__codelineno-0-908"></a><span class="sd">        glyph subclass. Keys recognised by `matplotlib.pyplot.colorbar`</span>
-<a id="__codelineno-0-909" name="__codelineno-0-909"></a><span class="sd">        — `label`, `shrink`, `aspect`, `orientation`, `pad`,</span>
-<a id="__codelineno-0-910" name="__codelineno-0-910"></a><span class="sd">        `ticks`, `extend` — are forwarded; `label` is special-cased</span>
-<a id="__codelineno-0-911" name="__codelineno-0-911"></a><span class="sd">        so that label-size and label-location styling from</span>
-<a id="__codelineno-0-912" name="__codelineno-0-912"></a><span class="sd">        `default_options` are still applied.</span>
-<a id="__codelineno-0-913" name="__codelineno-0-913"></a>
-<a id="__codelineno-0-914" name="__codelineno-0-914"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-915" name="__codelineno-0-915"></a><span class="sd">            ax: Matplotlib axes.</span>
-<a id="__codelineno-0-916" name="__codelineno-0-916"></a><span class="sd">            im: The mappable (image or contour) to attach the</span>
-<a id="__codelineno-0-917" name="__codelineno-0-917"></a><span class="sd">                colorbar to.</span>
-<a id="__codelineno-0-918" name="__codelineno-0-918"></a><span class="sd">            cbar_kw: Colorbar keyword arguments (ticks, format,</span>
-<a id="__codelineno-0-919" name="__codelineno-0-919"></a><span class="sd">                extend, etc.) computed by</span>
-<a id="__codelineno-0-920" name="__codelineno-0-920"></a><span class="sd">                `_create_norm_and_cbar_kw`.</span>
-<a id="__codelineno-0-921" name="__codelineno-0-921"></a>
-<a id="__codelineno-0-922" name="__codelineno-0-922"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-923" name="__codelineno-0-923"></a><span class="sd">            Colorbar: The created colorbar.</span>
-<a id="__codelineno-0-924" name="__codelineno-0-924"></a>
-<a id="__codelineno-0-925" name="__codelineno-0-925"></a><span class="sd">        Raises:</span>
-<a id="__codelineno-0-926" name="__codelineno-0-926"></a><span class="sd">            TypeError: If `default_options[&quot;cbar_kwargs&quot;]` is set</span>
-<a id="__codelineno-0-927" name="__codelineno-0-927"></a><span class="sd">                but is not a `dict`.</span>
-<a id="__codelineno-0-928" name="__codelineno-0-928"></a>
-<a id="__codelineno-0-929" name="__codelineno-0-929"></a><span class="sd">        Examples:</span>
-<a id="__codelineno-0-930" name="__codelineno-0-930"></a><span class="sd">            - Create a colorbar with a custom label:</span>
-<a id="__codelineno-0-931" name="__codelineno-0-931"></a><span class="sd">                ```python</span>
-<a id="__codelineno-0-932" name="__codelineno-0-932"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-933" name="__codelineno-0-933"></a><span class="sd">                &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-934" name="__codelineno-0-934"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyph import Glyph</span>
-<a id="__codelineno-0-935" name="__codelineno-0-935"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.styles import DEFAULT_OPTIONS</span>
-<a id="__codelineno-0-936" name="__codelineno-0-936"></a><span class="sd">                &gt;&gt;&gt; opts = DEFAULT_OPTIONS.copy()</span>
-<a id="__codelineno-0-937" name="__codelineno-0-937"></a><span class="sd">                &gt;&gt;&gt; opts.update({&quot;vmin&quot;: None, &quot;vmax&quot;: None})</span>
-<a id="__codelineno-0-938" name="__codelineno-0-938"></a><span class="sd">                &gt;&gt;&gt; g = Glyph(default_options=opts, cbar_label=&quot;Depth [m]&quot;)</span>
-<a id="__codelineno-0-939" name="__codelineno-0-939"></a><span class="sd">                &gt;&gt;&gt; fig, ax = plt.subplots()</span>
-<a id="__codelineno-0-940" name="__codelineno-0-940"></a><span class="sd">                &gt;&gt;&gt; im = ax.imshow(np.arange(9).reshape(3, 3))</span>
-<a id="__codelineno-0-941" name="__codelineno-0-941"></a><span class="sd">                &gt;&gt;&gt; cbar = g.create_color_bar(ax, im, {&quot;ticks&quot;: [0, 4, 8]})</span>
-<a id="__codelineno-0-942" name="__codelineno-0-942"></a><span class="sd">                &gt;&gt;&gt; cbar.orientation</span>
-<a id="__codelineno-0-943" name="__codelineno-0-943"></a><span class="sd">                &#39;vertical&#39;</span>
-<a id="__codelineno-0-944" name="__codelineno-0-944"></a>
-<a id="__codelineno-0-945" name="__codelineno-0-945"></a><span class="sd">                ```</span>
-<a id="__codelineno-0-946" name="__codelineno-0-946"></a><span class="sd">            - User-supplied `cbar_kwargs` win on collision and</span>
-<a id="__codelineno-0-947" name="__codelineno-0-947"></a><span class="sd">                `label` is applied via `set_label`:</span>
-<a id="__codelineno-0-948" name="__codelineno-0-948"></a><span class="sd">                ```python</span>
-<a id="__codelineno-0-949" name="__codelineno-0-949"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-950" name="__codelineno-0-950"></a><span class="sd">                &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-951" name="__codelineno-0-951"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyph import Glyph</span>
-<a id="__codelineno-0-952" name="__codelineno-0-952"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.styles import DEFAULT_OPTIONS</span>
-<a id="__codelineno-0-953" name="__codelineno-0-953"></a><span class="sd">                &gt;&gt;&gt; opts = DEFAULT_OPTIONS.copy()</span>
-<a id="__codelineno-0-954" name="__codelineno-0-954"></a><span class="sd">                &gt;&gt;&gt; opts.update({</span>
-<a id="__codelineno-0-955" name="__codelineno-0-955"></a><span class="sd">                ...     &quot;vmin&quot;: None,</span>
-<a id="__codelineno-0-956" name="__codelineno-0-956"></a><span class="sd">                ...     &quot;vmax&quot;: None,</span>
-<a id="__codelineno-0-957" name="__codelineno-0-957"></a><span class="sd">                ...     &quot;cbar_kwargs&quot;: {&quot;label&quot;: &quot;User Label&quot;, &quot;orientation&quot;: &quot;horizontal&quot;},</span>
-<a id="__codelineno-0-958" name="__codelineno-0-958"></a><span class="sd">                ... })</span>
-<a id="__codelineno-0-959" name="__codelineno-0-959"></a><span class="sd">                &gt;&gt;&gt; g = Glyph(default_options=opts, cbar_label=&quot;Default Label&quot;)</span>
-<a id="__codelineno-0-960" name="__codelineno-0-960"></a><span class="sd">                &gt;&gt;&gt; fig, ax = plt.subplots()</span>
-<a id="__codelineno-0-961" name="__codelineno-0-961"></a><span class="sd">                &gt;&gt;&gt; im = ax.imshow(np.arange(9).reshape(3, 3))</span>
-<a id="__codelineno-0-962" name="__codelineno-0-962"></a><span class="sd">                &gt;&gt;&gt; cbar = g.create_color_bar(ax, im, {&quot;ticks&quot;: [0, 4, 8]})</span>
-<a id="__codelineno-0-963" name="__codelineno-0-963"></a><span class="sd">                &gt;&gt;&gt; cbar.orientation</span>
-<a id="__codelineno-0-964" name="__codelineno-0-964"></a><span class="sd">                &#39;horizontal&#39;</span>
-<a id="__codelineno-0-965" name="__codelineno-0-965"></a><span class="sd">                &gt;&gt;&gt; cbar.ax.get_xlabel() or cbar.ax.get_ylabel()</span>
-<a id="__codelineno-0-966" name="__codelineno-0-966"></a><span class="sd">                &#39;User Label&#39;</span>
-<a id="__codelineno-0-967" name="__codelineno-0-967"></a>
-<a id="__codelineno-0-968" name="__codelineno-0-968"></a><span class="sd">                ```</span>
-<a id="__codelineno-0-969" name="__codelineno-0-969"></a><span class="sd">            - Non-dict `cbar_kwargs` raises `TypeError`:</span>
-<a id="__codelineno-0-970" name="__codelineno-0-970"></a><span class="sd">                ```python</span>
-<a id="__codelineno-0-971" name="__codelineno-0-971"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-972" name="__codelineno-0-972"></a><span class="sd">                &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-973" name="__codelineno-0-973"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyph import Glyph</span>
-<a id="__codelineno-0-974" name="__codelineno-0-974"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.styles import DEFAULT_OPTIONS</span>
-<a id="__codelineno-0-975" name="__codelineno-0-975"></a><span class="sd">                &gt;&gt;&gt; opts = DEFAULT_OPTIONS.copy()</span>
-<a id="__codelineno-0-976" name="__codelineno-0-976"></a><span class="sd">                &gt;&gt;&gt; opts.update({&quot;vmin&quot;: None, &quot;vmax&quot;: None, &quot;cbar_kwargs&quot;: &quot;oops&quot;})</span>
-<a id="__codelineno-0-977" name="__codelineno-0-977"></a><span class="sd">                &gt;&gt;&gt; g = Glyph(default_options=opts)</span>
-<a id="__codelineno-0-978" name="__codelineno-0-978"></a><span class="sd">                &gt;&gt;&gt; fig, ax = plt.subplots()</span>
-<a id="__codelineno-0-979" name="__codelineno-0-979"></a><span class="sd">                &gt;&gt;&gt; im = ax.imshow(np.arange(9).reshape(3, 3))</span>
-<a id="__codelineno-0-980" name="__codelineno-0-980"></a><span class="sd">                &gt;&gt;&gt; g.create_color_bar(ax, im, {&quot;ticks&quot;: [0, 4, 8]})</span>
-<a id="__codelineno-0-981" name="__codelineno-0-981"></a><span class="sd">                Traceback (most recent call last):</span>
-<a id="__codelineno-0-982" name="__codelineno-0-982"></a><span class="sd">                    ...</span>
-<a id="__codelineno-0-983" name="__codelineno-0-983"></a><span class="sd">                TypeError: cbar_kwargs must be a dict of colorbar keyword arguments, got str.</span>
-<a id="__codelineno-0-984" name="__codelineno-0-984"></a>
-<a id="__codelineno-0-985" name="__codelineno-0-985"></a><span class="sd">                ```</span>
-<a id="__codelineno-0-986" name="__codelineno-0-986"></a><span class="sd">        &quot;&quot;&quot;</span>
-<a id="__codelineno-0-987" name="__codelineno-0-987"></a>        <span class="n">fig</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">figure</span>
-<a id="__codelineno-0-988" name="__codelineno-0-988"></a>        <span class="n">is_subplot</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">fig</span><span class="o">.</span><span class="n">axes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span>
-<a id="__codelineno-0-989" name="__codelineno-0-989"></a>        <span class="n">merged_kw</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-990" name="__codelineno-0-990"></a>            <span class="s2">&quot;shrink&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">&quot;cbar_length&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-991" name="__codelineno-0-991"></a>            <span class="s2">&quot;orientation&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">&quot;cbar_orientation&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-992" name="__codelineno-0-992"></a>            <span class="s2">&quot;use_gridspec&quot;</span><span class="p">:</span> <span class="ow">not</span> <span class="n">is_subplot</span><span class="p">,</span>
-<a id="__codelineno-0-993" name="__codelineno-0-993"></a>        <span class="p">}</span>
-<a id="__codelineno-0-994" name="__codelineno-0-994"></a>        <span class="n">merged_kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">cbar_kw</span><span class="p">)</span>
-<a id="__codelineno-0-995" name="__codelineno-0-995"></a>        <span class="c1"># Pull the user-supplied `label` (if any) out of cbar_kwargs</span>
-<a id="__codelineno-0-996" name="__codelineno-0-996"></a>        <span class="c1"># before forwarding to `fig.colorbar` so we can apply it via</span>
-<a id="__codelineno-0-997" name="__codelineno-0-997"></a>        <span class="c1"># `cbar.set_label` and preserve label-size/location styling.</span>
-<a id="__codelineno-0-998" name="__codelineno-0-998"></a>        <span class="n">user_kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cbar_kwargs&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
-<a id="__codelineno-0-999" name="__codelineno-0-999"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-<a id="__codelineno-0-1000" name="__codelineno-0-1000"></a>            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
-<a id="__codelineno-0-1001" name="__codelineno-0-1001"></a>                <span class="s2">&quot;cbar_kwargs must be a dict of colorbar keyword &quot;</span>
-<a id="__codelineno-0-1002" name="__codelineno-0-1002"></a>                <span class="sa">f</span><span class="s2">&quot;arguments, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span>
-<a id="__codelineno-0-1003" name="__codelineno-0-1003"></a>            <span class="p">)</span>
-<a id="__codelineno-0-1004" name="__codelineno-0-1004"></a>        <span class="n">user_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">)</span>
-<a id="__codelineno-0-1005" name="__codelineno-0-1005"></a>        <span class="n">user_label</span> <span class="o">=</span> <span class="n">user_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;label&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-<a id="__codelineno-0-1006" name="__codelineno-0-1006"></a>        <span class="n">merged_kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">)</span>
-<a id="__codelineno-0-1007" name="__codelineno-0-1007"></a>        <span class="n">cbar</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">merged_kw</span><span class="p">)</span>
-<a id="__codelineno-0-1008" name="__codelineno-0-1008"></a>        <span class="n">cbar</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-<a id="__codelineno-0-1009" name="__codelineno-0-1009"></a>        <span class="n">label_text</span> <span class="o">=</span> <span class="p">(</span>
-<a id="__codelineno-0-1010" name="__codelineno-0-1010"></a>            <span class="n">user_label</span> <span class="k">if</span> <span class="n">user_label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-<a id="__codelineno-0-1011" name="__codelineno-0-1011"></a>            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">&quot;cbar_label&quot;</span><span class="p">]</span>
-<a id="__codelineno-0-1012" name="__codelineno-0-1012"></a>        <span class="p">)</span>
-<a id="__codelineno-0-1013" name="__codelineno-0-1013"></a>        <span class="n">cbar</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span>
-<a id="__codelineno-0-1014" name="__codelineno-0-1014"></a>            <span class="n">label_text</span><span class="p">,</span>
-<a id="__codelineno-0-1015" name="__codelineno-0-1015"></a>            <span class="n">fontsize</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">&quot;cbar_label_size&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-1016" name="__codelineno-0-1016"></a>            <span class="n">loc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">&quot;cbar_label_location&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-1017" name="__codelineno-0-1017"></a>        <span class="p">)</span>
-<a id="__codelineno-0-1018" name="__codelineno-0-1018"></a>        <span class="k">return</span> <span class="n">cbar</span>
-<a id="__codelineno-0-1019" name="__codelineno-0-1019"></a>
-<a id="__codelineno-0-1020" name="__codelineno-0-1020"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">adjust_ticks</span><span class="p">(</span>
-<a id="__codelineno-0-1021" name="__codelineno-0-1021"></a>        <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-1022" name="__codelineno-0-1022"></a>        <span class="n">axis</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<a id="__codelineno-0-1023" name="__codelineno-0-1023"></a>        <span class="n">multiply_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-0-1024" name="__codelineno-0-1024"></a>        <span class="n">add_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-<a id="__codelineno-0-1025" name="__codelineno-0-1025"></a>        <span class="n">fmt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0:g}</span><span class="s2">&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-1026" name="__codelineno-0-1026"></a>        <span class="n">visible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-0-1027" name="__codelineno-0-1027"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-1028" name="__codelineno-0-1028"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Adjust the axis tick labels with a linear transformation.</span>
-<a id="__codelineno-0-1029" name="__codelineno-0-1029"></a>
-<a id="__codelineno-0-1030" name="__codelineno-0-1030"></a><span class="sd">        Applies `tick_value * multiply_value + add_value` to each</span>
-<a id="__codelineno-0-1031" name="__codelineno-0-1031"></a><span class="sd">        tick, formatted with `fmt`. Useful for converting pixel</span>
-<a id="__codelineno-0-1032" name="__codelineno-0-1032"></a><span class="sd">        coordinates to real-world units.</span>
-<a id="__codelineno-0-1033" name="__codelineno-0-1033"></a>
-<a id="__codelineno-0-1034" name="__codelineno-0-1034"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-1035" name="__codelineno-0-1035"></a><span class="sd">            axis: `&quot;x&quot;` or `&quot;y&quot;`.</span>
-<a id="__codelineno-0-1036" name="__codelineno-0-1036"></a><span class="sd">            multiply_value: Multiplier for tick values. Default is 1.</span>
-<a id="__codelineno-0-1037" name="__codelineno-0-1037"></a><span class="sd">            add_value: Offset added to tick values. Default is 0.</span>
-<a id="__codelineno-0-1038" name="__codelineno-0-1038"></a><span class="sd">            fmt: Format string for tick labels.</span>
-<a id="__codelineno-0-1039" name="__codelineno-0-1039"></a><span class="sd">                Default is `&quot;{0:g}&quot;`.</span>
-<a id="__codelineno-0-1040" name="__codelineno-0-1040"></a><span class="sd">            visible: Whether the axis is visible. Default is True.</span>
-<a id="__codelineno-0-1041" name="__codelineno-0-1041"></a>
-<a id="__codelineno-0-1042" name="__codelineno-0-1042"></a><span class="sd">        Examples:</span>
-<a id="__codelineno-0-1043" name="__codelineno-0-1043"></a><span class="sd">            - Scale x-axis ticks by 100 and offset by 5:</span>
-<a id="__codelineno-0-1044" name="__codelineno-0-1044"></a><span class="sd">                ```python</span>
-<a id="__codelineno-0-1045" name="__codelineno-0-1045"></a><span class="sd">                &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-1046" name="__codelineno-0-1046"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyph import Glyph</span>
-<a id="__codelineno-0-1047" name="__codelineno-0-1047"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.styles import DEFAULT_OPTIONS</span>
-<a id="__codelineno-0-1048" name="__codelineno-0-1048"></a><span class="sd">                &gt;&gt;&gt; opts = DEFAULT_OPTIONS.copy()</span>
-<a id="__codelineno-0-1049" name="__codelineno-0-1049"></a><span class="sd">                &gt;&gt;&gt; opts.update({&quot;vmin&quot;: None, &quot;vmax&quot;: None})</span>
-<a id="__codelineno-0-1050" name="__codelineno-0-1050"></a><span class="sd">                &gt;&gt;&gt; g = Glyph(default_options=opts)</span>
-<a id="__codelineno-0-1051" name="__codelineno-0-1051"></a><span class="sd">                &gt;&gt;&gt; fig, ax = plt.subplots()</span>
-<a id="__codelineno-0-1052" name="__codelineno-0-1052"></a><span class="sd">                &gt;&gt;&gt; _ = ax.plot([0, 1, 2], [0, 1, 2])</span>
-<a id="__codelineno-0-1053" name="__codelineno-0-1053"></a><span class="sd">                &gt;&gt;&gt; g.fig, g.ax = fig, ax</span>
-<a id="__codelineno-0-1054" name="__codelineno-0-1054"></a><span class="sd">                &gt;&gt;&gt; g.adjust_ticks(axis=&quot;x&quot;, multiply_value=100, add_value=5)</span>
-<a id="__codelineno-0-1055" name="__codelineno-0-1055"></a>
-<a id="__codelineno-0-1056" name="__codelineno-0-1056"></a><span class="sd">                ```</span>
-<a id="__codelineno-0-1057" name="__codelineno-0-1057"></a><span class="sd">        &quot;&quot;&quot;</span>
-<a id="__codelineno-0-1058" name="__codelineno-0-1058"></a>        <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="s2">&quot;x&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-1059" name="__codelineno-0-1059"></a>            <span class="n">ticks_fn</span> <span class="o">=</span> <span class="n">ticker</span><span class="o">.</span><span class="n">FuncFormatter</span><span class="p">(</span>
-<a id="__codelineno-0-1060" name="__codelineno-0-1060"></a>                <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">pos</span><span class="p">:</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">multiply_value</span> <span class="o">+</span> <span class="n">add_value</span><span class="p">)</span>
-<a id="__codelineno-0-1061" name="__codelineno-0-1061"></a>            <span class="p">)</span>
-<a id="__codelineno-0-1062" name="__codelineno-0-1062"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">ticks_fn</span><span class="p">)</span>
-<a id="__codelineno-0-1063" name="__codelineno-0-1063"></a>        <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-1064" name="__codelineno-0-1064"></a>            <span class="n">ticks_fn</span> <span class="o">=</span> <span class="n">ticker</span><span class="o">.</span><span class="n">FuncFormatter</span><span class="p">(</span>
-<a id="__codelineno-0-1065" name="__codelineno-0-1065"></a>                <span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">pos</span><span class="p">:</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">y</span> <span class="o">*</span> <span class="n">multiply_value</span> <span class="o">+</span> <span class="n">add_value</span><span class="p">)</span>
-<a id="__codelineno-0-1066" name="__codelineno-0-1066"></a>            <span class="p">)</span>
-<a id="__codelineno-0-1067" name="__codelineno-0-1067"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">ticks_fn</span><span class="p">)</span>
-<a id="__codelineno-0-1068" name="__codelineno-0-1068"></a>
-<a id="__codelineno-0-1069" name="__codelineno-0-1069"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">visible</span><span class="p">:</span>
-<a id="__codelineno-0-1070" name="__codelineno-0-1070"></a>            <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="s2">&quot;x&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-1071" name="__codelineno-0-1071"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">get_xaxis</span><span class="p">()</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="n">visible</span><span class="p">)</span>
-<a id="__codelineno-0-1072" name="__codelineno-0-1072"></a>            <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-1073" name="__codelineno-0-1073"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">get_yaxis</span><span class="p">()</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="n">visible</span><span class="p">)</span>
-<a id="__codelineno-0-1074" name="__codelineno-0-1074"></a>
-<a id="__codelineno-0-1075" name="__codelineno-0-1075"></a>    <span class="nd">@staticmethod</span>
-<a id="__codelineno-0-1076" name="__codelineno-0-1076"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_plot_point_values</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">point_table</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pid_color</span><span class="p">,</span> <span class="n">pid_size</span><span class="p">):</span>
-<a id="__codelineno-0-1077" name="__codelineno-0-1077"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot point value labels on the axes.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-1078" name="__codelineno-0-1078"></a>        <span class="n">write_points</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
-<a id="__codelineno-0-1079" name="__codelineno-0-1079"></a>            <span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
-<a id="__codelineno-0-1080" name="__codelineno-0-1080"></a>            <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
-<a id="__codelineno-0-1081" name="__codelineno-0-1081"></a>            <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-<a id="__codelineno-0-1082" name="__codelineno-0-1082"></a>            <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-1083" name="__codelineno-0-1083"></a>            <span class="n">va</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-1084" name="__codelineno-0-1084"></a>            <span class="n">color</span><span class="o">=</span><span class="n">pid_color</span><span class="p">,</span>
-<a id="__codelineno-0-1085" name="__codelineno-0-1085"></a>            <span class="n">fontsize</span><span class="o">=</span><span class="n">pid_size</span><span class="p">,</span>
-<a id="__codelineno-0-1086" name="__codelineno-0-1086"></a>        <span class="p">)</span>
-<a id="__codelineno-0-1087" name="__codelineno-0-1087"></a>        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">write_points</span><span class="p">,</span> <span class="n">point_table</span><span class="p">))</span>
-<a id="__codelineno-0-1088" name="__codelineno-0-1088"></a>
-<a id="__codelineno-0-1089" name="__codelineno-0-1089"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">save_animation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-1090" name="__codelineno-0-1090"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Save this glyph&#39;s animation (`self.anim`) to a file.</span>
-<a id="__codelineno-0-1091" name="__codelineno-0-1091"></a>
-<a id="__codelineno-0-1092" name="__codelineno-0-1092"></a><span class="sd">        Thin wrapper around `cleopatra.animation.save_animation`; the output</span>
-<a id="__codelineno-0-1093" name="__codelineno-0-1093"></a><span class="sd">        format is determined by the file extension. GIF uses `PillowWriter`;</span>
-<a id="__codelineno-0-1094" name="__codelineno-0-1094"></a><span class="sd">        mov/avi/mp4 require FFmpeg to be installed.</span>
-<a id="__codelineno-0-1095" name="__codelineno-0-1095"></a>
-<a id="__codelineno-0-1096" name="__codelineno-0-1096"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-1097" name="__codelineno-0-1097"></a><span class="sd">            path: Output file path. Extension determines format.</span>
-<a id="__codelineno-0-1098" name="__codelineno-0-1098"></a><span class="sd">                Supported: gif, mov, avi, mp4.</span>
-<a id="__codelineno-0-1099" name="__codelineno-0-1099"></a><span class="sd">            fps: Frames per second. Default is 2.</span>
-<a id="__codelineno-0-1100" name="__codelineno-0-1100"></a>
-<a id="__codelineno-0-1101" name="__codelineno-0-1101"></a><span class="sd">        Raises:</span>
-<a id="__codelineno-0-1102" name="__codelineno-0-1102"></a><span class="sd">            ValueError: If `animate()` has not been called yet, or if the</span>
-<a id="__codelineno-0-1103" name="__codelineno-0-1103"></a><span class="sd">                file format is not supported.</span>
-<a id="__codelineno-0-1104" name="__codelineno-0-1104"></a><span class="sd">            FileNotFoundError: If a video format is requested but FFmpeg is</span>
-<a id="__codelineno-0-1105" name="__codelineno-0-1105"></a><span class="sd">                not installed.</span>
-<a id="__codelineno-0-1106" name="__codelineno-0-1106"></a>
-<a id="__codelineno-0-1107" name="__codelineno-0-1107"></a><span class="sd">        Examples:</span>
-<a id="__codelineno-0-1108" name="__codelineno-0-1108"></a><span class="sd">            - Check the supported video formats:</span>
-<a id="__codelineno-0-1109" name="__codelineno-0-1109"></a><span class="sd">                ```python</span>
-<a id="__codelineno-0-1110" name="__codelineno-0-1110"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyph import SUPPORTED_VIDEO_FORMAT</span>
-<a id="__codelineno-0-1111" name="__codelineno-0-1111"></a><span class="sd">                &gt;&gt;&gt; sorted(SUPPORTED_VIDEO_FORMAT)</span>
-<a id="__codelineno-0-1112" name="__codelineno-0-1112"></a><span class="sd">                [&#39;avi&#39;, &#39;gif&#39;, &#39;mov&#39;, &#39;mp4&#39;]</span>
-<a id="__codelineno-0-1113" name="__codelineno-0-1113"></a>
-<a id="__codelineno-0-1114" name="__codelineno-0-1114"></a><span class="sd">                ```</span>
-<a id="__codelineno-0-1115" name="__codelineno-0-1115"></a><span class="sd">        &quot;&quot;&quot;</span>
-<a id="__codelineno-0-1116" name="__codelineno-0-1116"></a>        <span class="n">_save_animation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">anim</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">)</span>
+<a id="__codelineno-0-863" name="__codelineno-0-863"></a><span class="sd">                &gt;&gt;&gt; cbar_kw[&quot;extend&quot;]</span>
+<a id="__codelineno-0-864" name="__codelineno-0-864"></a><span class="sd">                &#39;neither&#39;</span>
+<a id="__codelineno-0-865" name="__codelineno-0-865"></a>
+<a id="__codelineno-0-866" name="__codelineno-0-866"></a><span class="sd">                ```</span>
+<a id="__codelineno-0-867" name="__codelineno-0-867"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-868" name="__codelineno-0-868"></a>        <span class="c1"># `scheme` owns the norm, so any continuous `color_scale` / `levels`</span>
+<a id="__codelineno-0-869" name="__codelineno-0-869"></a>        <span class="c1"># the caller also set is ignored here. Warn rather than silently drop</span>
+<a id="__codelineno-0-870" name="__codelineno-0-870"></a>        <span class="c1"># it, so a conflicting configuration is visible.</span>
+<a id="__codelineno-0-871" name="__codelineno-0-871"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;color_scale&quot;</span><span class="p">,</span> <span class="s2">&quot;linear&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;linear&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-872" name="__codelineno-0-872"></a>            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+<a id="__codelineno-0-873" name="__codelineno-0-873"></a>                <span class="s2">&quot;`scheme` is set, so `color_scale=&quot;</span>
+<a id="__codelineno-0-874" name="__codelineno-0-874"></a>                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s1">&#39;color_scale&#39;</span><span class="p">]</span><span class="si">!r}</span><span class="s2">` is ignored &quot;</span>
+<a id="__codelineno-0-875" name="__codelineno-0-875"></a>                <span class="s2">&quot;(classification builds its own discrete norm).&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-876" name="__codelineno-0-876"></a>                <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+<a id="__codelineno-0-877" name="__codelineno-0-877"></a>            <span class="p">)</span>
+<a id="__codelineno-0-878" name="__codelineno-0-878"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;levels&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-879" name="__codelineno-0-879"></a>            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+<a id="__codelineno-0-880" name="__codelineno-0-880"></a>                <span class="s2">&quot;`scheme` is set, so `levels` is ignored (the classification &quot;</span>
+<a id="__codelineno-0-881" name="__codelineno-0-881"></a>                <span class="s2">&quot;scheme determines the bins).&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-882" name="__codelineno-0-882"></a>                <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+<a id="__codelineno-0-883" name="__codelineno-0-883"></a>            <span class="p">)</span>
+<a id="__codelineno-0-884" name="__codelineno-0-884"></a>        <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;k&quot;</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<a id="__codelineno-0-885" name="__codelineno-0-885"></a>        <span class="n">bin_edges</span><span class="p">,</span> <span class="n">norm</span> <span class="o">=</span> <span class="n">classify</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">scheme</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+<a id="__codelineno-0-886" name="__codelineno-0-886"></a>        <span class="n">extend</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;extend&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-887" name="__codelineno-0-887"></a>        <span class="n">cbar_kw</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-888" name="__codelineno-0-888"></a>            <span class="s2">&quot;ticks&quot;</span><span class="p">:</span> <span class="n">bin_edges</span><span class="p">,</span>
+<a id="__codelineno-0-889" name="__codelineno-0-889"></a>            <span class="s2">&quot;extend&quot;</span><span class="p">:</span> <span class="s2">&quot;neither&quot;</span> <span class="k">if</span> <span class="n">extend</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">extend</span><span class="p">,</span>
+<a id="__codelineno-0-890" name="__codelineno-0-890"></a>        <span class="p">}</span>
+<a id="__codelineno-0-891" name="__codelineno-0-891"></a>        <span class="k">return</span> <span class="n">norm</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">,</span> <span class="n">bin_edges</span>
+<a id="__codelineno-0-892" name="__codelineno-0-892"></a>
+<a id="__codelineno-0-893" name="__codelineno-0-893"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">create_color_bar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span><span class="p">,</span> <span class="n">im</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Colorbar</span><span class="p">:</span>
+<a id="__codelineno-0-894" name="__codelineno-0-894"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a colorbar with full customization from default_options.</span>
+<a id="__codelineno-0-895" name="__codelineno-0-895"></a>
+<a id="__codelineno-0-896" name="__codelineno-0-896"></a><span class="sd">        Reads `cbar_length`, `cbar_orientation`, `cbar_label`,</span>
+<a id="__codelineno-0-897" name="__codelineno-0-897"></a><span class="sd">        `cbar_label_size`, and `cbar_label_location` from</span>
+<a id="__codelineno-0-898" name="__codelineno-0-898"></a><span class="sd">        `default_options` to configure the colorbar. When the optional</span>
+<a id="__codelineno-0-899" name="__codelineno-0-899"></a><span class="sd">        `cbar_kwargs` entry is present in `default_options` (an</span>
+<a id="__codelineno-0-900" name="__codelineno-0-900"></a><span class="sd">        xarray-aligned dict-of-overrides), its keys are merged over the</span>
+<a id="__codelineno-0-901" name="__codelineno-0-901"></a><span class="sd">        defaults so the user wins on any collision (e.g. `label`,</span>
+<a id="__codelineno-0-902" name="__codelineno-0-902"></a><span class="sd">        `shrink`, `orientation`, `ticks`, `extend`).</span>
+<a id="__codelineno-0-903" name="__codelineno-0-903"></a>
+<a id="__codelineno-0-904" name="__codelineno-0-904"></a><span class="sd">        `cbar_kwargs` is read from `self.default_options[&quot;cbar_kwargs&quot;]`.</span>
+<a id="__codelineno-0-905" name="__codelineno-0-905"></a><span class="sd">        Set it via the constructor or `plot` kwargs of the calling</span>
+<a id="__codelineno-0-906" name="__codelineno-0-906"></a><span class="sd">        glyph subclass. Keys recognised by `matplotlib.pyplot.colorbar`</span>
+<a id="__codelineno-0-907" name="__codelineno-0-907"></a><span class="sd">        — `label`, `shrink`, `aspect`, `orientation`, `pad`,</span>
+<a id="__codelineno-0-908" name="__codelineno-0-908"></a><span class="sd">        `ticks`, `extend` — are forwarded; `label` is special-cased</span>
+<a id="__codelineno-0-909" name="__codelineno-0-909"></a><span class="sd">        so that label-size and label-location styling from</span>
+<a id="__codelineno-0-910" name="__codelineno-0-910"></a><span class="sd">        `default_options` are still applied.</span>
+<a id="__codelineno-0-911" name="__codelineno-0-911"></a>
+<a id="__codelineno-0-912" name="__codelineno-0-912"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-913" name="__codelineno-0-913"></a><span class="sd">            ax: Matplotlib axes.</span>
+<a id="__codelineno-0-914" name="__codelineno-0-914"></a><span class="sd">            im: The mappable (image or contour) to attach the</span>
+<a id="__codelineno-0-915" name="__codelineno-0-915"></a><span class="sd">                colorbar to.</span>
+<a id="__codelineno-0-916" name="__codelineno-0-916"></a><span class="sd">            cbar_kw: Colorbar keyword arguments (ticks, format,</span>
+<a id="__codelineno-0-917" name="__codelineno-0-917"></a><span class="sd">                extend, etc.) computed by</span>
+<a id="__codelineno-0-918" name="__codelineno-0-918"></a><span class="sd">                `_create_norm_and_cbar_kw`.</span>
+<a id="__codelineno-0-919" name="__codelineno-0-919"></a>
+<a id="__codelineno-0-920" name="__codelineno-0-920"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-0-921" name="__codelineno-0-921"></a><span class="sd">            Colorbar: The created colorbar.</span>
+<a id="__codelineno-0-922" name="__codelineno-0-922"></a>
+<a id="__codelineno-0-923" name="__codelineno-0-923"></a><span class="sd">        Raises:</span>
+<a id="__codelineno-0-924" name="__codelineno-0-924"></a><span class="sd">            TypeError: If `default_options[&quot;cbar_kwargs&quot;]` is set</span>
+<a id="__codelineno-0-925" name="__codelineno-0-925"></a><span class="sd">                but is not a `dict`.</span>
+<a id="__codelineno-0-926" name="__codelineno-0-926"></a>
+<a id="__codelineno-0-927" name="__codelineno-0-927"></a><span class="sd">        Examples:</span>
+<a id="__codelineno-0-928" name="__codelineno-0-928"></a><span class="sd">            - Create a colorbar with a custom label:</span>
+<a id="__codelineno-0-929" name="__codelineno-0-929"></a><span class="sd">                ```python</span>
+<a id="__codelineno-0-930" name="__codelineno-0-930"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-931" name="__codelineno-0-931"></a><span class="sd">                &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-932" name="__codelineno-0-932"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyph import Glyph</span>
+<a id="__codelineno-0-933" name="__codelineno-0-933"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.styles import DEFAULT_OPTIONS</span>
+<a id="__codelineno-0-934" name="__codelineno-0-934"></a><span class="sd">                &gt;&gt;&gt; opts = DEFAULT_OPTIONS.copy()</span>
+<a id="__codelineno-0-935" name="__codelineno-0-935"></a><span class="sd">                &gt;&gt;&gt; opts.update({&quot;vmin&quot;: None, &quot;vmax&quot;: None})</span>
+<a id="__codelineno-0-936" name="__codelineno-0-936"></a><span class="sd">                &gt;&gt;&gt; g = Glyph(default_options=opts, cbar_label=&quot;Depth [m]&quot;)</span>
+<a id="__codelineno-0-937" name="__codelineno-0-937"></a><span class="sd">                &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-938" name="__codelineno-0-938"></a><span class="sd">                &gt;&gt;&gt; im = ax.imshow(np.arange(9).reshape(3, 3))</span>
+<a id="__codelineno-0-939" name="__codelineno-0-939"></a><span class="sd">                &gt;&gt;&gt; cbar = g.create_color_bar(ax, im, {&quot;ticks&quot;: [0, 4, 8]})</span>
+<a id="__codelineno-0-940" name="__codelineno-0-940"></a><span class="sd">                &gt;&gt;&gt; cbar.orientation</span>
+<a id="__codelineno-0-941" name="__codelineno-0-941"></a><span class="sd">                &#39;vertical&#39;</span>
+<a id="__codelineno-0-942" name="__codelineno-0-942"></a>
+<a id="__codelineno-0-943" name="__codelineno-0-943"></a><span class="sd">                ```</span>
+<a id="__codelineno-0-944" name="__codelineno-0-944"></a><span class="sd">            - User-supplied `cbar_kwargs` win on collision and</span>
+<a id="__codelineno-0-945" name="__codelineno-0-945"></a><span class="sd">                `label` is applied via `set_label`:</span>
+<a id="__codelineno-0-946" name="__codelineno-0-946"></a><span class="sd">                ```python</span>
+<a id="__codelineno-0-947" name="__codelineno-0-947"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-948" name="__codelineno-0-948"></a><span class="sd">                &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-949" name="__codelineno-0-949"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyph import Glyph</span>
+<a id="__codelineno-0-950" name="__codelineno-0-950"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.styles import DEFAULT_OPTIONS</span>
+<a id="__codelineno-0-951" name="__codelineno-0-951"></a><span class="sd">                &gt;&gt;&gt; opts = DEFAULT_OPTIONS.copy()</span>
+<a id="__codelineno-0-952" name="__codelineno-0-952"></a><span class="sd">                &gt;&gt;&gt; opts.update({</span>
+<a id="__codelineno-0-953" name="__codelineno-0-953"></a><span class="sd">                ...     &quot;vmin&quot;: None,</span>
+<a id="__codelineno-0-954" name="__codelineno-0-954"></a><span class="sd">                ...     &quot;vmax&quot;: None,</span>
+<a id="__codelineno-0-955" name="__codelineno-0-955"></a><span class="sd">                ...     &quot;cbar_kwargs&quot;: {&quot;label&quot;: &quot;User Label&quot;, &quot;orientation&quot;: &quot;horizontal&quot;},</span>
+<a id="__codelineno-0-956" name="__codelineno-0-956"></a><span class="sd">                ... })</span>
+<a id="__codelineno-0-957" name="__codelineno-0-957"></a><span class="sd">                &gt;&gt;&gt; g = Glyph(default_options=opts, cbar_label=&quot;Default Label&quot;)</span>
+<a id="__codelineno-0-958" name="__codelineno-0-958"></a><span class="sd">                &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-959" name="__codelineno-0-959"></a><span class="sd">                &gt;&gt;&gt; im = ax.imshow(np.arange(9).reshape(3, 3))</span>
+<a id="__codelineno-0-960" name="__codelineno-0-960"></a><span class="sd">                &gt;&gt;&gt; cbar = g.create_color_bar(ax, im, {&quot;ticks&quot;: [0, 4, 8]})</span>
+<a id="__codelineno-0-961" name="__codelineno-0-961"></a><span class="sd">                &gt;&gt;&gt; cbar.orientation</span>
+<a id="__codelineno-0-962" name="__codelineno-0-962"></a><span class="sd">                &#39;horizontal&#39;</span>
+<a id="__codelineno-0-963" name="__codelineno-0-963"></a><span class="sd">                &gt;&gt;&gt; cbar.ax.get_xlabel() or cbar.ax.get_ylabel()</span>
+<a id="__codelineno-0-964" name="__codelineno-0-964"></a><span class="sd">                &#39;User Label&#39;</span>
+<a id="__codelineno-0-965" name="__codelineno-0-965"></a>
+<a id="__codelineno-0-966" name="__codelineno-0-966"></a><span class="sd">                ```</span>
+<a id="__codelineno-0-967" name="__codelineno-0-967"></a><span class="sd">            - Non-dict `cbar_kwargs` raises `TypeError`:</span>
+<a id="__codelineno-0-968" name="__codelineno-0-968"></a><span class="sd">                ```python</span>
+<a id="__codelineno-0-969" name="__codelineno-0-969"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-970" name="__codelineno-0-970"></a><span class="sd">                &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-971" name="__codelineno-0-971"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyph import Glyph</span>
+<a id="__codelineno-0-972" name="__codelineno-0-972"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.styles import DEFAULT_OPTIONS</span>
+<a id="__codelineno-0-973" name="__codelineno-0-973"></a><span class="sd">                &gt;&gt;&gt; opts = DEFAULT_OPTIONS.copy()</span>
+<a id="__codelineno-0-974" name="__codelineno-0-974"></a><span class="sd">                &gt;&gt;&gt; opts.update({&quot;vmin&quot;: None, &quot;vmax&quot;: None, &quot;cbar_kwargs&quot;: &quot;oops&quot;})</span>
+<a id="__codelineno-0-975" name="__codelineno-0-975"></a><span class="sd">                &gt;&gt;&gt; g = Glyph(default_options=opts)</span>
+<a id="__codelineno-0-976" name="__codelineno-0-976"></a><span class="sd">                &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-977" name="__codelineno-0-977"></a><span class="sd">                &gt;&gt;&gt; im = ax.imshow(np.arange(9).reshape(3, 3))</span>
+<a id="__codelineno-0-978" name="__codelineno-0-978"></a><span class="sd">                &gt;&gt;&gt; g.create_color_bar(ax, im, {&quot;ticks&quot;: [0, 4, 8]})</span>
+<a id="__codelineno-0-979" name="__codelineno-0-979"></a><span class="sd">                Traceback (most recent call last):</span>
+<a id="__codelineno-0-980" name="__codelineno-0-980"></a><span class="sd">                    ...</span>
+<a id="__codelineno-0-981" name="__codelineno-0-981"></a><span class="sd">                TypeError: cbar_kwargs must be a dict of colorbar keyword arguments, got str.</span>
+<a id="__codelineno-0-982" name="__codelineno-0-982"></a>
+<a id="__codelineno-0-983" name="__codelineno-0-983"></a><span class="sd">                ```</span>
+<a id="__codelineno-0-984" name="__codelineno-0-984"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-985" name="__codelineno-0-985"></a>        <span class="n">fig</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">figure</span>
+<a id="__codelineno-0-986" name="__codelineno-0-986"></a>        <span class="n">is_subplot</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">fig</span><span class="o">.</span><span class="n">axes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span>
+<a id="__codelineno-0-987" name="__codelineno-0-987"></a>        <span class="n">merged_kw</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-988" name="__codelineno-0-988"></a>            <span class="s2">&quot;shrink&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">&quot;cbar_length&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-989" name="__codelineno-0-989"></a>            <span class="s2">&quot;orientation&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">&quot;cbar_orientation&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-990" name="__codelineno-0-990"></a>            <span class="s2">&quot;use_gridspec&quot;</span><span class="p">:</span> <span class="ow">not</span> <span class="n">is_subplot</span><span class="p">,</span>
+<a id="__codelineno-0-991" name="__codelineno-0-991"></a>        <span class="p">}</span>
+<a id="__codelineno-0-992" name="__codelineno-0-992"></a>        <span class="n">merged_kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">cbar_kw</span><span class="p">)</span>
+<a id="__codelineno-0-993" name="__codelineno-0-993"></a>        <span class="c1"># Pull the user-supplied `label` (if any) out of cbar_kwargs</span>
+<a id="__codelineno-0-994" name="__codelineno-0-994"></a>        <span class="c1"># before forwarding to `fig.colorbar` so we can apply it via</span>
+<a id="__codelineno-0-995" name="__codelineno-0-995"></a>        <span class="c1"># `cbar.set_label` and preserve label-size/location styling.</span>
+<a id="__codelineno-0-996" name="__codelineno-0-996"></a>        <span class="n">user_kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cbar_kwargs&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+<a id="__codelineno-0-997" name="__codelineno-0-997"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+<a id="__codelineno-0-998" name="__codelineno-0-998"></a>            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+<a id="__codelineno-0-999" name="__codelineno-0-999"></a>                <span class="s2">&quot;cbar_kwargs must be a dict of colorbar keyword &quot;</span>
+<a id="__codelineno-0-1000" name="__codelineno-0-1000"></a>                <span class="sa">f</span><span class="s2">&quot;arguments, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span>
+<a id="__codelineno-0-1001" name="__codelineno-0-1001"></a>            <span class="p">)</span>
+<a id="__codelineno-0-1002" name="__codelineno-0-1002"></a>        <span class="n">user_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-1003" name="__codelineno-0-1003"></a>        <span class="n">user_label</span> <span class="o">=</span> <span class="n">user_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;label&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<a id="__codelineno-0-1004" name="__codelineno-0-1004"></a>        <span class="n">merged_kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-1005" name="__codelineno-0-1005"></a>        <span class="n">cbar</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">merged_kw</span><span class="p">)</span>
+<a id="__codelineno-0-1006" name="__codelineno-0-1006"></a>        <span class="n">cbar</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<a id="__codelineno-0-1007" name="__codelineno-0-1007"></a>        <span class="n">label_text</span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-0-1008" name="__codelineno-0-1008"></a>            <span class="n">user_label</span> <span class="k">if</span> <span class="n">user_label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-0-1009" name="__codelineno-0-1009"></a>            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">&quot;cbar_label&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-1010" name="__codelineno-0-1010"></a>        <span class="p">)</span>
+<a id="__codelineno-0-1011" name="__codelineno-0-1011"></a>        <span class="n">cbar</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span>
+<a id="__codelineno-0-1012" name="__codelineno-0-1012"></a>            <span class="n">label_text</span><span class="p">,</span>
+<a id="__codelineno-0-1013" name="__codelineno-0-1013"></a>            <span class="n">fontsize</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">&quot;cbar_label_size&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-1014" name="__codelineno-0-1014"></a>            <span class="n">loc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">&quot;cbar_label_location&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-1015" name="__codelineno-0-1015"></a>        <span class="p">)</span>
+<a id="__codelineno-0-1016" name="__codelineno-0-1016"></a>        <span class="k">return</span> <span class="n">cbar</span>
+<a id="__codelineno-0-1017" name="__codelineno-0-1017"></a>
+<a id="__codelineno-0-1018" name="__codelineno-0-1018"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">adjust_ticks</span><span class="p">(</span>
+<a id="__codelineno-0-1019" name="__codelineno-0-1019"></a>        <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-1020" name="__codelineno-0-1020"></a>        <span class="n">axis</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-0-1021" name="__codelineno-0-1021"></a>        <span class="n">multiply_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-1022" name="__codelineno-0-1022"></a>        <span class="n">add_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+<a id="__codelineno-0-1023" name="__codelineno-0-1023"></a>        <span class="n">fmt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0:g}</span><span class="s2">&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-1024" name="__codelineno-0-1024"></a>        <span class="n">visible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-1025" name="__codelineno-0-1025"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-1026" name="__codelineno-0-1026"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Adjust the axis tick labels with a linear transformation.</span>
+<a id="__codelineno-0-1027" name="__codelineno-0-1027"></a>
+<a id="__codelineno-0-1028" name="__codelineno-0-1028"></a><span class="sd">        Applies `tick_value * multiply_value + add_value` to each</span>
+<a id="__codelineno-0-1029" name="__codelineno-0-1029"></a><span class="sd">        tick, formatted with `fmt`. Useful for converting pixel</span>
+<a id="__codelineno-0-1030" name="__codelineno-0-1030"></a><span class="sd">        coordinates to real-world units.</span>
+<a id="__codelineno-0-1031" name="__codelineno-0-1031"></a>
+<a id="__codelineno-0-1032" name="__codelineno-0-1032"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-1033" name="__codelineno-0-1033"></a><span class="sd">            axis: `&quot;x&quot;` or `&quot;y&quot;`.</span>
+<a id="__codelineno-0-1034" name="__codelineno-0-1034"></a><span class="sd">            multiply_value: Multiplier for tick values. Default is 1.</span>
+<a id="__codelineno-0-1035" name="__codelineno-0-1035"></a><span class="sd">            add_value: Offset added to tick values. Default is 0.</span>
+<a id="__codelineno-0-1036" name="__codelineno-0-1036"></a><span class="sd">            fmt: Format string for tick labels.</span>
+<a id="__codelineno-0-1037" name="__codelineno-0-1037"></a><span class="sd">                Default is `&quot;{0:g}&quot;`.</span>
+<a id="__codelineno-0-1038" name="__codelineno-0-1038"></a><span class="sd">            visible: Whether the axis is visible. Default is True.</span>
+<a id="__codelineno-0-1039" name="__codelineno-0-1039"></a>
+<a id="__codelineno-0-1040" name="__codelineno-0-1040"></a><span class="sd">        Examples:</span>
+<a id="__codelineno-0-1041" name="__codelineno-0-1041"></a><span class="sd">            - Scale x-axis ticks by 100 and offset by 5:</span>
+<a id="__codelineno-0-1042" name="__codelineno-0-1042"></a><span class="sd">                ```python</span>
+<a id="__codelineno-0-1043" name="__codelineno-0-1043"></a><span class="sd">                &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-1044" name="__codelineno-0-1044"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyph import Glyph</span>
+<a id="__codelineno-0-1045" name="__codelineno-0-1045"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.styles import DEFAULT_OPTIONS</span>
+<a id="__codelineno-0-1046" name="__codelineno-0-1046"></a><span class="sd">                &gt;&gt;&gt; opts = DEFAULT_OPTIONS.copy()</span>
+<a id="__codelineno-0-1047" name="__codelineno-0-1047"></a><span class="sd">                &gt;&gt;&gt; opts.update({&quot;vmin&quot;: None, &quot;vmax&quot;: None})</span>
+<a id="__codelineno-0-1048" name="__codelineno-0-1048"></a><span class="sd">                &gt;&gt;&gt; g = Glyph(default_options=opts)</span>
+<a id="__codelineno-0-1049" name="__codelineno-0-1049"></a><span class="sd">                &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-1050" name="__codelineno-0-1050"></a><span class="sd">                &gt;&gt;&gt; _ = ax.plot([0, 1, 2], [0, 1, 2])</span>
+<a id="__codelineno-0-1051" name="__codelineno-0-1051"></a><span class="sd">                &gt;&gt;&gt; g.fig, g.ax = fig, ax</span>
+<a id="__codelineno-0-1052" name="__codelineno-0-1052"></a><span class="sd">                &gt;&gt;&gt; g.adjust_ticks(axis=&quot;x&quot;, multiply_value=100, add_value=5)</span>
+<a id="__codelineno-0-1053" name="__codelineno-0-1053"></a>
+<a id="__codelineno-0-1054" name="__codelineno-0-1054"></a><span class="sd">                ```</span>
+<a id="__codelineno-0-1055" name="__codelineno-0-1055"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-1056" name="__codelineno-0-1056"></a>        <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="s2">&quot;x&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-1057" name="__codelineno-0-1057"></a>            <span class="n">ticks_fn</span> <span class="o">=</span> <span class="n">ticker</span><span class="o">.</span><span class="n">FuncFormatter</span><span class="p">(</span>
+<a id="__codelineno-0-1058" name="__codelineno-0-1058"></a>                <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">pos</span><span class="p">:</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">multiply_value</span> <span class="o">+</span> <span class="n">add_value</span><span class="p">)</span>
+<a id="__codelineno-0-1059" name="__codelineno-0-1059"></a>            <span class="p">)</span>
+<a id="__codelineno-0-1060" name="__codelineno-0-1060"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">ticks_fn</span><span class="p">)</span>
+<a id="__codelineno-0-1061" name="__codelineno-0-1061"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-1062" name="__codelineno-0-1062"></a>            <span class="n">ticks_fn</span> <span class="o">=</span> <span class="n">ticker</span><span class="o">.</span><span class="n">FuncFormatter</span><span class="p">(</span>
+<a id="__codelineno-0-1063" name="__codelineno-0-1063"></a>                <span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">pos</span><span class="p">:</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">y</span> <span class="o">*</span> <span class="n">multiply_value</span> <span class="o">+</span> <span class="n">add_value</span><span class="p">)</span>
+<a id="__codelineno-0-1064" name="__codelineno-0-1064"></a>            <span class="p">)</span>
+<a id="__codelineno-0-1065" name="__codelineno-0-1065"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">ticks_fn</span><span class="p">)</span>
+<a id="__codelineno-0-1066" name="__codelineno-0-1066"></a>
+<a id="__codelineno-0-1067" name="__codelineno-0-1067"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">visible</span><span class="p">:</span>
+<a id="__codelineno-0-1068" name="__codelineno-0-1068"></a>            <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="s2">&quot;x&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-1069" name="__codelineno-0-1069"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">get_xaxis</span><span class="p">()</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="n">visible</span><span class="p">)</span>
+<a id="__codelineno-0-1070" name="__codelineno-0-1070"></a>            <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-1071" name="__codelineno-0-1071"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">get_yaxis</span><span class="p">()</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="n">visible</span><span class="p">)</span>
+<a id="__codelineno-0-1072" name="__codelineno-0-1072"></a>
+<a id="__codelineno-0-1073" name="__codelineno-0-1073"></a>    <span class="nd">@staticmethod</span>
+<a id="__codelineno-0-1074" name="__codelineno-0-1074"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_plot_point_values</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">point_table</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pid_color</span><span class="p">,</span> <span class="n">pid_size</span><span class="p">):</span>
+<a id="__codelineno-0-1075" name="__codelineno-0-1075"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot point value labels on the axes.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-1076" name="__codelineno-0-1076"></a>        <span class="n">write_points</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
+<a id="__codelineno-0-1077" name="__codelineno-0-1077"></a>            <span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+<a id="__codelineno-0-1078" name="__codelineno-0-1078"></a>            <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+<a id="__codelineno-0-1079" name="__codelineno-0-1079"></a>            <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+<a id="__codelineno-0-1080" name="__codelineno-0-1080"></a>            <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-1081" name="__codelineno-0-1081"></a>            <span class="n">va</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-1082" name="__codelineno-0-1082"></a>            <span class="n">color</span><span class="o">=</span><span class="n">pid_color</span><span class="p">,</span>
+<a id="__codelineno-0-1083" name="__codelineno-0-1083"></a>            <span class="n">fontsize</span><span class="o">=</span><span class="n">pid_size</span><span class="p">,</span>
+<a id="__codelineno-0-1084" name="__codelineno-0-1084"></a>        <span class="p">)</span>
+<a id="__codelineno-0-1085" name="__codelineno-0-1085"></a>        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">write_points</span><span class="p">,</span> <span class="n">point_table</span><span class="p">))</span>
+<a id="__codelineno-0-1086" name="__codelineno-0-1086"></a>
+<a id="__codelineno-0-1087" name="__codelineno-0-1087"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">save_animation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-1088" name="__codelineno-0-1088"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Save this glyph&#39;s animation (`self.anim`) to a file.</span>
+<a id="__codelineno-0-1089" name="__codelineno-0-1089"></a>
+<a id="__codelineno-0-1090" name="__codelineno-0-1090"></a><span class="sd">        Thin wrapper around `cleopatra.animation.save_animation`; the output</span>
+<a id="__codelineno-0-1091" name="__codelineno-0-1091"></a><span class="sd">        format is determined by the file extension. GIF uses `PillowWriter`;</span>
+<a id="__codelineno-0-1092" name="__codelineno-0-1092"></a><span class="sd">        mov/avi/mp4 require FFmpeg to be installed.</span>
+<a id="__codelineno-0-1093" name="__codelineno-0-1093"></a>
+<a id="__codelineno-0-1094" name="__codelineno-0-1094"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-1095" name="__codelineno-0-1095"></a><span class="sd">            path: Output file path. Extension determines format.</span>
+<a id="__codelineno-0-1096" name="__codelineno-0-1096"></a><span class="sd">                Supported: gif, mov, avi, mp4.</span>
+<a id="__codelineno-0-1097" name="__codelineno-0-1097"></a><span class="sd">            fps: Frames per second. Default is 2.</span>
+<a id="__codelineno-0-1098" name="__codelineno-0-1098"></a>
+<a id="__codelineno-0-1099" name="__codelineno-0-1099"></a><span class="sd">        Raises:</span>
+<a id="__codelineno-0-1100" name="__codelineno-0-1100"></a><span class="sd">            ValueError: If `animate()` has not been called yet, or if the</span>
+<a id="__codelineno-0-1101" name="__codelineno-0-1101"></a><span class="sd">                file format is not supported.</span>
+<a id="__codelineno-0-1102" name="__codelineno-0-1102"></a><span class="sd">            FileNotFoundError: If a video format is requested but FFmpeg is</span>
+<a id="__codelineno-0-1103" name="__codelineno-0-1103"></a><span class="sd">                not installed.</span>
+<a id="__codelineno-0-1104" name="__codelineno-0-1104"></a>
+<a id="__codelineno-0-1105" name="__codelineno-0-1105"></a><span class="sd">        Examples:</span>
+<a id="__codelineno-0-1106" name="__codelineno-0-1106"></a><span class="sd">            - Check the supported video formats:</span>
+<a id="__codelineno-0-1107" name="__codelineno-0-1107"></a><span class="sd">                ```python</span>
+<a id="__codelineno-0-1108" name="__codelineno-0-1108"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyph import SUPPORTED_VIDEO_FORMAT</span>
+<a id="__codelineno-0-1109" name="__codelineno-0-1109"></a><span class="sd">                &gt;&gt;&gt; sorted(SUPPORTED_VIDEO_FORMAT)</span>
+<a id="__codelineno-0-1110" name="__codelineno-0-1110"></a><span class="sd">                [&#39;avi&#39;, &#39;gif&#39;, &#39;mov&#39;, &#39;mp4&#39;]</span>
+<a id="__codelineno-0-1111" name="__codelineno-0-1111"></a>
+<a id="__codelineno-0-1112" name="__codelineno-0-1112"></a><span class="sd">                ```</span>
+<a id="__codelineno-0-1113" name="__codelineno-0-1113"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-1114" name="__codelineno-0-1114"></a>        <span class="n">_save_animation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">anim</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -4028,7 +4024,9 @@ Default is <code>"{0:g}"</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/cleopatra/glyph.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1020">1020</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1018">1018</a></span>
+<span class="normal"><a href="#__codelineno-0-1019">1019</a></span>
+<span class="normal"><a href="#__codelineno-0-1020">1020</a></span>
 <span class="normal"><a href="#__codelineno-0-1021">1021</a></span>
 <span class="normal"><a href="#__codelineno-0-1022">1022</a></span>
 <span class="normal"><a href="#__codelineno-0-1023">1023</a></span>
@@ -4079,62 +4077,60 @@ Default is <code>"{0:g}"</code>.</p>
 <span class="normal"><a href="#__codelineno-0-1068">1068</a></span>
 <span class="normal"><a href="#__codelineno-0-1069">1069</a></span>
 <span class="normal"><a href="#__codelineno-0-1070">1070</a></span>
-<span class="normal"><a href="#__codelineno-0-1071">1071</a></span>
-<span class="normal"><a href="#__codelineno-0-1072">1072</a></span>
-<span class="normal"><a href="#__codelineno-0-1073">1073</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1020" name="__codelineno-0-1020"></a><span class="k">def</span><span class="w"> </span><span class="nf">adjust_ticks</span><span class="p">(</span>
-<a id="__codelineno-0-1021" name="__codelineno-0-1021"></a>    <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-1022" name="__codelineno-0-1022"></a>    <span class="n">axis</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<a id="__codelineno-0-1023" name="__codelineno-0-1023"></a>    <span class="n">multiply_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-0-1024" name="__codelineno-0-1024"></a>    <span class="n">add_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-<a id="__codelineno-0-1025" name="__codelineno-0-1025"></a>    <span class="n">fmt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0:g}</span><span class="s2">&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-1026" name="__codelineno-0-1026"></a>    <span class="n">visible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-0-1027" name="__codelineno-0-1027"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-1028" name="__codelineno-0-1028"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Adjust the axis tick labels with a linear transformation.</span>
-<a id="__codelineno-0-1029" name="__codelineno-0-1029"></a>
-<a id="__codelineno-0-1030" name="__codelineno-0-1030"></a><span class="sd">    Applies `tick_value * multiply_value + add_value` to each</span>
-<a id="__codelineno-0-1031" name="__codelineno-0-1031"></a><span class="sd">    tick, formatted with `fmt`. Useful for converting pixel</span>
-<a id="__codelineno-0-1032" name="__codelineno-0-1032"></a><span class="sd">    coordinates to real-world units.</span>
-<a id="__codelineno-0-1033" name="__codelineno-0-1033"></a>
-<a id="__codelineno-0-1034" name="__codelineno-0-1034"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-1035" name="__codelineno-0-1035"></a><span class="sd">        axis: `&quot;x&quot;` or `&quot;y&quot;`.</span>
-<a id="__codelineno-0-1036" name="__codelineno-0-1036"></a><span class="sd">        multiply_value: Multiplier for tick values. Default is 1.</span>
-<a id="__codelineno-0-1037" name="__codelineno-0-1037"></a><span class="sd">        add_value: Offset added to tick values. Default is 0.</span>
-<a id="__codelineno-0-1038" name="__codelineno-0-1038"></a><span class="sd">        fmt: Format string for tick labels.</span>
-<a id="__codelineno-0-1039" name="__codelineno-0-1039"></a><span class="sd">            Default is `&quot;{0:g}&quot;`.</span>
-<a id="__codelineno-0-1040" name="__codelineno-0-1040"></a><span class="sd">        visible: Whether the axis is visible. Default is True.</span>
-<a id="__codelineno-0-1041" name="__codelineno-0-1041"></a>
-<a id="__codelineno-0-1042" name="__codelineno-0-1042"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-1043" name="__codelineno-0-1043"></a><span class="sd">        - Scale x-axis ticks by 100 and offset by 5:</span>
-<a id="__codelineno-0-1044" name="__codelineno-0-1044"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-1045" name="__codelineno-0-1045"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-1046" name="__codelineno-0-1046"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyph import Glyph</span>
-<a id="__codelineno-0-1047" name="__codelineno-0-1047"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styles import DEFAULT_OPTIONS</span>
-<a id="__codelineno-0-1048" name="__codelineno-0-1048"></a><span class="sd">            &gt;&gt;&gt; opts = DEFAULT_OPTIONS.copy()</span>
-<a id="__codelineno-0-1049" name="__codelineno-0-1049"></a><span class="sd">            &gt;&gt;&gt; opts.update({&quot;vmin&quot;: None, &quot;vmax&quot;: None})</span>
-<a id="__codelineno-0-1050" name="__codelineno-0-1050"></a><span class="sd">            &gt;&gt;&gt; g = Glyph(default_options=opts)</span>
-<a id="__codelineno-0-1051" name="__codelineno-0-1051"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
-<a id="__codelineno-0-1052" name="__codelineno-0-1052"></a><span class="sd">            &gt;&gt;&gt; _ = ax.plot([0, 1, 2], [0, 1, 2])</span>
-<a id="__codelineno-0-1053" name="__codelineno-0-1053"></a><span class="sd">            &gt;&gt;&gt; g.fig, g.ax = fig, ax</span>
-<a id="__codelineno-0-1054" name="__codelineno-0-1054"></a><span class="sd">            &gt;&gt;&gt; g.adjust_ticks(axis=&quot;x&quot;, multiply_value=100, add_value=5)</span>
-<a id="__codelineno-0-1055" name="__codelineno-0-1055"></a>
-<a id="__codelineno-0-1056" name="__codelineno-0-1056"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-1057" name="__codelineno-0-1057"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-1058" name="__codelineno-0-1058"></a>    <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="s2">&quot;x&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-1059" name="__codelineno-0-1059"></a>        <span class="n">ticks_fn</span> <span class="o">=</span> <span class="n">ticker</span><span class="o">.</span><span class="n">FuncFormatter</span><span class="p">(</span>
-<a id="__codelineno-0-1060" name="__codelineno-0-1060"></a>            <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">pos</span><span class="p">:</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">multiply_value</span> <span class="o">+</span> <span class="n">add_value</span><span class="p">)</span>
-<a id="__codelineno-0-1061" name="__codelineno-0-1061"></a>        <span class="p">)</span>
-<a id="__codelineno-0-1062" name="__codelineno-0-1062"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">ticks_fn</span><span class="p">)</span>
-<a id="__codelineno-0-1063" name="__codelineno-0-1063"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-1064" name="__codelineno-0-1064"></a>        <span class="n">ticks_fn</span> <span class="o">=</span> <span class="n">ticker</span><span class="o">.</span><span class="n">FuncFormatter</span><span class="p">(</span>
-<a id="__codelineno-0-1065" name="__codelineno-0-1065"></a>            <span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">pos</span><span class="p">:</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">y</span> <span class="o">*</span> <span class="n">multiply_value</span> <span class="o">+</span> <span class="n">add_value</span><span class="p">)</span>
-<a id="__codelineno-0-1066" name="__codelineno-0-1066"></a>        <span class="p">)</span>
-<a id="__codelineno-0-1067" name="__codelineno-0-1067"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">ticks_fn</span><span class="p">)</span>
-<a id="__codelineno-0-1068" name="__codelineno-0-1068"></a>
-<a id="__codelineno-0-1069" name="__codelineno-0-1069"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">visible</span><span class="p">:</span>
-<a id="__codelineno-0-1070" name="__codelineno-0-1070"></a>        <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="s2">&quot;x&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-1071" name="__codelineno-0-1071"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">get_xaxis</span><span class="p">()</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="n">visible</span><span class="p">)</span>
-<a id="__codelineno-0-1072" name="__codelineno-0-1072"></a>        <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-1073" name="__codelineno-0-1073"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">get_yaxis</span><span class="p">()</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="n">visible</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-1071">1071</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1018" name="__codelineno-0-1018"></a><span class="k">def</span><span class="w"> </span><span class="nf">adjust_ticks</span><span class="p">(</span>
+<a id="__codelineno-0-1019" name="__codelineno-0-1019"></a>    <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-1020" name="__codelineno-0-1020"></a>    <span class="n">axis</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-0-1021" name="__codelineno-0-1021"></a>    <span class="n">multiply_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-1022" name="__codelineno-0-1022"></a>    <span class="n">add_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+<a id="__codelineno-0-1023" name="__codelineno-0-1023"></a>    <span class="n">fmt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0:g}</span><span class="s2">&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-1024" name="__codelineno-0-1024"></a>    <span class="n">visible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-1025" name="__codelineno-0-1025"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-1026" name="__codelineno-0-1026"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Adjust the axis tick labels with a linear transformation.</span>
+<a id="__codelineno-0-1027" name="__codelineno-0-1027"></a>
+<a id="__codelineno-0-1028" name="__codelineno-0-1028"></a><span class="sd">    Applies `tick_value * multiply_value + add_value` to each</span>
+<a id="__codelineno-0-1029" name="__codelineno-0-1029"></a><span class="sd">    tick, formatted with `fmt`. Useful for converting pixel</span>
+<a id="__codelineno-0-1030" name="__codelineno-0-1030"></a><span class="sd">    coordinates to real-world units.</span>
+<a id="__codelineno-0-1031" name="__codelineno-0-1031"></a>
+<a id="__codelineno-0-1032" name="__codelineno-0-1032"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-1033" name="__codelineno-0-1033"></a><span class="sd">        axis: `&quot;x&quot;` or `&quot;y&quot;`.</span>
+<a id="__codelineno-0-1034" name="__codelineno-0-1034"></a><span class="sd">        multiply_value: Multiplier for tick values. Default is 1.</span>
+<a id="__codelineno-0-1035" name="__codelineno-0-1035"></a><span class="sd">        add_value: Offset added to tick values. Default is 0.</span>
+<a id="__codelineno-0-1036" name="__codelineno-0-1036"></a><span class="sd">        fmt: Format string for tick labels.</span>
+<a id="__codelineno-0-1037" name="__codelineno-0-1037"></a><span class="sd">            Default is `&quot;{0:g}&quot;`.</span>
+<a id="__codelineno-0-1038" name="__codelineno-0-1038"></a><span class="sd">        visible: Whether the axis is visible. Default is True.</span>
+<a id="__codelineno-0-1039" name="__codelineno-0-1039"></a>
+<a id="__codelineno-0-1040" name="__codelineno-0-1040"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-1041" name="__codelineno-0-1041"></a><span class="sd">        - Scale x-axis ticks by 100 and offset by 5:</span>
+<a id="__codelineno-0-1042" name="__codelineno-0-1042"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-1043" name="__codelineno-0-1043"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-1044" name="__codelineno-0-1044"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyph import Glyph</span>
+<a id="__codelineno-0-1045" name="__codelineno-0-1045"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styles import DEFAULT_OPTIONS</span>
+<a id="__codelineno-0-1046" name="__codelineno-0-1046"></a><span class="sd">            &gt;&gt;&gt; opts = DEFAULT_OPTIONS.copy()</span>
+<a id="__codelineno-0-1047" name="__codelineno-0-1047"></a><span class="sd">            &gt;&gt;&gt; opts.update({&quot;vmin&quot;: None, &quot;vmax&quot;: None})</span>
+<a id="__codelineno-0-1048" name="__codelineno-0-1048"></a><span class="sd">            &gt;&gt;&gt; g = Glyph(default_options=opts)</span>
+<a id="__codelineno-0-1049" name="__codelineno-0-1049"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-1050" name="__codelineno-0-1050"></a><span class="sd">            &gt;&gt;&gt; _ = ax.plot([0, 1, 2], [0, 1, 2])</span>
+<a id="__codelineno-0-1051" name="__codelineno-0-1051"></a><span class="sd">            &gt;&gt;&gt; g.fig, g.ax = fig, ax</span>
+<a id="__codelineno-0-1052" name="__codelineno-0-1052"></a><span class="sd">            &gt;&gt;&gt; g.adjust_ticks(axis=&quot;x&quot;, multiply_value=100, add_value=5)</span>
+<a id="__codelineno-0-1053" name="__codelineno-0-1053"></a>
+<a id="__codelineno-0-1054" name="__codelineno-0-1054"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-1055" name="__codelineno-0-1055"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-1056" name="__codelineno-0-1056"></a>    <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="s2">&quot;x&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-1057" name="__codelineno-0-1057"></a>        <span class="n">ticks_fn</span> <span class="o">=</span> <span class="n">ticker</span><span class="o">.</span><span class="n">FuncFormatter</span><span class="p">(</span>
+<a id="__codelineno-0-1058" name="__codelineno-0-1058"></a>            <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">pos</span><span class="p">:</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">multiply_value</span> <span class="o">+</span> <span class="n">add_value</span><span class="p">)</span>
+<a id="__codelineno-0-1059" name="__codelineno-0-1059"></a>        <span class="p">)</span>
+<a id="__codelineno-0-1060" name="__codelineno-0-1060"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">ticks_fn</span><span class="p">)</span>
+<a id="__codelineno-0-1061" name="__codelineno-0-1061"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-1062" name="__codelineno-0-1062"></a>        <span class="n">ticks_fn</span> <span class="o">=</span> <span class="n">ticker</span><span class="o">.</span><span class="n">FuncFormatter</span><span class="p">(</span>
+<a id="__codelineno-0-1063" name="__codelineno-0-1063"></a>            <span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">pos</span><span class="p">:</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">y</span> <span class="o">*</span> <span class="n">multiply_value</span> <span class="o">+</span> <span class="n">add_value</span><span class="p">)</span>
+<a id="__codelineno-0-1064" name="__codelineno-0-1064"></a>        <span class="p">)</span>
+<a id="__codelineno-0-1065" name="__codelineno-0-1065"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">ticks_fn</span><span class="p">)</span>
+<a id="__codelineno-0-1066" name="__codelineno-0-1066"></a>
+<a id="__codelineno-0-1067" name="__codelineno-0-1067"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">visible</span><span class="p">:</span>
+<a id="__codelineno-0-1068" name="__codelineno-0-1068"></a>        <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="s2">&quot;x&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-1069" name="__codelineno-0-1069"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">get_xaxis</span><span class="p">()</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="n">visible</span><span class="p">)</span>
+<a id="__codelineno-0-1070" name="__codelineno-0-1070"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-1071" name="__codelineno-0-1071"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">get_yaxis</span><span class="p">()</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="n">visible</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4339,7 +4335,9 @@ but is not a <code>dict</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/cleopatra/glyph.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-895"> 895</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-893"> 893</a></span>
+<span class="normal"><a href="#__codelineno-0-894"> 894</a></span>
+<span class="normal"><a href="#__codelineno-0-895"> 895</a></span>
 <span class="normal"><a href="#__codelineno-0-896"> 896</a></span>
 <span class="normal"><a href="#__codelineno-0-897"> 897</a></span>
 <span class="normal"><a href="#__codelineno-0-898"> 898</a></span>
@@ -4460,132 +4458,130 @@ but is not a <code>dict</code>.</p>
 <span class="normal"><a href="#__codelineno-0-1013">1013</a></span>
 <span class="normal"><a href="#__codelineno-0-1014">1014</a></span>
 <span class="normal"><a href="#__codelineno-0-1015">1015</a></span>
-<span class="normal"><a href="#__codelineno-0-1016">1016</a></span>
-<span class="normal"><a href="#__codelineno-0-1017">1017</a></span>
-<span class="normal"><a href="#__codelineno-0-1018">1018</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-895" name="__codelineno-0-895"></a><span class="k">def</span><span class="w"> </span><span class="nf">create_color_bar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span><span class="p">,</span> <span class="n">im</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Colorbar</span><span class="p">:</span>
-<a id="__codelineno-0-896" name="__codelineno-0-896"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a colorbar with full customization from default_options.</span>
-<a id="__codelineno-0-897" name="__codelineno-0-897"></a>
-<a id="__codelineno-0-898" name="__codelineno-0-898"></a><span class="sd">    Reads `cbar_length`, `cbar_orientation`, `cbar_label`,</span>
-<a id="__codelineno-0-899" name="__codelineno-0-899"></a><span class="sd">    `cbar_label_size`, and `cbar_label_location` from</span>
-<a id="__codelineno-0-900" name="__codelineno-0-900"></a><span class="sd">    `default_options` to configure the colorbar. When the optional</span>
-<a id="__codelineno-0-901" name="__codelineno-0-901"></a><span class="sd">    `cbar_kwargs` entry is present in `default_options` (an</span>
-<a id="__codelineno-0-902" name="__codelineno-0-902"></a><span class="sd">    xarray-aligned dict-of-overrides), its keys are merged over the</span>
-<a id="__codelineno-0-903" name="__codelineno-0-903"></a><span class="sd">    defaults so the user wins on any collision (e.g. `label`,</span>
-<a id="__codelineno-0-904" name="__codelineno-0-904"></a><span class="sd">    `shrink`, `orientation`, `ticks`, `extend`).</span>
-<a id="__codelineno-0-905" name="__codelineno-0-905"></a>
-<a id="__codelineno-0-906" name="__codelineno-0-906"></a><span class="sd">    `cbar_kwargs` is read from `self.default_options[&quot;cbar_kwargs&quot;]`.</span>
-<a id="__codelineno-0-907" name="__codelineno-0-907"></a><span class="sd">    Set it via the constructor or `plot` kwargs of the calling</span>
-<a id="__codelineno-0-908" name="__codelineno-0-908"></a><span class="sd">    glyph subclass. Keys recognised by `matplotlib.pyplot.colorbar`</span>
-<a id="__codelineno-0-909" name="__codelineno-0-909"></a><span class="sd">    — `label`, `shrink`, `aspect`, `orientation`, `pad`,</span>
-<a id="__codelineno-0-910" name="__codelineno-0-910"></a><span class="sd">    `ticks`, `extend` — are forwarded; `label` is special-cased</span>
-<a id="__codelineno-0-911" name="__codelineno-0-911"></a><span class="sd">    so that label-size and label-location styling from</span>
-<a id="__codelineno-0-912" name="__codelineno-0-912"></a><span class="sd">    `default_options` are still applied.</span>
-<a id="__codelineno-0-913" name="__codelineno-0-913"></a>
-<a id="__codelineno-0-914" name="__codelineno-0-914"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-915" name="__codelineno-0-915"></a><span class="sd">        ax: Matplotlib axes.</span>
-<a id="__codelineno-0-916" name="__codelineno-0-916"></a><span class="sd">        im: The mappable (image or contour) to attach the</span>
-<a id="__codelineno-0-917" name="__codelineno-0-917"></a><span class="sd">            colorbar to.</span>
-<a id="__codelineno-0-918" name="__codelineno-0-918"></a><span class="sd">        cbar_kw: Colorbar keyword arguments (ticks, format,</span>
-<a id="__codelineno-0-919" name="__codelineno-0-919"></a><span class="sd">            extend, etc.) computed by</span>
-<a id="__codelineno-0-920" name="__codelineno-0-920"></a><span class="sd">            `_create_norm_and_cbar_kw`.</span>
-<a id="__codelineno-0-921" name="__codelineno-0-921"></a>
-<a id="__codelineno-0-922" name="__codelineno-0-922"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-923" name="__codelineno-0-923"></a><span class="sd">        Colorbar: The created colorbar.</span>
-<a id="__codelineno-0-924" name="__codelineno-0-924"></a>
-<a id="__codelineno-0-925" name="__codelineno-0-925"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-926" name="__codelineno-0-926"></a><span class="sd">        TypeError: If `default_options[&quot;cbar_kwargs&quot;]` is set</span>
-<a id="__codelineno-0-927" name="__codelineno-0-927"></a><span class="sd">            but is not a `dict`.</span>
-<a id="__codelineno-0-928" name="__codelineno-0-928"></a>
-<a id="__codelineno-0-929" name="__codelineno-0-929"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-930" name="__codelineno-0-930"></a><span class="sd">        - Create a colorbar with a custom label:</span>
-<a id="__codelineno-0-931" name="__codelineno-0-931"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-932" name="__codelineno-0-932"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-933" name="__codelineno-0-933"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-934" name="__codelineno-0-934"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyph import Glyph</span>
-<a id="__codelineno-0-935" name="__codelineno-0-935"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styles import DEFAULT_OPTIONS</span>
-<a id="__codelineno-0-936" name="__codelineno-0-936"></a><span class="sd">            &gt;&gt;&gt; opts = DEFAULT_OPTIONS.copy()</span>
-<a id="__codelineno-0-937" name="__codelineno-0-937"></a><span class="sd">            &gt;&gt;&gt; opts.update({&quot;vmin&quot;: None, &quot;vmax&quot;: None})</span>
-<a id="__codelineno-0-938" name="__codelineno-0-938"></a><span class="sd">            &gt;&gt;&gt; g = Glyph(default_options=opts, cbar_label=&quot;Depth [m]&quot;)</span>
-<a id="__codelineno-0-939" name="__codelineno-0-939"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
-<a id="__codelineno-0-940" name="__codelineno-0-940"></a><span class="sd">            &gt;&gt;&gt; im = ax.imshow(np.arange(9).reshape(3, 3))</span>
-<a id="__codelineno-0-941" name="__codelineno-0-941"></a><span class="sd">            &gt;&gt;&gt; cbar = g.create_color_bar(ax, im, {&quot;ticks&quot;: [0, 4, 8]})</span>
-<a id="__codelineno-0-942" name="__codelineno-0-942"></a><span class="sd">            &gt;&gt;&gt; cbar.orientation</span>
-<a id="__codelineno-0-943" name="__codelineno-0-943"></a><span class="sd">            &#39;vertical&#39;</span>
-<a id="__codelineno-0-944" name="__codelineno-0-944"></a>
-<a id="__codelineno-0-945" name="__codelineno-0-945"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-946" name="__codelineno-0-946"></a><span class="sd">        - User-supplied `cbar_kwargs` win on collision and</span>
-<a id="__codelineno-0-947" name="__codelineno-0-947"></a><span class="sd">            `label` is applied via `set_label`:</span>
-<a id="__codelineno-0-948" name="__codelineno-0-948"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-949" name="__codelineno-0-949"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-950" name="__codelineno-0-950"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-951" name="__codelineno-0-951"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyph import Glyph</span>
-<a id="__codelineno-0-952" name="__codelineno-0-952"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styles import DEFAULT_OPTIONS</span>
-<a id="__codelineno-0-953" name="__codelineno-0-953"></a><span class="sd">            &gt;&gt;&gt; opts = DEFAULT_OPTIONS.copy()</span>
-<a id="__codelineno-0-954" name="__codelineno-0-954"></a><span class="sd">            &gt;&gt;&gt; opts.update({</span>
-<a id="__codelineno-0-955" name="__codelineno-0-955"></a><span class="sd">            ...     &quot;vmin&quot;: None,</span>
-<a id="__codelineno-0-956" name="__codelineno-0-956"></a><span class="sd">            ...     &quot;vmax&quot;: None,</span>
-<a id="__codelineno-0-957" name="__codelineno-0-957"></a><span class="sd">            ...     &quot;cbar_kwargs&quot;: {&quot;label&quot;: &quot;User Label&quot;, &quot;orientation&quot;: &quot;horizontal&quot;},</span>
-<a id="__codelineno-0-958" name="__codelineno-0-958"></a><span class="sd">            ... })</span>
-<a id="__codelineno-0-959" name="__codelineno-0-959"></a><span class="sd">            &gt;&gt;&gt; g = Glyph(default_options=opts, cbar_label=&quot;Default Label&quot;)</span>
-<a id="__codelineno-0-960" name="__codelineno-0-960"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
-<a id="__codelineno-0-961" name="__codelineno-0-961"></a><span class="sd">            &gt;&gt;&gt; im = ax.imshow(np.arange(9).reshape(3, 3))</span>
-<a id="__codelineno-0-962" name="__codelineno-0-962"></a><span class="sd">            &gt;&gt;&gt; cbar = g.create_color_bar(ax, im, {&quot;ticks&quot;: [0, 4, 8]})</span>
-<a id="__codelineno-0-963" name="__codelineno-0-963"></a><span class="sd">            &gt;&gt;&gt; cbar.orientation</span>
-<a id="__codelineno-0-964" name="__codelineno-0-964"></a><span class="sd">            &#39;horizontal&#39;</span>
-<a id="__codelineno-0-965" name="__codelineno-0-965"></a><span class="sd">            &gt;&gt;&gt; cbar.ax.get_xlabel() or cbar.ax.get_ylabel()</span>
-<a id="__codelineno-0-966" name="__codelineno-0-966"></a><span class="sd">            &#39;User Label&#39;</span>
-<a id="__codelineno-0-967" name="__codelineno-0-967"></a>
-<a id="__codelineno-0-968" name="__codelineno-0-968"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-969" name="__codelineno-0-969"></a><span class="sd">        - Non-dict `cbar_kwargs` raises `TypeError`:</span>
-<a id="__codelineno-0-970" name="__codelineno-0-970"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-971" name="__codelineno-0-971"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-972" name="__codelineno-0-972"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-973" name="__codelineno-0-973"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyph import Glyph</span>
-<a id="__codelineno-0-974" name="__codelineno-0-974"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styles import DEFAULT_OPTIONS</span>
-<a id="__codelineno-0-975" name="__codelineno-0-975"></a><span class="sd">            &gt;&gt;&gt; opts = DEFAULT_OPTIONS.copy()</span>
-<a id="__codelineno-0-976" name="__codelineno-0-976"></a><span class="sd">            &gt;&gt;&gt; opts.update({&quot;vmin&quot;: None, &quot;vmax&quot;: None, &quot;cbar_kwargs&quot;: &quot;oops&quot;})</span>
-<a id="__codelineno-0-977" name="__codelineno-0-977"></a><span class="sd">            &gt;&gt;&gt; g = Glyph(default_options=opts)</span>
-<a id="__codelineno-0-978" name="__codelineno-0-978"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
-<a id="__codelineno-0-979" name="__codelineno-0-979"></a><span class="sd">            &gt;&gt;&gt; im = ax.imshow(np.arange(9).reshape(3, 3))</span>
-<a id="__codelineno-0-980" name="__codelineno-0-980"></a><span class="sd">            &gt;&gt;&gt; g.create_color_bar(ax, im, {&quot;ticks&quot;: [0, 4, 8]})</span>
-<a id="__codelineno-0-981" name="__codelineno-0-981"></a><span class="sd">            Traceback (most recent call last):</span>
-<a id="__codelineno-0-982" name="__codelineno-0-982"></a><span class="sd">                ...</span>
-<a id="__codelineno-0-983" name="__codelineno-0-983"></a><span class="sd">            TypeError: cbar_kwargs must be a dict of colorbar keyword arguments, got str.</span>
-<a id="__codelineno-0-984" name="__codelineno-0-984"></a>
-<a id="__codelineno-0-985" name="__codelineno-0-985"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-986" name="__codelineno-0-986"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-987" name="__codelineno-0-987"></a>    <span class="n">fig</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">figure</span>
-<a id="__codelineno-0-988" name="__codelineno-0-988"></a>    <span class="n">is_subplot</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">fig</span><span class="o">.</span><span class="n">axes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span>
-<a id="__codelineno-0-989" name="__codelineno-0-989"></a>    <span class="n">merged_kw</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-990" name="__codelineno-0-990"></a>        <span class="s2">&quot;shrink&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">&quot;cbar_length&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-991" name="__codelineno-0-991"></a>        <span class="s2">&quot;orientation&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">&quot;cbar_orientation&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-992" name="__codelineno-0-992"></a>        <span class="s2">&quot;use_gridspec&quot;</span><span class="p">:</span> <span class="ow">not</span> <span class="n">is_subplot</span><span class="p">,</span>
-<a id="__codelineno-0-993" name="__codelineno-0-993"></a>    <span class="p">}</span>
-<a id="__codelineno-0-994" name="__codelineno-0-994"></a>    <span class="n">merged_kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">cbar_kw</span><span class="p">)</span>
-<a id="__codelineno-0-995" name="__codelineno-0-995"></a>    <span class="c1"># Pull the user-supplied `label` (if any) out of cbar_kwargs</span>
-<a id="__codelineno-0-996" name="__codelineno-0-996"></a>    <span class="c1"># before forwarding to `fig.colorbar` so we can apply it via</span>
-<a id="__codelineno-0-997" name="__codelineno-0-997"></a>    <span class="c1"># `cbar.set_label` and preserve label-size/location styling.</span>
-<a id="__codelineno-0-998" name="__codelineno-0-998"></a>    <span class="n">user_kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cbar_kwargs&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
-<a id="__codelineno-0-999" name="__codelineno-0-999"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-<a id="__codelineno-0-1000" name="__codelineno-0-1000"></a>        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
-<a id="__codelineno-0-1001" name="__codelineno-0-1001"></a>            <span class="s2">&quot;cbar_kwargs must be a dict of colorbar keyword &quot;</span>
-<a id="__codelineno-0-1002" name="__codelineno-0-1002"></a>            <span class="sa">f</span><span class="s2">&quot;arguments, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span>
-<a id="__codelineno-0-1003" name="__codelineno-0-1003"></a>        <span class="p">)</span>
-<a id="__codelineno-0-1004" name="__codelineno-0-1004"></a>    <span class="n">user_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">)</span>
-<a id="__codelineno-0-1005" name="__codelineno-0-1005"></a>    <span class="n">user_label</span> <span class="o">=</span> <span class="n">user_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;label&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-<a id="__codelineno-0-1006" name="__codelineno-0-1006"></a>    <span class="n">merged_kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">)</span>
-<a id="__codelineno-0-1007" name="__codelineno-0-1007"></a>    <span class="n">cbar</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">merged_kw</span><span class="p">)</span>
-<a id="__codelineno-0-1008" name="__codelineno-0-1008"></a>    <span class="n">cbar</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-<a id="__codelineno-0-1009" name="__codelineno-0-1009"></a>    <span class="n">label_text</span> <span class="o">=</span> <span class="p">(</span>
-<a id="__codelineno-0-1010" name="__codelineno-0-1010"></a>        <span class="n">user_label</span> <span class="k">if</span> <span class="n">user_label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-<a id="__codelineno-0-1011" name="__codelineno-0-1011"></a>        <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">&quot;cbar_label&quot;</span><span class="p">]</span>
-<a id="__codelineno-0-1012" name="__codelineno-0-1012"></a>    <span class="p">)</span>
-<a id="__codelineno-0-1013" name="__codelineno-0-1013"></a>    <span class="n">cbar</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span>
-<a id="__codelineno-0-1014" name="__codelineno-0-1014"></a>        <span class="n">label_text</span><span class="p">,</span>
-<a id="__codelineno-0-1015" name="__codelineno-0-1015"></a>        <span class="n">fontsize</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">&quot;cbar_label_size&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-1016" name="__codelineno-0-1016"></a>        <span class="n">loc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">&quot;cbar_label_location&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-1017" name="__codelineno-0-1017"></a>    <span class="p">)</span>
-<a id="__codelineno-0-1018" name="__codelineno-0-1018"></a>    <span class="k">return</span> <span class="n">cbar</span>
+<span class="normal"><a href="#__codelineno-0-1016">1016</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-893" name="__codelineno-0-893"></a><span class="k">def</span><span class="w"> </span><span class="nf">create_color_bar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span><span class="p">,</span> <span class="n">im</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Colorbar</span><span class="p">:</span>
+<a id="__codelineno-0-894" name="__codelineno-0-894"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a colorbar with full customization from default_options.</span>
+<a id="__codelineno-0-895" name="__codelineno-0-895"></a>
+<a id="__codelineno-0-896" name="__codelineno-0-896"></a><span class="sd">    Reads `cbar_length`, `cbar_orientation`, `cbar_label`,</span>
+<a id="__codelineno-0-897" name="__codelineno-0-897"></a><span class="sd">    `cbar_label_size`, and `cbar_label_location` from</span>
+<a id="__codelineno-0-898" name="__codelineno-0-898"></a><span class="sd">    `default_options` to configure the colorbar. When the optional</span>
+<a id="__codelineno-0-899" name="__codelineno-0-899"></a><span class="sd">    `cbar_kwargs` entry is present in `default_options` (an</span>
+<a id="__codelineno-0-900" name="__codelineno-0-900"></a><span class="sd">    xarray-aligned dict-of-overrides), its keys are merged over the</span>
+<a id="__codelineno-0-901" name="__codelineno-0-901"></a><span class="sd">    defaults so the user wins on any collision (e.g. `label`,</span>
+<a id="__codelineno-0-902" name="__codelineno-0-902"></a><span class="sd">    `shrink`, `orientation`, `ticks`, `extend`).</span>
+<a id="__codelineno-0-903" name="__codelineno-0-903"></a>
+<a id="__codelineno-0-904" name="__codelineno-0-904"></a><span class="sd">    `cbar_kwargs` is read from `self.default_options[&quot;cbar_kwargs&quot;]`.</span>
+<a id="__codelineno-0-905" name="__codelineno-0-905"></a><span class="sd">    Set it via the constructor or `plot` kwargs of the calling</span>
+<a id="__codelineno-0-906" name="__codelineno-0-906"></a><span class="sd">    glyph subclass. Keys recognised by `matplotlib.pyplot.colorbar`</span>
+<a id="__codelineno-0-907" name="__codelineno-0-907"></a><span class="sd">    — `label`, `shrink`, `aspect`, `orientation`, `pad`,</span>
+<a id="__codelineno-0-908" name="__codelineno-0-908"></a><span class="sd">    `ticks`, `extend` — are forwarded; `label` is special-cased</span>
+<a id="__codelineno-0-909" name="__codelineno-0-909"></a><span class="sd">    so that label-size and label-location styling from</span>
+<a id="__codelineno-0-910" name="__codelineno-0-910"></a><span class="sd">    `default_options` are still applied.</span>
+<a id="__codelineno-0-911" name="__codelineno-0-911"></a>
+<a id="__codelineno-0-912" name="__codelineno-0-912"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-913" name="__codelineno-0-913"></a><span class="sd">        ax: Matplotlib axes.</span>
+<a id="__codelineno-0-914" name="__codelineno-0-914"></a><span class="sd">        im: The mappable (image or contour) to attach the</span>
+<a id="__codelineno-0-915" name="__codelineno-0-915"></a><span class="sd">            colorbar to.</span>
+<a id="__codelineno-0-916" name="__codelineno-0-916"></a><span class="sd">        cbar_kw: Colorbar keyword arguments (ticks, format,</span>
+<a id="__codelineno-0-917" name="__codelineno-0-917"></a><span class="sd">            extend, etc.) computed by</span>
+<a id="__codelineno-0-918" name="__codelineno-0-918"></a><span class="sd">            `_create_norm_and_cbar_kw`.</span>
+<a id="__codelineno-0-919" name="__codelineno-0-919"></a>
+<a id="__codelineno-0-920" name="__codelineno-0-920"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-921" name="__codelineno-0-921"></a><span class="sd">        Colorbar: The created colorbar.</span>
+<a id="__codelineno-0-922" name="__codelineno-0-922"></a>
+<a id="__codelineno-0-923" name="__codelineno-0-923"></a><span class="sd">    Raises:</span>
+<a id="__codelineno-0-924" name="__codelineno-0-924"></a><span class="sd">        TypeError: If `default_options[&quot;cbar_kwargs&quot;]` is set</span>
+<a id="__codelineno-0-925" name="__codelineno-0-925"></a><span class="sd">            but is not a `dict`.</span>
+<a id="__codelineno-0-926" name="__codelineno-0-926"></a>
+<a id="__codelineno-0-927" name="__codelineno-0-927"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-928" name="__codelineno-0-928"></a><span class="sd">        - Create a colorbar with a custom label:</span>
+<a id="__codelineno-0-929" name="__codelineno-0-929"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-930" name="__codelineno-0-930"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-931" name="__codelineno-0-931"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-932" name="__codelineno-0-932"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyph import Glyph</span>
+<a id="__codelineno-0-933" name="__codelineno-0-933"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styles import DEFAULT_OPTIONS</span>
+<a id="__codelineno-0-934" name="__codelineno-0-934"></a><span class="sd">            &gt;&gt;&gt; opts = DEFAULT_OPTIONS.copy()</span>
+<a id="__codelineno-0-935" name="__codelineno-0-935"></a><span class="sd">            &gt;&gt;&gt; opts.update({&quot;vmin&quot;: None, &quot;vmax&quot;: None})</span>
+<a id="__codelineno-0-936" name="__codelineno-0-936"></a><span class="sd">            &gt;&gt;&gt; g = Glyph(default_options=opts, cbar_label=&quot;Depth [m]&quot;)</span>
+<a id="__codelineno-0-937" name="__codelineno-0-937"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-938" name="__codelineno-0-938"></a><span class="sd">            &gt;&gt;&gt; im = ax.imshow(np.arange(9).reshape(3, 3))</span>
+<a id="__codelineno-0-939" name="__codelineno-0-939"></a><span class="sd">            &gt;&gt;&gt; cbar = g.create_color_bar(ax, im, {&quot;ticks&quot;: [0, 4, 8]})</span>
+<a id="__codelineno-0-940" name="__codelineno-0-940"></a><span class="sd">            &gt;&gt;&gt; cbar.orientation</span>
+<a id="__codelineno-0-941" name="__codelineno-0-941"></a><span class="sd">            &#39;vertical&#39;</span>
+<a id="__codelineno-0-942" name="__codelineno-0-942"></a>
+<a id="__codelineno-0-943" name="__codelineno-0-943"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-944" name="__codelineno-0-944"></a><span class="sd">        - User-supplied `cbar_kwargs` win on collision and</span>
+<a id="__codelineno-0-945" name="__codelineno-0-945"></a><span class="sd">            `label` is applied via `set_label`:</span>
+<a id="__codelineno-0-946" name="__codelineno-0-946"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-947" name="__codelineno-0-947"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-948" name="__codelineno-0-948"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-949" name="__codelineno-0-949"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyph import Glyph</span>
+<a id="__codelineno-0-950" name="__codelineno-0-950"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styles import DEFAULT_OPTIONS</span>
+<a id="__codelineno-0-951" name="__codelineno-0-951"></a><span class="sd">            &gt;&gt;&gt; opts = DEFAULT_OPTIONS.copy()</span>
+<a id="__codelineno-0-952" name="__codelineno-0-952"></a><span class="sd">            &gt;&gt;&gt; opts.update({</span>
+<a id="__codelineno-0-953" name="__codelineno-0-953"></a><span class="sd">            ...     &quot;vmin&quot;: None,</span>
+<a id="__codelineno-0-954" name="__codelineno-0-954"></a><span class="sd">            ...     &quot;vmax&quot;: None,</span>
+<a id="__codelineno-0-955" name="__codelineno-0-955"></a><span class="sd">            ...     &quot;cbar_kwargs&quot;: {&quot;label&quot;: &quot;User Label&quot;, &quot;orientation&quot;: &quot;horizontal&quot;},</span>
+<a id="__codelineno-0-956" name="__codelineno-0-956"></a><span class="sd">            ... })</span>
+<a id="__codelineno-0-957" name="__codelineno-0-957"></a><span class="sd">            &gt;&gt;&gt; g = Glyph(default_options=opts, cbar_label=&quot;Default Label&quot;)</span>
+<a id="__codelineno-0-958" name="__codelineno-0-958"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-959" name="__codelineno-0-959"></a><span class="sd">            &gt;&gt;&gt; im = ax.imshow(np.arange(9).reshape(3, 3))</span>
+<a id="__codelineno-0-960" name="__codelineno-0-960"></a><span class="sd">            &gt;&gt;&gt; cbar = g.create_color_bar(ax, im, {&quot;ticks&quot;: [0, 4, 8]})</span>
+<a id="__codelineno-0-961" name="__codelineno-0-961"></a><span class="sd">            &gt;&gt;&gt; cbar.orientation</span>
+<a id="__codelineno-0-962" name="__codelineno-0-962"></a><span class="sd">            &#39;horizontal&#39;</span>
+<a id="__codelineno-0-963" name="__codelineno-0-963"></a><span class="sd">            &gt;&gt;&gt; cbar.ax.get_xlabel() or cbar.ax.get_ylabel()</span>
+<a id="__codelineno-0-964" name="__codelineno-0-964"></a><span class="sd">            &#39;User Label&#39;</span>
+<a id="__codelineno-0-965" name="__codelineno-0-965"></a>
+<a id="__codelineno-0-966" name="__codelineno-0-966"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-967" name="__codelineno-0-967"></a><span class="sd">        - Non-dict `cbar_kwargs` raises `TypeError`:</span>
+<a id="__codelineno-0-968" name="__codelineno-0-968"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-969" name="__codelineno-0-969"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-970" name="__codelineno-0-970"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-971" name="__codelineno-0-971"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyph import Glyph</span>
+<a id="__codelineno-0-972" name="__codelineno-0-972"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styles import DEFAULT_OPTIONS</span>
+<a id="__codelineno-0-973" name="__codelineno-0-973"></a><span class="sd">            &gt;&gt;&gt; opts = DEFAULT_OPTIONS.copy()</span>
+<a id="__codelineno-0-974" name="__codelineno-0-974"></a><span class="sd">            &gt;&gt;&gt; opts.update({&quot;vmin&quot;: None, &quot;vmax&quot;: None, &quot;cbar_kwargs&quot;: &quot;oops&quot;})</span>
+<a id="__codelineno-0-975" name="__codelineno-0-975"></a><span class="sd">            &gt;&gt;&gt; g = Glyph(default_options=opts)</span>
+<a id="__codelineno-0-976" name="__codelineno-0-976"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-977" name="__codelineno-0-977"></a><span class="sd">            &gt;&gt;&gt; im = ax.imshow(np.arange(9).reshape(3, 3))</span>
+<a id="__codelineno-0-978" name="__codelineno-0-978"></a><span class="sd">            &gt;&gt;&gt; g.create_color_bar(ax, im, {&quot;ticks&quot;: [0, 4, 8]})</span>
+<a id="__codelineno-0-979" name="__codelineno-0-979"></a><span class="sd">            Traceback (most recent call last):</span>
+<a id="__codelineno-0-980" name="__codelineno-0-980"></a><span class="sd">                ...</span>
+<a id="__codelineno-0-981" name="__codelineno-0-981"></a><span class="sd">            TypeError: cbar_kwargs must be a dict of colorbar keyword arguments, got str.</span>
+<a id="__codelineno-0-982" name="__codelineno-0-982"></a>
+<a id="__codelineno-0-983" name="__codelineno-0-983"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-984" name="__codelineno-0-984"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-985" name="__codelineno-0-985"></a>    <span class="n">fig</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">figure</span>
+<a id="__codelineno-0-986" name="__codelineno-0-986"></a>    <span class="n">is_subplot</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">fig</span><span class="o">.</span><span class="n">axes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span>
+<a id="__codelineno-0-987" name="__codelineno-0-987"></a>    <span class="n">merged_kw</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-988" name="__codelineno-0-988"></a>        <span class="s2">&quot;shrink&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">&quot;cbar_length&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-989" name="__codelineno-0-989"></a>        <span class="s2">&quot;orientation&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">&quot;cbar_orientation&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-990" name="__codelineno-0-990"></a>        <span class="s2">&quot;use_gridspec&quot;</span><span class="p">:</span> <span class="ow">not</span> <span class="n">is_subplot</span><span class="p">,</span>
+<a id="__codelineno-0-991" name="__codelineno-0-991"></a>    <span class="p">}</span>
+<a id="__codelineno-0-992" name="__codelineno-0-992"></a>    <span class="n">merged_kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">cbar_kw</span><span class="p">)</span>
+<a id="__codelineno-0-993" name="__codelineno-0-993"></a>    <span class="c1"># Pull the user-supplied `label` (if any) out of cbar_kwargs</span>
+<a id="__codelineno-0-994" name="__codelineno-0-994"></a>    <span class="c1"># before forwarding to `fig.colorbar` so we can apply it via</span>
+<a id="__codelineno-0-995" name="__codelineno-0-995"></a>    <span class="c1"># `cbar.set_label` and preserve label-size/location styling.</span>
+<a id="__codelineno-0-996" name="__codelineno-0-996"></a>    <span class="n">user_kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cbar_kwargs&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+<a id="__codelineno-0-997" name="__codelineno-0-997"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+<a id="__codelineno-0-998" name="__codelineno-0-998"></a>        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+<a id="__codelineno-0-999" name="__codelineno-0-999"></a>            <span class="s2">&quot;cbar_kwargs must be a dict of colorbar keyword &quot;</span>
+<a id="__codelineno-0-1000" name="__codelineno-0-1000"></a>            <span class="sa">f</span><span class="s2">&quot;arguments, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span>
+<a id="__codelineno-0-1001" name="__codelineno-0-1001"></a>        <span class="p">)</span>
+<a id="__codelineno-0-1002" name="__codelineno-0-1002"></a>    <span class="n">user_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-1003" name="__codelineno-0-1003"></a>    <span class="n">user_label</span> <span class="o">=</span> <span class="n">user_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;label&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<a id="__codelineno-0-1004" name="__codelineno-0-1004"></a>    <span class="n">merged_kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-1005" name="__codelineno-0-1005"></a>    <span class="n">cbar</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">merged_kw</span><span class="p">)</span>
+<a id="__codelineno-0-1006" name="__codelineno-0-1006"></a>    <span class="n">cbar</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<a id="__codelineno-0-1007" name="__codelineno-0-1007"></a>    <span class="n">label_text</span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-0-1008" name="__codelineno-0-1008"></a>        <span class="n">user_label</span> <span class="k">if</span> <span class="n">user_label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-0-1009" name="__codelineno-0-1009"></a>        <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">&quot;cbar_label&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-1010" name="__codelineno-0-1010"></a>    <span class="p">)</span>
+<a id="__codelineno-0-1011" name="__codelineno-0-1011"></a>    <span class="n">cbar</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span>
+<a id="__codelineno-0-1012" name="__codelineno-0-1012"></a>        <span class="n">label_text</span><span class="p">,</span>
+<a id="__codelineno-0-1013" name="__codelineno-0-1013"></a>        <span class="n">fontsize</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">&quot;cbar_label_size&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-1014" name="__codelineno-0-1014"></a>        <span class="n">loc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">&quot;cbar_label_location&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-1015" name="__codelineno-0-1015"></a>    <span class="p">)</span>
+<a id="__codelineno-0-1016" name="__codelineno-0-1016"></a>    <span class="k">return</span> <span class="n">cbar</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5310,7 +5306,9 @@ not installed.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/cleopatra/glyph.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1089">1089</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1087">1087</a></span>
+<span class="normal"><a href="#__codelineno-0-1088">1088</a></span>
+<span class="normal"><a href="#__codelineno-0-1089">1089</a></span>
 <span class="normal"><a href="#__codelineno-0-1090">1090</a></span>
 <span class="normal"><a href="#__codelineno-0-1091">1091</a></span>
 <span class="normal"><a href="#__codelineno-0-1092">1092</a></span>
@@ -5335,36 +5333,34 @@ not installed.</p>
 <span class="normal"><a href="#__codelineno-0-1111">1111</a></span>
 <span class="normal"><a href="#__codelineno-0-1112">1112</a></span>
 <span class="normal"><a href="#__codelineno-0-1113">1113</a></span>
-<span class="normal"><a href="#__codelineno-0-1114">1114</a></span>
-<span class="normal"><a href="#__codelineno-0-1115">1115</a></span>
-<span class="normal"><a href="#__codelineno-0-1116">1116</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1089" name="__codelineno-0-1089"></a><span class="k">def</span><span class="w"> </span><span class="nf">save_animation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-1090" name="__codelineno-0-1090"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Save this glyph&#39;s animation (`self.anim`) to a file.</span>
-<a id="__codelineno-0-1091" name="__codelineno-0-1091"></a>
-<a id="__codelineno-0-1092" name="__codelineno-0-1092"></a><span class="sd">    Thin wrapper around `cleopatra.animation.save_animation`; the output</span>
-<a id="__codelineno-0-1093" name="__codelineno-0-1093"></a><span class="sd">    format is determined by the file extension. GIF uses `PillowWriter`;</span>
-<a id="__codelineno-0-1094" name="__codelineno-0-1094"></a><span class="sd">    mov/avi/mp4 require FFmpeg to be installed.</span>
-<a id="__codelineno-0-1095" name="__codelineno-0-1095"></a>
-<a id="__codelineno-0-1096" name="__codelineno-0-1096"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-1097" name="__codelineno-0-1097"></a><span class="sd">        path: Output file path. Extension determines format.</span>
-<a id="__codelineno-0-1098" name="__codelineno-0-1098"></a><span class="sd">            Supported: gif, mov, avi, mp4.</span>
-<a id="__codelineno-0-1099" name="__codelineno-0-1099"></a><span class="sd">        fps: Frames per second. Default is 2.</span>
-<a id="__codelineno-0-1100" name="__codelineno-0-1100"></a>
-<a id="__codelineno-0-1101" name="__codelineno-0-1101"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-1102" name="__codelineno-0-1102"></a><span class="sd">        ValueError: If `animate()` has not been called yet, or if the</span>
-<a id="__codelineno-0-1103" name="__codelineno-0-1103"></a><span class="sd">            file format is not supported.</span>
-<a id="__codelineno-0-1104" name="__codelineno-0-1104"></a><span class="sd">        FileNotFoundError: If a video format is requested but FFmpeg is</span>
-<a id="__codelineno-0-1105" name="__codelineno-0-1105"></a><span class="sd">            not installed.</span>
-<a id="__codelineno-0-1106" name="__codelineno-0-1106"></a>
-<a id="__codelineno-0-1107" name="__codelineno-0-1107"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-1108" name="__codelineno-0-1108"></a><span class="sd">        - Check the supported video formats:</span>
-<a id="__codelineno-0-1109" name="__codelineno-0-1109"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-1110" name="__codelineno-0-1110"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyph import SUPPORTED_VIDEO_FORMAT</span>
-<a id="__codelineno-0-1111" name="__codelineno-0-1111"></a><span class="sd">            &gt;&gt;&gt; sorted(SUPPORTED_VIDEO_FORMAT)</span>
-<a id="__codelineno-0-1112" name="__codelineno-0-1112"></a><span class="sd">            [&#39;avi&#39;, &#39;gif&#39;, &#39;mov&#39;, &#39;mp4&#39;]</span>
-<a id="__codelineno-0-1113" name="__codelineno-0-1113"></a>
-<a id="__codelineno-0-1114" name="__codelineno-0-1114"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-1115" name="__codelineno-0-1115"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-1116" name="__codelineno-0-1116"></a>    <span class="n">_save_animation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">anim</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-1114">1114</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1087" name="__codelineno-0-1087"></a><span class="k">def</span><span class="w"> </span><span class="nf">save_animation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-1088" name="__codelineno-0-1088"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Save this glyph&#39;s animation (`self.anim`) to a file.</span>
+<a id="__codelineno-0-1089" name="__codelineno-0-1089"></a>
+<a id="__codelineno-0-1090" name="__codelineno-0-1090"></a><span class="sd">    Thin wrapper around `cleopatra.animation.save_animation`; the output</span>
+<a id="__codelineno-0-1091" name="__codelineno-0-1091"></a><span class="sd">    format is determined by the file extension. GIF uses `PillowWriter`;</span>
+<a id="__codelineno-0-1092" name="__codelineno-0-1092"></a><span class="sd">    mov/avi/mp4 require FFmpeg to be installed.</span>
+<a id="__codelineno-0-1093" name="__codelineno-0-1093"></a>
+<a id="__codelineno-0-1094" name="__codelineno-0-1094"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-1095" name="__codelineno-0-1095"></a><span class="sd">        path: Output file path. Extension determines format.</span>
+<a id="__codelineno-0-1096" name="__codelineno-0-1096"></a><span class="sd">            Supported: gif, mov, avi, mp4.</span>
+<a id="__codelineno-0-1097" name="__codelineno-0-1097"></a><span class="sd">        fps: Frames per second. Default is 2.</span>
+<a id="__codelineno-0-1098" name="__codelineno-0-1098"></a>
+<a id="__codelineno-0-1099" name="__codelineno-0-1099"></a><span class="sd">    Raises:</span>
+<a id="__codelineno-0-1100" name="__codelineno-0-1100"></a><span class="sd">        ValueError: If `animate()` has not been called yet, or if the</span>
+<a id="__codelineno-0-1101" name="__codelineno-0-1101"></a><span class="sd">            file format is not supported.</span>
+<a id="__codelineno-0-1102" name="__codelineno-0-1102"></a><span class="sd">        FileNotFoundError: If a video format is requested but FFmpeg is</span>
+<a id="__codelineno-0-1103" name="__codelineno-0-1103"></a><span class="sd">            not installed.</span>
+<a id="__codelineno-0-1104" name="__codelineno-0-1104"></a>
+<a id="__codelineno-0-1105" name="__codelineno-0-1105"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-1106" name="__codelineno-0-1106"></a><span class="sd">        - Check the supported video formats:</span>
+<a id="__codelineno-0-1107" name="__codelineno-0-1107"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-1108" name="__codelineno-0-1108"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyph import SUPPORTED_VIDEO_FORMAT</span>
+<a id="__codelineno-0-1109" name="__codelineno-0-1109"></a><span class="sd">            &gt;&gt;&gt; sorted(SUPPORTED_VIDEO_FORMAT)</span>
+<a id="__codelineno-0-1110" name="__codelineno-0-1110"></a><span class="sd">            [&#39;avi&#39;, &#39;gif&#39;, &#39;mov&#39;, &#39;mp4&#39;]</span>
+<a id="__codelineno-0-1111" name="__codelineno-0-1111"></a>
+<a id="__codelineno-0-1112" name="__codelineno-0-1112"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-1113" name="__codelineno-0-1113"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-1114" name="__codelineno-0-1114"></a>    <span class="n">_save_animation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">anim</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
