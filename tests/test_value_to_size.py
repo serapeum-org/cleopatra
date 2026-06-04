@@ -163,14 +163,33 @@ class TestResolveSizes:
         with pytest.raises(ValueError, match="non-negative"):
             resolve_sizes(np.array([-1.0, 1.0, 2.0]), 1.0, 2.0, scale="sqrt")
 
-    def test_all_non_finite_raises(self):
-        """All-non-finite input raises a clear ``ValueError``.
+    def test_non_finite_raises(self):
+        """Any non-finite entry raises a clear ``ValueError``.
 
         Test scenario:
-            No finite magnitude is available to define the domain.
+            A NaN/inf magnitude would map to a NaN size, so it is rejected
+            up front rather than rendered as a broken marker.
         """
-        with pytest.raises(ValueError, match="no finite entries"):
+        with pytest.raises(ValueError, match="non-finite entries"):
             resolve_sizes(np.array([np.nan, np.inf]), 1.0, 2.0)
+
+    def test_partial_non_finite_raises(self):
+        """A single non-finite entry among finite ones still raises.
+
+        Test scenario:
+            One NaN mixed with valid magnitudes is rejected.
+        """
+        with pytest.raises(ValueError, match="non-finite entries"):
+            resolve_sizes(np.array([1.0, np.nan, 3.0]), 1.0, 2.0)
+
+    def test_empty_raises(self):
+        """An empty magnitude array raises a clear ``ValueError``.
+
+        Test scenario:
+            There is nothing to map to sizes.
+        """
+        with pytest.raises(ValueError, match="is empty"):
+            resolve_sizes(np.array([]), 1.0, 2.0)
 
 
 class TestSizeLegend:

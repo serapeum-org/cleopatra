@@ -39,6 +39,7 @@ from matplotlib.figure import Figure
 from matplotlib.legend import Legend
 
 from cleopatra.glyph import Glyph
+from cleopatra.styles import CLASSIFY_OPTIONS
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import resolve_sizes, width_legend
 
@@ -58,7 +59,7 @@ FLOW_DEFAULT_OPTIONS = {
     "ticks_spacing": None,
     "add_colorbar": True,
 }
-FLOW_DEFAULT_OPTIONS = STYLE_DEFAULTS | FLOW_DEFAULT_OPTIONS
+FLOW_DEFAULT_OPTIONS = STYLE_DEFAULTS | CLASSIFY_OPTIONS | FLOW_DEFAULT_OPTIONS
 
 
 class FlowGlyph(Glyph):

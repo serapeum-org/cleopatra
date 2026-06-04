@@ -256,8 +256,15 @@ class KDEGlyph(Glyph):
     def _apply_clip(self, contour_set: Any) -> None:
         """Clip the drawn contour set to `self.clip_path`, if any.
 
-        A `Patch` clips directly; a `Path` is clipped in data coordinates
-        (`ax.transData`). No-op when no clip path was supplied.
+        A `Patch` clips in data coordinates; a `Path` is clipped in data
+        coordinates (`ax.transData`). No-op when no clip path was supplied.
+
+        A `Patch` clips through its own transform. A patch the caller just
+        constructed (and has not added to an axes) carries an identity
+        transform, which would clip in display space rather than data space;
+        so when the patch is not attached to an axes its transform is set to
+        `ax.transData` first, matching what `Axes.add_patch` would do. A
+        patch already added to an axes keeps its own transform.
 
         Args:
             contour_set: The `QuadContourSet` returned by
@@ -271,6 +278,8 @@ class KDEGlyph(Glyph):
         if clip is None:
             return
         if isinstance(clip, Patch):
+            if clip.axes is None:
+                clip.set_transform(self.ax.transData)
             contour_set.set_clip_path(clip)
         elif isinstance(clip, MplPath):
             contour_set.set_clip_path(clip, transform=self.ax.transData)

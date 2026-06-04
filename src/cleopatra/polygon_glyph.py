@@ -40,6 +40,7 @@ from matplotlib.collections import PolyCollection
 from matplotlib.figure import Figure
 
 from cleopatra.glyph import Glyph
+from cleopatra.styles import CLASSIFY_OPTIONS
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 #: Option keys for PolygonGlyph. `ticks_spacing` is `None` so the shared
@@ -53,7 +54,7 @@ POLYGON_DEFAULT_OPTIONS = {
     "ticks_spacing": None,
     "add_colorbar": True,
 }
-POLYGON_DEFAULT_OPTIONS = STYLE_DEFAULTS | POLYGON_DEFAULT_OPTIONS
+POLYGON_DEFAULT_OPTIONS = STYLE_DEFAULTS | CLASSIFY_OPTIONS | POLYGON_DEFAULT_OPTIONS
 
 
 class PolygonGlyph(Glyph):

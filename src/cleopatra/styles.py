@@ -111,6 +111,15 @@ DEFAULT_OPTIONS = {
     "bounds": None,
     "midpoint": 0,
     "grid_alpha": 0.75,
+}
+
+#: Classification options (`scheme` selects a `classify` scheme or explicit
+#: bin edges; `k` is the class count). Mixed into the option dicts of glyphs
+#: whose colour mapping routes through `Glyph._prepare_scalar_mapping` — kept
+#: out of the shared `DEFAULT_OPTIONS` so glyphs that bypass that pipeline
+#: (e.g. `ArrayGlyph` / `MeshGlyph`) reject `scheme` instead of silently
+#: ignoring it.
+CLASSIFY_OPTIONS = {
     "scheme": None,
     "k": 5,
 }
@@ -615,9 +624,9 @@ def resolve_sizes(
     each item.
 
     Args:
-        values: The per-item magnitudes to map. Non-finite entries are kept
-            in place in the output (mapped from a domain that ignores them)
-            — callers that pre-filter their data will not hit this.
+        values: The per-item magnitudes to map. Must be finite — a
+            non-finite entry (`NaN`/`inf`) would map to a `NaN` size, so it
+            is rejected rather than silently rendered as a broken marker.
         out_min: The smallest output size (maps to the minimum magnitude).
         out_max: The largest output size (maps to the maximum magnitude).
         scale: The pre-transform: `"linear"` (identity), `"log"`
@@ -630,9 +639,10 @@ def resolve_sizes(
             `[out_min, out_max]` for non-degenerate input.
 
     Raises:
-        ValueError: If `values` has no finite entries, if `scale` is not one
-            of `SIZE_SCALES`, if `scale="log"` and any magnitude is
-            non-positive, or if `scale="sqrt"` and any magnitude is negative.
+        ValueError: If `values` is empty or contains non-finite entries, if
+            `scale` is not one of `SIZE_SCALES`, if `scale="log"` and any
+            magnitude is non-positive, or if `scale="sqrt"` and any
+            magnitude is negative.
 
     Examples:
         - Linear mapping spans the output range, smallest→`out_min`:
@@ -669,30 +679,32 @@ def resolve_sizes(
         raise ValueError(
             f"Invalid size_scale {scale!r}. Expected one of {valid}."
         )
-    finite = values[np.isfinite(values)]
-    if finite.size == 0:
+    if values.size == 0:
+        raise ValueError("Cannot resolve sizes: `values` is empty.")
+    # Reject non-finite entries up front: a NaN/inf magnitude would map to a
+    # NaN size, which renders as an invisible or broken marker rather than
+    # failing loudly. Callers should clean their data first.
+    if not np.all(np.isfinite(values)):
         raise ValueError(
-            "Cannot resolve sizes: `values` has no finite entries."
+            "Cannot resolve sizes: `values` contains non-finite entries "
+            "(NaN/inf). Filter them before mapping to sizes."
         )
     if scale == "log":
-        if np.any(finite <= 0):
+        if np.any(values <= 0):
             raise ValueError(
                 "size_scale='log' requires strictly positive magnitudes."
             )
         transformed = Scale.log_scale(values)
-        domain = Scale.log_scale(finite)
     elif scale == "sqrt":
-        if np.any(finite < 0):
+        if np.any(values < 0):
             raise ValueError(
                 "size_scale='sqrt' requires non-negative magnitudes."
             )
         transformed = np.sqrt(values)
-        domain = np.sqrt(finite)
     else:  # linear
         transformed = values
-        domain = finite
 
-    lo, hi = float(domain.min()), float(domain.max())
+    lo, hi = float(transformed.min()), float(transformed.max())
     if hi == lo:
         midpoint = (out_min + out_max) / 2.0
         return np.full(values.shape, midpoint, dtype=float)

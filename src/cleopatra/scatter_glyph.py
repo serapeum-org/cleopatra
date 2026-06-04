@@ -42,6 +42,7 @@ from matplotlib.figure import Figure
 from matplotlib.legend import Legend
 
 from cleopatra.glyph import Glyph
+from cleopatra.styles import CLASSIFY_OPTIONS
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import resolve_sizes, size_legend
 
@@ -63,7 +64,7 @@ SCATTER_DEFAULT_OPTIONS = {
     "size_legend_values": None,
     "size_legend_kwargs": None,
 }
-SCATTER_DEFAULT_OPTIONS = STYLE_DEFAULTS | SCATTER_DEFAULT_OPTIONS
+SCATTER_DEFAULT_OPTIONS = STYLE_DEFAULTS | CLASSIFY_OPTIONS | SCATTER_DEFAULT_OPTIONS
 
 
 class ScatterGlyph(Glyph):

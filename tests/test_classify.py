@@ -22,10 +22,16 @@ import numpy as np
 import pytest
 
 import cleopatra.styles as styles_mod
+from cleopatra.array_glyph import ArrayGlyph
+from cleopatra.flow_glyph import FlowGlyph
 from cleopatra.glyph import Glyph
+from cleopatra.kde_glyph import KDEGlyph
+from cleopatra.mesh_glyph import MeshGlyph
 from cleopatra.polygon_glyph import PolygonGlyph
 from cleopatra.scatter_glyph import ScatterGlyph
+from cleopatra.vector_glyph import VectorGlyph
 from cleopatra.styles import (
+    CLASSIFY_OPTIONS,
     DEFAULT_OPTIONS as STYLE_DEFAULTS,
     JENKS_SCHEMES,
     NUMPY_SCHEMES,
@@ -97,15 +103,19 @@ class TestModuleConstants:
             "natural_breaks",
         }, f"Unexpected Jenks schemes: {JENKS_SCHEMES}"
 
-    def test_scheme_and_k_defaults_present(self):
-        """``scheme`` / ``k`` are part of the shared option defaults.
+    def test_scheme_and_k_in_classify_options_not_shared_defaults(self):
+        """``scheme`` / ``k`` live in CLASSIFY_OPTIONS, not the shared defaults.
 
         Test scenario:
-            They default to ``None`` and ``5`` so every glyph inherits the
-            continuous-by-default behaviour with five classes when enabled.
+            They default to ``None`` and ``5`` in CLASSIFY_OPTIONS, and are
+            deliberately kept out of the shared DEFAULT_OPTIONS so glyphs that
+            bypass the scalar-mapping pipeline reject `scheme` instead of
+            silently ignoring it.
         """
-        assert STYLE_DEFAULTS["scheme"] is None, "scheme should default to None"
-        assert STYLE_DEFAULTS["k"] == 5, "k should default to 5"
+        assert CLASSIFY_OPTIONS["scheme"] is None, "scheme should default to None"
+        assert CLASSIFY_OPTIONS["k"] == 5, "k should default to 5"
+        assert "scheme" not in STYLE_DEFAULTS, "scheme must not be in shared defaults"
+        assert "k" not in STYLE_DEFAULTS, "k must not be in shared defaults"
 
 
 class TestClassify:
@@ -549,3 +559,113 @@ class TestPolygonGlyphScheme:
         glyph = PolygonGlyph(polys, values=values)
         _, _, pc = glyph.plot()
         assert not isinstance(pc.norm, mcolors.BoundaryNorm), "No scheme -> no BoundaryNorm"
+
+
+class TestSchemeGlyphScope:
+    """Tests for which glyphs accept `scheme` (the M1 fix).
+
+    `scheme`/`k` live in `CLASSIFY_OPTIONS` and are mixed only into glyphs
+    whose colour mapping routes through `Glyph._prepare_scalar_mapping` and
+    is driven purely by the norm. Glyphs that bypass that pipeline
+    (`ArrayGlyph`, `MeshGlyph`) — and `KDEGlyph`, whose `contourf` has its
+    own `levels` discretisation — must reject `scheme` rather than silently
+    ignore it.
+    """
+
+    @pytest.mark.parametrize("glyph_cls", [ScatterGlyph, PolygonGlyph, VectorGlyph, FlowGlyph])
+    def test_pipeline_glyphs_accept_scheme(self, glyph_cls):
+        """Pipeline glyphs expose `scheme`/`k` as accepted options.
+
+        Args:
+            glyph_cls: A glyph class that colours through the shared pipeline.
+
+        Test scenario:
+            `scheme` and `k` are in the class's option keys.
+        """
+        keys = glyph_cls.option_keys()
+        assert "scheme" in keys and "k" in keys, (
+            f"{glyph_cls.__name__} should accept scheme/k"
+        )
+
+    def test_array_glyph_rejects_scheme(self):
+        """`ArrayGlyph` rejects `scheme` instead of silently ignoring it.
+
+        Test scenario:
+            ArrayGlyph bypasses `_prepare_scalar_mapping`, so `scheme` is not
+            an accepted option and construction raises.
+        """
+        with pytest.raises(ValueError, match="not correct"):
+            ArrayGlyph(np.arange(9).reshape(3, 3).astype(float), scheme="quantiles")
+
+    def test_mesh_glyph_rejects_scheme(self):
+        """`MeshGlyph` rejects `scheme` instead of silently ignoring it.
+
+        Test scenario:
+            MeshGlyph bypasses `_prepare_scalar_mapping`, so `scheme` is
+            rejected at construction.
+        """
+        with pytest.raises(ValueError, match="not correct"):
+            MeshGlyph(
+                np.array([0.0, 1.0, 0.0]),
+                np.array([0.0, 0.0, 1.0]),
+                np.array([[0, 1, 2]]),
+                scheme="quantiles",
+            )
+
+    def test_kde_glyph_rejects_scheme(self):
+        """`KDEGlyph` rejects `scheme` (its `levels` owns discretisation).
+
+        Test scenario:
+            KDEGlyph is excluded from the classification options, so `scheme`
+            is rejected at construction.
+        """
+        rng = np.random.default_rng(0)
+        with pytest.raises(ValueError, match="not correct"):
+            KDEGlyph(rng.normal(size=20), rng.normal(size=20), scheme="quantiles")
+
+
+class TestSchemeConflictWarnings:
+    """Tests for the L2 conflict warnings when `scheme` overrides options."""
+
+    def test_warns_on_conflicting_color_scale(self):
+        """Setting `scheme` with a non-linear `color_scale` warns.
+
+        Test scenario:
+            `scheme` owns the norm, so `color_scale="midpoint"` is ignored —
+            and a warning says so.
+        """
+        glyph = ScatterGlyph(
+            np.arange(5.0), np.zeros(5), values=np.arange(5.0),
+            scheme="quantiles", color_scale="midpoint",
+        )
+        with pytest.warns(UserWarning, match="color_scale"):
+            glyph.plot()
+
+    def test_warns_on_conflicting_levels(self):
+        """Setting `scheme` together with `levels` warns.
+
+        Test scenario:
+            The classification scheme determines the bins, so `levels` is
+            ignored — and a warning says so.
+        """
+        glyph = ScatterGlyph(
+            np.arange(5.0), np.zeros(5), values=np.arange(5.0),
+            scheme="quantiles", levels=4,
+        )
+        with pytest.warns(UserWarning, match="levels"):
+            glyph.plot()
+
+    def test_no_warning_without_conflict(self):
+        """A plain `scheme` (default color_scale, no levels) does not warn.
+
+        Test scenario:
+            `scheme="quantiles"` alone produces no conflict warning.
+        """
+        import warnings as _warnings
+
+        glyph = ScatterGlyph(
+            np.arange(5.0), np.zeros(5), values=np.arange(5.0), scheme="quantiles",
+        )
+        with _warnings.catch_warnings():
+            _warnings.simplefilter("error")
+            glyph.plot()
