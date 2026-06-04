@@ -23,6 +23,7 @@ _SUBMODULES = [
     "config",
     "flow_glyph",
     "glyph",
+    "kde_glyph",
     "line_glyph",
     "mesh_glyph",
     "polygon_glyph",
