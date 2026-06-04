@@ -37,6 +37,11 @@ tiles = [
     "pyproj>=3.7.2",
     "xyzservices>=2026.3.0",
 ]
+# Jenks-family classification schemes ("fisher_jenks" / "natural_breaks")
+# for cleopatra.styles.classify. The numpy-only schemes need nothing extra.
+classify = [
+    "mapclassify>=2.5.0",
+]
 
 [dependency-groups]
 dev = [

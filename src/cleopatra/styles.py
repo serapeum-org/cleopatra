@@ -110,6 +110,8 @@ DEFAULT_OPTIONS = {
     "bounds": None,
     "midpoint": 0,
     "grid_alpha": 0.75,
+    "scheme": None,
+    "k": 5,
 }
 
 
@@ -1039,3 +1041,222 @@ def histogram_legend(
     if orientation == "vertical":
         return ax.bar(centers, counts, width=widths, color=bar_colors, **bar_kwargs)
     return ax.barh(centers, counts, height=widths, color=bar_colors, **bar_kwargs)
+
+
+#: Classification schemes that need nothing beyond numpy. Anything outside
+#: this set (the Jenks-family `"fisher_jenks"` / `"natural_breaks"`) is routed
+#: to the optional, lazily-imported `cleopatra[classify]` extra (mapclassify)
+#: so the default install stays numpy + matplotlib only.
+NUMPY_SCHEMES = ("quantiles", "equal_interval", "percentiles", "std_mean")
+
+#: Jenks-family schemes that require the optional `cleopatra[classify]` extra.
+JENKS_SCHEMES = ("fisher_jenks", "natural_breaks")
+
+#: Standard-deviation multiples used by the `"std_mean"` scheme (mean ± nσ).
+#: Matches mapclassify's `StdMean` default; `k` is ignored for this scheme.
+_STD_MEAN_MULTIPLES = (-2.0, -1.0, 0.0, 1.0, 2.0)
+
+
+def classify(
+    values: np.ndarray | Sequence[float],
+    scheme: str | Sequence[float],
+    k: int = 5,
+) -> tuple[np.ndarray, colors.BoundaryNorm]:
+    """Bin a continuous array into discrete colour classes.
+
+    The shared building block behind categorical (classified) colouring:
+    it turns a continuous data column into an array of bin edges plus a
+    matching `matplotlib.colors.BoundaryNorm`, so any colour-by-value glyph
+    can render a stepped colorbar / class legend instead of a continuous
+    ramp. It is the classification counterpart to `Scale` and
+    `MidpointNormalize`.
+
+    The numpy-only schemes (no dependency beyond numpy) are:
+
+    * `"quantiles"` — `k` equal-count classes via
+      `np.quantile(values, np.linspace(0, 1, k + 1))`.
+    * `"equal_interval"` — `k` equal-width classes spanning the data range.
+    * `"percentiles"` — `k` equal-count classes via `np.percentile` on the
+      same evenly-spaced probabilities; numerically equivalent to
+      `"quantiles"` (it differs only in the `[0, 100]` vs `[0, 1]`
+      convention) and is kept as a familiar alias.
+    * `"std_mean"` — fixed breaks at `mean + nσ` for `n` in
+      `(-2, -1, 0, 1, 2)`, clipped to the data range. `k` is **ignored**
+      for this scheme (the number of classes follows from the multiples).
+
+    The Jenks-family schemes `"fisher_jenks"` and `"natural_breaks"` are
+    routed to the optional `cleopatra[classify]` extra (`mapclassify`),
+    imported lazily so the default install never needs it.
+
+    A non-string `scheme` is treated as an explicit, already-chosen
+    sequence of bin edges (sorted ascending); `k` is ignored.
+
+    Args:
+        values: The data to classify. Non-finite entries (`NaN` / `inf`)
+            are ignored when computing the edges. Can be any array-like.
+        scheme: A scheme name (see above, case-insensitive) **or** an
+            explicit sequence of bin edges to use verbatim.
+        k: The number of classes for the count/width schemes. Must be
+            `>= 1`. Default is 5. Ignored for `"std_mean"` and for an
+            explicit edge sequence.
+
+    Returns:
+        tuple[np.ndarray, matplotlib.colors.BoundaryNorm]: The sorted,
+            de-duplicated bin edges (length = classes + 1) and a
+            `BoundaryNorm` built from them (with `ncolors=256`, matching
+            the package's other boundary norms).
+
+    Raises:
+        ValueError: If `values` has no finite entries, if `k < 1`, if the
+            (finite) data has no spread so fewer than two distinct edges
+            result, or if `scheme` is an unrecognised name.
+        ModuleNotFoundError: If a Jenks-family scheme is requested but the
+            optional `cleopatra[classify]` extra (mapclassify) is not
+            installed.
+
+    Examples:
+        - Equal-interval edges on a 0–10 ramp:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.styles import classify
+            >>> edges, norm = classify(np.arange(11.0), "equal_interval", k=5)
+            >>> [float(e) for e in edges]
+            [0.0, 2.0, 4.0, 6.0, 8.0, 10.0]
+            >>> [float(b) for b in norm.boundaries]
+            [0.0, 2.0, 4.0, 6.0, 8.0, 10.0]
+
+            ```
+        - Quantile edges put equal counts in each class:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.styles import classify
+            >>> edges, _ = classify(np.arange(100.0), "quantiles", k=4)
+            >>> [float(e) for e in edges]
+            [0.0, 24.75, 49.5, 74.25, 99.0]
+
+            ```
+        - An explicit edge sequence is used verbatim (sorted):
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.styles import classify
+            >>> edges, _ = classify(np.arange(11.0), [10.0, 0.0, 5.0])
+            >>> [float(e) for e in edges]
+            [0.0, 5.0, 10.0]
+
+            ```
+        - An unknown scheme name is rejected:
+            ```python
+            >>> from cleopatra.styles import classify
+            >>> classify([1.0, 2.0, 3.0], "rainbow")
+            Traceback (most recent call last):
+                ...
+            ValueError: Unknown classification scheme 'rainbow'. ...
+
+            ```
+    """
+    finite = np.asarray(values, dtype=float)
+    finite = finite[np.isfinite(finite)]
+    if finite.size == 0:
+        raise ValueError(
+            "Cannot classify: `values` has no finite entries to bin."
+        )
+
+    if isinstance(scheme, str):
+        edges = _scheme_edges(finite, scheme, k)
+    else:
+        # An explicit sequence of bin edges supplied by the caller.
+        edges = np.sort(np.asarray(scheme, dtype=float))
+
+    # BoundaryNorm needs strictly increasing edges; quantiles on skewed or
+    # discrete data can repeat, so collapse duplicates and require spread.
+    edges = np.unique(edges)
+    if edges.size < 2:
+        raise ValueError(
+            "Cannot classify: the data has no spread (fewer than two "
+            "distinct bin edges). Pin explicit edges or widen the data."
+        )
+    norm = colors.BoundaryNorm(boundaries=edges, ncolors=256)
+    return edges, norm
+
+
+def _scheme_edges(finite: np.ndarray, scheme: str, k: int) -> np.ndarray:
+    """Compute bin edges for a named classification `scheme`.
+
+    Helper for `classify`: `finite` is already the finite-only data and
+    `scheme` is a (case-insensitive) scheme name. Returns the raw edges
+    before de-duplication, which `classify` performs.
+
+    Args:
+        finite: The finite-only data to derive edges from.
+        scheme: The scheme name (see `classify`).
+        k: The number of classes for the count/width schemes.
+
+    Returns:
+        np.ndarray: The (possibly non-unique) bin edges.
+
+    Raises:
+        ValueError: If `k < 1` (for the `k`-driven schemes) or `scheme`
+            is not a recognised name.
+        ModuleNotFoundError: If a Jenks-family scheme is requested without
+            the optional `cleopatra[classify]` extra.
+    """
+    name = scheme.lower()
+    if name in NUMPY_SCHEMES:
+        if name == "std_mean":
+            mean, std = float(finite.mean()), float(finite.std())
+            breaks = [mean + mult * std for mult in _STD_MEAN_MULTIPLES]
+            lo, hi = float(finite.min()), float(finite.max())
+            inner = [b for b in breaks if lo < b < hi]
+            return np.array([lo, *inner, hi], dtype=float)
+        if k < 1:
+            raise ValueError(f"`k` must be >= 1, got {k}.")
+        if name == "quantiles":
+            return np.quantile(finite, np.linspace(0.0, 1.0, k + 1))
+        if name == "percentiles":
+            return np.percentile(finite, np.linspace(0.0, 100.0, k + 1))
+        # name == "equal_interval"
+        return np.linspace(float(finite.min()), float(finite.max()), k + 1)
+
+    if name in JENKS_SCHEMES:
+        return _jenks_edges(finite, name, k)
+
+    valid = ", ".join(repr(s) for s in (*NUMPY_SCHEMES, *JENKS_SCHEMES))
+    raise ValueError(
+        f"Unknown classification scheme {scheme!r}. Expected one of "
+        f"{valid}, or an explicit sequence of bin edges."
+    )
+
+
+def _jenks_edges(finite: np.ndarray, name: str, k: int) -> np.ndarray:
+    """Compute Jenks-family bin edges via the optional mapclassify extra.
+
+    `mapclassify` is a soft dependency (the `cleopatra[classify]` extra),
+    not a hard requirement, so it is imported lazily here and re-raised
+    with an actionable install hint when missing — the default install
+    stays numpy + matplotlib only.
+
+    Args:
+        finite: The finite-only data to classify.
+        name: Either `"fisher_jenks"` or `"natural_breaks"`.
+        k: The number of classes.
+
+    Returns:
+        np.ndarray: Bin edges `[min, *upper_bounds]` from the classifier.
+
+    Raises:
+        ValueError: If `k < 1`.
+        ModuleNotFoundError: If `mapclassify` is not installed.
+    """
+    if k < 1:
+        raise ValueError(f"`k` must be >= 1, got {k}.")
+    try:
+        import mapclassify
+    except ModuleNotFoundError as exc:  # pragma: no cover - extra not installed
+        raise ModuleNotFoundError(
+            f"The {name!r} classification scheme requires the optional "
+            "'classify' extra. Install it with: "
+            "pip install 'cleopatra[classify]'."
+        ) from exc
+    classifier_name = "FisherJenks" if name == "fisher_jenks" else "NaturalBreaks"
+    classifier = getattr(mapclassify, classifier_name)(finite, k=k)
+    return np.concatenate([[float(finite.min())], np.asarray(classifier.bins)])
