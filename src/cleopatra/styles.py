@@ -762,6 +762,7 @@ class MidpointNormalize(colors.Normalize):
     Create a normalization with a non-zero midpoint (5):
     ```python
     >>> norm = MidpointNormalize(vmin=0, vmax=10, midpoint=5)
+
     ```
     - Values below midpoint are mapped to [0, 0.5]
     ```python
