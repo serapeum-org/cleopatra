@@ -295,6 +295,5 @@ sequenceDiagram
   `DEFAULT_OPTIONS`; they live in `CLASSIFY_OPTIONS` and are mixed only into the
   glyphs whose renderer is driven purely by the norm, so `ArrayGlyph` /
   `MeshGlyph` / `KDEGlyph` reject `scheme` instead of silently ignoring it.
-- **No new hard dependency** — classification, KDE, and rescaling are pure
-  numpy + matplotlib; the Jenks-family schemes are the only thing behind an
-  optional, lazily-imported `cleopatra[classify]` extra.
+- **No new dependency at all** — classification (including the Fisher-Jenks
+  natural-breaks optimisation), KDE, and rescaling are pure numpy + matplotlib.

@@ -2,9 +2,9 @@
 
 Covers:
 
-* `cleopatra.styles.classify` and its helpers `_scheme_edges` / `_jenks_edges`
-  (the numpy-only schemes, explicit edges, the `BoundaryNorm` output, and the
-  error / optional-extra paths).
+* `cleopatra.styles.classify` and its helpers `_scheme_edges` /
+  `_fisher_jenks_edges` (the numpy-only schemes incl. native Fisher-Jenks,
+  explicit edges, the `BoundaryNorm` output, and the error paths).
 * `Glyph._prepare_classified_mapping` and the `scheme` / `k` short-circuit
   added to `Glyph._prepare_scalar_mapping`.
 * Integration through `ScatterGlyph` and `PolygonGlyph` (discrete classes,
@@ -37,7 +37,7 @@ from cleopatra.styles import (
     NUMPY_SCHEMES,
     classify,
 )
-from cleopatra.styles import _jenks_edges, _scheme_edges
+from cleopatra.styles import _fisher_jenks_edges, _scheme_edges
 
 
 @pytest.fixture(autouse=True)
@@ -96,7 +96,7 @@ class TestModuleConstants:
         """The Jenks tuple names the two optional-extra schemes.
 
         Test scenario:
-            ``JENKS_SCHEMES`` is exactly the mapclassify-backed names.
+            ``JENKS_SCHEMES`` is exactly the native Fisher-Jenks names.
         """
         assert set(JENKS_SCHEMES) == {
             "fisher_jenks",
@@ -290,15 +290,16 @@ class TestClassify:
 class TestSchemeEdges:
     """Tests for the private ``_scheme_edges`` helper."""
 
-    def test_routes_jenks_to_extra(self):
-        """A Jenks name is routed to the optional-extra path.
+    def test_routes_jenks_to_native_fisher_jenks(self):
+        """A Jenks name is routed to the native Fisher-Jenks implementation.
 
         Test scenario:
-            With mapclassify absent, requesting fisher_jenks surfaces the
-            install hint (proving the routing, not the computation).
+            `fisher_jenks` returns `k + 1` edges computed in-process (no
+            optional dependency), spanning the data range.
         """
-        with pytest.raises(ModuleNotFoundError, match="cleopatra\\[classify\\]"):
-            _scheme_edges(np.arange(10.0), "fisher_jenks", k=3)
+        edges = _scheme_edges(np.arange(10.0), "fisher_jenks", k=3)
+        assert len(edges) == 4, f"k=3 should give 4 edges, got {len(edges)}"
+        assert edges[0] == 0.0 and edges[-1] == 9.0, f"Edges should span data: {edges}"
 
     def test_std_mean_k_ignored_branch(self):
         """``_scheme_edges`` does not validate ``k`` for ``std_mean``.
@@ -311,49 +312,96 @@ class TestSchemeEdges:
         assert edges[0] == 0.0 and edges[-1] == 99.0, f"Unexpected std_mean edges: {edges}"
 
 
-class TestJenksEdges:
-    """Tests for the private ``_jenks_edges`` helper."""
+class TestFisherJenksEdges:
+    """Tests for the native ``_fisher_jenks_edges`` helper (no dependency)."""
 
-    def test_missing_mapclassify_raises_with_hint(self):
-        """A missing optional extra raises ``ModuleNotFoundError`` with a hint.
+    @staticmethod
+    def _partition_sse(data, edges):
+        """Sum of within-class squared deviations for the given bin edges."""
+        data = np.sort(np.asarray(data, dtype=float))
+        cls = np.searchsorted(edges[1:-1], data, side="left")
+        return sum(
+            ((data[cls == c] - data[cls == c].mean()) ** 2).sum()
+            for c in np.unique(cls)
+        )
+
+    def test_matches_brute_force_optimum(self):
+        """The DP finds the globally optimal (minimum-SSE) partition.
 
         Test scenario:
-            mapclassify is not installed in the test environment, so the
-            helper re-raises with an actionable ``pip install`` hint.
+            For small samples, the within-class SSE achieved by the
+            Fisher-Jenks edges equals the brute-force optimum over all
+            contiguous k-partitions.
         """
-        with pytest.raises(ModuleNotFoundError, match="pip install 'cleopatra\\[classify\\]'"):
-            _jenks_edges(np.arange(10.0), "natural_breaks", k=3)
+        import itertools
 
-    def test_k_below_one_raises(self):
-        """``_jenks_edges`` validates ``k`` before importing the extra.
+        rng = np.random.default_rng(0)
+        for _ in range(5):
+            data = np.sort(rng.normal(size=11))
+            for k in (2, 3, 4):
+                best = min(
+                    sum(
+                        ((seg - seg.mean()) ** 2).sum()
+                        for seg in np.split(data, list(cuts))
+                        if seg.size
+                    )
+                    for cuts in itertools.combinations(range(1, data.size), k - 1)
+                )
+                edges = _fisher_jenks_edges(data, k)
+                got = self._partition_sse(data, edges)
+                assert np.isclose(got, best), f"k={k}: DP SSE {got} != optimum {best}"
+
+    def test_classic_break(self):
+        """A clear outlier is split into its own class.
 
         Test scenario:
-            ``k < 1`` raises ``ValueError`` regardless of mapclassify.
+            [1, 2, 3, 4, 5, 100] with k=2 breaks between 5 and 100.
         """
-        with pytest.raises(ValueError, match="`k` must be >= 1"):
-            _jenks_edges(np.arange(10.0), "fisher_jenks", k=0)
+        edges = _fisher_jenks_edges(np.array([1.0, 2, 3, 4, 5, 100]), k=2)
+        assert np.allclose(edges, [1.0, 5.0, 100.0]), f"Unexpected edges: {edges}"
 
-    def test_uses_mapclassify_when_available(self, monkeypatch):
-        """When mapclassify is importable, edges are ``[min, *bins]``.
+    def test_edges_count_and_span(self):
+        """`k` classes yield `k + 1` increasing edges spanning the data.
 
         Test scenario:
-            A fake ``mapclassify`` module with a ``FisherJenks`` classifier is
-            injected; the helper prepends the data minimum to the classifier
-            bins.
+            k=5 on a ramp gives six strictly increasing edges from min to max.
+        """
+        edges = _fisher_jenks_edges(np.arange(50.0), k=5)
+        assert len(edges) == 6, f"Expected 6 edges, got {len(edges)}"
+        assert edges[0] == 0.0 and edges[-1] == 49.0, "Edges should span the data"
+        assert np.all(np.diff(edges) > 0), f"Edges must be increasing: {edges}"
+
+    def test_k_at_least_n_one_class_per_point(self):
+        """When k >= number of points, every value becomes its own break.
+
+        Test scenario:
+            Three points with k=10 return the sorted values as edges.
+        """
+        edges = _fisher_jenks_edges(np.array([3.0, 1.0, 2.0]), k=10)
+        assert np.allclose(edges, [1.0, 1.0, 2.0, 3.0]), f"Unexpected edges: {edges}"
+
+    def test_natural_breaks_is_fisher_jenks_alias(self):
+        """`natural_breaks` produces identical edges to `fisher_jenks`.
+
+        Test scenario:
+            Both scheme names route to the same exact optimisation.
+        """
+        data = np.arange(40.0)
+        fisher, _ = classify(data, "fisher_jenks", k=4)
+        natural, _ = classify(data, "natural_breaks", k=4)
+        assert np.allclose(fisher, natural), "natural_breaks should equal fisher_jenks"
+
+    def test_no_mapclassify_import(self):
+        """Classifying with a Jenks scheme imports no optional dependency.
+
+        Test scenario:
+            After a fisher_jenks classification, `mapclassify` is absent from
+            `sys.modules` — the algorithm is pure numpy.
         """
         import sys
-        import types
 
-        fake = types.ModuleType("mapclassify")
-
-        class _FisherJenks:
-            def __init__(self, data, k):
-                self.bins = np.array([3.0, 6.0, 9.0])
-
-        fake.FisherJenks = _FisherJenks
-        monkeypatch.setitem(sys.modules, "mapclassify", fake)
-        edges = _jenks_edges(np.arange(10.0), "fisher_jenks", k=3)
-        assert np.allclose(edges, [0.0, 3.0, 6.0, 9.0]), f"Unexpected jenks edges: {edges}"
+        classify(np.arange(20.0), "fisher_jenks", k=4)
+        assert "mapclassify" not in sys.modules, "Jenks must not import mapclassify"
 
 
 class TestGlyphPrepareClassifiedMapping:

@@ -1325,17 +1325,17 @@ def histogram_legend(
     return ax.barh(centers, counts, height=widths, color=bar_colors, **bar_kwargs)
 
 
-#: Classification schemes that need nothing beyond numpy. Anything outside
-#: this set (the Jenks-family `"fisher_jenks"` / `"natural_breaks"`) is routed
-#: to the optional, lazily-imported `cleopatra[classify]` extra (mapclassify)
-#: so the default install stays numpy + matplotlib only.
+#: Count/width/spread classification schemes (simple closed-form breaks).
 NUMPY_SCHEMES = ("quantiles", "equal_interval", "percentiles", "std_mean")
 
-#: Jenks-family schemes that require the optional `cleopatra[classify]` extra.
+#: Jenks-family schemes computed by the native Fisher-Jenks optimisation
+#: (`_fisher_jenks_edges`). `"natural_breaks"` is an alias of `"fisher_jenks"`:
+#: both minimise the within-class sum of squared deviations. No dependency
+#: beyond numpy — the whole package stays numpy + matplotlib only.
 JENKS_SCHEMES = ("fisher_jenks", "natural_breaks")
 
-#: Standard-deviation multiples used by the `"std_mean"` scheme (mean ± nσ).
-#: Matches mapclassify's `StdMean` default; `k` is ignored for this scheme.
+#: Standard-deviation multiples used by the `"std_mean"` scheme (mean ± nσ);
+#: `k` is ignored for this scheme.
 _STD_MEAN_MULTIPLES = (-2.0, -1.0, 0.0, 1.0, 2.0)
 
 
@@ -1367,8 +1367,9 @@ def classify(
       for this scheme (the number of classes follows from the multiples).
 
     The Jenks-family schemes `"fisher_jenks"` and `"natural_breaks"` are
-    routed to the optional `cleopatra[classify]` extra (`mapclassify`),
-    imported lazily so the default install never needs it.
+    computed by the native Fisher-Jenks optimisation — the exact dynamic
+    program that minimises the within-class sum of squared deviations. Both
+    names are aliases for the same algorithm. No dependency beyond numpy.
 
     A non-string `scheme` is treated as an explicit, already-chosen
     sequence of bin edges (sorted ascending); `k` is ignored.
@@ -1392,9 +1393,6 @@ def classify(
         ValueError: If `values` has no finite entries, if `k < 1`, if the
             (finite) data has no spread so fewer than two distinct edges
             result, or if `scheme` is an unrecognised name.
-        ModuleNotFoundError: If a Jenks-family scheme is requested but the
-            optional `cleopatra[classify]` extra (mapclassify) is not
-            installed.
 
     Examples:
         - Equal-interval edges on a 0–10 ramp:
@@ -1479,8 +1477,6 @@ def _scheme_edges(finite: np.ndarray, scheme: str, k: int) -> np.ndarray:
     Raises:
         ValueError: If `k < 1` (for the `k`-driven schemes) or `scheme`
             is not a recognised name.
-        ModuleNotFoundError: If a Jenks-family scheme is requested without
-            the optional `cleopatra[classify]` extra.
     """
     name = scheme.lower()
     if name in NUMPY_SCHEMES:
@@ -1500,7 +1496,9 @@ def _scheme_edges(finite: np.ndarray, scheme: str, k: int) -> np.ndarray:
         return np.linspace(float(finite.min()), float(finite.max()), k + 1)
 
     if name in JENKS_SCHEMES:
-        return _jenks_edges(finite, name, k)
+        if k < 1:
+            raise ValueError(f"`k` must be >= 1, got {k}.")
+        return _fisher_jenks_edges(finite, k)
 
     valid = ", ".join(repr(s) for s in (*NUMPY_SCHEMES, *JENKS_SCHEMES))
     raise ValueError(
@@ -1509,36 +1507,64 @@ def _scheme_edges(finite: np.ndarray, scheme: str, k: int) -> np.ndarray:
     )
 
 
-def _jenks_edges(finite: np.ndarray, name: str, k: int) -> np.ndarray:
-    """Compute Jenks-family bin edges via the optional mapclassify extra.
+def _fisher_jenks_edges(finite: np.ndarray, k: int) -> np.ndarray:
+    """Compute Fisher-Jenks (natural-breaks) bin edges in pure numpy.
 
-    `mapclassify` is a soft dependency (the `cleopatra[classify]` extra),
-    not a hard requirement, so it is imported lazily here and re-raised
-    with an actionable install hint when missing — the default install
-    stays numpy + matplotlib only.
+    Implements the exact Fisher-Jenks optimisation: the contiguous
+    partition of the sorted data into `k` classes that minimises the total
+    within-class sum of squared deviations about each class mean (the
+    objective that `"natural_breaks"` also targets). This is the classic
+    O(k·n²) dynamic program; segment costs are evaluated in O(1) from
+    prefix sums, and the inner search is vectorised over split points.
 
     Args:
-        finite: The finite-only data to classify.
-        name: Either `"fisher_jenks"` or `"natural_breaks"`.
-        k: The number of classes.
+        finite: The finite-only data to classify (any order; sorted here).
+        k: The number of classes (`>= 1`, validated by the caller).
 
     Returns:
-        np.ndarray: Bin edges `[min, *upper_bounds]` from the classifier.
+        np.ndarray: Bin edges `[min, *class_upper_bounds]` (length `k + 1`),
+            i.e. the data minimum followed by the maximum value of each
+            class — matching the `[min, *bins]` convention of the other
+            schemes. When `k` meets or exceeds the number of distinct
+            points, every point becomes its own break.
 
-    Raises:
-        ValueError: If `k < 1`.
-        ModuleNotFoundError: If `mapclassify` is not installed.
+    Notes:
+        Runtime is O(k·n²); for very large point counts pre-aggregate or use
+        `"quantiles"` instead.
     """
-    if k < 1:
-        raise ValueError(f"`k` must be >= 1, got {k}.")
-    try:
-        import mapclassify
-    except ModuleNotFoundError as exc:  # pragma: no cover - extra not installed
-        raise ModuleNotFoundError(
-            f"The {name!r} classification scheme requires the optional "
-            "'classify' extra. Install it with: "
-            "pip install 'cleopatra[classify]'."
-        ) from exc
-    classifier_name = "FisherJenks" if name == "fisher_jenks" else "NaturalBreaks"
-    classifier = getattr(mapclassify, classifier_name)(finite, k=k)
-    return np.concatenate([[float(finite.min())], np.asarray(classifier.bins)])
+    data = np.sort(np.asarray(finite, dtype=float))
+    n = data.size
+    if k >= n:
+        # More classes than points: each value is its own class bound.
+        return np.concatenate([[data[0]], data])
+
+    # Prefix sums of values and squares for O(1) segment SSE:
+    # SSE[a, b) = sum(x^2) - sum(x)^2 / count  over data[a:b].
+    s1 = np.concatenate([[0.0], np.cumsum(data)])
+    s2 = np.concatenate([[0.0], np.cumsum(data * data)])
+
+    inf = np.inf
+    # dp[m, j] = min total SSE splitting the first j points into m classes.
+    dp = np.full((k + 1, n + 1), inf)
+    back = np.zeros((k + 1, n + 1), dtype=int)
+    dp[0, 0] = 0.0
+    for m in range(1, k + 1):
+        for j in range(m, n + 1):
+            # The m-th class spans points [i, j); i ranges over valid splits.
+            i = np.arange(m - 1, j)
+            count = j - i
+            seg_sum = s1[j] - s1[i]
+            seg_sse = (s2[j] - s2[i]) - seg_sum * seg_sum / count
+            total = dp[m - 1, i] + seg_sse
+            best = int(np.argmin(total))
+            dp[m, j] = total[best]
+            back[m, j] = i[best]
+
+    # Reconstruct class upper bounds from the split pointers.
+    bounds = []
+    j = n
+    for m in range(k, 0, -1):
+        bounds.append(data[j - 1])
+        j = int(back[m, j])
+    bounds.reverse()
+    return np.concatenate([[data[0]], bounds])

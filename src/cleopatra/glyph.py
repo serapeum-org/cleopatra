@@ -841,8 +841,6 @@ class Glyph:
         Raises:
             ValueError: Propagated from `classify` (unknown scheme,
                 degenerate data, or `k < 1`).
-            ModuleNotFoundError: Propagated from `classify` when a
-                Jenks-family scheme needs the optional `classify` extra.
 
         Examples:
             - A quantile scheme yields a `BoundaryNorm` and boundary ticks:
