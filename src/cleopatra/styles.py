@@ -15,6 +15,7 @@ from matplotlib.cm import ScalarMappable
 from matplotlib.colorbar import Colorbar
 from matplotlib.container import BarContainer
 from matplotlib.legend import Legend
+from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
 
@@ -585,6 +586,119 @@ class Scale:
         return new_value
 
 
+#: Accepted values for the `size_scale` of `resolve_sizes` — the transform
+#: applied to the magnitudes before they are linearly rescaled into the output
+#: range. `"sqrt"` matches perceived marker *area*; `"log"` suits magnitudes
+#: that span orders of magnitude.
+SIZE_SCALES = ("linear", "log", "sqrt")
+
+
+def resolve_sizes(
+    values: np.ndarray | Sequence[float],
+    out_min: float,
+    out_max: float,
+    scale: str = "linear",
+) -> np.ndarray:
+    """Map per-item magnitudes to a visual size range.
+
+    The reusable value→size primitive shared by size-encoding glyphs: it
+    turns a per-item magnitude array into an array of visual sizes spanning
+    `[out_min, out_max]`, optionally pre-transforming the magnitudes
+    (`"log"` / `"sqrt"`) before the linear rescale. `ScatterGlyph` uses it
+    for marker area (`s`); a future `FlowGlyph` can reuse it for line width.
+    The linear rescale itself is delegated to `Scale.rescale`, so this never
+    re-implements the range mapping.
+
+    The mapping is monotonic in the input, so larger magnitudes always map
+    to larger sizes. When every (finite) magnitude is equal, there is no
+    spread to encode and the midpoint of the output range is returned for
+    each item.
+
+    Args:
+        values: The per-item magnitudes to map. Non-finite entries are kept
+            in place in the output (mapped from a domain that ignores them)
+            — callers that pre-filter their data will not hit this.
+        out_min: The smallest output size (maps to the minimum magnitude).
+        out_max: The largest output size (maps to the maximum magnitude).
+        scale: The pre-transform: `"linear"` (identity), `"log"`
+            (`log10`, requires strictly positive magnitudes), or `"sqrt"`
+            (requires non-negative magnitudes). Case-insensitive. Default
+            is `"linear"`.
+
+    Returns:
+        np.ndarray: The mapped sizes, the same shape as `values`, spanning
+            `[out_min, out_max]` for non-degenerate input.
+
+    Raises:
+        ValueError: If `values` has no finite entries, if `scale` is not one
+            of `SIZE_SCALES`, if `scale="log"` and any magnitude is
+            non-positive, or if `scale="sqrt"` and any magnitude is negative.
+
+    Examples:
+        - Linear mapping spans the output range, smallest→`out_min`:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.styles import resolve_sizes
+            >>> sizes = resolve_sizes(np.array([0.0, 5.0, 10.0]), 10.0, 200.0)
+            >>> [float(s) for s in sizes]
+            [10.0, 105.0, 200.0]
+
+            ```
+        - The mapping is monotonic, so ranking is preserved:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.styles import resolve_sizes
+            >>> sizes = resolve_sizes(np.array([3.0, 1.0, 2.0]), 0.0, 1.0)
+            >>> bool(sizes[1] < sizes[2] < sizes[0])
+            True
+
+            ```
+        - All-equal magnitudes map to the output midpoint:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.styles import resolve_sizes
+            >>> [float(s) for s in resolve_sizes(np.full(3, 4.0), 10.0, 50.0)]
+            [30.0, 30.0, 30.0]
+
+            ```
+    """
+    values = np.asarray(values, dtype=float)
+    scale = str(scale).lower()
+    if scale not in SIZE_SCALES:
+        valid = ", ".join(repr(s) for s in SIZE_SCALES)
+        raise ValueError(
+            f"Invalid size_scale {scale!r}. Expected one of {valid}."
+        )
+    finite = values[np.isfinite(values)]
+    if finite.size == 0:
+        raise ValueError(
+            "Cannot resolve sizes: `values` has no finite entries."
+        )
+    if scale == "log":
+        if np.any(finite <= 0):
+            raise ValueError(
+                "size_scale='log' requires strictly positive magnitudes."
+            )
+        transformed = Scale.log_scale(values)
+        domain = Scale.log_scale(finite)
+    elif scale == "sqrt":
+        if np.any(finite < 0):
+            raise ValueError(
+                "size_scale='sqrt' requires non-negative magnitudes."
+            )
+        transformed = np.sqrt(values)
+        domain = np.sqrt(finite)
+    else:  # linear
+        transformed = values
+        domain = finite
+
+    lo, hi = float(domain.min()), float(domain.max())
+    if hi == lo:
+        midpoint = (out_min + out_max) / 2.0
+        return np.full(values.shape, midpoint, dtype=float)
+    return Scale.rescale(transformed, lo, hi, out_min, out_max)
+
+
 class MidpointNormalize(colors.Normalize):
     """A normalization class that scales data with a midpoint.
 
@@ -875,6 +989,92 @@ def disjoint_legend(
     handles = [
         Patch(facecolor=color, edgecolor=edgecolor, label=label)
         for color, label in zip(colors, labels)
+    ]
+    return ax.legend(handles=handles, **kwargs)
+
+
+def size_legend(
+    ax: Axes,
+    marker_sizes: Sequence[float],
+    labels: Sequence[str],
+    *,
+    color: str = "0.4",
+    marker: str = "o",
+    **kwargs,
+) -> Legend:
+    """Attach a legend whose marker *sizes* encode magnitude.
+
+    The size counterpart to `disjoint_legend`: where that varies the swatch
+    *colour*, this varies the marker *size*, so it is the right legend for a
+    bubble / size-scaled scatter (e.g. `ScatterGlyph(..., sizes=...)`). One
+    proxy marker is drawn per entry, sized to match the points it
+    represents.
+
+    `marker_sizes` are scatter-style **areas** (points², the same unit as a
+    glyph's resolved `s`); each is converted to the matplotlib `Line2D`
+    `markersize` (a diameter in points) via `sqrt`, so the swatches match
+    the plotted points visually.
+
+    Args:
+        ax: The axes the legend is attached to.
+        marker_sizes: The representative marker areas (points²), one per
+            legend entry. Must be the same length as `labels`.
+        labels: The text drawn next to each marker. Must be the same length
+            as `marker_sizes`.
+        color: Fill colour for every proxy marker. Defaults to a neutral
+            grey (`"0.4"`) because the legend encodes size, not colour.
+        marker: The marker style for the proxies. Defaults to `"o"`.
+        **kwargs: Forwarded verbatim to `Axes.legend` (e.g. `title`, `loc`,
+            `labelspacing`, `bbox_to_anchor`).
+
+    Returns:
+        Legend: The created legend artist, already added to `ax`.
+
+    Raises:
+        ValueError: If `marker_sizes` and `labels` have different lengths.
+
+    Examples:
+        - Build a three-entry size legend and read back its labels:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styles import size_legend
+            >>> fig, ax = plt.subplots()
+            >>> legend = size_legend(ax, [20.0, 100.0, 200.0], ["low", "mid", "high"])
+            >>> [t.get_text() for t in legend.get_texts()]
+            ['low', 'mid', 'high']
+
+            ```
+        - Larger areas produce larger proxy markers (diameters in points):
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styles import size_legend
+            >>> fig, ax = plt.subplots()
+            >>> legend = size_legend(ax, [16.0, 64.0], ["small", "big"])
+            >>> handles = legend.legend_handles
+            >>> round(handles[0].get_markersize(), 1), round(handles[1].get_markersize(), 1)
+            (4.0, 8.0)
+
+            ```
+    """
+    marker_sizes = list(marker_sizes)
+    labels = list(labels)
+    if len(marker_sizes) != len(labels):
+        raise ValueError(
+            "marker_sizes and labels must have the same length, got "
+            f"{len(marker_sizes)} and {len(labels)}."
+        )
+    handles = [
+        Line2D(
+            [],
+            [],
+            linestyle="none",
+            marker=marker,
+            markerfacecolor=color,
+            markeredgecolor=color,
+            markersize=np.sqrt(max(size, 0.0)),
+            label=label,
+        )
+        for size, label in zip(marker_sizes, labels)
     ]
     return ax.legend(handles=handles, **kwargs)
 
