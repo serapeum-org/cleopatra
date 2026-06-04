@@ -873,13 +873,13 @@ class Glyph:
                 "`scheme` is set, so `color_scale="
                 f"{self.default_options['color_scale']!r}` is ignored "
                 "(classification builds its own discrete norm).",
-                stacklevel=3,
+                stacklevel=4,
             )
         if self.default_options.get("levels") is not None:
             warnings.warn(
                 "`scheme` is set, so `levels` is ignored (the classification "
                 "scheme determines the bins).",
-                stacklevel=3,
+                stacklevel=4,
             )
         k = self.default_options.get("k", 5)
         bin_edges, norm = classify(values, scheme, k)

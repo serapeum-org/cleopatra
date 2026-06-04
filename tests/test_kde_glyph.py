@@ -305,35 +305,55 @@ class TestKDEGlyphApplyClip:
         """A freshly-constructed Patch clips in data space, not display space.
 
         Test scenario:
-            A standalone Circle carries an identity transform; the glyph must
-            give it ``ax.transData`` so the clip maps the data boundary
-            point (1, 0) to the same display location as the data transform
-            (otherwise it would clip a tiny region near the display origin).
+            A standalone Circle of radius 1 at the origin must clip the
+            contours to that circle in *data* coordinates: a point inside the
+            circle (0, 0) is kept and a far point (5, 5) is excluded. A
+            display-space clip (the bug) would instead clip a tiny region near
+            the axes origin.
+        """
+        x, y = cloud
+        glyph = KDEGlyph(x, y, gridsize=30, clip_path=Circle((0, 0), 1.0))
+        _, ax, cs = glyph.plot()
+        path = cs.get_clip_path().get_fully_transformed_path()
+        assert path.contains_point(ax.transData.transform((0.0, 0.0))), (
+            "Clip should keep data point (0, 0) inside the circle"
+        )
+        assert not path.contains_point(ax.transData.transform((5.0, 5.0))), (
+            "Clip should exclude data point (5, 5) outside the circle"
+        )
+
+    def test_standalone_patch_not_mutated(self, cloud):
+        """The glyph clips without mutating the caller's patch.
+
+        Test scenario:
+            A standalone Circle passed as clip_path keeps its original
+            transform and stays unattached after plotting, so it can be
+            reused on another axes.
         """
         x, y = cloud
         patch = Circle((0, 0), 1.0)
-        glyph = KDEGlyph(x, y, gridsize=30, clip_path=patch)
-        _, ax, cs = glyph.plot()
-        mapped = patch.get_transform().transform((1.0, 0.0))
-        expected = ax.transData.transform((1.0, 0.0))
-        assert np.allclose(mapped, expected), (
-            f"Patch clip should map data (1, 0) to {expected} (data space), got {mapped}"
+        before = patch.get_transform().get_matrix().copy()
+        KDEGlyph(x, y, gridsize=20, clip_path=patch).plot()
+        assert patch.axes is None, "clip patch should not be attached to the glyph axes"
+        assert np.allclose(patch.get_transform().get_matrix(), before), (
+            "clip patch transform should be left unchanged"
         )
 
-    def test_attached_patch_transform_preserved(self, cloud):
-        """A Patch already added to an axes keeps its own transform.
+    def test_attached_patch_used_as_is(self, cloud):
+        """A Patch already added to an axes is used with its own transform.
 
         Test scenario:
-            When the caller has added the patch to the axes, the glyph must
-            not overwrite its transform (clip.axes is not None).
+            When the caller has added the patch to the axes, the glyph uses it
+            directly (clip.axes is not None) and leaves it attached.
         """
         x, y = cloud
         fig, host_ax = plt.subplots()
         patch = Circle((0, 0), 1.0)
         host_ax.add_patch(patch)
         glyph = KDEGlyph(x, y, gridsize=20, clip_path=patch, ax=host_ax)
-        glyph.plot()
+        _, _, cs = glyph.plot()
         assert patch.axes is host_ax, "Attached patch should remain bound to its axes"
+        assert cs.get_clip_path() is not None, "Clip should be applied"
 
     def test_path_clip_applied(self, cloud):
         """A Path clip path is applied in data coordinates.

@@ -799,6 +799,24 @@ class TestVectorGlyphScheme:
         assert glyph.cbar is not None, "A colorbar should be drawn"
         assert isinstance(glyph.cbar.norm, mcolors.BoundaryNorm), "Colorbar norm should be discrete"
 
+    def test_streamplot_scheme_uses_boundary_norm(self):
+        """A classified streamplot colours its lines via a BoundaryNorm.
+
+        Test scenario:
+            On a regular grid with a magnitude gradient, `scheme="quantiles"`
+            makes the streamplot's `LineCollection` use a discrete
+            BoundaryNorm and draws a discrete colorbar.
+        """
+        y, x = np.mgrid[0:6, 0:6].astype(float)
+        u = x + 1.0
+        v = y + 1.0
+        glyph = VectorGlyph(x, y, u, v, scheme="quantiles", k=4)
+        _, _, im = glyph.plot(kind="streamplot")
+        assert isinstance(im.norm, mcolors.BoundaryNorm), "scheme should set a BoundaryNorm"
+        assert len(im.norm.boundaries) == 5, "k=4 should give 5 boundaries"
+        assert glyph.cbar is not None, "A discrete colorbar should be drawn"
+        assert isinstance(glyph.cbar.norm, mcolors.BoundaryNorm), "Colorbar norm should be discrete"
+
     def test_scheme_none_regression(self, field):
         """`scheme=None` keeps the continuous vector colouring.
 
