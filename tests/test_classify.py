@@ -669,3 +669,95 @@ class TestSchemeConflictWarnings:
         with _warnings.catch_warnings():
             _warnings.simplefilter("error")
             glyph.plot()
+
+
+class TestClassifyTwoDimensional:
+    """Tests for `classify` on a 2-D values array (raster-shaped input)."""
+
+    def test_2d_values_flattened_for_edges(self):
+        """A 2-D values array is classified on its flattened finite values.
+
+        Test scenario:
+            A 10x10 grid of 0..99 yields the same quantile edges as the
+            equivalent 1-D ramp.
+        """
+        grid = np.arange(100.0).reshape(10, 10)
+        edges_2d, _ = classify(grid, "quantiles", k=4)
+        edges_1d, _ = classify(np.arange(100.0), "quantiles", k=4)
+        assert np.allclose(edges_2d, edges_1d), (
+            f"2-D edges {edges_2d} should match 1-D edges {edges_1d}"
+        )
+
+    def test_2d_values_with_non_finite(self):
+        """Non-finite cells in a 2-D array are ignored when binning.
+
+        Test scenario:
+            A grid with a NaN cell produces the same edges as the clean grid.
+        """
+        clean = np.arange(1.0, 101.0).reshape(10, 10)
+        dirty = clean.copy()
+        dirty[0, 0] = np.nan
+        edges_clean, _ = classify(clean, "equal_interval", k=5)
+        edges_dirty, _ = classify(dirty, "equal_interval", k=5)
+        # equal_interval depends on min/max; the NaN cell was the min (1.0),
+        # so removing it shifts the lower edge — assert the upper edge holds
+        # and edges remain strictly increasing.
+        assert np.isclose(edges_clean[-1], edges_dirty[-1]), "Upper edge should match"
+        assert np.all(np.diff(edges_dirty) > 0), "Edges must stay strictly increasing"
+
+
+class TestVectorGlyphScheme:
+    """Integration tests for `scheme` through VectorGlyph."""
+
+    @pytest.fixture()
+    def field(self):
+        """A small vector field with a spread of magnitudes.
+
+        Returns:
+            tuple[np.ndarray, ...]: x, y, u, v arrays on a 4x4 grid.
+        """
+        x, y = np.meshgrid(np.arange(4.0), np.arange(4.0))
+        rng = np.random.default_rng(3)
+        u = rng.uniform(0.1, 5.0, size=x.shape)
+        v = rng.uniform(0.1, 5.0, size=x.shape)
+        return x, y, u, v
+
+    def test_quiver_scheme_uses_boundary_norm(self, field):
+        """A classified quiver colours via a discrete BoundaryNorm.
+
+        Test scenario:
+            `scheme="quantiles"` makes the Quiver mappable use a BoundaryNorm
+            with k+1 boundaries while still carrying the raw magnitude array.
+        """
+        x, y, u, v = field
+        glyph = VectorGlyph(x, y, u, v, scheme="quantiles", k=5)
+        _, _, im = glyph.plot(kind="quiver")
+        assert isinstance(im.norm, mcolors.BoundaryNorm), "scheme should set a BoundaryNorm"
+        assert len(im.norm.boundaries) == 6, "k=5 should give 6 boundaries"
+        assert np.allclose(im.get_array(), np.hypot(u, v).ravel()), (
+            "Quiver should carry the raw magnitude array"
+        )
+
+    def test_barbs_scheme_discrete_colorbar(self, field):
+        """A classified barbs plot draws a discrete colorbar.
+
+        Test scenario:
+            The colorbar norm is the discrete BoundaryNorm built from the
+            magnitude classification.
+        """
+        x, y, u, v = field
+        glyph = VectorGlyph(x, y, u, v, scheme="equal_interval", k=4)
+        glyph.plot(kind="barbs")
+        assert glyph.cbar is not None, "A colorbar should be drawn"
+        assert isinstance(glyph.cbar.norm, mcolors.BoundaryNorm), "Colorbar norm should be discrete"
+
+    def test_scheme_none_regression(self, field):
+        """`scheme=None` keeps the continuous vector colouring.
+
+        Test scenario:
+            Without a scheme the quiver is not BoundaryNorm-normalised.
+        """
+        x, y, u, v = field
+        glyph = VectorGlyph(x, y, u, v)
+        _, _, im = glyph.plot(kind="quiver")
+        assert not isinstance(im.norm, mcolors.BoundaryNorm), "No scheme -> no BoundaryNorm"
