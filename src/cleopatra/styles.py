@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import warnings
 from collections import OrderedDict
 from enum import StrEnum
 from typing import Callable, Sequence
@@ -1338,6 +1339,13 @@ JENKS_SCHEMES = ("fisher_jenks", "natural_breaks")
 #: `k` is ignored for this scheme.
 _STD_MEAN_MULTIPLES = (-2.0, -1.0, 0.0, 1.0, 2.0)
 
+#: Point-count above which the Fisher-Jenks optimisation classifies a
+#: representative quantile sample instead of the full data. The exact DP is
+#: O(k·n²); beyond this size it would block for seconds, so a sample of this
+#: many points is used (and a warning is emitted). The class breaks it yields
+#: still apply to the full data.
+MAX_JENKS_N = 5_000
+
 
 def classify(
     values: np.ndarray | Sequence[float],
@@ -1387,7 +1395,10 @@ def classify(
         tuple[np.ndarray, matplotlib.colors.BoundaryNorm]: The sorted,
             de-duplicated bin edges (length = classes + 1) and a
             `BoundaryNorm` built from them (with `ncolors=256`, matching
-            the package's other boundary norms).
+            the package's other boundary norms). The realised class count
+            can be **fewer than `k`** when the data has too few distinct
+            values to support `k` classes — coincident edges are collapsed,
+            so the returned edges are always strictly increasing.
 
     Raises:
         ValueError: If `values` has no finite entries, if `k < 1`, if the
@@ -1529,8 +1540,9 @@ def _fisher_jenks_edges(finite: np.ndarray, k: int) -> np.ndarray:
             points, every point becomes its own break.
 
     Notes:
-        Runtime is O(k·n²); for very large point counts pre-aggregate or use
-        `"quantiles"` instead.
+        Runtime is O(k·n²). Above `MAX_JENKS_N` points the optimisation runs
+        on a representative quantile sample of that size (a `UserWarning` is
+        emitted); the resulting breaks still apply to the full data.
     """
     data = np.sort(np.asarray(finite, dtype=float))
     n = data.size
@@ -1538,10 +1550,27 @@ def _fisher_jenks_edges(finite: np.ndarray, k: int) -> np.ndarray:
         # More classes than points: each value is its own class bound.
         return np.concatenate([[data[0]], data])
 
-    # Prefix sums of values and squares for O(1) segment SSE:
+    if n > MAX_JENKS_N:
+        # The exact DP is O(k·n²); on large inputs classify a quantile
+        # thumbprint of the distribution instead. The sample spans the full
+        # range (its ends are the data min/max), so the breaks remain valid.
+        warnings.warn(
+            f"Fisher-Jenks on {n} points is O(k·n^2); classifying a "
+            f"{MAX_JENKS_N}-point quantile sample instead. Pass fewer points "
+            "or use scheme='quantiles' for an exact result.",
+            stacklevel=2,
+        )
+        data = np.quantile(data, np.linspace(0.0, 1.0, MAX_JENKS_N))
+        n = data.size
+
+    # Centre the data before forming prefix sums: the partition is
+    # shift-invariant, and centring keeps `sum(x)^2 / count` from cancelling
+    # against `sum(x^2)` when the values are large relative to their spread.
+    centered = data - data.mean()
+    # Prefix sums of (centred) values and squares for O(1) segment SSE:
     # SSE[a, b) = sum(x^2) - sum(x)^2 / count  over data[a:b].
-    s1 = np.concatenate([[0.0], np.cumsum(data)])
-    s2 = np.concatenate([[0.0], np.cumsum(data * data)])
+    s1 = np.concatenate([[0.0], np.cumsum(centered)])
+    s2 = np.concatenate([[0.0], np.cumsum(centered * centered)])
 
     inf = np.inf
     # dp[m, j] = min total SSE splitting the first j points into m classes.
@@ -1560,7 +1589,7 @@ def _fisher_jenks_edges(finite: np.ndarray, k: int) -> np.ndarray:
             dp[m, j] = total[best]
             back[m, j] = i[best]
 
-    # Reconstruct class upper bounds from the split pointers.
+    # Reconstruct class upper bounds from the split pointers (original units).
     bounds = []
     j = n
     for m in range(k, 0, -1):

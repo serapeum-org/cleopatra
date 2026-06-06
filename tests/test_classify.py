@@ -418,6 +418,69 @@ class TestFisherJenksEdges:
         with pytest.raises(ValueError, match="`k` must be >= 1"):
             classify(np.arange(20.0), scheme, k=bad_k)
 
+    def test_centering_preserves_optimum_and_shift_invariance(self):
+        """Mean-centring keeps the breaks optimal and shift-invariant (L1).
+
+        Test scenario:
+            The same data offset by a large constant (1e9) yields the same
+            partition — the breaks differ only by that constant — proving the
+            centred SSE does not lose precision for extreme magnitudes.
+        """
+        data = np.array([0.0, 1, 2, 3, 4, 50, 51, 52, 200, 201])
+        base, _ = classify(data, "fisher_jenks", k=3)
+        shifted, _ = classify(data + 1e9, "fisher_jenks", k=3)
+        assert np.allclose(shifted - 1e9, base), (
+            f"Breaks should be shift-invariant; {shifted - 1e9} != {base}"
+        )
+
+    def test_large_input_samples_and_warns(self, monkeypatch):
+        """Above `MAX_JENKS_N` the DP runs on a quantile sample and warns (M1).
+
+        Args:
+            monkeypatch: Lowers the cap so the sampling path is exercised
+                without generating a huge array.
+
+        Test scenario:
+            Classifying more points than the cap emits a UserWarning and still
+            returns `k + 1` strictly-increasing edges spanning the data range.
+        """
+        monkeypatch.setattr(styles_mod, "MAX_JENKS_N", 100)
+        rng = np.random.default_rng(5)
+        data = rng.normal(size=400)
+        with pytest.warns(UserWarning, match="quantile sample"):
+            edges, _ = classify(data, "fisher_jenks", k=5)
+        assert len(edges) == 6, f"k=5 should give 6 edges, got {len(edges)}"
+        assert np.all(np.diff(edges) > 0), f"Edges must be increasing: {edges}"
+        assert np.isclose(edges[0], data.min()) and np.isclose(edges[-1], data.max()), (
+            "Sampled breaks should still span the full data range"
+        )
+
+    def test_below_cap_does_not_warn(self, monkeypatch, recwarn):
+        """At or below `MAX_JENKS_N` no sampling warning is emitted (M1).
+
+        Args:
+            monkeypatch: Sets a cap above the input size.
+            recwarn: Captures any warnings raised.
+
+        Test scenario:
+            A modest input classified exactly (no sampling) warns nothing.
+        """
+        monkeypatch.setattr(styles_mod, "MAX_JENKS_N", 5000)
+        classify(np.arange(50.0), "fisher_jenks", k=4)
+        sampling = [w for w in recwarn.list if "quantile sample" in str(w.message)]
+        assert not sampling, f"No sampling warning expected, got {sampling}"
+
+    def test_ties_yield_fewer_classes(self):
+        """Insufficient distinct values yield fewer than `k` classes (N1).
+
+        Test scenario:
+            Data with only two distinct values and k=4 collapses coincident
+            breaks, returning strictly-increasing edges with < k + 1 entries.
+        """
+        edges, _ = classify(np.array([1.0, 1, 1, 2, 2]), "fisher_jenks", k=4)
+        assert len(edges) < 5, f"Tied data should give < k+1 edges, got {len(edges)}"
+        assert np.all(np.diff(edges) > 0), f"Edges must stay increasing: {edges}"
+
 
 class TestGlyphPrepareClassifiedMapping:
     """Tests for ``Glyph._prepare_classified_mapping`` and the routing."""
