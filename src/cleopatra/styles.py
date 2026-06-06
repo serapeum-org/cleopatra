@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import warnings
 from collections import OrderedDict
 from enum import StrEnum
 from typing import Callable, Sequence
@@ -15,6 +16,7 @@ from matplotlib.cm import ScalarMappable
 from matplotlib.colorbar import Colorbar
 from matplotlib.container import BarContainer
 from matplotlib.legend import Legend
+from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
 
@@ -110,6 +112,17 @@ DEFAULT_OPTIONS = {
     "bounds": None,
     "midpoint": 0,
     "grid_alpha": 0.75,
+}
+
+#: Classification options (`scheme` selects a `classify` scheme or explicit
+#: bin edges; `k` is the class count). Mixed into the option dicts of glyphs
+#: whose colour mapping routes through `Glyph._prepare_scalar_mapping` — kept
+#: out of the shared `DEFAULT_OPTIONS` so glyphs that bypass that pipeline
+#: (e.g. `ArrayGlyph` / `MeshGlyph`) reject `scheme` instead of silently
+#: ignoring it.
+CLASSIFY_OPTIONS = {
+    "scheme": None,
+    "k": 5,
 }
 
 
@@ -583,6 +596,122 @@ class Scale:
         return new_value
 
 
+#: Accepted values for the `size_scale` of `resolve_sizes` — the transform
+#: applied to the magnitudes before they are linearly rescaled into the output
+#: range. `"sqrt"` matches perceived marker *area*; `"log"` suits magnitudes
+#: that span orders of magnitude.
+SIZE_SCALES = ("linear", "log", "sqrt")
+
+
+def resolve_sizes(
+    values: np.ndarray | Sequence[float],
+    out_min: float,
+    out_max: float,
+    scale: str = "linear",
+) -> np.ndarray:
+    """Map per-item magnitudes to a visual size range.
+
+    The reusable value→size primitive shared by size-encoding glyphs: it
+    turns a per-item magnitude array into an array of visual sizes spanning
+    `[out_min, out_max]`, optionally pre-transforming the magnitudes
+    (`"log"` / `"sqrt"`) before the linear rescale. `ScatterGlyph` uses it
+    for marker area (`s`); a future `FlowGlyph` can reuse it for line width.
+    The linear rescale itself is delegated to `Scale.rescale`, so this never
+    re-implements the range mapping.
+
+    The mapping is monotonic in the input, so larger magnitudes always map
+    to larger sizes. When every (finite) magnitude is equal, there is no
+    spread to encode and the midpoint of the output range is returned for
+    each item.
+
+    Args:
+        values: The per-item magnitudes to map. Must be finite — a
+            non-finite entry (`NaN`/`inf`) would map to a `NaN` size, so it
+            is rejected rather than silently rendered as a broken marker.
+        out_min: The smallest output size (maps to the minimum magnitude).
+        out_max: The largest output size (maps to the maximum magnitude).
+        scale: The pre-transform: `"linear"` (identity), `"log"`
+            (`log10`, requires strictly positive magnitudes), or `"sqrt"`
+            (requires non-negative magnitudes). Case-insensitive. Default
+            is `"linear"`.
+
+    Returns:
+        np.ndarray: The mapped sizes, the same shape as `values`, spanning
+            `[out_min, out_max]` for non-degenerate input.
+
+    Raises:
+        ValueError: If `values` is empty or contains non-finite entries, if
+            `scale` is not one of `SIZE_SCALES`, if `scale="log"` and any
+            magnitude is non-positive, or if `scale="sqrt"` and any
+            magnitude is negative.
+
+    Examples:
+        - Linear mapping spans the output range, smallest→`out_min`:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.styles import resolve_sizes
+            >>> sizes = resolve_sizes(np.array([0.0, 5.0, 10.0]), 10.0, 200.0)
+            >>> [float(s) for s in sizes]
+            [10.0, 105.0, 200.0]
+
+            ```
+        - The mapping is monotonic, so ranking is preserved:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.styles import resolve_sizes
+            >>> sizes = resolve_sizes(np.array([3.0, 1.0, 2.0]), 0.0, 1.0)
+            >>> bool(sizes[1] < sizes[2] < sizes[0])
+            True
+
+            ```
+        - All-equal magnitudes map to the output midpoint:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.styles import resolve_sizes
+            >>> [float(s) for s in resolve_sizes(np.full(3, 4.0), 10.0, 50.0)]
+            [30.0, 30.0, 30.0]
+
+            ```
+    """
+    values = np.asarray(values, dtype=float)
+    scale = str(scale).lower()
+    if scale not in SIZE_SCALES:
+        valid = ", ".join(repr(s) for s in SIZE_SCALES)
+        raise ValueError(
+            f"Invalid size_scale {scale!r}. Expected one of {valid}."
+        )
+    if values.size == 0:
+        raise ValueError("Cannot resolve sizes: `values` is empty.")
+    # Reject non-finite entries up front: a NaN/inf magnitude would map to a
+    # NaN size, which renders as an invisible or broken marker rather than
+    # failing loudly. Callers should clean their data first.
+    if not np.all(np.isfinite(values)):
+        raise ValueError(
+            "Cannot resolve sizes: `values` contains non-finite entries "
+            "(NaN/inf). Filter them before mapping to sizes."
+        )
+    if scale == "log":
+        if np.any(values <= 0):
+            raise ValueError(
+                "size_scale='log' requires strictly positive magnitudes."
+            )
+        transformed = Scale.log_scale(values)
+    elif scale == "sqrt":
+        if np.any(values < 0):
+            raise ValueError(
+                "size_scale='sqrt' requires non-negative magnitudes."
+            )
+        transformed = np.sqrt(values)
+    else:  # linear
+        transformed = values
+
+    lo, hi = float(transformed.min()), float(transformed.max())
+    if hi == lo:
+        midpoint = (out_min + out_max) / 2.0
+        return np.full(values.shape, midpoint, dtype=float)
+    return Scale.rescale(transformed, lo, hi, out_min, out_max)
+
+
 class MidpointNormalize(colors.Normalize):
     """A normalization class that scales data with a midpoint.
 
@@ -634,6 +763,7 @@ class MidpointNormalize(colors.Normalize):
     Create a normalization with a non-zero midpoint (5):
     ```python
     >>> norm = MidpointNormalize(vmin=0, vmax=10, midpoint=5)
+
     ```
     - Values below midpoint are mapped to [0, 0.5]
     ```python
@@ -877,6 +1007,161 @@ def disjoint_legend(
     return ax.legend(handles=handles, **kwargs)
 
 
+def size_legend(
+    ax: Axes,
+    marker_sizes: Sequence[float],
+    labels: Sequence[str],
+    *,
+    color: str = "0.4",
+    marker: str = "o",
+    **kwargs,
+) -> Legend:
+    """Attach a legend whose marker *sizes* encode magnitude.
+
+    The size counterpart to `disjoint_legend`: where that varies the swatch
+    *colour*, this varies the marker *size*, so it is the right legend for a
+    bubble / size-scaled scatter (e.g. `ScatterGlyph(..., sizes=...)`). One
+    proxy marker is drawn per entry, sized to match the points it
+    represents.
+
+    `marker_sizes` are scatter-style **areas** (points², the same unit as a
+    glyph's resolved `s`); each is converted to the matplotlib `Line2D`
+    `markersize` (a diameter in points) via `sqrt`, so the swatches match
+    the plotted points visually.
+
+    Args:
+        ax: The axes the legend is attached to.
+        marker_sizes: The representative marker areas (points²), one per
+            legend entry. Must be the same length as `labels`.
+        labels: The text drawn next to each marker. Must be the same length
+            as `marker_sizes`.
+        color: Fill colour for every proxy marker. Defaults to a neutral
+            grey (`"0.4"`) because the legend encodes size, not colour.
+        marker: The marker style for the proxies. Defaults to `"o"`.
+        **kwargs: Forwarded verbatim to `Axes.legend` (e.g. `title`, `loc`,
+            `labelspacing`, `bbox_to_anchor`).
+
+    Returns:
+        Legend: The created legend artist, already added to `ax`.
+
+    Raises:
+        ValueError: If `marker_sizes` and `labels` have different lengths.
+
+    Examples:
+        - Build a three-entry size legend and read back its labels:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styles import size_legend
+            >>> fig, ax = plt.subplots()
+            >>> legend = size_legend(ax, [20.0, 100.0, 200.0], ["low", "mid", "high"])
+            >>> [t.get_text() for t in legend.get_texts()]
+            ['low', 'mid', 'high']
+
+            ```
+        - Larger areas produce larger proxy markers (diameters in points):
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styles import size_legend
+            >>> fig, ax = plt.subplots()
+            >>> legend = size_legend(ax, [16.0, 64.0], ["small", "big"])
+            >>> handles = legend.legend_handles
+            >>> round(handles[0].get_markersize(), 1), round(handles[1].get_markersize(), 1)
+            (4.0, 8.0)
+
+            ```
+    """
+    marker_sizes = list(marker_sizes)
+    labels = list(labels)
+    if len(marker_sizes) != len(labels):
+        raise ValueError(
+            "marker_sizes and labels must have the same length, got "
+            f"{len(marker_sizes)} and {len(labels)}."
+        )
+    handles = [
+        Line2D(
+            [],
+            [],
+            linestyle="none",
+            marker=marker,
+            markerfacecolor=color,
+            markeredgecolor=color,
+            markersize=np.sqrt(max(size, 0.0)),
+            label=label,
+        )
+        for size, label in zip(marker_sizes, labels)
+    ]
+    return ax.legend(handles=handles, **kwargs)
+
+
+def width_legend(
+    ax: Axes,
+    linewidths: Sequence[float],
+    labels: Sequence[str],
+    *,
+    color: str = "0.4",
+    **kwargs,
+) -> Legend:
+    """Attach a legend whose line *widths* encode magnitude.
+
+    The line-width counterpart to `size_legend` (which varies marker size):
+    each entry is a short line drawn at the given `linewidth`, so it is the
+    right legend for a width-scaled flow / Sankey map
+    (e.g. `FlowGlyph(..., widths=...)`).
+
+    Args:
+        ax: The axes the legend is attached to.
+        linewidths: The representative line widths (points), one per legend
+            entry. Must be the same length as `labels`.
+        labels: The text drawn next to each line. Must be the same length as
+            `linewidths`.
+        color: Colour for every proxy line. Defaults to a neutral grey
+            (`"0.4"`) because the legend encodes width, not colour.
+        **kwargs: Forwarded verbatim to `Axes.legend` (e.g. `title`, `loc`,
+            `labelspacing`, `bbox_to_anchor`).
+
+    Returns:
+        Legend: The created legend artist, already added to `ax`.
+
+    Raises:
+        ValueError: If `linewidths` and `labels` have different lengths.
+
+    Examples:
+        - Build a width legend and read back its labels:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styles import width_legend
+            >>> fig, ax = plt.subplots()
+            >>> legend = width_legend(ax, [1.0, 3.0, 5.0], ["low", "mid", "high"])
+            >>> [t.get_text() for t in legend.get_texts()]
+            ['low', 'mid', 'high']
+
+            ```
+        - Larger magnitudes give thicker proxy lines:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styles import width_legend
+            >>> fig, ax = plt.subplots()
+            >>> legend = width_legend(ax, [1.0, 4.0], ["thin", "thick"])
+            >>> handles = legend.legend_handles
+            >>> handles[0].get_linewidth(), handles[1].get_linewidth()
+            (1.0, 4.0)
+
+            ```
+    """
+    linewidths = list(linewidths)
+    labels = list(labels)
+    if len(linewidths) != len(labels):
+        raise ValueError(
+            "linewidths and labels must have the same length, got "
+            f"{len(linewidths)} and {len(labels)}."
+        )
+    handles = [
+        Line2D([], [], color=color, linewidth=lw, label=label)
+        for lw, label in zip(linewidths, labels)
+    ]
+    return ax.legend(handles=handles, **kwargs)
+
+
 def colorbar_legend(mappable: ScalarMappable, ax: Axes = None, **kwargs) -> Colorbar:
     """Attach a continuous colorbar legend for a mappable.
 
@@ -1039,3 +1324,276 @@ def histogram_legend(
     if orientation == "vertical":
         return ax.bar(centers, counts, width=widths, color=bar_colors, **bar_kwargs)
     return ax.barh(centers, counts, height=widths, color=bar_colors, **bar_kwargs)
+
+
+#: Count/width/spread classification schemes (simple closed-form breaks).
+NUMPY_SCHEMES = ("quantiles", "equal_interval", "percentiles", "std_mean")
+
+#: Jenks-family schemes computed by the native Fisher-Jenks optimisation
+#: (`_fisher_jenks_edges`). `"natural_breaks"` is an alias of `"fisher_jenks"`:
+#: both minimise the within-class sum of squared deviations. No dependency
+#: beyond numpy — the whole package stays numpy + matplotlib only.
+JENKS_SCHEMES = ("fisher_jenks", "natural_breaks")
+
+#: Standard-deviation multiples used by the `"std_mean"` scheme (mean ± nσ);
+#: `k` is ignored for this scheme.
+_STD_MEAN_MULTIPLES = (-2.0, -1.0, 0.0, 1.0, 2.0)
+
+#: Point-count above which the Fisher-Jenks optimisation classifies a
+#: representative quantile sample instead of the full data. The exact DP is
+#: O(k·n²); beyond this size it would block for seconds, so a sample of this
+#: many points is used (and a warning is emitted). The class breaks it yields
+#: still apply to the full data.
+MAX_JENKS_N = 5_000
+
+
+def classify(
+    values: np.ndarray | Sequence[float],
+    scheme: str | Sequence[float],
+    k: int = 5,
+) -> tuple[np.ndarray, colors.BoundaryNorm]:
+    """Bin a continuous array into discrete colour classes.
+
+    The shared building block behind categorical (classified) colouring:
+    it turns a continuous data column into an array of bin edges plus a
+    matching `matplotlib.colors.BoundaryNorm`, so any colour-by-value glyph
+    can render a stepped colorbar / class legend instead of a continuous
+    ramp. It is the classification counterpart to `Scale` and
+    `MidpointNormalize`.
+
+    The numpy-only schemes (no dependency beyond numpy) are:
+
+    * `"quantiles"` — `k` equal-count classes via
+      `np.quantile(values, np.linspace(0, 1, k + 1))`.
+    * `"equal_interval"` — `k` equal-width classes spanning the data range.
+    * `"percentiles"` — `k` equal-count classes via `np.percentile` on the
+      same evenly-spaced probabilities; numerically equivalent to
+      `"quantiles"` (it differs only in the `[0, 100]` vs `[0, 1]`
+      convention) and is kept as a familiar alias.
+    * `"std_mean"` — fixed breaks at `mean + nσ` for `n` in
+      `(-2, -1, 0, 1, 2)`, clipped to the data range. `k` is **ignored**
+      for this scheme (the number of classes follows from the multiples).
+
+    The Jenks-family schemes `"fisher_jenks"` and `"natural_breaks"` are
+    computed by the native Fisher-Jenks optimisation — the exact dynamic
+    program that minimises the within-class sum of squared deviations. Both
+    names are aliases for the same algorithm. No dependency beyond numpy.
+
+    A non-string `scheme` is treated as an explicit, already-chosen
+    sequence of bin edges (sorted ascending); `k` is ignored.
+
+    Args:
+        values: The data to classify. Non-finite entries (`NaN` / `inf`)
+            are ignored when computing the edges. Can be any array-like.
+        scheme: A scheme name (see above, case-insensitive) **or** an
+            explicit sequence of bin edges to use verbatim.
+        k: The number of classes for the count/width schemes. Must be
+            `>= 1`. Default is 5. Ignored for `"std_mean"` and for an
+            explicit edge sequence.
+
+    Returns:
+        tuple[np.ndarray, matplotlib.colors.BoundaryNorm]: The sorted,
+            de-duplicated bin edges (length = classes + 1) and a
+            `BoundaryNorm` built from them (with `ncolors=256`, matching
+            the package's other boundary norms). The realised class count
+            can be **fewer than `k`** when the data has too few distinct
+            values to support `k` classes — coincident edges are collapsed,
+            so the returned edges are always strictly increasing.
+
+    Raises:
+        ValueError: If `values` has no finite entries, if `k < 1`, if the
+            (finite) data has no spread so fewer than two distinct edges
+            result, or if `scheme` is an unrecognised name.
+
+    Examples:
+        - Equal-interval edges on a 0–10 ramp:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.styles import classify
+            >>> edges, norm = classify(np.arange(11.0), "equal_interval", k=5)
+            >>> [float(e) for e in edges]
+            [0.0, 2.0, 4.0, 6.0, 8.0, 10.0]
+            >>> [float(b) for b in norm.boundaries]
+            [0.0, 2.0, 4.0, 6.0, 8.0, 10.0]
+
+            ```
+        - Quantile edges put equal counts in each class:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.styles import classify
+            >>> edges, _ = classify(np.arange(100.0), "quantiles", k=4)
+            >>> [float(e) for e in edges]
+            [0.0, 24.75, 49.5, 74.25, 99.0]
+
+            ```
+        - An explicit edge sequence is used verbatim (sorted):
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.styles import classify
+            >>> edges, _ = classify(np.arange(11.0), [10.0, 0.0, 5.0])
+            >>> [float(e) for e in edges]
+            [0.0, 5.0, 10.0]
+
+            ```
+        - An unknown scheme name is rejected:
+            ```python
+            >>> from cleopatra.styles import classify
+            >>> classify([1.0, 2.0, 3.0], "rainbow")
+            Traceback (most recent call last):
+                ...
+            ValueError: Unknown classification scheme 'rainbow'. ...
+
+            ```
+    """
+    finite = np.asarray(values, dtype=float)
+    finite = finite[np.isfinite(finite)]
+    if finite.size == 0:
+        raise ValueError(
+            "Cannot classify: `values` has no finite entries to bin."
+        )
+
+    if isinstance(scheme, str):
+        edges = _scheme_edges(finite, scheme, k)
+    else:
+        # An explicit sequence of bin edges supplied by the caller.
+        edges = np.sort(np.asarray(scheme, dtype=float))
+
+    # BoundaryNorm needs strictly increasing edges; quantiles on skewed or
+    # discrete data can repeat, so collapse duplicates and require spread.
+    edges = np.unique(edges)
+    if edges.size < 2:
+        raise ValueError(
+            "Cannot classify: the data has no spread (fewer than two "
+            "distinct bin edges). Pin explicit edges or widen the data."
+        )
+    norm = colors.BoundaryNorm(boundaries=edges, ncolors=256)
+    return edges, norm
+
+
+def _scheme_edges(finite: np.ndarray, scheme: str, k: int) -> np.ndarray:
+    """Compute bin edges for a named classification `scheme`.
+
+    Helper for `classify`: `finite` is already the finite-only data and
+    `scheme` is a (case-insensitive) scheme name. Returns the raw edges
+    before de-duplication, which `classify` performs.
+
+    Args:
+        finite: The finite-only data to derive edges from.
+        scheme: The scheme name (see `classify`).
+        k: The number of classes for the count/width schemes.
+
+    Returns:
+        np.ndarray: The (possibly non-unique) bin edges.
+
+    Raises:
+        ValueError: If `k < 1` (for the `k`-driven schemes) or `scheme`
+            is not a recognised name.
+    """
+    name = scheme.lower()
+    if name in NUMPY_SCHEMES:
+        if name == "std_mean":
+            mean, std = float(finite.mean()), float(finite.std())
+            breaks = [mean + mult * std for mult in _STD_MEAN_MULTIPLES]
+            lo, hi = float(finite.min()), float(finite.max())
+            inner = [b for b in breaks if lo < b < hi]
+            return np.array([lo, *inner, hi], dtype=float)
+        if k < 1:
+            raise ValueError(f"`k` must be >= 1, got {k}.")
+        if name == "quantiles":
+            return np.quantile(finite, np.linspace(0.0, 1.0, k + 1))
+        if name == "percentiles":
+            return np.percentile(finite, np.linspace(0.0, 100.0, k + 1))
+        # name == "equal_interval"
+        return np.linspace(float(finite.min()), float(finite.max()), k + 1)
+
+    if name in JENKS_SCHEMES:
+        if k < 1:
+            raise ValueError(f"`k` must be >= 1, got {k}.")
+        return _fisher_jenks_edges(finite, k)
+
+    valid = ", ".join(repr(s) for s in (*NUMPY_SCHEMES, *JENKS_SCHEMES))
+    raise ValueError(
+        f"Unknown classification scheme {scheme!r}. Expected one of "
+        f"{valid}, or an explicit sequence of bin edges."
+    )
+
+
+def _fisher_jenks_edges(finite: np.ndarray, k: int) -> np.ndarray:
+    """Compute Fisher-Jenks (natural-breaks) bin edges in pure numpy.
+
+    Implements the exact Fisher-Jenks optimisation: the contiguous
+    partition of the sorted data into `k` classes that minimises the total
+    within-class sum of squared deviations about each class mean (the
+    objective that `"natural_breaks"` also targets). This is the classic
+    O(k·n²) dynamic program; segment costs are evaluated in O(1) from
+    prefix sums, and the inner search is vectorised over split points.
+
+    Args:
+        finite: The finite-only data to classify (any order; sorted here).
+        k: The number of classes (`>= 1`, validated by the caller).
+
+    Returns:
+        np.ndarray: Bin edges `[min, *class_upper_bounds]` (length `k + 1`),
+            i.e. the data minimum followed by the maximum value of each
+            class — matching the `[min, *bins]` convention of the other
+            schemes. When `k` meets or exceeds the number of distinct
+            points, every point becomes its own break.
+
+    Notes:
+        Runtime is O(k·n²). Above `MAX_JENKS_N` points the optimisation runs
+        on a representative quantile sample of that size (a `UserWarning` is
+        emitted); the resulting breaks still apply to the full data.
+    """
+    data = np.sort(np.asarray(finite, dtype=float))
+    n = data.size
+    if k >= n:
+        # More classes than points: each value is its own class bound.
+        return np.concatenate([[data[0]], data])
+
+    if n > MAX_JENKS_N:
+        # The exact DP is O(k·n²); on large inputs classify a quantile
+        # thumbprint of the distribution instead. The sample spans the full
+        # range (its ends are the data min/max), so the breaks remain valid.
+        warnings.warn(
+            f"Fisher-Jenks on {n} points is O(k·n^2); classifying a "
+            f"{MAX_JENKS_N}-point quantile sample instead. Pass fewer points "
+            "or use scheme='quantiles' for an exact result.",
+            stacklevel=2,
+        )
+        data = np.quantile(data, np.linspace(0.0, 1.0, MAX_JENKS_N))
+        n = data.size
+
+    # Centre the data before forming prefix sums: the partition is
+    # shift-invariant, and centring keeps `sum(x)^2 / count` from cancelling
+    # against `sum(x^2)` when the values are large relative to their spread.
+    centered = data - data.mean()
+    # Prefix sums of (centred) values and squares for O(1) segment SSE:
+    # SSE[a, b) = sum(x^2) - sum(x)^2 / count  over data[a:b].
+    s1 = np.concatenate([[0.0], np.cumsum(centered)])
+    s2 = np.concatenate([[0.0], np.cumsum(centered * centered)])
+
+    inf = np.inf
+    # dp[m, j] = min total SSE splitting the first j points into m classes.
+    dp = np.full((k + 1, n + 1), inf)
+    back = np.zeros((k + 1, n + 1), dtype=int)
+    dp[0, 0] = 0.0
+    for m in range(1, k + 1):
+        for j in range(m, n + 1):
+            # The m-th class spans points [i, j); i ranges over valid splits.
+            i = np.arange(m - 1, j)
+            count = j - i
+            seg_sum = s1[j] - s1[i]
+            seg_sse = (s2[j] - s2[i]) - seg_sum * seg_sum / count
+            total = dp[m - 1, i] + seg_sse
+            best = int(np.argmin(total))
+            dp[m, j] = total[best]
+            back[m, j] = i[best]
+
+    # Reconstruct class upper bounds from the split pointers (original units).
+    bounds = []
+    j = n
+    for m in range(k, 0, -1):
+        bounds.append(data[j - 1])
+        j = int(back[m, j])
+    bounds.reverse()
+    return np.concatenate([[data[0]], bounds])

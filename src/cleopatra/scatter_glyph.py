@@ -39,12 +39,17 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.collections import PathCollection
 from matplotlib.figure import Figure
+from matplotlib.legend import Legend
 
 from cleopatra.glyph import Glyph
+from cleopatra.styles import CLASSIFY_OPTIONS
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
+from cleopatra.styles import resolve_sizes, size_legend
 
 #: Option keys for ScatterGlyph. `ticks_spacing` is `None` so the shared
 #: `_prepare_scalar_mapping` helper auto-derives it from the data range.
+#: The `size_*` keys drive value→size scaling and its legend (see `plot`);
+#: they are inert unless a `sizes` array is supplied at construction.
 SCATTER_DEFAULT_OPTIONS = {
     "marker": "o",
     "point_size": 20,
@@ -53,8 +58,13 @@ SCATTER_DEFAULT_OPTIONS = {
     "levels": None,
     "ticks_spacing": None,
     "add_colorbar": True,
+    "size_limits": (10, 200),
+    "size_scale": "linear",
+    "size_legend": False,
+    "size_legend_values": None,
+    "size_legend_kwargs": None,
 }
-SCATTER_DEFAULT_OPTIONS = STYLE_DEFAULTS | SCATTER_DEFAULT_OPTIONS
+SCATTER_DEFAULT_OPTIONS = STYLE_DEFAULTS | CLASSIFY_OPTIONS | SCATTER_DEFAULT_OPTIONS
 
 
 class ScatterGlyph(Glyph):
@@ -63,7 +73,9 @@ class ScatterGlyph(Glyph):
     Wraps `matplotlib.axes.Axes.scatter`. With no `values`, points are
     drawn in a single colour. With a per-point `values` array, points
     are colour-mapped through the shared scalar-mapping pipeline and a
-    matching colorbar is attached.
+    matching colorbar is attached. An independent per-point `sizes` array
+    scales the marker area (with an optional size legend), so colour and
+    size can encode two different quantities at once.
 
     Args:
         x: 1D array of point x-coordinates.
@@ -72,6 +84,11 @@ class ScatterGlyph(Glyph):
         values: Optional 1D array of per-point scalar values used for
             colour mapping. Must match the length of `x` when given.
             Default is None (uncoloured points).
+        sizes: Optional 1D array of per-point magnitudes used for *size*
+            mapping (kept separate from `values`, which drives colour, so a
+            point can encode both). Must match the length of `x` when
+            given. When None, the scalar `point_size` option is used for
+            every point (the original behaviour). Default is None.
         ax: Pre-existing axes to draw on. Default is None.
         fig: Pre-existing figure. Default is None.
         **kwargs: Override any key in `SCATTER_DEFAULT_OPTIONS`
@@ -79,11 +96,17 @@ class ScatterGlyph(Glyph):
             `levels`, `color_scale`, `ticks_spacing`, `cbar_label`,
             `figsize`, `title`). Set `add_colorbar=False` to suppress the
             per-glyph colorbar (default True) for shared-axes composition
-            where the host owns a single aggregated colorbar.
+            where the host owns a single aggregated colorbar. The
+            `size_limits` (min/max marker area in points², default
+            `(10, 200)`), `size_scale` (`"linear"` / `"log"` / `"sqrt"`,
+            default `"linear"`), `size_legend` (bool, default False),
+            `size_legend_values` (explicit representative magnitudes), and
+            `size_legend_kwargs` (forwarded to the legend) options control
+            the `sizes` mapping and its legend.
 
     Raises:
-        ValueError: If `x` and `y` (or `values`, when given) have
-            mismatched lengths.
+        ValueError: If `x` and `y` (or `values` / `sizes`, when given)
+            have mismatched lengths.
 
     Examples:
         - Colour points by value and read back the mapped array:
@@ -100,10 +123,29 @@ class ScatterGlyph(Glyph):
             [1.0, 5.0, 9.0]
 
             ```
+        - Size points by a magnitude; the areas span `size_limits`:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.scatter_glyph import ScatterGlyph
+            >>> glyph = ScatterGlyph(
+            ...     np.array([0.0, 1.0, 2.0]),
+            ...     np.array([0.0, 1.0, 0.0]),
+            ...     sizes=np.array([1.0, 5.0, 9.0]),
+            ...     size_limits=(10, 200),
+            ... )
+            >>> fig, ax, paths = glyph.plot()
+            >>> [float(s) for s in paths.get_sizes()]
+            [10.0, 105.0, 200.0]
+
+            ```
 
     See Also:
         cleopatra.glyph.Glyph._prepare_scalar_mapping: Shared
             norm/colorbar/ticks pipeline used for the coloured path.
+        cleopatra.styles.resolve_sizes: The value→size helper used for the
+            `sizes` mapping (reusable by other size-encoding glyphs).
+        cleopatra.styles.size_legend: Builds the size legend drawn when
+            `size_legend` is truthy.
     """
 
     #: Option keys this glyph accepts (see `Glyph.option_keys`/`filter_kwargs`).
@@ -115,6 +157,7 @@ class ScatterGlyph(Glyph):
         y: np.ndarray,
         values: np.ndarray | None = None,
         *,
+        sizes: np.ndarray | None = None,
         ax: Axes = None,
         fig: Figure = None,
         **kwargs,
@@ -136,8 +179,19 @@ class ScatterGlyph(Glyph):
                     f"values must match x/y shape {self.x.shape}, got "
                     f"{values.shape}."
                 )
+        if sizes is not None:
+            sizes = np.asarray(sizes)
+            if sizes.shape != self.x.shape:
+                raise ValueError(
+                    f"sizes must match x/y shape {self.x.shape}, got "
+                    f"{sizes.shape}."
+                )
         self.values = values
+        self.sizes = sizes
         self.cbar = None
+        #: The size legend created by `plot` when `size_legend` is truthy
+        #: (None otherwise); built via `cleopatra.styles.size_legend`.
+        self.size_legend_artist = None
 
     def plot(
         self,
@@ -145,13 +199,21 @@ class ScatterGlyph(Glyph):
         title: str | None = None,
         add_colorbar: bool | None = None,
     ) -> tuple[Figure, Axes, PathCollection]:
-        """Draw the point cloud, colour-mapping by value when present.
+        """Draw the point cloud, colour- and/or size-mapping per point.
 
         When `values` was supplied at construction, the colour scale,
         norm, ticks, and colorbar are resolved through
         `_prepare_scalar_mapping`, so `vmin` / `vmax` / `levels` /
         `color_scale` behave as for the other glyphs. With no values,
         a single-colour scatter is drawn and no colorbar is added.
+
+        When `sizes` was supplied, each marker's area is resolved from
+        that magnitude via `cleopatra.styles.resolve_sizes` (honouring
+        `size_limits` / `size_scale`); otherwise the scalar `point_size`
+        option is used for every point. Colour and size are independent,
+        so a point can encode two quantities at once. If `size_legend` is
+        truthy, a size legend is drawn via `cleopatra.styles.size_legend`
+        and stored on `self.size_legend_artist`.
 
         Args:
             ax: Axes to draw on. Falls back to the axes supplied at
@@ -193,6 +255,24 @@ class ScatterGlyph(Glyph):
                 'Stations'
 
                 ```
+            - Combine colour and size, with a size legend:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.scatter_glyph import ScatterGlyph
+                >>> glyph = ScatterGlyph(
+                ...     np.array([0.0, 1.0, 2.0]),
+                ...     np.array([0.0, 1.0, 0.0]),
+                ...     values=np.array([1.0, 2.0, 3.0]),
+                ...     sizes=np.array([5.0, 10.0, 20.0]),
+                ...     size_legend=True,
+                ... )
+                >>> fig, ax, paths = glyph.plot()
+                >>> bool(paths.get_sizes()[0] < paths.get_sizes()[-1])
+                True
+                >>> glyph.size_legend_artist is not None
+                True
+
+                ```
         """
         if ax is not None:
             self.ax = ax
@@ -210,11 +290,13 @@ class ScatterGlyph(Glyph):
             opts["add_colorbar"] if add_colorbar is None else add_colorbar
         )
 
+        marker_area = self._resolve_marker_area()
+
         if self.values is None:
             paths = ax.scatter(
                 self.x,
                 self.y,
-                s=opts["point_size"],
+                s=marker_area,
                 marker=opts["marker"],
             )
         else:
@@ -223,7 +305,7 @@ class ScatterGlyph(Glyph):
                 self.x,
                 self.y,
                 c=np.asarray(self.values),
-                s=opts["point_size"],
+                s=marker_area,
                 marker=opts["marker"],
                 cmap=opts["cmap"],
                 norm=norm,
@@ -233,7 +315,62 @@ class ScatterGlyph(Glyph):
             if draw_colorbar:
                 self.cbar = self.create_color_bar(ax, paths, cbar_kw)
 
+        if self.sizes is not None and opts["size_legend"]:
+            self.size_legend_artist = self._draw_size_legend(ax, marker_area)
+
         if opts["title"]:
             ax.set_title(opts["title"], fontsize=opts["title_size"])
 
         return self.fig, ax, paths
+
+    def _resolve_marker_area(self) -> float | np.ndarray:
+        """Resolve the scatter `s` (marker area) for this glyph.
+
+        Returns the per-point areas mapped from `sizes` when a `sizes`
+        array was supplied (via `cleopatra.styles.resolve_sizes`, honouring
+        the `size_limits` / `size_scale` options), or the scalar
+        `point_size` option when no `sizes` were given.
+
+        Returns:
+            float or np.ndarray: A scalar area (no `sizes`) or a per-point
+                area array spanning `size_limits` monotonically in `sizes`.
+        """
+        if self.sizes is None:
+            return self.default_options["point_size"]
+        size_min, size_max = self.default_options["size_limits"]
+        return resolve_sizes(
+            self.sizes,
+            size_min,
+            size_max,
+            scale=self.default_options["size_scale"],
+        )
+
+    def _draw_size_legend(self, ax: Axes, marker_area: np.ndarray) -> Legend:
+        """Draw a size legend for the resolved per-point areas.
+
+        Picks representative magnitudes (`size_legend_values`, or the min /
+        median / max of `sizes` when unset), maps each to its plotted
+        marker area by interpolating the already-computed `(sizes ->
+        marker_area)` mapping (so the swatches match the points exactly),
+        and hands them to `cleopatra.styles.size_legend`.
+
+        Args:
+            ax: The axes to attach the legend to.
+            marker_area: The per-point marker areas returned by
+                `_resolve_marker_area`.
+
+        Returns:
+            matplotlib.legend.Legend: The size legend added to `ax`.
+        """
+        sizes = np.asarray(self.sizes, dtype=float)
+        legend_values = self.default_options["size_legend_values"]
+        if legend_values is None:
+            legend_values = np.quantile(sizes, [0.0, 0.5, 1.0])
+        legend_values = np.asarray(legend_values, dtype=float)
+        order = np.argsort(sizes)
+        legend_areas = np.interp(
+            legend_values, sizes[order], np.asarray(marker_area)[order]
+        )
+        labels = [f"{v:g}" for v in legend_values]
+        legend_kwargs = self.default_options["size_legend_kwargs"] or {}
+        return size_legend(ax, legend_areas, labels, **legend_kwargs)
