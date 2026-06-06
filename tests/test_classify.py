@@ -403,6 +403,21 @@ class TestFisherJenksEdges:
         classify(np.arange(20.0), "fisher_jenks", k=4)
         assert "mapclassify" not in sys.modules, "Jenks must not import mapclassify"
 
+    @pytest.mark.parametrize("scheme", ["fisher_jenks", "natural_breaks"])
+    @pytest.mark.parametrize("bad_k", [0, -1])
+    def test_jenks_k_below_one_raises(self, scheme, bad_k):
+        """`k < 1` raises for the Jenks-family schemes too.
+
+        Args:
+            scheme: The Jenks scheme name under test.
+            bad_k: An invalid class count.
+
+        Test scenario:
+            Fewer than one class is rejected before running the optimisation.
+        """
+        with pytest.raises(ValueError, match="`k` must be >= 1"):
+            classify(np.arange(20.0), scheme, k=bad_k)
+
 
 class TestGlyphPrepareClassifiedMapping:
     """Tests for ``Glyph._prepare_classified_mapping`` and the routing."""
