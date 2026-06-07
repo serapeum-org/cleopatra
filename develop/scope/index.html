@@ -782,6 +782,8 @@
       
         
       
+        
+      
     
     
     
@@ -1124,6 +1126,34 @@
     
   
     Tiles (basemaps)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/reference-data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference data (coastlines/relief)
   
 
     
@@ -1950,7 +1980,15 @@ colorbars, ticks, classification, and animation.</p>
   — all NumPy-native), and reusable legend builders (disjoint/size/width/
   histogram/colorbar).</li>
 <li><code>tiles</code> (optional <code>cleopatra[tiles]</code> extra): fetch + stitch XYZ web-tile
-  basemaps; reprojection helpers. The <strong>only</strong> networked feature.</li>
+  basemaps; reprojection helpers.</li>
+<li><code>reference</code> (uses the <code>cleopatra[tiles]</code> extra for relief decoding /
+  reprojection): fetch + draw fixed public reference-basemap data <em>under</em> your
+  plot — Natural Earth vector layers (<code>add_features</code>) and a global hypsometric
+  relief raster (<code>add_relief</code>), the <code>cartopy</code> <code>ax.coastlines()</code> /
+  <code>GeoAxes.stock_img()</code> niche. It acquires only <strong>fixed public datasets</strong> that
+  cleopatra re-hosts as dependency-light artifacts (gzipped GeoJSON / PNG);
+  it reads no user files and never imports GDAL/geopandas.</li>
+<li><code>tiles</code> and <code>reference</code> are cleopatra's <strong>only</strong> networked features.</li>
 <li><code>projection</code>: lightweight axes-frame / coordinate helpers.</li>
 <li><code>animation</code>: turn a matplotlib <code>FuncAnimation</code> into a saved file, GIF bytes,
   or an embeddable IPython image (via ffmpeg).</li>
@@ -1970,9 +2008,13 @@ colorbars, ticks, classification, and animation.</p>
 <ul>
 <li><strong>Non-matplotlib backends / engines:</strong> Plotly, Bokeh, Altair, pyvista,
   datashader, OpenGL, web/JS rendering. Cleopatra is matplotlib-only.</li>
-<li><strong>Data I/O and formats:</strong> reading/writing GeoTIFF, NetCDF, shapefiles,
-  GeoJSON, CSV, databases. Users bring NumPy arrays already; file/raster I/O
-  belongs in sibling packages (e.g. <code>pyramids</code>), not here.</li>
+<li><strong>Data I/O and formats:</strong> reading/writing <em>user</em> GeoTIFF, NetCDF,
+  shapefiles, GeoJSON, CSV, databases. Users bring NumPy arrays already;
+  file/raster I/O of user data belongs in sibling packages (e.g. <code>pyramids</code>),
+  not here. The deliberate exception is the <code>tiles</code> / <code>reference</code> basemap
+  helpers, which fetch a handful of <em>fixed public</em> reference datasets (never
+  user data) that cleopatra re-hosts as dependency-light artifacts — see
+  "Supporting utilities".</li>
 <li><strong>GIS / geoprocessing:</strong> reprojection of user data, clipping, resampling,
   zonal stats, CRS management beyond what the optional <code>tiles</code> basemap needs.</li>
 <li><strong>Interactive / GUI apps:</strong> dashboards, widget servers, event callbacks,
@@ -1984,13 +2026,15 @@ colorbars, ticks, classification, and animation.</p>
   (plus <code>ffmpeg-python</code>, <code>hpc-utils</code>). Anything bigger must be an optional
   extra like <code>tiles</code>, and only with strong justification.</li>
 <li><strong>3D rendering</strong> (mplot3d surfaces/volumes), networked data sources other
-  than <code>tiles</code>, and general-purpose plotting that matplotlib already does well
-  without added value.</li>
+  than the <code>tiles</code> / <code>reference</code> basemap helpers, and general-purpose plotting
+  that matplotlib already does well without added value.</li>
 </ul>
 <h2 id="boundary-heuristic-for-a-feature-request"><a class="toclink" href="#boundary-heuristic-for-a-feature-request">Boundary heuristic for a feature request</a><a class="headerlink" href="#boundary-heuristic-for-a-feature-request" title="Permanent link">#</a></h2>
 <p>Ask, in order:</p>
 <ol>
-<li><strong>Input</strong> — does it start from in-memory NumPy data (not a file/CRS/URL)?</li>
+<li><strong>Input</strong> — does it start from in-memory NumPy data (not a file/CRS/URL)?
+   (The <code>tiles</code> / <code>reference</code> basemap helpers are the deliberate exception:
+   they acquire fixed <em>public</em> reference data, never user files.)</li>
 <li><strong>Output</strong> — does it produce a matplotlib <code>Figure</code>/<code>Axes</code>/artist (or an
    animation of one)?</li>
 <li><strong>Reuse</strong> — can it build on <code>Glyph</code> and the shared colour/colorbar/legend
