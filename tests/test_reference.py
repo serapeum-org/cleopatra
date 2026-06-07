@@ -323,6 +323,16 @@ def test_natural_earth_corrupt_cache_self_heals(cache: Path):
     assert not bad.exists()
 
 
+def test_natural_earth_non_featurecollection_cache_self_heals(cache: Path):
+    """Valid gzip+JSON that is not a FeatureCollection is also removed (L1)."""
+    bad = cache / "ne_110m_coastline.geojson.gz"
+    with gzip.open(bad, "wt", encoding="utf-8") as fh:
+        json.dump({"message": "Not Found"}, fh)
+    with pytest.raises(OSError, match="removed"):
+        natural_earth("coastline", "110m")
+    assert not bad.exists()
+
+
 # --- relief -----------------------------------------------------------------
 
 
@@ -511,6 +521,13 @@ def test_make_transformer_requires_pyproj(monkeypatch: pytest.MonkeyPatch):
     )
     with pytest.raises(ImportError, match="pyproj"):
         reference._make_transformer(3857)
+
+
+def test_make_transformer_invalid_crs_raises_valueerror():
+    """An unparseable CRS surfaces a wrapped ValueError, not a pyproj error (L2)."""
+    pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+    with pytest.raises(ValueError, match="Invalid CRS"):
+        reference._make_transformer("not-a-real-crs")
 
 
 def test_reproject_arr_roundtrip():

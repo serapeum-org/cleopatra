@@ -585,20 +585,22 @@ def _load_features(layer: str, resolution: str) -> list[dict]:
     try:
         with gzip.open(path, "rt", encoding="utf-8") as fh:
             collection = json.load(fh)
-    except (OSError, EOFError, ValueError) as e:
-        # Corrupt/poisoned cache (truncated gzip, HTML error page, bad
-        # JSON): drop it so the next call re-fetches rather than failing
-        # forever on the cached bytes.
+        features = collection["features"]
+        return [
+            feature["geometry"]
+            for feature in features
+            if feature.get("geometry") is not None
+        ]
+    except (OSError, EOFError, ValueError, KeyError, TypeError) as e:
+        # Corrupt/poisoned cache: truncated gzip, HTML error page, bad JSON,
+        # or valid JSON that is not a GeoJSON FeatureCollection (missing
+        # "features", wrong shape). Drop it so the next call re-fetches
+        # rather than failing forever on the cached bytes.
         path.unlink(missing_ok=True)
         raise OSError(
             f"Cached layer asset {path} could not be parsed ({e}); removed "
             "it -- retry to re-download."
         ) from e
-    return [
-        feature["geometry"]
-        for feature in collection["features"]
-        if feature.get("geometry") is not None
-    ]
 
 
 def natural_earth(
@@ -669,6 +671,7 @@ def _make_transformer(crs: int | str) -> Any:
 
     Raises:
         ImportError: If `pyproj` (the `[tiles]` extra) is not installed.
+        ValueError: If `crs` cannot be interpreted as a CRS.
     """
     if importlib.util.find_spec("pyproj") is None:
         raise ImportError(
@@ -677,9 +680,16 @@ def _make_transformer(crs: int | str) -> Any:
             "`pip install cleopatra[tiles]`, or plot your data in EPSG:4326."
         )
     from pyproj import Transformer
+    from pyproj.exceptions import CRSError
 
     dst = f"EPSG:{crs}" if isinstance(crs, int) else str(crs)
-    return Transformer.from_crs("EPSG:4326", dst, always_xy=True)
+    try:
+        return Transformer.from_crs("EPSG:4326", dst, always_xy=True)
+    except CRSError as e:
+        raise ValueError(
+            f"Invalid CRS {crs!r}: {e}. Provide a valid EPSG code or CRS "
+            "string."
+        ) from e
 
 
 def _reproject_arr(arr: np.ndarray, transformer: Any) -> np.ndarray:
