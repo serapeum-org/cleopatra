@@ -631,6 +631,18 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1000,7 +1012,175 @@
   
   
     <li class="md-nav__item">
-      <a href="../tiles.md" class="md-nav__link">
+      <a href="../scatter-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ScatterGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vector-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    VectorGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../flow-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FlowGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../line-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LineGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../polygon-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PolygonGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kde-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    KDEGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tiles/" class="md-nav__link">
         
   
   
@@ -1140,7 +1320,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../config.md" class="md-nav__link">
+      <a href="../config/" class="md-nav__link">
         
   
   
@@ -1625,9 +1805,11 @@
 <h1 id="glyph-base-class"><a class="toclink" href="#glyph-base-class">Glyph Base Class</a><a class="headerlink" href="#glyph-base-class" title="Permanent link">#</a></h1>
 <p>The <code>Glyph</code> class is the base class for all cleopatra visualization glyphs.
 It provides shared infrastructure for figure/axes management, color scale
-normalization, colorbar creation, tick control, point overlays, and
-animation saving.</p>
-<p>Both <code>ArrayGlyph</code> and <code>MeshGlyph</code> inherit from <code>Glyph</code>.</p>
+normalization (including value classification), colorbar creation, tick
+control, point overlays, and animation saving.</p>
+<p><code>ArrayGlyph</code>, <code>MeshGlyph</code>, <code>ScatterGlyph</code>, <code>VectorGlyph</code>, <code>FlowGlyph</code>,
+<code>LineGlyph</code>, <code>PolygonGlyph</code>, and <code>KDEGlyph</code> all inherit from <code>Glyph</code> and share
+its colour-mapping / colorbar pipeline. <code>StatisticalGlyph</code> stands alone.</p>
 <h2 id="class-documentation"><a class="toclink" href="#class-documentation">Class Documentation</a><a class="headerlink" href="#class-documentation" title="Permanent link">#</a></h2>
 
 
