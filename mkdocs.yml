@@ -105,6 +105,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Installation: installation.md
+  - Scope: scope.md
   - User Guide:
     - unstructured-mesh-guide.md
   - Reference:
@@ -112,6 +113,12 @@ nav:
     - Statistical plots: reference/statistics-glyph.md
     - ArrayGlyph: reference/array-glyph.md
     - MeshGlyph: reference/mesh-glyph.md
+    - ScatterGlyph: reference/scatter-glyph.md
+    - VectorGlyph: reference/vector-glyph.md
+    - FlowGlyph: reference/flow-glyph.md
+    - LineGlyph: reference/line-glyph.md
+    - PolygonGlyph: reference/polygon-glyph.md
+    - KDEGlyph: reference/kde-glyph.md
     - Tiles (basemaps): reference/tiles.md
     - Projection (globe frames): reference/projection.md
     - Animations (save/embed): reference/animation.md
@@ -121,6 +128,12 @@ nav:
   - Examples:
     - ArrayGlyph: notebooks/array_glyph/array_glyph_examples.ipynb
     - MeshGlyph: notebooks/mesh_glyph/mesh_glyph_examples.ipynb
+    - ScatterGlyph: notebooks/scatter_glyph/scatter_glyph_examples.ipynb
+    - VectorGlyph: notebooks/vector_glyph/vector_glyph_examples.ipynb
+    - FlowGlyph: notebooks/flow_glyph/flow_glyph_examples.ipynb
+    - LineGlyph: notebooks/line_glyph/line_glyph_examples.ipynb
+    - PolygonGlyph: notebooks/polygon_glyph/polygon_glyph_examples.ipynb
+    - KDEGlyph: notebooks/kde_glyph/kde_glyph_examples.ipynb
     - Statistics: notebooks/statistics/statistics_examples.ipynb
     - Colors: notebooks/colors/colors_examples.ipynb
     - Styles: notebooks/styles/styles_examples.ipynb
