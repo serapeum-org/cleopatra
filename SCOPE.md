@@ -54,7 +54,15 @@ colorbars, ticks, classification, and animation.
   — all NumPy-native), and reusable legend builders (disjoint/size/width/
   histogram/colorbar).
 - `tiles` (optional `cleopatra[tiles]` extra): fetch + stitch XYZ web-tile
-  basemaps; reprojection helpers. The **only** networked feature.
+  basemaps; reprojection helpers.
+- `reference` (uses the `cleopatra[tiles]` extra for relief decoding /
+  reprojection): fetch + draw fixed public reference-basemap data *under* your
+  plot — Natural Earth vector layers (`add_features`) and a global hypsometric
+  relief raster (`add_relief`), the `cartopy` `ax.coastlines()` /
+  `GeoAxes.stock_img()` niche. It acquires only **fixed public datasets** that
+  cleopatra re-hosts as dependency-light artifacts (gzipped GeoJSON / PNG);
+  it reads no user files and never imports GDAL/geopandas.
+- `tiles` and `reference` are cleopatra's **only** networked features.
 - `projection`: lightweight axes-frame / coordinate helpers.
 - `animation`: turn a matplotlib `FuncAnimation` into a saved file, GIF bytes,
   or an embeddable IPython image (via ffmpeg).
@@ -74,9 +82,13 @@ colorbars, ticks, classification, and animation.
 
 - **Non-matplotlib backends / engines:** Plotly, Bokeh, Altair, pyvista,
   datashader, OpenGL, web/JS rendering. Cleopatra is matplotlib-only.
-- **Data I/O and formats:** reading/writing GeoTIFF, NetCDF, shapefiles,
-  GeoJSON, CSV, databases. Users bring NumPy arrays already; file/raster I/O
-  belongs in sibling packages (e.g. `pyramids`), not here.
+- **Data I/O and formats:** reading/writing *user* GeoTIFF, NetCDF,
+  shapefiles, GeoJSON, CSV, databases. Users bring NumPy arrays already;
+  file/raster I/O of user data belongs in sibling packages (e.g. `pyramids`),
+  not here. The deliberate exception is the `tiles` / `reference` basemap
+  helpers, which fetch a handful of *fixed public* reference datasets (never
+  user data) that cleopatra re-hosts as dependency-light artifacts — see
+  "Supporting utilities".
 - **GIS / geoprocessing:** reprojection of user data, clipping, resampling,
   zonal stats, CRS management beyond what the optional `tiles` basemap needs.
 - **Interactive / GUI apps:** dashboards, widget servers, event callbacks,
@@ -88,14 +100,16 @@ colorbars, ticks, classification, and animation.
   (plus `ffmpeg-python`, `hpc-utils`). Anything bigger must be an optional
   extra like `tiles`, and only with strong justification.
 - **3D rendering** (mplot3d surfaces/volumes), networked data sources other
-  than `tiles`, and general-purpose plotting that matplotlib already does well
-  without added value.
+  than the `tiles` / `reference` basemap helpers, and general-purpose plotting
+  that matplotlib already does well without added value.
 
 ## Boundary heuristic for a feature request
 
 Ask, in order:
 
 1. **Input** — does it start from in-memory NumPy data (not a file/CRS/URL)?
+   (The `tiles` / `reference` basemap helpers are the deliberate exception:
+   they acquire fixed *public* reference data, never user files.)
 2. **Output** — does it produce a matplotlib `Figure`/`Axes`/artist (or an
    animation of one)?
 3. **Reuse** — can it build on `Glyph` and the shared colour/colorbar/legend

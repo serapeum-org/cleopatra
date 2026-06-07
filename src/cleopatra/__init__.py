@@ -7,7 +7,8 @@ classes/functions from their submodules, e.g.
 `from cleopatra.config import Config`.
 
 Submodules: `array_glyph`, `glyph`, `mesh_glyph`, `statistical_glyph`,
-`colors`, `styles`, `tiles`, `projection`, `animation`, `config`.
+`colors`, `styles`, `tiles`, `reference`, `projection`, `animation`,
+`config`.
 
 Importing cleopatra does not change the active matplotlib backend. If you
 want the old convenience behaviour (`%matplotlib inline` in a notebook,
