@@ -291,6 +291,35 @@ def add_relief(
         ValueError: If `resolution` is unknown.
         ConnectionError: If the asset must be downloaded and the fetch
             fails.
+
+    Examples:
+        - Draw a relief backdrop under data already plotted in lon/lat
+            (downloads the asset on first use, then caches it):
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.reference import add_relief
+            >>> fig, ax = plt.subplots()
+            >>> ax.set_xlim(-180, 180); ax.set_ylim(-90, 90)  # doctest: +SKIP
+            >>> ax = add_relief(ax, "low")  # doctest: +SKIP
+            >>> len(ax.images)  # doctest: +SKIP
+            1
+
+            ```
+        - Unknown resolutions are rejected before any download:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.reference import add_relief
+            >>> fig, ax = plt.subplots()
+            >>> add_relief(ax, "high")
+            Traceback (most recent call last):
+                ...
+            ValueError: Unknown relief resolution 'high'. Choose from ['low', 'medium'].
+
+            ```
     """
     _validate_axes(ax)
     rgb = relief(resolution)
@@ -595,6 +624,26 @@ def natural_earth(
         ValueError: If `layer` or `resolution` is unknown.
         ConnectionError: If the asset must be downloaded and the fetch
             fails.
+
+    Examples:
+        - Fetch coastlines and inspect the parts (downloads on first use,
+            then reads from the cache):
+            ```python
+            >>> from cleopatra.reference import natural_earth
+            >>> parts = natural_earth("coastline", "110m")  # doctest: +SKIP
+            >>> parts[0].shape[1]  # each part is an (N, 2) lon/lat array  # doctest: +SKIP
+            2
+
+            ```
+        - Unknown layers are rejected before any download:
+            ```python
+            >>> from cleopatra.reference import natural_earth
+            >>> natural_earth("countries")
+            Traceback (most recent call last):
+                ...
+            ValueError: Unknown layer 'countries'. Choose from ['coastline', 'land', 'ocean', 'rivers', 'lakes', 'borders'].
+
+            ```
     """
     parts: list[np.ndarray] = []
     for geometry in _load_features(layer, resolution):
@@ -744,6 +793,34 @@ def add_features(
             installed.
         ConnectionError: If the asset must be downloaded and the fetch
             fails.
+
+    Examples:
+        - Overlay a coastline and country borders on a lon/lat map
+            (downloads each layer on first use, then caches it):
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.reference import add_features
+            >>> fig, ax = plt.subplots()
+            >>> ax.set_xlim(-20, 40); ax.set_ylim(0, 60)  # doctest: +SKIP
+            >>> ax = add_features(ax, "coastline", "50m", colors="navy")  # doctest: +SKIP
+            >>> ax = add_features(ax, "borders", "50m")  # doctest: +SKIP
+
+            ```
+        - Unknown layers are rejected before any download:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.reference import add_features
+            >>> fig, ax = plt.subplots()
+            >>> add_features(ax, "countries")
+            Traceback (most recent call last):
+                ...
+            ValueError: Unknown layer 'countries'. Choose from ['coastline', 'land', 'ocean', 'rivers', 'lakes', 'borders'].
+
+            ```
     """
     _validate_axes(ax)
     geoms = _load_features(layer, resolution)
