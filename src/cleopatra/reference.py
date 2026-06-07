@@ -798,7 +798,8 @@ def add_features(
 
     Raises:
         TypeError: If `ax` is not a matplotlib Axes.
-        ValueError: If `layer` or `resolution` is unknown.
+        ValueError: If `layer` or `resolution` is unknown, or `crs` is not
+            a valid CRS.
         ImportError: If `crs` requires reprojection but `pyproj` is not
             installed.
         ConnectionError: If the asset must be downloaded and the fetch
