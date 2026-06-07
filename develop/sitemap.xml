@@ -33,7 +33,27 @@
          <lastmod>2026-06-07</lastmod>
     </url>
     <url>
+         <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/flow_glyph/flow_glyph_examples/</loc>
+         <lastmod>2026-06-07</lastmod>
+    </url>
+    <url>
+         <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/kde_glyph/kde_glyph_examples/</loc>
+         <lastmod>2026-06-07</lastmod>
+    </url>
+    <url>
+         <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/line_glyph/line_glyph_examples/</loc>
+         <lastmod>2026-06-07</lastmod>
+    </url>
+    <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/mesh_glyph/mesh_glyph_examples/</loc>
+         <lastmod>2026-06-07</lastmod>
+    </url>
+    <url>
+         <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/polygon_glyph/polygon_glyph_examples/</loc>
+         <lastmod>2026-06-07</lastmod>
+    </url>
+    <url>
+         <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/scatter_glyph/scatter_glyph_examples/</loc>
          <lastmod>2026-06-07</lastmod>
     </url>
     <url>
@@ -42,6 +62,10 @@
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/styles/styles_examples/</loc>
+         <lastmod>2026-06-07</lastmod>
+    </url>
+    <url>
+         <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/vector_glyph/vector_glyph_examples/</loc>
          <lastmod>2026-06-07</lastmod>
     </url>
     <url>
