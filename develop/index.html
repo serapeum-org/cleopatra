@@ -1982,31 +1982,41 @@ sensible scientific defaults.</p>
 <p>For the package's boundaries — what belongs here and what does not — see the <a href="scope/">Scope</a> page.</p>
 <h2 id="package-layout"><a class="toclink" href="#package-layout">Package Layout</a><a class="headerlink" href="#package-layout" title="Permanent link">#</a></h2>
 <pre class="mermaid"><code>graph TD
-    cleopatra["cleopatra"]
+    subgraph core["Core"]
+        glyph["&lt;b&gt;glyph&lt;/b&gt;&lt;br/&gt;Glyph — base class&lt;br/&gt;figure/axes · color norms · classification&lt;br/&gt;colorbars · ticks · point overlays · animation"]
+    end
 
-    cleopatra --&gt; glyph["glyph&lt;br/&gt;Glyph (base class)"]
-    cleopatra --&gt; array_glyph["array_glyph&lt;br/&gt;ArrayGlyph, FacetGrid"]
-    cleopatra --&gt; mesh_glyph["mesh_glyph&lt;br/&gt;MeshGlyph"]
-    cleopatra --&gt; statistical_glyph["statistical_glyph&lt;br/&gt;StatisticalGlyph"]
-    cleopatra --&gt; scatter_glyph["scatter_glyph&lt;br/&gt;ScatterGlyph"]
-    cleopatra --&gt; vector_glyph["vector_glyph&lt;br/&gt;VectorGlyph"]
-    cleopatra --&gt; flow_glyph["flow_glyph&lt;br/&gt;FlowGlyph"]
-    cleopatra --&gt; line_glyph["line_glyph&lt;br/&gt;LineGlyph"]
-    cleopatra --&gt; polygon_glyph["polygon_glyph&lt;br/&gt;PolygonGlyph"]
-    cleopatra --&gt; kde_glyph["kde_glyph&lt;br/&gt;KDEGlyph"]
-    cleopatra --&gt; tiles["tiles&lt;br/&gt;add_tiles + helpers (optional 'tiles' extra)"]
-    cleopatra --&gt; colors["colors&lt;br/&gt;Colors"]
-    cleopatra --&gt; styles["styles&lt;br/&gt;Styles, Scale, ColorScale, MidpointNormalize, classify, legends"]
-    cleopatra --&gt; config["config&lt;br/&gt;Config (matplotlib backend helper)"]
+    subgraph visualizers["Visualizers — subclass Glyph"]
+        array_glyph["&lt;b&gt;array_glyph&lt;/b&gt;&lt;br/&gt;ArrayGlyph · FacetGrid&lt;br/&gt;2D/3D rasters, facets, animation"]
+        mesh_glyph["&lt;b&gt;mesh_glyph&lt;/b&gt;&lt;br/&gt;MeshGlyph&lt;br/&gt;unstructured meshes"]
+        scatter_glyph["&lt;b&gt;scatter_glyph&lt;/b&gt;&lt;br/&gt;ScatterGlyph&lt;br/&gt;point clouds"]
+        vector_glyph["&lt;b&gt;vector_glyph&lt;/b&gt;&lt;br/&gt;VectorGlyph&lt;br/&gt;vector fields"]
+        flow_glyph["&lt;b&gt;flow_glyph&lt;/b&gt;&lt;br/&gt;FlowGlyph&lt;br/&gt;flow paths"]
+        line_glyph["&lt;b&gt;line_glyph&lt;/b&gt;&lt;br/&gt;LineGlyph&lt;br/&gt;line / bar / band"]
+        polygon_glyph["&lt;b&gt;polygon_glyph&lt;/b&gt;&lt;br/&gt;PolygonGlyph&lt;br/&gt;polygon collections"]
+        kde_glyph["&lt;b&gt;kde_glyph&lt;/b&gt;&lt;br/&gt;KDEGlyph&lt;br/&gt;2D kernel density"]
+    end
 
-    array_glyph -. extends .-&gt; glyph
-    mesh_glyph -. extends .-&gt; glyph
-    scatter_glyph -. extends .-&gt; glyph
-    vector_glyph -. extends .-&gt; glyph
-    flow_glyph -. extends .-&gt; glyph
-    line_glyph -. extends .-&gt; glyph
-    polygon_glyph -. extends .-&gt; glyph
-    kde_glyph -. extends .-&gt; glyph</code></pre>
+    subgraph standalone["Standalone"]
+        statistical_glyph["&lt;b&gt;statistical_glyph&lt;/b&gt;&lt;br/&gt;StatisticalGlyph&lt;br/&gt;histogram · boxplot · multiboxplot · stripes"]
+    end
+
+    subgraph support["Supporting utilities"]
+        styles["&lt;b&gt;styles&lt;/b&gt;&lt;br/&gt;Styles · Scale · ColorScale&lt;br/&gt;MidpointNormalize · classify · resolve_sizes · legends"]
+        colors["&lt;b&gt;colors&lt;/b&gt;&lt;br/&gt;Colors&lt;br/&gt;hex/RGB conversion · colormaps"]
+        animation["&lt;b&gt;animation&lt;/b&gt;&lt;br/&gt;save_animation · to_gif · embed_gif"]
+        projection["&lt;b&gt;projection&lt;/b&gt;&lt;br/&gt;apply_projection_frame"]
+        config["&lt;b&gt;config&lt;/b&gt;&lt;br/&gt;Config — matplotlib backend helper"]
+    end
+
+    subgraph optional["Optional — cleopatra[tiles]"]
+        tiles["&lt;b&gt;tiles&lt;/b&gt;&lt;br/&gt;add_tiles · fetch / stitch helpers&lt;br/&gt;XYZ web-tile basemaps"]
+    end
+
+    array_glyph &amp; mesh_glyph &amp; scatter_glyph &amp; vector_glyph &amp; flow_glyph &amp; line_glyph &amp; polygon_glyph &amp; kde_glyph ==&gt;|extends| glyph
+    glyph --&gt;|color scales · classification| styles
+    glyph --&gt;|save / embed| animation
+    array_glyph -.-&gt;|optional basemap| tiles</code></pre>
 <ul>
 <li><code>glyph</code> provides the shared <code>Glyph</code> base class (figure/axes lifecycle, colorbars, color norms, ticks,
   classification, animation).</li>
@@ -2015,9 +2025,9 @@ sensible scientific defaults.</p>
   <code>vector_glyph</code> (<code>VectorGlyph</code>), <code>flow_glyph</code> (<code>FlowGlyph</code>), <code>line_glyph</code> (<code>LineGlyph</code>), <code>polygon_glyph</code>
   (<code>PolygonGlyph</code>), and <code>kde_glyph</code> (<code>KDEGlyph</code>). <code>statistical_glyph</code> (<code>StatisticalGlyph</code>) stands alone.</li>
 <li><code>tiles</code> adds the optional web-tile basemap helper (<code>cleopatra.tiles.add_tiles</code>), behind the <code>cleopatra[tiles]</code> extra.</li>
-<li><code>colors</code>, <code>styles</code>, and <code>config</code> are supporting utilities (colour conversions; predefined styles,
-  <code>MidpointNormalize</code>, <code>ColorScale</code>, value→size mapping, <code>classify</code> classification schemes and legend builders;
-  and the matplotlib-backend helper).</li>
+<li><code>colors</code>, <code>styles</code>, <code>animation</code>, <code>projection</code>, and <code>config</code> are supporting utilities (colour conversions; predefined
+  styles, <code>MidpointNormalize</code>, <code>ColorScale</code>, value→size mapping, <code>classify</code> classification schemes and legend builders;
+  glyph-independent animation save/embed helpers; static projected map frames; and the matplotlib-backend helper).</li>
 </ul>
 <h2 id="main-features"><a class="toclink" href="#main-features">Main Features</a><a class="headerlink" href="#main-features" title="Permanent link">#</a></h2>
 <h3 id="arrayglyph-raster-array-visualization"><a class="toclink" href="#arrayglyph-raster-array-visualization"><code>ArrayGlyph</code> — raster / array visualization</a><a class="headerlink" href="#arrayglyph-raster-array-visualization" title="Permanent link">#</a></h3>
