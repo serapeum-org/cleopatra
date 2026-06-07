@@ -1,8 +1,9 @@
-from cleopatra.statistical_glyph import StatisticalGlyph
+# StatisticalGlyph Class
 
-# Statistic Class
-
-The `statistical_glyph` module provides a class for creating statistical plots, specifically histograms. The class, `Statistic`, is designed to handle both 1D (single-dimensional) and 2D (multi-dimensional) data.
+The `statistical_glyph` module provides the `StatisticalGlyph` class for creating
+statistical plots — **histograms**, **boxplots**, **multi-boxplots**, and
+**warming-stripe** bands. It handles both 1D (single-dimensional) and 2D
+(multi-dimensional, one series per column) data.
 
 ## Class Documentation
 
@@ -48,3 +49,32 @@ fig_2d, ax_2d, hist_2d = stat_plot_2d.histogram()
 ```
 
 ![Three Histogram Example](../images/statistical_glyph/three-histogram.png)
+
+### Boxplot
+
+```python
+import numpy as np
+from cleopatra.statistical_glyph import StatisticalGlyph
+
+# one box per column for 2D data
+data = np.random.default_rng(0).normal(0, 1, (200, 3))
+fig, ax, artists = StatisticalGlyph(data).boxplot(labels=["a", "b", "c"], notch=True)
+```
+
+### Grouped boxes at explicit positions (multiboxplot)
+
+```python
+# place boxes at caller-controlled x positions (e.g. lead times, months)
+data = np.random.default_rng(0).normal(0, 1, (200, 4))
+fig, ax, artists = StatisticalGlyph(data).multiboxplot(
+    positions=[1, 3, 6, 12], labels=["1h", "3h", "6h", "12h"], widths=0.4
+)
+```
+
+### Warming stripes
+
+```python
+# one full-height coloured stripe per value (1D), the Ed-Hawkins idiom
+yearly = np.random.default_rng(0).normal(0, 1, 50).cumsum()
+fig, ax, bars = StatisticalGlyph(yearly).stripes(cmap="RdBu_r")
+```

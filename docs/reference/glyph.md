@@ -2,10 +2,12 @@
 
 The `Glyph` class is the base class for all cleopatra visualization glyphs.
 It provides shared infrastructure for figure/axes management, color scale
-normalization, colorbar creation, tick control, point overlays, and
-animation saving.
+normalization (including value classification), colorbar creation, tick
+control, point overlays, and animation saving.
 
-Both `ArrayGlyph` and `MeshGlyph` inherit from `Glyph`.
+`ArrayGlyph`, `MeshGlyph`, `ScatterGlyph`, `VectorGlyph`, `FlowGlyph`,
+`LineGlyph`, `PolygonGlyph`, and `KDEGlyph` all inherit from `Glyph` and share
+its colour-mapping / colorbar pipeline. `StatisticalGlyph` stands alone.
 
 ## Class Documentation
 

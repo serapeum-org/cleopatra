@@ -213,7 +213,7 @@ fig, ax, artist = vg.plot(kind="quiver", title="Vector Field")
 
 - Python >= 3.11
 - numpy >= 2.0.0
-- matplotlib >= 3.8.4
+- matplotlib >= 3.9
 
 ## Documentation
 

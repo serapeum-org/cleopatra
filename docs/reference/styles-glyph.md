@@ -41,6 +41,73 @@ also re-exported from `cleopatra.array_glyph`.
       show_source: true
       heading_level: 3
 
+## Classification — `classify`
+
+`classify` bins a continuous array into discrete colour classes, returning the
+bin edges and a matplotlib `BoundaryNorm`. It is the shared building block behind
+classified (categorical) colouring. All schemes are NumPy-native (no extra
+dependency): `"quantiles"`, `"equal_interval"`, `"percentiles"`, `"std_mean"`,
+and the Jenks-family `"fisher_jenks"` / `"natural_breaks"`. A non-string `scheme`
+is treated as explicit, already-chosen bin edges.
+
+::: cleopatra.styles.classify
+    options:
+      show_root_heading: true
+      show_source: true
+      heading_level: 3
+
+## Value → size — `resolve_sizes`
+
+`resolve_sizes` maps per-item magnitudes to a visual size range — the reusable
+value→size primitive shared by the size-encoding glyphs (`ScatterGlyph` marker
+areas, `FlowGlyph` line widths).
+
+::: cleopatra.styles.resolve_sizes
+    options:
+      show_root_heading: true
+      show_source: true
+      heading_level: 3
+
+## Legend builders
+
+Reusable, glyph-independent legend helpers that attach a legend to any `Axes`:
+
+- `disjoint_legend` — a categorical (disjoint) swatch legend.
+- `size_legend` — a legend whose marker *sizes* encode magnitude.
+- `width_legend` — a legend whose line *widths* encode magnitude.
+- `colorbar_legend` — attach a colorbar for a `ScalarMappable`.
+- `histogram_legend` — a colour-mapped histogram drawn as a compact legend.
+
+::: cleopatra.styles.disjoint_legend
+    options:
+      show_root_heading: true
+      show_source: true
+      heading_level: 3
+
+::: cleopatra.styles.size_legend
+    options:
+      show_root_heading: true
+      show_source: true
+      heading_level: 3
+
+::: cleopatra.styles.width_legend
+    options:
+      show_root_heading: true
+      show_source: true
+      heading_level: 3
+
+::: cleopatra.styles.colorbar_legend
+    options:
+      show_root_heading: true
+      show_source: true
+      heading_level: 3
+
+::: cleopatra.styles.histogram_legend
+    options:
+      show_root_heading: true
+      show_source: true
+      heading_level: 3
+
 ## Examples
 
 ### Log Scale

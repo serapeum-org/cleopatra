@@ -113,6 +113,12 @@ nav:
     - Statistical plots: reference/statistics-glyph.md
     - ArrayGlyph: reference/array-glyph.md
     - MeshGlyph: reference/mesh-glyph.md
+    - ScatterGlyph: reference/scatter-glyph.md
+    - VectorGlyph: reference/vector-glyph.md
+    - FlowGlyph: reference/flow-glyph.md
+    - LineGlyph: reference/line-glyph.md
+    - PolygonGlyph: reference/polygon-glyph.md
+    - KDEGlyph: reference/kde-glyph.md
     - Tiles (basemaps): reference/tiles.md
     - Projection (globe frames): reference/projection.md
     - Animations (save/embed): reference/animation.md
