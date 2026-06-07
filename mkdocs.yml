@@ -128,6 +128,12 @@ nav:
   - Examples:
     - ArrayGlyph: notebooks/array_glyph/array_glyph_examples.ipynb
     - MeshGlyph: notebooks/mesh_glyph/mesh_glyph_examples.ipynb
+    - ScatterGlyph: notebooks/scatter_glyph/scatter_glyph_examples.ipynb
+    - VectorGlyph: notebooks/vector_glyph/vector_glyph_examples.ipynb
+    - FlowGlyph: notebooks/flow_glyph/flow_glyph_examples.ipynb
+    - LineGlyph: notebooks/line_glyph/line_glyph_examples.ipynb
+    - PolygonGlyph: notebooks/polygon_glyph/polygon_glyph_examples.ipynb
+    - KDEGlyph: notebooks/kde_glyph/kde_glyph_examples.ipynb
     - Statistics: notebooks/statistics/statistics_examples.ipynb
     - Colors: notebooks/colors/colors_examples.ipynb
     - Styles: notebooks/styles/styles_examples.ipynb
