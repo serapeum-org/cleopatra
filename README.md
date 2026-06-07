@@ -21,31 +21,41 @@ For the package's boundaries — what belongs here and what does not — see [`S
 
 ```mermaid
 graph TD
-    cleopatra["cleopatra"]
+    subgraph core["Core"]
+        glyph["<b>glyph</b><br/>Glyph — base class<br/>figure/axes · color norms · classification<br/>colorbars · ticks · point overlays · animation"]
+    end
 
-    cleopatra --> glyph["glyph<br/>Glyph (base class)"]
-    cleopatra --> array_glyph["array_glyph<br/>ArrayGlyph, FacetGrid"]
-    cleopatra --> mesh_glyph["mesh_glyph<br/>MeshGlyph"]
-    cleopatra --> statistical_glyph["statistical_glyph<br/>StatisticalGlyph"]
-    cleopatra --> scatter_glyph["scatter_glyph<br/>ScatterGlyph"]
-    cleopatra --> vector_glyph["vector_glyph<br/>VectorGlyph"]
-    cleopatra --> flow_glyph["flow_glyph<br/>FlowGlyph"]
-    cleopatra --> line_glyph["line_glyph<br/>LineGlyph"]
-    cleopatra --> polygon_glyph["polygon_glyph<br/>PolygonGlyph"]
-    cleopatra --> kde_glyph["kde_glyph<br/>KDEGlyph"]
-    cleopatra --> tiles["tiles<br/>add_tiles + helpers (optional 'tiles' extra)"]
-    cleopatra --> colors["colors<br/>Colors"]
-    cleopatra --> styles["styles<br/>Styles, Scale, ColorScale, MidpointNormalize, classify, legends"]
-    cleopatra --> config["config<br/>Config (matplotlib backend helper)"]
+    subgraph visualizers["Visualizers — subclass Glyph"]
+        array_glyph["<b>array_glyph</b><br/>ArrayGlyph · FacetGrid<br/>2D/3D rasters, facets, animation"]
+        mesh_glyph["<b>mesh_glyph</b><br/>MeshGlyph<br/>unstructured meshes"]
+        scatter_glyph["<b>scatter_glyph</b><br/>ScatterGlyph<br/>point clouds"]
+        vector_glyph["<b>vector_glyph</b><br/>VectorGlyph<br/>vector fields"]
+        flow_glyph["<b>flow_glyph</b><br/>FlowGlyph<br/>flow paths"]
+        line_glyph["<b>line_glyph</b><br/>LineGlyph<br/>line / bar / band"]
+        polygon_glyph["<b>polygon_glyph</b><br/>PolygonGlyph<br/>polygon collections"]
+        kde_glyph["<b>kde_glyph</b><br/>KDEGlyph<br/>2D kernel density"]
+    end
 
-    array_glyph -. extends .-> glyph
-    mesh_glyph -. extends .-> glyph
-    scatter_glyph -. extends .-> glyph
-    vector_glyph -. extends .-> glyph
-    flow_glyph -. extends .-> glyph
-    line_glyph -. extends .-> glyph
-    polygon_glyph -. extends .-> glyph
-    kde_glyph -. extends .-> glyph
+    subgraph standalone["Standalone"]
+        statistical_glyph["<b>statistical_glyph</b><br/>StatisticalGlyph<br/>histogram · boxplot · multiboxplot · stripes"]
+    end
+
+    subgraph support["Supporting utilities"]
+        styles["<b>styles</b><br/>Styles · Scale · ColorScale<br/>MidpointNormalize · classify · resolve_sizes · legends"]
+        colors["<b>colors</b><br/>Colors<br/>hex/RGB conversion · colormaps"]
+        animation["<b>animation</b><br/>save_animation · to_gif · embed_gif"]
+        projection["<b>projection</b><br/>apply_projection_frame"]
+        config["<b>config</b><br/>Config — matplotlib backend helper"]
+    end
+
+    subgraph optional["Optional — cleopatra[tiles]"]
+        tiles["<b>tiles</b><br/>add_tiles · fetch / stitch helpers<br/>XYZ web-tile basemaps"]
+    end
+
+    array_glyph & mesh_glyph & scatter_glyph & vector_glyph & flow_glyph & line_glyph & polygon_glyph & kde_glyph ==>|extends| glyph
+    glyph -->|color scales · classification| styles
+    glyph -->|save / embed| animation
+    array_glyph -.->|optional basemap| tiles
 ```
 
 - `glyph` provides the shared `Glyph` base class (figure/axes lifecycle, colorbars, color norms, ticks, classification,
@@ -55,9 +65,9 @@ graph TD
   (`VectorGlyph`), `flow_glyph` (`FlowGlyph`), `line_glyph` (`LineGlyph`), `polygon_glyph` (`PolygonGlyph`), and
   `kde_glyph` (`KDEGlyph`). `statistical_glyph` (`StatisticalGlyph`) stands alone.
 - `tiles` adds the optional web-tile basemap helper (`cleopatra.tiles.add_tiles`), behind the `cleopatra[tiles]` extra.
-- `colors`, `styles`, and `config` are supporting utilities (colour conversions; predefined styles, `MidpointNormalize`,
-  `ColorScale`, value→size mapping, `classify` classification schemes and legend builders; and the matplotlib-backend
-  helper).
+- `colors`, `styles`, `animation`, `projection`, and `config` are supporting utilities (colour conversions; predefined
+  styles, `MidpointNormalize`, `ColorScale`, value→size mapping, `classify` classification schemes and legend builders;
+  glyph-independent animation save/embed helpers; static projected map frames; and the matplotlib-backend helper).
 
 ## Main Features
 
