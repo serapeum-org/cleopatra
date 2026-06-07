@@ -243,6 +243,23 @@ def test_add_features_polygon_hole_renders_as_cutout(cache: Path):
     plt.close(fig)
 
 
+def test_add_features_zorder_and_style_passthrough(cache: Path):
+    """`zorder` and `**style` overrides reach the underlying collection."""
+    _write_layer(
+        cache,
+        "coastline",
+        "110m",
+        {"type": "LineString", "coordinates": [[0, 0], [10, 10]]},
+    )
+    fig, ax = plt.subplots()
+    ax.plot([0, 10], [0, 10])
+    add_features(ax, "coastline", "110m", zorder=5, linewidths=2.5)
+    lc = next(c for c in ax.collections if isinstance(c, LineCollection))
+    assert lc.get_zorder() == 5, f"zorder not forwarded: {lc.get_zorder()}"
+    assert lc.get_linewidths()[0] == 2.5, f"linewidth not forwarded: {lc.get_linewidths()}"
+    plt.close(fig)
+
+
 def test_add_features_bad_axes():
     with pytest.raises(TypeError, match="matplotlib.axes.Axes"):
         add_features(object(), "coastline", "110m")
@@ -357,6 +374,25 @@ def test_add_relief(cache: Path):
     assert ax.get_xlim() == (-20.0, 40.0)
     img = ax.images[0]
     assert tuple(img.get_extent()) == (-180.0, 180.0, -90.0, 90.0)
+    plt.close(fig)
+
+
+def test_add_relief_passes_imshow_params(cache: Path):
+    """`alpha`, `zorder`, and `interpolation` are forwarded to `imshow`."""
+    Image = pytest.importorskip("PIL.Image", reason="Pillow not installed (tiles extra)")
+    arr = (np.random.default_rng(2).random((4, 8, 3)) * 255).astype("uint8")
+    Image.fromarray(arr).save(cache / "ne_hypso_rgb_720x360.png")
+
+    fig, ax = plt.subplots()
+    ax.set_xlim(-180, 180)
+    ax.set_ylim(-90, 90)
+    add_relief(ax, "low", alpha=0.5, zorder=-3, interpolation="nearest")
+    img = ax.images[0]
+    assert img.get_alpha() == 0.5, f"alpha not forwarded: {img.get_alpha()}"
+    assert img.get_zorder() == -3, f"zorder not forwarded: {img.get_zorder()}"
+    assert img.get_interpolation() == "nearest", (
+        f"interpolation not forwarded: {img.get_interpolation()}"
+    )
     plt.close(fig)
 
 
