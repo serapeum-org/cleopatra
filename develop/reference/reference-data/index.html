@@ -2452,17 +2452,7 @@ fails.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/cleopatra/reference.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-754">754</a></span>
-<span class="normal"><a href="#__codelineno-0-755">755</a></span>
-<span class="normal"><a href="#__codelineno-0-756">756</a></span>
-<span class="normal"><a href="#__codelineno-0-757">757</a></span>
-<span class="normal"><a href="#__codelineno-0-758">758</a></span>
-<span class="normal"><a href="#__codelineno-0-759">759</a></span>
-<span class="normal"><a href="#__codelineno-0-760">760</a></span>
-<span class="normal"><a href="#__codelineno-0-761">761</a></span>
-<span class="normal"><a href="#__codelineno-0-762">762</a></span>
-<span class="normal"><a href="#__codelineno-0-763">763</a></span>
-<span class="normal"><a href="#__codelineno-0-764">764</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-764">764</a></span>
 <span class="normal"><a href="#__codelineno-0-765">765</a></span>
 <span class="normal"><a href="#__codelineno-0-766">766</a></span>
 <span class="normal"><a href="#__codelineno-0-767">767</a></span>
@@ -2546,101 +2536,111 @@ fails.</p>
 <span class="normal"><a href="#__codelineno-0-845">845</a></span>
 <span class="normal"><a href="#__codelineno-0-846">846</a></span>
 <span class="normal"><a href="#__codelineno-0-847">847</a></span>
-<span class="normal"><a href="#__codelineno-0-848">848</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-754" name="__codelineno-0-754"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_features</span><span class="p">(</span>
-<a id="__codelineno-0-755" name="__codelineno-0-755"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
-<a id="__codelineno-0-756" name="__codelineno-0-756"></a>    <span class="n">layer</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;coastline&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-757" name="__codelineno-0-757"></a>    <span class="n">resolution</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;110m&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-758" name="__codelineno-0-758"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-759" name="__codelineno-0-759"></a>    <span class="n">crs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-760" name="__codelineno-0-760"></a>    <span class="n">zorder</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-<a id="__codelineno-0-761" name="__codelineno-0-761"></a>    <span class="o">**</span><span class="n">style</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
-<a id="__codelineno-0-762" name="__codelineno-0-762"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<a id="__codelineno-0-763" name="__codelineno-0-763"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Draw a Natural Earth reference layer on an Axes.</span>
-<a id="__codelineno-0-764" name="__codelineno-0-764"></a>
-<a id="__codelineno-0-765" name="__codelineno-0-765"></a><span class="sd">    The `cartopy` `ax.coastlines()` analogue. Polygon layers</span>
-<a id="__codelineno-0-766" name="__codelineno-0-766"></a><span class="sd">    (`land`/`ocean`/`lakes`) are drawn hole-aware as a filled</span>
-<a id="__codelineno-0-767" name="__codelineno-0-767"></a><span class="sd">    `PathCollection` (so `ocean`&#39;s continent cut-outs and islands-in-lakes</span>
-<a id="__codelineno-0-768" name="__codelineno-0-768"></a><span class="sd">    render correctly); line layers (`coastline`/`rivers`/`borders`) as a</span>
-<a id="__codelineno-0-769" name="__codelineno-0-769"></a><span class="sd">    `LineCollection`. The source data is EPSG:4326; pass `crs` to reproject</span>
-<a id="__codelineno-0-770" name="__codelineno-0-770"></a><span class="sd">    the geometry into the axes&#39; CRS (requires `pyproj`). The current axis</span>
-<a id="__codelineno-0-771" name="__codelineno-0-771"></a><span class="sd">    limits are preserved.</span>
-<a id="__codelineno-0-772" name="__codelineno-0-772"></a>
-<a id="__codelineno-0-773" name="__codelineno-0-773"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-774" name="__codelineno-0-774"></a><span class="sd">        ax: A matplotlib `Axes` with data already plotted.</span>
-<a id="__codelineno-0-775" name="__codelineno-0-775"></a><span class="sd">        layer: One of `available_layers()`.</span>
-<a id="__codelineno-0-776" name="__codelineno-0-776"></a><span class="sd">        resolution: One of `available_resolutions()`.</span>
-<a id="__codelineno-0-777" name="__codelineno-0-777"></a><span class="sd">        crs: CRS of the data on `ax`. `None` or `4326`/`&quot;EPSG:4326&quot;`</span>
-<a id="__codelineno-0-778" name="__codelineno-0-778"></a><span class="sd">            draws the lon/lat coordinates directly; any other value</span>
-<a id="__codelineno-0-779" name="__codelineno-0-779"></a><span class="sd">            reprojects from EPSG:4326 first.</span>
-<a id="__codelineno-0-780" name="__codelineno-0-780"></a><span class="sd">        zorder: Matplotlib draw order for the layer.</span>
-<a id="__codelineno-0-781" name="__codelineno-0-781"></a><span class="sd">        **style: Overrides merged over the per-kind defaults and</span>
-<a id="__codelineno-0-782" name="__codelineno-0-782"></a><span class="sd">            forwarded to the underlying collection. Use polygon keys for</span>
-<a id="__codelineno-0-783" name="__codelineno-0-783"></a><span class="sd">            polygon layers (`facecolors`, `edgecolors`, `linewidths`) and</span>
-<a id="__codelineno-0-784" name="__codelineno-0-784"></a><span class="sd">            line keys for line layers (`colors`, `linewidths`).</span>
-<a id="__codelineno-0-785" name="__codelineno-0-785"></a>
-<a id="__codelineno-0-786" name="__codelineno-0-786"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-787" name="__codelineno-0-787"></a><span class="sd">        matplotlib.axes.Axes: The same axes, for chaining.</span>
-<a id="__codelineno-0-788" name="__codelineno-0-788"></a>
-<a id="__codelineno-0-789" name="__codelineno-0-789"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-790" name="__codelineno-0-790"></a><span class="sd">        TypeError: If `ax` is not a matplotlib Axes.</span>
-<a id="__codelineno-0-791" name="__codelineno-0-791"></a><span class="sd">        ValueError: If `layer` or `resolution` is unknown.</span>
-<a id="__codelineno-0-792" name="__codelineno-0-792"></a><span class="sd">        ImportError: If `crs` requires reprojection but `pyproj` is not</span>
-<a id="__codelineno-0-793" name="__codelineno-0-793"></a><span class="sd">            installed.</span>
-<a id="__codelineno-0-794" name="__codelineno-0-794"></a><span class="sd">        ConnectionError: If the asset must be downloaded and the fetch</span>
-<a id="__codelineno-0-795" name="__codelineno-0-795"></a><span class="sd">            fails.</span>
-<a id="__codelineno-0-796" name="__codelineno-0-796"></a>
-<a id="__codelineno-0-797" name="__codelineno-0-797"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-798" name="__codelineno-0-798"></a><span class="sd">        - Overlay a coastline and country borders on a lon/lat map</span>
-<a id="__codelineno-0-799" name="__codelineno-0-799"></a><span class="sd">            (downloads each layer on first use, then caches it):</span>
-<a id="__codelineno-0-800" name="__codelineno-0-800"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-801" name="__codelineno-0-801"></a><span class="sd">            &gt;&gt;&gt; import matplotlib</span>
-<a id="__codelineno-0-802" name="__codelineno-0-802"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use(&quot;Agg&quot;)</span>
-<a id="__codelineno-0-803" name="__codelineno-0-803"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-804" name="__codelineno-0-804"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.reference import add_features</span>
-<a id="__codelineno-0-805" name="__codelineno-0-805"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
-<a id="__codelineno-0-806" name="__codelineno-0-806"></a><span class="sd">            &gt;&gt;&gt; ax.set_xlim(-20, 40); ax.set_ylim(0, 60)  # doctest: +SKIP</span>
-<a id="__codelineno-0-807" name="__codelineno-0-807"></a><span class="sd">            &gt;&gt;&gt; ax = add_features(ax, &quot;coastline&quot;, &quot;50m&quot;, colors=&quot;navy&quot;)  # doctest: +SKIP</span>
-<a id="__codelineno-0-808" name="__codelineno-0-808"></a><span class="sd">            &gt;&gt;&gt; ax = add_features(ax, &quot;borders&quot;, &quot;50m&quot;)  # doctest: +SKIP</span>
-<a id="__codelineno-0-809" name="__codelineno-0-809"></a>
-<a id="__codelineno-0-810" name="__codelineno-0-810"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-811" name="__codelineno-0-811"></a><span class="sd">        - Unknown layers are rejected before any download:</span>
-<a id="__codelineno-0-812" name="__codelineno-0-812"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-813" name="__codelineno-0-813"></a><span class="sd">            &gt;&gt;&gt; import matplotlib</span>
-<a id="__codelineno-0-814" name="__codelineno-0-814"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use(&quot;Agg&quot;)</span>
-<a id="__codelineno-0-815" name="__codelineno-0-815"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-816" name="__codelineno-0-816"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.reference import add_features</span>
-<a id="__codelineno-0-817" name="__codelineno-0-817"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
-<a id="__codelineno-0-818" name="__codelineno-0-818"></a><span class="sd">            &gt;&gt;&gt; add_features(ax, &quot;countries&quot;)</span>
-<a id="__codelineno-0-819" name="__codelineno-0-819"></a><span class="sd">            Traceback (most recent call last):</span>
-<a id="__codelineno-0-820" name="__codelineno-0-820"></a><span class="sd">                ...</span>
-<a id="__codelineno-0-821" name="__codelineno-0-821"></a><span class="sd">            ValueError: Unknown layer &#39;countries&#39;. Choose from [&#39;coastline&#39;, &#39;land&#39;, &#39;ocean&#39;, &#39;rivers&#39;, &#39;lakes&#39;, &#39;borders&#39;].</span>
-<a id="__codelineno-0-822" name="__codelineno-0-822"></a>
-<a id="__codelineno-0-823" name="__codelineno-0-823"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-824" name="__codelineno-0-824"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-825" name="__codelineno-0-825"></a>    <span class="n">_validate_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
-<a id="__codelineno-0-826" name="__codelineno-0-826"></a>    <span class="n">geoms</span> <span class="o">=</span> <span class="n">_load_features</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)</span>
-<a id="__codelineno-0-827" name="__codelineno-0-827"></a>    <span class="n">transformer</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">_is_4326</span><span class="p">(</span><span class="n">crs</span><span class="p">)</span> <span class="k">else</span> <span class="n">_make_transformer</span><span class="p">(</span><span class="n">crs</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type]</span>
-<a id="__codelineno-0-828" name="__codelineno-0-828"></a>
-<a id="__codelineno-0-829" name="__codelineno-0-829"></a>    <span class="n">kind</span> <span class="o">=</span> <span class="n">_LAYERS</span><span class="p">[</span><span class="n">layer</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
-<a id="__codelineno-0-830" name="__codelineno-0-830"></a>    <span class="n">opts</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">_FEATURE_STYLE</span><span class="p">[</span><span class="n">kind</span><span class="p">],</span> <span class="o">**</span><span class="n">style</span><span class="p">}</span>
-<a id="__codelineno-0-831" name="__codelineno-0-831"></a>
-<a id="__codelineno-0-832" name="__codelineno-0-832"></a>    <span class="n">xlim</span><span class="p">,</span> <span class="n">ylim</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">(),</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
-<a id="__codelineno-0-833" name="__codelineno-0-833"></a>    <span class="n">collection</span><span class="p">:</span> <span class="n">Any</span>
-<a id="__codelineno-0-834" name="__codelineno-0-834"></a>    <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;polygon&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-835" name="__codelineno-0-835"></a>        <span class="n">collection</span> <span class="o">=</span> <span class="n">PathCollection</span><span class="p">(</span>
-<a id="__codelineno-0-836" name="__codelineno-0-836"></a>            <span class="n">_polygon_paths</span><span class="p">(</span><span class="n">geoms</span><span class="p">,</span> <span class="n">transformer</span><span class="p">),</span> <span class="n">zorder</span><span class="o">=</span><span class="n">zorder</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span>
-<a id="__codelineno-0-837" name="__codelineno-0-837"></a>        <span class="p">)</span>
-<a id="__codelineno-0-838" name="__codelineno-0-838"></a>        <span class="c1"># PathCollection paths default to a non-data transform (its scatter</span>
-<a id="__codelineno-0-839" name="__codelineno-0-839"></a>        <span class="c1"># heritage); place them in data coordinates explicitly.</span>
-<a id="__codelineno-0-840" name="__codelineno-0-840"></a>        <span class="n">collection</span><span class="o">.</span><span class="n">set_transform</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">transData</span><span class="p">)</span>
-<a id="__codelineno-0-841" name="__codelineno-0-841"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-842" name="__codelineno-0-842"></a>        <span class="n">collection</span> <span class="o">=</span> <span class="n">LineCollection</span><span class="p">(</span>
-<a id="__codelineno-0-843" name="__codelineno-0-843"></a>            <span class="n">_line_segments</span><span class="p">(</span><span class="n">geoms</span><span class="p">,</span> <span class="n">transformer</span><span class="p">),</span> <span class="n">zorder</span><span class="o">=</span><span class="n">zorder</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span>
-<a id="__codelineno-0-844" name="__codelineno-0-844"></a>        <span class="p">)</span>
-<a id="__codelineno-0-845" name="__codelineno-0-845"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">add_collection</span><span class="p">(</span><span class="n">collection</span><span class="p">)</span>
-<a id="__codelineno-0-846" name="__codelineno-0-846"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">xlim</span><span class="p">)</span>
-<a id="__codelineno-0-847" name="__codelineno-0-847"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">ylim</span><span class="p">)</span>
-<a id="__codelineno-0-848" name="__codelineno-0-848"></a>    <span class="k">return</span> <span class="n">ax</span>
+<span class="normal"><a href="#__codelineno-0-848">848</a></span>
+<span class="normal"><a href="#__codelineno-0-849">849</a></span>
+<span class="normal"><a href="#__codelineno-0-850">850</a></span>
+<span class="normal"><a href="#__codelineno-0-851">851</a></span>
+<span class="normal"><a href="#__codelineno-0-852">852</a></span>
+<span class="normal"><a href="#__codelineno-0-853">853</a></span>
+<span class="normal"><a href="#__codelineno-0-854">854</a></span>
+<span class="normal"><a href="#__codelineno-0-855">855</a></span>
+<span class="normal"><a href="#__codelineno-0-856">856</a></span>
+<span class="normal"><a href="#__codelineno-0-857">857</a></span>
+<span class="normal"><a href="#__codelineno-0-858">858</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-764" name="__codelineno-0-764"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_features</span><span class="p">(</span>
+<a id="__codelineno-0-765" name="__codelineno-0-765"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<a id="__codelineno-0-766" name="__codelineno-0-766"></a>    <span class="n">layer</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;coastline&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-767" name="__codelineno-0-767"></a>    <span class="n">resolution</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;110m&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-768" name="__codelineno-0-768"></a>    <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-0-769" name="__codelineno-0-769"></a>    <span class="n">crs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-770" name="__codelineno-0-770"></a>    <span class="n">zorder</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+<a id="__codelineno-0-771" name="__codelineno-0-771"></a>    <span class="o">**</span><span class="n">style</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<a id="__codelineno-0-772" name="__codelineno-0-772"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<a id="__codelineno-0-773" name="__codelineno-0-773"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Draw a Natural Earth reference layer on an Axes.</span>
+<a id="__codelineno-0-774" name="__codelineno-0-774"></a>
+<a id="__codelineno-0-775" name="__codelineno-0-775"></a><span class="sd">    The `cartopy` `ax.coastlines()` analogue. Polygon layers</span>
+<a id="__codelineno-0-776" name="__codelineno-0-776"></a><span class="sd">    (`land`/`ocean`/`lakes`) are drawn hole-aware as a filled</span>
+<a id="__codelineno-0-777" name="__codelineno-0-777"></a><span class="sd">    `PathCollection` (so `ocean`&#39;s continent cut-outs and islands-in-lakes</span>
+<a id="__codelineno-0-778" name="__codelineno-0-778"></a><span class="sd">    render correctly); line layers (`coastline`/`rivers`/`borders`) as a</span>
+<a id="__codelineno-0-779" name="__codelineno-0-779"></a><span class="sd">    `LineCollection`. The source data is EPSG:4326; pass `crs` to reproject</span>
+<a id="__codelineno-0-780" name="__codelineno-0-780"></a><span class="sd">    the geometry into the axes&#39; CRS (requires `pyproj`). The current axis</span>
+<a id="__codelineno-0-781" name="__codelineno-0-781"></a><span class="sd">    limits are preserved.</span>
+<a id="__codelineno-0-782" name="__codelineno-0-782"></a>
+<a id="__codelineno-0-783" name="__codelineno-0-783"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-784" name="__codelineno-0-784"></a><span class="sd">        ax: A matplotlib `Axes` with data already plotted.</span>
+<a id="__codelineno-0-785" name="__codelineno-0-785"></a><span class="sd">        layer: One of `available_layers()`.</span>
+<a id="__codelineno-0-786" name="__codelineno-0-786"></a><span class="sd">        resolution: One of `available_resolutions()`.</span>
+<a id="__codelineno-0-787" name="__codelineno-0-787"></a><span class="sd">        crs: CRS of the data on `ax`. `None` or `4326`/`&quot;EPSG:4326&quot;`</span>
+<a id="__codelineno-0-788" name="__codelineno-0-788"></a><span class="sd">            draws the lon/lat coordinates directly; any other value</span>
+<a id="__codelineno-0-789" name="__codelineno-0-789"></a><span class="sd">            reprojects from EPSG:4326 first.</span>
+<a id="__codelineno-0-790" name="__codelineno-0-790"></a><span class="sd">        zorder: Matplotlib draw order for the layer.</span>
+<a id="__codelineno-0-791" name="__codelineno-0-791"></a><span class="sd">        **style: Overrides merged over the per-kind defaults and</span>
+<a id="__codelineno-0-792" name="__codelineno-0-792"></a><span class="sd">            forwarded to the underlying collection. Use polygon keys for</span>
+<a id="__codelineno-0-793" name="__codelineno-0-793"></a><span class="sd">            polygon layers (`facecolors`, `edgecolors`, `linewidths`) and</span>
+<a id="__codelineno-0-794" name="__codelineno-0-794"></a><span class="sd">            line keys for line layers (`colors`, `linewidths`).</span>
+<a id="__codelineno-0-795" name="__codelineno-0-795"></a>
+<a id="__codelineno-0-796" name="__codelineno-0-796"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-797" name="__codelineno-0-797"></a><span class="sd">        matplotlib.axes.Axes: The same axes, for chaining.</span>
+<a id="__codelineno-0-798" name="__codelineno-0-798"></a>
+<a id="__codelineno-0-799" name="__codelineno-0-799"></a><span class="sd">    Raises:</span>
+<a id="__codelineno-0-800" name="__codelineno-0-800"></a><span class="sd">        TypeError: If `ax` is not a matplotlib Axes.</span>
+<a id="__codelineno-0-801" name="__codelineno-0-801"></a><span class="sd">        ValueError: If `layer` or `resolution` is unknown.</span>
+<a id="__codelineno-0-802" name="__codelineno-0-802"></a><span class="sd">        ImportError: If `crs` requires reprojection but `pyproj` is not</span>
+<a id="__codelineno-0-803" name="__codelineno-0-803"></a><span class="sd">            installed.</span>
+<a id="__codelineno-0-804" name="__codelineno-0-804"></a><span class="sd">        ConnectionError: If the asset must be downloaded and the fetch</span>
+<a id="__codelineno-0-805" name="__codelineno-0-805"></a><span class="sd">            fails.</span>
+<a id="__codelineno-0-806" name="__codelineno-0-806"></a>
+<a id="__codelineno-0-807" name="__codelineno-0-807"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-808" name="__codelineno-0-808"></a><span class="sd">        - Overlay a coastline and country borders on a lon/lat map</span>
+<a id="__codelineno-0-809" name="__codelineno-0-809"></a><span class="sd">            (downloads each layer on first use, then caches it):</span>
+<a id="__codelineno-0-810" name="__codelineno-0-810"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-811" name="__codelineno-0-811"></a><span class="sd">            &gt;&gt;&gt; import matplotlib</span>
+<a id="__codelineno-0-812" name="__codelineno-0-812"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use(&quot;Agg&quot;)</span>
+<a id="__codelineno-0-813" name="__codelineno-0-813"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-814" name="__codelineno-0-814"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.reference import add_features</span>
+<a id="__codelineno-0-815" name="__codelineno-0-815"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-816" name="__codelineno-0-816"></a><span class="sd">            &gt;&gt;&gt; ax.set_xlim(-20, 40); ax.set_ylim(0, 60)  # doctest: +SKIP</span>
+<a id="__codelineno-0-817" name="__codelineno-0-817"></a><span class="sd">            &gt;&gt;&gt; ax = add_features(ax, &quot;coastline&quot;, &quot;50m&quot;, colors=&quot;navy&quot;)  # doctest: +SKIP</span>
+<a id="__codelineno-0-818" name="__codelineno-0-818"></a><span class="sd">            &gt;&gt;&gt; ax = add_features(ax, &quot;borders&quot;, &quot;50m&quot;)  # doctest: +SKIP</span>
+<a id="__codelineno-0-819" name="__codelineno-0-819"></a>
+<a id="__codelineno-0-820" name="__codelineno-0-820"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-821" name="__codelineno-0-821"></a><span class="sd">        - Unknown layers are rejected before any download:</span>
+<a id="__codelineno-0-822" name="__codelineno-0-822"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-823" name="__codelineno-0-823"></a><span class="sd">            &gt;&gt;&gt; import matplotlib</span>
+<a id="__codelineno-0-824" name="__codelineno-0-824"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use(&quot;Agg&quot;)</span>
+<a id="__codelineno-0-825" name="__codelineno-0-825"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-826" name="__codelineno-0-826"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.reference import add_features</span>
+<a id="__codelineno-0-827" name="__codelineno-0-827"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-828" name="__codelineno-0-828"></a><span class="sd">            &gt;&gt;&gt; add_features(ax, &quot;countries&quot;)</span>
+<a id="__codelineno-0-829" name="__codelineno-0-829"></a><span class="sd">            Traceback (most recent call last):</span>
+<a id="__codelineno-0-830" name="__codelineno-0-830"></a><span class="sd">                ...</span>
+<a id="__codelineno-0-831" name="__codelineno-0-831"></a><span class="sd">            ValueError: Unknown layer &#39;countries&#39;. Choose from [&#39;coastline&#39;, &#39;land&#39;, &#39;ocean&#39;, &#39;rivers&#39;, &#39;lakes&#39;, &#39;borders&#39;].</span>
+<a id="__codelineno-0-832" name="__codelineno-0-832"></a>
+<a id="__codelineno-0-833" name="__codelineno-0-833"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-834" name="__codelineno-0-834"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-835" name="__codelineno-0-835"></a>    <span class="n">_validate_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+<a id="__codelineno-0-836" name="__codelineno-0-836"></a>    <span class="n">geoms</span> <span class="o">=</span> <span class="n">_load_features</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)</span>
+<a id="__codelineno-0-837" name="__codelineno-0-837"></a>    <span class="n">transformer</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">_is_4326</span><span class="p">(</span><span class="n">crs</span><span class="p">)</span> <span class="k">else</span> <span class="n">_make_transformer</span><span class="p">(</span><span class="n">crs</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type]</span>
+<a id="__codelineno-0-838" name="__codelineno-0-838"></a>
+<a id="__codelineno-0-839" name="__codelineno-0-839"></a>    <span class="n">kind</span> <span class="o">=</span> <span class="n">_LAYERS</span><span class="p">[</span><span class="n">layer</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+<a id="__codelineno-0-840" name="__codelineno-0-840"></a>    <span class="n">opts</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">_FEATURE_STYLE</span><span class="p">[</span><span class="n">kind</span><span class="p">],</span> <span class="o">**</span><span class="n">style</span><span class="p">}</span>
+<a id="__codelineno-0-841" name="__codelineno-0-841"></a>
+<a id="__codelineno-0-842" name="__codelineno-0-842"></a>    <span class="n">xlim</span><span class="p">,</span> <span class="n">ylim</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">(),</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
+<a id="__codelineno-0-843" name="__codelineno-0-843"></a>    <span class="n">collection</span><span class="p">:</span> <span class="n">Any</span>
+<a id="__codelineno-0-844" name="__codelineno-0-844"></a>    <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;polygon&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-845" name="__codelineno-0-845"></a>        <span class="n">collection</span> <span class="o">=</span> <span class="n">PathCollection</span><span class="p">(</span>
+<a id="__codelineno-0-846" name="__codelineno-0-846"></a>            <span class="n">_polygon_paths</span><span class="p">(</span><span class="n">geoms</span><span class="p">,</span> <span class="n">transformer</span><span class="p">),</span> <span class="n">zorder</span><span class="o">=</span><span class="n">zorder</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span>
+<a id="__codelineno-0-847" name="__codelineno-0-847"></a>        <span class="p">)</span>
+<a id="__codelineno-0-848" name="__codelineno-0-848"></a>        <span class="c1"># PathCollection paths default to a non-data transform (its scatter</span>
+<a id="__codelineno-0-849" name="__codelineno-0-849"></a>        <span class="c1"># heritage); place them in data coordinates explicitly.</span>
+<a id="__codelineno-0-850" name="__codelineno-0-850"></a>        <span class="n">collection</span><span class="o">.</span><span class="n">set_transform</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">transData</span><span class="p">)</span>
+<a id="__codelineno-0-851" name="__codelineno-0-851"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-852" name="__codelineno-0-852"></a>        <span class="n">collection</span> <span class="o">=</span> <span class="n">LineCollection</span><span class="p">(</span>
+<a id="__codelineno-0-853" name="__codelineno-0-853"></a>            <span class="n">_line_segments</span><span class="p">(</span><span class="n">geoms</span><span class="p">,</span> <span class="n">transformer</span><span class="p">),</span> <span class="n">zorder</span><span class="o">=</span><span class="n">zorder</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span>
+<a id="__codelineno-0-854" name="__codelineno-0-854"></a>        <span class="p">)</span>
+<a id="__codelineno-0-855" name="__codelineno-0-855"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">add_collection</span><span class="p">(</span><span class="n">collection</span><span class="p">)</span>
+<a id="__codelineno-0-856" name="__codelineno-0-856"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">xlim</span><span class="p">)</span>
+<a id="__codelineno-0-857" name="__codelineno-0-857"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">ylim</span><span class="p">)</span>
+<a id="__codelineno-0-858" name="__codelineno-0-858"></a>    <span class="k">return</span> <span class="n">ax</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3481,9 +3481,7 @@ fails.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/cleopatra/reference.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-604">604</a></span>
-<span class="normal"><a href="#__codelineno-0-605">605</a></span>
-<span class="normal"><a href="#__codelineno-0-606">606</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-606">606</a></span>
 <span class="normal"><a href="#__codelineno-0-607">607</a></span>
 <span class="normal"><a href="#__codelineno-0-608">608</a></span>
 <span class="normal"><a href="#__codelineno-0-609">609</a></span>
@@ -3528,54 +3526,56 @@ fails.</p>
 <span class="normal"><a href="#__codelineno-0-648">648</a></span>
 <span class="normal"><a href="#__codelineno-0-649">649</a></span>
 <span class="normal"><a href="#__codelineno-0-650">650</a></span>
-<span class="normal"><a href="#__codelineno-0-651">651</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-604" name="__codelineno-0-604"></a><span class="k">def</span><span class="w"> </span><span class="nf">natural_earth</span><span class="p">(</span>
-<a id="__codelineno-0-605" name="__codelineno-0-605"></a>    <span class="n">layer</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;coastline&quot;</span><span class="p">,</span> <span class="n">resolution</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;110m&quot;</span>
-<a id="__codelineno-0-606" name="__codelineno-0-606"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
-<a id="__codelineno-0-607" name="__codelineno-0-607"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetch (and cache) a Natural Earth layer as coordinate arrays.</span>
-<a id="__codelineno-0-608" name="__codelineno-0-608"></a>
-<a id="__codelineno-0-609" name="__codelineno-0-609"></a><span class="sd">    The layer is downloaded as preprocessed gzipped GeoJSON and parsed</span>
-<a id="__codelineno-0-610" name="__codelineno-0-610"></a><span class="sd">    with the standard library only -- no GDAL/geopandas. Coordinates are</span>
-<a id="__codelineno-0-611" name="__codelineno-0-611"></a><span class="sd">    EPSG:4326 lon/lat. Polygon layers return exterior rings only; use</span>
-<a id="__codelineno-0-612" name="__codelineno-0-612"></a><span class="sd">    `add_features` for hole-aware filled rendering.</span>
-<a id="__codelineno-0-613" name="__codelineno-0-613"></a>
-<a id="__codelineno-0-614" name="__codelineno-0-614"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-615" name="__codelineno-0-615"></a><span class="sd">        layer: One of `available_layers()`.</span>
-<a id="__codelineno-0-616" name="__codelineno-0-616"></a><span class="sd">        resolution: One of `available_resolutions()`</span>
-<a id="__codelineno-0-617" name="__codelineno-0-617"></a><span class="sd">            (`&quot;110m&quot;`/`&quot;50m&quot;`/`&quot;10m&quot;`).</span>
-<a id="__codelineno-0-618" name="__codelineno-0-618"></a>
-<a id="__codelineno-0-619" name="__codelineno-0-619"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-620" name="__codelineno-0-620"></a><span class="sd">        list[numpy.ndarray]: One `(N, 2)` lon/lat array per geometry part</span>
-<a id="__codelineno-0-621" name="__codelineno-0-621"></a><span class="sd">            (exterior rings for polygon layers).</span>
-<a id="__codelineno-0-622" name="__codelineno-0-622"></a>
-<a id="__codelineno-0-623" name="__codelineno-0-623"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-624" name="__codelineno-0-624"></a><span class="sd">        ValueError: If `layer` or `resolution` is unknown.</span>
-<a id="__codelineno-0-625" name="__codelineno-0-625"></a><span class="sd">        ConnectionError: If the asset must be downloaded and the fetch</span>
-<a id="__codelineno-0-626" name="__codelineno-0-626"></a><span class="sd">            fails.</span>
-<a id="__codelineno-0-627" name="__codelineno-0-627"></a>
-<a id="__codelineno-0-628" name="__codelineno-0-628"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-629" name="__codelineno-0-629"></a><span class="sd">        - Fetch coastlines and inspect the parts (downloads on first use,</span>
-<a id="__codelineno-0-630" name="__codelineno-0-630"></a><span class="sd">            then reads from the cache):</span>
-<a id="__codelineno-0-631" name="__codelineno-0-631"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-632" name="__codelineno-0-632"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.reference import natural_earth</span>
-<a id="__codelineno-0-633" name="__codelineno-0-633"></a><span class="sd">            &gt;&gt;&gt; parts = natural_earth(&quot;coastline&quot;, &quot;110m&quot;)  # doctest: +SKIP</span>
-<a id="__codelineno-0-634" name="__codelineno-0-634"></a><span class="sd">            &gt;&gt;&gt; parts[0].shape[1]  # each part is an (N, 2) lon/lat array  # doctest: +SKIP</span>
-<a id="__codelineno-0-635" name="__codelineno-0-635"></a><span class="sd">            2</span>
-<a id="__codelineno-0-636" name="__codelineno-0-636"></a>
-<a id="__codelineno-0-637" name="__codelineno-0-637"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-638" name="__codelineno-0-638"></a><span class="sd">        - Unknown layers are rejected before any download:</span>
-<a id="__codelineno-0-639" name="__codelineno-0-639"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-640" name="__codelineno-0-640"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.reference import natural_earth</span>
-<a id="__codelineno-0-641" name="__codelineno-0-641"></a><span class="sd">            &gt;&gt;&gt; natural_earth(&quot;countries&quot;)</span>
-<a id="__codelineno-0-642" name="__codelineno-0-642"></a><span class="sd">            Traceback (most recent call last):</span>
-<a id="__codelineno-0-643" name="__codelineno-0-643"></a><span class="sd">                ...</span>
-<a id="__codelineno-0-644" name="__codelineno-0-644"></a><span class="sd">            ValueError: Unknown layer &#39;countries&#39;. Choose from [&#39;coastline&#39;, &#39;land&#39;, &#39;ocean&#39;, &#39;rivers&#39;, &#39;lakes&#39;, &#39;borders&#39;].</span>
-<a id="__codelineno-0-645" name="__codelineno-0-645"></a>
-<a id="__codelineno-0-646" name="__codelineno-0-646"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-647" name="__codelineno-0-647"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-648" name="__codelineno-0-648"></a>    <span class="n">parts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-<a id="__codelineno-0-649" name="__codelineno-0-649"></a>    <span class="k">for</span> <span class="n">geometry</span> <span class="ow">in</span> <span class="n">_load_features</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">resolution</span><span class="p">):</span>
-<a id="__codelineno-0-650" name="__codelineno-0-650"></a>        <span class="n">parts</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">_paths</span><span class="p">(</span><span class="n">geometry</span><span class="p">))</span>
-<a id="__codelineno-0-651" name="__codelineno-0-651"></a>    <span class="k">return</span> <span class="n">parts</span>
+<span class="normal"><a href="#__codelineno-0-651">651</a></span>
+<span class="normal"><a href="#__codelineno-0-652">652</a></span>
+<span class="normal"><a href="#__codelineno-0-653">653</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-606" name="__codelineno-0-606"></a><span class="k">def</span><span class="w"> </span><span class="nf">natural_earth</span><span class="p">(</span>
+<a id="__codelineno-0-607" name="__codelineno-0-607"></a>    <span class="n">layer</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;coastline&quot;</span><span class="p">,</span> <span class="n">resolution</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;110m&quot;</span>
+<a id="__codelineno-0-608" name="__codelineno-0-608"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<a id="__codelineno-0-609" name="__codelineno-0-609"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetch (and cache) a Natural Earth layer as coordinate arrays.</span>
+<a id="__codelineno-0-610" name="__codelineno-0-610"></a>
+<a id="__codelineno-0-611" name="__codelineno-0-611"></a><span class="sd">    The layer is downloaded as preprocessed gzipped GeoJSON and parsed</span>
+<a id="__codelineno-0-612" name="__codelineno-0-612"></a><span class="sd">    with the standard library only -- no GDAL/geopandas. Coordinates are</span>
+<a id="__codelineno-0-613" name="__codelineno-0-613"></a><span class="sd">    EPSG:4326 lon/lat. Polygon layers return exterior rings only; use</span>
+<a id="__codelineno-0-614" name="__codelineno-0-614"></a><span class="sd">    `add_features` for hole-aware filled rendering.</span>
+<a id="__codelineno-0-615" name="__codelineno-0-615"></a>
+<a id="__codelineno-0-616" name="__codelineno-0-616"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-617" name="__codelineno-0-617"></a><span class="sd">        layer: One of `available_layers()`.</span>
+<a id="__codelineno-0-618" name="__codelineno-0-618"></a><span class="sd">        resolution: One of `available_resolutions()`</span>
+<a id="__codelineno-0-619" name="__codelineno-0-619"></a><span class="sd">            (`&quot;110m&quot;`/`&quot;50m&quot;`/`&quot;10m&quot;`).</span>
+<a id="__codelineno-0-620" name="__codelineno-0-620"></a>
+<a id="__codelineno-0-621" name="__codelineno-0-621"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-622" name="__codelineno-0-622"></a><span class="sd">        list[numpy.ndarray]: One `(N, 2)` lon/lat array per geometry part</span>
+<a id="__codelineno-0-623" name="__codelineno-0-623"></a><span class="sd">            (exterior rings for polygon layers).</span>
+<a id="__codelineno-0-624" name="__codelineno-0-624"></a>
+<a id="__codelineno-0-625" name="__codelineno-0-625"></a><span class="sd">    Raises:</span>
+<a id="__codelineno-0-626" name="__codelineno-0-626"></a><span class="sd">        ValueError: If `layer` or `resolution` is unknown.</span>
+<a id="__codelineno-0-627" name="__codelineno-0-627"></a><span class="sd">        ConnectionError: If the asset must be downloaded and the fetch</span>
+<a id="__codelineno-0-628" name="__codelineno-0-628"></a><span class="sd">            fails.</span>
+<a id="__codelineno-0-629" name="__codelineno-0-629"></a>
+<a id="__codelineno-0-630" name="__codelineno-0-630"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-631" name="__codelineno-0-631"></a><span class="sd">        - Fetch coastlines and inspect the parts (downloads on first use,</span>
+<a id="__codelineno-0-632" name="__codelineno-0-632"></a><span class="sd">            then reads from the cache):</span>
+<a id="__codelineno-0-633" name="__codelineno-0-633"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-634" name="__codelineno-0-634"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.reference import natural_earth</span>
+<a id="__codelineno-0-635" name="__codelineno-0-635"></a><span class="sd">            &gt;&gt;&gt; parts = natural_earth(&quot;coastline&quot;, &quot;110m&quot;)  # doctest: +SKIP</span>
+<a id="__codelineno-0-636" name="__codelineno-0-636"></a><span class="sd">            &gt;&gt;&gt; parts[0].shape[1]  # each part is an (N, 2) lon/lat array  # doctest: +SKIP</span>
+<a id="__codelineno-0-637" name="__codelineno-0-637"></a><span class="sd">            2</span>
+<a id="__codelineno-0-638" name="__codelineno-0-638"></a>
+<a id="__codelineno-0-639" name="__codelineno-0-639"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-640" name="__codelineno-0-640"></a><span class="sd">        - Unknown layers are rejected before any download:</span>
+<a id="__codelineno-0-641" name="__codelineno-0-641"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-642" name="__codelineno-0-642"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.reference import natural_earth</span>
+<a id="__codelineno-0-643" name="__codelineno-0-643"></a><span class="sd">            &gt;&gt;&gt; natural_earth(&quot;countries&quot;)</span>
+<a id="__codelineno-0-644" name="__codelineno-0-644"></a><span class="sd">            Traceback (most recent call last):</span>
+<a id="__codelineno-0-645" name="__codelineno-0-645"></a><span class="sd">                ...</span>
+<a id="__codelineno-0-646" name="__codelineno-0-646"></a><span class="sd">            ValueError: Unknown layer &#39;countries&#39;. Choose from [&#39;coastline&#39;, &#39;land&#39;, &#39;ocean&#39;, &#39;rivers&#39;, &#39;lakes&#39;, &#39;borders&#39;].</span>
+<a id="__codelineno-0-647" name="__codelineno-0-647"></a>
+<a id="__codelineno-0-648" name="__codelineno-0-648"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-649" name="__codelineno-0-649"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-650" name="__codelineno-0-650"></a>    <span class="n">parts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-0-651" name="__codelineno-0-651"></a>    <span class="k">for</span> <span class="n">geometry</span> <span class="ow">in</span> <span class="n">_load_features</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">resolution</span><span class="p">):</span>
+<a id="__codelineno-0-652" name="__codelineno-0-652"></a>        <span class="n">parts</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">_paths</span><span class="p">(</span><span class="n">geometry</span><span class="p">))</span>
+<a id="__codelineno-0-653" name="__codelineno-0-653"></a>    <span class="k">return</span> <span class="n">parts</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
