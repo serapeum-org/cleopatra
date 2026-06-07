@@ -22,7 +22,7 @@ import matplotlib
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt  # noqa: E402
-from matplotlib.collections import LineCollection, PolyCollection  # noqa: E402
+from matplotlib.collections import LineCollection, PathCollection  # noqa: E402
 
 from cleopatra import reference  # noqa: E402
 from cleopatra.reference import (  # noqa: E402
@@ -199,8 +199,45 @@ def test_add_features_polygon_layer(cache: Path):
     )
     fig, ax = plt.subplots()
     ax.plot([0, 10], [0, 10])
+    xlim, ylim = ax.get_xlim(), ax.get_ylim()
     add_features(ax, "land", "110m", facecolors="0.7")
-    assert any(isinstance(c, PolyCollection) for c in ax.collections)
+    assert any(isinstance(c, PathCollection) for c in ax.collections)
+    assert ax.get_xlim() == xlim and ax.get_ylim() == ylim
+    plt.close(fig)
+
+
+def test_add_features_polygon_hole_renders_as_cutout(cache: Path):
+    """A polygon with a hole must leave the hole unfilled (H1 regression)."""
+    _write_layer(
+        cache,
+        "ocean",
+        "110m",
+        {
+            "type": "Polygon",
+            "coordinates": [
+                [[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]],  # exterior
+                [[4, 4], [6, 4], [6, 6], [4, 6], [4, 4]],  # hole
+            ],
+        },
+    )
+    fig, ax = plt.subplots()
+    ax.set_xlim(0, 10)
+    ax.set_ylim(0, 10)
+    ax.set_position([0, 0, 1, 1])
+    ax.axis("off")
+    add_features(ax, "ocean", "110m", facecolors="black", edgecolors="none")
+    fig.canvas.draw()
+    buf = np.asarray(fig.canvas.buffer_rgba())
+    height, width, _ = buf.shape
+
+    def pixel(x_frac: float, y_frac: float) -> np.ndarray:
+        # y is flipped: buffer row 0 is the top of the figure.
+        return buf[int((1 - y_frac) * height) - 1, int(x_frac * width) - 1, :3]
+
+    # The exterior ring is filled (dark); the hole's centre is the white
+    # background — i.e. the hole is cut out, not painted over (H1).
+    assert pixel(0.1, 0.1).sum() < 60
+    assert pixel(0.5, 0.5).sum() > 600
     plt.close(fig)
 
 
@@ -232,6 +269,56 @@ def test_add_features_reproject(cache: Path):
     assert abs(verts[0][0]) < 1.0
     assert verts[1][0] > 1.0e6
     plt.close(fig)
+
+
+def test_add_features_reproject_polygon_drops_nonfinite_at_poles(cache: Path):
+    """Reprojecting a pole-touching polygon to 3857 must not emit inf (M1)."""
+    pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+    _write_layer(
+        cache,
+        "land",
+        "110m",
+        {
+            "type": "Polygon",
+            "coordinates": [[[-10, -90], [10, -90], [10, -80], [-10, -80], [-10, -90]]],
+        },
+    )
+    fig, ax = plt.subplots()
+    ax.plot([0, 1e6], [0, 1e6])
+    add_features(ax, "land", "110m", crs=3857)
+    pc = next(c for c in ax.collections if isinstance(c, PathCollection))
+    for path in pc.get_paths():
+        assert np.isfinite(path.vertices).all()
+    plt.close(fig)
+
+
+def test_add_features_reproject_line_drops_nonfinite_at_poles(cache: Path):
+    """A meridian line through the pole keeps only its finite span (M1)."""
+    pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+    _write_layer(
+        cache,
+        "coastline",
+        "110m",
+        {"type": "LineString", "coordinates": [[0, -90], [0, -80], [0, 0], [0, 80]]},
+    )
+    fig, ax = plt.subplots()
+    ax.plot([0, 1e6], [0, 1e6])
+    add_features(ax, "coastline", "110m", crs=3857)
+    lc = next(c for c in ax.collections if isinstance(c, LineCollection))
+    segments = lc.get_segments()
+    assert segments  # the finite span survived
+    for seg in segments:
+        assert np.isfinite(seg).all()
+    plt.close(fig)
+
+
+def test_natural_earth_corrupt_cache_self_heals(cache: Path):
+    """A poisoned (non-gzip) cache file is removed so a retry re-fetches (L1)."""
+    bad = cache / "ne_110m_coastline.geojson.gz"
+    bad.write_bytes(b"this is not gzip data")
+    with pytest.raises(OSError, match="removed"):
+        natural_earth("coastline", "110m")
+    assert not bad.exists()
 
 
 # --- relief -----------------------------------------------------------------
@@ -279,6 +366,16 @@ def test_add_relief_custom_extent(cache: Path):
 def test_add_relief_bad_axes():
     with pytest.raises(TypeError, match="matplotlib.axes.Axes"):
         add_relief(object())
+
+
+def test_relief_corrupt_cache_self_heals(cache: Path):
+    """A poisoned (non-image) relief cache file is removed on read (L1)."""
+    pytest.importorskip("PIL.Image", reason="Pillow not installed (tiles extra)")
+    bad = cache / "ne_hypso_rgb_720x360.png"
+    bad.write_bytes(b"this is not a png")
+    with pytest.raises(OSError, match="removed"):
+        relief("low")
+    assert not bad.exists()
 
 
 # --- download guard ---------------------------------------------------------

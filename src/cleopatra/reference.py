@@ -47,17 +47,18 @@ from __future__ import annotations
 
 import gzip
 import importlib.util
-import io
 import json
 import logging
 import os
+import shutil
 import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any
 
 import numpy as np
-from matplotlib.collections import LineCollection, PolyCollection
+from matplotlib.collections import LineCollection, PathCollection
+from matplotlib.path import Path as MplPath
 
 from cleopatra import __version__
 
@@ -100,9 +101,10 @@ def _cache_dir() -> Path:
 def _download(url: str, dest: Path, *, timeout: int = 60) -> Path:
     """Download `url` to `dest`, skipping the fetch if already cached.
 
-    The write is atomic: data lands in a `.part` sibling that is renamed
-    onto `dest` only after a complete download, so an interrupted fetch
-    never leaves a half-written cache file.
+    The body is streamed to a `.part` sibling and renamed onto `dest`
+    only after a complete download, so an interrupted fetch never leaves
+    a half-written cache file and the response is not buffered whole in
+    memory.
 
     Args:
         url: Source URL. Must use the `http` or `https` scheme.
@@ -122,16 +124,17 @@ def _download(url: str, dest: Path, *, timeout: int = 60) -> Path:
         raise ValueError(f"Refusing to fetch non-http(s) URL: {url!r}")
     logger.debug("Fetching reference asset %s", url)
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    tmp = dest.with_suffix(dest.suffix + ".part")
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
-            data = response.read()
+            with open(tmp, "wb") as handle:
+                shutil.copyfileobj(response, handle)
     except (urllib.error.URLError, OSError) as e:
+        tmp.unlink(missing_ok=True)
         raise ConnectionError(
             f"Failed to download reference asset {url!r}: {e}"
         ) from e
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    tmp = dest.with_suffix(dest.suffix + ".part")
-    tmp.write_bytes(data)
     tmp.replace(dest)
     return dest
 
@@ -204,6 +207,8 @@ def relief(resolution: str = "low") -> np.ndarray:
         ValueError: If `resolution` is not a known product.
         ConnectionError: If the asset must be downloaded and the fetch
             fails.
+        OSError: If the cached file cannot be decoded as an image (the
+            poisoned file is removed first so a retry re-downloads).
 
     Examples:
         - Unknown resolutions raise `ValueError` before any download:
@@ -223,12 +228,23 @@ def relief(resolution: str = "low") -> np.ndarray:
         )
     if not _PILLOW_AVAILABLE:
         raise ImportError(_PILLOW_HINT)
-    from PIL import Image
+    from PIL import Image, UnidentifiedImageError
 
     name = _RELIEF_PRODUCTS[resolution]
     path = _download(_RELIEF_BASE_URL + name, _cache_dir() / name)
-    with Image.open(io.BytesIO(path.read_bytes())) as img:
-        return np.asarray(img.convert("RGB"))
+    try:
+        with Image.open(path) as img:
+            return np.asarray(img.convert("RGB"))
+    except (UnidentifiedImageError, OSError, ValueError) as e:
+        # A complete-but-unreadable cache file (e.g. an HTML error page
+        # served with HTTP 200) would fail forever because `_download`
+        # returns the cached file unconditionally. Drop it so the next
+        # call re-fetches instead of staying poisoned.
+        path.unlink(missing_ok=True)
+        raise OSError(
+            f"Cached relief asset {path} could not be decoded ({e}); removed "
+            "it -- retry to re-download."
+        ) from e
 
 
 def add_relief(
@@ -246,6 +262,13 @@ def add_relief(
     in EPSG:4326 (lon/lat); for data in another CRS pass `extent` in the
     axes' own units. The current axis limits are preserved so adding the
     backdrop never changes the view.
+
+    Note:
+        The relief image is equirectangular (EPSG:4326). When placed with
+        a non-EPSG:4326 `extent` it is simply stretched by `imshow` to fit
+        those bounds -- visually acceptable for small extents but not a
+        true reprojection. For a pixel-accurate backdrop in another
+        projection, reproject the source before drawing.
 
     Args:
         ax: A matplotlib `Axes` with data already plotted (so its limits
@@ -311,7 +334,7 @@ _RESOLUTIONS = ("110m", "50m", "10m")
 _FEATURE_BASE_URL = _RELIEF_BASE_URL
 
 #: Per-kind default styling, merged under caller `**style` overrides. Keys
-#: match the target collection's constructor (`PolyCollection` /
+#: match the target collection's constructor (`PathCollection` /
 #: `LineCollection`).
 _FEATURE_STYLE = {
     "line": {"colors": "0.2", "linewidths": 0.6},
@@ -358,8 +381,9 @@ def _paths(geometry: dict) -> list[np.ndarray]:
     """Flatten a GeoJSON geometry into a list of `(N, 2)` float arrays.
 
     Polygons contribute their exterior ring only (interior holes are
-    dropped -- a reference backdrop does not need them). `Multi*`
-    geometries expand to one array per part.
+    dropped). This is the coordinate view used by `natural_earth` and the
+    line-layer renderer; the filled-polygon renderer uses `_polygons`,
+    which keeps holes. `Multi*` geometries expand to one array per part.
 
     Args:
         geometry: A GeoJSON geometry object with `type` and
@@ -412,6 +436,142 @@ def _paths(geometry: dict) -> list[np.ndarray]:
     raise ValueError(f"Unsupported geometry type: {gtype!r}")
 
 
+def _polygons(geometry: dict) -> list[list[np.ndarray]]:
+    """Return a GeoJSON geometry's polygons, each as `[exterior, *holes]`.
+
+    Unlike `_paths`, interior rings (holes) are preserved so a filled
+    polygon can be cut out correctly. Non-polygon geometries return an
+    empty list.
+
+    Args:
+        geometry: A GeoJSON geometry object.
+
+    Returns:
+        list[list[numpy.ndarray]]: One entry per polygon part; each entry
+            is `[exterior_ring, hole_ring, ...]` of `(N, 2)` arrays.
+
+    Examples:
+        - A polygon with one hole keeps both rings:
+            ```python
+            >>> from cleopatra.reference import _polygons
+            >>> geom = {
+            ...     "type": "Polygon",
+            ...     "coordinates": [
+            ...         [[0, 0], [2, 0], [2, 2], [0, 0]],
+            ...         [[0.5, 0.5], [1, 0.5], [1, 1], [0.5, 0.5]],
+            ...     ],
+            ... }
+            >>> [len(p) for p in _polygons(geom)]
+            [2]
+
+            ```
+    """
+    gtype = geometry["type"]
+    coords = geometry["coordinates"]
+    if gtype == "Polygon":
+        return [[np.asarray(ring, dtype=float) for ring in coords]]
+    if gtype == "MultiPolygon":
+        return [
+            [np.asarray(ring, dtype=float) for ring in poly] for poly in coords
+        ]
+    return []
+
+
+def _signed_area(ring: np.ndarray) -> float:
+    """Return the signed area of a ring (positive when counter-clockwise)."""
+    x = ring[:, 0]
+    y = ring[:, 1]
+    return 0.5 * float(np.sum(x * np.roll(y, -1) - np.roll(x, -1) * y))
+
+
+def _orient(ring: np.ndarray, ccw: bool) -> np.ndarray:
+    """Return `ring` wound counter-clockwise when `ccw`, else clockwise.
+
+    Source GeoJSON winding is not guaranteed (GDAL does not enforce RFC
+    7946), so exterior rings are forced CCW and holes CW. With opposite
+    windings the nonzero fill rule cuts the holes out of the exterior.
+    """
+    if (_signed_area(ring) > 0) != ccw:
+        return ring[::-1]
+    return ring
+
+
+def _finite_runs(arr: np.ndarray) -> list[np.ndarray]:
+    """Split `arr` into maximal runs of finite `(x, y)` rows (length >= 2).
+
+    Reprojection (`crs=`) can map points at a projection's singularity
+    (e.g. the poles in Web Mercator) to non-finite values; emitting those
+    to matplotlib produces broken paths and warnings. Splitting keeps the
+    finite spans and drops the non-finite breaks.
+    """
+    if arr.size == 0:
+        return []
+    mask = np.isfinite(arr).all(axis=1)
+    if mask.all():
+        return [arr] if len(arr) >= 2 else []
+    runs: list[np.ndarray] = []
+    start: int | None = None
+    for i, ok in enumerate(mask):
+        if ok and start is None:
+            start = i
+        elif not ok and start is not None:
+            if i - start >= 2:
+                runs.append(arr[start:i])
+            start = None
+    if start is not None and len(arr) - start >= 2:
+        runs.append(arr[start:])
+    return runs
+
+
+def _load_features(layer: str, resolution: str) -> list[dict]:
+    """Download/cache a layer and return its non-null GeoJSON geometries.
+
+    Args:
+        layer: One of `available_layers()`.
+        resolution: One of `available_resolutions()`.
+
+    Returns:
+        list[dict]: The GeoJSON geometry objects of every feature that has
+            one.
+
+    Raises:
+        ValueError: If `layer` or `resolution` is unknown.
+        ConnectionError: If the asset must be downloaded and the fetch
+            fails.
+        OSError: If the cached file cannot be parsed (the poisoned file is
+            removed first so a retry re-downloads).
+    """
+    if layer not in _LAYERS:
+        raise ValueError(
+            f"Unknown layer {layer!r}. Choose from {available_layers()}."
+        )
+    if resolution not in _RESOLUTIONS:
+        raise ValueError(
+            f"Unknown resolution {resolution!r}. "
+            f"Choose from {available_resolutions()}."
+        )
+    stem = _LAYERS[layer][0]
+    name = f"ne_{resolution}_{stem}.geojson.gz"
+    path = _download(_FEATURE_BASE_URL + name, _cache_dir() / name)
+    try:
+        with gzip.open(path, "rt", encoding="utf-8") as fh:
+            collection = json.load(fh)
+    except (OSError, EOFError, ValueError) as e:
+        # Corrupt/poisoned cache (truncated gzip, HTML error page, bad
+        # JSON): drop it so the next call re-fetches rather than failing
+        # forever on the cached bytes.
+        path.unlink(missing_ok=True)
+        raise OSError(
+            f"Cached layer asset {path} could not be parsed ({e}); removed "
+            "it -- retry to re-download."
+        ) from e
+    return [
+        feature["geometry"]
+        for feature in collection["features"]
+        if feature.get("geometry") is not None
+    ]
+
+
 def natural_earth(
     layer: str = "coastline", resolution: str = "110m"
 ) -> list[np.ndarray]:
@@ -419,7 +579,8 @@ def natural_earth(
 
     The layer is downloaded as preprocessed gzipped GeoJSON and parsed
     with the standard library only -- no GDAL/geopandas. Coordinates are
-    EPSG:4326 lon/lat.
+    EPSG:4326 lon/lat. Polygon layers return exterior rings only; use
+    `add_features` for hole-aware filled rendering.
 
     Args:
         layer: One of `available_layers()`.
@@ -435,37 +596,27 @@ def natural_earth(
         ConnectionError: If the asset must be downloaded and the fetch
             fails.
     """
-    if layer not in _LAYERS:
-        raise ValueError(
-            f"Unknown layer {layer!r}. Choose from {available_layers()}."
-        )
-    if resolution not in _RESOLUTIONS:
-        raise ValueError(
-            f"Unknown resolution {resolution!r}. "
-            f"Choose from {available_resolutions()}."
-        )
-    stem = _LAYERS[layer][0]
-    name = f"ne_{resolution}_{stem}.geojson.gz"
-    path = _download(_FEATURE_BASE_URL + name, _cache_dir() / name)
-    with gzip.open(path, "rt", encoding="utf-8") as fh:
-        collection = json.load(fh)
     parts: list[np.ndarray] = []
-    for feature in collection["features"]:
-        geometry = feature.get("geometry")
-        if geometry is not None:
-            parts.extend(_paths(geometry))
+    for geometry in _load_features(layer, resolution):
+        parts.extend(_paths(geometry))
     return parts
 
 
-def _reproject(parts: list[np.ndarray], crs: int | str) -> list[np.ndarray]:
-    """Reproject EPSG:4326 lon/lat parts to `crs`.
+def _is_4326(crs: int | str | None) -> bool:
+    """Return True when `crs` denotes EPSG:4326 (or is unspecified)."""
+    if crs is None:
+        return True
+    return str(crs).upper().replace("EPSG:", "") == "4326"
+
+
+def _make_transformer(crs: int | str) -> Any:
+    """Build a pyproj transformer from EPSG:4326 to `crs`.
 
     Args:
-        parts: `(N, 2)` lon/lat arrays from `natural_earth`.
         crs: Target CRS -- an int EPSG code or a CRS string/WKT.
 
     Returns:
-        list[numpy.ndarray]: The parts in the target CRS.
+        pyproj.Transformer: An `always_xy` transformer.
 
     Raises:
         ImportError: If `pyproj` (the `[tiles]` extra) is not installed.
@@ -479,19 +630,76 @@ def _reproject(parts: list[np.ndarray], crs: int | str) -> list[np.ndarray]:
     from pyproj import Transformer
 
     dst = f"EPSG:{crs}" if isinstance(crs, int) else str(crs)
-    transformer = Transformer.from_crs("EPSG:4326", dst, always_xy=True)
-    out: list[np.ndarray] = []
-    for part in parts:
-        x, y = transformer.transform(part[:, 0], part[:, 1])
-        out.append(np.column_stack([np.asarray(x), np.asarray(y)]))
-    return out
+    return Transformer.from_crs("EPSG:4326", dst, always_xy=True)
 
 
-def _is_4326(crs: int | str | None) -> bool:
-    """Return True when `crs` denotes EPSG:4326 (or is unspecified)."""
-    if crs is None:
-        return True
-    return str(crs).upper().replace("EPSG:", "") == "4326"
+def _reproject_arr(arr: np.ndarray, transformer: Any) -> np.ndarray:
+    """Reproject an `(N, 2)` lon/lat array with `transformer`."""
+    x, y = transformer.transform(arr[:, 0], arr[:, 1])
+    return np.column_stack([np.asarray(x, dtype=float), np.asarray(y, dtype=float)])
+
+
+def _line_segments(geoms: list[dict], transformer: Any) -> list[np.ndarray]:
+    """Build LineCollection segments from line geometries.
+
+    Each part is reprojected (when `transformer` is set) and split into
+    finite runs so projection singularities do not introduce broken
+    segments.
+    """
+    segments: list[np.ndarray] = []
+    for geometry in geoms:
+        for part in _paths(geometry):
+            if transformer is not None:
+                part = _reproject_arr(part, transformer)
+            segments.extend(_finite_runs(part))
+    return segments
+
+
+def _polygon_paths(geoms: list[dict], transformer: Any) -> list[MplPath]:
+    """Build hole-aware compound `Path`s from polygon geometries.
+
+    Each polygon becomes one compound path: the exterior ring forced
+    counter-clockwise and every hole clockwise, so the nonzero fill rule
+    renders the holes as cut-outs. Rings are reprojected (when
+    `transformer` is set) and stripped of non-finite vertices first.
+    """
+    paths: list[MplPath] = []
+    for geometry in geoms:
+        for polygon in _polygons(geometry):
+            oriented: list[np.ndarray] = []
+            for index, ring in enumerate(polygon):
+                if transformer is not None:
+                    ring = _reproject_arr(ring, transformer)
+                ring = ring[np.isfinite(ring).all(axis=1)]
+                if len(ring) >= 3:
+                    oriented.append(_orient(ring, ccw=(index == 0)))
+            path = _compound_path(oriented)
+            if path is not None:
+                paths.append(path)
+    return paths
+
+
+def _compound_path(rings: list[np.ndarray]) -> MplPath | None:
+    """Assemble `[exterior, *holes]` rings into one compound `Path`.
+
+    Returns None when there is no drawable exterior ring.
+    """
+    if not rings:
+        return None
+    verts: list[np.ndarray] = []
+    codes: list[np.ndarray] = []
+    for ring in rings:
+        # MOVETO, LINETO..., CLOSEPOLY. The explicit CLOSEPOLY (with a
+        # placeholder vertex) is what makes the nonzero fill rule treat the
+        # ring as a closed contour, so an oppositely-wound hole is cut out
+        # rather than filled solid.
+        n = len(ring)
+        ring_codes = np.full(n + 1, MplPath.LINETO, dtype=np.uint8)
+        ring_codes[0] = MplPath.MOVETO
+        ring_codes[-1] = MplPath.CLOSEPOLY
+        verts.append(np.vstack([ring, ring[0]]))
+        codes.append(ring_codes)
+    return MplPath(np.concatenate(verts), np.concatenate(codes))
 
 
 def add_features(
@@ -506,11 +714,12 @@ def add_features(
     """Draw a Natural Earth reference layer on an Axes.
 
     The `cartopy` `ax.coastlines()` analogue. Polygon layers
-    (`land`/`ocean`/`lakes`) are drawn as a filled `PolyCollection`; line
-    layers (`coastline`/`rivers`/`borders`) as a `LineCollection`. The
-    source data is EPSG:4326; pass `crs` to reproject the geometry into
-    the axes' CRS (requires `pyproj`). The current axis limits are
-    preserved.
+    (`land`/`ocean`/`lakes`) are drawn hole-aware as a filled
+    `PathCollection` (so `ocean`'s continent cut-outs and islands-in-lakes
+    render correctly); line layers (`coastline`/`rivers`/`borders`) as a
+    `LineCollection`. The source data is EPSG:4326; pass `crs` to reproject
+    the geometry into the axes' CRS (requires `pyproj`). The current axis
+    limits are preserved.
 
     Args:
         ax: A matplotlib `Axes` with data already plotted.
@@ -521,10 +730,9 @@ def add_features(
             reprojects from EPSG:4326 first.
         zorder: Matplotlib draw order for the layer.
         **style: Overrides merged over the per-kind defaults and
-            forwarded to the underlying collection. Use
-            `PolyCollection` keys for polygon layers (`facecolors`,
-            `edgecolors`, `linewidths`) and `LineCollection` keys for
-            line layers (`colors`, `linewidths`).
+            forwarded to the underlying collection. Use polygon keys for
+            polygon layers (`facecolors`, `edgecolors`, `linewidths`) and
+            line keys for line layers (`colors`, `linewidths`).
 
     Returns:
         matplotlib.axes.Axes: The same axes, for chaining.
@@ -538,23 +746,25 @@ def add_features(
             fails.
     """
     _validate_axes(ax)
-    if layer not in _LAYERS:
-        raise ValueError(
-            f"Unknown layer {layer!r}. Choose from {available_layers()}."
-        )
-
-    parts = natural_earth(layer, resolution)
-    if not _is_4326(crs):
-        parts = _reproject(parts, crs)  # type: ignore[arg-type]
+    geoms = _load_features(layer, resolution)
+    transformer = None if _is_4326(crs) else _make_transformer(crs)  # type: ignore[arg-type]
 
     kind = _LAYERS[layer][1]
     opts = {**_FEATURE_STYLE[kind], **style}
 
     xlim, ylim = ax.get_xlim(), ax.get_ylim()
+    collection: Any
     if kind == "polygon":
-        collection: Any = PolyCollection(parts, zorder=zorder, **opts)
+        collection = PathCollection(
+            _polygon_paths(geoms, transformer), zorder=zorder, **opts
+        )
+        # PathCollection paths default to a non-data transform (its scatter
+        # heritage); place them in data coordinates explicitly.
+        collection.set_transform(ax.transData)
     else:
-        collection = LineCollection(parts, zorder=zorder, **opts)
+        collection = LineCollection(
+            _line_segments(geoms, transformer), zorder=zorder, **opts
+        )
     ax.add_collection(collection)
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
