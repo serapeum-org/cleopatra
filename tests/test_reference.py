@@ -9,7 +9,9 @@ and the real read/parse/draw path is exercised offline.
 from __future__ import annotations
 
 import gzip
+import io
 import json
+import urllib.error
 from pathlib import Path
 
 import numpy as np
@@ -392,3 +394,130 @@ def test_download_returns_cached(tmp_path: Path):
     # No network: a cached file is returned untouched even for a bogus URL.
     assert reference._download("https://nope.invalid/cached.bin", dest) == dest
     assert dest.read_bytes() == b"already here"
+
+
+def test_download_streams_to_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """A successful download is streamed to `dest`, leaving no `.part` file."""
+    payload = b"reference-asset-bytes"
+    monkeypatch.setattr(
+        reference.urllib.request,
+        "urlopen",
+        lambda request, timeout=None: io.BytesIO(payload),
+    )
+    dest = tmp_path / "asset.bin"
+    out = reference._download("https://example.com/asset.bin", dest)
+    assert out == dest
+    assert dest.read_bytes() == payload
+    assert not (tmp_path / "asset.bin.part").exists()
+
+
+def test_download_failure_raises_and_cleans_part(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """A failed fetch raises ConnectionError and removes the partial file."""
+
+    def boom(request, timeout=None):
+        raise urllib.error.URLError("network down")
+
+    monkeypatch.setattr(reference.urllib.request, "urlopen", boom)
+    dest = tmp_path / "asset.bin"
+    with pytest.raises(ConnectionError, match="Failed to download"):
+        reference._download("https://example.com/asset.bin", dest)
+    assert not dest.exists()
+    assert not (tmp_path / "asset.bin.part").exists()
+
+
+# --- helpers: geometry, orientation, finite runs ----------------------------
+
+
+def test_polygons_multipolygon_keeps_rings():
+    geom = {
+        "type": "MultiPolygon",
+        "coordinates": [
+            [[[0, 0], [1, 0], [1, 1], [0, 0]], [[0.2, 0.2], [0.6, 0.2], [0.6, 0.6], [0.2, 0.2]]],
+            [[[5, 5], [6, 5], [6, 6], [5, 5]]],
+        ],
+    }
+    polys = reference._polygons(geom)
+    assert [len(p) for p in polys] == [2, 1]
+
+
+def test_polygons_non_polygon_returns_empty():
+    assert reference._polygons({"type": "LineString", "coordinates": [[0, 0], [1, 1]]}) == []
+
+
+def test_signed_area_sign():
+    ccw = np.array([[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]], dtype=float)
+    assert reference._signed_area(ccw) > 0
+    assert reference._signed_area(ccw[::-1]) < 0
+
+
+def test_orient_forces_requested_winding():
+    ccw = np.array([[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]], dtype=float)
+    assert reference._signed_area(reference._orient(ccw, ccw=True)) > 0
+    assert reference._signed_area(reference._orient(ccw, ccw=False)) < 0
+    # Already-correct winding is returned unchanged (no needless copy/flip).
+    assert np.array_equal(reference._orient(ccw, ccw=True), ccw)
+
+
+@pytest.mark.parametrize(
+    "rows, expected_lengths",
+    [
+        ([], []),
+        ([[0, 0]], []),
+        ([[0, 0], [1, 1]], [2]),
+        ([[0, 0], [1, 1], [np.inf, 0], [2, 2], [3, 3]], [2, 2]),
+        ([[np.inf, np.inf], [1, 1], [2, 2]], [2]),
+        ([[0, 0], [1, 1], [np.inf, 0], [2, 2]], [2]),
+        ([[0, 0], [np.inf, 0], [2, 2], [3, 3]], [2]),
+    ],
+)
+def test_finite_runs(rows, expected_lengths):
+    """`_finite_runs` keeps maximal finite spans of length >= 2."""
+    arr = np.array(rows, dtype=float).reshape(-1, 2) if rows else np.empty((0, 2))
+    runs = reference._finite_runs(arr)
+    assert [len(r) for r in runs] == expected_lengths
+    for run in runs:
+        assert np.isfinite(run).all()
+
+
+def test_compound_path_empty_returns_none():
+    assert reference._compound_path([]) is None
+
+
+def test_polygon_paths_skips_degenerate_rings():
+    """A polygon whose only ring has < 3 points yields no drawable path."""
+    geom = {"type": "Polygon", "coordinates": [[[0, 0], [1, 1]]]}
+    assert reference._polygon_paths([geom], None) == []
+
+
+# --- dependency guards ------------------------------------------------------
+
+
+def test_relief_requires_pillow(monkeypatch: pytest.MonkeyPatch):
+    """`relief` raises a helpful ImportError when Pillow is unavailable."""
+    monkeypatch.setattr(reference, "_PILLOW_AVAILABLE", False)
+    with pytest.raises(ImportError, match="Pillow"):
+        relief("low")
+
+
+def test_make_transformer_requires_pyproj(monkeypatch: pytest.MonkeyPatch):
+    """`_make_transformer` raises ImportError when pyproj is unavailable."""
+    real_find_spec = reference.importlib.util.find_spec
+    monkeypatch.setattr(
+        reference.importlib.util,
+        "find_spec",
+        lambda name: None if name == "pyproj" else real_find_spec(name),
+    )
+    with pytest.raises(ImportError, match="pyproj"):
+        reference._make_transformer(3857)
+
+
+def test_reproject_arr_roundtrip():
+    """`_reproject_arr` maps EPSG:4326 lon/lat into the target CRS."""
+    pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+    transformer = reference._make_transformer(3857)
+    out = reference._reproject_arr(np.array([[0.0, 0.0], [10.0, 0.0]]), transformer)
+    assert out.shape == (2, 2)
+    assert abs(out[0, 0]) < 1.0
+    assert out[1, 0] > 1.0e6
