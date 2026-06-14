@@ -342,6 +342,170 @@ class TestAnimate:
         # os.remove(path)
 
 
+@pytest.mark.plot
+class TestAnimateRGB:
+    """RGB / true-colour animation support in `ArrayGlyph.animate` (issue #168)."""
+
+    _LABELS = ["t0", "t1", "t2"]
+
+    @staticmethod
+    def _rgb_stack(channels: int = 3, n: int = 3, h: int = 8, w: int = 8) -> np.ndarray:
+        """Build a deterministic 4-D true-colour stack in the 0-1 range.
+
+        Args:
+            channels: Trailing channel count (3 for RGB, 4 for RGBA).
+            n: Number of time steps.
+            h: Frame height.
+            w: Frame width.
+
+        Returns:
+            np.ndarray: A `(n, h, w, channels)` float array with values in [0, 1].
+        """
+        size = n * h * w * channels
+        return np.linspace(0.0, 1.0, size).reshape(n, h, w, channels)
+
+    @pytest.mark.parametrize("channels", [3, 4])
+    def test_rgb_stack_returns_animation_without_colorbar(self, channels):
+        """A 4-D RGB/RGBA stack animates with no colorbar.
+
+        Args:
+            channels: Trailing channel count (3 = RGB, 4 = RGBA).
+
+        Test scenario:
+            `ArrayGlyph(stack).animate(labels)` on a
+            `(time, rows, cols, 3|4)` stack returns a `FuncAnimation`,
+            sets the first-frame artist on `self.im`, and leaves
+            `self.cbar` as None (true colour needs no colorbar).
+        """
+        glyph = ArrayGlyph(self._rgb_stack(channels=channels))
+        anim = glyph.animate(self._LABELS)
+        assert isinstance(
+            anim, FuncAnimation
+        ), f"expected FuncAnimation, got {type(anim).__name__}"
+        assert glyph.cbar is None, f"RGB animation must have no colorbar, got {glyph.cbar}"
+        assert glyph.im is not None, "first-frame artist should be stored on self.im"
+
+    def test_rgb_animation_renders_to_gif(self, tmp_path):
+        """Saving an RGB animation renders every frame to a file.
+
+        Args:
+            tmp_path: pytest temporary directory fixture.
+
+        Test scenario:
+            Saving the returned animation produces a non-empty GIF,
+            proving the per-frame `set_data` update path runs for RGB.
+        """
+        glyph = ArrayGlyph(self._rgb_stack(), title="RGB")
+        glyph.animate(self._LABELS)
+        out = tmp_path / "rgb_anim.gif"
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            glyph.save_animation(str(out), fps=2)
+        assert out.exists(), "RGB animation file was not written"
+        assert out.stat().st_size > 0, "RGB animation file is empty"
+
+    def test_data_getter_returns_rgb_frames(self):
+        """The lazy `data_getter` path accepts RGB frames over a 2-D template.
+
+        Test scenario:
+            A 2-D shape template plus a callback returning `(h, w, 3)`
+            frames animates as true colour, with no colorbar.
+        """
+        template = np.zeros((8, 8))
+        glyph = ArrayGlyph(template)
+
+        def get_rgb(i):
+            return np.full((8, 8, 3), i / 3.0)
+
+        anim = glyph.animate(self._LABELS, data_getter=get_rgb)
+        assert isinstance(
+            anim, FuncAnimation
+        ), f"expected FuncAnimation, got {type(anim).__name__}"
+        assert glyph.cbar is None, f"RGB data_getter animation must have no colorbar, got {glyph.cbar}"
+
+    def test_data_getter_rgb_renders_to_gif(self, tmp_path):
+        """Playing a lazy RGB animation fetches and renders every frame.
+
+        Args:
+            tmp_path: pytest temporary directory fixture.
+
+        Test scenario:
+            Saving a `data_getter`-backed RGB animation exercises the
+            per-frame fetch + spatial-shape revalidation for true colour
+            and writes a non-empty GIF.
+        """
+        glyph = ArrayGlyph(np.zeros((8, 8)))
+
+        def get_rgb(i):
+            return np.full((8, 8, 3), (i + 1) / 4.0)
+
+        glyph.animate(self._LABELS, data_getter=get_rgb)
+        out = tmp_path / "rgb_lazy.gif"
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            glyph.save_animation(str(out), fps=2)
+        assert out.exists(), "lazy RGB animation file was not written"
+        assert out.stat().st_size > 0, "lazy RGB animation file is empty"
+
+    def test_data_getter_bad_spatial_shape_raises(self):
+        """A `data_getter` whose spatial dims mismatch the template raises.
+
+        Test scenario:
+            A `(5, 5, 3)` frame against an `(8, 8)` template must raise
+            `ValueError` mentioning that the spatial dims do not match.
+        """
+        glyph = ArrayGlyph(np.zeros((8, 8)))
+        with pytest.raises(ValueError, match="do not match") as exc:
+            glyph.animate(self._LABELS, data_getter=lambda i: np.zeros((5, 5, 3)))
+        assert "do not match" in str(
+            exc.value
+        ), f"unexpected error message: {exc.value}"
+
+    def test_display_cell_value_ignored_for_rgb(self):
+        """`display_cell_value=True` is silently skipped for RGB frames.
+
+        Test scenario:
+            Per-cell annotation needs a scalar field; on an RGB stack the
+            option must be ignored without raising, still returning a
+            `FuncAnimation` with no colorbar.
+        """
+        glyph = ArrayGlyph(self._rgb_stack())
+        anim = glyph.animate(self._LABELS, display_cell_value=True)
+        assert isinstance(
+            anim, FuncAnimation
+        ), f"expected FuncAnimation, got {type(anim).__name__}"
+        assert glyph.cbar is None, "RGB animation must have no colorbar"
+
+    def test_single_band_3d_path_unchanged(self):
+        """The 3-D single-band path still draws a colorbar (no regression).
+
+        Test scenario:
+            A `(time, rows, cols)` stack animates as a colormapped field
+            and keeps its colorbar — the RGB branch must not affect it.
+        """
+        single_band = np.linspace(0.0, 1.0, 3 * 8 * 8).reshape(3, 8, 8)
+        glyph = ArrayGlyph(single_band)
+        anim = glyph.animate(self._LABELS)
+        assert isinstance(
+            anim, FuncAnimation
+        ), f"expected FuncAnimation, got {type(anim).__name__}"
+        assert glyph.cbar is not None, "single-band animation should keep its colorbar"
+
+    def test_2d_without_data_getter_raises_naming_both_dims(self):
+        """A 2-D array with no `data_getter` errors, naming 3-D and 4-D.
+
+        Test scenario:
+            With no time axis and no callback, `animate` must raise
+            `ValueError` whose message names both the 3-D and 4-D
+            accepted shapes.
+        """
+        glyph = ArrayGlyph(np.zeros((8, 8)))
+        with pytest.raises(ValueError) as exc:
+            glyph.animate(self._LABELS)
+        msg = str(exc.value)
+        assert "3-D" in msg and "4-D" in msg, f"message should name both 3-D and 4-D, got: {msg}"
+
+
 class TestNoImplicitShow:
     """Tests that `plot()` and `animate()` do not force an interactive display.
 
@@ -1852,7 +2016,7 @@ class TestAnimateDataGetter:
         stack = self._stack(n=4)
         template = stack[0]
         glyph = ArrayGlyph(template)
-        with pytest.raises(ValueError, match="expected"):
+        with pytest.raises(ValueError, match="do not match"):
             glyph.animate(
                 time=list(range(4)),
                 data_getter=lambda i: np.zeros((99, 99)),
@@ -1872,7 +2036,7 @@ class TestAnimateDataGetter:
     def test_2d_arr_without_data_getter_raises(self):
         """A 2-D `self.arr` without a callback raises `ValueError`."""
         glyph = ArrayGlyph(np.zeros((5, 5)))
-        with pytest.raises(ValueError, match="3-D arr or a data_getter"):
+        with pytest.raises(ValueError, match="data_getter callback"):
             glyph.animate(time=list(range(3)))
 
     def test_data_getter_invocation_count(self, tmp_path):

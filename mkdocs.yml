@@ -128,6 +128,7 @@ nav:
     - Config: reference/config.md
   - Examples:
     - ArrayGlyph: notebooks/array_glyph/array_glyph_examples.ipynb
+    - ArrayGlyph RGB animation: notebooks/array_glyph/rgb_animation.ipynb
     - MeshGlyph: notebooks/mesh_glyph/mesh_glyph_examples.ipynb
     - ScatterGlyph: notebooks/scatter_glyph/scatter_glyph_examples.ipynb
     - VectorGlyph: notebooks/vector_glyph/vector_glyph_examples.ipynb
