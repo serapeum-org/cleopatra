@@ -2722,14 +2722,22 @@ class ArrayGlyph(Glyph):
         data_getter: Callable[[int], np.ndarray] | None = None,
         **kwargs,
     ) -> FuncAnimation:
-        """Create an animation from a 3D array.
+        """Create an animation from a single-band or true-colour stack.
 
-        This method creates an animation by iterating through the first dimension of a 3D array.
-        Each slice of the array becomes a frame in the animation, with optional time labels,
-        point annotations, and cell value displays. Every frame is a slice of the *same* array,
-        so they all share the glyph's single `extent` (one spatial domain) — there is no
-        per-frame extent. For data spanning different domains, build one `ArrayGlyph`
-        per domain instead of stacking them into a single 3-D array.
+        This method creates an animation by iterating the first axis of the
+        data, turning each slice into a frame with optional time labels, point
+        annotations, and cell-value displays. Two stack layouts are accepted:
+
+        - a 3-D `(time, rows, cols)` single-band stack, rendered as a
+          colormapped field with a colorbar (the historical behaviour); and
+        - a 4-D `(time, rows, cols, 3|4)` RGB / RGBA stack, where each frame is
+          drawn straight through `imshow` as true colour — no norm, colormap or
+          colorbar (`self.cbar` is left `None`), and `display_cell_value` is
+          ignored because per-cell annotation needs a scalar field.
+
+        Every frame shares the glyph's single `extent` (one spatial domain) —
+        there is no per-frame extent. For data spanning different domains, build
+        one `ArrayGlyph` per domain instead of stacking them.
 
         Args:
             time: A list containing labels for each frame in the animation.
@@ -2756,12 +2764,14 @@ class ArrayGlyph(Glyph):
             pid_size: Size of the point value annotations, by default 10.
                 Controls the font size of the annotations.
             data_getter: Optional callable `f(i) -> ndarray` that
-                returns the 2-D frame for index `i`, by default
-                None. When set, `self.arr` is no longer iterated;
-                each frame is fetched lazily through the callback —
-                useful for streaming frames from a remote / lazy
-                source (e.g. a NetCDF time slab). The returned array
-                must have shape `self.arr.shape[-2:]`. When None
+                returns the frame for index `i`, by default None.
+                When set, `self.arr` is no longer iterated; each
+                frame is fetched lazily through the callback — useful
+                for streaming frames from a remote / lazy source
+                (e.g. a NetCDF time slab). The frame may be a 2-D
+                single-band array or a `(rows, cols, 3|4)` RGB / RGBA
+                array; either way its spatial dims (the first two
+                axes) must match `self.arr.shape[-2:]`. When None
                 (default) the existing behaviour is preserved and
                 `self.arr[i]` supplies frame `i`.
             **kwargs: Additional keyword arguments for customizing the animation.
@@ -2849,8 +2859,12 @@ class ArrayGlyph(Glyph):
         Raises:
             ValueError: If an invalid keyword argument is provided.
             ValueError: If the length of the time list doesn't match the first dimension of the array.
-            ValueError: If `data_getter` is None and `self.arr`
-                is 2-D (no time axis to iterate over).
+            ValueError: If `data_getter` is None and `self.arr` is
+                neither a 3-D `(time, rows, cols)` nor a 4-D
+                `(time, rows, cols, 3|4)` array (no time axis to
+                iterate over).
+            ValueError: If `data_getter` is set and a returned frame's
+                spatial dims do not match `self.arr.shape[-2:]`.
 
         Notes:
             The animation is created by iterating through the first dimension of the array.
@@ -2950,6 +2964,19 @@ class ArrayGlyph(Glyph):
         True
 
         ```
+        True-colour animation from a 4-D `(time, rows, cols, 3)` RGB stack.
+        Each frame is drawn as true colour, so no colorbar is created
+        (`glyph.cbar` stays `None`):
+        ```python
+        >>> import numpy as np
+        >>> from cleopatra.array_glyph import ArrayGlyph
+        >>> rgb_stack = np.linspace(0.0, 1.0, 3 * 6 * 6 * 3).reshape(3, 6, 6, 3)
+        >>> glyph = ArrayGlyph(rgb_stack, figsize=(4, 4), title="RGB")
+        >>> anim_obj = glyph.animate(["t0", "t1", "t2"])
+        >>> glyph.cbar is None
+        True
+
+        ```
         """
         if text_loc is None:
             text_loc = [0.1, 0.2]
@@ -2988,39 +3015,66 @@ class ArrayGlyph(Glyph):
         # `self.arr[i]` path. We require a 3-D arr in the eager
         # path; with a callback, `self.arr` is used only for the
         # frame shape so a 2-D template is fine.
+        # An RGB / RGBA frame carries a trailing channel axis of length 3
+        # or 4; a single-band frame is plain 2-D. Detecting this lets the
+        # render path skip the colormap / colorbar machinery for true colour.
+        def _is_rgb_frame(frame: np.ndarray) -> bool:
+            return frame.ndim == 3 and frame.shape[-1] in (3, 4)
+
         if data_getter is None:
-            if array.ndim != 3:
+            if array.ndim == 4 and array.shape[-1] in (3, 4):
+                # 4-D true-colour stack: (time, rows, cols, 3|4).
+                frame_0 = array[0]
+                n_frames = array.shape[0]
+            elif array.ndim == 3:
+                # 3-D single-band stack: (time, rows, cols).
+                frame_0 = array[0, :, :]
+                n_frames = array.shape[0]
+            else:
                 raise ValueError(
-                    "animate requires either a 3-D arr or a "
-                    "data_getter callback"
+                    "animate requires a 3-D (time, rows, cols) or 4-D "
+                    "(time, rows, cols, 3|4) array, or a data_getter callback"
                 )
-            frame_0 = array[0, :, :]
-            n_frames = np.shape(array)[0]
         else:
             n_frames = len(time)
             frame_0 = np.asarray(data_getter(0))
-            expected_shape = tuple(array.shape[-2:])
-            if frame_0.shape != expected_shape:
+            expected_hw = tuple(array.shape[-2:])
+            actual_hw = frame_0.shape[:2] if _is_rgb_frame(frame_0) else frame_0.shape
+            if actual_hw != expected_hw:
                 raise ValueError(
-                    f"`data_getter` returned shape {frame_0.shape}, "
-                    f"expected {expected_shape} (matching the data "
-                    "array's last two axes)."
+                    f"`data_getter` returned shape {frame_0.shape}, whose "
+                    f"spatial dims {actual_hw} do not match the data array's "
+                    f"last two axes {expected_hw}."
                 )
+
+        # True-colour frames render without a norm/colormap/colorbar and
+        # cannot carry per-cell value annotations (those need a scalar field).
+        rgb_frames = _is_rgb_frame(frame_0)
+        show_cell_value = (
+            self.default_options["display_cell_value"] and not rgb_frames
+        )
 
         if self.fig is None:
             self.fig, self.ax = self.create_figure_axes()
 
         fig, ax = self.fig, self.ax
 
-        ticks = self.get_ticks()
-        im, cbar_kw = self._plot_im_get_cbar_kw(ax, frame_0, ticks)
-        self.im = im
+        if rgb_frames:
+            # True-colour frames go straight through imshow — no norm,
+            # colormap or colorbar (mirrors `plot`'s RGB branch).
+            im = ax.imshow(frame_0, extent=self.extent)
+            self.im = im
+            self.cbar = None
+        else:
+            ticks = self.get_ticks()
+            im, cbar_kw = self._plot_im_get_cbar_kw(ax, frame_0, ticks)
+            self.im = im
 
-        # Create colorbar (stored on the instance, mirroring `plot`), unless
-        # the caller opted out via `add_colorbar=False`.
-        self.cbar = None
-        if self.default_options["add_colorbar"]:
-            self.cbar = self.create_color_bar(ax, im, cbar_kw)
+            # Create colorbar (stored on the instance, mirroring `plot`),
+            # unless the caller opted out via `add_colorbar=False`.
+            self.cbar = None
+            if self.default_options["add_colorbar"]:
+                self.cbar = self.create_color_bar(ax, im, cbar_kw)
 
         ax.set_title(
             self.default_options["title"], fontsize=self.default_options["title_size"]
@@ -3031,7 +3085,7 @@ class ArrayGlyph(Glyph):
         ax.set_xticks([])
         ax.set_yticks([])
 
-        if self.default_options["display_cell_value"]:
+        if show_cell_value:
             indices = get_indices2(frame_0, [np.nan])
             cell_text_value = self._plot_text(
                 ax, frame_0, indices, self.default_options
@@ -3048,13 +3102,17 @@ class ArrayGlyph(Glyph):
         # lazy `data_getter` we only have `frame_0` available
         # cheaply, so fall back to its max — callers who care can
         # set `background_color_threshold` explicitly.
-        if self.default_options["background_color_threshold"] is not None:
-            background_color_threshold = im.norm(
-                self.default_options["background_color_threshold"]
-            )
-        else:
-            ref_for_threshold = array if data_getter is None else frame_0
-            background_color_threshold = im.norm(np.nanmax(ref_for_threshold)) / 2.0
+        background_color_threshold = None
+        if not rgb_frames:
+            if self.default_options["background_color_threshold"] is not None:
+                background_color_threshold = im.norm(
+                    self.default_options["background_color_threshold"]
+                )
+            else:
+                ref_for_threshold = array if data_getter is None else frame_0
+                background_color_threshold = (
+                    im.norm(np.nanmax(ref_for_threshold)) / 2.0
+                )
 
         day_text = ax.text(
             text_loc[0],
@@ -3087,13 +3145,15 @@ class ArrayGlyph(Glyph):
                     expected `(H, W)`.
             """
             if data_getter is None:
-                frame = array[i, :, :]
+                frame = array[i] if rgb_frames else array[i, :, :]
             else:
                 frame = np.asarray(data_getter(i))
-                if frame.shape != tuple(array.shape[-2:]):
+                expected_hw = tuple(array.shape[-2:])
+                actual_hw = frame.shape[:2] if _is_rgb_frame(frame) else frame.shape
+                if actual_hw != expected_hw:
                     raise ValueError(
-                        f"`data_getter` returned shape {frame.shape}, "
-                        f"expected {tuple(array.shape[-2:])}."
+                        f"`data_getter` returned shape {frame.shape}, whose "
+                        f"spatial dims {actual_hw} do not match {expected_hw}."
                     )
             return frame
 
@@ -3111,7 +3171,7 @@ class ArrayGlyph(Glyph):
 
                 output += points_id
 
-            if self.default_options["display_cell_value"]:
+            if show_cell_value:
                 vals = frame_0[indices[:, 0], indices[:, 1]]
                 update_cell_value = lambda x: cell_text_value[x].set_text(vals[x])
                 # Iterate over the actual artist list, not
@@ -3138,7 +3198,7 @@ class ArrayGlyph(Glyph):
 
                 output += points_id
 
-            if self.default_options["display_cell_value"]:
+            if show_cell_value:
                 vals = frame[indices[:, 0], indices[:, 1]]
 
                 def update_cell_value(x):
