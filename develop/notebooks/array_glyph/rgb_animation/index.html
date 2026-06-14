@@ -2618,7 +2618,7 @@ from cleopatra.array_glyph import ArrayGlyph</div>
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="build-a-synthetic-rgb-stack">Build a synthetic RGB stack<a class="anchor-link" href="#build-a-synthetic-rgb-stack">¶</a></h2><p>We make a small <code>(time, rows, cols, 3)</code> stack: a coloured Gaussian blob that drifts across the frame and shifts hue over time. Any display-ready RGB array works — values as floats in <code>[0, 1]</code> or <code>uint8</code> in <code>[0, 255]</code>.</p>
+<h2 id="build-a-synthetic-rgb-stack">Build a synthetic RGB stack<a class="anchor-link" href="#build-a-synthetic-rgb-stack">¶</a></h2><p>We make a small <code>(time, rows, cols, 3)</code> stack: a coloured Gaussian blob that drifts across the frame and shifts hue over time. The frames must be <strong>display-ready</strong> RGB — floats in <code>[0, 1]</code> or <code>uint8</code> in <code>[0, 255]</code> (the same form <code>prepare_array</code> produces). Out-of-range values are clipped by matplotlib, so scale your data first if needed.</p>
 </div>
 </div>
 </div>
