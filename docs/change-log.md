@@ -1,5 +1,300 @@
 # Changelog
 
+## 0.17.0 (2026-06-07)
+
+
+- feat(reference): add Natural Earth and relief basemap helpers (#166)
+- Add `cleopatra.reference`, a matplotlib map-decoration layer that draws
+  fixed public reference data under a plot — the cartopy
+  `ax.coastlines()` / `GeoAxes.stock_img()` niche and the vector/raster
+  sibling of `cleopatra.tiles`.
+-   - `add_features` (Natural Earth coastline/borders/land/ocean/rivers/
+    lakes across 110m/50m/10m) and `add_relief` (global hypsometric
+    backdrop, low/medium) axes helpers, plus raw `natural_earth` /
+    `relief` accessors and discovery helpers.
+  - Assets are fixed public datasets re-hosted on a cleopatra-owned
+    `basemap-data-v1` release (gzipped GeoJSON + PNG); no GDAL/geopandas
+    and no dependency on pyramids. Features in EPSG:4326 need only
+    numpy+matplotlib; relief decode and `crs=` reprojection use the
+    existing `[tiles]` extra.
+  - Downloads are http(s)-only, streamed atomically, cached under
+    `~/.cleopatra/naturalearth` (override `CLEOPATRA_CACHE_DIR`), and
+    self-heal a corrupt/poisoned cache.
+  - Polygon layers render hole-aware via compound paths (nonzero fill), so
+    `ocean` continent cut-outs are correct; reprojection drops non-finite
+    vertices at projection singularities; invalid `crs` raises a clear
+    `ValueError`.
+  - Add `tools/build_basemap_assets.py`, the offline maintainer script that
+    builds the artifacts from upstream Natural Earth shapefiles and relief
+    GeoTIFFs.
+  - Document usage and migration from `pyramids.basemap.natural_earth` /
+    `relief`; amend `SCOPE.md` to record the `tiles`/`reference` basemap
+    helpers as the deliberate networked exception.
+  - Tests reach 100% line and branch coverage of `cleopatra.reference`
+    (50 tests) with 47 passing doctests.
+-   ref: #165
+
+## 0.16.0 (2026-06-06)
+
+
+- feat(glyphs ): add classification scheme, value-to-size, KDEGlyph, FlowGlyph (#162)
+- Consolidates the geoplot/Digital-Earth upstream tasks (#154–#157) into the
+  shared glyph subsystem, all pure numpy + matplotlib with no new dependency.
+-   - Categorical colour `scheme` (quantiles, equal_interval, percentiles,
+    std_mean, explicit edges, and a native Fisher-Jenks natural-breaks
+    optimisation) via `styles.classify` wired into the shared
+    `Glyph._prepare_scalar_mapping`, so every norm-driven glyph
+    (Scatter/Polygon/Vector/Flow) gains discrete classes and a stepped
+    colorbar. Array/Mesh/KDE reject `scheme` rather than ignore it.
+  - `ScatterGlyph` value-to-size scaling with an optional size legend,
+    factored into the reusable `styles.resolve_sizes` helper.
+  - `FlowGlyph`: magnitude-coloured, width-scaled `LineCollection` for
+    flow/Sankey maps, reusing `resolve_sizes` for line width.
+  - `KDEGlyph`: numpy-only 2-D Gaussian KDE drawn as filled/line contours
+    with an optional clip path and memory-chunked evaluation.
+  - Fisher-Jenks runs natively (exact O(k·n^2) DP, mean-centred for numeric
+    stability) and falls back to a quantile sample above `MAX_JENKS_N`.
+-   ref: #154, #155, #156, #157
+
+## 0.15.0 (2026-06-02)
+
+
+- feat(mesh_glyph): inline labels for line tricontours via labels argument (#152)
+- Add `labels` (bool) and `label_kw` (dict) options to `MeshGlyph.plot`
+  so node line tricontours can carry inline numeric labels through
+  `ax.clabel`, the unstructured mirror of `ArrayGlyph`'s contour labels
+  (#148/#149). The `TriContourSet` mappable was already returned, but
+  every caller had to re-roll the same `ax.clabel` glue.
+-   - labels=True (location="node", filled=False) draws inline labels
+    (defaults inline=True, fontsize=8, fmt="%g") and stores the Text
+    artists on self.contour_labels
+  - label_kw is merged over those defaults and forwarded to ax.clabel,
+    so user keys win on collision
+  - documented no-op for tripcolor (face data) and tricontourf
+    (filled=True); a labelled line set with no isolines yields an empty
+    list
+  - contour_labels resets to None on every plot() and animate() render,
+    so re-plotting without labels (or switching to filled/animation)
+    clears stale label artists
+  - complete the node_x/node_y/n_faces/n_nodes/n_edges property
+    docstrings and add TestContourLabels plus coverage for the
+    render/animate option branches (mesh_glyph coverage 96% -> 98%)
+-   Closes #151
+
+## 0.14.0 (2026-06-02)
+
+
+- feat(array_glyph): inline contour labels via plot(kind="contour", labels=True) (#149)
+- feat(array_glyph): inline contour labels via plot(kind="contour", labels=True)
+  
+  Add `labels` (bool) and `label_kw` (dict) options to ArrayGlyph.plot so
+  line contours can carry inline numeric labels through ax.clabel, the way
+  ECMWF Magics / cartopy / earthkit-plots label isolines. Previously the
+  QuadContourSet was returned as the mappable but every caller had to
+  re-roll the same ax.clabel glue.
+-   - labels=True draws inline labels (defaults inline=True, fontsize=8,
+    fmt="%g") and keeps the Text artists on self.contour_labels.
+  - label_kw is merged over those defaults and forwarded to ax.clabel,
+    so user keys win on collision.
+  - labels is a documented no-op for contourf and every non-contour kind;
+    a labelled contour with no isolines yields an empty list.
+  - self.contour_labels resets to None on each render, so re-plotting
+    without labels (or switching kind) clears stale label artists.
+-   Docstring section + two doctests on plot(); TestContourLabels adds 8
+  cases covering draw/expose, default no-op, contourf no-op, both reset
+  paths, the degenerate empty-list case, and label_kw forwarding and
+  precedence.
+-  ref: #148.
+
+## 0.13.0 (2026-06-01)
+
+
+- feat(animation): glyph-independent save/embed helpers for any FuncAnimation (#145)
+- Expose cleopatra's animation save/embed machinery as glyph-independent
+  free functions in a new `cleopatra.animation` module, so downstream
+  packages and notebooks can reuse the writer/format handling on any
+  matplotlib `FuncAnimation` instead of re-rolling temp-file + writer +
+  `IPython.display` glue.
+-   - add `save_animation(anim, path, fps=2)`, `to_gif(anim, fps=2)`, and
+    `embed_gif(anim, fps=2)`; the writer is chosen from the file extension
+    (gif via PillowWriter, mov/avi/mp4 via FFMpegWriter)
+  - `Glyph.save_animation` now delegates to the free function, removing the
+    duplicated writer logic; `SUPPORTED_VIDEO_FORMAT` moves to the new
+    module and is re-exported from `cleopatra.glyph` for back-compat
+  - match the file extension case-insensitively (`out.GIF` works)
+  - raise actionable errors: a missing FFmpeg points at ffmpeg.org, and a
+    missing IPython points at `pip install ipython` (and `to_gif`), while a
+    missing IPython sub-dependency is surfaced unchanged
+  - import IPython lazily so importing cleopatra never requires it
+  - add an API reference page and register the `animation` submodule in the
+    package surface
+  - cover the module with unit tests (100% line + branch) and executable
+    doctests
+-   ref: #144
+
+## 0.12.0 (2026-05-29)
+
+
+- feat(projection): add apply_projection_frame for static projected map frames (#142)
+- Add a stateless, PROJ-free helper that turns a plain matplotlib Axes into
+  a static projected ("globe") frame: it sets equal aspect and projected
+  limits, draws the projection boundary as a PathPatch, draws graticule
+  polylines, and optionally clips existing data layers to the boundary.
+-   All geometry (boundary vertices, graticule polylines, limits) is supplied
+  as plain (N, 2) arrays, so the module has no PROJ/CRS dependency -- the
+  upstream engine owns reprojection, cleopatra owns matplotlib.
+-   - add cleopatra/projection.py with apply_projection_frame and the _as_xy
+    input-coercion helper, validating axes, limits, and array shapes
+  - register the projection submodule in the package docstring and the
+    package-surface allowlist test
+  - add a full test suite (100% line + branch coverage) plus an in-band
+    doctest runner so the module examples are exercised by the default run
+  - add the projection reference page and wire it into the mkdocs nav
+-   Closes #141
+
+## 0.11.0 (2026-05-28)
+
+
+- feat(glyph): colorbar toggles, mesh mappable, per-band RGB stretch, flat-data guard (#136)
+- Close the remaining cleopatra composition gaps used by the Digital-Earth port.
+-   - Add an `add_colorbar` option (default True) to ScatterGlyph/PolygonGlyph/
+    VectorGlyph and a plot-time override, so a shared-axes host can own one
+    aggregated colorbar instead of one per layer. (MeshGlyph already exposes a
+    `colorbar=` toggle; LineGlyph draws no colorbar.)
+  - Expose the tripcolor/tricontour(f) artist as `MeshGlyph.im` (cleared by
+    `plot_outline`), mirroring `ArrayGlyph.im` and the other glyphs.
+  - Add a per-band percentile stretch to `ArrayGlyph.scale_to_rgb`
+    (`per_band=True`, default cut `(2, 98)`); the default global-max path is
+    unchanged, guards an all-zero array, and maps NaN/flat bands to a flat zero
+    band without warning.
+  - Fix constant-value arrays raising `ZeroDivisionError`: `Glyph.get_ticks`
+    returns a single tick for a degenerate range, `ArrayGlyph` falls back to a
+    unit `ticks_spacing`, and a constant-field line `contour` skips its empty
+    colorbar with a warning.
+-   ref: #61, #137, #138, #139
+
+## 0.10.1 (2026-05-27)
+
+
+- perf(mesh): vectorize fan triangulation and edge derivation (#134)
+- Replace the Python loops in MeshGlyph._fan_triangles and
+  MeshGlyph._build_edge_segments with vectorized numpy index
+  manipulation, removing the performance bottleneck on large
+  mixed-element meshes (>100k faces).
+-   - _fan_triangles: compact valid nodes in face order and build fan
+    triangles with np.repeat plus fancy indexing, via a new
+    _grouped_arange helper (handles zero-size groups); no per-face
+    Python loop.
+  - _build_edge_segments: derive polygon edges with wrap-around
+    indexing and deduplicate undirected edges via an int64 key encoding
+    plus sort/diff instead of a Python set.
+  - Fix a latent bug where a pure-triangle mesh stored in a wider padded
+    connectivity array leaked fill values into the triangulation; the
+    fast path now only applies to a clean (n, 3) array.
+  - Add Google-style docstring examples for the vectorized helpers and
+    expand the test suite (randomized equivalence vs the original loops,
+    pentagon/pure-quad fans, shared-edge dedup, grouped-arange edge
+    cases, and a non-flaky performance guard).
+-   A 100k mixed-element mesh now triangulates and derives edges in well
+  under 100ms; focus methods reach 100% line and branch coverage.
+- ref: #102
+
+## 0.10.0 (2026-05-27)
+
+
+- feat(glyph)!: standardize axes/figure API and expand glyph controls (#132)
+- Unify how the cleopatra glyphs bind to matplotlib axes/figures and round
+  out ArrayGlyph's rendering surface, with a small pre-construction
+  introspection API shared across all glyphs.
+  
+  - ArrayGlyph: store the colour-mapped artist on `self.im` for every kind
+    (imshow/pcolormesh/contour/contourf/RGB) and add an `add_colorbar`
+    option (default True) honoured by both `plot` and `animate`.
+  - ArrayGlyph.plot: accept `ax` and `title`; resolve axes as
+    `plot(ax=)` > constructor ax > fresh figure. `fig` stays a
+    construction-time binding (derived from the axes, never a plot arg).
+  - Glyph: keep a constructor `ax` given without `fig` (derive the figure
+    from it) and warn on a mismatched `fig`/`ax` pair; resolve the
+    top-level figure across matplotlib versions (SubFigure-safe).
+  - Glyph: add `option_keys()` / `filter_kwargs()` classmethods plus a
+    per-glyph `DEFAULT_OPTIONS` class attribute so accepted option keys can
+    be inspected and filtered before construction; StatisticalGlyph gains
+    matching helpers.
+  - Rename the array/statistical option dicts to `ARRAY_DEFAULT_OPTIONS` /
+    `STATISTICAL_DEFAULT_OPTIONS` (aligned with the other glyphs) with a
+    backwards-compatible `DEFAULT_OPTIONS` alias.
+-   BREAKING CHANGE: StatisticalGlyph.boxplot/multiboxplot/stripes no longer
+  accept a `fig` argument; bind the figure at construction instead, e.g.
+  `StatisticalGlyph(values, fig=fig).boxplot(ax=ax)`.
+-   Closes #128, #129, #130, #131
+
+## 0.9.0 (2026-05-26)
+
+
+- feat: add matplotlib glyph primitives for new plot types (#117)
+- Add generic matplotlib building blocks for point, vector, polygon, line,
+  and statistical plots, each with tests and Google-style docstrings.
+-   - glyph: add shared Glyph._prepare_scalar_mapping (+ _resolve_limits) so
+    every colour-by-value glyph reuses one resolve-limits -> ticks_spacing
+    -> norm/colorbar pipeline instead of re-deriving it; ArrayGlyph output
+    is unchanged
+  - scatter_glyph: new ScatterGlyph for coloured/uncoloured point clouds
+  - vector_glyph: new VectorGlyph for quiver/barbs/streamplot coloured by
+    magnitude, plus add_key (quiverkey)
+  - polygon_glyph: new PolygonGlyph for filled choropleths / outlines,
+    geometry-agnostic (plain vertex arrays, no geopandas)
+  - line_glyph: new LineGlyph for line/bar/fill_between, and extend
+    StatisticalGlyph with boxplot, multiboxplot, and stripes
+  - mesh_glyph: add filled=False to render node data as line tricontour
+  - styles: add disjoint_legend, colorbar_legend, and histogram_legend to
+    complete the three reusable legend styles
+  - build: raise the matplotlib floor to >=3.9 to match the APIs used
+- ref: #118, #119, #120, #121, #122, #123, #124, #125
+- feat(statistical_glyph)!: compose histograms into caller fig/ax; drop implicit plt.show() (#111)
+- - add optional `fig`/`ax` parameters to `StatisticalGlyph`; `histogram()` resolves three
+    composition modes: draw into a supplied `ax` (inferring its figure), add an axes onto an
+    empty supplied `fig` (raising `ValueError` if that figure already has axes), or create a
+    new figure/axes when neither is given
+  - switch histogram styling from pyplot (`plt.grid/xlabel/ylabel/xticks/yticks`) to axes-level
+    (`ax.grid/set_xlabel/set_ylabel/tick_params`) so labels land on the intended axes
+  - remove internal `plt.show()` from `StatisticalGlyph.histogram()`, `ArrayGlyph.plot()`, and
+    `ArrayGlyph.animate()`; these now return their `Figure`/`Axes`/`FuncAnimation` for the caller
+    to display or save
+  - document the composition modes and no-show behavior in docstrings; fix stale `Statistic`
+    naming and the module usage example
+  - add tests for fig/ax injection, the populated-figure `ValueError`, the no-show contract, a
+    self-checking doctest runner, and validation guards (statistical_glyph at 100% coverage)
+-   BREAKING CHANGE: `StatisticalGlyph.histogram()`, `ArrayGlyph.plot()`, and `ArrayGlyph.animate()`
+  no longer call `plt.show()`. Code relying on the implicit display must call `plt.show()` itself
+  (or save the returned figure/animation).
+-   Closes #116
+
+## 0.8.0 (2026-05-11)
+
+
+- feat!: Expand `ArrayGlyph` plotting and add the `cleopatra.tiles` module (#112)
+- xarray-aligned plotting features, a new web-tile basemap module, plus
+  bug fixes and packaging cleanups from PR review.
+-   - ArrayGlyph: plot(kind=imshow/pcolormesh/contour/contourf), colour
+    kwargs (robust/center/levels/extend/cbar_kwargs), coords=(x, y)
+    curvilinear grids, facet(col=, row=, col_wrap=, extents=) ->
+    FacetGrid, animate(data_getter=) lazy frames.
+  - New cleopatra.tiles module (add_tiles + helpers) behind the
+    cleopatra[tiles] extra (mercantile, pillow, pyproj, xyzservices);
+    cleopatra.styles.ColorScale enum.
+  - Fixes: facet mask preservation, animate(display_cell_value=True)
+    IndexError, import-time matplotlib backend no longer touched,
+    all-NaN colour-limit guard, broader tile image-signature acceptance,
+    color_scale validation.
+  - Internal: single-backtick docstrings, CLAUDE.md untracked/gitignored,
+    tests expanded.
+-   Refs: #113, #114
+-   BREAKING CHANGE: ArrayGlyph.no_elem -> num_domain_cells (deprecated
+  alias kept); cleopatra.add_tiles / cleopatra.Config top-level re-exports
+  removed (use the submodules); import cleopatra no longer sets the
+  matplotlib backend; ArrayGlyph(all_nan_arr) and bad color_scale now
+  raise ValueError.
+
 ## 0.7.1 (2026-04-09)
 
 ### fix
