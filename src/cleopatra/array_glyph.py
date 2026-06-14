@@ -2733,7 +2733,10 @@ class ArrayGlyph(Glyph):
         - a 4-D `(time, rows, cols, 3|4)` RGB / RGBA stack, where each frame is
           drawn straight through `imshow` as true colour — no norm, colormap or
           colorbar (`self.cbar` is left `None`), and `display_cell_value` is
-          ignored because per-cell annotation needs a scalar field.
+          ignored because per-cell annotation needs a scalar field. RGB/RGBA
+          frames must be display-ready (floats in `[0, 1]` or `uint8` in
+          `[0, 255]`, as produced by `prepare_array`); out-of-range values are
+          clipped by matplotlib.
 
         Every frame shares the glyph's single `extent` (one spatial domain) —
         there is no per-frame extent. For data spanning different domains, build
@@ -3012,9 +3015,9 @@ class ArrayGlyph(Glyph):
 
         # `data_getter` is the lazy-frame escape hatch
         # When `None` (default) we fall back to the eager
-        # `self.arr[i]` path. We require a 3-D arr in the eager
-        # path; with a callback, `self.arr` is used only for the
-        # frame shape so a 2-D template is fine.
+        # `self.arr[i]` path. The eager path requires a 3-D single-band
+        # or 4-D RGB/RGBA stack; with a callback, `self.arr` is used only
+        # for the frame shape so a 2-D template is fine.
         # An RGB / RGBA frame carries a trailing channel axis of length 3
         # or 4; a single-band frame is plain 2-D. Detecting this lets the
         # render path skip the colormap / colorbar machinery for true colour.
@@ -3125,24 +3128,25 @@ class ArrayGlyph(Glyph):
             """Resolve frame `i` for the animation step.
 
             Routes between the eager `self.arr[i]` path and the lazy
-            `data_getter(i)` callback added in CLEO-7. The returned
-            frame must always match `self.arr.shape[-2:]`; the
-            callback variant re-validates per call to catch upstream
-            shape drift (e.g. a NetCDF slab that changed size between
-            frames).
+            `data_getter(i)` callback added in CLEO-7. The frame's
+            spatial dims (its first two axes) must always match
+            `self.arr.shape[-2:]`; the callback variant re-validates
+            per call to catch upstream shape drift (e.g. a NetCDF slab
+            that changed size between frames).
 
             Args:
                 i: Zero-based frame index. Must be a valid index into
                     the time axis (`0 <= i < n_frames`).
 
             Returns:
-                np.ndarray: The 2-D frame for index `i`, with shape
-                    equal to `self.arr.shape[-2:]`.
+                np.ndarray: The frame for index `i` — a 2-D single-band
+                    array, or a `(rows, cols, 3|4)` RGB / RGBA array —
+                    whose spatial dims equal `self.arr.shape[-2:]`.
 
             Raises:
                 ValueError: If `data_getter` is set and the callback
-                    returns an array whose shape does not match the
-                    expected `(H, W)`.
+                    returns a frame whose spatial dims do not match
+                    `self.arr.shape[-2:]`.
             """
             if data_getter is None:
                 frame = array[i] if rgb_frames else array[i, :, :]
