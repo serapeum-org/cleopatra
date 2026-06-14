@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.18.0 (2026-06-14)
+
+
+- fix(changelog): generate on bump and backfill 0.8.0-0.17.0
+- The release flow runs cz bump, which only writes the changelog when
+update_changelog_on_bump is set. That key was missing from the
+[tool.commitizen] config, so docs/change-log.md froze at 0.7.1 while
+0.8.0-0.17.0 shipped (their notes only reached the GitHub Releases page).
+- - Add update_changelog_on_bump = true so cz bump regenerates and commits
+  the changelog on every future release.
+- Backfill the missing 0.8.0-0.17.0 sections (regenerated with commitizen
+  from the release commits on main; the 0.1.0-0.7.1 history is unchanged).
+- feat(array_glyph): animate RGB / true-colour stacks (#169)
+- ArrayGlyph.animate previously handled only 2-D single-band frames, so
+  producing an RGB time-lapse meant abandoning cleopatra and hand-rolling
+  matplotlib's FuncAnimation. It now also accepts a 4-D
+  (time, rows, cols, 3|4) RGB/RGBA stack:
+-   - 4-D stacks render each frame through imshow as true colour, with no
+    norm/colormap/colorbar (self.cbar stays None), mirroring plot()'s RGB
+    branch.
+  - The lazy data_getter path accepts RGB frames whose spatial dims (first
+    two axes) match the template's last two axes.
+  - display_cell_value and background_color_threshold are skipped for RGB
+    frames (per-cell annotation needs a scalar field).
+  - The 3-D single-band path is unchanged; the no-time-axis error now
+    names both the 3-D and 4-D accepted shapes.
+-   Add TestAnimateRGB covering 4-D RGB/RGBA stacks, GIF rendering, lazy RGB
+  frames, bad-shape errors, display_cell_value being ignored, and the
+  unchanged single-band path. Update the animate docstring/doctest and add
+  a docs/notebooks/array_glyph/rgb_animation.ipynb example wired into the
+  mkdocs nav.
+-   Closes #168
+
 ## 0.17.0 (2026-06-07)
 
 
