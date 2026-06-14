@@ -1661,6 +1661,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0180-2026-06-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.18.0 (2026-06-14)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0170-2026-06-07" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2251,6 +2262,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0180-2026-06-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.18.0 (2026-06-14)
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#0170-2026-06-07" class="md-nav__link">
@@ -2844,6 +2866,46 @@
 
 
 <h1 id="changelog"><a class="toclink" href="#changelog">Changelog</a><a class="headerlink" href="#changelog" title="Permanent link">#</a></h1>
+<h2 id="0180-2026-06-14"><a class="toclink" href="#0180-2026-06-14">0.18.0 (2026-06-14)</a><a class="headerlink" href="#0180-2026-06-14" title="Permanent link">#</a></h2>
+<ul>
+<li>fix(changelog): generate on bump and backfill 0.8.0-0.17.0</li>
+<li>The release flow runs cz bump, which only writes the changelog when
+update_changelog_on_bump is set. That key was missing from the
+[tool.commitizen] config, so docs/change-log.md froze at 0.7.1 while
+0.8.0-0.17.0 shipped (their notes only reached the GitHub Releases page).</li>
+<li>
+<ul>
+<li>Add update_changelog_on_bump = true so cz bump regenerates and commits
+  the changelog on every future release.</li>
+</ul>
+</li>
+<li>Backfill the missing 0.8.0-0.17.0 sections (regenerated with commitizen
+  from the release commits on main; the 0.1.0-0.7.1 history is unchanged).</li>
+<li>feat(array_glyph): animate RGB / true-colour stacks (#169)</li>
+<li>ArrayGlyph.animate previously handled only 2-D single-band frames, so
+  producing an RGB time-lapse meant abandoning cleopatra and hand-rolling
+  matplotlib's FuncAnimation. It now also accepts a 4-D
+  (time, rows, cols, 3|4) RGB/RGBA stack:</li>
+<li>
+<ul>
+<li>4-D stacks render each frame through imshow as true colour, with no
+    norm/colormap/colorbar (self.cbar stays None), mirroring plot()'s RGB
+    branch.</li>
+</ul>
+</li>
+<li>The lazy data_getter path accepts RGB frames whose spatial dims (first
+    two axes) match the template's last two axes.</li>
+<li>display_cell_value and background_color_threshold are skipped for RGB
+    frames (per-cell annotation needs a scalar field).</li>
+<li>The 3-D single-band path is unchanged; the no-time-axis error now
+    names both the 3-D and 4-D accepted shapes.</li>
+<li>Add TestAnimateRGB covering 4-D RGB/RGBA stacks, GIF rendering, lazy RGB
+  frames, bad-shape errors, display_cell_value being ignored, and the
+  unchanged single-band path. Update the animate docstring/doctest and add
+  a docs/notebooks/array_glyph/rgb_animation.ipynb example wired into the
+  mkdocs nav.</li>
+<li>Closes #168</li>
+</ul>
 <h2 id="0170-2026-06-07"><a class="toclink" href="#0170-2026-06-07">0.17.0 (2026-06-07)</a><a class="headerlink" href="#0170-2026-06-07" title="Permanent link">#</a></h2>
 <ul>
 <li>feat(reference): add Natural Earth and relief basemap helpers (#166)</li>
