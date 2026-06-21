@@ -16,7 +16,7 @@
         <link rel="prev" href="../tiles/">
       
       
-        <link rel="next" href="../projection/">
+        <link rel="next" href="../geo/">
       
       
         
@@ -645,6 +645,8 @@
       
         
       
+        
+      
     
     
     
@@ -1227,6 +1229,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../geo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Geo basemap methods (glyphs)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../projection/" class="md-nav__link">
         
   
@@ -1375,6 +1405,8 @@
   
     
     
+      
+        
       
         
       
@@ -1783,6 +1815,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebooks/reference/reference_examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference basemaps — coastlines, borders &amp; relief
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2096,6 +2156,9 @@ to match (requires <code>pyproj</code>):</p>
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">parts</span> <span class="o">=</span> <span class="n">natural_earth</span><span class="p">(</span><span class="s2">&quot;coastline&quot;</span><span class="p">,</span> <span class="s2">&quot;110m&quot;</span><span class="p">)</span>   <span class="c1"># list of (N, 2) lon/lat arrays</span>
 <a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">rgb</span> <span class="o">=</span> <span class="n">relief</span><span class="p">(</span><span class="s2">&quot;low&quot;</span><span class="p">)</span>                          <span class="c1"># (H, W, 3) uint8 RGB array</span>
 </code></pre></div>
+<p>To discover the valid arguments, call <code>available_layers()</code> and
+<code>available_resolutions()</code> for the vector layers, and
+<code>available_relief_resolutions()</code> for the relief products.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p><code>add_features</code> / <code>add_relief</code> read the axes' current <code>xlim</code>/<code>ylim</code> and
@@ -3923,13 +3986,13 @@ poisoned file is removed first so a retry re-downloads).</p>
         
         
           
-          <a href="../projection/" class="md-footer__link md-footer__link--next" aria-label="Next: Projection (globe frames)">
+          <a href="../geo/" class="md-footer__link md-footer__link--next" aria-label="Next: Geo basemap methods (glyphs)">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Projection (globe frames)
+                Geo basemap methods (glyphs)
               </div>
             </div>
             <div class="md-footer__button md-icon">
