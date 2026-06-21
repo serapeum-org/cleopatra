@@ -121,6 +121,7 @@ nav:
     - KDEGlyph: reference/kde-glyph.md
     - Tiles (basemaps): reference/tiles.md
     - Reference data (coastlines/relief): reference/reference-data.md
+    - Geo basemap methods (glyphs): reference/geo.md
     - Projection (globe frames): reference/projection.md
     - Animations (save/embed): reference/animation.md
     - Colors: reference/colors-glyph.md

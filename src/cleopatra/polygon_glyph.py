@@ -39,6 +39,7 @@ from matplotlib.axes import Axes
 from matplotlib.collections import PolyCollection
 from matplotlib.figure import Figure
 
+from cleopatra.geo import GeoMixin
 from cleopatra.glyph import Glyph
 from cleopatra.styles import CLASSIFY_OPTIONS
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
@@ -57,7 +58,7 @@ POLYGON_DEFAULT_OPTIONS = {
 POLYGON_DEFAULT_OPTIONS = STYLE_DEFAULTS | CLASSIFY_OPTIONS | POLYGON_DEFAULT_OPTIONS
 
 
-class PolygonGlyph(Glyph):
+class PolygonGlyph(GeoMixin, Glyph):
     """Visualization class for collections of polygons.
 
     Wraps `matplotlib.collections.PolyCollection`. With a per-polygon

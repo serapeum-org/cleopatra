@@ -33,6 +33,7 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.quiver import QuiverKey
 
+from cleopatra.geo import GeoMixin
 from cleopatra.glyph import Glyph
 from cleopatra.styles import CLASSIFY_OPTIONS
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
@@ -54,7 +55,7 @@ VECTOR_DEFAULT_OPTIONS = {
 VECTOR_DEFAULT_OPTIONS = STYLE_DEFAULTS | CLASSIFY_OPTIONS | VECTOR_DEFAULT_OPTIONS
 
 
-class VectorGlyph(Glyph):
+class VectorGlyph(GeoMixin, Glyph):
     """Visualization class for 2D vector fields.
 
     Renders a `(u, v)` vector field over `(x, y)` positions as arrows,
