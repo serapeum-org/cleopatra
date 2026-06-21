@@ -91,6 +91,10 @@ parts = natural_earth("coastline", "110m")   # list of (N, 2) lon/lat arrays
 rgb = relief("low")                          # (H, W, 3) uint8 RGB array
 ```
 
+To discover the valid arguments, call `available_layers()` and
+`available_resolutions()` for the vector layers, and
+`available_relief_resolutions()` for the relief products.
+
 !!! note
     `add_features` / `add_relief` read the axes' current `xlim`/`ylim` and
     preserve them, so **plot your data first**. Polygon layers
