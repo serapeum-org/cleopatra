@@ -139,6 +139,7 @@ nav:
     - Statistics: notebooks/statistics/statistics_examples.ipynb
     - Colors: notebooks/colors/colors_examples.ipynb
     - Styles: notebooks/styles/styles_examples.ipynb
+    - Reference data (coastlines/relief): notebooks/reference/reference_examples.ipynb
   - Change-log: change-log.md
 
 extra:
