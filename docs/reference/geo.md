@@ -22,15 +22,21 @@ import matplotlib
 matplotlib.use("Agg")  # any backend
 import numpy as np
 
-from cleopatra.array_glyph import ArrayGlyph
+from cleopatra.scatter_glyph import ScatterGlyph
 
-glyph = ArrayGlyph(np.random.default_rng(0).random((50, 50)))
-fig, ax, *_ = glyph.plot()        # plot your data first
+# A few cities as (lon, lat) points.
+lon = np.array([-74.0, -0.1, 2.35, 13.4, 37.6, 139.7, 151.2])
+lat = np.array([40.7, 51.5, 48.9, 52.5, 55.8, 35.7, -33.9])
 
-glyph.add_relief("low")            # hypsometric backdrop, on glyph.ax
-glyph.add_features("coastline", "50m", colors="black")
-glyph.add_features("borders", "50m", colors="0.4")
+glyph = ScatterGlyph(lon, lat, values=np.arange(len(lon)))
+glyph.plot()                                       # plot your data first
+
+glyph.add_features("coastline", "110m", colors="0.3")   # basemap, on glyph.ax
+glyph.add_features("borders", "110m", colors="0.6")
+glyph.ax.set_aspect("equal")                       # 1° lon == 1° lat
 ```
+
+![ScatterGlyph with coastline and borders via GeoMixin](../images/reference/geo-scatter.png)
 
 The standalone functions still work for plain matplotlib axes or non-geographic
 glyphs:

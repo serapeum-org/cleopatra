@@ -53,6 +53,7 @@ from cleopatra.reference import add_relief, add_features
 fig, ax = plt.subplots(figsize=(8, 4))
 ax.set_xlim(-180, 180)
 ax.set_ylim(-90, 90)
+ax.set_aspect("equal")   # 1° lon == 1° lat, so the map is not stretched
 
 add_relief(ax, resolution="low")                 # hypsometric backdrop
 add_features(ax, "coastline", "110m", colors="black")
@@ -61,12 +62,15 @@ add_features(ax, "borders", "110m", colors="0.4")
 fig.savefig("world.png", dpi=100)
 ```
 
+![Relief backdrop with coastline and borders](../images/reference/world.png)
+
 A regional map with a filled land layer and higher-resolution coastline:
 
 ```python
 fig, ax = plt.subplots()
 ax.set_xlim(-20, 40)   # Europe / N. Africa, in lon/lat
 ax.set_ylim(0, 60)
+ax.set_aspect("equal")
 
 add_features(ax, "ocean", "50m", facecolors="#bdd7e7")
 add_features(ax, "land", "50m", facecolors="0.9", edgecolors="0.5")
@@ -74,6 +78,8 @@ add_features(ax, "coastline", "50m", colors="navy", linewidths=0.8)
 
 fig.savefig("europe.png")
 ```
+
+![Filled land and ocean over Europe and North Africa](../images/reference/europe.png)
 
 If your data is in a projected CRS, pass `crs=` so the vectors are reprojected
 to match (requires `pyproj`):
@@ -98,10 +104,13 @@ To discover the valid arguments, call `available_layers()` and
 !!! note
     `add_features` / `add_relief` read the axes' current `xlim`/`ylim` and
     preserve them, so **plot your data first**. Polygon layers
-    (`land`/`ocean`/`lakes`) are drawn as a filled `PolyCollection` (style with
-    `facecolors` / `edgecolors` / `linewidths`); line layers
-    (`coastline`/`rivers`/`borders`) as a `LineCollection` (style with `colors`
-    / `linewidths`). Coordinates are EPSG:4326 unless you pass `crs=`.
+    (`land`/`ocean`/`lakes`) are drawn as a filled `PathCollection` with
+    interior holes cut out (style with `facecolors` / `edgecolors` /
+    `linewidths`); line layers (`coastline`/`rivers`/`borders`) as a
+    `LineCollection` (style with `colors` / `linewidths`). Coordinates are
+    EPSG:4326 unless you pass `crs=`. Set `ax.set_aspect("equal")` on lon/lat
+    maps so degrees render at the same scale (matplotlib's default
+    `aspect="auto"` otherwise stretches the map to fill the figure).
 
 !!! tip "Caching"
     The first call downloads the asset from the cleopatra
