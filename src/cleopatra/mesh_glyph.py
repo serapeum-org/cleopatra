@@ -36,6 +36,7 @@ import matplotlib.tri as mtri
 import numpy as np
 from matplotlib.animation import FuncAnimation
 
+from cleopatra.geo import GeoMixin
 from cleopatra.glyph import Glyph
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
@@ -48,7 +49,7 @@ MESH_DEFAULT_OPTIONS = {
 MESH_DEFAULT_OPTIONS = STYLE_DEFAULTS | MESH_DEFAULT_OPTIONS
 
 
-class MeshGlyph(Glyph):
+class MeshGlyph(GeoMixin, Glyph):
     """Visualization class for unstructured mesh data.
 
     Wraps matplotlib's triangulation-based rendering to plot data on

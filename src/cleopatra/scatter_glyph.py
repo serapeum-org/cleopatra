@@ -41,6 +41,7 @@ from matplotlib.collections import PathCollection
 from matplotlib.figure import Figure
 from matplotlib.legend import Legend
 
+from cleopatra.geo import GeoMixin
 from cleopatra.glyph import Glyph
 from cleopatra.styles import CLASSIFY_OPTIONS
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
@@ -67,7 +68,7 @@ SCATTER_DEFAULT_OPTIONS = {
 SCATTER_DEFAULT_OPTIONS = STYLE_DEFAULTS | CLASSIFY_OPTIONS | SCATTER_DEFAULT_OPTIONS
 
 
-class ScatterGlyph(Glyph):
+class ScatterGlyph(GeoMixin, Glyph):
     """Visualization class for 2D point clouds.
 
     Wraps `matplotlib.axes.Axes.scatter`. With no `values`, points are

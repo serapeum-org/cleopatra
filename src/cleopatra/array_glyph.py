@@ -39,6 +39,7 @@ from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
 from PIL import Image
 
+from cleopatra.geo import GeoMixin
 from cleopatra.glyph import Glyph, _root_figure
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import ColorScale  # re-exported for convenience  # noqa: F401
@@ -179,7 +180,7 @@ class FacetGrid:
         self.name_dicts = name_dicts
 
 
-class ArrayGlyph(Glyph):
+class ArrayGlyph(GeoMixin, Glyph):
     """A class to handle arrays and perform various visualization operations on them.
 
     The ArrayGlyph class provides functionality for visualizing 2D and 3D arrays with

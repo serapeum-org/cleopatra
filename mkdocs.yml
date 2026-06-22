@@ -121,6 +121,7 @@ nav:
     - KDEGlyph: reference/kde-glyph.md
     - Tiles (basemaps): reference/tiles.md
     - Reference data (coastlines/relief): reference/reference-data.md
+    - Geo basemap methods (glyphs): reference/geo.md
     - Projection (globe frames): reference/projection.md
     - Animations (save/embed): reference/animation.md
     - Colors: reference/colors-glyph.md
@@ -139,6 +140,7 @@ nav:
     - Statistics: notebooks/statistics/statistics_examples.ipynb
     - Colors: notebooks/colors/colors_examples.ipynb
     - Styles: notebooks/styles/styles_examples.ipynb
+    - Reference data (coastlines/relief): notebooks/reference/reference_examples.ipynb
   - Change-log: change-log.md
 
 extra:
