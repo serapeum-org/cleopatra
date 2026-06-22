@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.19.0 (2026-06-22)
+
+
+- feat(geo): glyph convenience methods for basemaps (GeoMixin) (#172)
+- Add cleopatra.geo.GeoMixin so the glyphs that plot geographic data can
+  drop a basemap straight from the glyph, plus the supporting reference
+  docs.
+-   - GeoMixin exposes add_tiles / add_features / add_relief; each draws on
+    the glyph's own axes (or an explicit ax=) and forwards all arguments
+    to the standalone cleopatra.tiles / cleopatra.reference functions,
+    which stay the single source of truth.
+  - Basemap modules are imported lazily, so importing a glyph never pulls
+    in the optional [tiles] extra.
+  - ArrayGlyph, MeshGlyph, VectorGlyph, FlowGlyph, PolygonGlyph and
+    ScatterGlyph inherit the mixin; the chart/statistical glyphs
+    (LineGlyph, StatisticalGlyph, KDEGlyph) deliberately do not.
+  - docs: add a reference example notebook (network/[tiles] cells tagged
+    nbval-skip), a geo.md page, embedded equal-aspect screenshots, and a
+    discovery-helper note; correct the polygon note to PathCollection.
+  - Add tests covering inheritance gating, delegation, the ax= override,
+    and the no-axes error.
+-   - Closes #173
+  - Closes #174
+
 ## 0.18.0 (2026-06-14)
 
 
