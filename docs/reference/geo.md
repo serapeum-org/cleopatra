@@ -42,9 +42,15 @@ The standalone functions still work for plain matplotlib axes or non-geographic
 glyphs:
 
 ```python
+import matplotlib.pyplot as plt
+
 from cleopatra.reference import add_features
 
-add_features(ax, "coastline", "110m")   # any matplotlib Axes
+fig, ax = plt.subplots()        # any matplotlib Axes
+ax.set_xlim(-180, 180)
+ax.set_ylim(-90, 90)
+ax.set_aspect("equal")
+add_features(ax, "coastline", "110m")
 ```
 
 !!! note
