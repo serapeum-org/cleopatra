@@ -16,7 +16,7 @@
         <link rel="prev" href="../tiles/">
       
       
-        <link rel="next" href="../projection/">
+        <link rel="next" href="../geo/">
       
       
         
@@ -645,6 +645,8 @@
       
         
       
+        
+      
     
     
     
@@ -1227,6 +1229,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../geo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Geo basemap methods (glyphs)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../projection/" class="md-nav__link">
         
   
@@ -1375,6 +1405,8 @@
   
     
     
+      
+        
       
         
       
@@ -1783,6 +1815,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebooks/reference/reference_examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference basemaps — coastlines, borders &amp; relief
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2068,24 +2128,28 @@ lon/lat (EPSG:4326) map:</p>
 <a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
 <a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="mi">180</span><span class="p">)</span>
 <a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="mi">90</span><span class="p">)</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">add_relief</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="s2">&quot;low&quot;</span><span class="p">)</span>                 <span class="c1"># hypsometric backdrop</span>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">add_features</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="s2">&quot;coastline&quot;</span><span class="p">,</span> <span class="s2">&quot;110m&quot;</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">)</span>
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="n">add_features</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="s2">&quot;borders&quot;</span><span class="p">,</span> <span class="s2">&quot;110m&quot;</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s2">&quot;0.4&quot;</span><span class="p">)</span>
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;world.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">&quot;equal&quot;</span><span class="p">)</span>   <span class="c1"># 1° lon == 1° lat, so the map is not stretched</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">add_relief</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="s2">&quot;low&quot;</span><span class="p">)</span>                 <span class="c1"># hypsometric backdrop</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="n">add_features</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="s2">&quot;coastline&quot;</span><span class="p">,</span> <span class="s2">&quot;110m&quot;</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="n">add_features</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="s2">&quot;borders&quot;</span><span class="p">,</span> <span class="s2">&quot;110m&quot;</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s2">&quot;0.4&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;world.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
 </code></pre></div>
+<p><img alt="Relief backdrop with coastline and borders" src="../../images/reference/world.png" /></p>
 <p>A regional map with a filled land layer and higher-resolution coastline:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="mi">20</span><span class="p">,</span> <span class="mi">40</span><span class="p">)</span>   <span class="c1"># Europe / N. Africa, in lon/lat</span>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">add_features</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="s2">&quot;ocean&quot;</span><span class="p">,</span> <span class="s2">&quot;50m&quot;</span><span class="p">,</span> <span class="n">facecolors</span><span class="o">=</span><span class="s2">&quot;#bdd7e7&quot;</span><span class="p">)</span>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">add_features</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="s2">&quot;land&quot;</span><span class="p">,</span> <span class="s2">&quot;50m&quot;</span><span class="p">,</span> <span class="n">facecolors</span><span class="o">=</span><span class="s2">&quot;0.9&quot;</span><span class="p">,</span> <span class="n">edgecolors</span><span class="o">=</span><span class="s2">&quot;0.5&quot;</span><span class="p">)</span>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="n">add_features</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="s2">&quot;coastline&quot;</span><span class="p">,</span> <span class="s2">&quot;50m&quot;</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s2">&quot;navy&quot;</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;europe.png&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">&quot;equal&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">add_features</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="s2">&quot;ocean&quot;</span><span class="p">,</span> <span class="s2">&quot;50m&quot;</span><span class="p">,</span> <span class="n">facecolors</span><span class="o">=</span><span class="s2">&quot;#bdd7e7&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="n">add_features</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="s2">&quot;land&quot;</span><span class="p">,</span> <span class="s2">&quot;50m&quot;</span><span class="p">,</span> <span class="n">facecolors</span><span class="o">=</span><span class="s2">&quot;0.9&quot;</span><span class="p">,</span> <span class="n">edgecolors</span><span class="o">=</span><span class="s2">&quot;0.5&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">add_features</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="s2">&quot;coastline&quot;</span><span class="p">,</span> <span class="s2">&quot;50m&quot;</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s2">&quot;navy&quot;</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;europe.png&quot;</span><span class="p">)</span>
 </code></pre></div>
+<p><img alt="Filled land and ocean over Europe and North Africa" src="../../images/reference/europe.png" /></p>
 <p>If your data is in a projected CRS, pass <code>crs=</code> so the vectors are reprojected
 to match (requires <code>pyproj</code>):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">add_features</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="s2">&quot;coastline&quot;</span><span class="p">,</span> <span class="s2">&quot;50m&quot;</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="mi">3857</span><span class="p">)</span>   <span class="c1"># Web Mercator axes</span>
@@ -2096,14 +2160,20 @@ to match (requires <code>pyproj</code>):</p>
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">parts</span> <span class="o">=</span> <span class="n">natural_earth</span><span class="p">(</span><span class="s2">&quot;coastline&quot;</span><span class="p">,</span> <span class="s2">&quot;110m&quot;</span><span class="p">)</span>   <span class="c1"># list of (N, 2) lon/lat arrays</span>
 <a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">rgb</span> <span class="o">=</span> <span class="n">relief</span><span class="p">(</span><span class="s2">&quot;low&quot;</span><span class="p">)</span>                          <span class="c1"># (H, W, 3) uint8 RGB array</span>
 </code></pre></div>
+<p>To discover the valid arguments, call <code>available_layers()</code> and
+<code>available_resolutions()</code> for the vector layers, and
+<code>available_relief_resolutions()</code> for the relief products.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p><code>add_features</code> / <code>add_relief</code> read the axes' current <code>xlim</code>/<code>ylim</code> and
 preserve them, so <strong>plot your data first</strong>. Polygon layers
-(<code>land</code>/<code>ocean</code>/<code>lakes</code>) are drawn as a filled <code>PolyCollection</code> (style with
-<code>facecolors</code> / <code>edgecolors</code> / <code>linewidths</code>); line layers
-(<code>coastline</code>/<code>rivers</code>/<code>borders</code>) as a <code>LineCollection</code> (style with <code>colors</code>
-/ <code>linewidths</code>). Coordinates are EPSG:4326 unless you pass <code>crs=</code>.</p>
+(<code>land</code>/<code>ocean</code>/<code>lakes</code>) are drawn as a filled <code>PathCollection</code> with
+interior holes cut out (style with <code>facecolors</code> / <code>edgecolors</code> /
+<code>linewidths</code>); line layers (<code>coastline</code>/<code>rivers</code>/<code>borders</code>) as a
+<code>LineCollection</code> (style with <code>colors</code> / <code>linewidths</code>). Coordinates are
+EPSG:4326 unless you pass <code>crs=</code>. Set <code>ax.set_aspect("equal")</code> on lon/lat
+maps so degrees render at the same scale (matplotlib's default
+<code>aspect="auto"</code> otherwise stretches the map to fill the figure).</p>
 </div>
 <div class="admonition tip">
 <p class="admonition-title">Caching</p>
@@ -3923,13 +3993,13 @@ poisoned file is removed first so a retry re-downloads).</p>
         
         
           
-          <a href="../projection/" class="md-footer__link md-footer__link--next" aria-label="Next: Projection (globe frames)">
+          <a href="../geo/" class="md-footer__link md-footer__link--next" aria-label="Next: Geo basemap methods (glyphs)">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Projection (globe frames)
+                Geo basemap methods (glyphs)
               </div>
             </div>
             <div class="md-footer__button md-icon">
