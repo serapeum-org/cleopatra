@@ -18,14 +18,18 @@ boilerplate for the geographic glyphs (`ArrayGlyph`, `MeshGlyph`,
 glyphs (line/bar charts, statistical plots) deliberately do not inherit
 it.
 
-The basemap helpers are imported lazily inside each method so importing a
-glyph never pulls in the optional `cleopatra[tiles]` extra unless a basemap
-is actually requested.
+Importing this module (and the `cleopatra.tiles` / `cleopatra.reference`
+modules it calls) does not require the optional `cleopatra[tiles]` extra:
+those modules gate their `[tiles]` dependencies (`mercantile`, `pyproj`,
+`Pillow`, ...) behind their own internal lazy imports, so the extra is
+only needed when a basemap is actually drawn.
 """
 
 from __future__ import annotations
 
 from typing import Any
+
+from cleopatra import reference, tiles
 
 
 class GeoMixin:
@@ -117,9 +121,9 @@ class GeoMixin:
             cleopatra.tiles.add_tiles: The underlying implementation and its
                 full parameter list.
         """
-        from cleopatra.tiles import add_tiles
-
-        return add_tiles(self._basemap_axes(ax), *args, **self._basemap_kwargs(kwargs))
+        return tiles.add_tiles(
+            self._basemap_axes(ax), *args, **self._basemap_kwargs(kwargs)
+        )
 
     def add_features(self, *args: Any, ax: Any = None, **kwargs: Any) -> Any:
         """Draw a Natural Earth reference layer on the glyph's axes.
@@ -148,9 +152,7 @@ class GeoMixin:
             cleopatra.reference.add_features: The underlying implementation
                 and its full parameter list.
         """
-        from cleopatra.reference import add_features
-
-        return add_features(
+        return reference.add_features(
             self._basemap_axes(ax), *args, **self._basemap_kwargs(kwargs)
         )
 
@@ -179,6 +181,4 @@ class GeoMixin:
             cleopatra.reference.add_relief: The underlying implementation and
                 its full parameter list.
         """
-        from cleopatra.reference import add_relief
-
-        return add_relief(self._basemap_axes(ax), *args, **kwargs)
+        return reference.add_relief(self._basemap_axes(ax), *args, **kwargs)
