@@ -1721,6 +1721,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0190-2026-06-22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.19.0 (2026-06-22)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0180-2026-06-14" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2322,6 +2333,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0190-2026-06-22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.19.0 (2026-06-22)
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#0180-2026-06-14" class="md-nav__link">
@@ -2926,6 +2948,37 @@
 
 
 <h1 id="changelog"><a class="toclink" href="#changelog">Changelog</a><a class="headerlink" href="#changelog" title="Permanent link">#</a></h1>
+<h2 id="0190-2026-06-22"><a class="toclink" href="#0190-2026-06-22">0.19.0 (2026-06-22)</a><a class="headerlink" href="#0190-2026-06-22" title="Permanent link">#</a></h2>
+<ul>
+<li>feat(geo): glyph convenience methods for basemaps (GeoMixin) (#172)</li>
+<li>Add cleopatra.geo.GeoMixin so the glyphs that plot geographic data can
+  drop a basemap straight from the glyph, plus the supporting reference
+  docs.</li>
+<li>
+<ul>
+<li>GeoMixin exposes add_tiles / add_features / add_relief; each draws on
+    the glyph's own axes (or an explicit ax=) and forwards all arguments
+    to the standalone cleopatra.tiles / cleopatra.reference functions,
+    which stay the single source of truth.</li>
+</ul>
+</li>
+<li>Basemap modules are imported lazily, so importing a glyph never pulls
+    in the optional [tiles] extra.</li>
+<li>ArrayGlyph, MeshGlyph, VectorGlyph, FlowGlyph, PolygonGlyph and
+    ScatterGlyph inherit the mixin; the chart/statistical glyphs
+    (LineGlyph, StatisticalGlyph, KDEGlyph) deliberately do not.</li>
+<li>docs: add a reference example notebook (network/[tiles] cells tagged
+    nbval-skip), a geo.md page, embedded equal-aspect screenshots, and a
+    discovery-helper note; correct the polygon note to PathCollection.</li>
+<li>Add tests covering inheritance gating, delegation, the ax= override,
+    and the no-axes error.</li>
+<li>
+<ul>
+<li>Closes #173</li>
+</ul>
+</li>
+<li>Closes #174</li>
+</ul>
 <h2 id="0180-2026-06-14"><a class="toclink" href="#0180-2026-06-14">0.18.0 (2026-06-14)</a><a class="headerlink" href="#0180-2026-06-14" title="Permanent link">#</a></h2>
 <ul>
 <li>fix(changelog): generate on bump and backfill 0.8.0-0.17.0</li>
