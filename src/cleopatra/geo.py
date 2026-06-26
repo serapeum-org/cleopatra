@@ -34,10 +34,23 @@ class GeoMixin:
     The host class is expected to expose the plotted axes as `self.ax`
     (every `cleopatra.glyph.Glyph` subclass does). Call these after
     plotting, or pass `ax=` explicitly.
+
+    Set `self.crs` to the CRS of the data plotted on the axes (an EPSG code
+    or CRS string) and `add_features` / `add_tiles` default their `crs=`
+    argument to it, so the reference layer is placed in matching
+    coordinates without restating it on every call. An explicit `crs=`
+    still wins; leaving `self.crs` as `None` preserves each helper's own
+    default. `add_relief` ignores `crs` -- relief is a fixed EPSG:4326
+    raster placed by `extent`.
     """
 
     #: Set by `cleopatra.glyph.Glyph`; the axes the basemap is drawn on.
     ax: Any
+
+    #: CRS of the data plotted on `self.ax` (EPSG code or CRS string). When
+    #: set, `add_features` / `add_tiles` default `crs=` to it. `None` keeps
+    #: each helper's own default.
+    crs: int | str | None = None
 
     def _basemap_axes(self, ax: Any = None) -> Any:
         """Return the axes to draw a basemap on (`ax` or `self.ax`).
@@ -60,18 +73,39 @@ class GeoMixin:
             )
         return target
 
+    def _basemap_kwargs(self, kwargs: dict) -> dict:
+        """Default `crs` to `self.crs` when the caller did not set it.
+
+        Only injects when `self.crs` is set and `crs` is absent (or `None`)
+        in `kwargs`, so the default `self.crs is None` is a pure pass-through
+        and an explicit `crs=` always wins. Pass `crs` as a keyword (not
+        positionally) for this defaulting to apply.
+
+        Args:
+            kwargs: The keyword arguments destined for the basemap helper.
+
+        Returns:
+            dict: `kwargs`, with `crs` filled in from `self.crs` when needed.
+        """
+        if self.crs is not None and kwargs.get("crs") is None:
+            return {**kwargs, "crs": self.crs}
+        return kwargs
+
     def add_tiles(self, *args: Any, ax: Any = None, **kwargs: Any) -> Any:
         """Overlay a web-tile basemap on the glyph's axes.
 
         Thin wrapper over `cleopatra.tiles.add_tiles`; positional and
         keyword arguments are forwarded unchanged (e.g. `source`, `crs`,
-        `zoom`, `alpha`). Requires the `cleopatra[tiles]` extra.
+        `zoom`, `alpha`). When `crs` is omitted it defaults to `self.crs`.
+        Requires the `cleopatra[tiles]` extra.
 
         Args:
             *args: Positional arguments for `cleopatra.tiles.add_tiles`
                 (after the axes).
             ax: Axes to draw on. Defaults to the glyph's `self.ax`.
-            **kwargs: Keyword arguments for `cleopatra.tiles.add_tiles`.
+            **kwargs: Keyword arguments for `cleopatra.tiles.add_tiles`. A
+                `crs` keyword is defaulted to `self.crs` when omitted; an
+                explicit `crs=` overrides it.
 
         Returns:
             matplotlib.axes.Axes: The axes, for chaining.
@@ -85,14 +119,14 @@ class GeoMixin:
         """
         from cleopatra.tiles import add_tiles
 
-        return add_tiles(self._basemap_axes(ax), *args, **kwargs)
+        return add_tiles(self._basemap_axes(ax), *args, **self._basemap_kwargs(kwargs))
 
     def add_features(self, *args: Any, ax: Any = None, **kwargs: Any) -> Any:
         """Draw a Natural Earth reference layer on the glyph's axes.
 
         Thin wrapper over `cleopatra.reference.add_features`; arguments are
         forwarded unchanged (e.g. `layer`, `resolution`, `crs`, and style
-        keywords).
+        keywords). When `crs` is omitted it defaults to `self.crs`.
 
         Args:
             *args: Positional arguments for
@@ -100,7 +134,9 @@ class GeoMixin:
                 `layer` and `resolution`.
             ax: Axes to draw on. Defaults to the glyph's `self.ax`.
             **kwargs: Keyword arguments for
-                `cleopatra.reference.add_features`.
+                `cleopatra.reference.add_features`. A `crs` keyword is
+                defaulted to `self.crs` when omitted; an explicit `crs=`
+                overrides it.
 
         Returns:
             matplotlib.axes.Axes: The axes, for chaining.
@@ -114,7 +150,9 @@ class GeoMixin:
         """
         from cleopatra.reference import add_features
 
-        return add_features(self._basemap_axes(ax), *args, **kwargs)
+        return add_features(
+            self._basemap_axes(ax), *args, **self._basemap_kwargs(kwargs)
+        )
 
     def add_relief(self, *args: Any, ax: Any = None, **kwargs: Any) -> Any:
         """Draw a hypsometric relief backdrop under the glyph's data.

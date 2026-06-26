@@ -109,6 +109,78 @@ def test_add_tiles_delegates(monkeypatch):
     plt.close(fig)
 
 
+def test_crs_defaults_to_self_crs_when_omitted(monkeypatch):
+    """add_features/add_tiles fall back to self.crs when crs= is omitted."""
+    seen = {}
+    monkeypatch.setattr(refmod, "add_features", lambda ax, *a, **k: seen.update(k) or ax)
+    fig, ax = plt.subplots()
+    glyph = _Dummy(ax)
+    glyph.crs = 4326
+    glyph.add_features("coastline", "50m")
+    assert seen.get("crs") == 4326, f"expected crs defaulted to 4326, got {seen.get('crs')}"
+    plt.close(fig)
+
+    seen.clear()
+    monkeypatch.setattr(tilesmod, "add_tiles", lambda ax, *a, **k: seen.update(k) or ax)
+    fig, ax = plt.subplots()
+    glyph = _Dummy(ax)
+    glyph.crs = "EPSG:3857"
+    glyph.add_tiles()
+    assert seen.get("crs") == "EPSG:3857", f"expected crs defaulted, got {seen.get('crs')}"
+    plt.close(fig)
+
+
+def test_explicit_crs_overrides_self_crs(monkeypatch):
+    """An explicit crs= wins over self.crs."""
+    seen = {}
+    monkeypatch.setattr(refmod, "add_features", lambda ax, *a, **k: seen.update(k) or ax)
+    fig, ax = plt.subplots()
+    glyph = _Dummy(ax)
+    glyph.crs = 4326
+    glyph.add_features("coastline", "50m", crs=3857)
+    assert seen.get("crs") == 3857, f"explicit crs should win, got {seen.get('crs')}"
+    plt.close(fig)
+
+
+def test_unset_crs_is_passthrough(monkeypatch):
+    """With self.crs unset (None), no crs is injected (helper default preserved)."""
+    seen = {}
+    monkeypatch.setattr(refmod, "add_features", lambda ax, *a, **k: seen.update(kwargs=k) or ax)
+    fig, ax = plt.subplots()
+    _Dummy(ax).add_features("coastline", "50m")  # crs left at class default None
+    assert "crs" not in seen["kwargs"], f"crs should not be injected, got {seen['kwargs']}"
+    plt.close(fig)
+
+
+def test_add_relief_ignores_self_crs(monkeypatch):
+    """add_relief never receives crs, even when self.crs is set."""
+    seen = {}
+    monkeypatch.setattr(refmod, "add_relief", lambda ax, *a, **k: seen.update(kwargs=k) or ax)
+    fig, ax = plt.subplots()
+    glyph = _Dummy(ax)
+    glyph.crs = 4326
+    glyph.add_relief("low")
+    assert "crs" not in seen["kwargs"], f"add_relief must not get crs, got {seen['kwargs']}"
+    plt.close(fig)
+
+
+def test_basemap_kwargs_helper():
+    """_basemap_kwargs injects only when self.crs is set and crs is absent."""
+    d = _Dummy(None)
+    assert d._basemap_kwargs({}) == {}                      # crs unset -> passthrough
+    assert d._basemap_kwargs({"crs": 3857}) == {"crs": 3857}
+    d.crs = 4326
+    assert d._basemap_kwargs({}) == {"crs": 4326}           # injected
+    assert d._basemap_kwargs({"crs": 3857}) == {"crs": 3857}  # explicit wins
+    assert d._basemap_kwargs({"crs": None}) == {"crs": 4326}  # None treated as unset
+
+
+def test_default_crs_is_none_on_geomixin():
+    """GeoMixin exposes a class-level crs default of None."""
+    assert GeoMixin.crs is None
+    assert _Dummy(None).crs is None
+
+
 def test_ax_override_takes_precedence(monkeypatch):
     """An explicit ax= overrides the glyph's own axes."""
     seen = {}
