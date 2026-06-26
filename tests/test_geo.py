@@ -176,9 +176,59 @@ def test_basemap_kwargs_helper():
 
 
 def test_default_crs_is_none_on_geomixin():
-    """GeoMixin exposes a class-level crs default of None."""
-    assert GeoMixin.crs is None
+    """A GeoMixin host's crs defaults to None and is exposed as a property."""
     assert _Dummy(None).crs is None
+    assert isinstance(type(_Dummy(None)).crs, property)
+
+
+def test_crs_accepts_valid_values():
+    """int EPSG codes, CRS strings, and None are accepted and round-trip."""
+    g = _Dummy(None)
+    g.crs = 4326
+    assert g.crs == 4326
+    g.crs = "EPSG:3857"
+    assert g.crs == "EPSG:3857"
+    g.crs = None
+    assert g.crs is None
+
+
+def test_crs_rejects_bad_type():
+    """Non int/str/None (including bool) is rejected at assignment with TypeError."""
+    g = _Dummy(None)
+    with pytest.raises(TypeError, match="crs must be"):
+        g.crs = [4326]
+    with pytest.raises(TypeError, match="crs must be"):
+        g.crs = True  # bool is not a valid EPSG code
+
+
+def test_crs_rejects_nonpositive_or_empty():
+    """A non-positive EPSG code or a blank string is rejected with ValueError."""
+    g = _Dummy(None)
+    with pytest.raises(ValueError, match="positive int"):
+        g.crs = 0
+    with pytest.raises(ValueError, match="non-empty"):
+        g.crs = "   "
+
+
+def test_crs_rejects_unresolvable_when_pyproj_available():
+    """An unresolvable CRS is caught at assignment when pyproj is installed."""
+    pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+    g = _Dummy(None)
+    with pytest.raises(ValueError, match="Invalid CRS"):
+        g.crs = "definitely-not-a-crs"
+
+
+def test_crs_skips_deep_validation_without_pyproj(monkeypatch):
+    """Without pyproj, a well-typed-but-unresolvable CRS is accepted (deferred)."""
+    import importlib.util as ilu
+
+    real_find_spec = ilu.find_spec
+    monkeypatch.setattr(
+        ilu, "find_spec", lambda name: None if name == "pyproj" else real_find_spec(name)
+    )
+    g = _Dummy(None)
+    g.crs = "deferred-to-draw-time"  # no deep check -> accepted
+    assert g.crs == "deferred-to-draw-time"
 
 
 def test_ax_override_takes_precedence(monkeypatch):
