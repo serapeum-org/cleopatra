@@ -658,6 +658,7 @@ def stitch_tiles(
 def add_tiles(
     ax: Any,
     source: Any | None = None,
+    *,
     crs: int | str | None = None,
     zoom: int | str = "auto",
     alpha: float = 1.0,

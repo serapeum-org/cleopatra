@@ -166,8 +166,8 @@ class GeoMixin:
 
         Only injects when `self.crs` is set and `crs` is absent (or `None`)
         in `kwargs`, so the default `self.crs is None` is a pure pass-through
-        and an explicit `crs=` always wins. Pass `crs` as a keyword (not
-        positionally) for this defaulting to apply.
+        and an explicit `crs=` always wins. `crs` is keyword-only in both
+        `add_features` and `add_tiles`, so it always arrives via `kwargs`.
 
         Args:
             kwargs: The keyword arguments destined for the basemap helper.

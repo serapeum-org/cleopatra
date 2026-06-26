@@ -11,6 +11,7 @@ glyph against a synthetic on-disk cache.
 from __future__ import annotations
 
 import gzip
+import inspect
 import json
 from pathlib import Path
 
@@ -173,6 +174,13 @@ def test_basemap_kwargs_helper():
     assert d._basemap_kwargs({}) == {"crs": 4326}           # injected
     assert d._basemap_kwargs({"crs": 3857}) == {"crs": 3857}  # explicit wins
     assert d._basemap_kwargs({"crs": None}) == {"crs": 4326}  # None treated as unset
+
+
+@pytest.mark.parametrize("fn", [tilesmod.add_tiles, refmod.add_features])
+def test_crs_is_keyword_only_in_helpers(fn):
+    """crs is keyword-only in add_tiles/add_features, so it cannot be positional."""
+    kind = inspect.signature(fn).parameters["crs"].kind
+    assert kind is inspect.Parameter.KEYWORD_ONLY, f"{fn.__name__}.crs is {kind}"
 
 
 def test_default_crs_is_none_on_geomixin():
