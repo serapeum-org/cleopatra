@@ -200,6 +200,15 @@ def test_crs_accepts_valid_values():
     assert g.crs is None
 
 
+def test_crs_normalizes_bare_numeric_string():
+    """A digits-only CRS string is normalised to an int EPSG code on assignment."""
+    g = _Dummy(None)
+    g.crs = "4326"
+    assert g.crs == 4326
+    g.crs = " 3857 "  # stripped, then normalised
+    assert g.crs == 3857
+
+
 def test_crs_rejects_bad_type():
     """Non int/str/None (including bool) is rejected at assignment with TypeError."""
     g = _Dummy(None)

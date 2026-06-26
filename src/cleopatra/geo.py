@@ -34,7 +34,7 @@ from cleopatra import reference, tiles
 
 
 def _validate_crs(crs: int | str | None) -> int | str | None:
-    """Validate a value assigned to `GeoMixin.crs`, returning it unchanged.
+    """Validate (and lightly normalise) a value assigned to `GeoMixin.crs`.
 
     Cheap type/shape checks always run (and need no third-party package);
     full CRS-resolvability is additionally checked with `pyproj` **only when
@@ -43,11 +43,17 @@ def _validate_crs(crs: int | str | None) -> int | str | None:
     absent, an unresolvable-but-well-typed CRS is still caught later, at
     draw time, by `add_features` / `add_tiles`.
 
+    Strings are stripped, and a bare numeric EPSG string (e.g. `"4326"`) is
+    normalised to the int `4326` so it is treated identically to the int
+    form and to the draw path across `pyproj` versions (some reject the
+    digits-only string).
+
     Args:
         crs: An int EPSG code, a CRS string, or `None`.
 
     Returns:
-        The validated `crs`, unchanged.
+        The validated `crs` -- whitespace-stripped, and with a bare numeric
+        string converted to an int EPSG code.
 
     Raises:
         TypeError: If `crs` is not an int, str, or `None` (`bool` is
@@ -56,12 +62,15 @@ def _validate_crs(crs: int | str | None) -> int | str | None:
             or (when `pyproj` is installed) an unresolvable CRS.
 
     Examples:
-        - `None` and well-formed values pass through unchanged:
+        - `None` and well-formed values pass through; a bare numeric string
+            is normalised to an int:
             ```python
             >>> from cleopatra.geo import _validate_crs
             >>> _validate_crs(None) is None
             True
             >>> _validate_crs(4326)
+            4326
+            >>> _validate_crs("4326")
             4326
 
             ```
@@ -82,10 +91,14 @@ def _validate_crs(crs: int | str | None) -> int | str | None:
             "crs must be an int EPSG code, a CRS string, or None, got "
             f"{type(crs).__name__}"
         )
+    if isinstance(crs, str):
+        crs = crs.strip()
+        if not crs:
+            raise ValueError("crs string must be a non-empty CRS identifier")
+        if crs.isdigit():
+            crs = int(crs)  # bare EPSG code as a string -> int
     if isinstance(crs, int) and crs <= 0:
         raise ValueError(f"crs EPSG code must be a positive int, got {crs}")
-    if isinstance(crs, str) and not crs.strip():
-        raise ValueError("crs string must be a non-empty CRS identifier")
     if importlib.util.find_spec("pyproj") is not None:
         from pyproj import CRS
         from pyproj.exceptions import CRSError
