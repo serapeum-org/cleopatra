@@ -283,3 +283,28 @@ def test_real_glyph_integration(tmp_path: Path, monkeypatch):
     glyph.add_features("coastline", "110m", colors="navy")
     assert any(isinstance(c, LineCollection) for c in ax.collections)
     plt.close(fig)
+
+
+def test_glyph_crs_drives_reprojected_placement(tmp_path: Path, monkeypatch):
+    """End-to-end: glyph.crs alone reprojects a drawn layer to that CRS."""
+    pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+    monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))
+    collection = {
+        "type": "FeatureCollection",
+        "features": [
+            {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[0, 0], [10, 0]]}}
+        ],
+    }
+    with gzip.open(tmp_path / "ne_110m_coastline.geojson.gz", "wt", encoding="utf-8") as fh:
+        json.dump(collection, fh)
+
+    fig, ax = plt.subplots()
+    glyph = PolygonGlyph([np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0]])], ax=ax)
+    glyph.crs = 3857  # axis CRS recorded once; no crs= on the draw call
+    glyph.add_features("coastline", "110m")
+    lc = next(c for c in ax.collections if isinstance(c, LineCollection))
+    verts = lc.get_paths()[0].vertices
+    # In EPSG:3857, lon=0 -> x~=0 m and lon=10 -> x~=1.11e6 m (not lon/lat degrees).
+    assert abs(verts[0][0]) < 1.0, f"first vertex not at x~=0: {verts[0]}"
+    assert verts[1][0] > 1.0e6, f"second vertex not reprojected to metres: {verts[1]}"
+    plt.close(fig)
