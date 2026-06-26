@@ -2141,7 +2141,7 @@ data plotted in Web Mercator coordinates:</p>
 
 
 <h4 id="cleopatra.tiles.add_tiles" class="doc doc-heading"><a href="#cleopatra.tiles.add_tiles" class="toclink">
-            <code class="highlight language-python"><span class="n">add_tiles</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">zoom</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">attribution</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;bilinear&#39;</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">retries</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">user_agent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_tiles</span><span class="o">=</span><span class="n">MAX_TILES</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">add_tiles</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">zoom</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">attribution</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;bilinear&#39;</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">retries</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">user_agent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_tiles</span><span class="o">=</span><span class="n">MAX_TILES</span><span class="p">)</span></code>
 
 </a><a href="#cleopatra.tiles.add_tiles" class="headerlink" title="Permanent link">#</a></h4>
 
@@ -2717,250 +2717,252 @@ invalid.</p>
 <span class="normal"><a href="#__codelineno-0-898">898</a></span>
 <span class="normal"><a href="#__codelineno-0-899">899</a></span>
 <span class="normal"><a href="#__codelineno-0-900">900</a></span>
-<span class="normal"><a href="#__codelineno-0-901">901</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-658" name="__codelineno-0-658"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_tiles</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-901">901</a></span>
+<span class="normal"><a href="#__codelineno-0-902">902</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-658" name="__codelineno-0-658"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_tiles</span><span class="p">(</span>
 <a id="__codelineno-0-659" name="__codelineno-0-659"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <a id="__codelineno-0-660" name="__codelineno-0-660"></a>    <span class="n">source</span><span class="p">:</span> <span class="n">Any</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-661" name="__codelineno-0-661"></a>    <span class="n">crs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-662" name="__codelineno-0-662"></a>    <span class="n">zoom</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;auto&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-663" name="__codelineno-0-663"></a>    <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
-<a id="__codelineno-0-664" name="__codelineno-0-664"></a>    <span class="n">attribution</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-0-665" name="__codelineno-0-665"></a>    <span class="n">zorder</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-0-666" name="__codelineno-0-666"></a>    <span class="n">interpolation</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;bilinear&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-667" name="__codelineno-0-667"></a>    <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
-<a id="__codelineno-0-668" name="__codelineno-0-668"></a>    <span class="n">retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
-<a id="__codelineno-0-669" name="__codelineno-0-669"></a>    <span class="n">user_agent</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-670" name="__codelineno-0-670"></a>    <span class="n">max_tiles</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">MAX_TILES</span><span class="p">,</span>
-<a id="__codelineno-0-671" name="__codelineno-0-671"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<a id="__codelineno-0-672" name="__codelineno-0-672"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Overlay a web-tile basemap on a matplotlib axes.</span>
-<a id="__codelineno-0-673" name="__codelineno-0-673"></a>
-<a id="__codelineno-0-674" name="__codelineno-0-674"></a><span class="sd">    Fetches XYZ web tiles that cover the axes&#39; current extent, stitches</span>
-<a id="__codelineno-0-675" name="__codelineno-0-675"></a><span class="sd">    them into a single composite image, and renders the image below the</span>
-<a id="__codelineno-0-676" name="__codelineno-0-676"></a><span class="sd">    existing data layer. When the data is already in Web Mercator</span>
-<a id="__codelineno-0-677" name="__codelineno-0-677"></a><span class="sd">    (EPSG:3857) the tiles are placed in-place; for any other CRS the</span>
-<a id="__codelineno-0-678" name="__codelineno-0-678"></a><span class="sd">    image is placed in the target CRS using the data&#39;s densified bounds</span>
-<a id="__codelineno-0-679" name="__codelineno-0-679"></a><span class="sd">    -- matplotlib stretches the bitmap to fit, which is visually</span>
-<a id="__codelineno-0-680" name="__codelineno-0-680"></a><span class="sd">    acceptable for small extents.</span>
-<a id="__codelineno-0-681" name="__codelineno-0-681"></a>
-<a id="__codelineno-0-682" name="__codelineno-0-682"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-683" name="__codelineno-0-683"></a><span class="sd">        ax: Matplotlib `matplotlib.axes.Axes` to add the</span>
-<a id="__codelineno-0-684" name="__codelineno-0-684"></a><span class="sd">            basemap to. Data must already be plotted so the axis</span>
-<a id="__codelineno-0-685" name="__codelineno-0-685"></a><span class="sd">            limits define the geographic extent.</span>
-<a id="__codelineno-0-686" name="__codelineno-0-686"></a><span class="sd">        source: Tile provider. `None` defaults to</span>
-<a id="__codelineno-0-687" name="__codelineno-0-687"></a><span class="sd">            `OpenStreetMap.Mapnik`. A dot-separated string such as</span>
-<a id="__codelineno-0-688" name="__codelineno-0-688"></a><span class="sd">            `&quot;CartoDB.Positron&quot;` is resolved via</span>
-<a id="__codelineno-0-689" name="__codelineno-0-689"></a><span class="sd">            `get_provider`. An `xyzservices.TileProvider` is</span>
-<a id="__codelineno-0-690" name="__codelineno-0-690"></a><span class="sd">            used directly.</span>
-<a id="__codelineno-0-691" name="__codelineno-0-691"></a><span class="sd">        crs: CRS of the data on `ax`. An integer is interpreted as an</span>
-<a id="__codelineno-0-692" name="__codelineno-0-692"></a><span class="sd">            EPSG code; a string is passed through (`&quot;EPSG:XXXX&quot;` or</span>
-<a id="__codelineno-0-693" name="__codelineno-0-693"></a><span class="sd">            WKT). `None` is treated as EPSG:3857.</span>
-<a id="__codelineno-0-694" name="__codelineno-0-694"></a><span class="sd">        zoom: Tile zoom level. `&quot;auto&quot;` derives a level from the</span>
-<a id="__codelineno-0-695" name="__codelineno-0-695"></a><span class="sd">            axes extent. Integers must be in `[0, 19]`.</span>
-<a id="__codelineno-0-696" name="__codelineno-0-696"></a><span class="sd">        alpha: Opacity of the basemap (`0.0`--`1.0`).</span>
-<a id="__codelineno-0-697" name="__codelineno-0-697"></a><span class="sd">        attribution: `True` adds the provider&#39;s attribution text, a</span>
-<a id="__codelineno-0-698" name="__codelineno-0-698"></a><span class="sd">            string overrides it, `False` skips it.</span>
-<a id="__codelineno-0-699" name="__codelineno-0-699"></a><span class="sd">        zorder: Matplotlib zorder for the basemap (`-1` puts it</span>
-<a id="__codelineno-0-700" name="__codelineno-0-700"></a><span class="sd">            behind all data).</span>
-<a id="__codelineno-0-701" name="__codelineno-0-701"></a><span class="sd">        interpolation: Interpolation method passed to `ax.imshow`.</span>
-<a id="__codelineno-0-702" name="__codelineno-0-702"></a><span class="sd">        timeout: Per-tile HTTP timeout in seconds.</span>
-<a id="__codelineno-0-703" name="__codelineno-0-703"></a><span class="sd">        retries: Per-tile retry count.</span>
-<a id="__codelineno-0-704" name="__codelineno-0-704"></a><span class="sd">        user_agent: `User-Agent` header to send on tile requests.</span>
-<a id="__codelineno-0-705" name="__codelineno-0-705"></a><span class="sd">            `None` (default) uses `USER_AGENT`</span>
-<a id="__codelineno-0-706" name="__codelineno-0-706"></a><span class="sd">            (`cleopatra/&lt;version&gt; (+repo-url)`). Pass your own string</span>
-<a id="__codelineno-0-707" name="__codelineno-0-707"></a><span class="sd">            when embedding cleopatra in an application so the traffic is</span>
-<a id="__codelineno-0-708" name="__codelineno-0-708"></a><span class="sd">            attributed to *that* app (recommended for production use, and</span>
-<a id="__codelineno-0-709" name="__codelineno-0-709"></a><span class="sd">            required by some providers&#39; usage policies).</span>
-<a id="__codelineno-0-710" name="__codelineno-0-710"></a><span class="sd">        max_tiles: Cap on how many tiles to fetch. If the chosen `zoom`</span>
-<a id="__codelineno-0-711" name="__codelineno-0-711"></a><span class="sd">            would need more than this, the zoom is stepped down until the</span>
-<a id="__codelineno-0-712" name="__codelineno-0-712"></a><span class="sd">            count fits (or reaches 0). Defaults to `MAX_TILES`</span>
-<a id="__codelineno-0-713" name="__codelineno-0-713"></a><span class="sd">            (`256`). Must be a positive int.</span>
-<a id="__codelineno-0-714" name="__codelineno-0-714"></a>
-<a id="__codelineno-0-715" name="__codelineno-0-715"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-716" name="__codelineno-0-716"></a><span class="sd">        matplotlib.axes.Axes: The same axes, for chaining.</span>
-<a id="__codelineno-0-717" name="__codelineno-0-717"></a>
-<a id="__codelineno-0-718" name="__codelineno-0-718"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-719" name="__codelineno-0-719"></a><span class="sd">        ImportError: If the `[tiles]` extra is not installed.</span>
-<a id="__codelineno-0-720" name="__codelineno-0-720"></a><span class="sd">        TypeError: If `ax` is not a matplotlib Axes.</span>
-<a id="__codelineno-0-721" name="__codelineno-0-721"></a><span class="sd">        ValueError: If the axes have no data extent or `zoom` is</span>
-<a id="__codelineno-0-722" name="__codelineno-0-722"></a><span class="sd">            invalid.</span>
-<a id="__codelineno-0-723" name="__codelineno-0-723"></a><span class="sd">        ConnectionError: If tiles cannot be fetched from the provider.</span>
-<a id="__codelineno-0-724" name="__codelineno-0-724"></a>
-<a id="__codelineno-0-725" name="__codelineno-0-725"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-726" name="__codelineno-0-726"></a><span class="sd">        Add a default OpenStreetMap basemap to an existing plot:</span>
-<a id="__codelineno-0-727" name="__codelineno-0-727"></a>
-<a id="__codelineno-0-728" name="__codelineno-0-728"></a><span class="sd">        &gt;&gt;&gt; import matplotlib</span>
-<a id="__codelineno-0-729" name="__codelineno-0-729"></a><span class="sd">        &gt;&gt;&gt; matplotlib.use(&quot;Agg&quot;)</span>
-<a id="__codelineno-0-730" name="__codelineno-0-730"></a><span class="sd">        &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-731" name="__codelineno-0-731"></a><span class="sd">        &gt;&gt;&gt; fig, ax = plt.subplots()</span>
-<a id="__codelineno-0-732" name="__codelineno-0-732"></a><span class="sd">        &gt;&gt;&gt; _ = ax.plot([1000000.0, 1200000.0], [6000000.0, 6200000.0])</span>
-<a id="__codelineno-0-733" name="__codelineno-0-733"></a><span class="sd">        &gt;&gt;&gt; _ = add_tiles(ax, crs=3857)  # doctest: +SKIP</span>
-<a id="__codelineno-0-734" name="__codelineno-0-734"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-735" name="__codelineno-0-735"></a>    <span class="n">_require_tiles_extra</span><span class="p">()</span>
-<a id="__codelineno-0-736" name="__codelineno-0-736"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">mercantile</span>
-<a id="__codelineno-0-737" name="__codelineno-0-737"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">pyproj</span><span class="w"> </span><span class="kn">import</span> <span class="n">Transformer</span>
-<a id="__codelineno-0-738" name="__codelineno-0-738"></a>
-<a id="__codelineno-0-739" name="__codelineno-0-739"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="s2">&quot;get_xlim&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="s2">&quot;get_ylim&quot;</span><span class="p">):</span>
-<a id="__codelineno-0-740" name="__codelineno-0-740"></a>        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
-<a id="__codelineno-0-741" name="__codelineno-0-741"></a>            <span class="s2">&quot;ax must be a matplotlib.axes.Axes instance, &quot;</span>
-<a id="__codelineno-0-742" name="__codelineno-0-742"></a>            <span class="sa">f</span><span class="s2">&quot;got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span>
-<a id="__codelineno-0-743" name="__codelineno-0-743"></a>        <span class="p">)</span>
-<a id="__codelineno-0-744" name="__codelineno-0-744"></a>
-<a id="__codelineno-0-745" name="__codelineno-0-745"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">max_tiles</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">max_tiles</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span> <span class="ow">or</span> <span class="n">max_tiles</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
-<a id="__codelineno-0-746" name="__codelineno-0-746"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;max_tiles must be a positive int, got </span><span class="si">{</span><span class="n">max_tiles</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-747" name="__codelineno-0-747"></a>
-<a id="__codelineno-0-748" name="__codelineno-0-748"></a>    <span class="n">x0</span><span class="p">,</span> <span class="n">x1</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span>
-<a id="__codelineno-0-749" name="__codelineno-0-749"></a>    <span class="n">y0</span><span class="p">,</span> <span class="n">y1</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
-<a id="__codelineno-0-750" name="__codelineno-0-750"></a>    <span class="n">west</span><span class="p">,</span> <span class="n">east</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">)</span>
-<a id="__codelineno-0-751" name="__codelineno-0-751"></a>    <span class="n">south</span><span class="p">,</span> <span class="n">north</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">y1</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">y1</span><span class="p">)</span>
-<a id="__codelineno-0-752" name="__codelineno-0-752"></a>
-<a id="__codelineno-0-753" name="__codelineno-0-753"></a>    <span class="k">if</span> <span class="p">(</span><span class="n">west</span><span class="p">,</span> <span class="n">east</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">south</span><span class="p">,</span> <span class="n">north</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">):</span>
-<a id="__codelineno-0-754" name="__codelineno-0-754"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-755" name="__codelineno-0-755"></a>            <span class="s2">&quot;Axes have no data extent. Plot data before adding a basemap.&quot;</span>
-<a id="__codelineno-0-756" name="__codelineno-0-756"></a>        <span class="p">)</span>
-<a id="__codelineno-0-757" name="__codelineno-0-757"></a>
-<a id="__codelineno-0-758" name="__codelineno-0-758"></a>    <span class="k">if</span> <span class="n">west</span> <span class="o">==</span> <span class="n">east</span> <span class="ow">or</span> <span class="n">south</span> <span class="o">==</span> <span class="n">north</span><span class="p">:</span>
-<a id="__codelineno-0-759" name="__codelineno-0-759"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-760" name="__codelineno-0-760"></a>            <span class="sa">f</span><span class="s2">&quot;Axes have zero-area extent (west=</span><span class="si">{</span><span class="n">west</span><span class="si">}</span><span class="s2">, east=</span><span class="si">{</span><span class="n">east</span><span class="si">}</span><span class="s2">, &quot;</span>
-<a id="__codelineno-0-761" name="__codelineno-0-761"></a>            <span class="sa">f</span><span class="s2">&quot;south=</span><span class="si">{</span><span class="n">south</span><span class="si">}</span><span class="s2">, north=</span><span class="si">{</span><span class="n">north</span><span class="si">}</span><span class="s2">). A basemap requires a &quot;</span>
-<a id="__codelineno-0-762" name="__codelineno-0-762"></a>            <span class="sa">f</span><span class="s2">&quot;non-degenerate geographic extent.&quot;</span>
-<a id="__codelineno-0-763" name="__codelineno-0-763"></a>        <span class="p">)</span>
-<a id="__codelineno-0-764" name="__codelineno-0-764"></a>
-<a id="__codelineno-0-765" name="__codelineno-0-765"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="n">source</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-766" name="__codelineno-0-766"></a>        <span class="n">provider</span> <span class="o">=</span> <span class="n">get_provider</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
-<a id="__codelineno-0-767" name="__codelineno-0-767"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-768" name="__codelineno-0-768"></a>        <span class="n">provider</span> <span class="o">=</span> <span class="n">source</span>
-<a id="__codelineno-0-769" name="__codelineno-0-769"></a>
-<a id="__codelineno-0-770" name="__codelineno-0-770"></a>    <span class="n">crs_value</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="mi">3857</span> <span class="k">if</span> <span class="n">crs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">crs</span>
-<a id="__codelineno-0-771" name="__codelineno-0-771"></a>    <span class="n">crs_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;EPSG:</span><span class="si">{</span><span class="n">crs_value</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">crs_value</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">crs_value</span><span class="p">)</span>
-<a id="__codelineno-0-772" name="__codelineno-0-772"></a>    <span class="n">is_3857</span> <span class="o">=</span> <span class="n">crs_str</span> <span class="o">==</span> <span class="s2">&quot;EPSG:3857&quot;</span>
-<a id="__codelineno-0-773" name="__codelineno-0-773"></a>
-<a id="__codelineno-0-774" name="__codelineno-0-774"></a>    <span class="k">if</span> <span class="n">is_3857</span><span class="p">:</span>
-<a id="__codelineno-0-775" name="__codelineno-0-775"></a>        <span class="n">w3857</span><span class="p">,</span> <span class="n">s3857</span><span class="p">,</span> <span class="n">e3857</span><span class="p">,</span> <span class="n">n3857</span> <span class="o">=</span> <span class="n">west</span><span class="p">,</span> <span class="n">south</span><span class="p">,</span> <span class="n">east</span><span class="p">,</span> <span class="n">north</span>
-<a id="__codelineno-0-776" name="__codelineno-0-776"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-777" name="__codelineno-0-777"></a>        <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-778" name="__codelineno-0-778"></a>            <span class="n">w3857</span><span class="p">,</span> <span class="n">s3857</span><span class="p">,</span> <span class="n">e3857</span><span class="p">,</span> <span class="n">n3857</span> <span class="o">=</span> <span class="n">_densify_and_reproject_bounds</span><span class="p">(</span>
-<a id="__codelineno-0-779" name="__codelineno-0-779"></a>                <span class="n">west</span><span class="p">,</span> <span class="n">south</span><span class="p">,</span> <span class="n">east</span><span class="p">,</span> <span class="n">north</span><span class="p">,</span> <span class="n">crs_str</span><span class="p">,</span> <span class="s2">&quot;EPSG:3857&quot;</span>
-<a id="__codelineno-0-780" name="__codelineno-0-780"></a>            <span class="p">)</span>
-<a id="__codelineno-0-781" name="__codelineno-0-781"></a>        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-<a id="__codelineno-0-782" name="__codelineno-0-782"></a>            <span class="k">if</span> <span class="s2">&quot;CRS&quot;</span> <span class="ow">in</span> <span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span> <span class="ow">or</span> <span class="s2">&quot;Invalid&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">):</span>
-<a id="__codelineno-0-783" name="__codelineno-0-783"></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-784" name="__codelineno-0-784"></a>                    <span class="sa">f</span><span class="s2">&quot;Invalid CRS: </span><span class="si">{</span><span class="n">crs_str</span><span class="si">!r}</span><span class="s2">. Provide a valid &quot;</span>
-<a id="__codelineno-0-785" name="__codelineno-0-785"></a>                    <span class="sa">f</span><span class="s2">&quot;EPSG code or WKT string.&quot;</span>
-<a id="__codelineno-0-786" name="__codelineno-0-786"></a>                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
-<a id="__codelineno-0-787" name="__codelineno-0-787"></a>            <span class="k">raise</span>
-<a id="__codelineno-0-788" name="__codelineno-0-788"></a>
-<a id="__codelineno-0-789" name="__codelineno-0-789"></a>    <span class="n">transformer_to_4326</span> <span class="o">=</span> <span class="n">Transformer</span><span class="o">.</span><span class="n">from_crs</span><span class="p">(</span>
-<a id="__codelineno-0-790" name="__codelineno-0-790"></a>        <span class="s2">&quot;EPSG:3857&quot;</span><span class="p">,</span> <span class="s2">&quot;EPSG:4326&quot;</span><span class="p">,</span> <span class="n">always_xy</span><span class="o">=</span><span class="kc">True</span>
-<a id="__codelineno-0-791" name="__codelineno-0-791"></a>    <span class="p">)</span>
-<a id="__codelineno-0-792" name="__codelineno-0-792"></a>    <span class="n">w4326</span><span class="p">,</span> <span class="n">s4326</span> <span class="o">=</span> <span class="n">transformer_to_4326</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">w3857</span><span class="p">,</span> <span class="n">s3857</span><span class="p">)</span>
-<a id="__codelineno-0-793" name="__codelineno-0-793"></a>    <span class="n">e4326</span><span class="p">,</span> <span class="n">n4326</span> <span class="o">=</span> <span class="n">transformer_to_4326</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">e3857</span><span class="p">,</span> <span class="n">n3857</span><span class="p">)</span>
-<a id="__codelineno-0-794" name="__codelineno-0-794"></a>
-<a id="__codelineno-0-795" name="__codelineno-0-795"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">(</span><span class="n">w4326</span><span class="p">,</span> <span class="n">s4326</span><span class="p">,</span> <span class="n">e4326</span><span class="p">,</span> <span class="n">n4326</span><span class="p">)):</span>
-<a id="__codelineno-0-796" name="__codelineno-0-796"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-797" name="__codelineno-0-797"></a>            <span class="s2">&quot;Reprojection to EPSG:4326 produced infinite or NaN &quot;</span>
-<a id="__codelineno-0-798" name="__codelineno-0-798"></a>            <span class="s2">&quot;coordinates. The data extent may be outside the valid &quot;</span>
-<a id="__codelineno-0-799" name="__codelineno-0-799"></a>            <span class="s2">&quot;Web Mercator domain.&quot;</span>
-<a id="__codelineno-0-800" name="__codelineno-0-800"></a>        <span class="p">)</span>
-<a id="__codelineno-0-801" name="__codelineno-0-801"></a>
-<a id="__codelineno-0-802" name="__codelineno-0-802"></a>    <span class="n">s4326</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">s4326</span><span class="p">,</span> <span class="o">-</span><span class="mf">85.06</span><span class="p">)</span>
-<a id="__codelineno-0-803" name="__codelineno-0-803"></a>    <span class="n">n4326</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">n4326</span><span class="p">,</span> <span class="mf">85.06</span><span class="p">)</span>
-<a id="__codelineno-0-804" name="__codelineno-0-804"></a>
-<a id="__codelineno-0-805" name="__codelineno-0-805"></a>    <span class="n">bounds_4326</span> <span class="o">=</span> <span class="p">(</span><span class="n">w4326</span><span class="p">,</span> <span class="n">s4326</span><span class="p">,</span> <span class="n">e4326</span><span class="p">,</span> <span class="n">n4326</span><span class="p">)</span>
-<a id="__codelineno-0-806" name="__codelineno-0-806"></a>
-<a id="__codelineno-0-807" name="__codelineno-0-807"></a>    <span class="k">if</span> <span class="n">zoom</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-808" name="__codelineno-0-808"></a>        <span class="n">tile_zoom</span> <span class="o">=</span> <span class="n">auto_zoom</span><span class="p">(</span><span class="n">bounds_4326</span><span class="p">)</span>
-<a id="__codelineno-0-809" name="__codelineno-0-809"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-810" name="__codelineno-0-810"></a>        <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-811" name="__codelineno-0-811"></a>            <span class="n">tile_zoom</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">zoom</span><span class="p">)</span>
-<a id="__codelineno-0-812" name="__codelineno-0-812"></a>        <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-<a id="__codelineno-0-813" name="__codelineno-0-813"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-814" name="__codelineno-0-814"></a>                <span class="sa">f</span><span class="s2">&quot;zoom must be &#39;auto&#39; or int 0-19, got </span><span class="si">{</span><span class="n">zoom</span><span class="si">!r}</span><span class="s2">&quot;</span>
-<a id="__codelineno-0-815" name="__codelineno-0-815"></a>            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
-<a id="__codelineno-0-816" name="__codelineno-0-816"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">tile_zoom</span> <span class="o">&lt;=</span> <span class="mi">19</span><span class="p">:</span>
-<a id="__codelineno-0-817" name="__codelineno-0-817"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;zoom must be 0-19, got </span><span class="si">{</span><span class="n">tile_zoom</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-818" name="__codelineno-0-818"></a>
-<a id="__codelineno-0-819" name="__codelineno-0-819"></a>    <span class="n">original_zoom</span> <span class="o">=</span> <span class="n">tile_zoom</span>
-<a id="__codelineno-0-820" name="__codelineno-0-820"></a>    <span class="n">tiles</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mercantile</span><span class="o">.</span><span class="n">tiles</span><span class="p">(</span><span class="n">w4326</span><span class="p">,</span> <span class="n">s4326</span><span class="p">,</span> <span class="n">e4326</span><span class="p">,</span> <span class="n">n4326</span><span class="p">,</span> <span class="n">zooms</span><span class="o">=</span><span class="n">tile_zoom</span><span class="p">))</span>
-<a id="__codelineno-0-821" name="__codelineno-0-821"></a>
-<a id="__codelineno-0-822" name="__codelineno-0-822"></a>    <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">tiles</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_tiles</span> <span class="ow">and</span> <span class="n">tile_zoom</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-823" name="__codelineno-0-823"></a>        <span class="n">tile_zoom</span> <span class="o">-=</span> <span class="mi">1</span>
-<a id="__codelineno-0-824" name="__codelineno-0-824"></a>        <span class="n">tiles</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mercantile</span><span class="o">.</span><span class="n">tiles</span><span class="p">(</span><span class="n">w4326</span><span class="p">,</span> <span class="n">s4326</span><span class="p">,</span> <span class="n">e4326</span><span class="p">,</span> <span class="n">n4326</span><span class="p">,</span> <span class="n">zooms</span><span class="o">=</span><span class="n">tile_zoom</span><span class="p">))</span>
-<a id="__codelineno-0-825" name="__codelineno-0-825"></a>
-<a id="__codelineno-0-826" name="__codelineno-0-826"></a>    <span class="k">if</span> <span class="n">tile_zoom</span> <span class="o">!=</span> <span class="n">original_zoom</span><span class="p">:</span>
-<a id="__codelineno-0-827" name="__codelineno-0-827"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-<a id="__codelineno-0-828" name="__codelineno-0-828"></a>            <span class="s2">&quot;Zoom reduced from </span><span class="si">%d</span><span class="s2"> to </span><span class="si">%d</span><span class="s2"> (extent requires &gt; </span><span class="si">%d</span><span class="s2"> tiles).&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-829" name="__codelineno-0-829"></a>            <span class="n">original_zoom</span><span class="p">,</span>
-<a id="__codelineno-0-830" name="__codelineno-0-830"></a>            <span class="n">tile_zoom</span><span class="p">,</span>
-<a id="__codelineno-0-831" name="__codelineno-0-831"></a>            <span class="n">max_tiles</span><span class="p">,</span>
-<a id="__codelineno-0-832" name="__codelineno-0-832"></a>        <span class="p">)</span>
-<a id="__codelineno-0-833" name="__codelineno-0-833"></a>
-<a id="__codelineno-0-834" name="__codelineno-0-834"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">tiles</span><span class="p">:</span>
-<a id="__codelineno-0-835" name="__codelineno-0-835"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-836" name="__codelineno-0-836"></a>            <span class="sa">f</span><span class="s2">&quot;No tiles found for bounds </span><span class="si">{</span><span class="n">bounds_4326</span><span class="si">}</span><span class="s2"> at zoom &quot;</span>
-<a id="__codelineno-0-837" name="__codelineno-0-837"></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">tile_zoom</span><span class="si">}</span><span class="s2">. The extent may be outside valid tile &quot;</span>
-<a id="__codelineno-0-838" name="__codelineno-0-838"></a>            <span class="sa">f</span><span class="s2">&quot;coverage.&quot;</span>
-<a id="__codelineno-0-839" name="__codelineno-0-839"></a>        <span class="p">)</span>
-<a id="__codelineno-0-840" name="__codelineno-0-840"></a>
-<a id="__codelineno-0-841" name="__codelineno-0-841"></a>    <span class="n">tile_data</span> <span class="o">=</span> <span class="n">fetch_tiles</span><span class="p">(</span>
-<a id="__codelineno-0-842" name="__codelineno-0-842"></a>        <span class="n">tiles</span><span class="p">,</span>
-<a id="__codelineno-0-843" name="__codelineno-0-843"></a>        <span class="n">provider</span><span class="p">,</span>
-<a id="__codelineno-0-844" name="__codelineno-0-844"></a>        <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
-<a id="__codelineno-0-845" name="__codelineno-0-845"></a>        <span class="n">retries</span><span class="o">=</span><span class="n">retries</span><span class="p">,</span>
-<a id="__codelineno-0-846" name="__codelineno-0-846"></a>        <span class="n">user_agent</span><span class="o">=</span><span class="n">user_agent</span> <span class="k">if</span> <span class="n">user_agent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">USER_AGENT</span><span class="p">,</span>
-<a id="__codelineno-0-847" name="__codelineno-0-847"></a>    <span class="p">)</span>
-<a id="__codelineno-0-848" name="__codelineno-0-848"></a>    <span class="n">image</span><span class="p">,</span> <span class="n">extent_3857</span> <span class="o">=</span> <span class="n">stitch_tiles</span><span class="p">(</span><span class="n">tile_data</span><span class="p">,</span> <span class="n">tiles</span><span class="p">,</span> <span class="n">tile_zoom</span><span class="p">)</span>
-<a id="__codelineno-0-849" name="__codelineno-0-849"></a>
-<a id="__codelineno-0-850" name="__codelineno-0-850"></a>    <span class="k">if</span> <span class="n">is_3857</span><span class="p">:</span>
-<a id="__codelineno-0-851" name="__codelineno-0-851"></a>        <span class="n">extent</span> <span class="o">=</span> <span class="n">extent_3857</span>
-<a id="__codelineno-0-852" name="__codelineno-0-852"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-853" name="__codelineno-0-853"></a>        <span class="c1"># No GDAL: place the tile bitmap in the target CRS using the</span>
-<a id="__codelineno-0-854" name="__codelineno-0-854"></a>        <span class="c1"># data&#39;s bounds. Matplotlib stretches the image -- accurate</span>
-<a id="__codelineno-0-855" name="__codelineno-0-855"></a>        <span class="c1"># enough for small extents (see module docstring).</span>
-<a id="__codelineno-0-856" name="__codelineno-0-856"></a>        <span class="n">extent</span> <span class="o">=</span> <span class="p">(</span><span class="n">west</span><span class="p">,</span> <span class="n">south</span><span class="p">,</span> <span class="n">east</span><span class="p">,</span> <span class="n">north</span><span class="p">)</span>
-<a id="__codelineno-0-857" name="__codelineno-0-857"></a>
-<a id="__codelineno-0-858" name="__codelineno-0-858"></a>    <span class="n">xlim</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span>
-<a id="__codelineno-0-859" name="__codelineno-0-859"></a>    <span class="n">ylim</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
-<a id="__codelineno-0-860" name="__codelineno-0-860"></a>
-<a id="__codelineno-0-861" name="__codelineno-0-861"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span>
-<a id="__codelineno-0-862" name="__codelineno-0-862"></a>        <span class="n">image</span><span class="p">,</span>
-<a id="__codelineno-0-863" name="__codelineno-0-863"></a>        <span class="n">extent</span><span class="o">=</span><span class="p">[</span><span class="n">extent</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">extent</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">extent</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">extent</span><span class="p">[</span><span class="mi">3</span><span class="p">]],</span>
-<a id="__codelineno-0-864" name="__codelineno-0-864"></a>        <span class="n">interpolation</span><span class="o">=</span><span class="n">interpolation</span><span class="p">,</span>
-<a id="__codelineno-0-865" name="__codelineno-0-865"></a>        <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span>
-<a id="__codelineno-0-866" name="__codelineno-0-866"></a>        <span class="n">zorder</span><span class="o">=</span><span class="n">zorder</span><span class="p">,</span>
-<a id="__codelineno-0-867" name="__codelineno-0-867"></a>        <span class="n">aspect</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">get_aspect</span><span class="p">(),</span>
-<a id="__codelineno-0-868" name="__codelineno-0-868"></a>    <span class="p">)</span>
-<a id="__codelineno-0-869" name="__codelineno-0-869"></a>
-<a id="__codelineno-0-870" name="__codelineno-0-870"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">xlim</span><span class="p">)</span>
-<a id="__codelineno-0-871" name="__codelineno-0-871"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">ylim</span><span class="p">)</span>
-<a id="__codelineno-0-872" name="__codelineno-0-872"></a>
-<a id="__codelineno-0-873" name="__codelineno-0-873"></a>    <span class="k">if</span> <span class="n">attribution</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
-<a id="__codelineno-0-874" name="__codelineno-0-874"></a>        <span class="n">raw</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">provider</span><span class="p">,</span> <span class="s2">&quot;attribution&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">getattr</span><span class="p">(</span>
-<a id="__codelineno-0-875" name="__codelineno-0-875"></a>            <span class="n">provider</span><span class="p">,</span> <span class="s2">&quot;html_attribution&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span>
-<a id="__codelineno-0-876" name="__codelineno-0-876"></a>        <span class="p">)</span>
-<a id="__codelineno-0-877" name="__codelineno-0-877"></a>        <span class="k">if</span> <span class="n">raw</span><span class="p">:</span>
-<a id="__codelineno-0-878" name="__codelineno-0-878"></a>            <span class="c1"># Strip HTML tags, then unescape entities (`&amp;copy;` -&gt; `©`,</span>
-<a id="__codelineno-0-879" name="__codelineno-0-879"></a>            <span class="c1"># `&amp;amp;` -&gt; `&amp;`, ...) so the placed text reads cleanly.</span>
-<a id="__codelineno-0-880" name="__codelineno-0-880"></a>            <span class="n">attr_text</span> <span class="o">=</span> <span class="n">html</span><span class="o">.</span><span class="n">unescape</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;&lt;[^&gt;]+&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">raw</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">or</span> <span class="kc">None</span>
-<a id="__codelineno-0-881" name="__codelineno-0-881"></a>        <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-882" name="__codelineno-0-882"></a>            <span class="n">attr_text</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-883" name="__codelineno-0-883"></a>    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">attribution</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-<a id="__codelineno-0-884" name="__codelineno-0-884"></a>        <span class="n">attr_text</span> <span class="o">=</span> <span class="n">attribution</span>
-<a id="__codelineno-0-885" name="__codelineno-0-885"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-886" name="__codelineno-0-886"></a>        <span class="n">attr_text</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-887" name="__codelineno-0-887"></a>
-<a id="__codelineno-0-888" name="__codelineno-0-888"></a>    <span class="k">if</span> <span class="n">attr_text</span><span class="p">:</span>
-<a id="__codelineno-0-889" name="__codelineno-0-889"></a>        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
-<a id="__codelineno-0-890" name="__codelineno-0-890"></a>            <span class="mf">0.99</span><span class="p">,</span>
-<a id="__codelineno-0-891" name="__codelineno-0-891"></a>            <span class="mf">0.01</span><span class="p">,</span>
-<a id="__codelineno-0-892" name="__codelineno-0-892"></a>            <span class="n">attr_text</span><span class="p">,</span>
-<a id="__codelineno-0-893" name="__codelineno-0-893"></a>            <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span>
-<a id="__codelineno-0-894" name="__codelineno-0-894"></a>            <span class="n">fontsize</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
-<a id="__codelineno-0-895" name="__codelineno-0-895"></a>            <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;right&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-896" name="__codelineno-0-896"></a>            <span class="n">va</span><span class="o">=</span><span class="s2">&quot;bottom&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-897" name="__codelineno-0-897"></a>            <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
-<a id="__codelineno-0-898" name="__codelineno-0-898"></a>            <span class="n">bbox</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">boxstyle</span><span class="o">=</span><span class="s2">&quot;round,pad=0.2&quot;</span><span class="p">,</span> <span class="n">fc</span><span class="o">=</span><span class="s2">&quot;white&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">),</span>
-<a id="__codelineno-0-899" name="__codelineno-0-899"></a>        <span class="p">)</span>
-<a id="__codelineno-0-900" name="__codelineno-0-900"></a>
-<a id="__codelineno-0-901" name="__codelineno-0-901"></a>    <span class="k">return</span> <span class="n">ax</span>
+<a id="__codelineno-0-661" name="__codelineno-0-661"></a>    <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-0-662" name="__codelineno-0-662"></a>    <span class="n">crs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-663" name="__codelineno-0-663"></a>    <span class="n">zoom</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-664" name="__codelineno-0-664"></a>    <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+<a id="__codelineno-0-665" name="__codelineno-0-665"></a>    <span class="n">attribution</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-666" name="__codelineno-0-666"></a>    <span class="n">zorder</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-667" name="__codelineno-0-667"></a>    <span class="n">interpolation</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;bilinear&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-668" name="__codelineno-0-668"></a>    <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+<a id="__codelineno-0-669" name="__codelineno-0-669"></a>    <span class="n">retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+<a id="__codelineno-0-670" name="__codelineno-0-670"></a>    <span class="n">user_agent</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-671" name="__codelineno-0-671"></a>    <span class="n">max_tiles</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">MAX_TILES</span><span class="p">,</span>
+<a id="__codelineno-0-672" name="__codelineno-0-672"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<a id="__codelineno-0-673" name="__codelineno-0-673"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Overlay a web-tile basemap on a matplotlib axes.</span>
+<a id="__codelineno-0-674" name="__codelineno-0-674"></a>
+<a id="__codelineno-0-675" name="__codelineno-0-675"></a><span class="sd">    Fetches XYZ web tiles that cover the axes&#39; current extent, stitches</span>
+<a id="__codelineno-0-676" name="__codelineno-0-676"></a><span class="sd">    them into a single composite image, and renders the image below the</span>
+<a id="__codelineno-0-677" name="__codelineno-0-677"></a><span class="sd">    existing data layer. When the data is already in Web Mercator</span>
+<a id="__codelineno-0-678" name="__codelineno-0-678"></a><span class="sd">    (EPSG:3857) the tiles are placed in-place; for any other CRS the</span>
+<a id="__codelineno-0-679" name="__codelineno-0-679"></a><span class="sd">    image is placed in the target CRS using the data&#39;s densified bounds</span>
+<a id="__codelineno-0-680" name="__codelineno-0-680"></a><span class="sd">    -- matplotlib stretches the bitmap to fit, which is visually</span>
+<a id="__codelineno-0-681" name="__codelineno-0-681"></a><span class="sd">    acceptable for small extents.</span>
+<a id="__codelineno-0-682" name="__codelineno-0-682"></a>
+<a id="__codelineno-0-683" name="__codelineno-0-683"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-684" name="__codelineno-0-684"></a><span class="sd">        ax: Matplotlib `matplotlib.axes.Axes` to add the</span>
+<a id="__codelineno-0-685" name="__codelineno-0-685"></a><span class="sd">            basemap to. Data must already be plotted so the axis</span>
+<a id="__codelineno-0-686" name="__codelineno-0-686"></a><span class="sd">            limits define the geographic extent.</span>
+<a id="__codelineno-0-687" name="__codelineno-0-687"></a><span class="sd">        source: Tile provider. `None` defaults to</span>
+<a id="__codelineno-0-688" name="__codelineno-0-688"></a><span class="sd">            `OpenStreetMap.Mapnik`. A dot-separated string such as</span>
+<a id="__codelineno-0-689" name="__codelineno-0-689"></a><span class="sd">            `&quot;CartoDB.Positron&quot;` is resolved via</span>
+<a id="__codelineno-0-690" name="__codelineno-0-690"></a><span class="sd">            `get_provider`. An `xyzservices.TileProvider` is</span>
+<a id="__codelineno-0-691" name="__codelineno-0-691"></a><span class="sd">            used directly.</span>
+<a id="__codelineno-0-692" name="__codelineno-0-692"></a><span class="sd">        crs: CRS of the data on `ax`. An integer is interpreted as an</span>
+<a id="__codelineno-0-693" name="__codelineno-0-693"></a><span class="sd">            EPSG code; a string is passed through (`&quot;EPSG:XXXX&quot;` or</span>
+<a id="__codelineno-0-694" name="__codelineno-0-694"></a><span class="sd">            WKT). `None` is treated as EPSG:3857.</span>
+<a id="__codelineno-0-695" name="__codelineno-0-695"></a><span class="sd">        zoom: Tile zoom level. `&quot;auto&quot;` derives a level from the</span>
+<a id="__codelineno-0-696" name="__codelineno-0-696"></a><span class="sd">            axes extent. Integers must be in `[0, 19]`.</span>
+<a id="__codelineno-0-697" name="__codelineno-0-697"></a><span class="sd">        alpha: Opacity of the basemap (`0.0`--`1.0`).</span>
+<a id="__codelineno-0-698" name="__codelineno-0-698"></a><span class="sd">        attribution: `True` adds the provider&#39;s attribution text, a</span>
+<a id="__codelineno-0-699" name="__codelineno-0-699"></a><span class="sd">            string overrides it, `False` skips it.</span>
+<a id="__codelineno-0-700" name="__codelineno-0-700"></a><span class="sd">        zorder: Matplotlib zorder for the basemap (`-1` puts it</span>
+<a id="__codelineno-0-701" name="__codelineno-0-701"></a><span class="sd">            behind all data).</span>
+<a id="__codelineno-0-702" name="__codelineno-0-702"></a><span class="sd">        interpolation: Interpolation method passed to `ax.imshow`.</span>
+<a id="__codelineno-0-703" name="__codelineno-0-703"></a><span class="sd">        timeout: Per-tile HTTP timeout in seconds.</span>
+<a id="__codelineno-0-704" name="__codelineno-0-704"></a><span class="sd">        retries: Per-tile retry count.</span>
+<a id="__codelineno-0-705" name="__codelineno-0-705"></a><span class="sd">        user_agent: `User-Agent` header to send on tile requests.</span>
+<a id="__codelineno-0-706" name="__codelineno-0-706"></a><span class="sd">            `None` (default) uses `USER_AGENT`</span>
+<a id="__codelineno-0-707" name="__codelineno-0-707"></a><span class="sd">            (`cleopatra/&lt;version&gt; (+repo-url)`). Pass your own string</span>
+<a id="__codelineno-0-708" name="__codelineno-0-708"></a><span class="sd">            when embedding cleopatra in an application so the traffic is</span>
+<a id="__codelineno-0-709" name="__codelineno-0-709"></a><span class="sd">            attributed to *that* app (recommended for production use, and</span>
+<a id="__codelineno-0-710" name="__codelineno-0-710"></a><span class="sd">            required by some providers&#39; usage policies).</span>
+<a id="__codelineno-0-711" name="__codelineno-0-711"></a><span class="sd">        max_tiles: Cap on how many tiles to fetch. If the chosen `zoom`</span>
+<a id="__codelineno-0-712" name="__codelineno-0-712"></a><span class="sd">            would need more than this, the zoom is stepped down until the</span>
+<a id="__codelineno-0-713" name="__codelineno-0-713"></a><span class="sd">            count fits (or reaches 0). Defaults to `MAX_TILES`</span>
+<a id="__codelineno-0-714" name="__codelineno-0-714"></a><span class="sd">            (`256`). Must be a positive int.</span>
+<a id="__codelineno-0-715" name="__codelineno-0-715"></a>
+<a id="__codelineno-0-716" name="__codelineno-0-716"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-717" name="__codelineno-0-717"></a><span class="sd">        matplotlib.axes.Axes: The same axes, for chaining.</span>
+<a id="__codelineno-0-718" name="__codelineno-0-718"></a>
+<a id="__codelineno-0-719" name="__codelineno-0-719"></a><span class="sd">    Raises:</span>
+<a id="__codelineno-0-720" name="__codelineno-0-720"></a><span class="sd">        ImportError: If the `[tiles]` extra is not installed.</span>
+<a id="__codelineno-0-721" name="__codelineno-0-721"></a><span class="sd">        TypeError: If `ax` is not a matplotlib Axes.</span>
+<a id="__codelineno-0-722" name="__codelineno-0-722"></a><span class="sd">        ValueError: If the axes have no data extent or `zoom` is</span>
+<a id="__codelineno-0-723" name="__codelineno-0-723"></a><span class="sd">            invalid.</span>
+<a id="__codelineno-0-724" name="__codelineno-0-724"></a><span class="sd">        ConnectionError: If tiles cannot be fetched from the provider.</span>
+<a id="__codelineno-0-725" name="__codelineno-0-725"></a>
+<a id="__codelineno-0-726" name="__codelineno-0-726"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-727" name="__codelineno-0-727"></a><span class="sd">        Add a default OpenStreetMap basemap to an existing plot:</span>
+<a id="__codelineno-0-728" name="__codelineno-0-728"></a>
+<a id="__codelineno-0-729" name="__codelineno-0-729"></a><span class="sd">        &gt;&gt;&gt; import matplotlib</span>
+<a id="__codelineno-0-730" name="__codelineno-0-730"></a><span class="sd">        &gt;&gt;&gt; matplotlib.use(&quot;Agg&quot;)</span>
+<a id="__codelineno-0-731" name="__codelineno-0-731"></a><span class="sd">        &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-732" name="__codelineno-0-732"></a><span class="sd">        &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-733" name="__codelineno-0-733"></a><span class="sd">        &gt;&gt;&gt; _ = ax.plot([1000000.0, 1200000.0], [6000000.0, 6200000.0])</span>
+<a id="__codelineno-0-734" name="__codelineno-0-734"></a><span class="sd">        &gt;&gt;&gt; _ = add_tiles(ax, crs=3857)  # doctest: +SKIP</span>
+<a id="__codelineno-0-735" name="__codelineno-0-735"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-736" name="__codelineno-0-736"></a>    <span class="n">_require_tiles_extra</span><span class="p">()</span>
+<a id="__codelineno-0-737" name="__codelineno-0-737"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">mercantile</span>
+<a id="__codelineno-0-738" name="__codelineno-0-738"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">pyproj</span><span class="w"> </span><span class="kn">import</span> <span class="n">Transformer</span>
+<a id="__codelineno-0-739" name="__codelineno-0-739"></a>
+<a id="__codelineno-0-740" name="__codelineno-0-740"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="s2">&quot;get_xlim&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="s2">&quot;get_ylim&quot;</span><span class="p">):</span>
+<a id="__codelineno-0-741" name="__codelineno-0-741"></a>        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+<a id="__codelineno-0-742" name="__codelineno-0-742"></a>            <span class="s2">&quot;ax must be a matplotlib.axes.Axes instance, &quot;</span>
+<a id="__codelineno-0-743" name="__codelineno-0-743"></a>            <span class="sa">f</span><span class="s2">&quot;got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-744" name="__codelineno-0-744"></a>        <span class="p">)</span>
+<a id="__codelineno-0-745" name="__codelineno-0-745"></a>
+<a id="__codelineno-0-746" name="__codelineno-0-746"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">max_tiles</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">max_tiles</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span> <span class="ow">or</span> <span class="n">max_tiles</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+<a id="__codelineno-0-747" name="__codelineno-0-747"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;max_tiles must be a positive int, got </span><span class="si">{</span><span class="n">max_tiles</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-748" name="__codelineno-0-748"></a>
+<a id="__codelineno-0-749" name="__codelineno-0-749"></a>    <span class="n">x0</span><span class="p">,</span> <span class="n">x1</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span>
+<a id="__codelineno-0-750" name="__codelineno-0-750"></a>    <span class="n">y0</span><span class="p">,</span> <span class="n">y1</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
+<a id="__codelineno-0-751" name="__codelineno-0-751"></a>    <span class="n">west</span><span class="p">,</span> <span class="n">east</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">)</span>
+<a id="__codelineno-0-752" name="__codelineno-0-752"></a>    <span class="n">south</span><span class="p">,</span> <span class="n">north</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">y1</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">y1</span><span class="p">)</span>
+<a id="__codelineno-0-753" name="__codelineno-0-753"></a>
+<a id="__codelineno-0-754" name="__codelineno-0-754"></a>    <span class="k">if</span> <span class="p">(</span><span class="n">west</span><span class="p">,</span> <span class="n">east</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">south</span><span class="p">,</span> <span class="n">north</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">):</span>
+<a id="__codelineno-0-755" name="__codelineno-0-755"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-756" name="__codelineno-0-756"></a>            <span class="s2">&quot;Axes have no data extent. Plot data before adding a basemap.&quot;</span>
+<a id="__codelineno-0-757" name="__codelineno-0-757"></a>        <span class="p">)</span>
+<a id="__codelineno-0-758" name="__codelineno-0-758"></a>
+<a id="__codelineno-0-759" name="__codelineno-0-759"></a>    <span class="k">if</span> <span class="n">west</span> <span class="o">==</span> <span class="n">east</span> <span class="ow">or</span> <span class="n">south</span> <span class="o">==</span> <span class="n">north</span><span class="p">:</span>
+<a id="__codelineno-0-760" name="__codelineno-0-760"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-761" name="__codelineno-0-761"></a>            <span class="sa">f</span><span class="s2">&quot;Axes have zero-area extent (west=</span><span class="si">{</span><span class="n">west</span><span class="si">}</span><span class="s2">, east=</span><span class="si">{</span><span class="n">east</span><span class="si">}</span><span class="s2">, &quot;</span>
+<a id="__codelineno-0-762" name="__codelineno-0-762"></a>            <span class="sa">f</span><span class="s2">&quot;south=</span><span class="si">{</span><span class="n">south</span><span class="si">}</span><span class="s2">, north=</span><span class="si">{</span><span class="n">north</span><span class="si">}</span><span class="s2">). A basemap requires a &quot;</span>
+<a id="__codelineno-0-763" name="__codelineno-0-763"></a>            <span class="sa">f</span><span class="s2">&quot;non-degenerate geographic extent.&quot;</span>
+<a id="__codelineno-0-764" name="__codelineno-0-764"></a>        <span class="p">)</span>
+<a id="__codelineno-0-765" name="__codelineno-0-765"></a>
+<a id="__codelineno-0-766" name="__codelineno-0-766"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="n">source</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-767" name="__codelineno-0-767"></a>        <span class="n">provider</span> <span class="o">=</span> <span class="n">get_provider</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+<a id="__codelineno-0-768" name="__codelineno-0-768"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-769" name="__codelineno-0-769"></a>        <span class="n">provider</span> <span class="o">=</span> <span class="n">source</span>
+<a id="__codelineno-0-770" name="__codelineno-0-770"></a>
+<a id="__codelineno-0-771" name="__codelineno-0-771"></a>    <span class="n">crs_value</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="mi">3857</span> <span class="k">if</span> <span class="n">crs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">crs</span>
+<a id="__codelineno-0-772" name="__codelineno-0-772"></a>    <span class="n">crs_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;EPSG:</span><span class="si">{</span><span class="n">crs_value</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">crs_value</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">crs_value</span><span class="p">)</span>
+<a id="__codelineno-0-773" name="__codelineno-0-773"></a>    <span class="n">is_3857</span> <span class="o">=</span> <span class="n">crs_str</span> <span class="o">==</span> <span class="s2">&quot;EPSG:3857&quot;</span>
+<a id="__codelineno-0-774" name="__codelineno-0-774"></a>
+<a id="__codelineno-0-775" name="__codelineno-0-775"></a>    <span class="k">if</span> <span class="n">is_3857</span><span class="p">:</span>
+<a id="__codelineno-0-776" name="__codelineno-0-776"></a>        <span class="n">w3857</span><span class="p">,</span> <span class="n">s3857</span><span class="p">,</span> <span class="n">e3857</span><span class="p">,</span> <span class="n">n3857</span> <span class="o">=</span> <span class="n">west</span><span class="p">,</span> <span class="n">south</span><span class="p">,</span> <span class="n">east</span><span class="p">,</span> <span class="n">north</span>
+<a id="__codelineno-0-777" name="__codelineno-0-777"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-778" name="__codelineno-0-778"></a>        <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-779" name="__codelineno-0-779"></a>            <span class="n">w3857</span><span class="p">,</span> <span class="n">s3857</span><span class="p">,</span> <span class="n">e3857</span><span class="p">,</span> <span class="n">n3857</span> <span class="o">=</span> <span class="n">_densify_and_reproject_bounds</span><span class="p">(</span>
+<a id="__codelineno-0-780" name="__codelineno-0-780"></a>                <span class="n">west</span><span class="p">,</span> <span class="n">south</span><span class="p">,</span> <span class="n">east</span><span class="p">,</span> <span class="n">north</span><span class="p">,</span> <span class="n">crs_str</span><span class="p">,</span> <span class="s2">&quot;EPSG:3857&quot;</span>
+<a id="__codelineno-0-781" name="__codelineno-0-781"></a>            <span class="p">)</span>
+<a id="__codelineno-0-782" name="__codelineno-0-782"></a>        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-0-783" name="__codelineno-0-783"></a>            <span class="k">if</span> <span class="s2">&quot;CRS&quot;</span> <span class="ow">in</span> <span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span> <span class="ow">or</span> <span class="s2">&quot;Invalid&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">):</span>
+<a id="__codelineno-0-784" name="__codelineno-0-784"></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-785" name="__codelineno-0-785"></a>                    <span class="sa">f</span><span class="s2">&quot;Invalid CRS: </span><span class="si">{</span><span class="n">crs_str</span><span class="si">!r}</span><span class="s2">. Provide a valid &quot;</span>
+<a id="__codelineno-0-786" name="__codelineno-0-786"></a>                    <span class="sa">f</span><span class="s2">&quot;EPSG code or WKT string.&quot;</span>
+<a id="__codelineno-0-787" name="__codelineno-0-787"></a>                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+<a id="__codelineno-0-788" name="__codelineno-0-788"></a>            <span class="k">raise</span>
+<a id="__codelineno-0-789" name="__codelineno-0-789"></a>
+<a id="__codelineno-0-790" name="__codelineno-0-790"></a>    <span class="n">transformer_to_4326</span> <span class="o">=</span> <span class="n">Transformer</span><span class="o">.</span><span class="n">from_crs</span><span class="p">(</span>
+<a id="__codelineno-0-791" name="__codelineno-0-791"></a>        <span class="s2">&quot;EPSG:3857&quot;</span><span class="p">,</span> <span class="s2">&quot;EPSG:4326&quot;</span><span class="p">,</span> <span class="n">always_xy</span><span class="o">=</span><span class="kc">True</span>
+<a id="__codelineno-0-792" name="__codelineno-0-792"></a>    <span class="p">)</span>
+<a id="__codelineno-0-793" name="__codelineno-0-793"></a>    <span class="n">w4326</span><span class="p">,</span> <span class="n">s4326</span> <span class="o">=</span> <span class="n">transformer_to_4326</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">w3857</span><span class="p">,</span> <span class="n">s3857</span><span class="p">)</span>
+<a id="__codelineno-0-794" name="__codelineno-0-794"></a>    <span class="n">e4326</span><span class="p">,</span> <span class="n">n4326</span> <span class="o">=</span> <span class="n">transformer_to_4326</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">e3857</span><span class="p">,</span> <span class="n">n3857</span><span class="p">)</span>
+<a id="__codelineno-0-795" name="__codelineno-0-795"></a>
+<a id="__codelineno-0-796" name="__codelineno-0-796"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">(</span><span class="n">w4326</span><span class="p">,</span> <span class="n">s4326</span><span class="p">,</span> <span class="n">e4326</span><span class="p">,</span> <span class="n">n4326</span><span class="p">)):</span>
+<a id="__codelineno-0-797" name="__codelineno-0-797"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-798" name="__codelineno-0-798"></a>            <span class="s2">&quot;Reprojection to EPSG:4326 produced infinite or NaN &quot;</span>
+<a id="__codelineno-0-799" name="__codelineno-0-799"></a>            <span class="s2">&quot;coordinates. The data extent may be outside the valid &quot;</span>
+<a id="__codelineno-0-800" name="__codelineno-0-800"></a>            <span class="s2">&quot;Web Mercator domain.&quot;</span>
+<a id="__codelineno-0-801" name="__codelineno-0-801"></a>        <span class="p">)</span>
+<a id="__codelineno-0-802" name="__codelineno-0-802"></a>
+<a id="__codelineno-0-803" name="__codelineno-0-803"></a>    <span class="n">s4326</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">s4326</span><span class="p">,</span> <span class="o">-</span><span class="mf">85.06</span><span class="p">)</span>
+<a id="__codelineno-0-804" name="__codelineno-0-804"></a>    <span class="n">n4326</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">n4326</span><span class="p">,</span> <span class="mf">85.06</span><span class="p">)</span>
+<a id="__codelineno-0-805" name="__codelineno-0-805"></a>
+<a id="__codelineno-0-806" name="__codelineno-0-806"></a>    <span class="n">bounds_4326</span> <span class="o">=</span> <span class="p">(</span><span class="n">w4326</span><span class="p">,</span> <span class="n">s4326</span><span class="p">,</span> <span class="n">e4326</span><span class="p">,</span> <span class="n">n4326</span><span class="p">)</span>
+<a id="__codelineno-0-807" name="__codelineno-0-807"></a>
+<a id="__codelineno-0-808" name="__codelineno-0-808"></a>    <span class="k">if</span> <span class="n">zoom</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-809" name="__codelineno-0-809"></a>        <span class="n">tile_zoom</span> <span class="o">=</span> <span class="n">auto_zoom</span><span class="p">(</span><span class="n">bounds_4326</span><span class="p">)</span>
+<a id="__codelineno-0-810" name="__codelineno-0-810"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-811" name="__codelineno-0-811"></a>        <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-812" name="__codelineno-0-812"></a>            <span class="n">tile_zoom</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">zoom</span><span class="p">)</span>
+<a id="__codelineno-0-813" name="__codelineno-0-813"></a>        <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-0-814" name="__codelineno-0-814"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-815" name="__codelineno-0-815"></a>                <span class="sa">f</span><span class="s2">&quot;zoom must be &#39;auto&#39; or int 0-19, got </span><span class="si">{</span><span class="n">zoom</span><span class="si">!r}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-816" name="__codelineno-0-816"></a>            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+<a id="__codelineno-0-817" name="__codelineno-0-817"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">tile_zoom</span> <span class="o">&lt;=</span> <span class="mi">19</span><span class="p">:</span>
+<a id="__codelineno-0-818" name="__codelineno-0-818"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;zoom must be 0-19, got </span><span class="si">{</span><span class="n">tile_zoom</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-819" name="__codelineno-0-819"></a>
+<a id="__codelineno-0-820" name="__codelineno-0-820"></a>    <span class="n">original_zoom</span> <span class="o">=</span> <span class="n">tile_zoom</span>
+<a id="__codelineno-0-821" name="__codelineno-0-821"></a>    <span class="n">tiles</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mercantile</span><span class="o">.</span><span class="n">tiles</span><span class="p">(</span><span class="n">w4326</span><span class="p">,</span> <span class="n">s4326</span><span class="p">,</span> <span class="n">e4326</span><span class="p">,</span> <span class="n">n4326</span><span class="p">,</span> <span class="n">zooms</span><span class="o">=</span><span class="n">tile_zoom</span><span class="p">))</span>
+<a id="__codelineno-0-822" name="__codelineno-0-822"></a>
+<a id="__codelineno-0-823" name="__codelineno-0-823"></a>    <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">tiles</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_tiles</span> <span class="ow">and</span> <span class="n">tile_zoom</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-824" name="__codelineno-0-824"></a>        <span class="n">tile_zoom</span> <span class="o">-=</span> <span class="mi">1</span>
+<a id="__codelineno-0-825" name="__codelineno-0-825"></a>        <span class="n">tiles</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mercantile</span><span class="o">.</span><span class="n">tiles</span><span class="p">(</span><span class="n">w4326</span><span class="p">,</span> <span class="n">s4326</span><span class="p">,</span> <span class="n">e4326</span><span class="p">,</span> <span class="n">n4326</span><span class="p">,</span> <span class="n">zooms</span><span class="o">=</span><span class="n">tile_zoom</span><span class="p">))</span>
+<a id="__codelineno-0-826" name="__codelineno-0-826"></a>
+<a id="__codelineno-0-827" name="__codelineno-0-827"></a>    <span class="k">if</span> <span class="n">tile_zoom</span> <span class="o">!=</span> <span class="n">original_zoom</span><span class="p">:</span>
+<a id="__codelineno-0-828" name="__codelineno-0-828"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+<a id="__codelineno-0-829" name="__codelineno-0-829"></a>            <span class="s2">&quot;Zoom reduced from </span><span class="si">%d</span><span class="s2"> to </span><span class="si">%d</span><span class="s2"> (extent requires &gt; </span><span class="si">%d</span><span class="s2"> tiles).&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-830" name="__codelineno-0-830"></a>            <span class="n">original_zoom</span><span class="p">,</span>
+<a id="__codelineno-0-831" name="__codelineno-0-831"></a>            <span class="n">tile_zoom</span><span class="p">,</span>
+<a id="__codelineno-0-832" name="__codelineno-0-832"></a>            <span class="n">max_tiles</span><span class="p">,</span>
+<a id="__codelineno-0-833" name="__codelineno-0-833"></a>        <span class="p">)</span>
+<a id="__codelineno-0-834" name="__codelineno-0-834"></a>
+<a id="__codelineno-0-835" name="__codelineno-0-835"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">tiles</span><span class="p">:</span>
+<a id="__codelineno-0-836" name="__codelineno-0-836"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-837" name="__codelineno-0-837"></a>            <span class="sa">f</span><span class="s2">&quot;No tiles found for bounds </span><span class="si">{</span><span class="n">bounds_4326</span><span class="si">}</span><span class="s2"> at zoom &quot;</span>
+<a id="__codelineno-0-838" name="__codelineno-0-838"></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">tile_zoom</span><span class="si">}</span><span class="s2">. The extent may be outside valid tile &quot;</span>
+<a id="__codelineno-0-839" name="__codelineno-0-839"></a>            <span class="sa">f</span><span class="s2">&quot;coverage.&quot;</span>
+<a id="__codelineno-0-840" name="__codelineno-0-840"></a>        <span class="p">)</span>
+<a id="__codelineno-0-841" name="__codelineno-0-841"></a>
+<a id="__codelineno-0-842" name="__codelineno-0-842"></a>    <span class="n">tile_data</span> <span class="o">=</span> <span class="n">fetch_tiles</span><span class="p">(</span>
+<a id="__codelineno-0-843" name="__codelineno-0-843"></a>        <span class="n">tiles</span><span class="p">,</span>
+<a id="__codelineno-0-844" name="__codelineno-0-844"></a>        <span class="n">provider</span><span class="p">,</span>
+<a id="__codelineno-0-845" name="__codelineno-0-845"></a>        <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+<a id="__codelineno-0-846" name="__codelineno-0-846"></a>        <span class="n">retries</span><span class="o">=</span><span class="n">retries</span><span class="p">,</span>
+<a id="__codelineno-0-847" name="__codelineno-0-847"></a>        <span class="n">user_agent</span><span class="o">=</span><span class="n">user_agent</span> <span class="k">if</span> <span class="n">user_agent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">USER_AGENT</span><span class="p">,</span>
+<a id="__codelineno-0-848" name="__codelineno-0-848"></a>    <span class="p">)</span>
+<a id="__codelineno-0-849" name="__codelineno-0-849"></a>    <span class="n">image</span><span class="p">,</span> <span class="n">extent_3857</span> <span class="o">=</span> <span class="n">stitch_tiles</span><span class="p">(</span><span class="n">tile_data</span><span class="p">,</span> <span class="n">tiles</span><span class="p">,</span> <span class="n">tile_zoom</span><span class="p">)</span>
+<a id="__codelineno-0-850" name="__codelineno-0-850"></a>
+<a id="__codelineno-0-851" name="__codelineno-0-851"></a>    <span class="k">if</span> <span class="n">is_3857</span><span class="p">:</span>
+<a id="__codelineno-0-852" name="__codelineno-0-852"></a>        <span class="n">extent</span> <span class="o">=</span> <span class="n">extent_3857</span>
+<a id="__codelineno-0-853" name="__codelineno-0-853"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-854" name="__codelineno-0-854"></a>        <span class="c1"># No GDAL: place the tile bitmap in the target CRS using the</span>
+<a id="__codelineno-0-855" name="__codelineno-0-855"></a>        <span class="c1"># data&#39;s bounds. Matplotlib stretches the image -- accurate</span>
+<a id="__codelineno-0-856" name="__codelineno-0-856"></a>        <span class="c1"># enough for small extents (see module docstring).</span>
+<a id="__codelineno-0-857" name="__codelineno-0-857"></a>        <span class="n">extent</span> <span class="o">=</span> <span class="p">(</span><span class="n">west</span><span class="p">,</span> <span class="n">south</span><span class="p">,</span> <span class="n">east</span><span class="p">,</span> <span class="n">north</span><span class="p">)</span>
+<a id="__codelineno-0-858" name="__codelineno-0-858"></a>
+<a id="__codelineno-0-859" name="__codelineno-0-859"></a>    <span class="n">xlim</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span>
+<a id="__codelineno-0-860" name="__codelineno-0-860"></a>    <span class="n">ylim</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
+<a id="__codelineno-0-861" name="__codelineno-0-861"></a>
+<a id="__codelineno-0-862" name="__codelineno-0-862"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span>
+<a id="__codelineno-0-863" name="__codelineno-0-863"></a>        <span class="n">image</span><span class="p">,</span>
+<a id="__codelineno-0-864" name="__codelineno-0-864"></a>        <span class="n">extent</span><span class="o">=</span><span class="p">[</span><span class="n">extent</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">extent</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">extent</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">extent</span><span class="p">[</span><span class="mi">3</span><span class="p">]],</span>
+<a id="__codelineno-0-865" name="__codelineno-0-865"></a>        <span class="n">interpolation</span><span class="o">=</span><span class="n">interpolation</span><span class="p">,</span>
+<a id="__codelineno-0-866" name="__codelineno-0-866"></a>        <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span>
+<a id="__codelineno-0-867" name="__codelineno-0-867"></a>        <span class="n">zorder</span><span class="o">=</span><span class="n">zorder</span><span class="p">,</span>
+<a id="__codelineno-0-868" name="__codelineno-0-868"></a>        <span class="n">aspect</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">get_aspect</span><span class="p">(),</span>
+<a id="__codelineno-0-869" name="__codelineno-0-869"></a>    <span class="p">)</span>
+<a id="__codelineno-0-870" name="__codelineno-0-870"></a>
+<a id="__codelineno-0-871" name="__codelineno-0-871"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">xlim</span><span class="p">)</span>
+<a id="__codelineno-0-872" name="__codelineno-0-872"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">ylim</span><span class="p">)</span>
+<a id="__codelineno-0-873" name="__codelineno-0-873"></a>
+<a id="__codelineno-0-874" name="__codelineno-0-874"></a>    <span class="k">if</span> <span class="n">attribution</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+<a id="__codelineno-0-875" name="__codelineno-0-875"></a>        <span class="n">raw</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">provider</span><span class="p">,</span> <span class="s2">&quot;attribution&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">getattr</span><span class="p">(</span>
+<a id="__codelineno-0-876" name="__codelineno-0-876"></a>            <span class="n">provider</span><span class="p">,</span> <span class="s2">&quot;html_attribution&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span>
+<a id="__codelineno-0-877" name="__codelineno-0-877"></a>        <span class="p">)</span>
+<a id="__codelineno-0-878" name="__codelineno-0-878"></a>        <span class="k">if</span> <span class="n">raw</span><span class="p">:</span>
+<a id="__codelineno-0-879" name="__codelineno-0-879"></a>            <span class="c1"># Strip HTML tags, then unescape entities (`&amp;copy;` -&gt; `©`,</span>
+<a id="__codelineno-0-880" name="__codelineno-0-880"></a>            <span class="c1"># `&amp;amp;` -&gt; `&amp;`, ...) so the placed text reads cleanly.</span>
+<a id="__codelineno-0-881" name="__codelineno-0-881"></a>            <span class="n">attr_text</span> <span class="o">=</span> <span class="n">html</span><span class="o">.</span><span class="n">unescape</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;&lt;[^&gt;]+&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">raw</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">or</span> <span class="kc">None</span>
+<a id="__codelineno-0-882" name="__codelineno-0-882"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-883" name="__codelineno-0-883"></a>            <span class="n">attr_text</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-884" name="__codelineno-0-884"></a>    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">attribution</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+<a id="__codelineno-0-885" name="__codelineno-0-885"></a>        <span class="n">attr_text</span> <span class="o">=</span> <span class="n">attribution</span>
+<a id="__codelineno-0-886" name="__codelineno-0-886"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-887" name="__codelineno-0-887"></a>        <span class="n">attr_text</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-888" name="__codelineno-0-888"></a>
+<a id="__codelineno-0-889" name="__codelineno-0-889"></a>    <span class="k">if</span> <span class="n">attr_text</span><span class="p">:</span>
+<a id="__codelineno-0-890" name="__codelineno-0-890"></a>        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
+<a id="__codelineno-0-891" name="__codelineno-0-891"></a>            <span class="mf">0.99</span><span class="p">,</span>
+<a id="__codelineno-0-892" name="__codelineno-0-892"></a>            <span class="mf">0.01</span><span class="p">,</span>
+<a id="__codelineno-0-893" name="__codelineno-0-893"></a>            <span class="n">attr_text</span><span class="p">,</span>
+<a id="__codelineno-0-894" name="__codelineno-0-894"></a>            <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span>
+<a id="__codelineno-0-895" name="__codelineno-0-895"></a>            <span class="n">fontsize</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
+<a id="__codelineno-0-896" name="__codelineno-0-896"></a>            <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;right&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-897" name="__codelineno-0-897"></a>            <span class="n">va</span><span class="o">=</span><span class="s2">&quot;bottom&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-898" name="__codelineno-0-898"></a>            <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+<a id="__codelineno-0-899" name="__codelineno-0-899"></a>            <span class="n">bbox</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">boxstyle</span><span class="o">=</span><span class="s2">&quot;round,pad=0.2&quot;</span><span class="p">,</span> <span class="n">fc</span><span class="o">=</span><span class="s2">&quot;white&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">),</span>
+<a id="__codelineno-0-900" name="__codelineno-0-900"></a>        <span class="p">)</span>
+<a id="__codelineno-0-901" name="__codelineno-0-901"></a>
+<a id="__codelineno-0-902" name="__codelineno-0-902"></a>    <span class="k">return</span> <span class="n">ax</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
