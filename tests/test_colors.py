@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from matplotlib.colors import LinearSegmentedColormap
 
@@ -23,6 +25,12 @@ class TestCreateColors:
         assert len(colors.color_value) == 2713
         with pytest.raises(FileNotFoundError):
             Colors.create_from_image("color_ramp_image")
+
+    def test_create_from_image_accepts_pathlib_path(self, color_ramp_image: str):
+        """`create_from_image` accepts a `pathlib.Path`, not just `str` (issue #180)."""
+        colors = Colors.create_from_image(Path(color_ramp_image))
+        assert isinstance(colors.color_value, list)
+        assert len(colors.color_value) == 2713
 
     def test_raise_error(self, color_ramp_image: str):
         with pytest.raises(ValueError):
