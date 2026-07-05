@@ -11,6 +11,7 @@ from typing import Any
 
 import inspect
 import math
+import os
 import warnings
 
 import matplotlib.colors as colors
@@ -1084,7 +1085,7 @@ class Glyph:
         )
         return list(map(write_points, point_table))
 
-    def save_animation(self, path: str, fps: int = 2) -> None:
+    def save_animation(self, path: str | os.PathLike, fps: int = 2) -> None:
         """Save this glyph's animation (`self.anim`) to a file.
 
         Thin wrapper around `cleopatra.animation.save_animation`; the output
@@ -1092,7 +1093,8 @@ class Glyph:
         mov/avi/mp4 require FFmpeg to be installed.
 
         Args:
-            path: Output file path. Extension determines format.
+            path: Output file path, as a `str` or `os.PathLike` (e.g. a
+                `pathlib.Path`). Extension determines format.
                 Supported: gif, mov, avi, mp4.
             fps: Frames per second. Default is 2.
 

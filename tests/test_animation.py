@@ -53,6 +53,19 @@ class TestSaveAnimation:
         # GIF magic number — confirms a real GIF, not a stray file.
         assert path.read_bytes()[:6] in (b"GIF87a", b"GIF89a")
 
+    def test_accepts_pathlib_path(self, tiny_anim, tmp_path):
+        """A `pathlib.Path` output path is accepted, not just `str` (issue #180).
+
+        Regression: the format was derived with `str.rsplit`, so a `Path`
+        raised `AttributeError`. The path is now normalised via `os.fspath`.
+        """
+        path = tmp_path / "from_path.gif"
+        returned = save_animation(tiny_anim, path, fps=2)  # Path, not str
+
+        assert path.exists(), "GIF was not written from a pathlib.Path"
+        assert path.read_bytes()[:6] in (b"GIF87a", b"GIF89a")
+        assert returned == str(path), "should return the fspath string of the Path"
+
     def test_unsupported_format_raises(self, tiny_anim, tmp_path):
         """An unsupported extension raises a clear ValueError."""
         with pytest.raises(ValueError, match="not supported"):

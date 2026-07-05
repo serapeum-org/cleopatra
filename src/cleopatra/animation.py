@@ -28,7 +28,9 @@ if TYPE_CHECKING:  # import only for type checkers; IPython stays optional
 SUPPORTED_VIDEO_FORMAT = ["gif", "mov", "avi", "mp4"]
 
 
-def save_animation(anim: FuncAnimation, path: str, fps: int = 2) -> str:
+def save_animation(
+    anim: FuncAnimation, path: str | os.PathLike, fps: int = 2
+) -> str:
     """Save any `FuncAnimation` to a file.
 
     The output format is determined by the file extension. GIF uses
@@ -36,7 +38,8 @@ def save_animation(anim: FuncAnimation, path: str, fps: int = 2) -> str:
 
     Args:
         anim: The animation to save.
-        path: Output file path. Extension determines format.
+        path: Output file path, as a `str` or `os.PathLike` (e.g. a
+            `pathlib.Path`). Extension determines format.
             Supported: gif, mov, avi, mp4.
         fps: Frames per second. Default is 2.
 
@@ -113,7 +116,10 @@ def save_animation(anim: FuncAnimation, path: str, fps: int = 2) -> str:
         to_gif: Render an animation to in-memory GIF bytes instead of a file.
         embed_gif: Wrap an animation as an ``IPython.display.Image``.
     """
-    video_format = path.rsplit(".", 1)[-1].lower()
+    # Accept str or os.PathLike (e.g. pathlib.Path): normalise to a string
+    # once so the extension parse and the writers both get a plain path.
+    path = os.fspath(path)
+    video_format = os.path.splitext(path)[1].lstrip(".").lower()
     if video_format not in SUPPORTED_VIDEO_FORMAT:
         raise ValueError(
             f"The given extension {video_format} implies a format that is "
