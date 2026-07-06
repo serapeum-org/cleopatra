@@ -120,6 +120,12 @@ def save_animation(
     # once so the extension parse and the writers both get a plain path.
     path = os.fspath(path)
     video_format = os.path.splitext(path)[1].lstrip(".").lower()
+    if not video_format:
+        raise ValueError(
+            f"The output path {path!r} has no file extension; the output "
+            f"format is taken from the extension, so use one of "
+            f"{SUPPORTED_VIDEO_FORMAT}."
+        )
     if video_format not in SUPPORTED_VIDEO_FORMAT:
         raise ValueError(
             f"The given extension {video_format} implies a format that is "

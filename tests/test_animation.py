@@ -131,15 +131,15 @@ class TestSaveAnimation:
         assert result == f"clip.{ext}", f"should return the path, got {result!r}"
 
     def test_no_extension_raises(self):
-        """A path with no extension is rejected as an unsupported format.
+        """A path with no extension is rejected with a clear message.
 
         Test scenario:
-            ``"noext"`` has no dot, so ``rsplit`` yields the whole string,
-            which is not a supported format and raises ``ValueError`` before
-            any save is attempted.
+            ``"noext"`` has no dot, so ``os.path.splitext`` yields an empty
+            extension, which raises ``ValueError`` naming the path before any
+            save is attempted.
         """
         anim = MagicMock(spec=FuncAnimation)
-        with pytest.raises(ValueError, match="not supported"):
+        with pytest.raises(ValueError, match="no file extension"):
             save_animation(anim, "noext")
         anim.save.assert_not_called()
 
