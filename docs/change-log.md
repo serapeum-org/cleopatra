@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.21.0 (2026-07-06)
+
+
+- fix(animation): accept os.PathLike in save_animation and create_from_image (#181)
+- save_animation derived the output format with str.rsplit, so passing a                                              
+  pathlib.Path (idiomatic from pyramids' Path-everywhere Dataset API)                                                 
+  raised AttributeError: 'WindowsPath' object has no attribute 'rsplit'.                                              
+                                                                                                                      
+  - Normalise paths with os.fspath and derive the extension via                                                       
+    os.path.splitext, so both str and os.PathLike work.                                                               
+  - Widen the type hints to str | os.PathLike on animation.save_animation,                                            
+    ArrayGlyph.save_animation, and Colors.create_from_image (the only two                                             
+    public path-taking APIs; reference/tiles handle internal paths only).                                             
+  - Give a clear error when the path has no file extension, and lock the                                              
+    tightened dotfile / extension-less rejection (.gif, dir/.gif, bare                                                
+    gif) with a regression test.                                                                                      
+  - Cover PathLike on the happy and error branches of every widened API.                                              
+                                                                                                                      
+  Closes #180
+
 ## 0.20.0 (2026-06-26)
 
 
