@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.20.0 (2026-06-26)
+
+
+- feat(geo)!: glyph axis CRS with defaulting and assignment-time validation (#178)
+- Let the geographic glyphs carry the CRS of their plotted data so reference                      
+  layers default to it, and make bad values fail fast.                                            
+                                                                                                  
+  - `GeoMixin` gains a `crs` property (default `None`). `add_features` and                        
+    `add_tiles` default their `crs=` to `self.crs` when omitted, so a caller                      
+    that records the axis CRS once (`glyph.crs = 4326`) gets correctly placed                     
+    layers without restating it; an explicit `crs=` still wins and                                
+    `self.crs is None` is a pure pass-through.                                                    
+  - `crs` lives on `GeoMixin`, not the base `Glyph`, so non-geographic glyphs                     
+    are unaffected. `add_relief` is excluded -- it has no `crs` parameter                         
+    (relief is a fixed EPSG:4326 raster placed by `extent`).                                      
+  - The `crs` setter validates on assignment: `TypeError` for non                                 
+    int/str/None (bool rejected), `ValueError` for a non-positive EPSG code,                      
+    an empty string, or -- when `pyproj` is installed -- an unresolvable CRS.                     
+    Strings are stripped and a bare numeric string (`"4326"`) is normalised                       
+    to the int `4326`. Setting `crs` never requires the `[tiles]` extra; the                      
+    deep check is skipped (deferred to draw time) without `pyproj`.                               
+  - Make `add_tiles` options keyword-only after `source` (matching                                
+    `add_features`), so `crs` can no longer be passed positionally and the                        
+    default injection is unconditionally safe.                                                    
+  - Hoist the `cleopatra.tiles` / `cleopatra.reference` imports to module top                     
+    and call via the module, removing the inline imports.                                         
+                                                                                                  
+  BREAKING CHANGE: `cleopatra.tiles.add_tiles` now accepts `crs`, `zoom`,                         
+  `alpha`, `attribution`, `zorder`, `interpolation`, `timeout`, `retries`,                        
+  `user_agent` and `max_tiles` as keyword-only arguments (everything after                        
+  `source`). Callers that passed any of these positionally must switch to                         
+  keyword arguments; `ax` and `source` remain positional.                                         
+                                                                                                  
+  Closes #177
+
 ## 0.19.0 (2026-06-22)
 
 
