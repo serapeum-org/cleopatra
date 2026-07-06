@@ -264,6 +264,21 @@ class TestAnimate:
         anim_obj = array.animate(animate_time_list, title="Flow Accumulation")
         assert isinstance(anim_obj, FuncAnimation)
 
+    def test_save_animation_accepts_pathlib_path(
+        self,
+        coello_data: np.ndarray,
+        animate_time_list: list,
+        no_data_value: float,
+        tmp_path,
+    ):
+        """`ArrayGlyph.save_animation` accepts a `pathlib.Path` directly (issue #180)."""
+        array = ArrayGlyph(coello_data, exclude_value=[no_data_value])
+        array.animate(animate_time_list, title="Flow Accumulation")
+        out = tmp_path / "flow.gif"  # Path, not str
+        array.save_animation(out, fps=2)
+        assert out.exists(), "GIF was not written from a pathlib.Path"
+        assert out.read_bytes()[:6] in (b"GIF87a", b"GIF89a")
+
     def test_save_animation_gif(
         self,
         coello_data: np.ndarray,
