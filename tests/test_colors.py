@@ -32,6 +32,11 @@ class TestCreateColors:
         assert isinstance(colors.color_value, list)
         assert len(colors.color_value) == 2713
 
+    def test_create_from_image_missing_pathlib_path_raises(self, tmp_path):
+        """A missing `pathlib.Path` raises `FileNotFoundError` (widened type, error branch)."""
+        with pytest.raises(FileNotFoundError):
+            Colors.create_from_image(tmp_path / "does-not-exist.png")
+
     def test_raise_error(self, color_ramp_image: str):
         with pytest.raises(ValueError):
             Colors(11)

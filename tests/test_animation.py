@@ -71,6 +71,11 @@ class TestSaveAnimation:
         with pytest.raises(ValueError, match="not supported"):
             save_animation(tiny_anim, str(tmp_path / "out.webm"))
 
+    def test_unsupported_format_raises_with_path(self, tiny_anim, tmp_path):
+        """An unsupported extension raises even when the path is a `Path`."""
+        with pytest.raises(ValueError, match="not supported"):
+            save_animation(tiny_anim, tmp_path / "out.webm")
+
     def test_extension_is_case_insensitive(self, tiny_anim, tmp_path):
         """An upper/mixed-case extension is matched the same as lower-case."""
         path = tmp_path / "out.GIF"
