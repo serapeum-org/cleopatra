@@ -28,7 +28,9 @@ if TYPE_CHECKING:  # import only for type checkers; IPython stays optional
 SUPPORTED_VIDEO_FORMAT = ["gif", "mov", "avi", "mp4"]
 
 
-def save_animation(anim: FuncAnimation, path: str, fps: int = 2) -> str:
+def save_animation(
+    anim: FuncAnimation, path: str | os.PathLike, fps: int = 2
+) -> str:
     """Save any `FuncAnimation` to a file.
 
     The output format is determined by the file extension. GIF uses
@@ -36,12 +38,15 @@ def save_animation(anim: FuncAnimation, path: str, fps: int = 2) -> str:
 
     Args:
         anim: The animation to save.
-        path: Output file path. Extension determines format.
+        path: Output file path, as a `str` or `os.PathLike` (e.g. a
+            `pathlib.Path`). Extension determines format.
             Supported: gif, mov, avi, mp4.
         fps: Frames per second. Default is 2.
 
     Returns:
-        The `path` that was written (convenient for chaining).
+        The output path as a `str` (the `os.fspath` of `path`),
+        convenient for chaining. Note a `pathlib.Path` argument comes
+        back as its string form, not the original object.
 
     Raises:
         ValueError: If the file format is not supported.
@@ -113,7 +118,16 @@ def save_animation(anim: FuncAnimation, path: str, fps: int = 2) -> str:
         to_gif: Render an animation to in-memory GIF bytes instead of a file.
         embed_gif: Wrap an animation as an ``IPython.display.Image``.
     """
-    video_format = path.rsplit(".", 1)[-1].lower()
+    # Accept str or os.PathLike (e.g. pathlib.Path): normalise to a string
+    # once so the extension parse and the writers both get a plain path.
+    path = os.fspath(path)
+    video_format = os.path.splitext(path)[1].lstrip(".").lower()
+    if not video_format:
+        raise ValueError(
+            f"The output path {path!r} has no file extension; the output "
+            f"format is taken from the extension, so use one of "
+            f"{SUPPORTED_VIDEO_FORMAT}."
+        )
     if video_format not in SUPPORTED_VIDEO_FORMAT:
         raise ValueError(
             f"The given extension {video_format} implies a format that is "

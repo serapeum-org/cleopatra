@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Any, List, Tuple, Union
 
@@ -150,7 +151,7 @@ class Colors:
         self._color_value = color_value
 
     @classmethod
-    def create_from_image(cls, path: str) -> "Colors":
+    def create_from_image(cls, path: Union[str, os.PathLike]) -> "Colors":
         """Create a color object from an image.
 
         if you have an image of a color ramp, and you want to extract the colors from it, you can use this method.
@@ -158,7 +159,8 @@ class Colors:
         ![color-ramp](./../images/colors/color-ramp.png)
 
         Args:
-            path: The path to the image file.
+            path: The path to the image file, as a `str` or `os.PathLike`
+                (e.g. a `pathlib.Path`).
 
         Returns:
             Colors: A color object.
@@ -175,6 +177,7 @@ class Colors:
 
         ```
         """
+        path = os.fspath(path)
         if not Path(path).exists():
             raise FileNotFoundError(f"The file {path} does not exist.")
         try:

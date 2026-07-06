@@ -53,10 +53,28 @@ class TestSaveAnimation:
         # GIF magic number — confirms a real GIF, not a stray file.
         assert path.read_bytes()[:6] in (b"GIF87a", b"GIF89a")
 
+    def test_accepts_pathlib_path(self, tiny_anim, tmp_path):
+        """A `pathlib.Path` output path is accepted, not just `str` (issue #180).
+
+        Regression: the format was derived with `str.rsplit`, so a `Path`
+        raised `AttributeError`. The path is now normalised via `os.fspath`.
+        """
+        path = tmp_path / "from_path.gif"
+        returned = save_animation(tiny_anim, path, fps=2)  # Path, not str
+
+        assert path.exists(), "GIF was not written from a pathlib.Path"
+        assert path.read_bytes()[:6] in (b"GIF87a", b"GIF89a")
+        assert returned == str(path), "should return the fspath string of the Path"
+
     def test_unsupported_format_raises(self, tiny_anim, tmp_path):
         """An unsupported extension raises a clear ValueError."""
         with pytest.raises(ValueError, match="not supported"):
             save_animation(tiny_anim, str(tmp_path / "out.webm"))
+
+    def test_unsupported_format_raises_with_path(self, tiny_anim, tmp_path):
+        """An unsupported extension raises even when the path is a `Path`."""
+        with pytest.raises(ValueError, match="not supported"):
+            save_animation(tiny_anim, tmp_path / "out.webm")
 
     def test_extension_is_case_insensitive(self, tiny_anim, tmp_path):
         """An upper/mixed-case extension is matched the same as lower-case."""
@@ -118,16 +136,30 @@ class TestSaveAnimation:
         assert result == f"clip.{ext}", f"should return the path, got {result!r}"
 
     def test_no_extension_raises(self):
-        """A path with no extension is rejected as an unsupported format.
+        """A path with no extension is rejected with a clear message.
 
         Test scenario:
-            ``"noext"`` has no dot, so ``rsplit`` yields the whole string,
-            which is not a supported format and raises ``ValueError`` before
-            any save is attempted.
+            ``"noext"`` has no dot, so ``os.path.splitext`` yields an empty
+            extension, which raises ``ValueError`` naming the path before any
+            save is attempted.
         """
         anim = MagicMock(spec=FuncAnimation)
-        with pytest.raises(ValueError, match="not supported"):
+        with pytest.raises(ValueError, match="no file extension"):
             save_animation(anim, "noext")
+        anim.save.assert_not_called()
+
+    @pytest.mark.parametrize("path", [".gif", "dir/.gif", "gif", "mp4"])
+    def test_dotfile_or_bare_name_rejected(self, path):
+        """Dotfile-style / extension-less names have no real extension and raise.
+
+        Test scenario:
+            `os.path.splitext` treats a leading-dot basename (`.gif`) or a
+            dot-less name (`gif`) as having no extension, so these are rejected
+            rather than silently written — locking the intended behaviour.
+        """
+        anim = MagicMock(spec=FuncAnimation)
+        with pytest.raises(ValueError, match="no file extension"):
+            save_animation(anim, path)
         anim.save.assert_not_called()
 
     def test_multi_dot_filename_uses_last_segment(self, monkeypatch):
