@@ -143,6 +143,20 @@ class TestSaveAnimation:
             save_animation(anim, "noext")
         anim.save.assert_not_called()
 
+    @pytest.mark.parametrize("path", [".gif", "dir/.gif", "gif", "mp4"])
+    def test_dotfile_or_bare_name_rejected(self, path):
+        """Dotfile-style / extension-less names have no real extension and raise.
+
+        Test scenario:
+            `os.path.splitext` treats a leading-dot basename (`.gif`) or a
+            dot-less name (`gif`) as having no extension, so these are rejected
+            rather than silently written — locking the intended behaviour.
+        """
+        anim = MagicMock(spec=FuncAnimation)
+        with pytest.raises(ValueError, match="no file extension"):
+            save_animation(anim, path)
+        anim.save.assert_not_called()
+
     def test_multi_dot_filename_uses_last_segment(self, monkeypatch):
         """Only the final dot-segment is treated as the extension.
 
