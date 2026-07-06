@@ -1721,6 +1721,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0200-2026-06-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.20.0 (2026-06-26)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0190-2026-06-22" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2333,6 +2344,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0200-2026-06-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.20.0 (2026-06-26)
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#0190-2026-06-22" class="md-nav__link">
@@ -2948,6 +2970,41 @@
 
 
 <h1 id="changelog"><a class="toclink" href="#changelog">Changelog</a><a class="headerlink" href="#changelog" title="Permanent link">#</a></h1>
+<h2 id="0200-2026-06-26"><a class="toclink" href="#0200-2026-06-26">0.20.0 (2026-06-26)</a><a class="headerlink" href="#0200-2026-06-26" title="Permanent link">#</a></h2>
+<ul>
+<li>feat(geo)!: glyph axis CRS with defaulting and assignment-time validation (#178)</li>
+<li>
+<p>Let the geographic glyphs carry the CRS of their plotted data so reference                    <br />
+  layers default to it, and make bad values fail fast.                                            </p>
+</li>
+<li>
+<p><code>GeoMixin</code> gains a <code>crs</code> property (default <code>None</code>). <code>add_features</code> and                      <br />
+<code>add_tiles</code> default their <code>crs=</code> to <code>self.crs</code> when omitted, so a caller                    <br />
+    that records the axis CRS once (<code>glyph.crs = 4326</code>) gets correctly placed                   <br />
+    layers without restating it; an explicit <code>crs=</code> still wins and                              <br />
+<code>self.crs is None</code> is a pure pass-through.                                                    </p>
+</li>
+<li><code>crs</code> lives on <code>GeoMixin</code>, not the base <code>Glyph</code>, so non-geographic glyphs                   <br />
+    are unaffected. <code>add_relief</code> is excluded -- it has no <code>crs</code> parameter                       <br />
+    (relief is a fixed EPSG:4326 raster placed by <code>extent</code>).                                      </li>
+<li>The <code>crs</code> setter validates on assignment: <code>TypeError</code> for non                               <br />
+    int/str/None (bool rejected), <code>ValueError</code> for a non-positive EPSG code,                    <br />
+    an empty string, or -- when <code>pyproj</code> is installed -- an unresolvable CRS.                   <br />
+    Strings are stripped and a bare numeric string (<code>"4326"</code>) is normalised                     <br />
+    to the int <code>4326</code>. Setting <code>crs</code> never requires the <code>[tiles]</code> extra; the                    <br />
+    deep check is skipped (deferred to draw time) without <code>pyproj</code>.                               </li>
+<li>Make <code>add_tiles</code> options keyword-only after <code>source</code> (matching                              <br />
+<code>add_features</code>), so <code>crs</code> can no longer be passed positionally and the                      <br />
+    default injection is unconditionally safe.                                                    </li>
+<li>Hoist the <code>cleopatra.tiles</code> / <code>cleopatra.reference</code> imports to module top                   <br />
+    and call via the module, removing the inline imports.                                         </li>
+</ul>
+<p>BREAKING CHANGE: <code>cleopatra.tiles.add_tiles</code> now accepts <code>crs</code>, <code>zoom</code>,                       <br />
+<code>alpha</code>, <code>attribution</code>, <code>zorder</code>, <code>interpolation</code>, <code>timeout</code>, <code>retries</code>,                      <br />
+<code>user_agent</code> and <code>max_tiles</code> as keyword-only arguments (everything after                      <br />
+<code>source</code>). Callers that passed any of these positionally must switch to                       <br />
+  keyword arguments; <code>ax</code> and <code>source</code> remain positional.                                         </p>
+<p>Closes #177</p>
 <h2 id="0190-2026-06-22"><a class="toclink" href="#0190-2026-06-22">0.19.0 (2026-06-22)</a><a class="headerlink" href="#0190-2026-06-22" title="Permanent link">#</a></h2>
 <ul>
 <li>feat(geo): glyph convenience methods for basemaps (GeoMixin) (#172)</li>
