@@ -3138,7 +3138,7 @@ Convert between color formats:
 <a id="__codelineno-0-151" name="__codelineno-0-151"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_color_value</span> <span class="o">=</span> <span class="n">color_value</span>
 <a id="__codelineno-0-152" name="__codelineno-0-152"></a>
 <a id="__codelineno-0-153" name="__codelineno-0-153"></a>    <span class="nd">@classmethod</span>
-<a id="__codelineno-0-154" name="__codelineno-0-154"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">create_from_image</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Colors&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-154" name="__codelineno-0-154"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">create_from_image</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;Colors&quot;</span><span class="p">:</span>
 <a id="__codelineno-0-155" name="__codelineno-0-155"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a color object from an image.</span>
 <a id="__codelineno-0-156" name="__codelineno-0-156"></a>
 <a id="__codelineno-0-157" name="__codelineno-0-157"></a><span class="sd">        if you have an image of a color ramp, and you want to extract the colors from it, you can use this method.</span>
@@ -4103,7 +4103,7 @@ Get color values from a Colors object with mixed color formats:
                 <code>path</code>
             </td>
             <td>
-                  <code><span title="str">str</span> | <span title="os.PathLike">PathLike</span></code>
+                  <code><span title="typing.Union">Union</span>[<span title="str">str</span>, <span title="os.PathLike">PathLike</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -4211,7 +4211,7 @@ Get color values from a Colors object with mixed color formats:
 <span class="normal"><a href="#__codelineno-0-188">188</a></span>
 <span class="normal"><a href="#__codelineno-0-189">189</a></span>
 <span class="normal"><a href="#__codelineno-0-190">190</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-153" name="__codelineno-0-153"></a><span class="nd">@classmethod</span>
-<a id="__codelineno-0-154" name="__codelineno-0-154"></a><span class="k">def</span><span class="w"> </span><span class="nf">create_from_image</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Colors&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-154" name="__codelineno-0-154"></a><span class="k">def</span><span class="w"> </span><span class="nf">create_from_image</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;Colors&quot;</span><span class="p">:</span>
 <a id="__codelineno-0-155" name="__codelineno-0-155"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a color object from an image.</span>
 <a id="__codelineno-0-156" name="__codelineno-0-156"></a>
 <a id="__codelineno-0-157" name="__codelineno-0-157"></a><span class="sd">    if you have an image of a color ramp, and you want to extract the colors from it, you can use this method.</span>
