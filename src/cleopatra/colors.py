@@ -151,7 +151,7 @@ class Colors:
         self._color_value = color_value
 
     @classmethod
-    def create_from_image(cls, path: str | os.PathLike) -> "Colors":
+    def create_from_image(cls, path: Union[str, os.PathLike]) -> "Colors":
         """Create a color object from an image.
 
         if you have an image of a color ramp, and you want to extract the colors from it, you can use this method.
