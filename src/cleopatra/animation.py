@@ -44,7 +44,9 @@ def save_animation(
         fps: Frames per second. Default is 2.
 
     Returns:
-        The `path` that was written (convenient for chaining).
+        The output path as a `str` (the `os.fspath` of `path`),
+        convenient for chaining. Note a `pathlib.Path` argument comes
+        back as its string form, not the original object.
 
     Raises:
         ValueError: If the file format is not supported.
