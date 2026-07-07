@@ -515,6 +515,16 @@ class TestAddTilesIntegration:
         with pytest.raises(ValueError, match="max_tiles must be a positive int"):
             add_tiles(mock_ax, crs=3857, max_tiles=bad)
 
+    @pytest.mark.parametrize("bad", [0, -1, 2.5, True, "8", None])
+    def test_invalid_min_tiles_across_raises(self, mock_ax, bad):
+        """`min_tiles_across` must be a positive int, rejected at the boundary.
+
+        Args:
+            bad: A value that should be rejected.
+        """
+        with pytest.raises(ValueError, match="min_tiles_across must be a positive int"):
+            add_tiles(mock_ax, crs=3857, min_tiles_across=bad)
+
 
 class TestRequireTilesExtra:
     """Tests for `cleopatra.tiles._require_tiles_extra` guard."""

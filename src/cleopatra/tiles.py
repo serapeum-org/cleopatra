@@ -775,6 +775,15 @@ def add_tiles(
     if not isinstance(max_tiles, int) or isinstance(max_tiles, bool) or max_tiles < 1:
         raise ValueError(f"max_tiles must be a positive int, got {max_tiles!r}.")
 
+    if (
+        not isinstance(min_tiles_across, int)
+        or isinstance(min_tiles_across, bool)
+        or min_tiles_across < 1
+    ):
+        raise ValueError(
+            f"min_tiles_across must be a positive int, got {min_tiles_across!r}."
+        )
+
     x0, x1 = ax.get_xlim()
     y0, y1 = ax.get_ylim()
     west, east = min(x0, x1), max(x0, x1)
