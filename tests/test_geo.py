@@ -417,6 +417,26 @@ class TestAddReferenceMap:
         assert host._background_is_dark(ax) is False
         plt.close(fig)
 
+    def test_auto_ignores_masked_no_data_cells(self):
+        """A light field that is mostly no-data is not misread as dark (M1)."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        field = np.ma.masked_array(np.ones((10, 10)))
+        field[:6] = np.ma.masked  # 60% no-data; the unmasked cells are bright
+        host.im = ax.imshow(field, cmap="viridis", vmin=0, vmax=1)
+        assert host._background_is_dark(ax) is False
+        plt.close(fig)
+
+    def test_auto_samples_target_axes_image(self):
+        """`auto` decides from an image on the target `ax`, not `self.im` (L1)."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        host.im = ax.imshow(np.ones((4, 4, 3)))  # glyph's own axes: white/light
+        fig2, other = plt.subplots()
+        other.imshow(np.zeros((4, 4, 3)))  # target axes: black/dark
+        host.add_reference_map("auto", ax=other)
+        assert host.add_features.call_args_list[0].kwargs["colors"] == "0.85"
+        plt.close(fig)
+        plt.close(fig2)
+
     def test_extent_sets_image_and_axis_limits(self):
         """`extent=[xmin, ymin, xmax, ymax]` (ArrayGlyph order) sets image + limits."""
         im = MagicMock()

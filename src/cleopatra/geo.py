@@ -398,35 +398,48 @@ class GeoMixin:
         return reference.add_relief(self._basemap_axes(ax), *args, **kwargs)
 
     def _background_is_dark(self, ax: Any) -> bool:
-        """Whether the plotted field on `ax` reads as a dark background.
+        """Whether the field displayed on `ax` reads as a dark background.
 
-        Used only by `add_reference_map(style="auto")`. Samples the glyph's
-        rendered image (`self.im`): `im.to_rgba(...)` applies the colormap
-        and `norm` for a colormapped scalar field and passes an RGB(A) frame
-        through, so the decision reflects the *displayed* colours (mean
-        Rec. 709 luminance) rather than raw data magnitude. Masked / no-data
-        cells contribute their rendered "bad" colour, and there is no NaN in
-        the RGBA result, so the reduction is warning-free. Returns `False`
-        when there is no image to sample (a neutral default).
+        Used only by `add_reference_map(style="auto")`. Samples an image on
+        the target `ax` (falling back to the glyph's own `self.im`) and runs
+        it through `im.to_rgba(...)`, which applies the colormap and `norm`
+        for a colormapped scalar field and passes an RGB(A) frame through, so
+        the decision reflects the *displayed* colours (mean Rec. 709
+        luminance) rather than raw data magnitude. Only **opaque** cells are
+        counted: masked / no-data cells render to the colormap's transparent
+        "bad" colour and are excluded, so a light field that merely has a lot
+        of no-data is not misread as dark. Large fields are decimated to keep
+        the check O(1) in memory. Returns `False` when there is nothing
+        opaque to sample (a neutral default).
 
         Args:
-            ax: The axes being decorated (unused directly; the sample comes
-                from `self.im`, kept for signature symmetry).
+            ax: The axes being decorated. An image drawn on it is preferred
+                as the sample source; otherwise `self.im` is used.
 
         Returns:
             bool: `True` when the mean displayed luminance is below 0.5.
         """
-        im = getattr(self, "im", None)
+        images = ax.get_images() if ax is not None and hasattr(ax, "get_images") else []
+        im = images[-1] if images else getattr(self, "im", None)
         arr = im.get_array() if im is not None and hasattr(im, "get_array") else None
         if arr is None:
             return False
+        # Decimate so the decision costs O(1) memory on large rasters.
+        if getattr(arr, "ndim", 0) >= 2:
+            sy = max(1, arr.shape[0] // 256)
+            sx = max(1, arr.shape[1] // 256)
+            arr = arr[::sy, ::sx]
         # Render through the image's norm+colormap so a colormapped field is
         # judged by what is shown, not by its data units; RGB(A) passes through.
-        rgb = np.asarray(im.to_rgba(arr), dtype=float)[..., :3]
-        if rgb.size == 0:
+        rgba = np.asarray(im.to_rgba(arr), dtype=float)
+        if rgba.size == 0:
+            return False
+        rgb, alpha = rgba[..., :3], rgba[..., 3]
+        opaque = alpha > 0
+        if not opaque.any():
             return False
         lum = 0.2126 * rgb[..., 0] + 0.7152 * rgb[..., 1] + 0.0722 * rgb[..., 2]
-        return bool(np.mean(lum) < 0.5)
+        return bool(np.mean(lum[opaque]) < 0.5)
 
     def add_reference_map(
         self,
