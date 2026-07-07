@@ -26,7 +26,7 @@ classifiers = [
 dependencies = [
     "numpy>=2.0.0",
     "matplotlib>=3.9",
-    "ffmpeg-python",
+    "imageio-ffmpeg>=0.4.9",
     "hpc-utils>=0.1.4",
 ]
 
