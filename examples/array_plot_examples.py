@@ -148,4 +148,3 @@ import matplotlib as mpl
 fps = 2
 
 path = "examples/animation.mp4"
-import ffmpeg

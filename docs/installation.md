@@ -7,12 +7,15 @@
 - Python (3.11 or later)
 - [numpy](https://www.numpy.org/) (2.0.0 or later)
 - [matplotlib](https://matplotlib.org/) (3.9 or later)
-- [ffmpeg-python](https://github.com/kkroening/ffmpeg-python/) — for animation export to MP4 / MOV / AVI
+- [imageio-ffmpeg](https://github.com/imageio/imageio-ffmpeg) — ships a static FFmpeg binary used for animation
+  export to MP4 / MOV / AVI
 - [hpc-utils](https://github.com/serapeum-org/hpc) (0.1.4 or later)
 
 !!! note
-    Writing animations to `mp4` / `mov` / `avi` also needs an **FFmpeg** binary on
-    your `PATH`. GIF export uses matplotlib's `PillowWriter` and needs no FFmpeg.
+    Writing animations to `mp4` / `mov` / `avi` needs an **FFmpeg** binary.
+    `imageio-ffmpeg` bundles one, so export works out of the box; a system FFmpeg
+    on your `PATH` is used in preference when present. GIF and WebP export use
+    Pillow and need no FFmpeg.
 
 ### Optional dependencies — the `tiles` extra
 
