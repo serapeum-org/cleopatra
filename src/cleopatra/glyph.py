@@ -1085,24 +1085,30 @@ class Glyph:
         )
         return list(map(write_points, point_table))
 
-    def save_animation(self, path: str | os.PathLike, fps: int = 2) -> None:
+    def save_animation(self, path: str | os.PathLike, fps: int = 2, **kwargs) -> None:
         """Save this glyph's animation (`self.anim`) to a file.
 
         Thin wrapper around `cleopatra.animation.save_animation`; the output
-        format is determined by the file extension. GIF uses `PillowWriter`;
-        mov/avi/mp4 require FFmpeg to be installed.
+        format is determined by the file extension. GIF uses an optimising
+        Pillow writer; mov/avi/mp4 use FFmpeg (a system binary if present,
+        otherwise the one bundled with imageio-ffmpeg).
 
         Args:
             path: Output file path, as a `str` or `os.PathLike` (e.g. a
                 `pathlib.Path`). Extension determines format.
                 Supported: gif, mov, avi, mp4.
             fps: Frames per second. Default is 2.
+            **kwargs: Additional keyword arguments forwarded to
+                `cleopatra.animation.save_animation`, e.g. ``crf``, ``bitrate``,
+                ``codec``, ``preset``, ``pix_fmt``, ``dpi`` (ffmpeg formats) or
+                ``optimize`` and ``loop`` (GIF).
 
         Raises:
-            ValueError: If `animate()` has not been called yet, or if the
-                file format is not supported.
-            FileNotFoundError: If a video format is requested but FFmpeg is
-                not installed.
+            ValueError: If `animate()` has not been called yet, if the file
+                format is not supported, or if both ``crf`` and ``bitrate``
+                are given.
+            FileNotFoundError: If a video format is requested but neither a
+                system FFmpeg nor imageio-ffmpeg's bundled binary is found.
 
         Examples:
             - Check the supported video formats:
@@ -1113,4 +1119,4 @@ class Glyph:
 
                 ```
         """
-        _save_animation(self.anim, path, fps=fps)
+        _save_animation(self.anim, path, fps=fps, **kwargs)
