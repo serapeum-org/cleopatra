@@ -537,6 +537,11 @@ class GeoMixin:
             # `[xmin, ymin, xmax, ymax]` == `[west, south, east, north]`,
             # the same order as ArrayGlyph(extent=...); matplotlib wants
             # `(xmin, xmax, ymin, ymax)` for `set_extent`.
+            if len(extent) != 4:
+                raise ValueError(
+                    "extent must be [xmin, ymin, xmax, ymax] "
+                    f"(4 values), got {len(extent)}"
+                )
             west, south, east, north = extent
             im = getattr(self, "im", None)
             if im is not None and hasattr(im, "set_extent"):

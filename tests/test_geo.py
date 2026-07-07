@@ -471,6 +471,13 @@ class TestAddReferenceMap:
         host.add_features.assert_not_called()  # failed fast, no layers drawn
         plt.close(fig)
 
+    def test_wrong_length_extent_raises(self):
+        """A non-4-element extent raises a clear ValueError naming the order (N1)."""
+        host, fig, ax = self._host()
+        with pytest.raises(ValueError, match=r"\[xmin, ymin, xmax, ymax\]"):
+            host.add_reference_map("ecmwf", extent=[-100, 15, 55])
+        plt.close(fig)
+
     def test_graticule_step_override(self):
         """An explicit `graticule_step` sets the locator base."""
         host, fig, ax = self._host(extent=[-100, 20, -80, 40])
