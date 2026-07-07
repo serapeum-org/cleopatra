@@ -258,6 +258,24 @@ class TestAddTilesBehaviour:
         add_tiles(mock_ax, crs=4326)
         mock_ax.imshow.assert_called_once()
 
+    def test_nonmercator_imshow_uses_mosaic_reprojected_bounds(
+        self, mock_ax, _patch_tiles
+    ):
+        """For a lon/lat axis the imshow extent is the mosaic's reprojected 3857
+        coverage, not the raw data bounds (issue #176)."""
+        mock_ax.get_xlim.return_value = (10.0, 11.0)
+        mock_ax.get_ylim.return_value = (50.0, 51.0)
+        add_tiles(mock_ax, crs=4326)
+        # The mocked stitch_tiles reports the mosaic covering these 3857 metres:
+        w, s, e, n = _densify_and_reproject_bounds(
+            1000000.0, 6000000.0, 1200000.0, 6200000.0, "EPSG:3857", "EPSG:4326"
+        )
+        got = mock_ax.imshow.call_args.kwargs["extent"]
+        assert got == pytest.approx([w, e, s, n]), (
+            f"imshow extent should be the mosaic's reprojected bounds, got {got}"
+        )
+        assert got != [10.0, 11.0, 50.0, 51.0], "extent must not be the raw data bounds"
+
     def test_axes_limits_are_restored(self, mock_ax, _patch_tiles):
         """`set_xlim` / `set_ylim` are called with the original limits."""
         add_tiles(mock_ax, crs=3857)

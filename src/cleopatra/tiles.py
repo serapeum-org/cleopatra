@@ -11,13 +11,15 @@ no GDAL dependency, so the module is safe to use in environments that
 only have matplotlib + numpy installed.
 
 Notes:
-    For data in projected CRSes other than Web Mercator (EPSG:3857) the
-    stitched tile image is placed in the target CRS using the data's
-    densified bounds. Matplotlib stretches the image to fit, which is
-    visually acceptable for small extents (e.g. local maps in EPSG:4326)
-    but may show projection distortion over very large areas. If
-    pixel-accurate warping is required, reproject the source data to
-    Web Mercator (EPSG:3857) before plotting.
+    For data in CRSes other than Web Mercator (EPSG:3857) the stitched tile
+    image is placed at the mosaic's own coverage: its Web-Mercator bounds
+    are reprojected (with edge densification) into the target CRS and used
+    as the `imshow` extent, while the axis limits stay at the data bounds.
+    This aligns the basemap with the data even when the fetched tiles cover
+    a tile-snapped area larger than the data. A residual Mercator-vs-linear
+    nonlinearity remains for very large extents (the Mercator pixels are
+    placed on a linear axis); if pixel-accurate warping is required,
+    reproject the source data to Web Mercator (EPSG:3857) before plotting.
 
 Examples:
     Add a default OpenStreetMap basemap to an axes that already has
@@ -676,9 +678,10 @@ def add_tiles(
     them into a single composite image, and renders the image below the
     existing data layer. When the data is already in Web Mercator
     (EPSG:3857) the tiles are placed in-place; for any other CRS the
-    image is placed in the target CRS using the data's densified bounds
-    -- matplotlib stretches the bitmap to fit, which is visually
-    acceptable for small extents.
+    mosaic's own Web-Mercator coverage is reprojected into the target CRS
+    and used as the image extent (the axis limits stay at the data
+    bounds), so the basemap aligns with the data even though the fetched
+    tiles cover a tile-snapped area larger than it.
 
     Args:
         ax: Matplotlib `matplotlib.axes.Axes` to add the
@@ -851,10 +854,23 @@ def add_tiles(
     if is_3857:
         extent = extent_3857
     else:
-        # No GDAL: place the tile bitmap in the target CRS using the
-        # data's bounds. Matplotlib stretches the image -- accurate
-        # enough for small extents (see module docstring).
-        extent = (west, south, east, north)
+        # Place the mosaic at its OWN geographic coverage, not the data
+        # bounds. The stitched tiles span `extent_3857` (Web-Mercator
+        # metres, tile-snapped and generally larger than the data), so
+        # reproject those corners into the target CRS. Using the data
+        # bounds instead stretched the mosaic onto the smaller extent and
+        # offset the basemap by up to hundreds of km at coarse zooms (see
+        # issue #176). A residual Mercator-vs-linear-axis nonlinearity
+        # remains for large extents; reproject the data to EPSG:3857 before
+        # plotting for pixel-accurate tiles.
+        extent = _densify_and_reproject_bounds(
+            extent_3857[0],
+            extent_3857[1],
+            extent_3857[2],
+            extent_3857[3],
+            "EPSG:3857",
+            crs_str,
+        )
 
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()
