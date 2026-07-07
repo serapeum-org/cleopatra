@@ -170,8 +170,15 @@ def save_animation(
         _ensure_ffmpeg_available()
         # libx264 requires even width/height, so a figure whose pixel size is
         # odd otherwise dies with "height not divisible by 2". Pad the frame up
-        # to the next even size so any figure encodes.
-        extra_args = ["-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2"]
+        # to the next even size so any figure encodes. Set pix_fmt=yuv420p
+        # explicitly so the output plays everywhere (browsers, QuickTime); it
+        # is otherwise one matplotlib default away from an unplayable file.
+        extra_args = [
+            "-vf",
+            "pad=ceil(iw/2)*2:ceil(ih/2)*2",
+            "-pix_fmt",
+            "yuv420p",
+        ]
         try:
             anim.save(
                 path,
