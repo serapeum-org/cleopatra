@@ -117,10 +117,14 @@ def _lon_formatter(value: float, _pos: Any = None) -> str:
         >>> from cleopatra.geo import _lon_formatter
         >>> _lon_formatter(-75), _lon_formatter(10), _lon_formatter(0)
         ('75°W', '10°E', '0°')
+        >>> _lon_formatter(180), _lon_formatter(-180)
+        ('180°', '180°')
 
         ```
     """
     lon = ((value + 180) % 360) - 180
+    if abs(lon) == 180:  # the antimeridian is neither W nor E
+        return "180°"
     if lon < 0:
         return f"{abs(lon):g}°W"
     if lon > 0:

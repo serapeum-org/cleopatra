@@ -336,6 +336,21 @@ class TestAddReferenceMap:
         """The built-in preset names are exposed and stable."""
         assert available_map_styles() == ["ecmwf", "ecmwf-dark"]
 
+    @pytest.mark.parametrize(
+        "value,expected",
+        [(-75, "75°W"), (10, "10°E"), (0, "0°"), (180, "180°"), (-180, "180°"), (200, "160°W")],
+    )
+    def test_lon_formatter(self, value, expected):
+        """Longitude ticks label W/E, 0, and the ±180° antimeridian (L1)."""
+        assert _lon_formatter(value) == expected
+
+    @pytest.mark.parametrize(
+        "value,expected", [(-20, "20°S"), (45, "45°N"), (0, "0°")]
+    )
+    def test_lat_formatter(self, value, expected):
+        """Latitude ticks label S/N and the equator."""
+        assert _lat_formatter(value) == expected
+
     def test_composes_features_graticule_and_frame(self):
         """The preset draws coastline+borders and styles graticule/labels/frame."""
         host, fig, ax = self._host(extent=[-100, 20, -80, 40])
