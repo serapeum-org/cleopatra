@@ -162,12 +162,20 @@ def get_provider(name: str | None = None) -> Any:
     return provider
 
 
-def auto_zoom(bounds_4326: tuple[float, float, float, float]) -> int:
+def auto_zoom(
+    bounds_4326: tuple[float, float, float, float],
+    min_tiles_across: int = 4,
+) -> int:
     """Compute a default zoom level for the given bounds in EPSG:4326.
 
-    Uses the formula
-    `zoom = ceil(log2(360 / max(lon_extent, lat_extent)))` clamped to
-    the range 0--19.
+    Picks the smallest zoom at which the larger of the two extents spans at
+    least `min_tiles_across` tiles, i.e.
+    `zoom = ceil(log2(min_tiles_across * 360 / max(lon_extent, lat_extent)))`,
+    clamped to 0--19. The `min_tiles_across` floor (default 4) stops a
+    mid-range regional extent from collapsing onto one or two coarse tiles
+    stretched over the whole area (a 6--11 degree window would otherwise
+    fetch just 2 tiles); `min_tiles_across=1` reproduces the older
+    one-tile-across heuristic.
 
     This is a coarse heuristic that treats degrees of longitude and
     latitude as interchangeable; it does **not** account for Web
@@ -180,23 +188,34 @@ def auto_zoom(bounds_4326: tuple[float, float, float, float]) -> int:
 
     Args:
         bounds_4326: `(west, south, east, north)` in EPSG:4326 degrees.
+        min_tiles_across: Minimum number of tiles the larger extent should
+            span, `>= 1`. Higher values pick a sharper (higher) zoom.
+            Defaults to 4.
 
     Returns:
         int: Zoom level between 0 and 19.
 
     Examples:
-        - Worldwide extent maps to zoom 0:
+        - Worldwide extent maps to zoom 2 (four tiles across the globe):
             ```python
             >>> from cleopatra.tiles import auto_zoom
             >>> auto_zoom((-180, -85, 180, 85))
-            0
+            2
 
             ```
-        - A 0.6 by 0.2 degree window over Berlin yields zoom 10:
+        - A 0.6 by 0.2 degree window over Berlin yields zoom 12:
             ```python
             >>> from cleopatra.tiles import auto_zoom
             >>> auto_zoom((13.0, 52.4, 13.6, 52.6))
-            10
+            12
+
+            ```
+        - `min_tiles_across=1` restores the older, coarser one-tile
+            heuristic (worldwide -> zoom 0):
+            ```python
+            >>> from cleopatra.tiles import auto_zoom
+            >>> auto_zoom((-180, -85, 180, 85), min_tiles_across=1)
+            0
 
             ```
         - Tiny extents are clamped to the maximum zoom (19):
@@ -211,7 +230,8 @@ def auto_zoom(bounds_4326: tuple[float, float, float, float]) -> int:
     lon_extent = abs(east - west)
     lat_extent = abs(north - south)
     max_extent = max(lon_extent, lat_extent, 1e-10)
-    zoom = math.ceil(math.log2(360.0 / max_extent))
+    across = max(1, min_tiles_across)
+    zoom = math.ceil(math.log2(across * 360.0 / max_extent))
     result = max(0, min(zoom, 19))
     return result
 
