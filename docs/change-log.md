@@ -1,5 +1,85 @@
 # Changelog
 
+## 0.22.0 (2026-07-07)
+
+
+- feat(animation): add save_animation quality controls, WebP, and bundled ffmpeg (#188)
+- Rework save_animation (and the Glyph.save_animation wrapper) from a                            
+  minimal two-line writer into a configurable, robust exporter, resolving                        
+  the rough edges surfaced in issue #185.                                                        
+                                                                                                 
+  - Replace the declared-but-unused ffmpeg-python dependency with                                
+    imageio-ffmpeg, and fall back to its bundled static binary when no                           
+    system ffmpeg is on PATH, so MP4/MOV/AVI export works out of the box.                        
+  - Auto-pad odd frame dimensions (-vf pad) so libx264 no longer crashes                         
+    on odd-sized figures, and set pix_fmt=yuv420p for universal playback.                        
+  - Add keyword-only crf, bitrate, codec, preset, pix_fmt, dpi, optimize,                        
+    loop, and extra_args controls, with crf and bitrate mutually                                 
+    exclusive and a caller -vf/-pix_fmt merged into the built arguments.                         
+  - Drop the hardcoded bitrate=1800 default in favour of libx264's                               
+    constant-quality default; existing 3-arg calls stay valid but encode                         
+    smaller, better files.                                                                       
+  - Add animated WebP output and optimise/loop-configurable GIF output                           
+    via an _OptimizedPillowWriter subclass.                                                      
+  - Add to_bytes and to_mp4 in-memory render helpers alongside the                               
+    existing to_gif/embed_gif; to_gif now delegates to to_bytes.                                 
+  - Forward the new controls through Glyph.save_animation so ArrayGlyph                          
+    and MeshGlyph inherit them.                                                                  
+                                                                                                 
+  Closes #185
+- feat(geo): add ECMWF reference-map style preset for georeferenced glyphs (#187)
+- Add GeoMixin.add_reference_map(style=...) so the ~15-line weather-centre                       
+  map recipe (grey Natural Earth coastline + borders, a dashed lon/lat                           
+  graticule, degree labels, a subtle frame) is a single call on top of a                         
+  plotted, georeferenced glyph.                                                                  
+                                                                                                 
+  - Presets "ecmwf" (light backgrounds) and "ecmwf-dark" (lighter greys so                       
+    coastlines stay visible over a dark field), plus style="auto" that                           
+    picks between them from the displayed luminance (im.to_rgba through the                      
+    colormap/norm; only opaque cells count, so light no-data fields are not                      
+    misread as dark; the target axes' image is preferred over self.im).                          
+  - extent=[xmin, ymin, xmax, ymax] (the ArrayGlyph order) georeferences                         
+    the image and axis limits, handling the pixel-coordinate RGB/animate                         
+    case; a warning fires when the glyph has no geographic extent.                               
+  - Degree formatters label the +/-180 antimeridian as "180"; _nice_step                         
+    covers sub-degree to 90-degree spacing; graticule_step is validated as                       
+    positive and finite; extent length is validated with a clear message.                        
+  - available_map_styles() and the REFERENCE_MAP_STYLES table expose and                         
+    allow copying the presets; the geographic knowledge (deriving extent                         
+    from a dataset geotransform) stays upstream.                                                 
+                                                                                                 
+  Add a runnable docs notebook (docs/notebooks/array_glyph/reference_map)                        
+  wired into the mkdocs nav, and TestAddReferenceMap plus a non-mocked                           
+  integration test (geo.py coverage 98%).                                                        
+                                                                                                 
+  Closes #184
+- fix(tiles): align web-tile basemap for non-EPSG:3857 data (#186)
+- For a non-EPSG:3857 axis, add_tiles stretched the stitched Mercator
+mosaic onto the data bounds, discarding the mosaic's tile-snapped (larger)
+coverage and offsetting the basemap by up to hundreds of km at coarse
+zoom (e.g. a curvilinear ROMS field over the Gulf of Mexico).
+- - Place the mosaic at its own geographic footprint: reproject its
+  Web-Mercator bounds (extent_3857) into the target CRS with edge
+  densification and use that as the imshow extent, keeping set_xlim/ylim
+  at the data bounds. If a coarse mosaic overflows a limited-domain CRS
+  (e.g. a whole-world mosaic into a UTM zone or a singular projection),
+  the reprojection is caught and the basemap falls back to the data
+  bounds with a warning, so a figure is still produced.
+- Add an auto_zoom floor via a new min_tiles_across parameter (default 2,
+  also exposed and validated on add_tiles): pick the smallest zoom at
+  which the larger extent spans at least that many tiles, so a mid-range
+  region is no longer rendered from one or two coarse tiles (global
+  z0->z1, Berlin z10->z11, Gulf z6->z7). min_tiles_across=1 restores the
+  old heuristic and MAX_TILES still caps the tile count.
+- Update the module and reference-doc notes; add tests for the
+  reprojected/enveloping extent, the overflow fallback, and the
+  auto_zoom floor and its validation.
+- The auto_zoom floor applies to every zoom="auto" call (all CRS, including
+EPSG:3857), so the default basemap fetches a slightly higher zoom and a
+few more tiles (bounded by MAX_TILES); a residual Mercator-vs-linear-axis
+nonlinearity remains for very large extents.
+- Closes #176
+
 ## 0.21.0 (2026-07-06)
 
 
