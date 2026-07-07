@@ -523,10 +523,16 @@ def test_add_reference_map_integration(tmp_path: Path, monkeypatch):
 
     glyph = ArrayGlyph(np.random.rand(20, 30), extent=[-100, 15, -40, 55])
     fig, ax = glyph.plot()
+    xlim0, ylim0 = ax.get_xlim(), ax.get_ylim()
     glyph.add_reference_map("ecmwf", resolution="110m")
 
     lcs = [c for c in ax.collections if isinstance(c, LineCollection)]
     assert len(lcs) >= 2, "coastline + borders should both draw"
     assert all(c.get_zorder() == 5 for c in lcs)
     assert ax.xaxis.get_major_formatter()(-75) == "75°W"
+    # the reference layers must not perturb the data extent
+    assert ax.get_xlim() == xlim0 and ax.get_ylim() == ylim0
+    # the preset styling reaches the real axes (frame + visible graticule)
+    assert ax.spines["bottom"].get_edgecolor() == (0.6, 0.6, 0.6, 1.0)
+    assert ax.xaxis.get_gridlines()[0].get_visible(), "graticule not drawn"
     plt.close(fig)
