@@ -67,8 +67,12 @@ def _ensure_ffmpeg_available() -> None:
     # Only the matplotlib default (``"ffmpeg"``) is overridden silently; an
     # explicit path the user configured is theirs, so warn before replacing it.
     if configured not in ("ffmpeg", "ffmpeg.exe"):
-        # stacklevel=3: warn() -> _ensure_ffmpeg_available -> save_animation ->
-        # user call site, so the warning is attributed to the caller's code.
+        # stacklevel=3 targets the common direct ``save_animation`` call
+        # (warn -> _ensure_ffmpeg_available -> save_animation -> caller). The
+        # depth differs when reached via to_bytes/to_mp4/Glyph.save_animation,
+        # so attribution is best-effort; the message is self-contained. There is
+        # no single correct stacklevel across those entry points, and
+        # ``skip_file_prefixes`` is Python 3.12+ while this package targets 3.11.
         warnings.warn(
             f"Configured ffmpeg binary {configured!r} was not found; falling "
             f"back to the imageio-ffmpeg bundled binary at {bundled!r}.",
@@ -100,6 +104,9 @@ class _OptimizedPillowWriter(PillowWriter):
         self._loop = loop
 
     def finish(self):
+        # Mirrors matplotlib's PillowWriter.finish body (it cannot be delegated
+        # because the parent hardcodes loop=0 and passes no optimize). Re-check
+        # against matplotlib.animation.PillowWriter.finish on version bumps.
         self._frames[0].save(
             self.outfile,
             save_all=True,
