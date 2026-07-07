@@ -396,31 +396,33 @@ class GeoMixin:
     def _background_is_dark(self, ax: Any) -> bool:
         """Whether the plotted field on `ax` reads as a dark background.
 
-        Used only by `add_reference_map(style="auto")`. Reads the mean
-        relative luminance of the glyph's rendered image (`self.im`); RGB(A)
-        frames use the Rec. 709 luminance weights, a colormapped scalar field
-        falls back to its normalised mean. Returns `False` when there is no
-        image to sample (a neutral default for an empty axes).
+        Used only by `add_reference_map(style="auto")`. Samples the glyph's
+        rendered image (`self.im`): `im.to_rgba(...)` applies the colormap
+        and `norm` for a colormapped scalar field and passes an RGB(A) frame
+        through, so the decision reflects the *displayed* colours (mean
+        Rec. 709 luminance) rather than raw data magnitude. Masked / no-data
+        cells contribute their rendered "bad" colour, and there is no NaN in
+        the RGBA result, so the reduction is warning-free. Returns `False`
+        when there is no image to sample (a neutral default).
 
         Args:
             ax: The axes being decorated (unused directly; the sample comes
                 from `self.im`, kept for signature symmetry).
 
         Returns:
-            bool: `True` when the mean luminance is below 0.5.
+            bool: `True` when the mean displayed luminance is below 0.5.
         """
         im = getattr(self, "im", None)
         arr = im.get_array() if im is not None and hasattr(im, "get_array") else None
         if arr is None:
             return False
-        data = np.asarray(arr, dtype=float)
-        if np.nanmax(data) > 1.0:
-            data = data / 255.0
-        if data.ndim == 3 and data.shape[-1] >= 3:
-            lum = 0.2126 * data[..., 0] + 0.7152 * data[..., 1] + 0.0722 * data[..., 2]
-        else:
-            lum = data
-        return bool(np.nanmean(lum) < 0.5)
+        # Render through the image's norm+colormap so a colormapped field is
+        # judged by what is shown, not by its data units; RGB(A) passes through.
+        rgb = np.asarray(im.to_rgba(arr), dtype=float)[..., :3]
+        if rgb.size == 0:
+            return False
+        lum = 0.2126 * rgb[..., 0] + 0.7152 * rgb[..., 1] + 0.0722 * rgb[..., 2]
+        return bool(np.mean(lum) < 0.5)
 
     def add_reference_map(
         self,

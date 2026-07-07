@@ -13,6 +13,7 @@ from __future__ import annotations
 import gzip
 import inspect
 import json
+import warnings
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -355,21 +356,46 @@ class TestAddReferenceMap:
         plt.close(fig)
 
     def test_auto_picks_dark_on_dark_background(self):
-        """`style="auto"` selects `ecmwf-dark` when the image reads as dark."""
-        dark_im = MagicMock()
-        dark_im.get_array.return_value = np.zeros((4, 4, 3))  # black RGB
-        host, fig, ax = self._host(extent=[-100, 20, -80, 40], im=dark_im)
+        """`style="auto"` selects `ecmwf-dark` for a dark rendered image."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        host.im = ax.imshow(np.zeros((4, 4, 3)))  # black RGB
         host.add_reference_map("auto")
         assert host.add_features.call_args_list[0].kwargs["colors"] == "0.85"
         plt.close(fig)
 
     def test_auto_picks_light_on_light_background(self):
-        """`style="auto"` selects `ecmwf` when the image reads as light."""
-        light_im = MagicMock()
-        light_im.get_array.return_value = np.ones((4, 4, 3))  # white RGB
-        host, fig, ax = self._host(extent=[-100, 20, -80, 40], im=light_im)
+        """`style="auto"` selects `ecmwf` for a light rendered image."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        host.im = ax.imshow(np.ones((4, 4, 3)))  # white RGB
         host.add_reference_map("auto")
         assert host.add_features.call_args_list[0].kwargs["colors"] == "0.45"
+        plt.close(fig)
+
+    def test_auto_uses_rendered_colours_not_data_magnitude(self):
+        """`auto` judges a colormapped field by its rendered colour (M1)."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        # data == 0 (would read "dark" by raw magnitude) but `gray_r` renders
+        # 0 as white -> the rendered image is light, so not dark.
+        host.im = ax.imshow(np.zeros((4, 4)), cmap="gray_r", vmin=0, vmax=1)
+        assert host._background_is_dark(ax) is False
+        plt.close(fig)
+
+    def test_background_dark_masked_field_no_warning(self):
+        """A fully-masked field yields a plain bool with no NaN warning (L2)."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        masked = np.ma.masked_all((4, 4))
+        host.im = ax.imshow(masked, cmap="viridis")
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")  # any RuntimeWarning would fail here
+            result = host._background_is_dark(ax)
+        assert isinstance(result, bool)
+        plt.close(fig)
+
+    def test_background_is_dark_no_image_returns_false(self):
+        """With no plotted image, the background reads as not-dark."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        host.im = None
+        assert host._background_is_dark(ax) is False
         plt.close(fig)
 
     def test_extent_sets_image_and_axis_limits(self):
