@@ -28,9 +28,122 @@ only needed when a basemap is actually drawn.
 from __future__ import annotations
 
 import importlib.util
+import warnings
 from typing import Any
 
+import numpy as np
+from matplotlib.ticker import FuncFormatter, MultipleLocator
+
 from cleopatra import reference, tiles
+
+#: Built-in reference-map style presets for `GeoMixin.add_reference_map`.
+#: `"ecmwf"` is tuned for light backgrounds; `"ecmwf-dark"` uses lighter
+#: greys so coastlines stay visible over a dark field (e.g. a satellite
+#: true-colour RGB). Each entry is a plain, overridable dict of the layer
+#: styles, graticule, tick-label, and frame (spine) parameters.
+REFERENCE_MAP_STYLES: dict[str, dict[str, Any]] = {
+    "ecmwf": {
+        "resolution": "50m",
+        "coastline": {"colors": "0.45", "linewidths": 0.8},
+        "borders": {"colors": "0.55", "linewidths": 0.5},
+        "graticule": {"color": "0.7", "linestyle": (0, (4, 4)), "linewidth": 0.5},
+        "labels": {"colors": "0.35", "labelsize": 8},
+        "spines": {"edgecolor": "0.6", "linewidth": 0.8},
+    },
+    "ecmwf-dark": {
+        "resolution": "50m",
+        "coastline": {"colors": "0.85", "linewidths": 0.8},
+        "borders": {"colors": "0.85", "linewidths": 0.5},
+        "graticule": {"color": "0.75", "linestyle": (0, (4, 4)), "linewidth": 0.5},
+        "labels": {"colors": "0.8", "labelsize": 8},
+        "spines": {"edgecolor": "0.7", "linewidth": 0.8},
+    },
+}
+
+
+def available_map_styles() -> list[str]:
+    """Return the built-in `add_reference_map` style names.
+
+    Returns:
+        list[str]: The preset names accepted by
+        `GeoMixin.add_reference_map` (excluding the special `"auto"`).
+
+    Examples:
+        ```python
+        >>> from cleopatra.geo import available_map_styles
+        >>> available_map_styles()
+        ['ecmwf', 'ecmwf-dark']
+
+        ```
+    """
+    return list(REFERENCE_MAP_STYLES)
+
+
+def _nice_step(span: float, target_divisions: int = 6) -> float:
+    """Pick a human-friendly graticule step for `span` over ~N divisions.
+
+    Args:
+        span: The axis span in degrees (`max(width, height)`).
+        target_divisions: Rough number of gridlines to aim for.
+
+    Returns:
+        float: A "nice" step (1, 2, 2.5, 5, 10, ...) so the graticule lands
+        on round degree values.
+
+    Examples:
+        ```python
+        >>> from cleopatra.geo import _nice_step
+        >>> _nice_step(30)
+        5.0
+        >>> _nice_step(4)
+        1.0
+
+        ```
+    """
+    if span <= 0:
+        return 1.0
+    raw = span / max(target_divisions, 1)
+    for candidate in (1, 2, 2.5, 5, 10, 15, 20, 30, 45, 60):
+        if raw <= candidate:
+            return float(candidate)
+    return 90.0
+
+
+def _lon_formatter(value: float, _pos: Any = None) -> str:
+    """Format a longitude tick as `°W`/`°E` (0 at the meridian).
+
+    Examples:
+        ```python
+        >>> from cleopatra.geo import _lon_formatter
+        >>> _lon_formatter(-75), _lon_formatter(10), _lon_formatter(0)
+        ('75°W', '10°E', '0°')
+
+        ```
+    """
+    lon = ((value + 180) % 360) - 180
+    if lon < 0:
+        return f"{abs(lon):g}°W"
+    if lon > 0:
+        return f"{lon:g}°E"
+    return "0°"
+
+
+def _lat_formatter(value: float, _pos: Any = None) -> str:
+    """Format a latitude tick as `°S`/`°N` (0 at the equator).
+
+    Examples:
+        ```python
+        >>> from cleopatra.geo import _lat_formatter
+        >>> _lat_formatter(-20), _lat_formatter(45), _lat_formatter(0)
+        ('20°S', '45°N', '0°')
+
+        ```
+    """
+    if value < 0:
+        return f"{abs(value):g}°S"
+    if value > 0:
+        return f"{value:g}°N"
+    return "0°"
 
 
 def _validate_crs(crs: int | str | None) -> int | str | None:
@@ -279,3 +392,147 @@ class GeoMixin:
                 its full parameter list.
         """
         return reference.add_relief(self._basemap_axes(ax), *args, **kwargs)
+
+    def _background_is_dark(self, ax: Any) -> bool:
+        """Whether the plotted field on `ax` reads as a dark background.
+
+        Used only by `add_reference_map(style="auto")`. Reads the mean
+        relative luminance of the glyph's rendered image (`self.im`); RGB(A)
+        frames use the Rec. 709 luminance weights, a colormapped scalar field
+        falls back to its normalised mean. Returns `False` when there is no
+        image to sample (a neutral default for an empty axes).
+
+        Args:
+            ax: The axes being decorated (unused directly; the sample comes
+                from `self.im`, kept for signature symmetry).
+
+        Returns:
+            bool: `True` when the mean luminance is below 0.5.
+        """
+        im = getattr(self, "im", None)
+        arr = im.get_array() if im is not None and hasattr(im, "get_array") else None
+        if arr is None:
+            return False
+        data = np.asarray(arr, dtype=float)
+        if np.nanmax(data) > 1.0:
+            data = data / 255.0
+        if data.ndim == 3 and data.shape[-1] >= 3:
+            lum = 0.2126 * data[..., 0] + 0.7152 * data[..., 1] + 0.0722 * data[..., 2]
+        else:
+            lum = data
+        return bool(np.nanmean(lum) < 0.5)
+
+    def add_reference_map(
+        self,
+        style: str = "ecmwf",
+        *,
+        ax: Any = None,
+        extent: Any = None,
+        resolution: str | None = None,
+        graticule_step: float | None = None,
+        zorder: int = 5,
+    ) -> Any:
+        """Dress the glyph's axes in a weather-centre reference-map style.
+
+        One call composes the recipe that otherwise takes ~15 lines of
+        matplotlib after `plot`/`animate`: grey Natural Earth `coastline`
+        + `borders`, a dashed lon/lat graticule, `°W`/`°N` degree labels,
+        and a subtle frame. It layers on top of the existing data, so call
+        it after plotting.
+
+        The map is drawn in the axes' current geographic coordinates. Pass
+        `extent` (or construct the glyph with `extent=`) so the axes are
+        georeferenced — otherwise the coastlines cannot align with the data
+        and a warning is emitted. Deriving that extent from a source dataset
+        is the caller's job (cleopatra renders supplied coordinates; it does
+        not read geotransforms).
+
+        Args:
+            style: A name from `available_map_styles()` (`"ecmwf"`,
+                `"ecmwf-dark"`), or `"auto"` to pick between them from the
+                background luminance (dark backgrounds get the lighter
+                `"ecmwf-dark"` greys so coastlines stay visible). Default
+                `"ecmwf"`.
+            ax: Axes to draw on. Defaults to the glyph's `self.ax`.
+            extent: Optional `(west, east, south, north)` in the axes' CRS.
+                When given, the image and axis limits are set to it (handling
+                the pixel-coordinate RGB/animate case); when omitted the
+                current axis limits are used.
+            resolution: Natural Earth resolution for the coastline/borders
+                (`"110m"`/`"50m"`/`"10m"`). Defaults to the style's value.
+            graticule_step: Degree spacing for the graticule. Defaults to a
+                "nice" step giving ~6 divisions across the wider span.
+            zorder: Draw order for the reference layers (drawn above the
+                data; the graticule sits just below the coastlines).
+
+        Returns:
+            matplotlib.axes.Axes: The decorated axes, for chaining.
+
+        Raises:
+            RuntimeError: If the glyph has no axes yet and `ax` is not given.
+            ValueError: If `style` is not a known preset or `"auto"`.
+
+        Examples:
+            - Dress a georeferenced field in the ECMWF look:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> data = np.random.rand(20, 30)
+                >>> glyph = ArrayGlyph(data, extent=[-100, 20, -80, 40])
+                >>> fig, ax = glyph.plot()  # doctest: +SKIP
+                >>> glyph.add_reference_map("ecmwf")  # doctest: +SKIP
+
+                ```
+
+        See Also:
+            add_features: The Natural Earth layer helper this composes.
+            available_map_styles: The built-in preset names.
+        """
+        target = self._basemap_axes(ax)
+
+        resolved = style
+        if style == "auto":
+            resolved = "ecmwf-dark" if self._background_is_dark(target) else "ecmwf"
+        if resolved not in REFERENCE_MAP_STYLES:
+            raise ValueError(
+                f"Unknown map style {style!r}; available: "
+                f"{available_map_styles()} (or 'auto')."
+            )
+        preset = REFERENCE_MAP_STYLES[resolved]
+
+        if extent is not None:
+            west, east, south, north = extent
+            im = getattr(self, "im", None)
+            if im is not None and hasattr(im, "set_extent"):
+                im.set_extent((west, east, south, north))
+            target.set_xlim(west, east)
+            target.set_ylim(south, north)
+        elif getattr(self, "extent", None) is None:
+            warnings.warn(
+                "add_reference_map: the glyph has no geographic extent, so "
+                "coastlines/borders may not align with the data. Pass "
+                "extent=(west, east, south, north) or construct the glyph "
+                "with extent=.",
+                stacklevel=2,
+            )
+
+        res = resolution or preset["resolution"]
+        self.add_features(
+            "coastline", res, ax=target, zorder=zorder, **preset["coastline"]
+        )
+        self.add_features(
+            "borders", res, ax=target, zorder=zorder, **preset["borders"]
+        )
+
+        xmin, xmax = target.get_xlim()
+        ymin, ymax = target.get_ylim()
+        step = graticule_step or _nice_step(max(abs(xmax - xmin), abs(ymax - ymin)))
+        target.xaxis.set_major_locator(MultipleLocator(step))
+        target.yaxis.set_major_locator(MultipleLocator(step))
+        target.xaxis.set_major_formatter(FuncFormatter(_lon_formatter))
+        target.yaxis.set_major_formatter(FuncFormatter(_lat_formatter))
+        target.grid(True, zorder=zorder - 1, **preset["graticule"])
+        target.tick_params(length=0, **preset["labels"])
+        for spine in target.spines.values():
+            spine.set(**preset["spines"])
+        return target

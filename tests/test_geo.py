@@ -14,6 +14,7 @@ import gzip
 import inspect
 import json
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
@@ -42,7 +43,7 @@ from cleopatra.vector_glyph import VectorGlyph  # noqa: E402
 
 GEO_GLYPHS = [ArrayGlyph, MeshGlyph, VectorGlyph, FlowGlyph, PolygonGlyph, ScatterGlyph]
 NON_GEO_GLYPHS = [LineGlyph, StatisticalGlyph, KDEGlyph]
-METHODS = ("add_tiles", "add_features", "add_relief")
+METHODS = ("add_tiles", "add_features", "add_relief", "add_reference_map")
 
 
 class _Dummy(GeoMixin):
@@ -308,3 +309,98 @@ def test_glyph_crs_drives_reprojected_placement(tmp_path: Path, monkeypatch):
     assert abs(verts[0][0]) < 1.0, f"first vertex not at x~=0: {verts[0]}"
     assert verts[1][0] > 1.0e6, f"second vertex not reprojected to metres: {verts[1]}"
     plt.close(fig)
+
+
+class TestAddReferenceMap:
+    """`GeoMixin.add_reference_map` reference-map style preset (issue #184)."""
+
+    @staticmethod
+    def _host(extent=None, im=None):
+        """A GeoMixin host with a real axes and a mocked `add_features`."""
+        fig, ax = plt.subplots()
+        host = _Dummy(ax=ax)
+        host.extent = extent
+        host.im = im
+        host.crs = None
+        host.add_features = MagicMock(return_value=ax)
+        return host, fig, ax
+
+    def test_available_map_styles(self):
+        """The built-in preset names are exposed and stable."""
+        from cleopatra.geo import available_map_styles
+
+        assert available_map_styles() == ["ecmwf", "ecmwf-dark"]
+
+    def test_composes_features_graticule_and_frame(self):
+        """The preset draws coastline+borders and styles graticule/labels/frame."""
+        host, fig, ax = self._host(extent=[-100, 20, -80, 40])
+        ret = host.add_reference_map("ecmwf")
+
+        assert ret is ax, "should return the axes for chaining"
+        layers = [c.args[0] for c in host.add_features.call_args_list]
+        assert layers == ["coastline", "borders"], layers
+        coast = host.add_features.call_args_list[0]
+        assert coast.kwargs["colors"] == "0.45"
+        assert coast.kwargs["linewidths"] == 0.8
+        assert ax.xaxis.get_major_formatter()(-75) == "75°W"
+        assert ax.yaxis.get_major_formatter()(40) == "40°N"
+        assert ax.spines["bottom"].get_edgecolor() == (0.6, 0.6, 0.6, 1.0)
+        plt.close(fig)
+
+    def test_dark_style_uses_lighter_greys(self):
+        """`ecmwf-dark` uses light-grey coastlines for dark backgrounds."""
+        host, fig, ax = self._host(extent=[-100, 20, -80, 40])
+        host.add_reference_map("ecmwf-dark")
+        assert host.add_features.call_args_list[0].kwargs["colors"] == "0.85"
+        plt.close(fig)
+
+    def test_auto_picks_dark_on_dark_background(self):
+        """`style="auto"` selects `ecmwf-dark` when the image reads as dark."""
+        dark_im = MagicMock()
+        dark_im.get_array.return_value = np.zeros((4, 4, 3))  # black RGB
+        host, fig, ax = self._host(extent=[-100, 20, -80, 40], im=dark_im)
+        host.add_reference_map("auto")
+        assert host.add_features.call_args_list[0].kwargs["colors"] == "0.85"
+        plt.close(fig)
+
+    def test_auto_picks_light_on_light_background(self):
+        """`style="auto"` selects `ecmwf` when the image reads as light."""
+        light_im = MagicMock()
+        light_im.get_array.return_value = np.ones((4, 4, 3))  # white RGB
+        host, fig, ax = self._host(extent=[-100, 20, -80, 40], im=light_im)
+        host.add_reference_map("auto")
+        assert host.add_features.call_args_list[0].kwargs["colors"] == "0.45"
+        plt.close(fig)
+
+    def test_extent_sets_image_and_axis_limits(self):
+        """Passing `extent` georeferences the image and axis limits."""
+        im = MagicMock()
+        host, fig, ax = self._host(im=im)
+        host.add_reference_map("ecmwf", extent=[-100, 20, -80, 40])
+        im.set_extent.assert_called_once_with((-100, 20, -80, 40))
+        assert ax.get_xlim() == (-100, 20)
+        assert ax.get_ylim() == (-80, 40)
+        plt.close(fig)
+
+    def test_no_extent_warns(self):
+        """With no extent, a warning flags that coastlines may not align."""
+        host, fig, ax = self._host(extent=None)
+        with pytest.warns(UserWarning, match="no geographic extent"):
+            host.add_reference_map("ecmwf")
+        plt.close(fig)
+
+    def test_unknown_style_raises(self):
+        """An unknown style name raises `ValueError` listing the options."""
+        host, fig, ax = self._host(extent=[-100, 20, -80, 40])
+        with pytest.raises(ValueError, match="Unknown map style"):
+            host.add_reference_map("bogus")
+        plt.close(fig)
+
+    def test_graticule_step_override(self):
+        """An explicit `graticule_step` sets the locator base."""
+        host, fig, ax = self._host(extent=[-100, 20, -80, 40])
+        host.add_reference_map("ecmwf", graticule_step=10)
+        # base is 10 -> ticks land on multiples of 10 within the view
+        ticks = ax.xaxis.get_major_locator().tick_values(-100, 20)
+        assert all(abs(t % 10) < 1e-9 for t in ticks), ticks
+        plt.close(fig)
