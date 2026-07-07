@@ -281,12 +281,11 @@ class TestAddTilesBehaviour:
         mock_ax.get_xlim.return_value = (10.0, 11.0)
         mock_ax.get_ylim.return_value = (50.0, 51.0)
         add_tiles(mock_ax, crs=4326)
-        # The mocked stitch_tiles reports the mosaic covering these 3857 metres:
-        w, s, e, n = _densify_and_reproject_bounds(
-            1000000.0, 6000000.0, 1200000.0, 6200000.0, "EPSG:3857", "EPSG:4326"
-        )
+        # Independent expected value: the mocked mosaic 3857 bounds
+        # (1e6, 6e6, 1.2e6, 6.2e6) reproject to these EPSG:4326 [w, e, s, n]
+        # degrees (precomputed, not re-derived from the production helper).
         got = mock_ax.imshow.call_args.kwargs["extent"]
-        assert got == pytest.approx([w, e, s, n]), (
+        assert got == pytest.approx([8.9832, 10.7798, 47.3537, 48.5569], abs=1e-4), (
             f"imshow extent should be the mosaic's reprojected bounds, got {got}"
         )
         assert got != [10.0, 11.0, 50.0, 51.0], "extent must not be the raw data bounds"
