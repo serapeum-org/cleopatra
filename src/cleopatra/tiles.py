@@ -908,6 +908,12 @@ def add_tiles(
                 crs_str,
             )
         except ValueError:
+            # `ValueError` is the complete failure surface here: `crs_str` was
+            # already validated by the forward transform above (a bad CRS would
+            # have raised there), and `_densify_and_reproject_bounds` reports an
+            # out-of-domain mosaic as `ValueError` (non-finite corners) rather
+            # than letting pyproj's `inf`/NaN through -- so no other exception
+            # type is expected from the reverse transform.
             # A coarse tile-snapped mosaic can be far larger than the data
             # and overflow a limited-domain target CRS (a UTM zone, national
             # grid, ...) when reprojected, yielding non-finite corners. Fall
