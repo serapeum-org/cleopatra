@@ -319,6 +319,30 @@ class TestAddTilesBehaviour:
             f"overflow should fall back to the data bounds, got {got}"
         )
 
+    def test_nonmercator_mosaic_extent_envelops_data(self, mock_ax):
+        """A mosaic larger than the data is placed enveloping the data bounds (issue #176)."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        mock_ax.get_xlim.return_value = (10.0, 11.0)  # lon/lat data extent
+        mock_ax.get_ylim.return_value = (50.0, 51.0)
+        # A mosaic whose Web-Mercator coverage is wider than the data's:
+        mosaic_3857 = (1.0e6, 6.3e6, 1.35e6, 6.75e6)
+        with (
+            patch.object(tiles_mod, "auto_zoom", return_value=6),
+            patch.object(
+                tiles_mod, "fetch_tiles", return_value={Tile(0, 0, 6): _make_tile_png()}
+            ),
+            patch.object(
+                tiles_mod,
+                "stitch_tiles",
+                return_value=(np.zeros((256, 256, 4), dtype=np.uint8), mosaic_3857),
+            ),
+        ):
+            add_tiles(mock_ax, crs=4326)
+        west, east, south, north = mock_ax.imshow.call_args.kwargs["extent"]
+        assert west <= 10.0 and east >= 11.0 and south <= 50.0 and north >= 51.0, (
+            f"mosaic extent {(west, east, south, north)} should envelop the data bounds"
+        )
+
     def test_min_tiles_across_forwarded_to_auto_zoom(self, mock_ax, _patch_tiles):
         """`add_tiles(min_tiles_across=...)` is forwarded to `auto_zoom` for zoom='auto'."""
         mock_zoom, _fetch, _stitch = _patch_tiles
