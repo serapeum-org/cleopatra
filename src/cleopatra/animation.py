@@ -168,8 +168,15 @@ def save_animation(
         anim.save(path, writer=PillowWriter(fps=fps))
     else:
         _ensure_ffmpeg_available()
+        # libx264 requires even width/height, so a figure whose pixel size is
+        # odd otherwise dies with "height not divisible by 2". Pad the frame up
+        # to the next even size so any figure encodes.
+        extra_args = ["-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2"]
         try:
-            anim.save(path, writer=FFMpegWriter(fps=fps, bitrate=1800))
+            anim.save(
+                path,
+                writer=FFMpegWriter(fps=fps, bitrate=1800, extra_args=extra_args),
+            )
         except FileNotFoundError as e:
             raise FileNotFoundError(
                 "FFmpeg not found. Please visit https://ffmpeg.org/ "
