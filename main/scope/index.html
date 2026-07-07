@@ -1381,6 +1381,8 @@
       
         
       
+        
+      
     
     
     
@@ -1499,6 +1501,34 @@
     
   
     Weather-centre reference maps with
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/animation/animation_examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Saving and embedding animations with
   
 
     
@@ -2143,8 +2173,12 @@ colorbars, ticks, classification, and animation.</p>
   forecasting, hypothesis tests — Cleopatra <em>displays</em> results, it doesn't
   compute models. (KDE is the deliberate, self-contained exception.)</li>
 <li><strong>Heavy new hard dependencies:</strong> keep the core to <code>numpy</code> + <code>matplotlib</code>
-  (plus <code>ffmpeg-python</code>, <code>hpc-utils</code>). Anything bigger must be an optional
-  extra like <code>tiles</code>, and only with strong justification.</li>
+  (plus <code>imageio-ffmpeg</code>, <code>hpc-utils</code>). Anything bigger must be an optional
+  extra like <code>tiles</code>, and only with strong justification. <code>imageio-ffmpeg</code> is
+  the deliberate exception: it replaces the pure-Python-but-unused
+  <code>ffmpeg-python</code> and bundles a static FFmpeg binary so <code>save_animation</code> can
+  export MP4/MOV/AVI out of the box (issue #185), which pure-Python packaging
+  cannot provide.</li>
 <li><strong>3D rendering</strong> (mplot3d surfaces/volumes), networked data sources other
   than the <code>tiles</code> / <code>reference</code> basemap helpers, and general-purpose plotting
   that matplotlib already does well without added value.</li>
