@@ -809,6 +809,53 @@ class TestQualityControls:
         )
         assert args[-2:] == ["-tune", "film"], f"passthrough flags lost: {args}"
 
+    def test_custom_pix_fmt_reaches_writer(self, monkeypatch):
+        """A custom ``pix_fmt`` param replaces the default in the writer args.
+
+        Test scenario:
+            ``pix_fmt="yuv444p"`` is emitted as the single ``-pix_fmt`` value.
+        """
+        ffmpeg = self._mock_ffmpeg(monkeypatch)
+
+        save_animation(MagicMock(spec=FuncAnimation), "clip.mp4", pix_fmt="yuv444p")
+
+        args = ffmpeg.call_args.kwargs["extra_args"]
+        assert args.count("-pix_fmt") == 1, f"expected one -pix_fmt: {args}"
+        assert args[args.index("-pix_fmt") + 1] == "yuv444p", f"pix_fmt wrong: {args}"
+
+    def test_caller_pix_fmt_in_extra_args_overrides_default(self, monkeypatch):
+        """A ``-pix_fmt`` in ``extra_args`` overrides the default without duplication.
+
+        Test scenario:
+            ``extra_args=["-pix_fmt", "rgb24"]`` yields exactly one ``-pix_fmt``
+            equal to ``rgb24`` (the forced ``yuv420p`` is not also emitted).
+        """
+        ffmpeg = self._mock_ffmpeg(monkeypatch)
+
+        save_animation(
+            MagicMock(spec=FuncAnimation), "clip.mp4", extra_args=["-pix_fmt", "rgb24"]
+        )
+
+        args = ffmpeg.call_args.kwargs["extra_args"]
+        assert args.count("-pix_fmt") == 1, f"duplicate -pix_fmt emitted: {args}"
+        assert args[args.index("-pix_fmt") + 1] == "rgb24", f"override lost: {args}"
+
+    @pytest.mark.parametrize("bad", [["-vf"], ["-crf", "20", "-pix_fmt"]])
+    def test_dangling_flag_in_extra_args_raises(self, bad, monkeypatch):
+        """A trailing valueless ``-vf``/``-pix_fmt`` raises instead of corrupting args.
+
+        Args:
+            bad: An ``extra_args`` list ending in a flag with no value.
+
+        Test scenario:
+            The merge helper rejects malformed input rather than appending a
+            dangling flag that would break the ffmpeg command line.
+        """
+        self._mock_ffmpeg(monkeypatch)
+
+        with pytest.raises(ValueError, match="must be followed by a value"):
+            save_animation(MagicMock(spec=FuncAnimation), "clip.mp4", extra_args=bad)
+
     def test_gif_loop_and_optimize_forwarded(self, monkeypatch):
         """GIF `optimize` and `loop` reach the `_OptimizedPillowWriter`.
 

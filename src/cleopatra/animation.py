@@ -130,11 +130,16 @@ def _build_ffmpeg_extra_args(
         crf: Constant Rate Factor; appended as ``-crf`` when not ``None``.
         preset: libx264 speed/size preset; appended as ``-preset`` when set.
         extra_args: Extra ffmpeg flags. A ``-vf`` pair here is merged into the
-            pad chain; everything else is passed through unchanged.
+            pad chain and a ``-pix_fmt`` pair overrides ``pix_fmt`` (rather than
+            duplicating the flag); everything else is passed through unchanged.
 
     Returns:
         The assembled argument list, always starting with the merged ``-vf``
-        chain followed by ``-pix_fmt``.
+        chain followed by a single ``-pix_fmt``.
+
+    Raises:
+        ValueError: If ``extra_args`` ends with a valueless ``-vf`` or
+            ``-pix_fmt`` flag.
 
     Examples:
         - Defaults produce just the pad filter and pixel format:
@@ -162,17 +167,28 @@ def _build_ffmpeg_extra_args(
     user_args = list(extra_args) if extra_args else []
     vf_filters: list[str] = []
     passthrough: list[str] = []
+    caller_pix_fmt: str | None = None
     i = 0
     while i < len(user_args):
-        if user_args[i] == "-vf" and i + 1 < len(user_args):
-            vf_filters.append(user_args[i + 1])
+        arg = user_args[i]
+        if arg in ("-vf", "-pix_fmt"):
+            if i + 1 >= len(user_args):
+                raise ValueError(
+                    f"Malformed extra_args: {arg!r} must be followed by a value."
+                )
+            if arg == "-vf":
+                vf_filters.append(user_args[i + 1])
+            else:
+                # A caller-supplied pixel format replaces the default rather than
+                # duplicating the flag (ffmpeg would otherwise carry both).
+                caller_pix_fmt = user_args[i + 1]
             i += 2
         else:
-            passthrough.append(user_args[i])
+            passthrough.append(arg)
             i += 1
     vf_filters.append(_EVEN_PAD_FILTER)
 
-    built = ["-vf", ",".join(vf_filters), "-pix_fmt", pix_fmt]
+    built = ["-vf", ",".join(vf_filters), "-pix_fmt", caller_pix_fmt or pix_fmt]
     if crf is not None:
         built += ["-crf", str(crf)]
     if preset is not None:
