@@ -15,33 +15,265 @@ writer/format logic has a single source of truth.
 from __future__ import annotations
 
 import os
+import shutil
 import tempfile
+import warnings
 from typing import TYPE_CHECKING
 
+import matplotlib as mpl
 from matplotlib.animation import FFMpegWriter, FuncAnimation, PillowWriter
 
 if TYPE_CHECKING:  # import only for type checkers; IPython stays optional
     from IPython.display import Image
 
-#: Container formats `save_animation` can write. GIF uses `PillowWriter`;
-#: the rest require FFmpeg (`FFMpegWriter`).
-SUPPORTED_VIDEO_FORMAT = ["gif", "mov", "avi", "mp4"]
+#: Container formats `save_animation` can write. GIF and (animated) WebP use
+#: Pillow (`_OptimizedPillowWriter`); mov/avi/mp4 require FFmpeg (`FFMpegWriter`).
+#: WebP is typically 3-5x smaller than GIF for photographic/satellite frames.
+SUPPORTED_VIDEO_FORMAT = ["gif", "mov", "avi", "mp4", "webp"]
+
+#: Formats written by Pillow rather than FFmpeg.
+_PILLOW_FORMATS = {"gif", "webp"}
+
+
+def _ensure_ffmpeg_available() -> None:
+    """Make sure matplotlib can find an ffmpeg binary to shell out to.
+
+    matplotlib's `FFMpegWriter` runs the ffmpeg *binary* named by
+    `matplotlib.rcParams["animation.ffmpeg_path"]` (default ``"ffmpeg"``,
+    resolved on `PATH`). If that binary is not found, fall back to the static
+    ffmpeg that `imageio-ffmpeg` bundles, so mp4/mov/avi export works with no
+    separate system install. A system ffmpeg on `PATH` still takes precedence.
+    If the rcParam was set to an explicit path that no longer resolves, a
+    `RuntimeWarning` is emitted before falling back, so an overridden user
+    choice is never discarded silently.
+
+    Raises:
+        FileNotFoundError: If neither a system ffmpeg nor `imageio-ffmpeg`'s
+            bundled binary can be located.
+    """
+    configured = mpl.rcParams["animation.ffmpeg_path"]
+    # Already usable: an absolute path that exists, or a name found on PATH.
+    if os.path.isfile(configured) or shutil.which(configured):
+        return
+    try:
+        import imageio_ffmpeg
+    except ModuleNotFoundError as e:  # pragma: no cover - imageio-ffmpeg is a dep
+        raise FileNotFoundError(
+            "FFmpeg not found on PATH and imageio-ffmpeg is not installed. "
+            "Install imageio-ffmpeg (ships a bundled ffmpeg) or download "
+            "ffmpeg from https://ffmpeg.org/ and add it to your PATH."
+        ) from e
+    bundled = imageio_ffmpeg.get_ffmpeg_exe()
+    # Only the matplotlib default (``"ffmpeg"``) is overridden silently; an
+    # explicit path the user configured is theirs, so warn before replacing it.
+    if configured not in ("ffmpeg", "ffmpeg.exe"):
+        # stacklevel=3 targets the common direct ``save_animation`` call
+        # (warn -> _ensure_ffmpeg_available -> save_animation -> caller). The
+        # depth differs when reached via to_bytes/to_mp4/Glyph.save_animation,
+        # so attribution is best-effort; the message is self-contained. There is
+        # no single correct stacklevel across those entry points, and
+        # ``skip_file_prefixes`` is Python 3.12+ while this package targets 3.11.
+        warnings.warn(
+            f"Configured ffmpeg binary {configured!r} was not found; falling "
+            f"back to the imageio-ffmpeg bundled binary at {bundled!r}.",
+            RuntimeWarning,
+            stacklevel=3,
+        )
+    mpl.rcParams["animation.ffmpeg_path"] = bundled
+
+
+class _OptimizedPillowWriter(PillowWriter):
+    """`PillowWriter` that writes optimised, loop-configurable GIF/WebP output.
+
+    This is the writer for both Pillow-backed formats (``gif`` and ``webp``).
+    matplotlib's stock `PillowWriter` hardcodes ``loop=0`` and never passes
+    ``optimize`` to `PIL.Image.save`, so GIFs come out unoptimised — needlessly
+    large for photographic/satellite frames. This subclass forwards ``optimize``
+    and ``loop`` while reusing the parent's frame-grabbing logic.
+
+    Args:
+        optimize: Run Pillow's optimisation pass. Effective for GIF (palette
+            compression); the WebP encoder ignores it, so it is a no-op there.
+        loop: Number of times the animation loops; ``0`` means loop forever
+            (Pillow's convention). Honoured by both GIF and WebP.
+    """
+
+    def __init__(self, *args, optimize: bool = True, loop: int = 0, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._optimize = optimize
+        self._loop = loop
+
+    def finish(self):
+        # Mirrors matplotlib's PillowWriter.finish body (it cannot be delegated
+        # because the parent hardcodes loop=0 and passes no optimize). Re-check
+        # against matplotlib.animation.PillowWriter.finish on version bumps.
+        self._frames[0].save(
+            self.outfile,
+            save_all=True,
+            append_images=self._frames[1:],
+            duration=int(1000 / self.fps),
+            loop=self._loop,
+            optimize=self._optimize,
+        )
+
+
+#: ffmpeg video filter that rounds the frame up to an even width/height.
+#: libx264 refuses odd dimensions, so this is always applied to video output.
+_EVEN_PAD_FILTER = "pad=ceil(iw/2)*2:ceil(ih/2)*2"
+
+
+def _build_ffmpeg_extra_args(
+    pix_fmt: str,
+    crf: int | None,
+    preset: str | None,
+    extra_args: list[str] | None,
+) -> list[str]:
+    """Assemble the ffmpeg ``extra_args`` list for a video export.
+
+    Combines the mandatory even-dimension pad filter with an explicit pixel
+    format and any caller-supplied CRF, preset, or raw ffmpeg flags. A caller
+    ``-vf`` filter is merged into a single chain — ffmpeg honours only the last
+    ``-vf`` — with the pad applied last so the frame ends up even whatever the
+    caller's filters produce.
+
+    Args:
+        pix_fmt: Pixel format passed as ``-pix_fmt`` (e.g. ``"yuv420p"``).
+        crf: Constant Rate Factor; appended as ``-crf`` when not ``None``.
+        preset: libx264 speed/size preset; appended as ``-preset`` when set.
+        extra_args: Extra ffmpeg flags. A ``-vf`` pair here is merged into the
+            pad chain and a ``-pix_fmt`` pair overrides ``pix_fmt`` (rather than
+            duplicating the flag); everything else is passed through unchanged.
+
+    Returns:
+        The assembled argument list, always starting with the merged ``-vf``
+        chain followed by a single ``-pix_fmt``.
+
+    Raises:
+        ValueError: If ``extra_args`` ends with a valueless ``-vf`` or
+            ``-pix_fmt`` flag.
+
+    Examples:
+        - Defaults produce just the pad filter and pixel format:
+            ```python
+            >>> from cleopatra.animation import _build_ffmpeg_extra_args
+            >>> _build_ffmpeg_extra_args("yuv420p", None, None, None)
+            ['-vf', 'pad=ceil(iw/2)*2:ceil(ih/2)*2', '-pix_fmt', 'yuv420p']
+
+            ```
+        - A CRF and preset are appended after the pixel format:
+            ```python
+            >>> from cleopatra.animation import _build_ffmpeg_extra_args
+            >>> _build_ffmpeg_extra_args("yuv420p", 26, "slow", None)[4:]
+            ['-crf', '26', '-preset', 'slow']
+
+            ```
+        - A caller ``-vf`` is merged into one chain with the pad applied last:
+            ```python
+            >>> from cleopatra.animation import _build_ffmpeg_extra_args
+            >>> _build_ffmpeg_extra_args("yuv420p", None, None, ["-vf", "scale=320:-1"])[:2]
+            ['-vf', 'scale=320:-1,pad=ceil(iw/2)*2:ceil(ih/2)*2']
+
+            ```
+    """
+    user_args = list(extra_args) if extra_args else []
+    vf_filters: list[str] = []
+    passthrough: list[str] = []
+    caller_pix_fmt: str | None = None
+    i = 0
+    while i < len(user_args):
+        arg = user_args[i]
+        if arg in ("-vf", "-pix_fmt"):
+            if i + 1 >= len(user_args):
+                raise ValueError(
+                    f"Malformed extra_args: {arg!r} must be followed by a value."
+                )
+            if arg == "-vf":
+                vf_filters.append(user_args[i + 1])
+            else:
+                # A caller-supplied pixel format replaces the default rather than
+                # duplicating the flag (ffmpeg would otherwise carry both).
+                caller_pix_fmt = user_args[i + 1]
+            i += 2
+        else:
+            passthrough.append(arg)
+            i += 1
+    vf_filters.append(_EVEN_PAD_FILTER)
+
+    chosen_pix_fmt = caller_pix_fmt if caller_pix_fmt is not None else pix_fmt
+    built = ["-vf", ",".join(vf_filters), "-pix_fmt", chosen_pix_fmt]
+    if crf is not None:
+        built += ["-crf", str(crf)]
+    if preset is not None:
+        built += ["-preset", preset]
+    built += passthrough
+    return built
 
 
 def save_animation(
-    anim: FuncAnimation, path: str | os.PathLike, fps: int = 2
+    anim: FuncAnimation,
+    path: str | os.PathLike,
+    fps: int = 2,
+    *,
+    crf: int | None = None,
+    bitrate: int | None = None,
+    codec: str | None = None,
+    preset: str | None = None,
+    pix_fmt: str = "yuv420p",
+    dpi: int | None = None,
+    optimize: bool = True,
+    loop: int = 0,
+    extra_args: list[str] | None = None,
 ) -> str:
     """Save any `FuncAnimation` to a file.
 
-    The output format is determined by the file extension. GIF uses
-    `PillowWriter`; mov/avi/mp4 require FFmpeg to be installed.
+    The output format is determined by the file extension. GIF and animated
+    WebP use an optimising Pillow writer; mov/avi/mp4 use FFmpeg. FFmpeg is
+    located on `PATH` when present and otherwise falls back to the binary
+    bundled with `imageio-ffmpeg`, so video export works with no separate
+    install. WebP is typically 3-5x smaller than GIF for photographic frames.
+
+    Note: when no system FFmpeg is found, the first video export sets
+    matplotlib's global ``rcParams["animation.ffmpeg_path"]`` to the bundled
+    binary — a process-wide side effect that then applies to any later
+    matplotlib animation in the same process.
+
+    For the FFmpeg formats the frame is automatically padded up to an even
+    width/height (libx264 rejects odd dimensions) and encoded with
+    ``pix_fmt=yuv420p`` for universal playback. By default no fixed bitrate is
+    requested (unlike older versions, which forced 1800 kbit/s), so libx264
+    uses its constant-quality default of roughly CRF 23 — pass ``crf`` or
+    ``bitrate`` to trade size against quality. GIF output is written with
+    Pillow's ``optimize`` pass enabled; both GIF and WebP loop forever by
+    default.
 
     Args:
         anim: The animation to save.
         path: Output file path, as a `str` or `os.PathLike` (e.g. a
             `pathlib.Path`). Extension determines format.
-            Supported: gif, mov, avi, mp4.
+            Supported: gif, mov, avi, mp4, webp.
         fps: Frames per second. Default is 2.
+        crf: Constant Rate Factor for the ffmpeg formats (lower is higher
+            quality/larger; ~18-28 is typical). Assumes an x264/x265-family
+            ``codec``. Mutually exclusive with ``bitrate``. Ignored for
+            GIF/WebP. ``None`` uses the encoder default.
+        bitrate: Target bitrate in kbit/s for the ffmpeg formats. Mutually
+            exclusive with ``crf``. Ignored for GIF/WebP. ``None`` lets the
+            encoder choose.
+        codec: ffmpeg codec (e.g. ``"libx264"``). ``None`` uses matplotlib's
+            default. Ignored for GIF/WebP.
+        preset: libx264/libx265 speed/size preset (e.g. ``"slow"``); ignored by
+            codecs that don't accept it. Ignored for GIF/WebP.
+        pix_fmt: Pixel format for the ffmpeg formats. Defaults to
+            ``"yuv420p"`` for universal playback. Ignored for GIF/WebP.
+        dpi: Resolution in dots per inch. ``None`` uses the figure's dpi.
+        optimize: GIF only — run Pillow's palette optimisation pass (a no-op
+            for WebP, whose encoder ignores it). Default ``True``.
+        loop: GIF/WebP only — number of times to loop; ``0`` loops forever.
+        extra_args: Extra ffmpeg flags. A ``-vf`` filter here is merged with
+            the automatic even-dimension pad and a ``-pix_fmt`` overrides
+            ``pix_fmt``. Note these flags bypass the ``crf``/``bitrate``
+            exclusivity check, so don't smuggle a conflicting ``-b:v``/``-crf``
+            through here. Ignored for GIF/WebP.
 
     Returns:
         The output path as a `str` (the `os.fspath` of `path`),
@@ -49,9 +281,10 @@ def save_animation(
         back as its string form, not the original object.
 
     Raises:
-        ValueError: If the file format is not supported.
-        FileNotFoundError: If a video format is requested but FFmpeg is
-            not installed.
+        ValueError: If the file format is not supported, or if both ``crf``
+            and ``bitrate`` are given (competing rate-control modes).
+        FileNotFoundError: If a video format is requested but neither a system
+            FFmpeg nor imageio-ffmpeg's bundled binary can be found.
 
     Examples:
         - Save a tiny animation to a GIF; the call returns the path it wrote:
@@ -134,28 +367,149 @@ def save_animation(
             f"not supported, only {SUPPORTED_VIDEO_FORMAT} are supported"
         )
 
-    if video_format == "gif":
-        anim.save(path, writer=PillowWriter(fps=fps))
+    # Validate the rate-control contract uniformly, before the format branch,
+    # so crf+bitrate is rejected for every format rather than only for video.
+    if crf is not None and bitrate is not None:
+        raise ValueError(
+            "Pass either crf or bitrate, not both: they are competing "
+            "rate-control modes for the encoder."
+        )
+
+    save_kwargs = {} if dpi is None else {"dpi": dpi}
+
+    if video_format in _PILLOW_FORMATS:
+        anim.save(
+            path,
+            writer=_OptimizedPillowWriter(fps=fps, optimize=optimize, loop=loop),
+            **save_kwargs,
+        )
     else:
+        _ensure_ffmpeg_available()
+        writer_kwargs = {
+            "fps": fps,
+            "extra_args": _build_ffmpeg_extra_args(pix_fmt, crf, preset, extra_args),
+        }
+        if bitrate is not None:
+            writer_kwargs["bitrate"] = bitrate
+        if codec is not None:
+            writer_kwargs["codec"] = codec
         try:
-            anim.save(path, writer=FFMpegWriter(fps=fps, bitrate=1800))
+            anim.save(path, writer=FFMpegWriter(**writer_kwargs), **save_kwargs)
         except FileNotFoundError as e:
+            # _ensure_ffmpeg_available() already resolved a binary, so this is
+            # rare (e.g. a pinned animation.ffmpeg_path was removed between the
+            # check and the encode). Keep the wording consistent with the
+            # bundled-binary story rather than pointing at a manual install.
             raise FileNotFoundError(
-                "FFmpeg not found. Please visit https://ffmpeg.org/ "
-                "and download a version compatible with your OS."
+                "FFmpeg could not be run. imageio-ffmpeg's bundled binary "
+                "normally makes this work out of the box; if you pinned a custom "
+                "ffmpeg via matplotlib's animation.ffmpeg_path, make sure it still "
+                "exists, or install a system ffmpeg from https://ffmpeg.org/."
             ) from e
     return path
 
 
-def to_gif(anim: FuncAnimation, fps: int = 2) -> bytes:
+def to_bytes(anim: FuncAnimation, fmt: str = "gif", fps: int = 2, **kwargs) -> bytes:
+    """Render a `FuncAnimation` to in-memory bytes in any supported format.
+
+    Renders to a temporary file (the writers need a real path) and reads it
+    back, leaving nothing on disk. Handy for embedding in a notebook or
+    serving over HTTP.
+
+    Args:
+        anim: The animation to render.
+        fmt: Output format — any member of ``SUPPORTED_VIDEO_FORMAT`` (e.g.
+            ``"gif"``, ``"mp4"``, ``"webp"``). A leading dot is tolerated.
+        fps: Frames per second. Default is 2.
+        **kwargs: Extra keyword arguments forwarded to `save_animation`
+            (e.g. ``crf``, ``codec``, ``loop``).
+
+    Returns:
+        The encoded bytes of the animation in the requested format.
+
+    Raises:
+        ValueError: If ``fmt`` is not a supported format.
+
+    Examples:
+        - Render to GIF bytes and inspect the payload:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from matplotlib.animation import FuncAnimation
+            >>> from cleopatra.animation import to_bytes
+            >>> fig, ax = plt.subplots()
+            >>> (line,) = ax.plot([0, 1], [0, 0])
+            >>> anim = FuncAnimation(fig, lambda i: (line,), frames=2)
+            >>> data = to_bytes(anim, fmt="gif")
+            >>> data[:6] in (b"GIF87a", b"GIF89a")
+            True
+            >>> plt.close(fig)
+
+            ```
+        - Render to animated WebP and confirm the container magic bytes:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from matplotlib.animation import FuncAnimation
+            >>> from cleopatra.animation import to_bytes
+            >>> fig, ax = plt.subplots()
+            >>> (line,) = ax.plot([0, 1], [0, 0])
+            >>> anim = FuncAnimation(fig, lambda i: (line,), frames=2)
+            >>> data = to_bytes(anim, fmt="webp")
+            >>> data[:4] == b"RIFF" and data[8:12] == b"WEBP"
+            True
+            >>> plt.close(fig)
+
+            ```
+        - An unsupported format raises ``ValueError``:
+            ```python
+            >>> from unittest.mock import MagicMock
+            >>> from matplotlib.animation import FuncAnimation
+            >>> from cleopatra.animation import to_bytes
+            >>> to_bytes(MagicMock(spec=FuncAnimation), fmt="webm")  # doctest: +ELLIPSIS
+            Traceback (most recent call last):
+                ...
+            ValueError: ...not supported...
+
+            ```
+
+    See Also:
+        to_gif: Convenience wrapper for GIF bytes.
+        to_mp4: Convenience wrapper for MP4 bytes.
+        save_animation: Write an animation directly to a file path.
+    """
+    fmt = fmt.lstrip(".").lower()
+    if fmt not in SUPPORTED_VIDEO_FORMAT:
+        raise ValueError(
+            f"The format {fmt!r} is not supported, only "
+            f"{SUPPORTED_VIDEO_FORMAT} are supported"
+        )
+    # Close our handle immediately so the writer can reopen the path; this
+    # makes the handle lifecycle explicit (no reliance on GC) and avoids a
+    # PermissionError when reopening on Windows.
+    fd, tmp = tempfile.mkstemp(suffix=f".{fmt}")
+    os.close(fd)
+    try:
+        save_animation(anim, tmp, fps=fps, **kwargs)
+        with open(tmp, "rb") as fh:
+            return fh.read()
+    finally:
+        os.remove(tmp)
+
+
+def to_gif(anim: FuncAnimation, fps: int = 2, **kwargs) -> bytes:
     """Render a `FuncAnimation` to in-memory GIF bytes.
 
     Handy for embedding in a notebook or serving over HTTP without leaving
-    a file on disk.
+    a file on disk. Thin wrapper around `to_bytes` with ``fmt="gif"``.
 
     Args:
         anim: The animation to render.
         fps: Frames per second. Default is 2.
+        **kwargs: Extra keyword arguments forwarded to `save_animation`
+            (e.g. ``optimize``, ``loop``).
 
     Returns:
         The GIF-encoded bytes of the animation.
@@ -198,20 +552,74 @@ def to_gif(anim: FuncAnimation, fps: int = 2) -> bytes:
             ```
 
     See Also:
+        to_bytes: Render to bytes in any supported format.
         save_animation: Write an animation directly to a file path.
         embed_gif: Wrap these bytes as an ``IPython.display.Image``.
     """
-    # Close our handle immediately so the writer can reopen the path; this
-    # makes the handle lifecycle explicit (no reliance on GC) and avoids a
-    # PermissionError when reopening on Windows.
-    fd, tmp = tempfile.mkstemp(suffix=".gif")
-    os.close(fd)
-    try:
-        save_animation(anim, tmp, fps=fps)
-        with open(tmp, "rb") as fh:
-            return fh.read()
-    finally:
-        os.remove(tmp)
+    return to_bytes(anim, fmt="gif", fps=fps, **kwargs)
+
+
+def to_mp4(anim: FuncAnimation, fps: int = 2, **kwargs) -> bytes:
+    """Render a `FuncAnimation` to in-memory MP4 (H.264) bytes.
+
+    Handy for embedding a compact, universally-playable clip or serving it
+    over HTTP without leaving a file on disk. Thin wrapper around `to_bytes`
+    with ``fmt="mp4"``; the frame is auto-padded to even dimensions and
+    encoded ``yuv420p`` like every other MP4 export.
+
+    Args:
+        anim: The animation to render.
+        fps: Frames per second. Default is 2.
+        **kwargs: Extra keyword arguments forwarded to `save_animation`
+            (e.g. ``crf``, ``bitrate``, ``codec``, ``preset``).
+
+    Returns:
+        The MP4-encoded bytes of the animation.
+
+    Raises:
+        FileNotFoundError: If neither a system FFmpeg nor imageio-ffmpeg's
+            bundled binary can be found.
+
+    Examples:
+        - Render to MP4 bytes and confirm the ISO base-media ``ftyp`` box:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from matplotlib.animation import FuncAnimation
+            >>> from cleopatra.animation import to_mp4
+            >>> fig, ax = plt.subplots()
+            >>> (line,) = ax.plot([0, 1], [0, 0])
+            >>> anim = FuncAnimation(fig, lambda i: (line,), frames=2)
+            >>> data = to_mp4(anim)
+            >>> data[4:8] == b"ftyp"
+            True
+            >>> plt.close(fig)
+
+            ```
+        - Trade size for quality with a CRF and confirm non-empty output:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from matplotlib.animation import FuncAnimation
+            >>> from cleopatra.animation import to_mp4
+            >>> fig, ax = plt.subplots()
+            >>> (line,) = ax.plot([0, 1], [0, 0])
+            >>> anim = FuncAnimation(fig, lambda i: (line,), frames=2)
+            >>> data = to_mp4(anim, crf=30, preset="veryfast")
+            >>> len(data) > 0
+            True
+            >>> plt.close(fig)
+
+            ```
+
+    See Also:
+        to_bytes: Render to bytes in any supported format.
+        to_gif: Render an animation to in-memory GIF bytes.
+        save_animation: Write an animation directly to a file path.
+    """
+    return to_bytes(anim, fmt="mp4", fps=fps, **kwargs)
 
 
 def embed_gif(anim: FuncAnimation, fps: int = 2) -> Image:

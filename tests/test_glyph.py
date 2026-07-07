@@ -639,13 +639,33 @@ class TestSaveAnimation:
 
         spy.assert_called_once_with(anim, "movie.gif", fps=5)
 
+    def test_forwards_quality_kwargs(self, monkeypatch):
+        """Extra quality kwargs are forwarded verbatim to the free function.
+
+        Test scenario:
+            ``crf``/``preset``/``dpi`` passed to the wrapper must reach
+            ``cleopatra.animation.save_animation`` unchanged so callers get the
+            full quality-control surface through the glyph.
+        """
+        g = Glyph(default_options=_make_options())
+        anim = MagicMock(spec=FuncAnimation)
+        g._anim = anim
+
+        spy = MagicMock()
+        monkeypatch.setattr(glyph_mod, "_save_animation", spy)
+        g.save_animation("movie.mp4", fps=2, crf=24, preset="slow", dpi=150)
+
+        spy.assert_called_once_with(
+            anim, "movie.mp4", fps=2, crf=24, preset="slow", dpi=150
+        )
+
 
 class TestSupportedVideoFormat:
     """Tests for module-level SUPPORTED_VIDEO_FORMAT constant."""
 
     def test_contains_expected_formats(self):
         """Test that all expected formats are present."""
-        expected = {"gif", "mov", "avi", "mp4"}
+        expected = {"gif", "mov", "avi", "mp4", "webp"}
         assert set(SUPPORTED_VIDEO_FORMAT) == expected, (
             f"Expected {expected}, got {set(SUPPORTED_VIDEO_FORMAT)}"
         )

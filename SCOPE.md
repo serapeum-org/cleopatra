@@ -97,8 +97,12 @@ colorbars, ticks, classification, and animation.
   forecasting, hypothesis tests — Cleopatra *displays* results, it doesn't
   compute models. (KDE is the deliberate, self-contained exception.)
 - **Heavy new hard dependencies:** keep the core to `numpy` + `matplotlib`
-  (plus `ffmpeg-python`, `hpc-utils`). Anything bigger must be an optional
-  extra like `tiles`, and only with strong justification.
+  (plus `imageio-ffmpeg`, `hpc-utils`). Anything bigger must be an optional
+  extra like `tiles`, and only with strong justification. `imageio-ffmpeg` is
+  the deliberate exception: it replaces the pure-Python-but-unused
+  `ffmpeg-python` and bundles a static FFmpeg binary so `save_animation` can
+  export MP4/MOV/AVI out of the box (issue #185), which pure-Python packaging
+  cannot provide.
 - **3D rendering** (mplot3d surfaces/volumes), networked data sources other
   than the `tiles` / `reference` basemap helpers, and general-purpose plotting
   that matplotlib already does well without added value.
