@@ -876,7 +876,7 @@ class TestSupportedVideoFormat:
     """Tests for the module-level `SUPPORTED_VIDEO_FORMAT` constant."""
 
     def test_contains_expected_formats(self):
-        """The constant lists exactly the four supported container formats."""
+        """The constant lists exactly the five supported container formats."""
         assert set(SUPPORTED_VIDEO_FORMAT) == {"gif", "mov", "avi", "mp4", "webp"}
 
     def test_is_single_source_of_truth(self):
