@@ -87,8 +87,9 @@ def _nice_step(span: float, target_divisions: int = 6) -> float:
         target_divisions: Rough number of gridlines to aim for.
 
     Returns:
-        float: A "nice" step (1, 2, 2.5, 5, 10, ...) so the graticule lands
-        on round degree values.
+        float: A "nice" step (..., 0.25, 0.5, 1, 2, 2.5, 5, 10, ...) so the
+        graticule lands on round degree values, including sub-degree steps
+        for zoomed-in (city/basin-scale) maps.
 
     Examples:
         ```python
@@ -97,13 +98,15 @@ def _nice_step(span: float, target_divisions: int = 6) -> float:
         5.0
         >>> _nice_step(4)
         1.0
+        >>> _nice_step(1.2)
+        0.2
 
         ```
     """
     if span <= 0:
         return 1.0
     raw = span / max(target_divisions, 1)
-    for candidate in (1, 2, 2.5, 5, 10, 15, 20, 30, 45, 60):
+    for candidate in (0.1, 0.2, 0.25, 0.5, 1, 2, 2.5, 5, 10, 15, 20, 30, 45, 60):
         if raw <= candidate:
             return float(candidate)
     return 90.0

@@ -481,10 +481,11 @@ class TestAddReferenceMap:
         plt.close(fig)
 
     @pytest.mark.parametrize(
-        "span,expected", [(0, 1.0), (-5, 1.0), (4, 1.0), (30, 5.0), (12, 2.0), (1000, 90.0)]
+        "span,expected",
+        [(0, 1.0), (-5, 1.0), (1.2, 0.2), (4, 1.0), (30, 5.0), (12, 2.0), (1000, 90.0)],
     )
     def test_nice_step(self, span, expected):
-        """`_nice_step` returns round steps and the 90 fallback for huge spans."""
+        """`_nice_step` returns round steps (incl. sub-degree) and the 90 fallback."""
         assert _nice_step(span) == expected
 
     def test_resolution_and_zorder_override(self):
