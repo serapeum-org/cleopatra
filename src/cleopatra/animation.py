@@ -352,6 +352,14 @@ def save_animation(
             f"not supported, only {SUPPORTED_VIDEO_FORMAT} are supported"
         )
 
+    # Validate the rate-control contract uniformly, before the format branch,
+    # so crf+bitrate is rejected for every format rather than only for video.
+    if crf is not None and bitrate is not None:
+        raise ValueError(
+            "Pass either crf or bitrate, not both: they are competing "
+            "rate-control modes for the encoder."
+        )
+
     save_kwargs = {} if dpi is None else {"dpi": dpi}
 
     if video_format in _PILLOW_FORMATS:
@@ -361,11 +369,6 @@ def save_animation(
             **save_kwargs,
         )
     else:
-        if crf is not None and bitrate is not None:
-            raise ValueError(
-                "Pass either crf or bitrate, not both: they are competing "
-                "rate-control modes for the encoder."
-            )
         _ensure_ffmpeg_available()
         writer_kwargs = {
             "fps": fps,

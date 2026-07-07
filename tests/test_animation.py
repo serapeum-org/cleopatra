@@ -758,6 +758,35 @@ class TestQualityControls:
                 MagicMock(spec=FuncAnimation), "clip.mp4", crf=20, bitrate=2000
             )
 
+    def test_crf_and_bitrate_together_raises_for_gif(self):
+        """crf+bitrate is rejected uniformly, even for the GIF/Pillow path.
+
+        Test scenario:
+            The mutual-exclusion check runs before the format branch, so a GIF
+            with both raises rather than silently ignoring them.
+        """
+        with pytest.raises(ValueError, match="either crf or bitrate"):
+            save_animation(
+                MagicMock(spec=FuncAnimation), "clip.gif", crf=20, bitrate=2000
+            )
+
+    def test_ffmpeg_only_kwargs_ignored_for_gif(self, monkeypatch):
+        """A lone ffmpeg-only kwarg is accepted (and ignored) on the GIF path.
+
+        Test scenario:
+            ``crf`` alone on a ``.gif`` does not raise and never touches the
+            FFmpeg writer — GIF goes through the Pillow writer.
+        """
+        pillow = MagicMock(name="_OptimizedPillowWriter")
+        ffmpeg = MagicMock(name="FFMpegWriter")
+        monkeypatch.setattr(anim_mod, "_OptimizedPillowWriter", pillow)
+        monkeypatch.setattr(anim_mod, "FFMpegWriter", ffmpeg)
+
+        save_animation(MagicMock(spec=FuncAnimation), "clip.gif", crf=20)
+
+        pillow.assert_called_once()
+        ffmpeg.assert_not_called()
+
     def test_dpi_forwarded_to_save(self, monkeypatch):
         """`dpi` is forwarded to ``anim.save`` for the ffmpeg path.
 
