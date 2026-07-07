@@ -58,6 +58,36 @@ def _ensure_ffmpeg_available() -> None:
     mpl.rcParams["animation.ffmpeg_path"] = imageio_ffmpeg.get_ffmpeg_exe()
 
 
+class _OptimizedPillowWriter(PillowWriter):
+    """`PillowWriter` that writes optimised GIFs with a configurable loop.
+
+    matplotlib's stock `PillowWriter` hardcodes ``loop=0`` and never passes
+    ``optimize`` to `PIL.Image.save`, so GIFs come out unoptimised — needlessly
+    large for photographic/satellite frames. This subclass forwards ``optimize``
+    and ``loop`` while reusing the parent's frame-grabbing logic.
+
+    Args:
+        optimize: Run Pillow's GIF optimisation pass (palette + delta frames).
+        loop: Number of times the GIF loops; ``0`` means loop forever (Pillow's
+            convention).
+    """
+
+    def __init__(self, *args, optimize: bool = True, loop: int = 0, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._optimize = optimize
+        self._loop = loop
+
+    def finish(self):
+        self._frames[0].save(
+            self.outfile,
+            save_all=True,
+            append_images=self._frames[1:],
+            duration=int(1000 / self.fps),
+            loop=self._loop,
+            optimize=self._optimize,
+        )
+
+
 def save_animation(
     anim: FuncAnimation, path: str | os.PathLike, fps: int = 2
 ) -> str:
@@ -165,7 +195,7 @@ def save_animation(
         )
 
     if video_format == "gif":
-        anim.save(path, writer=PillowWriter(fps=fps))
+        anim.save(path, writer=_OptimizedPillowWriter(fps=fps))
     else:
         _ensure_ffmpeg_available()
         # libx264 requires even width/height, so a figure whose pixel size is
