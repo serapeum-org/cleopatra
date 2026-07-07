@@ -93,13 +93,13 @@ class TestGetProvider:
 class TestAutoZoom:
     """Tests for `cleopatra.tiles.auto_zoom`."""
 
-    def test_global_extent_is_zoom_2(self):
-        """A global extent spans four tiles across at the default floor."""
-        assert auto_zoom((-180.0, -85.0, 180.0, 85.0)) == 2
+    def test_global_extent_is_zoom_1(self):
+        """A global extent spans two tiles across at the default floor."""
+        assert auto_zoom((-180.0, -85.0, 180.0, 85.0)) == 1
 
-    def test_city_extent_yields_zoom_12(self):
-        """A ~0.6-degree city extent yields zoom 12 at the default floor."""
-        assert auto_zoom((13.0, 52.4, 13.6, 52.6)) == 12
+    def test_city_extent_yields_zoom_11(self):
+        """A ~0.6-degree city extent yields zoom 11 at the default floor."""
+        assert auto_zoom((13.0, 52.4, 13.6, 52.6)) == 11
 
     def test_tiny_extent_clamps_to_19(self):
         """An infinitesimal extent clamps to the max zoom 19."""
@@ -113,7 +113,7 @@ class TestAutoZoom:
     def test_regional_extent_does_not_collapse_to_two_tiles(self):
         """A 6-11 degree extent (issue #176 Gulf) zooms past the coarse z6."""
         gulf = (-94.314, 27.439, -87.735, 30.867)
-        assert auto_zoom(gulf) == 8  # default floor -> sharper basemap
+        assert auto_zoom(gulf) == 7  # default floor (2) -> sharper basemap
         assert auto_zoom(gulf, min_tiles_across=1) == 6  # old coarse value
 
     def test_non_positive_min_tiles_across_is_treated_as_one(self):
