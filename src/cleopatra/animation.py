@@ -67,11 +67,13 @@ def _ensure_ffmpeg_available() -> None:
     # Only the matplotlib default (``"ffmpeg"``) is overridden silently; an
     # explicit path the user configured is theirs, so warn before replacing it.
     if configured not in ("ffmpeg", "ffmpeg.exe"):
+        # stacklevel=3: warn() -> _ensure_ffmpeg_available -> save_animation ->
+        # user call site, so the warning is attributed to the caller's code.
         warnings.warn(
             f"Configured ffmpeg binary {configured!r} was not found; falling "
             f"back to the imageio-ffmpeg bundled binary at {bundled!r}.",
             RuntimeWarning,
-            stacklevel=2,
+            stacklevel=3,
         )
     mpl.rcParams["animation.ffmpeg_path"] = bundled
 
