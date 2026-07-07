@@ -93,8 +93,15 @@ def save_animation(
 ) -> str:
     """Save any `FuncAnimation` to a file.
 
-    The output format is determined by the file extension. GIF uses
-    `PillowWriter`; mov/avi/mp4 require FFmpeg to be installed.
+    The output format is determined by the file extension. GIF uses an
+    optimising `PillowWriter`; mov/avi/mp4 use FFmpeg. FFmpeg is located on
+    `PATH` when present and otherwise falls back to the binary bundled with
+    `imageio-ffmpeg`, so video export works with no separate install.
+
+    For the FFmpeg formats the frame is automatically padded up to an even
+    width/height (libx264 rejects odd dimensions) and encoded with
+    ``pix_fmt=yuv420p`` for universal playback. GIF output is written with
+    Pillow's ``optimize`` pass enabled and loops forever.
 
     Args:
         anim: The animation to save.
