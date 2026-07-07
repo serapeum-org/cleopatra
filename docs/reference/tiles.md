@@ -57,7 +57,11 @@ fig.savefig("map.png")
     image extent (the axis limits stay at the data bounds), so the basemap aligns with the
     data even though the fetched tiles cover a tile-snapped area larger than it. A residual
     Mercator-vs-linear nonlinearity remains for very large extents — for pixel-accurate
-    results reproject the source data to EPSG:3857 before plotting. The automatic zoom uses
+    results reproject the source data to EPSG:3857 before plotting. If a coarse mosaic
+    overflows a limited-domain target CRS (e.g. a whole-world mosaic into a UTM zone), the
+    reprojection is skipped with a warning and the basemap falls back to the data bounds
+    (slightly misaligned); use a higher zoom or reproject the data to EPSG:3857 to avoid it.
+    The automatic zoom uses
     a `min_tiles_across` floor (default 2) so a mid-range extent is not rendered from one or
     two coarse tiles; the number of tiles is capped by `max_tiles` (default
     `MAX_TILES = 256`), and the zoom is stepped down if a level would need more.
