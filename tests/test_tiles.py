@@ -319,6 +319,19 @@ class TestAddTilesBehaviour:
             f"overflow should fall back to the data bounds, got {got}"
         )
 
+    def test_min_tiles_across_forwarded_to_auto_zoom(self, mock_ax, _patch_tiles):
+        """`add_tiles(min_tiles_across=...)` is forwarded to `auto_zoom` for zoom='auto'."""
+        mock_zoom, _fetch, _stitch = _patch_tiles
+        add_tiles(mock_ax, crs=3857, min_tiles_across=6)
+        mock_zoom.assert_called_once()
+        assert mock_zoom.call_args.kwargs.get("min_tiles_across") == 6
+
+    def test_explicit_zoom_ignores_min_tiles_across(self, mock_ax, _patch_tiles):
+        """An explicit `zoom=` bypasses `auto_zoom` (and thus `min_tiles_across`)."""
+        mock_zoom, _fetch, _stitch = _patch_tiles
+        add_tiles(mock_ax, crs=3857, zoom=5, min_tiles_across=6)
+        mock_zoom.assert_not_called()
+
     def test_axes_limits_are_restored(self, mock_ax, _patch_tiles):
         """`set_xlim` / `set_ylim` are called with the original limits."""
         add_tiles(mock_ax, crs=3857)

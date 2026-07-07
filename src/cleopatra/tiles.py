@@ -692,6 +692,7 @@ def add_tiles(
     retries: int = 2,
     user_agent: str | None = None,
     max_tiles: int = MAX_TILES,
+    min_tiles_across: int = 2,
 ) -> Any:
     """Overlay a web-tile basemap on a matplotlib axes.
 
@@ -736,6 +737,10 @@ def add_tiles(
             would need more than this, the zoom is stepped down until the
             count fits (or reaches 0). Defaults to `MAX_TILES`
             (`256`). Must be a positive int.
+        min_tiles_across: Floor for the automatic zoom, forwarded to
+            `auto_zoom` when `zoom="auto"` (ignored for an explicit `zoom=`).
+            Higher values give a sharper basemap at the cost of more tiles.
+            Defaults to 2. See `auto_zoom`.
 
     Returns:
         matplotlib.axes.Axes: The same axes, for chaining.
@@ -830,7 +835,7 @@ def add_tiles(
     bounds_4326 = (w4326, s4326, e4326, n4326)
 
     if zoom == "auto":
-        tile_zoom = auto_zoom(bounds_4326)
+        tile_zoom = auto_zoom(bounds_4326, min_tiles_across=min_tiles_across)
     else:
         try:
             tile_zoom = int(zoom)
