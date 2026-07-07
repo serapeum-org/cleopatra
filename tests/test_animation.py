@@ -11,9 +11,11 @@ import builtins
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pytest
 from matplotlib.animation import FuncAnimation
+from PIL import Image
 
 import cleopatra.animation as anim_mod
 from cleopatra.animation import (
@@ -93,17 +95,17 @@ class TestSaveAnimation:
             save_animation(anim, str(tmp_path / "movie.mp4"))
 
     def test_routes_gif_to_pillow_writer(self, monkeypatch):
-        """The `.gif` branch builds a `PillowWriter(fps=...)` and saves with it.
+        """The `.gif` branch builds an `_OptimizedPillowWriter` and saves with it.
 
         Test scenario:
-            A mocked animation and a patched `PillowWriter` confirm the GIF
-            branch is taken, the writer receives the requested ``fps``, and
-            ``anim.save`` is called once with that writer.
+            A mocked animation and a patched `_OptimizedPillowWriter` confirm
+            the GIF branch is taken, the writer receives the requested ``fps``,
+            and ``anim.save`` is called once with that writer.
         """
 
         anim = MagicMock(spec=FuncAnimation)
-        pillow = MagicMock(name="PillowWriter")
-        monkeypatch.setattr(anim_mod, "PillowWriter", pillow)
+        pillow = MagicMock(name="_OptimizedPillowWriter")
+        monkeypatch.setattr(anim_mod, "_OptimizedPillowWriter", pillow)
 
         result = save_animation(anim, "clip.gif", fps=7)
 
@@ -113,25 +115,32 @@ class TestSaveAnimation:
 
     @pytest.mark.parametrize("ext", ["mov", "avi", "mp4"])
     def test_routes_video_to_ffmpeg_writer(self, ext, monkeypatch):
-        """Non-GIF formats build an `FFMpegWriter(fps=, bitrate=1800)`.
+        """Non-GIF formats build an `FFMpegWriter` with the even-pad + pix_fmt args.
 
         Args:
             ext: A supported video container extension.
 
         Test scenario:
-            For each video extension the else-branch is taken, the writer is
-            constructed with the expected ``fps``/``bitrate``, ``anim.save``
-            is invoked with it, and the written path is returned. Exercises
-            the video success path without requiring FFmpeg.
+            For each video extension the else-branch is taken, ffmpeg
+            availability is resolved, the writer is constructed with the
+            expected ``fps``/``bitrate`` plus the odd-dimension pad filter and
+            an explicit ``yuv420p`` pixel format, ``anim.save`` is invoked with
+            it, and the written path is returned. Exercises the video success
+            path without requiring a real FFmpeg run.
         """
 
         anim = MagicMock(spec=FuncAnimation)
         ffmpeg = MagicMock(name="FFMpegWriter")
         monkeypatch.setattr(anim_mod, "FFMpegWriter", ffmpeg)
+        monkeypatch.setattr(anim_mod, "_ensure_ffmpeg_available", lambda: None)
 
         result = save_animation(anim, f"clip.{ext}", fps=5)
 
-        ffmpeg.assert_called_once_with(fps=5, bitrate=1800)
+        ffmpeg.assert_called_once_with(
+            fps=5,
+            bitrate=1800,
+            extra_args=["-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2", "-pix_fmt", "yuv420p"],
+        )
         anim.save.assert_called_once_with(f"clip.{ext}", writer=ffmpeg.return_value)
         assert result == f"clip.{ext}", f"should return the path, got {result!r}"
 
@@ -185,8 +194,8 @@ class TestSaveAnimation:
             Calling without ``fps`` builds ``PillowWriter(fps=2)``.
         """
 
-        pillow = MagicMock(name="PillowWriter")
-        monkeypatch.setattr(anim_mod, "PillowWriter", pillow)
+        pillow = MagicMock(name="_OptimizedPillowWriter")
+        monkeypatch.setattr(anim_mod, "_OptimizedPillowWriter", pillow)
 
         save_animation(MagicMock(spec=FuncAnimation), "clip.gif")
 
@@ -353,6 +362,172 @@ class TestEmbedGif:
 
         assert not hasattr(anim_mod, "Image"), (
             "IPython Image must not be imported at module load time"
+        )
+
+
+class TestOddDimensionAutoPad:
+    """Regression tests for odd pixel dimensions crashing mp4 export (issue #185)."""
+
+    def test_odd_dimension_mp4_encodes(self, tmp_path):
+        """A figure with odd pixel width/height encodes to mp4 without crashing.
+
+        Test scenario:
+            libx264 rejects odd dimensions, so a 335x335 px figure previously
+            died with "height not divisible by 2". The auto-pad video filter
+            must let it encode to a real, non-empty mp4.
+        """
+        fig = plt.figure(figsize=(3.35, 3.35), dpi=100)
+        ax = fig.add_subplot(111)
+        (line,) = ax.plot([0, 1], [0, 0])
+        width = int(round(fig.get_figwidth() * fig.dpi))
+        height = int(round(fig.get_figheight() * fig.dpi))
+        assert width % 2 == 1 and height % 2 == 1, (
+            f"fixture must be odd-sized to exercise the pad, got {width}x{height}"
+        )
+        anim = FuncAnimation(fig, lambda i: (line,), frames=2)
+        out = tmp_path / "odd.mp4"
+
+        save_animation(anim, str(out), fps=2)
+        plt.close(fig)
+
+        assert out.exists(), "odd-dimension mp4 was not written"
+        assert out.stat().st_size > 0, "odd-dimension mp4 is empty"
+
+
+class TestEnsureFfmpegAvailable:
+    """Tests for `_ensure_ffmpeg_available` (ffmpeg binary resolution)."""
+
+    def test_keeps_system_ffmpeg_on_path(self, monkeypatch):
+        """A resolvable ffmpeg on PATH is kept and imageio-ffmpeg is not consulted.
+
+        Test scenario:
+            When ``shutil.which`` finds the configured binary, the rcParam is
+            left untouched and the bundled-binary fallback is never invoked.
+        """
+        import imageio_ffmpeg
+
+        monkeypatch.setitem(mpl.rcParams, "animation.ffmpeg_path", "ffmpeg")
+        monkeypatch.setattr(anim_mod.shutil, "which", lambda name: "C:/bin/ffmpeg.exe")
+        calls = {"n": 0}
+        monkeypatch.setattr(
+            imageio_ffmpeg,
+            "get_ffmpeg_exe",
+            lambda: calls.__setitem__("n", calls["n"] + 1),
+        )
+
+        anim_mod._ensure_ffmpeg_available()
+
+        assert mpl.rcParams["animation.ffmpeg_path"] == "ffmpeg", (
+            "system ffmpeg path should be left unchanged"
+        )
+        assert calls["n"] == 0, "bundled binary must not be consulted when PATH resolves"
+
+    def test_falls_back_to_bundled_binary(self, monkeypatch):
+        """With no system ffmpeg, the rcParam is pointed at imageio-ffmpeg's binary.
+
+        Test scenario:
+            When neither an absolute path nor a PATH lookup resolves, the
+            resolver sets ``animation.ffmpeg_path`` to
+            ``imageio_ffmpeg.get_ffmpeg_exe()`` so export still works.
+        """
+        import imageio_ffmpeg
+
+        monkeypatch.setitem(mpl.rcParams, "animation.ffmpeg_path", "ffmpeg")
+        monkeypatch.setattr(anim_mod.os.path, "isfile", lambda path: False)
+        monkeypatch.setattr(anim_mod.shutil, "which", lambda name: None)
+        monkeypatch.setattr(
+            imageio_ffmpeg, "get_ffmpeg_exe", lambda: "C:/bundled/ffmpeg.exe"
+        )
+
+        anim_mod._ensure_ffmpeg_available()
+
+        assert mpl.rcParams["animation.ffmpeg_path"] == "C:/bundled/ffmpeg.exe", (
+            "resolver should fall back to the imageio-ffmpeg binary"
+        )
+
+    def test_raises_when_no_ffmpeg_available(self, monkeypatch):
+        """When neither system ffmpeg nor imageio-ffmpeg exist, raise FileNotFoundError.
+
+        Test scenario:
+            The bundled-binary import is forced to fail; the resolver must
+            surface an actionable ``FileNotFoundError`` naming imageio-ffmpeg.
+        """
+        monkeypatch.setattr(anim_mod.os.path, "isfile", lambda path: False)
+        monkeypatch.setattr(anim_mod.shutil, "which", lambda name: None)
+        real_import = builtins.__import__
+
+        def fake_import(name, *args, **kwargs):
+            if name == "imageio_ffmpeg":
+                raise ModuleNotFoundError("no imageio_ffmpeg", name="imageio_ffmpeg")
+            return real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", fake_import)
+
+        with pytest.raises(FileNotFoundError, match="imageio-ffmpeg"):
+            anim_mod._ensure_ffmpeg_available()
+
+
+class TestOptimizedPillowWriter:
+    """Tests for `_OptimizedPillowWriter` (optimised, loopable GIF writer)."""
+
+    def test_stores_optimize_and_loop(self):
+        """The constructor records the ``optimize`` and ``loop`` settings.
+
+        Test scenario:
+            Non-default values are stored on the instance so ``finish`` can
+            forward them to Pillow.
+        """
+        writer = anim_mod._OptimizedPillowWriter(fps=5, optimize=False, loop=3)
+
+        assert writer._optimize is False, "optimize flag not stored"
+        assert writer._loop == 3, "loop count not stored"
+
+    def test_writes_gif_with_configured_loop(self, tiny_anim, tmp_path):
+        """A finite loop count is embedded in the written GIF's metadata.
+
+        Test scenario:
+            Saving with ``loop=2`` yields a GIF whose Pillow ``loop`` info is 2.
+        """
+        out = tmp_path / "loop.gif"
+        tiny_anim.save(str(out), writer=anim_mod._OptimizedPillowWriter(fps=3, loop=2))
+
+        assert Image.open(out).info.get("loop") == 2, "loop count not written to GIF"
+
+    def test_default_loops_forever(self, tiny_anim, tmp_path):
+        """The default ``loop=0`` produces a GIF that loops forever.
+
+        Test scenario:
+            Saving without a loop override yields Pillow's forever-loop marker
+            (``loop == 0``).
+        """
+        out = tmp_path / "forever.gif"
+        tiny_anim.save(str(out), writer=anim_mod._OptimizedPillowWriter(fps=3))
+
+        assert Image.open(out).info.get("loop") == 0, "default GIF should loop forever"
+
+    def test_forwards_optimize_flag_to_pillow(self, tiny_anim, tmp_path, monkeypatch):
+        """The ``optimize`` flag reaches ``PIL.Image.Image.save``.
+
+        Test scenario:
+            A save spy captures the keyword arguments Pillow receives; writing
+            with ``optimize=False`` must forward that exact value.
+        """
+        captured = {}
+        real_save = Image.Image.save
+
+        def spy_save(self, fp, *args, **kwargs):
+            captured.update(kwargs)
+            return real_save(self, fp, *args, **kwargs)
+
+        monkeypatch.setattr(Image.Image, "save", spy_save)
+        out = tmp_path / "opt.gif"
+
+        tiny_anim.save(
+            str(out), writer=anim_mod._OptimizedPillowWriter(fps=3, optimize=False)
+        )
+
+        assert captured.get("optimize") is False, (
+            f"optimize flag not forwarded to Pillow: {captured}"
         )
 
 
