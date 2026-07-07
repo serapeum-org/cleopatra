@@ -13,7 +13,9 @@ from __future__ import annotations
 import gzip
 import inspect
 import json
+import warnings
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
@@ -31,7 +33,13 @@ import cleopatra.reference as refmod  # noqa: E402
 import cleopatra.tiles as tilesmod  # noqa: E402
 from cleopatra.array_glyph import ArrayGlyph  # noqa: E402
 from cleopatra.flow_glyph import FlowGlyph  # noqa: E402
-from cleopatra.geo import GeoMixin  # noqa: E402
+from cleopatra.geo import (  # noqa: E402
+    GeoMixin,
+    _lat_formatter,
+    _lon_formatter,
+    _nice_step,
+    available_map_styles,
+)
 from cleopatra.kde_glyph import KDEGlyph  # noqa: E402
 from cleopatra.line_glyph import LineGlyph  # noqa: E402
 from cleopatra.mesh_glyph import MeshGlyph  # noqa: E402
@@ -42,7 +50,7 @@ from cleopatra.vector_glyph import VectorGlyph  # noqa: E402
 
 GEO_GLYPHS = [ArrayGlyph, MeshGlyph, VectorGlyph, FlowGlyph, PolygonGlyph, ScatterGlyph]
 NON_GEO_GLYPHS = [LineGlyph, StatisticalGlyph, KDEGlyph]
-METHODS = ("add_tiles", "add_features", "add_relief")
+METHODS = ("add_tiles", "add_features", "add_relief", "add_reference_map")
 
 
 class _Dummy(GeoMixin):
@@ -307,4 +315,231 @@ def test_glyph_crs_drives_reprojected_placement(tmp_path: Path, monkeypatch):
     # In EPSG:3857, lon=0 -> x~=0 m and lon=10 -> x~=1.11e6 m (not lon/lat degrees).
     assert abs(verts[0][0]) < 1.0, f"first vertex not at x~=0: {verts[0]}"
     assert verts[1][0] > 1.0e6, f"second vertex not reprojected to metres: {verts[1]}"
+    plt.close(fig)
+
+
+class TestAddReferenceMap:
+    """`GeoMixin.add_reference_map` reference-map style preset (issue #184)."""
+
+    @staticmethod
+    def _host(extent=None, im=None):
+        """A GeoMixin host with a real axes and a mocked `add_features`."""
+        fig, ax = plt.subplots()
+        host = _Dummy(ax=ax)
+        host.extent = extent
+        host.im = im
+        host.crs = None
+        host.add_features = MagicMock(return_value=ax)
+        return host, fig, ax
+
+    def test_available_map_styles(self):
+        """The built-in preset names are exposed and stable."""
+        assert available_map_styles() == ["ecmwf", "ecmwf-dark"]
+
+    @pytest.mark.parametrize(
+        "value,expected",
+        [(-75, "75°W"), (10, "10°E"), (0, "0°"), (180, "180°"), (-180, "180°"), (200, "160°W")],
+    )
+    def test_lon_formatter(self, value, expected):
+        """Longitude ticks label W/E, 0, and the ±180° antimeridian (L1)."""
+        assert _lon_formatter(value) == expected
+
+    @pytest.mark.parametrize(
+        "value,expected", [(-20, "20°S"), (45, "45°N"), (0, "0°")]
+    )
+    def test_lat_formatter(self, value, expected):
+        """Latitude ticks label S/N and the equator."""
+        assert _lat_formatter(value) == expected
+
+    def test_composes_features_graticule_and_frame(self):
+        """The preset draws coastline+borders and styles graticule/labels/frame."""
+        host, fig, ax = self._host(extent=[-100, 20, -80, 40])
+        ret = host.add_reference_map("ecmwf")
+
+        assert ret is ax, "should return the axes for chaining"
+        layers = [c.args[0] for c in host.add_features.call_args_list]
+        assert layers == ["coastline", "borders"], layers
+        coast = host.add_features.call_args_list[0]
+        assert coast.kwargs["colors"] == "0.45"
+        assert coast.kwargs["linewidths"] == 0.8
+        assert ax.xaxis.get_major_formatter()(-75) == "75°W"
+        assert ax.yaxis.get_major_formatter()(40) == "40°N"
+        assert ax.spines["bottom"].get_edgecolor() == (0.6, 0.6, 0.6, 1.0)
+        plt.close(fig)
+
+    def test_dark_style_uses_lighter_greys(self):
+        """`ecmwf-dark` uses light-grey coastlines for dark backgrounds."""
+        host, fig, ax = self._host(extent=[-100, 20, -80, 40])
+        host.add_reference_map("ecmwf-dark")
+        assert host.add_features.call_args_list[0].kwargs["colors"] == "0.85"
+        plt.close(fig)
+
+    def test_auto_picks_dark_on_dark_background(self):
+        """`style="auto"` selects `ecmwf-dark` for a dark rendered image."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        host.im = ax.imshow(np.zeros((4, 4, 3)))  # black RGB
+        host.add_reference_map("auto")
+        assert host.add_features.call_args_list[0].kwargs["colors"] == "0.85"
+        plt.close(fig)
+
+    def test_auto_picks_light_on_light_background(self):
+        """`style="auto"` selects `ecmwf` for a light rendered image."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        host.im = ax.imshow(np.ones((4, 4, 3)))  # white RGB
+        host.add_reference_map("auto")
+        assert host.add_features.call_args_list[0].kwargs["colors"] == "0.45"
+        plt.close(fig)
+
+    def test_auto_uses_rendered_colours_not_data_magnitude(self):
+        """`auto` judges a colormapped field by its rendered colour (M1)."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        # data == 0 (would read "dark" by raw magnitude) but `gray_r` renders
+        # 0 as white -> the rendered image is light, so not dark.
+        host.im = ax.imshow(np.zeros((4, 4)), cmap="gray_r", vmin=0, vmax=1)
+        assert host._background_is_dark(ax) is False
+        plt.close(fig)
+
+    def test_background_dark_masked_field_no_warning(self):
+        """A fully-masked field yields a plain bool with no NaN warning (L2)."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        masked = np.ma.masked_all((4, 4))
+        host.im = ax.imshow(masked, cmap="viridis")
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")  # any RuntimeWarning would fail here
+            result = host._background_is_dark(ax)
+        assert isinstance(result, bool)
+        plt.close(fig)
+
+    def test_background_is_dark_no_image_returns_false(self):
+        """With no plotted image, the background reads as not-dark."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        host.im = None
+        assert host._background_is_dark(ax) is False
+        plt.close(fig)
+
+    def test_auto_ignores_masked_no_data_cells(self):
+        """A light field that is mostly no-data is not misread as dark (M1)."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        field = np.ma.masked_array(np.ones((10, 10)))
+        field[:6] = np.ma.masked  # 60% no-data; the unmasked cells are bright
+        host.im = ax.imshow(field, cmap="viridis", vmin=0, vmax=1)
+        assert host._background_is_dark(ax) is False
+        plt.close(fig)
+
+    def test_auto_samples_target_axes_image(self):
+        """`auto` decides from an image on the target `ax`, not `self.im` (L1)."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        host.im = ax.imshow(np.ones((4, 4, 3)))  # glyph's own axes: white/light
+        fig2, other = plt.subplots()
+        other.imshow(np.zeros((4, 4, 3)))  # target axes: black/dark
+        host.add_reference_map("auto", ax=other)
+        assert host.add_features.call_args_list[0].kwargs["colors"] == "0.85"
+        plt.close(fig)
+        plt.close(fig2)
+
+    def test_extent_sets_image_and_axis_limits(self):
+        """`extent=[xmin, ymin, xmax, ymax]` (ArrayGlyph order) sets image + limits."""
+        im = MagicMock()
+        host, fig, ax = self._host(im=im)
+        # [west, south, east, north] == [xmin, ymin, xmax, ymax], like ArrayGlyph
+        host.add_reference_map("ecmwf", extent=[-100, 15, -40, 55])
+        im.set_extent.assert_called_once_with((-100, -40, 15, 55))  # matplotlib order
+        assert ax.get_xlim() == (-100, -40)
+        assert ax.get_ylim() == (15, 55)
+        plt.close(fig)
+
+    def test_no_extent_warns(self):
+        """With no extent, a warning flags that coastlines may not align."""
+        host, fig, ax = self._host(extent=None)
+        with pytest.warns(UserWarning, match="no geographic extent"):
+            host.add_reference_map("ecmwf")
+        plt.close(fig)
+
+    def test_unknown_style_raises(self):
+        """An unknown style name raises `ValueError` listing the options."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        with pytest.raises(ValueError, match="Unknown map style"):
+            host.add_reference_map("bogus")
+        plt.close(fig)
+
+    @pytest.mark.parametrize("bad", [0, -5, float("nan"), float("inf")])
+    def test_invalid_graticule_step_raises(self, bad):
+        """A non-positive or non-finite graticule_step raises before drawing (L3)."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        with pytest.raises(ValueError, match="positive, finite"):
+            host.add_reference_map("ecmwf", graticule_step=bad)
+        host.add_features.assert_not_called()  # failed fast, no layers drawn
+        plt.close(fig)
+
+    def test_wrong_length_extent_raises(self):
+        """A non-4-element extent raises a clear ValueError naming the order (N1)."""
+        host, fig, ax = self._host()
+        with pytest.raises(ValueError, match=r"\[xmin, ymin, xmax, ymax\]"):
+            host.add_reference_map("ecmwf", extent=[-100, 15, 55])
+        plt.close(fig)
+
+    def test_graticule_step_override(self):
+        """An explicit `graticule_step` sets the locator base."""
+        host, fig, ax = self._host(extent=[-100, 20, -80, 40])
+        host.add_reference_map("ecmwf", graticule_step=10)
+        # base is 10 -> ticks land on multiples of 10 within the view
+        ticks = ax.xaxis.get_major_locator().tick_values(-100, 20)
+        assert all(abs(t % 10) < 1e-9 for t in ticks), ticks
+        plt.close(fig)
+
+    @pytest.mark.parametrize(
+        "span,expected",
+        [(0, 1.0), (-5, 1.0), (1.2, 0.2), (4, 1.0), (30, 5.0), (12, 2.0), (1000, 90.0)],
+    )
+    def test_nice_step(self, span, expected):
+        """`_nice_step` returns round steps (incl. sub-degree) and the 90 fallback."""
+        assert _nice_step(span) == expected
+
+    def test_resolution_and_zorder_override(self):
+        """`resolution` and `zorder` reach both underlying add_features calls."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        host.add_reference_map("ecmwf", resolution="10m", zorder=9)
+        for call in host.add_features.call_args_list:
+            assert call.args[1] == "10m"
+            assert call.kwargs["zorder"] == 9
+        plt.close(fig)
+
+    def test_ax_parameter_decorates_given_axes(self):
+        """An explicit `ax=` is decorated instead of `self.ax`."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        fig2, other = plt.subplots()
+        host.add_reference_map("ecmwf", ax=other)
+        assert host.add_features.call_args_list[0].kwargs["ax"] is other
+        assert other.spines["bottom"].get_edgecolor() == (0.6, 0.6, 0.6, 1.0)
+        plt.close(fig)
+        plt.close(fig2)
+
+
+def test_add_reference_map_integration(tmp_path: Path, monkeypatch):
+    """Non-mocked: add_reference_map draws real coastline + border collections."""
+    monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))
+    line = {
+        "type": "FeatureCollection",
+        "features": [
+            {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-90, 20], [-50, 50]]}}
+        ],
+    }
+    for fname in ("ne_110m_coastline.geojson.gz", "ne_110m_admin_0_boundary_lines_land.geojson.gz"):
+        with gzip.open(tmp_path / fname, "wt", encoding="utf-8") as fh:
+            json.dump(line, fh)
+
+    glyph = ArrayGlyph(np.random.rand(20, 30), extent=[-100, 15, -40, 55])
+    fig, ax = glyph.plot()
+    xlim0, ylim0 = ax.get_xlim(), ax.get_ylim()
+    glyph.add_reference_map("ecmwf", resolution="110m")
+
+    lcs = [c for c in ax.collections if isinstance(c, LineCollection)]
+    assert len(lcs) >= 2, "coastline + borders should both draw"
+    assert all(c.get_zorder() == 5 for c in lcs)
+    assert ax.xaxis.get_major_formatter()(-75) == "75°W"
+    # the reference layers must not perturb the data extent
+    assert ax.get_xlim() == xlim0 and ax.get_ylim() == ylim0
+    # the preset styling reaches the real axes (frame + visible graticule)
+    assert ax.spines["bottom"].get_edgecolor() == (0.6, 0.6, 0.6, 1.0)
+    assert ax.xaxis.get_gridlines()[0].get_visible(), "graticule not drawn"
     plt.close(fig)
