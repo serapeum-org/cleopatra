@@ -133,18 +133,10 @@ anim = array.animate(
     animate_time_list, title="Flow Accumulation", display_cell_value=True
 )
 
-import sys
-from pathlib import Path
-
-# path = Path(sys.executable)
-# f"{path.parent}/{}"
 # %%
-
-# amin.save('examples/animation.gif', fps=2)
-video_format = "mp4"
-
-import matplotlib as mpl
-
-fps = 2
-
-path = "examples/animation.mp4"
+# Save the animation. GIF (and WebP) need no extra tooling; MP4 uses ffmpeg,
+# which ships bundled via imageio-ffmpeg so this works out of the box. The
+# keyword-only quality controls (crf/preset/...) tune the MP4 encode, and odd
+# figure dimensions are padded automatically.
+array.save_animation("examples/animation.gif", fps=2)
+array.save_animation("examples/animation.mp4", fps=2, crf=26, preset="slow")
