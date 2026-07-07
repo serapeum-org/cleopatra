@@ -93,17 +93,32 @@ class TestGetProvider:
 class TestAutoZoom:
     """Tests for `cleopatra.tiles.auto_zoom`."""
 
-    def test_global_extent_is_zoom_0(self):
-        """A global extent collapses to zoom 0."""
-        assert auto_zoom((-180.0, -85.0, 180.0, 85.0)) == 0
+    def test_global_extent_is_zoom_1(self):
+        """A global extent spans two tiles across at the default floor."""
+        assert auto_zoom((-180.0, -85.0, 180.0, 85.0)) == 1
 
-    def test_city_extent_yields_zoom_10(self):
-        """A ~0.6-degree city extent yields zoom 10."""
-        assert auto_zoom((13.0, 52.4, 13.6, 52.6)) == 10
+    def test_city_extent_yields_zoom_11(self):
+        """A ~0.6-degree city extent yields zoom 11 at the default floor."""
+        assert auto_zoom((13.0, 52.4, 13.6, 52.6)) == 11
 
     def test_tiny_extent_clamps_to_19(self):
         """An infinitesimal extent clamps to the max zoom 19."""
         assert auto_zoom((0.0, 0.0, 1e-8, 1e-8)) == 19
+
+    def test_min_tiles_across_one_restores_coarse_heuristic(self):
+        """`min_tiles_across=1` reproduces the older one-tile-across zoom."""
+        assert auto_zoom((-180.0, -85.0, 180.0, 85.0), min_tiles_across=1) == 0
+        assert auto_zoom((13.0, 52.4, 13.6, 52.6), min_tiles_across=1) == 10
+
+    def test_regional_extent_does_not_collapse_to_two_tiles(self):
+        """A 6-11 degree extent (issue #176 Gulf) zooms past the coarse z6."""
+        gulf = (-94.314, 27.439, -87.735, 30.867)
+        assert auto_zoom(gulf) == 7  # default floor (2) -> sharper basemap
+        assert auto_zoom(gulf, min_tiles_across=1) == 6  # old coarse value
+
+    def test_non_positive_min_tiles_across_is_treated_as_one(self):
+        """`min_tiles_across` below 1 is clamped to the one-tile heuristic."""
+        assert auto_zoom((-180.0, -85.0, 180.0, 85.0), min_tiles_across=0) == 0
 
 
 class TestDensifyAndReprojectBounds:
@@ -257,6 +272,89 @@ class TestAddTilesBehaviour:
         mock_ax.get_ylim.return_value = (50.0, 51.0)
         add_tiles(mock_ax, crs=4326)
         mock_ax.imshow.assert_called_once()
+
+    def test_nonmercator_imshow_uses_mosaic_reprojected_bounds(
+        self, mock_ax, _patch_tiles
+    ):
+        """For a lon/lat axis the imshow extent is the mosaic's reprojected 3857
+        coverage, not the raw data bounds (issue #176)."""
+        mock_ax.get_xlim.return_value = (10.0, 11.0)
+        mock_ax.get_ylim.return_value = (50.0, 51.0)
+        add_tiles(mock_ax, crs=4326)
+        # Independent expected value: the mocked mosaic 3857 bounds
+        # (1e6, 6e6, 1.2e6, 6.2e6) reproject to these EPSG:4326 [w, e, s, n]
+        # degrees (precomputed, not re-derived from the production helper).
+        got = mock_ax.imshow.call_args.kwargs["extent"]
+        assert got == pytest.approx([8.9832, 10.7798, 47.3537, 48.5569], abs=1e-4), (
+            f"imshow extent should be the mosaic's reprojected bounds, got {got}"
+        )
+        assert got != [10.0, 11.0, 50.0, 51.0], "extent must not be the raw data bounds"
+
+    def test_nonmercator_falls_back_to_data_bounds_when_mosaic_overflows(self, mock_ax):
+        """A mosaic overflowing a singular projection falls back to the data bounds,
+        rendering instead of raising (issue #176 regression guard)."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        ortho = "+proj=ortho +lat_0=0 +lon_0=0"  # undefined on the far hemisphere
+        mock_ax.get_xlim.return_value = (0.0, 100000.0)  # ortho metres near centre
+        mock_ax.get_ylim.return_value = (0.0, 100000.0)
+        world = 20037508.342789244  # half the Web Mercator world extent (metres)
+        with (
+            patch.object(tiles_mod, "auto_zoom", return_value=0),
+            patch.object(
+                tiles_mod, "fetch_tiles", return_value={Tile(0, 0, 0): _make_tile_png()}
+            ),
+            patch.object(
+                tiles_mod,
+                "stitch_tiles",
+                return_value=(
+                    np.zeros((256, 256, 4), dtype=np.uint8),
+                    (-world, -world, world, world),  # whole-world mosaic
+                ),
+            ),
+        ):
+            add_tiles(mock_ax, crs=ortho)
+        mock_ax.imshow.assert_called_once()
+        got = mock_ax.imshow.call_args.kwargs["extent"]
+        assert got == [0.0, 100000.0, 0.0, 100000.0], (
+            f"overflow should fall back to the data bounds, got {got}"
+        )
+
+    def test_nonmercator_mosaic_extent_envelops_data(self, mock_ax):
+        """A mosaic larger than the data is placed enveloping the data bounds (issue #176)."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        mock_ax.get_xlim.return_value = (10.0, 11.0)  # lon/lat data extent
+        mock_ax.get_ylim.return_value = (50.0, 51.0)
+        # A mosaic whose Web-Mercator coverage is wider than the data's:
+        mosaic_3857 = (1.0e6, 6.3e6, 1.35e6, 6.75e6)
+        with (
+            patch.object(tiles_mod, "auto_zoom", return_value=6),
+            patch.object(
+                tiles_mod, "fetch_tiles", return_value={Tile(0, 0, 6): _make_tile_png()}
+            ),
+            patch.object(
+                tiles_mod,
+                "stitch_tiles",
+                return_value=(np.zeros((256, 256, 4), dtype=np.uint8), mosaic_3857),
+            ),
+        ):
+            add_tiles(mock_ax, crs=4326)
+        west, east, south, north = mock_ax.imshow.call_args.kwargs["extent"]
+        assert west <= 10.0 and east >= 11.0 and south <= 50.0 and north >= 51.0, (
+            f"mosaic extent {(west, east, south, north)} should envelop the data bounds"
+        )
+
+    def test_min_tiles_across_forwarded_to_auto_zoom(self, mock_ax, _patch_tiles):
+        """`add_tiles(min_tiles_across=...)` is forwarded to `auto_zoom` for zoom='auto'."""
+        mock_zoom, _fetch, _stitch = _patch_tiles
+        add_tiles(mock_ax, crs=3857, min_tiles_across=6)
+        mock_zoom.assert_called_once()
+        assert mock_zoom.call_args.kwargs.get("min_tiles_across") == 6
+
+    def test_explicit_zoom_ignores_min_tiles_across(self, mock_ax, _patch_tiles):
+        """An explicit `zoom=` bypasses `auto_zoom` (and thus `min_tiles_across`)."""
+        mock_zoom, _fetch, _stitch = _patch_tiles
+        add_tiles(mock_ax, crs=3857, zoom=5, min_tiles_across=6)
+        mock_zoom.assert_not_called()
 
     def test_axes_limits_are_restored(self, mock_ax, _patch_tiles):
         """`set_xlim` / `set_ylim` are called with the original limits."""
@@ -415,6 +513,16 @@ class TestAddTilesIntegration:
         """
         with pytest.raises(ValueError, match="max_tiles must be a positive int"):
             add_tiles(mock_ax, crs=3857, max_tiles=bad)
+
+    @pytest.mark.parametrize("bad", [0, -1, 2.5, True, "8", None])
+    def test_invalid_min_tiles_across_raises(self, mock_ax, bad):
+        """`min_tiles_across` must be a positive int, rejected at the boundary.
+
+        Args:
+            bad: A value that should be rejected.
+        """
+        with pytest.raises(ValueError, match="min_tiles_across must be a positive int"):
+            add_tiles(mock_ax, crs=3857, min_tiles_across=bad)
 
 
 class TestRequireTilesExtra:

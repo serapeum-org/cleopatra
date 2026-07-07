@@ -11,13 +11,15 @@ no GDAL dependency, so the module is safe to use in environments that
 only have matplotlib + numpy installed.
 
 Notes:
-    For data in projected CRSes other than Web Mercator (EPSG:3857) the
-    stitched tile image is placed in the target CRS using the data's
-    densified bounds. Matplotlib stretches the image to fit, which is
-    visually acceptable for small extents (e.g. local maps in EPSG:4326)
-    but may show projection distortion over very large areas. If
-    pixel-accurate warping is required, reproject the source data to
-    Web Mercator (EPSG:3857) before plotting.
+    For data in CRSes other than Web Mercator (EPSG:3857) the stitched tile
+    image is placed at the mosaic's own coverage: its Web-Mercator bounds
+    are reprojected (with edge densification) into the target CRS and used
+    as the `imshow` extent, while the axis limits stay at the data bounds.
+    This aligns the basemap with the data even when the fetched tiles cover
+    a tile-snapped area larger than the data. A residual Mercator-vs-linear
+    nonlinearity remains for very large extents (the Mercator pixels are
+    placed on a linear axis); if pixel-accurate warping is required,
+    reproject the source data to Web Mercator (EPSG:3857) before plotting.
 
 Examples:
     Add a default OpenStreetMap basemap to an axes that already has
@@ -160,12 +162,20 @@ def get_provider(name: str | None = None) -> Any:
     return provider
 
 
-def auto_zoom(bounds_4326: tuple[float, float, float, float]) -> int:
+def auto_zoom(
+    bounds_4326: tuple[float, float, float, float],
+    min_tiles_across: int = 2,
+) -> int:
     """Compute a default zoom level for the given bounds in EPSG:4326.
 
-    Uses the formula
-    `zoom = ceil(log2(360 / max(lon_extent, lat_extent)))` clamped to
-    the range 0--19.
+    Picks the smallest zoom at which the larger of the two extents spans at
+    least `min_tiles_across` tiles, i.e.
+    `zoom = ceil(log2(min_tiles_across * 360 / max(lon_extent, lat_extent)))`,
+    clamped to 0--19. The `min_tiles_across` floor (default 2) stops a
+    mid-range regional extent from collapsing onto a single coarse tile
+    stretched over the whole area (a 6--11 degree window would otherwise
+    fetch just 2 tiles); `min_tiles_across=1` reproduces the older
+    one-tile-across heuristic.
 
     This is a coarse heuristic that treats degrees of longitude and
     latitude as interchangeable; it does **not** account for Web
@@ -178,23 +188,35 @@ def auto_zoom(bounds_4326: tuple[float, float, float, float]) -> int:
 
     Args:
         bounds_4326: `(west, south, east, north)` in EPSG:4326 degrees.
+        min_tiles_across: Minimum number of tiles the larger extent should
+            span; higher values pick a sharper (higher) zoom. Values below 1
+            are clamped to 1 (the older one-tile-across heuristic). Defaults
+            to 2.
 
     Returns:
         int: Zoom level between 0 and 19.
 
     Examples:
-        - Worldwide extent maps to zoom 0:
+        - Worldwide extent maps to zoom 1 (two tiles across the globe):
             ```python
             >>> from cleopatra.tiles import auto_zoom
             >>> auto_zoom((-180, -85, 180, 85))
-            0
+            1
 
             ```
-        - A 0.6 by 0.2 degree window over Berlin yields zoom 10:
+        - A 0.6 by 0.2 degree window over Berlin yields zoom 11:
             ```python
             >>> from cleopatra.tiles import auto_zoom
             >>> auto_zoom((13.0, 52.4, 13.6, 52.6))
-            10
+            11
+
+            ```
+        - `min_tiles_across=1` restores the older, coarser one-tile
+            heuristic (worldwide -> zoom 0):
+            ```python
+            >>> from cleopatra.tiles import auto_zoom
+            >>> auto_zoom((-180, -85, 180, 85), min_tiles_across=1)
+            0
 
             ```
         - Tiny extents are clamped to the maximum zoom (19):
@@ -209,7 +231,8 @@ def auto_zoom(bounds_4326: tuple[float, float, float, float]) -> int:
     lon_extent = abs(east - west)
     lat_extent = abs(north - south)
     max_extent = max(lon_extent, lat_extent, 1e-10)
-    zoom = math.ceil(math.log2(360.0 / max_extent))
+    across = max(1, min_tiles_across)
+    zoom = math.ceil(math.log2(across * 360.0 / max_extent))
     result = max(0, min(zoom, 19))
     return result
 
@@ -669,6 +692,7 @@ def add_tiles(
     retries: int = 2,
     user_agent: str | None = None,
     max_tiles: int = MAX_TILES,
+    min_tiles_across: int = 2,
 ) -> Any:
     """Overlay a web-tile basemap on a matplotlib axes.
 
@@ -676,9 +700,10 @@ def add_tiles(
     them into a single composite image, and renders the image below the
     existing data layer. When the data is already in Web Mercator
     (EPSG:3857) the tiles are placed in-place; for any other CRS the
-    image is placed in the target CRS using the data's densified bounds
-    -- matplotlib stretches the bitmap to fit, which is visually
-    acceptable for small extents.
+    mosaic's own Web-Mercator coverage is reprojected into the target CRS
+    and used as the image extent (the axis limits stay at the data
+    bounds), so the basemap aligns with the data even though the fetched
+    tiles cover a tile-snapped area larger than it.
 
     Args:
         ax: Matplotlib `matplotlib.axes.Axes` to add the
@@ -712,6 +737,10 @@ def add_tiles(
             would need more than this, the zoom is stepped down until the
             count fits (or reaches 0). Defaults to `MAX_TILES`
             (`256`). Must be a positive int.
+        min_tiles_across: Floor for the automatic zoom, forwarded to
+            `auto_zoom` when `zoom="auto"` (ignored for an explicit `zoom=`).
+            Higher values give a sharper basemap at the cost of more tiles.
+            Defaults to 2. See `auto_zoom`.
 
     Returns:
         matplotlib.axes.Axes: The same axes, for chaining.
@@ -745,6 +774,15 @@ def add_tiles(
 
     if not isinstance(max_tiles, int) or isinstance(max_tiles, bool) or max_tiles < 1:
         raise ValueError(f"max_tiles must be a positive int, got {max_tiles!r}.")
+
+    if (
+        not isinstance(min_tiles_across, int)
+        or isinstance(min_tiles_across, bool)
+        or min_tiles_across < 1
+    ):
+        raise ValueError(
+            f"min_tiles_across must be a positive int, got {min_tiles_across!r}."
+        )
 
     x0, x1 = ax.get_xlim()
     y0, y1 = ax.get_ylim()
@@ -806,7 +844,7 @@ def add_tiles(
     bounds_4326 = (w4326, s4326, e4326, n4326)
 
     if zoom == "auto":
-        tile_zoom = auto_zoom(bounds_4326)
+        tile_zoom = auto_zoom(bounds_4326, min_tiles_across=min_tiles_across)
     else:
         try:
             tile_zoom = int(zoom)
@@ -851,10 +889,46 @@ def add_tiles(
     if is_3857:
         extent = extent_3857
     else:
-        # No GDAL: place the tile bitmap in the target CRS using the
-        # data's bounds. Matplotlib stretches the image -- accurate
-        # enough for small extents (see module docstring).
-        extent = (west, south, east, north)
+        # Place the mosaic at its OWN geographic coverage, not the data
+        # bounds. The stitched tiles span `extent_3857` (Web-Mercator
+        # metres, tile-snapped and generally larger than the data), so
+        # reproject those corners into the target CRS. Using the data
+        # bounds instead stretched the mosaic onto the smaller extent and
+        # offset the basemap by up to hundreds of km at coarse zooms (see
+        # issue #176). A residual Mercator-vs-linear-axis nonlinearity
+        # remains for large extents; reproject the data to EPSG:3857 before
+        # plotting for pixel-accurate tiles.
+        try:
+            extent = _densify_and_reproject_bounds(
+                extent_3857[0],
+                extent_3857[1],
+                extent_3857[2],
+                extent_3857[3],
+                "EPSG:3857",
+                crs_str,
+            )
+        except ValueError:
+            # `ValueError` is the complete failure surface here: `crs_str` was
+            # already validated by the forward transform above (a bad CRS would
+            # have raised there), and `_densify_and_reproject_bounds` reports an
+            # out-of-domain mosaic as `ValueError` (non-finite corners) rather
+            # than letting pyproj's `inf`/NaN through -- so no other exception
+            # type is expected from the reverse transform.
+            # A coarse tile-snapped mosaic can be far larger than the data
+            # and overflow a limited-domain target CRS (a UTM zone, national
+            # grid, ...) when reprojected, yielding non-finite corners. Fall
+            # back to the data bounds (the mosaic is then stretched onto them,
+            # slightly misaligned) so a figure is still produced rather than
+            # raising -- use a higher zoom or reproject the data to EPSG:3857
+            # for accurate placement.
+            logger.warning(
+                "Tile mosaic bounds could not be reprojected from EPSG:3857 "
+                "to %s (they overflow the target CRS domain); falling back to "
+                "the data bounds. Use a higher zoom or reproject the data to "
+                "EPSG:3857 for accurate tile placement.",
+                crs_str,
+            )
+            extent = (west, south, east, north)
 
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()
