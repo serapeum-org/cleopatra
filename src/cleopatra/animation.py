@@ -15,9 +15,11 @@ writer/format logic has a single source of truth.
 from __future__ import annotations
 
 import os
+import shutil
 import tempfile
 from typing import TYPE_CHECKING
 
+import matplotlib as mpl
 from matplotlib.animation import FFMpegWriter, FuncAnimation, PillowWriter
 
 if TYPE_CHECKING:  # import only for type checkers; IPython stays optional
@@ -26,6 +28,34 @@ if TYPE_CHECKING:  # import only for type checkers; IPython stays optional
 #: Container formats `save_animation` can write. GIF uses `PillowWriter`;
 #: the rest require FFmpeg (`FFMpegWriter`).
 SUPPORTED_VIDEO_FORMAT = ["gif", "mov", "avi", "mp4"]
+
+
+def _ensure_ffmpeg_available() -> None:
+    """Make sure matplotlib can find an ffmpeg binary to shell out to.
+
+    matplotlib's `FFMpegWriter` runs the ffmpeg *binary* named by
+    `matplotlib.rcParams["animation.ffmpeg_path"]` (default ``"ffmpeg"``,
+    resolved on `PATH`). If that binary is not found, fall back to the static
+    ffmpeg that `imageio-ffmpeg` bundles, so mp4/mov/avi export works with no
+    separate system install. A system ffmpeg on `PATH` still takes precedence.
+
+    Raises:
+        FileNotFoundError: If neither a system ffmpeg nor `imageio-ffmpeg`'s
+            bundled binary can be located.
+    """
+    configured = mpl.rcParams["animation.ffmpeg_path"]
+    # Already usable: an absolute path that exists, or a name found on PATH.
+    if os.path.isfile(configured) or shutil.which(configured):
+        return
+    try:
+        import imageio_ffmpeg
+    except ModuleNotFoundError as e:  # pragma: no cover - imageio-ffmpeg is a dep
+        raise FileNotFoundError(
+            "FFmpeg not found on PATH and imageio-ffmpeg is not installed. "
+            "Install imageio-ffmpeg (ships a bundled ffmpeg) or download "
+            "ffmpeg from https://ffmpeg.org/ and add it to your PATH."
+        ) from e
+    mpl.rcParams["animation.ffmpeg_path"] = imageio_ffmpeg.get_ffmpeg_exe()
 
 
 def save_animation(
@@ -137,6 +167,7 @@ def save_animation(
     if video_format == "gif":
         anim.save(path, writer=PillowWriter(fps=fps))
     else:
+        _ensure_ffmpeg_available()
         try:
             anim.save(path, writer=FFMpegWriter(fps=fps, bitrate=1800))
         except FileNotFoundError as e:
