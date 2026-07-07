@@ -1089,9 +1089,9 @@ class Glyph:
         """Save this glyph's animation (`self.anim`) to a file.
 
         Thin wrapper around `cleopatra.animation.save_animation`; the output
-        format is determined by the file extension. GIF uses an optimising
-        Pillow writer; mov/avi/mp4 use FFmpeg (a system binary if present,
-        otherwise the one bundled with imageio-ffmpeg).
+        format is determined by the file extension. GIF and WebP use an
+        optimising Pillow writer; mov/avi/mp4 use FFmpeg (a system binary if
+        present, otherwise the one bundled with imageio-ffmpeg).
 
         Args:
             path: Output file path, as a `str` or `os.PathLike` (e.g. a
