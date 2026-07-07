@@ -77,17 +77,19 @@ def _ensure_ffmpeg_available() -> None:
 
 
 class _OptimizedPillowWriter(PillowWriter):
-    """`PillowWriter` that writes optimised GIFs with a configurable loop.
+    """`PillowWriter` that writes optimised, loop-configurable GIF/WebP output.
 
+    This is the writer for both Pillow-backed formats (``gif`` and ``webp``).
     matplotlib's stock `PillowWriter` hardcodes ``loop=0`` and never passes
     ``optimize`` to `PIL.Image.save`, so GIFs come out unoptimised — needlessly
     large for photographic/satellite frames. This subclass forwards ``optimize``
     and ``loop`` while reusing the parent's frame-grabbing logic.
 
     Args:
-        optimize: Run Pillow's GIF optimisation pass (palette + delta frames).
-        loop: Number of times the GIF loops; ``0`` means loop forever (Pillow's
-            convention).
+        optimize: Run Pillow's optimisation pass. Effective for GIF (palette
+            compression); the WebP encoder ignores it, so it is a no-op there.
+        loop: Number of times the animation loops; ``0`` means loop forever
+            (Pillow's convention). Honoured by both GIF and WebP.
     """
 
     def __init__(self, *args, optimize: bool = True, loop: int = 0, **kwargs):
@@ -222,8 +224,12 @@ def save_animation(
 
     For the FFmpeg formats the frame is automatically padded up to an even
     width/height (libx264 rejects odd dimensions) and encoded with
-    ``pix_fmt=yuv420p`` for universal playback. GIF/WebP output is written with
-    Pillow's ``optimize`` pass enabled and loops forever.
+    ``pix_fmt=yuv420p`` for universal playback. By default no fixed bitrate is
+    requested (unlike older versions, which forced 1800 kbit/s), so libx264
+    uses its constant-quality default of roughly CRF 23 — pass ``crf`` or
+    ``bitrate`` to trade size against quality. GIF output is written with
+    Pillow's ``optimize`` pass enabled; both GIF and WebP loop forever by
+    default.
 
     Args:
         anim: The animation to save.
@@ -232,23 +238,27 @@ def save_animation(
             Supported: gif, mov, avi, mp4, webp.
         fps: Frames per second. Default is 2.
         crf: Constant Rate Factor for the ffmpeg formats (lower is higher
-            quality/larger; ~18-28 is typical). Mutually exclusive with
-            ``bitrate``. Ignored for GIF/WebP. ``None`` uses the encoder default.
+            quality/larger; ~18-28 is typical). Assumes an x264/x265-family
+            ``codec``. Mutually exclusive with ``bitrate``. Ignored for
+            GIF/WebP. ``None`` uses the encoder default.
         bitrate: Target bitrate in kbit/s for the ffmpeg formats. Mutually
             exclusive with ``crf``. Ignored for GIF/WebP. ``None`` lets the
             encoder choose.
         codec: ffmpeg codec (e.g. ``"libx264"``). ``None`` uses matplotlib's
             default. Ignored for GIF/WebP.
-        preset: libx264 speed/size preset (e.g. ``"slow"``). Ignored for
-            GIF/WebP.
+        preset: libx264/libx265 speed/size preset (e.g. ``"slow"``); ignored by
+            codecs that don't accept it. Ignored for GIF/WebP.
         pix_fmt: Pixel format for the ffmpeg formats. Defaults to
             ``"yuv420p"`` for universal playback. Ignored for GIF/WebP.
         dpi: Resolution in dots per inch. ``None`` uses the figure's dpi.
-        optimize: GIF/WebP only — run Pillow's optimisation pass. Default
-            ``True``.
+        optimize: GIF only — run Pillow's palette optimisation pass (a no-op
+            for WebP, whose encoder ignores it). Default ``True``.
         loop: GIF/WebP only — number of times to loop; ``0`` loops forever.
         extra_args: Extra ffmpeg flags. A ``-vf`` filter here is merged with
-            the automatic even-dimension pad. Ignored for GIF/WebP.
+            the automatic even-dimension pad and a ``-pix_fmt`` overrides
+            ``pix_fmt``. Note these flags bypass the ``crf``/``bitrate``
+            exclusivity check, so don't smuggle a conflicting ``-b:v``/``-crf``
+            through here. Ignored for GIF/WebP.
 
     Returns:
         The output path as a `str` (the `os.fspath` of `path`),
