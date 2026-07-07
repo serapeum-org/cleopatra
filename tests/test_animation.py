@@ -8,6 +8,7 @@ animation is rendered on the Agg backend (set globally via `MPLBACKEND`).
 from __future__ import annotations
 
 import builtins
+import doctest
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -886,3 +887,23 @@ class TestSupportedVideoFormat:
         assert glyph_constant is SUPPORTED_VIDEO_FORMAT, (
             "glyph should re-import the constant, not redefine it"
         )
+
+
+def test_module_doctests_execute():
+    """Run the module's docstring examples so they are exercised in CI.
+
+    Pytest is not configured with ``--doctest-modules``, so docstring examples in
+    ``src/`` would otherwise never run. This test executes them for
+    ``cleopatra.animation`` (including the ``to_bytes``/``to_mp4`` magic-byte checks
+    and the ``_build_ffmpeg_extra_args`` flag-merge examples) and fails if any
+    example's output no longer matches.
+    """
+    try:
+        results = doctest.testmod(anim_mod, verbose=False)
+    finally:
+        plt.close("all")
+    assert results.failed == 0, f"{results.failed} doctest example(s) failed in animation"
+    assert results.attempted > 0, (
+        "no doctest examples were collected from animation; the module's docstring "
+        "examples may have been moved or removed, silently dropping this coverage"
+    )
