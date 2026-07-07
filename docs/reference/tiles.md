@@ -53,11 +53,14 @@ fig.savefig("map.png")
 !!! note
     `add_tiles` reads the axes' current `xlim`/`ylim`, so plot your data first. When the
     data CRS is Web Mercator the tiles are placed in-place; for any other `crs=` the
-    bitmap is placed using the data's densified bounds and matplotlib stretches it — fine
-    for small extents, but for large areas or pixel-accurate results reproject the source
-    data to EPSG:3857 before plotting. The number of tiles fetched is capped by
-    `max_tiles` (default `MAX_TILES = 256`); the zoom is stepped down if a level would
-    need more.
+    mosaic's own Web-Mercator coverage is reprojected into the target CRS and used as the
+    image extent (the axis limits stay at the data bounds), so the basemap aligns with the
+    data even though the fetched tiles cover a tile-snapped area larger than it. A residual
+    Mercator-vs-linear nonlinearity remains for very large extents — for pixel-accurate
+    results reproject the source data to EPSG:3857 before plotting. The automatic zoom uses
+    a `min_tiles_across` floor (default 2) so a mid-range extent is not rendered from one or
+    two coarse tiles; the number of tiles is capped by `max_tiles` (default
+    `MAX_TILES = 256`), and the zoom is stepped down if a level would need more.
 
 ## Module Documentation
 
