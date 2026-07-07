@@ -462,11 +462,11 @@ class TestAddReferenceMap:
             host.add_reference_map("bogus")
         plt.close(fig)
 
-    @pytest.mark.parametrize("bad", [0, -5])
-    def test_nonpositive_graticule_step_raises(self, bad):
-        """A zero/negative graticule_step raises before anything is drawn (L3)."""
+    @pytest.mark.parametrize("bad", [0, -5, float("nan"), float("inf")])
+    def test_invalid_graticule_step_raises(self, bad):
+        """A non-positive or non-finite graticule_step raises before drawing (L3)."""
         host, fig, ax = self._host(extent=[-100, 15, -40, 55])
-        with pytest.raises(ValueError, match="graticule_step must be a positive"):
+        with pytest.raises(ValueError, match="positive, finite"):
             host.add_reference_map("ecmwf", graticule_step=bad)
         host.add_features.assert_not_called()  # failed fast, no layers drawn
         plt.close(fig)

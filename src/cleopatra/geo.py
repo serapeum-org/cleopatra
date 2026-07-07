@@ -28,6 +28,7 @@ only needed when a basemap is actually drawn.
 from __future__ import annotations
 
 import importlib.util
+import math
 import warnings
 from typing import Any
 
@@ -513,9 +514,12 @@ class GeoMixin:
             add_features: The Natural Earth layer helper this composes.
             available_map_styles: The built-in preset names.
         """
-        if graticule_step is not None and graticule_step <= 0:
+        if graticule_step is not None and (
+            not math.isfinite(graticule_step) or graticule_step <= 0
+        ):
             raise ValueError(
-                f"graticule_step must be a positive number, got {graticule_step}"
+                "graticule_step must be a positive, finite number, got "
+                f"{graticule_step}"
             )
         target = self._basemap_axes(ax)
 
