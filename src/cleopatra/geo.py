@@ -40,8 +40,10 @@ from cleopatra import reference, tiles
 #: Built-in reference-map style presets for `GeoMixin.add_reference_map`.
 #: `"ecmwf"` is tuned for light backgrounds; `"ecmwf-dark"` uses lighter
 #: greys so coastlines stay visible over a dark field (e.g. a satellite
-#: true-colour RGB). Each entry is a plain, overridable dict of the layer
-#: styles, graticule, tick-label, and frame (spine) parameters.
+#: true-colour RGB). Each entry is a plain dict of the layer styles,
+#: graticule, tick-label, and frame (spine) parameters -- read or copy it to
+#: build a custom preset; `add_reference_map` itself exposes only the
+#: `resolution` and `graticule_step` knobs per call.
 REFERENCE_MAP_STYLES: dict[str, dict[str, Any]] = {
     "ecmwf": {
         "resolution": "50m",
