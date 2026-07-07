@@ -454,10 +454,12 @@ class GeoMixin:
                 `"ecmwf-dark"` greys so coastlines stay visible). Default
                 `"ecmwf"`.
             ax: Axes to draw on. Defaults to the glyph's `self.ax`.
-            extent: Optional `(west, east, south, north)` in the axes' CRS.
-                When given, the image and axis limits are set to it (handling
-                the pixel-coordinate RGB/animate case); when omitted the
-                current axis limits are used.
+            extent: Optional `[xmin, ymin, xmax, ymax]` (i.e.
+                `[west, south, east, north]`) in the axes' CRS -- the same
+                order as `ArrayGlyph(extent=...)`. When given, the image and
+                axis limits are set to it (handling the pixel-coordinate
+                RGB/animate case); when omitted the current axis limits are
+                used.
             resolution: Natural Earth resolution for the coastline/borders
                 (`"110m"`/`"50m"`/`"10m"`). Defaults to the style's value.
             graticule_step: Degree spacing for the graticule. Defaults to a
@@ -478,7 +480,7 @@ class GeoMixin:
                 >>> import numpy as np
                 >>> from cleopatra.array_glyph import ArrayGlyph
                 >>> data = np.random.rand(20, 30)
-                >>> glyph = ArrayGlyph(data, extent=[-100, 20, -80, 40])
+                >>> glyph = ArrayGlyph(data, extent=[-100, 15, -40, 55])
                 >>> fig, ax = glyph.plot()  # doctest: +SKIP
                 >>> glyph.add_reference_map("ecmwf")  # doctest: +SKIP
 
@@ -501,7 +503,10 @@ class GeoMixin:
         preset = REFERENCE_MAP_STYLES[resolved]
 
         if extent is not None:
-            west, east, south, north = extent
+            # `[xmin, ymin, xmax, ymax]` == `[west, south, east, north]`,
+            # the same order as ArrayGlyph(extent=...); matplotlib wants
+            # `(xmin, xmax, ymin, ymax)` for `set_extent`.
+            west, south, east, north = extent
             im = getattr(self, "im", None)
             if im is not None and hasattr(im, "set_extent"):
                 im.set_extent((west, east, south, north))
@@ -511,7 +516,7 @@ class GeoMixin:
             warnings.warn(
                 "add_reference_map: the glyph has no geographic extent, so "
                 "coastlines/borders may not align with the data. Pass "
-                "extent=(west, east, south, north) or construct the glyph "
+                "extent=[west, south, east, north] or construct the glyph "
                 "with extent=.",
                 stacklevel=2,
             )

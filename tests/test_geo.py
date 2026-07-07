@@ -373,13 +373,14 @@ class TestAddReferenceMap:
         plt.close(fig)
 
     def test_extent_sets_image_and_axis_limits(self):
-        """Passing `extent` georeferences the image and axis limits."""
+        """`extent=[xmin, ymin, xmax, ymax]` (ArrayGlyph order) sets image + limits."""
         im = MagicMock()
         host, fig, ax = self._host(im=im)
-        host.add_reference_map("ecmwf", extent=[-100, 20, -80, 40])
-        im.set_extent.assert_called_once_with((-100, 20, -80, 40))
-        assert ax.get_xlim() == (-100, 20)
-        assert ax.get_ylim() == (-80, 40)
+        # [west, south, east, north] == [xmin, ymin, xmax, ymax], like ArrayGlyph
+        host.add_reference_map("ecmwf", extent=[-100, 15, -40, 55])
+        im.set_extent.assert_called_once_with((-100, -40, 15, 55))  # matplotlib order
+        assert ax.get_xlim() == (-100, -40)
+        assert ax.get_ylim() == (15, 55)
         plt.close(fig)
 
     def test_no_extent_warns(self):
