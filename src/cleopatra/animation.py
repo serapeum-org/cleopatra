@@ -25,9 +25,13 @@ from matplotlib.animation import FFMpegWriter, FuncAnimation, PillowWriter
 if TYPE_CHECKING:  # import only for type checkers; IPython stays optional
     from IPython.display import Image
 
-#: Container formats `save_animation` can write. GIF uses `PillowWriter`;
-#: the rest require FFmpeg (`FFMpegWriter`).
-SUPPORTED_VIDEO_FORMAT = ["gif", "mov", "avi", "mp4"]
+#: Container formats `save_animation` can write. GIF and (animated) WebP use
+#: Pillow (`_OptimizedPillowWriter`); mov/avi/mp4 require FFmpeg (`FFMpegWriter`).
+#: WebP is typically 3-5x smaller than GIF for photographic/satellite frames.
+SUPPORTED_VIDEO_FORMAT = ["gif", "mov", "avi", "mp4", "webp"]
+
+#: Formats written by Pillow rather than FFmpeg.
+_PILLOW_FORMATS = {"gif", "webp"}
 
 
 def _ensure_ffmpeg_available() -> None:
@@ -180,39 +184,41 @@ def save_animation(
 ) -> str:
     """Save any `FuncAnimation` to a file.
 
-    The output format is determined by the file extension. GIF uses an
-    optimising `PillowWriter`; mov/avi/mp4 use FFmpeg. FFmpeg is located on
-    `PATH` when present and otherwise falls back to the binary bundled with
-    `imageio-ffmpeg`, so video export works with no separate install.
+    The output format is determined by the file extension. GIF and animated
+    WebP use an optimising Pillow writer; mov/avi/mp4 use FFmpeg. FFmpeg is
+    located on `PATH` when present and otherwise falls back to the binary
+    bundled with `imageio-ffmpeg`, so video export works with no separate
+    install. WebP is typically 3-5x smaller than GIF for photographic frames.
 
     For the FFmpeg formats the frame is automatically padded up to an even
     width/height (libx264 rejects odd dimensions) and encoded with
-    ``pix_fmt=yuv420p`` for universal playback. GIF output is written with
+    ``pix_fmt=yuv420p`` for universal playback. GIF/WebP output is written with
     Pillow's ``optimize`` pass enabled and loops forever.
 
     Args:
         anim: The animation to save.
         path: Output file path, as a `str` or `os.PathLike` (e.g. a
             `pathlib.Path`). Extension determines format.
-            Supported: gif, mov, avi, mp4.
+            Supported: gif, mov, avi, mp4, webp.
         fps: Frames per second. Default is 2.
         crf: Constant Rate Factor for the ffmpeg formats (lower is higher
             quality/larger; ~18-28 is typical). Mutually exclusive with
-            ``bitrate``. Ignored for GIF. ``None`` uses the encoder default.
+            ``bitrate``. Ignored for GIF/WebP. ``None`` uses the encoder default.
         bitrate: Target bitrate in kbit/s for the ffmpeg formats. Mutually
-            exclusive with ``crf``. Ignored for GIF. ``None`` lets the encoder
-            choose.
+            exclusive with ``crf``. Ignored for GIF/WebP. ``None`` lets the
+            encoder choose.
         codec: ffmpeg codec (e.g. ``"libx264"``). ``None`` uses matplotlib's
-            default. Ignored for GIF.
-        preset: libx264 speed/size preset (e.g. ``"slow"``). Ignored for GIF.
+            default. Ignored for GIF/WebP.
+        preset: libx264 speed/size preset (e.g. ``"slow"``). Ignored for
+            GIF/WebP.
         pix_fmt: Pixel format for the ffmpeg formats. Defaults to
-            ``"yuv420p"`` for universal playback. Ignored for GIF.
+            ``"yuv420p"`` for universal playback. Ignored for GIF/WebP.
         dpi: Resolution in dots per inch. ``None`` uses the figure's dpi.
-        optimize: GIF only — run Pillow's palette optimisation pass. Default
+        optimize: GIF/WebP only — run Pillow's optimisation pass. Default
             ``True``.
-        loop: GIF only — number of times to loop; ``0`` loops forever.
+        loop: GIF/WebP only — number of times to loop; ``0`` loops forever.
         extra_args: Extra ffmpeg flags. A ``-vf`` filter here is merged with
-            the automatic even-dimension pad. Ignored for GIF.
+            the automatic even-dimension pad. Ignored for GIF/WebP.
 
     Returns:
         The output path as a `str` (the `os.fspath` of `path`),
@@ -308,7 +314,7 @@ def save_animation(
 
     save_kwargs = {} if dpi is None else {"dpi": dpi}
 
-    if video_format == "gif":
+    if video_format in _PILLOW_FORMATS:
         anim.save(
             path,
             writer=_OptimizedPillowWriter(fps=fps, optimize=optimize, loop=loop),

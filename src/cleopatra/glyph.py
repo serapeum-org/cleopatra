@@ -1096,7 +1096,7 @@ class Glyph:
         Args:
             path: Output file path, as a `str` or `os.PathLike` (e.g. a
                 `pathlib.Path`). Extension determines format.
-                Supported: gif, mov, avi, mp4.
+                Supported: gif, mov, avi, mp4, webp.
             fps: Frames per second. Default is 2.
             **kwargs: Additional keyword arguments forwarded to
                 `cleopatra.animation.save_animation`, e.g. ``crf``, ``bitrate``,
@@ -1115,7 +1115,7 @@ class Glyph:
                 ```python
                 >>> from cleopatra.glyph import SUPPORTED_VIDEO_FORMAT
                 >>> sorted(SUPPORTED_VIDEO_FORMAT)
-                ['avi', 'gif', 'mov', 'mp4']
+                ['avi', 'gif', 'mov', 'mp4', 'webp']
 
                 ```
         """

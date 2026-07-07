@@ -393,6 +393,44 @@ class TestOddDimensionAutoPad:
         assert out.stat().st_size > 0, "odd-dimension mp4 is empty"
 
 
+class TestWebP:
+    """Tests for animated WebP output (issue #185)."""
+
+    def test_writes_animated_webp(self, tiny_anim, tmp_path):
+        """A ``.webp`` path is written by Pillow as a multi-frame WebP.
+
+        Test scenario:
+            WebP routes to the Pillow writer (not FFmpeg); the output has the
+            RIFF/WEBP magic bytes and more than one frame.
+        """
+        out = tmp_path / "out.webp"
+
+        returned = save_animation(tiny_anim, str(out), fps=3)
+
+        assert returned == str(out), "should return the written path"
+        raw = out.read_bytes()
+        assert raw[:4] == b"RIFF" and raw[8:12] == b"WEBP", "not a WebP file"
+        assert getattr(Image.open(out), "n_frames", 1) > 1, "WebP is not animated"
+
+    def test_webp_routes_to_pillow_writer(self, monkeypatch):
+        """WebP uses `_OptimizedPillowWriter`, never the FFmpeg writer.
+
+        Test scenario:
+            The ``.webp`` branch builds the Pillow writer with the loop/optimize
+            settings and does not touch ``FFMpegWriter``.
+        """
+        anim = MagicMock(spec=FuncAnimation)
+        pillow = MagicMock(name="_OptimizedPillowWriter")
+        ffmpeg = MagicMock(name="FFMpegWriter")
+        monkeypatch.setattr(anim_mod, "_OptimizedPillowWriter", pillow)
+        monkeypatch.setattr(anim_mod, "FFMpegWriter", ffmpeg)
+
+        save_animation(anim, "clip.webp", fps=4, loop=1)
+
+        pillow.assert_called_once_with(fps=4, optimize=True, loop=1)
+        ffmpeg.assert_not_called()
+
+
 class TestEnsureFfmpegAvailable:
     """Tests for `_ensure_ffmpeg_available` (ffmpeg binary resolution)."""
 
@@ -657,7 +695,7 @@ class TestSupportedVideoFormat:
 
     def test_contains_expected_formats(self):
         """The constant lists exactly the four supported container formats."""
-        assert set(SUPPORTED_VIDEO_FORMAT) == {"gif", "mov", "avi", "mp4"}
+        assert set(SUPPORTED_VIDEO_FORMAT) == {"gif", "mov", "avi", "mp4", "webp"}
 
     def test_is_single_source_of_truth(self):
         """`cleopatra.glyph` re-exports the same object, not a copy."""

@@ -665,7 +665,7 @@ class TestSupportedVideoFormat:
 
     def test_contains_expected_formats(self):
         """Test that all expected formats are present."""
-        expected = {"gif", "mov", "avi", "mp4"}
+        expected = {"gif", "mov", "avi", "mp4", "webp"}
         assert set(SUPPORTED_VIDEO_FORMAT) == expected, (
             f"Expected {expected}, got {set(SUPPORTED_VIDEO_FORMAT)}"
         )
