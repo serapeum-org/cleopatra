@@ -1443,6 +1443,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1533,6 +1537,62 @@
     
   
     Animating RGB / true-colour stacks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebooks/array_glyph/reference_map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Weather-centre reference maps with
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebooks/animation/animation_examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Saving and embedding animations with
   
 
     
@@ -3301,7 +3361,13 @@ cleopatra.mesh_glyph.MeshGlyph: Glyph subclass for
 <span class="normal"><a href="#__codelineno-0-1113">1113</a></span>
 <span class="normal"><a href="#__codelineno-0-1114">1114</a></span>
 <span class="normal"><a href="#__codelineno-0-1115">1115</a></span>
-<span class="normal"><a href="#__codelineno-0-1116">1116</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-100" name="__codelineno-0-100"></a><span class="k">class</span><span class="w"> </span><span class="nc">Glyph</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-1116">1116</a></span>
+<span class="normal"><a href="#__codelineno-0-1117">1117</a></span>
+<span class="normal"><a href="#__codelineno-0-1118">1118</a></span>
+<span class="normal"><a href="#__codelineno-0-1119">1119</a></span>
+<span class="normal"><a href="#__codelineno-0-1120">1120</a></span>
+<span class="normal"><a href="#__codelineno-0-1121">1121</a></span>
+<span class="normal"><a href="#__codelineno-0-1122">1122</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-100" name="__codelineno-0-100"></a><span class="k">class</span><span class="w"> </span><span class="nc">Glyph</span><span class="p">:</span>
 <a id="__codelineno-0-101" name="__codelineno-0-101"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for cleopatra visualization glyphs.</span>
 <a id="__codelineno-0-102" name="__codelineno-0-102"></a>
 <a id="__codelineno-0-103" name="__codelineno-0-103"></a><span class="sd">    Handles figure/axes management, default options, color scale</span>
@@ -4289,35 +4355,41 @@ cleopatra.mesh_glyph.MeshGlyph: Glyph subclass for
 <a id="__codelineno-0-1085" name="__codelineno-0-1085"></a>        <span class="p">)</span>
 <a id="__codelineno-0-1086" name="__codelineno-0-1086"></a>        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">write_points</span><span class="p">,</span> <span class="n">point_table</span><span class="p">))</span>
 <a id="__codelineno-0-1087" name="__codelineno-0-1087"></a>
-<a id="__codelineno-0-1088" name="__codelineno-0-1088"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">save_animation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="n">fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-1088" name="__codelineno-0-1088"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">save_animation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="n">fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <a id="__codelineno-0-1089" name="__codelineno-0-1089"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Save this glyph&#39;s animation (`self.anim`) to a file.</span>
 <a id="__codelineno-0-1090" name="__codelineno-0-1090"></a>
 <a id="__codelineno-0-1091" name="__codelineno-0-1091"></a><span class="sd">        Thin wrapper around `cleopatra.animation.save_animation`; the output</span>
-<a id="__codelineno-0-1092" name="__codelineno-0-1092"></a><span class="sd">        format is determined by the file extension. GIF uses `PillowWriter`;</span>
-<a id="__codelineno-0-1093" name="__codelineno-0-1093"></a><span class="sd">        mov/avi/mp4 require FFmpeg to be installed.</span>
-<a id="__codelineno-0-1094" name="__codelineno-0-1094"></a>
-<a id="__codelineno-0-1095" name="__codelineno-0-1095"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-1096" name="__codelineno-0-1096"></a><span class="sd">            path: Output file path, as a `str` or `os.PathLike` (e.g. a</span>
-<a id="__codelineno-0-1097" name="__codelineno-0-1097"></a><span class="sd">                `pathlib.Path`). Extension determines format.</span>
-<a id="__codelineno-0-1098" name="__codelineno-0-1098"></a><span class="sd">                Supported: gif, mov, avi, mp4.</span>
-<a id="__codelineno-0-1099" name="__codelineno-0-1099"></a><span class="sd">            fps: Frames per second. Default is 2.</span>
-<a id="__codelineno-0-1100" name="__codelineno-0-1100"></a>
-<a id="__codelineno-0-1101" name="__codelineno-0-1101"></a><span class="sd">        Raises:</span>
-<a id="__codelineno-0-1102" name="__codelineno-0-1102"></a><span class="sd">            ValueError: If `animate()` has not been called yet, or if the</span>
-<a id="__codelineno-0-1103" name="__codelineno-0-1103"></a><span class="sd">                file format is not supported.</span>
-<a id="__codelineno-0-1104" name="__codelineno-0-1104"></a><span class="sd">            FileNotFoundError: If a video format is requested but FFmpeg is</span>
-<a id="__codelineno-0-1105" name="__codelineno-0-1105"></a><span class="sd">                not installed.</span>
-<a id="__codelineno-0-1106" name="__codelineno-0-1106"></a>
-<a id="__codelineno-0-1107" name="__codelineno-0-1107"></a><span class="sd">        Examples:</span>
-<a id="__codelineno-0-1108" name="__codelineno-0-1108"></a><span class="sd">            - Check the supported video formats:</span>
-<a id="__codelineno-0-1109" name="__codelineno-0-1109"></a><span class="sd">                ```python</span>
-<a id="__codelineno-0-1110" name="__codelineno-0-1110"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyph import SUPPORTED_VIDEO_FORMAT</span>
-<a id="__codelineno-0-1111" name="__codelineno-0-1111"></a><span class="sd">                &gt;&gt;&gt; sorted(SUPPORTED_VIDEO_FORMAT)</span>
-<a id="__codelineno-0-1112" name="__codelineno-0-1112"></a><span class="sd">                [&#39;avi&#39;, &#39;gif&#39;, &#39;mov&#39;, &#39;mp4&#39;]</span>
-<a id="__codelineno-0-1113" name="__codelineno-0-1113"></a>
-<a id="__codelineno-0-1114" name="__codelineno-0-1114"></a><span class="sd">                ```</span>
-<a id="__codelineno-0-1115" name="__codelineno-0-1115"></a><span class="sd">        &quot;&quot;&quot;</span>
-<a id="__codelineno-0-1116" name="__codelineno-0-1116"></a>        <span class="n">_save_animation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">anim</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">)</span>
+<a id="__codelineno-0-1092" name="__codelineno-0-1092"></a><span class="sd">        format is determined by the file extension. GIF and WebP use an</span>
+<a id="__codelineno-0-1093" name="__codelineno-0-1093"></a><span class="sd">        optimising Pillow writer; mov/avi/mp4 use FFmpeg (a system binary if</span>
+<a id="__codelineno-0-1094" name="__codelineno-0-1094"></a><span class="sd">        present, otherwise the one bundled with imageio-ffmpeg).</span>
+<a id="__codelineno-0-1095" name="__codelineno-0-1095"></a>
+<a id="__codelineno-0-1096" name="__codelineno-0-1096"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-1097" name="__codelineno-0-1097"></a><span class="sd">            path: Output file path, as a `str` or `os.PathLike` (e.g. a</span>
+<a id="__codelineno-0-1098" name="__codelineno-0-1098"></a><span class="sd">                `pathlib.Path`). Extension determines format.</span>
+<a id="__codelineno-0-1099" name="__codelineno-0-1099"></a><span class="sd">                Supported: gif, mov, avi, mp4, webp.</span>
+<a id="__codelineno-0-1100" name="__codelineno-0-1100"></a><span class="sd">            fps: Frames per second. Default is 2.</span>
+<a id="__codelineno-0-1101" name="__codelineno-0-1101"></a><span class="sd">            **kwargs: Additional keyword arguments forwarded to</span>
+<a id="__codelineno-0-1102" name="__codelineno-0-1102"></a><span class="sd">                `cleopatra.animation.save_animation`, e.g. ``crf``, ``bitrate``,</span>
+<a id="__codelineno-0-1103" name="__codelineno-0-1103"></a><span class="sd">                ``codec``, ``preset``, ``pix_fmt``, ``dpi`` (ffmpeg formats) or</span>
+<a id="__codelineno-0-1104" name="__codelineno-0-1104"></a><span class="sd">                ``optimize`` and ``loop`` (GIF).</span>
+<a id="__codelineno-0-1105" name="__codelineno-0-1105"></a>
+<a id="__codelineno-0-1106" name="__codelineno-0-1106"></a><span class="sd">        Raises:</span>
+<a id="__codelineno-0-1107" name="__codelineno-0-1107"></a><span class="sd">            ValueError: If `animate()` has not been called yet, if the file</span>
+<a id="__codelineno-0-1108" name="__codelineno-0-1108"></a><span class="sd">                format is not supported, or if both ``crf`` and ``bitrate``</span>
+<a id="__codelineno-0-1109" name="__codelineno-0-1109"></a><span class="sd">                are given.</span>
+<a id="__codelineno-0-1110" name="__codelineno-0-1110"></a><span class="sd">            FileNotFoundError: If a video format is requested but neither a</span>
+<a id="__codelineno-0-1111" name="__codelineno-0-1111"></a><span class="sd">                system FFmpeg nor imageio-ffmpeg&#39;s bundled binary is found.</span>
+<a id="__codelineno-0-1112" name="__codelineno-0-1112"></a>
+<a id="__codelineno-0-1113" name="__codelineno-0-1113"></a><span class="sd">        Examples:</span>
+<a id="__codelineno-0-1114" name="__codelineno-0-1114"></a><span class="sd">            - Check the supported video formats:</span>
+<a id="__codelineno-0-1115" name="__codelineno-0-1115"></a><span class="sd">                ```python</span>
+<a id="__codelineno-0-1116" name="__codelineno-0-1116"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyph import SUPPORTED_VIDEO_FORMAT</span>
+<a id="__codelineno-0-1117" name="__codelineno-0-1117"></a><span class="sd">                &gt;&gt;&gt; sorted(SUPPORTED_VIDEO_FORMAT)</span>
+<a id="__codelineno-0-1118" name="__codelineno-0-1118"></a><span class="sd">                [&#39;avi&#39;, &#39;gif&#39;, &#39;mov&#39;, &#39;mp4&#39;, &#39;webp&#39;]</span>
+<a id="__codelineno-0-1119" name="__codelineno-0-1119"></a>
+<a id="__codelineno-0-1120" name="__codelineno-0-1120"></a><span class="sd">                ```</span>
+<a id="__codelineno-0-1121" name="__codelineno-0-1121"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-1122" name="__codelineno-0-1122"></a>        <span class="n">_save_animation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">anim</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -5728,7 +5800,7 @@ contract.</p>
 
 
 <h4 id="cleopatra.glyph.Glyph.save_animation" class="doc doc-heading"><a href="#cleopatra.glyph.Glyph.save_animation" class="toclink">
-            <code class="highlight language-python"><span class="n">save_animation</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">save_animation</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
 </a><a href="#cleopatra.glyph.Glyph.save_animation" class="headerlink" title="Permanent link">#</a></h4>
 
@@ -5737,8 +5809,9 @@ contract.</p>
 
         <p>Save this glyph's animation (<code>self.anim</code>) to a file.</p>
 <p>Thin wrapper around <code>cleopatra.animation.save_animation</code>; the output
-format is determined by the file extension. GIF uses <code>PillowWriter</code>;
-mov/avi/mp4 require FFmpeg to be installed.</p>
+format is determined by the file extension. GIF and WebP use an
+optimising Pillow writer; mov/avi/mp4 use FFmpeg (a system binary if
+present, otherwise the one bundled with imageio-ffmpeg).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -5763,7 +5836,7 @@ mov/avi/mp4 require FFmpeg to be installed.</p>
               <div class="doc-md-description">
                 <p>Output file path, as a <code>str</code> or <code>os.PathLike</code> (e.g. a
 <code>pathlib.Path</code>). Extension determines format.
-Supported: gif, mov, avi, mp4.</p>
+Supported: gif, mov, avi, mp4, webp.</p>
               </div>
             </td>
             <td>
@@ -5786,6 +5859,24 @@ Supported: gif, mov, avi, mp4.</p>
                   <code>2</code>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>**kwargs</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Additional keyword arguments forwarded to
+<code>cleopatra.animation.save_animation</code>, e.g. <code>crf</code>, <code>bitrate</code>,
+<code>codec</code>, <code>preset</code>, <code>pix_fmt</code>, <code>dpi</code> (ffmpeg formats) or
+<code>optimize</code> and <code>loop</code> (GIF).</p>
+              </div>
+            </td>
+            <td>
+                  <code>{}</code>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -5805,8 +5896,9 @@ Supported: gif, mov, avi, mp4.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>If <code>animate()</code> has not been called yet, or if the
-file format is not supported.</p>
+                <p>If <code>animate()</code> has not been called yet, if the file
+format is not supported, or if both <code>crf</code> and <code>bitrate</code>
+are given.</p>
               </div>
             </td>
           </tr>
@@ -5816,8 +5908,8 @@ file format is not supported.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>If a video format is requested but FFmpeg is
-not installed.</p>
+                <p>If a video format is requested but neither a
+system FFmpeg nor imageio-ffmpeg's bundled binary is found.</p>
               </div>
             </td>
           </tr>
@@ -5830,7 +5922,7 @@ not installed.</p>
 <li>Check the supported video formats:
     <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">SUPPORTED_VIDEO_FORMAT</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">SUPPORTED_VIDEO_FORMAT</span><span class="p">)</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">[</span><span class="s1">&#39;avi&#39;</span><span class="p">,</span> <span class="s1">&#39;gif&#39;</span><span class="p">,</span> <span class="s1">&#39;mov&#39;</span><span class="p">,</span> <span class="s1">&#39;mp4&#39;</span><span class="p">]</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">[</span><span class="s1">&#39;avi&#39;</span><span class="p">,</span> <span class="s1">&#39;gif&#39;</span><span class="p">,</span> <span class="s1">&#39;mov&#39;</span><span class="p">,</span> <span class="s1">&#39;mp4&#39;</span><span class="p">,</span> <span class="s1">&#39;webp&#39;</span><span class="p">]</span>
 </code></pre></div></li>
 </ul>
 
@@ -5865,35 +5957,47 @@ not installed.</p>
 <span class="normal"><a href="#__codelineno-0-1113">1113</a></span>
 <span class="normal"><a href="#__codelineno-0-1114">1114</a></span>
 <span class="normal"><a href="#__codelineno-0-1115">1115</a></span>
-<span class="normal"><a href="#__codelineno-0-1116">1116</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1088" name="__codelineno-0-1088"></a><span class="k">def</span><span class="w"> </span><span class="nf">save_animation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="n">fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-1116">1116</a></span>
+<span class="normal"><a href="#__codelineno-0-1117">1117</a></span>
+<span class="normal"><a href="#__codelineno-0-1118">1118</a></span>
+<span class="normal"><a href="#__codelineno-0-1119">1119</a></span>
+<span class="normal"><a href="#__codelineno-0-1120">1120</a></span>
+<span class="normal"><a href="#__codelineno-0-1121">1121</a></span>
+<span class="normal"><a href="#__codelineno-0-1122">1122</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1088" name="__codelineno-0-1088"></a><span class="k">def</span><span class="w"> </span><span class="nf">save_animation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="n">fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <a id="__codelineno-0-1089" name="__codelineno-0-1089"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Save this glyph&#39;s animation (`self.anim`) to a file.</span>
 <a id="__codelineno-0-1090" name="__codelineno-0-1090"></a>
 <a id="__codelineno-0-1091" name="__codelineno-0-1091"></a><span class="sd">    Thin wrapper around `cleopatra.animation.save_animation`; the output</span>
-<a id="__codelineno-0-1092" name="__codelineno-0-1092"></a><span class="sd">    format is determined by the file extension. GIF uses `PillowWriter`;</span>
-<a id="__codelineno-0-1093" name="__codelineno-0-1093"></a><span class="sd">    mov/avi/mp4 require FFmpeg to be installed.</span>
-<a id="__codelineno-0-1094" name="__codelineno-0-1094"></a>
-<a id="__codelineno-0-1095" name="__codelineno-0-1095"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-1096" name="__codelineno-0-1096"></a><span class="sd">        path: Output file path, as a `str` or `os.PathLike` (e.g. a</span>
-<a id="__codelineno-0-1097" name="__codelineno-0-1097"></a><span class="sd">            `pathlib.Path`). Extension determines format.</span>
-<a id="__codelineno-0-1098" name="__codelineno-0-1098"></a><span class="sd">            Supported: gif, mov, avi, mp4.</span>
-<a id="__codelineno-0-1099" name="__codelineno-0-1099"></a><span class="sd">        fps: Frames per second. Default is 2.</span>
-<a id="__codelineno-0-1100" name="__codelineno-0-1100"></a>
-<a id="__codelineno-0-1101" name="__codelineno-0-1101"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-1102" name="__codelineno-0-1102"></a><span class="sd">        ValueError: If `animate()` has not been called yet, or if the</span>
-<a id="__codelineno-0-1103" name="__codelineno-0-1103"></a><span class="sd">            file format is not supported.</span>
-<a id="__codelineno-0-1104" name="__codelineno-0-1104"></a><span class="sd">        FileNotFoundError: If a video format is requested but FFmpeg is</span>
-<a id="__codelineno-0-1105" name="__codelineno-0-1105"></a><span class="sd">            not installed.</span>
-<a id="__codelineno-0-1106" name="__codelineno-0-1106"></a>
-<a id="__codelineno-0-1107" name="__codelineno-0-1107"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-1108" name="__codelineno-0-1108"></a><span class="sd">        - Check the supported video formats:</span>
-<a id="__codelineno-0-1109" name="__codelineno-0-1109"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-1110" name="__codelineno-0-1110"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyph import SUPPORTED_VIDEO_FORMAT</span>
-<a id="__codelineno-0-1111" name="__codelineno-0-1111"></a><span class="sd">            &gt;&gt;&gt; sorted(SUPPORTED_VIDEO_FORMAT)</span>
-<a id="__codelineno-0-1112" name="__codelineno-0-1112"></a><span class="sd">            [&#39;avi&#39;, &#39;gif&#39;, &#39;mov&#39;, &#39;mp4&#39;]</span>
-<a id="__codelineno-0-1113" name="__codelineno-0-1113"></a>
-<a id="__codelineno-0-1114" name="__codelineno-0-1114"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-1115" name="__codelineno-0-1115"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-1116" name="__codelineno-0-1116"></a>    <span class="n">_save_animation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">anim</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">)</span>
+<a id="__codelineno-0-1092" name="__codelineno-0-1092"></a><span class="sd">    format is determined by the file extension. GIF and WebP use an</span>
+<a id="__codelineno-0-1093" name="__codelineno-0-1093"></a><span class="sd">    optimising Pillow writer; mov/avi/mp4 use FFmpeg (a system binary if</span>
+<a id="__codelineno-0-1094" name="__codelineno-0-1094"></a><span class="sd">    present, otherwise the one bundled with imageio-ffmpeg).</span>
+<a id="__codelineno-0-1095" name="__codelineno-0-1095"></a>
+<a id="__codelineno-0-1096" name="__codelineno-0-1096"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-1097" name="__codelineno-0-1097"></a><span class="sd">        path: Output file path, as a `str` or `os.PathLike` (e.g. a</span>
+<a id="__codelineno-0-1098" name="__codelineno-0-1098"></a><span class="sd">            `pathlib.Path`). Extension determines format.</span>
+<a id="__codelineno-0-1099" name="__codelineno-0-1099"></a><span class="sd">            Supported: gif, mov, avi, mp4, webp.</span>
+<a id="__codelineno-0-1100" name="__codelineno-0-1100"></a><span class="sd">        fps: Frames per second. Default is 2.</span>
+<a id="__codelineno-0-1101" name="__codelineno-0-1101"></a><span class="sd">        **kwargs: Additional keyword arguments forwarded to</span>
+<a id="__codelineno-0-1102" name="__codelineno-0-1102"></a><span class="sd">            `cleopatra.animation.save_animation`, e.g. ``crf``, ``bitrate``,</span>
+<a id="__codelineno-0-1103" name="__codelineno-0-1103"></a><span class="sd">            ``codec``, ``preset``, ``pix_fmt``, ``dpi`` (ffmpeg formats) or</span>
+<a id="__codelineno-0-1104" name="__codelineno-0-1104"></a><span class="sd">            ``optimize`` and ``loop`` (GIF).</span>
+<a id="__codelineno-0-1105" name="__codelineno-0-1105"></a>
+<a id="__codelineno-0-1106" name="__codelineno-0-1106"></a><span class="sd">    Raises:</span>
+<a id="__codelineno-0-1107" name="__codelineno-0-1107"></a><span class="sd">        ValueError: If `animate()` has not been called yet, if the file</span>
+<a id="__codelineno-0-1108" name="__codelineno-0-1108"></a><span class="sd">            format is not supported, or if both ``crf`` and ``bitrate``</span>
+<a id="__codelineno-0-1109" name="__codelineno-0-1109"></a><span class="sd">            are given.</span>
+<a id="__codelineno-0-1110" name="__codelineno-0-1110"></a><span class="sd">        FileNotFoundError: If a video format is requested but neither a</span>
+<a id="__codelineno-0-1111" name="__codelineno-0-1111"></a><span class="sd">            system FFmpeg nor imageio-ffmpeg&#39;s bundled binary is found.</span>
+<a id="__codelineno-0-1112" name="__codelineno-0-1112"></a>
+<a id="__codelineno-0-1113" name="__codelineno-0-1113"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-1114" name="__codelineno-0-1114"></a><span class="sd">        - Check the supported video formats:</span>
+<a id="__codelineno-0-1115" name="__codelineno-0-1115"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-1116" name="__codelineno-0-1116"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyph import SUPPORTED_VIDEO_FORMAT</span>
+<a id="__codelineno-0-1117" name="__codelineno-0-1117"></a><span class="sd">            &gt;&gt;&gt; sorted(SUPPORTED_VIDEO_FORMAT)</span>
+<a id="__codelineno-0-1118" name="__codelineno-0-1118"></a><span class="sd">            [&#39;avi&#39;, &#39;gif&#39;, &#39;mov&#39;, &#39;mp4&#39;, &#39;webp&#39;]</span>
+<a id="__codelineno-0-1119" name="__codelineno-0-1119"></a>
+<a id="__codelineno-0-1120" name="__codelineno-0-1120"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-1121" name="__codelineno-0-1121"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-1122" name="__codelineno-0-1122"></a>    <span class="n">_save_animation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">anim</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>

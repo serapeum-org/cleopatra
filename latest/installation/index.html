@@ -1379,6 +1379,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1469,6 +1473,62 @@
     
   
     Animating RGB / true-colour stacks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/array_glyph/reference_map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Weather-centre reference maps with
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/animation/animation_examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Saving and embedding animations with
   
 
     
@@ -1984,13 +2044,16 @@
 <li>Python (3.11 or later)</li>
 <li><a href="https://www.numpy.org/">numpy</a> (2.0.0 or later)</li>
 <li><a href="https://matplotlib.org/">matplotlib</a> (3.9 or later)</li>
-<li><a href="https://github.com/kkroening/ffmpeg-python/">ffmpeg-python</a> — for animation export to MP4 / MOV / AVI</li>
+<li><a href="https://github.com/imageio/imageio-ffmpeg">imageio-ffmpeg</a> — ships a static FFmpeg binary used for animation
+  export to MP4 / MOV / AVI</li>
 <li><a href="https://github.com/serapeum-org/hpc">hpc-utils</a> (0.1.4 or later)</li>
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Writing animations to <code>mp4</code> / <code>mov</code> / <code>avi</code> also needs an <strong>FFmpeg</strong> binary on
-your <code>PATH</code>. GIF export uses matplotlib's <code>PillowWriter</code> and needs no FFmpeg.</p>
+<p>Writing animations to <code>mp4</code> / <code>mov</code> / <code>avi</code> needs an <strong>FFmpeg</strong> binary.
+<code>imageio-ffmpeg</code> bundles one, so export works out of the box; a system FFmpeg
+on your <code>PATH</code> is used in preference when present. GIF and WebP export use
+Pillow and need no FFmpeg.</p>
 </div>
 <h3 id="optional-dependencies-the-tiles-extra"><a class="toclink" href="#optional-dependencies-the-tiles-extra">Optional dependencies — the <code>tiles</code> extra</a><a class="headerlink" href="#optional-dependencies-the-tiles-extra" title="Permanent link">#</a></h3>
 <p>The web-tile basemap helper (<code>cleopatra.tiles.add_tiles</code>) needs four extra packages.
