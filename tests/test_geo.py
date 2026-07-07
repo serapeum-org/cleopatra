@@ -437,9 +437,18 @@ class TestAddReferenceMap:
 
     def test_unknown_style_raises(self):
         """An unknown style name raises `ValueError` listing the options."""
-        host, fig, ax = self._host(extent=[-100, 20, -80, 40])
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
         with pytest.raises(ValueError, match="Unknown map style"):
             host.add_reference_map("bogus")
+        plt.close(fig)
+
+    @pytest.mark.parametrize("bad", [0, -5])
+    def test_nonpositive_graticule_step_raises(self, bad):
+        """A zero/negative graticule_step raises before anything is drawn (L3)."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        with pytest.raises(ValueError, match="graticule_step must be a positive"):
+            host.add_reference_map("ecmwf", graticule_step=bad)
+        host.add_features.assert_not_called()  # failed fast, no layers drawn
         plt.close(fig)
 
     def test_graticule_step_override(self):

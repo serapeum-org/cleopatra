@@ -478,7 +478,8 @@ class GeoMixin:
 
         Raises:
             RuntimeError: If the glyph has no axes yet and `ax` is not given.
-            ValueError: If `style` is not a known preset or `"auto"`.
+            ValueError: If `style` is not a known preset or `"auto"`, or if
+                `graticule_step` is given and is not a positive number.
 
         Examples:
             - Dress a georeferenced field in the ECMWF look:
@@ -496,6 +497,10 @@ class GeoMixin:
             add_features: The Natural Earth layer helper this composes.
             available_map_styles: The built-in preset names.
         """
+        if graticule_step is not None and graticule_step <= 0:
+            raise ValueError(
+                f"graticule_step must be a positive number, got {graticule_step}"
+            )
         target = self._basemap_axes(ax)
 
         resolved = style
@@ -537,7 +542,11 @@ class GeoMixin:
 
         xmin, xmax = target.get_xlim()
         ymin, ymax = target.get_ylim()
-        step = graticule_step or _nice_step(max(abs(xmax - xmin), abs(ymax - ymin)))
+        step = (
+            graticule_step
+            if graticule_step is not None
+            else _nice_step(max(abs(xmax - xmin), abs(ymax - ymin)))
+        )
         target.xaxis.set_major_locator(MultipleLocator(step))
         target.yaxis.set_major_locator(MultipleLocator(step))
         target.xaxis.set_major_formatter(FuncFormatter(_lon_formatter))
