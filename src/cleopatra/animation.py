@@ -378,9 +378,15 @@ def save_animation(
         try:
             anim.save(path, writer=FFMpegWriter(**writer_kwargs), **save_kwargs)
         except FileNotFoundError as e:
+            # _ensure_ffmpeg_available() already resolved a binary, so this is
+            # rare (e.g. a pinned animation.ffmpeg_path was removed between the
+            # check and the encode). Keep the wording consistent with the
+            # bundled-binary story rather than pointing at a manual install.
             raise FileNotFoundError(
-                "FFmpeg not found. Please visit https://ffmpeg.org/ "
-                "and download a version compatible with your OS."
+                "FFmpeg could not be run. imageio-ffmpeg's bundled binary "
+                "normally makes this work out of the box; if you pinned a custom "
+                "ffmpeg via matplotlib's animation.ffmpeg_path, make sure it still "
+                "exists, or install a system ffmpeg from https://ffmpeg.org/."
             ) from e
     return path
 
