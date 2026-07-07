@@ -870,6 +870,23 @@ class TestQualityControls:
         assert args.count("-pix_fmt") == 1, f"duplicate -pix_fmt emitted: {args}"
         assert args[args.index("-pix_fmt") + 1] == "rgb24", f"override lost: {args}"
 
+    def test_explicit_empty_pix_fmt_override_is_honoured(self, monkeypatch):
+        """An explicit (even empty) ``-pix_fmt`` in extra_args is authoritative.
+
+        Test scenario:
+            ``extra_args=["-pix_fmt", ""]`` yields an empty ``-pix_fmt`` value
+            rather than silently reverting to the default (a present flag+value
+            is treated as the caller's choice via an ``is not None`` sentinel).
+        """
+        ffmpeg = self._mock_ffmpeg(monkeypatch)
+
+        save_animation(
+            MagicMock(spec=FuncAnimation), "clip.mp4", extra_args=["-pix_fmt", ""]
+        )
+
+        args = ffmpeg.call_args.kwargs["extra_args"]
+        assert args[args.index("-pix_fmt") + 1] == "", f"empty override dropped: {args}"
+
     @pytest.mark.parametrize("bad", [["-vf"], ["-crf", "20", "-pix_fmt"]])
     def test_dangling_flag_in_extra_args_raises(self, bad, monkeypatch):
         """A trailing valueless ``-vf``/``-pix_fmt`` raises instead of corrupting args.

@@ -190,7 +190,8 @@ def _build_ffmpeg_extra_args(
             i += 1
     vf_filters.append(_EVEN_PAD_FILTER)
 
-    built = ["-vf", ",".join(vf_filters), "-pix_fmt", caller_pix_fmt or pix_fmt]
+    chosen_pix_fmt = caller_pix_fmt if caller_pix_fmt is not None else pix_fmt
+    built = ["-vf", ",".join(vf_filters), "-pix_fmt", chosen_pix_fmt]
     if crf is not None:
         built += ["-crf", str(crf)]
     if preset is not None:
