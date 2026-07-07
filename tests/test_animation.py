@@ -109,7 +109,7 @@ class TestSaveAnimation:
 
         result = save_animation(anim, "clip.gif", fps=7)
 
-        pillow.assert_called_once_with(fps=7)
+        pillow.assert_called_once_with(fps=7, optimize=True, loop=0)
         anim.save.assert_called_once_with("clip.gif", writer=pillow.return_value)
         assert result == "clip.gif", f"should return the path, got {result!r}"
 
@@ -138,7 +138,6 @@ class TestSaveAnimation:
 
         ffmpeg.assert_called_once_with(
             fps=5,
-            bitrate=1800,
             extra_args=["-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2", "-pix_fmt", "yuv420p"],
         )
         anim.save.assert_called_once_with(f"clip.{ext}", writer=ffmpeg.return_value)
@@ -180,7 +179,7 @@ class TestSaveAnimation:
         """
 
         anim = MagicMock(spec=FuncAnimation)
-        monkeypatch.setattr(anim_mod, "PillowWriter", MagicMock())
+        monkeypatch.setattr(anim_mod, "_OptimizedPillowWriter", MagicMock())
 
         result = save_animation(anim, "my.movie.v2.gif", fps=2)
 
@@ -199,7 +198,7 @@ class TestSaveAnimation:
 
         save_animation(MagicMock(spec=FuncAnimation), "clip.gif")
 
-        pillow.assert_called_once_with(fps=2)
+        pillow.assert_called_once_with(fps=2, optimize=True, loop=0)
 
 
 class TestToGif:
@@ -529,6 +528,128 @@ class TestOptimizedPillowWriter:
         assert captured.get("optimize") is False, (
             f"optimize flag not forwarded to Pillow: {captured}"
         )
+
+
+class TestQualityControls:
+    """Tests for the crf/bitrate/codec/preset/dpi/gif controls of `save_animation`."""
+
+    def _mock_ffmpeg(self, monkeypatch):
+        """Patch the ffmpeg writer and availability check; return the writer mock."""
+        ffmpeg = MagicMock(name="FFMpegWriter")
+        monkeypatch.setattr(anim_mod, "FFMpegWriter", ffmpeg)
+        monkeypatch.setattr(anim_mod, "_ensure_ffmpeg_available", lambda: None)
+        return ffmpeg
+
+    def test_crf_and_preset_reach_writer(self, monkeypatch):
+        """`crf` and `preset` are appended to the ffmpeg extra_args.
+
+        Test scenario:
+            Requesting ``crf=26, preset="slow"`` puts ``-crf 26 -preset slow``
+            at the tail of the writer's ``extra_args``.
+        """
+        ffmpeg = self._mock_ffmpeg(monkeypatch)
+
+        save_animation(MagicMock(spec=FuncAnimation), "clip.mp4", crf=26, preset="slow")
+
+        _, kwargs = ffmpeg.call_args
+        assert kwargs["extra_args"][-4:] == ["-crf", "26", "-preset", "slow"], (
+            f"crf/preset not in extra_args: {kwargs['extra_args']}"
+        )
+
+    def test_bitrate_and_codec_reach_writer(self, monkeypatch):
+        """`bitrate` and `codec` are forwarded to the FFMpegWriter constructor.
+
+        Test scenario:
+            ``bitrate=2500, codec="libx264"`` appear as constructor kwargs.
+        """
+        ffmpeg = self._mock_ffmpeg(monkeypatch)
+
+        save_animation(
+            MagicMock(spec=FuncAnimation), "clip.mp4", bitrate=2500, codec="libx264"
+        )
+
+        _, kwargs = ffmpeg.call_args
+        assert kwargs["bitrate"] == 2500, f"bitrate not forwarded: {kwargs}"
+        assert kwargs["codec"] == "libx264", f"codec not forwarded: {kwargs}"
+
+    def test_crf_and_bitrate_together_raises(self):
+        """Passing both `crf` and `bitrate` is rejected as competing modes.
+
+        Test scenario:
+            crf and bitrate are mutually exclusive rate-control modes, so
+            supplying both raises ``ValueError`` before any encode.
+        """
+        with pytest.raises(ValueError, match="either crf or bitrate"):
+            save_animation(
+                MagicMock(spec=FuncAnimation), "clip.mp4", crf=20, bitrate=2000
+            )
+
+    def test_dpi_forwarded_to_save(self, monkeypatch):
+        """`dpi` is forwarded to ``anim.save`` for the ffmpeg path.
+
+        Test scenario:
+            ``dpi=150`` reaches the underlying save call.
+        """
+        self._mock_ffmpeg(monkeypatch)
+        anim = MagicMock(spec=FuncAnimation)
+
+        save_animation(anim, "clip.mp4", dpi=150)
+
+        _, kwargs = anim.save.call_args
+        assert kwargs.get("dpi") == 150, f"dpi not forwarded: {kwargs}"
+
+    def test_dpi_omitted_when_none(self, monkeypatch):
+        """With no `dpi`, ``anim.save`` is called without a dpi kwarg.
+
+        Test scenario:
+            Backward compatibility — the default call must not inject a dpi.
+        """
+        self._mock_ffmpeg(monkeypatch)
+        anim = MagicMock(spec=FuncAnimation)
+
+        save_animation(anim, "clip.mp4")
+
+        _, kwargs = anim.save.call_args
+        assert "dpi" not in kwargs, f"dpi should be omitted when None: {kwargs}"
+
+    def test_caller_vf_is_merged_with_pad(self, monkeypatch):
+        """A caller ``-vf`` filter is merged into one chain, pad applied last.
+
+        Test scenario:
+            ``extra_args=["-vf", "scale=320:-1", "-tune", "film"]`` yields a
+            single ``-vf scale=320:-1,pad=...`` chain and preserves the other
+            flags.
+        """
+        ffmpeg = self._mock_ffmpeg(monkeypatch)
+
+        save_animation(
+            MagicMock(spec=FuncAnimation),
+            "clip.mp4",
+            extra_args=["-vf", "scale=320:-1", "-tune", "film"],
+        )
+
+        _, kwargs = ffmpeg.call_args
+        args = kwargs["extra_args"]
+        assert args[0] == "-vf", f"first flag should be -vf: {args}"
+        assert args[1] == "scale=320:-1,pad=ceil(iw/2)*2:ceil(ih/2)*2", (
+            f"caller filter not merged with pad: {args}"
+        )
+        assert args[-2:] == ["-tune", "film"], f"passthrough flags lost: {args}"
+
+    def test_gif_loop_and_optimize_forwarded(self, monkeypatch):
+        """GIF `optimize` and `loop` reach the `_OptimizedPillowWriter`.
+
+        Test scenario:
+            ``optimize=False, loop=3`` are passed through to the GIF writer.
+        """
+        pillow = MagicMock(name="_OptimizedPillowWriter")
+        monkeypatch.setattr(anim_mod, "_OptimizedPillowWriter", pillow)
+
+        save_animation(
+            MagicMock(spec=FuncAnimation), "clip.gif", optimize=False, loop=3
+        )
+
+        pillow.assert_called_once_with(fps=2, optimize=False, loop=3)
 
 
 class TestSupportedVideoFormat:

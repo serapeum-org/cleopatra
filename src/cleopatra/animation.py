@@ -88,8 +88,95 @@ class _OptimizedPillowWriter(PillowWriter):
         )
 
 
+#: ffmpeg video filter that rounds the frame up to an even width/height.
+#: libx264 refuses odd dimensions, so this is always applied to video output.
+_EVEN_PAD_FILTER = "pad=ceil(iw/2)*2:ceil(ih/2)*2"
+
+
+def _build_ffmpeg_extra_args(
+    pix_fmt: str,
+    crf: int | None,
+    preset: str | None,
+    extra_args: list[str] | None,
+) -> list[str]:
+    """Assemble the ffmpeg ``extra_args`` list for a video export.
+
+    Combines the mandatory even-dimension pad filter with an explicit pixel
+    format and any caller-supplied CRF, preset, or raw ffmpeg flags. A caller
+    ``-vf`` filter is merged into a single chain — ffmpeg honours only the last
+    ``-vf`` — with the pad applied last so the frame ends up even whatever the
+    caller's filters produce.
+
+    Args:
+        pix_fmt: Pixel format passed as ``-pix_fmt`` (e.g. ``"yuv420p"``).
+        crf: Constant Rate Factor; appended as ``-crf`` when not ``None``.
+        preset: libx264 speed/size preset; appended as ``-preset`` when set.
+        extra_args: Extra ffmpeg flags. A ``-vf`` pair here is merged into the
+            pad chain; everything else is passed through unchanged.
+
+    Returns:
+        The assembled argument list, always starting with the merged ``-vf``
+        chain followed by ``-pix_fmt``.
+
+    Examples:
+        - Defaults produce just the pad filter and pixel format:
+            ```python
+            >>> from cleopatra.animation import _build_ffmpeg_extra_args
+            >>> _build_ffmpeg_extra_args("yuv420p", None, None, None)
+            ['-vf', 'pad=ceil(iw/2)*2:ceil(ih/2)*2', '-pix_fmt', 'yuv420p']
+
+            ```
+        - A CRF and preset are appended after the pixel format:
+            ```python
+            >>> from cleopatra.animation import _build_ffmpeg_extra_args
+            >>> _build_ffmpeg_extra_args("yuv420p", 26, "slow", None)[4:]
+            ['-crf', '26', '-preset', 'slow']
+
+            ```
+        - A caller ``-vf`` is merged into one chain with the pad applied last:
+            ```python
+            >>> from cleopatra.animation import _build_ffmpeg_extra_args
+            >>> _build_ffmpeg_extra_args("yuv420p", None, None, ["-vf", "scale=320:-1"])[:2]
+            ['-vf', 'scale=320:-1,pad=ceil(iw/2)*2:ceil(ih/2)*2']
+
+            ```
+    """
+    user_args = list(extra_args) if extra_args else []
+    vf_filters: list[str] = []
+    passthrough: list[str] = []
+    i = 0
+    while i < len(user_args):
+        if user_args[i] == "-vf" and i + 1 < len(user_args):
+            vf_filters.append(user_args[i + 1])
+            i += 2
+        else:
+            passthrough.append(user_args[i])
+            i += 1
+    vf_filters.append(_EVEN_PAD_FILTER)
+
+    built = ["-vf", ",".join(vf_filters), "-pix_fmt", pix_fmt]
+    if crf is not None:
+        built += ["-crf", str(crf)]
+    if preset is not None:
+        built += ["-preset", preset]
+    built += passthrough
+    return built
+
+
 def save_animation(
-    anim: FuncAnimation, path: str | os.PathLike, fps: int = 2
+    anim: FuncAnimation,
+    path: str | os.PathLike,
+    fps: int = 2,
+    *,
+    crf: int | None = None,
+    bitrate: int | None = None,
+    codec: str | None = None,
+    preset: str | None = None,
+    pix_fmt: str = "yuv420p",
+    dpi: int | None = None,
+    optimize: bool = True,
+    loop: int = 0,
+    extra_args: list[str] | None = None,
 ) -> str:
     """Save any `FuncAnimation` to a file.
 
@@ -109,6 +196,23 @@ def save_animation(
             `pathlib.Path`). Extension determines format.
             Supported: gif, mov, avi, mp4.
         fps: Frames per second. Default is 2.
+        crf: Constant Rate Factor for the ffmpeg formats (lower is higher
+            quality/larger; ~18-28 is typical). Mutually exclusive with
+            ``bitrate``. Ignored for GIF. ``None`` uses the encoder default.
+        bitrate: Target bitrate in kbit/s for the ffmpeg formats. Mutually
+            exclusive with ``crf``. Ignored for GIF. ``None`` lets the encoder
+            choose.
+        codec: ffmpeg codec (e.g. ``"libx264"``). ``None`` uses matplotlib's
+            default. Ignored for GIF.
+        preset: libx264 speed/size preset (e.g. ``"slow"``). Ignored for GIF.
+        pix_fmt: Pixel format for the ffmpeg formats. Defaults to
+            ``"yuv420p"`` for universal playback. Ignored for GIF.
+        dpi: Resolution in dots per inch. ``None`` uses the figure's dpi.
+        optimize: GIF only — run Pillow's palette optimisation pass. Default
+            ``True``.
+        loop: GIF only — number of times to loop; ``0`` loops forever.
+        extra_args: Extra ffmpeg flags. A ``-vf`` filter here is merged with
+            the automatic even-dimension pad. Ignored for GIF.
 
     Returns:
         The output path as a `str` (the `os.fspath` of `path`),
@@ -116,9 +220,10 @@ def save_animation(
         back as its string form, not the original object.
 
     Raises:
-        ValueError: If the file format is not supported.
-        FileNotFoundError: If a video format is requested but FFmpeg is
-            not installed.
+        ValueError: If the file format is not supported, or if both ``crf``
+            and ``bitrate`` are given (competing rate-control modes).
+        FileNotFoundError: If a video format is requested but neither a system
+            FFmpeg nor imageio-ffmpeg's bundled binary can be found.
 
     Examples:
         - Save a tiny animation to a GIF; the call returns the path it wrote:
@@ -201,26 +306,31 @@ def save_animation(
             f"not supported, only {SUPPORTED_VIDEO_FORMAT} are supported"
         )
 
+    save_kwargs = {} if dpi is None else {"dpi": dpi}
+
     if video_format == "gif":
-        anim.save(path, writer=_OptimizedPillowWriter(fps=fps))
+        anim.save(
+            path,
+            writer=_OptimizedPillowWriter(fps=fps, optimize=optimize, loop=loop),
+            **save_kwargs,
+        )
     else:
-        _ensure_ffmpeg_available()
-        # libx264 requires even width/height, so a figure whose pixel size is
-        # odd otherwise dies with "height not divisible by 2". Pad the frame up
-        # to the next even size so any figure encodes. Set pix_fmt=yuv420p
-        # explicitly so the output plays everywhere (browsers, QuickTime); it
-        # is otherwise one matplotlib default away from an unplayable file.
-        extra_args = [
-            "-vf",
-            "pad=ceil(iw/2)*2:ceil(ih/2)*2",
-            "-pix_fmt",
-            "yuv420p",
-        ]
-        try:
-            anim.save(
-                path,
-                writer=FFMpegWriter(fps=fps, bitrate=1800, extra_args=extra_args),
+        if crf is not None and bitrate is not None:
+            raise ValueError(
+                "Pass either crf or bitrate, not both: they are competing "
+                "rate-control modes for the encoder."
             )
+        _ensure_ffmpeg_available()
+        writer_kwargs = {
+            "fps": fps,
+            "extra_args": _build_ffmpeg_extra_args(pix_fmt, crf, preset, extra_args),
+        }
+        if bitrate is not None:
+            writer_kwargs["bitrate"] = bitrate
+        if codec is not None:
+            writer_kwargs["codec"] = codec
+        try:
+            anim.save(path, writer=FFMpegWriter(**writer_kwargs), **save_kwargs)
         except FileNotFoundError as e:
             raise FileNotFoundError(
                 "FFmpeg not found. Please visit https://ffmpeg.org/ "
