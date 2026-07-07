@@ -33,7 +33,13 @@ import cleopatra.reference as refmod  # noqa: E402
 import cleopatra.tiles as tilesmod  # noqa: E402
 from cleopatra.array_glyph import ArrayGlyph  # noqa: E402
 from cleopatra.flow_glyph import FlowGlyph  # noqa: E402
-from cleopatra.geo import GeoMixin  # noqa: E402
+from cleopatra.geo import (  # noqa: E402
+    GeoMixin,
+    _lat_formatter,
+    _lon_formatter,
+    _nice_step,
+    available_map_styles,
+)
 from cleopatra.kde_glyph import KDEGlyph  # noqa: E402
 from cleopatra.line_glyph import LineGlyph  # noqa: E402
 from cleopatra.mesh_glyph import MeshGlyph  # noqa: E402
@@ -328,8 +334,6 @@ class TestAddReferenceMap:
 
     def test_available_map_styles(self):
         """The built-in preset names are exposed and stable."""
-        from cleopatra.geo import available_map_styles
-
         assert available_map_styles() == ["ecmwf", "ecmwf-dark"]
 
     def test_composes_features_graticule_and_frame(self):
