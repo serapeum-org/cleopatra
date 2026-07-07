@@ -572,6 +572,51 @@ class TestEnsureFfmpegAvailable:
             "resolver should fall back to the imageio-ffmpeg binary"
         )
 
+    def test_warns_when_overriding_explicit_path(self, monkeypatch):
+        """Overriding a non-default, unresolved ffmpeg_path emits a RuntimeWarning.
+
+        Test scenario:
+            A user who set an explicit path that no longer resolves should be
+            told their choice was replaced by the bundled binary, not have it
+            discarded silently.
+        """
+        import imageio_ffmpeg
+
+        monkeypatch.setitem(
+            mpl.rcParams, "animation.ffmpeg_path", "C:/nope/custom-ffmpeg.exe"
+        )
+        monkeypatch.setattr(anim_mod.os.path, "isfile", lambda path: False)
+        monkeypatch.setattr(anim_mod.shutil, "which", lambda name: None)
+        monkeypatch.setattr(
+            imageio_ffmpeg, "get_ffmpeg_exe", lambda: "C:/bundled/ffmpeg.exe"
+        )
+
+        with pytest.warns(RuntimeWarning, match="custom-ffmpeg"):
+            anim_mod._ensure_ffmpeg_available()
+
+        assert mpl.rcParams["animation.ffmpeg_path"] == "C:/bundled/ffmpeg.exe", (
+            "should still fall back after warning"
+        )
+
+    def test_default_path_override_is_silent(self, monkeypatch, recwarn):
+        """Falling back from the default ``"ffmpeg"`` emits no warning.
+
+        Test scenario:
+            The unconfigured default is expected to be replaced quietly.
+        """
+        import imageio_ffmpeg
+
+        monkeypatch.setitem(mpl.rcParams, "animation.ffmpeg_path", "ffmpeg")
+        monkeypatch.setattr(anim_mod.os.path, "isfile", lambda path: False)
+        monkeypatch.setattr(anim_mod.shutil, "which", lambda name: None)
+        monkeypatch.setattr(
+            imageio_ffmpeg, "get_ffmpeg_exe", lambda: "C:/bundled/ffmpeg.exe"
+        )
+
+        anim_mod._ensure_ffmpeg_available()
+
+        assert len(recwarn) == 0, f"default fallback should not warn: {list(recwarn)}"
+
     def test_raises_when_no_ffmpeg_available(self, monkeypatch):
         """When neither system ffmpeg nor imageio-ffmpeg exist, raise FileNotFoundError.
 

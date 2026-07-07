@@ -17,6 +17,7 @@ from __future__ import annotations
 import os
 import shutil
 import tempfile
+import warnings
 from typing import TYPE_CHECKING
 
 import matplotlib as mpl
@@ -42,6 +43,9 @@ def _ensure_ffmpeg_available() -> None:
     resolved on `PATH`). If that binary is not found, fall back to the static
     ffmpeg that `imageio-ffmpeg` bundles, so mp4/mov/avi export works with no
     separate system install. A system ffmpeg on `PATH` still takes precedence.
+    If the rcParam was set to an explicit path that no longer resolves, a
+    `RuntimeWarning` is emitted before falling back, so an overridden user
+    choice is never discarded silently.
 
     Raises:
         FileNotFoundError: If neither a system ffmpeg nor `imageio-ffmpeg`'s
@@ -59,7 +63,17 @@ def _ensure_ffmpeg_available() -> None:
             "Install imageio-ffmpeg (ships a bundled ffmpeg) or download "
             "ffmpeg from https://ffmpeg.org/ and add it to your PATH."
         ) from e
-    mpl.rcParams["animation.ffmpeg_path"] = imageio_ffmpeg.get_ffmpeg_exe()
+    bundled = imageio_ffmpeg.get_ffmpeg_exe()
+    # Only the matplotlib default (``"ffmpeg"``) is overridden silently; an
+    # explicit path the user configured is theirs, so warn before replacing it.
+    if configured not in ("ffmpeg", "ffmpeg.exe"):
+        warnings.warn(
+            f"Configured ffmpeg binary {configured!r} was not found; falling "
+            f"back to the imageio-ffmpeg bundled binary at {bundled!r}.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+    mpl.rcParams["animation.ffmpeg_path"] = bundled
 
 
 class _OptimizedPillowWriter(PillowWriter):
