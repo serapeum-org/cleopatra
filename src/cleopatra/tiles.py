@@ -884,14 +884,31 @@ def add_tiles(
         # issue #176). A residual Mercator-vs-linear-axis nonlinearity
         # remains for large extents; reproject the data to EPSG:3857 before
         # plotting for pixel-accurate tiles.
-        extent = _densify_and_reproject_bounds(
-            extent_3857[0],
-            extent_3857[1],
-            extent_3857[2],
-            extent_3857[3],
-            "EPSG:3857",
-            crs_str,
-        )
+        try:
+            extent = _densify_and_reproject_bounds(
+                extent_3857[0],
+                extent_3857[1],
+                extent_3857[2],
+                extent_3857[3],
+                "EPSG:3857",
+                crs_str,
+            )
+        except ValueError:
+            # A coarse tile-snapped mosaic can be far larger than the data
+            # and overflow a limited-domain target CRS (a UTM zone, national
+            # grid, ...) when reprojected, yielding non-finite corners. Fall
+            # back to the data bounds (the mosaic is then stretched onto them,
+            # slightly misaligned) so a figure is still produced rather than
+            # raising -- use a higher zoom or reproject the data to EPSG:3857
+            # for accurate placement.
+            logger.warning(
+                "Tile mosaic bounds could not be reprojected from EPSG:3857 "
+                "to %s (they overflow the target CRS domain); falling back to "
+                "the data bounds. Use a higher zoom or reproject the data to "
+                "EPSG:3857 for accurate tile placement.",
+                crs_str,
+            )
+            extent = (west, south, east, north)
 
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()

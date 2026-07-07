@@ -291,6 +291,34 @@ class TestAddTilesBehaviour:
         )
         assert got != [10.0, 11.0, 50.0, 51.0], "extent must not be the raw data bounds"
 
+    def test_nonmercator_falls_back_to_data_bounds_when_mosaic_overflows(self, mock_ax):
+        """A mosaic overflowing a limited-domain CRS falls back to the data bounds,
+        rendering instead of raising (issue #176 regression guard)."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        mock_ax.get_xlim.return_value = (400000.0, 500000.0)  # UTM 33N metres
+        mock_ax.get_ylim.return_value = (5600000.0, 5700000.0)
+        world = 20037508.342789244  # half the Web Mercator world extent (metres)
+        with (
+            patch.object(tiles_mod, "auto_zoom", return_value=0),
+            patch.object(
+                tiles_mod, "fetch_tiles", return_value={Tile(0, 0, 0): _make_tile_png()}
+            ),
+            patch.object(
+                tiles_mod,
+                "stitch_tiles",
+                return_value=(
+                    np.zeros((256, 256, 4), dtype=np.uint8),
+                    (-world, -world, world, world),  # whole-world mosaic
+                ),
+            ),
+        ):
+            add_tiles(mock_ax, crs=32633)  # UTM zone 33N: limited domain
+        mock_ax.imshow.assert_called_once()
+        got = mock_ax.imshow.call_args.kwargs["extent"]
+        assert got == [400000.0, 500000.0, 5600000.0, 5700000.0], (
+            f"overflow should fall back to the data bounds, got {got}"
+        )
+
     def test_axes_limits_are_restored(self, mock_ax, _patch_tiles):
         """`set_xlim` / `set_ylim` are called with the original limits."""
         add_tiles(mock_ax, crs=3857)
