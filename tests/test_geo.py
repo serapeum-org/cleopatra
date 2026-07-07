@@ -459,3 +459,53 @@ class TestAddReferenceMap:
         ticks = ax.xaxis.get_major_locator().tick_values(-100, 20)
         assert all(abs(t % 10) < 1e-9 for t in ticks), ticks
         plt.close(fig)
+
+    @pytest.mark.parametrize(
+        "span,expected", [(0, 1.0), (-5, 1.0), (4, 1.0), (30, 5.0), (12, 2.0), (1000, 90.0)]
+    )
+    def test_nice_step(self, span, expected):
+        """`_nice_step` returns round steps and the 90 fallback for huge spans."""
+        assert _nice_step(span) == expected
+
+    def test_resolution_and_zorder_override(self):
+        """`resolution` and `zorder` reach both underlying add_features calls."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        host.add_reference_map("ecmwf", resolution="10m", zorder=9)
+        for call in host.add_features.call_args_list:
+            assert call.args[1] == "10m"
+            assert call.kwargs["zorder"] == 9
+        plt.close(fig)
+
+    def test_ax_parameter_decorates_given_axes(self):
+        """An explicit `ax=` is decorated instead of `self.ax`."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        fig2, other = plt.subplots()
+        host.add_reference_map("ecmwf", ax=other)
+        assert host.add_features.call_args_list[0].kwargs["ax"] is other
+        assert other.spines["bottom"].get_edgecolor() == (0.6, 0.6, 0.6, 1.0)
+        plt.close(fig)
+        plt.close(fig2)
+
+
+def test_add_reference_map_integration(tmp_path: Path, monkeypatch):
+    """Non-mocked: add_reference_map draws real coastline + border collections."""
+    monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))
+    line = {
+        "type": "FeatureCollection",
+        "features": [
+            {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-90, 20], [-50, 50]]}}
+        ],
+    }
+    for fname in ("ne_110m_coastline.geojson.gz", "ne_110m_admin_0_boundary_lines_land.geojson.gz"):
+        with gzip.open(tmp_path / fname, "wt", encoding="utf-8") as fh:
+            json.dump(line, fh)
+
+    glyph = ArrayGlyph(np.random.rand(20, 30), extent=[-100, 15, -40, 55])
+    fig, ax = glyph.plot()
+    glyph.add_reference_map("ecmwf", resolution="110m")
+
+    lcs = [c for c in ax.collections if isinstance(c, LineCollection)]
+    assert len(lcs) >= 2, "coastline + borders should both draw"
+    assert all(c.get_zorder() == 5 for c in lcs)
+    assert ax.xaxis.get_major_formatter()(-75) == "75°W"
+    plt.close(fig)
