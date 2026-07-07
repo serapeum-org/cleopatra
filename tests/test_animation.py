@@ -22,7 +22,9 @@ from cleopatra.animation import (
     SUPPORTED_VIDEO_FORMAT,
     embed_gif,
     save_animation,
+    to_bytes,
     to_gif,
+    to_mp4,
 )
 
 
@@ -268,6 +270,94 @@ class TestToGif:
 
         assert captured["fps"] == 9, f"fps not forwarded, got {captured.get('fps')!r}"
         assert data == b"GIF89a-data", f"unexpected bytes: {data!r}"
+
+
+class TestToBytes:
+    """Tests for `to_bytes` (in-memory render in any supported format)."""
+
+    def test_gif_bytes(self, tiny_anim):
+        """A ``fmt="gif"`` render returns GIF-magic bytes."""
+        data = to_bytes(tiny_anim, fmt="gif", fps=2)
+
+        assert data[:6] in (b"GIF87a", b"GIF89a"), f"not GIF bytes: {data[:6]!r}"
+
+    def test_webp_bytes(self, tiny_anim):
+        """A ``fmt="webp"`` render returns RIFF/WEBP bytes."""
+        data = to_bytes(tiny_anim, fmt="webp", fps=2)
+
+        assert data[:4] == b"RIFF" and data[8:12] == b"WEBP", "not WebP bytes"
+
+    def test_leading_dot_and_case_tolerated(self, tiny_anim):
+        """``fmt`` accepts a leading dot and mixed case (e.g. ``".GIF"``)."""
+        data = to_bytes(tiny_anim, fmt=".GIF")
+
+        assert data[:6] in (b"GIF87a", b"GIF89a"), "dot/case fmt not normalised"
+
+    def test_unsupported_format_raises(self):
+        """An unsupported ``fmt`` raises a clear ValueError before rendering."""
+        with pytest.raises(ValueError, match="not supported"):
+            to_bytes(MagicMock(spec=FuncAnimation), fmt="webm")
+
+    def test_forwards_kwargs_to_save_animation(self, tmp_path, monkeypatch):
+        """``fps`` and extra kwargs are forwarded to ``save_animation``.
+
+        Test scenario:
+            ``save_animation`` is patched to record what it receives; ``to_bytes``
+            must forward ``fps`` and any quality kwargs and return the written
+            bytes.
+        """
+        monkeypatch.setattr("tempfile.tempdir", str(tmp_path))
+        captured = {}
+
+        def fake_save(anim, path, fps, **kwargs):
+            captured["fps"] = fps
+            captured.update(kwargs)
+            Path(path).write_bytes(b"payload")
+            return path
+
+        monkeypatch.setattr(anim_mod, "save_animation", fake_save)
+
+        data = to_bytes(MagicMock(spec=FuncAnimation), fmt="mp4", fps=6, crf=24)
+
+        assert captured == {"fps": 6, "crf": 24}, f"kwargs not forwarded: {captured}"
+        assert data == b"payload", f"unexpected bytes: {data!r}"
+
+    def test_leaves_no_temp_file(self, tiny_anim, tmp_path, monkeypatch):
+        """The temp file used for rendering is cleaned up afterwards."""
+        monkeypatch.setattr("tempfile.tempdir", str(tmp_path))
+        before = set(tmp_path.iterdir())
+
+        to_bytes(tiny_anim, fmt="gif")
+
+        assert set(tmp_path.iterdir()) == before, "to_bytes left a temp file behind"
+
+
+class TestToMp4:
+    """Tests for `to_mp4`."""
+
+    def test_returns_mp4_bytes(self, tiny_anim):
+        """`to_mp4` returns a non-empty ISO base-media (MP4) payload."""
+        data = to_mp4(tiny_anim, fps=2)
+
+        assert data[4:8] == b"ftyp", f"not an MP4/ISO-BMFF payload: {data[:12]!r}"
+        assert len(data) > 0, "MP4 bytes are empty"
+
+    def test_delegates_to_to_bytes(self, monkeypatch):
+        """`to_mp4` delegates to `to_bytes` with ``fmt="mp4"`` and forwards kwargs.
+
+        Test scenario:
+            ``to_bytes`` is patched to return known bytes; ``to_mp4`` must call
+            it with ``fmt="mp4"``, the same ``fps``, and any extra kwargs, and
+            return its result.
+        """
+        spy = MagicMock(return_value=b"MP4-bytes")
+        monkeypatch.setattr(anim_mod, "to_bytes", spy)
+        anim = MagicMock(spec=FuncAnimation)
+
+        result = anim_mod.to_mp4(anim, fps=5, crf=20)
+
+        spy.assert_called_once_with(anim, fmt="mp4", fps=5, crf=20)
+        assert result == b"MP4-bytes", f"unexpected bytes: {result!r}"
 
 
 class TestEmbedGif:

@@ -345,15 +345,107 @@ def save_animation(
     return path
 
 
-def to_gif(anim: FuncAnimation, fps: int = 2) -> bytes:
+def to_bytes(anim: FuncAnimation, fmt: str = "gif", fps: int = 2, **kwargs) -> bytes:
+    """Render a `FuncAnimation` to in-memory bytes in any supported format.
+
+    Renders to a temporary file (the writers need a real path) and reads it
+    back, leaving nothing on disk. Handy for embedding in a notebook or
+    serving over HTTP.
+
+    Args:
+        anim: The animation to render.
+        fmt: Output format — any member of ``SUPPORTED_VIDEO_FORMAT`` (e.g.
+            ``"gif"``, ``"mp4"``, ``"webp"``). A leading dot is tolerated.
+        fps: Frames per second. Default is 2.
+        **kwargs: Extra keyword arguments forwarded to `save_animation`
+            (e.g. ``crf``, ``codec``, ``loop``).
+
+    Returns:
+        The encoded bytes of the animation in the requested format.
+
+    Raises:
+        ValueError: If ``fmt`` is not a supported format.
+
+    Examples:
+        - Render to GIF bytes and inspect the payload:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from matplotlib.animation import FuncAnimation
+            >>> from cleopatra.animation import to_bytes
+            >>> fig, ax = plt.subplots()
+            >>> (line,) = ax.plot([0, 1], [0, 0])
+            >>> anim = FuncAnimation(fig, lambda i: (line,), frames=2)
+            >>> data = to_bytes(anim, fmt="gif")
+            >>> data[:6] in (b"GIF87a", b"GIF89a")
+            True
+            >>> plt.close(fig)
+
+            ```
+        - Render to animated WebP and confirm the container magic bytes:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from matplotlib.animation import FuncAnimation
+            >>> from cleopatra.animation import to_bytes
+            >>> fig, ax = plt.subplots()
+            >>> (line,) = ax.plot([0, 1], [0, 0])
+            >>> anim = FuncAnimation(fig, lambda i: (line,), frames=2)
+            >>> data = to_bytes(anim, fmt="webp")
+            >>> data[:4] == b"RIFF" and data[8:12] == b"WEBP"
+            True
+            >>> plt.close(fig)
+
+            ```
+        - An unsupported format raises ``ValueError``:
+            ```python
+            >>> from unittest.mock import MagicMock
+            >>> from matplotlib.animation import FuncAnimation
+            >>> from cleopatra.animation import to_bytes
+            >>> to_bytes(MagicMock(spec=FuncAnimation), fmt="webm")  # doctest: +ELLIPSIS
+            Traceback (most recent call last):
+                ...
+            ValueError: ...not supported...
+
+            ```
+
+    See Also:
+        to_gif: Convenience wrapper for GIF bytes.
+        to_mp4: Convenience wrapper for MP4 bytes.
+        save_animation: Write an animation directly to a file path.
+    """
+    fmt = fmt.lstrip(".").lower()
+    if fmt not in SUPPORTED_VIDEO_FORMAT:
+        raise ValueError(
+            f"The format {fmt!r} is not supported, only "
+            f"{SUPPORTED_VIDEO_FORMAT} are supported"
+        )
+    # Close our handle immediately so the writer can reopen the path; this
+    # makes the handle lifecycle explicit (no reliance on GC) and avoids a
+    # PermissionError when reopening on Windows.
+    fd, tmp = tempfile.mkstemp(suffix=f".{fmt}")
+    os.close(fd)
+    try:
+        save_animation(anim, tmp, fps=fps, **kwargs)
+        with open(tmp, "rb") as fh:
+            return fh.read()
+    finally:
+        os.remove(tmp)
+
+
+def to_gif(anim: FuncAnimation, fps: int = 2, **kwargs) -> bytes:
     """Render a `FuncAnimation` to in-memory GIF bytes.
 
     Handy for embedding in a notebook or serving over HTTP without leaving
-    a file on disk.
+    a file on disk. Thin wrapper around `to_bytes` with ``fmt="gif"``.
 
     Args:
         anim: The animation to render.
         fps: Frames per second. Default is 2.
+        **kwargs: Extra keyword arguments forwarded to `save_animation`
+            (e.g. ``optimize``, ``loop``).
 
     Returns:
         The GIF-encoded bytes of the animation.
@@ -396,20 +488,74 @@ def to_gif(anim: FuncAnimation, fps: int = 2) -> bytes:
             ```
 
     See Also:
+        to_bytes: Render to bytes in any supported format.
         save_animation: Write an animation directly to a file path.
         embed_gif: Wrap these bytes as an ``IPython.display.Image``.
     """
-    # Close our handle immediately so the writer can reopen the path; this
-    # makes the handle lifecycle explicit (no reliance on GC) and avoids a
-    # PermissionError when reopening on Windows.
-    fd, tmp = tempfile.mkstemp(suffix=".gif")
-    os.close(fd)
-    try:
-        save_animation(anim, tmp, fps=fps)
-        with open(tmp, "rb") as fh:
-            return fh.read()
-    finally:
-        os.remove(tmp)
+    return to_bytes(anim, fmt="gif", fps=fps, **kwargs)
+
+
+def to_mp4(anim: FuncAnimation, fps: int = 2, **kwargs) -> bytes:
+    """Render a `FuncAnimation` to in-memory MP4 (H.264) bytes.
+
+    Handy for embedding a compact, universally-playable clip or serving it
+    over HTTP without leaving a file on disk. Thin wrapper around `to_bytes`
+    with ``fmt="mp4"``; the frame is auto-padded to even dimensions and
+    encoded ``yuv420p`` like every other MP4 export.
+
+    Args:
+        anim: The animation to render.
+        fps: Frames per second. Default is 2.
+        **kwargs: Extra keyword arguments forwarded to `save_animation`
+            (e.g. ``crf``, ``bitrate``, ``codec``, ``preset``).
+
+    Returns:
+        The MP4-encoded bytes of the animation.
+
+    Raises:
+        FileNotFoundError: If neither a system FFmpeg nor imageio-ffmpeg's
+            bundled binary can be found.
+
+    Examples:
+        - Render to MP4 bytes and confirm the ISO base-media ``ftyp`` box:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from matplotlib.animation import FuncAnimation
+            >>> from cleopatra.animation import to_mp4
+            >>> fig, ax = plt.subplots()
+            >>> (line,) = ax.plot([0, 1], [0, 0])
+            >>> anim = FuncAnimation(fig, lambda i: (line,), frames=2)
+            >>> data = to_mp4(anim)
+            >>> data[4:8] == b"ftyp"
+            True
+            >>> plt.close(fig)
+
+            ```
+        - Trade size for quality with a CRF and confirm non-empty output:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from matplotlib.animation import FuncAnimation
+            >>> from cleopatra.animation import to_mp4
+            >>> fig, ax = plt.subplots()
+            >>> (line,) = ax.plot([0, 1], [0, 0])
+            >>> anim = FuncAnimation(fig, lambda i: (line,), frames=2)
+            >>> data = to_mp4(anim, crf=30, preset="veryfast")
+            >>> len(data) > 0
+            True
+            >>> plt.close(fig)
+
+            ```
+
+    See Also:
+        to_bytes: Render to bytes in any supported format.
+        to_gif: Render an animation to in-memory GIF bytes.
+        save_animation: Write an animation directly to a file path.
+    """
+    return to_bytes(anim, fmt="mp4", fps=fps, **kwargs)
 
 
 def embed_gif(anim: FuncAnimation, fps: int = 2) -> Image:
