@@ -225,6 +225,11 @@ def save_animation(
     bundled with `imageio-ffmpeg`, so video export works with no separate
     install. WebP is typically 3-5x smaller than GIF for photographic frames.
 
+    Note: when no system FFmpeg is found, the first video export sets
+    matplotlib's global ``rcParams["animation.ffmpeg_path"]`` to the bundled
+    binary — a process-wide side effect that then applies to any later
+    matplotlib animation in the same process.
+
     For the FFmpeg formats the frame is automatically padded up to an even
     width/height (libx264 rejects odd dimensions) and encoded with
     ``pix_fmt=yuv420p`` for universal playback. By default no fixed bitrate is
