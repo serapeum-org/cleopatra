@@ -32,7 +32,7 @@ jobs:
           trigger: 'pull_request'
           package-manager: 'uv'
           python-version: '3.12'
-          install-groups: 'groups: docs'
+          install-groups: 'groups: docs, extras: tiles'
           notebooks-path: 'docs/notebooks'
           notebooks-exclude: '**/.ipynb_checkpoints/**'
           deploy-token: ${{ secrets.ACTIONS_DEPLOY_TOKEN }}
@@ -49,7 +49,7 @@ jobs:
         trigger: 'main'
         package-manager: 'uv'
         python-version: '3.12'
-        install-groups: 'groups: docs'
+        install-groups: 'groups: docs, extras: tiles'
         notebooks-path: 'docs/notebooks'
         notebooks-exclude: '**/.ipynb_checkpoints/**'
         deploy-token: ${{ secrets.ACTIONS_DEPLOY_TOKEN }}
@@ -66,7 +66,7 @@ jobs:
         trigger: 'release'
         package-manager: 'uv'
         python-version: '3.12'
-        install-groups: 'groups: docs'
+        install-groups: 'groups: docs, extras: tiles'
         notebooks-path: 'docs/notebooks'
         notebooks-exclude: '**/.ipynb_checkpoints/**'
         deploy-token: ${{ secrets.ACTIONS_DEPLOY_TOKEN }}
