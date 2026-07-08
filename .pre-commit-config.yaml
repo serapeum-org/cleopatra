@@ -144,6 +144,13 @@ repos:
       - id: commitizen
         stages: [commit-msg]
 
+  # Strip executed outputs from notebooks: the docs build re-executes them
+  # (mkdocs-jupyter / nbconvert), so committed outputs are redundant churn.
+  - repo: https://github.com/kynan/nbstripout
+    rev: 0.9.1
+    hooks:
+      - id: nbstripout
+
   - repo: local
     hooks:
       - id: pytest-check
