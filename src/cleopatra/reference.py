@@ -51,6 +51,7 @@ import json
 import logging
 import os
 import shutil
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -98,43 +99,62 @@ def _cache_dir() -> Path:
     return base
 
 
-def _download(url: str, dest: Path, *, timeout: int = 60) -> Path:
+def _download(
+    url: str,
+    dest: Path,
+    *,
+    timeout: int = 60,
+    retries: int = 3,
+    backoff: float = 0.5,
+) -> Path:
     """Download `url` to `dest`, skipping the fetch if already cached.
 
     The body is streamed to a `.part` sibling and renamed onto `dest`
     only after a complete download, so an interrupted fetch never leaves
     a half-written cache file and the response is not buffered whole in
-    memory.
+    memory. Transient failures (`URLError`/`OSError`, e.g. a dropped
+    connection or a DNS hiccup) are retried with exponential backoff
+    before giving up.
 
     Args:
         url: Source URL. Must use the `http` or `https` scheme.
         dest: Destination path in the cache.
         timeout: Per-request timeout in seconds.
+        retries: Maximum number of attempts before raising, by default 3.
+        backoff: Base delay in seconds between attempts, doubled after
+            each failure (0.5, 1.0, 2.0, ...), by default 0.5.
 
     Returns:
         pathlib.Path: `dest`, now present on disk.
 
     Raises:
         ValueError: If `url` is not an `http(s)` URL.
-        ConnectionError: If the download fails.
+        ConnectionError: If every attempt fails.
     """
     if dest.exists():
         return dest
     if not url.lower().startswith(("http://", "https://")):
         raise ValueError(f"Refusing to fetch non-http(s) URL: {url!r}")
-    logger.debug("Fetching reference asset %s", url)
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     dest.parent.mkdir(parents=True, exist_ok=True)
     tmp = dest.with_suffix(dest.suffix + ".part")
-    try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            with open(tmp, "wb") as handle:
-                shutil.copyfileobj(response, handle)
-    except (urllib.error.URLError, OSError) as e:
-        tmp.unlink(missing_ok=True)
-        raise ConnectionError(f"Failed to download reference asset {url!r}: {e}") from e
-    tmp.replace(dest)
-    return dest
+    last_error: Exception | None = None
+    for attempt in range(retries):
+        logger.debug("Fetching reference asset %s (attempt %d/%d)", url, attempt + 1, retries)
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                with open(tmp, "wb") as handle:
+                    shutil.copyfileobj(response, handle)
+            tmp.replace(dest)
+            return dest
+        except (urllib.error.URLError, OSError) as e:
+            last_error = e
+            tmp.unlink(missing_ok=True)
+            if attempt < retries - 1:
+                time.sleep(backoff * (2**attempt))
+    raise ConnectionError(
+        f"Failed to download reference asset {url!r} after {retries} attempts: {last_error}"
+    ) from last_error
 
 
 def _validate_axes(ax: Any) -> None:

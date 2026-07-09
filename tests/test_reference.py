@@ -472,16 +472,43 @@ def test_download_streams_to_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPat
 def test_download_failure_raises_and_cleans_part(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
-    """A failed fetch raises ConnectionError and removes the partial file."""
+    """A persistent failure retries, then raises ConnectionError and cleans up."""
+    calls = []
 
     def boom(request, timeout=None):
+        calls.append(1)
         raise urllib.error.URLError("network down")
 
     monkeypatch.setattr(reference.urllib.request, "urlopen", boom)
+    monkeypatch.setattr(reference.time, "sleep", lambda seconds: None)
     dest = tmp_path / "asset.bin"
     with pytest.raises(ConnectionError, match="Failed to download"):
-        reference._download("https://example.com/asset.bin", dest)
+        reference._download("https://example.com/asset.bin", dest, retries=3)
+    assert len(calls) == 3
     assert not dest.exists()
+    assert not (tmp_path / "asset.bin.part").exists()
+
+
+def test_download_retries_transient_failure_then_succeeds(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """A transient failure on the first attempt is retried and then succeeds."""
+    payload = b"reference-asset-bytes"
+    attempts = []
+
+    def flaky_then_ok(request, timeout=None):
+        attempts.append(1)
+        if len(attempts) == 1:
+            raise urllib.error.URLError("temporary hiccup")
+        return io.BytesIO(payload)
+
+    monkeypatch.setattr(reference.urllib.request, "urlopen", flaky_then_ok)
+    monkeypatch.setattr(reference.time, "sleep", lambda seconds: None)
+    dest = tmp_path / "asset.bin"
+    out = reference._download("https://example.com/asset.bin", dest, retries=3)
+    assert out == dest
+    assert dest.read_bytes() == payload
+    assert len(attempts) == 2
     assert not (tmp_path / "asset.bin.part").exists()
 
 
