@@ -1335,6 +1335,179 @@ def histogram_legend(
     return ax.barh(centers, counts, height=widths, color=bar_colors, **bar_kwargs)
 
 
+def swatch_legend(
+    ax: Axes,
+    cmap: str | colors.Colormap,
+    label: str,
+    *,
+    vmin: float = 0.0,
+    vmax: float = 1.0,
+    vmax_prefix: str = "≥",
+    bounds: Sequence[float] = (0.02, 0.88, 0.32, 0.05),
+    text_color: str = "white",
+    fontsize: float = 9,
+) -> Axes:
+    """Draw a compact two-stop gradient swatch with its label baked into the bar.
+
+    Renders a small inset gradient bar spanning `vmin` to `vmax`, with `label`
+    printed centred on top of the bar itself and the two endpoint values
+    printed below its corners -- a much more compact alternative to a full
+    `colorbar_legend` when several continuous layers need labelling at once
+    (e.g. two alpha-blended overlays from `alpha_scaled_image`, as ECMWF/CAMS
+    aerosol maps do for "Organic Matter" / "Dust"). Unlike a colorbar, there
+    are no intermediate tick marks -- only the two endpoints are labelled.
+
+    This is a generic legend primitive: any colormap and any label/range
+    works, so it composes with any plot, not just the haze style.
+
+    Args:
+        ax: The axes to attach the swatch to (an inset axes is created on it).
+        cmap: Colormap name or object for the gradient, e.g.
+            `HAZE_COLORMAPS["dust"]` (`cleopatra.colors`).
+        label: Text drawn centred on the gradient bar.
+        vmin: Value at the left end of the bar. Defaults to `0.0`.
+        vmax: Value at the right end of the bar. Defaults to `1.0`.
+        vmax_prefix: Prefix drawn before the formatted `vmax` label (e.g.
+            `"≥"` for an open-ended upper bound, matching the haze style).
+            Pass `""` for a plain value.
+        bounds: `(x0, y0, width, height)` of the inset axes in `ax`'s
+            fraction-of-axes coordinates (see `Axes.inset_axes`).
+        text_color: Color for the label and the endpoint values.
+        fontsize: Font size (points) for the label; endpoint labels use
+            `fontsize * 0.8`.
+
+    Returns:
+        Axes: The inset axes holding the swatch (a child of `ax`).
+
+    Examples:
+        - Draw a swatch and read back its label and endpoint text:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styles import swatch_legend
+            >>> fig, ax = plt.subplots()
+            >>> swatch = swatch_legend(ax, "viridis", "Dust", vmax=1.0)
+            >>> [t.get_text() for t in swatch.texts]
+            ['Dust', '0', '≥1']
+
+            ```
+        - The swatch is a child of the axes it was attached to, so it moves
+          and composes naturally with anything else drawn on `ax`:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styles import swatch_legend
+            >>> fig, ax = plt.subplots()
+            >>> swatch = swatch_legend(ax, "plasma", "Organic Matter")
+            >>> swatch in ax.child_axes
+            True
+
+            ```
+
+    See Also:
+        alpha_scaled_image: `cleopatra.colors` primitive this swatch is
+            designed to label.
+        colorbar_legend: A full colorbar with tick marks, for a single layer.
+    """
+    cmap_obj = mpl.colormaps[cmap] if isinstance(cmap, str) else cmap
+    swatch = ax.inset_axes(bounds)
+    gradient = np.linspace(0.0, 1.0, 256).reshape(1, -1)
+    swatch.imshow(gradient, aspect="auto", cmap=cmap_obj, extent=(0, 1, 0, 1))
+    swatch.set_xticks([])
+    swatch.set_yticks([])
+    for spine in swatch.spines.values():
+        spine.set_visible(False)
+    swatch.text(
+        0.5,
+        0.5,
+        label,
+        ha="center",
+        va="center",
+        color=text_color,
+        fontsize=fontsize,
+        fontweight="bold",
+        transform=swatch.transAxes,
+    )
+    swatch.text(
+        0.0,
+        -0.3,
+        f"{vmin:g}",
+        ha="left",
+        va="top",
+        color=text_color,
+        fontsize=fontsize * 0.8,
+        transform=swatch.transAxes,
+    )
+    swatch.text(
+        1.0,
+        -0.3,
+        f"{vmax_prefix}{vmax:g}",
+        ha="right",
+        va="top",
+        color=text_color,
+        fontsize=fontsize * 0.8,
+        transform=swatch.transAxes,
+    )
+    return swatch
+
+
+def apply_blank_canvas(ax: Axes, facecolor: str = "black") -> Axes:
+    """Strip an axes down to a chrome-free canvas: no ticks, spines, or frame.
+
+    Turns off every axis decoration (ticks, tick labels, spines) and sets
+    both the axes' and its figure's background colour, leaving nothing but
+    the data itself -- the minimal look ECMWF/CAMS-style globe animations
+    use (no coordinate frame, just the plotted field on black). This is a
+    generic chrome primitive: it doesn't know about any projection or
+    colormap, so it composes with a plain flat axes, an orthographic globe
+    (`apply_projection_frame`), or any other cleopatra styling.
+
+    Args:
+        ax: The axes to strip down.
+        facecolor: Background colour for both `ax` and its parent `Figure`.
+            Defaults to `"black"`, matching the haze style; pass e.g.
+            `"white"` or `"none"` for a different look.
+
+    Returns:
+        Axes: The same `ax`, for chaining.
+
+    Examples:
+        - Ticks and spines are removed, and the background is set:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styles import apply_blank_canvas
+            >>> fig, ax = plt.subplots()
+            >>> _ = apply_blank_canvas(ax)
+            >>> ax.get_xticks().size
+            0
+            >>> any(s.get_visible() for s in ax.spines.values())
+            False
+            >>> ax.get_facecolor()
+            (0.0, 0.0, 0.0, 1.0)
+
+            ```
+        - A custom `facecolor` is applied to both the axes and the figure:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styles import apply_blank_canvas
+            >>> fig, ax = plt.subplots()
+            >>> _ = apply_blank_canvas(ax, facecolor="navy")
+            >>> ax.get_facecolor()
+            (0.0, 0.0, 0.5019607843137255, 1.0)
+
+            ```
+
+    See Also:
+        cleopatra.geo.REFERENCE_MAP_STYLES: A less minimal chrome preset
+            (visible coastlines, ticks, and a frame) for a flat map.
+    """
+    ax.set_xticks([])
+    ax.set_yticks([])
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+    ax.set_facecolor(facecolor)
+    ax.figure.set_facecolor(facecolor)
+    return ax
+
+
 #: Count/width/spread classification schemes (simple closed-form breaks).
 NUMPY_SCHEMES = ("quantiles", "equal_interval", "percentiles", "std_mean")
 

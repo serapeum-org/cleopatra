@@ -2,9 +2,457 @@ import os
 from pathlib import Path
 from typing import Any, List, Tuple, Union
 
+import matplotlib as mpl
+import numpy as np
 from matplotlib import colors as mcolors
+from matplotlib.axes import Axes
 from matplotlib.colors import Colormap, LinearSegmentedColormap
+from matplotlib.image import AxesImage
 from PIL import Image, UnidentifiedImageError
+
+from cleopatra.styles import swatch_legend
+
+#: Sequential colormaps for the "haze" data style (white at 0.0, saturating
+#: toward the named hue at 1.0) -- the value-modulated-alpha, glowing-rim look
+#: used by ECMWF/CAMS aerosol-optical-depth animations. Each value is a ready
+#: `matplotlib.colors.Colormap` -- pass it directly as a `cmap` argument
+#: anywhere cleopatra or matplotlib accepts one (e.g. `alpha_scaled_image`,
+#: `swatch_legend`, `plt.imshow(..., cmap=HAZE_COLORMAPS["dust"])`). Plain
+#: constants, not registered into matplotlib's global colormap namespace, so
+#: importing this module has no global side effect. See `alpha_scaled_image`
+#: and `swatch_legend` for runnable examples using these colormaps.
+HAZE_COLORMAPS: dict[str, Colormap] = {
+    "organic_matter": LinearSegmentedColormap.from_list(
+        "haze_organic_matter",
+        ["#ffffff", "#ffd9f2", "#ff5fc9", "#c400a0", "#5c0050", "#200018"],
+    ),
+    "dust": LinearSegmentedColormap.from_list(
+        "haze_dust",
+        ["#ffffff", "#fff2b3", "#ffcc33", "#ff6a00", "#7a1500", "#2a0800"],
+    ),
+}
+
+
+def alpha_scaled_image(
+    ax: Axes,
+    data: np.ndarray,
+    cmap: str | Colormap,
+    *,
+    norm: mcolors.Normalize | None = None,
+    alpha_norm: mcolors.Normalize | None = None,
+    **imshow_kwargs: Any,
+) -> AxesImage:
+    """Draw `data` on `ax` with per-pixel opacity tied to its value.
+
+    Builds an RGBA image from `cmap(norm(data))` and overwrites the alpha
+    channel with `alpha_norm(data)`, so low values fade toward fully
+    transparent instead of being drawn at full opacity in a pale colour.
+    This is the "smoke fading into haze" look used by ECMWF/CAMS aerosol
+    animations: whatever is plotted underneath (a basemap, another layer)
+    shows through wherever the value is near zero. Any non-finite entry in
+    `data` (NaN) is drawn fully transparent regardless of `alpha_norm`.
+
+    This is a generic rendering primitive -- it takes any 2D array and any
+    colormap, so it composes with any other cleopatra or matplotlib styling
+    (a different basemap, a different colormap, a flat or projected axes).
+
+    Args:
+        ax: Axes to draw on.
+        data: 2D array of values to map.
+        cmap: Colormap name or object, e.g. `HAZE_COLORMAPS["dust"]`.
+        norm: Normalization mapping `data` to colour. Defaults to
+            `Normalize(vmin, vmax)` over the finite range of `data`.
+        alpha_norm: Normalization mapping `data` to opacity. Defaults to
+            `norm`, so colour and opacity are driven by the same scale; pass
+            a separate instance to decouple them (e.g. a steeper alpha ramp
+            so faint values vanish sooner than their colour would suggest).
+        **imshow_kwargs: Forwarded to `ax.imshow` (e.g. `extent`, `origin`,
+            `zorder`, `interpolation`).
+
+    Returns:
+        AxesImage: The image artist added to `ax`.
+
+    Raises:
+        ValueError: If `data` is not 2-dimensional.
+
+    Examples:
+        - Low values fade to transparent, high values are opaque:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import numpy as np
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.colors import alpha_scaled_image, HAZE_COLORMAPS
+            >>> fig, ax = plt.subplots()
+            >>> data = np.array([[0.0, 1.0], [0.5, 1.0]])
+            >>> img = alpha_scaled_image(ax, data, HAZE_COLORMAPS["dust"])
+            >>> rgba = img.get_array()
+            >>> rgba[0, 0, 3]  # value 0.0 -> fully transparent
+            np.float64(0.0)
+            >>> rgba[0, 1, 3]  # value 1.0 -> fully opaque
+            np.float64(1.0)
+            >>> plt.close(fig)
+
+            ```
+        - NaN pixels are always transparent, independent of `alpha_norm`:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import numpy as np
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.colors import alpha_scaled_image
+            >>> fig, ax = plt.subplots()
+            >>> data = np.array([[np.nan, 1.0]])
+            >>> img = alpha_scaled_image(ax, data, "viridis")
+            >>> img.get_array()[0, 0, 3]
+            np.float64(0.0)
+            >>> plt.close(fig)
+
+            ```
+
+    See Also:
+        HAZE_COLORMAPS: Ready-made colormaps designed for this function.
+        swatch_legend: A matching two-stop legend for the same data.
+    """
+    data = np.asarray(data, dtype=float)
+    if data.ndim != 2:
+        raise ValueError(f"data must be 2-dimensional, got shape {data.shape}")
+
+    rgba = _alpha_rgba(data, cmap, norm, alpha_norm)
+    return ax.imshow(rgba, **imshow_kwargs)
+
+
+def _alpha_rgba(
+    data: np.ndarray,
+    cmap: str | Colormap,
+    norm: mcolors.Normalize | None,
+    alpha_norm: mcolors.Normalize | None,
+) -> np.ndarray:
+    """Shared colour+alpha computation behind `alpha_scaled_image`/`_mesh`.
+
+    Args:
+        data: 2D array of values, already validated by the caller.
+        cmap: Colormap name or object.
+        norm: Normalization for colour, or `None` to default to the finite
+            range of `data`.
+        alpha_norm: Normalization for opacity, or `None` to reuse `norm`.
+
+    Returns:
+        np.ndarray: An `(*, *, 4)` RGBA array; non-finite `data` cells are
+        fully transparent.
+    """
+    cmap_obj = mpl.colormaps[cmap] if isinstance(cmap, str) else cmap
+    if norm is None:
+        finite = data[np.isfinite(data)]
+        vmin = float(finite.min()) if finite.size else 0.0
+        vmax = float(finite.max()) if finite.size else 1.0
+        norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
+    alpha_norm = norm if alpha_norm is None else alpha_norm
+
+    rgba = cmap_obj(norm(data))
+    alpha = np.clip(np.asarray(alpha_norm(data), dtype=float), 0.0, 1.0)
+    finite_mask = np.isfinite(data)
+    rgba[..., 3] = np.where(finite_mask, alpha, 0.0)
+    return rgba
+
+
+def alpha_scaled_mesh(
+    ax: Axes,
+    x: np.ndarray,
+    y: np.ndarray,
+    data: np.ndarray,
+    cmap: str | Colormap,
+    *,
+    norm: mcolors.Normalize | None = None,
+    alpha_norm: mcolors.Normalize | None = None,
+    **pcolormesh_kwargs: Any,
+) -> Any:
+    """Draw `data` on a curvilinear `(x, y)` mesh with per-cell opacity.
+
+    The `pcolormesh` counterpart to `alpha_scaled_image`. Use this instead of
+    `alpha_scaled_image` whenever the grid is not a plain rectangle in axes
+    coordinates -- e.g. data reprojected onto an orthographic globe by
+    `cleopatra.projection.orthographic_grid`, or any other curvilinear
+    `(x, y)` grid. Builds the same value-modulated-alpha RGBA colouring as
+    `alpha_scaled_image`, then paints it onto the mesh via `set_facecolor`:
+    `pcolormesh`'s own `cmap`/`norm`/`alpha` machinery is bypassed because its
+    `alpha` argument is a single scalar and cannot vary per cell.
+
+    Args:
+        ax: Axes to draw on.
+        x: 2D array of cell x-coordinates, in `Axes.pcolormesh`'s `(X, Y, C)`
+            convention (either one larger than `data` per axis for exact
+            cell edges, or the same shape with `shading="auto"`/`"nearest"`).
+        y: 2D array of cell y-coordinates, same convention as `x`.
+        data: 2D array of values, one per mesh cell.
+        cmap: Colormap name or object, e.g. `HAZE_COLORMAPS["dust"]`.
+        norm: Normalization mapping `data` to colour. Defaults to
+            `Normalize(vmin, vmax)` over the finite range of `data`.
+        alpha_norm: Normalization mapping `data` to opacity. Defaults to
+            `norm`.
+        **pcolormesh_kwargs: Forwarded to `ax.pcolormesh`. `shading` defaults
+            to `"auto"` if not given.
+
+    Returns:
+        QuadMesh: The mesh artist added to `ax`.
+
+    Raises:
+        ValueError: If `data` is not 2-dimensional.
+
+    Examples:
+        - A 2x2 curvilinear mesh with opacity fading toward zero:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import numpy as np
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.colors import alpha_scaled_mesh
+            >>> fig, ax = plt.subplots()
+            >>> x, y = np.meshgrid(np.arange(3), np.arange(3))
+            >>> data = np.array([[0.0, 1.0], [0.5, 1.0]])
+            >>> mesh = alpha_scaled_mesh(ax, x, y, data, "viridis", shading="flat")
+            >>> alpha = mesh.get_facecolor()[:, 3]
+            >>> alpha[0]  # first cell, value 0.0 -> transparent
+            np.float64(0.0)
+            >>> alpha[1]  # second cell, value 1.0 -> opaque
+            np.float64(1.0)
+            >>> plt.close(fig)
+
+            ```
+
+    See Also:
+        alpha_scaled_image: The regular-grid counterpart (uses `imshow`).
+        cleopatra.projection.orthographic_grid: Produces the `(x, y, data)`
+            triple this function is designed to render.
+    """
+    data = np.asarray(data, dtype=float)
+    if data.ndim != 2:
+        raise ValueError(f"data must be 2-dimensional, got shape {data.shape}")
+
+    pcolormesh_kwargs.setdefault("shading", "auto")
+    rgba = _alpha_rgba(data, cmap, norm, alpha_norm)
+    mesh = ax.pcolormesh(x, y, data, **pcolormesh_kwargs)
+    mesh.set_array(None)
+    mesh.set_facecolor(rgba.reshape(-1, 4))
+    return mesh
+
+
+#: Named "data style" presets for `apply_data_style` -- each entry maps a
+#: layer name to the `cmap`/`label`/`vmin`/`vmax` used to draw it with
+#: `alpha_scaled_image` and label it with `swatch_legend`. This is the
+#: colour/legend half of the ECMWF/CAMS look; pair it with a
+#: `cleopatra.projection` projection-style preset (globe or flat) -- the two
+#: are independent and neither requires the other.
+#:
+#: `"haze"`'s layers also set `alpha_vmin`/`alpha_vmax`, decoupling opacity
+#: from colour: opacity saturates over a much narrower band (0.1-0.5) than
+#: colour (0.0-1.0), so the vivid mid-colormap tones are fully opaque well
+#: before the data reaches its maximum. This reproduces the bright, glowing
+#: "flame" rim ECMWF/CAMS aerosol maps show at a plume's edge -- with a
+#: single shared curve, that rim's colour is barely visible because it sits
+#: at low, nearly-transparent opacity.
+DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
+    "haze": {
+        "organic_matter": {
+            "cmap": HAZE_COLORMAPS["organic_matter"],
+            "label": "Organic Matter",
+            "vmin": 0.0,
+            "vmax": 1.0,
+            "alpha_vmin": 0.1,
+            "alpha_vmax": 0.5,
+        },
+        "dust": {
+            "cmap": HAZE_COLORMAPS["dust"],
+            "label": "Dust",
+            "vmin": 0.0,
+            "vmax": 1.0,
+            "alpha_vmin": 0.1,
+            "alpha_vmax": 0.5,
+        },
+    },
+}
+
+
+def apply_data_style(
+    ax: Axes,
+    layers: dict[str, np.ndarray],
+    style: str = "haze",
+    *,
+    x: np.ndarray | None = None,
+    y: np.ndarray | None = None,
+    legend: bool = True,
+    legend_bounds: list[tuple[float, float, float, float]] | None = None,
+    **render_kwargs: Any,
+) -> dict[str, Any]:
+    """Draw one or more named data layers with a registered `DATA_STYLES` preset.
+
+    Applies `alpha_scaled_image` (and, if `legend`, a stacked `swatch_legend`
+    per layer) to each array in `layers`, using the colormap/label/range that
+    `style` defines for that layer name in `DATA_STYLES`. Calling this with
+    `layers={"organic_matter": ..., "dust": ...}` reproduces the ECMWF/CAMS
+    aerosol look in one call -- but it is only a thin orchestration over
+    `alpha_scaled_image` + `swatch_legend`, so nothing about it requires the
+    orthographic globe: it works on a plain flat axes, an existing
+    `"ecmwf"`/`"ecmwf-dark"` reference map (`cleopatra.geo`), or any other
+    projection just as well. Pass `x`/`y` (e.g. from
+    `cleopatra.projection.orthographic_grid`) to render on a curvilinear grid
+    via `alpha_scaled_mesh` instead of the default `imshow`-based
+    `alpha_scaled_image`.
+
+    Args:
+        ax: Axes to draw on.
+        layers: Mapping of layer name to its 2D data array. Every key must be
+            a layer defined by `style` (e.g. `"organic_matter"`/`"dust"` for
+            `"haze"`); pass a subset to draw only some of a style's layers.
+        style: A name from `DATA_STYLES`. Defaults to `"haze"`.
+        x: Optional 2D curvilinear x-coordinates (see `alpha_scaled_mesh`).
+            When given (together with `y`), every layer is drawn with
+            `alpha_scaled_mesh` instead of `alpha_scaled_image`.
+        y: Optional 2D curvilinear y-coordinates, paired with `x`.
+        legend: If `True` (default), attach one `swatch_legend` per layer,
+            stacked top-to-bottom in the top-left.
+        legend_bounds: Explicit `(x0, y0, width, height)` per layer legend,
+            in the same order as `layers`, overriding the auto-stacked
+            default.
+        **render_kwargs: Forwarded to every `alpha_scaled_image` (or
+            `alpha_scaled_mesh`, when `x`/`y` are given) call.
+
+    Returns:
+        dict[str, Any]: The image (or mesh) artist for each layer, keyed by
+        name, in the same order as `layers`.
+
+    Raises:
+        KeyError: If `style` is not registered, or `layers` names a layer the
+            style does not define.
+        ValueError: If exactly one of `x`/`y` is given (they must be given
+            together, or both omitted).
+
+    Examples:
+        - Draw both haze layers and read back the images and their labels:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import numpy as np
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.colors import apply_data_style
+            >>> fig, ax = plt.subplots()
+            >>> layers = {
+            ...     "dust": np.array([[0.0, 1.0]]),
+            ...     "organic_matter": np.array([[0.2, 0.8]]),
+            ... }
+            >>> images = apply_data_style(ax, layers)
+            >>> sorted(images)
+            ['dust', 'organic_matter']
+            >>> [t.get_text() for c in ax.child_axes for t in c.texts][:2]
+            ['Dust', '0']
+            >>> plt.close(fig)
+
+            ```
+        - Passing `x`/`y` renders on a curvilinear mesh instead of `imshow`:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import numpy as np
+            >>> import matplotlib.pyplot as plt
+            >>> from matplotlib.collections import QuadMesh
+            >>> from cleopatra.colors import apply_data_style
+            >>> fig, ax = plt.subplots()
+            >>> x, y = np.meshgrid(np.arange(3), np.arange(3))
+            >>> images = apply_data_style(
+            ...     ax, {"dust": np.array([[0.0, 1.0], [0.5, 1.0]])},
+            ...     x=x, y=y, shading="flat",
+            ... )
+            >>> isinstance(images["dust"], QuadMesh)
+            True
+            >>> plt.close(fig)
+
+            ```
+        - An unknown layer name raises `KeyError` before drawing anything:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import numpy as np
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.colors import apply_data_style
+            >>> fig, ax = plt.subplots()
+            >>> apply_data_style(ax, {"smoke": np.array([[0.0, 1.0]])})
+            Traceback (most recent call last):
+                ...
+            KeyError: "['smoke'] not defined for data style 'haze'; available layers: ['dust', 'organic_matter']"
+            >>> plt.close(fig)
+
+            ```
+
+    See Also:
+        alpha_scaled_image: The regular-grid rendering primitive this composes.
+        alpha_scaled_mesh: The curvilinear-grid rendering primitive this
+            composes when `x`/`y` are given.
+        swatch_legend: The per-layer legend primitive this composes.
+        cleopatra.projection.apply_projection_style: The companion
+            projection-style axis (globe vs flat).
+    """
+    if style not in DATA_STYLES:
+        raise KeyError(
+            f"Unknown data style {style!r}; available: {sorted(DATA_STYLES)}"
+        )
+    preset = DATA_STYLES[style]
+    unknown = sorted(set(layers) - set(preset))
+    if unknown:
+        raise KeyError(
+            f"{unknown} not defined for data style {style!r}; "
+            f"available layers: {sorted(preset)}"
+        )
+    if (x is None) != (y is None):
+        raise ValueError(
+            "x and y must be given together (or both omitted); got "
+            f"x={'given' if x is not None else None}, "
+            f"y={'given' if y is not None else None}"
+        )
+
+    curvilinear = x is not None and y is not None
+    if curvilinear:
+        # cleopatra.projection.apply_projection_style always returns cell
+        # EDGE coordinates (one larger per axis than data): matplotlib's
+        # automatic centre-to-edge inference ("auto"/"nearest") is unreliable
+        # for a globe's extreme local distortion, so shading="flat" (which
+        # trusts the given edges exactly) is the correct default here.
+        render_kwargs.setdefault("shading", "flat")
+    images: dict[str, Any] = {}
+    for i, (name, data) in enumerate(layers.items()):
+        cfg = preset[name]
+        norm = mcolors.Normalize(vmin=cfg["vmin"], vmax=cfg["vmax"])
+        alpha_vmin = cfg.get("alpha_vmin")
+        alpha_vmax = cfg.get("alpha_vmax")
+        alpha_norm = (
+            mcolors.Normalize(vmin=alpha_vmin, vmax=alpha_vmax)
+            if alpha_vmin is not None or alpha_vmax is not None
+            else None
+        )
+        if curvilinear:
+            images[name] = alpha_scaled_mesh(
+                ax, x, y, data, cfg["cmap"], norm=norm, alpha_norm=alpha_norm,
+                **render_kwargs,
+            )
+        else:
+            images[name] = alpha_scaled_image(
+                ax, data, cfg["cmap"], norm=norm, alpha_norm=alpha_norm,
+                **render_kwargs,
+            )
+        if legend:
+            bounds = (
+                legend_bounds[i]
+                if legend_bounds is not None
+                else (0.02, 0.92 - 0.12 * i, 0.32, 0.06)
+            )
+            swatch_legend(
+                ax,
+                cfg["cmap"],
+                cfg["label"],
+                vmin=cfg["vmin"],
+                vmax=cfg["vmax"],
+                bounds=bounds,
+            )
+    return images
 
 
 class Colors:

@@ -1,9 +1,10 @@
 """Tests for ``cleopatra.projection``.
 
-Covers the public helper ``apply_projection_frame`` and the private
-``_as_xy`` coercion utility. The module is pure matplotlib with no PROJ
-dependency, so all geometry is built inline as deterministic numpy arrays
-(no reprojection, no network, no filesystem).
+Covers the public helper ``apply_projection_frame`` (pure matplotlib, no PROJ
+dependency) and the orthographic ('globe') helpers, which reproject through
+``pyproj`` -- the ``[tiles]`` extra. Tests that call the orthographic helpers
+guard with ``pytest.importorskip("pyproj", ...)`` so the suite still runs
+(minus that coverage) in environments without the extra installed.
 
 Tests are grouped one class per function. Randomised image data is seeded
 so runs are deterministic.
@@ -29,8 +30,15 @@ from cleopatra import projection as projection_module  # noqa: E402
 from cleopatra.projection import (  # noqa: E402
     DEFAULT_BOUNDARY_KW,
     DEFAULT_GRATICULE_KW,
+    ORTHOGRAPHIC_RADIUS_M,
     _as_xy,
+    _bin_edges,
     apply_projection_frame,
+    orthographic_boundary,
+    orthographic_graticule,
+    orthographic_grid,
+    orthographic_grid_edges,
+    orthographic_points,
 )
 
 
@@ -560,6 +568,531 @@ class TestApplyProjectionFrame:
             )
 
 
+class TestVisibleHemisphere:
+    """Tests for the private `_visible_hemisphere` great-circle mask."""
+
+    def test_center_point_is_visible(self):
+        """The centre point itself is always on the visible hemisphere."""
+        from cleopatra.projection import _visible_hemisphere
+
+        visible = _visible_hemisphere(
+            np.array([10.0]), np.array([45.0]), center_lat=45.0, center_lon=10.0
+        )
+        assert visible[0], "the centre point must be visible"
+
+    def test_antipodal_point_is_not_visible(self):
+        """The point exactly opposite the centre is not visible."""
+        from cleopatra.projection import _visible_hemisphere
+
+        visible = _visible_hemisphere(
+            np.array([190.0]), np.array([-45.0]), center_lat=45.0, center_lon=10.0
+        )
+        assert not visible[0], "the antipodal point must not be visible"
+
+    def test_north_and_south_pole_from_arctic_center(self):
+        """From an Arctic-centred view, the North Pole is visible, South is not."""
+        from cleopatra.projection import _visible_hemisphere
+
+        visible = _visible_hemisphere(
+            np.array([0.0, 0.0]), np.array([90.0, -90.0]), center_lat=90.0, center_lon=0.0
+        )
+        assert visible[0] and not visible[1], f"unexpected visibility: {visible}"
+
+
+class TestSplitVisibleRuns:
+    """Tests for the private `_split_visible_runs` polyline splitter."""
+
+    def test_all_visible_returns_one_run(self):
+        """An entirely-visible line returns as a single unsplit segment."""
+        from cleopatra.projection import _split_visible_runs
+
+        xy = np.column_stack([np.arange(5.0), np.arange(5.0)])
+        runs = _split_visible_runs(xy, np.array([True] * 5))
+        assert len(runs) == 1, f"expected one run, got {len(runs)}"
+        np.testing.assert_array_equal(runs[0], xy)
+
+    def test_all_invisible_returns_no_runs(self):
+        """An entirely-invisible line returns no segments."""
+        from cleopatra.projection import _split_visible_runs
+
+        xy = np.column_stack([np.arange(5.0), np.arange(5.0)])
+        runs = _split_visible_runs(xy, np.array([False] * 5))
+        assert runs == [], f"expected no runs, got {runs}"
+
+    def test_gap_splits_into_two_runs(self):
+        """A visible-invisible-visible pattern splits into two segments."""
+        from cleopatra.projection import _split_visible_runs
+
+        xy = np.column_stack([np.arange(6.0), np.arange(6.0)])
+        visible = np.array([True, True, False, False, True, True])
+        runs = _split_visible_runs(xy, visible)
+        assert len(runs) == 2, f"expected two runs, got {len(runs)}"
+        np.testing.assert_array_equal(runs[0], xy[0:2])
+        np.testing.assert_array_equal(runs[1], xy[4:6])
+
+    def test_single_point_run_is_dropped(self):
+        """A run of exactly one visible point is dropped (not a drawable line)."""
+        from cleopatra.projection import _split_visible_runs
+
+        xy = np.column_stack([np.arange(3.0), np.arange(3.0)])
+        visible = np.array([False, True, False])
+        runs = _split_visible_runs(xy, visible)
+        assert runs == [], f"a lone point should not produce a run, got {runs}"
+
+
+class TestOrthographicGrid:
+    """Tests for `orthographic_grid`."""
+
+    def test_center_point_projects_near_origin(self):
+        """The centre point of the view projects to (0, 0) in projected space."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        lon = np.array([0.0, 90.0])
+        lat = np.array([90.0, -90.0])
+        data = np.array([[1.0, 2.0], [3.0, 4.0]])
+        x, y, _ = orthographic_grid(lon, lat, data, center_lat=90.0, center_lon=0.0)
+        assert abs(x[0, 0]) < 1e-6 and abs(y[0, 0]) < 1e-6, (
+            f"centre point should project near origin, got ({x[0, 0]}, {y[0, 0]})"
+        )
+
+    def test_far_hemisphere_is_masked_to_nan(self):
+        """Data at the far hemisphere is replaced with NaN, near side untouched."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        lon = np.array([0.0, 90.0])
+        lat = np.array([90.0, -90.0])
+        data = np.array([[1.0, 2.0], [3.0, 4.0]])
+        _, _, masked = orthographic_grid(lon, lat, data, center_lat=90.0, center_lon=0.0)
+        np.testing.assert_array_equal(masked[0], [1.0, 2.0])
+        assert np.all(np.isnan(masked[1])), f"far hemisphere should be NaN, got {masked[1]}"
+
+    def test_2d_lon_lat_matching_data_shape_is_accepted(self):
+        """Already-2D lon/lat (matching data's shape) bypasses the meshgrid step."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        lon2d, lat2d = np.meshgrid(np.array([0.0, 90.0]), np.array([90.0, -90.0]))
+        data = np.array([[1.0, 2.0], [3.0, 4.0]])
+        x, y, masked = orthographic_grid(lon2d, lat2d, data)
+        assert x.shape == data.shape and y.shape == data.shape
+
+    def test_mismatched_shapes_raise_value_error(self):
+        """Incompatible lon/lat/data shapes raise a clear `ValueError`."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        lon = np.array([0.0, 90.0, 180.0])
+        lat = np.array([90.0, -90.0])
+        data = np.array([[1.0, 2.0]])
+        with pytest.raises(ValueError, match="shapes must match"):
+            orthographic_grid(lon, lat, data)
+
+    def test_missing_pyproj_raises_import_error(self, monkeypatch):
+        """Without pyproj installed, a clear `ImportError` is raised."""
+        import cleopatra.projection as proj_mod
+
+        monkeypatch.setattr(
+            proj_mod.importlib.util, "find_spec", lambda name: None
+        )
+        with pytest.raises(ImportError, match=r"\[tiles\]"):
+            orthographic_grid(np.array([0.0]), np.array([0.0]), np.array([[1.0]]))
+
+
+class TestBinEdges:
+    """Tests for the private `_bin_edges` helper."""
+
+    def test_returns_one_more_edge_than_centers(self):
+        """`N` centres produce `N + 1` edges."""
+        edges = _bin_edges(np.array([0.0, 10.0, 20.0]))
+        assert edges.shape == (4,), f"expected 4 edges, got {edges.shape}"
+
+    def test_interior_edges_are_midpoints(self):
+        """Interior edges sit exactly halfway between consecutive centres."""
+        edges = _bin_edges(np.array([0.0, 10.0, 20.0]))
+        np.testing.assert_allclose(edges[1:-1], [5.0, 15.0])
+
+    def test_outer_edges_are_extrapolated_symmetrically(self):
+        """The two outer edges extend by the same half-step as their neighbour."""
+        edges = _bin_edges(np.array([0.0, 10.0, 20.0]))
+        np.testing.assert_allclose(edges, [-5.0, 5.0, 15.0, 25.0])
+
+    def test_uniform_spacing_round_trips_to_centers(self):
+        """For evenly-spaced centres, edges bracket each centre exactly."""
+        centers = np.array([1.0, 3.0, 5.0, 7.0])
+        edges = _bin_edges(centers)
+        midpoints_of_edges = (edges[:-1] + edges[1:]) / 2.0
+        np.testing.assert_allclose(midpoints_of_edges, centers)
+
+    def test_single_center_raises_value_error(self):
+        """A length-1 input raises a clear `ValueError`, not a bare `IndexError`."""
+        with pytest.raises(ValueError, match="at least 2 centres"):
+            _bin_edges(np.array([5.0]))
+
+    def test_empty_input_raises_value_error(self):
+        """An empty input also raises the same clear `ValueError`."""
+        with pytest.raises(ValueError, match="at least 2 centres"):
+            _bin_edges(np.array([]))
+
+
+class TestOrthographicGridEdges:
+    """Tests for `orthographic_grid_edges`."""
+
+    def test_shape_is_one_larger_per_axis(self):
+        """Edge arrays are `(len(lat) + 1, len(lon) + 1)`."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        lon = np.linspace(-180, 180, 8)
+        lat = np.linspace(-90, 90, 4)
+        x_edges, y_edges = orthographic_grid_edges(lon, lat)
+        assert x_edges.shape == y_edges.shape == (5, 9), (
+            f"unexpected shape: x={x_edges.shape}, y={y_edges.shape}"
+        )
+
+    def test_edges_are_finite(self):
+        """Every edge coordinate is finite (no inf from the antipodal singularity)."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        lon = np.linspace(-180, 180, 8)
+        lat = np.linspace(-90, 90, 4)
+        x_edges, y_edges = orthographic_grid_edges(lon, lat)
+        assert np.all(np.isfinite(x_edges)) and np.all(np.isfinite(y_edges)), (
+            "edge coordinates must be finite for pcolormesh(shading='flat')"
+        )
+
+    def test_missing_pyproj_raises_import_error(self, monkeypatch):
+        """Without pyproj installed, a clear `ImportError` is raised."""
+        import cleopatra.projection as proj_mod
+
+        monkeypatch.setattr(proj_mod.importlib.util, "find_spec", lambda name: None)
+        with pytest.raises(ImportError, match=r"\[tiles\]"):
+            orthographic_grid_edges(np.array([0.0, 90.0]), np.array([-45.0, 45.0]))
+
+
+class TestOrthographicPoints:
+    """Tests for `orthographic_points`."""
+
+    def test_center_point_projects_near_origin(self):
+        """The centre point of the view projects to (0, 0)."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        x, y = orthographic_points(0.0, 90.0, center_lat=90.0, center_lon=0.0)
+        assert abs(x[0]) < 1e-6 and abs(y[0]) < 1e-6, (
+            f"centre point should project near origin, got ({x[0]}, {y[0]})"
+        )
+
+    def test_visible_point_is_finite(self):
+        """A point well within the visible hemisphere reprojects to finite x/y."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        x, y = orthographic_points(-21.9, 64.1, center_lat=90.0, center_lon=0.0)
+        assert np.isfinite(x[0]) and np.isfinite(y[0])
+
+    def test_far_hemisphere_point_is_nan(self):
+        """A point on the far hemisphere reprojects to NaN in both x and y."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        x, y = orthographic_points(0.0, -80.0, center_lat=90.0, center_lon=0.0)
+        assert np.isnan(x[0]) and np.isnan(y[0])
+
+    def test_array_input_preserves_shape_and_order(self):
+        """Multiple points reproject to matching-length, order-preserved arrays."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        lon = np.array([-21.9, -0.1, -79.4])
+        lat = np.array([64.1, 51.5, 43.7])
+        x, y = orthographic_points(lon, lat, center_lat=55.0, center_lon=-30.0)
+        assert x.shape == y.shape == (3,), f"unexpected shape: {x.shape}"
+        assert np.all(np.isfinite(x)) and np.all(np.isfinite(y)), (
+            "all 3 cities should be visible from this mid-Atlantic view"
+        )
+        # distinct cities must not collapse to the same projected point
+        assert len({round(v, 3) for v in x}) == 3, f"x values should differ: {x}"
+
+    def test_scalar_input_returns_length_one_arrays(self):
+        """A scalar lon/lat pair returns length-1 arrays, not bare floats."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        x, y = orthographic_points(10.0, 20.0)
+        assert x.shape == (1,) and y.shape == (1,)
+
+    def test_missing_pyproj_raises_import_error(self, monkeypatch):
+        """Without pyproj installed, a clear `ImportError` is raised."""
+        import cleopatra.projection as proj_mod
+
+        monkeypatch.setattr(proj_mod.importlib.util, "find_spec", lambda name: None)
+        with pytest.raises(ImportError, match=r"\[tiles\]"):
+            orthographic_points(0.0, 45.0)
+
+
+class TestOrthographicBoundary:
+    """Tests for `orthographic_boundary`."""
+
+    def test_default_shape_and_radius(self):
+        """The default call returns 200 vertices at `ORTHOGRAPHIC_RADIUS_M`."""
+        boundary = orthographic_boundary()
+        assert boundary.shape == (200, 2), f"unexpected shape: {boundary.shape}"
+        radii = np.hypot(boundary[:, 0], boundary[:, 1])
+        np.testing.assert_allclose(radii, ORTHOGRAPHIC_RADIUS_M)
+
+    def test_custom_radius_and_vertex_count(self):
+        """A custom `radius`/`n` is honoured exactly."""
+        boundary = orthographic_boundary(n=16, radius=2.5)
+        assert boundary.shape == (16, 2), f"unexpected shape: {boundary.shape}"
+        radii = np.hypot(boundary[:, 0], boundary[:, 1])
+        np.testing.assert_allclose(radii, 2.5)
+
+
+class TestOrthographicGraticule:
+    """Tests for `orthographic_graticule`."""
+
+    def test_returns_list_of_2_column_arrays(self):
+        """Every returned segment is an `(m, 2)` array."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        lines = orthographic_graticule(step=45.0, densify=20)
+        assert len(lines) > 0, "expected at least one graticule segment"
+        assert all(line.ndim == 2 and line.shape[1] == 2 for line in lines), (
+            "every segment must be an (m, 2) array"
+        )
+
+    def test_non_positive_step_raises_value_error(self):
+        """A zero or negative `step` raises `ValueError` before any pyproj call."""
+        with pytest.raises(ValueError, match="positive, finite"):
+            orthographic_graticule(step=0)
+        with pytest.raises(ValueError, match="positive, finite"):
+            orthographic_graticule(step=-10.0)
+
+    def test_missing_pyproj_raises_import_error(self, monkeypatch):
+        """Without pyproj installed, a clear `ImportError` is raised."""
+        import cleopatra.projection as proj_mod
+
+        monkeypatch.setattr(
+            proj_mod.importlib.util, "find_spec", lambda name: None
+        )
+        with pytest.raises(ImportError, match=r"\[tiles\]"):
+            orthographic_graticule()
+
+    def test_finer_step_produces_more_segments(self):
+        """A smaller `step` produces at least as many graticule lines."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        coarse = orthographic_graticule(step=90.0, densify=20)
+        fine = orthographic_graticule(step=30.0, densify=20)
+        assert len(fine) >= len(coarse), (
+            f"finer step should not produce fewer segments: {len(fine)} vs {len(coarse)}"
+        )
+
+
+class TestApplyProjectionStyle:
+    """Tests for `apply_projection_style` and the `PROJECTION_STYLES` registry."""
+
+    @pytest.fixture
+    def ax(self):
+        """A fresh Axes on the Agg backend, closed after the test."""
+        fig, ax = plt.subplots()
+        yield ax
+        plt.close(fig)
+
+    @pytest.fixture
+    def grid(self):
+        """A tiny 2x2 lon/lat/data grid: North Pole visible, South Pole not."""
+        lon = np.array([0.0, 90.0])
+        lat = np.array([90.0, -90.0])
+        data = np.array([[1.0, 2.0], [3.0, 4.0]])
+        return lon, lat, data
+
+    def test_registry_has_globe_and_flat(self):
+        """`PROJECTION_STYLES` defines exactly 'globe' and 'flat'."""
+        assert set(projection_module.PROJECTION_STYLES) == {"globe", "flat"}
+
+    def test_globe_draws_boundary_and_masks_far_hemisphere(self, ax, grid):
+        """'globe' draws a boundary patch on `ax` and masks the far hemisphere.
+
+        `masked[0, 1]` (lon=90) sits exactly on this coarse 2x2 fixture's
+        extrapolated equatorial edge -- exactly 90 degrees from the pole
+        centre, so floating-point rounding puts that one corner just past
+        the visibility horizon. The corner-visibility check (fixing a prior
+        rendering bug -- see `TestApplyProjectionStyle.
+        test_no_visible_cell_has_an_invisible_corner`) correctly masks that
+        cell too, not just the fully-invisible far-hemisphere row.
+        """
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        lon, lat, data = grid
+        x, y, masked = projection_module.apply_projection_style(
+            ax, lon, lat, data, style="globe"
+        )
+        assert len(ax.patches) == 1, "globe style should draw one boundary patch"
+        assert masked[0, 0] == 1.0, "the pole cell itself must stay visible"
+        assert np.all(np.isnan(masked[1])), "far hemisphere should still be masked"
+
+    def test_flat_draws_nothing_and_leaves_data_unchanged(self, ax, grid):
+        """'flat' draws nothing on `ax`; `data` passes through unchanged.
+
+        `x`/`y` are cell-edge coordinates (one larger per axis than `lon`/
+        `lat`), not the raw `lon`/`lat` vectors -- see
+        `test_flat_returns_edge_shaped_coordinates`.
+        """
+        lon, lat, data = grid
+        _, _, out = projection_module.apply_projection_style(ax, lon, lat, data, style="flat")
+        assert len(ax.patches) == 0, "flat style should draw no boundary"
+        assert len(ax.lines) == 0, "flat style should draw no graticule"
+        np.testing.assert_array_equal(out, data)
+
+    def test_flat_returns_edge_shaped_coordinates(self, ax, grid):
+        """'flat' returns cell-EDGE x/y (one larger per axis than lon/lat).
+
+        Test scenario:
+            Matches 'globe''s contract so the same shading="flat" downstream
+            call works for either style -- see
+            `test_globe_and_flat_x_y_both_feed_alpha_scaled_mesh`.
+        """
+        lon, lat, data = grid
+        x, y, _ = projection_module.apply_projection_style(ax, lon, lat, data, style="flat")
+        assert x.shape == y.shape == (len(lat) + 1, len(lon) + 1), (
+            f"expected edge shape {(len(lat) + 1, len(lon) + 1)}, got x={x.shape}, y={y.shape}"
+        )
+
+    def test_2d_lon_lat_raises_value_error(self, ax, grid):
+        """Non-1D `lon`/`lat` raise `ValueError` for either style (edges need 1D input)."""
+        lon, lat, data = grid
+        lon2d, lat2d = np.meshgrid(lon, lat)
+        for style in ("globe", "flat"):
+            with pytest.raises(ValueError, match="1D lon/lat"):
+                projection_module.apply_projection_style(ax, lon2d, lat2d, data, style=style)
+
+    def test_unknown_style_raises_key_error(self, ax, grid):
+        """An unregistered `style` name raises `KeyError`."""
+        lon, lat, data = grid
+        with pytest.raises(KeyError, match="Unknown projection style"):
+            projection_module.apply_projection_style(ax, lon, lat, data, style="mercator")
+
+    def test_overrides_change_the_globe_center(self, ax, grid):
+        """`center_lat`/`center_lon` overrides change which hemisphere is visible.
+
+        As in `test_globe_draws_boundary_and_masks_far_hemisphere`, the
+        lon=90 cell sits on this fixture's equator-exact extrapolated edge,
+        so it is masked by the corner-visibility check regardless of which
+        pole is the centre; only the pole cell itself (lon=0) is asserted.
+        """
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        lon, lat, data = grid
+        # Re-centre on the South Pole: now the second row (lat=-90) is visible.
+        _, _, masked = projection_module.apply_projection_style(
+            ax, lon, lat, data, style="globe", center_lat=-90.0, center_lon=0.0
+        )
+        assert masked[1, 0] == 3.0, "the (re-centred) pole cell itself must stay visible"
+        assert np.all(np.isnan(masked[0])), "North Pole should now be masked"
+
+    def test_globe_and_flat_x_y_both_feed_alpha_scaled_mesh(self, ax, grid):
+        """Both styles' `(x, y, data)` compose directly with `alpha_scaled_mesh`.
+
+        Test scenario:
+            This is the actual composability contract between the projection
+            axis (`apply_projection_style`) and the data axis
+            (`cleopatra.colors.alpha_scaled_mesh`): the same downstream call
+            must work unchanged regardless of which projection style was
+            chosen (1D lon/lat vectors and 2D curvilinear grids are both
+            valid `pcolormesh`/`alpha_scaled_mesh` inputs).
+        """
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        from cleopatra.colors import alpha_scaled_mesh
+
+        lon, lat, data = grid
+        for style in ("globe", "flat"):
+            fig, this_ax = plt.subplots()
+            x, y, out = projection_module.apply_projection_style(
+                this_ax, lon, lat, data, style=style
+            )
+            mesh = alpha_scaled_mesh(this_ax, x, y, out, "viridis")
+            assert mesh in this_ax.collections, (
+                f"{style}: alpha_scaled_mesh should attach cleanly to the axes"
+            )
+            plt.close(fig)
+
+    def test_no_visible_cell_has_an_invisible_corner(self, ax):
+        """Regression: every non-NaN cell's 4 edge corners are all visible.
+
+        Test scenario:
+            A fine (36x18) global grid is guaranteed to contain cells whose
+            *centre* is visible but whose *corner* straddles the visibility
+            horizon (the orthographic projection is undefined -- pyproj
+            returns inf -- beyond the horizon). Before the fix, such a corner
+            was silently snapped to the disk's origin, producing a
+            wrongly-shaped quad for an otherwise-visible cell. This asserts
+            the fix: any cell with an invisible corner is masked to NaN,
+            never drawn with real data.
+        """
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        lon = np.linspace(-180, 180, 36)
+        lat = np.linspace(-90, 90, 18)
+        data = np.ones((18, 36))
+
+        x_edges, y_edges, masked = projection_module.apply_projection_style(
+            ax, lon, lat, data, style="globe"
+        )
+
+        assert np.any(~np.isnan(masked)), "fixture should have some visible cells"
+
+        lon_e = _bin_edges(lon)
+        lat_e = _bin_edges(lat)
+        lon_grid_e, lat_grid_e = np.meshgrid(lon_e, lat_e)
+        edge_visible = projection_module._visible_hemisphere(
+            lon_grid_e, lat_grid_e, 90.0, 0.0
+        )
+
+        ny, nx = masked.shape
+        for i in range(ny):
+            for j in range(nx):
+                if np.isnan(masked[i, j]):
+                    continue
+                corners = (
+                    edge_visible[i, j],
+                    edge_visible[i, j + 1],
+                    edge_visible[i + 1, j],
+                    edge_visible[i + 1, j + 1],
+                )
+                assert all(corners), (
+                    f"cell ({i}, {j}) is drawn (not NaN) but has an invisible "
+                    f"corner: {corners}"
+                )
+
+        assert np.all(np.isfinite(x_edges)) and np.all(np.isfinite(y_edges)), (
+            "edge coordinates must stay finite even where cells are masked"
+        )
+
+    def test_repeat_call_stacks_duplicate_frame_by_default(self, ax, grid):
+        """Regression guard: two default calls DO stack a duplicate boundary/graticule.
+
+        Documents the trap `draw_frame=False` exists to avoid -- see
+        `test_draw_frame_false_avoids_duplicate_frame`. Without an explicit
+        `draw_frame=False`, drawing a second layer on the same globe axes
+        (the branch's own multi-layer usage pattern) silently doubles the
+        chrome artists.
+        """
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        lon, lat, data = grid
+        projection_module.apply_projection_style(ax, lon, lat, data, style="globe")
+        projection_module.apply_projection_style(ax, lon, lat, data, style="globe")
+        assert len(ax.patches) == 2, (
+            f"expected 2 stacked boundary patches, got {len(ax.patches)}"
+        )
+
+    def test_draw_frame_false_avoids_duplicate_frame(self, ax, grid):
+        """`draw_frame=False` reprojects/masks a second layer without redrawing chrome."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        lon, lat, data = grid
+        x1, y1, masked1 = projection_module.apply_projection_style(
+            ax, lon, lat, data, style="globe"
+        )
+        x2, y2, masked2 = projection_module.apply_projection_style(
+            ax, lon, lat, data, style="globe", draw_frame=False
+        )
+        assert len(ax.patches) == 1, (
+            f"expected exactly 1 boundary patch, got {len(ax.patches)}"
+        )
+        np.testing.assert_array_equal(x1, x2)
+        np.testing.assert_array_equal(y1, y2)
+        np.testing.assert_array_equal(
+            masked1, masked2, err_msg="masking should be identical regardless of draw_frame"
+        )
+
+    def test_draw_frame_false_skips_graticule_too(self, ax, grid):
+        """`draw_frame=False` also skips the graticule lines, not just the boundary."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        lon, lat, data = grid
+        projection_module.apply_projection_style(ax, lon, lat, data, style="globe")
+        before = len(ax.lines)
+        projection_module.apply_projection_style(
+            ax, lon, lat, data, style="globe", draw_frame=False
+        )
+        assert len(ax.lines) == before, "graticule line count should not change"
+
+
 class TestModuleDoctests:
     """Run the module's docstring examples inside the default test suite."""
 
@@ -571,8 +1104,10 @@ class TestModuleDoctests:
             collect ``--doctest-modules`` from ``src``, so the module and
             function docstring examples would otherwise go unverified in CI.
             Running ``doctest.testmod`` here catches example drift as part of
-            the normal suite.
+            the normal suite. Several examples exercise the orthographic
+            ('globe') helpers, which require ``pyproj``.
         """
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
         results = doctest.testmod(projection_module, verbose=False)
         assert results.failed == 0, (
             f"{results.failed} doctest(s) failed in cleopatra.projection "

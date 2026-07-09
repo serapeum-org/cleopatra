@@ -11,12 +11,16 @@ from matplotlib.container import BarContainer
 from matplotlib.legend import Legend
 from matplotlib.patches import Patch
 
+from matplotlib.axes import Axes
+
 from cleopatra.styles import (
     ColorScale,
     Styles,
+    apply_blank_canvas,
     colorbar_legend,
     disjoint_legend,
     histogram_legend,
+    swatch_legend,
 )
 
 
@@ -413,3 +417,119 @@ class TestHistogramLegend:
         assert len(bars) == 3, f"Expected 3 bars, got {len(bars)}"
         assert norm.vmin == 0 and norm.vmax == 3, "Original BoundaryNorm untouched"
         plt.close(fig2)
+
+
+class TestSwatchLegend:
+    """Tests for `swatch_legend`."""
+
+    @pytest.fixture
+    def ax(self):
+        """A fresh Axes on the Agg backend, closed after the test."""
+        fig, ax = plt.subplots()
+        yield ax
+        plt.close(fig)
+
+    def test_returns_inset_axes_child_of_ax(self, ax):
+        """The swatch is an `Axes` registered as a child of the given axes."""
+        swatch = swatch_legend(ax, "viridis", "Dust")
+        assert isinstance(swatch, Axes), f"expected Axes, got {type(swatch)}"
+        assert swatch in ax.child_axes, "swatch should be a child of ax"
+
+    def test_label_and_default_endpoints(self, ax):
+        """The label and default (0/≥1) endpoint text are drawn on the swatch."""
+        swatch = swatch_legend(ax, "viridis", "Organic Matter")
+        texts = [t.get_text() for t in swatch.texts]
+        assert texts == ["Organic Matter", "0", "≥1"], f"unexpected texts: {texts}"
+
+    def test_custom_vmin_vmax_formatting(self, ax):
+        """Custom `vmin`/`vmax` are formatted without a trailing '.0'."""
+        swatch = swatch_legend(ax, "plasma", "Elevation", vmin=0, vmax=5000)
+        texts = [t.get_text() for t in swatch.texts]
+        assert texts[1:] == ["0", "≥5000"], f"unexpected endpoint labels: {texts[1:]}"
+
+    def test_vmax_prefix_can_be_disabled(self, ax):
+        """An empty `vmax_prefix` yields a plain endpoint value, no '≥'."""
+        swatch = swatch_legend(ax, "viridis", "Depth", vmax=100, vmax_prefix="")
+        texts = [t.get_text() for t in swatch.texts]
+        assert texts[-1] == "100", f"expected plain '100', got {texts[-1]!r}"
+
+    def test_accepts_colormap_object(self, ax):
+        """A `Colormap` instance (not just a name string) is accepted directly."""
+        from matplotlib.colors import LinearSegmentedColormap
+
+        cmap = LinearSegmentedColormap.from_list("test", ["white", "black"])
+        swatch = swatch_legend(ax, cmap, "Custom")
+        assert swatch.images, "gradient image should be drawn on the swatch"
+        assert swatch.images[0].get_cmap() is cmap, "custom cmap should be used as-is"
+
+    def test_no_axes_ticks_or_spines(self, ax):
+        """The swatch is chrome-free: no ticks and no visible spines."""
+        swatch = swatch_legend(ax, "viridis", "Dust")
+        assert swatch.get_xticks().size == 0, "swatch should have no x ticks"
+        assert swatch.get_yticks().size == 0, "swatch should have no y ticks"
+        assert not any(s.get_visible() for s in swatch.spines.values()), (
+            "swatch spines should all be hidden"
+        )
+
+    def test_independent_of_projection_or_other_styling(self, ax):
+        """`swatch_legend` composes with unrelated data already drawn on `ax`.
+
+        Test scenario:
+            A swatch attached to an axes that already holds a plain imshow
+            plot (representing "some other style") does not disturb it.
+        """
+        img = ax.imshow([[0, 1], [1, 0]], cmap="gray")
+        swatch = swatch_legend(ax, "viridis", "Dust")
+        assert img in ax.images, "pre-existing plot should be untouched"
+        assert swatch in ax.child_axes, "swatch should still attach cleanly"
+
+
+class TestApplyBlankCanvas:
+    """Tests for `apply_blank_canvas`."""
+
+    @pytest.fixture
+    def ax(self):
+        """A fresh Axes on the Agg backend, closed after the test."""
+        fig, ax = plt.subplots()
+        yield ax
+        plt.close(fig)
+
+    def test_removes_ticks(self, ax):
+        """Both x and y ticks are removed."""
+        apply_blank_canvas(ax)
+        assert ax.get_xticks().size == 0, "x ticks should be removed"
+        assert ax.get_yticks().size == 0, "y ticks should be removed"
+
+    def test_hides_all_spines(self, ax):
+        """Every spine (frame edge) is hidden."""
+        apply_blank_canvas(ax)
+        assert not any(s.get_visible() for s in ax.spines.values()), (
+            "all spines should be hidden"
+        )
+
+    def test_default_facecolor_is_black(self, ax):
+        """The default `facecolor` ('black') is applied to axes and figure."""
+        apply_blank_canvas(ax)
+        assert ax.get_facecolor() == (0.0, 0.0, 0.0, 1.0), (
+            f"unexpected axes facecolor: {ax.get_facecolor()}"
+        )
+        assert ax.figure.get_facecolor() == (0.0, 0.0, 0.0, 1.0), (
+            f"unexpected figure facecolor: {ax.figure.get_facecolor()}"
+        )
+
+    def test_custom_facecolor_applied_to_axes_and_figure(self, ax):
+        """A custom `facecolor` is applied consistently to both axes and figure."""
+        apply_blank_canvas(ax, facecolor="white")
+        assert ax.get_facecolor() == (1.0, 1.0, 1.0, 1.0)
+        assert ax.figure.get_facecolor() == (1.0, 1.0, 1.0, 1.0)
+
+    def test_returns_the_same_axes(self, ax):
+        """The function returns `ax` itself, enabling call chaining."""
+        result = apply_blank_canvas(ax)
+        assert result is ax, "should return the same Axes instance"
+
+    def test_composes_with_existing_plot(self, ax):
+        """Stripping chrome does not remove or disturb already-drawn artists."""
+        img = ax.imshow([[0, 1], [1, 0]], cmap="gray")
+        apply_blank_canvas(ax)
+        assert img in ax.images, "pre-existing plot should be untouched"
