@@ -2684,12 +2684,12 @@ class ArrayGlyph(GeoMixin, Glyph):
         text_colors: tuple[str, str] = ("white", "black"),
         interval: int = 200,
         text_loc: list[Any, Any] = None,
-        label_color: str = "black",
         point_color: str = "red",
         point_size: int = 100,
         pid_color: str = "blue",
         pid_size: int = 10,
         *,
+        label_color: str = "black",
         data_getter: Callable[[int], np.ndarray] | None = None,
         **kwargs,
     ) -> FuncAnimation:
@@ -2728,9 +2728,10 @@ class ArrayGlyph(GeoMixin, Glyph):
             interval: Delay between frames in milliseconds, by default 200.
                 Controls the speed of the animation (smaller values = faster animation).
             text_loc: Location of the frame label text as [x, y] coordinates, by default None.
-                If None, defaults to [0.1, 0.2].
-            label_color: Color of the frame label text, by default "black".
-                Any valid matplotlib color string.
+                When None, the label is anchored just inside the top-left corner using
+                axes-fraction coordinates, so it never clips regardless of the array's
+                shape or the axis orientation. Pass an explicit [x, y] to place the label
+                in data coordinates instead.
             point_color: Color of the points, by default "red".
                 Any valid matplotlib color string.
             point_size: Size of the points, by default 100.
@@ -2739,6 +2740,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                 Any valid matplotlib color string.
             pid_size: Size of the point value annotations, by default 10.
                 Controls the font size of the annotations.
+            label_color: Color of the frame label text, by default "black".
+                Any valid matplotlib color string. `ArrayGlyph`-only;
+                `MeshGlyph.animate()` does not yet expose this option.
             data_getter: Optional callable `f(i) -> ndarray` that
                 returns the frame for index `i`, by default None.
                 When set, `self.arr` is no longer iterated; each
@@ -2954,8 +2958,13 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         ```
         """
-        if text_loc is None:
-            text_loc = [0.1, 0.2]
+        text_loc_is_default = text_loc is None
+        if text_loc_is_default:
+            # Axes-fraction anchor (not data coordinates): stays inside the
+            # frame regardless of array shape or axis orientation, unlike a
+            # fixed data-coordinate default. See `day_text` below for the
+            # matching transform/alignment.
+            text_loc = [0.02, 0.95]
 
         for key, val in kwargs.items():
             if key not in self.default_options.keys():
@@ -3092,7 +3101,10 @@ class ArrayGlyph(GeoMixin, Glyph):
             " ",
             fontsize=self.default_options["cbar_label_size"],
             color=label_color,
+            transform=ax.transAxes if text_loc_is_default else ax.transData,
+            va="top" if text_loc_is_default else "baseline",
         )
+        self._day_text = day_text
 
         def _fetch_frame(i: int) -> np.ndarray:
             """Resolve frame `i` for the animation step.

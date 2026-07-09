@@ -1321,8 +1321,29 @@ class TestAnimateEdgeCases:
         glyph = ArrayGlyph(coello_data, exclude_value=[no_data_value])
         anim = glyph.animate(animate_time_list, label_color="yellow")
         assert anim is not None
-        ax = glyph.fig.axes[0]
-        assert ax.texts[0].get_color() == "yellow"
+        assert glyph._day_text.get_color() == "yellow"
+
+    def test_label_color_is_keyword_only(
+        self,
+        coello_data: np.ndarray,
+        animate_time_list: list,
+        no_data_value: float,
+    ):
+        """`label_color` must be keyword-only so no positional argument shifts."""
+        glyph = ArrayGlyph(coello_data, exclude_value=[no_data_value])
+        with pytest.raises(TypeError):
+            glyph.animate(
+                animate_time_list,
+                None,
+                ("white", "black"),
+                200,
+                None,
+                "red",
+                100,
+                "blue",
+                10,
+                "yellow",
+            )
 
 
 @pytest.mark.plot
@@ -3077,9 +3098,9 @@ class TestAnimateDataGetterEdgeCases:
         """A user-supplied `text_loc` skips the default-init branch.
 
         Test scenario:
-            Default `text_loc=None` is rewritten to `[0.1, 0.2]`;
-            passing an explicit value covers the alternate branch where
-            the rewrite is skipped.
+            Default `text_loc=None` is rewritten to an axes-fraction anchor;
+            passing an explicit value covers the alternate branch where the
+            rewrite is skipped and data coordinates are used instead.
         """
         stack = self._stack(n=3)
         glyph = ArrayGlyph(stack[0])
@@ -3092,8 +3113,33 @@ class TestAnimateDataGetterEdgeCases:
             assert isinstance(
                 anim, FuncAnimation
             ), "explicit text_loc must produce an animation"
+            assert glyph._day_text.get_transform() is glyph.ax.transData
         finally:
             plt.close(glyph.fig)
+
+    def test_default_text_loc_label_stays_inside_axes(self) -> None:
+        """The default frame label must not clip past the axes bounds.
+
+        Test scenario:
+            Regression test for the inverted-Y-axis clipping bug: with no
+            explicit `text_loc`, the label's rendered bounding box must sit
+            fully within the axes bounding box, for both a wide and a tall
+            array shape.
+        """
+        for shape in [(4, 48, 48), (4, 200, 20)]:
+            arr = np.zeros(shape)
+            glyph = ArrayGlyph(arr, figsize=(4, 4))
+            try:
+                glyph.animate(time=list(range(shape[0])), interval=150)
+                glyph._day_text.set_text("Date = 2024-01-01")
+                glyph.fig.canvas.draw()
+                renderer = glyph.fig.canvas.get_renderer()
+                label_bbox = glyph._day_text.get_window_extent(renderer=renderer)
+                axes_bbox = glyph.ax.get_window_extent(renderer=renderer)
+                assert label_bbox.y1 <= axes_bbox.y1, f"label clips above axes for {shape}"
+                assert label_bbox.y0 >= axes_bbox.y0, f"label clips below axes for {shape}"
+            finally:
+                plt.close(glyph.fig)
 
     def test_data_getter_background_color_threshold_set(self) -> None:
         """Setting `background_color_threshold` exercises the if-branch.
