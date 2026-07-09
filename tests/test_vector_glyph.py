@@ -45,8 +45,7 @@ class TestVectorGlyphInit:
         """
         glyph = VectorGlyph(*field)
         assert all(
-            isinstance(a, np.ndarray)
-            for a in (glyph.x, glyph.y, glyph.u, glyph.v)
+            isinstance(a, np.ndarray) for a in (glyph.x, glyph.y, glyph.u, glyph.v)
         ), "x/y/u/v should be stored as ndarrays"
 
     def test_magnitude_is_hypot(self, field):
@@ -56,9 +55,9 @@ class TestVectorGlyphInit:
             u=3, v=4 -> every magnitude is 5.
         """
         glyph = VectorGlyph(*field)
-        assert np.allclose(glyph.magnitude, 5.0), (
-            f"Magnitude should be 5 everywhere, got {glyph.magnitude}"
-        )
+        assert np.allclose(
+            glyph.magnitude, 5.0
+        ), f"Magnitude should be 5 everywhere, got {glyph.magnitude}"
 
     def test_ticks_spacing_defaults_none(self, field):
         """ticks_spacing defaults to None for auto-derivation.
@@ -67,9 +66,9 @@ class TestVectorGlyphInit:
             The option dict leaves ticks_spacing unset.
         """
         glyph = VectorGlyph(*field)
-        assert glyph.default_options["ticks_spacing"] is None, (
-            "ticks_spacing should default to None"
-        )
+        assert (
+            glyph.default_options["ticks_spacing"] is None
+        ), "ticks_spacing should default to None"
 
     def test_mismatched_uv_raises(self, field):
         """u and v of different shapes raise ValueError.
@@ -140,7 +139,9 @@ class TestVectorGlyphPlot:
         v = np.ones_like(y)
         glyph = VectorGlyph(x, y, u, v)
         _, _, im = glyph.plot(kind="streamplot")
-        assert im.get_array() is not None, "Streamplot lines should carry a colour array"
+        assert (
+            im.get_array() is not None
+        ), "Streamplot lines should carry a colour array"
         assert glyph.cbar is not None, "A colorbar should be attached"
 
     def test_streamplot_clim_pinned_to_tick_range(self):
@@ -157,9 +158,10 @@ class TestVectorGlyphPlot:
         glyph = VectorGlyph(x, y, u, v, vmin=0.0, vmax=10.0, ticks_spacing=2.0)
         _, _, im = glyph.plot(kind="streamplot")
         ticks = glyph.get_ticks()
-        assert im.get_clim() == (ticks[0], ticks[-1]), (
-            f"streamplot clim should equal the tick range, got {im.get_clim()}"
-        )
+        assert im.get_clim() == (
+            ticks[0],
+            ticks[-1],
+        ), f"streamplot clim should equal the tick range, got {im.get_clim()}"
 
     def test_quiver_clim_pinned_to_tick_range(self):
         """quiver colour limits also match the tick range (parity check).
@@ -174,9 +176,10 @@ class TestVectorGlyphPlot:
         glyph = VectorGlyph(x, y, u, v, vmin=0.0, vmax=10.0, ticks_spacing=2.0)
         _, _, im = glyph.plot(kind="quiver")
         ticks = glyph.get_ticks()
-        assert im.get_clim() == (ticks[0], ticks[-1]), (
-            f"quiver clim should equal the tick range, got {im.get_clim()}"
-        )
+        assert im.get_clim() == (
+            ticks[0],
+            ticks[-1],
+        ), f"quiver clim should equal the tick range, got {im.get_clim()}"
 
     def test_unknown_kind_raises(self, field):
         """An unrecognised kind raises ValueError before drawing.
@@ -196,9 +199,9 @@ class TestVectorGlyphPlot:
         """
         glyph = VectorGlyph(*field, levels=3, vmin=0.0, vmax=6.0)
         _, _, im = glyph.plot(kind="quiver")
-        assert isinstance(im.norm, mcolors.BoundaryNorm), (
-            f"levels should yield a BoundaryNorm, got {type(im.norm)}"
-        )
+        assert isinstance(
+            im.norm, mcolors.BoundaryNorm
+        ), f"levels should yield a BoundaryNorm, got {type(im.norm)}"
 
     def test_plot_on_supplied_axes(self, field):
         """Plotting onto a supplied axes reuses that axes/figure.
@@ -246,7 +249,9 @@ class TestVectorGlyphAddKey:
         _, _, im = glyph.plot(kind="quiver")
         key = glyph.add_key(im, value=5.0, label="5 m/s")
         assert isinstance(key, QuiverKey), f"Expected QuiverKey, got {type(key)}"
-        assert key.text.get_text() == "5 m/s", f"Unexpected label: {key.text.get_text()}"
+        assert (
+            key.text.get_text() == "5 m/s"
+        ), f"Unexpected label: {key.text.get_text()}"
 
     def test_add_key_default_label_is_value(self, field):
         """With no label, the numeric value is rendered.
@@ -257,7 +262,9 @@ class TestVectorGlyphAddKey:
         glyph = VectorGlyph(*field)
         _, _, im = glyph.plot(kind="quiver")
         key = glyph.add_key(im, value=7.0)
-        assert key.text.get_text() == "7", f"Default label should be '7', got {key.text.get_text()}"
+        assert (
+            key.text.get_text() == "7"
+        ), f"Default label should be '7', got {key.text.get_text()}"
 
 
 def test_vector_default_options_extend_style_defaults():
@@ -312,7 +319,9 @@ class TestAddColorbarToggle:
         glyph = VectorGlyph(gx, gy, u, v)
         fig, ax, _ = glyph.plot(add_colorbar=False)
         try:
-            assert glyph.cbar is None, "plot(add_colorbar=False) should skip the colorbar"
+            assert (
+                glyph.cbar is None
+            ), "plot(add_colorbar=False) should skip the colorbar"
             assert len(fig.axes) == 1, f"expected 1 axes, got {len(fig.axes)}"
         finally:
             plt.close(fig)

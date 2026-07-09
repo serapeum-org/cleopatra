@@ -137,9 +137,9 @@ class TestAsXy:
         """
         with pytest.raises(ValueError, match=r"must be an \(N, 2\) array") as exc:
             _as_xy(bad_input, "boundary_xy")
-        assert "boundary_xy" in str(exc.value), (
-            f"Error should name the argument for shape {shape_desc}, got: {exc.value}"
-        )
+        assert "boundary_xy" in str(
+            exc.value
+        ), f"Error should name the argument for shape {shape_desc}, got: {exc.value}"
 
     def test_error_message_includes_argument_name(self):
         """Include the caller-supplied name in the error message.
@@ -150,9 +150,9 @@ class TestAsXy:
         """
         with pytest.raises(ValueError, match=r"graticule_lines\[2\]") as exc:
             _as_xy(np.arange(3), "graticule_lines[2]")
-        assert "graticule_lines[2]" in str(exc.value), (
-            f"Argument name missing from message: {exc.value}"
-        )
+        assert "graticule_lines[2]" in str(
+            exc.value
+        ), f"Argument name missing from message: {exc.value}"
 
 
 class TestApplyProjectionFrame:
@@ -198,12 +198,12 @@ class TestApplyProjectionFrame:
             ylim=(-1, 1),
             graticule_lines=[meridian],
         )
-        assert patch.get_edgecolor()[:3] == pytest.approx((0.0, 0.0, 0.0)), (
-            f"Expected black boundary, got {patch.get_edgecolor()}"
-        )
-        assert patch.get_linewidth() == DEFAULT_BOUNDARY_KW["linewidth"], (
-            f"Expected lw {DEFAULT_BOUNDARY_KW['linewidth']}, got {patch.get_linewidth()}"
-        )
+        assert patch.get_edgecolor()[:3] == pytest.approx(
+            (0.0, 0.0, 0.0)
+        ), f"Expected black boundary, got {patch.get_edgecolor()}"
+        assert (
+            patch.get_linewidth() == DEFAULT_BOUNDARY_KW["linewidth"]
+        ), f"Expected lw {DEFAULT_BOUNDARY_KW['linewidth']}, got {patch.get_linewidth()}"
         line = axes.lines[0]
         assert line.get_linewidth() == DEFAULT_GRATICULE_KW["linewidth"], (
             f"Expected graticule lw {DEFAULT_GRATICULE_KW['linewidth']}, "
@@ -265,9 +265,9 @@ class TestApplyProjectionFrame:
         assert clip_path is not None, "Image should have a clip path set"
         verts = clip_path.get_fully_transformed_path().vertices
         expected = len(patch.get_path().vertices)
-        assert len(verts) == expected, (
-            f"Clip path should follow the boundary ({expected} verts), got {len(verts)}"
-        )
+        assert (
+            len(verts) == expected
+        ), f"Clip path should follow the boundary ({expected} verts), got {len(verts)}"
 
     def test_collection_clipped_to_boundary(self, axes, globe_boundary):
         """Clip a pre-existing collection (scatter) to the boundary.
@@ -327,9 +327,9 @@ class TestApplyProjectionFrame:
             ylim=(-1, 1),
             clip_artists=False,
         )
-        assert image.get_clip_path() is default_clip, (
-            "Image clip path should be untouched when clip_artists=False"
-        )
+        assert (
+            image.get_clip_path() is default_clip
+        ), "Image clip path should be untouched when clip_artists=False"
 
     def test_graticule_lines_drawn(self, axes, globe_boundary):
         """Draw one Line2D per supplied graticule polyline.
@@ -346,7 +346,9 @@ class TestApplyProjectionFrame:
             ylim=(-1, 1),
             graticule_lines=[meridian, equator],
         )
-        assert len(axes.lines) == 2, f"Expected 2 graticule lines, got {len(axes.lines)}"
+        assert (
+            len(axes.lines) == 2
+        ), f"Expected 2 graticule lines, got {len(axes.lines)}"
 
     def test_graticule_default_none_draws_nothing(self, axes, globe_boundary):
         """Draw no graticule when ``graticule_lines`` is omitted.
@@ -390,15 +392,15 @@ class TestApplyProjectionFrame:
             boundary_kw={"edgecolor": "red", "linewidth": 2.0},
             graticule_kw={"color": "blue"},
         )
-        assert patch.get_edgecolor()[:3] == pytest.approx((1.0, 0.0, 0.0)), (
-            f"Expected red boundary, got {patch.get_edgecolor()}"
-        )
-        assert patch.get_linewidth() == 2.0, (
-            f"Expected lw 2.0, got {patch.get_linewidth()}"
-        )
-        assert axes.lines[0].get_color() == "blue", (
-            f"Expected blue graticule, got {axes.lines[0].get_color()}"
-        )
+        assert patch.get_edgecolor()[:3] == pytest.approx(
+            (1.0, 0.0, 0.0)
+        ), f"Expected red boundary, got {patch.get_edgecolor()}"
+        assert (
+            patch.get_linewidth() == 2.0
+        ), f"Expected lw 2.0, got {patch.get_linewidth()}"
+        assert (
+            axes.lines[0].get_color() == "blue"
+        ), f"Expected blue graticule, got {axes.lines[0].get_color()}"
 
     def test_does_not_mutate_caller_style_dicts(self, axes, globe_boundary, meridian):
         """Leave the caller-supplied style dicts unmodified.
@@ -418,12 +420,12 @@ class TestApplyProjectionFrame:
             boundary_kw=boundary_kw,
             graticule_kw=graticule_kw,
         )
-        assert boundary_kw == {"edgecolor": "red"}, (
-            f"boundary_kw was mutated: {boundary_kw}"
-        )
-        assert graticule_kw == {"color": "blue"}, (
-            f"graticule_kw was mutated: {graticule_kw}"
-        )
+        assert boundary_kw == {
+            "edgecolor": "red"
+        }, f"boundary_kw was mutated: {boundary_kw}"
+        assert graticule_kw == {
+            "color": "blue"
+        }, f"graticule_kw was mutated: {graticule_kw}"
 
     def test_accepts_plain_list_geometry(self, axes):
         """Coerce plain-list boundary and graticule geometry.
@@ -468,9 +470,9 @@ class TestApplyProjectionFrame:
             apply_projection_frame(
                 object(), boundary_xy=globe_boundary, xlim=(-1, 1), ylim=(-1, 1)
             )
-        assert "object" in str(exc.value), (
-            f"Error should report the bad type name, got: {exc.value}"
-        )
+        assert "object" in str(
+            exc.value
+        ), f"Error should report the bad type name, got: {exc.value}"
 
     def test_axes_missing_add_patch_raises_type_error(self, globe_boundary):
         """Raise ``TypeError`` when ``ax`` has ``set_xlim`` but not ``add_patch``.
@@ -539,7 +541,9 @@ class TestApplyProjectionFrame:
                 graticule_lines=[np.arange(6)],
             )
 
-    def test_second_graticule_index_reported_in_error(self, axes, globe_boundary, meridian):
+    def test_second_graticule_index_reported_in_error(
+        self, axes, globe_boundary, meridian
+    ):
         """Report the correct index when a later graticule line is bad.
 
         Test scenario:

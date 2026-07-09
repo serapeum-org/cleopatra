@@ -67,17 +67,16 @@ class TestGetProvider:
     def test_default_provider_is_openstreetmap(self):
         """Calling `get_provider(None)` returns OpenStreetMap.Mapnik."""
         provider = get_provider(None)
-        assert (
-            "openstreetmap" in provider.name.lower()
-            or "OpenStreetMap" in str(provider)
+        assert "openstreetmap" in provider.name.lower() or "OpenStreetMap" in str(
+            provider
         ), f"Default provider should be OpenStreetMap, got {provider}"
 
     def test_resolve_cartodb_positron(self):
         """A dotted string resolves to a provider with `build_url`."""
         provider = get_provider("CartoDB.Positron")
-        assert hasattr(provider, "build_url"), (
-            f"Provider should have build_url method: {provider}"
-        )
+        assert hasattr(
+            provider, "build_url"
+        ), f"Provider should have build_url method: {provider}"
 
     def test_invalid_provider_raises_value_error(self):
         """An unknown provider name raises `ValueError`."""
@@ -129,18 +128,14 @@ class TestDensifyAndReprojectBounds:
         west, south, east, north = _densify_and_reproject_bounds(
             10.0, 50.0, 11.0, 51.0, "EPSG:4326", "EPSG:3857"
         )
-        assert abs(west) > 100000, (
-            f"West should be in meters (large value), got {west}"
-        )
+        assert abs(west) > 100000, f"West should be in meters (large value), got {west}"
         assert west < east
         assert south < north
 
     def test_identity_transform_preserves_bounds(self):
         """4326 -> 4326 returns approximately the same bounds."""
         bounds = (10.0, 50.0, 11.0, 51.0)
-        result = _densify_and_reproject_bounds(
-            *bounds, "EPSG:4326", "EPSG:4326"
-        )
+        result = _densify_and_reproject_bounds(*bounds, "EPSG:4326", "EPSG:4326")
         for orig, reprojected in zip(bounds, result):
             assert abs(orig - reprojected) < 0.001
 
@@ -285,9 +280,9 @@ class TestAddTilesBehaviour:
         # (1e6, 6e6, 1.2e6, 6.2e6) reproject to these EPSG:4326 [w, e, s, n]
         # degrees (precomputed, not re-derived from the production helper).
         got = mock_ax.imshow.call_args.kwargs["extent"]
-        assert got == pytest.approx([8.9832, 10.7798, 47.3537, 48.5569], abs=1e-4), (
-            f"imshow extent should be the mosaic's reprojected bounds, got {got}"
-        )
+        assert got == pytest.approx(
+            [8.9832, 10.7798, 47.3537, 48.5569], abs=1e-4
+        ), f"imshow extent should be the mosaic's reprojected bounds, got {got}"
         assert got != [10.0, 11.0, 50.0, 51.0], "extent must not be the raw data bounds"
 
     def test_nonmercator_falls_back_to_data_bounds_when_mosaic_overflows(self, mock_ax):
@@ -315,9 +310,12 @@ class TestAddTilesBehaviour:
             add_tiles(mock_ax, crs=ortho)
         mock_ax.imshow.assert_called_once()
         got = mock_ax.imshow.call_args.kwargs["extent"]
-        assert got == [0.0, 100000.0, 0.0, 100000.0], (
-            f"overflow should fall back to the data bounds, got {got}"
-        )
+        assert got == [
+            0.0,
+            100000.0,
+            0.0,
+            100000.0,
+        ], f"overflow should fall back to the data bounds, got {got}"
 
     def test_nonmercator_mosaic_extent_envelops_data(self, mock_ax):
         """A mosaic larger than the data is placed enveloping the data bounds (issue #176)."""
@@ -339,9 +337,9 @@ class TestAddTilesBehaviour:
         ):
             add_tiles(mock_ax, crs=4326)
         west, east, south, north = mock_ax.imshow.call_args.kwargs["extent"]
-        assert west <= 10.0 and east >= 11.0 and south <= 50.0 and north >= 51.0, (
-            f"mosaic extent {(west, east, south, north)} should envelop the data bounds"
-        )
+        assert (
+            west <= 10.0 and east >= 11.0 and south <= 50.0 and north >= 51.0
+        ), f"mosaic extent {(west, east, south, north)} should envelop the data bounds"
 
     def test_min_tiles_across_forwarded_to_auto_zoom(self, mock_ax, _patch_tiles):
         """`add_tiles(min_tiles_across=...)` is forwarded to `auto_zoom` for zoom='auto'."""
@@ -489,7 +487,9 @@ class TestAddTilesIntegration:
         with (
             patch.object(tiles_mod, "auto_zoom", return_value=10),
             patch.object(
-                tiles_mod, "fetch_tiles", return_value={Tile(0, 0, 10): _make_tile_png()}
+                tiles_mod,
+                "fetch_tiles",
+                return_value={Tile(0, 0, 10): _make_tile_png()},
             ),
             patch.object(
                 tiles_mod,
@@ -531,9 +531,9 @@ class TestRequireTilesExtra:
     def test_available_returns_silently(self):
         """When deps are present, the helper is a no-op and returns `None`."""
         result = _require_tiles_extra()
-        assert result is None, (
-            f"_require_tiles_extra should return None on success, got {result!r}"
-        )
+        assert (
+            result is None
+        ), f"_require_tiles_extra should return None on success, got {result!r}"
 
     def test_missing_raises_with_install_hint(self, monkeypatch):
         """When `_TILES_AVAILABLE` is False, raise `ImportError` with the hint."""
@@ -571,9 +571,9 @@ class TestAutoZoomEdgeCases:
             expected_min: Lower bound on the expected zoom value.
         """
         result = auto_zoom(bounds)
-        assert result >= expected_min, (
-            f"auto_zoom{bounds} should be >= {expected_min}, got {result}"
-        )
+        assert (
+            result >= expected_min
+        ), f"auto_zoom{bounds} should be >= {expected_min}, got {result}"
 
 
 class TestDensifyAndReprojectEdgeCases:
@@ -605,21 +605,29 @@ class TestDensifyAndReprojectEdgeCases:
             mock_from_crs.return_value = mock_transformer
             with pytest.raises(ValueError, match="infinite or NaN"):
                 _densify_and_reproject_bounds(
-                    10.0, 50.0, 11.0, 51.0,
-                    "EPSG:4326", "EPSG:3857",
+                    10.0,
+                    50.0,
+                    11.0,
+                    51.0,
+                    "EPSG:4326",
+                    "EPSG:3857",
                     n_points=2,
                 )
 
     def test_n_points_low_value_runs(self):
         """`n_points=2` (only corners) still produces finite bounds."""
         west, south, east, north = _densify_and_reproject_bounds(
-            10.0, 50.0, 11.0, 51.0,
-            "EPSG:4326", "EPSG:3857",
+            10.0,
+            50.0,
+            11.0,
+            51.0,
+            "EPSG:4326",
+            "EPSG:3857",
             n_points=2,
         )
-        assert all(np.isfinite([west, south, east, north])), (
-            f"Bounds should all be finite, got ({west}, {south}, {east}, {north})"
-        )
+        assert all(
+            np.isfinite([west, south, east, north])
+        ), f"Bounds should all be finite, got ({west}, {south}, {east}, {north})"
 
 
 class TestFetchSingleTile:
@@ -661,9 +669,9 @@ class TestFetchSingleTile:
 
             with pytest.raises(ConnectionError, match="Failed to fetch tile"):
                 fetch_single_tile(tile, provider, timeout=1, retries=1)
-            assert mock_urlopen.call_count == 2, (
-                f"Expected 2 attempts (retries=1), got {mock_urlopen.call_count}"
-            )
+            assert (
+                mock_urlopen.call_count == 2
+            ), f"Expected 2 attempts (retries=1), got {mock_urlopen.call_count}"
 
     def test_retries_and_succeeds(self):
         """A transient `URLError` is retried and a later success is returned."""
@@ -681,12 +689,10 @@ class TestFetchSingleTile:
                 urllib.error.URLError("transient"),
                 successful_response,
             ]
-            _, returned_bytes = fetch_single_tile(
-                tile, provider, timeout=1, retries=2
-            )
-        assert returned_bytes == png, (
-            f"Expected png bytes after retry, got {len(returned_bytes)} bytes"
-        )
+            _, returned_bytes = fetch_single_tile(tile, provider, timeout=1, retries=2)
+        assert (
+            returned_bytes == png
+        ), f"Expected png bytes after retry, got {len(returned_bytes)} bytes"
 
     def test_raises_after_all_retries_exhausted(self):
         """All retries failing raises `ConnectionError` referencing the tile."""
@@ -699,9 +705,9 @@ class TestFetchSingleTile:
             mock_urlopen.side_effect = urllib.error.URLError("permanent")
             with pytest.raises(ConnectionError, match="z=7/x=5/y=6"):
                 fetch_single_tile(tile, provider, timeout=1, retries=2)
-            assert mock_urlopen.call_count == 3, (
-                f"Expected 3 attempts, got {mock_urlopen.call_count}"
-            )
+            assert (
+                mock_urlopen.call_count == 3
+            ), f"Expected 3 attempts, got {mock_urlopen.call_count}"
 
     @pytest.mark.parametrize(
         "header",
@@ -717,8 +723,15 @@ class TestFetchSingleTile:
             b"RIFF\x00\x00\x00\x00WEBP",  # WebP
         ],
         ids=[
-            "jpeg-app0", "jpeg-app1", "jpeg-app2", "jpeg-app8", "jpeg-app15",
-            "jpeg-dqt", "jpeg-sof0", "gif", "webp",
+            "jpeg-app0",
+            "jpeg-app1",
+            "jpeg-app2",
+            "jpeg-app8",
+            "jpeg-app15",
+            "jpeg-dqt",
+            "jpeg-sof0",
+            "gif",
+            "webp",
         ],
     )
     def test_non_png_image_headers_accepted(self, header):
@@ -738,9 +751,7 @@ class TestFetchSingleTile:
             mock_response = MagicMock()
             mock_response.read.return_value = body
             mock_urlopen.return_value = mock_response
-            _, returned_bytes = fetch_single_tile(
-                tile, provider, timeout=1, retries=0
-            )
+            _, returned_bytes = fetch_single_tile(tile, provider, timeout=1, retries=0)
         assert returned_bytes == body, "image bytes should pass through unchanged"
 
     def _captured_user_agent(self, mock_urlopen) -> str:
@@ -763,9 +774,9 @@ class TestFetchSingleTile:
         ua = self._captured_user_agent(mock_urlopen)
         assert ua == USER_AGENT
         assert ua.startswith("cleopatra/"), f"UA should start with 'cleopatra/': {ua!r}"
-        assert "github.com/serapeum-org/cleopatra" in ua, (
-            f"UA should carry a contact URL: {ua!r}"
-        )
+        assert (
+            "github.com/serapeum-org/cleopatra" in ua
+        ), f"UA should carry a contact URL: {ua!r}"
         assert ua != "cleopatra/Python", "the old placeholder UA must be gone"
 
     def test_custom_user_agent_is_sent_verbatim(self):
@@ -798,8 +809,16 @@ class TestLooksLikeImage:
             b"GIF89a" + b"\x00" * 8,
             b"RIFF\x00\x00\x00\x00WEBP\x00\x00\x00\x00",
         ],
-        ids=["png", "jpeg-app0", "jpeg-app2", "jpeg-dqt", "jpeg-sof0",
-             "gif87a", "gif89a", "webp"],
+        ids=[
+            "png",
+            "jpeg-app0",
+            "jpeg-app2",
+            "jpeg-dqt",
+            "jpeg-sof0",
+            "gif87a",
+            "gif89a",
+            "webp",
+        ],
     )
     def test_accepts_known_signatures(self, data):
         """Every recognised raster signature returns True.
@@ -846,9 +865,9 @@ class TestFetchTiles:
         with patch.object(tiles_mod, "fetch_single_tile", side_effect=fake_single):
             result = fetch_tiles(tiles, provider, max_workers=2, timeout=1, retries=0)
 
-        assert set(result.keys()) == set(tiles), (
-            f"Result should be keyed by all input tiles, got {set(result.keys())}"
-        )
+        assert set(result.keys()) == set(
+            tiles
+        ), f"Result should be keyed by all input tiles, got {set(result.keys())}"
         for v in result.values():
             assert v == png, "All tile values should be the mocked PNG bytes"
 
@@ -888,9 +907,11 @@ class TestStitchTiles:
         png = _make_tile_png(size=256)
         image, extent = stitch_tiles({tiles[0]: png}, tiles, zoom=1)
 
-        assert image.shape == (256, 256, 4), (
-            f"Expected (256, 256, 4), got {image.shape}"
-        )
+        assert image.shape == (
+            256,
+            256,
+            4,
+        ), f"Expected (256, 256, 4), got {image.shape}"
         assert image.dtype.name == "uint8", f"Expected uint8, got {image.dtype}"
         assert len(extent) == 4, f"Expected 4-tuple extent, got {extent}"
 
@@ -898,12 +919,12 @@ class TestStitchTiles:
         """Two horizontally-adjacent tiles produce a `(256, 512, 4)` image."""
         tiles = [Tile(0, 0, 1), Tile(1, 0, 1)]
         png = _make_tile_png(size=256)
-        image, _ = stitch_tiles(
-            {tiles[0]: png, tiles[1]: png}, tiles, zoom=1
-        )
-        assert image.shape == (256, 512, 4), (
-            f"Expected (256, 512, 4) for two horizontal tiles, got {image.shape}"
-        )
+        image, _ = stitch_tiles({tiles[0]: png, tiles[1]: png}, tiles, zoom=1)
+        assert image.shape == (
+            256,
+            512,
+            4,
+        ), f"Expected (256, 512, 4) for two horizontal tiles, got {image.shape}"
 
     def test_invalid_first_image_raises(self):
         """A corrupt first PNG raises `ValueError` with a decode hint."""
@@ -930,7 +951,9 @@ class TestStitchTiles:
         assert west < east, f"west {west} < east {east} should hold"
         assert south < north, f"south {south} < north {north} should hold"
         for v in extent:
-            assert isinstance(v, float), f"Extent component should be float, got {type(v)}"
+            assert isinstance(
+                v, float
+            ), f"Extent component should be float, got {type(v)}"
 
 
 class TestAddTilesAdditionalValidation:
@@ -962,9 +985,9 @@ class TestAddTilesAdditionalValidation:
         add_tiles(mock_ax, crs=3857, attribution=True)
         if mock_ax.text.called:
             placed_text = mock_ax.text.call_args[0][2]
-            assert "<" not in placed_text, (
-                f"Attribution text should be HTML-stripped, got: {placed_text!r}"
-            )
+            assert (
+                "<" not in placed_text
+            ), f"Attribution text should be HTML-stripped, got: {placed_text!r}"
 
     def test_attribution_unescapes_html_entities(self, mock_ax, _patch_tiles):
         """`attribution=True` strips tags *and* unescapes HTML entities."""
@@ -976,9 +999,9 @@ class TestAddTilesAdditionalValidation:
         add_tiles(mock_ax, source=provider, crs=3857, attribution=True)
         mock_ax.text.assert_called_once()
         placed = mock_ax.text.call_args[0][2]
-        assert placed == "© OpenStreetMap & contributors", (
-            f"expected entities unescaped, got {placed!r}"
-        )
+        assert (
+            placed == "© OpenStreetMap & contributors"
+        ), f"expected entities unescaped, got {placed!r}"
 
 
 class TestStitchTilesPerformance:
@@ -1034,9 +1057,7 @@ class TestAddTilesCRSReprojectionFailure:
         def fake_reproject(*args, **kwargs):
             raise RuntimeError("Some other failure")
 
-        monkeypatch.setattr(
-            tiles_mod, "_densify_and_reproject_bounds", fake_reproject
-        )
+        monkeypatch.setattr(tiles_mod, "_densify_and_reproject_bounds", fake_reproject)
         with pytest.raises(RuntimeError, match="Some other failure"):
             add_tiles(ax, crs=4326)
 
@@ -1059,9 +1080,7 @@ class TestAddTilesCRSReprojectionFailure:
 
         # `add_tiles` does `from pyproj import Transformer` internally, so
         # patch the class itself rather than a name on `cleopatra.tiles`.
-        monkeypatch.setattr(
-            pyproj.Transformer, "from_crs", staticmethod(fake_from_crs)
-        )
+        monkeypatch.setattr(pyproj.Transformer, "from_crs", staticmethod(fake_from_crs))
         with pytest.raises(ValueError, match="Web Mercator"):
             add_tiles(ax, crs=3857)
 

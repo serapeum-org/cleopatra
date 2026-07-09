@@ -212,8 +212,7 @@ def apply_projection_frame(
     """
     if not hasattr(ax, "set_xlim") or not hasattr(ax, "add_patch"):
         raise TypeError(
-            "ax must be a matplotlib.axes.Axes instance, "
-            f"got {type(ax).__name__}"
+            f"ax must be a matplotlib.axes.Axes instance, got {type(ax).__name__}"
         )
 
     if len(xlim) != 2 or len(ylim) != 2:

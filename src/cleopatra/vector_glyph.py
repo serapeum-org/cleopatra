@@ -207,9 +207,7 @@ class VectorGlyph(GeoMixin, Glyph):
             opts["title"] = title
         # Resolve the colorbar choice for this call only (a plot-time
         # override does not persist into the glyph's options).
-        draw_colorbar = (
-            opts["add_colorbar"] if add_colorbar is None else add_colorbar
-        )
+        draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
 
         mag = self.magnitude
         norm, cbar_kw, ticks = self._prepare_scalar_mapping(mag)
@@ -218,18 +216,37 @@ class VectorGlyph(GeoMixin, Glyph):
 
         if kind == "quiver":
             im = ax.quiver(
-                self.x, self.y, self.u, self.v, mag,
-                cmap=cmap, norm=norm, scale=opts["scale"], **clim,
+                self.x,
+                self.y,
+                self.u,
+                self.v,
+                mag,
+                cmap=cmap,
+                norm=norm,
+                scale=opts["scale"],
+                **clim,
             )
         elif kind == "barbs":
             im = ax.barbs(
-                self.x, self.y, self.u, self.v, mag,
-                cmap=cmap, norm=norm, **clim,
+                self.x,
+                self.y,
+                self.u,
+                self.v,
+                mag,
+                cmap=cmap,
+                norm=norm,
+                **clim,
             )
         else:  # streamplot
             stream = ax.streamplot(
-                self.x, self.y, self.u, self.v,
-                color=mag, cmap=cmap, norm=norm, density=opts["density"],
+                self.x,
+                self.y,
+                self.u,
+                self.v,
+                color=mag,
+                cmap=cmap,
+                norm=norm,
+                density=opts["density"],
             )
             im = stream.lines
             if im.get_array() is None:

@@ -522,7 +522,9 @@ class TestPlotLineContour:
         mg = self._node_glyph()
         mg.fig, mg.ax = mg.create_figure_axes()
         mg.default_options["vmin"], mg.default_options["vmax"] = 0.0, 3.0
-        cs = mg._render_mesh(mg.ax, np.array([0.0, 1.0, 2.0, 3.0]), "node", filled=False)
+        cs = mg._render_mesh(
+            mg.ax, np.array([0.0, 1.0, 2.0, 3.0]), "node", filled=False
+        )
         assert cs.filled is False, "filled=False should produce a line contour set"
         plt.close(mg.fig)
 
@@ -534,9 +536,7 @@ class TestPlotLineContour:
             data and returns a Figure/Axes.
         """
         mg = self._node_glyph()
-        fig, ax = mg.plot(
-            np.array([0.0, 1.0, 2.0, 3.0]), location="node", filled=False
-        )
+        fig, ax = mg.plot(np.array([0.0, 1.0, 2.0, 3.0]), location="node", filled=False)
         assert fig is not None and ax is not None, "Should return a Figure and Axes"
         plt.close(fig)
 
@@ -886,9 +886,13 @@ class TestEdgeSegments:
             )
             for s in segs
         }
-        assert edges == {(0, 1), (0, 2), (1, 2), (1, 3), (2, 3)}, (
-            f"Unexpected edge set: {edges}"
-        )
+        assert edges == {
+            (0, 1),
+            (0, 2),
+            (1, 2),
+            (1, 3),
+            (2, 3),
+        }, f"Unexpected edge set: {edges}"
         assert segs.shape[0] == 5, f"Expected 5 unique edges, got {segs.shape[0]}"
 
 
@@ -1020,15 +1024,13 @@ class TestMeshGlyphSubplots:
         )
         mg2.plot(data * 2, location="face", ax=axes[1], title="Right")
 
-        assert axes[0].get_title() == "Left", (
-            f"Expected 'Left', got '{axes[0].get_title()}'"
-        )
-        assert axes[1].get_title() == "Right", (
-            f"Expected 'Right', got '{axes[1].get_title()}'"
-        )
-        assert len(fig.axes) >= 2, (
-            f"Expected at least 2 axes, got {len(fig.axes)}"
-        )
+        assert (
+            axes[0].get_title() == "Left"
+        ), f"Expected 'Left', got '{axes[0].get_title()}'"
+        assert (
+            axes[1].get_title() == "Right"
+        ), f"Expected 'Right', got '{axes[1].get_title()}'"
+        assert len(fig.axes) >= 2, f"Expected at least 2 axes, got {len(fig.axes)}"
         plt.close(fig)
 
     def test_mesh_plot_and_outline_on_subplots(self, triangle_glyph):
@@ -1048,9 +1050,7 @@ class TestMeshGlyphSubplots:
         mg1.plot(np.array([1.0, 2.0]), location="face", ax=axes[0])
         mg1.plot_outline(ax=axes[1], color="blue")
 
-        assert len(axes[1].collections) >= 1, (
-            "Right axes should have a LineCollection"
-        )
+        assert len(axes[1].collections) >= 1, "Right axes should have a LineCollection"
         plt.close(fig)
 
 
@@ -1172,9 +1172,9 @@ class TestPlotReuse:
         """
         mg = _make_tri_mg()
         mg.plot(np.array([0.0, 0.1]))
-        assert mg.default_options["ticks_spacing"] == pytest.approx(0.01), (
-            f"Expected ticks_spacing=0.01, got {mg.default_options['ticks_spacing']}"
-        )
+        assert mg.default_options["ticks_spacing"] == pytest.approx(
+            0.01
+        ), f"Expected ticks_spacing=0.01, got {mg.default_options['ticks_spacing']}"
 
     def test_constant_data_does_not_crash(self):
         """Test that plotting constant data (vmin==vmax) does not crash.
@@ -1195,9 +1195,9 @@ class TestPlotReuse:
         """
         mg = _make_tri_mg()
         fig, ax = mg.plot(np.array([0.0, 10.0]), ticks_spacing=2.5)
-        assert mg.ticks_spacing == 2.5, (
-            f"Expected explicit ticks_spacing=2.5, got {mg.ticks_spacing}"
-        )
+        assert (
+            mg.ticks_spacing == 2.5
+        ), f"Expected explicit ticks_spacing=2.5, got {mg.ticks_spacing}"
         plt.close(fig)
 
     def test_all_nan_data_raises(self):
@@ -1218,11 +1218,13 @@ class TestPlotReuse:
         """
         mg = _make_tri_mg()
         mg.plot(np.array([1.0, 2.0]), cmap="plasma")
-        assert mg.default_options["cmap"] == "plasma", "Should be plasma after first call"
+        assert (
+            mg.default_options["cmap"] == "plasma"
+        ), "Should be plasma after first call"
         mg.plot(np.array([3.0, 4.0]))
-        assert mg.default_options["cmap"] == "coolwarm_r", (
-            f"Should reset to default coolwarm_r, got {mg.default_options['cmap']}"
-        )
+        assert (
+            mg.default_options["cmap"] == "coolwarm_r"
+        ), f"Should reset to default coolwarm_r, got {mg.default_options['cmap']}"
 
 
 class TestAnimate:
@@ -1313,12 +1315,12 @@ class TestAnimate:
         assert anim is not None, "Should return a FuncAnimation"
         assert mg.vmin == 0.0, f"Expected explicit vmin=0.0, got {mg.vmin}"
         assert mg.vmax == 10.0, f"Expected explicit vmax=10.0, got {mg.vmax}"
-        assert mg.ticks_spacing == 2.0, (
-            f"Expected explicit ticks_spacing=2.0, got {mg.ticks_spacing}"
-        )
-        assert mg.ax.get_title() == "My Animation", (
-            f"Expected title 'My Animation', got {mg.ax.get_title()!r}"
-        )
+        assert (
+            mg.ticks_spacing == 2.0
+        ), f"Expected explicit ticks_spacing=2.0, got {mg.ticks_spacing}"
+        assert (
+            mg.ax.get_title() == "My Animation"
+        ), f"Expected title 'My Animation', got {mg.ax.get_title()!r}"
         plt.close(mg.fig)
 
     def test_animate_update_advances_frame(self):
@@ -1334,9 +1336,7 @@ class TestAnimate:
         frames = np.array([[1.0, 2.0], [3.0, 4.0]])
         anim = mg.animate(frames, time=["t0", "t1"])
         anim._func(1)
-        time_labels = [
-            t.get_text() for t in mg.ax.texts if t.get_text() == "t1"
-        ]
+        time_labels = [t.get_text() for t in mg.ax.texts if t.get_text() == "t1"]
         assert time_labels, "Frame update should set the time label to 't1'"
         plt.close(mg.fig)
 

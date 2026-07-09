@@ -6,11 +6,10 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
-from matplotlib.legend import Legend
-from matplotlib.patches import Patch
-
 from matplotlib.colorbar import Colorbar
 from matplotlib.container import BarContainer
+from matplotlib.legend import Legend
+from matplotlib.patches import Patch
 
 from cleopatra.styles import (
     ColorScale,
@@ -39,7 +38,11 @@ class TestColorScale:
     def test_member_names_and_values(self):
         """The enum covers exactly the five supported scales."""
         assert {m.value for m in ColorScale} == {
-            "linear", "power", "sym-lognorm", "boundary-norm", "midpoint"
+            "linear",
+            "power",
+            "sym-lognorm",
+            "boundary-norm",
+            "midpoint",
         }
 
     @pytest.mark.parametrize(
@@ -118,9 +121,9 @@ class TestDisjointLegend:
         """
         labels = ["a", "b", "c"]
         legend = disjoint_legend(ax, ["r", "g", "b"], labels)
-        assert [t.get_text() for t in legend.get_texts()] == labels, (
-            "Legend texts should equal the input labels in order"
-        )
+        assert [
+            t.get_text() for t in legend.get_texts()
+        ] == labels, "Legend texts should equal the input labels in order"
 
     def test_default_edgecolor_is_none(self, ax):
         """Swatches have no border by default (edgecolor='none').
@@ -130,9 +133,9 @@ class TestDisjointLegend:
         """
         legend = disjoint_legend(ax, ["red"], ["x"])
         edge = legend.legend_handles[0].get_edgecolor()
-        assert matplotlib.colors.to_rgba(edge)[3] == 0.0, (
-            f"Default edge should be transparent, got {edge}"
-        )
+        assert (
+            matplotlib.colors.to_rgba(edge)[3] == 0.0
+        ), f"Default edge should be transparent, got {edge}"
 
     def test_custom_edgecolor_applied(self, ax):
         """An explicit edgecolor is applied to every swatch.
@@ -142,9 +145,9 @@ class TestDisjointLegend:
         """
         legend = disjoint_legend(ax, ["red"], ["x"], edgecolor="black")
         edge = legend.legend_handles[0].get_edgecolor()
-        assert matplotlib.colors.to_rgba(edge) == matplotlib.colors.to_rgba("black"), (
-            f"Edge color should be black, got {edge}"
-        )
+        assert matplotlib.colors.to_rgba(edge) == matplotlib.colors.to_rgba(
+            "black"
+        ), f"Edge color should be black, got {edge}"
 
     def test_legend_kwargs_forwarded(self, ax):
         """Extra kwargs are forwarded to Axes.legend (e.g. title).
@@ -153,9 +156,9 @@ class TestDisjointLegend:
             title='Class' surfaces on the legend's title text.
         """
         legend = disjoint_legend(ax, ["red", "blue"], ["hot", "cold"], title="Class")
-        assert legend.get_title().get_text() == "Class", (
-            "title kwarg should be forwarded to Axes.legend"
-        )
+        assert (
+            legend.get_title().get_text() == "Class"
+        ), "title kwarg should be forwarded to Axes.legend"
 
     @pytest.mark.parametrize(
         "colors, labels",
@@ -198,9 +201,9 @@ class TestDiscreteContourfAcceptance:
         glyph = ArrayGlyph(data, levels=edges)
         glyph.plot(kind="contourf", cmap="viridis")
         ticks = list(glyph.cbar.get_ticks())
-        assert ticks == [float(e) for e in edges], (
-            f"Colorbar ticks should equal the level edges, got {ticks}"
-        )
+        assert ticks == [
+            float(e) for e in edges
+        ], f"Colorbar ticks should equal the level edges, got {ticks}"
         plt.close("all")
 
 
@@ -237,9 +240,9 @@ class TestColorbarLegend:
         """
         ax, sc = scatter
         cbar = colorbar_legend(sc, ax, label="depth")
-        assert cbar.ax.get_ylabel() == "depth", (
-            f"Unexpected colorbar label: {cbar.ax.get_ylabel()}"
-        )
+        assert (
+            cbar.ax.get_ylabel() == "depth"
+        ), f"Unexpected colorbar label: {cbar.ax.get_ylabel()}"
 
     def test_infers_axes_from_mappable(self, scatter):
         """With no ax, the mappable's own axes is used.
@@ -284,7 +287,9 @@ class TestHistogramLegend:
         bars = histogram_legend(
             ax, [0.0, 1.0, 1.0, 2.0, 2.0, 2.0], cmap="viridis", bins=3
         )
-        assert isinstance(bars, BarContainer), f"Expected BarContainer, got {type(bars)}"
+        assert isinstance(
+            bars, BarContainer
+        ), f"Expected BarContainer, got {type(bars)}"
         assert len(bars) == 3, f"Expected 3 bars, got {len(bars)}"
 
     def test_bars_coloured_by_cmap(self, ax):
@@ -310,7 +315,9 @@ class TestHistogramLegend:
             [0, 1, 2, 3], [0, 1, 0, 1], c=[1.0, 2.0, 3.0, 4.0], cmap="plasma"
         )
         bars = histogram_legend(ax, mappable=sc, bins=4)
-        assert len(bars) == 4, f"Expected 4 bars from the mappable array, got {len(bars)}"
+        assert (
+            len(bars) == 4
+        ), f"Expected 4 bars from the mappable array, got {len(bars)}"
         plt.close(fig2)
 
     def test_horizontal_orientation(self, ax):
@@ -396,8 +403,11 @@ class TestHistogramLegend:
         fig2, main_ax = plt.subplots()
         norm = BoundaryNorm([0, 1, 2, 3], ncolors=256)
         sc = main_ax.scatter(
-            [0, 1, 2, 3], [0, 1, 0, 1], c=[0.5, 1.5, 2.5, 0.5],
-            cmap="viridis", norm=norm,
+            [0, 1, 2, 3],
+            [0, 1, 0, 1],
+            c=[0.5, 1.5, 2.5, 0.5],
+            cmap="viridis",
+            norm=norm,
         )
         bars = histogram_legend(ax, mappable=sc, bins=3)
         assert len(bars) == 3, f"Expected 3 bars, got {len(bars)}"

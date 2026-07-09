@@ -46,9 +46,9 @@ class TestPackageSurface:
         import cleopatra
 
         assert hasattr(cleopatra, "__version__"), "Missing __version__"
-        assert isinstance(cleopatra.__version__, str), (
-            f"__version__ should be str, got {type(cleopatra.__version__)}"
-        )
+        assert isinstance(
+            cleopatra.__version__, str
+        ), f"__version__ should be str, got {type(cleopatra.__version__)}"
 
     def test_no_top_level_reexports(self):
         """The package root does not re-export classes/functions or `__all__`.
@@ -59,12 +59,12 @@ class TestPackageSurface:
         import cleopatra
 
         for name in ("add_tiles", "Config", "ArrayGlyph"):
-            assert not hasattr(cleopatra, name), (
-                f"cleopatra should not re-export {name!r}"
-            )
-        assert not hasattr(cleopatra, "__all__"), (
-            "cleopatra.__init__ should not define __all__"
-        )
+            assert not hasattr(
+                cleopatra, name
+            ), f"cleopatra should not re-export {name!r}"
+        assert not hasattr(
+            cleopatra, "__all__"
+        ), "cleopatra.__init__ should not define __all__"
         # Only dunders and the submodule attributes Python binds on import
         # should be present — nothing else leaked from __init__.py.
         leaked = [

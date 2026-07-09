@@ -1054,8 +1054,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     or np.issubdtype(arr_.dtype, np.floating)
                 ):
                     raise ValueError(
-                        f"{name}: {_COORD_DTYPE_MISMATCH}; got dtype "
-                        f"{arr_.dtype}."
+                        f"{name}: {_COORD_DTYPE_MISMATCH}; got dtype {arr_.dtype}."
                     )
             data_shape = array.shape[-2:]
             rows, cols = data_shape
@@ -1214,21 +1213,14 @@ class ArrayGlyph(GeoMixin, Glyph):
         values = values[np.isfinite(values)]
         if values.size == 0:
             raise ValueError(
-                "Cannot compute robust vmin/vmax: array has no finite "
-                "values."
+                "Cannot compute robust vmin/vmax: array has no finite " "values."
             )
-        vmin_robust = float(
-            np.nanpercentile(values, ROBUST_LOWER_PERCENTILE)
-        )
-        vmax_robust = float(
-            np.nanpercentile(values, ROBUST_UPPER_PERCENTILE)
-        )
+        vmin_robust = float(np.nanpercentile(values, ROBUST_LOWER_PERCENTILE))
+        vmax_robust = float(np.nanpercentile(values, ROBUST_UPPER_PERCENTILE))
         return vmin_robust, vmax_robust
 
     @staticmethod
-    def _center_limits(
-        vmin: float, vmax: float, center: float
-    ) -> tuple[float, float]:
+    def _center_limits(vmin: float, vmax: float, center: float) -> tuple[float, float]:
         """Make `(vmin, vmax)` symmetric around `center`.
 
         Implements xarray's diverging-cmap centring: the larger of
@@ -1362,12 +1354,8 @@ class ArrayGlyph(GeoMixin, Glyph):
                 vmin_base = np.nanmin(arr)
                 vmax_base = np.nanmax(arr)
 
-        vmin_final = (
-            vmin_kw if vmin_explicit and vmin_kw is not None else vmin_base
-        )
-        vmax_final = (
-            vmax_kw if vmax_explicit and vmax_kw is not None else vmax_base
-        )
+        vmin_final = vmin_kw if vmin_explicit and vmin_kw is not None else vmin_base
+        vmax_final = vmax_kw if vmax_explicit and vmax_kw is not None else vmax_base
 
         if not (np.isfinite(vmin_final) and np.isfinite(vmax_final)):
             raise ValueError(
@@ -1377,9 +1365,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             )
 
         if center is not None:
-            vmin_final, vmax_final = self._center_limits(
-                vmin_final, vmax_final, center
-            )
+            vmin_final, vmax_final = self._center_limits(vmin_final, vmax_final, center)
 
         return float(vmin_final), float(vmax_final)
 
@@ -1447,9 +1433,7 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         if kind == "imshow":
             if coords is not None:
-                raise ValueError(
-                    "`coords` requires kind='pcolormesh' or 'auto'."
-                )
+                raise ValueError("`coords` requires kind='pcolormesh' or 'auto'.")
             if norm is None:
                 im = ax.matshow(
                     plot_arr, cmap=cmap, vmin=vmin, vmax=vmax, extent=self.extent
@@ -1457,7 +1441,9 @@ class ArrayGlyph(GeoMixin, Glyph):
             else:
                 im = ax.matshow(plot_arr, cmap=cmap, norm=norm, extent=self.extent)
         elif kind == "pcolormesh":
-            pcm_args = (coords[0], coords[1], plot_arr) if coords is not None else (plot_arr,)
+            pcm_args = (
+                (coords[0], coords[1], plot_arr) if coords is not None else (plot_arr,)
+            )
             if norm is None:
                 im = ax.pcolormesh(
                     *pcm_args,
@@ -1467,9 +1453,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     shading="auto",
                 )
             else:
-                im = ax.pcolormesh(
-                    *pcm_args, cmap=cmap, norm=norm, shading="auto"
-                )
+                im = ax.pcolormesh(*pcm_args, cmap=cmap, norm=norm, shading="auto")
         elif kind in ("contour", "contourf"):
             # contour/contourf cannot consume masked arrays cleanly;
             # convert to a NaN-filled view if we're holding a mask.
@@ -2261,8 +2245,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             )
         if self.rgb and kind not in ("imshow", "auto"):
             raise ValueError(
-                "RGB compositing requires kind='imshow'. "
-                f"Got kind={kind!r}."
+                f"RGB compositing requires kind='imshow'. Got kind={kind!r}."
             )
 
         for key, val in kwargs.items():
@@ -2350,9 +2333,7 @@ class ArrayGlyph(GeoMixin, Glyph):
 
             # creating the ticks/bounds
             ticks = self.get_ticks()
-            im, cbar_kw = self._plot_im_get_cbar_kw(
-                ax, arr, ticks, kind=effective_kind
-            )
+            im, cbar_kw = self._plot_im_get_cbar_kw(ax, arr, ticks, kind=effective_kind)
             self.im = im
 
             # Create colorbar, unless the caller opted out (e.g. shared-axes
@@ -2534,9 +2515,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 ```
         """
         if col is None and row is None:
-            raise ValueError(
-                "at least one of `col`/`row` must be given"
-            )
+            raise ValueError("at least one of `col`/`row` must be given")
         if extents is not None:
             if self.extent is not None:
                 raise ValueError(
@@ -2544,9 +2523,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     "(one shared domain) are mutually exclusive."
                 )
             if self._coords is not None:
-                raise ValueError(
-                    "`extents` and `coords` are mutually exclusive."
-                )
+                raise ValueError("`extents` and `coords` are mutually exclusive.")
             for k, e in enumerate(extents):
                 if len(e) != 4:
                     raise ValueError(
@@ -2581,9 +2558,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             n_panels = n_col
         else:
             if col is None:
-                raise ValueError(
-                    "Faceting on `row` requires `col` as well."
-                )
+                raise ValueError("Faceting on `row` requires `col` as well.")
             if arr.ndim != 4:
                 raise ValueError(
                     "Faceting on `row`+`col` requires a 4-D array "
@@ -2602,9 +2577,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     f"`row_coords` length {len(row_coords)} does not match "
                     f"the row axis size {n_row}."
                 )
-            panel_indices = [
-                (i, j) for j in range(n_row) for i in range(n_col)
-            ]
+            panel_indices = [(i, j) for j in range(n_row) for i in range(n_col)]
             n_panels = n_col * n_row
 
         if extents is not None and len(extents) != n_panels:
@@ -2683,14 +2656,10 @@ class ArrayGlyph(GeoMixin, Glyph):
             )
             sub.plot(kind=kind)
 
-            col_label = (
-                col_coords[col_idx] if col_coords is not None else col_idx
-            )
+            col_label = col_coords[col_idx] if col_coords is not None else col_idx
             name_dict: dict[str, Any] = {col: col_label}
             if row is not None:
-                row_label = (
-                    row_coords[row_idx] if row_coords is not None else row_idx
-                )
+                row_label = row_coords[row_idx] if row_coords is not None else row_idx
                 name_dict[row] = row_label
                 title = f"{col}={col_label}, {row}={row_label}"
             else:
@@ -2720,6 +2689,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         pid_color: str = "blue",
         pid_size: int = 10,
         *,
+        label_color: str = "black",
         data_getter: Callable[[int], np.ndarray] | None = None,
         **kwargs,
     ) -> FuncAnimation:
@@ -2757,8 +2727,14 @@ class ArrayGlyph(GeoMixin, Glyph):
                 and the second color is used when the cell value is above the threshold.
             interval: Delay between frames in milliseconds, by default 200.
                 Controls the speed of the animation (smaller values = faster animation).
-            text_loc: Location of the time label text as [x, y] coordinates, by default None.
-                If None, defaults to [0.1, 0.2].
+            text_loc: Location of the frame label text as [x, y] coordinates, by default None.
+                When None, the label is anchored just inside the top-left corner using
+                axes-fraction coordinates, so it stays clear of the top/bottom edges
+                regardless of the array's shape or the axis orientation. A very narrow
+                axes can still overflow horizontally at the default font size, since no
+                anchor choice can fit a long label into less horizontal space than it
+                needs; pass an explicit [x, y] (data coordinates) or a smaller
+                `cbar_label_size` in that case.
             point_color: Color of the points, by default "red".
                 Any valid matplotlib color string.
             point_size: Size of the points, by default 100.
@@ -2767,6 +2743,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                 Any valid matplotlib color string.
             pid_size: Size of the point value annotations, by default 10.
                 Controls the font size of the annotations.
+            label_color: Color of the frame label text, by default "black".
+                Any valid matplotlib color string. `ArrayGlyph`-only;
+                `MeshGlyph.animate()` does not yet expose this option.
             data_getter: Optional callable `f(i) -> ndarray` that
                 returns the frame for index `i`, by default None.
                 When set, `self.arr` is no longer iterated; each
@@ -2982,8 +2961,13 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         ```
         """
-        if text_loc is None:
-            text_loc = [0.1, 0.2]
+        text_loc_is_default = text_loc is None
+        if text_loc_is_default:
+            # Axes-fraction anchor (not data coordinates): stays inside the
+            # frame regardless of array shape or axis orientation, unlike a
+            # fixed data-coordinate default. See `day_text` below for the
+            # matching transform/alignment.
+            text_loc = [0.02, 0.95]
 
         for key, val in kwargs.items():
             if key not in self.default_options.keys():
@@ -3054,9 +3038,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         # True-colour frames render without a norm/colormap/colorbar and
         # cannot carry per-cell value annotations (those need a scalar field).
         rgb_frames = _is_rgb_frame(frame_0)
-        show_cell_value = (
-            self.default_options["display_cell_value"] and not rgb_frames
-        )
+        show_cell_value = self.default_options["display_cell_value"] and not rgb_frames
 
         if self.fig is None:
             self.fig, self.ax = self.create_figure_axes()
@@ -3114,16 +3096,18 @@ class ArrayGlyph(GeoMixin, Glyph):
                 )
             else:
                 ref_for_threshold = array if data_getter is None else frame_0
-                background_color_threshold = (
-                    im.norm(np.nanmax(ref_for_threshold)) / 2.0
-                )
+                background_color_threshold = im.norm(np.nanmax(ref_for_threshold)) / 2.0
 
         day_text = ax.text(
             text_loc[0],
             text_loc[1],
             " ",
             fontsize=self.default_options["cbar_label_size"],
+            color=label_color,
+            transform=ax.transAxes if text_loc_is_default else ax.transData,
+            va="top" if text_loc_is_default else "baseline",
         )
+        self._day_text = day_text
 
         def _fetch_frame(i: int) -> np.ndarray:
             """Resolve frame `i` for the animation step.

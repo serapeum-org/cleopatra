@@ -91,7 +91,9 @@ class TestWidthLegend:
         """
         fig, ax = plt.subplots()
         legend = width_legend(ax, [1.0, 2.0], ["a", "b"], title="Flow")
-        assert legend.get_title().get_text() == "Flow", "title kwarg should be forwarded"
+        assert (
+            legend.get_title().get_text() == "Flow"
+        ), "title kwarg should be forwarded"
 
     def test_length_mismatch_raises(self):
         """Mismatched lengths raise ValueError.
@@ -115,7 +117,9 @@ class TestFlowGlyphInit:
         """
         glyph = FlowGlyph([[[0, 0], [1, 1]]])
         assert glyph.paths[0].dtype == float, "Paths should be stored as float arrays"
-        assert glyph.values is None and glyph.widths is None, "values/widths default to None"
+        assert (
+            glyph.values is None and glyph.widths is None
+        ), "values/widths default to None"
 
     def test_defaults_present(self, paths):
         """Flow-specific option defaults are exposed.
@@ -124,9 +128,16 @@ class TestFlowGlyphInit:
             width_limits/width_scale defaults and None ticks_spacing.
         """
         glyph = FlowGlyph(paths)
-        assert glyph.default_options["width_limits"] == (1, 5), "Default width_limits should be (1, 5)"
-        assert glyph.default_options["width_scale"] == "linear", "Default width_scale should be linear"
-        assert glyph.default_options["ticks_spacing"] is None, "ticks_spacing should auto-derive"
+        assert glyph.default_options["width_limits"] == (
+            1,
+            5,
+        ), "Default width_limits should be (1, 5)"
+        assert (
+            glyph.default_options["width_scale"] == "linear"
+        ), "Default width_scale should be linear"
+        assert (
+            glyph.default_options["ticks_spacing"] is None
+        ), "ticks_spacing should auto-derive"
 
     def test_mismatched_values_raises(self, paths):
         """A values array not matching the path count raises ValueError.
@@ -179,7 +190,9 @@ class TestFlowGlyphResolveLinewidths:
         out = np.asarray(glyph._resolve_linewidths())
         assert np.isclose(out.min(), 1.0), f"min width should be 1.0, got {out.min()}"
         assert np.isclose(out.max(), 5.0), f"max width should be 5.0, got {out.max()}"
-        assert np.array_equal(np.argsort(out), np.argsort(widths)), "Widths not monotonic in input"
+        assert np.array_equal(
+            np.argsort(out), np.argsort(widths)
+        ), "Widths not monotonic in input"
 
     @pytest.mark.parametrize("scale", ["linear", "log", "sqrt"])
     def test_width_scale_modes(self, paths, scale):
@@ -195,7 +208,9 @@ class TestFlowGlyphResolveLinewidths:
         widths = np.array([1.0, 2.0, 4.0, 8.0, 16.0])
         glyph = FlowGlyph(paths, widths=widths, width_scale=scale, width_limits=(1, 5))
         out = np.asarray(glyph._resolve_linewidths())
-        assert np.array_equal(np.argsort(out), np.argsort(widths)), f"{scale} not monotonic"
+        assert np.array_equal(
+            np.argsort(out), np.argsort(widths)
+        ), f"{scale} not monotonic"
 
 
 class TestFlowGlyphDrawWidthLegend:
@@ -209,7 +224,9 @@ class TestFlowGlyphDrawWidthLegend:
         """
         glyph = FlowGlyph(paths, widths=widths, size_legend=True)
         glyph.plot()
-        assert isinstance(glyph.size_legend_artist, Legend), "A width legend should be drawn"
+        assert isinstance(
+            glyph.size_legend_artist, Legend
+        ), "A width legend should be drawn"
         texts = [t.get_text() for t in glyph.size_legend_artist.get_texts()]
         assert len(texts) == 3, f"Default legend should have 3 entries, got {texts}"
 
@@ -219,8 +236,9 @@ class TestFlowGlyphDrawWidthLegend:
         Test scenario:
             Two representative magnitudes give two labelled entries.
         """
-        glyph = FlowGlyph(paths, widths=widths, size_legend=True,
-                          size_legend_values=[2.0, 8.0])
+        glyph = FlowGlyph(
+            paths, widths=widths, size_legend=True, size_legend_values=[2.0, 8.0]
+        )
         glyph.plot()
         texts = [t.get_text() for t in glyph.size_legend_artist.get_texts()]
         assert texts == ["2", "8"], f"Legend should honour explicit values, got {texts}"
@@ -247,7 +265,9 @@ class TestFlowGlyphPlot:
         """
         glyph = FlowGlyph(paths)
         fig, ax, lc = glyph.plot()
-        assert isinstance(lc, LineCollection), f"Expected LineCollection, got {type(lc)}"
+        assert isinstance(
+            lc, LineCollection
+        ), f"Expected LineCollection, got {type(lc)}"
 
     def test_uncoloured_single_colour_no_colorbar(self, paths):
         """Without values the lines are single-colour with no colorbar.
@@ -268,7 +288,9 @@ class TestFlowGlyphPlot:
         """
         glyph = FlowGlyph(paths, values=values)
         _, _, lc = glyph.plot()
-        assert np.array_equal(lc.get_array(), values), "Colour array should equal values"
+        assert np.array_equal(
+            lc.get_array(), values
+        ), "Colour array should equal values"
         assert glyph.cbar is not None, "A colorbar should be drawn by default"
 
     def test_colorbar_reflects_value_range(self, paths, values):
@@ -282,7 +304,9 @@ class TestFlowGlyphPlot:
         glyph = FlowGlyph(paths, values=values)
         glyph.plot()
         lo, hi = glyph.cbar.mappable.get_clim()
-        assert np.isclose(lo, values.min()), f"Colorbar should start at {values.min()}, got {lo}"
+        assert np.isclose(
+            lo, values.min()
+        ), f"Colorbar should start at {values.min()}, got {lo}"
         assert hi >= values.max(), f"Colorbar should cover {values.max()}, got {hi}"
 
     def test_colorbar_with_discrete_levels(self, paths, values):
@@ -307,10 +331,12 @@ class TestFlowGlyphPlot:
         glyph = FlowGlyph(paths, widths=widths, width_limits=(1, 5))
         _, _, lc = glyph.plot()
         lw = np.asarray(lc.get_linewidths())
-        assert np.array_equal(np.argsort(lw), np.argsort(widths)), "Linewidths not monotonic in widths"
-        assert np.isclose(lw.min(), 1.0) and np.isclose(lw.max(), 5.0), (
-            f"Linewidths should span (1, 5), got [{lw.min()}, {lw.max()}]"
-        )
+        assert np.array_equal(
+            np.argsort(lw), np.argsort(widths)
+        ), "Linewidths not monotonic in widths"
+        assert np.isclose(lw.min(), 1.0) and np.isclose(
+            lw.max(), 5.0
+        ), f"Linewidths should span (1, 5), got [{lw.min()}, {lw.max()}]"
 
     def test_add_colorbar_false_suppresses(self, paths, values):
         """add_colorbar=False suppresses the colorbar.
@@ -331,7 +357,9 @@ class TestFlowGlyphPlot:
         glyph = FlowGlyph(paths, values=values, line_width=2.0)
         _, _, lc = glyph.plot()
         lw = np.asarray(lc.get_linewidths())
-        assert np.all(lw == 2.0), f"All linewidths should be 2.0, got {set(lw.tolist())}"
+        assert np.all(
+            lw == 2.0
+        ), f"All linewidths should be 2.0, got {set(lw.tolist())}"
 
     def test_title_override(self, paths):
         """A title passed to plot overrides the default.
@@ -341,7 +369,9 @@ class TestFlowGlyphPlot:
         """
         glyph = FlowGlyph(paths)
         _, ax, _ = glyph.plot(title="Flows")
-        assert ax.get_title() == "Flows", f"Title should be 'Flows', got {ax.get_title()!r}"
+        assert (
+            ax.get_title() == "Flows"
+        ), f"Title should be 'Flows', got {ax.get_title()!r}"
 
     def test_plot_on_supplied_axes(self, paths):
         """plot(ax=...) draws on the supplied axes.

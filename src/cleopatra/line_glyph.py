@@ -93,9 +93,7 @@ class LineGlyph(Glyph):
         fig: Figure = None,
         **kwargs,
     ):
-        super().__init__(
-            default_options=LINE_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs
-        )
+        super().__init__(default_options=LINE_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs)
         self.x = np.asarray(x)
         self.y = np.asarray(y)
         n_rows = self.y.shape[0]
@@ -171,14 +169,12 @@ class LineGlyph(Glyph):
         opts = self.default_options
         color = color if color is not None else opts["color_1"]
         series = self._series()
-        labels = (
-            label if isinstance(label, (list, tuple))
-            else [label] * len(series)
-        )
+        labels = label if isinstance(label, (list, tuple)) else [label] * len(series)
         lines = []
         for col, lab in zip(series, labels):
             drawn = ax.plot(
-                self.x, col,
+                self.x,
+                col,
                 linestyle=opts["linestyle"],
                 marker=opts["marker"],
                 linewidth=opts["line_width"],
@@ -234,9 +230,7 @@ class LineGlyph(Glyph):
         ax = self._resolve_ax(ax)
         opts = self.default_options
         color = color if color is not None else opts["color_1"]
-        bars = ax.bar(
-            self.x, self.y, color=color, alpha=opts["alpha"], **kwargs
-        )
+        bars = ax.bar(self.x, self.y, color=color, alpha=opts["alpha"], **kwargs)
         self._apply_title(ax, title)
         return self.fig, ax, bars
 
@@ -286,15 +280,11 @@ class LineGlyph(Glyph):
                 ```
         """
         if self.y.ndim != 1:
-            raise ValueError(
-                f"fill_between requires 1D y; got {self.y.ndim}D."
-            )
+            raise ValueError(f"fill_between requires 1D y; got {self.y.ndim}D.")
         ax = self._resolve_ax(ax)
         opts = self.default_options
         color = color if color is not None else opts["color_1"]
         alpha = alpha if alpha is not None else 0.3
-        band = ax.fill_between(
-            self.x, self.y, y2, color=color, alpha=alpha, **kwargs
-        )
+        band = ax.fill_between(self.x, self.y, y2, color=color, alpha=alpha, **kwargs)
         self._apply_title(ax, title)
         return self.fig, ax, band

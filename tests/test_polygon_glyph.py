@@ -56,9 +56,9 @@ class TestPolygonGlyphInit:
         glyph = PolygonGlyph(polygons)
         assert glyph.default_options["edgecolor"] == "none", "Default edgecolor 'none'"
         assert glyph.default_options["linewidth"] == 0.5, "Default linewidth 0.5"
-        assert glyph.default_options["ticks_spacing"] is None, (
-            "ticks_spacing should default to None for auto-derivation"
-        )
+        assert (
+            glyph.default_options["ticks_spacing"] is None
+        ), "ticks_spacing should default to None for auto-derivation"
 
     def test_mismatched_values_raises(self, polygons):
         """A values array not matching polygon count raises ValueError.
@@ -91,11 +91,15 @@ class TestPolygonGlyphPlot:
         """
         glyph = PolygonGlyph(polygons, values=np.array([10.0, 20.0]))
         fig, ax, pc = glyph.plot()
-        assert isinstance(pc, PolyCollection), f"Expected PolyCollection, got {type(pc)}"
+        assert isinstance(
+            pc, PolyCollection
+        ), f"Expected PolyCollection, got {type(pc)}"
         np.testing.assert_array_almost_equal(
             pc.get_array(), [10.0, 20.0], err_msg="Array should equal values"
         )
-        assert glyph.cbar is not None, "A colorbar should be attached for filled polygons"
+        assert (
+            glyph.cbar is not None
+        ), "A colorbar should be attached for filled polygons"
         assert pc in ax.collections, "The collection should be added to the axes"
 
     def test_no_values_is_outline(self, polygons):
@@ -127,13 +131,12 @@ class TestPolygonGlyphPlot:
             With a spacing that divides the range, the clim equals the
             value range.
         """
-        glyph = PolygonGlyph(
-            polygons, values=np.array([0.0, 40.0]), ticks_spacing=10.0
-        )
+        glyph = PolygonGlyph(polygons, values=np.array([0.0, 40.0]), ticks_spacing=10.0)
         _, _, pc = glyph.plot()
-        assert pc.get_clim() == (0.0, 40.0), (
-            f"clim should follow the resolved limits, got {pc.get_clim()}"
-        )
+        assert pc.get_clim() == (
+            0.0,
+            40.0,
+        ), f"clim should follow the resolved limits, got {pc.get_clim()}"
 
     def test_levels_produce_boundary_norm(self, polygons):
         """An integer `levels` discretises the fill colour scale.
@@ -145,9 +148,9 @@ class TestPolygonGlyphPlot:
             polygons, values=np.array([0.0, 10.0]), levels=4, vmin=0.0, vmax=10.0
         )
         _, _, pc = glyph.plot()
-        assert isinstance(pc.norm, mcolors.BoundaryNorm), (
-            f"levels should yield a BoundaryNorm, got {type(pc.norm)}"
-        )
+        assert isinstance(
+            pc.norm, mcolors.BoundaryNorm
+        ), f"levels should yield a BoundaryNorm, got {type(pc.norm)}"
 
     def test_edgecolor_and_linewidth_forwarded(self, polygons):
         """edgecolor/linewidth options reach the PolyCollection.
@@ -225,7 +228,9 @@ class TestAddColorbarToggle:
 
     def test_add_colorbar_false_suppresses(self):
         """`add_colorbar=False` leaves cbar None and adds no axes."""
-        glyph = PolygonGlyph(self._polys(), values=np.array([1.0, 2.0]), add_colorbar=False)
+        glyph = PolygonGlyph(
+            self._polys(), values=np.array([1.0, 2.0]), add_colorbar=False
+        )
         fig, ax, _ = glyph.plot()
         try:
             assert glyph.cbar is None, "add_colorbar=False should skip the colorbar"
@@ -243,7 +248,9 @@ class TestAddColorbarToggle:
         glyph = PolygonGlyph(self._polys(), values=np.array([1.0, 2.0]))
         fig, ax, _ = glyph.plot(add_colorbar=False)
         try:
-            assert glyph.cbar is None, "plot(add_colorbar=False) should skip the colorbar"
+            assert (
+                glyph.cbar is None
+            ), "plot(add_colorbar=False) should skip the colorbar"
             assert len(fig.axes) == 1, f"expected 1 axes, got {len(fig.axes)}"
         finally:
             plt.close(fig)

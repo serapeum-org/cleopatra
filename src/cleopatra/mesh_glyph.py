@@ -776,9 +776,7 @@ class MeshGlyph(GeoMixin, Glyph):
 
         # Guard against all-NaN data.
         if np.all(np.isnan(data)):
-            raise ValueError(
-                "data is entirely NaN, cannot determine color range."
-            )
+            raise ValueError("data is entirely NaN, cannot determine color range.")
 
         # Reset default_options to a fresh copy so repeated plot() calls
         # on the same instance don't accumulate stale overrides.

@@ -65,9 +65,9 @@ class TestScatterGlyphInit:
         glyph = ScatterGlyph(*xy)
         assert glyph.default_options["marker"] == "o", "Default marker should be 'o'"
         assert glyph.default_options["point_size"] == 20, "Default size should be 20"
-        assert glyph.default_options["ticks_spacing"] is None, (
-            "ticks_spacing should default to None for auto-derivation"
-        )
+        assert (
+            glyph.default_options["ticks_spacing"] is None
+        ), "ticks_spacing should default to None for auto-derivation"
 
     def test_kwargs_override_options(self, xy):
         """Constructor kwargs override option defaults.
@@ -118,7 +118,9 @@ class TestScatterGlyphPlot:
         """
         glyph = ScatterGlyph(*xy)
         fig, ax, paths = glyph.plot()
-        assert isinstance(paths, PathCollection), f"Expected PathCollection, got {type(paths)}"
+        assert isinstance(
+            paths, PathCollection
+        ), f"Expected PathCollection, got {type(paths)}"
         assert paths.get_array() is None, "Uncoloured scatter should carry no array"
         assert glyph.cbar is None, "No colorbar should be created without values"
 
@@ -134,7 +136,9 @@ class TestScatterGlyphPlot:
         np.testing.assert_array_almost_equal(
             paths.get_array(), values, err_msg="Scatter array should equal values"
         )
-        assert glyph.cbar is not None, "A colorbar should be created for coloured points"
+        assert (
+            glyph.cbar is not None
+        ), "A colorbar should be created for coloured points"
 
     def test_point_size_and_marker_forwarded(self, xy):
         """point_size maps to the scatter sizes.
@@ -172,9 +176,10 @@ class TestScatterGlyphPlot:
             *xy, values=values, vmin=0.0, vmax=40.0, ticks_spacing=10.0
         )
         _, _, paths = glyph.plot()
-        assert paths.get_clim() == (0.0, 40.0), (
-            f"clim should honour explicit limits, got {paths.get_clim()}"
-        )
+        assert paths.get_clim() == (
+            0.0,
+            40.0,
+        ), f"clim should honour explicit limits, got {paths.get_clim()}"
 
     def test_levels_produce_boundary_norm(self, xy, values):
         """An integer `levels` discretises the colour scale.
@@ -184,9 +189,9 @@ class TestScatterGlyphPlot:
         """
         glyph = ScatterGlyph(*xy, values=values, levels=4)
         _, _, paths = glyph.plot()
-        assert isinstance(paths.norm, mcolors.BoundaryNorm), (
-            f"levels should yield a BoundaryNorm, got {type(paths.norm)}"
-        )
+        assert isinstance(
+            paths.norm, mcolors.BoundaryNorm
+        ), f"levels should yield a BoundaryNorm, got {type(paths.norm)}"
 
     def test_power_color_scale_applied(self, xy, values):
         """A non-linear color_scale is honoured for points.
@@ -196,9 +201,9 @@ class TestScatterGlyphPlot:
         """
         glyph = ScatterGlyph(*xy, values=values, color_scale="power")
         _, _, paths = glyph.plot()
-        assert isinstance(paths.norm, mcolors.PowerNorm), (
-            f"color_scale='power' should yield a PowerNorm, got {type(paths.norm)}"
-        )
+        assert isinstance(
+            paths.norm, mcolors.PowerNorm
+        ), f"color_scale='power' should yield a PowerNorm, got {type(paths.norm)}"
 
     def test_plot_on_supplied_axes(self, xy, values):
         """Plotting onto a supplied axes reuses that axes/figure.
@@ -249,7 +254,11 @@ class TestAddColorbarToggle:
 
     @staticmethod
     def _xyv():
-        return np.array([0.0, 1.0, 2.0]), np.array([0.0, 1.0, 2.0]), np.array([1.0, 2.0, 3.0])
+        return (
+            np.array([0.0, 1.0, 2.0]),
+            np.array([0.0, 1.0, 2.0]),
+            np.array([1.0, 2.0, 3.0]),
+        )
 
     def test_default_draws_colorbar(self):
         """By default a coloured scatter draws its colorbar (extra axes)."""
@@ -284,7 +293,9 @@ class TestAddColorbarToggle:
         glyph = ScatterGlyph(x, y, values=v)
         fig, ax, _ = glyph.plot(add_colorbar=False)
         try:
-            assert glyph.cbar is None, "plot(add_colorbar=False) should skip the colorbar"
+            assert (
+                glyph.cbar is None
+            ), "plot(add_colorbar=False) should skip the colorbar"
             assert len(fig.axes) == 1, f"expected 1 axes, got {len(fig.axes)}"
         finally:
             plt.close(fig)
@@ -332,9 +343,9 @@ class TestAddColorbarToggle:
         glyph = ScatterGlyph(x, y, values=v)
         fig, ax, _ = glyph.plot(add_colorbar=False)
         plt.close(fig)
-        assert glyph.default_options["add_colorbar"] is True, (
-            "override must not persist into default_options"
-        )
+        assert (
+            glyph.default_options["add_colorbar"] is True
+        ), "override must not persist into default_options"
         fig, ax, _ = glyph.plot()
         try:
             assert glyph.cbar is not None, "a later plot() should draw again"

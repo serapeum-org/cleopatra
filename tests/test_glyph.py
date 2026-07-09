@@ -137,9 +137,9 @@ class TestInit:
     def test_kwargs_override_defaults(self):
         """Test that kwargs override default_options values."""
         g = Glyph(default_options=_make_options(), cmap="plasma")
-        assert g.default_options["cmap"] == "plasma", (
-            f"Expected cmap='plasma', got '{g.default_options['cmap']}'"
-        )
+        assert (
+            g.default_options["cmap"] == "plasma"
+        ), f"Expected cmap='plasma', got '{g.default_options['cmap']}'"
 
     def test_invalid_kwarg_raises(self):
         """Test that an unknown kwarg raises ValueError."""
@@ -192,12 +192,12 @@ class TestMergeKwargs:
         """Test that valid kwargs update default_options."""
         g = Glyph(default_options=_make_options())
         g._merge_kwargs({"gamma": 0.8, "midpoint": 5})
-        assert g.default_options["gamma"] == 0.8, (
-            f"Expected gamma=0.8, got {g.default_options['gamma']}"
-        )
-        assert g.default_options["midpoint"] == 5, (
-            f"Expected midpoint=5, got {g.default_options['midpoint']}"
-        )
+        assert (
+            g.default_options["gamma"] == 0.8
+        ), f"Expected gamma=0.8, got {g.default_options['gamma']}"
+        assert (
+            g.default_options["midpoint"] == 5
+        ), f"Expected midpoint=5, got {g.default_options['midpoint']}"
 
     def test_invalid_key_raises(self):
         """Test that invalid key raises ValueError."""
@@ -289,18 +289,18 @@ class TestCreateNormAndCbarKw:
         glyph._default_options["gamma"] = 0.3
         ticks = np.array([0.0, 5.0, 10.0])
         norm, cbar_kw = glyph._create_norm_and_cbar_kw(ticks)
-        assert isinstance(norm, mcolors.PowerNorm), (
-            f"Expected PowerNorm, got {type(norm)}"
-        )
+        assert isinstance(
+            norm, mcolors.PowerNorm
+        ), f"Expected PowerNorm, got {type(norm)}"
 
     def test_sym_lognorm(self, glyph):
         """Test that sym-lognorm returns SymLogNorm with formatter."""
         glyph._default_options["color_scale"] = "sym-lognorm"
         ticks = np.array([0.0, 5.0, 10.0])
         norm, cbar_kw = glyph._create_norm_and_cbar_kw(ticks)
-        assert isinstance(norm, mcolors.SymLogNorm), (
-            f"Expected SymLogNorm, got {type(norm)}"
-        )
+        assert isinstance(
+            norm, mcolors.SymLogNorm
+        ), f"Expected SymLogNorm, got {type(norm)}"
         assert "format" in cbar_kw, "sym-lognorm should include a formatter"
 
     def test_boundary_norm_with_default_bounds(self, glyph):
@@ -309,9 +309,9 @@ class TestCreateNormAndCbarKw:
         glyph._default_options["bounds"] = None
         ticks = np.array([0.0, 5.0, 10.0])
         norm, cbar_kw = glyph._create_norm_and_cbar_kw(ticks)
-        assert isinstance(norm, mcolors.BoundaryNorm), (
-            f"Expected BoundaryNorm, got {type(norm)}"
-        )
+        assert isinstance(
+            norm, mcolors.BoundaryNorm
+        ), f"Expected BoundaryNorm, got {type(norm)}"
 
     def test_boundary_norm_with_custom_bounds(self, glyph):
         """Test boundary-norm with user-provided bounds."""
@@ -319,9 +319,9 @@ class TestCreateNormAndCbarKw:
         glyph._default_options["bounds"] = [0, 3, 6, 9]
         ticks = np.array([0.0, 5.0, 10.0])
         norm, cbar_kw = glyph._create_norm_and_cbar_kw(ticks)
-        assert isinstance(norm, mcolors.BoundaryNorm), (
-            f"Expected BoundaryNorm, got {type(norm)}"
-        )
+        assert isinstance(
+            norm, mcolors.BoundaryNorm
+        ), f"Expected BoundaryNorm, got {type(norm)}"
         np.testing.assert_array_equal(cbar_kw["ticks"], [0, 3, 6, 9])
 
     def test_midpoint_returns_midpoint_normalize(self, glyph):
@@ -330,9 +330,9 @@ class TestCreateNormAndCbarKw:
         glyph._default_options["midpoint"] = 5.0
         ticks = np.array([0.0, 5.0, 10.0])
         norm, cbar_kw = glyph._create_norm_and_cbar_kw(ticks)
-        assert isinstance(norm, MidpointNormalize), (
-            f"Expected MidpointNormalize, got {type(norm)}"
-        )
+        assert isinstance(
+            norm, MidpointNormalize
+        ), f"Expected MidpointNormalize, got {type(norm)}"
 
     def test_invalid_color_scale_string_raises(self, glyph):
         """An unrecognised color_scale string raises `ValueError`."""
@@ -390,17 +390,14 @@ class TestCreateColorBar:
 
     def test_respects_orientation(self):
         """Test that horizontal orientation is applied."""
-        g = Glyph(
-            default_options=_make_options(cbar_orientation="horizontal")
-        )
+        g = Glyph(default_options=_make_options(cbar_orientation="horizontal"))
         fig, ax = plt.subplots()
         im = ax.imshow(np.arange(9).reshape(3, 3))
         cbar = g.create_color_bar(ax, im, {"ticks": np.array([0, 4, 8])})
-        assert cbar.orientation == "horizontal", (
-            f"Expected horizontal, got {cbar.orientation}"
-        )
+        assert (
+            cbar.orientation == "horizontal"
+        ), f"Expected horizontal, got {cbar.orientation}"
         plt.close(fig)
-
 
     def test_single_axes_uses_gridspec(self):
         """Test that single-axes figure uses gridspec for colorbar.
@@ -433,15 +430,15 @@ class TestCreateColorBar:
         im2 = axes[1].imshow(np.arange(9, 0, -1).reshape(3, 3))
         g.create_color_bar(axes[1], im2, {"ticks": np.array([1, 5, 9])})
 
-        assert len(axes[0].images) == 1, (
-            f"First axes should have 1 image, got {len(axes[0].images)}"
-        )
-        assert len(axes[1].images) == 1, (
-            f"Second axes should have 1 image, got {len(axes[1].images)}"
-        )
-        assert len(fig.axes) == 4, (
-            f"Expected 4 axes (2 plot + 2 colorbar), got {len(fig.axes)}"
-        )
+        assert (
+            len(axes[0].images) == 1
+        ), f"First axes should have 1 image, got {len(axes[0].images)}"
+        assert (
+            len(axes[1].images) == 1
+        ), f"Second axes should have 1 image, got {len(axes[1].images)}"
+        assert (
+            len(fig.axes) == 4
+        ), f"Expected 4 axes (2 plot + 2 colorbar), got {len(fig.axes)}"
         plt.close(fig)
 
     def test_subplot_colorbars_independent(self):
@@ -482,12 +479,12 @@ class TestCreateColorBar:
             g.create_color_bar(ax, im, {"ticks": np.array([0.0, 0.5, 1.0])})
 
         for i, ax in enumerate(axes):
-            assert len(ax.images) == 1, (
-                f"Axes {i} should have 1 image, got {len(ax.images)}"
-            )
-        assert len(fig.axes) == 6, (
-            f"Expected 6 axes (3 plot + 3 colorbar), got {len(fig.axes)}"
-        )
+            assert (
+                len(ax.images) == 1
+            ), f"Axes {i} should have 1 image, got {len(ax.images)}"
+        assert (
+            len(fig.axes) == 6
+        ), f"Expected 6 axes (3 plot + 3 colorbar), got {len(fig.axes)}"
         plt.close(fig)
 
     def test_2x2_grid_subplots(self):
@@ -505,9 +502,9 @@ class TestCreateColorBar:
             g.create_color_bar(ax, im, {"ticks": np.array([0.0, 0.5, 1.0])})
 
         for i, ax in enumerate(axes.flat):
-            assert len(ax.images) == 1, (
-                f"Axes {i} should have 1 image, got {len(ax.images)}"
-            )
+            assert (
+                len(ax.images) == 1
+            ), f"Axes {i} should have 1 image, got {len(ax.images)}"
         plt.close(fig)
 
 
@@ -666,9 +663,9 @@ class TestSupportedVideoFormat:
     def test_contains_expected_formats(self):
         """Test that all expected formats are present."""
         expected = {"gif", "mov", "avi", "mp4", "webp"}
-        assert set(SUPPORTED_VIDEO_FORMAT) == expected, (
-            f"Expected {expected}, got {set(SUPPORTED_VIDEO_FORMAT)}"
-        )
+        assert (
+            set(SUPPORTED_VIDEO_FORMAT) == expected
+        ), f"Expected {expected}, got {set(SUPPORTED_VIDEO_FORMAT)}"
 
 
 class TestLevelsToBounds:
@@ -740,9 +737,9 @@ class TestCreateNormAndCbarKwLevelsExtend:
         glyph._default_options["levels"] = 4
         ticks = np.array([0.0, 5.0, 10.0])
         norm, cbar_kw = glyph._create_norm_and_cbar_kw(ticks)
-        assert isinstance(norm, mcolors.BoundaryNorm), (
-            f"Expected BoundaryNorm under linear+levels, got {type(norm)}"
-        )
+        assert isinstance(
+            norm, mcolors.BoundaryNorm
+        ), f"Expected BoundaryNorm under linear+levels, got {type(norm)}"
         assert len(cbar_kw["ticks"]) == 4
 
     def test_levels_list_under_linear(self, glyph):
@@ -792,9 +789,7 @@ class TestCreateNormAndCbarKwLevelsExtend:
         _, cbar_kw = glyph._create_norm_and_cbar_kw(ticks)
         assert cbar_kw["extend"] == "both"
 
-    @pytest.mark.parametrize(
-        "explicit", ["neither", "both", "min", "max"]
-    )
+    @pytest.mark.parametrize("explicit", ["neither", "both", "min", "max"])
     def test_extend_explicit_value_passes_through(self, glyph, explicit):
         """Any allowed explicit `extend` value is forwarded as-is.
 
@@ -821,17 +816,15 @@ class TestCreateColorBarKwargsMerge:
         fig, ax = plt.subplots()
         im = ax.imshow(np.arange(9).reshape(3, 3))
         cbar = g.create_color_bar(ax, im, {"ticks": np.array([0, 4, 8])})
-        assert cbar.ax.get_ylabel() == "Custom", (
-            f"Expected user label 'Custom', got {cbar.ax.get_ylabel()!r}"
-        )
+        assert (
+            cbar.ax.get_ylabel() == "Custom"
+        ), f"Expected user label 'Custom', got {cbar.ax.get_ylabel()!r}"
         plt.close(fig)
 
     def test_user_shrink_overrides_default(self):
         """User-supplied `shrink` survives the defaults merge."""
         g = Glyph(
-            default_options=_make_options(
-                cbar_length=0.9, cbar_kwargs={"shrink": 0.3}
-            )
+            default_options=_make_options(cbar_length=0.9, cbar_kwargs={"shrink": 0.3})
         )
         fig, ax = plt.subplots()
         im = ax.imshow(np.arange(9).reshape(3, 3))
@@ -846,9 +839,7 @@ class TestCreateColorBarKwargsMerge:
 
     def test_invalid_cbar_kwargs_type_raises(self):
         """Non-dict `cbar_kwargs` raises a clear `TypeError`."""
-        g = Glyph(
-            default_options=_make_options(cbar_kwargs="not-a-dict")
-        )
+        g = Glyph(default_options=_make_options(cbar_kwargs="not-a-dict"))
         fig, ax = plt.subplots()
         im = ax.imshow(np.arange(9).reshape(3, 3))
         with pytest.raises(TypeError, match="cbar_kwargs must be a dict"):
@@ -893,9 +884,9 @@ class TestResolveLimits:
         g = _make_glyph()
         vmin, vmax = g._resolve_limits(np.array([5.0, 1.0, 9.0]))
         assert (vmin, vmax) == (1.0, 9.0), f"Expected (1.0, 9.0), got {(vmin, vmax)}"
-        assert isinstance(vmin, float) and isinstance(vmax, float), (
-            "Limits must be returned as plain floats"
-        )
+        assert isinstance(vmin, float) and isinstance(
+            vmax, float
+        ), "Limits must be returned as plain floats"
 
     def test_explicit_vmin_preserved(self):
         """An explicit vmin is kept; only the missing vmax comes from data.
@@ -984,9 +975,9 @@ class TestPrepareScalarMapping:
         assert norm is None, "Linear scale with no levels should give norm=None"
         assert g.default_options["vmin"] == 0.0, "vmin should be written back"
         assert g.default_options["vmax"] == 10.0, "vmax should be written back"
-        assert g.default_options["ticks_spacing"] == 1.0, (
-            f"ticks_spacing should be range/10=1.0, got {g.default_options['ticks_spacing']}"
-        )
+        assert (
+            g.default_options["ticks_spacing"] == 1.0
+        ), f"ticks_spacing should be range/10=1.0, got {g.default_options['ticks_spacing']}"
         np.testing.assert_array_almost_equal(ticks, np.arange(0.0, 11.0, 1.0))
 
     def test_vmin_vmax_written_back_for_get_ticks(self):
@@ -1052,12 +1043,12 @@ class TestPrepareScalarMapping:
         g._default_options["ticks_spacing"] = None
         g._default_options["levels"] = 5
         norm, cbar_kw, _ = g._prepare_scalar_mapping(np.array([0.0, 10.0]))
-        assert isinstance(norm, mcolors.BoundaryNorm), (
-            f"levels should yield a BoundaryNorm, got {type(norm)}"
-        )
-        assert cbar_kw["extend"] == "both", (
-            f"levels should default extend to 'both', got {cbar_kw['extend']}"
-        )
+        assert isinstance(
+            norm, mcolors.BoundaryNorm
+        ), f"levels should yield a BoundaryNorm, got {type(norm)}"
+        assert (
+            cbar_kw["extend"] == "both"
+        ), f"levels should default extend to 'both', got {cbar_kw['extend']}"
 
     def test_color_scale_forwarded_into_norm(self):
         """A non-linear color_scale is honoured by the helper.
@@ -1070,9 +1061,9 @@ class TestPrepareScalarMapping:
         g._default_options["ticks_spacing"] = None
         g._default_options["color_scale"] = "power"
         norm, _, _ = g._prepare_scalar_mapping(np.array([0.0, 10.0]))
-        assert isinstance(norm, mcolors.PowerNorm), (
-            f"color_scale='power' should yield a PowerNorm, got {type(norm)}"
-        )
+        assert isinstance(
+            norm, mcolors.PowerNorm
+        ), f"color_scale='power' should yield a PowerNorm, got {type(norm)}"
 
 
 class TestArrayGlyphUnchangedByHelper:
@@ -1153,9 +1144,9 @@ class TestOptionKeysAndFilterKwargs:
         module = importlib.import_module(import_path)
         glyph_cls = getattr(module, class_name)
         const = getattr(module, const_name)
-        assert glyph_cls.option_keys() == set(const), (
-            f"{glyph_cls.__name__}.option_keys() must match {const_name}"
-        )
+        assert glyph_cls.option_keys() == set(
+            const
+        ), f"{glyph_cls.__name__}.option_keys() must match {const_name}"
 
     def test_keys_differ_per_glyph(self):
         """Different glyphs expose different option keys.
@@ -1203,6 +1194,7 @@ class TestOptionKeysAndFilterKwargs:
             keeping the accepted styling.
         """
         import numpy as np
+
         from cleopatra.array_glyph import ArrayGlyph
 
         raw = {"cmap": "viridis", "totally_unknown": 1}
@@ -1233,12 +1225,13 @@ class TestOptionKeysAndFilterKwargs:
             without an instance match the keys an actual instance ends up with.
         """
         import numpy as np
+
         from cleopatra.array_glyph import ArrayGlyph
 
         glyph = ArrayGlyph(np.arange(9.0).reshape(3, 3))
-        assert ArrayGlyph.option_keys() == set(glyph.default_options), (
-            "class option_keys must match the instance's accepted keys"
-        )
+        assert ArrayGlyph.option_keys() == set(
+            glyph.default_options
+        ), "class option_keys must match the instance's accepted keys"
 
     def test_filter_kwargs_does_not_mutate_input(self):
         """`filter_kwargs` leaves the caller's dict untouched and returns a copy.
@@ -1275,9 +1268,9 @@ class TestOptionKeysAndFilterKwargs:
         """
         from cleopatra.scatter_glyph import ScatterGlyph
 
-        assert ScatterGlyph.filter_kwargs({"nope": 1, "nah": 2}) == {}, (
-            "all-unknown input should yield an empty dict"
-        )
+        assert (
+            ScatterGlyph.filter_kwargs({"nope": 1, "nah": 2}) == {}
+        ), "all-unknown input should yield an empty dict"
 
 
 class TestRootFigure:
@@ -1347,9 +1340,15 @@ class TestDefaultOptionsAlias:
         """
         import cleopatra.array_glyph as ag
 
-        assert ag.DEFAULT_OPTIONS is ag.ARRAY_DEFAULT_OPTIONS, "alias must be the same object"
-        assert ag.ArrayGlyph.DEFAULT_OPTIONS is ag.ARRAY_DEFAULT_OPTIONS, "class attr mismatch"
-        assert ag.ArrayGlyph.option_keys() == set(ag.ARRAY_DEFAULT_OPTIONS), "keys mismatch"
+        assert (
+            ag.DEFAULT_OPTIONS is ag.ARRAY_DEFAULT_OPTIONS
+        ), "alias must be the same object"
+        assert (
+            ag.ArrayGlyph.DEFAULT_OPTIONS is ag.ARRAY_DEFAULT_OPTIONS
+        ), "class attr mismatch"
+        assert ag.ArrayGlyph.option_keys() == set(
+            ag.ARRAY_DEFAULT_OPTIONS
+        ), "keys mismatch"
 
     def test_statistical_alias_is_same_object(self):
         """`statistical_glyph.DEFAULT_OPTIONS` aliases `STATISTICAL_DEFAULT_OPTIONS`.
@@ -1361,9 +1360,15 @@ class TestDefaultOptionsAlias:
         """
         import cleopatra.statistical_glyph as sg
 
-        assert sg.DEFAULT_OPTIONS is sg.STATISTICAL_DEFAULT_OPTIONS, "alias must be the same object"
-        assert sg.StatisticalGlyph.DEFAULT_OPTIONS is sg.STATISTICAL_DEFAULT_OPTIONS, "class attr mismatch"
-        assert sg.StatisticalGlyph.option_keys() == set(sg.STATISTICAL_DEFAULT_OPTIONS), "keys mismatch"
+        assert (
+            sg.DEFAULT_OPTIONS is sg.STATISTICAL_DEFAULT_OPTIONS
+        ), "alias must be the same object"
+        assert (
+            sg.StatisticalGlyph.DEFAULT_OPTIONS is sg.STATISTICAL_DEFAULT_OPTIONS
+        ), "class attr mismatch"
+        assert sg.StatisticalGlyph.option_keys() == set(
+            sg.STATISTICAL_DEFAULT_OPTIONS
+        ), "keys mismatch"
 
 
 class TestSubFigureFigureResolution:
@@ -1489,7 +1494,9 @@ class TestFigureResolutionInternals:
         try:
             with _warnings.catch_warnings():
                 _warnings.simplefilter("ignore")
-                assert _root_figure(_LegacyAxOnSub()) is fig, "should climb to the root figure"
+                assert (
+                    _root_figure(_LegacyAxOnSub()) is fig
+                ), "should climb to the root figure"
         finally:
             plt.close(fig)
 
@@ -1538,4 +1545,11 @@ class TestGetTicksDegenerateRange:
         opts = _make_options()
         opts.update({"vmin": 0.0, "vmax": 10.0, "ticks_spacing": 2.0})
         g = Glyph(default_options=opts)
-        assert g.get_ticks().tolist() == [0.0, 2.0, 4.0, 6.0, 8.0, 10.0], "ticks changed"
+        assert g.get_ticks().tolist() == [
+            0.0,
+            2.0,
+            4.0,
+            6.0,
+            8.0,
+            10.0,
+        ], "ticks changed"

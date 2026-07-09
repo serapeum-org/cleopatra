@@ -104,7 +104,9 @@ class TestLineGlyphLine:
         """
         glyph = LineGlyph(*xy)
         _, _, lines = glyph.line(label="obs")
-        assert lines[0].get_label() == "obs", f"Unexpected label: {lines[0].get_label()}"
+        assert (
+            lines[0].get_label() == "obs"
+        ), f"Unexpected label: {lines[0].get_label()}"
 
     def test_title_override(self, xy):
         """A title passed to line is applied to the axes."""
@@ -131,7 +133,9 @@ class TestLineGlyphBar:
         """
         glyph = LineGlyph(*xy)
         _, _, bars = glyph.bar()
-        assert isinstance(bars, BarContainer), f"Expected BarContainer, got {type(bars)}"
+        assert isinstance(
+            bars, BarContainer
+        ), f"Expected BarContainer, got {type(bars)}"
         assert len(bars) == 4, f"Expected 4 bars, got {len(bars)}"
 
     def test_bar_rejects_2d(self):
@@ -158,7 +162,9 @@ class TestLineGlyphFillBetween:
         """
         glyph = LineGlyph(*xy)
         _, ax, band = glyph.fill_between(y2=0.0)
-        assert isinstance(band, PolyCollection), f"Expected PolyCollection, got {type(band)}"
+        assert isinstance(
+            band, PolyCollection
+        ), f"Expected PolyCollection, got {type(band)}"
         assert band in ax.collections, "Band should be added to the axes"
 
     def test_array_lower_bound(self, xy):

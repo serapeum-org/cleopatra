@@ -137,7 +137,10 @@ def test_natural_earth_reads_cached_lines(cache: Path):
         cache,
         "coastline",
         "110m",
-        {"type": "MultiLineString", "coordinates": [[[0, 0], [10, 10]], [[5, 5], [6, 7]]]},
+        {
+            "type": "MultiLineString",
+            "coordinates": [[[0, 0], [10, 10]], [[5, 5], [6, 7]]],
+        },
     )
     parts = natural_earth("coastline", "110m")
     assert len(parts) == 2
@@ -155,7 +158,9 @@ def test_natural_earth_skips_null_geometry(cache: Path):
             },
         ],
     }
-    with gzip.open(cache / "ne_110m_coastline.geojson.gz", "wt", encoding="utf-8") as fh:
+    with gzip.open(
+        cache / "ne_110m_coastline.geojson.gz", "wt", encoding="utf-8"
+    ) as fh:
         json.dump(collection, fh)
     parts = natural_earth("coastline", "110m")
     assert len(parts) == 1
@@ -197,7 +202,10 @@ def test_add_features_polygon_layer(cache: Path):
         cache,
         "land",
         "110m",
-        {"type": "Polygon", "coordinates": [[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]]},
+        {
+            "type": "Polygon",
+            "coordinates": [[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]],
+        },
     )
     fig, ax = plt.subplots()
     ax.plot([0, 10], [0, 10])
@@ -256,7 +264,9 @@ def test_add_features_zorder_and_style_passthrough(cache: Path):
     add_features(ax, "coastline", "110m", zorder=5, linewidths=2.5)
     lc = next(c for c in ax.collections if isinstance(c, LineCollection))
     assert lc.get_zorder() == 5, f"zorder not forwarded: {lc.get_zorder()}"
-    assert lc.get_linewidths()[0] == 2.5, f"linewidth not forwarded: {lc.get_linewidths()}"
+    assert (
+        lc.get_linewidths()[0] == 2.5
+    ), f"linewidth not forwarded: {lc.get_linewidths()}"
     plt.close(fig)
 
 
@@ -379,7 +389,9 @@ def test_add_relief(cache: Path):
 
 def test_add_relief_passes_imshow_params(cache: Path):
     """`alpha`, `zorder`, and `interpolation` are forwarded to `imshow`."""
-    Image = pytest.importorskip("PIL.Image", reason="Pillow not installed (tiles extra)")
+    Image = pytest.importorskip(
+        "PIL.Image", reason="Pillow not installed (tiles extra)"
+    )
     arr = (np.random.default_rng(2).random((4, 8, 3)) * 255).astype("uint8")
     Image.fromarray(arr).save(cache / "ne_hypso_rgb_720x360.png")
 
@@ -390,9 +402,9 @@ def test_add_relief_passes_imshow_params(cache: Path):
     img = ax.images[0]
     assert img.get_alpha() == 0.5, f"alpha not forwarded: {img.get_alpha()}"
     assert img.get_zorder() == -3, f"zorder not forwarded: {img.get_zorder()}"
-    assert img.get_interpolation() == "nearest", (
-        f"interpolation not forwarded: {img.get_interpolation()}"
-    )
+    assert (
+        img.get_interpolation() == "nearest"
+    ), f"interpolation not forwarded: {img.get_interpolation()}"
     plt.close(fig)
 
 
@@ -460,16 +472,43 @@ def test_download_streams_to_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPat
 def test_download_failure_raises_and_cleans_part(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
-    """A failed fetch raises ConnectionError and removes the partial file."""
+    """A persistent failure retries, then raises ConnectionError and cleans up."""
+    calls = []
 
     def boom(request, timeout=None):
+        calls.append(1)
         raise urllib.error.URLError("network down")
 
     monkeypatch.setattr(reference.urllib.request, "urlopen", boom)
+    monkeypatch.setattr(reference.time, "sleep", lambda seconds: None)
     dest = tmp_path / "asset.bin"
     with pytest.raises(ConnectionError, match="Failed to download"):
-        reference._download("https://example.com/asset.bin", dest)
+        reference._download("https://example.com/asset.bin", dest, retries=3)
+    assert len(calls) == 3
     assert not dest.exists()
+    assert not (tmp_path / "asset.bin.part").exists()
+
+
+def test_download_retries_transient_failure_then_succeeds(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """A transient failure on the first attempt is retried and then succeeds."""
+    payload = b"reference-asset-bytes"
+    attempts = []
+
+    def flaky_then_ok(request, timeout=None):
+        attempts.append(1)
+        if len(attempts) == 1:
+            raise urllib.error.URLError("temporary hiccup")
+        return io.BytesIO(payload)
+
+    monkeypatch.setattr(reference.urllib.request, "urlopen", flaky_then_ok)
+    monkeypatch.setattr(reference.time, "sleep", lambda seconds: None)
+    dest = tmp_path / "asset.bin"
+    out = reference._download("https://example.com/asset.bin", dest, retries=3)
+    assert out == dest
+    assert dest.read_bytes() == payload
+    assert len(attempts) == 2
     assert not (tmp_path / "asset.bin.part").exists()
 
 
@@ -480,7 +519,10 @@ def test_polygons_multipolygon_keeps_rings():
     geom = {
         "type": "MultiPolygon",
         "coordinates": [
-            [[[0, 0], [1, 0], [1, 1], [0, 0]], [[0.2, 0.2], [0.6, 0.2], [0.6, 0.6], [0.2, 0.2]]],
+            [
+                [[0, 0], [1, 0], [1, 1], [0, 0]],
+                [[0.2, 0.2], [0.6, 0.2], [0.6, 0.6], [0.2, 0.2]],
+            ],
             [[[5, 5], [6, 5], [6, 6], [5, 5]]],
         ],
     }
@@ -489,7 +531,10 @@ def test_polygons_multipolygon_keeps_rings():
 
 
 def test_polygons_non_polygon_returns_empty():
-    assert reference._polygons({"type": "LineString", "coordinates": [[0, 0], [1, 1]]}) == []
+    assert (
+        reference._polygons({"type": "LineString", "coordinates": [[0, 0], [1, 1]]})
+        == []
+    )
 
 
 def test_signed_area_sign():
