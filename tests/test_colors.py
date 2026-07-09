@@ -1,9 +1,47 @@
 from pathlib import Path
 
 import pytest
-from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.colors import Colormap, LinearSegmentedColormap
 
-from cleopatra.colors import Colors
+from cleopatra.colors import CAMS_COLORMAPS, Colors
+
+
+class TestCamsColormaps:
+    """Tests for the `CAMS_COLORMAPS` preset constant."""
+
+    def test_has_organic_matter_and_dust(self):
+        """The two documented preset names are present, and only those two."""
+        assert set(CAMS_COLORMAPS) == {"organic_matter", "dust"}, (
+            f"unexpected preset names: {set(CAMS_COLORMAPS)}"
+        )
+
+    @pytest.mark.parametrize("name", ["organic_matter", "dust"])
+    def test_entries_are_colormaps(self, name):
+        """Each entry is a ready `Colormap`, not a name string or dict."""
+        assert isinstance(CAMS_COLORMAPS[name], Colormap), (
+            f"{name} is not a Colormap: {type(CAMS_COLORMAPS[name])}"
+        )
+
+    @pytest.mark.parametrize("name", ["organic_matter", "dust"])
+    def test_starts_white_at_zero(self, name):
+        """Every CAMS colormap starts at opaque white for value 0.0."""
+        assert CAMS_COLORMAPS[name](0.0) == (1.0, 1.0, 1.0, 1.0), (
+            f"{name}(0.0) should be white, got {CAMS_COLORMAPS[name](0.0)}"
+        )
+
+    def test_dust_ends_dark_brown(self):
+        """The dust colormap saturates to a dark brown at value 1.0."""
+        r, g, b, a = CAMS_COLORMAPS["dust"](1.0)
+        assert a == 1.0, "alpha should be opaque"
+        assert r > g > b, f"dust top stop should be brown-toned, got rgb=({r}, {g}, {b})"
+
+    def test_organic_matter_ends_purple(self):
+        """The organic_matter colormap saturates to a deep purple at value 1.0."""
+        r, g, b, a = CAMS_COLORMAPS["organic_matter"](1.0)
+        assert a == 1.0, "alpha should be opaque"
+        assert r > g and b > g, (
+            f"organic_matter top stop should be purple-toned, got rgb=({r}, {g}, {b})"
+        )
 
 
 class TestCreateColors:

@@ -6,6 +6,23 @@ from matplotlib import colors as mcolors
 from matplotlib.colors import Colormap, LinearSegmentedColormap
 from PIL import Image, UnidentifiedImageError
 
+#: Sequential colormaps matching the ECMWF/CAMS aerosol-optical-depth animation
+#: style (white at 0.0, saturating toward the named hue at 1.0). Each value is a
+#: ready `matplotlib.colors.Colormap` -- pass it directly as a `cmap` argument
+#: anywhere cleopatra or matplotlib accepts one (e.g. `alpha_scaled_image`,
+#: `swatch_legend`, `plt.imshow(..., cmap=CAMS_COLORMAPS["dust"])`). Plain
+#: constants, not registered into matplotlib's global colormap namespace, so
+#: importing this module has no global side effect. See `alpha_scaled_image`
+#: and `swatch_legend` for runnable examples using these colormaps.
+CAMS_COLORMAPS: dict[str, Colormap] = {
+    "organic_matter": LinearSegmentedColormap.from_list(
+        "cams_organic_matter", ["#ffffff", "#ff5fa8", "#8a0e82", "#3b0057"]
+    ),
+    "dust": LinearSegmentedColormap.from_list(
+        "cams_dust", ["#ffffff", "#ffe066", "#ff8c00", "#5c2c06"]
+    ),
+}
+
 
 class Colors:
     """A class for handling and converting between different color formats.
