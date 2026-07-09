@@ -10,6 +10,8 @@ from matplotlib.colors import Colormap, LinearSegmentedColormap
 from matplotlib.image import AxesImage
 from PIL import Image, UnidentifiedImageError
 
+from cleopatra.styles import swatch_legend
+
 #: Sequential colormaps matching the ECMWF/CAMS aerosol-optical-depth animation
 #: style (white at 0.0, saturating toward the named hue at 1.0). Each value is a
 #: ready `matplotlib.colors.Colormap` -- pass it directly as a `cmap` argument
@@ -127,6 +129,152 @@ def alpha_scaled_image(
     rgba[..., 3] = np.where(finite_mask, alpha, 0.0)
 
     return ax.imshow(rgba, **imshow_kwargs)
+
+
+#: Named "data style" presets for `apply_data_style` -- each entry maps a
+#: layer name to the `cmap`/`label`/`vmin`/`vmax` used to draw it with
+#: `alpha_scaled_image` and label it with `swatch_legend`. This is the
+#: colour/legend half of the ECMWF/CAMS look; pair it with a
+#: `cleopatra.projection` projection-style preset (globe or flat) -- the two
+#: are independent and neither requires the other.
+DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
+    "cams": {
+        "organic_matter": {
+            "cmap": CAMS_COLORMAPS["organic_matter"],
+            "label": "Organic Matter",
+            "vmin": 0.0,
+            "vmax": 1.0,
+        },
+        "dust": {
+            "cmap": CAMS_COLORMAPS["dust"],
+            "label": "Dust",
+            "vmin": 0.0,
+            "vmax": 1.0,
+        },
+    },
+}
+
+
+def apply_data_style(
+    ax: Axes,
+    layers: dict[str, np.ndarray],
+    style: str = "cams",
+    *,
+    legend: bool = True,
+    legend_bounds: list[tuple[float, float, float, float]] | None = None,
+    **alpha_scaled_image_kwargs: Any,
+) -> dict[str, AxesImage]:
+    """Draw one or more named data layers with a registered `DATA_STYLES` preset.
+
+    Applies `alpha_scaled_image` (and, if `legend`, a stacked `swatch_legend`
+    per layer) to each array in `layers`, using the colormap/label/range that
+    `style` defines for that layer name in `DATA_STYLES`. Calling this with
+    `layers={"organic_matter": ..., "dust": ...}` reproduces the ECMWF/CAMS
+    aerosol look in one call -- but it is only a thin orchestration over
+    `alpha_scaled_image` + `swatch_legend`, so nothing about it requires the
+    orthographic globe: it works on a plain flat axes, an existing
+    `"ecmwf"`/`"ecmwf-dark"` reference map (`cleopatra.geo`), or any other
+    projection just as well.
+
+    Args:
+        ax: Axes to draw on.
+        layers: Mapping of layer name to its 2D data array. Every key must be
+            a layer defined by `style` (e.g. `"organic_matter"`/`"dust"` for
+            `"cams"`); pass a subset to draw only some of a style's layers.
+        style: A name from `DATA_STYLES`. Defaults to `"cams"`.
+        legend: If `True` (default), attach one `swatch_legend` per layer,
+            stacked top-to-bottom in the top-left.
+        legend_bounds: Explicit `(x0, y0, width, height)` per layer legend,
+            in the same order as `layers`, overriding the auto-stacked
+            default.
+        **alpha_scaled_image_kwargs: Forwarded to every `alpha_scaled_image`
+            call (e.g. `extent`, `zorder`, `origin`).
+
+    Returns:
+        dict[str, AxesImage]: The image artist for each layer, keyed by name,
+        in the same order as `layers`.
+
+    Raises:
+        KeyError: If `style` is not registered, or `layers` names a layer the
+            style does not define.
+
+    Examples:
+        - Draw both CAMS layers and read back the images and their labels:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import numpy as np
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.colors import apply_data_style
+            >>> fig, ax = plt.subplots()
+            >>> layers = {
+            ...     "dust": np.array([[0.0, 1.0]]),
+            ...     "organic_matter": np.array([[0.2, 0.8]]),
+            ... }
+            >>> images = apply_data_style(ax, layers)
+            >>> sorted(images)
+            ['dust', 'organic_matter']
+            >>> [t.get_text() for c in ax.child_axes for t in c.texts][:2]
+            ['Dust', '0']
+            >>> plt.close(fig)
+
+            ```
+        - An unknown layer name raises `KeyError` before drawing anything:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import numpy as np
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.colors import apply_data_style
+            >>> fig, ax = plt.subplots()
+            >>> apply_data_style(ax, {"smoke": np.array([[0.0, 1.0]])})
+            Traceback (most recent call last):
+                ...
+            KeyError: "['smoke'] not defined for data style 'cams'; available layers: ['dust', 'organic_matter']"
+            >>> plt.close(fig)
+
+            ```
+
+    See Also:
+        alpha_scaled_image: The per-layer rendering primitive this composes.
+        swatch_legend: The per-layer legend primitive this composes.
+        cleopatra.projection.apply_projection_style: The companion
+            projection-style axis (globe vs flat).
+    """
+    if style not in DATA_STYLES:
+        raise KeyError(
+            f"Unknown data style {style!r}; available: {sorted(DATA_STYLES)}"
+        )
+    preset = DATA_STYLES[style]
+    unknown = sorted(set(layers) - set(preset))
+    if unknown:
+        raise KeyError(
+            f"{unknown} not defined for data style {style!r}; "
+            f"available layers: {sorted(preset)}"
+        )
+
+    images: dict[str, AxesImage] = {}
+    for i, (name, data) in enumerate(layers.items()):
+        cfg = preset[name]
+        norm = mcolors.Normalize(vmin=cfg["vmin"], vmax=cfg["vmax"])
+        images[name] = alpha_scaled_image(
+            ax, data, cfg["cmap"], norm=norm, **alpha_scaled_image_kwargs
+        )
+        if legend:
+            bounds = (
+                legend_bounds[i]
+                if legend_bounds is not None
+                else (0.02, 0.92 - 0.12 * i, 0.32, 0.06)
+            )
+            swatch_legend(
+                ax,
+                cfg["cmap"],
+                cfg["label"],
+                vmin=cfg["vmin"],
+                vmax=cfg["vmax"],
+                bounds=bounds,
+            )
+    return images
 
 
 class Colors:

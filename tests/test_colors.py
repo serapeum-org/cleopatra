@@ -6,7 +6,13 @@ import pytest
 from matplotlib.colors import Colormap, LinearSegmentedColormap, Normalize
 from matplotlib.image import AxesImage
 
-from cleopatra.colors import CAMS_COLORMAPS, Colors, alpha_scaled_image
+from cleopatra.colors import (
+    CAMS_COLORMAPS,
+    DATA_STYLES,
+    Colors,
+    alpha_scaled_image,
+    apply_data_style,
+)
 
 
 class TestCamsColormaps:
@@ -114,6 +120,84 @@ class TestAlphaScaledImage:
         """Extra keyword arguments (e.g. `zorder`) reach the underlying `imshow`."""
         img = alpha_scaled_image(ax, np.array([[0.0, 1.0]]), "viridis", zorder=7)
         assert img.get_zorder() == 7, f"zorder not forwarded, got {img.get_zorder()}"
+
+
+class TestApplyDataStyle:
+    """Tests for `apply_data_style` and the `DATA_STYLES` registry."""
+
+    @pytest.fixture
+    def ax(self):
+        """A fresh Axes on the Agg backend, closed after the test."""
+        fig, ax = plt.subplots()
+        yield ax
+        plt.close(fig)
+
+    def test_cams_preset_has_both_layers(self):
+        """The registered 'cams' preset defines exactly organic_matter and dust."""
+        assert set(DATA_STYLES["cams"]) == {"organic_matter", "dust"}, (
+            f"unexpected cams layers: {set(DATA_STYLES['cams'])}"
+        )
+
+    def test_draws_one_image_per_layer(self, ax):
+        """Each key in `layers` produces one returned `AxesImage`, drawn on `ax`."""
+        layers = {"dust": np.array([[0.0, 1.0]]), "organic_matter": np.array([[0.2, 0.8]])}
+        images = apply_data_style(ax, layers)
+        assert set(images) == {"dust", "organic_matter"}, f"unexpected keys: {set(images)}"
+        for img in images.values():
+            assert isinstance(img, AxesImage), f"expected AxesImage, got {type(img)}"
+            assert img in ax.images, "image should be drawn on ax"
+
+    def test_uses_the_layer_specific_colormap(self, ax):
+        """Each layer is drawn with its own DATA_STYLES colormap, not a shared one."""
+        images = apply_data_style(ax, {"dust": np.array([[0.0, 1.0]])})
+        top_rgb = images["dust"].get_array()[0, 1, :3]
+        expected = CAMS_COLORMAPS["dust"](1.0)[:3]
+        np.testing.assert_allclose(
+            top_rgb, expected, atol=1e-6, err_msg="dust layer used the wrong colormap"
+        )
+
+    def test_legend_true_attaches_one_swatch_per_layer(self, ax):
+        """`legend=True` (the default) attaches one swatch legend per layer."""
+        apply_data_style(ax, {"dust": np.array([[0.0, 1.0]]), "organic_matter": np.array([[0.0, 1.0]])})
+        assert len(ax.child_axes) == 2, f"expected 2 swatch legends, got {len(ax.child_axes)}"
+
+    def test_legend_false_attaches_no_swatch(self, ax):
+        """`legend=False` draws the layers without any swatch legend."""
+        apply_data_style(ax, {"dust": np.array([[0.0, 1.0]])}, legend=False)
+        assert ax.child_axes == [], f"expected no swatch legends, got {ax.child_axes}"
+
+    def test_partial_layer_subset_is_allowed(self, ax):
+        """Passing only one of the preset's layers draws just that one."""
+        images = apply_data_style(ax, {"dust": np.array([[0.0, 1.0]])})
+        assert list(images) == ["dust"], f"expected only 'dust', got {list(images)}"
+
+    def test_unknown_style_raises_key_error(self, ax):
+        """An unregistered `style` name raises `KeyError` before drawing anything."""
+        with pytest.raises(KeyError, match="Unknown data style"):
+            apply_data_style(ax, {"dust": np.array([[0.0, 1.0]])}, style="not-a-style")
+        assert len(ax.images) == 0, "nothing should be drawn when style is invalid"
+
+    def test_unknown_layer_name_raises_key_error(self, ax):
+        """A layer name the style doesn't define raises `KeyError`, nothing drawn."""
+        with pytest.raises(KeyError, match="smoke"):
+            apply_data_style(ax, {"smoke": np.array([[0.0, 1.0]])})
+        assert len(ax.images) == 0, "nothing should be drawn when a layer is unknown"
+
+    def test_explicit_legend_bounds_are_used(self, ax):
+        """Explicit `legend_bounds` override the auto-stacked default position."""
+        apply_data_style(
+            ax,
+            {"dust": np.array([[0.0, 1.0]])},
+            legend_bounds=[(0.5, 0.5, 0.2, 0.05)],
+        )
+        assert ax.child_axes[0].get_position().bounds is not None, (
+            "swatch should have a position derived from the explicit bounds"
+        )
+
+    def test_forwards_alpha_scaled_image_kwargs(self, ax):
+        """Extra kwargs (e.g. `zorder`) reach the underlying `alpha_scaled_image`."""
+        images = apply_data_style(ax, {"dust": np.array([[0.0, 1.0]])}, zorder=5)
+        assert images["dust"].get_zorder() == 5, "zorder not forwarded to alpha_scaled_image"
 
 
 class TestCreateColors:
