@@ -12,20 +12,23 @@ from PIL import Image, UnidentifiedImageError
 
 from cleopatra.styles import swatch_legend
 
-#: Sequential colormaps matching the ECMWF/CAMS aerosol-optical-depth animation
-#: style (white at 0.0, saturating toward the named hue at 1.0). Each value is a
-#: ready `matplotlib.colors.Colormap` -- pass it directly as a `cmap` argument
+#: Sequential colormaps for the "haze" data style (white at 0.0, saturating
+#: toward the named hue at 1.0) -- the value-modulated-alpha, glowing-rim look
+#: used by ECMWF/CAMS aerosol-optical-depth animations. Each value is a ready
+#: `matplotlib.colors.Colormap` -- pass it directly as a `cmap` argument
 #: anywhere cleopatra or matplotlib accepts one (e.g. `alpha_scaled_image`,
-#: `swatch_legend`, `plt.imshow(..., cmap=CAMS_COLORMAPS["dust"])`). Plain
+#: `swatch_legend`, `plt.imshow(..., cmap=HAZE_COLORMAPS["dust"])`). Plain
 #: constants, not registered into matplotlib's global colormap namespace, so
 #: importing this module has no global side effect. See `alpha_scaled_image`
 #: and `swatch_legend` for runnable examples using these colormaps.
-CAMS_COLORMAPS: dict[str, Colormap] = {
+HAZE_COLORMAPS: dict[str, Colormap] = {
     "organic_matter": LinearSegmentedColormap.from_list(
-        "cams_organic_matter", ["#ffffff", "#ff5fa8", "#8a0e82", "#3b0057"]
+        "haze_organic_matter",
+        ["#ffffff", "#ffd9f2", "#ff5fc9", "#c400a0", "#5c0050", "#200018"],
     ),
     "dust": LinearSegmentedColormap.from_list(
-        "cams_dust", ["#ffffff", "#ffe066", "#ff8c00", "#5c2c06"]
+        "haze_dust",
+        ["#ffffff", "#fff2b3", "#ffcc33", "#ff6a00", "#7a1500", "#2a0800"],
     ),
 }
 
@@ -56,7 +59,7 @@ def alpha_scaled_image(
     Args:
         ax: Axes to draw on.
         data: 2D array of values to map.
-        cmap: Colormap name or object, e.g. `CAMS_COLORMAPS["dust"]`.
+        cmap: Colormap name or object, e.g. `HAZE_COLORMAPS["dust"]`.
         norm: Normalization mapping `data` to colour. Defaults to
             `Normalize(vmin, vmax)` over the finite range of `data`.
         alpha_norm: Normalization mapping `data` to opacity. Defaults to
@@ -79,10 +82,10 @@ def alpha_scaled_image(
             >>> matplotlib.use("Agg")
             >>> import numpy as np
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.colors import alpha_scaled_image, CAMS_COLORMAPS
+            >>> from cleopatra.colors import alpha_scaled_image, HAZE_COLORMAPS
             >>> fig, ax = plt.subplots()
             >>> data = np.array([[0.0, 1.0], [0.5, 1.0]])
-            >>> img = alpha_scaled_image(ax, data, CAMS_COLORMAPS["dust"])
+            >>> img = alpha_scaled_image(ax, data, HAZE_COLORMAPS["dust"])
             >>> rgba = img.get_array()
             >>> rgba[0, 0, 3]  # value 0.0 -> fully transparent
             np.float64(0.0)
@@ -108,7 +111,7 @@ def alpha_scaled_image(
             ```
 
     See Also:
-        CAMS_COLORMAPS: Ready-made colormaps designed for this function.
+        HAZE_COLORMAPS: Ready-made colormaps designed for this function.
         swatch_legend: A matching two-stop legend for the same data.
     """
     data = np.asarray(data, dtype=float)
@@ -182,7 +185,7 @@ def alpha_scaled_mesh(
             cell edges, or the same shape with `shading="auto"`/`"nearest"`).
         y: 2D array of cell y-coordinates, same convention as `x`.
         data: 2D array of values, one per mesh cell.
-        cmap: Colormap name or object, e.g. `CAMS_COLORMAPS["dust"]`.
+        cmap: Colormap name or object, e.g. `HAZE_COLORMAPS["dust"]`.
         norm: Normalization mapping `data` to colour. Defaults to
             `Normalize(vmin, vmax)` over the finite range of `data`.
         alpha_norm: Normalization mapping `data` to opacity. Defaults to
@@ -240,19 +243,31 @@ def alpha_scaled_mesh(
 #: colour/legend half of the ECMWF/CAMS look; pair it with a
 #: `cleopatra.projection` projection-style preset (globe or flat) -- the two
 #: are independent and neither requires the other.
+#:
+#: `"haze"`'s layers also set `alpha_vmin`/`alpha_vmax`, decoupling opacity
+#: from colour: opacity saturates over a much narrower band (0.1-0.5) than
+#: colour (0.0-1.0), so the vivid mid-colormap tones are fully opaque well
+#: before the data reaches its maximum. This reproduces the bright, glowing
+#: "flame" rim ECMWF/CAMS aerosol maps show at a plume's edge -- with a
+#: single shared curve, that rim's colour is barely visible because it sits
+#: at low, nearly-transparent opacity.
 DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
-    "cams": {
+    "haze": {
         "organic_matter": {
-            "cmap": CAMS_COLORMAPS["organic_matter"],
+            "cmap": HAZE_COLORMAPS["organic_matter"],
             "label": "Organic Matter",
             "vmin": 0.0,
             "vmax": 1.0,
+            "alpha_vmin": 0.1,
+            "alpha_vmax": 0.5,
         },
         "dust": {
-            "cmap": CAMS_COLORMAPS["dust"],
+            "cmap": HAZE_COLORMAPS["dust"],
             "label": "Dust",
             "vmin": 0.0,
             "vmax": 1.0,
+            "alpha_vmin": 0.1,
+            "alpha_vmax": 0.5,
         },
     },
 }
@@ -261,7 +276,7 @@ DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
 def apply_data_style(
     ax: Axes,
     layers: dict[str, np.ndarray],
-    style: str = "cams",
+    style: str = "haze",
     *,
     x: np.ndarray | None = None,
     y: np.ndarray | None = None,
@@ -288,8 +303,8 @@ def apply_data_style(
         ax: Axes to draw on.
         layers: Mapping of layer name to its 2D data array. Every key must be
             a layer defined by `style` (e.g. `"organic_matter"`/`"dust"` for
-            `"cams"`); pass a subset to draw only some of a style's layers.
-        style: A name from `DATA_STYLES`. Defaults to `"cams"`.
+            `"haze"`); pass a subset to draw only some of a style's layers.
+        style: A name from `DATA_STYLES`. Defaults to `"haze"`.
         x: Optional 2D curvilinear x-coordinates (see `alpha_scaled_mesh`).
             When given (together with `y`), every layer is drawn with
             `alpha_scaled_mesh` instead of `alpha_scaled_image`.
@@ -313,7 +328,7 @@ def apply_data_style(
             together, or both omitted).
 
     Examples:
-        - Draw both CAMS layers and read back the images and their labels:
+        - Draw both haze layers and read back the images and their labels:
             ```python
             >>> import matplotlib
             >>> matplotlib.use("Agg")
@@ -363,7 +378,7 @@ def apply_data_style(
             >>> apply_data_style(ax, {"smoke": np.array([[0.0, 1.0]])})
             Traceback (most recent call last):
                 ...
-            KeyError: "['smoke'] not defined for data style 'cams'; available layers: ['dust', 'organic_matter']"
+            KeyError: "['smoke'] not defined for data style 'haze'; available layers: ['dust', 'organic_matter']"
             >>> plt.close(fig)
 
             ```
@@ -406,13 +421,22 @@ def apply_data_style(
     for i, (name, data) in enumerate(layers.items()):
         cfg = preset[name]
         norm = mcolors.Normalize(vmin=cfg["vmin"], vmax=cfg["vmax"])
+        alpha_vmin = cfg.get("alpha_vmin")
+        alpha_vmax = cfg.get("alpha_vmax")
+        alpha_norm = (
+            mcolors.Normalize(vmin=alpha_vmin, vmax=alpha_vmax)
+            if alpha_vmin is not None or alpha_vmax is not None
+            else None
+        )
         if curvilinear:
             images[name] = alpha_scaled_mesh(
-                ax, x, y, data, cfg["cmap"], norm=norm, **render_kwargs
+                ax, x, y, data, cfg["cmap"], norm=norm, alpha_norm=alpha_norm,
+                **render_kwargs,
             )
         else:
             images[name] = alpha_scaled_image(
-                ax, data, cfg["cmap"], norm=norm, **render_kwargs
+                ax, data, cfg["cmap"], norm=norm, alpha_norm=alpha_norm,
+                **render_kwargs,
             )
         if legend:
             bounds = (

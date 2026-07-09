@@ -1349,17 +1349,17 @@ def swatch_legend(
     are no intermediate tick marks -- only the two endpoints are labelled.
 
     This is a generic legend primitive: any colormap and any label/range
-    works, so it composes with any plot, not just the CAMS style.
+    works, so it composes with any plot, not just the haze style.
 
     Args:
         ax: The axes to attach the swatch to (an inset axes is created on it).
         cmap: Colormap name or object for the gradient, e.g.
-            `CAMS_COLORMAPS["dust"]` (`cleopatra.colors`).
+            `HAZE_COLORMAPS["dust"]` (`cleopatra.colors`).
         label: Text drawn centred on the gradient bar.
         vmin: Value at the left end of the bar. Defaults to `0.0`.
         vmax: Value at the right end of the bar. Defaults to `1.0`.
         vmax_prefix: Prefix drawn before the formatted `vmax` label (e.g.
-            `"≥"` for an open-ended upper bound, matching the CAMS style).
+            `"≥"` for an open-ended upper bound, matching the haze style).
             Pass `""` for a plain value.
         bounds: `(x0, y0, width, height)` of the inset axes in `ax`'s
             fraction-of-axes coordinates (see `Axes.inset_axes`).
@@ -1454,7 +1454,7 @@ def apply_blank_canvas(ax: Axes, facecolor: str = "black") -> Axes:
     Args:
         ax: The axes to strip down.
         facecolor: Background colour for both `ax` and its parent `Figure`.
-            Defaults to `"black"`, matching the CAMS style; pass e.g.
+            Defaults to `"black"`, matching the haze style; pass e.g.
             `"white"` or `"none"` for a different look.
 
     Returns:

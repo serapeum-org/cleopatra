@@ -724,7 +724,8 @@ def orthographic_graticule(
 
 
 #: Named "projection style" presets for `apply_projection_style` -- the
-#: coordinate-frame half of the ECMWF/CAMS look, independent of the
+#: coordinate-frame half of the "haze" look (the glowing, ECMWF/CAMS-style
+#: aerosol-animation aesthetic), independent of the
 #: `cleopatra.colors.DATA_STYLES` colour/legend half. `"globe"` reprojects
 #: onto an orthographic view and frames it with a boundary + graticule;
 #: `"flat"` leaves the data in plain lon/lat and touches nothing on `ax`.
@@ -751,7 +752,7 @@ def apply_projection_style(
     returns `(lon, lat, data)` unchanged and does not touch `ax` at all --
     the data is meant to be plotted directly in lon/lat coordinates.
 
-    This is the projection half of composing the CAMS look; the colour half
+    This is the projection half of composing the haze look; the colour half
     is `cleopatra.colors.apply_data_style`, called with the `(x, y, data)`
     this function returns as its `x`/`y`/layer arguments. Both styles return
     cell-**edge** coordinates (one larger per axis than `data`) for use with
@@ -768,7 +769,7 @@ def apply_projection_style(
     ```
 
     Neither function requires the other: use `"globe"` with a single plain
-    colormap instead of `apply_data_style`, or `"flat"` with the `"cams"`
+    colormap instead of `apply_data_style`, or `"flat"` with the `"haze"`
     data style and no globe at all.
 
     This function takes a single `data` array, not a `layers` dict like

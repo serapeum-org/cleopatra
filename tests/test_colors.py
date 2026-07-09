@@ -8,7 +8,7 @@ from matplotlib.colors import Colormap, LinearSegmentedColormap, Normalize
 from matplotlib.image import AxesImage
 
 from cleopatra.colors import (
-    CAMS_COLORMAPS,
+    HAZE_COLORMAPS,
     DATA_STYLES,
     Colors,
     alpha_scaled_image,
@@ -17,38 +17,38 @@ from cleopatra.colors import (
 )
 
 
-class TestCamsColormaps:
-    """Tests for the `CAMS_COLORMAPS` preset constant."""
+class TestHazeColormaps:
+    """Tests for the `HAZE_COLORMAPS` preset constant."""
 
     def test_has_organic_matter_and_dust(self):
         """The two documented preset names are present, and only those two."""
-        assert set(CAMS_COLORMAPS) == {"organic_matter", "dust"}, (
-            f"unexpected preset names: {set(CAMS_COLORMAPS)}"
+        assert set(HAZE_COLORMAPS) == {"organic_matter", "dust"}, (
+            f"unexpected preset names: {set(HAZE_COLORMAPS)}"
         )
 
     @pytest.mark.parametrize("name", ["organic_matter", "dust"])
     def test_entries_are_colormaps(self, name):
         """Each entry is a ready `Colormap`, not a name string or dict."""
-        assert isinstance(CAMS_COLORMAPS[name], Colormap), (
-            f"{name} is not a Colormap: {type(CAMS_COLORMAPS[name])}"
+        assert isinstance(HAZE_COLORMAPS[name], Colormap), (
+            f"{name} is not a Colormap: {type(HAZE_COLORMAPS[name])}"
         )
 
     @pytest.mark.parametrize("name", ["organic_matter", "dust"])
     def test_starts_white_at_zero(self, name):
-        """Every CAMS colormap starts at opaque white for value 0.0."""
-        assert CAMS_COLORMAPS[name](0.0) == (1.0, 1.0, 1.0, 1.0), (
-            f"{name}(0.0) should be white, got {CAMS_COLORMAPS[name](0.0)}"
+        """Every haze colormap starts at opaque white for value 0.0."""
+        assert HAZE_COLORMAPS[name](0.0) == (1.0, 1.0, 1.0, 1.0), (
+            f"{name}(0.0) should be white, got {HAZE_COLORMAPS[name](0.0)}"
         )
 
     def test_dust_ends_dark_brown(self):
         """The dust colormap saturates to a dark brown at value 1.0."""
-        r, g, b, a = CAMS_COLORMAPS["dust"](1.0)
+        r, g, b, a = HAZE_COLORMAPS["dust"](1.0)
         assert a == 1.0, "alpha should be opaque"
         assert r > g > b, f"dust top stop should be brown-toned, got rgb=({r}, {g}, {b})"
 
     def test_organic_matter_ends_purple(self):
         """The organic_matter colormap saturates to a deep purple at value 1.0."""
-        r, g, b, a = CAMS_COLORMAPS["organic_matter"](1.0)
+        r, g, b, a = HAZE_COLORMAPS["organic_matter"](1.0)
         assert a == 1.0, "alpha should be opaque"
         assert r > g and b > g, (
             f"organic_matter top stop should be purple-toned, got rgb=({r}, {g}, {b})"
@@ -107,10 +107,10 @@ class TestAlphaScaledImage:
 
     def test_cmap_accepts_colormap_object(self, ax):
         """A `Colormap` instance (not just a name string) is accepted directly."""
-        img = alpha_scaled_image(ax, np.array([[0.0, 1.0]]), CAMS_COLORMAPS["dust"])
+        img = alpha_scaled_image(ax, np.array([[0.0, 1.0]]), HAZE_COLORMAPS["dust"])
         rgb = img.get_array()[0, 1, :3]
         np.testing.assert_allclose(
-            rgb, [0.36, 0.17, 0.02], atol=0.01, err_msg=f"unexpected top-stop colour: {rgb}"
+            rgb, [0.165, 0.031, 0.0], atol=0.01, err_msg=f"unexpected top-stop colour: {rgb}"
         )
 
     def test_non_2d_data_raises(self, ax):
@@ -196,10 +196,52 @@ class TestApplyDataStyle:
         yield ax
         plt.close(fig)
 
-    def test_cams_preset_has_both_layers(self):
-        """The registered 'cams' preset defines exactly organic_matter and dust."""
-        assert set(DATA_STYLES["cams"]) == {"organic_matter", "dust"}, (
-            f"unexpected cams layers: {set(DATA_STYLES['cams'])}"
+    def test_haze_preset_has_both_layers(self):
+        """The registered 'haze' preset defines exactly organic_matter and dust."""
+        assert set(DATA_STYLES["haze"]) == {"organic_matter", "dust"}, (
+            f"unexpected haze layers: {set(DATA_STYLES['haze'])}"
+        )
+
+    @pytest.mark.parametrize("layer", ["organic_matter", "dust"])
+    def test_haze_layers_declare_decoupled_alpha(self, layer):
+        """Every 'haze' layer sets a narrower alpha_vmin/alpha_vmax than its colour vmin/vmax."""
+        cfg = DATA_STYLES["haze"][layer]
+        assert cfg["alpha_vmin"] > cfg["vmin"], f"{layer}: alpha_vmin should be > vmin"
+        assert cfg["alpha_vmax"] < cfg["vmax"], f"{layer}: alpha_vmax should be < vmax"
+
+    def test_haze_alpha_saturates_before_color_range_ends(self, ax):
+        """A mid-range 'haze' value is already fully opaque, unlike a shared-curve style.
+
+        Test scenario:
+            With alpha_vmin=0.1/alpha_vmax=0.5 (the 'haze' dust preset), a data
+            value of 0.5 should be fully opaque (alpha=1.0) even though it is
+            only the midpoint of the 0.0-1.0 *colour* range -- this decoupling
+            is what produces the bright, opaque "flame" rim at moderate density
+            instead of a value that would still be half-transparent under a
+            single shared norm.
+        """
+        images = apply_data_style(ax, {"dust": np.array([[0.5, 1.0]])})
+        alpha = images["dust"].get_array()[..., 3]
+        assert alpha[0, 0] == 1.0, f"expected fully opaque at data=0.5, got alpha={alpha[0, 0]}"
+
+    def test_custom_style_without_alpha_keys_uses_shared_norm(self, ax, monkeypatch):
+        """A custom style lacking alpha_vmin/alpha_vmax falls back to sharing the colour norm.
+
+        Test scenario:
+            Backward compatibility: a caller-registered style dict with only
+            cmap/label/vmin/vmax (no alpha_vmin/alpha_vmax) must behave exactly
+            as before -- alpha tracks the same norm as colour.
+        """
+        import cleopatra.colors as colors_mod
+
+        custom_styles = {
+            "plain": {"dust": {"cmap": "viridis", "label": "Plain", "vmin": 0.0, "vmax": 1.0}}
+        }
+        monkeypatch.setattr(colors_mod, "DATA_STYLES", custom_styles)
+        images = apply_data_style(ax, {"dust": np.array([[0.5, 1.0]])}, style="plain")
+        alpha = images["dust"].get_array()[..., 3]
+        assert alpha[0, 0] == 0.5, (
+            f"without alpha_vmin/vmax, alpha should equal the colour norm (0.5), got {alpha[0, 0]}"
         )
 
     def test_draws_one_image_per_layer(self, ax):
@@ -215,7 +257,7 @@ class TestApplyDataStyle:
         """Each layer is drawn with its own DATA_STYLES colormap, not a shared one."""
         images = apply_data_style(ax, {"dust": np.array([[0.0, 1.0]])})
         top_rgb = images["dust"].get_array()[0, 1, :3]
-        expected = CAMS_COLORMAPS["dust"](1.0)[:3]
+        expected = HAZE_COLORMAPS["dust"](1.0)[:3]
         np.testing.assert_allclose(
             top_rgb, expected, atol=1e-6, err_msg="dust layer used the wrong colormap"
         )
