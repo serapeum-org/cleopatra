@@ -17,6 +17,7 @@ from matplotlib.axes import Axes
 from cleopatra.styles import (
     ColorScale,
     Styles,
+    apply_blank_canvas,
     colorbar_legend,
     disjoint_legend,
     histogram_legend,
@@ -471,3 +472,54 @@ class TestSwatchLegend:
         swatch = swatch_legend(ax, "viridis", "Dust")
         assert img in ax.images, "pre-existing plot should be untouched"
         assert swatch in ax.child_axes, "swatch should still attach cleanly"
+
+
+class TestApplyBlankCanvas:
+    """Tests for `apply_blank_canvas`."""
+
+    @pytest.fixture
+    def ax(self):
+        """A fresh Axes on the Agg backend, closed after the test."""
+        fig, ax = plt.subplots()
+        yield ax
+        plt.close(fig)
+
+    def test_removes_ticks(self, ax):
+        """Both x and y ticks are removed."""
+        apply_blank_canvas(ax)
+        assert ax.get_xticks().size == 0, "x ticks should be removed"
+        assert ax.get_yticks().size == 0, "y ticks should be removed"
+
+    def test_hides_all_spines(self, ax):
+        """Every spine (frame edge) is hidden."""
+        apply_blank_canvas(ax)
+        assert not any(s.get_visible() for s in ax.spines.values()), (
+            "all spines should be hidden"
+        )
+
+    def test_default_facecolor_is_black(self, ax):
+        """The default `facecolor` ('black') is applied to axes and figure."""
+        apply_blank_canvas(ax)
+        assert ax.get_facecolor() == (0.0, 0.0, 0.0, 1.0), (
+            f"unexpected axes facecolor: {ax.get_facecolor()}"
+        )
+        assert ax.figure.get_facecolor() == (0.0, 0.0, 0.0, 1.0), (
+            f"unexpected figure facecolor: {ax.figure.get_facecolor()}"
+        )
+
+    def test_custom_facecolor_applied_to_axes_and_figure(self, ax):
+        """A custom `facecolor` is applied consistently to both axes and figure."""
+        apply_blank_canvas(ax, facecolor="white")
+        assert ax.get_facecolor() == (1.0, 1.0, 1.0, 1.0)
+        assert ax.figure.get_facecolor() == (1.0, 1.0, 1.0, 1.0)
+
+    def test_returns_the_same_axes(self, ax):
+        """The function returns `ax` itself, enabling call chaining."""
+        result = apply_blank_canvas(ax)
+        assert result is ax, "should return the same Axes instance"
+
+    def test_composes_with_existing_plot(self, ax):
+        """Stripping chrome does not remove or disturb already-drawn artists."""
+        img = ax.imshow([[0, 1], [1, 0]], cmap="gray")
+        apply_blank_canvas(ax)
+        assert img in ax.images, "pre-existing plot should be untouched"

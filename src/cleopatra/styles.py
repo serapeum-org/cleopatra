@@ -1440,6 +1440,65 @@ def swatch_legend(
     return swatch
 
 
+def apply_blank_canvas(ax: Axes, facecolor: str = "black") -> Axes:
+    """Strip an axes down to a chrome-free canvas: no ticks, spines, or frame.
+
+    Turns off every axis decoration (ticks, tick labels, spines) and sets
+    both the axes' and its figure's background colour, leaving nothing but
+    the data itself -- the minimal look ECMWF/CAMS-style globe animations
+    use (no coordinate frame, just the plotted field on black). This is a
+    generic chrome primitive: it doesn't know about any projection or
+    colormap, so it composes with a plain flat axes, an orthographic globe
+    (`apply_projection_frame`), or any other cleopatra styling.
+
+    Args:
+        ax: The axes to strip down.
+        facecolor: Background colour for both `ax` and its parent `Figure`.
+            Defaults to `"black"`, matching the CAMS style; pass e.g.
+            `"white"` or `"none"` for a different look.
+
+    Returns:
+        Axes: The same `ax`, for chaining.
+
+    Examples:
+        - Ticks and spines are removed, and the background is set:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styles import apply_blank_canvas
+            >>> fig, ax = plt.subplots()
+            >>> _ = apply_blank_canvas(ax)
+            >>> ax.get_xticks().size
+            0
+            >>> any(s.get_visible() for s in ax.spines.values())
+            False
+            >>> ax.get_facecolor()
+            (0.0, 0.0, 0.0, 1.0)
+
+            ```
+        - A custom `facecolor` is applied to both the axes and the figure:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styles import apply_blank_canvas
+            >>> fig, ax = plt.subplots()
+            >>> _ = apply_blank_canvas(ax, facecolor="navy")
+            >>> ax.get_facecolor()
+            (0.0, 0.0, 0.5019607843137255, 1.0)
+
+            ```
+
+    See Also:
+        cleopatra.geo.REFERENCE_MAP_STYLES: A less minimal chrome preset
+            (visible coastlines, ticks, and a frame) for a flat map.
+    """
+    ax.set_xticks([])
+    ax.set_yticks([])
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+    ax.set_facecolor(facecolor)
+    ax.figure.set_facecolor(facecolor)
+    return ax
+
+
 #: Count/width/spread classification schemes (simple closed-form breaks).
 NUMPY_SCHEMES = ("quantiles", "equal_interval", "percentiles", "std_mean")
 
