@@ -707,6 +707,16 @@ class TestBinEdges:
         midpoints_of_edges = (edges[:-1] + edges[1:]) / 2.0
         np.testing.assert_allclose(midpoints_of_edges, centers)
 
+    def test_single_center_raises_value_error(self):
+        """A length-1 input raises a clear `ValueError`, not a bare `IndexError`."""
+        with pytest.raises(ValueError, match="at least 2 centres"):
+            _bin_edges(np.array([5.0]))
+
+    def test_empty_input_raises_value_error(self):
+        """An empty input also raises the same clear `ValueError`."""
+        with pytest.raises(ValueError, match="at least 2 centres"):
+            _bin_edges(np.array([]))
+
 
 class TestOrthographicGridEdges:
     """Tests for `orthographic_grid_edges`."""
@@ -816,13 +826,22 @@ class TestApplyProjectionStyle:
         assert set(projection_module.PROJECTION_STYLES) == {"globe", "flat"}
 
     def test_globe_draws_boundary_and_masks_far_hemisphere(self, ax, grid):
-        """'globe' draws a boundary patch on `ax` and masks the far hemisphere."""
+        """'globe' draws a boundary patch on `ax` and masks the far hemisphere.
+
+        `masked[0, 1]` (lon=90) sits exactly on this coarse 2x2 fixture's
+        extrapolated equatorial edge -- exactly 90 degrees from the pole
+        centre, so floating-point rounding puts that one corner just past
+        the visibility horizon. The corner-visibility check (fixing a prior
+        rendering bug -- see `TestApplyProjectionStyle.
+        test_no_visible_cell_has_an_invisible_corner`) correctly masks that
+        cell too, not just the fully-invisible far-hemisphere row.
+        """
         lon, lat, data = grid
         x, y, masked = projection_module.apply_projection_style(
             ax, lon, lat, data, style="globe"
         )
         assert len(ax.patches) == 1, "globe style should draw one boundary patch"
-        np.testing.assert_array_equal(masked[0], [1.0, 2.0])
+        assert masked[0, 0] == 1.0, "the pole cell itself must stay visible"
         assert np.all(np.isnan(masked[1])), "far hemisphere should still be masked"
 
     def test_flat_draws_nothing_and_leaves_data_unchanged(self, ax, grid):
@@ -867,13 +886,19 @@ class TestApplyProjectionStyle:
             projection_module.apply_projection_style(ax, lon, lat, data, style="mercator")
 
     def test_overrides_change_the_globe_center(self, ax, grid):
-        """`center_lat`/`center_lon` overrides change which hemisphere is visible."""
+        """`center_lat`/`center_lon` overrides change which hemisphere is visible.
+
+        As in `test_globe_draws_boundary_and_masks_far_hemisphere`, the
+        lon=90 cell sits on this fixture's equator-exact extrapolated edge,
+        so it is masked by the corner-visibility check regardless of which
+        pole is the centre; only the pole cell itself (lon=0) is asserted.
+        """
         lon, lat, data = grid
         # Re-centre on the South Pole: now the second row (lat=-90) is visible.
         _, _, masked = projection_module.apply_projection_style(
             ax, lon, lat, data, style="globe", center_lat=-90.0, center_lon=0.0
         )
-        np.testing.assert_array_equal(masked[1], [3.0, 4.0])
+        assert masked[1, 0] == 3.0, "the (re-centred) pole cell itself must stay visible"
         assert np.all(np.isnan(masked[0])), "North Pole should now be masked"
 
     def test_globe_and_flat_x_y_both_feed_alpha_scaled_mesh(self, ax, grid):
@@ -900,6 +925,56 @@ class TestApplyProjectionStyle:
                 f"{style}: alpha_scaled_mesh should attach cleanly to the axes"
             )
             plt.close(fig)
+
+    def test_no_visible_cell_has_an_invisible_corner(self, ax):
+        """Regression: every non-NaN cell's 4 edge corners are all visible.
+
+        Test scenario:
+            A fine (36x18) global grid is guaranteed to contain cells whose
+            *centre* is visible but whose *corner* straddles the visibility
+            horizon (the orthographic projection is undefined -- pyproj
+            returns inf -- beyond the horizon). Before the fix, such a corner
+            was silently snapped to the disk's origin, producing a
+            wrongly-shaped quad for an otherwise-visible cell. This asserts
+            the fix: any cell with an invisible corner is masked to NaN,
+            never drawn with real data.
+        """
+        lon = np.linspace(-180, 180, 36)
+        lat = np.linspace(-90, 90, 18)
+        data = np.ones((18, 36))
+
+        x_edges, y_edges, masked = projection_module.apply_projection_style(
+            ax, lon, lat, data, style="globe"
+        )
+
+        assert np.any(~np.isnan(masked)), "fixture should have some visible cells"
+
+        lon_e = _bin_edges(lon)
+        lat_e = _bin_edges(lat)
+        lon_grid_e, lat_grid_e = np.meshgrid(lon_e, lat_e)
+        edge_visible = projection_module._visible_hemisphere(
+            lon_grid_e, lat_grid_e, 90.0, 0.0
+        )
+
+        ny, nx = masked.shape
+        for i in range(ny):
+            for j in range(nx):
+                if np.isnan(masked[i, j]):
+                    continue
+                corners = (
+                    edge_visible[i, j],
+                    edge_visible[i, j + 1],
+                    edge_visible[i + 1, j],
+                    edge_visible[i + 1, j + 1],
+                )
+                assert all(corners), (
+                    f"cell ({i}, {j}) is drawn (not NaN) but has an invisible "
+                    f"corner: {corners}"
+                )
+
+        assert np.all(np.isfinite(x_edges)) and np.all(np.isfinite(y_edges)), (
+            "edge coordinates must stay finite even where cells are masked"
+        )
 
 
 class TestModuleDoctests:

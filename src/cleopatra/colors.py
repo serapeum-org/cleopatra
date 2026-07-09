@@ -309,6 +309,8 @@ def apply_data_style(
     Raises:
         KeyError: If `style` is not registered, or `layers` names a layer the
             style does not define.
+        ValueError: If exactly one of `x`/`y` is given (they must be given
+            together, or both omitted).
 
     Examples:
         - Draw both CAMS layers and read back the images and their labels:
@@ -384,6 +386,12 @@ def apply_data_style(
         raise KeyError(
             f"{unknown} not defined for data style {style!r}; "
             f"available layers: {sorted(preset)}"
+        )
+    if (x is None) != (y is None):
+        raise ValueError(
+            "x and y must be given together (or both omitted); got "
+            f"x={'given' if x is not None else None}, "
+            f"y={'given' if y is not None else None}"
         )
 
     curvilinear = x is not None and y is not None

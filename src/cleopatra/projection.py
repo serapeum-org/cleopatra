@@ -431,8 +431,17 @@ def _bin_edges(centers: np.ndarray) -> np.ndarray:
     Interior edges are midpoints between consecutive centres; the two outer
     edges are extrapolated by the same half-step as their neighbouring
     interior edge.
+
+    Raises:
+        ValueError: If fewer than 2 centres are given (at least one interior
+            gap is required to infer an edge spacing).
     """
     centers = np.asarray(centers, dtype=float)
+    if centers.size < 2:
+        raise ValueError(
+            "at least 2 centres are required to infer bin edges, got "
+            f"{centers.size}"
+        )
     mid = (centers[:-1] + centers[1:]) / 2.0
     first = centers[0] - (mid[0] - centers[0])
     last = centers[-1] + (centers[-1] - mid[-1])
@@ -472,6 +481,17 @@ def orthographic_grid_edges(
 
     Raises:
         ImportError: If pyproj (the `[tiles]` extra) is not installed.
+
+    Warning:
+        The orthographic projection is only finite on the visible (near)
+        hemisphere -- an edge point beyond it has no real coordinate, so it
+        is placed at a finite placeholder (not a meaningful position). A data
+        cell whose *centre* is visible can still have a corner past the
+        horizon; drawing it anyway pulls that corner toward the placeholder,
+        producing a wrongly-shaped quad. Before drawing, drop (`NaN`) any
+        cell for which not all four corners are visible -- `apply_projection_style`
+        does this automatically; call it instead of this function directly
+        unless you are prepared to replicate that check.
 
     Examples:
         - Edge arrays are one larger per axis than the centre vectors:
@@ -798,6 +818,25 @@ def apply_projection_style(
     x_edges, y_edges = orthographic_grid_edges(
         lon_arr, lat_arr, center_lat=center_lat, center_lon=center_lon
     )
+    # A cell is only safe to draw if ALL FOUR of its corners are on the
+    # visible hemisphere, not just its centre. The orthographic projection
+    # is only defined (finite) on the near hemisphere -- an invisible corner
+    # has no real coordinate, so orthographic_grid_edges places a finite
+    # placeholder there. Without this extra check, a cell whose centre is
+    # visible (so it *would* be drawn with real data) but whose corner
+    # straddles the horizon renders as a wrongly-shaped quad reaching toward
+    # that placeholder instead of tapering correctly at the boundary.
+    lon_edges_1d = _bin_edges(lon_arr)
+    lat_edges_1d = _bin_edges(lat_arr)
+    lon_e, lat_e = np.meshgrid(lon_edges_1d, lat_edges_1d)
+    edge_visible = _visible_hemisphere(lon_e, lat_e, center_lat, center_lon)
+    corner_ok = (
+        edge_visible[:-1, :-1]
+        & edge_visible[:-1, 1:]
+        & edge_visible[1:, :-1]
+        & edge_visible[1:, 1:]
+    )
+    masked = np.where(corner_ok, masked, np.nan)
     boundary = orthographic_boundary()
     graticule = orthographic_graticule(
         center_lat=center_lat, center_lon=center_lon, step=graticule_step

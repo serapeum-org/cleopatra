@@ -284,6 +284,21 @@ class TestApplyDataStyle:
             f"expected AxesImage without x/y, got {type(images['dust'])}"
         )
 
+    @pytest.mark.parametrize("kwargs", [{"x": [[0.0, 1.0]]}, {"y": [[0.0, 1.0]]}])
+    def test_only_one_of_x_y_raises(self, ax, kwargs):
+        """Passing only `x` or only `y` raises `ValueError`, not a silent fallback.
+
+        Args:
+            kwargs: Either `{"x": ...}` or `{"y": ...}` alone.
+
+        Test scenario:
+            A caller who mis-destructures apply_projection_style's 3-tuple
+            (e.g. passing only `x`) must get a clear error instead of
+            silently falling back to the flat imshow path.
+        """
+        with pytest.raises(ValueError, match="x and y must be given together"):
+            apply_data_style(ax, {"dust": np.array([[0.0, 1.0]])}, **kwargs)
+
 
 class TestCreateColors:
     def test_create_from_hex(self):
