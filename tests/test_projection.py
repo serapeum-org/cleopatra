@@ -1,9 +1,10 @@
 """Tests for ``cleopatra.projection``.
 
-Covers the public helper ``apply_projection_frame`` and the private
-``_as_xy`` coercion utility. The module is pure matplotlib with no PROJ
-dependency, so all geometry is built inline as deterministic numpy arrays
-(no reprojection, no network, no filesystem).
+Covers the public helper ``apply_projection_frame`` (pure matplotlib, no PROJ
+dependency) and the orthographic ('globe') helpers, which reproject through
+``pyproj`` -- the ``[tiles]`` extra. Tests that call the orthographic helpers
+guard with ``pytest.importorskip("pyproj", ...)`` so the suite still runs
+(minus that coverage) in environments without the extra installed.
 
 Tests are grouped one class per function. Randomised image data is seeded
 so runs are deterministic.
@@ -640,6 +641,7 @@ class TestOrthographicGrid:
 
     def test_center_point_projects_near_origin(self):
         """The centre point of the view projects to (0, 0) in projected space."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
         lon = np.array([0.0, 90.0])
         lat = np.array([90.0, -90.0])
         data = np.array([[1.0, 2.0], [3.0, 4.0]])
@@ -650,6 +652,7 @@ class TestOrthographicGrid:
 
     def test_far_hemisphere_is_masked_to_nan(self):
         """Data at the far hemisphere is replaced with NaN, near side untouched."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
         lon = np.array([0.0, 90.0])
         lat = np.array([90.0, -90.0])
         data = np.array([[1.0, 2.0], [3.0, 4.0]])
@@ -659,6 +662,7 @@ class TestOrthographicGrid:
 
     def test_2d_lon_lat_matching_data_shape_is_accepted(self):
         """Already-2D lon/lat (matching data's shape) bypasses the meshgrid step."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
         lon2d, lat2d = np.meshgrid(np.array([0.0, 90.0]), np.array([90.0, -90.0]))
         data = np.array([[1.0, 2.0], [3.0, 4.0]])
         x, y, masked = orthographic_grid(lon2d, lat2d, data)
@@ -666,6 +670,7 @@ class TestOrthographicGrid:
 
     def test_mismatched_shapes_raise_value_error(self):
         """Incompatible lon/lat/data shapes raise a clear `ValueError`."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
         lon = np.array([0.0, 90.0, 180.0])
         lat = np.array([90.0, -90.0])
         data = np.array([[1.0, 2.0]])
@@ -724,6 +729,7 @@ class TestOrthographicGridEdges:
 
     def test_shape_is_one_larger_per_axis(self):
         """Edge arrays are `(len(lat) + 1, len(lon) + 1)`."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
         lon = np.linspace(-180, 180, 8)
         lat = np.linspace(-90, 90, 4)
         x_edges, y_edges = orthographic_grid_edges(lon, lat)
@@ -733,6 +739,7 @@ class TestOrthographicGridEdges:
 
     def test_edges_are_finite(self):
         """Every edge coordinate is finite (no inf from the antipodal singularity)."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
         lon = np.linspace(-180, 180, 8)
         lat = np.linspace(-90, 90, 4)
         x_edges, y_edges = orthographic_grid_edges(lon, lat)
@@ -754,6 +761,7 @@ class TestOrthographicPoints:
 
     def test_center_point_projects_near_origin(self):
         """The centre point of the view projects to (0, 0)."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
         x, y = orthographic_points(0.0, 90.0, center_lat=90.0, center_lon=0.0)
         assert abs(x[0]) < 1e-6 and abs(y[0]) < 1e-6, (
             f"centre point should project near origin, got ({x[0]}, {y[0]})"
@@ -761,16 +769,19 @@ class TestOrthographicPoints:
 
     def test_visible_point_is_finite(self):
         """A point well within the visible hemisphere reprojects to finite x/y."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
         x, y = orthographic_points(-21.9, 64.1, center_lat=90.0, center_lon=0.0)
         assert np.isfinite(x[0]) and np.isfinite(y[0])
 
     def test_far_hemisphere_point_is_nan(self):
         """A point on the far hemisphere reprojects to NaN in both x and y."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
         x, y = orthographic_points(0.0, -80.0, center_lat=90.0, center_lon=0.0)
         assert np.isnan(x[0]) and np.isnan(y[0])
 
     def test_array_input_preserves_shape_and_order(self):
         """Multiple points reproject to matching-length, order-preserved arrays."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
         lon = np.array([-21.9, -0.1, -79.4])
         lat = np.array([64.1, 51.5, 43.7])
         x, y = orthographic_points(lon, lat, center_lat=55.0, center_lon=-30.0)
@@ -783,6 +794,7 @@ class TestOrthographicPoints:
 
     def test_scalar_input_returns_length_one_arrays(self):
         """A scalar lon/lat pair returns length-1 arrays, not bare floats."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
         x, y = orthographic_points(10.0, 20.0)
         assert x.shape == (1,) and y.shape == (1,)
 
@@ -818,6 +830,7 @@ class TestOrthographicGraticule:
 
     def test_returns_list_of_2_column_arrays(self):
         """Every returned segment is an `(m, 2)` array."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
         lines = orthographic_graticule(step=45.0, densify=20)
         assert len(lines) > 0, "expected at least one graticule segment"
         assert all(line.ndim == 2 and line.shape[1] == 2 for line in lines), (
@@ -843,6 +856,7 @@ class TestOrthographicGraticule:
 
     def test_finer_step_produces_more_segments(self):
         """A smaller `step` produces at least as many graticule lines."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
         coarse = orthographic_graticule(step=90.0, densify=20)
         fine = orthographic_graticule(step=30.0, densify=20)
         assert len(fine) >= len(coarse), (
@@ -883,6 +897,7 @@ class TestApplyProjectionStyle:
         test_no_visible_cell_has_an_invisible_corner`) correctly masks that
         cell too, not just the fully-invisible far-hemisphere row.
         """
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
         lon, lat, data = grid
         x, y, masked = projection_module.apply_projection_style(
             ax, lon, lat, data, style="globe"
@@ -940,6 +955,7 @@ class TestApplyProjectionStyle:
         so it is masked by the corner-visibility check regardless of which
         pole is the centre; only the pole cell itself (lon=0) is asserted.
         """
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
         lon, lat, data = grid
         # Re-centre on the South Pole: now the second row (lat=-90) is visible.
         _, _, masked = projection_module.apply_projection_style(
@@ -959,6 +975,7 @@ class TestApplyProjectionStyle:
             chosen (1D lon/lat vectors and 2D curvilinear grids are both
             valid `pcolormesh`/`alpha_scaled_mesh` inputs).
         """
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
         from cleopatra.colors import alpha_scaled_mesh
 
         lon, lat, data = grid
@@ -986,6 +1003,7 @@ class TestApplyProjectionStyle:
             the fix: any cell with an invisible corner is masked to NaN,
             never drawn with real data.
         """
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
         lon = np.linspace(-180, 180, 36)
         lat = np.linspace(-90, 90, 18)
         data = np.ones((18, 36))
@@ -1032,6 +1050,7 @@ class TestApplyProjectionStyle:
         (the branch's own multi-layer usage pattern) silently doubles the
         chrome artists.
         """
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
         lon, lat, data = grid
         projection_module.apply_projection_style(ax, lon, lat, data, style="globe")
         projection_module.apply_projection_style(ax, lon, lat, data, style="globe")
@@ -1041,6 +1060,7 @@ class TestApplyProjectionStyle:
 
     def test_draw_frame_false_avoids_duplicate_frame(self, ax, grid):
         """`draw_frame=False` reprojects/masks a second layer without redrawing chrome."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
         lon, lat, data = grid
         x1, y1, masked1 = projection_module.apply_projection_style(
             ax, lon, lat, data, style="globe"
@@ -1059,6 +1079,7 @@ class TestApplyProjectionStyle:
 
     def test_draw_frame_false_skips_graticule_too(self, ax, grid):
         """`draw_frame=False` also skips the graticule lines, not just the boundary."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
         lon, lat, data = grid
         projection_module.apply_projection_style(ax, lon, lat, data, style="globe")
         before = len(ax.lines)
@@ -1079,8 +1100,10 @@ class TestModuleDoctests:
             collect ``--doctest-modules`` from ``src``, so the module and
             function docstring examples would otherwise go unverified in CI.
             Running ``doctest.testmod`` here catches example drift as part of
-            the normal suite.
+            the normal suite. Several examples exercise the orthographic
+            ('globe') helpers, which require ``pyproj``.
         """
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
         results = doctest.testmod(projection_module, verbose=False)
         assert results.failed == 0, (
             f"{results.failed} doctest(s) failed in cleopatra.projection "
