@@ -29,8 +29,12 @@ from cleopatra import projection as projection_module  # noqa: E402
 from cleopatra.projection import (  # noqa: E402
     DEFAULT_BOUNDARY_KW,
     DEFAULT_GRATICULE_KW,
+    ORTHOGRAPHIC_RADIUS_M,
     _as_xy,
     apply_projection_frame,
+    orthographic_boundary,
+    orthographic_graticule,
+    orthographic_grid,
 )
 
 
@@ -554,6 +558,181 @@ class TestApplyProjectionFrame:
                 ylim=(-1, 1),
                 graticule_lines=[meridian, np.arange(6)],
             )
+
+
+class TestVisibleHemisphere:
+    """Tests for the private `_visible_hemisphere` great-circle mask."""
+
+    def test_center_point_is_visible(self):
+        """The centre point itself is always on the visible hemisphere."""
+        from cleopatra.projection import _visible_hemisphere
+
+        visible = _visible_hemisphere(
+            np.array([10.0]), np.array([45.0]), center_lat=45.0, center_lon=10.0
+        )
+        assert visible[0], "the centre point must be visible"
+
+    def test_antipodal_point_is_not_visible(self):
+        """The point exactly opposite the centre is not visible."""
+        from cleopatra.projection import _visible_hemisphere
+
+        visible = _visible_hemisphere(
+            np.array([190.0]), np.array([-45.0]), center_lat=45.0, center_lon=10.0
+        )
+        assert not visible[0], "the antipodal point must not be visible"
+
+    def test_north_and_south_pole_from_arctic_center(self):
+        """From an Arctic-centred view, the North Pole is visible, South is not."""
+        from cleopatra.projection import _visible_hemisphere
+
+        visible = _visible_hemisphere(
+            np.array([0.0, 0.0]), np.array([90.0, -90.0]), center_lat=90.0, center_lon=0.0
+        )
+        assert visible[0] and not visible[1], f"unexpected visibility: {visible}"
+
+
+class TestSplitVisibleRuns:
+    """Tests for the private `_split_visible_runs` polyline splitter."""
+
+    def test_all_visible_returns_one_run(self):
+        """An entirely-visible line returns as a single unsplit segment."""
+        from cleopatra.projection import _split_visible_runs
+
+        xy = np.column_stack([np.arange(5.0), np.arange(5.0)])
+        runs = _split_visible_runs(xy, np.array([True] * 5))
+        assert len(runs) == 1, f"expected one run, got {len(runs)}"
+        np.testing.assert_array_equal(runs[0], xy)
+
+    def test_all_invisible_returns_no_runs(self):
+        """An entirely-invisible line returns no segments."""
+        from cleopatra.projection import _split_visible_runs
+
+        xy = np.column_stack([np.arange(5.0), np.arange(5.0)])
+        runs = _split_visible_runs(xy, np.array([False] * 5))
+        assert runs == [], f"expected no runs, got {runs}"
+
+    def test_gap_splits_into_two_runs(self):
+        """A visible-invisible-visible pattern splits into two segments."""
+        from cleopatra.projection import _split_visible_runs
+
+        xy = np.column_stack([np.arange(6.0), np.arange(6.0)])
+        visible = np.array([True, True, False, False, True, True])
+        runs = _split_visible_runs(xy, visible)
+        assert len(runs) == 2, f"expected two runs, got {len(runs)}"
+        np.testing.assert_array_equal(runs[0], xy[0:2])
+        np.testing.assert_array_equal(runs[1], xy[4:6])
+
+    def test_single_point_run_is_dropped(self):
+        """A run of exactly one visible point is dropped (not a drawable line)."""
+        from cleopatra.projection import _split_visible_runs
+
+        xy = np.column_stack([np.arange(3.0), np.arange(3.0)])
+        visible = np.array([False, True, False])
+        runs = _split_visible_runs(xy, visible)
+        assert runs == [], f"a lone point should not produce a run, got {runs}"
+
+
+class TestOrthographicGrid:
+    """Tests for `orthographic_grid`."""
+
+    def test_center_point_projects_near_origin(self):
+        """The centre point of the view projects to (0, 0) in projected space."""
+        lon = np.array([0.0, 90.0])
+        lat = np.array([90.0, -90.0])
+        data = np.array([[1.0, 2.0], [3.0, 4.0]])
+        x, y, _ = orthographic_grid(lon, lat, data, center_lat=90.0, center_lon=0.0)
+        assert abs(x[0, 0]) < 1e-6 and abs(y[0, 0]) < 1e-6, (
+            f"centre point should project near origin, got ({x[0, 0]}, {y[0, 0]})"
+        )
+
+    def test_far_hemisphere_is_masked_to_nan(self):
+        """Data at the far hemisphere is replaced with NaN, near side untouched."""
+        lon = np.array([0.0, 90.0])
+        lat = np.array([90.0, -90.0])
+        data = np.array([[1.0, 2.0], [3.0, 4.0]])
+        _, _, masked = orthographic_grid(lon, lat, data, center_lat=90.0, center_lon=0.0)
+        np.testing.assert_array_equal(masked[0], [1.0, 2.0])
+        assert np.all(np.isnan(masked[1])), f"far hemisphere should be NaN, got {masked[1]}"
+
+    def test_2d_lon_lat_matching_data_shape_is_accepted(self):
+        """Already-2D lon/lat (matching data's shape) bypasses the meshgrid step."""
+        lon2d, lat2d = np.meshgrid(np.array([0.0, 90.0]), np.array([90.0, -90.0]))
+        data = np.array([[1.0, 2.0], [3.0, 4.0]])
+        x, y, masked = orthographic_grid(lon2d, lat2d, data)
+        assert x.shape == data.shape and y.shape == data.shape
+
+    def test_mismatched_shapes_raise_value_error(self):
+        """Incompatible lon/lat/data shapes raise a clear `ValueError`."""
+        lon = np.array([0.0, 90.0, 180.0])
+        lat = np.array([90.0, -90.0])
+        data = np.array([[1.0, 2.0]])
+        with pytest.raises(ValueError, match="shapes must match"):
+            orthographic_grid(lon, lat, data)
+
+    def test_missing_pyproj_raises_import_error(self, monkeypatch):
+        """Without pyproj installed, a clear `ImportError` is raised."""
+        import cleopatra.projection as proj_mod
+
+        monkeypatch.setattr(
+            proj_mod.importlib.util, "find_spec", lambda name: None
+        )
+        with pytest.raises(ImportError, match=r"\[tiles\]"):
+            orthographic_grid(np.array([0.0]), np.array([0.0]), np.array([[1.0]]))
+
+
+class TestOrthographicBoundary:
+    """Tests for `orthographic_boundary`."""
+
+    def test_default_shape_and_radius(self):
+        """The default call returns 200 vertices at `ORTHOGRAPHIC_RADIUS_M`."""
+        boundary = orthographic_boundary()
+        assert boundary.shape == (200, 2), f"unexpected shape: {boundary.shape}"
+        radii = np.hypot(boundary[:, 0], boundary[:, 1])
+        np.testing.assert_allclose(radii, ORTHOGRAPHIC_RADIUS_M)
+
+    def test_custom_radius_and_vertex_count(self):
+        """A custom `radius`/`n` is honoured exactly."""
+        boundary = orthographic_boundary(n=16, radius=2.5)
+        assert boundary.shape == (16, 2), f"unexpected shape: {boundary.shape}"
+        radii = np.hypot(boundary[:, 0], boundary[:, 1])
+        np.testing.assert_allclose(radii, 2.5)
+
+
+class TestOrthographicGraticule:
+    """Tests for `orthographic_graticule`."""
+
+    def test_returns_list_of_2_column_arrays(self):
+        """Every returned segment is an `(m, 2)` array."""
+        lines = orthographic_graticule(step=45.0, densify=20)
+        assert len(lines) > 0, "expected at least one graticule segment"
+        assert all(line.ndim == 2 and line.shape[1] == 2 for line in lines), (
+            "every segment must be an (m, 2) array"
+        )
+
+    def test_non_positive_step_raises_value_error(self):
+        """A zero or negative `step` raises `ValueError` before any pyproj call."""
+        with pytest.raises(ValueError, match="positive, finite"):
+            orthographic_graticule(step=0)
+        with pytest.raises(ValueError, match="positive, finite"):
+            orthographic_graticule(step=-10.0)
+
+    def test_missing_pyproj_raises_import_error(self, monkeypatch):
+        """Without pyproj installed, a clear `ImportError` is raised."""
+        import cleopatra.projection as proj_mod
+
+        monkeypatch.setattr(
+            proj_mod.importlib.util, "find_spec", lambda name: None
+        )
+        with pytest.raises(ImportError, match=r"\[tiles\]"):
+            orthographic_graticule()
+
+    def test_finer_step_produces_more_segments(self):
+        """A smaller `step` produces at least as many graticule lines."""
+        coarse = orthographic_graticule(step=90.0, densify=20)
+        fine = orthographic_graticule(step=30.0, densify=20)
+        assert len(fine) >= len(coarse), (
+            f"finer step should not produce fewer segments: {len(fine)} vs {len(coarse)}"
+        )
 
 
 class TestModuleDoctests:

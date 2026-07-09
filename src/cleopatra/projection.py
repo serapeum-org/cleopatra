@@ -35,6 +35,8 @@ Examples:
 
 from __future__ import annotations
 
+import importlib.util
+import math
 from collections.abc import Sequence
 from typing import Any
 
@@ -252,3 +254,284 @@ def apply_projection_frame(
 
     ax.set_axis_off()
     return patch
+
+
+#: Mean Earth radius (metres), IUGG 1980 value. Used as the orthographic
+#: projection's spherical datum radius (`+R=`), which keeps the visible
+#: hemisphere's boundary an exact circle -- see `_ortho_proj4`.
+ORTHOGRAPHIC_RADIUS_M = 6371008.7714
+
+
+def _ortho_proj4(center_lat: float, center_lon: float) -> str:
+    """Build a spherical-datum orthographic proj4 string.
+
+    A spherical (not ellipsoidal) datum is used deliberately: with `+R=`
+    fixed, the orthographic projection's visible-hemisphere boundary is an
+    exact circle of radius `ORTHOGRAPHIC_RADIUS_M` regardless of the centre
+    point, so `orthographic_boundary` can return it in closed form -- no
+    pyproj query needed. This is standard practice for an illustrative globe
+    view (not for geodetically precise reprojection).
+    """
+    return (
+        f"+proj=ortho +R={ORTHOGRAPHIC_RADIUS_M} +lat_0={center_lat} "
+        f"+lon_0={center_lon} +x_0=0 +y_0=0 +units=m +no_defs"
+    )
+
+
+def _require_pyproj(action: str) -> None:
+    """Raise an actionable `ImportError` if pyproj is not installed.
+
+    Args:
+        action: Short description of what needed pyproj, used in the
+            message (e.g. `"Orthographic ('globe') projection"`).
+    """
+    if importlib.util.find_spec("pyproj") is None:
+        raise ImportError(
+            f"{action} requires pyproj, provided by the [tiles] extra. "
+            "Install with `pip install cleopatra[tiles]`."
+        )
+
+
+def _visible_hemisphere(
+    lon: np.ndarray, lat: np.ndarray, center_lat: float, center_lon: float
+) -> np.ndarray:
+    """Boolean mask: `True` where `(lon, lat)` is on the near (visible) side.
+
+    Uses the spherical law of cosines for the great-circle central angle `c`
+    between `(lon, lat)` and the centre point; the near hemisphere is exactly
+    `cos(c) >= 0`.
+    """
+    lat0_rad, lon0_rad = math.radians(center_lat), math.radians(center_lon)
+    lat_rad, lon_rad = np.radians(lat), np.radians(lon)
+    cos_c = np.sin(lat0_rad) * np.sin(lat_rad) + np.cos(lat0_rad) * np.cos(
+        lat_rad
+    ) * np.cos(lon_rad - lon0_rad)
+    return cos_c >= 0
+
+
+def _split_visible_runs(xy: np.ndarray, visible: np.ndarray) -> list[np.ndarray]:
+    """Split an `(N, 2)` polyline into contiguous runs where `visible` is `True`.
+
+    Runs shorter than 2 points are dropped (not a drawable line segment).
+    """
+    runs: list[np.ndarray] = []
+    start: int | None = None
+    for i, ok in enumerate(visible):
+        if ok and start is None:
+            start = i
+        elif not ok and start is not None:
+            if i - start >= 2:
+                runs.append(xy[start:i])
+            start = None
+    if start is not None and len(visible) - start >= 2:
+        runs.append(xy[start:])
+    return runs
+
+
+def orthographic_grid(
+    lon: Any,
+    lat: Any,
+    data: Any,
+    center_lat: float = 90.0,
+    center_lon: float = 0.0,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Reproject a lon/lat grid onto an orthographic ('globe') view.
+
+    Projects every grid point via pyproj onto a sphere viewed from directly
+    above `(center_lat, center_lon)`, and masks out the far (non-visible)
+    hemisphere -- the orthographic projection formula is defined everywhere
+    but is only meaningful for the visible half, so points beyond it are set
+    to NaN in the returned data rather than silently folded onto the visible
+    disk. Pair the result with `alpha_scaled_mesh` (`cleopatra.colors`),
+    which -- unlike `alpha_scaled_image` -- can render this kind of
+    curvilinear (non-rectangular) grid.
+
+    Args:
+        lon: Longitudes in degrees, either a 1D vector (paired with a 1D
+            `lat` to build a regular grid via `np.meshgrid`) or a 2D array
+            already matching `data`'s shape.
+        lat: Latitudes in degrees, same convention as `lon`.
+        data: 2D array of values to reproject alongside the grid.
+        center_lat: Latitude the globe is centred on (the "camera" points at
+            this point). Defaults to `90.0` (the North Pole), matching the
+            ECMWF/CAMS Arctic-centred style.
+        center_lon: Longitude the globe is centred on. Defaults to `0.0`.
+
+    Returns:
+        tuple: `(x, y, masked_data)` -- projected x/y coordinates (metres,
+        same shape as `data`) and a copy of `data` with the far hemisphere
+        set to NaN.
+
+    Raises:
+        ImportError: If pyproj (the `[tiles]` extra) is not installed.
+        ValueError: If `lon`/`lat`/`data` shapes are incompatible.
+
+    Examples:
+        - Reproject a tiny 2x2 grid centred on the North Pole; the row at
+          latitude -90 (South Pole) is masked out as not visible:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.projection import orthographic_grid
+            >>> lon = np.array([0.0, 90.0])
+            >>> lat = np.array([90.0, -90.0])
+            >>> data = np.array([[1.0, 2.0], [3.0, 4.0]])
+            >>> x, y, masked = orthographic_grid(lon, lat, data)
+            >>> masked[0]  # latitude 90: visible, values kept
+            array([1., 2.])
+            >>> np.all(np.isnan(masked[1]))  # latitude -90: not visible
+            np.True_
+
+            ```
+
+    See Also:
+        orthographic_boundary: The matching globe outline for this centre.
+        orthographic_graticule: Matching meridian/parallel lines.
+        cleopatra.colors.alpha_scaled_mesh: Renders the returned grid.
+    """
+    _require_pyproj("Orthographic ('globe') projection")
+    from pyproj import Transformer
+
+    lon_arr = np.asarray(lon, dtype=float)
+    lat_arr = np.asarray(lat, dtype=float)
+    data_arr = np.asarray(data, dtype=float)
+    if lon_arr.ndim == 1 and lat_arr.ndim == 1 and data_arr.ndim == 2:
+        lon_arr, lat_arr = np.meshgrid(lon_arr, lat_arr)
+    if lon_arr.shape != data_arr.shape or lat_arr.shape != data_arr.shape:
+        raise ValueError(
+            "lon/lat/data shapes must match (after meshgrid for 1D lon/lat), "
+            f"got lon={lon_arr.shape}, lat={lat_arr.shape}, data={data_arr.shape}"
+        )
+
+    transformer = Transformer.from_crs(
+        "EPSG:4326", _ortho_proj4(center_lat, center_lon), always_xy=True
+    )
+    x, y = transformer.transform(lon_arr, lat_arr)
+    visible = _visible_hemisphere(lon_arr, lat_arr, center_lat, center_lon)
+    masked_data = np.where(visible, data_arr, np.nan)
+    return np.asarray(x, dtype=float), np.asarray(y, dtype=float), masked_data
+
+
+def orthographic_boundary(
+    n: int = 200, radius: float = ORTHOGRAPHIC_RADIUS_M
+) -> np.ndarray:
+    """Return the orthographic globe's boundary circle.
+
+    The orthographic projection's visible-hemisphere boundary is always a
+    circle of the projection's radius centred at the origin, independent of
+    which point the globe is centred on -- no pyproj call is needed. Pass
+    the result as `apply_projection_frame`'s `boundary_xy`.
+
+    Args:
+        n: Number of vertices around the circle.
+        radius: Circle radius in projected-CRS units (metres). Defaults to
+            `ORTHOGRAPHIC_RADIUS_M`, the same radius `orthographic_grid`
+            projects with -- pass a matching value to both if overridden.
+
+    Returns:
+        np.ndarray: `(n, 2)` array of boundary vertices.
+
+    Examples:
+        - The boundary is a circle of the given radius, centred at the origin:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.projection import orthographic_boundary
+            >>> boundary = orthographic_boundary(n=100, radius=1.0)
+            >>> boundary.shape
+            (100, 2)
+            >>> np.allclose(np.hypot(boundary[:, 0], boundary[:, 1]), 1.0)
+            True
+
+            ```
+
+    See Also:
+        orthographic_grid: The projected data this boundary frames.
+        apply_projection_frame: Renders the boundary onto an axes.
+    """
+    theta = np.linspace(0.0, 2.0 * np.pi, n)
+    return np.column_stack([radius * np.cos(theta), radius * np.sin(theta)])
+
+
+def orthographic_graticule(
+    center_lat: float = 90.0,
+    center_lon: float = 0.0,
+    step: float = 30.0,
+    densify: int = 200,
+) -> list[np.ndarray]:
+    """Build graticule (meridian/parallel) polylines for an orthographic view.
+
+    Generates meridian (constant-longitude) and parallel (constant-latitude)
+    lines spaced `step` degrees apart, reprojects them with the same centre
+    as `orthographic_grid`, and splits each at the visible-hemisphere edge so
+    only the visible portion of each line is returned. Pass the result as
+    `apply_projection_frame`'s `graticule_lines`.
+
+    Args:
+        center_lat: Latitude the globe is centred on. Must match the value
+            passed to `orthographic_grid` for the graticule to align with
+            the data.
+        center_lon: Longitude the globe is centred on. Must match
+            `orthographic_grid`.
+        step: Degree spacing between meridians/parallels. Must be positive.
+        densify: Number of points each line is sampled at before
+            reprojecting -- higher values give smoother curves near the
+            visible-hemisphere edge.
+
+    Returns:
+        list[np.ndarray]: One `(m, 2)` array per visible line segment (lines
+        crossing the hemisphere edge are split into separate segments).
+
+    Raises:
+        ImportError: If pyproj (the `[tiles]` extra) is not installed.
+        ValueError: If `step` is not a positive, finite number.
+
+    Examples:
+        - A 90-degree step gives a small set of meridians/parallels, each a
+          `(densify, 2)` or shorter (edge-clipped) segment:
+            ```python
+            >>> from cleopatra.projection import orthographic_graticule
+            >>> lines = orthographic_graticule(step=90.0, densify=50)
+            >>> len(lines) > 0
+            True
+            >>> all(line.shape[1] == 2 for line in lines)
+            True
+
+            ```
+        - A non-positive step raises `ValueError`:
+            ```python
+            >>> from cleopatra.projection import orthographic_graticule
+            >>> orthographic_graticule(step=0)
+            Traceback (most recent call last):
+                ...
+            ValueError: step must be a positive, finite number, got 0
+
+            ```
+
+    See Also:
+        orthographic_grid: The projected data this graticule frames.
+        orthographic_boundary: The matching globe outline.
+    """
+    if not math.isfinite(step) or step <= 0:
+        raise ValueError(f"step must be a positive, finite number, got {step}")
+    _require_pyproj("Orthographic ('globe') graticule")
+    from pyproj import Transformer
+
+    transformer = Transformer.from_crs(
+        "EPSG:4326", _ortho_proj4(center_lat, center_lon), always_xy=True
+    )
+
+    lines_lonlat = []
+    lat_dense = np.linspace(-90.0, 90.0, densify)
+    for lon0 in np.arange(-180.0, 180.0, step):
+        lines_lonlat.append(np.column_stack([np.full_like(lat_dense, lon0), lat_dense]))
+    lon_dense = np.linspace(-180.0, 180.0, densify)
+    for lat0 in np.arange(-90.0 + step, 90.0, step):
+        lines_lonlat.append(np.column_stack([lon_dense, np.full_like(lon_dense, lat0)]))
+
+    segments: list[np.ndarray] = []
+    for line in lines_lonlat:
+        lon_l, lat_l = line[:, 0], line[:, 1]
+        x_l, y_l = transformer.transform(lon_l, lat_l)
+        visible = _visible_hemisphere(lon_l, lat_l, center_lat, center_lon)
+        xy = np.column_stack([x_l, y_l])
+        segments.extend(_split_visible_runs(xy, visible))
+    return segments
