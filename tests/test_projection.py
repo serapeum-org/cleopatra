@@ -976,6 +976,50 @@ class TestApplyProjectionStyle:
             "edge coordinates must stay finite even where cells are masked"
         )
 
+    def test_repeat_call_stacks_duplicate_frame_by_default(self, ax, grid):
+        """Regression guard: two default calls DO stack a duplicate boundary/graticule.
+
+        Documents the trap `draw_frame=False` exists to avoid -- see
+        `test_draw_frame_false_avoids_duplicate_frame`. Without an explicit
+        `draw_frame=False`, drawing a second layer on the same globe axes
+        (the branch's own multi-layer usage pattern) silently doubles the
+        chrome artists.
+        """
+        lon, lat, data = grid
+        projection_module.apply_projection_style(ax, lon, lat, data, style="globe")
+        projection_module.apply_projection_style(ax, lon, lat, data, style="globe")
+        assert len(ax.patches) == 2, (
+            f"expected 2 stacked boundary patches, got {len(ax.patches)}"
+        )
+
+    def test_draw_frame_false_avoids_duplicate_frame(self, ax, grid):
+        """`draw_frame=False` reprojects/masks a second layer without redrawing chrome."""
+        lon, lat, data = grid
+        x1, y1, masked1 = projection_module.apply_projection_style(
+            ax, lon, lat, data, style="globe"
+        )
+        x2, y2, masked2 = projection_module.apply_projection_style(
+            ax, lon, lat, data, style="globe", draw_frame=False
+        )
+        assert len(ax.patches) == 1, (
+            f"expected exactly 1 boundary patch, got {len(ax.patches)}"
+        )
+        np.testing.assert_array_equal(x1, x2)
+        np.testing.assert_array_equal(y1, y2)
+        np.testing.assert_array_equal(
+            masked1, masked2, err_msg="masking should be identical regardless of draw_frame"
+        )
+
+    def test_draw_frame_false_skips_graticule_too(self, ax, grid):
+        """`draw_frame=False` also skips the graticule lines, not just the boundary."""
+        lon, lat, data = grid
+        projection_module.apply_projection_style(ax, lon, lat, data, style="globe")
+        before = len(ax.lines)
+        projection_module.apply_projection_style(
+            ax, lon, lat, data, style="globe", draw_frame=False
+        )
+        assert len(ax.lines) == before, "graticule line count should not change"
+
 
 class TestModuleDoctests:
     """Run the module's docstring examples inside the default test suite."""

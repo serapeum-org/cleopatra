@@ -663,6 +663,8 @@ def apply_projection_style(
     lat: Any,
     data: Any,
     style: str = "globe",
+    *,
+    draw_frame: bool = True,
     **overrides: Any,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Reproject `(lon, lat, data)` and frame `ax` per a `PROJECTION_STYLES` preset.
@@ -692,8 +694,22 @@ def apply_projection_style(
     colormap instead of `apply_data_style`, or `"flat"` with the `"cams"`
     data style and no globe at all.
 
+    This function takes a single `data` array, not a `layers` dict like
+    `apply_data_style` -- drawing several layers on the *same* grid/axes
+    means calling it once per layer. `apply_projection_frame` (which draws
+    the boundary/graticule) is one-shot per axes: a second unguarded call
+    stacks a duplicate boundary patch and graticule. Pass `draw_frame=False`
+    on every call after the first to reproject/mask that layer's data
+    without redrawing the chrome:
+
+    ```python
+    x, y, om = apply_projection_style(ax, lon, lat, organic_matter, style="globe")
+    _, _, du = apply_projection_style(ax, lon, lat, dust, style="globe", draw_frame=False)
+    ```
+
     Args:
-        ax: Axes to draw the boundary/graticule on. Ignored for `"flat"`.
+        ax: Axes to draw the boundary/graticule on. Ignored for `"flat"`
+            (which never draws) and when `draw_frame=False`.
         lon: 1D vector of cell-centre longitudes, degrees. Both styles
             require 1D `lon`/`lat` so cell edges can be computed reliably;
             for an already-2D curvilinear grid, call `orthographic_grid`
@@ -703,6 +719,10 @@ def apply_projection_style(
             and hemisphere-masked for `"globe"`; returned unchanged for
             `"flat"`.
         style: A name from `PROJECTION_STYLES` (`"globe"` or `"flat"`).
+        draw_frame: If `True` (default), draw the boundary/graticule via
+            `apply_projection_frame` (`"globe"` only -- `"flat"` never draws
+            regardless). Pass `False` for every call after the first when
+            drawing multiple layers on one already-framed axes.
         **overrides: Override any of the style's parameters -- for
             `"globe"`: `center_lat`, `center_lon`, `graticule_step`,
             `boundary_kw`, `graticule_kw` (the last two forwarded to
@@ -757,6 +777,24 @@ def apply_projection_style(
             (3, 3)
             >>> np.array_equal(out, data)
             True
+            >>> plt.close(fig)
+
+            ```
+        - A second layer on the same globe with `draw_frame=False` reuses the
+          already-drawn chrome instead of stacking a duplicate boundary:
+            ```python
+            >>> import numpy as np
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.projection import apply_projection_style
+            >>> fig, ax = plt.subplots()
+            >>> lon = np.array([0.0, 90.0])
+            >>> lat = np.array([90.0, -90.0])
+            >>> first = np.array([[1.0, 2.0], [3.0, 4.0]])
+            >>> second = np.array([[5.0, 6.0], [7.0, 8.0]])
+            >>> _ = apply_projection_style(ax, lon, lat, first, style="globe")
+            >>> _ = apply_projection_style(ax, lon, lat, second, style="globe", draw_frame=False)
+            >>> len(ax.patches)  # still one boundary, not two
+            1
             >>> plt.close(fig)
 
             ```
@@ -837,17 +875,18 @@ def apply_projection_style(
         & edge_visible[1:, 1:]
     )
     masked = np.where(corner_ok, masked, np.nan)
-    boundary = orthographic_boundary()
-    graticule = orthographic_graticule(
-        center_lat=center_lat, center_lon=center_lon, step=graticule_step
-    )
-    apply_projection_frame(
-        ax,
-        boundary_xy=boundary,
-        xlim=(-ORTHOGRAPHIC_RADIUS_M, ORTHOGRAPHIC_RADIUS_M),
-        ylim=(-ORTHOGRAPHIC_RADIUS_M, ORTHOGRAPHIC_RADIUS_M),
-        graticule_lines=graticule,
-        boundary_kw=boundary_kw,
-        graticule_kw=graticule_kw,
-    )
+    if draw_frame:
+        boundary = orthographic_boundary()
+        graticule = orthographic_graticule(
+            center_lat=center_lat, center_lon=center_lon, step=graticule_step
+        )
+        apply_projection_frame(
+            ax,
+            boundary_xy=boundary,
+            xlim=(-ORTHOGRAPHIC_RADIUS_M, ORTHOGRAPHIC_RADIUS_M),
+            ylim=(-ORTHOGRAPHIC_RADIUS_M, ORTHOGRAPHIC_RADIUS_M),
+            graticule_lines=graticule,
+            boundary_kw=boundary_kw,
+            graticule_kw=graticule_kw,
+        )
     return x_edges, y_edges, masked
