@@ -3078,55 +3078,55 @@
 <ul>
 <li>feat(animation): add save_animation quality controls, WebP, and bundled ffmpeg (#188)</li>
 <li>
-<p>Rework save_animation (and the Glyph.save_animation wrapper) from a<br />
-  minimal two-line writer into a configurable, robust exporter, resolving<br />
-  the rough edges surfaced in issue #185.  </p>
+<p>Rework save_animation (and the Glyph.save_animation wrapper) from a                          <br />
+  minimal two-line writer into a configurable, robust exporter, resolving                      <br />
+  the rough edges surfaced in issue #185.                                                        </p>
 </li>
 <li>
-<p>Replace the declared-but-unused ffmpeg-python dependency with<br />
-    imageio-ffmpeg, and fall back to its bundled static binary when no<br />
-    system ffmpeg is on PATH, so MP4/MOV/AVI export works out of the box.  </p>
+<p>Replace the declared-but-unused ffmpeg-python dependency with                              <br />
+    imageio-ffmpeg, and fall back to its bundled static binary when no                         <br />
+    system ffmpeg is on PATH, so MP4/MOV/AVI export works out of the box.                        </p>
 </li>
-<li>Auto-pad odd frame dimensions (-vf pad) so libx264 no longer crashes<br />
-    on odd-sized figures, and set pix_fmt=yuv420p for universal playback.  </li>
-<li>Add keyword-only crf, bitrate, codec, preset, pix_fmt, dpi, optimize,<br />
-    loop, and extra_args controls, with crf and bitrate mutually<br />
-    exclusive and a caller -vf/-pix_fmt merged into the built arguments.  </li>
-<li>Drop the hardcoded bitrate=1800 default in favour of libx264's<br />
-    constant-quality default; existing 3-arg calls stay valid but encode<br />
-    smaller, better files.  </li>
-<li>Add animated WebP output and optimise/loop-configurable GIF output<br />
-    via an _OptimizedPillowWriter subclass.  </li>
-<li>Add to_bytes and to_mp4 in-memory render helpers alongside the<br />
-    existing to_gif/embed_gif; to_gif now delegates to to_bytes.  </li>
-<li>Forward the new controls through Glyph.save_animation so ArrayGlyph<br />
-    and MeshGlyph inherit them.  </li>
+<li>Auto-pad odd frame dimensions (-vf pad) so libx264 no longer crashes                       <br />
+    on odd-sized figures, and set pix_fmt=yuv420p for universal playback.                        </li>
+<li>Add keyword-only crf, bitrate, codec, preset, pix_fmt, dpi, optimize,                      <br />
+    loop, and extra_args controls, with crf and bitrate mutually                               <br />
+    exclusive and a caller -vf/-pix_fmt merged into the built arguments.                         </li>
+<li>Drop the hardcoded bitrate=1800 default in favour of libx264's                             <br />
+    constant-quality default; existing 3-arg calls stay valid but encode                       <br />
+    smaller, better files.                                                                       </li>
+<li>Add animated WebP output and optimise/loop-configurable GIF output                         <br />
+    via an _OptimizedPillowWriter subclass.                                                      </li>
+<li>Add to_bytes and to_mp4 in-memory render helpers alongside the                             <br />
+    existing to_gif/embed_gif; to_gif now delegates to to_bytes.                                 </li>
+<li>Forward the new controls through Glyph.save_animation so ArrayGlyph                        <br />
+    and MeshGlyph inherit them.                                                                  </li>
 </ul>
 <p>Closes #185
 - feat(geo): add ECMWF reference-map style preset for georeferenced glyphs (#187)
-- Add GeoMixin.add_reference_map(style=...) so the ~15-line weather-centre<br />
-  map recipe (grey Natural Earth coastline + borders, a dashed lon/lat<br />
-  graticule, degree labels, a subtle frame) is a single call on top of a<br />
-  plotted, georeferenced glyph.  </p>
+- Add GeoMixin.add_reference_map(style=...) so the ~15-line weather-centre                     <br />
+  map recipe (grey Natural Earth coastline + borders, a dashed lon/lat                         <br />
+  graticule, degree labels, a subtle frame) is a single call on top of a                       <br />
+  plotted, georeferenced glyph.                                                                  </p>
 <ul>
-<li>Presets "ecmwf" (light backgrounds) and "ecmwf-dark" (lighter greys so<br />
-    coastlines stay visible over a dark field), plus style="auto" that<br />
-    picks between them from the displayed luminance (im.to_rgba through the<br />
-    colormap/norm; only opaque cells count, so light no-data fields are not<br />
-    misread as dark; the target axes' image is preferred over self.im).  </li>
-<li>extent=[xmin, ymin, xmax, ymax] (the ArrayGlyph order) georeferences<br />
-    the image and axis limits, handling the pixel-coordinate RGB/animate<br />
-    case; a warning fires when the glyph has no geographic extent.  </li>
-<li>Degree formatters label the +/-180 antimeridian as "180"; _nice_step<br />
-    covers sub-degree to 90-degree spacing; graticule_step is validated as<br />
-    positive and finite; extent length is validated with a clear message.  </li>
-<li>available_map_styles() and the REFERENCE_MAP_STYLES table expose and<br />
-    allow copying the presets; the geographic knowledge (deriving extent<br />
-    from a dataset geotransform) stays upstream.  </li>
+<li>Presets "ecmwf" (light backgrounds) and "ecmwf-dark" (lighter greys so                     <br />
+    coastlines stay visible over a dark field), plus style="auto" that                         <br />
+    picks between them from the displayed luminance (im.to_rgba through the                    <br />
+    colormap/norm; only opaque cells count, so light no-data fields are not                    <br />
+    misread as dark; the target axes' image is preferred over self.im).                          </li>
+<li>extent=[xmin, ymin, xmax, ymax] (the ArrayGlyph order) georeferences                       <br />
+    the image and axis limits, handling the pixel-coordinate RGB/animate                       <br />
+    case; a warning fires when the glyph has no geographic extent.                               </li>
+<li>Degree formatters label the +/-180 antimeridian as "180"; _nice_step                       <br />
+    covers sub-degree to 90-degree spacing; graticule_step is validated as                     <br />
+    positive and finite; extent length is validated with a clear message.                        </li>
+<li>available_map_styles() and the REFERENCE_MAP_STYLES table expose and                       <br />
+    allow copying the presets; the geographic knowledge (deriving extent                       <br />
+    from a dataset geotransform) stays upstream.                                                 </li>
 </ul>
-<p>Add a runnable docs notebook (docs/notebooks/array_glyph/reference_map)<br />
-  wired into the mkdocs nav, and TestAddReferenceMap plus a non-mocked<br />
-  integration test (geo.py coverage 98%).  </p>
+<p>Add a runnable docs notebook (docs/notebooks/array_glyph/reference_map)                      <br />
+  wired into the mkdocs nav, and TestAddReferenceMap plus a non-mocked                         <br />
+  integration test (geo.py coverage 98%).                                                        </p>
 <p>Closes #184
 - fix(tiles): align web-tile basemap for non-EPSG:3857 data (#186)
 - For a non-EPSG:3857 axis, add_tiles stretched the stitched Mercator
@@ -3158,57 +3158,57 @@ nonlinearity remains for very large extents.
 <ul>
 <li>fix(animation): accept os.PathLike in save_animation and create_from_image (#181)</li>
 <li>
-<p>save_animation derived the output format with str.rsplit, so passing a<br />
-  pathlib.Path (idiomatic from pyramids' Path-everywhere Dataset API)<br />
-  raised AttributeError: 'WindowsPath' object has no attribute 'rsplit'.  </p>
+<p>save_animation derived the output format with str.rsplit, so passing a                                            <br />
+  pathlib.Path (idiomatic from pyramids' Path-everywhere Dataset API)                                               <br />
+  raised AttributeError: 'WindowsPath' object has no attribute 'rsplit'.                                              </p>
 </li>
 <li>
-<p>Normalise paths with os.fspath and derive the extension via<br />
-    os.path.splitext, so both str and os.PathLike work.  </p>
+<p>Normalise paths with os.fspath and derive the extension via                                                     <br />
+    os.path.splitext, so both str and os.PathLike work.                                                               </p>
 </li>
-<li>Widen the type hints to str | os.PathLike on animation.save_animation,<br />
-    ArrayGlyph.save_animation, and Colors.create_from_image (the only two<br />
-    public path-taking APIs; reference/tiles handle internal paths only).  </li>
-<li>Give a clear error when the path has no file extension, and lock the<br />
-    tightened dotfile / extension-less rejection (.gif, dir/.gif, bare<br />
-    gif) with a regression test.  </li>
-<li>Cover PathLike on the happy and error branches of every widened API.  </li>
+<li>Widen the type hints to str | os.PathLike on animation.save_animation,                                          <br />
+    ArrayGlyph.save_animation, and Colors.create_from_image (the only two                                           <br />
+    public path-taking APIs; reference/tiles handle internal paths only).                                             </li>
+<li>Give a clear error when the path has no file extension, and lock the                                            <br />
+    tightened dotfile / extension-less rejection (.gif, dir/.gif, bare                                              <br />
+    gif) with a regression test.                                                                                      </li>
+<li>Cover PathLike on the happy and error branches of every widened API.                                              </li>
 </ul>
 <p>Closes #180</p>
 <h2 id="0200-2026-06-26"><a class="toclink" href="#0200-2026-06-26">0.20.0 (2026-06-26)</a><a class="headerlink" href="#0200-2026-06-26" title="Permanent link">#</a></h2>
 <ul>
 <li>feat(geo)!: glyph axis CRS with defaulting and assignment-time validation (#178)</li>
 <li>
-<p>Let the geographic glyphs carry the CRS of their plotted data so reference<br />
-  layers default to it, and make bad values fail fast.  </p>
+<p>Let the geographic glyphs carry the CRS of their plotted data so reference                    <br />
+  layers default to it, and make bad values fail fast.                                            </p>
 </li>
 <li>
-<p><code>GeoMixin</code> gains a <code>crs</code> property (default <code>None</code>). <code>add_features</code> and<br />
-<code>add_tiles</code> default their <code>crs=</code> to <code>self.crs</code> when omitted, so a caller<br />
-    that records the axis CRS once (<code>glyph.crs = 4326</code>) gets correctly placed<br />
-    layers without restating it; an explicit <code>crs=</code> still wins and<br />
-<code>self.crs is None</code> is a pure pass-through.  </p>
+<p><code>GeoMixin</code> gains a <code>crs</code> property (default <code>None</code>). <code>add_features</code> and                      <br />
+<code>add_tiles</code> default their <code>crs=</code> to <code>self.crs</code> when omitted, so a caller                    <br />
+    that records the axis CRS once (<code>glyph.crs = 4326</code>) gets correctly placed                   <br />
+    layers without restating it; an explicit <code>crs=</code> still wins and                              <br />
+<code>self.crs is None</code> is a pure pass-through.                                                    </p>
 </li>
-<li><code>crs</code> lives on <code>GeoMixin</code>, not the base <code>Glyph</code>, so non-geographic glyphs<br />
-    are unaffected. <code>add_relief</code> is excluded -- it has no <code>crs</code> parameter<br />
-    (relief is a fixed EPSG:4326 raster placed by <code>extent</code>).  </li>
-<li>The <code>crs</code> setter validates on assignment: <code>TypeError</code> for non<br />
-    int/str/None (bool rejected), <code>ValueError</code> for a non-positive EPSG code,<br />
-    an empty string, or -- when <code>pyproj</code> is installed -- an unresolvable CRS.<br />
-    Strings are stripped and a bare numeric string (<code>"4326"</code>) is normalised<br />
-    to the int <code>4326</code>. Setting <code>crs</code> never requires the <code>[tiles]</code> extra; the<br />
-    deep check is skipped (deferred to draw time) without <code>pyproj</code>.  </li>
-<li>Make <code>add_tiles</code> options keyword-only after <code>source</code> (matching<br />
-<code>add_features</code>), so <code>crs</code> can no longer be passed positionally and the<br />
-    default injection is unconditionally safe.  </li>
-<li>Hoist the <code>cleopatra.tiles</code> / <code>cleopatra.reference</code> imports to module top<br />
-    and call via the module, removing the inline imports.  </li>
+<li><code>crs</code> lives on <code>GeoMixin</code>, not the base <code>Glyph</code>, so non-geographic glyphs                   <br />
+    are unaffected. <code>add_relief</code> is excluded -- it has no <code>crs</code> parameter                       <br />
+    (relief is a fixed EPSG:4326 raster placed by <code>extent</code>).                                      </li>
+<li>The <code>crs</code> setter validates on assignment: <code>TypeError</code> for non                               <br />
+    int/str/None (bool rejected), <code>ValueError</code> for a non-positive EPSG code,                    <br />
+    an empty string, or -- when <code>pyproj</code> is installed -- an unresolvable CRS.                   <br />
+    Strings are stripped and a bare numeric string (<code>"4326"</code>) is normalised                     <br />
+    to the int <code>4326</code>. Setting <code>crs</code> never requires the <code>[tiles]</code> extra; the                    <br />
+    deep check is skipped (deferred to draw time) without <code>pyproj</code>.                               </li>
+<li>Make <code>add_tiles</code> options keyword-only after <code>source</code> (matching                              <br />
+<code>add_features</code>), so <code>crs</code> can no longer be passed positionally and the                      <br />
+    default injection is unconditionally safe.                                                    </li>
+<li>Hoist the <code>cleopatra.tiles</code> / <code>cleopatra.reference</code> imports to module top                   <br />
+    and call via the module, removing the inline imports.                                         </li>
 </ul>
-<p>BREAKING CHANGE: <code>cleopatra.tiles.add_tiles</code> now accepts <code>crs</code>, <code>zoom</code>,<br />
-<code>alpha</code>, <code>attribution</code>, <code>zorder</code>, <code>interpolation</code>, <code>timeout</code>, <code>retries</code>,<br />
-<code>user_agent</code> and <code>max_tiles</code> as keyword-only arguments (everything after<br />
-<code>source</code>). Callers that passed any of these positionally must switch to<br />
-  keyword arguments; <code>ax</code> and <code>source</code> remain positional.  </p>
+<p>BREAKING CHANGE: <code>cleopatra.tiles.add_tiles</code> now accepts <code>crs</code>, <code>zoom</code>,                       <br />
+<code>alpha</code>, <code>attribution</code>, <code>zorder</code>, <code>interpolation</code>, <code>timeout</code>, <code>retries</code>,                      <br />
+<code>user_agent</code> and <code>max_tiles</code> as keyword-only arguments (everything after                      <br />
+<code>source</code>). Callers that passed any of these positionally must switch to                       <br />
+  keyword arguments; <code>ax</code> and <code>source</code> remain positional.                                         </p>
 <p>Closes #177</p>
 <h2 id="0190-2026-06-22"><a class="toclink" href="#0190-2026-06-22">0.19.0 (2026-06-22)</a><a class="headerlink" href="#0190-2026-06-22" title="Permanent link">#</a></h2>
 <ul>
