@@ -425,6 +425,81 @@ def orthographic_grid(
     return x, y, masked_data
 
 
+def _bin_edges(centers: np.ndarray) -> np.ndarray:
+    """Compute `N + 1` bin edges from `N` monotonic bin centres.
+
+    Interior edges are midpoints between consecutive centres; the two outer
+    edges are extrapolated by the same half-step as their neighbouring
+    interior edge.
+    """
+    centers = np.asarray(centers, dtype=float)
+    mid = (centers[:-1] + centers[1:]) / 2.0
+    first = centers[0] - (mid[0] - centers[0])
+    last = centers[-1] + (centers[-1] - mid[-1])
+    return np.concatenate([[first], mid, [last]])
+
+
+def orthographic_grid_edges(
+    lon: Any,
+    lat: Any,
+    center_lat: float = 90.0,
+    center_lon: float = 0.0,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Reproject 1D lon/lat cell-centre vectors to orthographic cell-*edge* coordinates.
+
+    Companion to `orthographic_grid`: that function reprojects data at cell
+    *centres*, matching `pcolormesh`'s `shading="auto"`/`"nearest"`
+    convention -- but the orthographic projection's extreme local distortion
+    (longitude lines compress drastically near the projection centre) makes
+    matplotlib's automatic centre-to-edge inference unreliable there: most
+    cells can render as degenerate slivers, silently dropping most of the
+    grid. This function instead reprojects the cell **edges**, for use with
+    `shading="flat"` (matplotlib draws exactly the given quads, inferring
+    nothing) -- the reliable choice for this projection.
+
+    Args:
+        lon: 1D vector of cell-centre longitudes, degrees.
+        lat: 1D vector of cell-centre latitudes, degrees.
+        center_lat: Latitude the globe is centred on. Must match the value
+            passed to `orthographic_grid` for the data these edges frame.
+        center_lon: Longitude the globe is centred on. Must match
+            `orthographic_grid`.
+
+    Returns:
+        tuple: `(x_edges, y_edges)`, each shaped `(len(lat) + 1, len(lon) + 1)`
+        -- one more per axis than a `(len(lat), len(lon))` data array, ready
+        for `ax.pcolormesh(x_edges, y_edges, data, shading="flat")`.
+
+    Raises:
+        ImportError: If pyproj (the `[tiles]` extra) is not installed.
+
+    Examples:
+        - Edge arrays are one larger per axis than the centre vectors:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.projection import orthographic_grid_edges
+            >>> lon = np.linspace(-180, 180, 8)
+            >>> lat = np.linspace(-90, 90, 4)
+            >>> x_edges, y_edges = orthographic_grid_edges(lon, lat)
+            >>> x_edges.shape, y_edges.shape
+            ((5, 9), (5, 9))
+
+            ```
+
+    See Also:
+        orthographic_grid: The matching cell-centre reprojection for `data`.
+        cleopatra.colors.alpha_scaled_mesh: Renders with `shading="flat"`.
+    """
+    lon_edges_1d = _bin_edges(np.asarray(lon, dtype=float))
+    lat_edges_1d = _bin_edges(np.asarray(lat, dtype=float))
+    lon_e, lat_e = np.meshgrid(lon_edges_1d, lat_edges_1d)
+    dummy = np.zeros_like(lon_e)
+    x_edges, y_edges, _ = orthographic_grid(
+        lon_e, lat_e, dummy, center_lat=center_lat, center_lon=center_lon
+    )
+    return x_edges, y_edges
+
+
 def orthographic_boundary(
     n: int = 200, radius: float = ORTHOGRAPHIC_RADIUS_M
 ) -> np.ndarray:
@@ -579,14 +654,18 @@ def apply_projection_style(
 
     This is the projection half of composing the CAMS look; the colour half
     is `cleopatra.colors.apply_data_style`, called with the `(x, y, data)`
-    this function returns as its `x`/`y`/layer arguments -- `pcolormesh`
-    (which `alpha_scaled_mesh` uses) renders a plain regular lon/lat grid
-    exactly as well as a curvilinear globe grid, so the *same* two-line
-    pattern composes both layers regardless of which style was chosen:
+    this function returns as its `x`/`y`/layer arguments. Both styles return
+    cell-**edge** coordinates (one larger per axis than `data`) for use with
+    `shading="flat"`: the orthographic projection's extreme distortion near
+    its centre makes matplotlib's automatic centre-to-edge inference
+    (`shading="auto"`/`"nearest"`) unreliable -- most cells can render as
+    degenerate slivers -- so edges are computed explicitly and reliably
+    instead. The *same* two-line pattern composes both layers regardless of
+    which style was chosen:
 
     ```python
     x, y, masked = apply_projection_style(ax, lon, lat, data, style=chosen)
-    apply_data_style(ax, {"dust": masked}, x=x, y=y)
+    apply_data_style(ax, {"dust": masked}, x=x, y=y, shading="flat")
     ```
 
     Neither function requires the other: use `"globe"` with a single plain
@@ -595,11 +674,14 @@ def apply_projection_style(
 
     Args:
         ax: Axes to draw the boundary/graticule on. Ignored for `"flat"`.
-        lon: Longitudes in degrees (see `orthographic_grid` for accepted
-            shapes). Returned unchanged for `"flat"`.
-        lat: Latitudes in degrees, paired with `lon`.
-        data: 2D array of values, reprojected/masked alongside the grid for
-            `"globe"`; returned unchanged for `"flat"`.
+        lon: 1D vector of cell-centre longitudes, degrees. Both styles
+            require 1D `lon`/`lat` so cell edges can be computed reliably;
+            for an already-2D curvilinear grid, call `orthographic_grid`
+            directly and build your own edge coordinates.
+        lat: 1D vector of cell-centre latitudes, degrees, paired with `lon`.
+        data: 2D array of values, shape `(len(lat), len(lon))`. Reprojected
+            and hemisphere-masked for `"globe"`; returned unchanged for
+            `"flat"`.
         style: A name from `PROJECTION_STYLES` (`"globe"` or `"flat"`).
         **overrides: Override any of the style's parameters -- for
             `"globe"`: `center_lat`, `center_lon`, `graticule_step`,
@@ -607,17 +689,19 @@ def apply_projection_style(
             `apply_projection_frame`).
 
     Returns:
-        tuple: `(x, y, data)` -- for `"globe"`, the reprojected coordinates
-        and hemisphere-masked data from `orthographic_grid`; for `"flat"`,
-        `lon`/`lat`/`data` coerced to arrays, unchanged.
+        tuple: `(x_edges, y_edges, data)` -- cell-edge coordinates, each
+        shaped `(len(lat) + 1, len(lon) + 1)`, and `data` unchanged (for
+        `"flat"`) or hemisphere-masked (for `"globe"`).
 
     Raises:
         KeyError: If `style` is not registered.
+        ValueError: If `lon`/`lat` are not 1D.
         ImportError: If `style="globe"` and pyproj (the `[tiles]` extra) is
             not installed.
 
     Examples:
-        - `"globe"` reprojects the data and draws a boundary patch on `ax`:
+        - `"globe"` reprojects the data, draws a boundary patch on `ax`, and
+          returns edge coordinates one larger per axis than `data`:
             ```python
             >>> import numpy as np
             >>> import matplotlib.pyplot as plt
@@ -629,12 +713,15 @@ def apply_projection_style(
             >>> x, y, masked = apply_projection_style(ax, lon, lat, data, style="globe")
             >>> len(ax.patches)  # the boundary circle
             1
+            >>> x.shape  # one larger per axis than data's (2, 2)
+            (3, 3)
             >>> np.all(np.isnan(masked[1]))  # far hemisphere still masked
             np.True_
             >>> plt.close(fig)
 
             ```
-        - `"flat"` is a pass-through: nothing is drawn, data is unchanged:
+        - `"flat"` draws nothing but still returns matching edge coordinates,
+          so the same `shading="flat"` call works for either style:
             ```python
             >>> import numpy as np
             >>> import matplotlib.pyplot as plt
@@ -646,6 +733,8 @@ def apply_projection_style(
             >>> x, y, out = apply_projection_style(ax, lon, lat, data, style="flat")
             >>> len(ax.patches)
             0
+            >>> x.shape
+            (3, 3)
             >>> np.array_equal(out, data)
             True
             >>> plt.close(fig)
@@ -669,7 +758,8 @@ def apply_projection_style(
             ```
 
     See Also:
-        orthographic_grid: The `"globe"` reprojection primitive this composes.
+        orthographic_grid: The `"globe"` cell-centre reprojection primitive.
+        orthographic_grid_edges: The `"globe"` cell-edge reprojection primitive.
         apply_projection_frame: Draws the boundary/graticule this composes.
         cleopatra.colors.apply_data_style: The companion data-style axis.
     """
@@ -680,12 +770,21 @@ def apply_projection_style(
         )
     cfg = {**PROJECTION_STYLES[style], **overrides}
 
-    if style == "flat":
-        return (
-            np.asarray(lon, dtype=float),
-            np.asarray(lat, dtype=float),
-            np.asarray(data, dtype=float),
+    lon_arr = np.asarray(lon, dtype=float)
+    lat_arr = np.asarray(lat, dtype=float)
+    if lon_arr.ndim != 1 or lat_arr.ndim != 1:
+        raise ValueError(
+            "apply_projection_style requires 1D lon/lat vectors so cell "
+            "edges can be computed reliably; for an already-2D curvilinear "
+            "grid, call orthographic_grid directly and build your own edge "
+            "coordinates."
         )
+
+    if style == "flat":
+        lon_edges_1d = _bin_edges(lon_arr)
+        lat_edges_1d = _bin_edges(lat_arr)
+        x_edges, y_edges = np.meshgrid(lon_edges_1d, lat_edges_1d)
+        return x_edges, y_edges, np.asarray(data, dtype=float)
 
     center_lat = cfg.get("center_lat", 90.0)
     center_lon = cfg.get("center_lon", 0.0)
@@ -693,8 +792,11 @@ def apply_projection_style(
     boundary_kw = cfg.get("boundary_kw")
     graticule_kw = cfg.get("graticule_kw")
 
-    x, y, masked = orthographic_grid(
-        lon, lat, data, center_lat=center_lat, center_lon=center_lon
+    _, _, masked = orthographic_grid(
+        lon_arr, lat_arr, data, center_lat=center_lat, center_lon=center_lon
+    )
+    x_edges, y_edges = orthographic_grid_edges(
+        lon_arr, lat_arr, center_lat=center_lat, center_lon=center_lon
     )
     boundary = orthographic_boundary()
     graticule = orthographic_graticule(
@@ -709,4 +811,4 @@ def apply_projection_style(
         boundary_kw=boundary_kw,
         graticule_kw=graticule_kw,
     )
-    return x, y, masked
+    return x_edges, y_edges, masked

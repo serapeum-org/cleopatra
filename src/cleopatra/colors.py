@@ -387,6 +387,13 @@ def apply_data_style(
         )
 
     curvilinear = x is not None and y is not None
+    if curvilinear:
+        # cleopatra.projection.apply_projection_style always returns cell
+        # EDGE coordinates (one larger per axis than data): matplotlib's
+        # automatic centre-to-edge inference ("auto"/"nearest") is unreliable
+        # for a globe's extreme local distortion, so shading="flat" (which
+        # trusts the given edges exactly) is the correct default here.
+        render_kwargs.setdefault("shading", "flat")
     images: dict[str, Any] = {}
     for i, (name, data) in enumerate(layers.items()):
         cfg = preset[name]

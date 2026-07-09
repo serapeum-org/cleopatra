@@ -31,10 +31,12 @@ from cleopatra.projection import (  # noqa: E402
     DEFAULT_GRATICULE_KW,
     ORTHOGRAPHIC_RADIUS_M,
     _as_xy,
+    _bin_edges,
     apply_projection_frame,
     orthographic_boundary,
     orthographic_graticule,
     orthographic_grid,
+    orthographic_grid_edges,
 )
 
 
@@ -680,6 +682,62 @@ class TestOrthographicGrid:
             orthographic_grid(np.array([0.0]), np.array([0.0]), np.array([[1.0]]))
 
 
+class TestBinEdges:
+    """Tests for the private `_bin_edges` helper."""
+
+    def test_returns_one_more_edge_than_centers(self):
+        """`N` centres produce `N + 1` edges."""
+        edges = _bin_edges(np.array([0.0, 10.0, 20.0]))
+        assert edges.shape == (4,), f"expected 4 edges, got {edges.shape}"
+
+    def test_interior_edges_are_midpoints(self):
+        """Interior edges sit exactly halfway between consecutive centres."""
+        edges = _bin_edges(np.array([0.0, 10.0, 20.0]))
+        np.testing.assert_allclose(edges[1:-1], [5.0, 15.0])
+
+    def test_outer_edges_are_extrapolated_symmetrically(self):
+        """The two outer edges extend by the same half-step as their neighbour."""
+        edges = _bin_edges(np.array([0.0, 10.0, 20.0]))
+        np.testing.assert_allclose(edges, [-5.0, 5.0, 15.0, 25.0])
+
+    def test_uniform_spacing_round_trips_to_centers(self):
+        """For evenly-spaced centres, edges bracket each centre exactly."""
+        centers = np.array([1.0, 3.0, 5.0, 7.0])
+        edges = _bin_edges(centers)
+        midpoints_of_edges = (edges[:-1] + edges[1:]) / 2.0
+        np.testing.assert_allclose(midpoints_of_edges, centers)
+
+
+class TestOrthographicGridEdges:
+    """Tests for `orthographic_grid_edges`."""
+
+    def test_shape_is_one_larger_per_axis(self):
+        """Edge arrays are `(len(lat) + 1, len(lon) + 1)`."""
+        lon = np.linspace(-180, 180, 8)
+        lat = np.linspace(-90, 90, 4)
+        x_edges, y_edges = orthographic_grid_edges(lon, lat)
+        assert x_edges.shape == y_edges.shape == (5, 9), (
+            f"unexpected shape: x={x_edges.shape}, y={y_edges.shape}"
+        )
+
+    def test_edges_are_finite(self):
+        """Every edge coordinate is finite (no inf from the antipodal singularity)."""
+        lon = np.linspace(-180, 180, 8)
+        lat = np.linspace(-90, 90, 4)
+        x_edges, y_edges = orthographic_grid_edges(lon, lat)
+        assert np.all(np.isfinite(x_edges)) and np.all(np.isfinite(y_edges)), (
+            "edge coordinates must be finite for pcolormesh(shading='flat')"
+        )
+
+    def test_missing_pyproj_raises_import_error(self, monkeypatch):
+        """Without pyproj installed, a clear `ImportError` is raised."""
+        import cleopatra.projection as proj_mod
+
+        monkeypatch.setattr(proj_mod.importlib.util, "find_spec", lambda name: None)
+        with pytest.raises(ImportError, match=r"\[tiles\]"):
+            orthographic_grid_edges(np.array([0.0, 90.0]), np.array([-45.0, 45.0]))
+
+
 class TestOrthographicBoundary:
     """Tests for `orthographic_boundary`."""
 
@@ -767,17 +825,40 @@ class TestApplyProjectionStyle:
         np.testing.assert_array_equal(masked[0], [1.0, 2.0])
         assert np.all(np.isnan(masked[1])), "far hemisphere should still be masked"
 
-    def test_flat_is_a_pure_passthrough(self, ax, grid):
-        """'flat' draws nothing and returns lon/lat/data unchanged."""
+    def test_flat_draws_nothing_and_leaves_data_unchanged(self, ax, grid):
+        """'flat' draws nothing on `ax`; `data` passes through unchanged.
+
+        `x`/`y` are cell-edge coordinates (one larger per axis than `lon`/
+        `lat`), not the raw `lon`/`lat` vectors -- see
+        `test_flat_returns_edge_shaped_coordinates`.
+        """
         lon, lat, data = grid
-        x, y, out = projection_module.apply_projection_style(
-            ax, lon, lat, data, style="flat"
-        )
+        _, _, out = projection_module.apply_projection_style(ax, lon, lat, data, style="flat")
         assert len(ax.patches) == 0, "flat style should draw no boundary"
         assert len(ax.lines) == 0, "flat style should draw no graticule"
-        np.testing.assert_array_equal(x, lon)
-        np.testing.assert_array_equal(y, lat)
         np.testing.assert_array_equal(out, data)
+
+    def test_flat_returns_edge_shaped_coordinates(self, ax, grid):
+        """'flat' returns cell-EDGE x/y (one larger per axis than lon/lat).
+
+        Test scenario:
+            Matches 'globe''s contract so the same shading="flat" downstream
+            call works for either style -- see
+            `test_globe_and_flat_x_y_both_feed_alpha_scaled_mesh`.
+        """
+        lon, lat, data = grid
+        x, y, _ = projection_module.apply_projection_style(ax, lon, lat, data, style="flat")
+        assert x.shape == y.shape == (len(lat) + 1, len(lon) + 1), (
+            f"expected edge shape {(len(lat) + 1, len(lon) + 1)}, got x={x.shape}, y={y.shape}"
+        )
+
+    def test_2d_lon_lat_raises_value_error(self, ax, grid):
+        """Non-1D `lon`/`lat` raise `ValueError` for either style (edges need 1D input)."""
+        lon, lat, data = grid
+        lon2d, lat2d = np.meshgrid(lon, lat)
+        for style in ("globe", "flat"):
+            with pytest.raises(ValueError, match="1D lon/lat"):
+                projection_module.apply_projection_style(ax, lon2d, lat2d, data, style=style)
 
     def test_unknown_style_raises_key_error(self, ax, grid):
         """An unregistered `style` name raises `KeyError`."""
