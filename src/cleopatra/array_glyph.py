@@ -2729,9 +2729,12 @@ class ArrayGlyph(GeoMixin, Glyph):
                 Controls the speed of the animation (smaller values = faster animation).
             text_loc: Location of the frame label text as [x, y] coordinates, by default None.
                 When None, the label is anchored just inside the top-left corner using
-                axes-fraction coordinates, so it never clips regardless of the array's
-                shape or the axis orientation. Pass an explicit [x, y] to place the label
-                in data coordinates instead.
+                axes-fraction coordinates, so it stays clear of the top/bottom edges
+                regardless of the array's shape or the axis orientation. A very narrow
+                axes can still overflow horizontally at the default font size, since no
+                anchor choice can fit a long label into less horizontal space than it
+                needs; pass an explicit [x, y] (data coordinates) or a smaller
+                `cbar_label_size` in that case.
             point_color: Color of the points, by default "red".
                 Any valid matplotlib color string.
             point_size: Size of the points, by default 100.

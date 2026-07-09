@@ -3123,10 +3123,16 @@ class TestAnimateDataGetterEdgeCases:
         Test scenario:
             Regression test for the inverted-Y-axis clipping bug: with no
             explicit `text_loc`, the label's rendered bounding box must sit
-            fully within the axes bounding box, for both a wide and a tall
-            array shape.
+            fully within the axes bounding box on both axes, for a square
+            and a moderately rectangular array shape. Does not cover an
+            extremely narrow axes (e.g. a 20-column array), where the
+            label can still overflow horizontally simply because the
+            available width is smaller than the label's rendered text at
+            the default font size — a physical-space limit no anchor
+            choice can fix; callers with very narrow images should pass
+            an explicit `text_loc` or a smaller `cbar_label_size`.
         """
-        for shape in [(4, 48, 48), (4, 200, 20)]:
+        for shape in [(4, 48, 48), (4, 100, 50)]:
             arr = np.zeros(shape)
             glyph = ArrayGlyph(arr, figsize=(4, 4))
             try:
@@ -3138,6 +3144,8 @@ class TestAnimateDataGetterEdgeCases:
                 axes_bbox = glyph.ax.get_window_extent(renderer=renderer)
                 assert label_bbox.y1 <= axes_bbox.y1, f"label clips above axes for {shape}"
                 assert label_bbox.y0 >= axes_bbox.y0, f"label clips below axes for {shape}"
+                assert label_bbox.x1 <= axes_bbox.x1, f"label clips right of axes for {shape}"
+                assert label_bbox.x0 >= axes_bbox.x0, f"label clips left of axes for {shape}"
             finally:
                 plt.close(glyph.fig)
 
