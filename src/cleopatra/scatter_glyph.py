@@ -32,9 +32,6 @@ Examples:
 
 from __future__ import annotations
 
-from typing import Any
-
-import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.collections import PathCollection
@@ -184,8 +181,7 @@ class ScatterGlyph(GeoMixin, Glyph):
             sizes = np.asarray(sizes)
             if sizes.shape != self.x.shape:
                 raise ValueError(
-                    f"sizes must match x/y shape {self.x.shape}, got "
-                    f"{sizes.shape}."
+                    f"sizes must match x/y shape {self.x.shape}, got " f"{sizes.shape}."
                 )
         self.values = values
         self.sizes = sizes
@@ -287,9 +283,7 @@ class ScatterGlyph(GeoMixin, Glyph):
             opts["title"] = title
         # Resolve the colorbar choice for this call only (a plot-time
         # override does not persist into the glyph's options).
-        draw_colorbar = (
-            opts["add_colorbar"] if add_colorbar is None else add_colorbar
-        )
+        draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
 
         marker_area = self._resolve_marker_area()
 

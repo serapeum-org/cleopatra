@@ -130,9 +130,7 @@ class KDEGlyph(Glyph):
         fig: Figure = None,
         **kwargs,
     ):
-        super().__init__(
-            default_options=KDE_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs
-        )
+        super().__init__(default_options=KDE_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs)
         self.x = np.asarray(x, dtype=float)
         self.y = np.asarray(y, dtype=float)
         if self.x.shape != self.y.shape:
@@ -141,9 +139,7 @@ class KDEGlyph(Glyph):
                 f"and {self.y.shape}."
             )
         if self.x.size < 2:
-            raise ValueError(
-                f"KDE needs at least 2 points, got {self.x.size}."
-            )
+            raise ValueError(f"KDE needs at least 2 points, got {self.x.size}.")
         bw_method = self.default_options["bw_method"]
         if bw_method is not None and bw_method <= 0:
             raise ValueError(
@@ -224,11 +220,11 @@ class KDEGlyph(Glyph):
         block = max(1, MAX_KDE_BLOCK // gx_flat.shape[0])
         density_flat = np.zeros(gx_flat.shape[0], dtype=float)
         for start in range(0, n, block):
-            xs = x[start:start + block]
-            ys = y[start:start + block]
+            xs = x[start : start + block]
+            ys = y[start : start + block]
             dx = (gx_flat - xs) / sx
             dy = (gy_flat - ys) / sy
-            density_flat += np.exp(-0.5 * (dx ** 2 + dy ** 2)).sum(axis=1)
+            density_flat += np.exp(-0.5 * (dx**2 + dy**2)).sum(axis=1)
 
         density = density_flat.reshape(gx.shape) / (2.0 * np.pi * sx * sy * n)
         return gx, gy, density
@@ -361,9 +357,7 @@ class KDEGlyph(Glyph):
 
         if title is not None:
             opts["title"] = title
-        draw_colorbar = (
-            opts["add_colorbar"] if add_colorbar is None else add_colorbar
-        )
+        draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
 
         gx, gy, density = self.evaluate()
         level_edges = self._resolve_levels(density)

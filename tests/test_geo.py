@@ -90,7 +90,9 @@ def test_add_features_delegates_with_axes_and_args(monkeypatch):
     assert result is ax, "method should return the function's result"
     assert seen["ax"] is ax, f"expected self.ax forwarded, got {seen['ax']}"
     assert seen["args"] == ("coastline", "50m"), f"args not forwarded: {seen['args']}"
-    assert seen["kwargs"] == {"colors": "navy"}, f"kwargs not forwarded: {seen['kwargs']}"
+    assert seen["kwargs"] == {
+        "colors": "navy"
+    }, f"kwargs not forwarded: {seen['kwargs']}"
     plt.close(fig)
 
 
@@ -121,12 +123,16 @@ def test_add_tiles_delegates(monkeypatch):
 def test_crs_defaults_to_self_crs_when_omitted(monkeypatch):
     """add_features/add_tiles fall back to self.crs when crs= is omitted."""
     seen = {}
-    monkeypatch.setattr(refmod, "add_features", lambda ax, *a, **k: seen.update(k) or ax)
+    monkeypatch.setattr(
+        refmod, "add_features", lambda ax, *a, **k: seen.update(k) or ax
+    )
     fig, ax = plt.subplots()
     glyph = _Dummy(ax)
     glyph.crs = 4326
     glyph.add_features("coastline", "50m")
-    assert seen.get("crs") == 4326, f"expected crs defaulted to 4326, got {seen.get('crs')}"
+    assert (
+        seen.get("crs") == 4326
+    ), f"expected crs defaulted to 4326, got {seen.get('crs')}"
     plt.close(fig)
 
     seen.clear()
@@ -135,14 +141,18 @@ def test_crs_defaults_to_self_crs_when_omitted(monkeypatch):
     glyph = _Dummy(ax)
     glyph.crs = "EPSG:3857"
     glyph.add_tiles()
-    assert seen.get("crs") == "EPSG:3857", f"expected crs defaulted, got {seen.get('crs')}"
+    assert (
+        seen.get("crs") == "EPSG:3857"
+    ), f"expected crs defaulted, got {seen.get('crs')}"
     plt.close(fig)
 
 
 def test_explicit_crs_overrides_self_crs(monkeypatch):
     """An explicit crs= wins over self.crs."""
     seen = {}
-    monkeypatch.setattr(refmod, "add_features", lambda ax, *a, **k: seen.update(k) or ax)
+    monkeypatch.setattr(
+        refmod, "add_features", lambda ax, *a, **k: seen.update(k) or ax
+    )
     fig, ax = plt.subplots()
     glyph = _Dummy(ax)
     glyph.crs = 4326
@@ -154,32 +164,40 @@ def test_explicit_crs_overrides_self_crs(monkeypatch):
 def test_unset_crs_is_passthrough(monkeypatch):
     """With self.crs unset (None), no crs is injected (helper default preserved)."""
     seen = {}
-    monkeypatch.setattr(refmod, "add_features", lambda ax, *a, **k: seen.update(kwargs=k) or ax)
+    monkeypatch.setattr(
+        refmod, "add_features", lambda ax, *a, **k: seen.update(kwargs=k) or ax
+    )
     fig, ax = plt.subplots()
     _Dummy(ax).add_features("coastline", "50m")  # crs left at class default None
-    assert "crs" not in seen["kwargs"], f"crs should not be injected, got {seen['kwargs']}"
+    assert (
+        "crs" not in seen["kwargs"]
+    ), f"crs should not be injected, got {seen['kwargs']}"
     plt.close(fig)
 
 
 def test_add_relief_ignores_self_crs(monkeypatch):
     """add_relief never receives crs, even when self.crs is set."""
     seen = {}
-    monkeypatch.setattr(refmod, "add_relief", lambda ax, *a, **k: seen.update(kwargs=k) or ax)
+    monkeypatch.setattr(
+        refmod, "add_relief", lambda ax, *a, **k: seen.update(kwargs=k) or ax
+    )
     fig, ax = plt.subplots()
     glyph = _Dummy(ax)
     glyph.crs = 4326
     glyph.add_relief("low")
-    assert "crs" not in seen["kwargs"], f"add_relief must not get crs, got {seen['kwargs']}"
+    assert (
+        "crs" not in seen["kwargs"]
+    ), f"add_relief must not get crs, got {seen['kwargs']}"
     plt.close(fig)
 
 
 def test_basemap_kwargs_helper():
     """_basemap_kwargs injects only when self.crs is set and crs is absent."""
     d = _Dummy(None)
-    assert d._basemap_kwargs({}) == {}                      # crs unset -> passthrough
+    assert d._basemap_kwargs({}) == {}  # crs unset -> passthrough
     assert d._basemap_kwargs({"crs": 3857}) == {"crs": 3857}
     d.crs = 4326
-    assert d._basemap_kwargs({}) == {"crs": 4326}           # injected
+    assert d._basemap_kwargs({}) == {"crs": 4326}  # injected
     assert d._basemap_kwargs({"crs": 3857}) == {"crs": 3857}  # explicit wins
     assert d._basemap_kwargs({"crs": None}) == {"crs": 4326}  # None treated as unset
 
@@ -249,7 +267,9 @@ def test_crs_skips_deep_validation_without_pyproj(monkeypatch):
 
     real_find_spec = ilu.find_spec
     monkeypatch.setattr(
-        ilu, "find_spec", lambda name: None if name == "pyproj" else real_find_spec(name)
+        ilu,
+        "find_spec",
+        lambda name: None if name == "pyproj" else real_find_spec(name),
     )
     g = _Dummy(None)
     g.crs = "deferred-to-draw-time"  # no deep check -> accepted
@@ -259,7 +279,9 @@ def test_crs_skips_deep_validation_without_pyproj(monkeypatch):
 def test_ax_override_takes_precedence(monkeypatch):
     """An explicit ax= overrides the glyph's own axes."""
     seen = {}
-    monkeypatch.setattr(refmod, "add_features", lambda ax, *a, **k: seen.update(ax=ax) or ax)
+    monkeypatch.setattr(
+        refmod, "add_features", lambda ax, *a, **k: seen.update(ax=ax) or ax
+    )
     fig1, ax1 = plt.subplots()
     fig2, ax2 = plt.subplots()
     _Dummy(ax1).add_features("coastline", ax=ax2)
@@ -280,10 +302,15 @@ def test_real_glyph_integration(tmp_path: Path, monkeypatch):
     collection = {
         "type": "FeatureCollection",
         "features": [
-            {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[0, 0], [10, 10]]}}
+            {
+                "type": "Feature",
+                "geometry": {"type": "LineString", "coordinates": [[0, 0], [10, 10]]},
+            }
         ],
     }
-    with gzip.open(tmp_path / "ne_110m_coastline.geojson.gz", "wt", encoding="utf-8") as fh:
+    with gzip.open(
+        tmp_path / "ne_110m_coastline.geojson.gz", "wt", encoding="utf-8"
+    ) as fh:
         json.dump(collection, fh)
 
     fig, ax = plt.subplots()
@@ -300,10 +327,15 @@ def test_glyph_crs_drives_reprojected_placement(tmp_path: Path, monkeypatch):
     collection = {
         "type": "FeatureCollection",
         "features": [
-            {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[0, 0], [10, 0]]}}
+            {
+                "type": "Feature",
+                "geometry": {"type": "LineString", "coordinates": [[0, 0], [10, 0]]},
+            }
         ],
     }
-    with gzip.open(tmp_path / "ne_110m_coastline.geojson.gz", "wt", encoding="utf-8") as fh:
+    with gzip.open(
+        tmp_path / "ne_110m_coastline.geojson.gz", "wt", encoding="utf-8"
+    ) as fh:
         json.dump(collection, fh)
 
     fig, ax = plt.subplots()
@@ -338,15 +370,20 @@ class TestAddReferenceMap:
 
     @pytest.mark.parametrize(
         "value,expected",
-        [(-75, "75°W"), (10, "10°E"), (0, "0°"), (180, "180°"), (-180, "180°"), (200, "160°W")],
+        [
+            (-75, "75°W"),
+            (10, "10°E"),
+            (0, "0°"),
+            (180, "180°"),
+            (-180, "180°"),
+            (200, "160°W"),
+        ],
     )
     def test_lon_formatter(self, value, expected):
         """Longitude ticks label W/E, 0, and the ±180° antimeridian (L1)."""
         assert _lon_formatter(value) == expected
 
-    @pytest.mark.parametrize(
-        "value,expected", [(-20, "20°S"), (45, "45°N"), (0, "0°")]
-    )
+    @pytest.mark.parametrize("value,expected", [(-20, "20°S"), (45, "45°N"), (0, "0°")])
     def test_lat_formatter(self, value, expected):
         """Latitude ticks label S/N and the equator."""
         assert _lat_formatter(value) == expected
@@ -521,10 +558,19 @@ def test_add_reference_map_integration(tmp_path: Path, monkeypatch):
     line = {
         "type": "FeatureCollection",
         "features": [
-            {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-90, 20], [-50, 50]]}}
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [[-90, 20], [-50, 50]],
+                },
+            }
         ],
     }
-    for fname in ("ne_110m_coastline.geojson.gz", "ne_110m_admin_0_boundary_lines_land.geojson.gz"):
+    for fname in (
+        "ne_110m_coastline.geojson.gz",
+        "ne_110m_admin_0_boundary_lines_land.geojson.gz",
+    ):
         with gzip.open(tmp_path / fname, "wt", encoding="utf-8") as fh:
             json.dump(line, fh)
 

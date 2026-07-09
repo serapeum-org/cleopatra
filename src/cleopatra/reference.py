@@ -132,9 +132,7 @@ def _download(url: str, dest: Path, *, timeout: int = 60) -> Path:
                 shutil.copyfileobj(response, handle)
     except (urllib.error.URLError, OSError) as e:
         tmp.unlink(missing_ok=True)
-        raise ConnectionError(
-            f"Failed to download reference asset {url!r}: {e}"
-        ) from e
+        raise ConnectionError(f"Failed to download reference asset {url!r}: {e}") from e
     tmp.replace(dest)
     return dest
 
@@ -323,9 +321,7 @@ def add_relief(
     """
     _validate_axes(ax)
     rgb = relief(resolution)
-    west, south, east, north = (
-        extent if extent is not None else _RELIEF_EXTENT_4326
-    )
+    west, south, east, north = extent if extent is not None else _RELIEF_EXTENT_4326
 
     xlim, ylim = ax.get_xlim(), ax.get_ylim()
     ax.imshow(
@@ -500,9 +496,7 @@ def _polygons(geometry: dict) -> list[list[np.ndarray]]:
     if gtype == "Polygon":
         return [[np.asarray(ring, dtype=float) for ring in coords]]
     if gtype == "MultiPolygon":
-        return [
-            [np.asarray(ring, dtype=float) for ring in poly] for poly in coords
-        ]
+        return [[np.asarray(ring, dtype=float) for ring in poly] for poly in coords]
     return []
 
 
@@ -571,9 +565,7 @@ def _load_features(layer: str, resolution: str) -> list[dict]:
             removed first so a retry re-downloads).
     """
     if layer not in _LAYERS:
-        raise ValueError(
-            f"Unknown layer {layer!r}. Choose from {available_layers()}."
-        )
+        raise ValueError(f"Unknown layer {layer!r}. Choose from {available_layers()}.")
     if resolution not in _RESOLUTIONS:
         raise ValueError(
             f"Unknown resolution {resolution!r}. "
@@ -687,8 +679,7 @@ def _make_transformer(crs: int | str) -> Any:
         return Transformer.from_crs("EPSG:4326", dst, always_xy=True)
     except CRSError as e:
         raise ValueError(
-            f"Invalid CRS {crs!r}: {e}. Provide a valid EPSG code or CRS "
-            "string."
+            f"Invalid CRS {crs!r}: {e}. Provide a valid EPSG code or CRS " "string."
         ) from e
 
 

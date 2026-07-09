@@ -407,9 +407,7 @@ class TestEmbedGif:
 
         def fake_import(name, *args, **kwargs):
             if name.startswith("IPython"):
-                raise ModuleNotFoundError(
-                    "No module named 'IPython'", name="IPython"
-                )
+                raise ModuleNotFoundError("No module named 'IPython'", name="IPython")
             return real_import(name, *args, **kwargs)
 
         monkeypatch.setattr(builtins, "__import__", fake_import)
@@ -431,9 +429,7 @@ class TestEmbedGif:
 
         def fake_import(name, *args, **kwargs):
             if name == "IPython.display":
-                raise ModuleNotFoundError(
-                    "No module named 'some_dep'", name="some_dep"
-                )
+                raise ModuleNotFoundError("No module named 'some_dep'", name="some_dep")
             return real_import(name, *args, **kwargs)
 
         monkeypatch.setattr(builtins, "__import__", fake_import)
@@ -450,9 +446,9 @@ class TestEmbedGif:
             so the package never hard-depends on IPython at load time.
         """
 
-        assert not hasattr(anim_mod, "Image"), (
-            "IPython Image must not be imported at module load time"
-        )
+        assert not hasattr(
+            anim_mod, "Image"
+        ), "IPython Image must not be imported at module load time"
 
 
 class TestOddDimensionAutoPad:
@@ -471,9 +467,9 @@ class TestOddDimensionAutoPad:
         (line,) = ax.plot([0, 1], [0, 0])
         width = int(round(fig.get_figwidth() * fig.dpi))
         height = int(round(fig.get_figheight() * fig.dpi))
-        assert width % 2 == 1 and height % 2 == 1, (
-            f"fixture must be odd-sized to exercise the pad, got {width}x{height}"
-        )
+        assert (
+            width % 2 == 1 and height % 2 == 1
+        ), f"fixture must be odd-sized to exercise the pad, got {width}x{height}"
         anim = FuncAnimation(fig, lambda i: (line,), frames=2)
         out = tmp_path / "odd.mp4"
 
@@ -545,10 +541,12 @@ class TestEnsureFfmpegAvailable:
 
         anim_mod._ensure_ffmpeg_available()
 
-        assert mpl.rcParams["animation.ffmpeg_path"] == "ffmpeg", (
-            "system ffmpeg path should be left unchanged"
-        )
-        assert calls["n"] == 0, "bundled binary must not be consulted when PATH resolves"
+        assert (
+            mpl.rcParams["animation.ffmpeg_path"] == "ffmpeg"
+        ), "system ffmpeg path should be left unchanged"
+        assert (
+            calls["n"] == 0
+        ), "bundled binary must not be consulted when PATH resolves"
 
     def test_falls_back_to_bundled_binary(self, monkeypatch):
         """With no system ffmpeg, the rcParam is pointed at imageio-ffmpeg's binary.
@@ -569,9 +567,9 @@ class TestEnsureFfmpegAvailable:
 
         anim_mod._ensure_ffmpeg_available()
 
-        assert mpl.rcParams["animation.ffmpeg_path"] == "C:/bundled/ffmpeg.exe", (
-            "resolver should fall back to the imageio-ffmpeg binary"
-        )
+        assert (
+            mpl.rcParams["animation.ffmpeg_path"] == "C:/bundled/ffmpeg.exe"
+        ), "resolver should fall back to the imageio-ffmpeg binary"
 
     def test_warns_when_overriding_explicit_path(self, monkeypatch):
         """Overriding a non-default, unresolved ffmpeg_path emits a RuntimeWarning.
@@ -595,9 +593,9 @@ class TestEnsureFfmpegAvailable:
         with pytest.warns(RuntimeWarning, match="custom-ffmpeg"):
             anim_mod._ensure_ffmpeg_available()
 
-        assert mpl.rcParams["animation.ffmpeg_path"] == "C:/bundled/ffmpeg.exe", (
-            "should still fall back after warning"
-        )
+        assert (
+            mpl.rcParams["animation.ffmpeg_path"] == "C:/bundled/ffmpeg.exe"
+        ), "should still fall back after warning"
 
     def test_default_path_override_is_silent(self, monkeypatch, recwarn):
         """Falling back from the default ``"ffmpeg"`` emits no warning.
@@ -699,9 +697,9 @@ class TestOptimizedPillowWriter:
             str(out), writer=anim_mod._OptimizedPillowWriter(fps=3, optimize=False)
         )
 
-        assert captured.get("optimize") is False, (
-            f"optimize flag not forwarded to Pillow: {captured}"
-        )
+        assert (
+            captured.get("optimize") is False
+        ), f"optimize flag not forwarded to Pillow: {captured}"
 
 
 class TestQualityControls:
@@ -726,9 +724,12 @@ class TestQualityControls:
         save_animation(MagicMock(spec=FuncAnimation), "clip.mp4", crf=26, preset="slow")
 
         _, kwargs = ffmpeg.call_args
-        assert kwargs["extra_args"][-4:] == ["-crf", "26", "-preset", "slow"], (
-            f"crf/preset not in extra_args: {kwargs['extra_args']}"
-        )
+        assert kwargs["extra_args"][-4:] == [
+            "-crf",
+            "26",
+            "-preset",
+            "slow",
+        ], f"crf/preset not in extra_args: {kwargs['extra_args']}"
 
     def test_bitrate_and_codec_reach_writer(self, monkeypatch):
         """`bitrate` and `codec` are forwarded to the FFMpegWriter constructor.
@@ -834,9 +835,9 @@ class TestQualityControls:
         _, kwargs = ffmpeg.call_args
         args = kwargs["extra_args"]
         assert args[0] == "-vf", f"first flag should be -vf: {args}"
-        assert args[1] == "scale=320:-1,pad=ceil(iw/2)*2:ceil(ih/2)*2", (
-            f"caller filter not merged with pad: {args}"
-        )
+        assert (
+            args[1] == "scale=320:-1,pad=ceil(iw/2)*2:ceil(ih/2)*2"
+        ), f"caller filter not merged with pad: {args}"
         assert args[-2:] == ["-tune", "film"], f"passthrough flags lost: {args}"
 
     def test_custom_pix_fmt_reaches_writer(self, monkeypatch):
@@ -930,9 +931,9 @@ class TestSupportedVideoFormat:
         """`cleopatra.glyph` re-exports the same object, not a copy."""
         from cleopatra.glyph import SUPPORTED_VIDEO_FORMAT as glyph_constant
 
-        assert glyph_constant is SUPPORTED_VIDEO_FORMAT, (
-            "glyph should re-import the constant, not redefine it"
-        )
+        assert (
+            glyph_constant is SUPPORTED_VIDEO_FORMAT
+        ), "glyph should re-import the constant, not redefine it"
 
 
 def test_module_doctests_execute():
@@ -948,7 +949,9 @@ def test_module_doctests_execute():
         results = doctest.testmod(anim_mod, verbose=False)
     finally:
         plt.close("all")
-    assert results.failed == 0, f"{results.failed} doctest example(s) failed in animation"
+    assert (
+        results.failed == 0
+    ), f"{results.failed} doctest example(s) failed in animation"
     assert results.attempted > 0, (
         "no doctest examples were collected from animation; the module's docstring "
         "examples may have been moved or removed, silently dropping this coverage"

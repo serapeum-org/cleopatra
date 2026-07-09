@@ -711,7 +711,8 @@ class StatisticalGlyph:
         fig, ax = self._resolve_fig_ax(ax)
         columns = self._columns()
         tick_labels = (
-            list(labels) if labels is not None
+            list(labels)
+            if labels is not None
             else [str(i + 1) for i in range(len(columns))]
         )
         # Honour a caller-supplied `positions` (forwarded via **kwargs)
@@ -879,9 +880,7 @@ class StatisticalGlyph:
         self._reject_fig_kwarg(kwargs)
         values = np.asarray(self.values, dtype=float)
         if values.ndim != 1:
-            raise ValueError(
-                f"stripes requires 1D values; got {values.ndim}D."
-            )
+            raise ValueError(f"stripes requires 1D values; got {values.ndim}D.")
         fig, ax = self._resolve_fig_ax(ax)
         cmap = cmap if cmap is not None else self.default_options["cmap"]
         cmap_obj = mpl.colormaps[cmap] if isinstance(cmap, str) else cmap

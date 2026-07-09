@@ -141,9 +141,7 @@ class FlowGlyph(GeoMixin, Glyph):
         fig: Figure = None,
         **kwargs,
     ):
-        super().__init__(
-            default_options=FLOW_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs
-        )
+        super().__init__(default_options=FLOW_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs)
         self.paths = [np.asarray(p, dtype=float) for p in paths]
         n_paths = len(self.paths)
         if values is not None:
@@ -291,9 +289,7 @@ class FlowGlyph(GeoMixin, Glyph):
 
         if title is not None:
             opts["title"] = title
-        draw_colorbar = (
-            opts["add_colorbar"] if add_colorbar is None else add_colorbar
-        )
+        draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
 
         linewidths = self._resolve_linewidths()
 

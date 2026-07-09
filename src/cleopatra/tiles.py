@@ -768,8 +768,7 @@ def add_tiles(
 
     if not hasattr(ax, "get_xlim") or not hasattr(ax, "get_ylim"):
         raise TypeError(
-            "ax must be a matplotlib.axes.Axes instance, "
-            f"got {type(ax).__name__}"
+            "ax must be a matplotlib.axes.Axes instance, " f"got {type(ax).__name__}"
         )
 
     if not isinstance(max_tiles, int) or isinstance(max_tiles, bool) or max_tiles < 1:
@@ -790,9 +789,7 @@ def add_tiles(
     south, north = min(y0, y1), max(y0, y1)
 
     if (west, east) == (0.0, 1.0) and (south, north) == (0.0, 1.0):
-        raise ValueError(
-            "Axes have no data extent. Plot data before adding a basemap."
-        )
+        raise ValueError("Axes have no data extent. Plot data before adding a basemap.")
 
     if west == east or south == north:
         raise ValueError(
@@ -825,9 +822,7 @@ def add_tiles(
                 ) from e
             raise
 
-    transformer_to_4326 = Transformer.from_crs(
-        "EPSG:3857", "EPSG:4326", always_xy=True
-    )
+    transformer_to_4326 = Transformer.from_crs("EPSG:3857", "EPSG:4326", always_xy=True)
     w4326, s4326 = transformer_to_4326.transform(w3857, s3857)
     e4326, n4326 = transformer_to_4326.transform(e3857, n3857)
 
@@ -849,9 +844,7 @@ def add_tiles(
         try:
             tile_zoom = int(zoom)
         except (ValueError, TypeError) as e:
-            raise ValueError(
-                f"zoom must be 'auto' or int 0-19, got {zoom!r}"
-            ) from e
+            raise ValueError(f"zoom must be 'auto' or int 0-19, got {zoom!r}") from e
         if not 0 <= tile_zoom <= 19:
             raise ValueError(f"zoom must be 0-19, got {tile_zoom}")
 

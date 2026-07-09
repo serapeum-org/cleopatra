@@ -41,7 +41,6 @@ from __future__ import annotations
 
 import argparse
 import gzip
-import json
 import sys
 import tempfile
 import urllib.error
@@ -144,9 +143,7 @@ def build_vectors(
 
             tol = simplify.get(resolution, 0.0)
             if tol > 0:
-                gdf["geometry"] = gdf.geometry.simplify(
-                    tol, preserve_topology=True
-                )
+                gdf["geometry"] = gdf.geometry.simplify(tol, preserve_topology=True)
             grid = precision.get(resolution, 0.0)
             if grid > 0:
                 gdf["geometry"] = set_precision(gdf.geometry.values, grid)

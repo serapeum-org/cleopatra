@@ -194,7 +194,9 @@ class Styles:
     ]
 
     @staticmethod
-    def get_line_style(style: str | int = "loosely dotted") -> tuple[int, tuple[int, ...]] | None:
+    def get_line_style(
+        style: str | int = "loosely dotted",
+    ) -> tuple[int, tuple[int, ...]] | None:
         """Get a matplotlib line style tuple by name or index.
 
         This method retrieves a line style tuple that can be used with matplotlib
@@ -533,7 +535,13 @@ class Scale:
         return scalar
 
     @staticmethod
-    def rescale(old_value: float | np.ndarray, old_min: float, old_max: float, new_min: float, new_max: float) -> float | np.ndarray:
+    def rescale(
+        old_value: float | np.ndarray,
+        old_min: float,
+        old_max: float,
+        new_min: float,
+        new_max: float,
+    ) -> float | np.ndarray:
         """Rescale a value from one range to another.
 
         This method performs linear rescaling of a value from an original range
@@ -677,9 +685,7 @@ def resolve_sizes(
     scale = str(scale).lower()
     if scale not in SIZE_SCALES:
         valid = ", ".join(repr(s) for s in SIZE_SCALES)
-        raise ValueError(
-            f"Invalid size_scale {scale!r}. Expected one of {valid}."
-        )
+        raise ValueError(f"Invalid size_scale {scale!r}. Expected one of {valid}.")
     if values.size == 0:
         raise ValueError("Cannot resolve sizes: `values` is empty.")
     # Reject non-finite entries up front: a NaN/inf magnitude would map to a
@@ -692,15 +698,11 @@ def resolve_sizes(
         )
     if scale == "log":
         if np.any(values <= 0):
-            raise ValueError(
-                "size_scale='log' requires strictly positive magnitudes."
-            )
+            raise ValueError("size_scale='log' requires strictly positive magnitudes.")
         transformed = Scale.log_scale(values)
     elif scale == "sqrt":
         if np.any(values < 0):
-            raise ValueError(
-                "size_scale='sqrt' requires non-negative magnitudes."
-            )
+            raise ValueError("size_scale='sqrt' requires non-negative magnitudes.")
         transformed = np.sqrt(values)
     else:  # linear
         transformed = values
@@ -799,7 +801,13 @@ class MidpointNormalize(colors.Normalize):
     ```
     """
 
-    def __init__(self, vmin: float | None = None, vmax: float | None = None, midpoint: float | None = None, clip: bool = False) -> None:
+    def __init__(
+        self,
+        vmin: float | None = None,
+        vmax: float | None = None,
+        midpoint: float | None = None,
+        clip: bool = False,
+    ) -> None:
         """Initialize a MidpointNormalize instance.
 
         Args:
@@ -837,7 +845,9 @@ class MidpointNormalize(colors.Normalize):
         self.midpoint = midpoint
         colors.Normalize.__init__(self, vmin, vmax, clip)
 
-    def __call__(self, value: float | np.ndarray, clip: bool | None = None) -> np.ma.MaskedArray:
+    def __call__(
+        self, value: float | np.ndarray, clip: bool | None = None
+    ) -> np.ma.MaskedArray:
         """Normalize data values to the [0, 1] range with a fixed midpoint.
 
         This method implements the normalization logic, mapping input values to
@@ -1287,15 +1297,12 @@ def histogram_legend(
     """
     if orientation not in ("vertical", "horizontal"):
         raise ValueError(
-            f"orientation must be 'vertical' or 'horizontal', got "
-            f"{orientation!r}."
+            f"orientation must be 'vertical' or 'horizontal', got " f"{orientation!r}."
         )
 
     if values is None:
         if mappable is None or mappable.get_array() is None:
-            raise ValueError(
-                "Provide `values` or a `mappable` carrying a data array."
-            )
+            raise ValueError("Provide `values` or a `mappable` carrying a data array.")
         values = np.asarray(mappable.get_array()).ravel()
     values = np.asarray(values, dtype=float)
     values = values[np.isfinite(values)]
@@ -1304,8 +1311,10 @@ def histogram_legend(
 
     if cmap is None and mappable is not None:
         cmap = mappable.cmap
-    cmap_obj = mpl.colormaps[cmap] if isinstance(cmap, str) else (
-        cmap if cmap is not None else mpl.colormaps[mpl.rcParams["image.cmap"]]
+    cmap_obj = (
+        mpl.colormaps[cmap]
+        if isinstance(cmap, str)
+        else (cmap if cmap is not None else mpl.colormaps[mpl.rcParams["image.cmap"]])
     )
     if norm is None and mappable is not None:
         # Copy so that mapping bin centres below cannot mutate the
@@ -1448,9 +1457,7 @@ def classify(
     finite = np.asarray(values, dtype=float)
     finite = finite[np.isfinite(finite)]
     if finite.size == 0:
-        raise ValueError(
-            "Cannot classify: `values` has no finite entries to bin."
-        )
+        raise ValueError("Cannot classify: `values` has no finite entries to bin.")
 
     if isinstance(scheme, str):
         edges = _scheme_edges(finite, scheme, k)

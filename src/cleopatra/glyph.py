@@ -7,12 +7,11 @@ colorbar creation, tick management, point overlays, and animation.
 
 from __future__ import annotations
 
-from typing import Any
-
 import inspect
 import math
 import os
 import warnings
+from typing import Any
 
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
@@ -511,9 +510,7 @@ class Glyph:
 
         if color_scale == ColorScale.LINEAR:
             if bounds_from_levels is not None:
-                norm = colors.BoundaryNorm(
-                    boundaries=bounds_from_levels, ncolors=256
-                )
+                norm = colors.BoundaryNorm(boundaries=bounds_from_levels, ncolors=256)
                 cbar_kw = {"ticks": bounds_from_levels}
             else:
                 norm = None
@@ -621,9 +618,7 @@ class Glyph:
         bounds: np.ndarray | None
         if levels is None:
             bounds = None
-        elif isinstance(levels, (int, np.integer)) and not isinstance(
-            levels, bool
-        ):
+        elif isinstance(levels, (int, np.integer)) and not isinstance(levels, bool):
             n = int(levels)
             if not 2 <= n <= MAX_DISCRETE_LEVELS:
                 raise ValueError(
@@ -1006,8 +1001,7 @@ class Glyph:
         cbar = fig.colorbar(im, ax=ax, **merged_kw)
         cbar.ax.tick_params(labelsize=10)
         label_text = (
-            user_label if user_label is not None
-            else self.default_options["cbar_label"]
+            user_label if user_label is not None else self.default_options["cbar_label"]
         )
         cbar.set_label(
             label_text,

@@ -563,9 +563,7 @@ class GeoMixin:
         self.add_features(
             "coastline", res, ax=target, zorder=zorder, **preset["coastline"]
         )
-        self.add_features(
-            "borders", res, ax=target, zorder=zorder, **preset["borders"]
-        )
+        self.add_features("borders", res, ax=target, zorder=zorder, **preset["borders"])
 
         xmin, xmax = target.get_xlim()
         ymin, ymax = target.get_ylim()
