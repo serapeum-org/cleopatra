@@ -233,6 +233,91 @@ def _validate_crs(crs: int | str | None) -> int | str | None:
     return crs
 
 
+def add_point_labels(
+    ax: Any,
+    points: dict[str, tuple[float, float]],
+    *,
+    color: str = "white",
+    marker_size: float = 5.0,
+    fontsize: float = 9.0,
+    offset: tuple[float, float] = (4.0, 0.0),
+    zorder: int = 6,
+) -> Any:
+    """Annotate named points with a plain dot marker + text label.
+
+    Draws a small circular marker at each point and a plain text label
+    beside it -- no halo, no bounding box -- matching the minimalist look
+    ECMWF/CAMS maps use for city labels. `points` are plotted at whatever
+    coordinates `ax` is already using (plain lon/lat on a flat axes, or
+    projected x/y on an orthographic globe -- reproject the points yourself,
+    e.g. with the same transformer `cleopatra.projection.orthographic_grid`
+    builds, before calling this on a globe view), so this composes with any
+    projection or colour styling; it makes no assumption about either.
+
+    Args:
+        ax: Axes to draw on.
+        points: Mapping of label text to `(x, y)` coordinates.
+        color: Colour for both the marker and the label text.
+        marker_size: Marker size in points.
+        fontsize: Label font size in points.
+        offset: `(dx, dy)` label offset from the marker, in points (applied
+            via `textcoords="offset points"`), so it scales with font size
+            rather than the data coordinates.
+        zorder: Draw order for both the marker and the label.
+
+    Returns:
+        Axes: The same `ax`, for chaining.
+
+    Examples:
+        - Label two points and read back the drawn markers/labels:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.geo import add_point_labels
+            >>> fig, ax = plt.subplots()
+            >>> _ = add_point_labels(ax, {"London": (-0.1, 51.5), "Moscow": (37.6, 55.8)})
+            >>> len(ax.lines)  # one marker per point
+            2
+            >>> [t.get_text() for t in ax.texts]
+            ['London', 'Moscow']
+            >>> plt.close(fig)
+
+            ```
+        - An empty mapping draws nothing but still returns `ax`, for chaining:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.geo import add_point_labels
+            >>> fig, ax = plt.subplots()
+            >>> add_point_labels(ax, {}) is ax
+            True
+            >>> plt.close(fig)
+
+            ```
+
+    See Also:
+        GeoMixin.add_labels: The glyph convenience wrapper for this function.
+    """
+    for label, (x, y) in points.items():
+        ax.plot(
+            x,
+            y,
+            marker="o",
+            markersize=marker_size,
+            color=color,
+            linestyle="none",
+            zorder=zorder,
+        )
+        ax.annotate(
+            label,
+            (x, y),
+            xytext=offset,
+            textcoords="offset points",
+            color=color,
+            fontsize=fontsize,
+            zorder=zorder,
+        )
+    return ax
+
+
 class GeoMixin:
     """Mixin giving geographic glyphs `add_tiles` / `add_features` / `add_relief`.
 
@@ -402,6 +487,49 @@ class GeoMixin:
                 its full parameter list.
         """
         return reference.add_relief(self._basemap_axes(ax), *args, **kwargs)
+
+    def add_labels(
+        self, points: dict[str, tuple[float, float]], *, ax: Any = None, **kwargs: Any
+    ) -> Any:
+        """Annotate named points on the glyph's axes with a dot + label.
+
+        Thin wrapper over `cleopatra.geo.add_point_labels`; draws a plain
+        dot marker and text label per point, matching the minimalist
+        city-label look ECMWF/CAMS maps use. Points are plotted at whatever
+        coordinates the axes is already using -- plain lon/lat for a flat
+        map, or reprojected x/y for an orthographic globe.
+
+        Args:
+            points: Mapping of label text to `(x, y)` coordinates, in the
+                same coordinate space as whatever is already plotted on the
+                axes.
+            ax: Axes to draw on. Defaults to the glyph's `self.ax`.
+            **kwargs: Forwarded to `cleopatra.geo.add_point_labels` (e.g.
+                `color`, `marker_size`, `fontsize`, `offset`, `zorder`).
+
+        Returns:
+            matplotlib.axes.Axes: The axes, for chaining.
+
+        Raises:
+            RuntimeError: If the glyph has no axes yet and `ax` is not given.
+
+        Examples:
+            - Label a city on a plotted glyph:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> data = np.random.rand(20, 30)
+                >>> glyph = ArrayGlyph(data, extent=[-100, 15, -40, 55])
+                >>> fig, ax = glyph.plot()  # doctest: +SKIP
+                >>> glyph.add_labels({"London": (-0.1, 51.5)})  # doctest: +SKIP
+
+                ```
+
+        See Also:
+            cleopatra.geo.add_point_labels: The underlying implementation.
+            add_reference_map: The full basemap-chrome preset this pairs with.
+        """
+        return add_point_labels(self._basemap_axes(ax), points, **kwargs)
 
     def _background_is_dark(self, ax: Any) -> bool:
         """Whether the field displayed on `ax` reads as a dark background.

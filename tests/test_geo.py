@@ -38,6 +38,7 @@ from cleopatra.geo import (  # noqa: E402
     _lat_formatter,
     _lon_formatter,
     _nice_step,
+    add_point_labels,
     available_map_styles,
 )
 from cleopatra.kde_glyph import KDEGlyph  # noqa: E402
@@ -50,7 +51,7 @@ from cleopatra.vector_glyph import VectorGlyph  # noqa: E402
 
 GEO_GLYPHS = [ArrayGlyph, MeshGlyph, VectorGlyph, FlowGlyph, PolygonGlyph, ScatterGlyph]
 NON_GEO_GLYPHS = [LineGlyph, StatisticalGlyph, KDEGlyph]
-METHODS = ("add_tiles", "add_features", "add_relief", "add_reference_map")
+METHODS = ("add_tiles", "add_features", "add_relief", "add_reference_map", "add_labels")
 
 
 class _Dummy(GeoMixin):
@@ -104,6 +105,84 @@ def test_add_relief_delegates(monkeypatch):
     _Dummy(ax).add_relief("low", alpha=0.5)
     assert seen["ax"] is ax and seen["a"] == ("low",) and seen["k"] == {"alpha": 0.5}
     plt.close(fig)
+
+
+def test_add_labels_delegates(monkeypatch):
+    """add_labels forwards self.ax, points, and kwargs to geo.add_point_labels."""
+    import cleopatra.geo as geomod
+
+    seen = {}
+    monkeypatch.setattr(
+        geomod,
+        "add_point_labels",
+        lambda ax, points, **k: seen.update(ax=ax, points=points, k=k) or ax,
+    )
+    fig, ax = plt.subplots()
+    points = {"London": (-0.1, 51.5)}
+    _Dummy(ax).add_labels(points, color="yellow")
+    assert seen["ax"] is ax
+    assert seen["points"] == points
+    assert seen["k"] == {"color": "yellow"}
+    plt.close(fig)
+
+
+def test_add_labels_no_axes_raises():
+    """Calling add_labels before plotting (no axes) raises RuntimeError."""
+    with pytest.raises(RuntimeError, match="Plot the glyph first"):
+        _Dummy(None).add_labels({"London": (-0.1, 51.5)})
+
+
+class TestAddPointLabels:
+    """Tests for the standalone `cleopatra.geo.add_point_labels` function."""
+
+    @pytest.fixture
+    def ax(self):
+        """A fresh Axes on the Agg backend, closed after the test."""
+        fig, ax = plt.subplots()
+        yield ax
+        plt.close(fig)
+
+    def test_draws_one_marker_and_label_per_point(self, ax):
+        """Each point in the mapping gets exactly one marker line and one text."""
+        add_point_labels(ax, {"London": (-0.1, 51.5), "Moscow": (37.6, 55.8)})
+        assert len(ax.lines) == 2, f"expected 2 markers, got {len(ax.lines)}"
+        assert len(ax.texts) == 2, f"expected 2 labels, got {len(ax.texts)}"
+
+    def test_label_text_matches_the_key(self, ax):
+        """The drawn text matches the point's label (dict key)."""
+        add_point_labels(ax, {"Reykjavik": (-21.9, 64.1)})
+        assert ax.texts[0].get_text() == "Reykjavik"
+
+    def test_marker_placed_at_the_given_coordinates(self, ax):
+        """The marker is drawn at exactly the given (x, y)."""
+        add_point_labels(ax, {"Nuuk": (-51.7, 64.2)})
+        line = ax.lines[0]
+        assert line.get_xdata() == [-51.7]
+        assert line.get_ydata() == [64.2]
+
+    def test_empty_points_draws_nothing_but_returns_ax(self, ax):
+        """An empty mapping draws no artists and still returns `ax`."""
+        result = add_point_labels(ax, {})
+        assert result is ax, "should return ax even with no points"
+        assert len(ax.lines) == 0 and len(ax.texts) == 0
+
+    def test_returns_the_same_axes(self, ax):
+        """The function returns `ax` itself, enabling call chaining."""
+        result = add_point_labels(ax, {"London": (-0.1, 51.5)})
+        assert result is ax
+
+    def test_custom_color_and_fontsize_applied(self, ax):
+        """`color`/`fontsize` are applied to both the marker and the label."""
+        add_point_labels(ax, {"London": (-0.1, 51.5)}, color="red", fontsize=14)
+        assert ax.lines[0].get_color() == "red"
+        assert ax.texts[0].get_color() == "red"
+        assert ax.texts[0].get_fontsize() == 14
+
+    def test_composes_with_existing_plot(self, ax):
+        """Labelling does not disturb artists already drawn on `ax`."""
+        img = ax.imshow([[0, 1], [1, 0]], cmap="gray")
+        add_point_labels(ax, {"London": (-0.1, 51.5)})
+        assert img in ax.images, "pre-existing plot should be untouched"
 
 
 def test_add_tiles_delegates(monkeypatch):
