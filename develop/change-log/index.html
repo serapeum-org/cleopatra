@@ -1811,6 +1811,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0230-2026-07-09" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.23.0 (2026-07-09)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0220-2026-07-07" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2456,6 +2467,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0230-2026-07-09" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.23.0 (2026-07-09)
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#0220-2026-07-07" class="md-nav__link">
@@ -3104,6 +3126,54 @@
 
 
 <h1 id="changelog"><a class="toclink" href="#changelog">Changelog</a><a class="headerlink" href="#changelog" title="Permanent link">#</a></h1>
+<h2 id="0230-2026-07-09"><a class="toclink" href="#0230-2026-07-09">0.23.0 (2026-07-09)</a><a class="headerlink" href="#0230-2026-07-09" title="Permanent link">#</a></h2>
+<ul>
+<li>feat(colors,projection): add composable haze-style data and globe projection presets (#192)</li>
+<li>
+<ul>
+<li>Add HAZE_COLORMAPS, DATA_STYLES["haze"], and apply_data_style() for                        <br />
+    value-modulated-alpha colour layers with decoupled alpha/colour                            <br />
+    ranges (a glowing "flame" rim effect) plus swatch legends.                                   </li>
+</ul>
+</li>
+<li>Add alpha_scaled_image()/alpha_scaled_mesh() low-level rendering                           <br />
+    primitives that apply_data_style is built on.                                                </li>
+<li>Add PROJECTION_STYLES and apply_projection_style() to reproject                            <br />
+    gridded data onto an orthographic globe or leave it flat behind one                        <br />
+    call, backed by orthographic_grid(), orthographic_grid_edges(),                            <br />
+    orthographic_points(), orthographic_boundary(), and                                        <br />
+    orthographic_graticule().                                                                    </li>
+<li>Add apply_blank_canvas() and swatch_legend() to cleopatra.styles.                            </li>
+<li>Add add_point_labels() to cleopatra.geo for plain dot-and-text                             <br />
+    point/city labels, reprojectable onto a globe via                                          <br />
+    orthographic_points().                                                                       </li>
+<li>Add a tutorial notebook demonstrating every primitive independently                        <br />
+    and composed, including an animated multi-day globe view.                                    </li>
+<li>Cover every new primitive with tests, guarding the pyproj-backed                           <br />
+    globe helpers with pytest.importorskip so the suite still passes                           <br />
+    without the [tiles] extra installed.                                                         </li>
+</ul>
+<p>Closes #193
+- fix: stop animate() label clipping and execute docs notebooks in CI (#190)
+- - Wire notebook execution into all three mkdocs-deploy jobs
+  (deploy-pr/main/release) so docs/notebooks/<em><em> render fresh, real
+  output during the build instead of whatever was last committed by
+  hand.
+- Add an nbstripout pre-commit hook so notebooks never carry baked-in
+  outputs in git history again.
+- Fix ArrayGlyph.animate()'s default text_loc: it clipped the frame
+  label under the array's inverted Y-axis for any shape. The default
+  now anchors via axes-fraction coordinates with top alignment; an
+  explicit text_loc keeps the prior data-coordinate behavior
+  unchanged.
+- Add a keyword-only label_color parameter to animate() for the frame
+  label's color.
+- Retry transient network failures in reference._download with
+  exponential backoff, so the two live-data example notebooks no
+  longer hard-fail the docs build on a flaky fetch.
+- Reformat most of src/cleopatra/</em>.py and tests/</em>.py (line-wrap and
+  isort); no behavior change.
+- Closes #191</p>
 <h2 id="0220-2026-07-07"><a class="toclink" href="#0220-2026-07-07">0.22.0 (2026-07-07)</a><a class="headerlink" href="#0220-2026-07-07" title="Permanent link">#</a></h2>
 <ul>
 <li>feat(animation): add save_animation quality controls, WebP, and bundled ffmpeg (#188)</li>
