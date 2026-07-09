@@ -735,6 +735,92 @@ class TestOrthographicGraticule:
         )
 
 
+class TestApplyProjectionStyle:
+    """Tests for `apply_projection_style` and the `PROJECTION_STYLES` registry."""
+
+    @pytest.fixture
+    def ax(self):
+        """A fresh Axes on the Agg backend, closed after the test."""
+        fig, ax = plt.subplots()
+        yield ax
+        plt.close(fig)
+
+    @pytest.fixture
+    def grid(self):
+        """A tiny 2x2 lon/lat/data grid: North Pole visible, South Pole not."""
+        lon = np.array([0.0, 90.0])
+        lat = np.array([90.0, -90.0])
+        data = np.array([[1.0, 2.0], [3.0, 4.0]])
+        return lon, lat, data
+
+    def test_registry_has_globe_and_flat(self):
+        """`PROJECTION_STYLES` defines exactly 'globe' and 'flat'."""
+        assert set(projection_module.PROJECTION_STYLES) == {"globe", "flat"}
+
+    def test_globe_draws_boundary_and_masks_far_hemisphere(self, ax, grid):
+        """'globe' draws a boundary patch on `ax` and masks the far hemisphere."""
+        lon, lat, data = grid
+        x, y, masked = projection_module.apply_projection_style(
+            ax, lon, lat, data, style="globe"
+        )
+        assert len(ax.patches) == 1, "globe style should draw one boundary patch"
+        np.testing.assert_array_equal(masked[0], [1.0, 2.0])
+        assert np.all(np.isnan(masked[1])), "far hemisphere should still be masked"
+
+    def test_flat_is_a_pure_passthrough(self, ax, grid):
+        """'flat' draws nothing and returns lon/lat/data unchanged."""
+        lon, lat, data = grid
+        x, y, out = projection_module.apply_projection_style(
+            ax, lon, lat, data, style="flat"
+        )
+        assert len(ax.patches) == 0, "flat style should draw no boundary"
+        assert len(ax.lines) == 0, "flat style should draw no graticule"
+        np.testing.assert_array_equal(x, lon)
+        np.testing.assert_array_equal(y, lat)
+        np.testing.assert_array_equal(out, data)
+
+    def test_unknown_style_raises_key_error(self, ax, grid):
+        """An unregistered `style` name raises `KeyError`."""
+        lon, lat, data = grid
+        with pytest.raises(KeyError, match="Unknown projection style"):
+            projection_module.apply_projection_style(ax, lon, lat, data, style="mercator")
+
+    def test_overrides_change_the_globe_center(self, ax, grid):
+        """`center_lat`/`center_lon` overrides change which hemisphere is visible."""
+        lon, lat, data = grid
+        # Re-centre on the South Pole: now the second row (lat=-90) is visible.
+        _, _, masked = projection_module.apply_projection_style(
+            ax, lon, lat, data, style="globe", center_lat=-90.0, center_lon=0.0
+        )
+        np.testing.assert_array_equal(masked[1], [3.0, 4.0])
+        assert np.all(np.isnan(masked[0])), "North Pole should now be masked"
+
+    def test_globe_and_flat_x_y_both_feed_alpha_scaled_mesh(self, ax, grid):
+        """Both styles' `(x, y, data)` compose directly with `alpha_scaled_mesh`.
+
+        Test scenario:
+            This is the actual composability contract between the projection
+            axis (`apply_projection_style`) and the data axis
+            (`cleopatra.colors.alpha_scaled_mesh`): the same downstream call
+            must work unchanged regardless of which projection style was
+            chosen (1D lon/lat vectors and 2D curvilinear grids are both
+            valid `pcolormesh`/`alpha_scaled_mesh` inputs).
+        """
+        from cleopatra.colors import alpha_scaled_mesh
+
+        lon, lat, data = grid
+        for style in ("globe", "flat"):
+            fig, this_ax = plt.subplots()
+            x, y, out = projection_module.apply_projection_style(
+                this_ax, lon, lat, data, style=style
+            )
+            mesh = alpha_scaled_mesh(this_ax, x, y, out, "viridis")
+            assert mesh in this_ax.collections, (
+                f"{style}: alpha_scaled_mesh should attach cleanly to the axes"
+            )
+            plt.close(fig)
+
+
 class TestModuleDoctests:
     """Run the module's docstring examples inside the default test suite."""
 

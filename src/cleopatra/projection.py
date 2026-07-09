@@ -360,7 +360,11 @@ def orthographic_grid(
     Returns:
         tuple: `(x, y, masked_data)` -- projected x/y coordinates (metres,
         same shape as `data`) and a copy of `data` with the far hemisphere
-        set to NaN.
+        set to NaN. `x`/`y` are always finite: the orthographic formula
+        diverges at the antipodal point, so any non-visible or non-finite
+        coordinate is replaced with a `0.0` placeholder (safe because those
+        cells carry no data and are never rendered), keeping the grid a
+        valid `pcolormesh`/`imshow` input.
 
     Raises:
         ImportError: If pyproj (the `[tiles]` extra) is not installed.
@@ -405,10 +409,20 @@ def orthographic_grid(
     transformer = Transformer.from_crs(
         "EPSG:4326", _ortho_proj4(center_lat, center_lon), always_xy=True
     )
-    x, y = transformer.transform(lon_arr, lat_arr)
+    x_raw, y_raw = transformer.transform(lon_arr, lat_arr)
+    x = np.asarray(x_raw, dtype=float)
+    y = np.asarray(y_raw, dtype=float)
     visible = _visible_hemisphere(lon_arr, lat_arr, center_lat, center_lon)
     masked_data = np.where(visible, data_arr, np.nan)
-    return np.asarray(x, dtype=float), np.asarray(y, dtype=float), masked_data
+    # The orthographic formula diverges (inf) exactly at the antipodal point,
+    # and pcolormesh/imshow require finite coordinates for every cell even
+    # when its data is masked out. Those cells carry no data (masked_data is
+    # NaN there), so their exact position is irrelevant -- replace any
+    # non-visible or non-finite coordinate with a finite placeholder.
+    coord_ok = visible & np.isfinite(x) & np.isfinite(y)
+    x = np.where(coord_ok, x, 0.0)
+    y = np.where(coord_ok, y, 0.0)
+    return x, y, masked_data
 
 
 def orthographic_boundary(
@@ -535,3 +549,164 @@ def orthographic_graticule(
         xy = np.column_stack([x_l, y_l])
         segments.extend(_split_visible_runs(xy, visible))
     return segments
+
+
+#: Named "projection style" presets for `apply_projection_style` -- the
+#: coordinate-frame half of the ECMWF/CAMS look, independent of the
+#: `cleopatra.colors.DATA_STYLES` colour/legend half. `"globe"` reprojects
+#: onto an orthographic view and frames it with a boundary + graticule;
+#: `"flat"` leaves the data in plain lon/lat and touches nothing on `ax`.
+PROJECTION_STYLES: dict[str, dict[str, Any]] = {
+    "globe": {"center_lat": 90.0, "center_lon": 0.0, "graticule_step": 30.0},
+    "flat": {},
+}
+
+
+def apply_projection_style(
+    ax: Axes,
+    lon: Any,
+    lat: Any,
+    data: Any,
+    style: str = "globe",
+    **overrides: Any,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Reproject `(lon, lat, data)` and frame `ax` per a `PROJECTION_STYLES` preset.
+
+    For `"globe"`, reprojects via `orthographic_grid` and draws the globe
+    boundary + graticule on `ax` via `apply_projection_frame`. For `"flat"`,
+    returns `(lon, lat, data)` unchanged and does not touch `ax` at all --
+    the data is meant to be plotted directly in lon/lat coordinates.
+
+    This is the projection half of composing the CAMS look; the colour half
+    is `cleopatra.colors.apply_data_style`, called with the `(x, y, data)`
+    this function returns as its `x`/`y`/layer arguments -- `pcolormesh`
+    (which `alpha_scaled_mesh` uses) renders a plain regular lon/lat grid
+    exactly as well as a curvilinear globe grid, so the *same* two-line
+    pattern composes both layers regardless of which style was chosen:
+
+    ```python
+    x, y, masked = apply_projection_style(ax, lon, lat, data, style=chosen)
+    apply_data_style(ax, {"dust": masked}, x=x, y=y)
+    ```
+
+    Neither function requires the other: use `"globe"` with a single plain
+    colormap instead of `apply_data_style`, or `"flat"` with the `"cams"`
+    data style and no globe at all.
+
+    Args:
+        ax: Axes to draw the boundary/graticule on. Ignored for `"flat"`.
+        lon: Longitudes in degrees (see `orthographic_grid` for accepted
+            shapes). Returned unchanged for `"flat"`.
+        lat: Latitudes in degrees, paired with `lon`.
+        data: 2D array of values, reprojected/masked alongside the grid for
+            `"globe"`; returned unchanged for `"flat"`.
+        style: A name from `PROJECTION_STYLES` (`"globe"` or `"flat"`).
+        **overrides: Override any of the style's parameters -- for
+            `"globe"`: `center_lat`, `center_lon`, `graticule_step`,
+            `boundary_kw`, `graticule_kw` (the last two forwarded to
+            `apply_projection_frame`).
+
+    Returns:
+        tuple: `(x, y, data)` -- for `"globe"`, the reprojected coordinates
+        and hemisphere-masked data from `orthographic_grid`; for `"flat"`,
+        `lon`/`lat`/`data` coerced to arrays, unchanged.
+
+    Raises:
+        KeyError: If `style` is not registered.
+        ImportError: If `style="globe"` and pyproj (the `[tiles]` extra) is
+            not installed.
+
+    Examples:
+        - `"globe"` reprojects the data and draws a boundary patch on `ax`:
+            ```python
+            >>> import numpy as np
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.projection import apply_projection_style
+            >>> fig, ax = plt.subplots()
+            >>> lon = np.array([0.0, 90.0])
+            >>> lat = np.array([90.0, -90.0])
+            >>> data = np.array([[1.0, 2.0], [3.0, 4.0]])
+            >>> x, y, masked = apply_projection_style(ax, lon, lat, data, style="globe")
+            >>> len(ax.patches)  # the boundary circle
+            1
+            >>> np.all(np.isnan(masked[1]))  # far hemisphere still masked
+            np.True_
+            >>> plt.close(fig)
+
+            ```
+        - `"flat"` is a pass-through: nothing is drawn, data is unchanged:
+            ```python
+            >>> import numpy as np
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.projection import apply_projection_style
+            >>> fig, ax = plt.subplots()
+            >>> lon = np.array([0.0, 90.0])
+            >>> lat = np.array([90.0, -90.0])
+            >>> data = np.array([[1.0, 2.0], [3.0, 4.0]])
+            >>> x, y, out = apply_projection_style(ax, lon, lat, data, style="flat")
+            >>> len(ax.patches)
+            0
+            >>> np.array_equal(out, data)
+            True
+            >>> plt.close(fig)
+
+            ```
+        - An unknown style raises `KeyError`:
+            ```python
+            >>> import numpy as np
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.projection import apply_projection_style
+            >>> fig, ax = plt.subplots()
+            >>> apply_projection_style(
+            ...     ax, np.array([0.0]), np.array([0.0]), np.array([[1.0]]),
+            ...     style="not-a-style",
+            ... )
+            Traceback (most recent call last):
+                ...
+            KeyError: "Unknown projection style 'not-a-style'; available: ['flat', 'globe']"
+            >>> plt.close(fig)
+
+            ```
+
+    See Also:
+        orthographic_grid: The `"globe"` reprojection primitive this composes.
+        apply_projection_frame: Draws the boundary/graticule this composes.
+        cleopatra.colors.apply_data_style: The companion data-style axis.
+    """
+    if style not in PROJECTION_STYLES:
+        raise KeyError(
+            f"Unknown projection style {style!r}; available: "
+            f"{sorted(PROJECTION_STYLES)}"
+        )
+    cfg = {**PROJECTION_STYLES[style], **overrides}
+
+    if style == "flat":
+        return (
+            np.asarray(lon, dtype=float),
+            np.asarray(lat, dtype=float),
+            np.asarray(data, dtype=float),
+        )
+
+    center_lat = cfg.get("center_lat", 90.0)
+    center_lon = cfg.get("center_lon", 0.0)
+    graticule_step = cfg.get("graticule_step", 30.0)
+    boundary_kw = cfg.get("boundary_kw")
+    graticule_kw = cfg.get("graticule_kw")
+
+    x, y, masked = orthographic_grid(
+        lon, lat, data, center_lat=center_lat, center_lon=center_lon
+    )
+    boundary = orthographic_boundary()
+    graticule = orthographic_graticule(
+        center_lat=center_lat, center_lon=center_lon, step=graticule_step
+    )
+    apply_projection_frame(
+        ax,
+        boundary_xy=boundary,
+        xlim=(-ORTHOGRAPHIC_RADIUS_M, ORTHOGRAPHIC_RADIUS_M),
+        ylim=(-ORTHOGRAPHIC_RADIUS_M, ORTHOGRAPHIC_RADIUS_M),
+        graticule_lines=graticule,
+        boundary_kw=boundary_kw,
+        graticule_kw=graticule_kw,
+    )
+    return x, y, masked
