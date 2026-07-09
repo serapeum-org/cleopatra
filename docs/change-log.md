@@ -1,5 +1,51 @@
 # Changelog
 
+## 0.23.0 (2026-07-09)
+
+
+- feat(colors,projection): add composable haze-style data and globe projection presets (#192)
+- - Add HAZE_COLORMAPS, DATA_STYLES["haze"], and apply_data_style() for                          
+    value-modulated-alpha colour layers with decoupled alpha/colour                              
+    ranges (a glowing "flame" rim effect) plus swatch legends.                                   
+  - Add alpha_scaled_image()/alpha_scaled_mesh() low-level rendering                             
+    primitives that apply_data_style is built on.                                                
+  - Add PROJECTION_STYLES and apply_projection_style() to reproject                              
+    gridded data onto an orthographic globe or leave it flat behind one                          
+    call, backed by orthographic_grid(), orthographic_grid_edges(),                              
+    orthographic_points(), orthographic_boundary(), and                                          
+    orthographic_graticule().                                                                    
+  - Add apply_blank_canvas() and swatch_legend() to cleopatra.styles.                            
+  - Add add_point_labels() to cleopatra.geo for plain dot-and-text                               
+    point/city labels, reprojectable onto a globe via                                            
+    orthographic_points().                                                                       
+  - Add a tutorial notebook demonstrating every primitive independently                          
+    and composed, including an animated multi-day globe view.                                    
+  - Cover every new primitive with tests, guarding the pyproj-backed                             
+    globe helpers with pytest.importorskip so the suite still passes                             
+    without the [tiles] extra installed.                                                         
+                                                                                                 
+  Closes #193
+- fix: stop animate() label clipping and execute docs notebooks in CI (#190)
+- - Wire notebook execution into all three mkdocs-deploy jobs
+  (deploy-pr/main/release) so docs/notebooks/** render fresh, real
+  output during the build instead of whatever was last committed by
+  hand.
+- Add an nbstripout pre-commit hook so notebooks never carry baked-in
+  outputs in git history again.
+- Fix ArrayGlyph.animate()'s default text_loc: it clipped the frame
+  label under the array's inverted Y-axis for any shape. The default
+  now anchors via axes-fraction coordinates with top alignment; an
+  explicit text_loc keeps the prior data-coordinate behavior
+  unchanged.
+- Add a keyword-only label_color parameter to animate() for the frame
+  label's color.
+- Retry transient network failures in reference._download with
+  exponential backoff, so the two live-data example notebooks no
+  longer hard-fail the docs build on a flaky fetch.
+- Reformat most of src/cleopatra/*.py and tests/*.py (line-wrap and
+  isort); no behavior change.
+- Closes #191
+
 ## 0.22.0 (2026-07-07)
 
 
