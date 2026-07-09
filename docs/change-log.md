@@ -4,54 +4,54 @@
 
 
 - feat(animation): add save_animation quality controls, WebP, and bundled ffmpeg (#188)
-- Rework save_animation (and the Glyph.save_animation wrapper) from a  
-  minimal two-line writer into a configurable, robust exporter, resolving  
-  the rough edges surfaced in issue #185.  
-
-  - Replace the declared-but-unused ffmpeg-python dependency with  
-    imageio-ffmpeg, and fall back to its bundled static binary when no  
-    system ffmpeg is on PATH, so MP4/MOV/AVI export works out of the box.  
-  - Auto-pad odd frame dimensions (-vf pad) so libx264 no longer crashes  
-    on odd-sized figures, and set pix_fmt=yuv420p for universal playback.  
-  - Add keyword-only crf, bitrate, codec, preset, pix_fmt, dpi, optimize,  
-    loop, and extra_args controls, with crf and bitrate mutually  
-    exclusive and a caller -vf/-pix_fmt merged into the built arguments.  
-  - Drop the hardcoded bitrate=1800 default in favour of libx264's  
-    constant-quality default; existing 3-arg calls stay valid but encode  
-    smaller, better files.  
-  - Add animated WebP output and optimise/loop-configurable GIF output  
-    via an _OptimizedPillowWriter subclass.  
-  - Add to_bytes and to_mp4 in-memory render helpers alongside the  
-    existing to_gif/embed_gif; to_gif now delegates to to_bytes.  
-  - Forward the new controls through Glyph.save_animation so ArrayGlyph  
-    and MeshGlyph inherit them.  
-
+- Rework save_animation (and the Glyph.save_animation wrapper) from a                            
+  minimal two-line writer into a configurable, robust exporter, resolving                        
+  the rough edges surfaced in issue #185.                                                        
+                                                                                                 
+  - Replace the declared-but-unused ffmpeg-python dependency with                                
+    imageio-ffmpeg, and fall back to its bundled static binary when no                           
+    system ffmpeg is on PATH, so MP4/MOV/AVI export works out of the box.                        
+  - Auto-pad odd frame dimensions (-vf pad) so libx264 no longer crashes                         
+    on odd-sized figures, and set pix_fmt=yuv420p for universal playback.                        
+  - Add keyword-only crf, bitrate, codec, preset, pix_fmt, dpi, optimize,                        
+    loop, and extra_args controls, with crf and bitrate mutually                                 
+    exclusive and a caller -vf/-pix_fmt merged into the built arguments.                         
+  - Drop the hardcoded bitrate=1800 default in favour of libx264's                               
+    constant-quality default; existing 3-arg calls stay valid but encode                         
+    smaller, better files.                                                                       
+  - Add animated WebP output and optimise/loop-configurable GIF output                           
+    via an _OptimizedPillowWriter subclass.                                                      
+  - Add to_bytes and to_mp4 in-memory render helpers alongside the                               
+    existing to_gif/embed_gif; to_gif now delegates to to_bytes.                                 
+  - Forward the new controls through Glyph.save_animation so ArrayGlyph                          
+    and MeshGlyph inherit them.                                                                  
+                                                                                                 
   Closes #185
 - feat(geo): add ECMWF reference-map style preset for georeferenced glyphs (#187)
-- Add GeoMixin.add_reference_map(style=...) so the ~15-line weather-centre  
-  map recipe (grey Natural Earth coastline + borders, a dashed lon/lat  
-  graticule, degree labels, a subtle frame) is a single call on top of a  
-  plotted, georeferenced glyph.  
-
-  - Presets "ecmwf" (light backgrounds) and "ecmwf-dark" (lighter greys so  
-    coastlines stay visible over a dark field), plus style="auto" that  
-    picks between them from the displayed luminance (im.to_rgba through the  
-    colormap/norm; only opaque cells count, so light no-data fields are not  
-    misread as dark; the target axes' image is preferred over self.im).  
-  - extent=[xmin, ymin, xmax, ymax] (the ArrayGlyph order) georeferences  
-    the image and axis limits, handling the pixel-coordinate RGB/animate  
-    case; a warning fires when the glyph has no geographic extent.  
-  - Degree formatters label the +/-180 antimeridian as "180"; _nice_step  
-    covers sub-degree to 90-degree spacing; graticule_step is validated as  
-    positive and finite; extent length is validated with a clear message.  
-  - available_map_styles() and the REFERENCE_MAP_STYLES table expose and  
-    allow copying the presets; the geographic knowledge (deriving extent  
-    from a dataset geotransform) stays upstream.  
-
-  Add a runnable docs notebook (docs/notebooks/array_glyph/reference_map)  
-  wired into the mkdocs nav, and TestAddReferenceMap plus a non-mocked  
-  integration test (geo.py coverage 98%).  
-
+- Add GeoMixin.add_reference_map(style=...) so the ~15-line weather-centre                       
+  map recipe (grey Natural Earth coastline + borders, a dashed lon/lat                           
+  graticule, degree labels, a subtle frame) is a single call on top of a                         
+  plotted, georeferenced glyph.                                                                  
+                                                                                                 
+  - Presets "ecmwf" (light backgrounds) and "ecmwf-dark" (lighter greys so                       
+    coastlines stay visible over a dark field), plus style="auto" that                           
+    picks between them from the displayed luminance (im.to_rgba through the                      
+    colormap/norm; only opaque cells count, so light no-data fields are not                      
+    misread as dark; the target axes' image is preferred over self.im).                          
+  - extent=[xmin, ymin, xmax, ymax] (the ArrayGlyph order) georeferences                         
+    the image and axis limits, handling the pixel-coordinate RGB/animate                         
+    case; a warning fires when the glyph has no geographic extent.                               
+  - Degree formatters label the +/-180 antimeridian as "180"; _nice_step                         
+    covers sub-degree to 90-degree spacing; graticule_step is validated as                       
+    positive and finite; extent length is validated with a clear message.                        
+  - available_map_styles() and the REFERENCE_MAP_STYLES table expose and                         
+    allow copying the presets; the geographic knowledge (deriving extent                         
+    from a dataset geotransform) stays upstream.                                                 
+                                                                                                 
+  Add a runnable docs notebook (docs/notebooks/array_glyph/reference_map)                        
+  wired into the mkdocs nav, and TestAddReferenceMap plus a non-mocked                           
+  integration test (geo.py coverage 98%).                                                        
+                                                                                                 
   Closes #184
 - fix(tiles): align web-tile basemap for non-EPSG:3857 data (#186)
 - For a non-EPSG:3857 axis, add_tiles stretched the stitched Mercator
@@ -84,55 +84,55 @@ nonlinearity remains for very large extents.
 
 
 - fix(animation): accept os.PathLike in save_animation and create_from_image (#181)
-- save_animation derived the output format with str.rsplit, so passing a  
-  pathlib.Path (idiomatic from pyramids' Path-everywhere Dataset API)  
-  raised AttributeError: 'WindowsPath' object has no attribute 'rsplit'.  
-
-  - Normalise paths with os.fspath and derive the extension via  
-    os.path.splitext, so both str and os.PathLike work.  
-  - Widen the type hints to str | os.PathLike on animation.save_animation,  
-    ArrayGlyph.save_animation, and Colors.create_from_image (the only two  
-    public path-taking APIs; reference/tiles handle internal paths only).  
-  - Give a clear error when the path has no file extension, and lock the  
-    tightened dotfile / extension-less rejection (.gif, dir/.gif, bare  
-    gif) with a regression test.  
-  - Cover PathLike on the happy and error branches of every widened API.  
-
+- save_animation derived the output format with str.rsplit, so passing a                                              
+  pathlib.Path (idiomatic from pyramids' Path-everywhere Dataset API)                                                 
+  raised AttributeError: 'WindowsPath' object has no attribute 'rsplit'.                                              
+                                                                                                                      
+  - Normalise paths with os.fspath and derive the extension via                                                       
+    os.path.splitext, so both str and os.PathLike work.                                                               
+  - Widen the type hints to str | os.PathLike on animation.save_animation,                                            
+    ArrayGlyph.save_animation, and Colors.create_from_image (the only two                                             
+    public path-taking APIs; reference/tiles handle internal paths only).                                             
+  - Give a clear error when the path has no file extension, and lock the                                              
+    tightened dotfile / extension-less rejection (.gif, dir/.gif, bare                                                
+    gif) with a regression test.                                                                                      
+  - Cover PathLike on the happy and error branches of every widened API.                                              
+                                                                                                                      
   Closes #180
 
 ## 0.20.0 (2026-06-26)
 
 
 - feat(geo)!: glyph axis CRS with defaulting and assignment-time validation (#178)
-- Let the geographic glyphs carry the CRS of their plotted data so reference  
-  layers default to it, and make bad values fail fast.  
-
-  - `GeoMixin` gains a `crs` property (default `None`). `add_features` and  
-    `add_tiles` default their `crs=` to `self.crs` when omitted, so a caller  
-    that records the axis CRS once (`glyph.crs = 4326`) gets correctly placed  
-    layers without restating it; an explicit `crs=` still wins and  
-    `self.crs is None` is a pure pass-through.  
-  - `crs` lives on `GeoMixin`, not the base `Glyph`, so non-geographic glyphs  
-    are unaffected. `add_relief` is excluded -- it has no `crs` parameter  
-    (relief is a fixed EPSG:4326 raster placed by `extent`).  
-  - The `crs` setter validates on assignment: `TypeError` for non  
-    int/str/None (bool rejected), `ValueError` for a non-positive EPSG code,  
-    an empty string, or -- when `pyproj` is installed -- an unresolvable CRS.  
-    Strings are stripped and a bare numeric string (`"4326"`) is normalised  
-    to the int `4326`. Setting `crs` never requires the `[tiles]` extra; the  
-    deep check is skipped (deferred to draw time) without `pyproj`.  
-  - Make `add_tiles` options keyword-only after `source` (matching  
-    `add_features`), so `crs` can no longer be passed positionally and the  
-    default injection is unconditionally safe.  
-  - Hoist the `cleopatra.tiles` / `cleopatra.reference` imports to module top  
-    and call via the module, removing the inline imports.  
-
-  BREAKING CHANGE: `cleopatra.tiles.add_tiles` now accepts `crs`, `zoom`,  
-  `alpha`, `attribution`, `zorder`, `interpolation`, `timeout`, `retries`,  
-  `user_agent` and `max_tiles` as keyword-only arguments (everything after  
-  `source`). Callers that passed any of these positionally must switch to  
-  keyword arguments; `ax` and `source` remain positional.  
-
+- Let the geographic glyphs carry the CRS of their plotted data so reference                      
+  layers default to it, and make bad values fail fast.                                            
+                                                                                                  
+  - `GeoMixin` gains a `crs` property (default `None`). `add_features` and                        
+    `add_tiles` default their `crs=` to `self.crs` when omitted, so a caller                      
+    that records the axis CRS once (`glyph.crs = 4326`) gets correctly placed                     
+    layers without restating it; an explicit `crs=` still wins and                                
+    `self.crs is None` is a pure pass-through.                                                    
+  - `crs` lives on `GeoMixin`, not the base `Glyph`, so non-geographic glyphs                     
+    are unaffected. `add_relief` is excluded -- it has no `crs` parameter                         
+    (relief is a fixed EPSG:4326 raster placed by `extent`).                                      
+  - The `crs` setter validates on assignment: `TypeError` for non                                 
+    int/str/None (bool rejected), `ValueError` for a non-positive EPSG code,                      
+    an empty string, or -- when `pyproj` is installed -- an unresolvable CRS.                     
+    Strings are stripped and a bare numeric string (`"4326"`) is normalised                       
+    to the int `4326`. Setting `crs` never requires the `[tiles]` extra; the                      
+    deep check is skipped (deferred to draw time) without `pyproj`.                               
+  - Make `add_tiles` options keyword-only after `source` (matching                                
+    `add_features`), so `crs` can no longer be passed positionally and the                        
+    default injection is unconditionally safe.                                                    
+  - Hoist the `cleopatra.tiles` / `cleopatra.reference` imports to module top                     
+    and call via the module, removing the inline imports.                                         
+                                                                                                  
+  BREAKING CHANGE: `cleopatra.tiles.add_tiles` now accepts `crs`, `zoom`,                         
+  `alpha`, `attribution`, `zorder`, `interpolation`, `timeout`, `retries`,                        
+  `user_agent` and `max_tiles` as keyword-only arguments (everything after                        
+  `source`). Callers that passed any of these positionally must switch to                         
+  keyword arguments; `ax` and `source` remain positional.                                         
+                                                                                                  
   Closes #177
 
 ## 0.19.0 (2026-06-22)
@@ -278,7 +278,7 @@ update_changelog_on_bump is set. That key was missing from the
 
 - feat(array_glyph): inline contour labels via plot(kind="contour", labels=True) (#149)
 - feat(array_glyph): inline contour labels via plot(kind="contour", labels=True)
-
+  
   Add `labels` (bool) and `label_kw` (dict) options to ArrayGlyph.plot so
   line contours can carry inline numeric labels through ax.clabel, the way
   ECMWF Magics / cartopy / earthkit-plots label isolines. Previously the
@@ -398,7 +398,7 @@ update_changelog_on_bump is set. That key was missing from the
 - Unify how the cleopatra glyphs bind to matplotlib axes/figures and round
   out ArrayGlyph's rendering surface, with a small pre-construction
   introspection API shared across all glyphs.
-
+  
   - ArrayGlyph: store the colour-mapped artist on `self.im` for every kind
     (imshow/pcolormesh/contour/contourf/RGB) and add an `add_colorbar`
     option (default True) honoured by both `plot` and `animate`.
