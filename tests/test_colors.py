@@ -3,6 +3,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from matplotlib.collections import QuadMesh
 from matplotlib.colors import Colormap, LinearSegmentedColormap, Normalize
 from matplotlib.image import AxesImage
 
@@ -11,6 +12,7 @@ from cleopatra.colors import (
     DATA_STYLES,
     Colors,
     alpha_scaled_image,
+    alpha_scaled_mesh,
     apply_data_style,
 )
 
@@ -122,6 +124,68 @@ class TestAlphaScaledImage:
         assert img.get_zorder() == 7, f"zorder not forwarded, got {img.get_zorder()}"
 
 
+class TestAlphaScaledMesh:
+    """Tests for `alpha_scaled_mesh` (the curvilinear-grid counterpart)."""
+
+    @pytest.fixture
+    def ax(self):
+        """A fresh Axes on the Agg backend, closed after the test."""
+        fig, ax = plt.subplots()
+        yield ax
+        plt.close(fig)
+
+    @pytest.fixture
+    def xy(self):
+        """A 3x3 corner grid for a 2x2 quad mesh (shading='flat' convention)."""
+        return np.meshgrid(np.arange(3), np.arange(3))
+
+    def test_returns_quadmesh_attached_to_ax(self, ax, xy):
+        """The call returns a `QuadMesh` registered as a collection on `ax`."""
+        x, y = xy
+        data = np.array([[0.0, 1.0], [0.5, 0.25]])
+        mesh = alpha_scaled_mesh(ax, x, y, data, "viridis", shading="flat")
+        assert isinstance(mesh, QuadMesh), f"expected QuadMesh, got {type(mesh)}"
+        assert mesh in ax.collections, "mesh should be attached to ax"
+
+    def test_facecolor_alpha_matches_normalised_value(self, ax, xy):
+        """Per-quad alpha in `facecolor` equals the (default-normalised) value."""
+        x, y = xy
+        data = np.array([[0.0, 1.0], [0.5, 0.25]])
+        mesh = alpha_scaled_mesh(ax, x, y, data, "viridis", shading="flat")
+        alpha = mesh.get_facecolor()[:, 3]
+        np.testing.assert_allclose(
+            alpha, [0.0, 1.0, 0.5, 0.25], err_msg=f"unexpected facecolor alpha: {alpha}"
+        )
+
+    def test_nan_cell_is_fully_transparent(self, ax, xy):
+        """A NaN cell renders with alpha=0 in the facecolor array."""
+        x, y = xy
+        data = np.array([[np.nan, 1.0], [0.5, 0.25]])
+        mesh = alpha_scaled_mesh(ax, x, y, data, "viridis", shading="flat")
+        alpha = mesh.get_facecolor()[:, 3]
+        assert alpha[0] == 0.0, f"NaN cell should be transparent, got alpha={alpha[0]}"
+
+    def test_array_cleared_so_cmap_norm_do_not_override_facecolor(self, ax, xy):
+        """`set_array(None)` is applied so the mesh renders the explicit facecolor."""
+        x, y = xy
+        data = np.array([[0.0, 1.0], [0.5, 0.25]])
+        mesh = alpha_scaled_mesh(ax, x, y, data, "viridis", shading="flat")
+        assert mesh.get_array() is None, "mesh array should be cleared after colouring"
+
+    def test_non_2d_data_raises(self, ax, xy):
+        """A 1D `data` array raises `ValueError`."""
+        x, y = xy
+        with pytest.raises(ValueError, match="2-dimensional"):
+            alpha_scaled_mesh(ax, x, y, np.array([0.0, 1.0]), "viridis")
+
+    def test_default_shading_is_auto(self, ax):
+        """With no explicit `shading`, same-shape x/y/data does not raise."""
+        x, y = np.meshgrid(np.arange(2), np.arange(2))
+        data = np.array([[0.0, 1.0], [0.5, 0.25]])
+        mesh = alpha_scaled_mesh(ax, x, y, data, "viridis")
+        assert mesh in ax.collections, "default shading should still produce a mesh"
+
+
 class TestApplyDataStyle:
     """Tests for `apply_data_style` and the `DATA_STYLES` registry."""
 
@@ -198,6 +262,27 @@ class TestApplyDataStyle:
         """Extra kwargs (e.g. `zorder`) reach the underlying `alpha_scaled_image`."""
         images = apply_data_style(ax, {"dust": np.array([[0.0, 1.0]])}, zorder=5)
         assert images["dust"].get_zorder() == 5, "zorder not forwarded to alpha_scaled_image"
+
+    def test_x_y_dispatches_to_alpha_scaled_mesh(self, ax):
+        """Passing `x`/`y` renders every layer as a `QuadMesh`, not an `AxesImage`."""
+        x, y = np.meshgrid(np.arange(3), np.arange(3))
+        images = apply_data_style(
+            ax,
+            {"dust": np.array([[0.0, 1.0], [0.5, 0.25]])},
+            x=x,
+            y=y,
+            shading="flat",
+        )
+        assert isinstance(images["dust"], QuadMesh), (
+            f"expected QuadMesh with x/y given, got {type(images['dust'])}"
+        )
+
+    def test_without_x_y_uses_alpha_scaled_image(self, ax):
+        """With no `x`/`y`, layers render as `AxesImage` (the default path)."""
+        images = apply_data_style(ax, {"dust": np.array([[0.0, 1.0]])})
+        assert isinstance(images["dust"], AxesImage), (
+            f"expected AxesImage without x/y, got {type(images['dust'])}"
+        )
 
 
 class TestCreateColors:
