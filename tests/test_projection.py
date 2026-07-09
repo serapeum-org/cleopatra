@@ -37,6 +37,7 @@ from cleopatra.projection import (  # noqa: E402
     orthographic_graticule,
     orthographic_grid,
     orthographic_grid_edges,
+    orthographic_points,
 )
 
 
@@ -746,6 +747,52 @@ class TestOrthographicGridEdges:
         monkeypatch.setattr(proj_mod.importlib.util, "find_spec", lambda name: None)
         with pytest.raises(ImportError, match=r"\[tiles\]"):
             orthographic_grid_edges(np.array([0.0, 90.0]), np.array([-45.0, 45.0]))
+
+
+class TestOrthographicPoints:
+    """Tests for `orthographic_points`."""
+
+    def test_center_point_projects_near_origin(self):
+        """The centre point of the view projects to (0, 0)."""
+        x, y = orthographic_points(0.0, 90.0, center_lat=90.0, center_lon=0.0)
+        assert abs(x[0]) < 1e-6 and abs(y[0]) < 1e-6, (
+            f"centre point should project near origin, got ({x[0]}, {y[0]})"
+        )
+
+    def test_visible_point_is_finite(self):
+        """A point well within the visible hemisphere reprojects to finite x/y."""
+        x, y = orthographic_points(-21.9, 64.1, center_lat=90.0, center_lon=0.0)
+        assert np.isfinite(x[0]) and np.isfinite(y[0])
+
+    def test_far_hemisphere_point_is_nan(self):
+        """A point on the far hemisphere reprojects to NaN in both x and y."""
+        x, y = orthographic_points(0.0, -80.0, center_lat=90.0, center_lon=0.0)
+        assert np.isnan(x[0]) and np.isnan(y[0])
+
+    def test_array_input_preserves_shape_and_order(self):
+        """Multiple points reproject to matching-length, order-preserved arrays."""
+        lon = np.array([-21.9, -0.1, -79.4])
+        lat = np.array([64.1, 51.5, 43.7])
+        x, y = orthographic_points(lon, lat, center_lat=55.0, center_lon=-30.0)
+        assert x.shape == y.shape == (3,), f"unexpected shape: {x.shape}"
+        assert np.all(np.isfinite(x)) and np.all(np.isfinite(y)), (
+            "all 3 cities should be visible from this mid-Atlantic view"
+        )
+        # distinct cities must not collapse to the same projected point
+        assert len({round(v, 3) for v in x}) == 3, f"x values should differ: {x}"
+
+    def test_scalar_input_returns_length_one_arrays(self):
+        """A scalar lon/lat pair returns length-1 arrays, not bare floats."""
+        x, y = orthographic_points(10.0, 20.0)
+        assert x.shape == (1,) and y.shape == (1,)
+
+    def test_missing_pyproj_raises_import_error(self, monkeypatch):
+        """Without pyproj installed, a clear `ImportError` is raised."""
+        import cleopatra.projection as proj_mod
+
+        monkeypatch.setattr(proj_mod.importlib.util, "find_spec", lambda name: None)
+        with pytest.raises(ImportError, match=r"\[tiles\]"):
+            orthographic_points(0.0, 45.0)
 
 
 class TestOrthographicBoundary:

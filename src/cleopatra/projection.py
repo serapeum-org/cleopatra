@@ -520,6 +520,83 @@ def orthographic_grid_edges(
     return x_edges, y_edges
 
 
+def orthographic_points(
+    lon: Any,
+    lat: Any,
+    center_lat: float = 90.0,
+    center_lon: float = 0.0,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Reproject scattered lon/lat points onto an orthographic ('globe') view.
+
+    The point counterpart to `orthographic_grid`: use this for discrete
+    locations -- e.g. city markers for `cleopatra.geo.add_point_labels` --
+    rather than a raster grid. A globe's axes are scaled in projected
+    metres (`ORTHOGRAPHIC_RADIUS_M`), not degrees, so plotting raw lon/lat
+    values directly on a globe axes collapses every point toward the origin;
+    reproject with this function first.
+
+    Args:
+        lon: Longitudes in degrees, scalar or 1D array.
+        lat: Latitudes in degrees, scalar or 1D array, paired with `lon`.
+        center_lat: Latitude the globe is centred on. Must match the value
+            passed to `orthographic_grid`/`apply_projection_style` for the
+            points to align with the data.
+        center_lon: Longitude the globe is centred on. Must match
+            `orthographic_grid`/`apply_projection_style`.
+
+    Returns:
+        tuple: `(x, y)`, the same shape as `lon`/`lat` (broadcast to at
+        least 1D). A point on the far (non-visible) hemisphere is `NaN` in
+        both `x` and `y` -- filter those out before plotting.
+
+    Raises:
+        ImportError: If pyproj (the `[tiles]` extra) is not installed.
+
+    Examples:
+        - Reproject two cities visible from a North-Pole-centred view; a
+          point on the far side comes back `NaN`:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.projection import orthographic_points
+            >>> lon = np.array([-21.9, 0.0])
+            >>> lat = np.array([64.1, -80.0])
+            >>> x, y = orthographic_points(lon, lat, center_lat=90.0, center_lon=0.0)
+            >>> np.isnan(x[0])  # Reykjavik: visible
+            np.False_
+            >>> np.isnan(x[1])  # near the South Pole: not visible
+            np.True_
+
+            ```
+        - A single scalar point round-trips as a 1-element array:
+            ```python
+            >>> from cleopatra.projection import orthographic_points
+            >>> x, y = orthographic_points(0.0, 90.0)
+            >>> round(float(x[0]), 6), round(float(y[0]), 6)
+            (0.0, -0.0)
+
+            ```
+
+    See Also:
+        orthographic_grid: The raster-grid counterpart.
+        cleopatra.geo.add_point_labels: Renders the reprojected points.
+    """
+    _require_pyproj("Orthographic ('globe') point reprojection")
+    from pyproj import Transformer
+
+    lon_arr = np.atleast_1d(np.asarray(lon, dtype=float))
+    lat_arr = np.atleast_1d(np.asarray(lat, dtype=float))
+    transformer = Transformer.from_crs(
+        "EPSG:4326", _ortho_proj4(center_lat, center_lon), always_xy=True
+    )
+    x_raw, y_raw = transformer.transform(lon_arr, lat_arr)
+    x = np.asarray(x_raw, dtype=float)
+    y = np.asarray(y_raw, dtype=float)
+    visible = _visible_hemisphere(lon_arr, lat_arr, center_lat, center_lon)
+    x = np.where(visible & np.isfinite(x), x, np.nan)
+    y = np.where(visible & np.isfinite(y), y, np.nan)
+    return x, y
+
+
 def orthographic_boundary(
     n: int = 200, radius: float = ORTHOGRAPHIC_RADIUS_M
 ) -> np.ndarray:
