@@ -768,7 +768,7 @@ def add_tiles(
 
     if not hasattr(ax, "get_xlim") or not hasattr(ax, "get_ylim"):
         raise TypeError(
-            "ax must be a matplotlib.axes.Axes instance, " f"got {type(ax).__name__}"
+            f"ax must be a matplotlib.axes.Axes instance, got {type(ax).__name__}"
         )
 
     if not isinstance(max_tiles, int) or isinstance(max_tiles, bool) or max_tiles < 1:

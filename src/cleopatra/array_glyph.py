@@ -1054,7 +1054,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     or np.issubdtype(arr_.dtype, np.floating)
                 ):
                     raise ValueError(
-                        f"{name}: {_COORD_DTYPE_MISMATCH}; got dtype " f"{arr_.dtype}."
+                        f"{name}: {_COORD_DTYPE_MISMATCH}; got dtype {arr_.dtype}."
                     )
             data_shape = array.shape[-2:]
             rows, cols = data_shape
@@ -2245,7 +2245,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             )
         if self.rgb and kind not in ("imshow", "auto"):
             raise ValueError(
-                "RGB compositing requires kind='imshow'. " f"Got kind={kind!r}."
+                f"RGB compositing requires kind='imshow'. Got kind={kind!r}."
             )
 
         for key, val in kwargs.items():

@@ -1297,7 +1297,7 @@ def histogram_legend(
     """
     if orientation not in ("vertical", "horizontal"):
         raise ValueError(
-            f"orientation must be 'vertical' or 'horizontal', got " f"{orientation!r}."
+            f"orientation must be 'vertical' or 'horizontal', got {orientation!r}."
         )
 
     if values is None:

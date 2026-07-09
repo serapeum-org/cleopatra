@@ -181,7 +181,7 @@ class ScatterGlyph(GeoMixin, Glyph):
             sizes = np.asarray(sizes)
             if sizes.shape != self.x.shape:
                 raise ValueError(
-                    f"sizes must match x/y shape {self.x.shape}, got " f"{sizes.shape}."
+                    f"sizes must match x/y shape {self.x.shape}, got {sizes.shape}."
                 )
         self.values = values
         self.sizes = sizes
