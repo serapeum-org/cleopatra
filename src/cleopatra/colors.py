@@ -2,8 +2,12 @@ import os
 from pathlib import Path
 from typing import Any, List, Tuple, Union
 
+import matplotlib as mpl
+import numpy as np
 from matplotlib import colors as mcolors
+from matplotlib.axes import Axes
 from matplotlib.colors import Colormap, LinearSegmentedColormap
+from matplotlib.image import AxesImage
 from PIL import Image, UnidentifiedImageError
 
 #: Sequential colormaps matching the ECMWF/CAMS aerosol-optical-depth animation
@@ -22,6 +26,107 @@ CAMS_COLORMAPS: dict[str, Colormap] = {
         "cams_dust", ["#ffffff", "#ffe066", "#ff8c00", "#5c2c06"]
     ),
 }
+
+
+def alpha_scaled_image(
+    ax: Axes,
+    data: np.ndarray,
+    cmap: str | Colormap,
+    *,
+    norm: mcolors.Normalize | None = None,
+    alpha_norm: mcolors.Normalize | None = None,
+    **imshow_kwargs: Any,
+) -> AxesImage:
+    """Draw `data` on `ax` with per-pixel opacity tied to its value.
+
+    Builds an RGBA image from `cmap(norm(data))` and overwrites the alpha
+    channel with `alpha_norm(data)`, so low values fade toward fully
+    transparent instead of being drawn at full opacity in a pale colour.
+    This is the "smoke fading into haze" look used by ECMWF/CAMS aerosol
+    animations: whatever is plotted underneath (a basemap, another layer)
+    shows through wherever the value is near zero. Any non-finite entry in
+    `data` (NaN) is drawn fully transparent regardless of `alpha_norm`.
+
+    This is a generic rendering primitive -- it takes any 2D array and any
+    colormap, so it composes with any other cleopatra or matplotlib styling
+    (a different basemap, a different colormap, a flat or projected axes).
+
+    Args:
+        ax: Axes to draw on.
+        data: 2D array of values to map.
+        cmap: Colormap name or object, e.g. `CAMS_COLORMAPS["dust"]`.
+        norm: Normalization mapping `data` to colour. Defaults to
+            `Normalize(vmin, vmax)` over the finite range of `data`.
+        alpha_norm: Normalization mapping `data` to opacity. Defaults to
+            `norm`, so colour and opacity are driven by the same scale; pass
+            a separate instance to decouple them (e.g. a steeper alpha ramp
+            so faint values vanish sooner than their colour would suggest).
+        **imshow_kwargs: Forwarded to `ax.imshow` (e.g. `extent`, `origin`,
+            `zorder`, `interpolation`).
+
+    Returns:
+        AxesImage: The image artist added to `ax`.
+
+    Raises:
+        ValueError: If `data` is not 2-dimensional.
+
+    Examples:
+        - Low values fade to transparent, high values are opaque:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import numpy as np
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.colors import alpha_scaled_image, CAMS_COLORMAPS
+            >>> fig, ax = plt.subplots()
+            >>> data = np.array([[0.0, 1.0], [0.5, 1.0]])
+            >>> img = alpha_scaled_image(ax, data, CAMS_COLORMAPS["dust"])
+            >>> rgba = img.get_array()
+            >>> rgba[0, 0, 3]  # value 0.0 -> fully transparent
+            np.float64(0.0)
+            >>> rgba[0, 1, 3]  # value 1.0 -> fully opaque
+            np.float64(1.0)
+            >>> plt.close(fig)
+
+            ```
+        - NaN pixels are always transparent, independent of `alpha_norm`:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import numpy as np
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.colors import alpha_scaled_image
+            >>> fig, ax = plt.subplots()
+            >>> data = np.array([[np.nan, 1.0]])
+            >>> img = alpha_scaled_image(ax, data, "viridis")
+            >>> img.get_array()[0, 0, 3]
+            np.float64(0.0)
+            >>> plt.close(fig)
+
+            ```
+
+    See Also:
+        CAMS_COLORMAPS: Ready-made colormaps designed for this function.
+        swatch_legend: A matching two-stop legend for the same data.
+    """
+    data = np.asarray(data, dtype=float)
+    if data.ndim != 2:
+        raise ValueError(f"data must be 2-dimensional, got shape {data.shape}")
+
+    cmap_obj = mpl.colormaps[cmap] if isinstance(cmap, str) else cmap
+    if norm is None:
+        finite = data[np.isfinite(data)]
+        vmin = float(finite.min()) if finite.size else 0.0
+        vmax = float(finite.max()) if finite.size else 1.0
+        norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
+    alpha_norm = norm if alpha_norm is None else alpha_norm
+
+    rgba = cmap_obj(norm(data))
+    alpha = np.clip(np.asarray(alpha_norm(data), dtype=float), 0.0, 1.0)
+    finite_mask = np.isfinite(data)
+    rgba[..., 3] = np.where(finite_mask, alpha, 0.0)
+
+    return ax.imshow(rgba, **imshow_kwargs)
 
 
 class Colors:

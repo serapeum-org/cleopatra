@@ -1,9 +1,12 @@
 from pathlib import Path
 
+import matplotlib.pyplot as plt
+import numpy as np
 import pytest
-from matplotlib.colors import Colormap, LinearSegmentedColormap
+from matplotlib.colors import Colormap, LinearSegmentedColormap, Normalize
+from matplotlib.image import AxesImage
 
-from cleopatra.colors import CAMS_COLORMAPS, Colors
+from cleopatra.colors import CAMS_COLORMAPS, Colors, alpha_scaled_image
 
 
 class TestCamsColormaps:
@@ -42,6 +45,75 @@ class TestCamsColormaps:
         assert r > g and b > g, (
             f"organic_matter top stop should be purple-toned, got rgb=({r}, {g}, {b})"
         )
+
+
+class TestAlphaScaledImage:
+    """Tests for `alpha_scaled_image`."""
+
+    @pytest.fixture
+    def ax(self):
+        """A fresh Axes on the Agg backend, closed after the test."""
+        fig, ax = plt.subplots()
+        yield ax
+        plt.close(fig)
+
+    def test_returns_axes_image(self, ax):
+        """The call returns an `AxesImage` attached to the given axes."""
+        img = alpha_scaled_image(ax, np.array([[0.0, 1.0]]), "viridis")
+        assert isinstance(img, AxesImage), f"expected AxesImage, got {type(img)}"
+        assert img in ax.images, "image should be attached to the given axes"
+
+    def test_alpha_matches_normalised_value(self, ax):
+        """Alpha equals the (default-normalised) data value, not the colour."""
+        data = np.array([[0.0, 0.25, 1.0]])
+        img = alpha_scaled_image(ax, data, "viridis")
+        alpha = img.get_array()[..., 3]
+        np.testing.assert_allclose(
+            alpha, [[0.0, 0.25, 1.0]], err_msg=f"unexpected alpha channel: {alpha}"
+        )
+
+    def test_nan_is_always_fully_transparent(self, ax):
+        """A NaN cell is alpha=0 even under an alpha_norm that would not zero it."""
+        data = np.array([[np.nan, 5.0]])
+        img = alpha_scaled_image(
+            ax, data, "viridis", alpha_norm=Normalize(vmin=0.0, vmax=5.0, clip=False)
+        )
+        alpha = img.get_array()[..., 3]
+        assert alpha[0, 0] == 0.0, f"NaN pixel should be transparent, got alpha={alpha[0, 0]}"
+        assert alpha[0, 1] == 1.0, f"finite max value should be opaque, got {alpha[0, 1]}"
+
+    def test_decoupled_alpha_norm(self, ax):
+        """A separate `alpha_norm` drives opacity independently of `norm`."""
+        data = np.array([[0.0, 10.0]])
+        img = alpha_scaled_image(
+            ax,
+            data,
+            "viridis",
+            norm=Normalize(vmin=0.0, vmax=10.0),
+            alpha_norm=Normalize(vmin=0.0, vmax=20.0),
+        )
+        alpha = img.get_array()[..., 3]
+        np.testing.assert_allclose(
+            alpha, [[0.0, 0.5]], err_msg=f"alpha_norm override not applied: {alpha}"
+        )
+
+    def test_cmap_accepts_colormap_object(self, ax):
+        """A `Colormap` instance (not just a name string) is accepted directly."""
+        img = alpha_scaled_image(ax, np.array([[0.0, 1.0]]), CAMS_COLORMAPS["dust"])
+        rgb = img.get_array()[0, 1, :3]
+        np.testing.assert_allclose(
+            rgb, [0.36, 0.17, 0.02], atol=0.01, err_msg=f"unexpected top-stop colour: {rgb}"
+        )
+
+    def test_non_2d_data_raises(self, ax):
+        """A 1D (or higher-dimensional) `data` array raises `ValueError`."""
+        with pytest.raises(ValueError, match="2-dimensional"):
+            alpha_scaled_image(ax, np.array([0.0, 1.0]), "viridis")
+
+    def test_forwards_imshow_kwargs(self, ax):
+        """Extra keyword arguments (e.g. `zorder`) reach the underlying `imshow`."""
+        img = alpha_scaled_image(ax, np.array([[0.0, 1.0]]), "viridis", zorder=7)
+        assert img.get_zorder() == 7, f"zorder not forwarded, got {img.get_zorder()}"
 
 
 class TestCreateColors:
