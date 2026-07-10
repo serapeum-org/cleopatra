@@ -22,9 +22,12 @@ Examples:
         >>> fig, ax, pc = glyph.plot()
 
         ```
-    - Draw outlines only (no fill, no colorbar):
+    - Draw outlines only (no fill, no colorbar). Outlines are black unless
+        an explicit `edgecolor` is given:
         ```python
         >>> glyph = PolygonGlyph(polys)
+        >>> fig, ax, pc = glyph.plot(outline_only=True)
+        >>> glyph = PolygonGlyph(polys, edgecolor="navy", linewidth=1.5)
         >>> fig, ax, pc = glyph.plot(outline_only=True)
 
         ```
@@ -57,6 +60,11 @@ POLYGON_DEFAULT_OPTIONS = {
 }
 POLYGON_DEFAULT_OPTIONS = STYLE_DEFAULTS | CLASSIFY_OPTIONS | POLYGON_DEFAULT_OPTIONS
 
+#: Edge colour substituted in outline-only mode when `edgecolor` is left at
+#: its `"none"` default. A borderless fill is the right default for a filled
+#: choropleth, but an unfilled polygon with a transparent edge is invisible.
+OUTLINE_EDGECOLOR = "black"
+
 
 class PolygonGlyph(GeoMixin, Glyph):
     """Visualization class for collections of polygons.
@@ -65,7 +73,7 @@ class PolygonGlyph(GeoMixin, Glyph):
     `values` array, polygons are filled and colour-mapped through the
     shared scalar-mapping pipeline and a colorbar is attached. With no
     values (or `outline_only=True`), only the polygon outlines are
-    drawn.
+    drawn, in `OUTLINE_EDGECOLOR` unless `edgecolor` is given.
 
     Args:
         polygons: Sequence of polygons, each an `(n_i, 2)` array of
@@ -147,7 +155,9 @@ class PolygonGlyph(GeoMixin, Glyph):
         polygons are filled and colour-mapped through
         `_prepare_scalar_mapping` (so `vmin` / `vmax` / `levels` /
         `color_scale` apply) with a matching colorbar. Otherwise only
-        the outlines are drawn and no colorbar is added.
+        the outlines are drawn and no colorbar is added; the outlines
+        use `OUTLINE_EDGECOLOR` when `edgecolor` is left at its
+        borderless-fill default of `"none"`.
 
         Args:
             outline_only: Draw unfilled outlines even when `values` is
@@ -166,7 +176,8 @@ class PolygonGlyph(GeoMixin, Glyph):
                 and the `PolyCollection` added to the axes.
 
         Examples:
-            - Outline-only mode carries no colour array and no colorbar:
+            - Outline-only mode carries no colour array and no colorbar,
+                and its edges are opaque so the outlines are visible:
                 ```python
                 >>> import numpy as np
                 >>> from cleopatra.polygon_glyph import PolygonGlyph
@@ -177,6 +188,16 @@ class PolygonGlyph(GeoMixin, Glyph):
                 True
                 >>> glyph.cbar is None
                 True
+                >>> float(pc.get_edgecolor()[0][3])  # alpha
+                1.0
+
+                ```
+            - An explicit `edgecolor` is honoured as given:
+                ```python
+                >>> glyph = PolygonGlyph(polys, edgecolor="navy")
+                >>> fig, ax, pc = glyph.plot(outline_only=True)
+                >>> tuple(round(float(c), 3) for c in pc.get_edgecolor()[0])
+                (0.0, 0.0, 0.502, 1.0)
 
                 ```
         """
@@ -195,10 +216,15 @@ class PolygonGlyph(GeoMixin, Glyph):
         draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
 
         if outline_only or self.values is None:
+            edgecolor = opts["edgecolor"]
+            # An unfilled polygon whose edge is transparent draws nothing, so
+            # the borderless-fill default cannot carry over to outline mode.
+            if isinstance(edgecolor, str) and edgecolor.lower() == "none":
+                edgecolor = OUTLINE_EDGECOLOR
             pc = PolyCollection(
                 self.polygons,
                 facecolors="none",
-                edgecolors=opts["edgecolor"],
+                edgecolors=edgecolor,
                 linewidths=opts["linewidth"],
             )
             ax.add_collection(pc)

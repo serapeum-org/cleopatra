@@ -11,7 +11,11 @@ import numpy as np
 import pytest
 from matplotlib.collections import PolyCollection
 
-from cleopatra.polygon_glyph import POLYGON_DEFAULT_OPTIONS, PolygonGlyph
+from cleopatra.polygon_glyph import (
+    OUTLINE_EDGECOLOR,
+    POLYGON_DEFAULT_OPTIONS,
+    PolygonGlyph,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -123,6 +127,65 @@ class TestPolygonGlyphPlot:
         _, _, pc = glyph.plot(outline_only=True)
         assert pc.get_array() is None, "outline_only should suppress the colour array"
         assert glyph.cbar is None, "outline_only should suppress the colorbar"
+
+    def test_outline_only_edges_are_visible_by_default(self, polygons):
+        """Outline mode substitutes a visible edge for the 'none' default.
+
+        Test scenario:
+            The default edgecolor is 'none' (borderless fill), which would
+            render an unfilled polygon invisible; outline mode must fall
+            back to OUTLINE_EDGECOLOR so the outlines are actually drawn.
+        """
+        glyph = PolygonGlyph(polygons)
+        _, _, pc = glyph.plot(outline_only=True)
+        edgecolors = pc.get_edgecolor()
+        assert len(edgecolors) > 0, "outline mode should set at least one edge colour"
+        assert np.allclose(
+            edgecolors[0], mcolors.to_rgba(OUTLINE_EDGECOLOR)
+        ), f"expected the {OUTLINE_EDGECOLOR!r} fallback, got {edgecolors[0]}"
+        assert np.allclose(
+            pc.get_facecolor(), np.empty((0, 4))
+        ), "outline mode should leave the polygons unfilled"
+
+    def test_no_values_edges_are_visible_by_default(self, polygons):
+        """The implicit outline path (no values) is visible too.
+
+        Test scenario:
+            Constructing without values takes the same outline branch, so
+            it must also get the visible-edge fallback.
+        """
+        glyph = PolygonGlyph(polygons)
+        _, _, pc = glyph.plot()
+        assert np.allclose(
+            pc.get_edgecolor()[0], mcolors.to_rgba(OUTLINE_EDGECOLOR)
+        ), "no-values outlines should use the visible fallback edge colour"
+
+    def test_outline_only_honours_explicit_edgecolor(self, polygons):
+        """An explicit edgecolor is not overridden by the fallback.
+
+        Test scenario:
+            edgecolor='navy' survives outline mode unchanged.
+        """
+        glyph = PolygonGlyph(polygons, edgecolor="navy", linewidth=1.5)
+        _, _, pc = glyph.plot(outline_only=True)
+        assert np.allclose(
+            pc.get_edgecolor()[0], mcolors.to_rgba("navy")
+        ), "an explicit edgecolor should be honoured in outline mode"
+        assert pc.get_linewidth()[0] == 1.5, "linewidth should be forwarded"
+
+    def test_filled_polygons_keep_borderless_default(self, polygons):
+        """The fallback does not leak into the filled branch.
+
+        Test scenario:
+            A value-filled choropleth keeps its transparent 'none' edge,
+            so polygons render borderless as before.
+        """
+        glyph = PolygonGlyph(polygons, values=np.array([10.0, 20.0]))
+        _, _, pc = glyph.plot()
+        edgecolors = pc.get_edgecolor()
+        assert (
+            len(edgecolors) == 0 or edgecolors[0][3] == 0.0
+        ), f"filled polygons should stay borderless, got edges {edgecolors}"
 
     def test_auto_limits_from_values(self, polygons):
         """Colour limits auto-resolve from the value range (pinned spacing).
