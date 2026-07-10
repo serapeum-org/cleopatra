@@ -8,6 +8,7 @@ from matplotlib.colors import Colormap, LinearSegmentedColormap, Normalize
 from matplotlib.image import AxesImage
 
 from cleopatra.colors import (
+    CAMS_AOD_COLORMAPS,
     HAZE_COLORMAPS,
     DATA_STYLES,
     Colors,
@@ -53,6 +54,53 @@ class TestHazeColormaps:
         assert r > g and b > g, (
             f"organic_matter top stop should be purple-toned, got rgb=({r}, {g}, {b})"
         )
+
+
+class TestCamsAodColormaps:
+    """Tests for the `CAMS_AOD_COLORMAPS` preset constant (official CAMS AOD scales)."""
+
+    NAMES = ["blue_yellow_red", "blue_yellow_red_brown", "blue_red", "oranges"]
+
+    def test_has_the_four_documented_palettes(self):
+        """The four documented preset names are present, and only those four."""
+        assert set(CAMS_AOD_COLORMAPS) == set(self.NAMES), (
+            f"unexpected preset names: {set(CAMS_AOD_COLORMAPS)}"
+        )
+
+    @pytest.mark.parametrize("name", NAMES)
+    def test_entries_are_colormaps(self, name):
+        """Each entry is a ready `Colormap`, not a name string or dict."""
+        assert isinstance(CAMS_AOD_COLORMAPS[name], Colormap), (
+            f"{name} is not a Colormap: {type(CAMS_AOD_COLORMAPS[name])}"
+        )
+
+    @pytest.mark.parametrize("name", NAMES)
+    def test_are_fully_opaque(self, name):
+        """The vendored colormaps are pure colour -- opaque at both ends.
+
+        Magics' `sh_Oranges_aod` ramps opacity with value, but that alpha is
+        intentionally handled by cleopatra's separate opacity axis, not baked
+        into the colormap (see the `CAMS_AOD_COLORMAPS` docstring).
+        """
+        assert CAMS_AOD_COLORMAPS[name](0.0)[3] == 1.0, f"{name}(0.0) should be opaque"
+        assert CAMS_AOD_COLORMAPS[name](1.0)[3] == 1.0, f"{name}(1.0) should be opaque"
+
+    @pytest.mark.parametrize("name", ["blue_yellow_red", "blue_yellow_red_brown", "blue_red"])
+    def test_blue_low_end(self, name):
+        """The blue-to-red AOD scales start blue-dominant at value 0.0."""
+        r, g, b, _ = CAMS_AOD_COLORMAPS[name](0.0)
+        assert b >= r, f"{name}(0.0) should be blue-toned, got rgb=({r}, {g}, {b})"
+
+    @pytest.mark.parametrize("name", ["blue_yellow_red", "blue_red"])
+    def test_red_high_end(self, name):
+        """The red-topped AOD scales saturate red-dominant at value 1.0."""
+        r, g, b, _ = CAMS_AOD_COLORMAPS[name](1.0)
+        assert r > g and r > b, f"{name}(1.0) should be red-toned, got rgb=({r}, {g}, {b})"
+
+    def test_oranges_low_end_is_near_white(self):
+        """The `oranges` scale starts near white (its Magics form fades in via alpha)."""
+        r, g, b, _ = CAMS_AOD_COLORMAPS["oranges"](0.0)
+        assert min(r, g, b) > 0.85, f"oranges(0.0) should be near white, got rgb=({r}, {g}, {b})"
 
 
 class TestAlphaScaledImage:

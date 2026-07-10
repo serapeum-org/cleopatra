@@ -32,6 +32,53 @@ HAZE_COLORMAPS: dict[str, Colormap] = {
     ),
 }
 
+#: The official ECMWF/CAMS aerosol-optical-depth (AOD at 550 nm) colour scales,
+#: as opposed to the stylised `HAZE_COLORMAPS` inspired by them. Colour stops are
+#: transcribed verbatim from the open-source Magics rendering engine
+#: (`ecmwf/magics`, Apache-2.0 -- `share/magics/styles/default/palettes.json`,
+#: the palettes tagged `cams` / "Aerosol optical depth at 550 nm"); only the
+#: engine's colour data is vendored, none of its code. Each value is a ready
+#: `matplotlib.colors.Colormap`, usable anywhere cleopatra or matplotlib accepts
+#: a `cmap` argument (e.g. `plt.imshow(..., cmap=CAMS_AOD_COLORMAPS["blue_yellow_red"])`).
+#: Keys describe the ramp; the originating Magics style name is given per entry.
+#:
+#: These are pure-colour maps (fully opaque), consistent with `HAZE_COLORMAPS`.
+#: Magics' `sh_Oranges_aod` additionally ramps *opacity* linearly with value
+#: (alpha 0.05 -> 1.0); that alpha is intentionally not baked in here -- reproduce
+#: it with cleopatra's separate opacity axis via `alpha_scaled_image(...,
+#: alpha_norm=Normalize(vmin, vmax))` or a `DATA_STYLES` entry carrying
+#: `alpha_vmin`/`alpha_vmax`, keeping colour and opacity independent.
+CAMS_AOD_COLORMAPS: dict[str, Colormap] = {
+    # Magics `sh_BuYlRd_aod` -- the canonical CAMS AOD scale.
+    "blue_yellow_red": LinearSegmentedColormap.from_list(
+        "cams_aod_blue_yellow_red",
+        ["#d3d7eb", "#a8afd7", "#8892bf", "#a3a891", "#bebd65", "#d8d239",
+         "#f3e70b", "#f4c60a", "#f6a508", "#f88406", "#f96205", "#fb4103",
+         "#fd2001", "#ff0000"],
+    ),
+    # Magics `sh_BuYlRdBr_aod` -- like blue_yellow_red but fading to dark maroon.
+    "blue_yellow_red_brown": LinearSegmentedColormap.from_list(
+        "cams_aod_blue_yellow_red_brown",
+        ["#d2d2ff", "#a1a1ff", "#7070ff", "#8787c7", "#b8b876", "#e9e926",
+         "#ffda00", "#ff8a00", "#ff3900", "#f40000", "#c40000", "#930000",
+         "#640000"],
+    ),
+    # Magics `sh_all_aod` / `sh_all_aod550` -- the blue->cyan->green->yellow->red scale.
+    "blue_red": LinearSegmentedColormap.from_list(
+        "cams_aod_blue_red",
+        ["#0000f1", "#004cff", "#00b1ff", "#29ffce", "#7dff7a", "#ceff29",
+         "#ffc400", "#ff6800", "#f10800", "#800000"],
+    ),
+    # Magics `sh_Oranges_aod` -- white->dark-orange (natively alpha-ramped; see above).
+    "oranges": LinearSegmentedColormap.from_list(
+        "cams_aod_oranges",
+        ["#ffefe0", "#fee9d4", "#fee2c6", "#fdd9b4", "#fdd0a2", "#fdc38d",
+         "#fdb576", "#fda762", "#fd9a4e", "#fd8c3b", "#f87f2c", "#f3701b",
+         "#ec620f", "#e25508", "#d84801", "#c54102", "#b03903", "#9e3303",
+         "#8e2d04", "#7f2704"],
+    ),
+}
+
 
 def alpha_scaled_image(
     ax: Axes,
