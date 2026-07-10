@@ -133,6 +133,7 @@ nav:
     - ArrayGlyph reference map: notebooks/array_glyph/reference_map.ipynb
     - Saving animations: notebooks/animation/animation_examples.ipynb
     - Haze-style presets: notebooks/haze_preset/haze_preset_examples.ipynb
+    - Data-style presets: notebooks/data_style_presets/data_style_presets_examples.ipynb
     - MeshGlyph: notebooks/mesh_glyph/mesh_glyph_examples.ipynb
     - ScatterGlyph: notebooks/scatter_glyph/scatter_glyph_examples.ipynb
     - VectorGlyph: notebooks/vector_glyph/vector_glyph_examples.ipynb
