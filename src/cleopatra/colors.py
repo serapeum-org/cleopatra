@@ -87,6 +87,7 @@ def alpha_scaled_image(
     *,
     norm: mcolors.Normalize | None = None,
     alpha_norm: mcolors.Normalize | None = None,
+    constant_alpha: float | None = None,
     **imshow_kwargs: Any,
 ) -> AxesImage:
     """Draw `data` on `ax` with per-pixel opacity tied to its value.
@@ -113,6 +114,9 @@ def alpha_scaled_image(
             `norm`, so colour and opacity are driven by the same scale; pass
             a separate instance to decouple them (e.g. a steeper alpha ramp
             so faint values vanish sooner than their colour would suggest).
+        constant_alpha: If given, draw every finite cell at this fixed opacity
+            (clipped to `[0, 1]`) and ignore `alpha_norm` -- e.g. `1.0` for a
+            plain opaque field. Non-finite (NaN) cells stay transparent.
         **imshow_kwargs: Forwarded to `ax.imshow` (e.g. `extent`, `origin`,
             `zorder`, `interpolation`).
 
@@ -165,7 +169,7 @@ def alpha_scaled_image(
     if data.ndim != 2:
         raise ValueError(f"data must be 2-dimensional, got shape {data.shape}")
 
-    rgba = _alpha_rgba(data, cmap, norm, alpha_norm)
+    rgba = _alpha_rgba(data, cmap, norm, alpha_norm, constant_alpha)
     return ax.imshow(rgba, **imshow_kwargs)
 
 
@@ -174,6 +178,7 @@ def _alpha_rgba(
     cmap: str | Colormap,
     norm: mcolors.Normalize | None,
     alpha_norm: mcolors.Normalize | None,
+    constant_alpha: float | None = None,
 ) -> np.ndarray:
     """Shared colour+alpha computation behind `alpha_scaled_image`/`_mesh`.
 
@@ -183,6 +188,10 @@ def _alpha_rgba(
         norm: Normalization for colour, or `None` to default to the finite
             range of `data`.
         alpha_norm: Normalization for opacity, or `None` to reuse `norm`.
+        constant_alpha: If given, every finite cell is drawn at this fixed
+            opacity (clipped to `[0, 1]`) and `alpha_norm` is ignored -- for a
+            plain opaque field (`1.0`) or a uniform semi-transparent overlay.
+            Non-finite cells stay fully transparent either way.
 
     Returns:
         np.ndarray: An `(*, *, 4)` RGBA array; non-finite `data` cells are
@@ -197,7 +206,10 @@ def _alpha_rgba(
     alpha_norm = norm if alpha_norm is None else alpha_norm
 
     rgba = cmap_obj(norm(data))
-    alpha = np.clip(np.asarray(alpha_norm(data), dtype=float), 0.0, 1.0)
+    if constant_alpha is not None:
+        alpha = np.full(data.shape, float(np.clip(constant_alpha, 0.0, 1.0)))
+    else:
+        alpha = np.clip(np.asarray(alpha_norm(data), dtype=float), 0.0, 1.0)
     finite_mask = np.isfinite(data)
     rgba[..., 3] = np.where(finite_mask, alpha, 0.0)
     return rgba
@@ -212,6 +224,7 @@ def alpha_scaled_mesh(
     *,
     norm: mcolors.Normalize | None = None,
     alpha_norm: mcolors.Normalize | None = None,
+    constant_alpha: float | None = None,
     **pcolormesh_kwargs: Any,
 ) -> Any:
     """Draw `data` on a curvilinear `(x, y)` mesh with per-cell opacity.
@@ -237,6 +250,9 @@ def alpha_scaled_mesh(
             `Normalize(vmin, vmax)` over the finite range of `data`.
         alpha_norm: Normalization mapping `data` to opacity. Defaults to
             `norm`.
+        constant_alpha: If given, paint every finite cell at this fixed opacity
+            (clipped to `[0, 1]`) and ignore `alpha_norm` -- e.g. `1.0` for a
+            plain opaque field. Non-finite (NaN) cells stay transparent.
         **pcolormesh_kwargs: Forwarded to `ax.pcolormesh`. `shading` defaults
             to `"auto"` if not given.
 
@@ -277,7 +293,7 @@ def alpha_scaled_mesh(
         raise ValueError(f"data must be 2-dimensional, got shape {data.shape}")
 
     pcolormesh_kwargs.setdefault("shading", "auto")
-    rgba = _alpha_rgba(data, cmap, norm, alpha_norm)
+    rgba = _alpha_rgba(data, cmap, norm, alpha_norm, constant_alpha)
     mesh = ax.pcolormesh(x, y, data, **pcolormesh_kwargs)
     mesh.set_array(None)
     mesh.set_facecolor(rgba.reshape(-1, 4))
@@ -285,9 +301,23 @@ def alpha_scaled_mesh(
 
 
 #: Named "data style" presets for `apply_data_style` -- each entry maps a
-#: layer name to the `cmap`/`label`/`vmin`/`vmax` used to draw it with
-#: `alpha_scaled_image` and label it with `swatch_legend`. This is the
-#: colour/legend half of the ECMWF/CAMS look; pair it with a
+#: layer name to the config used to draw it with `alpha_scaled_image` /
+#: `alpha_scaled_mesh` and label it with `swatch_legend`. Per-layer keys:
+#:
+#: - ``cmap`` (required): a `Colormap` object or a matplotlib colormap name.
+#: - ``label`` (required): the legend caption.
+#: - ``vmin`` / ``vmax`` (optional): colour range; **omit to auto-range** from
+#:   each field's finite values -- the right default for real GIS/climate data
+#:   whose absolute range varies (temperature in K vs C, elevation in m, ...).
+#: - ``center`` (optional): render as a **diverging** map symmetric around this
+#:   value (colormap midpoint lands on it) -- for anomaly fields, usually ``0``.
+#: - Opacity policy (choose at most one): omit all alpha keys for the default
+#:   value-linked opacity (transparent where the value is low -- the overlay
+#:   look); set ``alpha`` to a constant (e.g. ``1.0``) for a plain opaque
+#:   field; or set ``alpha_vmin``/``alpha_vmax`` to decouple opacity from
+#:   colour (the "haze" glowing rim).
+#:
+#: This is the colour/legend half of the ECMWF/CAMS look; pair it with a
 #: `cleopatra.projection` projection-style preset (globe or flat) -- the two
 #: are independent and neither requires the other.
 #:
@@ -332,7 +362,99 @@ DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
             "vmax": 1.0,
         },
     },
+    # --- Ready-to-use presets for common pyramids GIS/NetCDF-climate fields. ---
+    # Opaque full fields (auto-ranged from the data): the whole field is drawn.
+    "temperature": {
+        "temperature": {
+            "cmap": "RdYlBu_r",  # blue (cold) -> red (hot)
+            "label": "Temperature",
+            "alpha": 1.0,
+        },
+    },
+    "elevation": {
+        "elevation": {
+            "cmap": "terrain",
+            "label": "Elevation",
+            "alpha": 1.0,
+        },
+    },
+    "vegetation": {
+        "vegetation": {
+            "cmap": "YlGn",  # sparse (pale) -> dense (green)
+            "label": "Vegetation (NDVI)",
+            "alpha": 1.0,
+        },
+    },
+    "wind_speed": {
+        "wind_speed": {
+            "cmap": "viridis",  # perceptually uniform
+            "label": "Wind speed",
+            "alpha": 1.0,
+        },
+    },
+    # Diverging anomaly field, symmetric around zero (0 -> white).
+    "anomaly": {
+        "anomaly": {
+            "cmap": "RdBu_r",  # negative (blue) -> 0 (white) -> positive (red)
+            "label": "Anomaly",
+            "center": 0.0,
+            "alpha": 1.0,
+        },
+    },
+    # Overlay field: value-linked opacity, so it is transparent where dry and
+    # opaque where it rains -- ideal for compositing over a basemap.
+    "precipitation": {
+        "precipitation": {
+            "cmap": "YlGnBu",  # light (light rain) -> dark blue (heavy)
+            "label": "Precipitation",
+        },
+    },
 }
+
+
+def _resolve_style_norm(
+    data: np.ndarray, cfg: dict[str, Any]
+) -> tuple[mcolors.Normalize, float, float]:
+    """Resolve the colour `Normalize` (and its concrete bounds) for one layer.
+
+    Honours a `DATA_STYLES` layer's optional `vmin`/`vmax` (auto-ranged from
+    the data's finite values when omitted -- essential for real GIS/climate
+    fields whose absolute range varies) and an optional diverging `center`.
+    When `center` is set and a bound is missing, the range is made symmetric
+    around it (`center +/- max|data - center|`), so the colormap's midpoint
+    lands exactly on `center` -- the anomaly-map convention.
+
+    Args:
+        data: The layer's 2D data array (finite values drive auto-ranging).
+        cfg: The layer's `DATA_STYLES` config dict.
+
+    Returns:
+        tuple: `(norm, vmin, vmax)` -- the colour normalization and the
+        concrete bounds it resolved to (reused for the layer's legend).
+    """
+    vmin = cfg.get("vmin")
+    vmax = cfg.get("vmax")
+    center = cfg.get("center")
+    finite = data[np.isfinite(data)]
+    if center is not None and (vmin is None or vmax is None):
+        if finite.size:
+            radius = max(
+                abs(float(finite.min()) - center),
+                abs(float(finite.max()) - center),
+            )
+        else:
+            radius = 1.0
+        radius = radius or 1.0
+        vmin = center - radius if vmin is None else vmin
+        vmax = center + radius if vmax is None else vmax
+    else:
+        if vmin is None:
+            vmin = float(finite.min()) if finite.size else 0.0
+        if vmax is None:
+            vmax = float(finite.max()) if finite.size else 1.0
+    if vmin == vmax:
+        vmax = vmin + 1.0
+    return mcolors.Normalize(vmin=vmin, vmax=vmax), vmin, vmax
 
 
 def apply_data_style(
@@ -482,9 +604,17 @@ def apply_data_style(
     images: dict[str, Any] = {}
     for i, (name, data) in enumerate(layers.items()):
         cfg = preset[name]
-        norm = mcolors.Normalize(vmin=cfg["vmin"], vmax=cfg["vmax"])
+        data = np.asarray(data, dtype=float)
+        norm, resolved_vmin, resolved_vmax = _resolve_style_norm(data, cfg)
+
+        alpha_const = cfg.get("alpha")
         alpha_vmin = cfg.get("alpha_vmin")
         alpha_vmax = cfg.get("alpha_vmax")
+        if alpha_const is not None and (alpha_vmin is not None or alpha_vmax is not None):
+            raise ValueError(
+                f"data style layer {name!r} sets both a constant 'alpha' and "
+                "'alpha_vmin'/'alpha_vmax'; those are mutually exclusive"
+            )
         alpha_norm = (
             mcolors.Normalize(vmin=alpha_vmin, vmax=alpha_vmax)
             if alpha_vmin is not None or alpha_vmax is not None
@@ -493,12 +623,12 @@ def apply_data_style(
         if curvilinear:
             images[name] = alpha_scaled_mesh(
                 ax, x, y, data, cfg["cmap"], norm=norm, alpha_norm=alpha_norm,
-                **render_kwargs,
+                constant_alpha=alpha_const, **render_kwargs,
             )
         else:
             images[name] = alpha_scaled_image(
                 ax, data, cfg["cmap"], norm=norm, alpha_norm=alpha_norm,
-                **render_kwargs,
+                constant_alpha=alpha_const, **render_kwargs,
             )
         if legend:
             bounds = (
@@ -510,8 +640,8 @@ def apply_data_style(
                 ax,
                 cfg["cmap"],
                 cfg["label"],
-                vmin=cfg["vmin"],
-                vmax=cfg["vmax"],
+                vmin=resolved_vmin,
+                vmax=resolved_vmax,
                 bounds=bounds,
             )
     return images
