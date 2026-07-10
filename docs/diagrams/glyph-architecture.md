@@ -4,8 +4,8 @@ Architecture and class diagrams for cleopatra's glyph subsystem and the shared
 colour / scale pipeline, including the geoplot-upstream additions
 (classification `scheme`, value→size scaling, `FlowGlyph`, `KDEGlyph`).
 
-All diagrams use [Mermaid](https://mermaid.js.org/) (rendered by
-`mkdocs-mermaid2` in the docs site and by GitHub).
+All diagrams use [Mermaid](https://mermaid.js.org/) (rendered by the
+`pymdownx.superfences` custom mermaid fence in the docs site, and by GitHub).
 
 ## Legend
 
@@ -21,7 +21,10 @@ All diagrams use [Mermaid](https://mermaid.js.org/) (rendered by
 ## 1. Class hierarchy
 
 `ArrayGlyph`, `MeshGlyph`, `ScatterGlyph`, `PolygonGlyph`, `VectorGlyph`,
-`FlowGlyph`, and `KDEGlyph` subclass `Glyph`. `StatisticalGlyph` is independent.
+`FlowGlyph`, `LineGlyph`, and `KDEGlyph` subclass `Glyph`. `StatisticalGlyph` is
+independent. The six geographic glyphs (`ArrayGlyph`, `MeshGlyph`, `ScatterGlyph`,
+`VectorGlyph`, `FlowGlyph`, `PolygonGlyph`) also mix in `GeoMixin` for basemap
+methods — omitted here to keep the colour-pipeline focus.
 
 ```mermaid
 classDiagram
@@ -93,6 +96,13 @@ classDiagram
         #_resolve_levels()
         #_apply_clip()
     }
+    class LineGlyph {
+        +x
+        +y
+        +line()
+        +bar()
+        +fill_between()
+    }
     class StatisticalGlyph {
         +plot()
     }
@@ -104,8 +114,10 @@ classDiagram
     Glyph <|-- VectorGlyph
     Glyph <|-- FlowGlyph
     Glyph <|-- KDEGlyph
+    Glyph <|-- LineGlyph
 
     note for StatisticalGlyph "Stands alone — 1-D/2-D histograms,\ndoes not subclass Glyph"
+    note for LineGlyph "line/bar/band — no colour-by-value path\n(not in the scalar-mapping pipeline)"
 
     style Glyph fill:#cfe2ff,stroke:#3D59AB,color:#000
     style ArrayGlyph fill:#d1e7dd,stroke:#0f5132,color:#000
@@ -115,6 +127,7 @@ classDiagram
     style VectorGlyph fill:#d1e7dd,stroke:#0f5132,color:#000
     style FlowGlyph fill:#d1e7dd,stroke:#0f5132,color:#000
     style KDEGlyph fill:#d1e7dd,stroke:#0f5132,color:#000
+    style LineGlyph fill:#d1e7dd,stroke:#0f5132,color:#000
     style StatisticalGlyph fill:#e2e3e5,stroke:#41464b,color:#000
 ```
 
@@ -123,11 +136,12 @@ classDiagram
 ## 2. Shared colour / scale pipeline
 
 Every colour-by-value glyph that routes through `_prepare_scalar_mapping`
-(`ScatterGlyph`, `PolygonGlyph`, `VectorGlyph`, `FlowGlyph`) shares one
-contract. Since the geoplot-upstream work, a `scheme` option short-circuits to
-classified (discrete) colouring; otherwise the continuous `color_scale` /
+(`ScatterGlyph`, `PolygonGlyph`, `VectorGlyph`, `FlowGlyph`, `KDEGlyph`) shares
+one contract. Since the geoplot-upstream work, a `scheme` option short-circuits
+to classified (discrete) colouring; otherwise the continuous `color_scale` /
 `levels` path runs. `ArrayGlyph` / `MeshGlyph` build their norm directly via
-`_create_norm_and_cbar_kw` and therefore do **not** accept `scheme`.
+`_create_norm_and_cbar_kw` and therefore do **not** accept `scheme`. `LineGlyph`
+has no colour-by-value path and is not part of this pipeline.
 
 ```mermaid
 flowchart TD

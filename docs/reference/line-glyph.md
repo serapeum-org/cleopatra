@@ -1,10 +1,11 @@
 # LineGlyph Class
 
 The `LineGlyph` class wraps `Axes.plot`, `Axes.bar`, and `Axes.fill_between` for
-**line**, **bar**, and **band** plots. `y` may be 1-D (a single series) or 2-D
-`(n_points, n_series)` — `line` and `bar` draw one series per column. Styling
-comes from the shared options (`color_1`, `line_width`, `marker`, `linestyle`,
-`alpha`).
+**line**, **bar**, and **band** plots. For `line` (and `fill_between`), `y` may
+be 1-D (a single series) or 2-D `(n_points, n_series)` — one series per column.
+`bar` accepts only a single 1-D series and raises `ValueError` for 2-D input.
+Styling comes from the shared options (`color_1`, `line_width`, `marker`,
+`linestyle`, `alpha`).
 
 ## Class Documentation
 

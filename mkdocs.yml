@@ -21,7 +21,6 @@ theme:
     - content.action.edit
     - content.action.view
     - content.code.annotate
-    - content.code.copy
     - content.tooltips
     - search.highlight
     - search.suggest
@@ -46,8 +45,6 @@ theme:
     toggle:
       icon: material/weather-night
       name: Switch to system preference
-  primary: indigo
-  accent: indigo
   icon:
     repo: fontawesome/brands/github
 
@@ -65,8 +62,6 @@ plugins:
             show_root_heading: true
             heading_level: 2
             docstring_style: google
-  - table-reader
-  - tags
   - mike:
       # These fields are all optional; the defaults are as below...
       alias_type: symlink
@@ -85,7 +80,6 @@ markdown_extensions:
         - name: mermaid
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
-  - pymdownx.tabbed
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.tabbed:
@@ -107,7 +101,8 @@ nav:
   - Installation: installation.md
   - Scope: scope.md
   - User Guide:
-    - unstructured-mesh-guide.md
+    - Unstructured meshes: unstructured-mesh-guide.md
+    - Glyph architecture: diagrams/glyph-architecture.md
   - Reference:
     - Glyph (base): reference/glyph.md
     - Statistical plots: reference/statistics-glyph.md

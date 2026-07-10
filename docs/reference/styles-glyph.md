@@ -73,12 +73,20 @@ areas, `FlowGlyph` line widths).
 Reusable, glyph-independent legend helpers that attach a legend to any `Axes`:
 
 - `disjoint_legend` — a categorical (disjoint) swatch legend.
+- `swatch_legend` — a compact colour-swatch legend for named layers (used by the
+  `colors.apply_data_style` "haze" presets).
 - `size_legend` — a legend whose marker *sizes* encode magnitude.
 - `width_legend` — a legend whose line *widths* encode magnitude.
 - `colorbar_legend` — attach a colorbar for a `ScalarMappable`.
 - `histogram_legend` — a colour-mapped histogram drawn as a compact legend.
 
 ::: cleopatra.styles.disjoint_legend
+    options:
+      show_root_heading: true
+      show_source: true
+      heading_level: 3
+
+::: cleopatra.styles.swatch_legend
     options:
       show_root_heading: true
       show_source: true
@@ -103,6 +111,20 @@ Reusable, glyph-independent legend helpers that attach a legend to any `Axes`:
       heading_level: 3
 
 ::: cleopatra.styles.histogram_legend
+    options:
+      show_root_heading: true
+      show_source: true
+      heading_level: 3
+
+## Chrome-free canvas — `apply_blank_canvas`
+
+`apply_blank_canvas` strips an axes down to just the data — no ticks, spines, or
+frame — and sets the axes' and figure's background colour. It is the minimal look
+the ECMWF/CAMS-style globe animations use (plotted field on black), and composes
+with a flat axes, an orthographic globe (`projection.apply_projection_frame`), or
+any other cleopatra styling.
+
+::: cleopatra.styles.apply_blank_canvas
     options:
       show_root_heading: true
       show_source: true

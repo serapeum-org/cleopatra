@@ -1,92 +1,77 @@
 # Contributing
 
-When contributing to this repository, please first discuss the change you wish to make via issue,
-email, or any other method with the owners of this repository before making a change.
+Thanks for your interest in improving Cleopatra! This guide describes how the
+project actually works so your change lands smoothly.
 
-Please note we have a code of conduct, please follow it in all your interactions with the project.
+Please also read our [Code of Conduct](CODE_OF_CONDUCT.md) and follow it in all
+your interactions with the project.
 
-## Pull Request Process
+## Before you start — is it in scope?
 
-1. Ensure any install or build dependencies are removed before the end of the layer when doing a
-   build.
-2. Update the README.md with details of changes to the interface, this includes new environment
-   variables, exposed ports, useful file locations and container parameters.
-3. Increase the version numbers in any examples files and the README.md to the new version that this
-   Pull Request would represent. The versioning scheme we use is [SemVer](http://semver.org/).
-4. You may merge the Pull Request in once you have the sign-off of two other developers, or if you
-   do not have permission to do that, you may request the second reviewer to merge it for you.
+Cleopatra is a **matplotlib-only convenience layer over in-memory NumPy data**.
+Before proposing or building a feature, read [`SCOPE.md`](SCOPE.md): it defines
+what belongs here (the glyph family, colour/colorbar/legend pipeline, animation
+export, the fixed-public-dataset basemap helpers) and what does not (non-matplotlib
+backends, user-data file I/O, GIS/geoprocessing, interactive GUIs, modelling, heavy
+new dependencies). If a request falls outside that scope, it will be declined or
+redirected rather than merged.
 
-## Code of Conduct
+For anything non-trivial, open an issue to discuss the change before you invest
+time in a pull request.
 
-### Our Pledge
+## Development setup
 
-In the interest of fostering an open and welcoming environment, we as
-contributors and maintainers pledge to making participation in our project and
-our community a harassment-free experience for everyone, regardless of age, body
-size, disability, ethnicity, gender identity and expression, level of experience,
-nationality, personal appearance, race, religion, or sexual identity and
-orientation.
+Cleopatra uses [uv](https://docs.astral.sh/uv/) for environment and dependency
+management.
 
-### Our Standards
+```bash
+git clone https://github.com/serapeum-org/cleopatra.git
+cd cleopatra
 
-Examples of behavior that contributes to creating a positive environment
-include:
+# create the environment and install the package with the dev + docs tooling
+uv sync
 
-* Using welcoming and inclusive language
-* Being respectful of differing viewpoints and experiences
-* Gracefully accepting constructive criticism
-* Focusing on what is best for the community
-* Showing empathy towards other community members
+# include the optional web-tile / basemap extra when working on geo features
+uv sync --extra tiles
+```
 
-Examples of unacceptable behavior by participants include:
+Run the test suite with pytest:
 
-* The use of sexualized language or imagery and unwelcome sexual attention or
-advances
-* Trolling, insulting/derogatory comments, and personal or political attacks
-* Public or private harassment
-* Publishing others' private information, such as a physical or electronic
-  address, without explicit permission
-* Other conduct which could reasonably be considered inappropriate in a
-  professional setting
+```bash
+uv run pytest
+```
 
-### Our Responsibilities
+Notebook-based docs examples are validated in CI; if you touch a public API,
+update the matching example under `docs/notebooks/` and make sure it still
+executes.
 
-Project maintainers are responsible for clarifying the standards of acceptable
-behavior and are expected to take appropriate and fair corrective action in
-response to any instances of unacceptable behavior.
+## Commit messages — Conventional Commits
 
-Project maintainers have the right and responsibility to remove, edit, or
-reject comments, commits, code, wiki edits, issues, and other contributions
-that are not aligned to this Code of Conduct, or to ban temporarily or
-permanently any contributor for other behaviors that they deem inappropriate,
-threatening, offensive, or harmful.
+**The version number and `docs/change-log.md` are generated automatically** by
+[commitizen](https://commitizen-tools.github.io/commitizen/) from the commit
+history — do **not** bump versions or edit the changelog by hand. Release notes
+come entirely from well-formed commit messages, so write
+[Conventional Commits](https://www.conventionalcommits.org/):
 
-### Scope
+- `feat: ...` — a new feature (minor version bump)
+- `fix: ...` — a bug fix (patch version bump)
+- `docs: ...`, `test: ...`, `refactor: ...`, `chore: ...` — no version bump
+- `feat!: ...` or a `BREAKING CHANGE:` footer — a breaking change (major bump)
 
-This Code of Conduct applies both within project spaces and in public spaces
-when an individual is representing the project or its community. Examples of
-representing a project or community include using an official project e-mail
-address, posting via an official social media account, or acting as an appointed
-representative at an online or offline event. Representation of a project may be
-further defined and clarified by project maintainers.
+## Pull request process
 
-### Enforcement
+1. Work on a feature branch, not `main`.
+2. Keep the change in scope (see above) and covered by tests; run `uv run pytest`
+   locally.
+3. Update the relevant documentation: the API reference page and/or example
+   notebook under `docs/`, and the README/`docs/index.md` overview if you add a
+   user-facing feature. Do not edit `docs/change-log.md` (auto-generated).
+4. Use Conventional Commit messages so the release tooling can pick up your change.
+5. Open the pull request against `main` and fill in the template. A maintainer will
+   review and merge once CI is green.
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported by contacting the project team at [INSERT EMAIL ADDRESS]. All
-complaints will be reviewed and investigated and will result in a response that
-is deemed necessary and appropriate to the circumstances. The project team is
-obligated to maintain confidentiality with regard to the reporter of an incident.
-Further details of specific enforcement policies may be posted separately.
+## Code of conduct
 
-Project maintainers who do not follow or enforce the Code of Conduct in good
-faith may face temporary or permanent repercussions as determined by other
-members of the project's leadership.
-
-### Attribution
-
-This Code of Conduct is adapted from the [Contributor Covenant][homepage], version 1.4,
-available at [http://contributor-covenant.org/version/1/4][version]
-
-[homepage]: http://contributor-covenant.org
-[version]: http://contributor-covenant.org/version/1/4/
+This project and everyone participating in it is governed by the
+[Cleopatra Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected
+to uphold it; please report unacceptable behavior to the project maintainers.
