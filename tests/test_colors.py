@@ -272,6 +272,40 @@ class TestApplyDataStyle:
         alpha = images["dust"].get_array()[..., 3]
         assert alpha[0, 0] == 1.0, f"expected fully opaque at data=0.5, got alpha={alpha[0, 0]}"
 
+    def test_cams_aod_preset_has_single_aod_layer(self):
+        """The registered 'cams_aod' preset defines exactly one 'aod' layer."""
+        assert set(DATA_STYLES["cams_aod"]) == {"aod"}, (
+            f"unexpected cams_aod layers: {set(DATA_STYLES['cams_aod'])}"
+        )
+
+    def test_cams_aod_uses_official_palette(self):
+        """The 'cams_aod' layer uses the canonical CAMS_AOD_COLORMAPS scale, not a haze map."""
+        assert (
+            DATA_STYLES["cams_aod"]["aod"]["cmap"]
+            is CAMS_AOD_COLORMAPS["blue_yellow_red"]
+        ), "cams_aod should reuse the official CAMS AOD colormap object"
+
+    def test_cams_aod_declares_no_decoupled_alpha(self):
+        """Unlike 'haze', 'cams_aod' sets no alpha_vmin/alpha_vmax (opacity tracks colour)."""
+        cfg = DATA_STYLES["cams_aod"]["aod"]
+        assert "alpha_vmin" not in cfg and "alpha_vmax" not in cfg, (
+            f"cams_aod should not decouple alpha, got {cfg}"
+        )
+
+    def test_cams_aod_alpha_tracks_value_linearly(self, ax):
+        """'cams_aod' opacity fades in with AOD: transparent at ~0, opaque at the top.
+
+        Test scenario:
+            With no alpha_vmin/alpha_vmax, alpha follows the same 0.0-1.0 norm
+            as colour, so an AOD field renders transparent where it is ~0 and
+            opaque red where it is high -- the natural overlay behaviour, and
+            the deliberate contrast with 'haze''s decoupled glowing rim.
+        """
+        images = apply_data_style(ax, {"aod": np.array([[0.0, 1.0]])}, style="cams_aod")
+        alpha = images["aod"].get_array()[..., 3]
+        assert alpha[0, 0] == 0.0, f"AOD 0.0 should be transparent, got {alpha[0, 0]}"
+        assert alpha[0, 1] == 1.0, f"AOD 1.0 should be opaque, got {alpha[0, 1]}"
+
     def test_custom_style_without_alpha_keys_uses_shared_norm(self, ax, monkeypatch):
         """A custom style lacking alpha_vmin/alpha_vmax falls back to sharing the colour norm.
 

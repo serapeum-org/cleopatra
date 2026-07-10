@@ -298,6 +298,13 @@ def alpha_scaled_mesh(
 #: "flame" rim ECMWF/CAMS aerosol maps show at a plume's edge -- with a
 #: single shared curve, that rim's colour is barely visible because it sits
 #: at low, nearly-transparent opacity.
+#:
+#: `"cams_aod"` is the plainer, official counterpart: a single `"aod"` layer
+#: drawn with the canonical `CAMS_AOD_COLORMAPS["blue_yellow_red"]` scale. It
+#: sets no `alpha_vmin`/`alpha_vmax`, so opacity tracks the colour norm
+#: linearly -- transparent where AOD is ~0, opaque red where it is high --
+#: the natural behaviour for overlaying a single aerosol-optical-depth field
+#: on a basemap (the common `pyramids` raster/NetCDF case).
 DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
     "haze": {
         "organic_matter": {
@@ -315,6 +322,14 @@ DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
             "vmax": 1.0,
             "alpha_vmin": 0.1,
             "alpha_vmax": 0.5,
+        },
+    },
+    "cams_aod": {
+        "aod": {
+            "cmap": CAMS_AOD_COLORMAPS["blue_yellow_red"],
+            "label": "Aerosol Optical Depth",
+            "vmin": 0.0,
+            "vmax": 1.0,
         },
     },
 }
