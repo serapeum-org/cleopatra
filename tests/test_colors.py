@@ -12,6 +12,7 @@ from cleopatra.colors import (
     HAZE_COLORMAPS,
     DATA_STYLES,
     Colors,
+    _load_magics_presets,
     alpha_scaled_image,
     alpha_scaled_mesh,
     apply_data_style,
@@ -544,6 +545,72 @@ class TestApplyDataStyle:
         """
         with pytest.raises(ValueError, match="x and y must be given together"):
             apply_data_style(ax, {"dust": np.array([[0.0, 1.0]])}, **kwargs)
+
+
+class TestMagicsPresets:
+    """Tests for the ECMWF/Magics preset library loaded into `DATA_STYLES`."""
+
+    @pytest.fixture
+    def ax(self):
+        """A fresh Axes on the Agg backend, closed after the test."""
+        fig, ax = plt.subplots()
+        yield ax
+        plt.close(fig)
+
+    HAND_AUTHORED = {
+        "haze", "cams_aod", "temperature", "elevation",
+        "vegetation", "wind_speed", "anomaly", "precipitation",
+    }
+
+    def test_known_parameters_are_registered(self):
+        """Well-known GRIB parameters resolve to presets carrying their real labels."""
+        assert DATA_STYLES["2t"]["2t"]["label"] == "2 metre temperature"
+        assert DATA_STYLES["tp"]["tp"]["label"] == "Total precipitation"
+        assert DATA_STYLES["aod550"]["aod550"]["label"].startswith(
+            "Total Aerosol Optical Depth"
+        )
+
+    def test_a_substantial_library_was_loaded(self):
+        """The vendored asset registers a large batch of parameter presets."""
+        magics = set(DATA_STYLES) - self.HAND_AUTHORED
+        assert len(magics) >= 50, f"expected many Magics presets, got {len(magics)}"
+
+    def test_preset_layer_structure(self):
+        """Each Magics preset is a single layer keyed by its own name, with a Colormap."""
+        entry = DATA_STYLES["2t"]
+        assert set(entry) == {"2t"}, f"unexpected layers: {set(entry)}"
+        layer = entry["2t"]
+        assert isinstance(layer["cmap"], Colormap), f"cmap is {type(layer['cmap'])}"
+        assert isinstance(layer["label"], str) and layer["label"]
+
+    def test_opaque_preset_carries_constant_alpha(self):
+        """An opaque Magics field (2m temperature) sets alpha=1.0 -- a full opaque field."""
+        assert DATA_STYLES["2t"]["2t"]["alpha"] == 1.0
+
+    def test_overlay_preset_has_no_constant_alpha(self):
+        """An alpha-ramped Magics field (high cloud cover) is a value-linked overlay."""
+        assert "alpha" not in DATA_STYLES["hcc"]["hcc"], (
+            "an alpha-ramped Magics palette should map to the overlay policy"
+        )
+
+    def test_magics_preset_renders_opaque_field(self, ax):
+        """A Magics preset draws end-to-end; an opaque one fills the field, NaN transparent."""
+        images = apply_data_style(
+            ax, {"2t": np.array([[250.0, 300.0], [np.nan, 275.0]])}, style="2t"
+        )
+        alpha = images["2t"].get_array()[..., 3]
+        assert alpha[0, 0] == alpha[0, 1] == alpha[1, 1] == 1.0, f"not opaque: {alpha}"
+        assert alpha[1, 0] == 0.0, f"NaN cell should be transparent, got {alpha[1, 0]}"
+
+    def test_loader_degrades_gracefully_without_asset(self, monkeypatch):
+        """If the vendored asset is unreadable, the loader returns {} instead of raising."""
+        import cleopatra.colors as colors_mod
+
+        def boom(_pkg):
+            raise FileNotFoundError("no data package")
+
+        monkeypatch.setattr(colors_mod.importlib.resources, "files", boom)
+        assert _load_magics_presets() == {}, "missing asset should degrade to no presets"
 
 
 class TestCreateColors:

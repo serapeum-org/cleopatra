@@ -21,6 +21,7 @@ _SUBMODULES = [
     "array_glyph",
     "colors",
     "config",
+    "data",
     "flow_glyph",
     "geo",
     "glyph",
