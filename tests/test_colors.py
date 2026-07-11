@@ -811,6 +811,31 @@ class TestCmoceanPresets:
         """The shared asset loader returns {} for an absent resource, never raising."""
         assert _load_preset_asset("does_not_exist.json", "x") == {}
 
+    @staticmethod
+    def _patch_asset_text(monkeypatch, text):
+        """Make the loader read `text` as the asset content."""
+        import cleopatra.colors as colors_mod
+
+        class _File:
+            def read_text(self, encoding=None):
+                return text
+
+        class _Dir:
+            def joinpath(self, name):
+                return _File()
+
+        monkeypatch.setattr(colors_mod.importlib.resources, "files", lambda pkg: _Dir())
+
+    def test_malformed_json_degrades_to_empty(self, monkeypatch):
+        """A corrupt (invalid JSON) asset returns {} instead of crashing the import."""
+        self._patch_asset_text(monkeypatch, "{not valid json")
+        assert _load_preset_asset("magics_presets.json", "magics") == {}
+
+    def test_record_missing_palette_or_label_degrades_to_empty(self, monkeypatch):
+        """A structurally-broken record (no `palette`/`label`) returns {}, never raises."""
+        self._patch_asset_text(monkeypatch, '{"presets": {"x": {"label": "X"}}}')
+        assert _load_preset_asset("magics_presets.json", "magics") == {}
+
 
 class TestCreateColors:
     def test_create_from_hex(self):

@@ -490,27 +490,35 @@ def _load_preset_asset(
         unavailable. Never raises, so a partial install degrades to the
         hand-authored presets rather than breaking `import cleopatra`.
     """
+    # The whole load is guarded: a missing, unreadable, malformed (invalid
+    # JSON), or structurally-broken (missing palette/label) asset degrades to
+    # the hand-authored presets rather than breaking `import cleopatra`.
     try:
         source = (
             importlib.resources.files("cleopatra.data")
             .joinpath(resource)
             .read_text(encoding="utf-8")
         )
-    except (FileNotFoundError, ModuleNotFoundError, OSError):
+        asset = json.loads(source)
+        presets: dict[str, dict[str, dict[str, Any]]] = {}
+        for key, rec in asset.get("presets", {}).items():
+            layer: dict[str, Any] = {
+                "cmap": LinearSegmentedColormap.from_list(
+                    f"{cmap_prefix}_{key}", rec["palette"]
+                ),
+                "label": rec["label"],
+            }
+            if rec.get("opacity") == "opaque":
+                layer["alpha"] = 1.0  # value-linked opacity (overlay) is the default otherwise
+            if rec.get("center") is not None:
+                layer["center"] = rec["center"]
+            presets[key] = {key: layer}
+        return presets
+    except (
+        FileNotFoundError, ModuleNotFoundError, OSError,
+        json.JSONDecodeError, KeyError, TypeError, ValueError,
+    ):
         return {}
-    asset = json.loads(source)
-    presets: dict[str, dict[str, dict[str, Any]]] = {}
-    for key, rec in asset.get("presets", {}).items():
-        layer: dict[str, Any] = {
-            "cmap": LinearSegmentedColormap.from_list(f"{cmap_prefix}_{key}", rec["palette"]),
-            "label": rec["label"],
-        }
-        if rec.get("opacity") == "opaque":
-            layer["alpha"] = 1.0  # value-linked opacity (overlay) is the default otherwise
-        if rec.get("center") is not None:
-            layer["center"] = rec["center"]
-        presets[key] = {key: layer}
-    return presets
 
 
 def _load_magics_presets() -> dict[str, dict[str, dict[str, Any]]]:
