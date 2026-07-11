@@ -414,17 +414,21 @@ DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
 }
 
 
-def _load_magics_presets() -> dict[str, dict[str, dict[str, Any]]]:
-    """Build `DATA_STYLES` entries from the vendored ECMWF/Magics preset asset.
+def _load_preset_asset(
+    resource: str, cmap_prefix: str
+) -> dict[str, dict[str, dict[str, Any]]]:
+    """Build `DATA_STYLES` entries from a vendored preset asset under `cleopatra.data`.
 
-    Reads `cleopatra/data/magics_presets.json` -- colour ramps and parameter
-    labels derived from ecmwf/magics (Apache-2.0; see the `MAGICS_NOTICE.txt`
-    beside it) -- and turns each parameter into a single-layer preset keyed by
-    its GRIB shortName: the palette becomes a colormap, `long_name` becomes the
-    legend label, and the opacity policy is opaque for a plain field or a
-    value-linked overlay where Magics' palette carried a built-in alpha ramp.
-    The presets carry no `vmin`/`vmax` -- the exact Magics contour levels are
-    not in the open data -- so they auto-range.
+    Shared by the ECMWF/Magics and cmocean preset libraries. Each asset maps a
+    preset key to a `palette` (hex control points), a `label`, an `opacity`
+    policy (`"opaque"` -> a plain field via constant alpha; otherwise a
+    value-linked overlay), and an optional diverging `center`. Every preset is a
+    single layer keyed by its own name and carries no `vmin`/`vmax`, so it
+    auto-ranges.
+
+    Args:
+        resource: The asset filename inside the `cleopatra.data` package.
+        cmap_prefix: A prefix for the generated colormap names (e.g. `"magics"`).
 
     Returns:
         dict: `DATA_STYLES`-shaped presets, or an empty mapping if the asset is
@@ -434,7 +438,7 @@ def _load_magics_presets() -> dict[str, dict[str, dict[str, Any]]]:
     try:
         source = (
             importlib.resources.files("cleopatra.data")
-            .joinpath("magics_presets.json")
+            .joinpath(resource)
             .read_text(encoding="utf-8")
         )
     except (FileNotFoundError, ModuleNotFoundError, OSError):
@@ -443,20 +447,34 @@ def _load_magics_presets() -> dict[str, dict[str, dict[str, Any]]]:
     presets: dict[str, dict[str, dict[str, Any]]] = {}
     for key, rec in asset.get("presets", {}).items():
         layer: dict[str, Any] = {
-            "cmap": LinearSegmentedColormap.from_list(f"magics_{key}", rec["palette"]),
+            "cmap": LinearSegmentedColormap.from_list(f"{cmap_prefix}_{key}", rec["palette"]),
             "label": rec["label"],
         }
         if rec.get("opacity") == "opaque":
             layer["alpha"] = 1.0  # value-linked opacity (overlay) is the default otherwise
+        if rec.get("center") is not None:
+            layer["center"] = rec["center"]
         presets[key] = {key: layer}
     return presets
 
 
-#: Register the full ECMWF/Magics parameter-preset library into `DATA_STYLES`
-#: at import, alongside the hand-authored presets above. Keyed by GRIB
-#: shortName (e.g. `"2t"`, `"tp"`, `"aod550"`); list them with
-#: `sorted(DATA_STYLES)`.
+def _load_magics_presets() -> dict[str, dict[str, dict[str, Any]]]:
+    """Load the ECMWF/Magics parameter-preset library (Apache-2.0).
+
+    Colour ramps and parameter labels derived from ecmwf/magics (see
+    `MAGICS_NOTICE.txt`), keyed by GRIB shortName. Thin wrapper over
+    `_load_preset_asset`.
+    """
+    return _load_preset_asset("magics_presets.json", "magics")
+
+
+#: Register the vendored preset libraries into `DATA_STYLES` at import, alongside
+#: the hand-authored presets above: the full ECMWF/Magics parameter set (keyed
+#: by GRIB shortName, e.g. `"2t"`, `"tp"`, `"aod550"`) and the cmocean
+#: ocean/hydrology/DEM set (keyed by variable, e.g. `"salinity"`,
+#: `"bathymetry"`). List them all with `sorted(DATA_STYLES)`.
 DATA_STYLES.update(_load_magics_presets())
+DATA_STYLES.update(_load_preset_asset("cmocean_presets.json", "cmocean"))
 
 
 def _resolve_style_norm(

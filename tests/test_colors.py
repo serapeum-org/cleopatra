@@ -13,6 +13,7 @@ from cleopatra.colors import (
     DATA_STYLES,
     Colors,
     _load_magics_presets,
+    _load_preset_asset,
     alpha_scaled_image,
     alpha_scaled_mesh,
     apply_data_style,
@@ -611,6 +612,57 @@ class TestMagicsPresets:
 
         monkeypatch.setattr(colors_mod.importlib.resources, "files", boom)
         assert _load_magics_presets() == {}, "missing asset should degrade to no presets"
+
+
+class TestCmoceanPresets:
+    """Tests for the cmocean ocean/hydrology/DEM preset library in `DATA_STYLES`."""
+
+    @pytest.fixture
+    def ax(self):
+        """A fresh Axes on the Agg backend, closed after the test."""
+        fig, ax = plt.subplots()
+        yield ax
+        plt.close(fig)
+
+    def test_known_variables_are_registered(self):
+        """Ocean/hydrology variables resolve to presets carrying cmocean labels."""
+        assert DATA_STYLES["salinity"]["salinity"]["label"] == "Salinity"
+        assert DATA_STYLES["bathymetry"]["bathymetry"]["label"] == "Ocean depth"
+        assert DATA_STYLES["turbidity"]["turbidity"]["label"] == "Turbidity / sediment"
+
+    def test_the_batch_was_loaded(self):
+        """The full curated cmocean batch is registered as presets."""
+        expected = {
+            "salinity", "bathymetry", "topography", "turbidity", "current_speed",
+            "chlorophyll", "dissolved_oxygen", "sea_surface_temperature", "sea_ice",
+            "solar_radiation", "rainfall", "phase", "sea_level_anomaly", "vorticity",
+            "water_density",
+        }
+        assert expected <= set(DATA_STYLES), f"missing: {expected - set(DATA_STYLES)}"
+
+    def test_diverging_and_land_sea_presets_center_on_zero(self):
+        """The diverging and land+sea presets render symmetric about zero."""
+        for key in ("sea_level_anomaly", "vorticity", "topography"):
+            assert DATA_STYLES[key][key].get("center") == 0.0, f"{key} should center on 0"
+
+    def test_preset_is_an_opaque_single_layer(self):
+        """Each cmocean preset is one opaque layer with a ready Colormap."""
+        layer = DATA_STYLES["salinity"]["salinity"]
+        assert isinstance(layer["cmap"], Colormap), f"cmap is {type(layer['cmap'])}"
+        assert layer["alpha"] == 1.0, "cmocean presets are opaque full fields"
+
+    def test_cmocean_preset_renders_opaque_field(self, ax):
+        """A cmocean preset draws end-to-end: opaque field, NaN transparent."""
+        images = apply_data_style(
+            ax, {"bathymetry": np.array([[0.0, 5000.0], [np.nan, 2000.0]])}, style="bathymetry"
+        )
+        alpha = images["bathymetry"].get_array()[..., 3]
+        assert alpha[0, 0] == alpha[0, 1] == alpha[1, 1] == 1.0, f"not opaque: {alpha}"
+        assert alpha[1, 0] == 0.0, f"NaN cell should be transparent, got {alpha[1, 0]}"
+
+    def test_missing_asset_degrades_to_empty(self):
+        """The shared asset loader returns {} for an absent resource, never raising."""
+        assert _load_preset_asset("does_not_exist.json", "x") == {}
 
 
 class TestCreateColors:
