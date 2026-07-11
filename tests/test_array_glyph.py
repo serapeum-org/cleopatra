@@ -3840,3 +3840,9 @@ class TestArrayGlyphHillshade:
         ).plot()
         assert ax.images[0].get_array().shape[-1] == 4
         plt.close("all")
+
+    def test_hillshade_warns_on_non_imshow_kind(self):
+        """`hillshade` on a kind it cannot shade warns instead of silently no-op-ing."""
+        with pytest.warns(UserWarning, match="hillshade is only applied to kind='imshow'"):
+            ArrayGlyph(self._dem(), cmap="terrain", hillshade=True).plot(kind="pcolormesh")
+        plt.close("all")

@@ -1504,10 +1504,17 @@ class ArrayGlyph(GeoMixin, Glyph):
         # regular-grid `imshow` path; the mappable keeps its cmap/norm so the
         # colorbar is unaffected. See `cleopatra.hillshade.shade_grid`.
         hillshade = resolve_hillshade(self.default_options.get("hillshade"))
-        if hillshade is not None and kind == "imshow":
-            hs_norm = norm if norm is not None else Normalize(vmin=vmin, vmax=vmax)
-            elevation = np.asarray(ma.filled(plot_arr, np.nan), dtype=float)
-            im.set_data(shade_grid(elevation, cmap, norm=hs_norm, **hillshade))
+        if hillshade is not None:
+            if kind == "imshow":
+                hs_norm = norm if norm is not None else Normalize(vmin=vmin, vmax=vmax)
+                elevation = np.asarray(ma.filled(plot_arr, np.nan), dtype=float)
+                im.set_data(shade_grid(elevation, cmap, norm=hs_norm, **hillshade))
+            else:
+                warnings.warn(
+                    f"hillshade is only applied to kind='imshow'; ignored for "
+                    f"kind={kind!r}.",
+                    stacklevel=2,
+                )
 
         return im, cbar_kw
 
