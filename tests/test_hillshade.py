@@ -55,10 +55,11 @@ class TestResolveHillshade:
         """False, an int, and a sequence are all accepted for `multidirectional`."""
         assert resolve_hillshade({"multidirectional": value})["multidirectional"] == value
 
-    def test_multidirectional_true_raises_clearly(self):
-        """`multidirectional=True` is rejected with a clear message, not a bare TypeError."""
+    @pytest.mark.parametrize("bad", [True, "north", 1.5])
+    def test_multidirectional_invalid_forms_raise_clearly(self, bad):
+        """A bool, string, or non-iterable float `multidirectional` raises `ValueError`."""
         with pytest.raises(ValueError, match="multidirectional"):
-            resolve_hillshade({"multidirectional": True})
+            resolve_hillshade({"multidirectional": bad})
 
 
 class TestShadeGrid:
@@ -94,6 +95,12 @@ class TestShadeGrid:
         single = shade_grid(dem, "terrain", vert_exag=5)
         multi = shade_grid(dem, "terrain", vert_exag=5, multidirectional=4)
         assert not np.allclose(single, multi)
+
+    def test_multidirectional_sequence_of_azimuths(self, dem):
+        """An explicit sequence of azimuths averages those directions."""
+        rgba = shade_grid(dem, "terrain", vert_exag=5, multidirectional=[0.0, 90.0, 180.0])
+        assert rgba.shape == dem.shape + (4,)
+        assert np.all(np.isfinite(rgba))
 
 
 class TestShadeFaces:
