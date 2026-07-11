@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#projection-module-static-projected-globe-map-frames" class="md-skip">
+        <a href="#projection-module-projected-globe-map-frames-presets" class="md-skip">
           Skip to content
         </a>
       
@@ -518,6 +518,8 @@
       
         
       
+        
+      
     
     
     
@@ -579,7 +581,35 @@
   <span class="md-ellipsis">
     
   
-    Unstructured Mesh Visualization Guide
+    Unstructured meshes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../diagrams/glyph-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glyph architecture
   
 
     
@@ -2126,17 +2156,33 @@
   
 
 
-<h1 id="projection-module-static-projected-globe-map-frames"><a class="toclink" href="#projection-module-static-projected-globe-map-frames">Projection Module — Static Projected ("Globe") Map Frames</a><a class="headerlink" href="#projection-module-static-projected-globe-map-frames" title="Permanent link">#</a></h1>
-<p>The <code>cleopatra.projection</code> module adds a single, stateless helper:
-<code>apply_projection_frame</code> turns a plain matplotlib <code>Axes</code> into a static projected
-("globe") frame. It sets the projected limits and equal aspect, draws the projection
-<strong>boundary</strong> (the globe's circle, Robinson's rounded rectangle, ...), optionally <strong>clips</strong>
-the existing data layers to that boundary, and draws the <strong>graticule</strong> polylines.</p>
-<p>The module is <strong>pure matplotlib with no PROJ/CRS dependency</strong>. It only <em>receives</em>
-already-computed geometry — boundary vertices, graticule polylines, and projected limits —
-as plain arrays. Whatever produces the projection (reprojecting data and deriving the
-boundary/graticule) lives upstream; cleopatra only renders the result. This keeps the
-engine split clean: the upstream owns CRS/PROJ, cleopatra owns matplotlib.</p>
+<h1 id="projection-module-projected-globe-map-frames-presets"><a class="toclink" href="#projection-module-projected-globe-map-frames-presets">Projection Module — Projected ("Globe") Map Frames &amp; Presets</a><a class="headerlink" href="#projection-module-projected-globe-map-frames-presets" title="Permanent link">#</a></h1>
+<p>The <code>cleopatra.projection</code> module has two layers:</p>
+<ol>
+<li>
+<p><strong><code>apply_projection_frame</code></strong> — the low-level, stateless renderer. It turns a plain
+   matplotlib <code>Axes</code> into a static projected ("globe") frame: it sets the projected limits
+   and equal aspect, draws the projection <strong>boundary</strong> (the globe's circle, Robinson's
+   rounded rectangle, ...), optionally <strong>clips</strong> the existing data layers to that boundary,
+   and draws the <strong>graticule</strong> polylines. This function is <strong>pure matplotlib with no
+   PROJ/CRS dependency</strong> — it only <em>receives</em> already-computed geometry (boundary vertices,
+   graticule polylines, projected limits) as plain arrays and renders it.</p>
+</li>
+<li>
+<p><strong>Orthographic globe presets</strong> — higher-level helpers that <em>do</em> the reprojection for the
+   common orthographic ("globe") case, and therefore require <code>pyproj</code> (the <code>cleopatra[tiles]</code>
+   extra): <code>apply_projection_style</code> (the one-call entry point, driven by <code>PROJECTION_STYLES</code>),
+   <code>orthographic_grid</code> / <code>orthographic_grid_edges</code> (reproject a lon/lat grid, masking the far
+   hemisphere), <code>orthographic_points</code> (reproject scattered lon/lat points), and
+   <code>orthographic_boundary</code> / <code>orthographic_graticule</code> (the globe outline and meridian/parallel
+   polylines). <code>apply_projection_style(style="globe")</code> reprojects <code>(lon, lat, data)</code> and draws
+   the boundary + graticule via <code>apply_projection_frame</code>; pair it with
+   <a href="../colors-glyph/"><code>colors.apply_data_style</code></a> to compose the full ECMWF/CAMS "haze" globe in
+   a couple of lines (see the Haze-style presets example notebook).</p>
+</li>
+</ol>
+<p>If you already have projected geometry from an upstream engine, use <code>apply_projection_frame</code>
+directly and skip the pyproj-backed presets.</p>
 <h2 id="usage"><a class="toclink" href="#usage">Usage</a><a class="headerlink" href="#usage" title="Permanent link">#</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">&quot;Agg&quot;</span><span class="p">)</span>  <span class="c1"># any backend; Agg shown for headless rendering</span>
@@ -5524,7 +5570,7 @@ cleopatra.geo.add_point_labels: Renders the reprojected points.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.expand", "navigation.indexes", "navigation.footer", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "content.code.copy", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tooltips", "search.highlight", "search.suggest", "toc.follow", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.expand", "navigation.indexes", "navigation.footer", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "content.code.copy", "content.action.edit", "content.action.view", "content.code.annotate", "content.tooltips", "search.highlight", "search.suggest", "toc.follow", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
