@@ -165,6 +165,11 @@ class MeshGlyph(GeoMixin, Glyph):
         #: `tripcolor`/`tricontourf`); an empty list when the line
         #: tricontour has no isolines.
         self.contour_labels = None
+        #: `hillshade` set at construction. `plot()` resets `default_options`
+        #: to the class defaults on each call, so this is restored there when
+        #: `hillshade` is not overridden at `plot()` time -- keeping the option
+        #: honoured at construction, consistent with `ArrayGlyph`/`KDEGlyph`.
+        self._construct_hillshade = self.default_options.get("hillshade", False)
 
     @property
     def node_x(self) -> np.ndarray:
@@ -844,6 +849,12 @@ class MeshGlyph(GeoMixin, Glyph):
             else:
                 render_kwargs[key] = val
         self._merge_kwargs(option_kwargs)
+
+        # The reset above drops a construction-time `hillshade`; restore it
+        # unless this `plot()` call overrides it, so the option behaves like
+        # it does on `ArrayGlyph`/`KDEGlyph` (honoured at construction).
+        if "hillshade" not in option_kwargs:
+            self.default_options["hillshade"] = self._construct_hillshade
 
         # Recompute vmin/vmax from data unless user explicitly passed them.
         if "vmin" not in option_kwargs:

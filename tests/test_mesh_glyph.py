@@ -1446,6 +1446,19 @@ class TestMeshGlyphHillshade:
         assert "Contour" in type(mg.im).__name__
         plt.close("all")
 
+    def test_constructor_time_hillshade_is_honoured(self):
+        """`hillshade` set at construction shades the mesh, like ArrayGlyph/KDEGlyph.
+
+        MeshGlyph.plot() resets default_options each call, so the option is
+        restored from the constructor value when plot() does not override it.
+        """
+        nx, ny, faces, z = self._terrain_mesh()
+        mg = MeshGlyph(nx, ny, faces, hillshade=True)
+        mg.plot(z, location="node", cmap="terrain")
+        assert type(mg.im).__name__ == "PolyCollection", "constructor hillshade should shade"
+        assert mg.im.get_array() is None, "shaded relief uses explicit facecolors"
+        plt.close("all")
+
     def test_hillshade_with_labels_and_lines_does_not_crash(self):
         """`labels=True`, `filled=False`, and `hillshade` together are a safe no-op.
 
