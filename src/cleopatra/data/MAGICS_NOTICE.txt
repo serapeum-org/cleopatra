@@ -9,6 +9,9 @@ are derived from the ECMWF Magics meteorological plotting library:
     Licensed under the Apache License, Version 2.0.
     http://www.apache.org/licenses/LICENSE-2.0
 
+The full text of the Apache License, Version 2.0 is bundled alongside this
+notice as `LICENSE-APACHE-2.0.txt`.
+
 Only Magics' colour *data* and the parameter-to-palette/label associations were
 extracted (from `share/magics/styles/default/palettes.json` and
 `contours.json`). No Magics source code is included or used at runtime.
