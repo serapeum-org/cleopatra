@@ -154,10 +154,12 @@ A typical UGRID file contains:
 | `mesh2d_waterdepth` | `(n_faces,)` | Face-centered data |
 | `mesh2d_s1` | `(n_nodes,)` | Node-centered data |
 
-`MeshGlyph` maps directly to these arrays:
+`MeshGlyph` maps directly to these arrays (this example reads them with
+`netCDF4`, which is **not** a cleopatra dependency — `pip install netCDF4` — since
+cleopatra takes plain NumPy arrays and does no file I/O of its own):
 
 ```python
-import netCDF4 as nc
+import netCDF4 as nc  # not a cleopatra dependency: pip install netCDF4
 
 ds = nc.Dataset("output.nc")
 mg = MeshGlyph(
@@ -274,12 +276,12 @@ mg.plot(
 | Aspect | ArrayGlyph | MeshGlyph |
 |--------|-----------|-----------|
 | **Data type** | Regular 2D/3D numpy arrays | Unstructured mesh (nodes + connectivity) |
-| **Rendering** | `imshow` / `matshow` | `tripcolor` / `tricontourf` |
+| **Rendering** | `imshow` / `pcolormesh` / `contour` / `contourf` | `tripcolor` / `tricontourf` |
 | **Cell shape** | Uniform rectangles | Arbitrary polygons (triangles, quads, mixed) |
 | **Resolution** | Uniform everywhere | Variable -- dense where needed |
 | **Wireframe** | N/A | `plot_outline()` |
 | **Face vs Node** | N/A (always grid cells) | `location="face"` or `location="node"` |
 | **Color scales** | All 5 types | All 5 types |
-| **Animation** | `animate()` over 3D array slices | `animate()` over list of data arrays |
+| **Animation** | `animate()` over 3D array slices | `animate()` over a list or 2D `(n_frames, n_elements)` array |
 | **RGB support** | Yes | No |
 | **Shared base** | `Glyph` | `Glyph` |

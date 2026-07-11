@@ -2,18 +2,31 @@
 
 The glyphs that plot geographic data — `ArrayGlyph`, `MeshGlyph`, `VectorGlyph`,
 `FlowGlyph`, `PolygonGlyph`, and `ScatterGlyph` — inherit
-`cleopatra.geo.GeoMixin`, which adds three convenience methods that drop a
-basemap onto the glyph's **own axes** without importing the standalone helpers:
+`cleopatra.geo.GeoMixin`, which adds a settable `crs` property plus five
+convenience methods that drop a basemap onto the glyph's **own axes** without
+importing the standalone helpers:
 
+- `crs` — a validated coordinate-reference-system property (int EPSG code, CRS
+  string, or `None`); it defaults the `crs=` of `add_tiles` / `add_features` when
+  you omit it, and is validated on assignment.
 - `add_tiles` → [`cleopatra.tiles.add_tiles`](tiles.md)
 - `add_features` → [`cleopatra.reference.add_features`](reference-data.md)
 - `add_relief` → [`cleopatra.reference.add_relief`](reference-data.md)
+- `add_reference_map` — a one-call ECMWF/CAMS-style reference-map preset
+  (`"ecmwf"`, `"ecmwf-dark"`, or `"auto"`): grey coastlines + borders, a dashed
+  lon/lat graticule, °W/°N labels, and a subtle frame.
+- `add_labels` → `cleopatra.geo.add_point_labels` (dot + text markers for named
+  points, e.g. cities).
 
-Each method is a thin wrapper: it draws on `self.ax` (the axes produced when you
-plot the glyph) and forwards every argument to the matching standalone function,
-which remains the single source of truth. Chart and statistical glyphs
+Each basemap method is a thin wrapper: it draws on `self.ax` (the axes produced
+when you plot the glyph) and forwards its arguments to the matching standalone
+function, which remains the single source of truth. Chart and statistical glyphs
 (`LineGlyph`, `StatisticalGlyph`, `KDEGlyph`) deliberately do **not** inherit
 these geo-only methods.
+
+The module also exposes the standalone `add_point_labels` and `available_map_styles`
+functions and the `REFERENCE_MAP_STYLES` preset dict (copy or read it to build a
+custom preset).
 
 ## Usage
 

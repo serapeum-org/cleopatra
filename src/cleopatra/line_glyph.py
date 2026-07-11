@@ -49,10 +49,12 @@ LINE_DEFAULT_OPTIONS = STYLE_DEFAULTS | LINE_DEFAULT_OPTIONS
 class LineGlyph(Glyph):
     """Visualization class for line, bar, and band plots.
 
-    Wraps `Axes.plot`, `Axes.bar`, and `Axes.fill_between`. `y` may be
-    1D (a single series) or 2D (`line`/`bar` draw one series per
-    column). Styling comes from the shared options (`color_1`,
-    `line_width`, `marker`, `linestyle`, `alpha`).
+    Wraps `Axes.plot`, `Axes.bar`, and `Axes.fill_between`. For `line`
+    (and `fill_between`), `y` may be 1D (a single series) or 2D
+    `(n_points, n_series)` — one series per column. `bar` accepts only a
+    1D `y` (a single series) and raises `ValueError` for 2D input.
+    Styling comes from the shared options (`color_1`, `line_width`,
+    `marker`, `linestyle`, `alpha`).
 
     Args:
         x: 1D array of x-coordinates.

@@ -1,16 +1,28 @@
-# Projection Module — Static Projected ("Globe") Map Frames
+# Projection Module — Projected ("Globe") Map Frames & Presets
 
-The `cleopatra.projection` module adds a single, stateless helper:
-`apply_projection_frame` turns a plain matplotlib `Axes` into a static projected
-("globe") frame. It sets the projected limits and equal aspect, draws the projection
-**boundary** (the globe's circle, Robinson's rounded rectangle, ...), optionally **clips**
-the existing data layers to that boundary, and draws the **graticule** polylines.
+The `cleopatra.projection` module has two layers:
 
-The module is **pure matplotlib with no PROJ/CRS dependency**. It only *receives*
-already-computed geometry — boundary vertices, graticule polylines, and projected limits —
-as plain arrays. Whatever produces the projection (reprojecting data and deriving the
-boundary/graticule) lives upstream; cleopatra only renders the result. This keeps the
-engine split clean: the upstream owns CRS/PROJ, cleopatra owns matplotlib.
+1. **`apply_projection_frame`** — the low-level, stateless renderer. It turns a plain
+   matplotlib `Axes` into a static projected ("globe") frame: it sets the projected limits
+   and equal aspect, draws the projection **boundary** (the globe's circle, Robinson's
+   rounded rectangle, ...), optionally **clips** the existing data layers to that boundary,
+   and draws the **graticule** polylines. This function is **pure matplotlib with no
+   PROJ/CRS dependency** — it only *receives* already-computed geometry (boundary vertices,
+   graticule polylines, projected limits) as plain arrays and renders it.
+
+2. **Orthographic globe presets** — higher-level helpers that *do* the reprojection for the
+   common orthographic ("globe") case, and therefore require `pyproj` (the `cleopatra[tiles]`
+   extra): `apply_projection_style` (the one-call entry point, driven by `PROJECTION_STYLES`),
+   `orthographic_grid` / `orthographic_grid_edges` (reproject a lon/lat grid, masking the far
+   hemisphere), `orthographic_points` (reproject scattered lon/lat points), and
+   `orthographic_boundary` / `orthographic_graticule` (the globe outline and meridian/parallel
+   polylines). `apply_projection_style(style="globe")` reprojects `(lon, lat, data)` and draws
+   the boundary + graticule via `apply_projection_frame`; pair it with
+   [`colors.apply_data_style`](colors-glyph.md) to compose the full ECMWF/CAMS "haze" globe in
+   a couple of lines (see the Haze-style presets example notebook).
+
+If you already have projected geometry from an upstream engine, use `apply_projection_frame`
+directly and skip the pyproj-backed presets.
 
 ## Usage
 
