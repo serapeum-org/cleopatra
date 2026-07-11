@@ -760,6 +760,17 @@ class TestStyleNormKinds:
         with pytest.raises(ValueError, match="'norm' must be"):
             _resolve_style_norm(np.array([1.0, 2.0]), {"norm": "bogus"})
 
+    def test_log_reports_clamped_positive_vmin(self):
+        """The `log` branch reports the clamped positive lower bound (matches the LogNorm).
+
+        The returned vmin must equal the `LogNorm`'s vmin so the swatch legend
+        does not label a 0/negative bound the colours never actually use.
+        """
+        norm, vmin, _ = _resolve_style_norm(
+            np.array([0.0, 5.0, 100.0]), {"norm": "log"}
+        )
+        assert vmin > 0 and vmin == norm.vmin
+
 
 class TestCmoceanPresets:
     """Tests for the cmocean ocean/hydrology/DEM preset library in `DATA_STYLES`."""

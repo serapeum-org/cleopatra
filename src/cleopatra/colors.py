@@ -616,6 +616,9 @@ def _resolve_style_norm(
         lo = vmin if (vmin is not None and vmin > 0) else (
             float(positive.min()) if positive.size else 1.0
         )
+        # Report the clamped positive lower bound so the legend matches the
+        # colours the LogNorm actually starts from (not a 0/negative vmin).
+        vmin = lo
         norm = mcolors.LogNorm(vmin=lo, vmax=vmax)
     elif norm_kind == "symlog":
         # Symmetric log: linear within +/- linthresh (so 0 maps cleanly) and
@@ -847,6 +850,7 @@ def apply_data_style(
                 vmin=resolved_vmin,
                 vmax=resolved_vmax,
                 bounds=bounds,
+                norm=norm,
             )
     return images
 
