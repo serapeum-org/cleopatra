@@ -1376,6 +1376,11 @@ def swatch_legend(
         text_color: Color for the label and the endpoint values.
         fontsize: Font size (points) for the label; endpoint labels use
             `fontsize * 0.8`.
+        norm: Optional `matplotlib.colors.Normalize` the layer is drawn with.
+            When given, the bar's colour is sampled through it across the
+            linear `vmin`..`vmax` range, so a nonlinear (log/symlog) mapping
+            shows its true, compressed progression instead of a plain linear
+            ramp. Defaults to `None` (a linear gradient).
 
     Returns:
         Axes: The inset axes holding the swatch (a child of `ax`).
