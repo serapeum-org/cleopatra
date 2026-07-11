@@ -15,6 +15,7 @@ from cleopatra.colors import (
     _category_boundaries,
     _load_magics_presets,
     _load_preset_asset,
+    _resolve_style_norm,
     alpha_scaled_image,
     alpha_scaled_mesh,
     apply_data_style,
@@ -675,6 +676,72 @@ class TestCategoricalPresets:
         """`legend=False` draws the classes without a legend."""
         apply_data_style(ax, {"flood_status": np.array([[0.0, 4.0]])}, style="flood_status", legend=False)
         assert ax.get_legend() is None, "no legend expected when legend=False"
+
+
+class TestFlowRasterPresets:
+    """Tests for the DEM-derived hydrology presets (flow direction / accumulation)."""
+
+    @pytest.fixture
+    def ax(self):
+        """A fresh Axes on the Agg backend, closed after the test."""
+        fig, ax = plt.subplots()
+        yield ax
+        plt.close(fig)
+
+    def test_flow_direction_d8_has_eight_compass_classes(self):
+        """`flow_direction_d8` maps the 8 ESRI D8 codes to compass-labelled classes."""
+        cats = DATA_STYLES["flow_direction_d8"]["flow_direction_d8"]["categories"]
+        assert [c[0] for c in cats] == [1, 2, 4, 8, 16, 32, 64, 128]
+        assert [c[2] for c in cats] == ["E", "SE", "S", "SW", "W", "NW", "N", "NE"]
+
+    def test_flow_direction_d8_maps_codes_to_cyclic_colours(self, ax):
+        """Each D8 code renders as its declared cyclic colour."""
+        img = apply_data_style(
+            ax, {"flow_direction_d8": np.array([[1.0, 128.0]])}, style="flow_direction_d8"
+        )["flow_direction_d8"]
+        rgba = img.get_array()
+        assert to_hex(rgba[0, 0, :3]) == "#e2d9e2"
+        assert to_hex(rgba[0, 1, :3]) == "#cca389"
+
+    def test_flow_accumulation_declares_symlog(self):
+        """`flow_accumulation` uses a symmetric-log norm for its skewed range."""
+        assert DATA_STYLES["flow_accumulation"]["flow_accumulation"]["norm"] == "symlog"
+
+    def test_flow_accumulation_fades_zeros_shows_channels(self, ax):
+        """Zero-accumulation cells fade out; high-accumulation channels are opaque."""
+        img = apply_data_style(
+            ax, {"flow_accumulation": np.array([[0.0, 9000.0]])}, style="flow_accumulation"
+        )["flow_accumulation"]
+        alpha = img.get_array()[..., 3]
+        assert alpha[0, 0] == 0.0, f"zero cell should be transparent, got {alpha[0, 0]}"
+        assert alpha[0, 1] == 1.0, f"channel cell should be opaque, got {alpha[0, 1]}"
+
+
+class TestStyleNormKinds:
+    """Tests for the `norm` key in `_resolve_style_norm` (linear / log / symlog)."""
+
+    def test_default_is_linear(self):
+        """Omitting `norm` yields a plain `Normalize`."""
+        norm, _, _ = _resolve_style_norm(np.array([1.0, 10.0]), {})
+        assert type(norm).__name__ == "Normalize"
+
+    def test_symlog_norm(self):
+        """`norm='symlog'` yields a `SymLogNorm` (handles zeros)."""
+        norm, _, _ = _resolve_style_norm(np.array([0.0, 100.0]), {"norm": "symlog"})
+        assert type(norm).__name__ == "SymLogNorm"
+
+    def test_log_norm_clamps_vmin_to_positive(self):
+        """`norm='log'` yields a `LogNorm` with a positive vmin even if data hits 0."""
+        norm, _, _ = _resolve_style_norm(
+            np.array([0.0, 5.0, 100.0]), {"norm": "log"}
+        )
+        assert type(norm).__name__ == "LogNorm"
+        assert norm.vmin > 0, "LogNorm needs a positive lower bound"
+
+    def test_unknown_norm_raises(self):
+        """An unrecognised `norm` value raises `ValueError`."""
+        with pytest.raises(ValueError, match="'norm' must be"):
+            _resolve_style_norm(np.array([1.0, 2.0]), {"norm": "bogus"})
 
 
 class TestCmoceanPresets:

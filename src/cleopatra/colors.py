@@ -313,6 +313,10 @@ def alpha_scaled_mesh(
 #:   whose absolute range varies (temperature in K vs C, elevation in m, ...).
 #: - ``center`` (optional): render as a **diverging** map symmetric around this
 #:   value (colormap midpoint lands on it) -- for anomaly fields, usually ``0``.
+#: - ``norm`` (optional): ``"linear"`` (default), ``"log"`` (`LogNorm`), or
+#:   ``"symlog"`` (`SymLogNorm`, linear within ``+/-linthresh`` so ``0`` maps
+#:   cleanly -- the robust choice for heavily-skewed, zero-containing fields
+#:   like flow accumulation). ``linthresh`` (optional) sets the symlog threshold.
 #: - Opacity policy (choose at most one): omit all alpha keys for the default
 #:   value-linked opacity (transparent where the value is low -- the overlay
 #:   look); set ``alpha`` to a constant (e.g. ``1.0``) for a plain opaque
@@ -430,6 +434,36 @@ DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
                 (4, "#e31a1c", "Major"),
             ],
             "label": "Flood status",
+        },
+    },
+    # Hydrology rasters derived from a DEM.
+    # D8 flow direction: the 8 ESRI direction codes (powers of two) are discrete
+    # classes, coloured cyclically (twilight) so adjacent compass directions are
+    # similar and opposites distinct. (D-infinity flow *angle* is continuous and
+    # cyclic -- use the "phase" preset for that.)
+    "flow_direction_d8": {
+        "flow_direction_d8": {
+            "categories": [
+                (1, "#e2d9e2", "E"),
+                (2, "#95b5c7", "SE"),
+                (4, "#6276ba", "S"),
+                (8, "#592a8f", "SW"),
+                (16, "#2f1436", "W"),
+                (32, "#741e4f", "NW"),
+                (64, "#b25652", "N"),
+                (128, "#cca389", "NE"),
+            ],
+            "label": "Flow direction (D8)",
+        },
+    },
+    # Flow accumulation is extremely skewed (most cells ~0, channels huge), so a
+    # symmetric-log norm is used; opacity tracks it, so low cells fade and the
+    # channel network stands out. Composes over a hillshaded DEM.
+    "flow_accumulation": {
+        "flow_accumulation": {
+            "cmap": "Blues",
+            "label": "Flow accumulation",
+            "norm": "symlog",
         },
     },
 }
@@ -563,7 +597,30 @@ def _resolve_style_norm(
             vmax = float(finite.max()) if finite.size else 1.0
     if vmin == vmax:
         vmax = vmin + 1.0
-    return mcolors.Normalize(vmin=vmin, vmax=vmax), vmin, vmax
+
+    norm_kind = cfg.get("norm")
+    if norm_kind in (None, "linear"):
+        norm: mcolors.Normalize = mcolors.Normalize(vmin=vmin, vmax=vmax)
+    elif norm_kind == "log":
+        # LogNorm needs a positive lower bound; fall back to the smallest
+        # positive finite value (or 1) when the data reaches 0 or below.
+        positive = finite[finite > 0] if finite.size else finite
+        lo = vmin if (vmin is not None and vmin > 0) else (
+            float(positive.min()) if positive.size else 1.0
+        )
+        norm = mcolors.LogNorm(vmin=lo, vmax=vmax)
+    elif norm_kind == "symlog":
+        # Symmetric log: linear within +/- linthresh (so 0 maps cleanly) and
+        # logarithmic beyond -- the robust choice for skewed, zero-containing
+        # fields such as flow accumulation.
+        norm = mcolors.SymLogNorm(
+            linthresh=float(cfg.get("linthresh", 1.0)), vmin=vmin, vmax=vmax
+        )
+    else:
+        raise ValueError(
+            f"data style 'norm' must be 'linear', 'log', or 'symlog', got {norm_kind!r}"
+        )
+    return norm, vmin, vmax
 
 
 def apply_data_style(
