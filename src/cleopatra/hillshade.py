@@ -67,7 +67,26 @@ def resolve_hillshade(hillshade: bool | dict | None) -> dict[str, Any] | None:
         raise ValueError(
             f"hillshade blend_mode must be one of {_BLEND_MODES}, got {opts['blend_mode']!r}"
         )
+    md = opts["multidirectional"]
+    if md is True or (
+        not isinstance(md, int) and md is not False and not _is_sequence(md)
+    ):
+        raise ValueError(
+            "hillshade 'multidirectional' must be False, an int (number of "
+            f"azimuths), or a sequence of azimuths; got {md!r}."
+        )
     return opts
+
+
+def _is_sequence(value: Any) -> bool:
+    """True for a non-string iterable (a sequence of azimuths)."""
+    if isinstance(value, str):
+        return False
+    try:
+        iter(value)
+        return True
+    except TypeError:
+        return False
 
 
 def _blend_fn(ls: LightSource, blend_mode: str):

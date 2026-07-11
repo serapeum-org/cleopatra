@@ -50,6 +50,16 @@ class TestResolveHillshade:
         with pytest.raises(ValueError, match="blend_mode"):
             resolve_hillshade({"blend_mode": "nope"})
 
+    @pytest.mark.parametrize("value", [False, 4, [0, 90, 180]])
+    def test_multidirectional_valid_forms(self, value):
+        """False, an int, and a sequence are all accepted for `multidirectional`."""
+        assert resolve_hillshade({"multidirectional": value})["multidirectional"] == value
+
+    def test_multidirectional_true_raises_clearly(self):
+        """`multidirectional=True` is rejected with a clear message, not a bare TypeError."""
+        with pytest.raises(ValueError, match="multidirectional"):
+            resolve_hillshade({"multidirectional": True})
+
 
 class TestShadeGrid:
     """Tests for `shade_grid` (raster relief shading)."""
