@@ -518,6 +518,8 @@
       
         
       
+        
+      
     
     
     
@@ -579,7 +581,35 @@
   <span class="md-ellipsis">
     
   
-    Unstructured Mesh Visualization Guide
+    Unstructured meshes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../diagrams/glyph-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glyph architecture
   
 
     
@@ -2118,19 +2148,24 @@ machinery as <strong>glyph-independent</strong> helpers. They operate on <em>any
 <code>matplotlib.animation.FuncAnimation</code> — a sine wave, stock prices, or a map — not only on a
 <code>Glyph</code>'s internal <code>self.anim</code>:</p>
 <ul>
-<li><code>save_animation(anim, path, fps=2)</code> writes an animation to a file, choosing the writer
-  from the extension (GIF via <code>PillowWriter</code>; <code>mov</code>/<code>avi</code>/<code>mp4</code> via <code>FFMpegWriter</code>, which
-  needs FFmpeg installed). The extension is matched <strong>case-insensitively</strong>.</li>
-<li><code>to_gif(anim, fps=2)</code> renders the animation to in-memory <strong>GIF bytes</strong> (handy for serving
-  or embedding) with the temporary file cleaned up afterwards.</li>
+<li><code>save_animation(anim, path, fps=2, ...)</code> writes an animation to a file, choosing the
+  writer from the extension: <code>gif</code> and <code>webp</code> via Pillow, <code>mov</code>/<code>avi</code>/<code>mp4</code> via FFmpeg. The
+  extension is matched <strong>case-insensitively</strong>. Quality controls are keyword-only:
+  <code>crf</code> / <code>bitrate</code> (mutually exclusive), <code>codec</code>, <code>preset</code>, <code>pix_fmt</code>, and <code>dpi</code> for the
+  FFmpeg formats; <code>optimize</code> and <code>loop</code> for the Pillow (GIF/WebP) formats; plus <code>extra_args</code>
+  passed straight through to the writer.</li>
+<li><code>to_bytes(anim, fmt="gif", fps=2, ...)</code> renders to in-memory <strong>bytes</strong> in any supported
+  format (temp file cleaned up afterwards); <code>to_gif(...)</code> and <code>to_mp4(...)</code> are thin
+  wrappers for the two common formats.</li>
 <li><code>embed_gif(anim, fps=2)</code> returns an <code>IPython.display.Image</code> for inline notebook display.
   IPython is imported <strong>lazily</strong> (and is bundled with Jupyter, so any notebook already has
   it); if it is absent, <code>embed_gif</code> raises a clear <code>ModuleNotFoundError</code> with a
   <code>pip install ipython</code> hint — or use <code>to_gif</code> for raw bytes with no IPython dependency.</li>
 </ul>
-<p><code>Glyph.save_animation</code> delegates to <code>save_animation</code>, so the writer/format logic has a
-single source of truth. Downstream packages that build their own <code>FuncAnimation</code> can reuse
-these helpers instead of re-rolling temp-file + writer + <code>IPython.display</code> glue.</p>
+<p><code>SUPPORTED_VIDEO_FORMAT</code> is <code>["gif", "mov", "avi", "mp4", "webp"]</code>. <code>Glyph.save_animation</code>
+delegates to <code>save_animation</code>, so the writer/format logic has a single source of truth.
+Downstream packages that build their own <code>FuncAnimation</code> can reuse these helpers instead of
+re-rolling temp-file + writer + <code>IPython.display</code> glue.</p>
 <h2 id="usage"><a class="toclink" href="#usage">Usage</a><a class="headerlink" href="#usage" title="Permanent link">#</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">&quot;Agg&quot;</span><span class="p">)</span>  <span class="c1"># any backend; Agg shown for headless rendering</span>
@@ -2151,18 +2186,22 @@ these helpers instead of re-rolling temp-file + writer + <code>IPython.display</
 <a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
 <a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="n">anim</span> <span class="o">=</span> <span class="n">FuncAnimation</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">update</span><span class="p">,</span> <span class="n">frames</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">blit</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="n">save_animation</span><span class="p">(</span><span class="n">anim</span><span class="p">,</span> <span class="s2">&quot;wave.gif&quot;</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>   <span class="c1"># write to a file (gif/mov/avi/mp4)</span>
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="n">gif_bytes</span> <span class="o">=</span> <span class="n">to_gif</span><span class="p">(</span><span class="n">anim</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>           <span class="c1"># in-memory GIF bytes</span>
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="n">embed_gif</span><span class="p">(</span><span class="n">anim</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>                     <span class="c1"># inline in a notebook cell</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="n">save_animation</span><span class="p">(</span><span class="n">anim</span><span class="p">,</span> <span class="s2">&quot;wave.gif&quot;</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>   <span class="c1"># write to a file (gif/webp/mov/avi/mp4)</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="n">save_animation</span><span class="p">(</span><span class="n">anim</span><span class="p">,</span> <span class="s2">&quot;wave.mp4&quot;</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">crf</span><span class="o">=</span><span class="mi">18</span><span class="p">)</span>  <span class="c1"># quality-controlled MP4</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="n">gif_bytes</span> <span class="o">=</span> <span class="n">to_gif</span><span class="p">(</span><span class="n">anim</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>           <span class="c1"># in-memory GIF bytes</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="n">embed_gif</span><span class="p">(</span><span class="n">anim</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>                     <span class="c1"># inline in a notebook cell</span>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The output format is taken from the file extension and is matched case-insensitively
-(<code>out.GIF</code> works). Video formats (<code>mov</code>/<code>avi</code>/<code>mp4</code>) require FFmpeg on the <code>PATH</code>; if it
-is missing, <code>save_animation</code> raises a <code>FileNotFoundError</code> pointing at
-<a href="https://ffmpeg.org/">https://ffmpeg.org/</a>. An unsupported extension raises a <code>ValueError</code>. <code>embed_gif</code>
-imports IPython only when called; if IPython is absent it raises a
-<code>ModuleNotFoundError</code> with a <code>pip install ipython</code> hint (use <code>to_gif</code> to avoid IPython).</p>
+(<code>out.GIF</code> works). <code>gif</code> / <code>webp</code> are written with Pillow (no FFmpeg needed). Video
+formats (<code>mov</code>/<code>avi</code>/<code>mp4</code>) use FFmpeg: cleopatra depends on <code>imageio-ffmpeg</code>, which
+<strong>bundles a static FFmpeg binary</strong>, so video export works out of the box — a system
+FFmpeg on the <code>PATH</code> is used in preference when present. A <code>FileNotFoundError</code> (pointing
+at <a href="https://ffmpeg.org/">https://ffmpeg.org/</a>) is raised only if no FFmpeg — bundled or system — is available;
+an unsupported extension raises a <code>ValueError</code>. <code>embed_gif</code> imports IPython only when
+called; if IPython is absent it raises a <code>ModuleNotFoundError</code> with a <code>pip install
+ipython</code> hint (use <code>to_gif</code> to avoid IPython).</p>
 </div>
 <h2 id="module-documentation"><a class="toclink" href="#module-documentation">Module Documentation</a><a class="headerlink" href="#module-documentation" title="Permanent link">#</a></h2>
 
@@ -4387,7 +4426,7 @@ save_animation: Write an animation directly to a file path.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.expand", "navigation.indexes", "navigation.footer", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "content.code.copy", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tooltips", "search.highlight", "search.suggest", "toc.follow", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.expand", "navigation.indexes", "navigation.footer", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "content.code.copy", "content.action.edit", "content.action.view", "content.code.annotate", "content.tooltips", "search.highlight", "search.suggest", "toc.follow", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

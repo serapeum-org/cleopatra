@@ -659,6 +659,8 @@
       
         
       
+        
+      
     
     
     
@@ -720,7 +722,35 @@
   <span class="md-ellipsis">
     
   
-    Unstructured Mesh Visualization Guide
+    Unstructured meshes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diagrams/glyph-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glyph architecture
   
 
     
@@ -2116,9 +2146,13 @@ on your <code>PATH</code> is used in preference when present. GIF and WebP expor
 Pillow and need no FFmpeg.</p>
 </div>
 <h3 id="optional-dependencies-the-tiles-extra"><a class="toclink" href="#optional-dependencies-the-tiles-extra">Optional dependencies — the <code>tiles</code> extra</a><a class="headerlink" href="#optional-dependencies-the-tiles-extra" title="Permanent link">#</a></h3>
-<p>The web-tile basemap helper (<code>cleopatra.tiles.add_tiles</code>) needs four extra packages.
-They are bundled in the <code>cleopatra[tiles]</code> extra (pip) / the <code>cleopatra-tiles</code> package
-(conda) and are otherwise not installed:</p>
+<p>The geospatial basemap features need four extra packages: the web-tile basemap helper
+(<code>cleopatra.tiles.add_tiles</code>), the reference-data layers (<code>cleopatra.reference.add_relief</code>
+for relief PNG decoding, and <code>cleopatra.reference.add_features(..., crs=...)</code> for
+reprojection), the orthographic globe presets in <code>cleopatra.projection</code>, and CRS
+reprojection on the geographic glyphs (<code>GeoMixin.add_tiles</code> / <code>add_features</code> / <code>add_relief</code>
+/ <code>add_reference_map</code>). They are bundled in the <code>cleopatra[tiles]</code> extra (pip) / the
+<code>cleopatra-tiles</code> package (conda) and are otherwise not installed:</p>
 <ul>
 <li><a href="https://github.com/mapbox/mercantile">mercantile</a> (1.2.1 or later)</li>
 <li><a href="https://python-pillow.org/">pillow</a> (12.1.1 or later)</li>
@@ -2277,7 +2311,7 @@ dependencies.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.expand", "navigation.indexes", "navigation.footer", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "content.code.copy", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tooltips", "search.highlight", "search.suggest", "toc.follow", "announce.dismiss"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.expand", "navigation.indexes", "navigation.footer", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "content.code.copy", "content.action.edit", "content.action.view", "content.code.annotate", "content.tooltips", "search.highlight", "search.suggest", "toc.follow", "announce.dismiss"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>

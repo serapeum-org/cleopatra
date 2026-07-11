@@ -16,7 +16,7 @@
         <link rel="prev" href="../scope/">
       
       
-        <link rel="next" href="../reference/glyph/">
+        <link rel="next" href="../diagrams/glyph-architecture/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Unstructured Mesh Visualization Guide - Cleopatra</title>
+        <title>Unstructured meshes - Cleopatra</title>
       
     
     
@@ -120,7 +120,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Unstructured Mesh Visualization Guide
+              Unstructured meshes
             
           </span>
         </div>
@@ -520,6 +520,8 @@
       
         
       
+        
+      
     
     
     
@@ -591,7 +593,7 @@
   <span class="md-ellipsis">
     
   
-    Unstructured Mesh Visualization Guide
+    Unstructured meshes
   
 
     
@@ -609,7 +611,7 @@
   <span class="md-ellipsis">
     
   
-    Unstructured Mesh Visualization Guide
+    Unstructured meshes
   
 
     
@@ -843,6 +845,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diagrams/glyph-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glyph architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -2468,8 +2498,10 @@ variables are organized.</p>
 </tr>
 </tbody>
 </table>
-<p><code>MeshGlyph</code> maps directly to these arrays:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">netCDF4</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nc</span>
+<p><code>MeshGlyph</code> maps directly to these arrays (this example reads them with
+<code>netCDF4</code>, which is <strong>not</strong> a cleopatra dependency — <code>pip install netCDF4</code> — since
+cleopatra takes plain NumPy arrays and does no file I/O of its own):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">netCDF4</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nc</span>  <span class="c1"># not a cleopatra dependency: pip install netCDF4</span>
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">ds</span> <span class="o">=</span> <span class="n">nc</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="s2">&quot;output.nc&quot;</span><span class="p">)</span>
 <a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">mg</span> <span class="o">=</span> <span class="n">MeshGlyph</span><span class="p">(</span>
@@ -2595,7 +2627,7 @@ simulation), <code>animate()</code> creates a frame-by-frame animation:</p>
 </tr>
 <tr>
 <td><strong>Rendering</strong></td>
-<td><code>imshow</code> / <code>matshow</code></td>
+<td><code>imshow</code> / <code>pcolormesh</code> / <code>contour</code> / <code>contourf</code></td>
 <td><code>tripcolor</code> / <code>tricontourf</code></td>
 </tr>
 <tr>
@@ -2626,7 +2658,7 @@ simulation), <code>animate()</code> creates a frame-by-frame animation:</p>
 <tr>
 <td><strong>Animation</strong></td>
 <td><code>animate()</code> over 3D array slices</td>
-<td><code>animate()</code> over list of data arrays</td>
+<td><code>animate()</code> over a list or 2D <code>(n_frames, n_elements)</code> array</td>
 </tr>
 <tr>
 <td><strong>RGB support</strong></td>
@@ -2692,13 +2724,13 @@ simulation), <code>animate()</code> creates a frame-by-frame animation:</p>
         
         
           
-          <a href="../reference/glyph/" class="md-footer__link md-footer__link--next" aria-label="Next: Glyph (base)">
+          <a href="../diagrams/glyph-architecture/" class="md-footer__link md-footer__link--next" aria-label="Next: Glyph architecture">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Glyph (base)
+                Glyph architecture
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -2751,7 +2783,7 @@ simulation), <code>animate()</code> creates a frame-by-frame animation:</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.expand", "navigation.indexes", "navigation.footer", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "content.code.copy", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tooltips", "search.highlight", "search.suggest", "toc.follow", "announce.dismiss"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.expand", "navigation.indexes", "navigation.footer", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "content.code.copy", "content.action.edit", "content.action.view", "content.code.annotate", "content.tooltips", "search.highlight", "search.suggest", "toc.follow", "announce.dismiss"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>

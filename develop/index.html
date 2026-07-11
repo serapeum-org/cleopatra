@@ -613,10 +613,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#cleopatratiles-web-tile-basemaps-optional" class="md-nav__link">
+  <a href="#geospatial-basemaps-geomixin" class="md-nav__link">
     <span class="md-ellipsis">
       
-        cleopatra.tiles — web-tile basemaps (optional)
+        Geospatial basemaps — GeoMixin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cleopatratiles-cleopatrareference-basemaps-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cleopatra.tiles / cleopatra.reference — basemaps (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#composable-data-styles-globe-projections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Composable data styles &amp; globe projections
       
     </span>
   </a>
@@ -712,6 +734,8 @@
       
         
       
+        
+      
     
     
     
@@ -773,7 +797,35 @@
   <span class="md-ellipsis">
     
   
-    Unstructured Mesh Visualization Guide
+    Unstructured meshes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="diagrams/glyph-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glyph architecture
   
 
     
@@ -2146,10 +2198,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#cleopatratiles-web-tile-basemaps-optional" class="md-nav__link">
+  <a href="#geospatial-basemaps-geomixin" class="md-nav__link">
     <span class="md-ellipsis">
       
-        cleopatra.tiles — web-tile basemaps (optional)
+        Geospatial basemaps — GeoMixin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cleopatratiles-cleopatrareference-basemaps-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cleopatra.tiles / cleopatra.reference — basemaps (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#composable-data-styles-globe-projections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Composable data styles &amp; globe projections
       
     </span>
   </a>
@@ -2226,6 +2300,10 @@ sensible scientific defaults.</p>
         glyph["&lt;b&gt;glyph&lt;/b&gt;&lt;br/&gt;Glyph — base class&lt;br/&gt;figure/axes · color norms · classification&lt;br/&gt;colorbars · ticks · point overlays · animation"]
     end
 
+    subgraph geomixin["Geo mixin"]
+        geo["&lt;b&gt;geo&lt;/b&gt;&lt;br/&gt;GeoMixin — crs · add_tiles&lt;br/&gt;add_features · add_relief&lt;br/&gt;add_reference_map · add_labels"]
+    end
+
     subgraph visualizers["Visualizers — subclass Glyph"]
         array_glyph["&lt;b&gt;array_glyph&lt;/b&gt;&lt;br/&gt;ArrayGlyph · FacetGrid&lt;br/&gt;2D/3D rasters, facets, animation"]
         mesh_glyph["&lt;b&gt;mesh_glyph&lt;/b&gt;&lt;br/&gt;MeshGlyph&lt;br/&gt;unstructured meshes"]
@@ -2243,20 +2321,23 @@ sensible scientific defaults.</p>
 
     subgraph support["Supporting utilities"]
         styles["&lt;b&gt;styles&lt;/b&gt;&lt;br/&gt;Styles · Scale · ColorScale&lt;br/&gt;MidpointNormalize · classify · resolve_sizes · legends"]
-        colors["&lt;b&gt;colors&lt;/b&gt;&lt;br/&gt;Colors&lt;br/&gt;hex/RGB conversion · colormaps"]
-        animation["&lt;b&gt;animation&lt;/b&gt;&lt;br/&gt;save_animation · to_gif · embed_gif"]
-        projection["&lt;b&gt;projection&lt;/b&gt;&lt;br/&gt;apply_projection_frame"]
+        colors["&lt;b&gt;colors&lt;/b&gt;&lt;br/&gt;Colors · haze data styles&lt;br/&gt;hex/RGB · colormaps · alpha-scaled layers"]
+        animation["&lt;b&gt;animation&lt;/b&gt;&lt;br/&gt;save_animation · to_gif/mp4 · embed_gif&lt;br/&gt;GIF/WebP/MP4/MOV/AVI · bundled ffmpeg"]
+        projection["&lt;b&gt;projection&lt;/b&gt;&lt;br/&gt;apply_projection_frame&lt;br/&gt;orthographic globe presets"]
         config["&lt;b&gt;config&lt;/b&gt;&lt;br/&gt;Config — matplotlib backend helper"]
     end
 
     subgraph optional["Optional — cleopatra[tiles]"]
         tiles["&lt;b&gt;tiles&lt;/b&gt;&lt;br/&gt;add_tiles · fetch / stitch helpers&lt;br/&gt;XYZ web-tile basemaps"]
+        reference["&lt;b&gt;reference&lt;/b&gt;&lt;br/&gt;add_features · add_relief&lt;br/&gt;Natural Earth · hypsometric relief"]
     end
 
     array_glyph &amp; mesh_glyph &amp; scatter_glyph &amp; vector_glyph &amp; flow_glyph &amp; line_glyph &amp; polygon_glyph &amp; kde_glyph ==&gt;|extends| glyph
+    array_glyph &amp; mesh_glyph &amp; scatter_glyph &amp; vector_glyph &amp; flow_glyph &amp; polygon_glyph -.-&gt;|mixes in| geo
+    geo --&gt;|basemap tiles| tiles
+    geo --&gt;|coastlines · relief| reference
     glyph --&gt;|color scales · classification| styles
-    glyph --&gt;|save / embed| animation
-    array_glyph -.-&gt;|optional basemap| tiles</code></pre>
+    glyph --&gt;|save / embed| animation</code></pre>
 <ul>
 <li><code>glyph</code> provides the shared <code>Glyph</code> base class (figure/axes lifecycle, colorbars, color norms, ticks,
   classification, animation).</li>
@@ -2264,10 +2345,19 @@ sensible scientific defaults.</p>
   <code>array_glyph</code> (<code>ArrayGlyph</code>, <code>FacetGrid</code>), <code>mesh_glyph</code> (<code>MeshGlyph</code>), <code>scatter_glyph</code> (<code>ScatterGlyph</code>),
   <code>vector_glyph</code> (<code>VectorGlyph</code>), <code>flow_glyph</code> (<code>FlowGlyph</code>), <code>line_glyph</code> (<code>LineGlyph</code>), <code>polygon_glyph</code>
   (<code>PolygonGlyph</code>), and <code>kde_glyph</code> (<code>KDEGlyph</code>). <code>statistical_glyph</code> (<code>StatisticalGlyph</code>) stands alone.</li>
-<li><code>tiles</code> adds the optional web-tile basemap helper (<code>cleopatra.tiles.add_tiles</code>), behind the <code>cleopatra[tiles]</code> extra.</li>
-<li><code>colors</code>, <code>styles</code>, <code>animation</code>, <code>projection</code>, and <code>config</code> are supporting utilities (colour conversions; predefined
-  styles, <code>MidpointNormalize</code>, <code>ColorScale</code>, value→size mapping, <code>classify</code> classification schemes and legend builders;
-  glyph-independent animation save/embed helpers; static projected map frames; and the matplotlib-backend helper).</li>
+<li><code>geo</code> provides <code>GeoMixin</code>, mixed into the six geographic visualizers (<code>array_glyph</code>, <code>mesh_glyph</code>,
+  <code>scatter_glyph</code>, <code>vector_glyph</code>, <code>flow_glyph</code>, <code>polygon_glyph</code> — not <code>line_glyph</code>, <code>kde_glyph</code>, or
+  <code>statistical_glyph</code>), adding a settable <code>crs</code> and one-call basemap helpers on the glyph's own axes:
+  <code>add_tiles</code>, <code>add_features</code>, <code>add_relief</code>, <code>add_reference_map</code>, and <code>add_labels</code>.</li>
+<li><code>tiles</code> and <code>reference</code> are the optional (<code>cleopatra[tiles]</code>) basemap data sources <code>geo</code> wraps — <code>tiles</code>
+  fetches/stitches XYZ web-tile mosaics; <code>reference</code> draws fixed public Natural Earth vector layers and a
+  hypsometric relief raster.</li>
+<li><code>colors</code>, <code>styles</code>, <code>animation</code>, <code>projection</code>, and <code>config</code> are supporting utilities (colour conversions plus
+  composable "haze"-style data layers via <code>apply_data_style</code> and alpha-scaled image/mesh rendering; predefined
+  styles, <code>MidpointNormalize</code>, <code>ColorScale</code>, value→size mapping, <code>classify</code> classification schemes and legend
+  builders; glyph-independent animation save/embed helpers spanning GIF/WebP/MP4/MOV/AVI with a bundled-ffmpeg
+  fallback; static projected map frames plus orthographic globe reprojection presets; and the matplotlib-backend
+  helper).</li>
 </ul>
 <h2 id="main-features"><a class="toclink" href="#main-features">Main Features</a><a class="headerlink" href="#main-features" title="Permanent link">#</a></h2>
 <h3 id="arrayglyph-raster-array-visualization"><a class="toclink" href="#arrayglyph-raster-array-visualization"><code>ArrayGlyph</code> — raster / array visualization</a><a class="headerlink" href="#arrayglyph-raster-array-visualization" title="Permanent link">#</a></h3>
@@ -2278,9 +2368,11 @@ sensible scientific defaults.</p>
 <li>xarray-aligned colour options: <code>robust</code>, <code>center</code>, <code>levels</code>, <code>extend</code>, <code>cbar_kwargs</code>.</li>
 <li>Curvilinear / non-uniform grids with <code>coords=(x, y)</code>; faceted grids of subplots with
   <code>facet(col=, row=, col_wrap=, extents=)</code> → <code>FacetGrid</code>.</li>
-<li>Animate 3-D arrays over time (with an optional lazy <code>data_getter</code> for streaming frames)
-  and export to GIF / MP4 / MOV / AVI (via ffmpeg).</li>
+<li>Animate 3-D single-band stacks or 4-D RGB/RGBA true-colour stacks over time (with an optional lazy
+  <code>data_getter</code> for streaming frames) and export to GIF / WebP / MP4 / MOV / AVI (bundled ffmpeg, no separate
+  install).</li>
 <li>Overlay point markers and per-cell value labels.</li>
+<li>Drop in an ECMWF/CAMS-style basemap (coastlines, borders, graticule) with a single <code>add_reference_map</code> call.</li>
 </ul>
 <p>See the <a href="reference/array-glyph/">ArrayGlyph reference</a>.</p>
 <h3 id="meshglyph-unstructured-mesh-visualization"><a class="toclink" href="#meshglyph-unstructured-mesh-visualization"><code>MeshGlyph</code> — unstructured mesh visualization</a><a class="headerlink" href="#meshglyph-unstructured-mesh-visualization" title="Permanent link">#</a></h3>
@@ -2313,7 +2405,8 @@ sensible scientific defaults.</p>
 <p>See the <a href="reference/flow-glyph/">FlowGlyph reference</a>.</p>
 <h3 id="lineglyph-line-bar-band-plots"><a class="toclink" href="#lineglyph-line-bar-band-plots"><code>LineGlyph</code> — line / bar / band plots</a><a class="headerlink" href="#lineglyph-line-bar-band-plots" title="Permanent link">#</a></h3>
 <ul>
-<li>Line, bar, and <code>fill_between</code> (band) plots from 1-D or 2-D <code>y</code> (one series per column).</li>
+<li>Line, bar, and <code>fill_between</code> (band) plots. <code>line</code> accepts 1-D or 2-D <code>y</code> (one series per column); <code>bar</code> takes a
+  single 1-D series.</li>
 </ul>
 <p>See the <a href="reference/line-glyph/">LineGlyph reference</a>.</p>
 <h3 id="polygonglyph-polygon-collections"><a class="toclink" href="#polygonglyph-polygon-collections"><code>PolygonGlyph</code> — polygon collections</a><a class="headerlink" href="#polygonglyph-polygon-collections" title="Permanent link">#</a></h3>
@@ -2326,21 +2419,44 @@ sensible scientific defaults.</p>
 <li>2-D Gaussian kernel-density contours (filled or line), NumPy only — no scipy.</li>
 </ul>
 <p>See the <a href="reference/kde-glyph/">KDEGlyph reference</a>.</p>
-<h3 id="cleopatratiles-web-tile-basemaps-optional"><a class="toclink" href="#cleopatratiles-web-tile-basemaps-optional"><code>cleopatra.tiles</code> — web-tile basemaps (optional)</a><a class="headerlink" href="#cleopatratiles-web-tile-basemaps-optional" title="Permanent link">#</a></h3>
+<h3 id="geospatial-basemaps-geomixin"><a class="toclink" href="#geospatial-basemaps-geomixin">Geospatial basemaps — <code>GeoMixin</code></a><a class="headerlink" href="#geospatial-basemaps-geomixin" title="Permanent link">#</a></h3>
 <ul>
-<li><code>add_tiles(ax, ...)</code> overlays an XYZ web-tile basemap (OpenStreetMap, CartoDB, Esri, …)
-  underneath your data — pure Python, no GDAL. Behind the <code>cleopatra[tiles]</code> extra
-  (<code>conda install -c conda-forge cleopatra-tiles</code>).</li>
+<li><code>ArrayGlyph</code>, <code>MeshGlyph</code>, <code>ScatterGlyph</code>, <code>VectorGlyph</code>, <code>FlowGlyph</code>, and <code>PolygonGlyph</code> mix in <code>GeoMixin</code>,
+  adding a settable <code>crs</code> plus one-call basemap helpers on <code>glyph.ax</code>: <code>add_tiles</code> (XYZ web-tile mosaics),
+  <code>add_features</code> / <code>add_relief</code> (Natural Earth coastlines, borders, land, ocean, rivers, lakes, and a hypsometric
+  relief backdrop), a one-call <code>add_reference_map</code> preset (<code>"ecmwf"</code>, <code>"ecmwf-dark"</code>, or <code>"auto"</code>), and
+  <code>add_labels</code> for city/point labels.</li>
 </ul>
-<p>See the <a href="reference/tiles/">Tiles reference</a>.</p>
+<p>See the <a href="reference/geo/">Geo basemap methods reference</a>, <a href="reference/tiles/">Tiles reference</a>, and
+<a href="reference/reference-data/">Reference data reference</a>.</p>
+<h3 id="cleopatratiles-cleopatrareference-basemaps-optional"><a class="toclink" href="#cleopatratiles-cleopatrareference-basemaps-optional"><code>cleopatra.tiles</code> / <code>cleopatra.reference</code> — basemaps (optional)</a><a class="headerlink" href="#cleopatratiles-cleopatrareference-basemaps-optional" title="Permanent link">#</a></h3>
+<ul>
+<li><code>add_tiles(ax, ...)</code> overlays an XYZ web-tile basemap (OpenStreetMap, CartoDB, Esri, …) underneath your data —
+  pure Python, no GDAL.</li>
+<li><code>reference.add_features</code> / <code>reference.add_relief</code> draw fixed public Natural Earth vector layers and a global
+  hypsometric relief raster (the <code>cartopy</code> <code>ax.coastlines()</code> / <code>stock_img()</code> niche).</li>
+<li>Both live behind the <code>cleopatra[tiles]</code> extra (<code>conda install -c conda-forge cleopatra-tiles</code>).</li>
+</ul>
+<p>See the <a href="reference/tiles/">Tiles reference</a> and <a href="reference/reference-data/">Reference data reference</a>.</p>
+<h3 id="composable-data-styles-globe-projections"><a class="toclink" href="#composable-data-styles-globe-projections">Composable data styles &amp; globe projections</a><a class="headerlink" href="#composable-data-styles-globe-projections" title="Permanent link">#</a></h3>
+<ul>
+<li><code>colors.apply_data_style</code> renders one or more layers with a named preset (currently <code>"haze"</code>, an aerosol /
+  organic-matter / dust look) — per-pixel opacity tied to value via <code>alpha_scaled_image</code> / <code>alpha_scaled_mesh</code>,
+  plus a swatch legend, in one call.</li>
+<li><code>projection.apply_projection_style</code> reprojects <code>(lon, lat, data)</code> onto an orthographic "globe" view (or leaves it
+  flat) via named presets, pairing with <code>apply_data_style</code> to build ECMWF/CAMS-style globe animations in a few
+  lines. The orthographic helpers need the <code>cleopatra[tiles]</code> extra (<code>pyproj</code>).</li>
+</ul>
+<p>See the <a href="notebooks/haze_preset/haze_preset_examples/">Haze-style presets example</a> and the
+<a href="reference/projection/">Projection reference</a>.</p>
 <h3 id="colors-styles-config"><a class="toclink" href="#colors-styles-config"><code>Colors</code>, <code>styles</code>, <code>config</code></a><a class="headerlink" href="#colors-styles-config" title="Permanent link">#</a></h3>
 <ul>
-<li><code>Colors</code> — convert between hex / RGB(0–255) / normalized-RGB(0–1) and build colormaps
-  from images.</li>
-<li><code>styles</code> — predefined line/marker styles, <code>ColorScale</code>, <code>MidpointNormalize</code>, value→size
-  mapping (<code>resolve_sizes</code>), <code>classify</code> classification schemes, and reusable legend builders.</li>
-<li><code>config</code> — an opt-in helper for picking the matplotlib backend (importing <code>cleopatra</code>
-  does not change it).</li>
+<li><code>Colors</code> — convert between hex / RGB(0–255) / normalized-RGB(0–1) and build colormaps from images; plus the
+  ready-made "haze" colormaps and alpha-scaled rendering helpers for the composable data styles above.</li>
+<li><code>styles</code> — predefined line/marker styles, <code>ColorScale</code>, <code>MidpointNormalize</code>, value→size mapping
+  (<code>resolve_sizes</code>), <code>classify</code> classification schemes, reusable legend builders, and the <code>apply_blank_canvas</code>
+  chrome helper.</li>
+<li><code>config</code> — an opt-in helper for picking the matplotlib backend (importing <code>cleopatra</code> does not change it).</li>
 </ul>
 <p>See the <a href="reference/styles-glyph/">Styles reference</a> and <a href="reference/colors-glyph/">Colors reference</a>.</p>
 
@@ -2438,7 +2554,7 @@ sensible scientific defaults.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["navigation.instant", "navigation.tracking", "navigation.expand", "navigation.indexes", "navigation.footer", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "content.code.copy", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tooltips", "search.highlight", "search.suggest", "toc.follow", "announce.dismiss"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["navigation.instant", "navigation.tracking", "navigation.expand", "navigation.indexes", "navigation.footer", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "content.code.copy", "content.action.edit", "content.action.view", "content.code.annotate", "content.tooltips", "search.highlight", "search.suggest", "toc.follow", "announce.dismiss"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
       <script src="assets/javascripts/bundle.79ae519e.min.js"></script>
