@@ -254,6 +254,60 @@ class TestFlowGlyphDrawWidthLegend:
         assert glyph.size_legend_artist is None, "No width legend without widths"
 
 
+class TestFlowGlyphDrawOrder:
+    """Tests for the `draw_order` option (stream-order 'widest on top')."""
+
+    def test_default_is_input(self):
+        """The default `draw_order` is 'input' (no reordering)."""
+        assert FLOW_DEFAULT_OPTIONS["draw_order"] == "input"
+
+    def test_input_order_preserves_path_order(self, paths, values, widths):
+        """With the default 'input', the colour array stays in input order."""
+        glyph = FlowGlyph(paths, values=values, widths=widths)
+        _, _, lc = glyph.plot(add_colorbar=False)
+        assert [float(v) for v in lc.get_array()] == [1.0, 2.0, 3.0, 4.0, 5.0]
+
+    def test_width_order_paints_widest_last(self, paths, widths):
+        """`draw_order='width'` reorders paths so line widths ascend (widest last)."""
+        glyph = FlowGlyph(paths, widths=widths, width_limits=(1, 5), draw_order="width")
+        _, _, lc = glyph.plot()
+        lw = np.asarray(lc.get_linewidths())
+        assert np.all(np.diff(lw) >= 0), f"widths should ascend (widest last): {lw}"
+
+    def test_width_order_reorders_colours_with_paths(self, paths, values, widths):
+        """The colour array is reordered with the paths, so colours stay aligned.
+
+        Test scenario:
+            widths=[2,1,5,3,9] sort ascending at indices [1,0,3,2,4], so the
+            values [1,2,3,4,5] are drawn in the order [2,1,4,3,5].
+        """
+        glyph = FlowGlyph(paths, values=values, widths=widths, draw_order="width")
+        _, _, lc = glyph.plot(add_colorbar=False)
+        assert [float(v) for v in lc.get_array()] == [2.0, 1.0, 4.0, 3.0, 5.0]
+
+    def test_width_order_without_widths_is_harmless(self, paths, values):
+        """`draw_order='width'` with no `widths` has nothing to sort -> input order."""
+        glyph = FlowGlyph(paths, values=values, draw_order="width")
+        _, _, lc = glyph.plot(add_colorbar=False)
+        assert [float(v) for v in lc.get_array()] == [1.0, 2.0, 3.0, 4.0, 5.0]
+
+    def test_invalid_draw_order_raises(self, paths, widths):
+        """An unknown `draw_order` value raises `ValueError`."""
+        glyph = FlowGlyph(paths, widths=widths, draw_order="bogus")
+        with pytest.raises(ValueError, match="draw_order"):
+            glyph.plot()
+
+    def test_width_legend_intact_under_width_order(self, paths, widths):
+        """The width legend still resolves correctly when paths are reordered."""
+        glyph = FlowGlyph(
+            paths, widths=widths, width_limits=(1, 5), draw_order="width",
+            size_legend=True, size_legend_values=[1, 5, 9],
+        )
+        glyph.plot()
+        assert glyph.size_legend_artist is not None
+        assert len(glyph.size_legend_artist.get_texts()) == 3
+
+
 class TestFlowGlyphPlot:
     """Tests for FlowGlyph.plot."""
 
