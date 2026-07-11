@@ -879,10 +879,27 @@ class TestCmoceanPresets:
         self._patch_asset_text(monkeypatch, "{not valid json")
         assert _load_preset_asset("magics_presets.json", "magics") == {}
 
-    def test_record_missing_palette_or_label_degrades_to_empty(self, monkeypatch):
-        """A structurally-broken record (no `palette`/`label`) returns {}, never raises."""
-        self._patch_asset_text(monkeypatch, '{"presets": {"x": {"label": "X"}}}')
+    def test_non_mapping_json_degrades_to_empty(self, monkeypatch):
+        """A structurally-wrong (non-object) asset returns {}, never raises."""
+        self._patch_asset_text(monkeypatch, "[1, 2, 3]")
         assert _load_preset_asset("magics_presets.json", "magics") == {}
+
+    def test_one_bad_record_is_skipped_others_survive(self, monkeypatch):
+        """A single malformed record is skipped; the sibling well-formed presets load."""
+        import json
+
+        asset = json.dumps(
+            {
+                "presets": {
+                    "good1": {"palette": ["#000000", "#ffffff"], "label": "Good 1"},
+                    "bad": {"label": "no palette"},
+                    "good2": {"palette": ["#ff0000", "#00ff00"], "label": "Good 2"},
+                }
+            }
+        )
+        self._patch_asset_text(monkeypatch, asset)
+        loaded = _load_preset_asset("magics_presets.json", "magics")
+        assert set(loaded) == {"good1", "good2"}, f"bad record should not drop siblings: {loaded}"
 
 
 class TestCreateColors:

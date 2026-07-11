@@ -490,18 +490,28 @@ def _load_preset_asset(
         unavailable. Never raises, so a partial install degrades to the
         hand-authored presets rather than breaking `import cleopatra`.
     """
-    # The whole load is guarded: a missing, unreadable, malformed (invalid
-    # JSON), or structurally-broken (missing palette/label) asset degrades to
-    # the hand-authored presets rather than breaking `import cleopatra`.
+    # Outer guard: a missing, unreadable, or malformed-JSON asset (or a
+    # non-mapping structure) degrades to the hand-authored presets rather than
+    # breaking `import cleopatra`.
     try:
         source = (
             importlib.resources.files("cleopatra.data")
             .joinpath(resource)
             .read_text(encoding="utf-8")
         )
-        asset = json.loads(source)
-        presets: dict[str, dict[str, dict[str, Any]]] = {}
-        for key, rec in asset.get("presets", {}).items():
+        records = json.loads(source).get("presets", {}).items()
+    except (
+        FileNotFoundError, ModuleNotFoundError, OSError,
+        json.JSONDecodeError, AttributeError,
+    ):
+        return {}
+
+    # Inner guard: a single structurally-broken record (missing palette/label,
+    # an unparseable colour, a <2-colour palette) is skipped, keeping every
+    # other well-formed preset in the asset.
+    presets: dict[str, dict[str, dict[str, Any]]] = {}
+    for key, rec in records:
+        try:
             layer: dict[str, Any] = {
                 "cmap": LinearSegmentedColormap.from_list(
                     f"{cmap_prefix}_{key}", rec["palette"]
@@ -513,12 +523,9 @@ def _load_preset_asset(
             if rec.get("center") is not None:
                 layer["center"] = rec["center"]
             presets[key] = {key: layer}
-        return presets
-    except (
-        FileNotFoundError, ModuleNotFoundError, OSError,
-        json.JSONDecodeError, KeyError, TypeError, ValueError,
-    ):
-        return {}
+        except (KeyError, TypeError, ValueError, AttributeError):
+            continue
+    return presets
 
 
 def _load_magics_presets() -> dict[str, dict[str, dict[str, Any]]]:
