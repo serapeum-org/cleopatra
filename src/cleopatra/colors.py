@@ -809,7 +809,23 @@ def apply_data_style(
                     **render_kwargs,
                 )
             if legend:
-                disjoint_legend(ax, cat_colors, cat_labels, title=cfg["label"], loc="upper right")
+                # Honour legend_bounds' (x0, y0) as an anchor when given;
+                # otherwise default to the top-right. Re-add any earlier
+                # categorical legend so a second categorical layer stacks
+                # instead of replacing it (matplotlib keeps one legend/axes).
+                prior_legend = ax.get_legend()
+                if legend_bounds is not None:
+                    x0, y0 = legend_bounds[i][0], legend_bounds[i][1]
+                    leg = disjoint_legend(
+                        ax, cat_colors, cat_labels, title=cfg["label"],
+                        loc="upper left", bbox_to_anchor=(x0, y0),
+                    )
+                else:
+                    leg = disjoint_legend(
+                        ax, cat_colors, cat_labels, title=cfg["label"], loc="upper right"
+                    )
+                if prior_legend is not None and prior_legend is not leg:
+                    ax.add_artist(prior_legend)
             continue
 
         norm, resolved_vmin, resolved_vmax = _resolve_style_norm(data, cfg)

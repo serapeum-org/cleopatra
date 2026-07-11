@@ -677,6 +677,27 @@ class TestCategoricalPresets:
         apply_data_style(ax, {"flood_status": np.array([[0.0, 4.0]])}, style="flood_status", legend=False)
         assert ax.get_legend() is None, "no legend expected when legend=False"
 
+    def test_categorical_legend_honours_bounds_and_stacks(self, ax, monkeypatch):
+        """Two categorical layers keep both legends, anchored by `legend_bounds`."""
+        import cleopatra.colors as colors_mod
+
+        styles = dict(
+            colors_mod.DATA_STYLES,
+            two={
+                "a": {"categories": [(0, "#111111", "A"), (1, "#eeeeee", "B")], "label": "A"},
+                "b": {"categories": [(0, "#ff0000", "X"), (1, "#00ff00", "Y")], "label": "B"},
+            },
+        )
+        monkeypatch.setattr(colors_mod, "DATA_STYLES", styles)
+        apply_data_style(
+            ax,
+            {"a": np.array([[0.0, 1.0]]), "b": np.array([[0.0, 1.0]])},
+            style="two",
+            legend_bounds=[(0.02, 0.9, 0.3, 0.05), (0.6, 0.9, 0.3, 0.05)],
+        )
+        legends = [c for c in ax.get_children() if type(c).__name__ == "Legend"]
+        assert len(legends) == 2, "both categorical legends should coexist, not clobber"
+
     def test_out_of_range_and_nodata_codes_are_transparent(self, ax):
         """Codes outside the declared set (sinks, nodata) render transparent, not clamped.
 
