@@ -25,6 +25,7 @@ _SUBMODULES = [
     "flow_glyph",
     "geo",
     "glyph",
+    "hillshade",
     "kde_glyph",
     "line_glyph",
     "mesh_glyph",

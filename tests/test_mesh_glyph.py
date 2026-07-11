@@ -1402,3 +1402,46 @@ class TestMeshGlyphMappable:
         fig, ax = glyph.plot_outline()
         plt.close(fig)
         assert glyph.im is None, "plot_outline should clear im"
+
+
+class TestMeshGlyphHillshade:
+    """Tests for the `hillshade` relief-shading option (triangulated terrain)."""
+
+    @staticmethod
+    def _terrain_mesh(n=12):
+        gx, gy = np.meshgrid(np.linspace(0, 10, n), np.linspace(0, 10, n))
+        nx, ny = gx.ravel(), gy.ravel()
+        z = 50.0 + 150.0 * np.exp(-(((nx - 7) / 2) ** 2 + ((ny - 5) / 3) ** 2)) + 6.0 * np.sin(nx)
+        faces = np.array(
+            [[j * n + i, j * n + i + 1, j * n + i + n + 1, j * n + i + n]
+             for j in range(n - 1) for i in range(n - 1)]
+        )
+        return nx, ny, faces, z
+
+    def test_node_hillshade_draws_shaded_polycollection(self):
+        """Node-centered `hillshade` renders a per-face shaded `tripcolor` mesh."""
+        nx, ny, faces, z = self._terrain_mesh()
+        mg = MeshGlyph(nx, ny, faces)
+        mg.plot(z, location="node", cmap="terrain", hillshade={"vert_exag": 3})
+        facecolors = mg.im.get_facecolor()
+        assert facecolors.shape[1] == 4
+        assert len(np.unique(np.round(facecolors[:, 0], 3))) > 5, "faces should vary"
+        assert mg._cbar is not None
+        plt.close("all")
+
+    def test_face_data_with_hillshade_raises(self):
+        """Hillshade needs node elevation; face-centered data raises `ValueError`."""
+        nx, ny, faces, _ = self._terrain_mesh()
+        with pytest.raises(ValueError, match="node-centered"):
+            MeshGlyph(nx, ny, faces).plot(
+                np.ones(len(faces)), location="face", hillshade=True
+            )
+        plt.close("all")
+
+    def test_without_hillshade_uses_contours(self):
+        """Node data without hillshade still uses the contour path (not tripcolor)."""
+        nx, ny, faces, z = self._terrain_mesh()
+        mg = MeshGlyph(nx, ny, faces)
+        mg.plot(z, location="node")
+        assert "Contour" in type(mg.im).__name__
+        plt.close("all")

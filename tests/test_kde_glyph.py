@@ -504,3 +504,37 @@ class TestKDEGlyphPlot:
         x, y = cloud
         KDEGlyph(x, y, gridsize=30).plot()
         assert "scipy" not in sys.modules, "KDEGlyph must not import scipy"
+
+
+class TestKDEGlyphHillshade:
+    """Tests for the `hillshade` option (relief-shaded density surface)."""
+
+    @staticmethod
+    def _cloud():
+        rng = np.random.default_rng(3)
+        x = np.concatenate([rng.normal(-2, 0.7, 200), rng.normal(2, 1.0, 150)])
+        y = np.concatenate([rng.normal(-1, 0.6, 200), rng.normal(2, 1.2, 150)])
+        return x, y
+
+    def test_hillshade_draws_shaded_image(self):
+        """`hillshade` renders the density as a shaded RGBA image, not contours."""
+        x, y = self._cloud()
+        _, _, im = KDEGlyph(x, y, gridsize=40, cmap="magma", hillshade=True).plot()
+        assert type(im).__name__ == "AxesImage"
+        assert im.get_array().shape[-1] == 4
+        plt.close("all")
+
+    def test_colorbar_present_via_proxy(self):
+        """A colorbar attaches to the density via a ScalarMappable proxy."""
+        x, y = self._cloud()
+        g = KDEGlyph(x, y, gridsize=40, hillshade={"vert_exag": 20})
+        g.plot()
+        assert g.cbar is not None
+        plt.close("all")
+
+    def test_without_hillshade_still_contours(self):
+        """Without hillshade the KDE still draws a contour set."""
+        x, y = self._cloud()
+        _, _, cs = KDEGlyph(x, y, gridsize=40).plot()
+        assert isinstance(cs, QuadContourSet)
+        plt.close("all")

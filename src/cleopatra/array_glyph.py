@@ -35,11 +35,12 @@ from hpc.indexing import get_indices2
 from matplotlib.animation import FuncAnimation
 from matplotlib.axes import Axes
 from matplotlib.colorbar import Colorbar
-from matplotlib.colors import Colormap
+from matplotlib.colors import Colormap, Normalize
 from matplotlib.figure import Figure
 from PIL import Image
 
 from cleopatra.geo import GeoMixin
+from cleopatra.hillshade import resolve_hillshade, shade_grid
 from cleopatra.glyph import Glyph, _root_figure
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import ColorScale  # re-exported for convenience  # noqa: F401
@@ -62,6 +63,7 @@ ARRAY_DEFAULT_OPTIONS = {
     "add_colorbar": True,
     "labels": False,
     "label_kw": None,
+    "hillshade": False,
 }
 ARRAY_DEFAULT_OPTIONS = STYLE_DEFAULTS | ARRAY_DEFAULT_OPTIONS
 #: Backwards-compatible alias for the array glyph's default options
@@ -1496,6 +1498,16 @@ class ArrayGlyph(GeoMixin, Glyph):
             raise ValueError(
                 f"Invalid kind={kind!r}. Valid kinds are {VALID_PLOT_KINDS}."
             )
+
+        # Relief shading: blend a hillshade of the raster into the drawn image
+        # so wide-range DEMs read by form, not colour alone. Applies to the
+        # regular-grid `imshow` path; the mappable keeps its cmap/norm so the
+        # colorbar is unaffected. See `cleopatra.hillshade.shade_grid`.
+        hillshade = resolve_hillshade(self.default_options.get("hillshade"))
+        if hillshade is not None and kind == "imshow":
+            hs_norm = norm if norm is not None else Normalize(vmin=vmin, vmax=vmax)
+            elevation = np.asarray(ma.filled(plot_arr, np.nan), dtype=float)
+            im.set_data(shade_grid(elevation, cmap, norm=hs_norm, **hillshade))
 
         return im, cbar_kw
 

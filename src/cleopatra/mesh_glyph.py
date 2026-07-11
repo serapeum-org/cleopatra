@@ -38,6 +38,7 @@ from matplotlib.animation import FuncAnimation
 
 from cleopatra.geo import GeoMixin
 from cleopatra.glyph import Glyph
+from cleopatra.hillshade import resolve_hillshade, shade_faces
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 MESH_DEFAULT_OPTIONS = {
@@ -45,6 +46,7 @@ MESH_DEFAULT_OPTIONS = {
     "vmax": None,
     "labels": False,
     "label_kw": None,
+    "hillshade": False,
 }
 MESH_DEFAULT_OPTIONS = STYLE_DEFAULTS | MESH_DEFAULT_OPTIONS
 
@@ -627,6 +629,57 @@ class MeshGlyph(GeoMixin, Glyph):
             return ax.tricontourf(tri, data, **contour_kw)
         return ax.tricontour(tri, data, **contour_kw)
 
+    def _render_shaded_relief(
+        self,
+        ax: Any,
+        data: np.ndarray,
+        edgecolor: str,
+        norm: Any,
+        hillshade: dict[str, Any],
+        **render_kwargs: Any,
+    ) -> Any:
+        """Render the mesh as a relief-shaded terrain surface (node elevation).
+
+        Colours each triangle by its mean node elevation, then blends the
+        triangle-normal hillshade into those colours via
+        `cleopatra.hillshade.shade_faces`, so a wide-range terrain mesh reads
+        by form. The returned `tripcolor` mappable keeps its cmap/norm, so the
+        colorbar is unaffected. Requires node-centered `data` (the surface's
+        per-node elevation).
+
+        Args:
+            ax: Axes to draw on.
+            data: Node-centered elevation (one value per mesh node).
+            edgecolor: Triangle edge colour.
+            norm: Colour normalization, or `None` to use `vmin`/`vmax`.
+            hillshade: Resolved hillshade settings.
+            **render_kwargs: Forwarded to `tripcolor`.
+
+        Returns:
+            The `tripcolor` mappable, with per-face colours set to the shaded
+            RGBA.
+        """
+        tri = self.triangulation
+        z_nodes = np.asarray(data, dtype=float)
+        tri_faces = tri.triangles
+        tri_z = z_nodes[tri_faces].mean(axis=1)  # per-triangle base value
+
+        kw: dict[str, Any] = {"cmap": self.default_options["cmap"], "edgecolors": edgecolor}
+        if norm is not None:
+            kw["norm"] = norm
+        else:
+            kw["vmin"] = self.default_options["vmin"]
+            kw["vmax"] = self.default_options["vmax"]
+        kw.update(render_kwargs)
+        tpc = ax.tripcolor(tri, facecolors=tri_z, **kw)
+
+        node_xy = np.column_stack([tri.x, tri.y])
+        base_rgba = tpc.to_rgba(tri_z)
+        shaded = shade_faces(node_xy, tri_faces, z_nodes, base_rgba, **hillshade)
+        tpc.set_array(None)
+        tpc.set_facecolor(shaded)
+        return tpc
+
     def plot(
         self,
         data: np.ndarray,
@@ -823,15 +876,25 @@ class MeshGlyph(GeoMixin, Glyph):
         # every other path leaves it `None`.
         self.contour_labels = None
 
-        tpc = self._render_mesh(
-            self.ax,
-            data,
-            location,
-            edgecolor=edgecolor,
-            norm=norm,
-            filled=filled,
-            **render_kwargs,
-        )
+        hillshade = resolve_hillshade(self.default_options.get("hillshade"))
+        if hillshade is not None:
+            if location != "node":
+                raise ValueError(
+                    "hillshade needs node-centered elevation; pass location='node'"
+                )
+            tpc = self._render_shaded_relief(
+                self.ax, data, edgecolor, norm, hillshade, **render_kwargs
+            )
+        else:
+            tpc = self._render_mesh(
+                self.ax,
+                data,
+                location,
+                edgecolor=edgecolor,
+                norm=norm,
+                filled=filled,
+                **render_kwargs,
+            )
         # Expose the colour-mapped artist (the `PolyCollection` from
         # `tripcolor`, or the `TriContourSet` from `tricontour(f)`) so a
         # caller can attach a colorbar/register the layer without scraping
