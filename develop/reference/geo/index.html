@@ -518,8 +518,6 @@
       
         
       
-        
-      
     
     
     
@@ -581,35 +579,7 @@
   <span class="md-ellipsis">
     
   
-    Unstructured meshes
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../diagrams/glyph-architecture/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Glyph architecture
+    Unstructured Mesh Visualization Guide
   
 
     
@@ -1402,6 +1372,8 @@
       
         
       
+        
+      
     
     
     
@@ -1576,6 +1548,34 @@
     
   
     Composable haze-style presets: data style + projection style
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebooks/data_style_presets/data_style_presets_examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data-style presets: name a look, pass a field
   
 
     
@@ -2071,30 +2071,18 @@
 <h1 id="geographic-basemap-methods-glyphs"><a class="toclink" href="#geographic-basemap-methods-glyphs">Geographic basemap methods (glyphs)</a><a class="headerlink" href="#geographic-basemap-methods-glyphs" title="Permanent link">#</a></h1>
 <p>The glyphs that plot geographic data — <code>ArrayGlyph</code>, <code>MeshGlyph</code>, <code>VectorGlyph</code>,
 <code>FlowGlyph</code>, <code>PolygonGlyph</code>, and <code>ScatterGlyph</code> — inherit
-<code>cleopatra.geo.GeoMixin</code>, which adds a settable <code>crs</code> property plus five
-convenience methods that drop a basemap onto the glyph's <strong>own axes</strong> without
-importing the standalone helpers:</p>
+<code>cleopatra.geo.GeoMixin</code>, which adds three convenience methods that drop a
+basemap onto the glyph's <strong>own axes</strong> without importing the standalone helpers:</p>
 <ul>
-<li><code>crs</code> — a validated coordinate-reference-system property (int EPSG code, CRS
-  string, or <code>None</code>); it defaults the <code>crs=</code> of <code>add_tiles</code> / <code>add_features</code> when
-  you omit it, and is validated on assignment.</li>
 <li><code>add_tiles</code> → <a href="../tiles/"><code>cleopatra.tiles.add_tiles</code></a></li>
 <li><code>add_features</code> → <a href="../reference-data/"><code>cleopatra.reference.add_features</code></a></li>
 <li><code>add_relief</code> → <a href="../reference-data/"><code>cleopatra.reference.add_relief</code></a></li>
-<li><code>add_reference_map</code> — a one-call ECMWF/CAMS-style reference-map preset
-  (<code>"ecmwf"</code>, <code>"ecmwf-dark"</code>, or <code>"auto"</code>): grey coastlines + borders, a dashed
-  lon/lat graticule, °W/°N labels, and a subtle frame.</li>
-<li><code>add_labels</code> → <code>cleopatra.geo.add_point_labels</code> (dot + text markers for named
-  points, e.g. cities).</li>
 </ul>
-<p>Each basemap method is a thin wrapper: it draws on <code>self.ax</code> (the axes produced
-when you plot the glyph) and forwards its arguments to the matching standalone
-function, which remains the single source of truth. Chart and statistical glyphs
+<p>Each method is a thin wrapper: it draws on <code>self.ax</code> (the axes produced when you
+plot the glyph) and forwards every argument to the matching standalone function,
+which remains the single source of truth. Chart and statistical glyphs
 (<code>LineGlyph</code>, <code>StatisticalGlyph</code>, <code>KDEGlyph</code>) deliberately do <strong>not</strong> inherit
 these geo-only methods.</p>
-<p>The module also exposes the standalone <code>add_point_labels</code> and <code>available_map_styles</code>
-functions and the <code>REFERENCE_MAP_STYLES</code> preset dict (copy or read it to build a
-custom preset).</p>
 <h2 id="usage"><a class="toclink" href="#usage">Usage</a><a class="headerlink" href="#usage" title="Permanent link">#</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">&quot;Agg&quot;</span><span class="p">)</span>  <span class="c1"># any backend</span>
@@ -5019,7 +5007,7 @@ rather than the data coordinates.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.expand", "navigation.indexes", "navigation.footer", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "content.code.copy", "content.action.edit", "content.action.view", "content.code.annotate", "content.tooltips", "search.highlight", "search.suggest", "toc.follow", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.expand", "navigation.indexes", "navigation.footer", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "content.code.copy", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tooltips", "search.highlight", "search.suggest", "toc.follow", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
