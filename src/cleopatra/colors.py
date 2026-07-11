@@ -775,20 +775,27 @@ def apply_data_style(
         categories = cfg.get("categories")
         if categories is not None:
             cats = sorted(categories, key=lambda c: c[0])
+            cat_values = [float(c[0]) for c in cats]
             cat_colors = [c[1] for c in cats]
             cat_labels = [c[2] for c in cats]
             cat_cmap = mcolors.ListedColormap(cat_colors)
             cat_norm = mcolors.BoundaryNorm(
-                _category_boundaries([float(c[0]) for c in cats]), len(cat_colors)
+                _category_boundaries(cat_values), len(cat_colors)
             )
+            # Only cells whose value is one of the declared class codes are
+            # drawn; anything else (nodata sentinels, D8 sinks, out-of-range
+            # codes) is masked to NaN so it renders transparent instead of
+            # being clamped to an end category at full opacity.
+            cat_data = np.where(np.isin(data, cat_values), data, np.nan)
             if curvilinear:
                 images[name] = alpha_scaled_mesh(
-                    ax, x, y, data, cat_cmap, norm=cat_norm, constant_alpha=1.0,
+                    ax, x, y, cat_data, cat_cmap, norm=cat_norm, constant_alpha=1.0,
                     **render_kwargs,
                 )
             else:
                 images[name] = alpha_scaled_image(
-                    ax, data, cat_cmap, norm=cat_norm, constant_alpha=1.0, **render_kwargs
+                    ax, cat_data, cat_cmap, norm=cat_norm, constant_alpha=1.0,
+                    **render_kwargs,
                 )
             if legend:
                 disjoint_legend(ax, cat_colors, cat_labels, title=cfg["label"], loc="upper right")

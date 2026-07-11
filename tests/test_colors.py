@@ -677,6 +677,23 @@ class TestCategoricalPresets:
         apply_data_style(ax, {"flood_status": np.array([[0.0, 4.0]])}, style="flood_status", legend=False)
         assert ax.get_legend() is None, "no legend expected when legend=False"
 
+    def test_out_of_range_and_nodata_codes_are_transparent(self, ax):
+        """Codes outside the declared set (sinks, nodata) render transparent, not clamped.
+
+        Test scenario:
+            A categorical field carrying values that are not declared class
+            codes -- a D8 sink (0), a nodata sentinel (255), or an out-of-range
+            flood code -- must be masked to transparent rather than clamped to
+            the first/last category at full opacity.
+        """
+        img = apply_data_style(
+            ax, {"flood_status": np.array([[-3.0, 0.0, 4.0, 7.0]])}, style="flood_status"
+        )["flood_status"]
+        alpha = img.get_array()[..., 3]
+        assert list(alpha[0]) == [0.0, 1.0, 1.0, 0.0], (
+            f"only declared codes should be opaque, got {list(alpha[0])}"
+        )
+
 
 class TestFlowRasterPresets:
     """Tests for the DEM-derived hydrology presets (flow direction / accumulation)."""
