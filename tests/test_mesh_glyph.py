@@ -1445,3 +1445,15 @@ class TestMeshGlyphHillshade:
         mg.plot(z, location="node")
         assert "Contour" in type(mg.im).__name__
         plt.close("all")
+
+    def test_hillshade_with_labels_and_lines_does_not_crash(self):
+        """`labels=True`, `filled=False`, and `hillshade` together are a safe no-op.
+
+        The shaded relief is a `PolyCollection` with no isolines, so `clabel`
+        must be skipped rather than raising `AttributeError`.
+        """
+        nx, ny, faces, z = self._terrain_mesh()
+        mg = MeshGlyph(nx, ny, faces)
+        mg.plot(z, location="node", filled=False, labels=True, hillshade=True)
+        assert mg.contour_labels is None, "labels are a no-op under hillshade"
+        plt.close("all")

@@ -903,8 +903,15 @@ class MeshGlyph(GeoMixin, Glyph):
 
         # Inline numeric labels on the isolines. Only meaningful for line
         # tricontours (`location="node"`, `filled=False`); `labels=True` is
-        # a documented no-op for `tripcolor` (face data) and `tricontourf`.
-        if location == "node" and not filled and self.default_options.get("labels"):
+        # a documented no-op for `tripcolor` (face data), `tricontourf`, and
+        # the shaded-relief surface (`hillshade`, a `PolyCollection` with no
+        # isolines -- `clabel` would raise on it).
+        if (
+            location == "node"
+            and not filled
+            and hillshade is None
+            and self.default_options.get("labels")
+        ):
             label_kw = {
                 "inline": True,
                 "fontsize": 8,
