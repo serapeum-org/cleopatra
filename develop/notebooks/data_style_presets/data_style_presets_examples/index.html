@@ -1660,6 +1660,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#hydrology-rasters-flow-direction-flow-accumulation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hydrology rasters: flow direction &amp; flow accumulation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#takeaway" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2168,6 +2179,17 @@
     <span class="md-ellipsis">
       
         Categorical presets -- discrete classes, not a colour ramp
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hydrology-rasters-flow-direction-flow-accumulation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hydrology rasters: flow direction &amp; flow accumulation
       
     </span>
   </a>
@@ -2939,7 +2961,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </style>
 <!-- End of mermaid configuration --><div class="jupyter-wrapper">
 <div class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=8b807e6f">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=1463ea5c">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -2964,7 +2986,7 @@ for the stylised, multi-layer aerosol look.</p>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=fb9345ef">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=dbb2b772">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -2977,7 +2999,7 @@ call that applies a preset), the <code>DATA_STYLES</code> registry (to list what
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=e6f8bcaa">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=5957d76a">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3047,6 +3069,8 @@ sorted(DATA_STYLES)  # the presets available by name</div>
  'duaod550',
  'elevation',
  'flood_status',
+ 'flow_accumulation',
+ 'flow_direction_d8',
  'frpfire',
  'go3',
  'gtco3',
@@ -3120,7 +3144,7 @@ sorted(DATA_STYLES)  # the presets available by name</div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=a7ec2d80">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=42b7bc9a">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3135,7 +3159,7 @@ raster or NetCDF slice you would normally load with <code>pyramids</code>.</p>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=7e368035">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=f5323cca">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3174,7 +3198,7 @@ def blob(cx, cy, sx, sy):
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=17331fcc">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=685f4722">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3234,7 +3258,7 @@ def blob(cx, cy, sx, sy):
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=733f9d4d">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=3ff611d4">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3248,7 +3272,7 @@ the axes afterwards.</p>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=9e8f1eb0">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=5f153cae">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3295,7 +3319,7 @@ plt.show()</div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=ad9575fb">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=a270896c">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3308,7 +3332,7 @@ itself to this field's own min/max, drew the whole field opaque, and captioned t
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=25d388c8">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=2b61a1b6">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3321,7 +3345,7 @@ grey axes background shows through wherever it is dry.</p>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=09faa81d">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=dd450bcb">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3374,7 +3398,7 @@ plt.tight_layout(); plt.show()</div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=49f6e4c3">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=fda43320">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3434,7 +3458,7 @@ different field under that key to style any raster with that look.</p>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=de6274c2">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=74abc76a">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3448,7 +3472,7 @@ scales, transcribed from the open-source Magics engine. They are ordinary
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=53c4088f">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=1a7a1756">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3499,7 +3523,7 @@ plt.tight_layout(); plt.show()</div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=cda81dfd">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=5a0d41bb">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3511,7 +3535,7 @@ plt.tight_layout(); plt.show()</div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=c3603403">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=1d92ee15">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3524,7 +3548,7 @@ degrees Celsius or kelvin -- only the legend numbers change.</p>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=3cdc88e2">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=d98c2012">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3577,7 +3601,7 @@ plt.tight_layout(); plt.show()</div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d704b6ca">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=4737452d">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3590,7 +3614,7 @@ explicit <code>vmin</code>/<code>vmax</code>.</p>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=f6981f5b">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=acaf8ab7">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3603,7 +3627,7 @@ midpoint (white) lands exactly on 0 even when the data is lopsided (here it runs
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=7ed0d8ba">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=bda01f1d">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3650,7 +3674,7 @@ plt.show()</div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=de8e7ac2">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=eca65f1f">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3662,7 +3686,7 @@ colour tells you the <em>sign</em> at a glance, which an auto-ranged sequential 
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=9a81aa25">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=b65a66d0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3676,7 +3700,7 @@ contrast is clear.</p>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=304a3b36">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=06386c29">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3727,7 +3751,7 @@ plt.tight_layout(); plt.show()</div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d1be95e2">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=2fec2aa4">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3740,7 +3764,7 @@ policy, a decoupled <em>glowing rim</em>, powers the multi-layer <code>haze</cod
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=44a6112b">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=dca10ef8">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3754,7 +3778,7 @@ Apache-2.0). Each is keyed by its <strong>GRIB shortName</strong> and labelled w
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=a579b31a">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=c2e6b77b">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3796,7 +3820,7 @@ for key in ['2t', 'tp', 'aod550', 'co', 'go3', 'hcc']:
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>85 Magics presets loaded, e.g.:
+<pre>87 Magics presets loaded, e.g.:
   2t       -&gt; 2 metre temperature
   tp       -&gt; Total precipitation
   aod550   -&gt; Total Aerosol Optical Depth at 550nm
@@ -3810,7 +3834,7 @@ for key in ['2t', 'tp', 'aod550', 'co', 'go3', 'hcc']:
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=254d634c">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=6ff467eb">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3825,7 +3849,7 @@ three fill the panel, while <code>hcc</code> (high cloud cover) lets the backdro
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=068dc66e">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=b43c3815">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3880,7 +3904,7 @@ plt.tight_layout(); plt.show()</div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=a71682ce">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=58b4c5c0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3894,7 +3918,7 @@ parameter. To find the preset for a variable, match your data's GRIB shortName a
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=87529891">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=504582e9">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3910,7 +3934,7 @@ cover variables the weather-focused presets do not: <code>salinity</code>, <code
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=b243ddb6">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=a32c7a8f">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3967,7 +3991,7 @@ for key in cmocean_keys:
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=a19621fd">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d35cc286">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3981,7 +4005,7 @@ matching synthetic fields; note how <code>topography</code> splits land from sea
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=beb498e2">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=1679449a">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -4046,7 +4070,7 @@ plt.tight_layout(); plt.show()</div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=35d1396a">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=6b4b883e">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -4059,7 +4083,7 @@ and the high half in its land colours, split exactly at zero -- the same <code>c
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=c664c641">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=bbcf5d9b">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -4073,7 +4097,7 @@ bundled <code>flood_status</code> preset uses the near-universal NWS/USGS 5-clas
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=c106d4fe">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=9dbf5b62">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -4110,7 +4134,7 @@ for level, radius in [(0, 1.0), (1, 0.8), (2, 0.6), (3, 0.4), (4, 0.2)]:
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=9a7cd1f8">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=92bc4edb">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -4159,7 +4183,7 @@ plt.show()</div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=1335180b">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=b8620fda">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -4173,7 +4197,158 @@ layer carries a <code>categories</code> list of <code>(class_value, colour, labe
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=412741d3">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=82d16327">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="hydrology-rasters-flow-direction-flow-accumulation">Hydrology rasters: flow direction &amp; flow accumulation<a class="anchor-link" href="#hydrology-rasters-flow-direction-flow-accumulation">¶</a></h2><p>Two DEM-derived rasters each need a specific treatment. <strong>D8 flow direction</strong> is a raster of 8 discrete
+direction codes (<code>1</code>=E, <code>2</code>=SE, ... <code>128</code>=NE), so <code>flow_direction_d8</code> is a <strong>categorical</strong> preset coloured
+cyclically -- adjacent compass directions look similar, opposites distinct. <strong>Flow accumulation</strong> is wildly
+skewed (most cells ~0, channels enormous), so <code>flow_accumulation</code> uses a <strong>symmetric-log</strong> norm; its opacity
+tracks the norm, so zero cells fade out and the channel network stands out (ideal over a hillshaded DEM).</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=ffbc1c78">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [16]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="CodeMirror cm-s-jupyter">
+<div class="zeroclipboard-container">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-16">
+<div>
+<span class="notice" hidden="">Copied!</span>
+<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
+<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+</clipboard-copy>
+</div>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="c1"># D8 flow direction: quantise the downhill angle to the 8 ESRI direction codes</span>
+<span class="n">yy2</span><span class="p">,</span> <span class="n">xx2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mgrid</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">80</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="mi">100</span><span class="p">]</span>
+<span class="n">angle</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="mi">40</span> <span class="o">-</span> <span class="n">yy2</span><span class="p">,</span> <span class="mi">50</span> <span class="o">-</span> <span class="n">xx2</span><span class="p">))</span> <span class="o">+</span> <span class="mi">360</span><span class="p">)</span> <span class="o">%</span> <span class="mi">360</span>
+<span class="n">codes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">])</span>   <span class="c1"># E, SE, S, SW, W, NW, N, NE (clockwise)</span>
+<span class="n">d8</span> <span class="o">=</span> <span class="n">codes</span><span class="p">[(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(((</span><span class="mi">360</span> <span class="o">-</span> <span class="n">angle</span><span class="p">)</span> <span class="o">%</span> <span class="mi">360</span><span class="p">)</span> <span class="o">/</span> <span class="mi">45</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">))</span> <span class="o">%</span> <span class="mi">8</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+
+<span class="c1"># flow accumulation: a small branching channel network (skewed -- zeros plus huge values)</span>
+<span class="n">acc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">d8</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">draw</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+    <span class="n">px</span> <span class="o">=</span> <span class="p">(</span><span class="n">x0</span> <span class="o">+</span> <span class="p">(</span><span class="n">x1</span> <span class="o">-</span> <span class="n">x0</span><span class="p">)</span> <span class="o">*</span> <span class="n">t</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">);</span> <span class="n">py</span> <span class="o">=</span> <span class="p">(</span><span class="n">y0</span> <span class="o">+</span> <span class="p">(</span><span class="n">y1</span> <span class="o">-</span> <span class="n">y0</span><span class="p">)</span> <span class="o">*</span> <span class="n">t</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)):</span>
+        <span class="n">acc</span><span class="p">[</span><span class="n">py</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">px</span><span class="p">[</span><span class="n">k</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">acc</span><span class="p">[</span><span class="n">py</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">px</span><span class="p">[</span><span class="n">k</span><span class="p">]],</span> <span class="n">v</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">k</span> <span class="o">/</span> <span class="mi">40</span><span class="p">))</span>
+<span class="n">draw</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">2500</span><span class="p">);</span> <span class="n">draw</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">90</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">2000</span><span class="p">);</span> <span class="n">draw</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">72</span><span class="p">,</span> <span class="mi">1200</span><span class="p">)</span>
+<span class="n">acc</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">acc</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+</pre></div>
+<div class="clipboard-copy-txt" id="cell-16"># D8 flow direction: quantise the downhill angle to the 8 ESRI direction codes
+yy2, xx2 = np.mgrid[0:80, 0:100]
+angle = (np.degrees(np.arctan2(40 - yy2, 50 - xx2)) + 360) % 360
+codes = np.array([1, 2, 4, 8, 16, 32, 64, 128])   # E, SE, S, SW, W, NW, N, NE (clockwise)
+d8 = codes[(np.round(((360 - angle) % 360) / 45).astype(int)) % 8].astype(float)
+
+# flow accumulation: a small branching channel network (skewed -- zeros plus huge values)
+acc = np.zeros_like(d8)
+def draw(x0, y0, x1, y1, v):
+    t = np.linspace(0, 1, 200)
+    px = (x0 + (x1 - x0) * t).astype(int); py = (y0 + (y1 - y0) * t).astype(int)
+    for k in range(len(t)):
+        acc[py[k], px[k]] = max(acc[py[k], px[k]], v * (1 + k / 40))
+draw(50, 40, 10, 8, 2500); draw(50, 40, 90, 12, 2000); draw(50, 40, 30, 72, 1200)
+acc.min(), acc.max()</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[16]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>(np.float64(0.0), np.float64(14937.5))</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=6e5e8d7c">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [17]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="CodeMirror cm-s-jupyter">
+<div class="zeroclipboard-container">
+<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-17">
+<div>
+<span class="notice" hidden="">Copied!</span>
+<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
+<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+</clipboard-copy>
+</div>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">11</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">apply_data_style</span><span class="p">(</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">{</span><span class="s1">'flow_direction_d8'</span><span class="p">:</span> <span class="n">d8</span><span class="p">},</span> <span class="n">style</span><span class="o">=</span><span class="s1">'flow_direction_d8'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'style="flow_direction_d8"  (categorical, cyclic)'</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s1">'left'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="s1">'#eeeeee'</span><span class="p">)</span>
+<span class="n">apply_data_style</span><span class="p">(</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">{</span><span class="s1">'flow_accumulation'</span><span class="p">:</span> <span class="n">acc</span><span class="p">},</span> <span class="n">style</span><span class="o">=</span><span class="s1">'flow_accumulation'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'style="flow_accumulation"  (symlog)'</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s1">'left'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">:</span>
+    <span class="n">a</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([]);</span> <span class="n">a</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">();</span> <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+<div class="clipboard-copy-txt" id="cell-17">fig, axes = plt.subplots(1, 2, figsize=(11, 4))
+apply_data_style(axes[0], {'flow_direction_d8': d8}, style='flow_direction_d8')
+axes[0].set_title('style="flow_direction_d8"  (categorical, cyclic)', loc='left', fontsize=9)
+axes[1].set_facecolor('#eeeeee')
+apply_data_style(axes[1], {'flow_accumulation': acc}, style='flow_accumulation')
+axes[1].set_title('style="flow_accumulation"  (symlog)', loc='left', fontsize=9)
+for a in axes:
+    a.set_xticks([]); a.set_yticks([])
+plt.tight_layout(); plt.show()</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output" tabindex="0">
+<img alt="No description has been provided for this image" class="" src="data:image/png;base64,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jd2uSYp/9laFrl27ulyPSAVzub/88ksdOnRII0eO1IgRI+RwOCQVfK6+++67+uWXX3T48OEKrXFUEeW952JjY/X33387t5V0jcrnL1B9Kpygb9myRd99950yMzPl7++v0NBQ+fr6Sir4Rm/v3r1ui0Bdf/31+vTTT/XWW2+5fQtY1C233KIHH3xQW7ZskVTwLd3nn3/u/OZyxowZSktLK/XnjDPOOO4HXtTo0aM1e/Zs/fzzz8rLy9OLL76ow4cP67zzzpNUsHBHXl6eZs+erYEDB8pms+mMM87Qiy++6LYYWUlGjRqlxYsX64svvlBeXp7eeOMN/fnnnxWOr0GDBhoxYoQmTpzoTPz27dun+fPnS5LOP/98ZWdn68EHH1R6erpycnKc38hGR0fLbrdr27ZtJR7bbrfryiuv1H333acjR47o8OHDmjJliq6++upyP/DK0qdPH0VFRemxxx5TTk6OVq5c6VxATJLatWun0NBQvfLKK8rLy1NqaqreeOONSrkdzfDhw52PX5KuuuoqxcfHa8aMGcrOzlZGRobzAislJUWBgYGqU6eO0tLS3G7jFRMTo127drks6lfW+7VJkyY67bTTNGXKFGVmZuqvv/7S66+/7ty3UaNGGjhwoO68806lp6dr9+7dmjp1qq699toKP75x48bpkUce0W+//SZjjHbv3u1c4CglJUWRkZEKCQnRpk2b9Oqrr5Z5LJvN5rbYW6Ebb7xRH3zwgebPn6+8vDwlJydrxYoVzu2XXXaZEhIS9OSTT7r8/46Li1Pbtm118803KykpSXl5efrpp5/KvQdseftlZGRo1apVzv+XAGovrjlO/JqjvM+1cePGafr06Vq2bJkcDocOHDigtWvXlrute/fu+uabb7R3716lpqbqkUceOann4XiOV9h7W69ePeXk5OjRRx916d0u7T1RqFevXoqJidGDDz6o7Oxs/fHHH3rxxReP67P3RAwZMkSbNm3S0aNHJRUsEjt//nylpqbK19dX4eHhzve1VJC8G2N08803a/To0S6jEE/GZZddpqVLl+rzzz9XXl6ePv30Uy1fvlyXX365pIIv959++mnt27dPycnJJd5R54cfftCwYcMqJR4AZatwBpaTk6MHHnhAMTExqlu3rn744QfnapODBg1Snz591KhRI0VGRjq/eWvZsqV69uyp1NRUnX/++aUe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"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=bb7c49da">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>The direction raster reads as a cyclic colour wheel of compass classes; the accumulation raster shows only the
+channels (zero cells are transparent, so the grey backdrop shows through) -- exactly what you want when
+compositing it over a hillshaded DEM. Continuous <strong>D-infinity</strong> flow <em>angle</em> (0-2pi) is not discrete: use the
+cyclic <code>phase</code> preset for it. Flow accumulation pairs naturally with the <code>hillshade</code> option on <code>ArrayGlyph</code>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=f9de0878">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
