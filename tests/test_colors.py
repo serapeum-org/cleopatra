@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from matplotlib.collections import QuadMesh
-from matplotlib.colors import Colormap, LinearSegmentedColormap, Normalize
+from matplotlib.colors import Colormap, LinearSegmentedColormap, Normalize, to_hex
 from matplotlib.image import AxesImage
 
 from cleopatra.colors import (
@@ -12,6 +12,7 @@ from cleopatra.colors import (
     HAZE_COLORMAPS,
     DATA_STYLES,
     Colors,
+    _category_boundaries,
     _load_magics_presets,
     _load_preset_asset,
     alpha_scaled_image,
@@ -612,6 +613,68 @@ class TestMagicsPresets:
 
         monkeypatch.setattr(colors_mod.importlib.resources, "files", boom)
         assert _load_magics_presets() == {}, "missing asset should degrade to no presets"
+
+
+class TestCategoricalPresets:
+    """Tests for categorical (class-code) presets -- the `flood_status` preset."""
+
+    @pytest.fixture
+    def ax(self):
+        """A fresh Axes on the Agg backend, closed after the test."""
+        fig, ax = plt.subplots()
+        yield ax
+        plt.close(fig)
+
+    def test_flood_status_declares_categories(self):
+        """The 'flood_status' preset carries a 5-class category list, not a cmap."""
+        cfg = DATA_STYLES["flood_status"]["flood_status"]
+        assert "categories" in cfg and "cmap" not in cfg
+        assert [c[2] for c in cfg["categories"]] == [
+            "Normal", "Action", "Minor", "Moderate", "Major"
+        ]
+
+    def test_category_boundaries_are_midpoints_and_half_gaps(self):
+        """Integer class codes 0..4 produce the expected +/-0.5 bin edges."""
+        assert _category_boundaries([0, 1, 2, 3, 4]) == [-0.5, 0.5, 1.5, 2.5, 3.5, 4.5]
+
+    def test_single_category_boundaries(self):
+        """A lone class value still yields a valid two-edge bin."""
+        assert _category_boundaries([3]) == [2.5, 3.5]
+
+    def test_each_class_maps_to_its_colour(self, ax):
+        """Every class code renders as exactly its declared category colour."""
+        data = np.array([[0.0, 1.0, 2.0], [3.0, 4.0, 4.0]])
+        img = apply_data_style(ax, {"flood_status": data}, style="flood_status")["flood_status"]
+        rgba = img.get_array()
+        expected = ["#2c7fb8", "#31a354", "#ffeb3b", "#ff7f00", "#e31a1c"]
+        got = [
+            to_hex(rgba[0, 0, :3]), to_hex(rgba[0, 1, :3]), to_hex(rgba[0, 2, :3]),
+            to_hex(rgba[1, 0, :3]), to_hex(rgba[1, 1, :3]),
+        ]
+        assert got == expected, f"class colours wrong: {got}"
+
+    def test_categorical_is_opaque_with_nan_transparent(self, ax):
+        """Classes are drawn fully opaque; NaN (no-data) is transparent."""
+        data = np.array([[0.0, 4.0], [np.nan, 2.0]])
+        img = apply_data_style(ax, {"flood_status": data}, style="flood_status")["flood_status"]
+        alpha = img.get_array()[..., 3]
+        assert alpha[0, 0] == alpha[0, 1] == alpha[1, 1] == 1.0, f"not opaque: {alpha}"
+        assert alpha[1, 0] == 0.0, f"NaN should be transparent, got {alpha[1, 0]}"
+
+    def test_categorical_attaches_a_disjoint_legend(self, ax):
+        """A categorical preset gets a discrete matplotlib legend, titled by `label`."""
+        apply_data_style(ax, {"flood_status": np.array([[0.0, 4.0]])}, style="flood_status")
+        legend = ax.get_legend()
+        assert legend is not None, "categorical preset should attach a legend"
+        assert [t.get_text() for t in legend.get_texts()] == [
+            "Normal", "Action", "Minor", "Moderate", "Major"
+        ]
+        assert legend.get_title().get_text() == "Flood status"
+
+    def test_categorical_legend_can_be_suppressed(self, ax):
+        """`legend=False` draws the classes without a legend."""
+        apply_data_style(ax, {"flood_status": np.array([[0.0, 4.0]])}, style="flood_status", legend=False)
+        assert ax.get_legend() is None, "no legend expected when legend=False"
 
 
 class TestCmoceanPresets:

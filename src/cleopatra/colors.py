@@ -12,7 +12,7 @@ from matplotlib.colors import Colormap, LinearSegmentedColormap
 from matplotlib.image import AxesImage
 from PIL import Image, UnidentifiedImageError
 
-from cleopatra.styles import swatch_legend
+from cleopatra.styles import disjoint_legend, swatch_legend
 
 #: Sequential colormaps for the "haze" data style (white at 0.0, saturating
 #: toward the named hue at 1.0) -- the value-modulated-alpha, glowing-rim look
@@ -318,6 +318,12 @@ def alpha_scaled_mesh(
 #:   look); set ``alpha`` to a constant (e.g. ``1.0``) for a plain opaque
 #:   field; or set ``alpha_vmin``/``alpha_vmax`` to decouple opacity from
 #:   colour (the "haze" glowing rim).
+#: - ``categories`` (optional): a **categorical** preset instead of a colormap.
+#:   A list of ``(class_value, colour, label)`` triples for discrete integer
+#:   class codes (e.g. flood status); the layer is drawn opaque with a
+#:   `ListedColormap`/`BoundaryNorm` and gets a discrete (disjoint) legend
+#:   rather than a gradient swatch. ``cmap``/``vmin``/``vmax``/``center`` are
+#:   ignored when ``categories`` is set; only ``label`` (the legend title) is used.
 #:
 #: This is the colour/legend half of the ECMWF/CAMS look; pair it with a
 #: `cleopatra.projection` projection-style preset (globe or flat) -- the two
@@ -411,6 +417,21 @@ DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
             "label": "Precipitation",
         },
     },
+    # Categorical preset: discrete integer class codes -> fixed colours + a
+    # discrete (disjoint) legend, instead of a continuous colormap. The
+    # near-universal NWS/USGS 5-class river-flood status scale (0..4).
+    "flood_status": {
+        "flood_status": {
+            "categories": [
+                (0, "#2c7fb8", "Normal"),
+                (1, "#31a354", "Action"),
+                (2, "#ffeb3b", "Minor"),
+                (3, "#ff7f00", "Moderate"),
+                (4, "#e31a1c", "Major"),
+            ],
+            "label": "Flood status",
+        },
+    },
 }
 
 
@@ -475,6 +496,29 @@ def _load_magics_presets() -> dict[str, dict[str, dict[str, Any]]]:
 #: `"bathymetry"`). List them all with `sorted(DATA_STYLES)`.
 DATA_STYLES.update(_load_magics_presets())
 DATA_STYLES.update(_load_preset_asset("cmocean_presets.json", "cmocean"))
+
+
+def _category_boundaries(values: list[float]) -> list[float]:
+    """Bin edges for a `BoundaryNorm` over discrete category values.
+
+    Interior edges are the midpoints between consecutive (sorted) class
+    values; the two outer edges extend by the same half-gap, so each value
+    lands in the middle of its own bin (for integer class codes this is the
+    usual ``+/-0.5``).
+
+    Args:
+        values: The category class values (need not be pre-sorted).
+
+    Returns:
+        list[float]: ``len(values) + 1`` ascending bin edges.
+    """
+    vals = sorted(values)
+    if len(vals) == 1:
+        return [vals[0] - 0.5, vals[0] + 0.5]
+    mids = [(vals[i] + vals[i + 1]) / 2.0 for i in range(len(vals) - 1)]
+    lower = vals[0] - (mids[0] - vals[0])
+    upper = vals[-1] + (vals[-1] - mids[-1])
+    return [lower] + mids + [upper]
 
 
 def _resolve_style_norm(
@@ -670,6 +714,29 @@ def apply_data_style(
     for i, (name, data) in enumerate(layers.items()):
         cfg = preset[name]
         data = np.asarray(data, dtype=float)
+
+        categories = cfg.get("categories")
+        if categories is not None:
+            cats = sorted(categories, key=lambda c: c[0])
+            cat_colors = [c[1] for c in cats]
+            cat_labels = [c[2] for c in cats]
+            cat_cmap = mcolors.ListedColormap(cat_colors)
+            cat_norm = mcolors.BoundaryNorm(
+                _category_boundaries([float(c[0]) for c in cats]), len(cat_colors)
+            )
+            if curvilinear:
+                images[name] = alpha_scaled_mesh(
+                    ax, x, y, data, cat_cmap, norm=cat_norm, constant_alpha=1.0,
+                    **render_kwargs,
+                )
+            else:
+                images[name] = alpha_scaled_image(
+                    ax, data, cat_cmap, norm=cat_norm, constant_alpha=1.0, **render_kwargs
+                )
+            if legend:
+                disjoint_legend(ax, cat_colors, cat_labels, title=cfg["label"], loc="upper right")
+            continue
+
         norm, resolved_vmin, resolved_vmax = _resolve_style_norm(data, cfg)
 
         alpha_const = cfg.get("alpha")
