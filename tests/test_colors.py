@@ -781,6 +781,22 @@ class TestStyleNormKinds:
         with pytest.raises(ValueError, match="'norm' must be"):
             _resolve_style_norm(np.array([1.0, 2.0]), {"norm": "bogus"})
 
+    def test_center_is_honoured_with_explicit_bounds(self):
+        """`center` puts zero on the midpoint even when explicit vmin/vmax are set.
+
+        With asymmetric explicit bounds a plain `Normalize` would land `center`
+        off-midpoint; a `TwoSlopeNorm` keeps it at 0.5.
+        """
+        data = np.array([-2.0, 4.0, 10.0])
+        norm, _, _ = _resolve_style_norm(data, {"center": 0, "vmin": -2, "vmax": 10})
+        assert type(norm).__name__ == "TwoSlopeNorm"
+        assert float(norm(0.0)) == pytest.approx(0.5)
+
+    def test_center_outside_bounds_raises(self):
+        """A `center` not strictly inside [vmin, vmax] raises a clear `ValueError`."""
+        with pytest.raises(ValueError, match="must lie strictly between"):
+            _resolve_style_norm(np.array([1.0, 10.0]), {"center": 0, "vmin": 1, "vmax": 10})
+
     def test_log_reports_clamped_positive_vmin(self):
         """The `log` branch reports the clamped positive lower bound (matches the LogNorm).
 

@@ -607,8 +607,19 @@ def _resolve_style_norm(
         vmax = vmin + 1.0
 
     norm_kind = cfg.get("norm")
-    if norm_kind in (None, "linear"):
-        norm: mcolors.Normalize = mcolors.Normalize(vmin=vmin, vmax=vmax)
+    if norm_kind in (None, "linear") and center is not None:
+        # Diverging: put `center` on the colormap midpoint regardless of how
+        # the bounds were resolved (auto-symmetric or explicit vmin/vmax).
+        if not (vmin < center < vmax):
+            raise ValueError(
+                f"diverging 'center' ({center}) must lie strictly between "
+                f"vmin ({vmin}) and vmax ({vmax})"
+            )
+        norm: mcolors.Normalize = mcolors.TwoSlopeNorm(
+            vcenter=center, vmin=vmin, vmax=vmax
+        )
+    elif norm_kind in (None, "linear"):
+        norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
     elif norm_kind == "log":
         # LogNorm needs a positive lower bound; fall back to the smallest
         # positive finite value (or 1) when the data reaches 0 or below.
