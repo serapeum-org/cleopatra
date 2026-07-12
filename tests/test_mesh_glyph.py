@@ -1558,3 +1558,12 @@ class TestMeshGlyphDataStyle:
         g.plot(z, location="node", style="topography", hillshade=True)
         assert type(g.im).__name__ == "PolyCollection"
         plt.close("all")
+
+    def test_symlog_preset_colorbar_uses_a_log_locator(self):
+        """A symlog preset's colorbar picks a log locator, not the linear ticks."""
+        nx, ny, faces = self._mesh()
+        fvals = np.abs(np.random.default_rng(0).normal(size=len(faces))) * 100
+        g = MeshGlyph(nx, ny, faces)
+        g.plot(fvals, location="face", style="flow_accumulation")
+        assert type(g._cbar.locator).__name__ == "SymmetricalLogLocator"
+        plt.close("all")

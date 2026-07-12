@@ -398,6 +398,8 @@ class KDEGlyph(Glyph):
                 )
             cmap = cfg["cmap"]
             norm, _, _ = resolve_style_norm(np.asarray(density, dtype=float), cfg)
+            # Drop the linear ticks so the colorbar matches the preset norm.
+            cbar_kw.pop("ticks", None)
 
         hillshade = resolve_hillshade(
             hillshade if hillshade is not None else opts.get("hillshade")

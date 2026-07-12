@@ -956,6 +956,11 @@ class MeshGlyph(GeoMixin, Glyph):
             else:
                 self.default_options["cmap"] = cfg["cmap"]
                 norm, _, _ = resolve_style_norm(data_f, cfg)
+                # The preset norm may be nonlinear (log/symlog) or carry its own
+                # vmin/vmax; drop the linear ticks computed above so the colorbar
+                # picks a locator/format matching the norm instead of misplacing
+                # evenly-spaced ticks on a log axis.
+                cbar_kw.pop("ticks", None)
 
         # Reset any inline contour labels from a previous render; the
         # line-tricontour branch below repopulates this when `labels=True`,
