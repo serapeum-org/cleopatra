@@ -602,13 +602,52 @@ class TestKDEGlyphDataStyle:
             KDEGlyph(x, y, gridsize=40).plot(style="not_a_style")
         plt.close("all")
 
-    def test_plot_time_style_does_not_leak_cmap(self):
-        """A per-call `style` does not persist its colormap into a later `plot()`."""
+    def test_style_renders_preset_cmap_without_mutating_default(self):
+        """A style renders with the preset cmap but never overwrites `default_options['cmap']`.
+
+        A plot-time `style` name persists (like ArrayGlyph), so a later plain
+        `plot()` keeps it -- but the base `default_options['cmap']` is left
+        untouched (the cmap is resolved into a local), so nothing is corrupted.
+        """
         x, y = self._cloud()
         g = KDEGlyph(x, y, gridsize=40)
         default_cmap = g.default_options["cmap"]
-        g.plot(style="temperature")
+        _, _, cs = g.plot(style="temperature")
+        assert cs.get_cmap().name == "RdYlBu_r"
+        assert g.default_options["cmap"] == default_cmap
+        assert g.style == "temperature"  # the name persists for read-back
         plt.close("all")
-        _, _, cs = g.plot()  # style=None
-        assert cs.get_cmap().name == default_cmap
+
+
+class TestKDEGlyphApplyStyle:
+    """Tests for the public `apply_style` method and `style` read-back."""
+
+    @staticmethod
+    def _cloud():
+        rng = np.random.default_rng(3)
+        x = np.concatenate([rng.normal(-2, 0.7, 200), rng.normal(2, 1.0, 150)])
+        y = np.concatenate([rng.normal(-1, 0.6, 200), rng.normal(2, 1.2, 150)])
+        return x, y
+
+    def test_apply_style_restyles_and_reads_back(self):
+        """apply_style colours the density and `style` reads back its name."""
+        x, y = self._cloud()
+        g = KDEGlyph(x, y, gridsize=40)
+        g.plot()
+        _, _, cs = g.apply_style("temperature")
+        assert g.style == "temperature" and cs.get_cmap().name == "RdYlBu_r"
+        plt.close("all")
+
+    def test_apply_style_categorical_raises(self):
+        """A categorical preset via apply_style raises (density is continuous)."""
+        x, y = self._cloud()
+        with pytest.raises(ValueError, match="is categorical"):
+            KDEGlyph(x, y, gridsize=40).apply_style("flow_direction_d8")
+        plt.close("all")
+
+    def test_apply_style_unknown_name_raises(self):
+        """An unknown preset name raises a clear `ValueError`."""
+        x, y = self._cloud()
+        with pytest.raises(ValueError, match="unknown data style"):
+            KDEGlyph(x, y, gridsize=40).apply_style("not_a_style")
         plt.close("all")

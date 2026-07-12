@@ -296,6 +296,58 @@ class KDEGlyph(Glyph):
                 f"{type(clip).__name__}."
             )
 
+    @property
+    def style(self) -> str | None:
+        """Name of the `DATA_STYLES` preset currently applied, or `None`.
+
+        Reads back the preset set via the `style` constructor kwarg, a
+        `plot(style=...)` call, or `apply_style`.
+        """
+        return self.default_options.get("style")
+
+    def apply_style(
+        self,
+        style: str,
+        *,
+        hillshade: bool | dict | None = None,
+        add_colorbar: bool | None = None,
+        title: str | None = None,
+    ):
+        """Apply a continuous `DATA_STYLES` preset by name, re-rendering in place.
+
+        A discoverable wrapper over `plot(style=...)` for restyling an
+        already-built glyph: it redraws on the glyph's existing axes (clearing
+        the previous render first) or, if the glyph has not been plotted yet,
+        on a new figure.
+
+        Args:
+            style: A continuous `cleopatra.colors.DATA_STYLES` preset name.
+            hillshade: Optional relief shading, forwarded to `plot`.
+            add_colorbar: Optional colorbar toggle, forwarded to `plot`.
+            title: Optional title, forwarded to `plot`.
+
+        Returns:
+            tuple[Figure, Axes, QuadContourSet]: The `plot` result.
+
+        Raises:
+            ValueError: If `style` is unknown, or is categorical (a density is
+                continuous), raised by `plot`.
+        """
+        if getattr(self, "ax", None) is not None:
+            if self.cbar is not None:
+                self.cbar.remove()
+                self.cbar = None
+            for inset in list(self.ax.child_axes):
+                inset.remove()
+            self.ax.clear()
+            return self.plot(
+                ax=self.ax, title=title, add_colorbar=add_colorbar,
+                hillshade=hillshade, style=style,
+            )
+        return self.plot(
+            title=title, add_colorbar=add_colorbar, hillshade=hillshade, style=style
+        )
+
     def plot(
         self,
         ax: Axes = None,
@@ -388,7 +440,12 @@ class KDEGlyph(Glyph):
         # has no meaning for a continuous density surface, so reject it. The
         # cmap is resolved into a LOCAL (not `opts`), so a per-call `style` does
         # not leak its colormap into a later `plot()` on the same instance.
-        style = style if style is not None else opts.get("style")
+        # Persist a plot-time `style` name into the options so `self.style`
+        # reads it back (matching ArrayGlyph, whose **kwargs persist it). Only
+        # the name is stored -- the resolved cmap stays a local (no leak).
+        if style is not None:
+            opts["style"] = style
+        style = opts.get("style")
         if style is not None:
             _, cfg = resolve_single_layer_style(style)
             if cfg.get("categories") is not None:
