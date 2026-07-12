@@ -1559,6 +1559,18 @@ class TestMeshGlyphDataStyle:
         assert type(g.im).__name__ == "PolyCollection"
         plt.close("all")
 
+    def test_categorical_preset_with_node_location_warns(self):
+        """A categorical preset on node data warns (tricontourf interpolates class codes)."""
+        nx, ny, faces = self._mesh()
+        codes = np.random.default_rng(2).choice(
+            [1, 2, 4, 8, 16, 32, 64, 128], size=len(nx)
+        ).astype(float)
+        with pytest.warns(UserWarning, match="interpolates discrete class codes"):
+            MeshGlyph(nx, ny, faces).plot(
+                codes, location="node", style="flow_direction_d8"
+            )
+        plt.close("all")
+
     def test_symlog_preset_colorbar_uses_a_log_locator(self):
         """A symlog preset's colorbar picks a log locator, not the linear ticks."""
         nx, ny, faces = self._mesh()

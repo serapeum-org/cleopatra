@@ -28,6 +28,7 @@ Examples:
 
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 import matplotlib.collections as mcoll
@@ -953,6 +954,13 @@ class MeshGlyph(GeoMixin, Glyph):
                 colorbar = False
                 self.default_options["hillshade"] = False
                 style_legend = (cat_colors, cat_labels, cfg["label"])
+                if location == "node":
+                    warnings.warn(
+                        "a categorical data-style preset with location='node' "
+                        "interpolates discrete class codes via tricontourf; use "
+                        "location='face' for correct per-cell class colours.",
+                        stacklevel=2,
+                    )
             else:
                 self.default_options["cmap"] = cfg["cmap"]
                 norm, _, _ = resolve_style_norm(data_f, cfg)
