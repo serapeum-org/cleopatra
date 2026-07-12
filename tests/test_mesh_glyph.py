@@ -1471,6 +1471,20 @@ class TestMeshGlyphHillshade:
         assert mg.contour_labels is None, "labels are a no-op under hillshade"
         plt.close("all")
 
+    def test_hillshade_honours_nonlinear_color_scale(self):
+        """A non-linear `color_scale` feeds its `norm` into the shaded tripcolor.
+
+        Exercises the `norm is not None` branch of `_render_shaded_relief`,
+        which the default (linear) hillshade tests skip.
+        """
+        nx, ny, faces, z = self._terrain_mesh()
+        mg = MeshGlyph(nx, ny, faces)
+        mg.plot(z, location="node", cmap="terrain", color_scale="power",
+                gamma=0.4, hillshade=True)
+        assert type(mg.im).__name__ == "PolyCollection"
+        assert type(mg.im.norm).__name__ == "PowerNorm", "the color_scale norm is applied"
+        plt.close("all")
+
     def test_hillshade_makes_nodata_faces_transparent(self):
         """Faces touching a non-finite (nodata) node render fully transparent.
 

@@ -546,3 +546,12 @@ class TestKDEGlyphHillshade:
         assert type(im).__name__ == "AxesImage"
         assert im.get_array().shape[-1] == 4
         plt.close("all")
+
+    def test_hillshade_honours_title_and_suppressed_colorbar(self):
+        """The shaded path sets a title and skips the colorbar when asked."""
+        x, y = self._cloud()
+        g = KDEGlyph(x, y, gridsize=40, hillshade=True)
+        _, ax, _ = g.plot(title="Density terrain", add_colorbar=False)
+        assert ax.get_title() == "Density terrain"
+        assert g.cbar is None
+        plt.close("all")
