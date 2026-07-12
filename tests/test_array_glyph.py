@@ -3982,7 +3982,7 @@ class TestArrayGlyphDataStyle:
         ny, nx = arr.shape
         x = np.linspace(-3.0, 3.0, nx)
         y = np.linspace(-3.0, 3.0, ny)
-        with pytest.warns(UserWarning, match="curvilinear grid"):
+        with pytest.warns(UserWarning, match="curvilinear data-style preset"):
             ArrayGlyph(arr, coords=(x, y), style="flow_accumulation", hillshade=True).plot()
         plt.close("all")
 
