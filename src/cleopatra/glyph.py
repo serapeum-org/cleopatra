@@ -76,6 +76,17 @@ def _root_figure(ax: Axes) -> Figure:
     return fig
 
 
+def _figure_is_open(fig: Figure | None) -> bool:
+    """True if `fig` is a live top-level `Figure` still registered with pyplot.
+
+    Pass a root `Figure` (resolve a `SubFigure` via `_root_figure` first); a
+    figure whose window/number has been closed, or a `SubFigure` (no `.number`),
+    returns `False`.
+    """
+    num = getattr(fig, "number", None)
+    return num is not None and plt.fignum_exists(num)
+
+
 def _immediate_figure(ax: Axes) -> Figure:
     """Return the figure `ax` is directly attached to (its immediate parent).
 
@@ -385,9 +396,11 @@ class Glyph:
         """
         ax = getattr(self, "ax", None)
         fig = getattr(self, "fig", None)
-        num = getattr(fig, "number", None)
-        fig_open = fig is not None and (num is None or plt.fignum_exists(num))
-        if ax is not None and fig_open:
+        # Decide liveness by the ROOT figure's number: a SubFigure has no number
+        # of its own, so resolving the root detects a closed parent Figure too.
+        root = _root_figure(ax) if ax is not None else fig
+        ax_live = ax is not None and _figure_is_open(root)
+        if ax_live:
             for attr in ("cbar", "_cbar"):
                 cbar = getattr(self, attr, None)
                 if cbar is not None:
@@ -396,10 +409,12 @@ class Glyph:
             for inset in list(self.ax.child_axes):
                 inset.remove()
             self.ax.clear()
-        elif fig_open:
-            # figure exists but has no axes (e.g. a `fig`-only construction):
-            # add one rather than crashing when `plot` dereferences `self.ax`.
-            self.ax = fig.add_subplot(111)
+        elif _figure_is_open(fig):
+            # A live figure with no (live) axes -- e.g. a `fig`-only construction:
+            # reuse an existing axes on it if present, else add one, rather than
+            # crashing when `plot` dereferences `self.ax` (or overlapping a
+            # caller's own axes with a fresh `111` subplot).
+            self.ax = fig.axes[0] if fig.axes else fig.add_subplot(111)
         else:
             self.fig, self.ax = self.create_figure_axes()
 
