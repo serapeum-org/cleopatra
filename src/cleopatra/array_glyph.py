@@ -3270,6 +3270,18 @@ class ArrayGlyph(GeoMixin, Glyph):
             )
             style = self.default_options.get("style")
             if style is not None:
+                # The preset owns the colour mapping and draws its own legend, so
+                # point / cell-value overlays are bypassed -- warn (mirroring
+                # plot()) rather than drawing them silently over the preset.
+                if points is not None or show_cell_value:
+                    warnings.warn(
+                        "data-style presets bypass point and cell-value "
+                        "overlays; 'points' and 'display_cell_value' are ignored "
+                        "with 'style'.",
+                        stacklevel=2,
+                    )
+                    points = None
+                    show_cell_value = False
                 layer = self._resolve_style_layer(style)
                 cfg = DATA_STYLES[style][layer]
                 hillshade_active = (

@@ -4108,6 +4108,20 @@ class TestArrayGlyphShadedAnimate:
         assert g.im.cmap.name == "Blues"
         plt.close("all")
 
+    def test_animate_style_warns_and_bypasses_overlays(self):
+        """`animate` warns and drops point/cell-value overlays under a style, like `plot`."""
+        rng = np.random.default_rng(11)
+        accum = np.stack(
+            [np.abs(rng.normal(size=(20, 25))).cumsum(1) * 40 for _ in range(3)]
+        )
+        pts = np.array([[1.0, 2, 3], [2.0, 5, 6]])
+        g = ArrayGlyph(accum, style="flow_accumulation")
+        with pytest.warns(UserWarning, match="bypass point and cell-value overlays"):
+            g.animate(time=list(range(3)), points=pts)
+        # no scatter overlay drawn (the preset image is the only artist family)
+        assert len(g.ax.collections) == 0
+        plt.close("all")
+
     def test_categorical_style_in_animate_renders_with_legend(self):
         """A categorical preset animates: per-frame remap to RGBA + a discrete legend, no colorbar."""
         rng = np.random.default_rng(4)
