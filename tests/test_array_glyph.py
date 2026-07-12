@@ -4239,6 +4239,26 @@ class TestArrayGlyphApplyStyle:
             ArrayGlyph(self._dem()).apply_style("not_a_style")
         plt.close("all")
 
+    def test_failed_apply_style_leaves_glyph_usable(self):
+        """A bad apply_style name raises without poisoning the style or wiping the render."""
+        g = ArrayGlyph(self._dem())
+        g.plot(style="topography")
+        with pytest.raises(ValueError, match="unknown data style"):
+            g.apply_style("not_a_style")
+        assert g.style == "topography"  # prior good style preserved
+        assert np.asarray(g.im.get_array()).ndim == 3  # render not wiped
+        g.plot()  # still usable
+        plt.close("all")
+
+    def test_failed_plot_style_does_not_poison(self):
+        """plot(style='bad') raises and clears the style so later plain plot() works."""
+        g = ArrayGlyph(self._dem())
+        with pytest.raises(ValueError, match="unknown data style"):
+            g.plot(style="not_a_style")
+        assert g.style is None
+        g.plot()  # not bricked
+        plt.close("all")
+
     def test_style_is_sticky_and_clearable(self):
         """A style survives a later plain plot() and is cleared by style=None."""
         g = ArrayGlyph(self._dem())

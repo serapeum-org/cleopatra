@@ -1659,6 +1659,29 @@ class TestMeshGlyphApplyStyle:
         assert n_cbar_axes == 1  # one colorbar, not stacked
         plt.close("all")
 
+    def test_failed_apply_style_leaves_glyph_usable(self):
+        """A bad apply_style name raises without poisoning the sticky style."""
+        nx, ny, faces = self._mesh()
+        fvals = np.abs(np.random.default_rng(8).normal(size=len(faces))) * 100
+        g = MeshGlyph(nx, ny, faces)
+        g.plot(fvals, location="face", style="flow_accumulation")
+        with pytest.raises(ValueError, match="unknown data style"):
+            g.apply_style("not_a_style")
+        assert g.style == "flow_accumulation"
+        g.plot(fvals, location="face")  # still usable
+        plt.close("all")
+
+    def test_masked_data_cache_preserves_mask(self):
+        """A masked mesh array's mask survives the _last_data cache for restyle."""
+        nx, ny, faces = self._mesh()
+        vals = np.abs(np.random.default_rng(9).normal(size=len(faces))) * 100
+        masked = np.ma.array(vals, mask=[i % 5 == 0 for i in range(len(faces))])
+        g = MeshGlyph(nx, ny, faces)
+        g.plot(masked, location="face")
+        assert np.ma.isMaskedArray(g._last_data)
+        assert np.any(np.ma.getmaskarray(g._last_data))
+        plt.close("all")
+
     def test_apply_style_data_override_and_copy(self):
         """apply_style uses an explicit data= override and the cached data is a copy."""
         nx, ny, faces = self._mesh()

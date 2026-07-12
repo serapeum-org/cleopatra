@@ -652,6 +652,16 @@ class TestKDEGlyphApplyStyle:
             KDEGlyph(x, y, gridsize=40).apply_style("not_a_style")
         plt.close("all")
 
+    def test_failed_plot_style_does_not_poison(self):
+        """plot(style='bad') raises and does not brick later plain plot()."""
+        x, y = self._cloud()
+        g = KDEGlyph(x, y, gridsize=40)
+        with pytest.raises(ValueError, match="unknown data style"):
+            g.plot(style="not_a_style")
+        assert g.style is None
+        g.plot()  # not bricked
+        plt.close("all")
+
     def test_style_is_sticky_and_clearable(self):
         """A style survives a later plain plot() and is cleared by style=None."""
         x, y = self._cloud()
