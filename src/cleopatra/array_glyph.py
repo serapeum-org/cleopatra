@@ -1588,19 +1588,23 @@ class ArrayGlyph(GeoMixin, Glyph):
             )
         self.im = images[layer]
 
-        # Relief shading composes with the preset: blend the terrain hillshade
-        # into the drawn preset colours (regular-grid `imshow` only -- a
-        # curvilinear `QuadMesh` has no 2D RGBA grid to light).
+        # Relief shading composes with a CONTINUOUS preset: blend the terrain
+        # hillshade into the drawn colours (regular-grid `imshow` only). It is
+        # NOT applied to a categorical preset -- shading nominal class colours
+        # is meaningless (a darkened "N" can read as another class), matching
+        # MeshGlyph -- nor to a curvilinear `QuadMesh` (no 2D RGBA grid to light).
         hillshade = resolve_hillshade(self.default_options.get("hillshade"))
         if hillshade is not None:
-            if coords is None:
-                self.im.set_data(shade_rgb(self.im.get_array(), data, **hillshade))
-            else:
+            categorical = resolve_single_layer_style(style)[1].get("categories") is not None
+            if categorical or coords is not None:
+                kind = "categorical" if categorical else "curvilinear"
                 warnings.warn(
-                    "hillshade is not composed with a data-style preset on a "
-                    "curvilinear grid; the preset is applied and hillshade ignored.",
+                    f"hillshade is not composed with a {kind} data-style preset; "
+                    "the preset is applied and hillshade ignored.",
                     stacklevel=2,
                 )
+            else:
+                self.im.set_data(shade_rgb(self.im.get_array(), data, **hillshade))
         # Presets present their scale via a swatch / categorical legend, not a
         # matplotlib colorbar.
         self.cbar = None

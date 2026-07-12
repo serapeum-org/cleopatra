@@ -3967,6 +3967,15 @@ class TestArrayGlyphDataStyle:
         assert not np.allclose(shaded[..., :3], base[..., :3]), "hillshade lit the preset colours"
         plt.close("all")
 
+    def test_categorical_style_with_hillshade_warns_not_shaded(self):
+        """A categorical preset + hillshade warns and is NOT relief-shaded (like MeshGlyph)."""
+        with pytest.warns(UserWarning, match="categorical data-style preset"):
+            g = ArrayGlyph(self._d8(), style="flow_direction_d8", hillshade=True)
+            g.plot()
+        # the categorical image keeps its flat class colours (RGBA from the preset)
+        assert np.asarray(g.im.get_array()).shape[-1] == 4
+        plt.close("all")
+
     def test_curvilinear_style_with_hillshade_warns(self):
         """On a curvilinear grid, `style` + `hillshade` warns (no 2D RGBA grid to light)."""
         arr = self._accum()
