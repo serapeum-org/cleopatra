@@ -39,7 +39,7 @@ from matplotlib.colors import Colormap, Normalize
 from matplotlib.figure import Figure
 from PIL import Image
 
-from cleopatra.colors import DATA_STYLES, apply_data_style, resolve_style_norm
+from cleopatra.colors import DATA_STYLES, alpha_rgba, apply_data_style, resolve_style_norm
 from cleopatra.geo import GeoMixin
 from cleopatra.hillshade import resolve_hillshade, shade_grid
 from cleopatra.glyph import Glyph, _root_figure
@@ -1509,7 +1509,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         if hillshade is not None:
             if kind == "imshow":
                 hs_norm = norm if norm is not None else Normalize(vmin=vmin, vmax=vmax)
-                elevation = np.asarray(ma.filled(plot_arr, np.nan), dtype=float)
+                elevation = np.asarray(ma.filled(ma.asarray(plot_arr).astype(float), np.nan), dtype=float)
                 im.set_data(shade_grid(elevation, cmap, norm=hs_norm, **hillshade))
             else:
                 warnings.warn(
@@ -1568,12 +1568,10 @@ class ArrayGlyph(GeoMixin, Glyph):
         Returns:
             tuple[Figure, Axes]: The figure and axes drawn on.
         """
-        if self.default_options.get("hillshade"):
-            warnings.warn(
-                "hillshade is not composed with a data-style preset yet; "
-                "the 'style' preset is applied and 'hillshade' is ignored.",
-                stacklevel=2,
-            )
+        # Validate the style name first, then the coords contract, and only
+        # warn about hillshade on the path that actually proceeds -- so an
+        # aborting call reports the right error and emits no spurious warning.
+        layer = self._resolve_style_layer(style)
         if self._coords is not None:
             # apply_data_style's curvilinear path forces shading="flat", which
             # needs cell-EDGE coordinates, but ArrayGlyph stores cell CENTRES.
@@ -1585,7 +1583,12 @@ class ArrayGlyph(GeoMixin, Glyph):
                 "stores cell centres. Plot without coords, or call "
                 "cleopatra.colors.apply_data_style directly with edge coordinates."
             )
-        layer = self._resolve_style_layer(style)
+        if self.default_options.get("hillshade"):
+            warnings.warn(
+                "hillshade is not composed with a data-style preset yet; "
+                "the 'style' preset is applied and 'hillshade' is ignored.",
+                stacklevel=2,
+            )
         # Cast to float BEFORE filling: `ma.filled(int_array, np.nan)` raises
         # `TypeError: Cannot convert fill_value nan to dtype int64` for an
         # integer masked array -- exactly the integer-coded categorical raster
@@ -3218,6 +3221,11 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         fig, ax = self.fig, self.ax
 
+        # Per-frame RGBA recipe for a continuous `style` (cmap, colour norm,
+        # alpha norm, constant alpha), set in the style branch below and
+        # consumed by `_display_frame`. `None` when no style is active.
+        style_render = None
+
         if rgb_frames:
             # True-colour frames go straight through imshow — no norm,
             # colormap or colorbar (mirrors `plot`'s RGB branch).
@@ -3277,6 +3285,17 @@ class ArrayGlyph(GeoMixin, Glyph):
                 im.set_norm(style_norm)
                 if self.cbar is not None:
                     self.cbar.update_normal(im)
+                # Reproduce apply_data_style's per-frame RGBA (colour + the
+                # preset's value-linked opacity) so animate matches plot; the
+                # colorbar stays driven off the scalar norm/cmap installed above.
+                alpha_vmin = cfg.get("alpha_vmin")
+                alpha_vmax = cfg.get("alpha_vmax")
+                style_alpha_norm = (
+                    Normalize(vmin=alpha_vmin, vmax=alpha_vmax)
+                    if alpha_vmin is not None or alpha_vmax is not None
+                    else None
+                )
+                style_render = (cfg["cmap"], style_norm, style_alpha_norm, cfg.get("alpha"))
 
         ax.set_title(
             self.default_options["title"], fontsize=self.default_options["title_size"]
@@ -3372,9 +3391,18 @@ class ArrayGlyph(GeoMixin, Glyph):
             hillshade_opts = None
 
         def _display_frame(frame):
-            """Return the frame's image data, relief-shaded when requested."""
+            """Return the frame's image data: preset RGBA, relief-shaded, or raw."""
+            if style_render is not None:
+                # Bake the preset RGBA (colour + value-linked opacity) so animate
+                # matches plot()'s apply_data_style rendering.
+                cmap_, norm_, alpha_norm_, const_ = style_render
+                return alpha_rgba(
+                    np.asarray(ma.filled(ma.asarray(frame).astype(float), np.nan), dtype=float),
+                    cmap_, norm_, alpha_norm_, const_,
+                )
             if hillshade_opts is not None and not rgb_frames:
-                elevation = np.asarray(ma.filled(frame, np.nan), dtype=float)
+                # Cast before filling: integer masked frames reject a NaN fill.
+                elevation = np.asarray(ma.filled(ma.asarray(frame).astype(float), np.nan), dtype=float)
                 return shade_grid(elevation, im.cmap, norm=im.norm, **hillshade_opts)
             return frame
 

@@ -3960,6 +3960,16 @@ class TestArrayGlyphDataStyle:
             ArrayGlyph(self._accum(), style="flow_accumulation", hillshade=True).plot()
         plt.close("all")
 
+    def test_unknown_style_with_coords_reports_style_error_first(self):
+        """With a bad style name and curvilinear coords, the unknown-style error is reported first."""
+        arr = self._accum()
+        ny, nx = arr.shape
+        x = np.linspace(0.0, 1.0, nx)
+        y = np.linspace(0.0, 1.0, ny)
+        with pytest.raises(ValueError, match="unknown data style"):
+            ArrayGlyph(arr, coords=(x, y), style="not_a_style").plot()
+        plt.close("all")
+
 
 class TestArrayGlyphShadedAnimate:
     """Tests for hillshade + data-style presets in `animate`."""
@@ -4009,7 +4019,37 @@ class TestArrayGlyphShadedAnimate:
         anim._func(2)  # drive a frame; must not raise on the scale-norm colorbar
         assert g.im.cmap.name == "Blues"
         assert type(g.im.norm).__name__ == "SymLogNorm"
-        assert np.asarray(g.im.get_array()).ndim == 2, "hillshade dropped -> scalar frames"
+        frame = np.asarray(g.im.get_array())
+        assert frame.ndim == 3 and frame.shape[-1] == 4, "style renders its own RGBA (hillshade dropped)"
+        plt.close("all")
+
+    def test_continuous_style_animate_reproduces_alpha_glow(self):
+        """A value-linked-opacity preset fades low cells in animate too (plot/animate parity)."""
+        rng = np.random.default_rng(8)
+        accum = np.stack(
+            [np.abs(rng.normal(size=(20, 25))).cumsum(1) * 40 for _ in range(3)]
+        )
+        g = ArrayGlyph(accum, style="flow_accumulation")
+        anim = g.animate(time=list(range(3)))
+        anim._func(1)
+        frame = np.asarray(g.im.get_array())
+        assert frame.shape[-1] == 4, "animate frames are RGBA"
+        alpha = frame[..., 3]
+        assert alpha.min() < 0.2 and alpha.max() > 0.8, "opacity ramps with value like plot()"
+        plt.close("all")
+
+    def test_hillshade_animate_integer_masked_frame_does_not_crash(self):
+        """An integer masked frame (via data_getter) is shaded without a `ma.filled` TypeError."""
+        template = np.zeros((10, 10))
+        base = np.arange(100).reshape(10, 10)
+
+        def getter(i):
+            return np.ma.array((base + i).astype(int), mask=(base % 7 == 0))
+
+        g = ArrayGlyph(template, cmap="terrain", hillshade=True)
+        anim = g.animate(time=list(range(3)), data_getter=getter)
+        anim._func(1)  # integer masked frame through _display_frame's hillshade branch
+        assert np.asarray(g.im.get_array()).shape[-1] == 4
         plt.close("all")
 
     def test_continuous_style_animate_without_colorbar(self):

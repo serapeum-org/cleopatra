@@ -171,11 +171,11 @@ def alpha_scaled_image(
     if data.ndim != 2:
         raise ValueError(f"data must be 2-dimensional, got shape {data.shape}")
 
-    rgba = _alpha_rgba(data, cmap, norm, alpha_norm, constant_alpha)
+    rgba = alpha_rgba(data, cmap, norm, alpha_norm, constant_alpha)
     return ax.imshow(rgba, **imshow_kwargs)
 
 
-def _alpha_rgba(
+def alpha_rgba(
     data: np.ndarray,
     cmap: str | Colormap,
     norm: mcolors.Normalize | None,
@@ -295,7 +295,7 @@ def alpha_scaled_mesh(
         raise ValueError(f"data must be 2-dimensional, got shape {data.shape}")
 
     pcolormesh_kwargs.setdefault("shading", "auto")
-    rgba = _alpha_rgba(data, cmap, norm, alpha_norm, constant_alpha)
+    rgba = alpha_rgba(data, cmap, norm, alpha_norm, constant_alpha)
     mesh = ax.pcolormesh(x, y, data, **pcolormesh_kwargs)
     mesh.set_array(None)
     mesh.set_facecolor(rgba.reshape(-1, 4))
@@ -666,8 +666,9 @@ def resolve_style_norm(
     return norm, vmin, vmax
 
 
-#: Backward-compatible private alias for `resolve_style_norm` (its earlier name).
+#: Backward-compatible private aliases for symbols that were renamed public.
 _resolve_style_norm = resolve_style_norm
+_alpha_rgba = alpha_rgba
 
 
 def apply_data_style(
