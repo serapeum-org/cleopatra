@@ -4247,3 +4247,37 @@ class TestArrayGlyphApplyStyle:
         assert g.style == "topography"
         g.plot(style=None)
         assert g.style is None
+
+    def test_apply_style_on_closed_figure_renders_fresh(self):
+        """After the figure is closed, apply_style renders on a new live figure."""
+        g = ArrayGlyph(self._dem())
+        fig, _ = g.plot()
+        plt.close(fig)
+        g.apply_style("topography")
+        assert plt.fignum_exists(g.fig.number)
+        plt.close("all")
+
+    def test_apply_style_on_fig_only_construction_does_not_crash(self):
+        """apply_style on a glyph built with fig= but never plotted creates an axes."""
+        fig = plt.figure()
+        g = ArrayGlyph(self._dem(), fig=fig)
+        g.apply_style("elevation")
+        assert g.ax is not None and g.style == "elevation"
+        plt.close("all")
+
+    def test_apply_style_takes_ownership_of_its_axes(self):
+        """apply_style clears the glyph's axes (documented full ownership)."""
+        g = ArrayGlyph(self._dem())
+        _, ax = g.plot()
+        ax.plot([0, 1], [0, 1])  # prior artist on the glyph's axes
+        g.apply_style("topography")
+        assert len(ax.lines) == 0  # the restyle owns and clears the axes
+        plt.close("all")
+
+    def test_apply_style_forwards_add_colorbar(self):
+        """add_colorbar=False forwards to plot (no swatch legend inset drawn)."""
+        g = ArrayGlyph(self._dem())
+        g.plot()
+        g.apply_style("flow_accumulation", add_colorbar=False)
+        assert len(g.ax.child_axes) == 0
+        plt.close("all")

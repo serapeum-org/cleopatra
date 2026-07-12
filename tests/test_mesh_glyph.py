@@ -1645,3 +1645,29 @@ class TestMeshGlyphApplyStyle:
         g.plot(fvals, location="face", style=None)
         assert g.style is None
         plt.close("all")
+
+    def test_apply_style_repeated_does_not_stack_legends(self):
+        """Restyling a mesh repeatedly replaces the render rather than stacking legends."""
+        nx, ny, faces = self._mesh()
+        fvals = np.abs(np.random.default_rng(5).normal(size=len(faces))) * 100
+        g = MeshGlyph(nx, ny, faces)
+        g.plot(fvals, location="face")
+        g.apply_style("flow_accumulation")
+        g.apply_style("topography")
+        assert g.style == "topography"
+        n_cbar_axes = sum(1 for a in g.fig.axes if a is not g.ax)
+        assert n_cbar_axes == 1  # one colorbar, not stacked
+        plt.close("all")
+
+    def test_apply_style_data_override_and_copy(self):
+        """apply_style uses an explicit data= override and the cached data is a copy."""
+        nx, ny, faces = self._mesh()
+        fvals = np.abs(np.random.default_rng(6).normal(size=len(faces))) * 100
+        g = MeshGlyph(nx, ny, faces)
+        g.plot(fvals, location="face")
+        fvals[:] = 0.0  # mutate caller buffer after plot -> must not affect cache
+        assert not np.allclose(g._last_data, 0.0)
+        other = np.abs(np.random.default_rng(7).normal(size=len(faces))) * 50
+        g.apply_style("flow_accumulation", data=other)
+        assert g.style == "flow_accumulation"
+        plt.close("all")
