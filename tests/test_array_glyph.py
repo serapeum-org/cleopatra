@@ -4186,3 +4186,118 @@ class TestArrayGlyphShadedAnimate:
         anim._func(1)
         assert np.asarray(g.im.get_array())[0, 0, 3] == 0.0
         plt.close("all")
+
+
+class TestArrayGlyphApplyStyle:
+    """Tests for the public `apply_style` method and `style` read-back."""
+
+    @staticmethod
+    def _dem():
+        return np.arange(600.0).reshape(20, 30)
+
+    def test_style_defaults_to_none(self):
+        """`style` is None on a glyph with no preset applied."""
+        assert ArrayGlyph(self._dem()).style is None
+
+    def test_apply_style_restyles_in_place_and_reads_back(self):
+        """apply_style renders the preset and `style` reads back its name."""
+        g = ArrayGlyph(self._dem())
+        g.plot()
+        g.apply_style("topography")
+        assert g.style == "topography"
+        assert g.cbar is None and len(g.ax.child_axes) == 1
+        plt.close("all")
+
+    def test_apply_style_repeated_does_not_stack_legends(self):
+        """Restyling repeatedly replaces the render rather than stacking insets."""
+        g = ArrayGlyph(self._dem())
+        g.plot()
+        g.apply_style("topography")
+        g.apply_style("flow_accumulation")
+        assert g.style == "flow_accumulation"
+        assert len(g.ax.child_axes) == 1
+        plt.close("all")
+
+    def test_apply_style_forwards_hillshade(self):
+        """Extra kwargs (hillshade) are forwarded to plot and compose."""
+        g = ArrayGlyph(self._dem())
+        g.plot()
+        g.apply_style("topography", hillshade={"vert_exag": 6})
+        assert np.asarray(g.im.get_array()).ndim == 3  # shaded RGBA
+        plt.close("all")
+
+    def test_apply_style_on_unplotted_glyph_creates_figure(self):
+        """apply_style works before any plot() (renders on a fresh figure)."""
+        g = ArrayGlyph(self._dem())
+        fig, ax = g.apply_style("elevation")
+        assert fig is not None and g.style == "elevation"
+        plt.close("all")
+
+    def test_apply_style_unknown_name_raises(self):
+        """An unknown preset name raises a clear `ValueError`."""
+        with pytest.raises(ValueError, match="unknown data style"):
+            ArrayGlyph(self._dem()).apply_style("not_a_style")
+        plt.close("all")
+
+    def test_failed_apply_style_leaves_glyph_usable(self):
+        """A bad apply_style name raises without poisoning the style or wiping the render."""
+        g = ArrayGlyph(self._dem())
+        g.plot(style="topography")
+        with pytest.raises(ValueError, match="unknown data style"):
+            g.apply_style("not_a_style")
+        assert g.style == "topography"  # prior good style preserved
+        assert np.asarray(g.im.get_array()).ndim == 3  # render not wiped
+        g.plot()  # still usable
+        plt.close("all")
+
+    def test_failed_plot_style_does_not_poison(self):
+        """plot(style='bad') raises and clears the style so later plain plot() works."""
+        g = ArrayGlyph(self._dem())
+        with pytest.raises(ValueError, match="unknown data style"):
+            g.plot(style="not_a_style")
+        assert g.style is None
+        g.plot()  # not bricked
+        plt.close("all")
+
+    def test_style_is_sticky_and_clearable(self):
+        """A style survives a later plain plot() and is cleared by style=None."""
+        g = ArrayGlyph(self._dem())
+        g.plot(style="topography")
+        g.plot()
+        assert g.style == "topography"
+        g.plot(style=None)
+        assert g.style is None
+
+    def test_apply_style_on_closed_figure_renders_fresh(self):
+        """After the figure is closed, apply_style renders on a new live figure."""
+        g = ArrayGlyph(self._dem())
+        fig, _ = g.plot()
+        plt.close(fig)
+        g.apply_style("topography")
+        assert plt.fignum_exists(g.fig.number)
+        plt.close("all")
+
+    def test_apply_style_on_fig_only_construction_does_not_crash(self):
+        """apply_style on a glyph built with fig= but never plotted creates an axes."""
+        fig = plt.figure()
+        g = ArrayGlyph(self._dem(), fig=fig)
+        g.apply_style("elevation")
+        assert g.ax is not None and g.style == "elevation"
+        plt.close("all")
+
+    def test_apply_style_takes_ownership_of_its_axes(self):
+        """apply_style clears the glyph's axes (documented full ownership)."""
+        g = ArrayGlyph(self._dem())
+        _, ax = g.plot()
+        ax.plot([0, 1], [0, 1])  # prior artist on the glyph's axes
+        g.apply_style("topography")
+        assert len(ax.lines) == 0  # the restyle owns and clears the axes
+        plt.close("all")
+
+    def test_apply_style_forwards_add_colorbar(self):
+        """add_colorbar=False forwards to plot (no swatch legend inset drawn)."""
+        g = ArrayGlyph(self._dem())
+        g.plot()
+        g.apply_style("flow_accumulation", add_colorbar=False)
+        assert len(g.ax.child_axes) == 0
+        plt.close("all")

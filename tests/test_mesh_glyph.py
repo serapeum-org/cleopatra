@@ -1579,3 +1579,118 @@ class TestMeshGlyphDataStyle:
         g.plot(fvals, location="face", style="flow_accumulation")
         assert type(g._cbar.locator).__name__ == "SymmetricalLogLocator"
         plt.close("all")
+
+
+class TestMeshGlyphApplyStyle:
+    """Tests for the public `apply_style` method and `style` read-back."""
+
+    @staticmethod
+    def _mesh(n=8):
+        gx, gy = np.meshgrid(np.linspace(0, 10, n), np.linspace(0, 10, n))
+        nx, ny = gx.ravel(), gy.ravel()
+        faces = np.array(
+            [
+                [j * n + i, j * n + i + 1, j * n + i + n + 1, j * n + i + n]
+                for j in range(n - 1)
+                for i in range(n - 1)
+            ]
+        )
+        return nx, ny, faces
+
+    def test_apply_style_reuses_last_data_and_reads_back(self):
+        """apply_style restyles using the last-plotted data; `style` reads back."""
+        nx, ny, faces = self._mesh()
+        fvals = np.abs(np.random.default_rng(0).normal(size=len(faces))) * 100
+        g = MeshGlyph(nx, ny, faces)
+        g.plot(fvals, location="face")
+        g.apply_style("flow_accumulation")
+        assert g.style == "flow_accumulation"
+        assert g.im.cmap.name == "Blues"
+        plt.close("all")
+
+    def test_construction_time_style_is_honoured(self):
+        """A `style` set at construction survives plot()'s options reset."""
+        nx, ny, faces = self._mesh()
+        fvals = np.abs(np.random.default_rng(1).normal(size=len(faces))) * 100
+        g = MeshGlyph(nx, ny, faces, style="flow_accumulation")
+        g.plot(fvals, location="face")
+        assert g.style == "flow_accumulation" and g.im.cmap.name == "Blues"
+        plt.close("all")
+
+    def test_apply_style_without_data_or_prior_plot_raises(self):
+        """apply_style before any plot and with no data raises a clear error."""
+        nx, ny, faces = self._mesh()
+        with pytest.raises(ValueError, match="apply_style needs mesh data"):
+            MeshGlyph(nx, ny, faces).apply_style("flow_accumulation")
+        plt.close("all")
+
+    def test_apply_style_unknown_name_raises(self):
+        """An unknown preset name raises a clear `ValueError`."""
+        nx, ny, faces = self._mesh()
+        fvals = np.ones(len(faces))
+        g = MeshGlyph(nx, ny, faces)
+        g.plot(fvals, location="face")
+        with pytest.raises(ValueError, match="unknown data style"):
+            g.apply_style("not_a_style")
+        plt.close("all")
+
+    def test_style_is_sticky_and_clearable(self):
+        """A style survives a later plain plot(data) and is cleared by style=None."""
+        nx, ny, faces = self._mesh()
+        fvals = np.abs(np.random.default_rng(4).normal(size=len(faces))) * 100
+        g = MeshGlyph(nx, ny, faces)
+        g.plot(fvals, location="face", style="flow_accumulation")
+        g.plot(fvals, location="face")
+        assert g.style == "flow_accumulation"
+        g.plot(fvals, location="face", style=None)
+        assert g.style is None
+        plt.close("all")
+
+    def test_apply_style_repeated_does_not_stack_legends(self):
+        """Restyling a mesh repeatedly replaces the render rather than stacking legends."""
+        nx, ny, faces = self._mesh()
+        fvals = np.abs(np.random.default_rng(5).normal(size=len(faces))) * 100
+        g = MeshGlyph(nx, ny, faces)
+        g.plot(fvals, location="face")
+        g.apply_style("flow_accumulation")
+        g.apply_style("topography")
+        assert g.style == "topography"
+        n_cbar_axes = sum(1 for a in g.fig.axes if a is not g.ax)
+        assert n_cbar_axes == 1  # one colorbar, not stacked
+        plt.close("all")
+
+    def test_failed_apply_style_leaves_glyph_usable(self):
+        """A bad apply_style name raises without poisoning the sticky style."""
+        nx, ny, faces = self._mesh()
+        fvals = np.abs(np.random.default_rng(8).normal(size=len(faces))) * 100
+        g = MeshGlyph(nx, ny, faces)
+        g.plot(fvals, location="face", style="flow_accumulation")
+        with pytest.raises(ValueError, match="unknown data style"):
+            g.apply_style("not_a_style")
+        assert g.style == "flow_accumulation"
+        g.plot(fvals, location="face")  # still usable
+        plt.close("all")
+
+    def test_masked_data_cache_preserves_mask(self):
+        """A masked mesh array's mask survives the _last_data cache for restyle."""
+        nx, ny, faces = self._mesh()
+        vals = np.abs(np.random.default_rng(9).normal(size=len(faces))) * 100
+        masked = np.ma.array(vals, mask=[i % 5 == 0 for i in range(len(faces))])
+        g = MeshGlyph(nx, ny, faces)
+        g.plot(masked, location="face")
+        assert np.ma.isMaskedArray(g._last_data)
+        assert np.any(np.ma.getmaskarray(g._last_data))
+        plt.close("all")
+
+    def test_apply_style_data_override_and_copy(self):
+        """apply_style uses an explicit data= override and the cached data is a copy."""
+        nx, ny, faces = self._mesh()
+        fvals = np.abs(np.random.default_rng(6).normal(size=len(faces))) * 100
+        g = MeshGlyph(nx, ny, faces)
+        g.plot(fvals, location="face")
+        fvals[:] = 0.0  # mutate caller buffer after plot -> must not affect cache
+        assert not np.allclose(g._last_data, 0.0)
+        other = np.abs(np.random.default_rng(7).normal(size=len(faces))) * 50
+        g.apply_style("flow_accumulation", data=other)
+        assert g.style == "flow_accumulation"
+        plt.close("all")

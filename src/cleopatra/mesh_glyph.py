@@ -180,6 +180,16 @@ class MeshGlyph(GeoMixin, Glyph):
         #: `hillshade` is not overridden at `plot()` time -- keeping the option
         #: honoured at construction, consistent with `ArrayGlyph`/`KDEGlyph`.
         self._construct_hillshade = self.default_options.get("hillshade", False)
+        #: The sticky `style` preset. `plot()` resets `default_options` each
+        #: call, so this tracks the current preset (updated whenever `plot()` /
+        #: `apply_style` passes `style`, including `None` to clear) and is
+        #: restored after the reset -- so a style survives a later plain
+        #: `plot(data)` (sticky + clearable, like `ArrayGlyph`).
+        self._style_state = self.default_options.get("style")
+        #: Last `(data, location)` rendered, so `apply_style` can restyle in
+        #: place without the caller re-supplying the mesh data.
+        self._last_data = None
+        self._last_location = "face"
 
     @property
     def node_x(self) -> np.ndarray:
@@ -709,6 +719,56 @@ class MeshGlyph(GeoMixin, Glyph):
         tpc.set_facecolor(shaded)
         return tpc
 
+    @property
+    def style(self) -> str | None:
+        """Name of the `DATA_STYLES` preset currently applied, or `None`.
+
+        Reads back the preset set via the `style` constructor kwarg, a
+        `plot(style=...)` call, or `apply_style`.
+        """
+        return self.default_options.get("style")
+
+    def apply_style(
+        self, style: str, data: np.ndarray | None = None, **kwargs: Any
+    ) -> tuple[plt.Figure, plt.Axes]:
+        """Apply a `DATA_STYLES` preset by name, re-rendering the mesh in place.
+
+        A discoverable wrapper over `plot(style=...)` for restyling an
+        already-built glyph. It redraws **in place** on the glyph's own axes
+        (taking full ownership -- do not use on a shared axes), or on a fresh
+        figure if the glyph was never plotted or its figure was closed. It
+        reuses the last-plotted mesh data (and location) so the caller need not
+        re-supply it; pass `data=` when the glyph has not been plotted yet. The
+        applied style is **sticky** (survives a later plain `plot(data)`);
+        `plot(data, style=None)` clears it. Extra keyword arguments (e.g.
+        `location`, `hillshade`, `edgecolor`) are forwarded to `plot`.
+
+        Args:
+            style: A `cleopatra.colors.DATA_STYLES` preset name.
+            data: Mesh data to render; defaults to the last-plotted data.
+            **kwargs: Forwarded to `plot` (e.g. `location`, `hillshade`).
+
+        Returns:
+            tuple[Figure, Axes]: The figure and axes drawn on.
+
+        Raises:
+            ValueError: If `style` is unknown (raised by `plot`), or no data is
+                available (never plotted and none passed).
+        """
+        # Validate the name up front, before touching data/axes or persisting
+        # it, so a typo raises without wiping the render or poisoning the style.
+        resolve_single_layer_style(style)
+        if data is None:
+            data = self._last_data
+            if data is None:
+                raise ValueError(
+                    "apply_style needs mesh data: call plot(data, ...) first, "
+                    "or pass data= explicitly."
+                )
+        location = kwargs.pop("location", self._last_location)
+        self._reset_axes_for_restyle()
+        return self.plot(data, location=location, ax=self.ax, style=style, **kwargs)
+
     def plot(
         self,
         data: np.ndarray,
@@ -898,11 +958,35 @@ class MeshGlyph(GeoMixin, Glyph):
                 render_kwargs[key] = val
         self._merge_kwargs(option_kwargs)
 
-        # The reset above drops a construction-time `hillshade`; restore it
-        # unless this `plot()` call overrides it, so the option behaves like
-        # it does on `ArrayGlyph`/`KDEGlyph` (honoured at construction).
+        # The reset above drops `hillshade`/`style`; restore each unless this
+        # `plot()` overrides it. `hillshade` reverts to its construction value;
+        # `style` is sticky (tracks the last applied preset, incl. a `None`
+        # clear) so it survives a later plain `plot(data)` like on `ArrayGlyph`.
         if "hillshade" not in option_kwargs:
             self.default_options["hillshade"] = self._construct_hillshade
+        if "style" in option_kwargs:
+            new_style = self.default_options["style"]
+            if new_style is not None:
+                # Validate before committing to the sticky state, and roll back
+                # to the prior good style on a bad name so the glyph isn't
+                # bricked (a poisoned sticky style re-raises on every plot).
+                try:
+                    resolve_single_layer_style(new_style)
+                except ValueError:
+                    self.default_options["style"] = self._style_state
+                    raise
+            self._style_state = new_style
+        else:
+            self.default_options["style"] = self._style_state
+
+        # Remember what was rendered so `apply_style` can restyle in place.
+        # Copy the array so a caller mutating its buffer after plot() (a common
+        # reuse pattern) does not change what a later `apply_style` renders;
+        # preserve a masked array's mask (a plain `np.array` copy would drop it).
+        self._last_data = (
+            np.ma.copy(data) if np.ma.isMaskedArray(data) else np.array(data, copy=True)
+        )
+        self._last_location = location
 
         # Recompute vmin/vmax from data unless user explicitly passed them.
         if "vmin" not in option_kwargs:

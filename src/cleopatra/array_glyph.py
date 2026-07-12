@@ -1528,6 +1528,61 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         return im, cbar_kw
 
+    @property
+    def style(self) -> str | None:
+        """Name of the `DATA_STYLES` preset currently applied, or `None`.
+
+        Reads back the preset set via the `style` constructor kwarg, a
+        `plot(style=...)` call, or `apply_style`.
+        """
+        return self.default_options.get("style")
+
+    def apply_style(self, style: str, **kwargs: Any) -> tuple[Figure, Axes]:
+        """Apply a `DATA_STYLES` preset by name, re-rendering the glyph in place.
+
+        A discoverable wrapper over `plot(style=...)` for restyling an
+        already-built glyph. It redraws **in place** on the glyph's own axes
+        (clearing the previous render first), so `apply_style` takes full
+        ownership of that axes -- do not use it on an axes shared with unrelated
+        caller content. If the glyph was never plotted (or its figure was
+        closed), it renders on a fresh figure. Extra keyword arguments (e.g.
+        `hillshade`, `add_colorbar`) are forwarded to `plot`. The applied style
+        is **sticky** (survives a later plain `plot()`); `plot(style=None)`
+        clears it.
+
+        Args:
+            style: A `cleopatra.colors.DATA_STYLES` preset name (see
+                `sorted(cleopatra.colors.DATA_STYLES)`).
+            **kwargs: Forwarded to `plot` (e.g. `hillshade`).
+
+        Returns:
+            tuple[Figure, Axes]: The figure and axes drawn on.
+
+        Raises:
+            ValueError: If `style` is unknown or names a multi-layer preset
+                (raised by `plot`).
+
+        Examples:
+            - Restyle a rendered glyph by name:
+                ```python
+                >>> import matplotlib
+                >>> matplotlib.use("Agg")
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> glyph = ArrayGlyph(np.arange(60.0).reshape(6, 10))
+                >>> _ = glyph.plot()
+                >>> _ = glyph.apply_style("topography")
+                >>> glyph.style
+                'topography'
+
+                ```
+        """
+        # Validate the name up front, before clearing the axes or persisting it,
+        # so a typo raises without wiping the render or poisoning the style.
+        resolve_single_layer_style(style)
+        self._reset_axes_for_restyle()
+        return self.plot(style=style, ax=self.ax, **kwargs)
+
     def _resolve_style_layer(self, style: str) -> str:
         """Validate a `DATA_STYLES` name and return its single layer key.
 
@@ -2439,6 +2494,13 @@ class ArrayGlyph(GeoMixin, Glyph):
         # are reproduced rather than lossily mapped onto `color_scale`.
         style = self.default_options.get("style")
         if style is not None:
+            # Validate before rendering; on a bad name clear the sticky style
+            # and re-raise, so a poisoned name can't brick every later plot().
+            try:
+                resolve_single_layer_style(style)
+            except ValueError:
+                self.default_options["style"] = None
+                raise
             if self.rgb:
                 warnings.warn(
                     "data-style presets do not apply to RGB arrays; 'style' is "

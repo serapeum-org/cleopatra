@@ -76,6 +76,17 @@ def _root_figure(ax: Axes) -> Figure:
     return fig
 
 
+def _figure_is_open(fig: Figure | None) -> bool:
+    """True if `fig` is a live top-level `Figure` still registered with pyplot.
+
+    Pass a root `Figure` (resolve a `SubFigure` via `_root_figure` first); a
+    figure whose window/number has been closed, or a `SubFigure` (no `.number`),
+    returns `False`.
+    """
+    num = getattr(fig, "number", None)
+    return num is not None and plt.fignum_exists(num)
+
+
 def _immediate_figure(ax: Axes) -> Figure:
     """Return the figure `ax` is directly attached to (its immediate parent).
 
@@ -370,6 +381,42 @@ class Glyph:
         """
         fig, ax = plt.subplots(figsize=self.default_options["figsize"])
         return fig, ax
+
+    def _reset_axes_for_restyle(self) -> None:
+        """Prepare `self.ax` for an in-place restyle (used by `apply_style`).
+
+        When the glyph has a **live** axes (already plotted and its figure is
+        still open), the previous render is cleared from it -- the glyph's
+        colorbar, any legend / swatch inset axes, and all artists -- so the
+        restyle replaces the content in place. `apply_style` therefore takes
+        full ownership of this axes and must not be used on an axes shared with
+        unrelated caller content. When the glyph was never plotted, its figure
+        was closed, or it was built with a figure but no axes, a fresh axes is
+        created instead (on the existing figure when one is still open).
+        """
+        ax = getattr(self, "ax", None)
+        fig = getattr(self, "fig", None)
+        # Decide liveness by the ROOT figure's number: a SubFigure has no number
+        # of its own, so resolving the root detects a closed parent Figure too.
+        root = _root_figure(ax) if ax is not None else fig
+        ax_live = ax is not None and _figure_is_open(root)
+        if ax_live:
+            for attr in ("cbar", "_cbar"):
+                cbar = getattr(self, attr, None)
+                if cbar is not None:
+                    cbar.remove()
+                    setattr(self, attr, None)
+            for inset in list(self.ax.child_axes):
+                inset.remove()
+            self.ax.clear()
+        elif _figure_is_open(fig):
+            # A live figure with no (live) axes -- e.g. a `fig`-only construction:
+            # reuse an existing axes on it if present, else add one, rather than
+            # crashing when `plot` dereferences `self.ax` (or overlapping a
+            # caller's own axes with a fresh `111` subplot).
+            self.ax = fig.axes[0] if fig.axes else fig.add_subplot(111)
+        else:
+            self.fig, self.ax = self.create_figure_axes()
 
     def get_ticks(self) -> np.ndarray:
         """Compute colorbar tick locations from default_options.
