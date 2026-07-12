@@ -649,8 +649,13 @@ class MeshGlyph(GeoMixin, Glyph):
         triangle-normal hillshade into those colours via
         `cleopatra.hillshade.shade_faces`, so a wide-range terrain mesh reads
         by form. The returned `tripcolor` mappable keeps its cmap/norm, so the
-        colorbar is unaffected. Requires node-centered `data` (the surface's
-        per-node elevation).
+        colorbar spans the **node** elevation range (`vmin`/`vmax` from the
+        per-node `data`). Note that faces are coloured by each triangle's
+        *mean* node elevation, whose range is narrower than the node range on
+        any mesh with within-triangle variation, so the colorbar's extreme
+        colours may not appear on the surface — the bar reflects the input
+        data range, not the drawn per-face means. Requires node-centered
+        `data` (the surface's per-node elevation).
 
         Args:
             ax: Axes to draw on.
@@ -748,6 +753,20 @@ class MeshGlyph(GeoMixin, Glyph):
                   over cleopatra's defaults (`inline=True`, `fontsize=8`,
                   `fmt="%g"`) so user keys (`fmt`, `fontsize`, `colors`,
                   `inline_spacing`, …) win on collision.
+
+                One relief option is honoured **only** for node data
+                (`location="node"`):
+
+                - `hillshade` (bool | dict, default `False`): render the
+                  mesh as a relief-shaded terrain surface. Each triangle is
+                  coloured by its *mean* node elevation and blended with a
+                  triangle-normal hillshade. The colorbar spans the **node**
+                  elevation range, so — because faces use per-triangle means
+                  — its extreme colours may not appear on the surface; the
+                  bar reflects the input data range, not the drawn per-face
+                  colours. Faces touching a non-finite (nodata) node render
+                  transparent. Passing `hillshade` with `location="face"`
+                  raises `ValueError`.
 
         Returns:
             tuple[Figure, Axes]: The matplotlib Figure and Axes objects.
