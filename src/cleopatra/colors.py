@@ -672,6 +672,37 @@ _alpha_rgba = alpha_rgba
 _category_boundaries = category_boundaries
 
 
+def resolve_single_layer_style(style: str) -> tuple[str, dict[str, Any]]:
+    """Resolve a single-layer `DATA_STYLES` preset to its `(layer, config)`.
+
+    A single glyph field (a raster band, a mesh's node/face values, a density)
+    maps to exactly one preset layer, so multi-layer presets are rejected. Used
+    by the glyph `style=` options to look up the preset's cmap/norm/categories.
+
+    Args:
+        style: A key of `DATA_STYLES`.
+
+    Returns:
+        tuple: `(layer_name, layer_config)` for the preset's single layer.
+
+    Raises:
+        ValueError: If `style` is unknown, or names a multi-layer preset.
+    """
+    if style not in DATA_STYLES:
+        raise ValueError(
+            f"unknown data style {style!r}; valid styles are {sorted(DATA_STYLES)}"
+        )
+    layers = DATA_STYLES[style]
+    if len(layers) != 1:
+        raise ValueError(
+            f"data style {style!r} defines multiple layers {sorted(layers)}; a "
+            "single glyph field maps to one layer. Use apply_data_style directly "
+            "for multi-layer styles."
+        )
+    name = next(iter(layers))
+    return name, layers[name]
+
+
 def apply_data_style(
     ax: Axes,
     layers: dict[str, np.ndarray],

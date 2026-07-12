@@ -36,10 +36,18 @@ import matplotlib.tri as mtri
 import numpy as np
 from matplotlib.animation import FuncAnimation
 
+from matplotlib.colors import BoundaryNorm, ListedColormap
+
+from cleopatra.colors import (
+    category_boundaries,
+    resolve_single_layer_style,
+    resolve_style_norm,
+)
 from cleopatra.geo import GeoMixin
 from cleopatra.glyph import Glyph
 from cleopatra.hillshade import resolve_hillshade, shade_faces
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
+from cleopatra.styles import disjoint_legend
 
 MESH_DEFAULT_OPTIONS = {
     "vmin": None,
@@ -47,6 +55,7 @@ MESH_DEFAULT_OPTIONS = {
     "labels": False,
     "label_kw": None,
     "hillshade": False,
+    "style": None,
 }
 MESH_DEFAULT_OPTIONS = STYLE_DEFAULTS | MESH_DEFAULT_OPTIONS
 
@@ -910,6 +919,34 @@ class MeshGlyph(GeoMixin, Glyph):
         ticks = self.get_ticks()
         norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
 
+        # Named data-style preset: a continuous preset overrides the cmap/norm
+        # (and composes with hillshade, which reads them); a categorical preset
+        # builds a discrete colormap, masks out-of-range codes to transparent,
+        # swaps the colorbar for a `disjoint_legend`, and disables relief
+        # (undefined for class codes).
+        style = self.default_options.get("style")
+        style_legend = None
+        if style is not None:
+            _, cfg = resolve_single_layer_style(style)
+            data_f = np.asarray(data, dtype=float)
+            categories = cfg.get("categories")
+            if categories is not None:
+                cats = sorted(categories, key=lambda c: c[0])
+                cat_values = np.array([float(c[0]) for c in cats])
+                cat_colors = [c[1] for c in cats]
+                cat_labels = [c[2] for c in cats]
+                self.default_options["cmap"] = ListedColormap(cat_colors)
+                norm = BoundaryNorm(
+                    category_boundaries(list(cat_values)), len(cat_colors)
+                )
+                data = np.where(np.isin(data_f, cat_values), data_f, np.nan)
+                colorbar = False
+                self.default_options["hillshade"] = False
+                style_legend = (cat_colors, cat_labels, cfg["label"])
+            else:
+                self.default_options["cmap"] = cfg["cmap"]
+                norm, _, _ = resolve_style_norm(data_f, cfg)
+
         # Reset any inline contour labels from a previous render; the
         # line-tricontour branch below repopulates this when `labels=True`,
         # every other path leaves it `None`.
@@ -966,6 +1003,13 @@ class MeshGlyph(GeoMixin, Glyph):
 
         if colorbar:
             self._cbar = self.create_color_bar(self.ax, tpc, cbar_kw)
+
+        # A categorical preset presents its classes via a discrete legend.
+        if style_legend is not None:
+            cat_colors, cat_labels, cat_title = style_legend
+            disjoint_legend(
+                self.ax, cat_colors, cat_labels, title=cat_title, loc="upper right"
+            )
 
         if self.default_options["title"]:
             self.ax.set_title(

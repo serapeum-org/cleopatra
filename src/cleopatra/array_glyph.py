@@ -44,6 +44,7 @@ from cleopatra.colors import (
     alpha_rgba,
     apply_data_style,
     category_boundaries,
+    resolve_single_layer_style,
     resolve_style_norm,
 )
 from cleopatra.geo import GeoMixin
@@ -1545,19 +1546,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             ValueError: If `style` is unknown, or names a multi-layer preset
                 (which cannot be applied to a single raster band).
         """
-        if style not in DATA_STYLES:
-            raise ValueError(
-                f"unknown data style {style!r}; valid styles are "
-                f"{sorted(DATA_STYLES)}"
-            )
-        layers = DATA_STYLES[style]
-        if len(layers) != 1:
-            raise ValueError(
-                f"data style {style!r} defines multiple layers {sorted(layers)}; "
-                "ArrayGlyph applies single-layer presets to a single band. Use "
-                "cleopatra.colors.apply_data_style directly for multi-layer styles."
-            )
-        return next(iter(layers))
+        return resolve_single_layer_style(style)[0]
 
     def _plot_with_style(self, style: str) -> tuple[Figure, Axes]:
         """Render the array with a named `DATA_STYLES` preset.
