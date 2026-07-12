@@ -651,3 +651,14 @@ class TestKDEGlyphApplyStyle:
         with pytest.raises(ValueError, match="unknown data style"):
             KDEGlyph(x, y, gridsize=40).apply_style("not_a_style")
         plt.close("all")
+
+    def test_style_is_sticky_and_clearable(self):
+        """A style survives a later plain plot() and is cleared by style=None."""
+        x, y = self._cloud()
+        g = KDEGlyph(x, y, gridsize=40)
+        g.plot(style="temperature")
+        g.plot()
+        assert g.style == "temperature"
+        g.plot(style=None)
+        assert g.style is None
+        plt.close("all")

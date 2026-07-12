@@ -51,6 +51,11 @@ from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 #: the temporary at ~`MAX_KDE_BLOCK` floats (a few tens of MB).
 MAX_KDE_BLOCK = 4_000_000
 
+#: Sentinel for `plot(style=...)` distinguishing "not passed" (keep the current
+#: sticky style) from an explicit `style=None` (clear it back to plain density
+#: colouring). KDE's fixed signature cannot use `None` for both.
+_UNSET = object()
+
 #: Option keys for KDEGlyph. `ticks_spacing` is `None` so the shared
 #: `_prepare_scalar_mapping` helper auto-derives it from the density range.
 KDE_DEFAULT_OPTIONS = {
@@ -354,7 +359,7 @@ class KDEGlyph(Glyph):
         title: str | None = None,
         add_colorbar: bool | None = None,
         hillshade: bool | dict | None = None,
-        style: str | None = None,
+        style: str | None = _UNSET,
     ):
         """Render the 2-D density as filled or line contours.
 
@@ -440,10 +445,12 @@ class KDEGlyph(Glyph):
         # has no meaning for a continuous density surface, so reject it. The
         # cmap is resolved into a LOCAL (not `opts`), so a per-call `style` does
         # not leak its colormap into a later `plot()` on the same instance.
-        # Persist a plot-time `style` name into the options so `self.style`
-        # reads it back (matching ArrayGlyph, whose **kwargs persist it). Only
-        # the name is stored -- the resolved cmap stays a local (no leak).
-        if style is not None:
+        # Persist a plot-time `style` into the options so `self.style` reads it
+        # back and it stays sticky across later plain `plot()` calls (matching
+        # ArrayGlyph). Only the name is stored -- the resolved cmap stays a
+        # local (no leak). A passed `style=None` clears it; not passing `style`
+        # (the `_UNSET` sentinel) keeps the current sticky value.
+        if style is not _UNSET:
             opts["style"] = style
         style = opts.get("style")
         if style is not None:

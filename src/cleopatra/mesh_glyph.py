@@ -180,9 +180,12 @@ class MeshGlyph(GeoMixin, Glyph):
         #: `hillshade` is not overridden at `plot()` time -- keeping the option
         #: honoured at construction, consistent with `ArrayGlyph`/`KDEGlyph`.
         self._construct_hillshade = self.default_options.get("hillshade", False)
-        #: `style` set at construction, restored after `plot()`'s options reset
-        #: (same shim as `hillshade`) so a construction-time preset is honoured.
-        self._construct_style = self.default_options.get("style")
+        #: The sticky `style` preset. `plot()` resets `default_options` each
+        #: call, so this tracks the current preset (updated whenever `plot()` /
+        #: `apply_style` passes `style`, including `None` to clear) and is
+        #: restored after the reset -- so a style survives a later plain
+        #: `plot(data)` (sticky + clearable, like `ArrayGlyph`).
+        self._style_state = self.default_options.get("style")
         #: Last `(data, location)` rendered, so `apply_style` can restyle in
         #: place without the caller re-supplying the mesh data.
         self._last_data = None
@@ -957,13 +960,16 @@ class MeshGlyph(GeoMixin, Glyph):
                 render_kwargs[key] = val
         self._merge_kwargs(option_kwargs)
 
-        # The reset above drops a construction-time `hillshade`/`style`; restore
-        # each unless this `plot()` call overrides it, so both options behave
-        # like they do on `ArrayGlyph`/`KDEGlyph` (honoured at construction).
+        # The reset above drops `hillshade`/`style`; restore each unless this
+        # `plot()` overrides it. `hillshade` reverts to its construction value;
+        # `style` is sticky (tracks the last applied preset, incl. a `None`
+        # clear) so it survives a later plain `plot(data)` like on `ArrayGlyph`.
         if "hillshade" not in option_kwargs:
             self.default_options["hillshade"] = self._construct_hillshade
-        if "style" not in option_kwargs:
-            self.default_options["style"] = self._construct_style
+        if "style" in option_kwargs:
+            self._style_state = self.default_options["style"]
+        else:
+            self.default_options["style"] = self._style_state
 
         # Remember what was rendered so `apply_style` can restyle in place.
         self._last_data = data

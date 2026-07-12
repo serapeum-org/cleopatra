@@ -4238,3 +4238,12 @@ class TestArrayGlyphApplyStyle:
         with pytest.raises(ValueError, match="unknown data style"):
             ArrayGlyph(self._dem()).apply_style("not_a_style")
         plt.close("all")
+
+    def test_style_is_sticky_and_clearable(self):
+        """A style survives a later plain plot() and is cleared by style=None."""
+        g = ArrayGlyph(self._dem())
+        g.plot(style="topography")
+        g.plot()
+        assert g.style == "topography"
+        g.plot(style=None)
+        assert g.style is None

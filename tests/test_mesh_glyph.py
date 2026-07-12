@@ -1633,3 +1633,15 @@ class TestMeshGlyphApplyStyle:
         with pytest.raises(ValueError, match="unknown data style"):
             g.apply_style("not_a_style")
         plt.close("all")
+
+    def test_style_is_sticky_and_clearable(self):
+        """A style survives a later plain plot(data) and is cleared by style=None."""
+        nx, ny, faces = self._mesh()
+        fvals = np.abs(np.random.default_rng(4).normal(size=len(faces))) * 100
+        g = MeshGlyph(nx, ny, faces)
+        g.plot(fvals, location="face", style="flow_accumulation")
+        g.plot(fvals, location="face")
+        assert g.style == "flow_accumulation"
+        g.plot(fvals, location="face", style=None)
+        assert g.style is None
+        plt.close("all")
