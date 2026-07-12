@@ -321,9 +321,11 @@ class KDEGlyph(Glyph):
         """Apply a continuous `DATA_STYLES` preset by name, re-rendering in place.
 
         A discoverable wrapper over `plot(style=...)` for restyling an
-        already-built glyph: it redraws on the glyph's existing axes (clearing
-        the previous render first) or, if the glyph has not been plotted yet,
-        on a new figure.
+        already-built glyph. It redraws **in place** on the glyph's own axes
+        (taking full ownership -- do not use on a shared axes), or on a fresh
+        figure if the glyph was never plotted or its figure was closed. The
+        applied style is **sticky** (survives a later plain `plot()`);
+        `plot(style=None)` clears it.
 
         Args:
             style: A continuous `cleopatra.colors.DATA_STYLES` preset name.
@@ -338,19 +340,10 @@ class KDEGlyph(Glyph):
             ValueError: If `style` is unknown, or is categorical (a density is
                 continuous), raised by `plot`.
         """
-        if getattr(self, "ax", None) is not None:
-            if self.cbar is not None:
-                self.cbar.remove()
-                self.cbar = None
-            for inset in list(self.ax.child_axes):
-                inset.remove()
-            self.ax.clear()
-            return self.plot(
-                ax=self.ax, title=title, add_colorbar=add_colorbar,
-                hillshade=hillshade, style=style,
-            )
+        self._reset_axes_for_restyle()
         return self.plot(
-            title=title, add_colorbar=add_colorbar, hillshade=hillshade, style=style
+            ax=self.ax, title=title, add_colorbar=add_colorbar,
+            hillshade=hillshade, style=style,
         )
 
     def plot(
@@ -383,7 +376,13 @@ class KDEGlyph(Glyph):
                 works the same way across all three glyphs.
             style: Name of a continuous `cleopatra.colors.DATA_STYLES` preset
                 to colour the density with (its cmap + norm; composes with
-                `hillshade`). Defaults to None, keeping the construction value.
+                `hillshade`). The preset name is **sticky** -- once set it
+                persists into `default_options` and survives later plain
+                `plot()` calls (like `ArrayGlyph`), and `self.style` reads it
+                back; the resolved cmap is not persisted, so it never leaks.
+                Not passing `style` keeps the current preset; passing
+                `style=None` clears it back to the plain density colouring
+                (unlike `hillshade`, which reverts to its construction value).
                 A categorical preset has no meaning for a continuous density
                 and raises `ValueError`. Valid names:
                 `sorted(cleopatra.colors.DATA_STYLES)`.

@@ -371,6 +371,38 @@ class Glyph:
         fig, ax = plt.subplots(figsize=self.default_options["figsize"])
         return fig, ax
 
+    def _reset_axes_for_restyle(self) -> None:
+        """Prepare `self.ax` for an in-place restyle (used by `apply_style`).
+
+        When the glyph has a **live** axes (already plotted and its figure is
+        still open), the previous render is cleared from it -- the glyph's
+        colorbar, any legend / swatch inset axes, and all artists -- so the
+        restyle replaces the content in place. `apply_style` therefore takes
+        full ownership of this axes and must not be used on an axes shared with
+        unrelated caller content. When the glyph was never plotted, its figure
+        was closed, or it was built with a figure but no axes, a fresh axes is
+        created instead (on the existing figure when one is still open).
+        """
+        ax = getattr(self, "ax", None)
+        fig = getattr(self, "fig", None)
+        num = getattr(fig, "number", None)
+        fig_open = fig is not None and (num is None or plt.fignum_exists(num))
+        if ax is not None and fig_open:
+            for attr in ("cbar", "_cbar"):
+                cbar = getattr(self, attr, None)
+                if cbar is not None:
+                    cbar.remove()
+                    setattr(self, attr, None)
+            for inset in list(self.ax.child_axes):
+                inset.remove()
+            self.ax.clear()
+        elif fig_open:
+            # figure exists but has no axes (e.g. a `fig`-only construction):
+            # add one rather than crashing when `plot` dereferences `self.ax`.
+            self.ax = fig.add_subplot(111)
+        else:
+            self.fig, self.ax = self.create_figure_axes()
+
     def get_ticks(self) -> np.ndarray:
         """Compute colorbar tick locations from default_options.
 

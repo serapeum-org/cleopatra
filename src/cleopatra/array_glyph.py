@@ -1541,10 +1541,14 @@ class ArrayGlyph(GeoMixin, Glyph):
         """Apply a `DATA_STYLES` preset by name, re-rendering the glyph in place.
 
         A discoverable wrapper over `plot(style=...)` for restyling an
-        already-built glyph: it redraws on the glyph's existing axes (clearing
-        the previous render first) or, if the glyph has not been plotted yet,
-        on a new figure. Extra keyword arguments (e.g. `hillshade`,
-        `add_colorbar`) are forwarded to `plot`.
+        already-built glyph. It redraws **in place** on the glyph's own axes
+        (clearing the previous render first), so `apply_style` takes full
+        ownership of that axes -- do not use it on an axes shared with unrelated
+        caller content. If the glyph was never plotted (or its figure was
+        closed), it renders on a fresh figure. Extra keyword arguments (e.g.
+        `hillshade`, `add_colorbar`) are forwarded to `plot`. The applied style
+        is **sticky** (survives a later plain `plot()`); `plot(style=None)`
+        clears it.
 
         Args:
             style: A `cleopatra.colors.DATA_STYLES` preset name (see
@@ -1573,19 +1577,8 @@ class ArrayGlyph(GeoMixin, Glyph):
 
                 ```
         """
-        if getattr(self, "ax", None) is not None:
-            self._clear_axes_for_restyle()
-            return self.plot(style=style, ax=self.ax, **kwargs)
-        return self.plot(style=style, **kwargs)
-
-    def _clear_axes_for_restyle(self) -> None:
-        """Remove the previous render (colorbar, legend insets, artists) in place."""
-        if self.cbar is not None:
-            self.cbar.remove()
-            self.cbar = None
-        for inset in list(self.ax.child_axes):
-            inset.remove()
-        self.ax.clear()
+        self._reset_axes_for_restyle()
+        return self.plot(style=style, ax=self.ax, **kwargs)
 
     def _resolve_style_layer(self, style: str) -> str:
         """Validate a `DATA_STYLES` name and return its single layer key.

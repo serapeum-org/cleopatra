@@ -734,9 +734,13 @@ class MeshGlyph(GeoMixin, Glyph):
         """Apply a `DATA_STYLES` preset by name, re-rendering the mesh in place.
 
         A discoverable wrapper over `plot(style=...)` for restyling an
-        already-built glyph. It reuses the last-plotted mesh data (and
-        location) so the caller need not re-supply it; pass `data=` when the
-        glyph has not been plotted yet. Extra keyword arguments (e.g.
+        already-built glyph. It redraws **in place** on the glyph's own axes
+        (taking full ownership -- do not use on a shared axes), or on a fresh
+        figure if the glyph was never plotted or its figure was closed. It
+        reuses the last-plotted mesh data (and location) so the caller need not
+        re-supply it; pass `data=` when the glyph has not been plotted yet. The
+        applied style is **sticky** (survives a later plain `plot(data)`);
+        `plot(data, style=None)` clears it. Extra keyword arguments (e.g.
         `location`, `hillshade`, `edgecolor`) are forwarded to `plot`.
 
         Args:
@@ -759,17 +763,8 @@ class MeshGlyph(GeoMixin, Glyph):
                     "or pass data= explicitly."
                 )
         location = kwargs.pop("location", self._last_location)
-        if getattr(self, "ax", None) is not None:
-            if self._cbar is not None:
-                self._cbar.remove()
-                self._cbar = None
-            for inset in list(self.ax.child_axes):
-                inset.remove()
-            self.ax.clear()
-            return self.plot(
-                data, location=location, ax=self.ax, style=style, **kwargs
-            )
-        return self.plot(data, location=location, style=style, **kwargs)
+        self._reset_axes_for_restyle()
+        return self.plot(data, location=location, ax=self.ax, style=style, **kwargs)
 
     def plot(
         self,
@@ -972,7 +967,9 @@ class MeshGlyph(GeoMixin, Glyph):
             self.default_options["style"] = self._style_state
 
         # Remember what was rendered so `apply_style` can restyle in place.
-        self._last_data = data
+        # Copy the array so a caller mutating its buffer after plot() (a common
+        # reuse pattern) does not change what a later `apply_style` renders.
+        self._last_data = np.array(data, copy=True)
         self._last_location = location
 
         # Recompute vmin/vmax from data unless user explicitly passed them.
