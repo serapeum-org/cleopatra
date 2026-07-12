@@ -108,6 +108,31 @@ def _azimuths(multidirectional: Any, azimuth: float) -> list[float]:
     return [float(a) for a in multidirectional]
 
 
+def _illumination(
+    elevation: np.ndarray,
+    azimuth: float,
+    altitude: float,
+    vert_exag: float,
+    multidirectional: Any,
+    fraction: float,
+    dx: float,
+    dy: float,
+) -> np.ndarray:
+    """Terrain illumination in `[0, 1]`, averaged over `multidirectional` azimuths.
+
+    A cell adjacent to NaN gets a NaN gradient, mapped to neutral (mid, 0.5)
+    illumination so it neither brightens nor darkens.
+    """
+    intensities = [
+        LightSource(azdeg=az, altdeg=altitude).hillshade(
+            elevation, vert_exag=vert_exag, dx=dx, dy=dy, fraction=fraction
+        )
+        for az in _azimuths(multidirectional, azimuth)
+    ]
+    intensity = np.mean(intensities, axis=0)
+    return np.where(np.isfinite(intensity), intensity, 0.5)
+
+
 def shade_grid(
     elevation: np.ndarray,
     cmap: str | Colormap,
@@ -160,17 +185,9 @@ def shade_grid(
 
     rgb = cmap_obj(norm(elevation))[..., :3]
 
-    intensities = [
-        LightSource(azdeg=az, altdeg=altitude).hillshade(
-            elevation, vert_exag=vert_exag, dx=dx, dy=dy, fraction=fraction
-        )
-        for az in _azimuths(multidirectional, azimuth)
-    ]
-    intensity = np.mean(intensities, axis=0)
-    # A cell adjacent to NaN gets a NaN gradient -> neutral (mid) illumination;
-    # the cell itself is made transparent below if its elevation is non-finite.
-    intensity = np.where(np.isfinite(intensity), intensity, 0.5)
-
+    intensity = _illumination(
+        elevation, azimuth, altitude, vert_exag, multidirectional, fraction, dx, dy
+    )
     ls = LightSource(azdeg=azimuth, altdeg=altitude)
     shaded_rgb = _blend_fn(ls, blend_mode)(rgb, intensity[..., np.newaxis])
     shaded_rgb = np.clip(shaded_rgb, 0.0, 1.0)
@@ -180,6 +197,57 @@ def shade_grid(
     )
     rgba[~finite] = 0.0
     return rgba
+
+
+def shade_rgb(
+    rgb: np.ndarray,
+    elevation: np.ndarray,
+    *,
+    azimuth: float = 315.0,
+    altitude: float = 45.0,
+    vert_exag: float = 1.0,
+    blend_mode: str = "overlay",
+    multidirectional: Any = False,
+    fraction: float = 1.0,
+    dx: float = 1.0,
+    dy: float = 1.0,
+) -> np.ndarray:
+    """Blend hillshade relief into an already-coloured RGB(A) image (regular grid).
+
+    Unlike `shade_grid` (which colours `elevation` itself with a colormap), this
+    lights colours produced elsewhere -- e.g. a `DATA_STYLES` preset image -- so
+    the source colours and their opacity are preserved and merely illuminated by
+    the terrain. An input alpha channel is carried through unchanged (so the
+    preset's transparent nodata / value-linked opacity survives).
+
+    Args:
+        rgb: `(*, *, 3)` or `(*, *, 4)` image to be lit.
+        elevation: 2D surface whose slopes drive the illumination (same shape as
+            `rgb`'s first two axes).
+        azimuth: Light compass direction in degrees (315 = NW).
+        altitude: Light height above the horizon in degrees.
+        vert_exag: Vertical exaggeration -- raise it for more relief contrast.
+        blend_mode: `"overlay"`, `"soft"`, or `"hsv"`.
+        multidirectional: `False`, an int `N`, or a sequence of azimuths.
+        fraction: Increases the illumination contrast.
+        dx: Grid spacing in x (affects slope).
+        dy: Grid spacing in y (affects slope).
+
+    Returns:
+        np.ndarray: The lit image, same channel count as `rgb`.
+    """
+    rgb = np.asarray(rgb, dtype=float)
+    elevation = np.asarray(elevation, dtype=float)
+    intensity = _illumination(
+        elevation, azimuth, altitude, vert_exag, multidirectional, fraction, dx, dy
+    )
+    ls = LightSource(azdeg=azimuth, altdeg=altitude)
+    shaded = np.clip(
+        _blend_fn(ls, blend_mode)(rgb[..., :3], intensity[..., np.newaxis]), 0.0, 1.0
+    )
+    if rgb.shape[-1] == 4:
+        return np.concatenate([shaded, rgb[..., 3:4]], axis=-1)
+    return shaded
 
 
 def shade_faces(

@@ -3921,14 +3921,15 @@ class TestArrayGlyphDataStyle:
             ArrayGlyph(self._accum(), style="haze").plot()
         plt.close("all")
 
-    def test_curvilinear_coords_with_style_raises_clear_error(self):
-        """Curvilinear `coords` + `style` fails with a clear cleopatra message, not a matplotlib TypeError."""
+    def test_curvilinear_coords_with_style_renders(self):
+        """Curvilinear `coords` + `style` render via shading='nearest' (a QuadMesh)."""
         arr = self._accum()
         ny, nx = arr.shape
         x = np.linspace(-3.0, 3.0, nx)
         y = np.linspace(-3.0, 3.0, ny)
-        with pytest.raises(ValueError, match="do not support curvilinear 'coords'"):
-            ArrayGlyph(arr, coords=(x, y), style="flow_accumulation").plot()
+        g = ArrayGlyph(arr, coords=(x, y), style="flow_accumulation")
+        g.plot()
+        assert type(g.im).__name__ == "QuadMesh"
         plt.close("all")
 
     def test_integer_masked_categorical_input_does_not_crash(self):
@@ -3954,10 +3955,26 @@ class TestArrayGlyphDataStyle:
             ArrayGlyph(rgb, rgb=[0, 1, 2], style="flow_accumulation").plot()
         plt.close("all")
 
-    def test_plot_style_with_hillshade_warns(self):
-        """In `plot`, a `style` takes precedence over `hillshade`, which is warned and dropped."""
-        with pytest.warns(UserWarning, match="hillshade is not composed"):
-            ArrayGlyph(self._accum(), style="flow_accumulation", hillshade=True).plot()
+    def test_plot_style_with_hillshade_composes(self):
+        """In `plot`, `style` + `hillshade` compose: the preset RGBA is relief-shaded."""
+        g = ArrayGlyph(self._accum(), style="flow_accumulation", hillshade={"vert_exag": 5})
+        g.plot()
+        shaded = np.asarray(g.im.get_array())
+        assert shaded.ndim == 3 and shaded.shape[-1] == 4
+        g2 = ArrayGlyph(self._accum(), style="flow_accumulation")
+        g2.plot()
+        base = np.asarray(g2.im.get_array())
+        assert not np.allclose(shaded[..., :3], base[..., :3]), "hillshade lit the preset colours"
+        plt.close("all")
+
+    def test_curvilinear_style_with_hillshade_warns(self):
+        """On a curvilinear grid, `style` + `hillshade` warns (no 2D RGBA grid to light)."""
+        arr = self._accum()
+        ny, nx = arr.shape
+        x = np.linspace(-3.0, 3.0, nx)
+        y = np.linspace(-3.0, 3.0, ny)
+        with pytest.warns(UserWarning, match="curvilinear grid"):
+            ArrayGlyph(arr, coords=(x, y), style="flow_accumulation", hillshade=True).plot()
         plt.close("all")
 
     def test_unknown_style_with_coords_reports_style_error_first(self):

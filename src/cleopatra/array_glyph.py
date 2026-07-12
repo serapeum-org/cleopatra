@@ -41,7 +41,7 @@ from PIL import Image
 
 from cleopatra.colors import DATA_STYLES, alpha_rgba, apply_data_style, resolve_style_norm
 from cleopatra.geo import GeoMixin
-from cleopatra.hillshade import resolve_hillshade, shade_grid
+from cleopatra.hillshade import resolve_hillshade, shade_grid, shade_rgb
 from cleopatra.glyph import Glyph, _root_figure
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import ColorScale  # re-exported for convenience  # noqa: F401
@@ -1568,27 +1568,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         Returns:
             tuple[Figure, Axes]: The figure and axes drawn on.
         """
-        # Validate the style name first, then the coords contract, and only
-        # warn about hillshade on the path that actually proceeds -- so an
-        # aborting call reports the right error and emits no spurious warning.
         layer = self._resolve_style_layer(style)
-        if self._coords is not None:
-            # apply_data_style's curvilinear path forces shading="flat", which
-            # needs cell-EDGE coordinates, but ArrayGlyph stores cell CENTRES.
-            # Fail with a clear cleopatra message instead of a downstream
-            # matplotlib "Dimensions of C should be one smaller than X/Y" error.
-            raise ValueError(
-                "data-style presets do not support curvilinear 'coords' yet: "
-                "apply_data_style needs cell-edge coordinates, but ArrayGlyph "
-                "stores cell centres. Plot without coords, or call "
-                "cleopatra.colors.apply_data_style directly with edge coordinates."
-            )
-        if self.default_options.get("hillshade"):
-            warnings.warn(
-                "hillshade is not composed with a data-style preset yet; "
-                "the 'style' preset is applied and 'hillshade' is ignored.",
-                stacklevel=2,
-            )
         # Cast to float BEFORE filling: `ma.filled(int_array, np.nan)` raises
         # `TypeError: Cannot convert fill_value nan to dtype int64` for an
         # integer masked array -- exactly the integer-coded categorical raster
@@ -1596,11 +1576,35 @@ class ArrayGlyph(GeoMixin, Glyph):
         # presets target.
         data = np.asarray(ma.filled(ma.asarray(self.arr).astype(float), np.nan), dtype=float)
         legend = bool(self.default_options.get("add_colorbar", True))
-        render_kwargs = {"extent": self.extent} if self.extent is not None else {}
-        images = apply_data_style(
-            self.ax, {layer: data}, style=style, legend=legend, **render_kwargs
-        )
+        coords = self._coords
+        if coords is not None:
+            # apply_data_style's curvilinear path defaults to shading="flat"
+            # (needs cell EDGES) via setdefault; ArrayGlyph stores cell CENTRES,
+            # so pass shading="nearest", which trusts the centres.
+            images = apply_data_style(
+                self.ax, {layer: data}, style=style, x=coords[0], y=coords[1],
+                legend=legend, shading="nearest",
+            )
+        else:
+            render_kwargs = {"extent": self.extent} if self.extent is not None else {}
+            images = apply_data_style(
+                self.ax, {layer: data}, style=style, legend=legend, **render_kwargs
+            )
         self.im = images[layer]
+
+        # Relief shading composes with the preset: blend the terrain hillshade
+        # into the drawn preset colours (regular-grid `imshow` only -- a
+        # curvilinear `QuadMesh` has no 2D RGBA grid to light).
+        hillshade = resolve_hillshade(self.default_options.get("hillshade"))
+        if hillshade is not None:
+            if coords is None:
+                self.im.set_data(shade_rgb(self.im.get_array(), data, **hillshade))
+            else:
+                warnings.warn(
+                    "hillshade is not composed with a data-style preset on a "
+                    "curvilinear grid; the preset is applied and hillshade ignored.",
+                    stacklevel=2,
+                )
         # Presets present their scale via a swatch / categorical legend, not a
         # matplotlib colorbar.
         self.cbar = None

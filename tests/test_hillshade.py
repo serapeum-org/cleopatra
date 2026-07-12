@@ -17,6 +17,7 @@ from cleopatra.hillshade import (
     resolve_hillshade,
     shade_faces,
     shade_grid,
+    shade_rgb,
 )
 
 
@@ -101,6 +102,31 @@ class TestShadeGrid:
         rgba = shade_grid(dem, "terrain", vert_exag=5, multidirectional=[0.0, 90.0, 180.0])
         assert rgba.shape == dem.shape + (4,)
         assert np.all(np.isfinite(rgba))
+
+
+class TestShadeRgb:
+    """Tests for `shade_rgb` (lighting an already-coloured image)."""
+
+    @pytest.fixture
+    def dem(self):
+        """A small varied synthetic DEM."""
+        yy, xx = np.mgrid[0:20, 0:25]
+        return 10.0 + 0.5 * yy + 8.0 * np.sin(xx / 3.0) * np.cos(yy / 3.0)
+
+    def test_lights_the_input_colours(self, dem):
+        """Relief shading changes the supplied RGB rather than recolouring it."""
+        rgb = mpl.colormaps["viridis"](Normalize()(dem))[..., :3]
+        shaded = shade_rgb(rgb, dem, vert_exag=5)
+        assert shaded.shape == rgb.shape
+        assert not np.allclose(shaded, rgb)
+
+    def test_preserves_the_alpha_channel(self, dem):
+        """An input alpha channel is carried through unchanged."""
+        rgba = mpl.colormaps["viridis"](Normalize()(dem))
+        rgba[..., 3] = np.linspace(0.0, 1.0, rgba[..., 3].size).reshape(rgba.shape[:2])
+        out = shade_rgb(rgba, dem, vert_exag=5)
+        assert out.shape[-1] == 4
+        assert np.allclose(out[..., 3], rgba[..., 3])
 
 
 class TestShadeFaces:
