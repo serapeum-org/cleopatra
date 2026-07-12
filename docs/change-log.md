@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.25.0 (2026-07-12)
+
+
+- feat(glyphs): public apply_style() to (re)apply a data-style preset on an existing glyph (#203)
+- Add a discoverable way to (re)apply a DATA_STYLES preset on a glyph                             
+  instance that already exists, so a caller holding a rendered glyph can                          
+  restyle it by name without rebuilding it.                                                       
+                                                                                                  
+  - Add apply_style(name, **kwargs) and a style read-back property to                             
+    ArrayGlyph, MeshGlyph, and KDEGlyph. apply_style re-renders the glyph                         
+    in place on its own axes (or a fresh figure if never plotted or the                           
+    figure was closed) and forwards extra kwargs (hillshade, ...) to plot.                        
+  - Unify style persistence across the three glyphs: an applied style is                          
+    sticky (survives a plain plot()) and clearable (plot(style=None)).                            
+    MeshGlyph tracks the current style and restores it after its options                          
+    reset; KDEGlyph uses a typed _Unset sentinel so style=None can clear.                         
+  - Validate a preset name before persisting or clearing, and roll back on                        
+    a bad/categorical name, so a typo can't wipe the render or brick the                          
+    glyph for later plain plots.                                                                  
+  - Add a shared Glyph._reset_axes_for_restyle helper (root-figure aware,                         
+    reuses an existing axes) and copy MeshGlyph's cached data (preserving a                       
+    masked array's mask). Honour a construction-time MeshGlyph style too.                         
+  - Document the option and add an apply_style example to the ArrayGlyph,                         
+    MeshGlyph, and KDEGlyph notebooks.                                                            
+                                                                                                  
+  Closes #202
+
 ## 0.24.0 (2026-07-12)
 
 
