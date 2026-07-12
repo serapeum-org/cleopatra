@@ -693,6 +693,13 @@ def apply_data_style(
         layers: Mapping of layer name to its 2D data array. Every key must be
             a layer defined by `style` (e.g. `"organic_matter"`/`"dust"` for
             `"haze"`); pass a subset to draw only some of a style's layers.
+            For a **categorical** preset (one that defines `categories`, e.g.
+            `"flow_direction_d8"`), the array is matched to the declared class
+            codes by exact float equality, so it must be integer-coded (D8
+            powers of two, flood classes 0..4 — all exactly representable in
+            float). Any cell that is not bit-exactly a declared code (nodata,
+            sinks, or a value perturbed by a lossy float transform) is treated
+            as out-of-range and rendered transparent.
         style: A name from `DATA_STYLES`. Defaults to `"haze"`.
         x: Optional 2D curvilinear x-coordinates (see `alpha_scaled_mesh`).
             When given (together with `y`), every layer is drawn with
@@ -824,7 +831,12 @@ def apply_data_style(
             # Only cells whose value is one of the declared class codes are
             # drawn; anything else (nodata sentinels, D8 sinks, out-of-range
             # codes) is masked to NaN so it renders transparent instead of
-            # being clamped to an end category at full opacity.
+            # being clamped to an end category at full opacity. Matching is by
+            # exact float equality, so categorical presets expect integer-coded
+            # input (D8 powers of two, flood classes 0..4 -- all exactly
+            # representable); a value that is not bit-exactly a declared code
+            # (e.g. one perturbed by a lossy float transform) is treated as
+            # out-of-range and silently rendered transparent.
             cat_data = np.where(np.isin(data, cat_values), data, np.nan)
             if curvilinear:
                 images[name] = alpha_scaled_mesh(
