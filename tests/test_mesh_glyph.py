@@ -1501,3 +1501,81 @@ class TestMeshGlyphHillshade:
         assert np.allclose(alphas[[0, 1]], 0.0), "nodata-touching faces are transparent"
         assert alphas[2] > 0.0, "the fully-finite face stays opaque"
         plt.close("all")
+
+
+class TestMeshGlyphDataStyle:
+    """Tests for the `style` data-style preset option on MeshGlyph."""
+
+    @staticmethod
+    def _mesh(n=8):
+        gx, gy = np.meshgrid(np.linspace(0, 10, n), np.linspace(0, 10, n))
+        nx, ny = gx.ravel(), gy.ravel()
+        faces = np.array(
+            [
+                [j * n + i, j * n + i + 1, j * n + i + n + 1, j * n + i + n]
+                for j in range(n - 1)
+                for i in range(n - 1)
+            ]
+        )
+        return nx, ny, faces
+
+    def test_continuous_preset_sets_cmap_and_norm(self):
+        """A continuous preset drives the mesh through its cmap + norm."""
+        nx, ny, faces = self._mesh()
+        fvals = np.abs(np.random.default_rng(0).normal(size=len(faces))) * 100
+        g = MeshGlyph(nx, ny, faces)
+        g.plot(fvals, location="face", style="flow_accumulation")
+        assert g.im.cmap.name == "Blues"
+        assert type(g.im.norm).__name__ == "SymLogNorm"
+        plt.close("all")
+
+    def test_categorical_preset_draws_disjoint_legend(self):
+        """A categorical preset renders a discrete legend and no colorbar."""
+        nx, ny, faces = self._mesh()
+        d8 = np.random.default_rng(1).choice(
+            [1, 2, 4, 8, 16, 32, 64, 128], size=len(faces)
+        ).astype(float)
+        g = MeshGlyph(nx, ny, faces)
+        _, ax = g.plot(d8, location="face", style="flow_direction_d8")
+        assert ax.get_legend() is not None
+        assert g._cbar is None
+        plt.close("all")
+
+    def test_unknown_style_raises(self):
+        """An unknown style name raises a clear `ValueError`."""
+        nx, ny, faces = self._mesh()
+        with pytest.raises(ValueError, match="unknown data style"):
+            MeshGlyph(nx, ny, faces).plot(
+                np.ones(len(faces)), location="face", style="not_a_style"
+            )
+        plt.close("all")
+
+    def test_continuous_style_composes_with_hillshade(self):
+        """A continuous preset composes with node-elevation relief shading."""
+        nx, ny, faces = self._mesh()
+        z = 50 + 150 * np.exp(-(((nx - 7) / 2) ** 2 + ((ny - 5) / 3) ** 2))
+        g = MeshGlyph(nx, ny, faces)
+        g.plot(z, location="node", style="topography", hillshade=True)
+        assert type(g.im).__name__ == "PolyCollection"
+        plt.close("all")
+
+    def test_categorical_preset_with_node_location_warns(self):
+        """A categorical preset on node data warns (tricontourf interpolates class codes)."""
+        nx, ny, faces = self._mesh()
+        codes = np.random.default_rng(2).choice(
+            [1, 2, 4, 8, 16, 32, 64, 128], size=len(nx)
+        ).astype(float)
+        with pytest.warns(UserWarning, match="interpolates discrete class codes"):
+            MeshGlyph(nx, ny, faces).plot(
+                codes, location="node", style="flow_direction_d8"
+            )
+        plt.close("all")
+
+    def test_symlog_preset_colorbar_uses_a_log_locator(self):
+        """A symlog preset's colorbar picks a log locator, not the linear ticks."""
+        nx, ny, faces = self._mesh()
+        fvals = np.abs(np.random.default_rng(0).normal(size=len(faces))) * 100
+        g = MeshGlyph(nx, ny, faces)
+        g.plot(fvals, location="face", style="flow_accumulation")
+        assert type(g._cbar.locator).__name__ == "SymmetricalLogLocator"
+        plt.close("all")

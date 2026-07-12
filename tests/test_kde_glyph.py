@@ -555,3 +555,60 @@ class TestKDEGlyphHillshade:
         assert ax.get_title() == "Density terrain"
         assert g.cbar is None
         plt.close("all")
+
+
+class TestKDEGlyphDataStyle:
+    """Tests for the `style` data-style preset option on KDEGlyph."""
+
+    @staticmethod
+    def _cloud():
+        rng = np.random.default_rng(3)
+        x = np.concatenate([rng.normal(-2, 0.7, 200), rng.normal(2, 1.0, 150)])
+        y = np.concatenate([rng.normal(-1, 0.6, 200), rng.normal(2, 1.2, 150)])
+        return x, y
+
+    def test_continuous_preset_sets_cmap_at_construction(self):
+        """A continuous preset set at construction colours the density."""
+        x, y = self._cloud()
+        _, _, cs = KDEGlyph(x, y, gridsize=40, style="temperature").plot()
+        assert cs.get_cmap().name == "RdYlBu_r"
+        plt.close("all")
+
+    def test_continuous_preset_at_plot_time(self):
+        """A continuous preset passed to `plot()` colours the density."""
+        x, y = self._cloud()
+        _, _, cs = KDEGlyph(x, y, gridsize=40).plot(style="elevation")
+        assert cs.get_cmap().name == "terrain"
+        plt.close("all")
+
+    def test_style_composes_with_hillshade(self):
+        """A continuous preset composes with the relief-shaded density image."""
+        x, y = self._cloud()
+        _, _, im = KDEGlyph(x, y, gridsize=40).plot(style="temperature", hillshade=True)
+        assert type(im).__name__ == "AxesImage"
+        plt.close("all")
+
+    def test_categorical_style_raises(self):
+        """A categorical preset is meaningless for a continuous density and raises."""
+        x, y = self._cloud()
+        with pytest.raises(ValueError, match="is categorical"):
+            KDEGlyph(x, y, gridsize=40, style="flow_direction_d8").plot()
+        plt.close("all")
+
+    def test_unknown_style_raises(self):
+        """An unknown style name raises a clear `ValueError`."""
+        x, y = self._cloud()
+        with pytest.raises(ValueError, match="unknown data style"):
+            KDEGlyph(x, y, gridsize=40).plot(style="not_a_style")
+        plt.close("all")
+
+    def test_plot_time_style_does_not_leak_cmap(self):
+        """A per-call `style` does not persist its colormap into a later `plot()`."""
+        x, y = self._cloud()
+        g = KDEGlyph(x, y, gridsize=40)
+        default_cmap = g.default_options["cmap"]
+        g.plot(style="temperature")
+        plt.close("all")
+        _, _, cs = g.plot()  # style=None
+        assert cs.get_cmap().name == default_cmap
+        plt.close("all")

@@ -35,15 +35,24 @@ from hpc.indexing import get_indices2
 from matplotlib.animation import FuncAnimation
 from matplotlib.axes import Axes
 from matplotlib.colorbar import Colorbar
-from matplotlib.colors import Colormap, Normalize
+from matplotlib.colors import BoundaryNorm, Colormap, ListedColormap, Normalize
 from matplotlib.figure import Figure
 from PIL import Image
 
+from cleopatra.colors import (
+    DATA_STYLES,
+    alpha_rgba,
+    apply_data_style,
+    category_boundaries,
+    resolve_single_layer_style,
+    resolve_style_norm,
+)
 from cleopatra.geo import GeoMixin
-from cleopatra.hillshade import resolve_hillshade, shade_grid
+from cleopatra.hillshade import resolve_hillshade, shade_grid, shade_rgb
 from cleopatra.glyph import Glyph, _root_figure
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import ColorScale  # re-exported for convenience  # noqa: F401
+from cleopatra.styles import disjoint_legend, swatch_legend
 
 ARRAY_DEFAULT_OPTIONS = {
     "vmin": None,
@@ -64,6 +73,7 @@ ARRAY_DEFAULT_OPTIONS = {
     "labels": False,
     "label_kw": None,
     "hillshade": False,
+    "style": None,
 }
 ARRAY_DEFAULT_OPTIONS = STYLE_DEFAULTS | ARRAY_DEFAULT_OPTIONS
 #: Backwards-compatible alias for the array glyph's default options
@@ -1507,7 +1517,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         if hillshade is not None:
             if kind == "imshow":
                 hs_norm = norm if norm is not None else Normalize(vmin=vmin, vmax=vmax)
-                elevation = np.asarray(ma.filled(plot_arr, np.nan), dtype=float)
+                elevation = np.asarray(ma.filled(ma.asarray(plot_arr).astype(float), np.nan), dtype=float)
                 im.set_data(shade_grid(elevation, cmap, norm=hs_norm, **hillshade))
             else:
                 warnings.warn(
@@ -1517,6 +1527,98 @@ class ArrayGlyph(GeoMixin, Glyph):
                 )
 
         return im, cbar_kw
+
+    def _resolve_style_layer(self, style: str) -> str:
+        """Validate a `DATA_STYLES` name and return its single layer key.
+
+        A raster band is one field, so only single-layer presets apply. The
+        style name is the layer name for every single-layer preset
+        (`flow_accumulation`, `flow_direction_d8`, topography, each Magics /
+        cmocean entry).
+
+        Args:
+            style: A key of `cleopatra.colors.DATA_STYLES`.
+
+        Returns:
+            The preset's single layer name.
+
+        Raises:
+            ValueError: If `style` is unknown, or names a multi-layer preset
+                (which cannot be applied to a single raster band).
+        """
+        return resolve_single_layer_style(style)[0]
+
+    def _plot_with_style(self, style: str) -> tuple[Figure, Axes]:
+        """Render the array with a named `DATA_STYLES` preset.
+
+        Delegates the drawing to `cleopatra.colors.apply_data_style` so the
+        preset's colormap, norm (`linear`/`log`/`symlog`/diverging `center`),
+        transparent nodata, optional alpha glow, and — for categorical presets
+        — the discrete `disjoint_legend` are reproduced exactly. The preset's
+        swatch / categorical legend stands in for the colorbar, so `self.cbar`
+        is left `None`. `add_colorbar=False` suppresses that legend.
+
+        Args:
+            style: A `DATA_STYLES` name (see `_resolve_style_layer`).
+
+        Returns:
+            tuple[Figure, Axes]: The figure and axes drawn on.
+        """
+        layer = self._resolve_style_layer(style)
+        # Cast to float BEFORE filling: `ma.filled(int_array, np.nan)` raises
+        # `TypeError: Cannot convert fill_value nan to dtype int64` for an
+        # integer masked array -- exactly the integer-coded categorical raster
+        # (e.g. `flow_direction_d8` with nodata masked via `exclude_value`) these
+        # presets target.
+        data = np.asarray(ma.filled(ma.asarray(self.arr).astype(float), np.nan), dtype=float)
+        legend = bool(self.default_options.get("add_colorbar", True))
+        coords = self._coords
+        if coords is not None:
+            # apply_data_style's curvilinear path defaults to shading="flat"
+            # (needs cell EDGES) via setdefault; ArrayGlyph stores cell CENTRES,
+            # so pass shading="nearest", which trusts the centres.
+            images = apply_data_style(
+                self.ax, {layer: data}, style=style, x=coords[0], y=coords[1],
+                legend=legend, shading="nearest",
+            )
+        else:
+            render_kwargs = {"extent": self.extent} if self.extent is not None else {}
+            images = apply_data_style(
+                self.ax, {layer: data}, style=style, legend=legend, **render_kwargs
+            )
+        self.im = images[layer]
+
+        # Relief shading composes with a CONTINUOUS preset: blend the terrain
+        # hillshade into the drawn colours (regular-grid `imshow` only). It is
+        # NOT applied to a categorical preset -- shading nominal class colours
+        # is meaningless (a darkened "N" can read as another class), matching
+        # MeshGlyph -- nor to a curvilinear `QuadMesh` (no 2D RGBA grid to light).
+        hillshade = resolve_hillshade(self.default_options.get("hillshade"))
+        if hillshade is not None:
+            categorical = resolve_single_layer_style(style)[1].get("categories") is not None
+            if categorical or coords is not None:
+                kind = "categorical" if categorical else "curvilinear"
+                warnings.warn(
+                    f"hillshade is not composed with a {kind} data-style preset; "
+                    "the preset is applied and hillshade ignored.",
+                    stacklevel=2,
+                )
+            else:
+                self.im.set_data(shade_rgb(self.im.get_array(), data, **hillshade))
+        # Presets present their scale via a swatch / categorical legend, not a
+        # matplotlib colorbar.
+        self.cbar = None
+        # Match the imshow path: with no extent (and no curvilinear coords) hide
+        # the pixel-index tick labels.
+        if self.extent is None and coords is None:
+            self.ax.set_xticklabels([])
+            self.ax.set_yticklabels([])
+            self.ax.set_xticks([])
+            self.ax.set_yticks([])
+        self.ax.set_title(
+            self.default_options["title"], fontsize=self.default_options["title_size"]
+        )
+        return self.fig, self.ax
 
     def apply_colormap(self, cmap: Colormap | str) -> np.ndarray:
         """Apply a matplotlib colormap to an array.
@@ -1920,6 +2022,33 @@ class ArrayGlyph(GeoMixin, Glyph):
                         If cell value > threshold, text is black; otherwise, text is white.
                         If None, uses max(array)/2 as the threshold.
 
+                Data-style preset / relief options:
+                    style : str, optional
+                        Name of a `cleopatra.colors.DATA_STYLES` preset (e.g.
+                        `"flow_accumulation"`, `"flow_direction_d8"`,
+                        `"topography"`; valid names are
+                        `sorted(cleopatra.colors.DATA_STYLES)`). When set, the
+                        preset's colormap, norm (linear/log/symlog/diverging
+                        `center`), transparent nodata, alpha glow, and — for
+                        categorical presets — a discrete legend are applied via
+                        `cleopatra.colors.apply_data_style`. Only single-layer
+                        presets apply to a single band. The preset owns the
+                        colour mapping, so it takes precedence over `cmap` /
+                        `color_scale` / `vmin` / `vmax` / `center`, presents its
+                        scale via a legend rather than a colorbar (`self.cbar`
+                        is `None`), and bypasses `points` / `display_cell_value`
+                        overlays (which warn). Ignored for RGB arrays. A
+                        **continuous** preset composes with `hillshade` (the
+                        relief is blended into the preset colours); a
+                        **categorical** preset is not shaded (shading class
+                        codes is meaningless) and warns. By default None.
+                    hillshade : bool or dict, optional
+                        Relief-shade a regular-grid DEM so wide-range terrain
+                        reads by form. `True` uses defaults; a dict tunes
+                        `vert_exag`, `azimuth`, `altitude`, `blend_mode`, or
+                        `multidirectional`. Applied only to `kind="imshow"`
+                        (warns otherwise). By default False.
+
         Returns:
             tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: A tuple containing:
                 - fig: The matplotlib Figure object
@@ -2302,6 +2431,31 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         arr = self.arr
         fig, ax = self.fig, self.ax
+
+        # Named data-style preset: resolve the preset's cmap/norm/vmin/vmax/
+        # center/categories (and alpha glow / categorical legend) by delegating
+        # to `cleopatra.colors.apply_data_style`, so the full preset semantics
+        # (log/symlog norms, transparent nodata, disjoint categorical legend)
+        # are reproduced rather than lossily mapped onto `color_scale`.
+        style = self.default_options.get("style")
+        if style is not None:
+            if self.rgb:
+                warnings.warn(
+                    "data-style presets do not apply to RGB arrays; 'style' is "
+                    "ignored and the RGB image is drawn as-is.",
+                    stacklevel=2,
+                )
+            else:
+                # The preset owns the colour mapping and draws its own legend, so
+                # point / cell-value overlays are bypassed -- make that visible
+                # rather than dropping them silently.
+                if points is not None or self.default_options.get("display_cell_value"):
+                    warnings.warn(
+                        "data-style presets bypass point and cell-value overlays; "
+                        "'points' and 'display_cell_value' are ignored with 'style'.",
+                        stacklevel=2,
+                    )
+                return self._plot_with_style(style)
 
         if self.rgb:
             self.im = ax.imshow(arr, extent=self.extent)
@@ -2849,6 +3003,24 @@ class ArrayGlyph(GeoMixin, Glyph):
                         If cell value > threshold, text is black; otherwise, text is white.
                         If None, uses max(array)/2 as the threshold.
 
+                Data-style preset / relief options:
+                    style : str, optional
+                        Name of a `cleopatra.colors.DATA_STYLES` preset applied
+                        to every frame (valid names:
+                        `sorted(cleopatra.colors.DATA_STYLES)`). Continuous
+                        presets drive the frames through the preset's cmap +
+                        norm + value-linked opacity and present a swatch legend
+                        (matching `plot`); categorical presets remap the class
+                        codes through a discrete colormap and draw a legend (no
+                        colorbar). Under a lazy `data_getter` the continuous
+                        colour range is taken from frame 0. A continuous preset
+                        composes with `hillshade`; a categorical preset drops it
+                        (and warns). By default None.
+                    hillshade : bool or dict, optional
+                        Relief-shade every frame of a regular-grid DEM (same
+                        options as `plot`). Composes with a continuous `style`;
+                        dropped for a categorical `style`. By default False.
+
         Returns:
             matplotlib.animation.FuncAnimation: The animation object that can be displayed
                 in a notebook or saved to a file.
@@ -3064,6 +3236,14 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         fig, ax = self.fig, self.ax
 
+        # Per-frame RGBA recipe for a continuous `style` (cmap, colour norm,
+        # alpha norm, constant alpha), set in the style branch below and
+        # consumed by `_display_frame`. `None` when no style is active.
+        style_render = None
+        # True when the active preset is categorical (drops hillshade, which is
+        # meaningless for class codes); a continuous preset composes hillshade.
+        style_categorical = False
+
         if rgb_frames:
             # True-colour frames go straight through imshow — no norm,
             # colormap or colorbar (mirrors `plot`'s RGB branch).
@@ -3080,6 +3260,106 @@ class ArrayGlyph(GeoMixin, Glyph):
             self.cbar = None
             if self.default_options["add_colorbar"]:
                 self.cbar = self.create_color_bar(ax, im, cbar_kw)
+
+            # Named data-style preset for animation. `_display_frame` bakes each
+            # frame's RGBA from `style_render`; continuous presets reproduce the
+            # cmap/norm + value-linked opacity, categorical presets remap class
+            # codes through a ListedColormap/BoundaryNorm with a discrete legend.
+            frame_0_scalar = np.asarray(
+                ma.filled(ma.asarray(frame_0).astype(float), np.nan), dtype=float
+            )
+            style = self.default_options.get("style")
+            if style is not None:
+                # The preset owns the colour mapping and draws its own legend, so
+                # point / cell-value overlays are bypassed -- warn (mirroring
+                # plot()) rather than drawing them silently over the preset.
+                if points is not None or show_cell_value:
+                    warnings.warn(
+                        "data-style presets bypass point and cell-value "
+                        "overlays; 'points' and 'display_cell_value' are ignored "
+                        "with 'style'.",
+                        stacklevel=2,
+                    )
+                    points = None
+                    show_cell_value = False
+                layer = self._resolve_style_layer(style)
+                cfg = DATA_STYLES[style][layer]
+                hillshade_active = (
+                    resolve_hillshade(self.default_options.get("hillshade")) is not None
+                )
+                categories = cfg.get("categories")
+                if categories is not None:
+                    # Categorical: a discrete legend replaces the colorbar and is
+                    # drawn once; frames only remap the class codes. Hillshade is
+                    # meaningless for class codes, so warn and drop it.
+                    style_categorical = True
+                    if hillshade_active:
+                        warnings.warn(
+                            "hillshade is not composed with a categorical "
+                            "data-style preset; the preset is applied and "
+                            "hillshade ignored.",
+                            stacklevel=2,
+                        )
+                    cats = sorted(categories, key=lambda c: c[0])
+                    cat_values = np.array([float(c[0]) for c in cats])
+                    cat_colors = [c[1] for c in cats]
+                    cat_labels = [c[2] for c in cats]
+                    cat_cmap = ListedColormap(cat_colors)
+                    cat_norm = BoundaryNorm(
+                        category_boundaries(list(cat_values)), len(cat_colors)
+                    )
+                    if self.cbar is not None:
+                        self.cbar.remove()
+                        self.cbar = None
+                    im.set_data(frame_0_scalar)
+                    im.set_cmap(cat_cmap)
+                    im.set_norm(cat_norm)
+                    if self.default_options["add_colorbar"]:
+                        disjoint_legend(
+                            ax, cat_colors, cat_labels, title=cfg["label"],
+                            loc="upper right",
+                        )
+                    style_render = ("categorical", cat_cmap, cat_norm, cat_values)
+                else:
+                    # Continuous: cmap + norm, range resolved over the eager
+                    # stack (frame 0 only under a lazy data_getter). A swatch
+                    # legend replaces the colorbar to match `plot()`'s
+                    # apply_data_style presentation, and hillshade composes into
+                    # the per-frame RGBA (see `_display_frame`).
+                    stack = array if data_getter is None else frame_0
+                    style_norm, style_vmin, style_vmax = resolve_style_norm(
+                        np.asarray(ma.filled(ma.asarray(stack).astype(float), np.nan), dtype=float),
+                        cfg,
+                    )
+                    im.set_data(frame_0_scalar)
+                    im.set_cmap(cfg["cmap"])
+                    im.set_norm(style_norm)
+                    if self.cbar is not None:
+                        self.cbar.remove()
+                        self.cbar = None
+                    if self.default_options["add_colorbar"]:
+                        # Remove a swatch inset from a previous render so
+                        # repeated animate() calls don't stack legends.
+                        for _inset in list(ax.child_axes):
+                            _inset.remove()
+                        # Same bounds as apply_data_style's swatch (plot path),
+                        # so a plot and its animation align exactly.
+                        swatch_legend(
+                            ax, cfg["cmap"], cfg["label"],
+                            vmin=style_vmin, vmax=style_vmax, norm=style_norm,
+                            bounds=(0.02, 0.92, 0.32, 0.06),
+                        )
+                    alpha_vmin = cfg.get("alpha_vmin")
+                    alpha_vmax = cfg.get("alpha_vmax")
+                    style_alpha_norm = (
+                        Normalize(vmin=alpha_vmin, vmax=alpha_vmax)
+                        if alpha_vmin is not None or alpha_vmax is not None
+                        else None
+                    )
+                    style_render = (
+                        "continuous", cfg["cmap"], style_norm, style_alpha_norm,
+                        cfg.get("alpha"),
+                    )
 
         ax.set_title(
             self.default_options["title"], fontsize=self.default_options["title_size"]
@@ -3165,9 +3445,46 @@ class ArrayGlyph(GeoMixin, Glyph):
                     )
             return frame
 
+        # Relief-shade each frame when `hillshade` is set: the initial render
+        # shaded `frame_0`, but `init`/`animate_a` overwrite `im` with the raw
+        # scalar frame, so shading is re-applied per frame through this wrapper.
+        # A continuous `style` composes hillshade into its RGBA (matching plot());
+        # a categorical `style` drops it (meaningless for class codes).
+        hillshade_opts = resolve_hillshade(self.default_options.get("hillshade"))
+        if style_categorical:
+            hillshade_opts = None
+
+        def _display_frame(frame):
+            """Return the frame's image data: preset RGBA, relief-shaded, or raw."""
+            if style_render is not None:
+                filled = np.asarray(
+                    ma.filled(ma.asarray(frame).astype(float), np.nan), dtype=float
+                )
+                if style_render[0] == "categorical":
+                    # Remap only the declared class codes; everything else
+                    # (nodata, out-of-range) is drawn transparent.
+                    _, cat_cmap, cat_norm, cat_values = style_render
+                    masked = np.where(np.isin(filled, cat_values), filled, np.nan)
+                    rgba = np.asarray(cat_cmap(cat_norm(masked)), dtype=float)
+                    rgba[~np.isfinite(masked)] = 0.0
+                    return rgba
+                # Continuous: bake the preset RGBA (colour + value-linked
+                # opacity) so animate matches plot()'s apply_data_style output,
+                # then compose hillshade into it (matching plot's shade_rgb).
+                _, cmap_, norm_, alpha_norm_, const_ = style_render
+                rgba = alpha_rgba(filled, cmap_, norm_, alpha_norm_, const_)
+                if hillshade_opts is not None:
+                    rgba = shade_rgb(rgba, filled, **hillshade_opts)
+                return rgba
+            if hillshade_opts is not None and not rgb_frames:
+                # Cast before filling: integer masked frames reject a NaN fill.
+                elevation = np.asarray(ma.filled(ma.asarray(frame).astype(float), np.nan), dtype=float)
+                return shade_grid(elevation, im.cmap, norm=im.norm, **hillshade_opts)
+            return frame
+
         def init():
             """initialize the plot with the cached first frame"""
-            im.set_data(frame_0)
+            im.set_data(_display_frame(frame_0))
             day_text.set_text("")
             output = [im, day_text]
 
@@ -3193,7 +3510,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         def animate_a(i):
             """plot for each element in the iterable."""
             frame = _fetch_frame(i)
-            im.set_data(frame)
+            im.set_data(_display_frame(frame))
             day_text.set_text("Date = " + str(time[i])[0:10])
             output = [im, day_text]
 

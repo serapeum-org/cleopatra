@@ -171,11 +171,11 @@ def alpha_scaled_image(
     if data.ndim != 2:
         raise ValueError(f"data must be 2-dimensional, got shape {data.shape}")
 
-    rgba = _alpha_rgba(data, cmap, norm, alpha_norm, constant_alpha)
+    rgba = alpha_rgba(data, cmap, norm, alpha_norm, constant_alpha)
     return ax.imshow(rgba, **imshow_kwargs)
 
 
-def _alpha_rgba(
+def alpha_rgba(
     data: np.ndarray,
     cmap: str | Colormap,
     norm: mcolors.Normalize | None,
@@ -295,7 +295,7 @@ def alpha_scaled_mesh(
         raise ValueError(f"data must be 2-dimensional, got shape {data.shape}")
 
     pcolormesh_kwargs.setdefault("shading", "auto")
-    rgba = _alpha_rgba(data, cmap, norm, alpha_norm, constant_alpha)
+    rgba = alpha_rgba(data, cmap, norm, alpha_norm, constant_alpha)
     mesh = ax.pcolormesh(x, y, data, **pcolormesh_kwargs)
     mesh.set_array(None)
     mesh.set_facecolor(rgba.reshape(-1, 4))
@@ -547,7 +547,7 @@ DATA_STYLES.update(_load_magics_presets())
 DATA_STYLES.update(_load_preset_asset("cmocean_presets.json", "cmocean"))
 
 
-def _category_boundaries(values: list[float]) -> list[float]:
+def category_boundaries(values: list[float]) -> list[float]:
     """Bin edges for a `BoundaryNorm` over discrete category values.
 
     Interior edges are the midpoints between consecutive (sorted) class
@@ -570,7 +570,7 @@ def _category_boundaries(values: list[float]) -> list[float]:
     return [lower] + mids + [upper]
 
 
-def _resolve_style_norm(
+def resolve_style_norm(
     data: np.ndarray, cfg: dict[str, Any]
 ) -> tuple[mcolors.Normalize, float, float]:
     """Resolve the colour `Normalize` (and its concrete bounds) for one layer.
@@ -664,6 +664,43 @@ def _resolve_style_norm(
             f"data style 'norm' must be 'linear', 'log', or 'symlog', got {norm_kind!r}"
         )
     return norm, vmin, vmax
+
+
+#: Backward-compatible private aliases for symbols that were renamed public.
+_resolve_style_norm = resolve_style_norm
+_alpha_rgba = alpha_rgba
+_category_boundaries = category_boundaries
+
+
+def resolve_single_layer_style(style: str) -> tuple[str, dict[str, Any]]:
+    """Resolve a single-layer `DATA_STYLES` preset to its `(layer, config)`.
+
+    A single glyph field (a raster band, a mesh's node/face values, a density)
+    maps to exactly one preset layer, so multi-layer presets are rejected. Used
+    by the glyph `style=` options to look up the preset's cmap/norm/categories.
+
+    Args:
+        style: A key of `DATA_STYLES`.
+
+    Returns:
+        tuple: `(layer_name, layer_config)` for the preset's single layer.
+
+    Raises:
+        ValueError: If `style` is unknown, or names a multi-layer preset.
+    """
+    if style not in DATA_STYLES:
+        raise ValueError(
+            f"unknown data style {style!r}; valid styles are {sorted(DATA_STYLES)}"
+        )
+    layers = DATA_STYLES[style]
+    if len(layers) != 1:
+        raise ValueError(
+            f"data style {style!r} defines multiple layers {sorted(layers)}; a "
+            "single glyph field maps to one layer. Use apply_data_style directly "
+            "for multi-layer styles."
+        )
+    name = next(iter(layers))
+    return name, layers[name]
 
 
 def apply_data_style(
@@ -830,7 +867,7 @@ def apply_data_style(
             cat_labels = [c[2] for c in cats]
             cat_cmap = mcolors.ListedColormap(cat_colors)
             cat_norm = mcolors.BoundaryNorm(
-                _category_boundaries(cat_values), len(cat_colors)
+                category_boundaries(cat_values), len(cat_colors)
             )
             # Only cells whose value is one of the declared class codes are
             # drawn; anything else (nodata sentinels, D8 sinks, out-of-range
@@ -872,7 +909,7 @@ def apply_data_style(
                     ax.add_artist(prior_legend)
             continue
 
-        norm, resolved_vmin, resolved_vmax = _resolve_style_norm(data, cfg)
+        norm, resolved_vmin, resolved_vmax = resolve_style_norm(data, cfg)
 
         alpha_const = cfg.get("alpha")
         alpha_vmin = cfg.get("alpha_vmin")

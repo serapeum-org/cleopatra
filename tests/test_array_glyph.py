@@ -3846,3 +3846,343 @@ class TestArrayGlyphHillshade:
         with pytest.warns(UserWarning, match="hillshade is only applied to kind='imshow'"):
             ArrayGlyph(self._dem(), cmap="terrain", hillshade=True).plot(kind="pcolormesh")
         plt.close("all")
+
+
+class TestArrayGlyphDataStyle:
+    """Tests for the `style` data-style preset option on `plot`."""
+
+    @staticmethod
+    def _accum():
+        rng = np.random.default_rng(0)
+        return np.abs(rng.normal(size=(30, 40))).cumsum(axis=1) * 50.0
+
+    @staticmethod
+    def _d8():
+        rng = np.random.default_rng(1)
+        return rng.choice([1, 2, 4, 8, 16, 32, 64, 128], size=(20, 20)).astype(float)
+
+    def test_continuous_preset_renders_image_without_colorbar(self):
+        """A continuous preset draws an image and presents its scale via a legend, not a colorbar."""
+        g = ArrayGlyph(self._accum(), style="flow_accumulation")
+        g.plot()
+        assert type(g.im).__name__ == "AxesImage"
+        assert g.cbar is None
+        plt.close("all")
+
+    def test_continuous_preset_renders_baked_rgba(self):
+        """The preset delegates to `apply_data_style`, baking the norm/alpha into an RGBA image.
+
+        The symlog norm is applied when building the RGBA (verified on the
+        animate path, which keeps the norm on the artist); here the drawn
+        image is the baked RGBA that alpha_scaled_image produces.
+        """
+        g = ArrayGlyph(self._accum(), style="flow_accumulation")
+        g.plot()
+        assert np.asarray(g.im.get_array()).shape[-1] == 4
+        plt.close("all")
+
+    def test_continuous_preset_draws_swatch_legend(self):
+        """A continuous preset draws its swatch legend as an inset child axes."""
+        g = ArrayGlyph(self._accum(), style="flow_accumulation")
+        _, ax = g.plot()
+        assert len(ax.child_axes) == 1
+        plt.close("all")
+
+    def test_continuous_add_colorbar_false_suppresses_swatch(self):
+        """`add_colorbar=False` suppresses the continuous swatch legend."""
+        g = ArrayGlyph(self._accum(), style="flow_accumulation")
+        _, ax = g.plot(add_colorbar=False)
+        assert len(ax.child_axes) == 0
+        plt.close("all")
+
+    def test_categorical_preset_draws_disjoint_legend(self):
+        """A categorical preset renders a discrete legend of its class codes."""
+        g = ArrayGlyph(self._d8(), style="flow_direction_d8")
+        _, ax = g.plot()
+        assert ax.get_legend() is not None
+        plt.close("all")
+
+    def test_add_colorbar_false_suppresses_preset_legend(self):
+        """`add_colorbar=False` suppresses the preset's legend."""
+        g = ArrayGlyph(self._d8(), style="flow_direction_d8")
+        _, ax = g.plot(add_colorbar=False)
+        assert ax.get_legend() is None
+        plt.close("all")
+
+    def test_unknown_style_raises(self):
+        """An unknown style name raises a clear `ValueError`."""
+        with pytest.raises(ValueError, match="unknown data style"):
+            ArrayGlyph(self._accum(), style="not_a_style").plot()
+        plt.close("all")
+
+    def test_multilayer_style_rejected(self):
+        """A multi-layer preset (`haze`) cannot apply to a single band."""
+        with pytest.raises(ValueError, match="multiple layers"):
+            ArrayGlyph(self._accum(), style="haze").plot()
+        plt.close("all")
+
+    def test_curvilinear_coords_with_style_renders(self):
+        """Curvilinear `coords` + `style` render via shading='nearest' (a QuadMesh)."""
+        arr = self._accum()
+        ny, nx = arr.shape
+        x = np.linspace(-3.0, 3.0, nx)
+        y = np.linspace(-3.0, 3.0, ny)
+        g = ArrayGlyph(arr, coords=(x, y), style="flow_accumulation")
+        g.plot()
+        assert type(g.im).__name__ == "QuadMesh"
+        plt.close("all")
+
+    def test_integer_masked_categorical_input_does_not_crash(self):
+        """An integer-coded categorical raster with masked nodata renders (no `ma.filled` TypeError)."""
+        rng = np.random.default_rng(2)
+        d8 = rng.choice([0, 1, 2, 4, 8, 16, 32, 64, 128], size=(20, 20))  # int dtype, 0 = nodata
+        g = ArrayGlyph(d8, style="flow_direction_d8", exclude_value=[0])
+        _, ax = g.plot()
+        assert ax.get_legend() is not None
+        plt.close("all")
+
+    def test_style_hides_pixel_ticks_without_extent(self):
+        """A style plot with no extent hides pixel-index ticks, like the imshow path."""
+        g = ArrayGlyph(self._accum(), style="flow_accumulation")
+        _, ax = g.plot()
+        assert ax.get_xticks().size == 0 and ax.get_yticks().size == 0
+        plt.close("all")
+
+    def test_points_with_style_warns(self):
+        """A preset bypasses point/cell-value overlays; the drop is warned, not silent."""
+        pts = np.array([[1.0, 2, 3], [2.0, 5, 6]])
+        with pytest.warns(UserWarning, match="bypass point and cell-value overlays"):
+            ArrayGlyph(self._accum()).plot(points=pts, style="flow_accumulation")
+        plt.close("all")
+
+    def test_rgb_with_style_warns(self):
+        """A `style` on an RGB array is ignored with a warning, not silently."""
+        rgb = np.random.default_rng(6).random((3, 8, 8))
+        with pytest.warns(UserWarning, match="do not apply to RGB"):
+            ArrayGlyph(rgb, rgb=[0, 1, 2], style="flow_accumulation").plot()
+        plt.close("all")
+
+    def test_plot_style_with_hillshade_composes(self):
+        """In `plot`, `style` + `hillshade` compose: the preset RGBA is relief-shaded."""
+        g = ArrayGlyph(self._accum(), style="flow_accumulation", hillshade={"vert_exag": 5})
+        g.plot()
+        shaded = np.asarray(g.im.get_array())
+        assert shaded.ndim == 3 and shaded.shape[-1] == 4
+        g2 = ArrayGlyph(self._accum(), style="flow_accumulation")
+        g2.plot()
+        base = np.asarray(g2.im.get_array())
+        assert not np.allclose(shaded[..., :3], base[..., :3]), "hillshade lit the preset colours"
+        plt.close("all")
+
+    def test_categorical_style_with_hillshade_warns_not_shaded(self):
+        """A categorical preset + hillshade warns and is NOT relief-shaded (like MeshGlyph)."""
+        with pytest.warns(UserWarning, match="categorical data-style preset"):
+            g = ArrayGlyph(self._d8(), style="flow_direction_d8", hillshade=True)
+            g.plot()
+        # the categorical image keeps its flat class colours (RGBA from the preset)
+        assert np.asarray(g.im.get_array()).shape[-1] == 4
+        plt.close("all")
+
+    def test_curvilinear_style_with_hillshade_warns(self):
+        """On a curvilinear grid, `style` + `hillshade` warns (no 2D RGBA grid to light)."""
+        arr = self._accum()
+        ny, nx = arr.shape
+        x = np.linspace(-3.0, 3.0, nx)
+        y = np.linspace(-3.0, 3.0, ny)
+        with pytest.warns(UserWarning, match="curvilinear data-style preset"):
+            ArrayGlyph(arr, coords=(x, y), style="flow_accumulation", hillshade=True).plot()
+        plt.close("all")
+
+    def test_unknown_style_with_coords_reports_style_error_first(self):
+        """With a bad style name and curvilinear coords, the unknown-style error is reported first."""
+        arr = self._accum()
+        ny, nx = arr.shape
+        x = np.linspace(0.0, 1.0, nx)
+        y = np.linspace(0.0, 1.0, ny)
+        with pytest.raises(ValueError, match="unknown data style"):
+            ArrayGlyph(arr, coords=(x, y), style="not_a_style").plot()
+        plt.close("all")
+
+
+class TestArrayGlyphShadedAnimate:
+    """Tests for hillshade + data-style presets in `animate`."""
+
+    @staticmethod
+    def _dem_stack(n=5):
+        yy, xx = np.mgrid[0:30, 0:40]
+        return np.stack(
+            [
+                10.0
+                + 0.3 * yy
+                + 200.0 * np.exp(-(((xx - 20 - i) / 6) ** 2 + ((yy - 15) / 8) ** 2))
+                for i in range(n)
+            ]
+        )
+
+    def test_hillshade_shades_every_frame(self):
+        """`animate_a` shades each frame RGBA rather than reverting to the raw scalar frame."""
+        g = ArrayGlyph(self._dem_stack(), cmap="terrain", hillshade={"vert_exag": 5})
+        anim = g.animate(time=list(range(5)))
+        anim._func(2)  # drive a mid-sequence frame through animate_a
+        arr = np.asarray(g.im.get_array())
+        assert arr.ndim == 3 and arr.shape[-1] == 4
+        plt.close("all")
+
+    def test_continuous_style_applies_preset_cmap_and_norm(self):
+        """A continuous preset drives the animation through its cmap + norm."""
+        rng = np.random.default_rng(3)
+        accum = np.stack(
+            [np.abs(rng.normal(size=(20, 25))).cumsum(1) * 40 for _ in range(4)]
+        )
+        g = ArrayGlyph(accum, style="flow_accumulation")
+        g.animate(time=list(range(4)))
+        assert g.im.cmap.name == "Blues"
+        assert type(g.im.norm).__name__ == "SymLogNorm"
+        plt.close("all")
+
+    def test_symlog_style_with_hillshade_composes_without_crash(self):
+        """A symlog preset + hillshade animates: relief composes into the preset RGBA, no scale-norm crash."""
+        rng = np.random.default_rng(5)
+        accum = np.stack(
+            [np.abs(rng.normal(size=(20, 25))).cumsum(1) * 40 for _ in range(4)]
+        )
+        g = ArrayGlyph(accum, style="flow_accumulation", hillshade={"vert_exag": 5})
+        anim = g.animate(time=list(range(4)))
+        anim._func(2)  # drive a frame; must not raise on the scale-norm path
+        assert g.im.cmap.name == "Blues"
+        assert type(g.im.norm).__name__ == "SymLogNorm"
+        frame = np.asarray(g.im.get_array())
+        assert frame.ndim == 3 and frame.shape[-1] == 4
+        plt.close("all")
+
+    def test_continuous_style_uses_swatch_legend_like_plot(self):
+        """A continuous preset presents a swatch legend (cbar=None) in animate, matching plot."""
+        rng = np.random.default_rng(6)
+        accum = np.stack(
+            [np.abs(rng.normal(size=(20, 25))).cumsum(1) * 40 for _ in range(3)]
+        )
+        g = ArrayGlyph(accum, style="flow_accumulation")
+        g.animate(time=list(range(3)))
+        assert g.cbar is None
+        assert len(g.ax.child_axes) == 1  # the swatch legend inset
+        g.animate(time=list(range(3)))  # repeat must not stack swatches
+        assert len(g.ax.child_axes) == 1
+        plt.close("all")
+
+    def test_continuous_style_animate_reproduces_alpha_glow(self):
+        """A value-linked-opacity preset fades low cells in animate too (plot/animate parity)."""
+        rng = np.random.default_rng(8)
+        accum = np.stack(
+            [np.abs(rng.normal(size=(20, 25))).cumsum(1) * 40 for _ in range(3)]
+        )
+        g = ArrayGlyph(accum, style="flow_accumulation")
+        anim = g.animate(time=list(range(3)))
+        anim._func(1)
+        frame = np.asarray(g.im.get_array())
+        assert frame.shape[-1] == 4, "animate frames are RGBA"
+        alpha = frame[..., 3]
+        assert alpha.min() < 0.2 and alpha.max() > 0.8, "opacity ramps with value like plot()"
+        plt.close("all")
+
+    def test_hillshade_animate_integer_masked_frame_does_not_crash(self):
+        """An integer masked frame (via data_getter) is shaded without a `ma.filled` TypeError."""
+        template = np.zeros((10, 10))
+        base = np.arange(100).reshape(10, 10)
+
+        def getter(i):
+            return np.ma.array((base + i).astype(int), mask=(base % 7 == 0))
+
+        g = ArrayGlyph(template, cmap="terrain", hillshade=True)
+        anim = g.animate(time=list(range(3)), data_getter=getter)
+        anim._func(1)  # integer masked frame through _display_frame's hillshade branch
+        assert np.asarray(g.im.get_array()).shape[-1] == 4
+        plt.close("all")
+
+    def test_continuous_style_animate_without_colorbar(self):
+        """A continuous style animates with `add_colorbar=False` (no colorbar to refresh)."""
+        rng = np.random.default_rng(7)
+        accum = np.stack(
+            [np.abs(rng.normal(size=(20, 25))).cumsum(1) * 40 for _ in range(4)]
+        )
+        g = ArrayGlyph(accum, style="flow_accumulation")
+        g.animate(time=list(range(4)), add_colorbar=False)
+        assert g.cbar is None
+        assert g.im.cmap.name == "Blues"
+        plt.close("all")
+
+    def test_animate_style_warns_and_bypasses_overlays(self):
+        """`animate` warns and drops point/cell-value overlays under a style, like `plot`."""
+        rng = np.random.default_rng(11)
+        accum = np.stack(
+            [np.abs(rng.normal(size=(20, 25))).cumsum(1) * 40 for _ in range(3)]
+        )
+        pts = np.array([[1.0, 2, 3], [2.0, 5, 6]])
+        g = ArrayGlyph(accum, style="flow_accumulation")
+        with pytest.warns(UserWarning, match="bypass point and cell-value overlays"):
+            g.animate(time=list(range(3)), points=pts)
+        # no scatter overlay drawn (the preset image is the only artist family)
+        assert len(g.ax.collections) == 0
+        plt.close("all")
+
+    def test_categorical_style_in_animate_renders_with_legend(self):
+        """A categorical preset animates: per-frame remap to RGBA + a discrete legend, no colorbar."""
+        rng = np.random.default_rng(4)
+        d8 = np.stack(
+            [
+                rng.choice([1, 2, 4, 8, 16, 32, 64, 128], size=(15, 15)).astype(float)
+                for _ in range(3)
+            ]
+        )
+        g = ArrayGlyph(d8, style="flow_direction_d8")
+        anim = g.animate(time=list(range(3)))
+        anim._func(1)
+        frame = np.asarray(g.im.get_array())
+        assert frame.ndim == 3 and frame.shape[-1] == 4, "categorical frames are RGBA"
+        assert g.ax.get_legend() is not None, "a discrete legend is drawn"
+        assert g.cbar is None, "categorical presets use a legend, not a colorbar"
+        plt.close("all")
+
+    def test_categorical_style_animate_with_hillshade_warns(self):
+        """A categorical preset + hillshade in animate warns and drops the relief."""
+        rng = np.random.default_rng(12)
+        d8 = np.stack(
+            [
+                rng.choice([1, 2, 4, 8, 16, 32, 64, 128], size=(12, 12)).astype(float)
+                for _ in range(3)
+            ]
+        )
+        with pytest.warns(UserWarning, match="categorical data-style preset"):
+            ArrayGlyph(d8, style="flow_direction_d8", hillshade=True).animate(
+                time=list(range(3))
+            )
+        plt.close("all")
+
+    def test_categorical_style_animate_without_colorbar(self):
+        """A categorical preset animates with `add_colorbar=False` (no legend, no colorbar)."""
+        rng = np.random.default_rng(13)
+        d8 = np.stack(
+            [
+                rng.choice([1, 2, 4, 8, 16, 32, 64, 128], size=(12, 12)).astype(float)
+                for _ in range(3)
+            ]
+        )
+        g = ArrayGlyph(d8, style="flow_direction_d8")
+        g.animate(time=list(range(3)), add_colorbar=False)
+        assert g.cbar is None and g.ax.get_legend() is None
+        plt.close("all")
+
+    def test_categorical_animate_masks_out_of_range_codes(self):
+        """Non-declared codes render transparent in animated categorical frames."""
+        rng = np.random.default_rng(9)
+        d8 = np.stack(
+            [
+                rng.choice([1, 2, 4, 8, 16, 32, 64, 128], size=(10, 10)).astype(float)
+                for _ in range(3)
+            ]
+        )
+        d8[:, 0, 0] = 999.0  # nodata / out-of-range
+        g = ArrayGlyph(d8, style="flow_direction_d8")
+        anim = g.animate(time=list(range(3)))
+        anim._func(1)
+        assert np.asarray(g.im.get_array())[0, 0, 3] == 0.0
+        plt.close("all")
