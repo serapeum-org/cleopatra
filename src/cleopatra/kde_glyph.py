@@ -40,6 +40,7 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Patch
 from matplotlib.path import Path as MplPath
 
+from cleopatra.colors import resolve_single_layer_style, resolve_style_norm
 from cleopatra.glyph import Glyph
 from cleopatra.hillshade import resolve_hillshade, shade_grid
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
@@ -62,6 +63,7 @@ KDE_DEFAULT_OPTIONS = {
     "ticks_spacing": None,
     "add_colorbar": True,
     "hillshade": False,
+    "style": None,
 }
 KDE_DEFAULT_OPTIONS = STYLE_DEFAULTS | KDE_DEFAULT_OPTIONS
 
@@ -300,6 +302,7 @@ class KDEGlyph(Glyph):
         title: str | None = None,
         add_colorbar: bool | None = None,
         hillshade: bool | dict | None = None,
+        style: str | None = None,
     ):
         """Render the 2-D density as filled or line contours.
 
@@ -372,6 +375,20 @@ class KDEGlyph(Glyph):
         gx, gy, density = self.evaluate()
         level_edges = self._resolve_levels(density)
         norm, cbar_kw, _ = self._prepare_scalar_mapping(density)
+
+        # Named data-style preset: a continuous preset overrides the density's
+        # cmap + norm (and composes with hillshade below). A categorical preset
+        # has no meaning for a continuous density surface, so reject it.
+        style = style if style is not None else opts.get("style")
+        if style is not None:
+            _, cfg = resolve_single_layer_style(style)
+            if cfg.get("categories") is not None:
+                raise ValueError(
+                    f"data style {style!r} is categorical; KDEGlyph colours a "
+                    "continuous density, so only continuous presets apply"
+                )
+            opts["cmap"] = cfg["cmap"]
+            norm, _, _ = resolve_style_norm(np.asarray(density, dtype=float), cfg)
 
         hillshade = resolve_hillshade(
             hillshade if hillshade is not None else opts.get("hillshade")
