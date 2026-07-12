@@ -755,6 +755,9 @@ class MeshGlyph(GeoMixin, Glyph):
             ValueError: If `style` is unknown (raised by `plot`), or no data is
                 available (never plotted and none passed).
         """
+        # Validate the name up front, before touching data/axes or persisting
+        # it, so a typo raises without wiping the render or poisoning the style.
+        resolve_single_layer_style(style)
         if data is None:
             data = self._last_data
             if data is None:
@@ -962,14 +965,27 @@ class MeshGlyph(GeoMixin, Glyph):
         if "hillshade" not in option_kwargs:
             self.default_options["hillshade"] = self._construct_hillshade
         if "style" in option_kwargs:
-            self._style_state = self.default_options["style"]
+            new_style = self.default_options["style"]
+            if new_style is not None:
+                # Validate before committing to the sticky state, and roll back
+                # to the prior good style on a bad name so the glyph isn't
+                # bricked (a poisoned sticky style re-raises on every plot).
+                try:
+                    resolve_single_layer_style(new_style)
+                except ValueError:
+                    self.default_options["style"] = self._style_state
+                    raise
+            self._style_state = new_style
         else:
             self.default_options["style"] = self._style_state
 
         # Remember what was rendered so `apply_style` can restyle in place.
         # Copy the array so a caller mutating its buffer after plot() (a common
-        # reuse pattern) does not change what a later `apply_style` renders.
-        self._last_data = np.array(data, copy=True)
+        # reuse pattern) does not change what a later `apply_style` renders;
+        # preserve a masked array's mask (a plain `np.array` copy would drop it).
+        self._last_data = (
+            np.ma.copy(data) if np.ma.isMaskedArray(data) else np.array(data, copy=True)
+        )
         self._last_location = location
 
         # Recompute vmin/vmax from data unless user explicitly passed them.

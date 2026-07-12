@@ -51,10 +51,21 @@ from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 #: the temporary at ~`MAX_KDE_BLOCK` floats (a few tens of MB).
 MAX_KDE_BLOCK = 4_000_000
 
-#: Sentinel for `plot(style=...)` distinguishing "not passed" (keep the current
-#: sticky style) from an explicit `style=None` (clear it back to plain density
-#: colouring). KDE's fixed signature cannot use `None` for both.
-_UNSET = object()
+class _Unset:
+    """Sentinel type for `plot(style=...)`'s tri-state default.
+
+    Distinguishes "not passed" (keep the current sticky style) from an explicit
+    `style=None` (clear it back to plain density colouring); KDE's fixed
+    signature cannot use `None` for both. A named type (rather than a bare
+    `object()`) keeps the `str | None | _Unset` annotation accurate for mypy.
+    """
+
+    def __repr__(self) -> str:  # pragma: no cover - debugging aid
+        return "<UNSET>"
+
+
+#: The single `_Unset` sentinel instance used as `plot(style=...)`'s default.
+_UNSET = _Unset()
 
 #: Option keys for KDEGlyph. `ticks_spacing` is `None` so the shared
 #: `_prepare_scalar_mapping` helper auto-derives it from the density range.
@@ -338,8 +349,17 @@ class KDEGlyph(Glyph):
 
         Raises:
             ValueError: If `style` is unknown, or is categorical (a density is
-                continuous), raised by `plot`.
+                continuous).
         """
+        # Validate the name up front, before clearing the axes or persisting it,
+        # so a bad/categorical style raises without wiping the render or
+        # poisoning the style (a categorical preset is invalid for a density).
+        _, cfg = resolve_single_layer_style(style)
+        if cfg.get("categories") is not None:
+            raise ValueError(
+                f"data style {style!r} is categorical; KDEGlyph colours a "
+                "continuous density, so only continuous presets apply"
+            )
         self._reset_axes_for_restyle()
         return self.plot(
             ax=self.ax, title=title, add_colorbar=add_colorbar,
@@ -352,7 +372,7 @@ class KDEGlyph(Glyph):
         title: str | None = None,
         add_colorbar: bool | None = None,
         hillshade: bool | dict | None = None,
-        style: str | None = _UNSET,
+        style: str | None | _Unset = _UNSET,
     ):
         """Render the 2-D density as filled or line contours.
 
@@ -449,16 +469,24 @@ class KDEGlyph(Glyph):
         # ArrayGlyph). Only the name is stored -- the resolved cmap stays a
         # local (no leak). A passed `style=None` clears it; not passing `style`
         # (the `_UNSET` sentinel) keeps the current sticky value.
+        prev_style = opts.get("style")
         if style is not _UNSET:
             opts["style"] = style
         style = opts.get("style")
         if style is not None:
-            _, cfg = resolve_single_layer_style(style)
-            if cfg.get("categories") is not None:
-                raise ValueError(
-                    f"data style {style!r} is categorical; KDEGlyph colours a "
-                    "continuous density, so only continuous presets apply"
-                )
+            # Validate before rendering, and roll back to the prior good style
+            # on a bad/categorical name so the sticky style isn't poisoned
+            # (a poisoned name would re-raise on every later plot()).
+            try:
+                _, cfg = resolve_single_layer_style(style)
+                if cfg.get("categories") is not None:
+                    raise ValueError(
+                        f"data style {style!r} is categorical; KDEGlyph colours "
+                        "a continuous density, so only continuous presets apply"
+                    )
+            except ValueError:
+                opts["style"] = prev_style
+                raise
             cmap = cfg["cmap"]
             norm, _, _ = resolve_style_norm(np.asarray(density, dtype=float), cfg)
             # Drop the linear ticks so the colorbar matches the preset norm.

@@ -1577,6 +1577,9 @@ class ArrayGlyph(GeoMixin, Glyph):
 
                 ```
         """
+        # Validate the name up front, before clearing the axes or persisting it,
+        # so a typo raises without wiping the render or poisoning the style.
+        resolve_single_layer_style(style)
         self._reset_axes_for_restyle()
         return self.plot(style=style, ax=self.ax, **kwargs)
 
@@ -2491,6 +2494,13 @@ class ArrayGlyph(GeoMixin, Glyph):
         # are reproduced rather than lossily mapped onto `color_scale`.
         style = self.default_options.get("style")
         if style is not None:
+            # Validate before rendering; on a bad name clear the sticky style
+            # and re-raise, so a poisoned name can't brick every later plot().
+            try:
+                resolve_single_layer_style(style)
+            except ValueError:
+                self.default_options["style"] = None
+                raise
             if self.rgb:
                 warnings.warn(
                     "data-style presets do not apply to RGB arrays; 'style' is "
