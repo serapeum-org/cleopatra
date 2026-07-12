@@ -538,3 +538,11 @@ class TestKDEGlyphHillshade:
         _, _, cs = KDEGlyph(x, y, gridsize=40).plot()
         assert isinstance(cs, QuadContourSet)
         plt.close("all")
+
+    def test_hillshade_at_plot_time(self):
+        """`hillshade` passed to `plot()` shades, mirroring ArrayGlyph/MeshGlyph."""
+        x, y = self._cloud()
+        _, _, im = KDEGlyph(x, y, gridsize=40, cmap="magma").plot(hillshade={"vert_exag": 20})
+        assert type(im).__name__ == "AxesImage"
+        assert im.get_array().shape[-1] == 4
+        plt.close("all")

@@ -299,6 +299,7 @@ class KDEGlyph(Glyph):
         ax: Axes = None,
         title: str | None = None,
         add_colorbar: bool | None = None,
+        hillshade: bool | dict | None = None,
     ):
         """Render the 2-D density as filled or line contours.
 
@@ -315,6 +316,11 @@ class KDEGlyph(Glyph):
             add_colorbar: Override the `add_colorbar` option for this call
                 — True draws the colorbar, False suppresses it. Defaults to
                 None, which keeps the value set at construction.
+            hillshade: Relief-shade the density surface for this call (`True`
+                or an options dict; see `cleopatra.hillshade`). Defaults to
+                None, which keeps the value set at construction. Accepting it
+                here mirrors `ArrayGlyph.plot`/`MeshGlyph.plot`, so `hillshade`
+                works the same way across all three glyphs.
 
         Returns:
             tuple[Figure, Axes, QuadContourSet]: The figure, the axes, and
@@ -367,7 +373,9 @@ class KDEGlyph(Glyph):
         level_edges = self._resolve_levels(density)
         norm, cbar_kw, _ = self._prepare_scalar_mapping(density)
 
-        hillshade = resolve_hillshade(opts.get("hillshade"))
+        hillshade = resolve_hillshade(
+            hillshade if hillshade is not None else opts.get("hillshade")
+        )
         if hillshade is not None:
             # Treat the density as a surface and relief-shade it, so the
             # "density terrain" (peaks and ridges) reads by form. The shaded
