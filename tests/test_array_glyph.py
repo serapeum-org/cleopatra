@@ -3954,6 +3954,12 @@ class TestArrayGlyphDataStyle:
             ArrayGlyph(rgb, rgb=[0, 1, 2], style="flow_accumulation").plot()
         plt.close("all")
 
+    def test_plot_style_with_hillshade_warns(self):
+        """In `plot`, a `style` takes precedence over `hillshade`, which is warned and dropped."""
+        with pytest.warns(UserWarning, match="hillshade is not composed"):
+            ArrayGlyph(self._accum(), style="flow_accumulation", hillshade=True).plot()
+        plt.close("all")
+
 
 class TestArrayGlyphShadedAnimate:
     """Tests for hillshade + data-style presets in `animate`."""
@@ -4004,6 +4010,18 @@ class TestArrayGlyphShadedAnimate:
         assert g.im.cmap.name == "Blues"
         assert type(g.im.norm).__name__ == "SymLogNorm"
         assert np.asarray(g.im.get_array()).ndim == 2, "hillshade dropped -> scalar frames"
+        plt.close("all")
+
+    def test_continuous_style_animate_without_colorbar(self):
+        """A continuous style animates with `add_colorbar=False` (no colorbar to refresh)."""
+        rng = np.random.default_rng(7)
+        accum = np.stack(
+            [np.abs(rng.normal(size=(20, 25))).cumsum(1) * 40 for _ in range(4)]
+        )
+        g = ArrayGlyph(accum, style="flow_accumulation")
+        g.animate(time=list(range(4)), add_colorbar=False)
+        assert g.cbar is None
+        assert g.im.cmap.name == "Blues"
         plt.close("all")
 
     def test_categorical_style_in_animate_raises(self):
