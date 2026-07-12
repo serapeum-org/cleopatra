@@ -3941,6 +3941,13 @@ class TestArrayGlyphDataStyle:
         assert ax.get_legend() is not None
         plt.close("all")
 
+    def test_style_hides_pixel_ticks_without_extent(self):
+        """A style plot with no extent hides pixel-index ticks, like the imshow path."""
+        g = ArrayGlyph(self._accum(), style="flow_accumulation")
+        _, ax = g.plot()
+        assert ax.get_xticks().size == 0 and ax.get_yticks().size == 0
+        plt.close("all")
+
     def test_points_with_style_warns(self):
         """A preset bypasses point/cell-value overlays; the drop is warned, not silent."""
         pts = np.array([[1.0, 2, 3], [2.0, 5, 6]])

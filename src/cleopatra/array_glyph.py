@@ -1608,6 +1608,13 @@ class ArrayGlyph(GeoMixin, Glyph):
         # Presets present their scale via a swatch / categorical legend, not a
         # matplotlib colorbar.
         self.cbar = None
+        # Match the imshow path: with no extent (and no curvilinear coords) hide
+        # the pixel-index tick labels.
+        if self.extent is None and coords is None:
+            self.ax.set_xticklabels([])
+            self.ax.set_yticklabels([])
+            self.ax.set_xticks([])
+            self.ax.set_yticks([])
         self.ax.set_title(
             self.default_options["title"], fontsize=self.default_options["title_size"]
         )
