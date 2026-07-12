@@ -381,10 +381,13 @@ class KDEGlyph(Glyph):
         gx, gy, density = self.evaluate()
         level_edges = self._resolve_levels(density)
         norm, cbar_kw, _ = self._prepare_scalar_mapping(density)
+        cmap = opts["cmap"]
 
         # Named data-style preset: a continuous preset overrides the density's
         # cmap + norm (and composes with hillshade below). A categorical preset
-        # has no meaning for a continuous density surface, so reject it.
+        # has no meaning for a continuous density surface, so reject it. The
+        # cmap is resolved into a LOCAL (not `opts`), so a per-call `style` does
+        # not leak its colormap into a later `plot()` on the same instance.
         style = style if style is not None else opts.get("style")
         if style is not None:
             _, cfg = resolve_single_layer_style(style)
@@ -393,7 +396,7 @@ class KDEGlyph(Glyph):
                     f"data style {style!r} is categorical; KDEGlyph colours a "
                     "continuous density, so only continuous presets apply"
                 )
-            opts["cmap"] = cfg["cmap"]
+            cmap = cfg["cmap"]
             norm, _, _ = resolve_style_norm(np.asarray(density, dtype=float), cfg)
 
         hillshade = resolve_hillshade(
@@ -407,13 +410,13 @@ class KDEGlyph(Glyph):
             hs_norm = norm if norm is not None else Normalize(
                 vmin=float(density.min()), vmax=float(density.max())
             )
-            rgba = shade_grid(density, opts["cmap"], norm=hs_norm, **hillshade)
+            rgba = shade_grid(density, cmap, norm=hs_norm, **hillshade)
             extent = [float(gx.min()), float(gx.max()), float(gy.min()), float(gy.max())]
             mappable = ax.imshow(rgba, extent=extent, origin="lower", aspect="auto")
             self._apply_clip(mappable)
             self.im = mappable
             if draw_colorbar:
-                proxy = ScalarMappable(norm=hs_norm, cmap=opts["cmap"])
+                proxy = ScalarMappable(norm=hs_norm, cmap=cmap)
                 proxy.set_array(density)
                 self.cbar = self.create_color_bar(ax, proxy, cbar_kw)
             if opts["title"]:
@@ -422,7 +425,7 @@ class KDEGlyph(Glyph):
 
         render = ax.contourf if opts["shade"] else ax.contour
         contour_set = render(
-            gx, gy, density, levels=level_edges, cmap=opts["cmap"], norm=norm
+            gx, gy, density, levels=level_edges, cmap=cmap, norm=norm
         )
         self._apply_clip(contour_set)
         self.im = contour_set

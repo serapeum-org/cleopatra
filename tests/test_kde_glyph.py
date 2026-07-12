@@ -601,3 +601,14 @@ class TestKDEGlyphDataStyle:
         with pytest.raises(ValueError, match="unknown data style"):
             KDEGlyph(x, y, gridsize=40).plot(style="not_a_style")
         plt.close("all")
+
+    def test_plot_time_style_does_not_leak_cmap(self):
+        """A per-call `style` does not persist its colormap into a later `plot()`."""
+        x, y = self._cloud()
+        g = KDEGlyph(x, y, gridsize=40)
+        default_cmap = g.default_options["cmap"]
+        g.plot(style="temperature")
+        plt.close("all")
+        _, _, cs = g.plot()  # style=None
+        assert cs.get_cmap().name == default_cmap
+        plt.close("all")
