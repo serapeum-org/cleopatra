@@ -681,7 +681,16 @@ class MeshGlyph(GeoMixin, Glyph):
         node_xy = np.column_stack([tri.x, tri.y])
         base_rgba = tpc.to_rgba(tri_z)
         shaded = shade_faces(node_xy, tri_faces, z_nodes, base_rgba, **hillshade)
+        # A triangle touching a non-finite (nodata) node has an undefined
+        # colour and normal; render it transparent, matching how the raster
+        # hillshade (`shade_grid`) drops NaN cells rather than colouring them.
+        nan_faces = ~np.isfinite(z_nodes[tri_faces]).all(axis=1)
+        shaded[nan_faces] = 0.0
         tpc.set_array(None)
+        # tripcolor seeds the collection with a scalar alpha=1, which would
+        # overwrite the per-face RGBA alpha (clobbering the transparent nodata
+        # faces above); clear it so `set_facecolor` honours each face's alpha.
+        tpc.set_alpha(None)
         tpc.set_facecolor(shaded)
         return tpc
 

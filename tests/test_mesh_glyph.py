@@ -1470,3 +1470,20 @@ class TestMeshGlyphHillshade:
         mg.plot(z, location="node", filled=False, labels=True, hillshade=True)
         assert mg.contour_labels is None, "labels are a no-op under hillshade"
         plt.close("all")
+
+    def test_hillshade_makes_nodata_faces_transparent(self):
+        """Faces touching a non-finite (nodata) node render fully transparent.
+
+        Mirrors the raster hillshade, which drops NaN cells rather than
+        colouring them; a triangle with a NaN node has no defined normal.
+        """
+        nx = np.array([0.0, 1.0, 0.0, 1.0])
+        ny = np.array([0.0, 0.0, 1.0, 1.0])
+        faces = np.array([[0, 1, 3], [1, 2, 3], [0, 1, 2]])
+        z = np.array([10.0, 20.0, 30.0, np.nan])  # node 3 is nodata
+        mg = MeshGlyph(nx, ny, faces)
+        mg.plot(z, location="node", cmap="terrain", hillshade=True)
+        alphas = mg.im.get_facecolor()[:, 3]
+        assert np.allclose(alphas[[0, 1]], 0.0), "nodata-touching faces are transparent"
+        assert alphas[2] > 0.0, "the fully-finite face stays opaque"
+        plt.close("all")
