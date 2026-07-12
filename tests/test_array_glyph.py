@@ -4040,20 +4040,31 @@ class TestArrayGlyphShadedAnimate:
         assert type(g.im.norm).__name__ == "SymLogNorm"
         plt.close("all")
 
-    def test_symlog_style_with_hillshade_and_colorbar_does_not_crash(self):
-        """A symlog preset + hillshade + default colorbar animates: style wins, hillshade warned and dropped."""
+    def test_symlog_style_with_hillshade_composes_without_crash(self):
+        """A symlog preset + hillshade animates: relief composes into the preset RGBA, no scale-norm crash."""
         rng = np.random.default_rng(5)
         accum = np.stack(
             [np.abs(rng.normal(size=(20, 25))).cumsum(1) * 40 for _ in range(4)]
         )
-        g = ArrayGlyph(accum, style="flow_accumulation", hillshade=True)
-        with pytest.warns(UserWarning, match="hillshade is not composed"):
-            anim = g.animate(time=list(range(4)))
-        anim._func(2)  # drive a frame; must not raise on the scale-norm colorbar
+        g = ArrayGlyph(accum, style="flow_accumulation", hillshade={"vert_exag": 5})
+        anim = g.animate(time=list(range(4)))
+        anim._func(2)  # drive a frame; must not raise on the scale-norm path
         assert g.im.cmap.name == "Blues"
         assert type(g.im.norm).__name__ == "SymLogNorm"
         frame = np.asarray(g.im.get_array())
-        assert frame.ndim == 3 and frame.shape[-1] == 4, "style renders its own RGBA (hillshade dropped)"
+        assert frame.ndim == 3 and frame.shape[-1] == 4
+        plt.close("all")
+
+    def test_continuous_style_uses_swatch_legend_like_plot(self):
+        """A continuous preset presents a swatch legend (cbar=None) in animate, matching plot."""
+        rng = np.random.default_rng(6)
+        accum = np.stack(
+            [np.abs(rng.normal(size=(20, 25))).cumsum(1) * 40 for _ in range(3)]
+        )
+        g = ArrayGlyph(accum, style="flow_accumulation")
+        g.animate(time=list(range(3)))
+        assert g.cbar is None
+        assert len(g.ax.child_axes) == 1  # the swatch legend inset
         plt.close("all")
 
     def test_continuous_style_animate_reproduces_alpha_glow(self):
