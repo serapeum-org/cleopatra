@@ -4140,6 +4140,35 @@ class TestArrayGlyphShadedAnimate:
         assert g.cbar is None, "categorical presets use a legend, not a colorbar"
         plt.close("all")
 
+    def test_categorical_style_animate_with_hillshade_warns(self):
+        """A categorical preset + hillshade in animate warns and drops the relief."""
+        rng = np.random.default_rng(12)
+        d8 = np.stack(
+            [
+                rng.choice([1, 2, 4, 8, 16, 32, 64, 128], size=(12, 12)).astype(float)
+                for _ in range(3)
+            ]
+        )
+        with pytest.warns(UserWarning, match="categorical data-style preset"):
+            ArrayGlyph(d8, style="flow_direction_d8", hillshade=True).animate(
+                time=list(range(3))
+            )
+        plt.close("all")
+
+    def test_categorical_style_animate_without_colorbar(self):
+        """A categorical preset animates with `add_colorbar=False` (no legend, no colorbar)."""
+        rng = np.random.default_rng(13)
+        d8 = np.stack(
+            [
+                rng.choice([1, 2, 4, 8, 16, 32, 64, 128], size=(12, 12)).astype(float)
+                for _ in range(3)
+            ]
+        )
+        g = ArrayGlyph(d8, style="flow_direction_d8")
+        g.animate(time=list(range(3)), add_colorbar=False)
+        assert g.cbar is None and g.ax.get_legend() is None
+        plt.close("all")
+
     def test_categorical_animate_masks_out_of_range_codes(self):
         """Non-declared codes render transparent in animated categorical frames."""
         rng = np.random.default_rng(9)
