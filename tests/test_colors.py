@@ -823,6 +823,16 @@ class TestStyleNormKinds:
         with pytest.raises(ValueError, match="norm='log' needs positive data"):
             _resolve_style_norm(np.array([0.0, 0.0, 0.0]), {"norm": "log"})
 
+    def test_log_on_single_positive_value_raises_clearly(self):
+        """`norm='log'` where the only positive value equals vmax raises (no flat LogNorm).
+
+        Data `[0, 5]` resolves lower bound == upper bound (5); a strict `>` guard
+        would let it build a degenerate `LogNorm(vmin==vmax)`, so the guard uses
+        `>=` and fails clearly instead.
+        """
+        with pytest.raises(ValueError, match="norm='log' needs positive data"):
+            _resolve_style_norm(np.array([0.0, 5.0]), {"norm": "log"})
+
 
 class TestCmoceanPresets:
     """Tests for the cmocean ocean/hydrology/DEM preset library in `DATA_STYLES`."""

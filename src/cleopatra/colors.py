@@ -638,7 +638,11 @@ def _resolve_style_norm(
         lo = vmin if (vmin is not None and vmin > 0) else (
             float(positive.min()) if positive.size else None
         )
-        if lo is None or vmax is None or vmax <= 0 or lo > vmax:
+        # `lo >= vmax` (not just `>`) so a single-positive-value range like
+        # data [0, 5] -- where the only positive value is both the lower and
+        # upper bound -- fails clearly rather than building a degenerate
+        # LogNorm(vmin==vmax) that renders the whole layer flat at one colour.
+        if lo is None or vmax is None or vmax <= 0 or lo >= vmax:
             raise ValueError(
                 "data style norm='log' needs positive data with a positive "
                 f"value range (resolved vmin={lo!r}, vmax={vmax!r}); use "
