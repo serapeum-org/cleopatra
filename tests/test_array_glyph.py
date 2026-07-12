@@ -4081,8 +4081,8 @@ class TestArrayGlyphShadedAnimate:
         assert g.im.cmap.name == "Blues"
         plt.close("all")
 
-    def test_categorical_style_in_animate_raises(self):
-        """Categorical presets are not animated yet; raise a clear `NotImplementedError`."""
+    def test_categorical_style_in_animate_renders_with_legend(self):
+        """A categorical preset animates: per-frame remap to RGBA + a discrete legend, no colorbar."""
         rng = np.random.default_rng(4)
         d8 = np.stack(
             [
@@ -4090,6 +4090,27 @@ class TestArrayGlyphShadedAnimate:
                 for _ in range(3)
             ]
         )
-        with pytest.raises(NotImplementedError, match="categorical data-style presets"):
-            ArrayGlyph(d8, style="flow_direction_d8").animate(time=list(range(3)))
+        g = ArrayGlyph(d8, style="flow_direction_d8")
+        anim = g.animate(time=list(range(3)))
+        anim._func(1)
+        frame = np.asarray(g.im.get_array())
+        assert frame.ndim == 3 and frame.shape[-1] == 4, "categorical frames are RGBA"
+        assert g.ax.get_legend() is not None, "a discrete legend is drawn"
+        assert g.cbar is None, "categorical presets use a legend, not a colorbar"
+        plt.close("all")
+
+    def test_categorical_animate_masks_out_of_range_codes(self):
+        """Non-declared codes render transparent in animated categorical frames."""
+        rng = np.random.default_rng(9)
+        d8 = np.stack(
+            [
+                rng.choice([1, 2, 4, 8, 16, 32, 64, 128], size=(10, 10)).astype(float)
+                for _ in range(3)
+            ]
+        )
+        d8[:, 0, 0] = 999.0  # nodata / out-of-range
+        g = ArrayGlyph(d8, style="flow_direction_d8")
+        anim = g.animate(time=list(range(3)))
+        anim._func(1)
+        assert np.asarray(g.im.get_array())[0, 0, 3] == 0.0
         plt.close("all")

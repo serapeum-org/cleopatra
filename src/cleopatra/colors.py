@@ -547,7 +547,7 @@ DATA_STYLES.update(_load_magics_presets())
 DATA_STYLES.update(_load_preset_asset("cmocean_presets.json", "cmocean"))
 
 
-def _category_boundaries(values: list[float]) -> list[float]:
+def category_boundaries(values: list[float]) -> list[float]:
     """Bin edges for a `BoundaryNorm` over discrete category values.
 
     Interior edges are the midpoints between consecutive (sorted) class
@@ -669,6 +669,7 @@ def resolve_style_norm(
 #: Backward-compatible private aliases for symbols that were renamed public.
 _resolve_style_norm = resolve_style_norm
 _alpha_rgba = alpha_rgba
+_category_boundaries = category_boundaries
 
 
 def apply_data_style(
@@ -835,7 +836,7 @@ def apply_data_style(
             cat_labels = [c[2] for c in cats]
             cat_cmap = mcolors.ListedColormap(cat_colors)
             cat_norm = mcolors.BoundaryNorm(
-                _category_boundaries(cat_values), len(cat_colors)
+                category_boundaries(cat_values), len(cat_colors)
             )
             # Only cells whose value is one of the declared class codes are
             # drawn; anything else (nodata sentinels, D8 sinks, out-of-range
