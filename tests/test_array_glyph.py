@@ -3846,3 +3846,113 @@ class TestArrayGlyphHillshade:
         with pytest.warns(UserWarning, match="hillshade is only applied to kind='imshow'"):
             ArrayGlyph(self._dem(), cmap="terrain", hillshade=True).plot(kind="pcolormesh")
         plt.close("all")
+
+
+class TestArrayGlyphDataStyle:
+    """Tests for the `style` data-style preset option on `plot`."""
+
+    @staticmethod
+    def _accum():
+        rng = np.random.default_rng(0)
+        return np.abs(rng.normal(size=(30, 40))).cumsum(axis=1) * 50.0
+
+    @staticmethod
+    def _d8():
+        rng = np.random.default_rng(1)
+        return rng.choice([1, 2, 4, 8, 16, 32, 64, 128], size=(20, 20)).astype(float)
+
+    def test_continuous_preset_renders_image_without_colorbar(self):
+        """A continuous preset draws an image and presents its scale via a legend, not a colorbar."""
+        g = ArrayGlyph(self._accum(), style="flow_accumulation")
+        g.plot()
+        assert type(g.im).__name__ == "AxesImage"
+        assert g.cbar is None
+        plt.close("all")
+
+    def test_continuous_preset_renders_baked_rgba(self):
+        """The preset delegates to `apply_data_style`, baking the norm/alpha into an RGBA image.
+
+        The symlog norm is applied when building the RGBA (verified on the
+        animate path, which keeps the norm on the artist); here the drawn
+        image is the baked RGBA that alpha_scaled_image produces.
+        """
+        g = ArrayGlyph(self._accum(), style="flow_accumulation")
+        g.plot()
+        assert np.asarray(g.im.get_array()).shape[-1] == 4
+        plt.close("all")
+
+    def test_categorical_preset_draws_disjoint_legend(self):
+        """A categorical preset renders a discrete legend of its class codes."""
+        g = ArrayGlyph(self._d8(), style="flow_direction_d8")
+        _, ax = g.plot()
+        assert ax.get_legend() is not None
+        plt.close("all")
+
+    def test_add_colorbar_false_suppresses_preset_legend(self):
+        """`add_colorbar=False` suppresses the preset's legend."""
+        g = ArrayGlyph(self._d8(), style="flow_direction_d8")
+        _, ax = g.plot(add_colorbar=False)
+        assert ax.get_legend() is None
+        plt.close("all")
+
+    def test_unknown_style_raises(self):
+        """An unknown style name raises a clear `ValueError`."""
+        with pytest.raises(ValueError, match="unknown data style"):
+            ArrayGlyph(self._accum(), style="not_a_style").plot()
+        plt.close("all")
+
+    def test_multilayer_style_rejected(self):
+        """A multi-layer preset (`haze`) cannot apply to a single band."""
+        with pytest.raises(ValueError, match="multiple layers"):
+            ArrayGlyph(self._accum(), style="haze").plot()
+        plt.close("all")
+
+
+class TestArrayGlyphShadedAnimate:
+    """Tests for hillshade + data-style presets in `animate`."""
+
+    @staticmethod
+    def _dem_stack(n=5):
+        yy, xx = np.mgrid[0:30, 0:40]
+        return np.stack(
+            [
+                10.0
+                + 0.3 * yy
+                + 200.0 * np.exp(-(((xx - 20 - i) / 6) ** 2 + ((yy - 15) / 8) ** 2))
+                for i in range(n)
+            ]
+        )
+
+    def test_hillshade_shades_every_frame(self):
+        """`animate_a` shades each frame RGBA rather than reverting to the raw scalar frame."""
+        g = ArrayGlyph(self._dem_stack(), cmap="terrain", hillshade={"vert_exag": 5})
+        anim = g.animate(time=list(range(5)))
+        anim._func(2)  # drive a mid-sequence frame through animate_a
+        arr = np.asarray(g.im.get_array())
+        assert arr.ndim == 3 and arr.shape[-1] == 4
+        plt.close("all")
+
+    def test_continuous_style_applies_preset_cmap_and_norm(self):
+        """A continuous preset drives the animation through its cmap + norm."""
+        rng = np.random.default_rng(3)
+        accum = np.stack(
+            [np.abs(rng.normal(size=(20, 25))).cumsum(1) * 40 for _ in range(4)]
+        )
+        g = ArrayGlyph(accum, style="flow_accumulation")
+        g.animate(time=list(range(4)))
+        assert g.im.cmap.name == "Blues"
+        assert type(g.im.norm).__name__ == "SymLogNorm"
+        plt.close("all")
+
+    def test_categorical_style_in_animate_raises(self):
+        """Categorical presets are not animated yet; raise a clear `NotImplementedError`."""
+        rng = np.random.default_rng(4)
+        d8 = np.stack(
+            [
+                rng.choice([1, 2, 4, 8, 16, 32, 64, 128], size=(15, 15)).astype(float)
+                for _ in range(3)
+            ]
+        )
+        with pytest.raises(NotImplementedError, match="categorical data-style presets"):
+            ArrayGlyph(d8, style="flow_direction_d8").animate(time=list(range(3)))
+        plt.close("all")
