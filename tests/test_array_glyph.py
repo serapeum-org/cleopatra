@@ -3881,6 +3881,20 @@ class TestArrayGlyphDataStyle:
         assert np.asarray(g.im.get_array()).shape[-1] == 4
         plt.close("all")
 
+    def test_continuous_preset_draws_swatch_legend(self):
+        """A continuous preset draws its swatch legend as an inset child axes."""
+        g = ArrayGlyph(self._accum(), style="flow_accumulation")
+        _, ax = g.plot()
+        assert len(ax.child_axes) == 1
+        plt.close("all")
+
+    def test_continuous_add_colorbar_false_suppresses_swatch(self):
+        """`add_colorbar=False` suppresses the continuous swatch legend."""
+        g = ArrayGlyph(self._accum(), style="flow_accumulation")
+        _, ax = g.plot(add_colorbar=False)
+        assert len(ax.child_axes) == 0
+        plt.close("all")
+
     def test_categorical_preset_draws_disjoint_legend(self):
         """A categorical preset renders a discrete legend of its class codes."""
         g = ArrayGlyph(self._d8(), style="flow_direction_d8")
