@@ -4065,6 +4065,8 @@ class TestArrayGlyphShadedAnimate:
         g.animate(time=list(range(3)))
         assert g.cbar is None
         assert len(g.ax.child_axes) == 1  # the swatch legend inset
+        g.animate(time=list(range(3)))  # repeat must not stack swatches
+        assert len(g.ax.child_axes) == 1
         plt.close("all")
 
     def test_continuous_style_animate_reproduces_alpha_glow(self):

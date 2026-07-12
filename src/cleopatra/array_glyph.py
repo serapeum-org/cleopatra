@@ -3338,9 +3338,16 @@ class ArrayGlyph(GeoMixin, Glyph):
                         self.cbar.remove()
                         self.cbar = None
                     if self.default_options["add_colorbar"]:
+                        # Remove a swatch inset from a previous render so
+                        # repeated animate() calls don't stack legends.
+                        for _inset in list(ax.child_axes):
+                            _inset.remove()
+                        # Same bounds as apply_data_style's swatch (plot path),
+                        # so a plot and its animation align exactly.
                         swatch_legend(
                             ax, cfg["cmap"], cfg["label"],
                             vmin=style_vmin, vmax=style_vmax, norm=style_norm,
+                            bounds=(0.02, 0.92, 0.32, 0.06),
                         )
                     alpha_vmin = cfg.get("alpha_vmin")
                     alpha_vmax = cfg.get("alpha_vmax")
