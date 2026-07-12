@@ -1346,6 +1346,7 @@ def swatch_legend(
     bounds: Sequence[float] = (0.02, 0.88, 0.32, 0.05),
     text_color: str = "white",
     fontsize: float = 9,
+    norm: colors.Normalize | None = None,
 ) -> Axes:
     """Draw a compact two-stop gradient swatch with its label baked into the bar.
 
@@ -1375,6 +1376,11 @@ def swatch_legend(
         text_color: Color for the label and the endpoint values.
         fontsize: Font size (points) for the label; endpoint labels use
             `fontsize * 0.8`.
+        norm: Optional `matplotlib.colors.Normalize` the layer is drawn with.
+            When given, the bar's colour is sampled through it across the
+            linear `vmin`..`vmax` range, so a nonlinear (log/symlog) mapping
+            shows its true, compressed progression instead of a plain linear
+            ramp. Defaults to `None` (a linear gradient).
 
     Returns:
         Axes: The inset axes holding the swatch (a child of `ax`).
@@ -1409,8 +1415,16 @@ def swatch_legend(
     """
     cmap_obj = mpl.colormaps[cmap] if isinstance(cmap, str) else cmap
     swatch = ax.inset_axes(bounds)
-    gradient = np.linspace(0.0, 1.0, 256).reshape(1, -1)
-    swatch.imshow(gradient, aspect="auto", cmap=cmap_obj, extent=(0, 1, 0, 1))
+    if norm is None:
+        gradient = np.linspace(0.0, 1.0, 256).reshape(1, -1)
+    else:
+        # Position along the bar is linear in data (vmin..vmax); sample the
+        # colour through `norm` so a nonlinear (log/symlog) mapping shows its
+        # true, compressed progression instead of a misleading linear ramp.
+        gradient = np.asarray(
+            norm(np.linspace(vmin, vmax, 256)), dtype=float
+        ).reshape(1, -1)
+    swatch.imshow(gradient, aspect="auto", cmap=cmap_obj, vmin=0.0, vmax=1.0, extent=(0, 1, 0, 1))
     swatch.set_xticks([])
     swatch.set_yticks([])
     for spine in swatch.spines.values():

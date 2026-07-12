@@ -38,6 +38,7 @@ from matplotlib.animation import FuncAnimation
 
 from cleopatra.geo import GeoMixin
 from cleopatra.glyph import Glyph
+from cleopatra.hillshade import resolve_hillshade, shade_faces
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 MESH_DEFAULT_OPTIONS = {
@@ -45,6 +46,7 @@ MESH_DEFAULT_OPTIONS = {
     "vmax": None,
     "labels": False,
     "label_kw": None,
+    "hillshade": False,
 }
 MESH_DEFAULT_OPTIONS = STYLE_DEFAULTS | MESH_DEFAULT_OPTIONS
 
@@ -163,6 +165,11 @@ class MeshGlyph(GeoMixin, Glyph):
         #: `tripcolor`/`tricontourf`); an empty list when the line
         #: tricontour has no isolines.
         self.contour_labels = None
+        #: `hillshade` set at construction. `plot()` resets `default_options`
+        #: to the class defaults on each call, so this is restored there when
+        #: `hillshade` is not overridden at `plot()` time -- keeping the option
+        #: honoured at construction, consistent with `ArrayGlyph`/`KDEGlyph`.
+        self._construct_hillshade = self.default_options.get("hillshade", False)
 
     @property
     def node_x(self) -> np.ndarray:
@@ -627,6 +634,71 @@ class MeshGlyph(GeoMixin, Glyph):
             return ax.tricontourf(tri, data, **contour_kw)
         return ax.tricontour(tri, data, **contour_kw)
 
+    def _render_shaded_relief(
+        self,
+        ax: Any,
+        data: np.ndarray,
+        edgecolor: str,
+        norm: Any,
+        hillshade: dict[str, Any],
+        **render_kwargs: Any,
+    ) -> Any:
+        """Render the mesh as a relief-shaded terrain surface (node elevation).
+
+        Colours each triangle by its mean node elevation, then blends the
+        triangle-normal hillshade into those colours via
+        `cleopatra.hillshade.shade_faces`, so a wide-range terrain mesh reads
+        by form. The returned `tripcolor` mappable keeps its cmap/norm, so the
+        colorbar spans the **node** elevation range (`vmin`/`vmax` from the
+        per-node `data`). Note that faces are coloured by each triangle's
+        *mean* node elevation, whose range is narrower than the node range on
+        any mesh with within-triangle variation, so the colorbar's extreme
+        colours may not appear on the surface — the bar reflects the input
+        data range, not the drawn per-face means. Requires node-centered
+        `data` (the surface's per-node elevation).
+
+        Args:
+            ax: Axes to draw on.
+            data: Node-centered elevation (one value per mesh node).
+            edgecolor: Triangle edge colour.
+            norm: Colour normalization, or `None` to use `vmin`/`vmax`.
+            hillshade: Resolved hillshade settings.
+            **render_kwargs: Forwarded to `tripcolor`.
+
+        Returns:
+            The `tripcolor` mappable, with per-face colours set to the shaded
+            RGBA.
+        """
+        tri = self.triangulation
+        z_nodes = np.asarray(data, dtype=float)
+        tri_faces = tri.triangles
+        tri_z = z_nodes[tri_faces].mean(axis=1)  # per-triangle base value
+
+        kw: dict[str, Any] = {"cmap": self.default_options["cmap"], "edgecolors": edgecolor}
+        if norm is not None:
+            kw["norm"] = norm
+        else:
+            kw["vmin"] = self.default_options["vmin"]
+            kw["vmax"] = self.default_options["vmax"]
+        kw.update(render_kwargs)
+        tpc = ax.tripcolor(tri, facecolors=tri_z, **kw)
+
+        node_xy = np.column_stack([tri.x, tri.y])
+        base_rgba = tpc.to_rgba(tri_z)
+        shaded = shade_faces(node_xy, tri_faces, z_nodes, base_rgba, **hillshade)
+        # A triangle touching a non-finite (nodata) node has an undefined
+        # colour and normal; render it transparent, matching how the raster
+        # hillshade (`shade_grid`) drops NaN cells rather than colouring them.
+        nan_faces = ~np.isfinite(z_nodes[tri_faces]).all(axis=1)
+        shaded[nan_faces] = 0.0
+        tpc.set_array(None)
+        # tripcolor seeds the collection with a scalar alpha=1, which would
+        # overwrite the per-face RGBA alpha (clobbering the transparent nodata
+        # faces above); clear it so `set_facecolor` honours each face's alpha.
+        tpc.set_alpha(None)
+        tpc.set_facecolor(shaded)
+        return tpc
+
     def plot(
         self,
         data: np.ndarray,
@@ -681,6 +753,20 @@ class MeshGlyph(GeoMixin, Glyph):
                   over cleopatra's defaults (`inline=True`, `fontsize=8`,
                   `fmt="%g"`) so user keys (`fmt`, `fontsize`, `colors`,
                   `inline_spacing`, …) win on collision.
+
+                One relief option is honoured **only** for node data
+                (`location="node"`):
+
+                - `hillshade` (bool | dict, default `False`): render the
+                  mesh as a relief-shaded terrain surface. Each triangle is
+                  coloured by its *mean* node elevation and blended with a
+                  triangle-normal hillshade. The colorbar spans the **node**
+                  elevation range, so — because faces use per-triangle means
+                  — its extreme colours may not appear on the surface; the
+                  bar reflects the input data range, not the drawn per-face
+                  colours. Faces touching a non-finite (nodata) node render
+                  transparent. Passing `hillshade` with `location="face"`
+                  raises `ValueError`.
 
         Returns:
             tuple[Figure, Axes]: The matplotlib Figure and Axes objects.
@@ -792,6 +878,12 @@ class MeshGlyph(GeoMixin, Glyph):
                 render_kwargs[key] = val
         self._merge_kwargs(option_kwargs)
 
+        # The reset above drops a construction-time `hillshade`; restore it
+        # unless this `plot()` call overrides it, so the option behaves like
+        # it does on `ArrayGlyph`/`KDEGlyph` (honoured at construction).
+        if "hillshade" not in option_kwargs:
+            self.default_options["hillshade"] = self._construct_hillshade
+
         # Recompute vmin/vmax from data unless user explicitly passed them.
         if "vmin" not in option_kwargs:
             self.default_options["vmin"] = float(np.nanmin(data))
@@ -823,15 +915,25 @@ class MeshGlyph(GeoMixin, Glyph):
         # every other path leaves it `None`.
         self.contour_labels = None
 
-        tpc = self._render_mesh(
-            self.ax,
-            data,
-            location,
-            edgecolor=edgecolor,
-            norm=norm,
-            filled=filled,
-            **render_kwargs,
-        )
+        hillshade = resolve_hillshade(self.default_options.get("hillshade"))
+        if hillshade is not None:
+            if location != "node":
+                raise ValueError(
+                    "hillshade needs node-centered elevation; pass location='node'"
+                )
+            tpc = self._render_shaded_relief(
+                self.ax, data, edgecolor, norm, hillshade, **render_kwargs
+            )
+        else:
+            tpc = self._render_mesh(
+                self.ax,
+                data,
+                location,
+                edgecolor=edgecolor,
+                norm=norm,
+                filled=filled,
+                **render_kwargs,
+            )
         # Expose the colour-mapped artist (the `PolyCollection` from
         # `tripcolor`, or the `TriContourSet` from `tricontour(f)`) so a
         # caller can attach a colorbar/register the layer without scraping
@@ -840,8 +942,15 @@ class MeshGlyph(GeoMixin, Glyph):
 
         # Inline numeric labels on the isolines. Only meaningful for line
         # tricontours (`location="node"`, `filled=False`); `labels=True` is
-        # a documented no-op for `tripcolor` (face data) and `tricontourf`.
-        if location == "node" and not filled and self.default_options.get("labels"):
+        # a documented no-op for `tripcolor` (face data), `tricontourf`, and
+        # the shaded-relief surface (`hillshade`, a `PolyCollection` with no
+        # isolines -- `clabel` would raise on it).
+        if (
+            location == "node"
+            and not filled
+            and hillshade is None
+            and self.default_options.get("labels")
+        ):
             label_kw = {
                 "inline": True,
                 "fontsize": 8,

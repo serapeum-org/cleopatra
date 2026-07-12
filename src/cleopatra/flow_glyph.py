@@ -51,6 +51,7 @@ from cleopatra.styles import resolve_sizes, width_legend
 FLOW_DEFAULT_OPTIONS = {
     "width_limits": (1, 5),
     "width_scale": "linear",
+    "draw_order": "input",
     "size_legend": False,
     "size_legend_values": None,
     "size_legend_kwargs": None,
@@ -87,6 +88,9 @@ class FlowGlyph(GeoMixin, Glyph):
         **kwargs: Override any key in `FLOW_DEFAULT_OPTIONS`: `width_limits`
             (min/max line width in points, default `(1, 5)`), `width_scale`
             (`"linear"` / `"log"` / `"sqrt"`, default `"linear"`),
+            `draw_order` (`"input"` / `"width"`, default `"input"`; `"width"`
+            paints thinnest-to-thickest so the widest paths render on top --
+            e.g. high stream-order rivers over their tributaries),
             `size_legend` (bool, default False), `size_legend_values`,
             `size_legend_kwargs`, plus the shared colour options (`cmap`,
             `vmin`, `vmax`, `levels`, `color_scale`, `ticks_spacing`,
@@ -278,6 +282,28 @@ class FlowGlyph(GeoMixin, Glyph):
                 [3.0, 7.0]
 
                 ```
+            - `draw_order="width"` paints the widest paths last (on top), so
+                high stream-order channels sit over their tributaries:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.flow_glyph import FlowGlyph
+                >>> paths = [
+                ...     np.array([[0.0, 0.0], [1.0, 0.0]]),
+                ...     np.array([[0.0, 1.0], [1.0, 1.0]]),
+                ... ]
+                >>> glyph = FlowGlyph(
+                ...     paths, values=np.array([5.0, 1.0]),
+                ...     widths=np.array([5.0, 1.0]), width_limits=(1, 5),
+                ...     draw_order="width",
+                ... )
+                >>> fig, ax, lc = glyph.plot(add_colorbar=False)
+                >>> lw = lc.get_linewidths()
+                >>> bool(lw[0] < lw[-1])  # thinnest drawn first, widest last
+                True
+                >>> [float(v) for v in lc.get_array()]  # colours follow the reorder
+                [1.0, 5.0]
+
+                ```
         """
         if ax is not None:
             self.ax = ax
@@ -290,22 +316,40 @@ class FlowGlyph(GeoMixin, Glyph):
         if title is not None:
             opts["title"] = title
         draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
+        if opts["draw_order"] not in ("input", "width"):
+            raise ValueError(
+                f"draw_order must be 'input' or 'width', got {opts['draw_order']!r}"
+            )
 
         linewidths = self._resolve_linewidths()
 
+        # Draw-order: with draw_order="width", paint paths from thinnest to
+        # thickest so the widest (e.g. the highest stream-order main channels)
+        # render on top of narrower tributaries. Reorder only the copies fed to
+        # the LineCollection; self.widths/self.values and the width legend keep
+        # their original order.
+        draw_paths, draw_values, draw_widths = self.paths, self.values, linewidths
+        if opts["draw_order"] == "width" and self.widths is not None:
+            order = np.argsort(np.asarray(self.widths, dtype=float), kind="stable")
+            draw_paths = [self.paths[k] for k in order]
+            if isinstance(linewidths, np.ndarray):
+                draw_widths = linewidths[order]
+            if self.values is not None:
+                draw_values = np.asarray(self.values)[order]
+
         if self.values is None:
             lc = LineCollection(
-                self.paths, colors=opts["color_1"], linewidths=linewidths
+                draw_paths, colors=opts["color_1"], linewidths=draw_widths
             )
             ax.add_collection(lc)
         else:
             norm, cbar_kw, ticks = self._prepare_scalar_mapping(self.values)
             lc = LineCollection(
-                self.paths,
-                array=np.asarray(self.values),
+                draw_paths,
+                array=np.asarray(draw_values),
                 cmap=opts["cmap"],
                 norm=norm,
-                linewidths=linewidths,
+                linewidths=draw_widths,
             )
             if norm is None:
                 lc.set_clim(ticks[0], ticks[-1])

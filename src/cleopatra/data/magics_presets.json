@@ -1,0 +1,1319 @@
+{
+ "_meta": {
+  "source": "ecmwf/magics",
+  "source_ref": "develop",
+  "source_files": [
+   "share/magics/styles/default/palettes.json",
+   "share/magics/styles/default/contours.json"
+  ],
+  "license": "Apache-2.0",
+  "generated_utc": "2026-07-10",
+  "note": "Colour data and parameter/label associations derived from ECMWF Magics (Apache-2.0); contains no Magics code. Exact contour levels are not in the open data, so presets carry no vmin/vmax and auto-range. Opacity is opaque unless the source palette carries a built-in alpha ramp, in which case it is an overlay."
+ },
+ "presets": {
+  "10fg": {
+   "label": "10 metre wind gust since previous post-processing",
+   "palette": [
+    "#d9fced",
+    "#73faf5",
+    "#00baff",
+    "#002eff",
+    "#0803a3",
+    "#29fc24",
+    "#91ff00",
+    "#d4ff00",
+    "#fffa00",
+    "#ffd900",
+    "#ffa100",
+    "#ff6600",
+    "#ff1f00",
+    "#ff00ab",
+    "#d900ff",
+    "#78038c"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_mc_wind_f0t80"
+  },
+  "10fgi": {
+   "label": "10 metre wind gust index",
+   "palette": [
+    "#000000",
+    "#000000",
+    "#010100",
+    "#ffbf00",
+    "#ff8000",
+    "#ff4000",
+    "#010000"
+   ],
+   "opacity": "overlay",
+   "magics_style": "sh_red_f05t1i01"
+  },
+  "10wsi": {
+   "label": "10 metre speed index",
+   "palette": [
+    "#000000",
+    "#000000",
+    "#010100",
+    "#ffbf00",
+    "#ff8000",
+    "#ff4000",
+    "#010000"
+   ],
+   "opacity": "overlay",
+   "magics_style": "sh_red_f05t1i01"
+  },
+  "2d": {
+   "label": "2 metre dewpoint temperature",
+   "palette": [
+    "#000080",
+    "#000080",
+    "#000080",
+    "#000080",
+    "#000080",
+    "#0000d9",
+    "#4000ff",
+    "#ffff00",
+    "#ffa500",
+    "#ff0000",
+    "#ff00ff",
+    "#ff00ff",
+    "#ff00ff",
+    "#ff00ff",
+    "#ff00ff"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_all_fM48t56i4"
+  },
+  "2t": {
+   "label": "2 metre temperature",
+   "palette": [
+    "#000080",
+    "#000080",
+    "#000080",
+    "#000080",
+    "#000080",
+    "#0000d9",
+    "#4000ff",
+    "#ffff00",
+    "#ffa500",
+    "#ff0000",
+    "#ff00ff",
+    "#ff00ff",
+    "#ff00ff",
+    "#ff00ff",
+    "#ff00ff"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_all_fM48t56i4"
+  },
+  "2ti": {
+   "label": "2 metre temperature index",
+   "palette": [
+    "#ff00da",
+    "#3c00ff",
+    "#00adff",
+    "#00ff69",
+    "#80ff00",
+    "#000000",
+    "#000000",
+    "#000000",
+    "#000000",
+    "#000000",
+    "#010100",
+    "#ffbf00",
+    "#ff8000",
+    "#ff4000",
+    "#010000"
+   ],
+   "opacity": "overlay",
+   "magics_style": "sh_blured_fM1t1lst"
+  },
+  "2tp": {
+   "label": "2 metre temperature probability",
+   "palette": [
+    "#7805c4",
+    "#6b54d4",
+    "#2442f0",
+    "#0282db",
+    "#06adb8",
+    "#03d1d9",
+    "#75f2bf",
+    "#26de94",
+    "#96e30c",
+    "#e0f22b",
+    "#fcb806",
+    "#eb7d21",
+    "#e63030"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_mf_pdist"
+  },
+  "aod550": {
+   "label": "Total Aerosol Optical Depth at 550nm",
+   "palette": [
+    "#0000f1",
+    "#004cff",
+    "#00b1ff",
+    "#29ffce",
+    "#7dff7a",
+    "#ceff29",
+    "#ffc400",
+    "#ff6800",
+    "#f10800",
+    "#800000"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_all_aod"
+  },
+  "capei": {
+   "label": "Convective available potential energy index",
+   "palette": [
+    "#000000",
+    "#000000",
+    "#010100",
+    "#ffbf00",
+    "#ff8000",
+    "#ff4000",
+    "#010000"
+   ],
+   "opacity": "overlay",
+   "magics_style": "sh_red_f05t1i01"
+  },
+  "capes": {
+   "label": "Convective available potential energy shear",
+   "palette": [
+    "#bfbff2",
+    "#8080f2",
+    "#0373fc",
+    "#02bafc",
+    "#03fcf2",
+    "#05b2a6",
+    "#00801a",
+    "#02fc36",
+    "#c4fc03",
+    "#fc9402",
+    "#fc1302",
+    "#b20a7d",
+    "#010001",
+    "#8003fc"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_mc_capes_f10t4000"
+  },
+  "capesi": {
+   "label": "Convective available potential energy shear index",
+   "palette": [
+    "#000000",
+    "#000000",
+    "#010100",
+    "#ffbf00",
+    "#ff8000",
+    "#ff4000",
+    "#010000"
+   ],
+   "opacity": "overlay",
+   "magics_style": "sh_red_f05t1i01"
+  },
+  "cin": {
+   "label": "Convective inhibition",
+   "palette": [
+    "#fc0606",
+    "#fc8502",
+    "#fafa0f",
+    "#137826",
+    "#09f519",
+    "#265eeb",
+    "#8f3deb"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_red_f0t900"
+  },
+  "clbt": {
+   "label": "Cloudy brightness temperature",
+   "palette": [
+    "#010101",
+    "#010101",
+    "#fcfcfc",
+    "#f7f7f7",
+    "#f2f2f2",
+    "#f0f0f0",
+    "#ededed",
+    "#e8e8e8",
+    "#e3e3e3",
+    "#dbdbdb",
+    "#d4d4d4",
+    "#cccccc",
+    "#c4c4c4",
+    "#bdbdbd",
+    "#b5b5b5",
+    "#b0b0b0",
+    "#a8a8a8",
+    "#a1a1a1",
+    "#999999",
+    "#919191",
+    "#8a8a8a",
+    "#828282",
+    "#7d7d7d",
+    "#757575",
+    "#6e6e6e",
+    "#666666",
+    "#5e5e5e",
+    "#575757",
+    "#4f4f4f",
+    "#4a4a4a",
+    "#424242",
+    "#3b3b3b",
+    "#333333",
+    "#2b2b2b",
+    "#242424",
+    "#1c1c1c",
+    "#171717",
+    "#0f0f0f",
+    "#080808",
+    "#000000"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sim_image_wv_fixed_range"
+  },
+  "co": {
+   "label": "Carbon monoxide",
+   "palette": [
+    "#265ba0",
+    "#269170",
+    "#6bb25b",
+    "#a8c96b",
+    "#fff49b",
+    "#f4d138",
+    "#eab538",
+    "#dd8740",
+    "#cc3533",
+    "#9b1623",
+    "#561919",
+    "#341919"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_all_co_500hpa"
+  },
+  "cp": {
+   "label": "Convective precipitation",
+   "palette": [
+    "#00ffff",
+    "#0000ff",
+    "#ff00ff",
+    "#ffa500",
+    "#ff0000"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_blured_f05t300lst"
+  },
+  "crfrate": {
+   "label": "Convective rainfall rate",
+   "palette": [
+    "#38ffff",
+    "#209afd",
+    "#0e27fd",
+    "#34fe28",
+    "#27c71d",
+    "#1a9613",
+    "#fffe30",
+    "#fec627",
+    "#fc761d",
+    "#fc0016",
+    "#c5000e",
+    "#940008",
+    "#fc1ffe",
+    "#9524f8",
+    "#ffffff"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_prate_radarlike_grided"
+  },
+  "d": {
+   "label": "Divergence",
+   "palette": [
+    "#00004c",
+    "#000080",
+    "#0000b2",
+    "#0000e6",
+    "#0026ff",
+    "#004cff",
+    "#0073ff",
+    "#0099ff",
+    "#00bfff",
+    "#00d9ff",
+    "#33f2ff",
+    "#73ffff",
+    "#bfffff",
+    "#000000",
+    "#010100",
+    "#ffe600",
+    "#ffcc00",
+    "#ffb200",
+    "#ff9900",
+    "#ff8000",
+    "#ff6600",
+    "#ff4c00",
+    "#ff2600",
+    "#e60000",
+    "#b20000",
+    "#800000",
+    "#4c0000"
+   ],
+   "opacity": "overlay",
+   "magics_style": "sh_blured_fM50t50lst_cell"
+  },
+  "duaod550": {
+   "label": "Dust Aerosol Optical Depth at 550nm",
+   "palette": [
+    "#0000f1",
+    "#004cff",
+    "#00b1ff",
+    "#29ffce",
+    "#7dff7a",
+    "#ceff29",
+    "#ffc400",
+    "#ff6800",
+    "#f10800",
+    "#800000"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_all_aod"
+  },
+  "frpfire": {
+   "label": "Wildfire radiative power",
+   "palette": [
+    "#350000",
+    "#5f0000",
+    "#890000",
+    "#b30000",
+    "#dd0000",
+    "#ff0800",
+    "#ff3200",
+    "#ff5c00",
+    "#ff8600",
+    "#ffb000",
+    "#ffda00",
+    "#ffff07",
+    "#ffff46",
+    "#ffff85",
+    "#ffffc4",
+    "#ffffff"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_all_fire"
+  },
+  "go3": {
+   "label": "GEMS Ozone",
+   "palette": [
+    "#9bc7ea",
+    "#009ee0",
+    "#007bbf",
+    "#265ba0",
+    "#269170",
+    "#6bb25b",
+    "#a8c96b",
+    "#fff49b",
+    "#f4d138",
+    "#eab538",
+    "#dd8740",
+    "#cc3533",
+    "#9b1623",
+    "#561919"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_all_o3_sfc"
+  },
+  "gtco3": {
+   "label": "GEMS Total column ozone",
+   "palette": [
+    "#000000",
+    "#000080",
+    "#0000ff",
+    "#ffff00",
+    "#ffa500",
+    "#ff0000",
+    "#a52a2a",
+    "#f5f5dc",
+    "#d2b48c"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_all_tco3"
+  },
+  "hcc": {
+   "label": "High cloud cover",
+   "palette": [
+    "#000000",
+    "#010101",
+    "#ffffff",
+    "#ffffff",
+    "#ffffff",
+    "#ffffff",
+    "#ffffff",
+    "#ffffff",
+    "#ffffff",
+    "#ffffff",
+    "#ffffff",
+    "#010101"
+   ],
+   "opacity": "overlay",
+   "magics_style": "transparency_white"
+  },
+  "kx": {
+   "label": "K index",
+   "palette": [
+    "#ebf006",
+    "#f09e06",
+    "#f04006",
+    "#ab0f1a",
+    "#f006e0",
+    "#6e11a6"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_red_f15t60"
+  },
+  "lcc": {
+   "label": "Low cloud cover",
+   "palette": [
+    "#000000",
+    "#a8a8a8",
+    "#a8a8a8",
+    "#a8a8a8",
+    "#a8a8a8",
+    "#a8a8a8",
+    "#a8a8a8",
+    "#a8a8a8",
+    "#a8a8a8",
+    "#a8a8a8",
+    "#a8a8a8",
+    "#a8a8a8"
+   ],
+   "opacity": "overlay",
+   "magics_style": "transparency_grey"
+  },
+  "lsp": {
+   "label": "Large-scale precipitation",
+   "palette": [
+    "#00ffff",
+    "#0000ff",
+    "#ff00ff",
+    "#ffa500",
+    "#ff0000"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_blured_f05t300lst"
+  },
+  "lsrrate": {
+   "label": "Large scale rainfall rate",
+   "palette": [
+    "#38ffff",
+    "#209afd",
+    "#0e27fd",
+    "#34fe28",
+    "#27c71d",
+    "#1a9613",
+    "#fffe30",
+    "#fec627",
+    "#fc761d",
+    "#fc0016",
+    "#c5000e",
+    "#940008",
+    "#fc1ffe",
+    "#9524f8",
+    "#ffffff"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_prate_radarlike_grided"
+  },
+  "maxswh": {
+   "label": "Maximum of significant wave height",
+   "palette": [
+    "#d1f2f2",
+    "#82f5f2",
+    "#17d1cc",
+    "#2ea6a3",
+    "#338585",
+    "#246966",
+    "#0d70ba",
+    "#0d54ba",
+    "#1c0dba",
+    "#d900ff",
+    "#78038c"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_mc_swh_f0t20"
+  },
+  "maxswhi": {
+   "label": "Maximum of significant wave height index",
+   "palette": [
+    "#000000",
+    "#000000",
+    "#010100",
+    "#ffbf00",
+    "#ff8000",
+    "#ff4000",
+    "#010000"
+   ],
+   "opacity": "overlay",
+   "magics_style": "sh_red_f05t1i01"
+  },
+  "mcc": {
+   "label": "Medium cloud cover",
+   "palette": [
+    "#000000",
+    "#cccccc",
+    "#cccccc",
+    "#cccccc",
+    "#cccccc",
+    "#cccccc",
+    "#cccccc",
+    "#cccccc",
+    "#cccccc",
+    "#cccccc",
+    "#cccccc",
+    "#cccccc"
+   ],
+   "opacity": "overlay",
+   "magics_style": "transparency_lightgrey"
+  },
+  "mean10ws": {
+   "label": "Mean of 10 metre wind speed",
+   "palette": [
+    "#d9fced",
+    "#73faf5",
+    "#00baff",
+    "#002eff",
+    "#0803a3",
+    "#29fc24",
+    "#91ff00",
+    "#d4ff00",
+    "#fffa00",
+    "#ffd900",
+    "#ffa100",
+    "#ff6600",
+    "#ff1f00",
+    "#ff00ab",
+    "#d900ff",
+    "#78038c"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_mc_wind_f0t80"
+  },
+  "mean2t": {
+   "label": "Mean temperature at 2 metres",
+   "palette": [
+    "#8200c2",
+    "#ed00fa",
+    "#ff7df5",
+    "#d47aff",
+    "#0808d6",
+    "#007aff",
+    "#00a6ff",
+    "#00d1ff",
+    "#00f7ff",
+    "#c9fcff",
+    "#008233",
+    "#38db78",
+    "#00ff3d",
+    "#a1ff00",
+    "#faff00",
+    "#ffd600",
+    "#ffa100",
+    "#ff6b00",
+    "#ff2600",
+    "#c7030d"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_mc_t_fM80t60"
+  },
+  "mn2t": {
+   "label": "Minimum temperature at 2 metres since previous post-processing",
+   "palette": [
+    "#000080",
+    "#000080",
+    "#000080",
+    "#000080",
+    "#000080",
+    "#0000d9",
+    "#4000ff",
+    "#ffff00",
+    "#ffa500",
+    "#ff0000",
+    "#ff00ff",
+    "#ff00ff",
+    "#ff00ff",
+    "#ff00ff",
+    "#ff00ff"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_all_fM48t56i4"
+  },
+  "mn2ti": {
+   "label": "Minimum temperature at 2 metres index",
+   "palette": [
+    "#ff00da",
+    "#3c00ff",
+    "#00adff",
+    "#00ff69",
+    "#80ff00",
+    "#000000",
+    "#000000",
+    "#000000",
+    "#000000",
+    "#000000",
+    "#010100",
+    "#ffbf00",
+    "#ff8000",
+    "#ff4000",
+    "#010000"
+   ],
+   "opacity": "overlay",
+   "magics_style": "sh_blured_fM1t1lst"
+  },
+  "mpts": {
+   "label": "Mean period of total swell",
+   "palette": [
+    "#0000ff",
+    "#ffff00",
+    "#ffa500",
+    "#ff0000",
+    "#a52a2a"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_all_f0t18i1_5"
+  },
+  "mpww": {
+   "label": "Mean period of wind waves",
+   "palette": [
+    "#0000ff",
+    "#ffff00",
+    "#ffa500",
+    "#ff0000",
+    "#a52a2a"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_all_f0t18i1_5"
+  },
+  "mslpp": {
+   "label": "Mean sea level pressure probability",
+   "palette": [
+    "#7805c4",
+    "#6b54d4",
+    "#2442f0",
+    "#0282db",
+    "#06adb8",
+    "#03d1d9",
+    "#75f2bf",
+    "#26de94",
+    "#96e30c",
+    "#e0f22b",
+    "#fcb806",
+    "#eb7d21",
+    "#e63030"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_mf_pdist"
+  },
+  "mwp": {
+   "label": "Mean wave period",
+   "palette": [
+    "#0000ff",
+    "#ffff00",
+    "#ffa500",
+    "#ff0000",
+    "#a52a2a"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_all_f0t18i1_5"
+  },
+  "mx2t": {
+   "label": "Maximum temperature at 2 metres since previous post-processing",
+   "palette": [
+    "#000080",
+    "#000080",
+    "#000080",
+    "#000080",
+    "#000080",
+    "#0000d9",
+    "#4000ff",
+    "#ffff00",
+    "#ffa500",
+    "#ff0000",
+    "#ff00ff",
+    "#ff00ff",
+    "#ff00ff",
+    "#ff00ff",
+    "#ff00ff"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_all_fM48t56i4"
+  },
+  "mx2ti": {
+   "label": "Maximum temperature at 2 metres index",
+   "palette": [
+    "#ff00da",
+    "#3c00ff",
+    "#00adff",
+    "#00ff69",
+    "#80ff00",
+    "#000000",
+    "#000000",
+    "#000000",
+    "#000000",
+    "#000000",
+    "#010100",
+    "#ffbf00",
+    "#ff8000",
+    "#ff4000",
+    "#010000"
+   ],
+   "opacity": "overlay",
+   "magics_style": "sh_blured_fM1t1lst"
+  },
+  "no2": {
+   "label": "Nitrogen dioxide",
+   "palette": [
+    "#9bc7ea",
+    "#009ee0",
+    "#007bbf",
+    "#265ba0",
+    "#269170",
+    "#6bb25b",
+    "#a8c96b",
+    "#fff49b",
+    "#f4d138",
+    "#eab538",
+    "#dd8740",
+    "#cc3533",
+    "#9b1623",
+    "#561919"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_all_no2_surface"
+  },
+  "ph": {
+   "label": "Probability of a hurricane",
+   "palette": [
+    "#800080",
+    "#ffff00",
+    "#00ffff",
+    "#0000ff",
+    "#ee82ee"
+   ],
+   "opacity": "opaque",
+   "magics_style": "genesis_prob"
+  },
+  "prate": {
+   "label": "Precipitation rate",
+   "palette": [
+    "#38ffff",
+    "#209afd",
+    "#0e27fd",
+    "#34fe28",
+    "#27c71d",
+    "#1a9613",
+    "#fffe30",
+    "#fec627",
+    "#fc761d",
+    "#fc0016",
+    "#c5000e",
+    "#940008",
+    "#fc1ffe",
+    "#9524f8",
+    "#ffffff"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_prate_radarlike_grided"
+  },
+  "pt": {
+   "label": "Potential temperature",
+   "palette": [
+    "#e033e0",
+    "#ad33ad",
+    "#7a337a",
+    "#473347",
+    "#330066",
+    "#590080",
+    "#00ccff",
+    "#ffff80",
+    "#ffff00",
+    "#ff7300",
+    "#ff0000",
+    "#cc0000",
+    "#ff00ff",
+    "#ff80ff",
+    "#ffbfff"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_all_fM52t48i4"
+  },
+  "ptd": {
+   "label": "Probability of a tropical depression",
+   "palette": [
+    "#800080",
+    "#ffff00",
+    "#00ffff",
+    "#0000ff",
+    "#ee82ee"
+   ],
+   "opacity": "opaque",
+   "magics_style": "genesis_prob"
+  },
+  "pts": {
+   "label": "Probability of a tropical storm",
+   "palette": [
+    "#800080",
+    "#ffff00",
+    "#00ffff",
+    "#0000ff",
+    "#ee82ee"
+   ],
+   "opacity": "opaque",
+   "magics_style": "genesis_prob"
+  },
+  "q": {
+   "label": "Specific humidity",
+   "palette": [
+    "#ff0000",
+    "#ffd700",
+    "#ffff00",
+    "#40e0d0",
+    "#0000ff",
+    "#ee82ee",
+    "#ab05c9",
+    "#ff01c7"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_spechum_option1"
+  },
+  "sf": {
+   "label": "Snowfall",
+   "palette": [
+    "#00ffff",
+    "#0000ff",
+    "#ff00ff",
+    "#ffa500",
+    "#ff0000"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_blured_f05t300lst"
+  },
+  "sfi": {
+   "label": "Snowfall index",
+   "palette": [
+    "#000000",
+    "#000000",
+    "#010100",
+    "#ffbf00",
+    "#ff8000",
+    "#ff4000",
+    "#010000"
+   ],
+   "opacity": "overlay",
+   "magics_style": "sh_red_f05t1i01"
+  },
+  "sh10": {
+   "label": "Significant wave height of all waves with period larger than 10s",
+   "palette": [
+    "#0000ff",
+    "#ffff00",
+    "#ffa500",
+    "#ff0000",
+    "#a52a2a"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_all_f0t20lst"
+  },
+  "shts": {
+   "label": "Significant height of total swell",
+   "palette": [
+    "#0000ff",
+    "#ffff00",
+    "#ffa500",
+    "#ff0000",
+    "#a52a2a"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_all_f0t20lst"
+  },
+  "shww": {
+   "label": "Significant height of wind waves",
+   "palette": [
+    "#0000ff",
+    "#ffff00",
+    "#ffa500",
+    "#ff0000",
+    "#a52a2a"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_all_f0t20lst"
+  },
+  "srweq": {
+   "label": "Snow fall rate water equivalent",
+   "palette": [
+    "#38ffff",
+    "#209afd",
+    "#0e27fd",
+    "#34fe28",
+    "#27c71d",
+    "#1a9613",
+    "#fffe30",
+    "#fec627",
+    "#fc761d",
+    "#fc0016",
+    "#c5000e",
+    "#940008",
+    "#fc1ffe",
+    "#9524f8",
+    "#ffffff"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_prate_radarlike_grided"
+  },
+  "stl1p": {
+   "label": "Soil temperature level 1 probability",
+   "palette": [
+    "#7805c4",
+    "#6b54d4",
+    "#2442f0",
+    "#0282db",
+    "#06adb8",
+    "#03d1d9",
+    "#75f2bf",
+    "#26de94",
+    "#96e30c",
+    "#e0f22b",
+    "#fcb806",
+    "#eb7d21",
+    "#e63030"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_mf_pdist"
+  },
+  "suaod550": {
+   "label": "Sulphate Aerosol Optical Depth at 550nm",
+   "palette": [
+    "#0000f1",
+    "#004cff",
+    "#00b1ff",
+    "#29ffce",
+    "#7dff7a",
+    "#ceff29",
+    "#ffc400",
+    "#ff6800",
+    "#f10800",
+    "#800000"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_all_aod"
+  },
+  "swh": {
+   "label": "Significant height of combined wind waves and swell",
+   "palette": [
+    "#0000ff",
+    "#ffff00",
+    "#ffa500",
+    "#ff0000",
+    "#a52a2a"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_all_f0t20lst"
+  },
+  "t": {
+   "label": "Temperature",
+   "palette": [
+    "#e033e0",
+    "#ad33ad",
+    "#7a337a",
+    "#473347",
+    "#330066",
+    "#590080",
+    "#00ccff",
+    "#ffff80",
+    "#ffff00",
+    "#ff7300",
+    "#ff0000",
+    "#cc0000",
+    "#ff00ff",
+    "#ff80ff",
+    "#ffbfff"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_all_fM52t48i4"
+  },
+  "tcch4": {
+   "label": "CH4 column-mean molar fraction",
+   "palette": [
+    "#0d0d0d",
+    "#7d008e",
+    "#2d00a4",
+    "#0000dd",
+    "#0082dd",
+    "#00a4bb",
+    "#00aa88",
+    "#00a400",
+    "#00d200",
+    "#00ff00",
+    "#ccf900",
+    "#f9d700",
+    "#ff9900",
+    "#f40000",
+    "#d20000",
+    "#66001f"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_nipy_spectral_ch4_totalcolumn"
+  },
+  "tcco": {
+   "label": "Total column Carbon monoxide",
+   "palette": [
+    "#9bc7ea",
+    "#009ee0",
+    "#007bbf",
+    "#265ba0",
+    "#269170",
+    "#6bb25b",
+    "#a8c96b",
+    "#fff49b",
+    "#f4d138",
+    "#eab538",
+    "#dd8740",
+    "#cc3533",
+    "#9b1623",
+    "#561919"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_all_tcco"
+  },
+  "tcco2": {
+   "label": "CO2 column-mean molar fraction",
+   "palette": [
+    "#5e4fa2",
+    "#4e63ac",
+    "#3d79b6",
+    "#3990ba",
+    "#4ea7b0",
+    "#62bda7",
+    "#7ccaa5",
+    "#94d4a4",
+    "#aedea3",
+    "#c6e89f",
+    "#ddf19a",
+    "#ecf7a1",
+    "#f6fbb0",
+    "#fffebe",
+    "#fff3ac",
+    "#fee797",
+    "#fed884",
+    "#fdc574",
+    "#fdb163",
+    "#fa9857",
+    "#f7814c",
+    "#f26944",
+    "#e55749",
+    "#d9444d",
+    "#c72e4c",
+    "#b11747",
+    "#9e0142"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_Spectral_r_co2_totalcolumn"
+  },
+  "tcso2": {
+   "label": "Total column Sulphur dioxide",
+   "palette": [
+    "#9bc7ea",
+    "#009ee0",
+    "#007bbf",
+    "#265ba0",
+    "#269170",
+    "#6bb25b",
+    "#a8c96b",
+    "#fff49b",
+    "#f4d138",
+    "#eab538",
+    "#dd8740",
+    "#cc3533",
+    "#9b1623",
+    "#561919"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_all_tcso2"
+  },
+  "totalx": {
+   "label": "Total totals index",
+   "palette": [
+    "#000000",
+    "#ebf006",
+    "#f09e06",
+    "#f04006",
+    "#ab0f1a",
+    "#f006e0",
+    "#6e11a6",
+    "#000080"
+   ],
+   "opacity": "overlay",
+   "magics_style": "sh_red_f44t70"
+  },
+  "tp": {
+   "label": "Total precipitation",
+   "palette": [
+    "#00ffff",
+    "#0000ff",
+    "#ff00ff",
+    "#ffa500",
+    "#ff0000"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_blured_f05t300lst"
+  },
+  "tpi": {
+   "label": "Total precipitation index",
+   "palette": [
+    "#000000",
+    "#000000",
+    "#010100",
+    "#ffbf00",
+    "#ff8000",
+    "#ff4000",
+    "#010000"
+   ],
+   "opacity": "overlay",
+   "magics_style": "sh_red_f05t1i01"
+  },
+  "tpp": {
+   "label": "Total precipitation probability",
+   "palette": [
+    "#7805c4",
+    "#6b54d4",
+    "#2442f0",
+    "#0282db",
+    "#06adb8",
+    "#03d1d9",
+    "#75f2bf",
+    "#26de94",
+    "#96e30c",
+    "#e0f22b",
+    "#fcb806",
+    "#eb7d21",
+    "#e63030"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_mf_pdist"
+  },
+  "uvbed": {
+   "label": " UV biologically effective dose",
+   "palette": [
+    "#42a631",
+    "#a5c600",
+    "#fff300",
+    "#ffd700",
+    "#f7b200",
+    "#ef8a00",
+    "#e66900",
+    "#e63510",
+    "#e62484",
+    "#b565a5",
+    "#847db5",
+    "#7ba6ff",
+    "#63beff",
+    "#4adbff"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_all_uvindex"
+  },
+  "uvbedcs": {
+   "label": " UV biologically effective dose clear-sky",
+   "palette": [
+    "#42a631",
+    "#a5c600",
+    "#fff300",
+    "#ffd700",
+    "#f7b200",
+    "#ef8a00",
+    "#e66900",
+    "#e63510",
+    "#e62484",
+    "#b565a5",
+    "#847db5",
+    "#7ba6ff",
+    "#63beff",
+    "#4adbff"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_all_uvindex"
+  },
+  "vo": {
+   "label": "Vorticity (relative)",
+   "palette": [
+    "#00004c",
+    "#000080",
+    "#0000b2",
+    "#0000e6",
+    "#0026ff",
+    "#004cff",
+    "#0073ff",
+    "#0099ff",
+    "#00bfff",
+    "#00d9ff",
+    "#33f2ff",
+    "#73ffff",
+    "#bfffff",
+    "#000000",
+    "#010100",
+    "#ffe600",
+    "#ffcc00",
+    "#ffb200",
+    "#ff9900",
+    "#ff8000",
+    "#ff6600",
+    "#ff4c00",
+    "#ff2600",
+    "#e60000",
+    "#b20000",
+    "#800000",
+    "#4c0000"
+   ],
+   "opacity": "overlay",
+   "magics_style": "sh_blured_fM50t50lst_cell"
+  },
+  "w": {
+   "label": "Vertical velocity",
+   "palette": [
+    "#000066",
+    "#0000bf",
+    "#000001",
+    "#004cff",
+    "#0080ff",
+    "#00b2ff",
+    "#00d9ff",
+    "#1affff",
+    "#99ffff",
+    "#000000",
+    "#010100",
+    "#ffd900",
+    "#ffb200",
+    "#ff8c00",
+    "#ff6600",
+    "#ff1a00",
+    "#d90000",
+    "#990000",
+    "#660000"
+   ],
+   "opacity": "overlay",
+   "magics_style": "sh_blured_fM5t5lst"
+  },
+  "ws": {
+   "label": "Wind speed",
+   "palette": [
+    "#ffff66",
+    "#94ff00",
+    "#005447",
+    "#004247",
+    "#003370",
+    "#0033a3"
+   ],
+   "opacity": "opaque",
+   "magics_style": "sh_grn_f10t100lst"
+  }
+ }
+}

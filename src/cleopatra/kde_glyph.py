@@ -34,11 +34,14 @@ from typing import Any
 
 import numpy as np
 from matplotlib.axes import Axes
+from matplotlib.cm import ScalarMappable
+from matplotlib.colors import Normalize
 from matplotlib.figure import Figure
 from matplotlib.patches import Patch
 from matplotlib.path import Path as MplPath
 
 from cleopatra.glyph import Glyph
+from cleopatra.hillshade import resolve_hillshade, shade_grid
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 #: Upper bound on the number of (grid-cell × data-point) products evaluated in
@@ -58,6 +61,7 @@ KDE_DEFAULT_OPTIONS = {
     "vmax": None,
     "ticks_spacing": None,
     "add_colorbar": True,
+    "hillshade": False,
 }
 KDE_DEFAULT_OPTIONS = STYLE_DEFAULTS | KDE_DEFAULT_OPTIONS
 
@@ -295,6 +299,7 @@ class KDEGlyph(Glyph):
         ax: Axes = None,
         title: str | None = None,
         add_colorbar: bool | None = None,
+        hillshade: bool | dict | None = None,
     ):
         """Render the 2-D density as filled or line contours.
 
@@ -311,6 +316,11 @@ class KDEGlyph(Glyph):
             add_colorbar: Override the `add_colorbar` option for this call
                 — True draws the colorbar, False suppresses it. Defaults to
                 None, which keeps the value set at construction.
+            hillshade: Relief-shade the density surface for this call (`True`
+                or an options dict; see `cleopatra.hillshade`). Defaults to
+                None, which keeps the value set at construction. Accepting it
+                here mirrors `ArrayGlyph.plot`/`MeshGlyph.plot`, so `hillshade`
+                works the same way across all three glyphs.
 
         Returns:
             tuple[Figure, Axes, QuadContourSet]: The figure, the axes, and
@@ -362,6 +372,30 @@ class KDEGlyph(Glyph):
         gx, gy, density = self.evaluate()
         level_edges = self._resolve_levels(density)
         norm, cbar_kw, _ = self._prepare_scalar_mapping(density)
+
+        hillshade = resolve_hillshade(
+            hillshade if hillshade is not None else opts.get("hillshade")
+        )
+        if hillshade is not None:
+            # Treat the density as a surface and relief-shade it, so the
+            # "density terrain" (peaks and ridges) reads by form. The shaded
+            # RGBA image carries no scalar array, so the colorbar attaches to a
+            # ScalarMappable proxy carrying the same cmap/norm.
+            hs_norm = norm if norm is not None else Normalize(
+                vmin=float(density.min()), vmax=float(density.max())
+            )
+            rgba = shade_grid(density, opts["cmap"], norm=hs_norm, **hillshade)
+            extent = [float(gx.min()), float(gx.max()), float(gy.min()), float(gy.max())]
+            mappable = ax.imshow(rgba, extent=extent, origin="lower", aspect="auto")
+            self._apply_clip(mappable)
+            self.im = mappable
+            if draw_colorbar:
+                proxy = ScalarMappable(norm=hs_norm, cmap=opts["cmap"])
+                proxy.set_array(density)
+                self.cbar = self.create_color_bar(ax, proxy, cbar_kw)
+            if opts["title"]:
+                ax.set_title(opts["title"], fontsize=opts["title_size"])
+            return self.fig, ax, mappable
 
         render = ax.contourf if opts["shade"] else ax.contour
         contour_set = render(

@@ -1402,3 +1402,102 @@ class TestMeshGlyphMappable:
         fig, ax = glyph.plot_outline()
         plt.close(fig)
         assert glyph.im is None, "plot_outline should clear im"
+
+
+class TestMeshGlyphHillshade:
+    """Tests for the `hillshade` relief-shading option (triangulated terrain)."""
+
+    @staticmethod
+    def _terrain_mesh(n=12):
+        gx, gy = np.meshgrid(np.linspace(0, 10, n), np.linspace(0, 10, n))
+        nx, ny = gx.ravel(), gy.ravel()
+        z = 50.0 + 150.0 * np.exp(-(((nx - 7) / 2) ** 2 + ((ny - 5) / 3) ** 2)) + 6.0 * np.sin(nx)
+        faces = np.array(
+            [[j * n + i, j * n + i + 1, j * n + i + n + 1, j * n + i + n]
+             for j in range(n - 1) for i in range(n - 1)]
+        )
+        return nx, ny, faces, z
+
+    def test_node_hillshade_draws_shaded_polycollection(self):
+        """Node-centered `hillshade` renders a per-face shaded `tripcolor` mesh."""
+        nx, ny, faces, z = self._terrain_mesh()
+        mg = MeshGlyph(nx, ny, faces)
+        mg.plot(z, location="node", cmap="terrain", hillshade={"vert_exag": 3})
+        facecolors = mg.im.get_facecolor()
+        assert facecolors.shape[1] == 4
+        assert len(np.unique(np.round(facecolors[:, 0], 3))) > 5, "faces should vary"
+        assert mg._cbar is not None
+        plt.close("all")
+
+    def test_face_data_with_hillshade_raises(self):
+        """Hillshade needs node elevation; face-centered data raises `ValueError`."""
+        nx, ny, faces, _ = self._terrain_mesh()
+        with pytest.raises(ValueError, match="node-centered"):
+            MeshGlyph(nx, ny, faces).plot(
+                np.ones(len(faces)), location="face", hillshade=True
+            )
+        plt.close("all")
+
+    def test_without_hillshade_uses_contours(self):
+        """Node data without hillshade still uses the contour path (not tripcolor)."""
+        nx, ny, faces, z = self._terrain_mesh()
+        mg = MeshGlyph(nx, ny, faces)
+        mg.plot(z, location="node")
+        assert "Contour" in type(mg.im).__name__
+        plt.close("all")
+
+    def test_constructor_time_hillshade_is_honoured(self):
+        """`hillshade` set at construction shades the mesh, like ArrayGlyph/KDEGlyph.
+
+        MeshGlyph.plot() resets default_options each call, so the option is
+        restored from the constructor value when plot() does not override it.
+        """
+        nx, ny, faces, z = self._terrain_mesh()
+        mg = MeshGlyph(nx, ny, faces, hillshade=True)
+        mg.plot(z, location="node", cmap="terrain")
+        assert type(mg.im).__name__ == "PolyCollection", "constructor hillshade should shade"
+        assert mg.im.get_array() is None, "shaded relief uses explicit facecolors"
+        plt.close("all")
+
+    def test_hillshade_with_labels_and_lines_does_not_crash(self):
+        """`labels=True`, `filled=False`, and `hillshade` together are a safe no-op.
+
+        The shaded relief is a `PolyCollection` with no isolines, so `clabel`
+        must be skipped rather than raising `AttributeError`.
+        """
+        nx, ny, faces, z = self._terrain_mesh()
+        mg = MeshGlyph(nx, ny, faces)
+        mg.plot(z, location="node", filled=False, labels=True, hillshade=True)
+        assert mg.contour_labels is None, "labels are a no-op under hillshade"
+        plt.close("all")
+
+    def test_hillshade_honours_nonlinear_color_scale(self):
+        """A non-linear `color_scale` feeds its `norm` into the shaded tripcolor.
+
+        Exercises the `norm is not None` branch of `_render_shaded_relief`,
+        which the default (linear) hillshade tests skip.
+        """
+        nx, ny, faces, z = self._terrain_mesh()
+        mg = MeshGlyph(nx, ny, faces)
+        mg.plot(z, location="node", cmap="terrain", color_scale="power",
+                gamma=0.4, hillshade=True)
+        assert type(mg.im).__name__ == "PolyCollection"
+        assert type(mg.im.norm).__name__ == "PowerNorm", "the color_scale norm is applied"
+        plt.close("all")
+
+    def test_hillshade_makes_nodata_faces_transparent(self):
+        """Faces touching a non-finite (nodata) node render fully transparent.
+
+        Mirrors the raster hillshade, which drops NaN cells rather than
+        colouring them; a triangle with a NaN node has no defined normal.
+        """
+        nx = np.array([0.0, 1.0, 0.0, 1.0])
+        ny = np.array([0.0, 0.0, 1.0, 1.0])
+        faces = np.array([[0, 1, 3], [1, 2, 3], [0, 1, 2]])
+        z = np.array([10.0, 20.0, 30.0, np.nan])  # node 3 is nodata
+        mg = MeshGlyph(nx, ny, faces)
+        mg.plot(z, location="node", cmap="terrain", hillshade=True)
+        alphas = mg.im.get_facecolor()[:, 3]
+        assert np.allclose(alphas[[0, 1]], 0.0), "nodata-touching faces are transparent"
+        assert alphas[2] > 0.0, "the fully-finite face stays opaque"
+        plt.close("all")

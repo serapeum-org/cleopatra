@@ -3799,3 +3799,50 @@ class TestScaleToRgbPerBand:
             int(out[..., 0].max()) == 255
         ), "finite values should still stretch to 255"
         assert int(out[0, 0, 0]) == 0, "the NaN pixel should map to 0"
+
+
+class TestArrayGlyphHillshade:
+    """Tests for the `hillshade` relief-shading option (regular-grid DEMs)."""
+
+    @staticmethod
+    def _dem():
+        yy, xx = np.mgrid[0:30, 0:40]
+        return 10.0 + 0.5 * yy + 200.0 * np.exp(
+            -(((xx - 30) / 6) ** 2 + ((yy - 15) / 8) ** 2)
+        ) + 8.0 * np.sin(xx / 4.0)
+
+    def test_off_by_default_draws_scalar_image(self):
+        """Without hillshade the imshow image carries a scalar array."""
+        _, ax = ArrayGlyph(self._dem(), cmap="terrain").plot()
+        assert ax.images[0].get_array().ndim == 2
+        plt.close("all")
+
+    def test_hillshade_draws_rgba_image(self):
+        """`hillshade=True` replaces the image data with a shaded RGBA image."""
+        _, ax = ArrayGlyph(self._dem(), cmap="terrain", hillshade=True).plot()
+        assert ax.images[0].get_array().shape[-1] == 4
+        plt.close("all")
+
+    def test_colorbar_survives_hillshade(self):
+        """The colorbar still reflects the cmap/norm after shading."""
+        g = ArrayGlyph(self._dem(), cmap="terrain", hillshade=True)
+        g.plot()
+        assert g.cbar is not None
+        lo, hi = g.cbar.mappable.get_clim()
+        assert hi > lo
+        plt.close("all")
+
+    def test_hillshade_options_dict(self):
+        """A dict of hillshade overrides (vert_exag, multidirectional) is honoured."""
+        _, ax = ArrayGlyph(
+            self._dem(), cmap="gist_earth",
+            hillshade={"vert_exag": 6, "azimuth": 300, "multidirectional": 3},
+        ).plot()
+        assert ax.images[0].get_array().shape[-1] == 4
+        plt.close("all")
+
+    def test_hillshade_warns_on_non_imshow_kind(self):
+        """`hillshade` on a kind it cannot shade warns instead of silently no-op-ing."""
+        with pytest.warns(UserWarning, match="hillshade is only applied to kind='imshow'"):
+            ArrayGlyph(self._dem(), cmap="terrain", hillshade=True).plot(kind="pcolormesh")
+        plt.close("all")

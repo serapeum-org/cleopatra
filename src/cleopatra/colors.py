@@ -1,3 +1,5 @@
+import importlib.resources
+import json
 import os
 from pathlib import Path
 from typing import Any, List, Tuple, Union
@@ -10,7 +12,7 @@ from matplotlib.colors import Colormap, LinearSegmentedColormap
 from matplotlib.image import AxesImage
 from PIL import Image, UnidentifiedImageError
 
-from cleopatra.styles import swatch_legend
+from cleopatra.styles import disjoint_legend, swatch_legend
 
 #: Sequential colormaps for the "haze" data style (white at 0.0, saturating
 #: toward the named hue at 1.0) -- the value-modulated-alpha, glowing-rim look
@@ -32,6 +34,53 @@ HAZE_COLORMAPS: dict[str, Colormap] = {
     ),
 }
 
+#: The official ECMWF/CAMS aerosol-optical-depth (AOD at 550 nm) colour scales,
+#: as opposed to the stylised `HAZE_COLORMAPS` inspired by them. Colour stops are
+#: transcribed verbatim from the open-source Magics rendering engine
+#: (`ecmwf/magics`, Apache-2.0 -- `share/magics/styles/default/palettes.json`,
+#: the palettes tagged `cams` / "Aerosol optical depth at 550 nm"); only the
+#: engine's colour data is vendored, none of its code. Each value is a ready
+#: `matplotlib.colors.Colormap`, usable anywhere cleopatra or matplotlib accepts
+#: a `cmap` argument (e.g. `plt.imshow(..., cmap=CAMS_AOD_COLORMAPS["blue_yellow_red"])`).
+#: Keys describe the ramp; the originating Magics style name is given per entry.
+#:
+#: These are pure-colour maps (fully opaque), consistent with `HAZE_COLORMAPS`.
+#: Magics' `sh_Oranges_aod` additionally ramps *opacity* linearly with value
+#: (alpha 0.05 -> 1.0); that alpha is intentionally not baked in here -- reproduce
+#: it with cleopatra's separate opacity axis via `alpha_scaled_image(...,
+#: alpha_norm=Normalize(vmin, vmax))` or a `DATA_STYLES` entry carrying
+#: `alpha_vmin`/`alpha_vmax`, keeping colour and opacity independent.
+CAMS_AOD_COLORMAPS: dict[str, Colormap] = {
+    # Magics `sh_BuYlRd_aod` -- the canonical CAMS AOD scale.
+    "blue_yellow_red": LinearSegmentedColormap.from_list(
+        "cams_aod_blue_yellow_red",
+        ["#d3d7eb", "#a8afd7", "#8892bf", "#a3a891", "#bebd65", "#d8d239",
+         "#f3e70b", "#f4c60a", "#f6a508", "#f88406", "#f96205", "#fb4103",
+         "#fd2001", "#ff0000"],
+    ),
+    # Magics `sh_BuYlRdBr_aod` -- like blue_yellow_red but fading to dark maroon.
+    "blue_yellow_red_brown": LinearSegmentedColormap.from_list(
+        "cams_aod_blue_yellow_red_brown",
+        ["#d2d2ff", "#a1a1ff", "#7070ff", "#8787c7", "#b8b876", "#e9e926",
+         "#ffda00", "#ff8a00", "#ff3900", "#f40000", "#c40000", "#930000",
+         "#640000"],
+    ),
+    # Magics `sh_all_aod` / `sh_all_aod550` -- the blue->cyan->green->yellow->red scale.
+    "blue_red": LinearSegmentedColormap.from_list(
+        "cams_aod_blue_red",
+        ["#0000f1", "#004cff", "#00b1ff", "#29ffce", "#7dff7a", "#ceff29",
+         "#ffc400", "#ff6800", "#f10800", "#800000"],
+    ),
+    # Magics `sh_Oranges_aod` -- white->dark-orange (natively alpha-ramped; see above).
+    "oranges": LinearSegmentedColormap.from_list(
+        "cams_aod_oranges",
+        ["#ffefe0", "#fee9d4", "#fee2c6", "#fdd9b4", "#fdd0a2", "#fdc38d",
+         "#fdb576", "#fda762", "#fd9a4e", "#fd8c3b", "#f87f2c", "#f3701b",
+         "#ec620f", "#e25508", "#d84801", "#c54102", "#b03903", "#9e3303",
+         "#8e2d04", "#7f2704"],
+    ),
+}
+
 
 def alpha_scaled_image(
     ax: Axes,
@@ -40,6 +89,7 @@ def alpha_scaled_image(
     *,
     norm: mcolors.Normalize | None = None,
     alpha_norm: mcolors.Normalize | None = None,
+    constant_alpha: float | None = None,
     **imshow_kwargs: Any,
 ) -> AxesImage:
     """Draw `data` on `ax` with per-pixel opacity tied to its value.
@@ -66,6 +116,9 @@ def alpha_scaled_image(
             `norm`, so colour and opacity are driven by the same scale; pass
             a separate instance to decouple them (e.g. a steeper alpha ramp
             so faint values vanish sooner than their colour would suggest).
+        constant_alpha: If given, draw every finite cell at this fixed opacity
+            (clipped to `[0, 1]`) and ignore `alpha_norm` -- e.g. `1.0` for a
+            plain opaque field. Non-finite (NaN) cells stay transparent.
         **imshow_kwargs: Forwarded to `ax.imshow` (e.g. `extent`, `origin`,
             `zorder`, `interpolation`).
 
@@ -118,7 +171,7 @@ def alpha_scaled_image(
     if data.ndim != 2:
         raise ValueError(f"data must be 2-dimensional, got shape {data.shape}")
 
-    rgba = _alpha_rgba(data, cmap, norm, alpha_norm)
+    rgba = _alpha_rgba(data, cmap, norm, alpha_norm, constant_alpha)
     return ax.imshow(rgba, **imshow_kwargs)
 
 
@@ -127,6 +180,7 @@ def _alpha_rgba(
     cmap: str | Colormap,
     norm: mcolors.Normalize | None,
     alpha_norm: mcolors.Normalize | None,
+    constant_alpha: float | None = None,
 ) -> np.ndarray:
     """Shared colour+alpha computation behind `alpha_scaled_image`/`_mesh`.
 
@@ -136,6 +190,10 @@ def _alpha_rgba(
         norm: Normalization for colour, or `None` to default to the finite
             range of `data`.
         alpha_norm: Normalization for opacity, or `None` to reuse `norm`.
+        constant_alpha: If given, every finite cell is drawn at this fixed
+            opacity (clipped to `[0, 1]`) and `alpha_norm` is ignored -- for a
+            plain opaque field (`1.0`) or a uniform semi-transparent overlay.
+            Non-finite cells stay fully transparent either way.
 
     Returns:
         np.ndarray: An `(*, *, 4)` RGBA array; non-finite `data` cells are
@@ -150,7 +208,10 @@ def _alpha_rgba(
     alpha_norm = norm if alpha_norm is None else alpha_norm
 
     rgba = cmap_obj(norm(data))
-    alpha = np.clip(np.asarray(alpha_norm(data), dtype=float), 0.0, 1.0)
+    if constant_alpha is not None:
+        alpha = np.full(data.shape, float(np.clip(constant_alpha, 0.0, 1.0)))
+    else:
+        alpha = np.clip(np.asarray(alpha_norm(data), dtype=float), 0.0, 1.0)
     finite_mask = np.isfinite(data)
     rgba[..., 3] = np.where(finite_mask, alpha, 0.0)
     return rgba
@@ -165,6 +226,7 @@ def alpha_scaled_mesh(
     *,
     norm: mcolors.Normalize | None = None,
     alpha_norm: mcolors.Normalize | None = None,
+    constant_alpha: float | None = None,
     **pcolormesh_kwargs: Any,
 ) -> Any:
     """Draw `data` on a curvilinear `(x, y)` mesh with per-cell opacity.
@@ -190,6 +252,9 @@ def alpha_scaled_mesh(
             `Normalize(vmin, vmax)` over the finite range of `data`.
         alpha_norm: Normalization mapping `data` to opacity. Defaults to
             `norm`.
+        constant_alpha: If given, paint every finite cell at this fixed opacity
+            (clipped to `[0, 1]`) and ignore `alpha_norm` -- e.g. `1.0` for a
+            plain opaque field. Non-finite (NaN) cells stay transparent.
         **pcolormesh_kwargs: Forwarded to `ax.pcolormesh`. `shading` defaults
             to `"auto"` if not given.
 
@@ -230,7 +295,7 @@ def alpha_scaled_mesh(
         raise ValueError(f"data must be 2-dimensional, got shape {data.shape}")
 
     pcolormesh_kwargs.setdefault("shading", "auto")
-    rgba = _alpha_rgba(data, cmap, norm, alpha_norm)
+    rgba = _alpha_rgba(data, cmap, norm, alpha_norm, constant_alpha)
     mesh = ax.pcolormesh(x, y, data, **pcolormesh_kwargs)
     mesh.set_array(None)
     mesh.set_facecolor(rgba.reshape(-1, 4))
@@ -238,9 +303,33 @@ def alpha_scaled_mesh(
 
 
 #: Named "data style" presets for `apply_data_style` -- each entry maps a
-#: layer name to the `cmap`/`label`/`vmin`/`vmax` used to draw it with
-#: `alpha_scaled_image` and label it with `swatch_legend`. This is the
-#: colour/legend half of the ECMWF/CAMS look; pair it with a
+#: layer name to the config used to draw it with `alpha_scaled_image` /
+#: `alpha_scaled_mesh` and label it with `swatch_legend`. Per-layer keys:
+#:
+#: - ``cmap`` (required): a `Colormap` object or a matplotlib colormap name.
+#: - ``label`` (required): the legend caption.
+#: - ``vmin`` / ``vmax`` (optional): colour range; **omit to auto-range** from
+#:   each field's finite values -- the right default for real GIS/climate data
+#:   whose absolute range varies (temperature in K vs C, elevation in m, ...).
+#: - ``center`` (optional): render as a **diverging** map symmetric around this
+#:   value (colormap midpoint lands on it) -- for anomaly fields, usually ``0``.
+#: - ``norm`` (optional): ``"linear"`` (default), ``"log"`` (`LogNorm`), or
+#:   ``"symlog"`` (`SymLogNorm`, linear within ``+/-linthresh`` so ``0`` maps
+#:   cleanly -- the robust choice for heavily-skewed, zero-containing fields
+#:   like flow accumulation). ``linthresh`` (optional) sets the symlog threshold.
+#: - Opacity policy (choose at most one): omit all alpha keys for the default
+#:   value-linked opacity (transparent where the value is low -- the overlay
+#:   look); set ``alpha`` to a constant (e.g. ``1.0``) for a plain opaque
+#:   field; or set ``alpha_vmin``/``alpha_vmax`` to decouple opacity from
+#:   colour (the "haze" glowing rim).
+#: - ``categories`` (optional): a **categorical** preset instead of a colormap.
+#:   A list of ``(class_value, colour, label)`` triples for discrete integer
+#:   class codes (e.g. flood status); the layer is drawn opaque with a
+#:   `ListedColormap`/`BoundaryNorm` and gets a discrete (disjoint) legend
+#:   rather than a gradient swatch. ``cmap``/``vmin``/``vmax``/``center`` are
+#:   ignored when ``categories`` is set; only ``label`` (the legend title) is used.
+#:
+#: This is the colour/legend half of the ECMWF/CAMS look; pair it with a
 #: `cleopatra.projection` projection-style preset (globe or flat) -- the two
 #: are independent and neither requires the other.
 #:
@@ -251,6 +340,13 @@ def alpha_scaled_mesh(
 #: "flame" rim ECMWF/CAMS aerosol maps show at a plume's edge -- with a
 #: single shared curve, that rim's colour is barely visible because it sits
 #: at low, nearly-transparent opacity.
+#:
+#: `"cams_aod"` is the plainer, official counterpart: a single `"aod"` layer
+#: drawn with the canonical `CAMS_AOD_COLORMAPS["blue_yellow_red"]` scale. It
+#: sets no `alpha_vmin`/`alpha_vmax`, so opacity tracks the colour norm
+#: linearly -- transparent where AOD is ~0, opaque red where it is high --
+#: the natural behaviour for overlaying a single aerosol-optical-depth field
+#: on a basemap (the common `pyramids` raster/NetCDF case).
 DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
     "haze": {
         "organic_matter": {
@@ -270,7 +366,304 @@ DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
             "alpha_vmax": 0.5,
         },
     },
+    "cams_aod": {
+        "aod": {
+            "cmap": CAMS_AOD_COLORMAPS["blue_yellow_red"],
+            "label": "Aerosol Optical Depth",
+            "vmin": 0.0,
+            "vmax": 1.0,
+        },
+    },
+    # --- Ready-to-use presets for common pyramids GIS/NetCDF-climate fields. ---
+    # Opaque full fields (auto-ranged from the data): the whole field is drawn.
+    "temperature": {
+        "temperature": {
+            "cmap": "RdYlBu_r",  # blue (cold) -> red (hot)
+            "label": "Temperature",
+            "alpha": 1.0,
+        },
+    },
+    "elevation": {
+        "elevation": {
+            "cmap": "terrain",
+            "label": "Elevation",
+            "alpha": 1.0,
+        },
+    },
+    "vegetation": {
+        "vegetation": {
+            "cmap": "YlGn",  # sparse (pale) -> dense (green)
+            "label": "Vegetation (NDVI)",
+            "alpha": 1.0,
+        },
+    },
+    "wind_speed": {
+        "wind_speed": {
+            "cmap": "viridis",  # perceptually uniform
+            "label": "Wind speed",
+            "alpha": 1.0,
+        },
+    },
+    # Diverging anomaly field, symmetric around zero (0 -> white).
+    "anomaly": {
+        "anomaly": {
+            "cmap": "RdBu_r",  # negative (blue) -> 0 (white) -> positive (red)
+            "label": "Anomaly",
+            "center": 0.0,
+            "alpha": 1.0,
+        },
+    },
+    # Overlay field: value-linked opacity, so it is transparent where dry and
+    # opaque where it rains -- ideal for compositing over a basemap.
+    "precipitation": {
+        "precipitation": {
+            "cmap": "YlGnBu",  # light (light rain) -> dark blue (heavy)
+            "label": "Precipitation",
+        },
+    },
+    # Categorical preset: discrete integer class codes -> fixed colours + a
+    # discrete (disjoint) legend, instead of a continuous colormap. The
+    # near-universal NWS/USGS 5-class river-flood status scale (0..4).
+    "flood_status": {
+        "flood_status": {
+            "categories": [
+                (0, "#2c7fb8", "Normal"),
+                (1, "#31a354", "Action"),
+                (2, "#ffeb3b", "Minor"),
+                (3, "#ff7f00", "Moderate"),
+                (4, "#e31a1c", "Major"),
+            ],
+            "label": "Flood status",
+        },
+    },
+    # Hydrology rasters derived from a DEM.
+    # D8 flow direction: the 8 ESRI direction codes (powers of two) are discrete
+    # classes, coloured cyclically (twilight) so adjacent compass directions are
+    # similar and opposites distinct. (D-infinity flow *angle* is continuous and
+    # cyclic -- use the "phase" preset for that.)
+    "flow_direction_d8": {
+        "flow_direction_d8": {
+            "categories": [
+                (1, "#e2d9e2", "E"),
+                (2, "#95b5c7", "SE"),
+                (4, "#6276ba", "S"),
+                (8, "#592a8f", "SW"),
+                (16, "#2f1436", "W"),
+                (32, "#741e4f", "NW"),
+                (64, "#b25652", "N"),
+                (128, "#cca389", "NE"),
+            ],
+            "label": "Flow direction (D8)",
+        },
+    },
+    # Flow accumulation is extremely skewed (most cells ~0, channels huge), so a
+    # symmetric-log norm is used; opacity tracks it, so low cells fade and the
+    # channel network stands out. Composes over a hillshaded DEM.
+    "flow_accumulation": {
+        "flow_accumulation": {
+            "cmap": "Blues",
+            "label": "Flow accumulation",
+            "norm": "symlog",
+        },
+    },
 }
+
+
+def _load_preset_asset(
+    resource: str, cmap_prefix: str
+) -> dict[str, dict[str, dict[str, Any]]]:
+    """Build `DATA_STYLES` entries from a vendored preset asset under `cleopatra.data`.
+
+    Shared by the ECMWF/Magics and cmocean preset libraries. Each asset maps a
+    preset key to a `palette` (hex control points), a `label`, an `opacity`
+    policy (`"opaque"` -> a plain field via constant alpha; otherwise a
+    value-linked overlay), and an optional diverging `center`. Every preset is a
+    single layer keyed by its own name and carries no `vmin`/`vmax`, so it
+    auto-ranges.
+
+    Args:
+        resource: The asset filename inside the `cleopatra.data` package.
+        cmap_prefix: A prefix for the generated colormap names (e.g. `"magics"`).
+
+    Returns:
+        dict: `DATA_STYLES`-shaped presets, or an empty mapping if the asset is
+        unavailable. Never raises, so a partial install degrades to the
+        hand-authored presets rather than breaking `import cleopatra`.
+    """
+    # Outer guard: a missing, unreadable, or malformed-JSON asset (or a
+    # non-mapping structure) degrades to the hand-authored presets rather than
+    # breaking `import cleopatra`.
+    try:
+        source = (
+            importlib.resources.files("cleopatra.data")
+            .joinpath(resource)
+            .read_text(encoding="utf-8")
+        )
+        records = json.loads(source).get("presets", {}).items()
+    except (
+        FileNotFoundError, ModuleNotFoundError, OSError,
+        json.JSONDecodeError, AttributeError,
+    ):
+        return {}
+
+    # Inner guard: a single structurally-broken record (missing palette/label,
+    # an unparseable colour, a <2-colour palette) is skipped, keeping every
+    # other well-formed preset in the asset.
+    presets: dict[str, dict[str, dict[str, Any]]] = {}
+    for key, rec in records:
+        try:
+            layer: dict[str, Any] = {
+                "cmap": LinearSegmentedColormap.from_list(
+                    f"{cmap_prefix}_{key}", rec["palette"]
+                ),
+                "label": rec["label"],
+            }
+            if rec.get("opacity") == "opaque":
+                layer["alpha"] = 1.0  # value-linked opacity (overlay) is the default otherwise
+            if rec.get("center") is not None:
+                layer["center"] = rec["center"]
+            presets[key] = {key: layer}
+        except (KeyError, TypeError, ValueError, AttributeError):
+            continue
+    return presets
+
+
+def _load_magics_presets() -> dict[str, dict[str, dict[str, Any]]]:
+    """Load the ECMWF/Magics parameter-preset library (Apache-2.0).
+
+    Colour ramps and parameter labels derived from ecmwf/magics (see
+    `MAGICS_NOTICE.txt`), keyed by GRIB shortName. Thin wrapper over
+    `_load_preset_asset`.
+    """
+    return _load_preset_asset("magics_presets.json", "magics")
+
+
+#: Register the vendored preset libraries into `DATA_STYLES` at import, alongside
+#: the hand-authored presets above: the full ECMWF/Magics parameter set (keyed
+#: by GRIB shortName, e.g. `"2t"`, `"tp"`, `"aod550"`) and the cmocean
+#: ocean/hydrology/DEM set (keyed by variable, e.g. `"salinity"`,
+#: `"bathymetry"`). List them all with `sorted(DATA_STYLES)`.
+DATA_STYLES.update(_load_magics_presets())
+DATA_STYLES.update(_load_preset_asset("cmocean_presets.json", "cmocean"))
+
+
+def _category_boundaries(values: list[float]) -> list[float]:
+    """Bin edges for a `BoundaryNorm` over discrete category values.
+
+    Interior edges are the midpoints between consecutive (sorted) class
+    values; the two outer edges extend by the same half-gap, so each value
+    lands in the middle of its own bin (for integer class codes this is the
+    usual ``+/-0.5``).
+
+    Args:
+        values: The category class values (need not be pre-sorted).
+
+    Returns:
+        list[float]: ``len(values) + 1`` ascending bin edges.
+    """
+    vals = sorted(values)
+    if len(vals) == 1:
+        return [vals[0] - 0.5, vals[0] + 0.5]
+    mids = [(vals[i] + vals[i + 1]) / 2.0 for i in range(len(vals) - 1)]
+    lower = vals[0] - (mids[0] - vals[0])
+    upper = vals[-1] + (vals[-1] - mids[-1])
+    return [lower] + mids + [upper]
+
+
+def _resolve_style_norm(
+    data: np.ndarray, cfg: dict[str, Any]
+) -> tuple[mcolors.Normalize, float, float]:
+    """Resolve the colour `Normalize` (and its concrete bounds) for one layer.
+
+    Honours a `DATA_STYLES` layer's optional `vmin`/`vmax` (auto-ranged from
+    the data's finite values when omitted -- essential for real GIS/climate
+    fields whose absolute range varies) and an optional diverging `center`.
+    When `center` is set and a bound is missing, the range is made symmetric
+    around it (`center +/- max|data - center|`), so the colormap's midpoint
+    lands exactly on `center` -- the anomaly-map convention.
+
+    Args:
+        data: The layer's 2D data array (finite values drive auto-ranging).
+        cfg: The layer's `DATA_STYLES` config dict.
+
+    Returns:
+        tuple: `(norm, vmin, vmax)` -- the colour normalization and the
+        concrete bounds it resolved to (reused for the layer's legend).
+    """
+    vmin = cfg.get("vmin")
+    vmax = cfg.get("vmax")
+    center = cfg.get("center")
+    finite = data[np.isfinite(data)]
+    if center is not None and (vmin is None or vmax is None):
+        if finite.size:
+            radius = max(
+                abs(float(finite.min()) - center),
+                abs(float(finite.max()) - center),
+            )
+        else:
+            radius = 1.0
+        radius = radius or 1.0
+        vmin = center - radius if vmin is None else vmin
+        vmax = center + radius if vmax is None else vmax
+    else:
+        if vmin is None:
+            vmin = float(finite.min()) if finite.size else 0.0
+        if vmax is None:
+            vmax = float(finite.max()) if finite.size else 1.0
+    if vmin == vmax:
+        vmax = vmin + 1.0
+
+    norm_kind = cfg.get("norm")
+    if norm_kind in (None, "linear") and center is not None:
+        # Diverging: put `center` on the colormap midpoint regardless of how
+        # the bounds were resolved (auto-symmetric or explicit vmin/vmax).
+        if not (vmin < center < vmax):
+            raise ValueError(
+                f"diverging 'center' ({center}) must lie strictly between "
+                f"vmin ({vmin}) and vmax ({vmax})"
+            )
+        norm: mcolors.Normalize = mcolors.TwoSlopeNorm(
+            vcenter=center, vmin=vmin, vmax=vmax
+        )
+    elif norm_kind in (None, "linear"):
+        norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
+    elif norm_kind == "log":
+        # LogNorm needs a strictly positive range. Derive the lower bound from
+        # an explicit positive vmin, else the smallest positive finite value;
+        # the upper bound must be positive too. Data with no positive value (or
+        # an inverted explicit range) has no valid log window -- fail clearly
+        # here instead of letting matplotlib raise an opaque "vmin must be less
+        # or equal to vmax" deep inside the draw.
+        positive = finite[finite > 0] if finite.size else finite
+        lo = vmin if (vmin is not None and vmin > 0) else (
+            float(positive.min()) if positive.size else None
+        )
+        # `lo >= vmax` (not just `>`) so a single-positive-value range like
+        # data [0, 5] -- where the only positive value is both the lower and
+        # upper bound -- fails clearly rather than building a degenerate
+        # LogNorm(vmin==vmax) that renders the whole layer flat at one colour.
+        if lo is None or vmax is None or vmax <= 0 or lo >= vmax:
+            raise ValueError(
+                "data style norm='log' needs positive data with a positive "
+                f"value range (resolved vmin={lo!r}, vmax={vmax!r}); use "
+                "norm='symlog' for data that spans zero or negative values."
+            )
+        # Report the clamped positive lower bound so the legend matches the
+        # colours the LogNorm actually starts from (not a 0/negative vmin).
+        vmin = lo
+        norm = mcolors.LogNorm(vmin=lo, vmax=vmax)
+    elif norm_kind == "symlog":
+        # Symmetric log: linear within +/- linthresh (so 0 maps cleanly) and
+        # logarithmic beyond -- the robust choice for skewed, zero-containing
+        # fields such as flow accumulation.
+        norm = mcolors.SymLogNorm(
+            linthresh=float(cfg.get("linthresh", 1.0)), vmin=vmin, vmax=vmax
+        )
+    else:
+        raise ValueError(
+            f"data style 'norm' must be 'linear', 'log', or 'symlog', got {norm_kind!r}"
+        )
+    return norm, vmin, vmax
 
 
 def apply_data_style(
@@ -304,6 +697,13 @@ def apply_data_style(
         layers: Mapping of layer name to its 2D data array. Every key must be
             a layer defined by `style` (e.g. `"organic_matter"`/`"dust"` for
             `"haze"`); pass a subset to draw only some of a style's layers.
+            For a **categorical** preset (one that defines `categories`, e.g.
+            `"flow_direction_d8"`), the array is matched to the declared class
+            codes by exact float equality, so it must be integer-coded (D8
+            powers of two, flood classes 0..4 — all exactly representable in
+            float). Any cell that is not bit-exactly a declared code (nodata,
+            sinks, or a value perturbed by a lossy float transform) is treated
+            as out-of-range and rendered transparent.
         style: A name from `DATA_STYLES`. Defaults to `"haze"`.
         x: Optional 2D curvilinear x-coordinates (see `alpha_scaled_mesh`).
             When given (together with `y`), every layer is drawn with
@@ -420,9 +820,68 @@ def apply_data_style(
     images: dict[str, Any] = {}
     for i, (name, data) in enumerate(layers.items()):
         cfg = preset[name]
-        norm = mcolors.Normalize(vmin=cfg["vmin"], vmax=cfg["vmax"])
+        data = np.asarray(data, dtype=float)
+
+        categories = cfg.get("categories")
+        if categories is not None:
+            cats = sorted(categories, key=lambda c: c[0])
+            cat_values = [float(c[0]) for c in cats]
+            cat_colors = [c[1] for c in cats]
+            cat_labels = [c[2] for c in cats]
+            cat_cmap = mcolors.ListedColormap(cat_colors)
+            cat_norm = mcolors.BoundaryNorm(
+                _category_boundaries(cat_values), len(cat_colors)
+            )
+            # Only cells whose value is one of the declared class codes are
+            # drawn; anything else (nodata sentinels, D8 sinks, out-of-range
+            # codes) is masked to NaN so it renders transparent instead of
+            # being clamped to an end category at full opacity. Matching is by
+            # exact float equality, so categorical presets expect integer-coded
+            # input (D8 powers of two, flood classes 0..4 -- all exactly
+            # representable); a value that is not bit-exactly a declared code
+            # (e.g. one perturbed by a lossy float transform) is treated as
+            # out-of-range and silently rendered transparent.
+            cat_data = np.where(np.isin(data, cat_values), data, np.nan)
+            if curvilinear:
+                images[name] = alpha_scaled_mesh(
+                    ax, x, y, cat_data, cat_cmap, norm=cat_norm, constant_alpha=1.0,
+                    **render_kwargs,
+                )
+            else:
+                images[name] = alpha_scaled_image(
+                    ax, cat_data, cat_cmap, norm=cat_norm, constant_alpha=1.0,
+                    **render_kwargs,
+                )
+            if legend:
+                # Honour legend_bounds' (x0, y0) as an anchor when given;
+                # otherwise default to the top-right. Re-add any earlier
+                # categorical legend so a second categorical layer stacks
+                # instead of replacing it (matplotlib keeps one legend/axes).
+                prior_legend = ax.get_legend()
+                if legend_bounds is not None:
+                    x0, y0 = legend_bounds[i][0], legend_bounds[i][1]
+                    leg = disjoint_legend(
+                        ax, cat_colors, cat_labels, title=cfg["label"],
+                        loc="upper left", bbox_to_anchor=(x0, y0),
+                    )
+                else:
+                    leg = disjoint_legend(
+                        ax, cat_colors, cat_labels, title=cfg["label"], loc="upper right"
+                    )
+                if prior_legend is not None and prior_legend is not leg:
+                    ax.add_artist(prior_legend)
+            continue
+
+        norm, resolved_vmin, resolved_vmax = _resolve_style_norm(data, cfg)
+
+        alpha_const = cfg.get("alpha")
         alpha_vmin = cfg.get("alpha_vmin")
         alpha_vmax = cfg.get("alpha_vmax")
+        if alpha_const is not None and (alpha_vmin is not None or alpha_vmax is not None):
+            raise ValueError(
+                f"data style layer {name!r} sets both a constant 'alpha' and "
+                "'alpha_vmin'/'alpha_vmax'; those are mutually exclusive"
+            )
         alpha_norm = (
             mcolors.Normalize(vmin=alpha_vmin, vmax=alpha_vmax)
             if alpha_vmin is not None or alpha_vmax is not None
@@ -431,12 +890,12 @@ def apply_data_style(
         if curvilinear:
             images[name] = alpha_scaled_mesh(
                 ax, x, y, data, cfg["cmap"], norm=norm, alpha_norm=alpha_norm,
-                **render_kwargs,
+                constant_alpha=alpha_const, **render_kwargs,
             )
         else:
             images[name] = alpha_scaled_image(
                 ax, data, cfg["cmap"], norm=norm, alpha_norm=alpha_norm,
-                **render_kwargs,
+                constant_alpha=alpha_const, **render_kwargs,
             )
         if legend:
             bounds = (
@@ -448,9 +907,10 @@ def apply_data_style(
                 ax,
                 cfg["cmap"],
                 cfg["label"],
-                vmin=cfg["vmin"],
-                vmax=cfg["vmax"],
+                vmin=resolved_vmin,
+                vmax=resolved_vmax,
                 bounds=bounds,
+                norm=norm,
             )
     return images
 

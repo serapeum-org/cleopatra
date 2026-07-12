@@ -4,13 +4,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from matplotlib.collections import QuadMesh
-from matplotlib.colors import Colormap, LinearSegmentedColormap, Normalize
+from matplotlib.colors import Colormap, LinearSegmentedColormap, Normalize, to_hex
 from matplotlib.image import AxesImage
 
 from cleopatra.colors import (
+    CAMS_AOD_COLORMAPS,
     HAZE_COLORMAPS,
     DATA_STYLES,
     Colors,
+    _category_boundaries,
+    _load_magics_presets,
+    _load_preset_asset,
+    _resolve_style_norm,
     alpha_scaled_image,
     alpha_scaled_mesh,
     apply_data_style,
@@ -53,6 +58,53 @@ class TestHazeColormaps:
         assert r > g and b > g, (
             f"organic_matter top stop should be purple-toned, got rgb=({r}, {g}, {b})"
         )
+
+
+class TestCamsAodColormaps:
+    """Tests for the `CAMS_AOD_COLORMAPS` preset constant (official CAMS AOD scales)."""
+
+    NAMES = ["blue_yellow_red", "blue_yellow_red_brown", "blue_red", "oranges"]
+
+    def test_has_the_four_documented_palettes(self):
+        """The four documented preset names are present, and only those four."""
+        assert set(CAMS_AOD_COLORMAPS) == set(self.NAMES), (
+            f"unexpected preset names: {set(CAMS_AOD_COLORMAPS)}"
+        )
+
+    @pytest.mark.parametrize("name", NAMES)
+    def test_entries_are_colormaps(self, name):
+        """Each entry is a ready `Colormap`, not a name string or dict."""
+        assert isinstance(CAMS_AOD_COLORMAPS[name], Colormap), (
+            f"{name} is not a Colormap: {type(CAMS_AOD_COLORMAPS[name])}"
+        )
+
+    @pytest.mark.parametrize("name", NAMES)
+    def test_are_fully_opaque(self, name):
+        """The vendored colormaps are pure colour -- opaque at both ends.
+
+        Magics' `sh_Oranges_aod` ramps opacity with value, but that alpha is
+        intentionally handled by cleopatra's separate opacity axis, not baked
+        into the colormap (see the `CAMS_AOD_COLORMAPS` docstring).
+        """
+        assert CAMS_AOD_COLORMAPS[name](0.0)[3] == 1.0, f"{name}(0.0) should be opaque"
+        assert CAMS_AOD_COLORMAPS[name](1.0)[3] == 1.0, f"{name}(1.0) should be opaque"
+
+    @pytest.mark.parametrize("name", ["blue_yellow_red", "blue_yellow_red_brown", "blue_red"])
+    def test_blue_low_end(self, name):
+        """The blue-to-red AOD scales start blue-dominant at value 0.0."""
+        r, g, b, _ = CAMS_AOD_COLORMAPS[name](0.0)
+        assert b >= r, f"{name}(0.0) should be blue-toned, got rgb=({r}, {g}, {b})"
+
+    @pytest.mark.parametrize("name", ["blue_yellow_red", "blue_red"])
+    def test_red_high_end(self, name):
+        """The red-topped AOD scales saturate red-dominant at value 1.0."""
+        r, g, b, _ = CAMS_AOD_COLORMAPS[name](1.0)
+        assert r > g and r > b, f"{name}(1.0) should be red-toned, got rgb=({r}, {g}, {b})"
+
+    def test_oranges_low_end_is_near_white(self):
+        """The `oranges` scale starts near white (its Magics form fades in via alpha)."""
+        r, g, b, _ = CAMS_AOD_COLORMAPS["oranges"](0.0)
+        assert min(r, g, b) > 0.85, f"oranges(0.0) should be near white, got rgb=({r}, {g}, {b})"
 
 
 class TestAlphaScaledImage:
@@ -112,6 +164,28 @@ class TestAlphaScaledImage:
         np.testing.assert_allclose(
             rgb, [0.165, 0.031, 0.0], atol=0.01, err_msg=f"unexpected top-stop colour: {rgb}"
         )
+
+    def test_constant_alpha_makes_field_opaque(self, ax):
+        """`constant_alpha=1.0` draws every finite cell opaque, ignoring value."""
+        data = np.array([[0.0, 0.5, 1.0]])
+        img = alpha_scaled_image(ax, data, "viridis", constant_alpha=1.0)
+        alpha = img.get_array()[..., 3]
+        np.testing.assert_allclose(
+            alpha, [[1.0, 1.0, 1.0]], err_msg=f"expected all-opaque, got {alpha}"
+        )
+
+    def test_constant_alpha_keeps_nan_transparent(self, ax):
+        """`constant_alpha` still leaves NaN cells fully transparent."""
+        data = np.array([[np.nan, 1.0]])
+        img = alpha_scaled_image(ax, data, "viridis", constant_alpha=1.0)
+        alpha = img.get_array()[..., 3]
+        assert alpha[0, 0] == 0.0, f"NaN should stay transparent, got {alpha[0, 0]}"
+        assert alpha[0, 1] == 1.0, f"finite cell should be opaque, got {alpha[0, 1]}"
+
+    def test_constant_alpha_is_clipped(self, ax):
+        """An out-of-range `constant_alpha` is clipped into [0, 1]."""
+        img = alpha_scaled_image(ax, np.array([[0.0, 1.0]]), "viridis", constant_alpha=2.5)
+        assert img.get_array()[0, 1, 3] == 1.0, "constant_alpha > 1 should clip to 1.0"
 
     def test_non_2d_data_raises(self, ax):
         """A 1D (or higher-dimensional) `data` array raises `ValueError`."""
@@ -223,6 +297,140 @@ class TestApplyDataStyle:
         images = apply_data_style(ax, {"dust": np.array([[0.5, 1.0]])})
         alpha = images["dust"].get_array()[..., 3]
         assert alpha[0, 0] == 1.0, f"expected fully opaque at data=0.5, got alpha={alpha[0, 0]}"
+
+    def test_cams_aod_preset_has_single_aod_layer(self):
+        """The registered 'cams_aod' preset defines exactly one 'aod' layer."""
+        assert set(DATA_STYLES["cams_aod"]) == {"aod"}, (
+            f"unexpected cams_aod layers: {set(DATA_STYLES['cams_aod'])}"
+        )
+
+    def test_cams_aod_uses_official_palette(self):
+        """The 'cams_aod' layer uses the canonical CAMS_AOD_COLORMAPS scale, not a haze map."""
+        assert (
+            DATA_STYLES["cams_aod"]["aod"]["cmap"]
+            is CAMS_AOD_COLORMAPS["blue_yellow_red"]
+        ), "cams_aod should reuse the official CAMS AOD colormap object"
+
+    def test_cams_aod_declares_no_decoupled_alpha(self):
+        """Unlike 'haze', 'cams_aod' sets no alpha_vmin/alpha_vmax (opacity tracks colour)."""
+        cfg = DATA_STYLES["cams_aod"]["aod"]
+        assert "alpha_vmin" not in cfg and "alpha_vmax" not in cfg, (
+            f"cams_aod should not decouple alpha, got {cfg}"
+        )
+
+    def test_cams_aod_alpha_tracks_value_linearly(self, ax):
+        """'cams_aod' opacity fades in with AOD: transparent at ~0, opaque at the top.
+
+        Test scenario:
+            With no alpha_vmin/alpha_vmax, alpha follows the same 0.0-1.0 norm
+            as colour, so an AOD field renders transparent where it is ~0 and
+            opaque red where it is high -- the natural overlay behaviour, and
+            the deliberate contrast with 'haze''s decoupled glowing rim.
+        """
+        images = apply_data_style(ax, {"aod": np.array([[0.0, 1.0]])}, style="cams_aod")
+        alpha = images["aod"].get_array()[..., 3]
+        assert alpha[0, 0] == 0.0, f"AOD 0.0 should be transparent, got {alpha[0, 0]}"
+        assert alpha[0, 1] == 1.0, f"AOD 1.0 should be opaque, got {alpha[0, 1]}"
+
+    CLIMATE_PRESETS = [
+        "temperature", "elevation", "vegetation", "wind_speed", "anomaly", "precipitation",
+    ]
+
+    @pytest.mark.parametrize("style", CLIMATE_PRESETS)
+    def test_climate_preset_is_registered_single_layer(self, style):
+        """Each climate/GIS preset is registered with one same-named layer."""
+        assert style in DATA_STYLES, f"{style} missing from DATA_STYLES"
+        assert set(DATA_STYLES[style]) == {style}, (
+            f"{style} should have one '{style}' layer, got {set(DATA_STYLES[style])}"
+        )
+
+    @pytest.mark.parametrize(
+        "style", ["temperature", "elevation", "vegetation", "wind_speed", "anomaly"]
+    )
+    def test_opaque_presets_fill_the_field(self, ax, style):
+        """The opaque presets draw every finite cell at full opacity, NaN transparent."""
+        images = apply_data_style(
+            ax, {style: np.array([[0.0, 1.0], [np.nan, 0.5]])}, style=style
+        )
+        alpha = images[style].get_array()[..., 3]
+        assert alpha[0, 0] == alpha[0, 1] == alpha[1, 1] == 1.0, (
+            f"{style} finite cells should be opaque, got {alpha}"
+        )
+        assert alpha[1, 0] == 0.0, f"{style} NaN cell should be transparent, got {alpha[1, 0]}"
+
+    def test_auto_range_uses_data_min_max(self, ax):
+        """A preset without vmin/vmax auto-ranges the colour norm to the data.
+
+        Test scenario:
+            The lowest data value maps to the colormap's start and the highest
+            to its end, proving the norm resolved to the field's own [min, max]
+            rather than a hard-coded 0-1.
+        """
+        cmap = plt.get_cmap("RdYlBu_r")
+        images = apply_data_style(
+            ax, {"temperature": np.array([[10.0, 30.0]])}, style="temperature"
+        )
+        rgba = images["temperature"].get_array()
+        np.testing.assert_allclose(
+            rgba[0, 0, :3], cmap(0.0)[:3], atol=1e-6,
+            err_msg="min value should map to the colormap start",
+        )
+        np.testing.assert_allclose(
+            rgba[0, 1, :3], cmap(1.0)[:3], atol=1e-6,
+            err_msg="max value should map to the colormap end",
+        )
+
+    def test_flat_field_avoids_degenerate_norm(self, ax):
+        """A constant field (min == max) renders without a zero-width norm error."""
+        images = apply_data_style(
+            ax, {"temperature": np.full((2, 2), 15.0)}, style="temperature"
+        )
+        assert images["temperature"].get_array()[..., 3].min() == 1.0, (
+            "a flat opaque field should still draw fully opaque"
+        )
+
+    def test_diverging_center_puts_zero_at_midpoint(self, ax):
+        """'anomaly' centres 0 on the colormap midpoint, even for asymmetric data.
+
+        Test scenario:
+            With center=0 and data spanning -1..4, the symmetric range is
+            [-4, 4], so the value 0.0 lands on the colormap's exact midpoint
+            (near-white for RdBu_r) regardless of the data being lopsided.
+        """
+        cmap = plt.get_cmap("RdBu_r")
+        images = apply_data_style(
+            ax, {"anomaly": np.array([[-1.0, 4.0, 0.0]])}, style="anomaly"
+        )
+        rgba = images["anomaly"].get_array()
+        np.testing.assert_allclose(
+            rgba[0, 2, :3], cmap(0.5)[:3], atol=0.02,
+            err_msg="the 0.0 cell should map to the colormap midpoint",
+        )
+
+    def test_precipitation_overlay_is_transparent_when_dry(self, ax):
+        """'precipitation' fades to transparent where the value is ~0 (overlay behaviour)."""
+        images = apply_data_style(
+            ax, {"precipitation": np.array([[0.0, 50.0]])}, style="precipitation"
+        )
+        alpha = images["precipitation"].get_array()[..., 3]
+        assert alpha[0, 0] == 0.0, f"dry cell should be transparent, got {alpha[0, 0]}"
+        assert alpha[0, 1] == 1.0, f"wettest cell should be opaque, got {alpha[0, 1]}"
+
+    def test_constant_alpha_and_decoupled_alpha_are_mutually_exclusive(self, ax, monkeypatch):
+        """A preset combining a constant 'alpha' with alpha_vmin/vmax raises ValueError."""
+        import cleopatra.colors as colors_mod
+
+        bad = {
+            "bad": {
+                "x": {
+                    "cmap": "viridis", "label": "X",
+                    "alpha": 1.0, "alpha_vmin": 0.1, "alpha_vmax": 0.5,
+                }
+            }
+        }
+        monkeypatch.setattr(colors_mod, "DATA_STYLES", bad)
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            apply_data_style(ax, {"x": np.array([[0.0, 1.0]])}, style="bad")
 
     def test_custom_style_without_alpha_keys_uses_shared_norm(self, ax, monkeypatch):
         """A custom style lacking alpha_vmin/alpha_vmax falls back to sharing the colour norm.
@@ -340,6 +548,383 @@ class TestApplyDataStyle:
         """
         with pytest.raises(ValueError, match="x and y must be given together"):
             apply_data_style(ax, {"dust": np.array([[0.0, 1.0]])}, **kwargs)
+
+
+class TestMagicsPresets:
+    """Tests for the ECMWF/Magics preset library loaded into `DATA_STYLES`."""
+
+    @pytest.fixture
+    def ax(self):
+        """A fresh Axes on the Agg backend, closed after the test."""
+        fig, ax = plt.subplots()
+        yield ax
+        plt.close(fig)
+
+    HAND_AUTHORED = {
+        "haze", "cams_aod", "temperature", "elevation",
+        "vegetation", "wind_speed", "anomaly", "precipitation",
+    }
+
+    def test_known_parameters_are_registered(self):
+        """Well-known GRIB parameters resolve to presets carrying their real labels."""
+        assert DATA_STYLES["2t"]["2t"]["label"] == "2 metre temperature"
+        assert DATA_STYLES["tp"]["tp"]["label"] == "Total precipitation"
+        assert DATA_STYLES["aod550"]["aod550"]["label"].startswith(
+            "Total Aerosol Optical Depth"
+        )
+
+    def test_a_substantial_library_was_loaded(self):
+        """The vendored asset registers a large batch of parameter presets."""
+        magics = set(DATA_STYLES) - self.HAND_AUTHORED
+        assert len(magics) >= 50, f"expected many Magics presets, got {len(magics)}"
+
+    def test_preset_layer_structure(self):
+        """Each Magics preset is a single layer keyed by its own name, with a Colormap."""
+        entry = DATA_STYLES["2t"]
+        assert set(entry) == {"2t"}, f"unexpected layers: {set(entry)}"
+        layer = entry["2t"]
+        assert isinstance(layer["cmap"], Colormap), f"cmap is {type(layer['cmap'])}"
+        assert isinstance(layer["label"], str) and layer["label"]
+
+    def test_opaque_preset_carries_constant_alpha(self):
+        """An opaque Magics field (2m temperature) sets alpha=1.0 -- a full opaque field."""
+        assert DATA_STYLES["2t"]["2t"]["alpha"] == 1.0
+
+    def test_overlay_preset_has_no_constant_alpha(self):
+        """An alpha-ramped Magics field (high cloud cover) is a value-linked overlay."""
+        assert "alpha" not in DATA_STYLES["hcc"]["hcc"], (
+            "an alpha-ramped Magics palette should map to the overlay policy"
+        )
+
+    def test_magics_preset_renders_opaque_field(self, ax):
+        """A Magics preset draws end-to-end; an opaque one fills the field, NaN transparent."""
+        images = apply_data_style(
+            ax, {"2t": np.array([[250.0, 300.0], [np.nan, 275.0]])}, style="2t"
+        )
+        alpha = images["2t"].get_array()[..., 3]
+        assert alpha[0, 0] == alpha[0, 1] == alpha[1, 1] == 1.0, f"not opaque: {alpha}"
+        assert alpha[1, 0] == 0.0, f"NaN cell should be transparent, got {alpha[1, 0]}"
+
+    def test_loader_degrades_gracefully_without_asset(self, monkeypatch):
+        """If the vendored asset is unreadable, the loader returns {} instead of raising."""
+        import cleopatra.colors as colors_mod
+
+        def boom(_pkg):
+            raise FileNotFoundError("no data package")
+
+        monkeypatch.setattr(colors_mod.importlib.resources, "files", boom)
+        assert _load_magics_presets() == {}, "missing asset should degrade to no presets"
+
+
+class TestCategoricalPresets:
+    """Tests for categorical (class-code) presets -- the `flood_status` preset."""
+
+    @pytest.fixture
+    def ax(self):
+        """A fresh Axes on the Agg backend, closed after the test."""
+        fig, ax = plt.subplots()
+        yield ax
+        plt.close(fig)
+
+    def test_flood_status_declares_categories(self):
+        """The 'flood_status' preset carries a 5-class category list, not a cmap."""
+        cfg = DATA_STYLES["flood_status"]["flood_status"]
+        assert "categories" in cfg and "cmap" not in cfg
+        assert [c[2] for c in cfg["categories"]] == [
+            "Normal", "Action", "Minor", "Moderate", "Major"
+        ]
+
+    def test_category_boundaries_are_midpoints_and_half_gaps(self):
+        """Integer class codes 0..4 produce the expected +/-0.5 bin edges."""
+        assert _category_boundaries([0, 1, 2, 3, 4]) == [-0.5, 0.5, 1.5, 2.5, 3.5, 4.5]
+
+    def test_single_category_boundaries(self):
+        """A lone class value still yields a valid two-edge bin."""
+        assert _category_boundaries([3]) == [2.5, 3.5]
+
+    def test_each_class_maps_to_its_colour(self, ax):
+        """Every class code renders as exactly its declared category colour."""
+        data = np.array([[0.0, 1.0, 2.0], [3.0, 4.0, 4.0]])
+        img = apply_data_style(ax, {"flood_status": data}, style="flood_status")["flood_status"]
+        rgba = img.get_array()
+        expected = ["#2c7fb8", "#31a354", "#ffeb3b", "#ff7f00", "#e31a1c"]
+        got = [
+            to_hex(rgba[0, 0, :3]), to_hex(rgba[0, 1, :3]), to_hex(rgba[0, 2, :3]),
+            to_hex(rgba[1, 0, :3]), to_hex(rgba[1, 1, :3]),
+        ]
+        assert got == expected, f"class colours wrong: {got}"
+
+    def test_categorical_is_opaque_with_nan_transparent(self, ax):
+        """Classes are drawn fully opaque; NaN (no-data) is transparent."""
+        data = np.array([[0.0, 4.0], [np.nan, 2.0]])
+        img = apply_data_style(ax, {"flood_status": data}, style="flood_status")["flood_status"]
+        alpha = img.get_array()[..., 3]
+        assert alpha[0, 0] == alpha[0, 1] == alpha[1, 1] == 1.0, f"not opaque: {alpha}"
+        assert alpha[1, 0] == 0.0, f"NaN should be transparent, got {alpha[1, 0]}"
+
+    def test_categorical_attaches_a_disjoint_legend(self, ax):
+        """A categorical preset gets a discrete matplotlib legend, titled by `label`."""
+        apply_data_style(ax, {"flood_status": np.array([[0.0, 4.0]])}, style="flood_status")
+        legend = ax.get_legend()
+        assert legend is not None, "categorical preset should attach a legend"
+        assert [t.get_text() for t in legend.get_texts()] == [
+            "Normal", "Action", "Minor", "Moderate", "Major"
+        ]
+        assert legend.get_title().get_text() == "Flood status"
+
+    def test_categorical_legend_can_be_suppressed(self, ax):
+        """`legend=False` draws the classes without a legend."""
+        apply_data_style(ax, {"flood_status": np.array([[0.0, 4.0]])}, style="flood_status", legend=False)
+        assert ax.get_legend() is None, "no legend expected when legend=False"
+
+    def test_categorical_legend_honours_bounds_and_stacks(self, ax, monkeypatch):
+        """Two categorical layers keep both legends, anchored by `legend_bounds`."""
+        import cleopatra.colors as colors_mod
+
+        styles = dict(
+            colors_mod.DATA_STYLES,
+            two={
+                "a": {"categories": [(0, "#111111", "A"), (1, "#eeeeee", "B")], "label": "A"},
+                "b": {"categories": [(0, "#ff0000", "X"), (1, "#00ff00", "Y")], "label": "B"},
+            },
+        )
+        monkeypatch.setattr(colors_mod, "DATA_STYLES", styles)
+        apply_data_style(
+            ax,
+            {"a": np.array([[0.0, 1.0]]), "b": np.array([[0.0, 1.0]])},
+            style="two",
+            legend_bounds=[(0.02, 0.9, 0.3, 0.05), (0.6, 0.9, 0.3, 0.05)],
+        )
+        legends = [c for c in ax.get_children() if type(c).__name__ == "Legend"]
+        assert len(legends) == 2, "both categorical legends should coexist, not clobber"
+
+    def test_out_of_range_and_nodata_codes_are_transparent(self, ax):
+        """Codes outside the declared set (sinks, nodata) render transparent, not clamped.
+
+        Test scenario:
+            A categorical field carrying values that are not declared class
+            codes -- a D8 sink (0), a nodata sentinel (255), or an out-of-range
+            flood code -- must be masked to transparent rather than clamped to
+            the first/last category at full opacity.
+        """
+        img = apply_data_style(
+            ax, {"flood_status": np.array([[-3.0, 0.0, 4.0, 7.0]])}, style="flood_status"
+        )["flood_status"]
+        alpha = img.get_array()[..., 3]
+        assert list(alpha[0]) == [0.0, 1.0, 1.0, 0.0], (
+            f"only declared codes should be opaque, got {list(alpha[0])}"
+        )
+
+
+class TestFlowRasterPresets:
+    """Tests for the DEM-derived hydrology presets (flow direction / accumulation)."""
+
+    @pytest.fixture
+    def ax(self):
+        """A fresh Axes on the Agg backend, closed after the test."""
+        fig, ax = plt.subplots()
+        yield ax
+        plt.close(fig)
+
+    def test_flow_direction_d8_has_eight_compass_classes(self):
+        """`flow_direction_d8` maps the 8 ESRI D8 codes to compass-labelled classes."""
+        cats = DATA_STYLES["flow_direction_d8"]["flow_direction_d8"]["categories"]
+        assert [c[0] for c in cats] == [1, 2, 4, 8, 16, 32, 64, 128]
+        assert [c[2] for c in cats] == ["E", "SE", "S", "SW", "W", "NW", "N", "NE"]
+
+    def test_flow_direction_d8_maps_codes_to_cyclic_colours(self, ax):
+        """Each D8 code renders as its declared cyclic colour."""
+        img = apply_data_style(
+            ax, {"flow_direction_d8": np.array([[1.0, 128.0]])}, style="flow_direction_d8"
+        )["flow_direction_d8"]
+        rgba = img.get_array()
+        assert to_hex(rgba[0, 0, :3]) == "#e2d9e2"
+        assert to_hex(rgba[0, 1, :3]) == "#cca389"
+
+    def test_flow_accumulation_declares_symlog(self):
+        """`flow_accumulation` uses a symmetric-log norm for its skewed range."""
+        assert DATA_STYLES["flow_accumulation"]["flow_accumulation"]["norm"] == "symlog"
+
+    def test_flow_accumulation_fades_zeros_shows_channels(self, ax):
+        """Zero-accumulation cells fade out; high-accumulation channels are opaque."""
+        img = apply_data_style(
+            ax, {"flow_accumulation": np.array([[0.0, 9000.0]])}, style="flow_accumulation"
+        )["flow_accumulation"]
+        alpha = img.get_array()[..., 3]
+        assert alpha[0, 0] == 0.0, f"zero cell should be transparent, got {alpha[0, 0]}"
+        assert alpha[0, 1] == 1.0, f"channel cell should be opaque, got {alpha[0, 1]}"
+
+
+class TestStyleNormKinds:
+    """Tests for the `norm` key in `_resolve_style_norm` (linear / log / symlog)."""
+
+    def test_default_is_linear(self):
+        """Omitting `norm` yields a plain `Normalize`."""
+        norm, _, _ = _resolve_style_norm(np.array([1.0, 10.0]), {})
+        assert type(norm).__name__ == "Normalize"
+
+    def test_symlog_norm(self):
+        """`norm='symlog'` yields a `SymLogNorm` (handles zeros)."""
+        norm, _, _ = _resolve_style_norm(np.array([0.0, 100.0]), {"norm": "symlog"})
+        assert type(norm).__name__ == "SymLogNorm"
+
+    def test_log_norm_clamps_vmin_to_positive(self):
+        """`norm='log'` yields a `LogNorm` with a positive vmin even if data hits 0."""
+        norm, _, _ = _resolve_style_norm(
+            np.array([0.0, 5.0, 100.0]), {"norm": "log"}
+        )
+        assert type(norm).__name__ == "LogNorm"
+        assert norm.vmin > 0, "LogNorm needs a positive lower bound"
+
+    def test_unknown_norm_raises(self):
+        """An unrecognised `norm` value raises `ValueError`."""
+        with pytest.raises(ValueError, match="'norm' must be"):
+            _resolve_style_norm(np.array([1.0, 2.0]), {"norm": "bogus"})
+
+    def test_center_is_honoured_with_explicit_bounds(self):
+        """`center` puts zero on the midpoint even when explicit vmin/vmax are set.
+
+        With asymmetric explicit bounds a plain `Normalize` would land `center`
+        off-midpoint; a `TwoSlopeNorm` keeps it at 0.5.
+        """
+        data = np.array([-2.0, 4.0, 10.0])
+        norm, _, _ = _resolve_style_norm(data, {"center": 0, "vmin": -2, "vmax": 10})
+        assert type(norm).__name__ == "TwoSlopeNorm"
+        assert float(norm(0.0)) == pytest.approx(0.5)
+
+    def test_center_outside_bounds_raises(self):
+        """A `center` not strictly inside [vmin, vmax] raises a clear `ValueError`."""
+        with pytest.raises(ValueError, match="must lie strictly between"):
+            _resolve_style_norm(np.array([1.0, 10.0]), {"center": 0, "vmin": 1, "vmax": 10})
+
+    def test_log_reports_clamped_positive_vmin(self):
+        """The `log` branch reports the clamped positive lower bound (matches the LogNorm).
+
+        The returned vmin must equal the `LogNorm`'s vmin so the swatch legend
+        does not label a 0/negative bound the colours never actually use.
+        """
+        norm, vmin, _ = _resolve_style_norm(
+            np.array([0.0, 5.0, 100.0]), {"norm": "log"}
+        )
+        assert vmin > 0 and vmin == norm.vmin
+
+    def test_log_on_all_negative_data_raises_clearly(self):
+        """`norm='log'` on all-negative data raises a clear cleopatra error.
+
+        There is no positive value to anchor a log scale, so the branch must
+        fail with an actionable message rather than building an invalid
+        `LogNorm(vmin>vmax)` that crashes deep in matplotlib at draw time.
+        """
+        with pytest.raises(ValueError, match="norm='log' needs positive data"):
+            _resolve_style_norm(np.array([-5.0, -3.0, -1.0]), {"norm": "log"})
+
+    def test_log_on_all_zero_data_raises_clearly(self):
+        """`norm='log'` on all-zero data raises rather than a degenerate `LogNorm(1,1)`."""
+        with pytest.raises(ValueError, match="norm='log' needs positive data"):
+            _resolve_style_norm(np.array([0.0, 0.0, 0.0]), {"norm": "log"})
+
+    def test_log_on_single_positive_value_raises_clearly(self):
+        """`norm='log'` where the only positive value equals vmax raises (no flat LogNorm).
+
+        Data `[0, 5]` resolves lower bound == upper bound (5); a strict `>` guard
+        would let it build a degenerate `LogNorm(vmin==vmax)`, so the guard uses
+        `>=` and fails clearly instead.
+        """
+        with pytest.raises(ValueError, match="norm='log' needs positive data"):
+            _resolve_style_norm(np.array([0.0, 5.0]), {"norm": "log"})
+
+
+class TestCmoceanPresets:
+    """Tests for the cmocean ocean/hydrology/DEM preset library in `DATA_STYLES`."""
+
+    @pytest.fixture
+    def ax(self):
+        """A fresh Axes on the Agg backend, closed after the test."""
+        fig, ax = plt.subplots()
+        yield ax
+        plt.close(fig)
+
+    def test_known_variables_are_registered(self):
+        """Ocean/hydrology variables resolve to presets carrying cmocean labels."""
+        assert DATA_STYLES["salinity"]["salinity"]["label"] == "Salinity"
+        assert DATA_STYLES["bathymetry"]["bathymetry"]["label"] == "Ocean depth"
+        assert DATA_STYLES["turbidity"]["turbidity"]["label"] == "Turbidity / sediment"
+
+    def test_the_batch_was_loaded(self):
+        """The full curated cmocean batch is registered as presets."""
+        expected = {
+            "salinity", "bathymetry", "topography", "turbidity", "current_speed",
+            "chlorophyll", "dissolved_oxygen", "sea_surface_temperature", "sea_ice",
+            "solar_radiation", "rainfall", "phase", "sea_level_anomaly", "vorticity",
+            "water_density",
+        }
+        assert expected <= set(DATA_STYLES), f"missing: {expected - set(DATA_STYLES)}"
+
+    def test_diverging_and_land_sea_presets_center_on_zero(self):
+        """The diverging and land+sea presets render symmetric about zero."""
+        for key in ("sea_level_anomaly", "vorticity", "topography"):
+            assert DATA_STYLES[key][key].get("center") == 0.0, f"{key} should center on 0"
+
+    def test_preset_is_an_opaque_single_layer(self):
+        """Each cmocean preset is one opaque layer with a ready Colormap."""
+        layer = DATA_STYLES["salinity"]["salinity"]
+        assert isinstance(layer["cmap"], Colormap), f"cmap is {type(layer['cmap'])}"
+        assert layer["alpha"] == 1.0, "cmocean presets are opaque full fields"
+
+    def test_cmocean_preset_renders_opaque_field(self, ax):
+        """A cmocean preset draws end-to-end: opaque field, NaN transparent."""
+        images = apply_data_style(
+            ax, {"bathymetry": np.array([[0.0, 5000.0], [np.nan, 2000.0]])}, style="bathymetry"
+        )
+        alpha = images["bathymetry"].get_array()[..., 3]
+        assert alpha[0, 0] == alpha[0, 1] == alpha[1, 1] == 1.0, f"not opaque: {alpha}"
+        assert alpha[1, 0] == 0.0, f"NaN cell should be transparent, got {alpha[1, 0]}"
+
+    def test_missing_asset_degrades_to_empty(self):
+        """The shared asset loader returns {} for an absent resource, never raising."""
+        assert _load_preset_asset("does_not_exist.json", "x") == {}
+
+    @staticmethod
+    def _patch_asset_text(monkeypatch, text):
+        """Make the loader read `text` as the asset content."""
+        import cleopatra.colors as colors_mod
+
+        class _File:
+            def read_text(self, encoding=None):
+                return text
+
+        class _Dir:
+            def joinpath(self, name):
+                return _File()
+
+        monkeypatch.setattr(colors_mod.importlib.resources, "files", lambda pkg: _Dir())
+
+    def test_malformed_json_degrades_to_empty(self, monkeypatch):
+        """A corrupt (invalid JSON) asset returns {} instead of crashing the import."""
+        self._patch_asset_text(monkeypatch, "{not valid json")
+        assert _load_preset_asset("magics_presets.json", "magics") == {}
+
+    def test_non_mapping_json_degrades_to_empty(self, monkeypatch):
+        """A structurally-wrong (non-object) asset returns {}, never raises."""
+        self._patch_asset_text(monkeypatch, "[1, 2, 3]")
+        assert _load_preset_asset("magics_presets.json", "magics") == {}
+
+    def test_one_bad_record_is_skipped_others_survive(self, monkeypatch):
+        """A single malformed record is skipped; the sibling well-formed presets load."""
+        import json
+
+        asset = json.dumps(
+            {
+                "presets": {
+                    "good1": {"palette": ["#000000", "#ffffff"], "label": "Good 1"},
+                    "bad": {"label": "no palette"},
+                    "good2": {"palette": ["#ff0000", "#00ff00"], "label": "Good 2"},
+                }
+            }
+        )
+        self._patch_asset_text(monkeypatch, asset)
+        loaded = _load_preset_asset("magics_presets.json", "magics")
+        assert set(loaded) == {"good1", "good2"}, f"bad record should not drop siblings: {loaded}"
 
 
 class TestCreateColors:
