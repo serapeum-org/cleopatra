@@ -1528,6 +1528,65 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         return im, cbar_kw
 
+    @property
+    def style(self) -> str | None:
+        """Name of the `DATA_STYLES` preset currently applied, or `None`.
+
+        Reads back the preset set via the `style` constructor kwarg, a
+        `plot(style=...)` call, or `apply_style`.
+        """
+        return self.default_options.get("style")
+
+    def apply_style(self, style: str, **kwargs: Any) -> tuple[Figure, Axes]:
+        """Apply a `DATA_STYLES` preset by name, re-rendering the glyph in place.
+
+        A discoverable wrapper over `plot(style=...)` for restyling an
+        already-built glyph: it redraws on the glyph's existing axes (clearing
+        the previous render first) or, if the glyph has not been plotted yet,
+        on a new figure. Extra keyword arguments (e.g. `hillshade`,
+        `add_colorbar`) are forwarded to `plot`.
+
+        Args:
+            style: A `cleopatra.colors.DATA_STYLES` preset name (see
+                `sorted(cleopatra.colors.DATA_STYLES)`).
+            **kwargs: Forwarded to `plot` (e.g. `hillshade`).
+
+        Returns:
+            tuple[Figure, Axes]: The figure and axes drawn on.
+
+        Raises:
+            ValueError: If `style` is unknown or names a multi-layer preset
+                (raised by `plot`).
+
+        Examples:
+            - Restyle a rendered glyph by name:
+                ```python
+                >>> import matplotlib
+                >>> matplotlib.use("Agg")
+                >>> import numpy as np
+                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> glyph = ArrayGlyph(np.arange(60.0).reshape(6, 10))
+                >>> _ = glyph.plot()
+                >>> _ = glyph.apply_style("topography")
+                >>> glyph.style
+                'topography'
+
+                ```
+        """
+        if getattr(self, "ax", None) is not None:
+            self._clear_axes_for_restyle()
+            return self.plot(style=style, ax=self.ax, **kwargs)
+        return self.plot(style=style, **kwargs)
+
+    def _clear_axes_for_restyle(self) -> None:
+        """Remove the previous render (colorbar, legend insets, artists) in place."""
+        if self.cbar is not None:
+            self.cbar.remove()
+            self.cbar = None
+        for inset in list(self.ax.child_axes):
+            inset.remove()
+        self.ax.clear()
+
     def _resolve_style_layer(self, style: str) -> str:
         """Validate a `DATA_STYLES` name and return its single layer key.
 

@@ -4186,3 +4186,55 @@ class TestArrayGlyphShadedAnimate:
         anim._func(1)
         assert np.asarray(g.im.get_array())[0, 0, 3] == 0.0
         plt.close("all")
+
+
+class TestArrayGlyphApplyStyle:
+    """Tests for the public `apply_style` method and `style` read-back."""
+
+    @staticmethod
+    def _dem():
+        return np.arange(600.0).reshape(20, 30)
+
+    def test_style_defaults_to_none(self):
+        """`style` is None on a glyph with no preset applied."""
+        assert ArrayGlyph(self._dem()).style is None
+
+    def test_apply_style_restyles_in_place_and_reads_back(self):
+        """apply_style renders the preset and `style` reads back its name."""
+        g = ArrayGlyph(self._dem())
+        g.plot()
+        g.apply_style("topography")
+        assert g.style == "topography"
+        assert g.cbar is None and len(g.ax.child_axes) == 1
+        plt.close("all")
+
+    def test_apply_style_repeated_does_not_stack_legends(self):
+        """Restyling repeatedly replaces the render rather than stacking insets."""
+        g = ArrayGlyph(self._dem())
+        g.plot()
+        g.apply_style("topography")
+        g.apply_style("flow_accumulation")
+        assert g.style == "flow_accumulation"
+        assert len(g.ax.child_axes) == 1
+        plt.close("all")
+
+    def test_apply_style_forwards_hillshade(self):
+        """Extra kwargs (hillshade) are forwarded to plot and compose."""
+        g = ArrayGlyph(self._dem())
+        g.plot()
+        g.apply_style("topography", hillshade={"vert_exag": 6})
+        assert np.asarray(g.im.get_array()).ndim == 3  # shaded RGBA
+        plt.close("all")
+
+    def test_apply_style_on_unplotted_glyph_creates_figure(self):
+        """apply_style works before any plot() (renders on a fresh figure)."""
+        g = ArrayGlyph(self._dem())
+        fig, ax = g.apply_style("elevation")
+        assert fig is not None and g.style == "elevation"
+        plt.close("all")
+
+    def test_apply_style_unknown_name_raises(self):
+        """An unknown preset name raises a clear `ValueError`."""
+        with pytest.raises(ValueError, match="unknown data style"):
+            ArrayGlyph(self._dem()).apply_style("not_a_style")
+        plt.close("all")
