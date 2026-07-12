@@ -3926,6 +3926,20 @@ class TestArrayGlyphDataStyle:
         assert ax.get_legend() is not None
         plt.close("all")
 
+    def test_points_with_style_warns(self):
+        """A preset bypasses point/cell-value overlays; the drop is warned, not silent."""
+        pts = np.array([[1.0, 2, 3], [2.0, 5, 6]])
+        with pytest.warns(UserWarning, match="bypass point and cell-value overlays"):
+            ArrayGlyph(self._accum()).plot(points=pts, style="flow_accumulation")
+        plt.close("all")
+
+    def test_rgb_with_style_warns(self):
+        """A `style` on an RGB array is ignored with a warning, not silently."""
+        rgb = np.random.default_rng(6).random((3, 8, 8))
+        with pytest.warns(UserWarning, match="do not apply to RGB"):
+            ArrayGlyph(rgb, rgb=[0, 1, 2], style="flow_accumulation").plot()
+        plt.close("all")
+
 
 class TestArrayGlyphShadedAnimate:
     """Tests for hillshade + data-style presets in `animate`."""

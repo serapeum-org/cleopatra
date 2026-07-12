@@ -2396,8 +2396,25 @@ class ArrayGlyph(GeoMixin, Glyph):
         # to `cleopatra.colors.apply_data_style`, so the full preset semantics
         # (log/symlog norms, transparent nodata, disjoint categorical legend)
         # are reproduced rather than lossily mapped onto `color_scale`.
-        if self.default_options.get("style") is not None and not self.rgb:
-            return self._plot_with_style(self.default_options["style"])
+        style = self.default_options.get("style")
+        if style is not None:
+            if self.rgb:
+                warnings.warn(
+                    "data-style presets do not apply to RGB arrays; 'style' is "
+                    "ignored and the RGB image is drawn as-is.",
+                    stacklevel=2,
+                )
+            else:
+                # The preset owns the colour mapping and draws its own legend, so
+                # point / cell-value overlays are bypassed -- make that visible
+                # rather than dropping them silently.
+                if points is not None or self.default_options.get("display_cell_value"):
+                    warnings.warn(
+                        "data-style presets bypass point and cell-value overlays; "
+                        "'points' and 'display_cell_value' are ignored with 'style'.",
+                        stacklevel=2,
+                    )
+                return self._plot_with_style(style)
 
         if self.rgb:
             self.im = ax.imshow(arr, extent=self.extent)
