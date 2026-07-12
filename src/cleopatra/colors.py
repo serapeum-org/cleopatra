@@ -570,7 +570,7 @@ def _category_boundaries(values: list[float]) -> list[float]:
     return [lower] + mids + [upper]
 
 
-def _resolve_style_norm(
+def resolve_style_norm(
     data: np.ndarray, cfg: dict[str, Any]
 ) -> tuple[mcolors.Normalize, float, float]:
     """Resolve the colour `Normalize` (and its concrete bounds) for one layer.
@@ -664,6 +664,10 @@ def _resolve_style_norm(
             f"data style 'norm' must be 'linear', 'log', or 'symlog', got {norm_kind!r}"
         )
     return norm, vmin, vmax
+
+
+#: Backward-compatible private alias for `resolve_style_norm` (its earlier name).
+_resolve_style_norm = resolve_style_norm
 
 
 def apply_data_style(
@@ -872,7 +876,7 @@ def apply_data_style(
                     ax.add_artist(prior_legend)
             continue
 
-        norm, resolved_vmin, resolved_vmax = _resolve_style_norm(data, cfg)
+        norm, resolved_vmin, resolved_vmax = resolve_style_norm(data, cfg)
 
         alpha_const = cfg.get("alpha")
         alpha_vmin = cfg.get("alpha_vmin")

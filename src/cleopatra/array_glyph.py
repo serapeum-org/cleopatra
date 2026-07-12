@@ -39,7 +39,7 @@ from matplotlib.colors import Colormap, Normalize
 from matplotlib.figure import Figure
 from PIL import Image
 
-from cleopatra.colors import DATA_STYLES, apply_data_style, _resolve_style_norm
+from cleopatra.colors import DATA_STYLES, apply_data_style, resolve_style_norm
 from cleopatra.geo import GeoMixin
 from cleopatra.hillshade import resolve_hillshade, shade_grid
 from cleopatra.glyph import Glyph, _root_figure
@@ -3221,7 +3221,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 stack = array if data_getter is None else frame_0
                 # Cast to float before filling (integer masked arrays reject a
                 # NaN fill value -- see `_plot_with_style`).
-                style_norm, _, _ = _resolve_style_norm(
+                style_norm, _, _ = resolve_style_norm(
                     np.asarray(ma.filled(ma.asarray(stack).astype(float), np.nan), dtype=float),
                     cfg,
                 )
