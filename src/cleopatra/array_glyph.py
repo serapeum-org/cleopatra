@@ -1574,20 +1574,24 @@ class ArrayGlyph(GeoMixin, Glyph):
                 "the 'style' preset is applied and 'hillshade' is ignored.",
                 stacklevel=2,
             )
+        if self._coords is not None:
+            # apply_data_style's curvilinear path forces shading="flat", which
+            # needs cell-EDGE coordinates, but ArrayGlyph stores cell CENTRES.
+            # Fail with a clear cleopatra message instead of a downstream
+            # matplotlib "Dimensions of C should be one smaller than X/Y" error.
+            raise ValueError(
+                "data-style presets do not support curvilinear 'coords' yet: "
+                "apply_data_style needs cell-edge coordinates, but ArrayGlyph "
+                "stores cell centres. Plot without coords, or call "
+                "cleopatra.colors.apply_data_style directly with edge coordinates."
+            )
         layer = self._resolve_style_layer(style)
         data = np.asarray(ma.filled(self.arr, np.nan), dtype=float)
         legend = bool(self.default_options.get("add_colorbar", True))
-        coords = self._coords
-        if coords is not None:
-            images = apply_data_style(
-                self.ax, {layer: data}, style=style, x=coords[0], y=coords[1],
-                legend=legend,
-            )
-        else:
-            render_kwargs = {"extent": self.extent} if self.extent is not None else {}
-            images = apply_data_style(
-                self.ax, {layer: data}, style=style, legend=legend, **render_kwargs
-            )
+        render_kwargs = {"extent": self.extent} if self.extent is not None else {}
+        images = apply_data_style(
+            self.ax, {layer: data}, style=style, legend=legend, **render_kwargs
+        )
         self.im = images[layer]
         # Presets present their scale via a swatch / categorical legend, not a
         # matplotlib colorbar.

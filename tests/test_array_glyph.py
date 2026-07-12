@@ -3907,6 +3907,16 @@ class TestArrayGlyphDataStyle:
             ArrayGlyph(self._accum(), style="haze").plot()
         plt.close("all")
 
+    def test_curvilinear_coords_with_style_raises_clear_error(self):
+        """Curvilinear `coords` + `style` fails with a clear cleopatra message, not a matplotlib TypeError."""
+        arr = self._accum()
+        ny, nx = arr.shape
+        x = np.linspace(-3.0, 3.0, nx)
+        y = np.linspace(-3.0, 3.0, ny)
+        with pytest.raises(ValueError, match="do not support curvilinear 'coords'"):
+            ArrayGlyph(arr, coords=(x, y), style="flow_accumulation").plot()
+        plt.close("all")
+
 
 class TestArrayGlyphShadedAnimate:
     """Tests for hillshade + data-style presets in `animate`."""
