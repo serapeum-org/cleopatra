@@ -3195,10 +3195,12 @@ class ArrayGlyph(GeoMixin, Glyph):
                 self.cbar = self.create_color_bar(ax, im, cbar_kw)
 
             # Named data-style preset for animation: continuous presets drive
-            # the frames through the preset's cmap + norm (resolved across the
-            # whole stack so the colour range is stable across frames), and the
-            # colorbar is refreshed to match. Categorical presets need per-frame
-            # masking + a discrete legend and are not animated yet -- use plot().
+            # the frames through the preset's cmap + norm and refresh the
+            # colorbar to match. The norm range is resolved across the eager
+            # stack so it is stable across frames; under a lazy `data_getter`
+            # only frame 0 is available, so its range is used (later frames that
+            # exceed it are clipped). Categorical presets need per-frame masking
+            # + a discrete legend and are not animated yet -- use plot().
             style = self.default_options.get("style")
             if style is not None:
                 layer = self._resolve_style_layer(style)
