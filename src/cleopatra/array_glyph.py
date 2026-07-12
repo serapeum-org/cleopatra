@@ -1586,7 +1586,12 @@ class ArrayGlyph(GeoMixin, Glyph):
                 "cleopatra.colors.apply_data_style directly with edge coordinates."
             )
         layer = self._resolve_style_layer(style)
-        data = np.asarray(ma.filled(self.arr, np.nan), dtype=float)
+        # Cast to float BEFORE filling: `ma.filled(int_array, np.nan)` raises
+        # `TypeError: Cannot convert fill_value nan to dtype int64` for an
+        # integer masked array -- exactly the integer-coded categorical raster
+        # (e.g. `flow_direction_d8` with nodata masked via `exclude_value`) these
+        # presets target.
+        data = np.asarray(ma.filled(ma.asarray(self.arr).astype(float), np.nan), dtype=float)
         legend = bool(self.default_options.get("add_colorbar", True))
         render_kwargs = {"extent": self.extent} if self.extent is not None else {}
         images = apply_data_style(
@@ -3187,8 +3192,11 @@ class ArrayGlyph(GeoMixin, Glyph):
                         "animate yet; use plot() for categorical styles"
                     )
                 stack = array if data_getter is None else frame_0
+                # Cast to float before filling (integer masked arrays reject a
+                # NaN fill value -- see `_plot_with_style`).
                 style_norm, _, _ = _resolve_style_norm(
-                    np.asarray(ma.filled(stack, np.nan), dtype=float), cfg
+                    np.asarray(ma.filled(ma.asarray(stack).astype(float), np.nan), dtype=float),
+                    cfg,
                 )
                 im.set_cmap(cfg["cmap"])
                 im.set_norm(style_norm)

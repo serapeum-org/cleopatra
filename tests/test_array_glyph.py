@@ -3917,6 +3917,15 @@ class TestArrayGlyphDataStyle:
             ArrayGlyph(arr, coords=(x, y), style="flow_accumulation").plot()
         plt.close("all")
 
+    def test_integer_masked_categorical_input_does_not_crash(self):
+        """An integer-coded categorical raster with masked nodata renders (no `ma.filled` TypeError)."""
+        rng = np.random.default_rng(2)
+        d8 = rng.choice([0, 1, 2, 4, 8, 16, 32, 64, 128], size=(20, 20))  # int dtype, 0 = nodata
+        g = ArrayGlyph(d8, style="flow_direction_d8", exclude_value=[0])
+        _, ax = g.plot()
+        assert ax.get_legend() is not None
+        plt.close("all")
+
 
 class TestArrayGlyphShadedAnimate:
     """Tests for hillshade + data-style presets in `animate`."""
