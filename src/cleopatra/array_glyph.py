@@ -2008,6 +2008,31 @@ class ArrayGlyph(GeoMixin, Glyph):
                         If cell value > threshold, text is black; otherwise, text is white.
                         If None, uses max(array)/2 as the threshold.
 
+                Data-style preset / relief options:
+                    style : str, optional
+                        Name of a `cleopatra.colors.DATA_STYLES` preset (e.g.
+                        `"flow_accumulation"`, `"flow_direction_d8"`,
+                        `"topography"`; valid names are
+                        `sorted(cleopatra.colors.DATA_STYLES)`). When set, the
+                        preset's colormap, norm (linear/log/symlog/diverging
+                        `center`), transparent nodata, alpha glow, and — for
+                        categorical presets — a discrete legend are applied via
+                        `cleopatra.colors.apply_data_style`. Only single-layer
+                        presets apply to a single band. The preset owns the
+                        colour mapping, so it takes precedence over `cmap` /
+                        `color_scale` / `vmin` / `vmax` / `center`, presents its
+                        scale via a legend rather than a colorbar (`self.cbar`
+                        is `None`), and bypasses `points` / `display_cell_value`
+                        overlays (which warn). Ignored for RGB arrays and not
+                        composed with `hillshade` (the preset wins). By default
+                        None.
+                    hillshade : bool or dict, optional
+                        Relief-shade a regular-grid DEM so wide-range terrain
+                        reads by form. `True` uses defaults; a dict tunes
+                        `vert_exag`, `azimuth`, `altitude`, `blend_mode`, or
+                        `multidirectional`. Applied only to `kind="imshow"`
+                        (warns otherwise). By default False.
+
         Returns:
             tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: A tuple containing:
                 - fig: The matplotlib Figure object
@@ -2961,6 +2986,22 @@ class ArrayGlyph(GeoMixin, Glyph):
                         Threshold for cell value text color, by default None.
                         If cell value > threshold, text is black; otherwise, text is white.
                         If None, uses max(array)/2 as the threshold.
+
+                Data-style preset / relief options:
+                    style : str, optional
+                        Name of a `cleopatra.colors.DATA_STYLES` preset applied
+                        to every frame through the preset's cmap + norm (valid
+                        names: `sorted(cleopatra.colors.DATA_STYLES)`). Only
+                        **continuous** single-layer presets are supported in
+                        `animate`; a categorical preset raises
+                        `NotImplementedError`. Under a lazy `data_getter` the
+                        colour range is taken from frame 0. Takes precedence over
+                        `hillshade` (the preset wins; hillshade is warned and
+                        dropped). By default None.
+                    hillshade : bool or dict, optional
+                        Relief-shade every frame of a regular-grid DEM (same
+                        options as `plot`). Not composed with `style`. By
+                        default False.
 
         Returns:
             matplotlib.animation.FuncAnimation: The animation object that can be displayed
