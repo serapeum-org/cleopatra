@@ -1579,3 +1579,57 @@ class TestMeshGlyphDataStyle:
         g.plot(fvals, location="face", style="flow_accumulation")
         assert type(g._cbar.locator).__name__ == "SymmetricalLogLocator"
         plt.close("all")
+
+
+class TestMeshGlyphApplyStyle:
+    """Tests for the public `apply_style` method and `style` read-back."""
+
+    @staticmethod
+    def _mesh(n=8):
+        gx, gy = np.meshgrid(np.linspace(0, 10, n), np.linspace(0, 10, n))
+        nx, ny = gx.ravel(), gy.ravel()
+        faces = np.array(
+            [
+                [j * n + i, j * n + i + 1, j * n + i + n + 1, j * n + i + n]
+                for j in range(n - 1)
+                for i in range(n - 1)
+            ]
+        )
+        return nx, ny, faces
+
+    def test_apply_style_reuses_last_data_and_reads_back(self):
+        """apply_style restyles using the last-plotted data; `style` reads back."""
+        nx, ny, faces = self._mesh()
+        fvals = np.abs(np.random.default_rng(0).normal(size=len(faces))) * 100
+        g = MeshGlyph(nx, ny, faces)
+        g.plot(fvals, location="face")
+        g.apply_style("flow_accumulation")
+        assert g.style == "flow_accumulation"
+        assert g.im.cmap.name == "Blues"
+        plt.close("all")
+
+    def test_construction_time_style_is_honoured(self):
+        """A `style` set at construction survives plot()'s options reset."""
+        nx, ny, faces = self._mesh()
+        fvals = np.abs(np.random.default_rng(1).normal(size=len(faces))) * 100
+        g = MeshGlyph(nx, ny, faces, style="flow_accumulation")
+        g.plot(fvals, location="face")
+        assert g.style == "flow_accumulation" and g.im.cmap.name == "Blues"
+        plt.close("all")
+
+    def test_apply_style_without_data_or_prior_plot_raises(self):
+        """apply_style before any plot and with no data raises a clear error."""
+        nx, ny, faces = self._mesh()
+        with pytest.raises(ValueError, match="apply_style needs mesh data"):
+            MeshGlyph(nx, ny, faces).apply_style("flow_accumulation")
+        plt.close("all")
+
+    def test_apply_style_unknown_name_raises(self):
+        """An unknown preset name raises a clear `ValueError`."""
+        nx, ny, faces = self._mesh()
+        fvals = np.ones(len(faces))
+        g = MeshGlyph(nx, ny, faces)
+        g.plot(fvals, location="face")
+        with pytest.raises(ValueError, match="unknown data style"):
+            g.apply_style("not_a_style")
+        plt.close("all")
