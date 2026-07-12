@@ -777,6 +777,16 @@ class MeshGlyph(GeoMixin, Glyph):
                   transparent. Passing `hillshade` with `location="face"`
                   raises `ValueError`.
 
+                A data-style preset option:
+
+                - `style` (str, default `None`): name of a
+                  `cleopatra.colors.DATA_STYLES` preset (valid names:
+                  `sorted(cleopatra.colors.DATA_STYLES)`). A continuous preset
+                  overrides the cmap + norm (and composes with `hillshade`); a
+                  categorical preset builds a discrete colormap, masks
+                  out-of-range codes transparent, and draws a legend instead of
+                  the colorbar. Takes precedence over `cmap`/`color_scale`.
+
         Returns:
             tuple[Figure, Axes]: The matplotlib Figure and Axes objects.
                 When no axes exist, a new figure is created. Call

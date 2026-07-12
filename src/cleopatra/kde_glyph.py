@@ -324,6 +324,12 @@ class KDEGlyph(Glyph):
                 None, which keeps the value set at construction. Accepting it
                 here mirrors `ArrayGlyph.plot`/`MeshGlyph.plot`, so `hillshade`
                 works the same way across all three glyphs.
+            style: Name of a continuous `cleopatra.colors.DATA_STYLES` preset
+                to colour the density with (its cmap + norm; composes with
+                `hillshade`). Defaults to None, keeping the construction value.
+                A categorical preset has no meaning for a continuous density
+                and raises `ValueError`. Valid names:
+                `sorted(cleopatra.colors.DATA_STYLES)`.
 
         Returns:
             tuple[Figure, Axes, QuadContourSet]: The figure, the axes, and
