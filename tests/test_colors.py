@@ -808,6 +808,21 @@ class TestStyleNormKinds:
         )
         assert vmin > 0 and vmin == norm.vmin
 
+    def test_log_on_all_negative_data_raises_clearly(self):
+        """`norm='log'` on all-negative data raises a clear cleopatra error.
+
+        There is no positive value to anchor a log scale, so the branch must
+        fail with an actionable message rather than building an invalid
+        `LogNorm(vmin>vmax)` that crashes deep in matplotlib at draw time.
+        """
+        with pytest.raises(ValueError, match="norm='log' needs positive data"):
+            _resolve_style_norm(np.array([-5.0, -3.0, -1.0]), {"norm": "log"})
+
+    def test_log_on_all_zero_data_raises_clearly(self):
+        """`norm='log'` on all-zero data raises rather than a degenerate `LogNorm(1,1)`."""
+        with pytest.raises(ValueError, match="norm='log' needs positive data"):
+            _resolve_style_norm(np.array([0.0, 0.0, 0.0]), {"norm": "log"})
+
 
 class TestCmoceanPresets:
     """Tests for the cmocean ocean/hydrology/DEM preset library in `DATA_STYLES`."""

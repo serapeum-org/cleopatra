@@ -628,12 +628,22 @@ def _resolve_style_norm(
     elif norm_kind in (None, "linear"):
         norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
     elif norm_kind == "log":
-        # LogNorm needs a positive lower bound; fall back to the smallest
-        # positive finite value (or 1) when the data reaches 0 or below.
+        # LogNorm needs a strictly positive range. Derive the lower bound from
+        # an explicit positive vmin, else the smallest positive finite value;
+        # the upper bound must be positive too. Data with no positive value (or
+        # an inverted explicit range) has no valid log window -- fail clearly
+        # here instead of letting matplotlib raise an opaque "vmin must be less
+        # or equal to vmax" deep inside the draw.
         positive = finite[finite > 0] if finite.size else finite
         lo = vmin if (vmin is not None and vmin > 0) else (
-            float(positive.min()) if positive.size else 1.0
+            float(positive.min()) if positive.size else None
         )
+        if lo is None or vmax is None or vmax <= 0 or lo > vmax:
+            raise ValueError(
+                "data style norm='log' needs positive data with a positive "
+                f"value range (resolved vmin={lo!r}, vmax={vmax!r}); use "
+                "norm='symlog' for data that spans zero or negative values."
+            )
         # Report the clamped positive lower bound so the legend matches the
         # colours the LogNorm actually starts from (not a 0/negative vmin).
         vmin = lo
