@@ -3191,12 +3191,27 @@ class ArrayGlyph(GeoMixin, Glyph):
                         "categorical data-style presets are not supported in "
                         "animate yet; use plot() for categorical styles"
                     )
+                # A `style` takes precedence over `hillshade` (aligned with
+                # plot()); warn and drop the relief rather than compose it.
+                if resolve_hillshade(self.default_options.get("hillshade")) is not None:
+                    warnings.warn(
+                        "hillshade is not composed with a data-style preset yet; "
+                        "the 'style' preset is applied and 'hillshade' is ignored.",
+                        stacklevel=2,
+                    )
                 stack = array if data_getter is None else frame_0
                 # Cast to float before filling (integer masked arrays reject a
                 # NaN fill value -- see `_plot_with_style`).
                 style_norm, _, _ = _resolve_style_norm(
                     np.asarray(ma.filled(ma.asarray(stack).astype(float), np.nan), dtype=float),
                     cfg,
+                )
+                # The initial render may have baked an RGBA hillshade into `im`;
+                # reset it to a scalar frame so the colorbar can autoscale over
+                # scalar data -- applying a scale norm (Log/SymLog) to an RGBA
+                # array raises "Input values must have shape (N, 1) or (1,)".
+                im.set_data(
+                    np.asarray(ma.filled(ma.asarray(frame_0).astype(float), np.nan), dtype=float)
                 )
                 im.set_cmap(cfg["cmap"])
                 im.set_norm(style_norm)
@@ -3289,9 +3304,12 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         # Relief-shade each frame when `hillshade` is set: the initial render
         # shaded `frame_0`, but `init`/`animate_a` overwrite `im` with the raw
-        # scalar frame, so shading is re-applied per frame through this wrapper
-        # (using the artist's live cmap/norm, so it composes with a `style`).
+        # scalar frame, so shading is re-applied per frame through this wrapper.
+        # A `style` preset takes precedence over hillshade (aligned with plot()),
+        # so shading is disabled when a style is active.
         hillshade_opts = resolve_hillshade(self.default_options.get("hillshade"))
+        if self.default_options.get("style") is not None:
+            hillshade_opts = None
 
         def _display_frame(frame):
             """Return the frame's image data, relief-shaded when requested."""

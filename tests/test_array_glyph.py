@@ -3963,6 +3963,21 @@ class TestArrayGlyphShadedAnimate:
         assert type(g.im.norm).__name__ == "SymLogNorm"
         plt.close("all")
 
+    def test_symlog_style_with_hillshade_and_colorbar_does_not_crash(self):
+        """A symlog preset + hillshade + default colorbar animates: style wins, hillshade warned and dropped."""
+        rng = np.random.default_rng(5)
+        accum = np.stack(
+            [np.abs(rng.normal(size=(20, 25))).cumsum(1) * 40 for _ in range(4)]
+        )
+        g = ArrayGlyph(accum, style="flow_accumulation", hillshade=True)
+        with pytest.warns(UserWarning, match="hillshade is not composed"):
+            anim = g.animate(time=list(range(4)))
+        anim._func(2)  # drive a frame; must not raise on the scale-norm colorbar
+        assert g.im.cmap.name == "Blues"
+        assert type(g.im.norm).__name__ == "SymLogNorm"
+        assert np.asarray(g.im.get_array()).ndim == 2, "hillshade dropped -> scalar frames"
+        plt.close("all")
+
     def test_categorical_style_in_animate_raises(self):
         """Categorical presets are not animated yet; raise a clear `NotImplementedError`."""
         rng = np.random.default_rng(4)
