@@ -137,10 +137,14 @@ class PolygonGlyph(GeoMixin, Glyph):
         self.polygons = [np.asarray(p, dtype=float) for p in polygons]
         if values is not None:
             values = np.asarray(values)
-            if values.shape[0] != len(self.polygons):
+            # A full-shape check (not just `shape[0]`) rejects an accidentally
+            # un-flattened 2-D `values` array with a matching row count -- it
+            # would otherwise slip through here and only surface as a
+            # silently mis-sized colour array once `plot()` flattens it.
+            if values.shape != (len(self.polygons),):
                 raise ValueError(
-                    f"values length ({values.shape[0]}) must match the number "
-                    f"of polygons ({len(self.polygons)})."
+                    f"values shape {values.shape} must match the number of "
+                    f"polygons ({len(self.polygons)},)."
                 )
         self.values = values
         self.cbar = None
