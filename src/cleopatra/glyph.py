@@ -1067,9 +1067,14 @@ class Glyph:
             # An explicit non-default `cmap` (qualitative or not) is always
             # honoured as given.
             cmap = CATEGORICAL_DEFAULT_CMAP
-        categories, palette = categorize(values, cmap=cmap)
-        lookup = {category: i for i, category in enumerate(categories.tolist())}
+        # Flatten `values` once and reuse it for both `categorize` (which
+        # would otherwise redo the identical `np.asarray(...).ravel()` on
+        # the original, possibly nested/2-D `values`) and the codes lookup
+        # below -- passing an already-flat list back through `categorize`
+        # is a cheap no-op re-wrap, not a second real flattening pass.
         raw = np.asarray(values, dtype=object).ravel().tolist()
+        categories, palette = categorize(raw, cmap=cmap)
+        lookup = {category: i for i, category in enumerate(categories.tolist())}
         codes = np.array([lookup.get(v, np.nan) for v in raw], dtype=float)
         listed_cmap = colors.ListedColormap(palette)
         edges = np.arange(len(categories) + 1) - 0.5
