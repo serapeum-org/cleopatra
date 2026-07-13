@@ -1094,6 +1094,37 @@ class Glyph:
             ValueError: If `self._categorical` has not been populated yet
                 (i.e. `_prepare_categorical_mapping` has not run for this
                 glyph instance).
+
+        Examples:
+            - Prepare a categorical mapping, then draw and inspect the legend:
+                ```python
+                >>> import numpy as np
+                >>> import matplotlib.pyplot as plt
+                >>> from cleopatra.polygon_glyph import PolygonGlyph
+                >>> polys = [np.zeros((3, 2))] * 3
+                >>> g = PolygonGlyph(polys, values=np.array(["a", "b", "a"]))
+                >>> _ = g._prepare_categorical_mapping(np.array(["a", "b", "a"]))
+                >>> fig, ax = plt.subplots()
+                >>> legend = g.create_categorical_legend(ax)
+                >>> [t.get_text() for t in legend.get_texts()]
+                ['a', 'b']
+                >>> plt.close(fig)
+
+                ```
+            - Calling it before a categorical mapping exists raises `ValueError`:
+                ```python
+                >>> import numpy as np
+                >>> import matplotlib.pyplot as plt
+                >>> from cleopatra.polygon_glyph import PolygonGlyph
+                >>> g = PolygonGlyph([np.zeros((3, 2))] * 2, values=np.array(["a", "b"]))
+                >>> fig, ax = plt.subplots()
+                >>> g.create_categorical_legend(ax)
+                Traceback (most recent call last):
+                    ...
+                ValueError: create_categorical_legend() called before a scheme='categorical' mapping was prepared -- call _prepare_scalar_mapping (or plot()) first.
+                >>> plt.close(fig)
+
+                ```
         """
         categorical = self._categorical
         if categorical is None:
