@@ -132,12 +132,17 @@ class TestCategorize:
         """A continuous (non-`ListedColormap`) cmap is sampled, not cycled.
 
         Test scenario:
-            `"viridis"` has no discrete `.colors` list; categorize samples
-            it at N evenly spaced points, so distinct categories still get
-            distinct colours even past what a 10-swatch qualitative map
-            would offer.
+            `"coolwarm"` has no discrete `.colors` list (it is a
+            `LinearSegmentedColormap`, unlike the perceptually-uniform maps
+            such as `"viridis"`, which modern matplotlib implements as a
+            256-entry `ListedColormap`); categorize samples it at N evenly
+            spaced points, so distinct categories still get distinct colours
+            even past what a 10-swatch qualitative map would offer.
         """
-        categories, palette = categorize(list(range(15)), cmap="viridis")
+        assert getattr(matplotlib.colormaps["coolwarm"], "colors", None) is None, (
+            "Test assumption: 'coolwarm' must have no discrete .colors list"
+        )
+        categories, palette = categorize(list(range(15)), cmap="coolwarm")
         assert len(categories) == 15
         assert len(set(palette)) == 15, "Sampled continuous cmap should not repeat"
 
@@ -265,12 +270,14 @@ class TestGlyphPrepareCategoricalMapping:
         """An explicitly chosen `cmap` is never overridden by the fallback.
 
         Test scenario:
-            Passing `cmap="viridis"` (continuous, not qualitative) is still
-            respected -- the fallback only triggers when `cmap` was left at
-            the glyph's own unmodified default.
+            Passing `cmap="coolwarm"` explicitly is still respected even
+            though it is the same continuous colormap the glyph's own
+            default resolves to (just spelled out instead of left implicit)
+            -- the fallback only triggers when `cmap` was left at the
+            glyph's own unmodified default value.
         """
         g = PolygonGlyph(
-            [np.zeros((3, 2))] * 3, values=np.array(["a", "b", "c"]), cmap="viridis"
+            [np.zeros((3, 2))] * 3, values=np.array(["a", "b", "c"]), cmap="coolwarm"
         )
         g._prepare_categorical_mapping(np.array(["a", "b", "c"]))
         assert len(set(g._categorical["colors"])) == 3, "Should still get 3 colours"
