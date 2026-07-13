@@ -210,6 +210,12 @@ class ScatterGlyph(GeoMixin, Glyph):
         `color_scale` behave as for the other glyphs. With no values,
         a single-colour scatter is drawn and no colorbar is added.
 
+        The one exception is `scheme="categorical"`: `vmin` / `vmax` /
+        `levels` / `color_scale` are ignored (with a warning if set), and
+        instead of a colorbar a `disjoint_legend` is drawn and stored on
+        `self.category_legend` (`self.cbar` stays `None`). See
+        `Glyph._prepare_categorical_mapping`.
+
         When `sizes` was supplied, each marker's area is resolved from
         that magnitude via `cleopatra.styles.resolve_sizes` (honouring
         `size_limits` / `size_scale`); otherwise the scalar `point_size`
@@ -290,6 +296,11 @@ class ScatterGlyph(GeoMixin, Glyph):
         # Resolve the colorbar choice for this call only (a plot-time
         # override does not persist into the glyph's options).
         draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
+        # Reset both artifacts unconditionally so a re-plot (e.g. switching
+        # `scheme` between calls) never leaves a stale reference from the
+        # previous call -- only one of the two is (re)created below.
+        self.cbar = None
+        self.category_legend = None
 
         marker_area = self._resolve_marker_area()
 

@@ -169,6 +169,12 @@ class PolygonGlyph(GeoMixin, Glyph):
         use `OUTLINE_EDGECOLOR` when `edgecolor` is left at its
         borderless-fill default of `"none"`.
 
+        The one exception is `scheme="categorical"`: `vmin` / `vmax` /
+        `levels` / `color_scale` are ignored (with a warning if set), and
+        instead of a colorbar a `disjoint_legend` is drawn and stored on
+        `self.category_legend` (`self.cbar` stays `None`). See
+        `Glyph._prepare_categorical_mapping`.
+
         Args:
             outline_only: Draw unfilled outlines even when `values` is
                 present (the `shapes` use case). Default is False.
@@ -224,6 +230,11 @@ class PolygonGlyph(GeoMixin, Glyph):
         # Resolve the colorbar choice for this call only (a plot-time
         # override does not persist into the glyph's options).
         draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
+        # Reset both artifacts unconditionally so a re-plot (e.g. switching
+        # `scheme` between calls) never leaves a stale reference from the
+        # previous call -- only one of the two is (re)created below.
+        self.cbar = None
+        self.category_legend = None
 
         if outline_only or self.values is None:
             edgecolor = opts["edgecolor"]

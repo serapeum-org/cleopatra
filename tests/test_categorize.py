@@ -387,6 +387,43 @@ class TestPolygonGlyphCategorical:
         assert not isinstance(pc.norm, mcolors.BoundaryNorm)
         assert glyph.category_legend is None
 
+    def test_replot_from_categorical_to_continuous_clears_legend(self, polys_land_use):
+        """Switching `scheme` off on a re-plot drops the stale legend.
+
+        Test scenario:
+            A glyph first plotted with `scheme="categorical"` (legend, no
+            colorbar) is re-plotted with `scheme=None` and numeric values;
+            the stale `category_legend` reference must not survive.
+        """
+        polys, labels = polys_land_use
+        glyph = PolygonGlyph(polys, values=labels, scheme="categorical")
+        glyph.plot()
+        assert glyph.category_legend is not None and glyph.cbar is None
+
+        glyph.default_options["scheme"] = None
+        glyph.values = np.arange(6.0)
+        glyph.plot()
+        assert glyph.category_legend is None, "Stale legend must be cleared"
+        assert glyph.cbar is not None, "The new continuous plot should draw a colorbar"
+
+    def test_replot_from_continuous_to_categorical_clears_colorbar(self, polys_land_use):
+        """Switching `scheme` on for a re-plot drops the stale colorbar.
+
+        Test scenario:
+            The reverse direction of the previous test: continuous first,
+            categorical second.
+        """
+        polys, labels = polys_land_use
+        glyph = PolygonGlyph(polys, values=np.arange(6.0))
+        glyph.plot()
+        assert glyph.cbar is not None and glyph.category_legend is None
+
+        glyph.default_options["scheme"] = "categorical"
+        glyph.values = labels
+        glyph.plot()
+        assert glyph.cbar is None, "Stale colorbar must be cleared"
+        assert glyph.category_legend is not None, "The new categorical plot draws a legend"
+
 
 class TestScatterGlyphCategorical:
     """Integration tests for `scheme="categorical"` through ScatterGlyph."""
@@ -467,6 +504,25 @@ class TestScatterGlyphCategorical:
         _, _, paths = glyph.plot()
         assert not isinstance(paths.norm, mcolors.BoundaryNorm)
         assert glyph.category_legend is None
+
+    def test_replot_from_categorical_to_continuous_clears_legend(self, xy_species):
+        """Switching `scheme` off on a re-plot drops the stale legend.
+
+        Test scenario:
+            A glyph first plotted with `scheme="categorical"` (legend, no
+            colorbar) is re-plotted with `scheme=None` and numeric values;
+            the stale `category_legend` reference must not survive.
+        """
+        x, y, species = xy_species
+        glyph = ScatterGlyph(x, y, values=species, scheme="categorical")
+        glyph.plot()
+        assert glyph.category_legend is not None and glyph.cbar is None
+
+        glyph.default_options["scheme"] = None
+        glyph.values = np.arange(6.0)
+        glyph.plot()
+        assert glyph.category_legend is None, "Stale legend must be cleared"
+        assert glyph.cbar is not None, "The new continuous plot should draw a colorbar"
 
 
 class TestCategoricalSchemeGlyphScope:
