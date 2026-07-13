@@ -43,6 +43,11 @@ from cleopatra.styles import (
 #: and `np.linspace` with a huge count would exhaust memory.
 MAX_DISCRETE_LEVELS = 1000
 
+#: Qualitative colormap `_prepare_categorical_mapping` falls back to when the
+#: caller left `cmap` at the shared continuous/diverging default -- see the
+#: fallback logic there.
+CATEGORICAL_DEFAULT_CMAP = "tab10"
+
 
 def _get_figure_supports_root(get_figure) -> bool:
     """Return True if `get_figure` accepts a `root` keyword argument.
@@ -983,6 +988,14 @@ class Glyph:
         not know to read `self._categorical` back in the first place — it
         would keep feeding the raw (mismatched) values to the mappable.
 
+        The glyph's `cmap` option drives `categorize`'s palette, with one
+        override: if `cmap` is still at the shared continuous/diverging
+        default (`"coolwarm_r"`) — i.e. the caller never overrode it — it is
+        substituted with `CATEGORICAL_DEFAULT_CMAP` (`"tab10"`) instead,
+        since sampling a diverging gradient at N points would defeat the
+        point of "one distinct colour per class". Any other `cmap`,
+        qualitative or not, is always honoured as given.
+
         Args:
             values: The per-element nominal values to categorize.
 
@@ -1036,7 +1049,17 @@ class Glyph:
                 "scheme determines the bins).",
                 stacklevel=4,
             )
-        categories, palette = categorize(values, cmap=self.default_options["cmap"])
+        cmap = self.default_options["cmap"]
+        if cmap == STYLE_DEFAULTS["cmap"]:
+            # `cmap` is still at the shared continuous/diverging default
+            # ("coolwarm_r") -- nobody chose it *for* a categorical mapping,
+            # they just never overrode it. Sampling a diverging gradient at
+            # N points defeats the point of "one distinct colour per class",
+            # so fall back to `categorize`'s own qualitative default instead.
+            # An explicit non-default `cmap` (qualitative or not) is always
+            # honoured as given.
+            cmap = CATEGORICAL_DEFAULT_CMAP
+        categories, palette = categorize(values, cmap=cmap)
         lookup = {category: i for i, category in enumerate(categories.tolist())}
         raw = np.asarray(values, dtype=object).ravel().tolist()
         codes = np.array([lookup.get(v, np.nan) for v in raw], dtype=float)

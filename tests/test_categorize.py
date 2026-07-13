@@ -27,7 +27,7 @@ import numpy as np
 import pytest
 
 from cleopatra.flow_glyph import FlowGlyph
-from cleopatra.glyph import Glyph
+from cleopatra.glyph import CATEGORICAL_DEFAULT_CMAP, Glyph
 from cleopatra.polygon_glyph import PolygonGlyph
 from cleopatra.scatter_glyph import ScatterGlyph
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
@@ -216,6 +216,40 @@ class TestGlyphPrepareCategoricalMapping:
         ), f"Unexpected codes: {categorical['codes']}"
         assert categorical["labels"] == ["a", "b"]
         assert isinstance(categorical["cmap"], mcolors.ListedColormap)
+
+    def test_default_cmap_falls_back_to_qualitative_palette(self):
+        """Leaving `cmap` unset resolves to a qualitative default, not `coolwarm_r`.
+
+        Test scenario:
+            With no explicit `cmap`, categories get `CATEGORICAL_DEFAULT_CMAP`
+            (`"tab10"`) colours instead of samples from the glyph's continuous
+            diverging default -- otherwise "distinct colours" would silently
+            come from a red-white-blue gradient.
+        """
+        g = PolygonGlyph([np.zeros((3, 2))] * 3, values=np.array(["a", "b", "c"]))
+        g._prepare_categorical_mapping(np.array(["a", "b", "c"]))
+        expected = [
+            mcolors.to_hex(c)
+            for c in matplotlib.colormaps[CATEGORICAL_DEFAULT_CMAP].colors[:3]
+        ]
+        assert g._categorical["colors"] == expected, (
+            f"Expected the {CATEGORICAL_DEFAULT_CMAP} palette, got "
+            f"{g._categorical['colors']}"
+        )
+
+    def test_explicit_cmap_is_honoured_even_if_continuous(self):
+        """An explicitly chosen `cmap` is never overridden by the fallback.
+
+        Test scenario:
+            Passing `cmap="viridis"` (continuous, not qualitative) is still
+            respected -- the fallback only triggers when `cmap` was left at
+            the glyph's own unmodified default.
+        """
+        g = PolygonGlyph(
+            [np.zeros((3, 2))] * 3, values=np.array(["a", "b", "c"]), cmap="viridis"
+        )
+        g._prepare_categorical_mapping(np.array(["a", "b", "c"]))
+        assert len(set(g._categorical["colors"])) == 3, "Should still get 3 colours"
 
     def test_prepare_scalar_mapping_routes_to_categorical(self):
         """`_prepare_scalar_mapping` short-circuits for `scheme="categorical"`.
