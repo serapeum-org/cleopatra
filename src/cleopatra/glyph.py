@@ -990,11 +990,13 @@ class Glyph:
 
         The glyph's `cmap` option drives `categorize`'s palette, with one
         override: if `cmap` is still at the shared continuous/diverging
-        default (`"coolwarm_r"`) — i.e. the caller never overrode it — it is
-        substituted with `CATEGORICAL_DEFAULT_CMAP` (`"tab10"`) instead,
-        since sampling a diverging gradient at N points would defeat the
-        point of "one distinct colour per class". Any other `cmap`,
-        qualitative or not, is always honoured as given.
+        default (`"coolwarm_r"`, matched by resolved name so a `Colormap`
+        instance equivalent to the default is caught too, not just the bare
+        string) — i.e. the caller never overrode it — it is substituted with
+        `CATEGORICAL_DEFAULT_CMAP` (`"tab10"`) instead, since sampling a
+        diverging gradient at N points would defeat the point of "one
+        distinct colour per class". Any other `cmap`, qualitative or not,
+        is always honoured as given.
 
         Args:
             values: The per-element nominal values to categorize.
@@ -1050,7 +1052,13 @@ class Glyph:
                 stacklevel=4,
             )
         cmap = self.default_options["cmap"]
-        if cmap == STYLE_DEFAULTS["cmap"]:
+        # Compare by resolved name, not raw `==`: `Colormap` does not
+        # implement equality, so a `Colormap` *instance* equivalent to the
+        # default (e.g. `mpl.colormaps["coolwarm_r"]`, a legitimate way to
+        # pass a colormap) would otherwise never match the string default
+        # and silently bypass the fallback below.
+        cmap_name = cmap if isinstance(cmap, str) else getattr(cmap, "name", None)
+        if cmap_name == STYLE_DEFAULTS["cmap"]:
             # `cmap` is still at the shared continuous/diverging default
             # ("coolwarm_r") -- nobody chose it *for* a categorical mapping,
             # they just never overrode it. Sampling a diverging gradient at

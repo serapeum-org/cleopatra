@@ -282,6 +282,32 @@ class TestGlyphPrepareCategoricalMapping:
         g._prepare_categorical_mapping(np.array(["a", "b", "c"]))
         assert len(set(g._categorical["colors"])) == 3, "Should still get 3 colours"
 
+    def test_default_cmap_fallback_matches_a_colormap_object_too(self):
+        """A `Colormap` instance equivalent to the default also falls back.
+
+        Test scenario:
+            Passing `cmap=matplotlib.colormaps["coolwarm_r"]` (an object,
+            not the bare string) must be recognised as "still at the
+            glyph's own default" and fall back to the qualitative palette,
+            the same as leaving `cmap` unset entirely -- `Colormap` has no
+            `__eq__`, so a naive `==` comparison would miss this and leave
+            the diverging gradient sampled instead.
+        """
+        g = PolygonGlyph(
+            [np.zeros((3, 2))] * 3,
+            values=np.array(["a", "b", "c"]),
+            cmap=matplotlib.colormaps["coolwarm_r"],
+        )
+        g._prepare_categorical_mapping(np.array(["a", "b", "c"]))
+        expected = [
+            mcolors.to_hex(c)
+            for c in matplotlib.colormaps[CATEGORICAL_DEFAULT_CMAP].colors[:3]
+        ]
+        assert g._categorical["colors"] == expected, (
+            f"Expected the {CATEGORICAL_DEFAULT_CMAP} fallback palette, got "
+            f"{g._categorical['colors']}"
+        )
+
     def test_prepare_scalar_mapping_routes_to_categorical(self):
         """`_prepare_scalar_mapping` short-circuits for `scheme="categorical"`.
 
