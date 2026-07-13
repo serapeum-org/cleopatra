@@ -885,6 +885,30 @@ class Glyph:
         norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
         return norm, cbar_kw, ticks
 
+    def _warn_scheme_overrides_continuous_options(self) -> None:
+        """Warn when a `scheme` is set alongside continuous-only options.
+
+        Shared by `_prepare_classified_mapping` and
+        `_prepare_categorical_mapping`: either scheme owns the norm
+        entirely, so a `color_scale` other than `"linear"` or an explicit
+        `levels` the caller also set is silently ignored rather than
+        applied -- this warns so that conflicting configuration is visible
+        instead of quietly doing nothing.
+        """
+        if self.default_options.get("color_scale", "linear") != "linear":
+            warnings.warn(
+                "`scheme` is set, so `color_scale="
+                f"{self.default_options['color_scale']!r}` is ignored "
+                "(classification builds its own discrete norm).",
+                stacklevel=5,
+            )
+        if self.default_options.get("levels") is not None:
+            warnings.warn(
+                "`scheme` is set, so `levels` is ignored (the classification "
+                "scheme determines the bins).",
+                stacklevel=5,
+            )
+
     def _prepare_classified_mapping(
         self, values: np.ndarray, scheme: str | list | np.ndarray
     ) -> tuple[colors.BoundaryNorm, dict, np.ndarray]:
@@ -938,22 +962,7 @@ class Glyph:
 
                 ```
         """
-        # `scheme` owns the norm, so any continuous `color_scale` / `levels`
-        # the caller also set is ignored here. Warn rather than silently drop
-        # it, so a conflicting configuration is visible.
-        if self.default_options.get("color_scale", "linear") != "linear":
-            warnings.warn(
-                "`scheme` is set, so `color_scale="
-                f"{self.default_options['color_scale']!r}` is ignored "
-                "(classification builds its own discrete norm).",
-                stacklevel=4,
-            )
-        if self.default_options.get("levels") is not None:
-            warnings.warn(
-                "`scheme` is set, so `levels` is ignored (the classification "
-                "scheme determines the bins).",
-                stacklevel=4,
-            )
+        self._warn_scheme_overrides_continuous_options()
         k = self.default_options.get("k", 5)
         bin_edges, norm = classify(values, scheme, k)
         extend = self.default_options.get("extend")
@@ -1036,21 +1045,7 @@ class Glyph:
                 "(its values are a continuous magnitude, not nominal class "
                 "labels)."
             )
-        # `scheme` owns the norm, so any continuous `color_scale` / `levels`
-        # the caller also set is ignored here, same as the classified path.
-        if self.default_options.get("color_scale", "linear") != "linear":
-            warnings.warn(
-                "`scheme` is set, so `color_scale="
-                f"{self.default_options['color_scale']!r}` is ignored "
-                "(classification builds its own discrete norm).",
-                stacklevel=4,
-            )
-        if self.default_options.get("levels") is not None:
-            warnings.warn(
-                "`scheme` is set, so `levels` is ignored (the classification "
-                "scheme determines the bins).",
-                stacklevel=4,
-            )
+        self._warn_scheme_overrides_continuous_options()
         cmap = self.default_options["cmap"]
         # Compare by resolved name, not raw `==`: `Colormap` does not
         # implement equality, so a `Colormap` *instance* equivalent to the
