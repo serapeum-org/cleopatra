@@ -602,6 +602,29 @@ class TestScatterGlyphCategorical:
         assert glyph.category_legend is None, "Stale legend must be cleared"
         assert glyph.cbar is not None, "The new continuous plot should draw a colorbar"
 
+    def test_size_legend_does_not_evict_category_legend(self, xy_species):
+        """Combining `scheme="categorical"` with `size_legend` keeps both legends.
+
+        Test scenario:
+            `Axes.legend()` is single-slot per axes; `size_legend`'s internal
+            call to it would otherwise silently replace the categorical
+            legend drawn just before it. Both legends must remain actual
+            children of the axes (not just non-`None` attributes) after
+            `plot()`.
+        """
+        x, y, species = xy_species
+        sizes = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
+        glyph = ScatterGlyph(
+            x, y, values=species, sizes=sizes, scheme="categorical", size_legend=True
+        )
+        _, ax, _ = glyph.plot()
+        assert glyph.category_legend in ax.get_children(), (
+            "The categorical legend must still be rendered, not silently evicted"
+        )
+        assert glyph.size_legend_artist in ax.get_children(), (
+            "The size legend must also be rendered"
+        )
+
 
 class TestCategoricalSchemeGlyphScope:
     """Tests for which glyphs accept `scheme="categorical"`.

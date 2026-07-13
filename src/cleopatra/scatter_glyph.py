@@ -336,6 +336,15 @@ class ScatterGlyph(GeoMixin, Glyph):
                     self.cbar = self.create_color_bar(ax, paths, cbar_kw)
 
         if self.sizes is not None and opts["size_legend"]:
+            # `Axes.legend()` is single-slot per axes: `size_legend` calls it
+            # internally, which would otherwise silently evict the
+            # categorical legend just drawn above (matplotlib replaces
+            # `ax.legend_`, so the earlier Legend stops being part of
+            # `ax.get_children()` even though `self.category_legend` still
+            # references it). Re-attach it as a plain artist first, mirroring
+            # the multi-legend pattern in `colors.apply_data_style`.
+            if self.category_legend is not None:
+                ax.add_artist(self.category_legend)
             self.size_legend_artist = self._draw_size_legend(ax, marker_area)
 
         if opts["title"]:
