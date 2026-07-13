@@ -183,6 +183,30 @@ class TestCategorize:
         categories, _ = categorize(grid)
         assert list(categories) == ["a", "b"], f"Unexpected categories: {categories}"
 
+    def test_ragged_non_hashable_entries_raise_type_error(self):
+        """A ragged sequence of non-hashable entries raises `TypeError`.
+
+        Test scenario:
+            Differently-sized nested lists cannot be coerced into a
+            rectangular array, so each list survives as its own (unhashable)
+            element and `dict.fromkeys` raises `TypeError` -- matching the
+            documented contract.
+        """
+        with pytest.raises(TypeError, match="unhashable"):
+            categorize([[1, 2], [3, 4, 5], [1, 2]])
+
+    def test_rectangular_nested_sequences_are_flattened_not_rejected(self):
+        """Equal-length nested sequences are treated as a 2-D scalar grid.
+
+        Test scenario:
+            A rectangular list-of-lists is coerced to a 2-D array (like
+            `test_2d_input_is_flattened`) and its scalar elements become the
+            categories -- it does not raise, and the "list" values never
+            become categories themselves.
+        """
+        categories, _ = categorize([[1, 2], [3, 4], [1, 2]])
+        assert list(categories) == [1, 2, 3, 4], f"Unexpected categories: {categories}"
+
 
 class TestGlyphPrepareCategoricalMapping:
     """Tests for ``Glyph._prepare_categorical_mapping`` and the routing."""

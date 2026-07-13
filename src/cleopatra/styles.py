@@ -1681,9 +1681,16 @@ def categorize(
     (`None` / `NaN`) never become a category.
 
     Args:
-        values: The data to categorize. Any array-like of hashable values
-            (numeric or string class codes). Non-hashable entries (e.g.
-            nested lists) raise `TypeError`.
+        values: The data to categorize. Any array-like of hashable scalar
+            values (numeric or string class codes), flattened first — so,
+            like `classify`, a 2-D grid of scalar categories (e.g. a
+            categorical raster) is accepted directly. Because flattening
+            happens before the null/hashability checks, a *ragged* sequence
+            of non-hashable entries (e.g. differently-sized nested lists,
+            which numpy cannot coerce into a rectangular array) raises
+            `TypeError`; a rectangular (equal-length) sequence of sequences
+            is instead coerced to a 2-D array and flattened into its scalar
+            elements, the same as any other 2-D input.
         cmap: A qualitative colormap name (or `Colormap` instance) to draw
             category colours from. A `ListedColormap` (e.g. the default
             `"tab10"`, or `"tab20"`/`"Set1"`/...) contributes its colours
@@ -1738,6 +1745,16 @@ def categorize(
             ValueError: Cannot categorize: `values` has no non-null entries.
 
             ```
+        - A ragged (non-rectangular) sequence of non-hashable entries raises
+            `TypeError`, since numpy cannot flatten it into scalar elements:
+            ```python
+            >>> from cleopatra.styles import categorize
+            >>> categorize([[1, 2], [3, 4, 5], [1, 2]])
+            Traceback (most recent call last):
+                ...
+            TypeError: unhashable type: 'list'
+
+            ```
 
     See Also:
         classify: The continuous-range counterpart (bins a numeric range
@@ -1753,6 +1770,13 @@ def categorize(
     def _is_null(value: Any) -> bool:
         if value is None:
             return True
+        if isinstance(value, (list, tuple, dict, set, np.ndarray)):
+            # A non-hashable, non-scalar entry is never a "null" -- and
+            # `np.isnan` on a multi-element one raises `ValueError` (ambiguous
+            # truth value) rather than answering the null check. Treat it as
+            # not-null here so it reaches `dict.fromkeys` below, which raises
+            # the documented `TypeError` for the genuinely unhashable value.
+            return False
         try:
             return bool(np.isnan(value))
         except TypeError:
