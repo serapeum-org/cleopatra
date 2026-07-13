@@ -1089,8 +1089,19 @@ class Glyph:
 
         Returns:
             Legend: The created legend artist, already added to `ax`.
+
+        Raises:
+            ValueError: If `self._categorical` has not been populated yet
+                (i.e. `_prepare_categorical_mapping` has not run for this
+                glyph instance).
         """
         categorical = self._categorical
+        if categorical is None:
+            raise ValueError(
+                "create_categorical_legend() called before a "
+                "scheme='categorical' mapping was prepared -- call "
+                "_prepare_scalar_mapping (or plot()) first."
+            )
         return disjoint_legend(
             ax,
             categorical["colors"],

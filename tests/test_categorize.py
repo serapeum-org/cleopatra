@@ -302,6 +302,19 @@ class TestGlyphPrepareCategoricalMapping:
         with pytest.raises(ValueError, match="does not support scheme='categorical'"):
             g._prepare_categorical_mapping(np.array(["a", "b"]))
 
+    def test_create_categorical_legend_before_prepare_raises(self):
+        """Calling the legend builder before the mapping is prepared errors clearly.
+
+        Test scenario:
+            A freshly constructed glyph has `self._categorical is None`;
+            `create_categorical_legend` must raise a clear `ValueError`
+            rather than a raw `TypeError` from indexing `None`.
+        """
+        g = PolygonGlyph([np.zeros((3, 2))] * 2, values=np.array(["a", "b"]))
+        _, ax = plt.subplots()
+        with pytest.raises(ValueError, match="before a scheme='categorical' mapping"):
+            g.create_categorical_legend(ax)
+
     def test_warns_on_conflicting_color_scale(self):
         """`scheme="categorical"` with a non-linear `color_scale` warns.
 
