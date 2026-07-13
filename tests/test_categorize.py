@@ -188,6 +188,18 @@ class TestCategorize:
         categories, _ = categorize(grid)
         assert list(categories) == ["a", "b"], f"Unexpected categories: {categories}"
 
+    def test_equal_but_differently_typed_values_collapse_to_one_category(self):
+        """`1`, `1.0`, and `True` dedupe into a single category, as documented.
+
+        Test scenario:
+            Deduplication is by Python `hash`/`==` (the same rule any
+            `dict`/`set` uses), so an integer code, its float equivalent, and
+            the boolean `True` -- all equal to each other -- collapse into
+            one category rather than three, matching the documented caveat.
+        """
+        categories, _ = categorize(np.array([1, True, 0, False, 1.0], dtype=object))
+        assert list(categories) == [0, 1], f"Expected 2 categories, got {categories}"
+
     def test_ragged_non_hashable_entries_raise_type_error(self):
         """A ragged sequence of non-hashable entries raises `TypeError`.
 

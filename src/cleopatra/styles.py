@@ -1678,7 +1678,13 @@ def categorize(
     the auto-derived equivalent of a hand-authored `colors.DATA_STYLES`
     categorical preset. Values are sorted when they support `<` (numbers,
     strings); otherwise first-encounter order is kept. Null entries
-    (`None` / `NaN`) never become a category.
+    (`None` / `NaN`) never become a category. Deduplication is by Python
+    `hash`/`==`, so values that are *equal but differently typed* collapse
+    into one category, same as any other Python `dict`/`set`: `1`, `1.0`,
+    and `True` are indistinguishable class codes here (`1 == True` and
+    `hash(1) == hash(True)`). This rarely matters for genuinely nominal
+    attributes, but a caller mixing integer class codes with a boolean
+    mask on the same field should not expect them to stay separate.
 
     Args:
         values: The data to categorize. Any array-like of hashable scalar
