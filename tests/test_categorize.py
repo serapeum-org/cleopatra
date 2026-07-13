@@ -441,6 +441,23 @@ class TestPolygonGlyphCategorical:
             "water",
         }, f"Unexpected legend labels: {legend_labels}"
 
+    def test_category_legend_kwargs_overrides_title_and_placement(self, polys_land_use):
+        """`category_legend_kwargs` is forwarded to the disjoint legend.
+
+        Test scenario:
+            An explicit `title` in `category_legend_kwargs` overrides the
+            `cbar_label`-derived default, mirroring `size_legend_kwargs`.
+        """
+        polys, labels = polys_land_use
+        glyph = PolygonGlyph(
+            polys,
+            values=labels,
+            scheme="categorical",
+            category_legend_kwargs={"title": "Land use", "loc": "lower left"},
+        )
+        glyph.plot()
+        assert glyph.category_legend.get_title().get_text() == "Land use"
+
     def test_add_colorbar_false_suppresses_legend(self, polys_land_use):
         """`add_colorbar=False` also suppresses the categorical legend.
 

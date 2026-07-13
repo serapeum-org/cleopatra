@@ -1095,7 +1095,12 @@ class Glyph:
         `cleopatra.styles.disjoint_legend` — the discrete counterpart to
         `create_color_bar`, used instead of it whenever `scheme` is
         `"categorical"` (a colorbar would imply a false ordering over
-        nominal classes).
+        nominal classes). The legend's title defaults to the `cbar_label`
+        option (the same label a continuous plot would put on its
+        colorbar); the `category_legend_kwargs` option is merged over that
+        default and forwarded to `disjoint_legend` (e.g. `loc`, `ncol`,
+        `bbox_to_anchor`, or an explicit `title` override) — the categorical
+        counterpart to `size_legend_kwargs`.
 
         Args:
             ax: The axes to attach the legend to.
@@ -1138,6 +1143,25 @@ class Glyph:
                 >>> plt.close(fig)
 
                 ```
+            - `category_legend_kwargs` overrides the default title and adds
+                a `loc`:
+                ```python
+                >>> import numpy as np
+                >>> import matplotlib.pyplot as plt
+                >>> from cleopatra.polygon_glyph import PolygonGlyph
+                >>> polys = [np.zeros((3, 2))] * 2
+                >>> g = PolygonGlyph(
+                ...     polys, values=np.array(["a", "b"]),
+                ...     category_legend_kwargs={"title": "Class", "loc": "upper left"},
+                ... )
+                >>> _ = g._prepare_categorical_mapping(np.array(["a", "b"]))
+                >>> fig, ax = plt.subplots()
+                >>> legend = g.create_categorical_legend(ax)
+                >>> legend.get_title().get_text()
+                'Class'
+                >>> plt.close(fig)
+
+                ```
         """
         categorical = self._categorical
         if categorical is None:
@@ -1146,11 +1170,15 @@ class Glyph:
                 "scheme='categorical' mapping was prepared -- call "
                 "_prepare_scalar_mapping (or plot()) first."
             )
+        legend_kwargs = {
+            "title": self.default_options.get("cbar_label"),
+            **(self.default_options.get("category_legend_kwargs") or {}),
+        }
         return disjoint_legend(
             ax,
             categorical["colors"],
             categorical["labels"],
-            title=self.default_options.get("cbar_label"),
+            **legend_kwargs,
         )
 
     def create_color_bar(self, ax: Axes, im: Any, cbar_kw: dict) -> Colorbar:
