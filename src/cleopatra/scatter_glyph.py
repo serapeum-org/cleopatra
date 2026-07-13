@@ -148,6 +148,9 @@ class ScatterGlyph(GeoMixin, Glyph):
 
     #: Option keys this glyph accepts (see `Glyph.option_keys`/`filter_kwargs`).
     DEFAULT_OPTIONS = SCATTER_DEFAULT_OPTIONS
+    #: Per-point `values` are a nominal class label just as often as a
+    #: continuous magnitude, so `scheme="categorical"` is supported.
+    _SUPPORTS_CATEGORICAL_SCHEME = True
 
     def __init__(
         self,
@@ -189,6 +192,9 @@ class ScatterGlyph(GeoMixin, Glyph):
         #: The size legend created by `plot` when `size_legend` is truthy
         #: (None otherwise); built via `cleopatra.styles.size_legend`.
         self.size_legend_artist = None
+        #: The disjoint legend created by `plot` when `scheme="categorical"`
+        #: (`None` otherwise); built via `Glyph.create_categorical_legend`.
+        self.category_legend = None
 
     def plot(
         self,
@@ -296,19 +302,27 @@ class ScatterGlyph(GeoMixin, Glyph):
             )
         else:
             norm, cbar_kw, ticks = self._prepare_scalar_mapping(self.values)
+            categorical = self._categorical
+            if categorical is not None:
+                color_array, cmap = categorical["codes"], categorical["cmap"]
+            else:
+                color_array, cmap = np.asarray(self.values), opts["cmap"]
             paths = ax.scatter(
                 self.x,
                 self.y,
-                c=np.asarray(self.values),
+                c=color_array,
                 s=marker_area,
                 marker=opts["marker"],
-                cmap=opts["cmap"],
+                cmap=cmap,
                 norm=norm,
                 vmin=None if norm else ticks[0],
                 vmax=None if norm else ticks[-1],
             )
             if draw_colorbar:
-                self.cbar = self.create_color_bar(ax, paths, cbar_kw)
+                if categorical is not None:
+                    self.category_legend = self.create_categorical_legend(ax)
+                else:
+                    self.cbar = self.create_color_bar(ax, paths, cbar_kw)
 
         if self.sizes is not None and opts["size_legend"]:
             self.size_legend_artist = self._draw_size_legend(ax, marker_area)

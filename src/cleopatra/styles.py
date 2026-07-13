@@ -6,7 +6,7 @@ import copy
 import warnings
 from collections import OrderedDict
 from enum import StrEnum
-from typing import Callable, Sequence
+from typing import Any, Callable, Sequence
 
 import matplotlib as mpl
 import matplotlib.colors as colors
@@ -114,10 +114,13 @@ DEFAULT_OPTIONS = {
     "grid_alpha": 0.75,
 }
 
-#: Classification options (`scheme` selects a `classify` scheme or explicit
-#: bin edges; `k` is the class count). Mixed into the option dicts of glyphs
-#: whose colour mapping routes through `Glyph._prepare_scalar_mapping` — kept
-#: out of the shared `DEFAULT_OPTIONS` so glyphs that bypass that pipeline
+#: Classification options (`scheme` selects a `classify` scheme, explicit
+#: bin edges, or the literal `"categorical"` for a `styles.categorize`
+#: distinct-value mapping — supported only by glyphs whose values are
+#: nominal, see `Glyph._SUPPORTS_CATEGORICAL_SCHEME`; `k` is the class count,
+#: ignored by `"categorical"`). Mixed into the option dicts of glyphs whose
+#: colour mapping routes through `Glyph._prepare_scalar_mapping` — kept out
+#: of the shared `DEFAULT_OPTIONS` so glyphs that bypass that pipeline
 #: (e.g. `ArrayGlyph` / `MeshGlyph`) reject `scheme` instead of silently
 #: ignoring it.
 CLASSIFY_OPTIONS = {
@@ -1662,6 +1665,119 @@ def classify(
         )
     norm = colors.BoundaryNorm(boundaries=edges, ncolors=256)
     return edges, norm
+
+
+def categorize(
+    values: np.ndarray | Sequence,
+    cmap: str | colors.Colormap = "tab10",
+) -> tuple[np.ndarray, list[str]]:
+    """Map each distinct value in `values` to its own colour.
+
+    The distinct-value (nominal) counterpart to `classify`: instead of
+    binning a continuous range, it assigns one colour per unique value —
+    the auto-derived equivalent of a hand-authored `colors.DATA_STYLES`
+    categorical preset. Values are sorted when they support `<` (numbers,
+    strings); otherwise first-encounter order is kept. Null entries
+    (`None` / `NaN`) never become a category.
+
+    Args:
+        values: The data to categorize. Any array-like of hashable values
+            (numeric or string class codes). Non-hashable entries (e.g.
+            nested lists) raise `TypeError`.
+        cmap: A qualitative colormap name (or `Colormap` instance) to draw
+            category colours from. A `ListedColormap` (e.g. the default
+            `"tab10"`, or `"tab20"`/`"Set1"`/...) contributes its colours
+            in order, cycling once there are more categories than colours.
+            Any other colormap is sampled at `len(categories)` evenly
+            spaced points instead (no cycling).
+
+    Returns:
+        tuple[np.ndarray, list[str]]: The distinct categories (an object
+            array, so mixed numeric/string codes round-trip) and one hex
+            colour string per category, aligned by position.
+
+    Raises:
+        ValueError: If `values` has no non-null entries.
+
+    Examples:
+        - Distinct integer codes get one colour each, sorted ascending:
+            ```python
+            >>> from cleopatra.styles import categorize
+            >>> categories, palette = categorize([3, 1, 2, 1])
+            >>> list(categories)
+            [1, 2, 3]
+            >>> len(palette)
+            3
+
+            ```
+        - String labels are sorted alphabetically; `None`/`NaN` are dropped:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.styles import categorize
+            >>> categories, palette = categorize(
+            ...     ["urban", "water", None, "forest", np.nan]
+            ... )
+            >>> list(categories)
+            ['forest', 'urban', 'water']
+
+            ```
+        - More categories than the cmap's colours cycles back to the start:
+            ```python
+            >>> from cleopatra.styles import categorize
+            >>> categories, palette = categorize(range(12), cmap="tab10")
+            >>> palette[0] == palette[10]
+            True
+
+            ```
+        - An all-null input has no category to assign, so it is rejected:
+            ```python
+            >>> from cleopatra.styles import categorize
+            >>> categorize([None, None])
+            Traceback (most recent call last):
+                ...
+            ValueError: Cannot categorize: `values` has no non-null entries.
+
+            ```
+
+    See Also:
+        classify: The continuous-range counterpart (bins a numeric range
+            instead of mapping distinct values).
+        cleopatra.glyph.Glyph._prepare_categorical_mapping: Turns this
+            function's categories/palette into per-element integer codes
+            plus a matching `ListedColormap` + `BoundaryNorm`.
+        disjoint_legend: The legend primitive that pairs with a categorical
+            colouring (one swatch per category).
+    """
+    raw = np.asarray(values, dtype=object).ravel().tolist()
+
+    def _is_null(value: Any) -> bool:
+        if value is None:
+            return True
+        try:
+            return bool(np.isnan(value))
+        except TypeError:
+            return False
+
+    seen = list(dict.fromkeys(v for v in raw if not _is_null(v)))
+    if not seen:
+        raise ValueError("Cannot categorize: `values` has no non-null entries.")
+    try:
+        categories = sorted(seen)
+    except TypeError:
+        # Mixed / unorderable types (e.g. int and str together): keep the
+        # order values were first encountered rather than raising.
+        categories = seen
+
+    mpl_cmap = mpl.colormaps[cmap] if isinstance(cmap, str) else cmap
+    base_colors = getattr(mpl_cmap, "colors", None)
+    n = len(categories)
+    if base_colors is None:
+        # A continuous colormap has no discrete swatches to cycle through;
+        # sample it at n evenly spaced points instead.
+        base_colors = [mpl_cmap(i) for i in np.linspace(0.0, 1.0, n)]
+    palette = [colors.to_hex(base_colors[i % len(base_colors)]) for i in range(n)]
+
+    return np.array(categories, dtype=object), palette
 
 
 def _scheme_edges(finite: np.ndarray, scheme: str, k: int) -> np.ndarray:

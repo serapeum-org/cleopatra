@@ -118,6 +118,9 @@ class PolygonGlyph(GeoMixin, Glyph):
 
     #: Option keys this glyph accepts (see `Glyph.option_keys`/`filter_kwargs`).
     DEFAULT_OPTIONS = POLYGON_DEFAULT_OPTIONS
+    #: Per-polygon `values` are a nominal class label just as often as a
+    #: continuous magnitude, so `scheme="categorical"` is supported.
+    _SUPPORTS_CATEGORICAL_SCHEME = True
 
     def __init__(
         self,
@@ -141,6 +144,9 @@ class PolygonGlyph(GeoMixin, Glyph):
                 )
         self.values = values
         self.cbar = None
+        #: The disjoint legend created by `plot` when `scheme="categorical"`
+        #: (`None` otherwise); built via `Glyph.create_categorical_legend`.
+        self.category_legend = None
 
     def plot(
         self,
@@ -231,10 +237,15 @@ class PolygonGlyph(GeoMixin, Glyph):
             ax.autoscale_view()
         else:
             norm, cbar_kw, ticks = self._prepare_scalar_mapping(self.values)
+            categorical = self._categorical
+            if categorical is not None:
+                color_array, cmap = categorical["codes"], categorical["cmap"]
+            else:
+                color_array, cmap = np.asarray(self.values), opts["cmap"]
             pc = PolyCollection(
                 self.polygons,
-                array=np.asarray(self.values),
-                cmap=opts["cmap"],
+                array=color_array,
+                cmap=cmap,
                 norm=norm,
                 edgecolors=opts["edgecolor"],
                 linewidths=opts["linewidth"],
@@ -244,7 +255,10 @@ class PolygonGlyph(GeoMixin, Glyph):
             ax.add_collection(pc)
             ax.autoscale_view()
             if draw_colorbar:
-                self.cbar = self.create_color_bar(ax, pc, cbar_kw)
+                if categorical is not None:
+                    self.category_legend = self.create_categorical_legend(ax)
+                else:
+                    self.cbar = self.create_color_bar(ax, pc, cbar_kw)
 
         if opts["title"]:
             ax.set_title(opts["title"], fontsize=opts["title_size"])
