@@ -105,13 +105,13 @@ def _resolve_renamed_kwarg(
     """Resolve a renamed keyword argument, honouring its deprecated alias.
 
     Several `ArrayGlyph.animate` parameters were renamed for clarity
-    (e.g. `text_loc` -> `label_location`). Since the old name is no longer
-    an explicit parameter, a caller still using it arrives here through
-    `**kwargs` instead -- this pops it out, emits a `DeprecationWarning`,
-    and returns its value. Must be called *before* `plot`/`animate`
-    validate `kwargs` against `self.default_options` (the old name is
-    never a valid option key, so it would otherwise raise there instead of
-    being resolved).
+    (e.g. `text_colors` -> `cell_value_text_colors`). Since the old name is
+    no longer an explicit parameter, a caller still using it arrives here
+    through `**kwargs` instead -- this pops it out, emits a
+    `DeprecationWarning`, and returns its value. Must be called *before*
+    `plot`/`animate` validate `kwargs` against `self.default_options` (the
+    old name is never a valid option key, so it would otherwise raise
+    there instead of being resolved).
 
     Args:
         kwargs: The method's `**kwargs` dict; mutated in place (the old
@@ -136,15 +136,16 @@ def _resolve_renamed_kwarg(
         - The old name is used and a `DeprecationWarning` is raised:
             ```python
             >>> import warnings
-            >>> kwargs = {"text_loc": [0.1, 0.1]}
+            >>> kwargs = {"text_colors": ("yellow", "purple")}
             >>> with warnings.catch_warnings(record=True) as caught:
             ...     warnings.simplefilter("always")
             ...     resolved = _resolve_renamed_kwarg(
-            ...         kwargs, "text_loc", "label_location", None, None
+            ...         kwargs, "text_colors", "cell_value_text_colors",
+            ...         ("white", "black"), ("white", "black"),
             ...     )
             >>> resolved
-            [0.1, 0.1]
-            >>> "text_loc" in kwargs
+            ('yellow', 'purple')
+            >>> "text_colors" in kwargs
             False
             >>> issubclass(caught[0].category, DeprecationWarning)
             True
@@ -155,9 +156,10 @@ def _resolve_renamed_kwarg(
             ```python
             >>> kwargs = {"cmap": "viridis"}
             >>> _resolve_renamed_kwarg(
-            ...     kwargs, "text_loc", "label_location", [0.2, 0.2], None
+            ...     kwargs, "text_colors", "cell_value_text_colors",
+            ...     ("yellow", "purple"), ("white", "black"),
             ... )
-            [0.2, 0.2]
+            ('yellow', 'purple')
             >>> kwargs
             {'cmap': 'viridis'}
 
@@ -242,6 +244,56 @@ class PointOverlay:
         self.size = size
         self.label_color = label_color
         self.label_size = label_size
+
+
+class FrameLabel:
+    """Styling for the per-frame time label `ArrayGlyph.animate` draws.
+
+    Bundles the two frame-label parameters (`location`, `color`) that
+    `animate` previously accepted as separate `label_location` /
+    `label_color` arguments. Pass an instance as
+    `animate(frame_label=...)` instead.
+
+    Attributes:
+        location: `[x, y]` position for the label, by default `None`.
+            When `None`, the label is anchored just inside the top-left
+            corner using axes-fraction coordinates, so it stays clear of
+            the top/bottom edges regardless of the array's shape or the
+            axis orientation. A very narrow axes can still overflow
+            horizontally at the default font size, since no anchor choice
+            can fit a long label into less horizontal space than it
+            needs; pass an explicit `[x, y]` (data coordinates) in that
+            case.
+        color: Label text colour, by default `"black"`. Any valid
+            matplotlib colour string.
+
+    Examples:
+        - Build a frame label and pass it to `animate`:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.array_glyph import ArrayGlyph, FrameLabel
+            >>> stack = np.arange(3 * 9, dtype=float).reshape(3, 3, 3)
+            >>> label = FrameLabel(location=[0.1, 0.1], color="white")
+            >>> glyph = ArrayGlyph(stack)
+            >>> anim_obj = glyph.animate(["t0", "t1", "t2"], frame_label=label)
+            >>> label.color
+            'white'
+
+            ```
+    """
+
+    def __init__(
+        self, *, location: list[Any, Any] = None, color: str = "black"
+    ) -> None:
+        """Initialise a `FrameLabel`.
+
+        Args:
+            location: `[x, y]` label position, by default `None` (auto
+                top-left anchor -- see the class docstring).
+            color: Label text colour, by default `"black"`.
+        """
+        self.location = location
+        self.color = color
 
 
 #: Deprecated `plot`/`animate` kwargs that `_resolve_point_overlay` folds
@@ -346,6 +398,63 @@ def _resolve_point_overlay(
     return PointOverlay(
         points, color=color, size=size, label_color=label_color, label_size=label_size
     )
+
+
+#: Deprecated `animate` kwargs that `_resolve_frame_label` folds into a
+#: `FrameLabel` instead of the (now-removed) individual keywords.
+#: `text_loc` is the oldest generation (pre-dating `label_location`) and is
+#: honoured too.
+_DEPRECATED_FRAME_LABEL_KWARGS = ("label_location", "label_color", "text_loc")
+
+
+def _resolve_frame_label(frame_label: FrameLabel | None, kwargs: dict) -> FrameLabel:
+    """Normalise `animate`'s `frame_label` argument into a `FrameLabel`.
+
+    Accepts the current calling convention (`frame_label` is already a
+    `FrameLabel`, or `None` for the defaults) as well as the deprecated one
+    (separate `label_location` / `label_color` keywords, or the even older
+    `text_loc` for the location) -- the latter emit a `DeprecationWarning`
+    and are folded into a `FrameLabel` here. Unlike `_resolve_point_overlay`,
+    this never returns `None`: `animate` always draws a frame label, so
+    `frame_label=None` means "use `FrameLabel`'s own defaults", not "no
+    label". Must be called *before* `animate` validates `kwargs` against
+    `self.default_options`, which would otherwise reject the deprecated
+    keys outright.
+
+    Args:
+        frame_label: The raw `frame_label` argument as received by
+            `animate`: a `FrameLabel`, or `None`.
+        kwargs: The method's `**kwargs` dict; mutated in place (any
+            deprecated frame-label keys are popped out).
+
+    Returns:
+        FrameLabel: `frame_label` unchanged if it was already a
+            `FrameLabel`; otherwise a new `FrameLabel` built from the
+            (possibly deprecated) location/color kwargs, or the defaults.
+    """
+    if isinstance(frame_label, FrameLabel):
+        used_deprecated = [k for k in _DEPRECATED_FRAME_LABEL_KWARGS if k in kwargs]
+        if used_deprecated:
+            warnings.warn(
+                f"{used_deprecated} are ignored when `frame_label` is a "
+                "`FrameLabel` -- set them on the `FrameLabel` instance "
+                "instead.",
+                stacklevel=4,
+            )
+            for key in used_deprecated:
+                kwargs.pop(key)
+        return frame_label
+    location, location_key = _pop_first(kwargs, ("label_location", "text_loc"), None)
+    color, color_key = _pop_first(kwargs, ("label_color",), "black")
+    used = [k for k in (location_key, color_key) if k]
+    if used:
+        warnings.warn(
+            f"Passing {used} directly is deprecated; pass a "
+            "`cleopatra.array_glyph.FrameLabel` as `frame_label` instead.",
+            DeprecationWarning,
+            stacklevel=4,
+        )
+    return FrameLabel(location=location, color=color)
 
 
 class FacetGrid:
@@ -3165,9 +3274,8 @@ class ArrayGlyph(GeoMixin, Glyph):
         points: np.ndarray | PointOverlay | None = None,
         cell_value_text_colors: tuple[str, str] = ("white", "black"),
         interval: int = 200,
-        label_location: list[Any, Any] = None,
+        frame_label: FrameLabel | None = None,
         *,
-        label_color: str = "black",
         data_getter: Callable[[int], np.ndarray] | None = None,
         **kwargs,
     ) -> FuncAnimation:
@@ -3213,20 +3321,17 @@ class ArrayGlyph(GeoMixin, Glyph):
                 emits a `DeprecationWarning`.)
             interval: Delay between frames in milliseconds, by default 200.
                 Controls the speed of the animation (smaller values = faster animation).
-            label_location: Location of the frame label text as [x, y]
-                coordinates, by default None. When None, the label is
-                anchored just inside the top-left corner using
-                axes-fraction coordinates, so it stays clear of the top/bottom edges
-                regardless of the array's shape or the axis orientation. A very narrow
-                axes can still overflow horizontally at the default font size, since no
-                anchor choice can fit a long label into less horizontal space than it
-                needs; pass an explicit [x, y] (data coordinates) or a smaller
-                `cbar_label_size` in that case. (Renamed from `text_loc`;
-                the old name still works as a keyword and emits a
-                `DeprecationWarning`.)
-            label_color: Color of the frame label text, by default "black".
-                Any valid matplotlib color string. `ArrayGlyph`-only;
+            frame_label: Styling for the per-frame time label, by default
+                None (a `FrameLabel` with its own defaults: auto-anchored
+                top-left, black text). See `FrameLabel` for the
+                `location`/`color` fields and the top-left anchoring
+                behaviour when `location` is left unset. `ArrayGlyph`-only;
                 `MeshGlyph.animate()` does not yet expose this option.
+                (Styling the frame label via separate `label_location` /
+                `label_color` keywords — or the even older `text_loc` for
+                the location — is deprecated; pass a `FrameLabel` instead —
+                the old keywords still work as `**kwargs` and emit a
+                `DeprecationWarning`.)
             data_getter: Optional callable `f(i) -> ndarray` that
                 returns the frame for index `i`, by default None.
                 When set, `self.arr` is no longer iterated; each
@@ -3469,18 +3574,21 @@ class ArrayGlyph(GeoMixin, Glyph):
             cell_value_text_colors,
             ("white", "black"),
         )
-        label_location = _resolve_renamed_kwarg(
-            kwargs, "text_loc", "label_location", label_location, None
-        )
+        frame_label = _resolve_frame_label(frame_label, kwargs)
         points = _resolve_point_overlay(points, kwargs)
 
-        label_location_is_default = label_location is None
+        # Resolved into a local rather than written back onto `frame_label`,
+        # so a `FrameLabel` instance the caller passed in (and might reuse
+        # across calls) is never mutated.
+        label_location_is_default = frame_label.location is None
         if label_location_is_default:
             # Axes-fraction anchor (not data coordinates): stays inside the
             # frame regardless of array shape or axis orientation, unlike a
             # fixed data-coordinate default. See `day_text` below for the
             # matching transform/alignment.
             label_location = [0.02, 0.95]
+        else:
+            label_location = frame_label.location
 
         for key, val in kwargs.items():
             if key not in self.default_options.keys():
@@ -3726,7 +3834,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             label_location[1],
             " ",
             fontsize=self.default_options["cbar_label_size"],
-            color=label_color,
+            color=frame_label.color,
             transform=ax.transAxes if label_location_is_default else ax.transData,
             va="top" if label_location_is_default else "baseline",
         )

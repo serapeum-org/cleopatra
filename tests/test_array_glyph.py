@@ -17,6 +17,7 @@ from cleopatra.array_glyph import (
     _COORD_SHAPE_MISMATCH,
     ArrayGlyph,
     FacetGrid,
+    FrameLabel,
     PointOverlay,
 )
 
@@ -352,13 +353,14 @@ class TestAnimate:
 class TestRenamedKwargAliases:
     """The legacy `plot`/`animate` kwarg names still work but warn.
 
-    `text_colors` was renamed to `cell_value_text_colors`, and `text_loc`
-    to `label_location`. Each old name is still accepted as a keyword
-    (routed through `**kwargs`), emits a `DeprecationWarning` naming its
-    replacement, and is forwarded to the same effective behaviour as the
-    new name. The point-styling kwargs (`point_color`, `pid_color`, ...)
-    have since been superseded by `PointOverlay` -- see
-    `TestPointOverlayAliases`.
+    `text_colors` was renamed to `cell_value_text_colors`. The old name is
+    still accepted as a keyword (routed through `**kwargs`), emits a
+    `DeprecationWarning` naming its replacement, and is forwarded to the
+    same effective behaviour as the new name. The point-styling kwargs
+    (`point_color`, `pid_color`, ...) have since been superseded by
+    `PointOverlay` -- see `TestPointOverlayAliases`; the frame-label
+    kwargs (`label_location`, `label_color`, `text_loc`) by `FrameLabel`
+    -- see `TestFrameLabelAliases`.
     """
 
     def test_animate_text_colors_alias_still_works(
@@ -373,15 +375,6 @@ class TestRenamedKwargAliases:
                 text_colors=("yellow", "purple"),
             )
 
-    def test_animate_text_loc_alias_still_works(
-        self, coello_data: np.ndarray, animate_time_list: list
-    ):
-        """`animate(text_loc=...)` warns and positions the frame label."""
-        array = ArrayGlyph(coello_data)
-        with pytest.warns(DeprecationWarning, match="label_location"):
-            array.animate(animate_time_list, text_loc=[0.1, 0.1])
-        assert array._day_text.get_transform() is array.ax.transData
-
     def test_no_warning_with_only_new_names(self, coello_data: np.ndarray):
         """Using only the current names raises no deprecation warning."""
         array = ArrayGlyph(coello_data)
@@ -390,8 +383,69 @@ class TestRenamedKwargAliases:
             array.animate(
                 ["t0", "t1", "t2"],
                 cell_value_text_colors=("yellow", "purple"),
-                label_location=[0.1, 0.1],
+                frame_label=FrameLabel(location=[0.1, 0.1]),
             )
+
+
+class TestFrameLabelAliases:
+    """`FrameLabel` is the current way to style `animate`'s frame/time
+    label; the flat keywords it replaces (`label_location`/`label_color`,
+    and the older `text_loc`) still work but warn.
+    """
+
+    def test_frame_label_no_warning(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """Passing a `FrameLabel` is the current style and warns nothing."""
+        array = ArrayGlyph(coello_data)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            array.animate(
+                animate_time_list,
+                frame_label=FrameLabel(location=[0.1, 0.1], color="yellow"),
+            )
+        assert array._day_text.get_color() == "yellow"
+        assert array._day_text.get_transform() is array.ax.transData
+
+    def test_label_location_alias_still_works(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """`animate(label_location=...)` warns and positions the frame label."""
+        array = ArrayGlyph(coello_data)
+        with pytest.warns(DeprecationWarning, match="FrameLabel"):
+            array.animate(animate_time_list, label_location=[0.1, 0.1])
+        assert array._day_text.get_transform() is array.ax.transData
+
+    def test_text_loc_oldest_alias_still_works(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """`animate(text_loc=...)` (the oldest name) warns and positions the label."""
+        array = ArrayGlyph(coello_data)
+        with pytest.warns(DeprecationWarning, match="FrameLabel"):
+            array.animate(animate_time_list, text_loc=[0.1, 0.1])
+        assert array._day_text.get_transform() is array.ax.transData
+
+    def test_label_color_alias_still_works(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """`animate(label_color=...)` warns and colours the frame label."""
+        array = ArrayGlyph(coello_data)
+        with pytest.warns(DeprecationWarning, match="FrameLabel"):
+            array.animate(animate_time_list, label_color="yellow")
+        assert array._day_text.get_color() == "yellow"
+
+    def test_deprecated_kwargs_ignored_with_frame_label(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """A deprecated kwarg alongside a `FrameLabel` is ignored, with a warning."""
+        array = ArrayGlyph(coello_data)
+        with pytest.warns(UserWarning, match="ignored"):
+            array.animate(
+                animate_time_list,
+                frame_label=FrameLabel(color="yellow"),
+                label_color="orange",
+            )
+        assert array._day_text.get_color() == "yellow"
 
 
 class TestPointOverlayAliases:
@@ -1448,25 +1502,13 @@ class TestAnimateEdgeCases:
         assert anim is not None
         assert glyph.default_options["ticks_spacing"] == 50.0
 
-    def test_animate_with_label_color(
+    def test_data_getter_is_keyword_only(
         self,
         coello_data: np.ndarray,
         animate_time_list: list,
         no_data_value: float,
     ):
-        """`animate(label_color=...)` sets the frame label's text color."""
-        glyph = ArrayGlyph(coello_data, exclude_value=[no_data_value])
-        anim = glyph.animate(animate_time_list, label_color="yellow")
-        assert anim is not None
-        assert glyph._day_text.get_color() == "yellow"
-
-    def test_label_color_is_keyword_only(
-        self,
-        coello_data: np.ndarray,
-        animate_time_list: list,
-        no_data_value: float,
-    ):
-        """`label_color` must be keyword-only so no positional argument shifts."""
+        """`data_getter` must be keyword-only so no positional argument shifts."""
         glyph = ArrayGlyph(coello_data, exclude_value=[no_data_value])
         with pytest.raises(TypeError):
             glyph.animate(
@@ -1475,11 +1517,7 @@ class TestAnimateEdgeCases:
                 ("white", "black"),
                 200,
                 None,
-                "red",
-                100,
-                "blue",
-                10,
-                "yellow",
+                lambda i: coello_data,
             )
 
 
@@ -3231,36 +3269,36 @@ class TestAnimateDataGetterEdgeCases:
         finally:
             plt.close(anim._fig)
 
-    def test_data_getter_explicit_label_location(self) -> None:
-        """A user-supplied `label_location` skips the default-init branch.
+    def test_data_getter_explicit_frame_label_location(self) -> None:
+        """A user-supplied `FrameLabel(location=...)` skips the default-init branch.
 
         Test scenario:
-            Default `label_location=None` is rewritten to an axes-fraction
-            anchor; passing an explicit value covers the alternate branch
-            where the rewrite is skipped and data coordinates are used
-            instead.
+            Default `frame_label=None` resolves to an axes-fraction anchor;
+            passing an explicit `FrameLabel` location covers the alternate
+            branch where the rewrite is skipped and data coordinates are
+            used instead.
         """
         stack = self._stack(n=3)
         glyph = ArrayGlyph(stack[0])
         anim = glyph.animate(
             time=list(range(3)),
             data_getter=lambda i: stack[i],
-            label_location=[0.05, 0.05],
+            frame_label=FrameLabel(location=[0.05, 0.05]),
         )
         try:
             assert isinstance(
                 anim, FuncAnimation
-            ), "explicit label_location must produce an animation"
+            ), "explicit frame_label location must produce an animation"
             assert glyph._day_text.get_transform() is glyph.ax.transData
         finally:
             plt.close(glyph.fig)
 
-    def test_default_label_location_stays_inside_axes(self) -> None:
+    def test_default_frame_label_location_stays_inside_axes(self) -> None:
         """The default frame label must not clip past the axes bounds.
 
         Test scenario:
             Regression test for the inverted-Y-axis clipping bug: with no
-            explicit `label_location`, the label's rendered bounding box
+            explicit `frame_label`, the label's rendered bounding box
             must sit fully within the axes bounding box on both axes, for
             a square and a moderately rectangular array shape. Does not
             cover an extremely narrow axes (e.g. a 20-column array), where
@@ -3268,7 +3306,8 @@ class TestAnimateDataGetterEdgeCases:
             available width is smaller than the label's rendered text at
             the default font size — a physical-space limit no anchor
             choice can fix; callers with very narrow images should pass
-            an explicit `label_location` or a smaller `cbar_label_size`.
+            an explicit `FrameLabel(location=...)` or a smaller
+            `cbar_label_size`.
         """
         for shape in [(4, 48, 48), (4, 100, 50)]:
             arr = np.zeros(shape)
