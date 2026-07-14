@@ -1356,7 +1356,9 @@ class Glyph:
                 self.ax.get_yaxis().set_visible(visible)
 
     @staticmethod
-    def _plot_point_values(ax, point_table: np.ndarray, pid_color, pid_size):
+    def _plot_point_values(
+        ax, point_table: np.ndarray, point_label_color, point_label_size
+    ):
         """Plot point value labels on the axes."""
         write_points = lambda x: ax.text(
             x[2],
@@ -1364,8 +1366,8 @@ class Glyph:
             x[0],
             ha="center",
             va="center",
-            color=pid_color,
-            fontsize=pid_size,
+            color=point_label_color,
+            fontsize=point_label_size,
         )
         return list(map(write_points, point_table))
 

@@ -350,6 +350,94 @@ class TestAnimate:
         # os.remove(path)
 
 
+class TestRenamedKwargAliases:
+    """The legacy `plot`/`animate` kwarg names still work but warn.
+
+    `pid_color`/`pid_size` were renamed to `point_label_color`/
+    `point_label_size`, `text_colors` to `cell_value_text_colors`, and
+    `text_loc` to `label_location`. Each old name is still accepted as a
+    keyword (routed through `**kwargs`), emits a `DeprecationWarning`
+    naming its replacement, and is forwarded to the same effective
+    behaviour as the new name.
+    """
+
+    def test_plot_pid_color_alias_still_works(self, arr: np.ndarray):
+        """`plot(pid_color=...)` warns and colours the point label."""
+        points = np.array([[5, 1, 1]])
+        array = ArrayGlyph(arr)
+        with pytest.warns(DeprecationWarning, match="point_label_color"):
+            fig, ax = array.plot(points=points, pid_color="lime")
+        label = [t for t in ax.texts if t.get_text() == "5"][0]
+        assert to_rgba(label.get_color()) == to_rgba("lime")
+
+    def test_plot_pid_size_alias_still_works(self, arr: np.ndarray):
+        """`plot(pid_size=...)` warns and sizes the point label."""
+        points = np.array([[5, 1, 1]])
+        array = ArrayGlyph(arr)
+        with pytest.warns(DeprecationWarning, match="point_label_size"):
+            fig, ax = array.plot(points=points, pid_size=42)
+        label = [t for t in ax.texts if t.get_text() == "5"][0]
+        assert label.get_fontsize() == 42
+
+    def test_plot_new_name_wins_over_deprecated_alias(self, arr: np.ndarray):
+        """Passing both names at once still warns, but the new name wins."""
+        points = np.array([[5, 1, 1]])
+        array = ArrayGlyph(arr)
+        with pytest.warns(DeprecationWarning, match="point_label_color"):
+            fig, ax = array.plot(
+                points=points, point_label_color="lime", pid_color="orange"
+            )
+        label = [t for t in ax.texts if t.get_text() == "5"][0]
+        assert to_rgba(label.get_color()) == to_rgba("lime")
+
+    def test_animate_pid_color_alias_still_works(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """`animate(pid_color=...)` warns and colours the point label."""
+        points = np.array([[5, 1, 1]])
+        array = ArrayGlyph(coello_data)
+        with pytest.warns(DeprecationWarning, match="point_label_color"):
+            array.animate(animate_time_list, points=points, pid_color="lime")
+
+    def test_animate_pid_size_alias_still_works(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """`animate(pid_size=...)` warns and sizes the point label."""
+        points = np.array([[5, 1, 1]])
+        array = ArrayGlyph(coello_data)
+        with pytest.warns(DeprecationWarning, match="point_label_size"):
+            array.animate(animate_time_list, points=points, pid_size=42)
+
+    def test_animate_text_colors_alias_still_works(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """`animate(text_colors=...)` warns and is forwarded unchanged."""
+        array = ArrayGlyph(coello_data)
+        with pytest.warns(DeprecationWarning, match="cell_value_text_colors"):
+            array.animate(
+                animate_time_list,
+                display_cell_value=True,
+                text_colors=("yellow", "purple"),
+            )
+
+    def test_animate_text_loc_alias_still_works(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """`animate(text_loc=...)` warns and positions the frame label."""
+        array = ArrayGlyph(coello_data)
+        with pytest.warns(DeprecationWarning, match="label_location"):
+            array.animate(animate_time_list, text_loc=[0.1, 0.1])
+        assert array._day_text.get_transform() is array.ax.transData
+
+    def test_no_warning_with_only_new_names(self, arr: np.ndarray):
+        """Using only the current names raises no deprecation warning."""
+        points = np.array([[5, 1, 1]])
+        array = ArrayGlyph(arr)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            array.plot(points=points, point_label_color="lime", point_label_size=42)
+
+
 @pytest.mark.plot
 class TestAnimateRGB:
     """RGB / true-colour animation support in `ArrayGlyph.animate` (issue #168)."""
@@ -3094,43 +3182,44 @@ class TestAnimateDataGetterEdgeCases:
         finally:
             plt.close(anim._fig)
 
-    def test_data_getter_explicit_text_loc(self) -> None:
-        """A user-supplied `text_loc` skips the default-init branch.
+    def test_data_getter_explicit_label_location(self) -> None:
+        """A user-supplied `label_location` skips the default-init branch.
 
         Test scenario:
-            Default `text_loc=None` is rewritten to an axes-fraction anchor;
-            passing an explicit value covers the alternate branch where the
-            rewrite is skipped and data coordinates are used instead.
+            Default `label_location=None` is rewritten to an axes-fraction
+            anchor; passing an explicit value covers the alternate branch
+            where the rewrite is skipped and data coordinates are used
+            instead.
         """
         stack = self._stack(n=3)
         glyph = ArrayGlyph(stack[0])
         anim = glyph.animate(
             time=list(range(3)),
             data_getter=lambda i: stack[i],
-            text_loc=[0.05, 0.05],
+            label_location=[0.05, 0.05],
         )
         try:
             assert isinstance(
                 anim, FuncAnimation
-            ), "explicit text_loc must produce an animation"
+            ), "explicit label_location must produce an animation"
             assert glyph._day_text.get_transform() is glyph.ax.transData
         finally:
             plt.close(glyph.fig)
 
-    def test_default_text_loc_label_stays_inside_axes(self) -> None:
+    def test_default_label_location_stays_inside_axes(self) -> None:
         """The default frame label must not clip past the axes bounds.
 
         Test scenario:
             Regression test for the inverted-Y-axis clipping bug: with no
-            explicit `text_loc`, the label's rendered bounding box must sit
-            fully within the axes bounding box on both axes, for a square
-            and a moderately rectangular array shape. Does not cover an
-            extremely narrow axes (e.g. a 20-column array), where the
-            label can still overflow horizontally simply because the
+            explicit `label_location`, the label's rendered bounding box
+            must sit fully within the axes bounding box on both axes, for
+            a square and a moderately rectangular array shape. Does not
+            cover an extremely narrow axes (e.g. a 20-column array), where
+            the label can still overflow horizontally simply because the
             available width is smaller than the label's rendered text at
             the default font size — a physical-space limit no anchor
             choice can fix; callers with very narrow images should pass
-            an explicit `text_loc` or a smaller `cbar_label_size`.
+            an explicit `label_location` or a smaller `cbar_label_size`.
         """
         for shape in [(4, 48, 48), (4, 100, 50)]:
             arr = np.zeros(shape)

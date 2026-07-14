@@ -99,6 +99,88 @@ _COORD_SHAPE_MISMATCH = "coord array shape does not match the data array"
 _COORD_DTYPE_MISMATCH = "coord arrays must be numeric (integer or float)"
 
 
+def _resolve_renamed_kwarg(
+    kwargs: dict, old_name: str, new_name: str, new_value: Any, default: Any
+) -> Any:
+    """Resolve a renamed keyword argument, honouring its deprecated alias.
+
+    Several `ArrayGlyph.plot`/`animate` parameters were renamed for
+    clarity (e.g. `pid_color` -> `point_label_color`). Since the old name
+    is no longer an explicit parameter, a caller still using it arrives
+    here through `**kwargs` instead -- this pops it out, emits a
+    `DeprecationWarning`, and returns its value. Must be called *before*
+    `plot`/`animate` validate `kwargs` against `self.default_options`
+    (the old name is never a valid option key, so it would otherwise raise
+    there instead of being resolved).
+
+    Args:
+        kwargs: The method's `**kwargs` dict; mutated in place (the old
+            key, if present, is popped so it never reaches the strict
+            `default_options` validation).
+        old_name: The deprecated parameter name to look for in `kwargs`.
+        new_name: The current parameter name, used in the warning message.
+        new_value: The value the caller's `new_name` argument resolved to
+            (whatever `plot`/`animate` received for it, default or not).
+        default: `new_name`'s own default value. Used only to detect a
+            caller passing *both* names at once (a non-default `new_value`
+            alongside the old name is ambiguous) -- not a fully reliable
+            signal (a caller could explicitly repeat the default), but
+            good enough to warn on the common conflicting case.
+
+    Returns:
+        Any: `new_value` when `old_name` is absent from `kwargs`, or when
+            both names were given (new wins); otherwise the popped
+            `old_name` value.
+
+    Examples:
+        - The old name is used and a `DeprecationWarning` is raised:
+            ```python
+            >>> import warnings
+            >>> kwargs = {"pid_color": "orange"}
+            >>> with warnings.catch_warnings(record=True) as caught:
+            ...     warnings.simplefilter("always")
+            ...     resolved = _resolve_renamed_kwarg(
+            ...         kwargs, "pid_color", "point_label_color", "blue", "blue"
+            ...     )
+            >>> resolved
+            'orange'
+            >>> "pid_color" in kwargs
+            False
+            >>> issubclass(caught[0].category, DeprecationWarning)
+            True
+
+            ```
+        - With no old-name alias present, the new value passes through
+            untouched and `kwargs` is unaffected:
+            ```python
+            >>> kwargs = {"cmap": "viridis"}
+            >>> _resolve_renamed_kwarg(
+            ...     kwargs, "pid_color", "point_label_color", "green", "blue"
+            ... )
+            'green'
+            >>> kwargs
+            {'cmap': 'viridis'}
+
+            ```
+    """
+    if old_name not in kwargs:
+        return new_value
+    old_value = kwargs.pop(old_name)
+    warnings.warn(
+        f"`{old_name}` is deprecated; use `{new_name}` instead.",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+    if new_value != default:
+        warnings.warn(
+            f"Both `{old_name}` (deprecated) and `{new_name}` were given; "
+            f"`{new_name}` wins.",
+            stacklevel=3,
+        )
+        return new_value
+    return old_value
+
+
 class FacetGrid:
     """Result object for a multi-subplot facet plot.
 
@@ -1881,8 +1963,8 @@ class ArrayGlyph(GeoMixin, Glyph):
         points: np.ndarray = None,
         point_color: str = "red",
         point_size: int | float = 100,
-        pid_color: str = "blue",
-        pid_size: int | float = 10,
+        point_label_color: str = "blue",
+        point_label_size: int | float = 10,
         kind: str = "auto",
         ax: Axes | None = None,
         title: str | None = None,
@@ -1904,10 +1986,14 @@ class ArrayGlyph(GeoMixin, Glyph):
                 Any valid matplotlib color string.
             point_size: Size of the points, by default 100.
                 Controls the marker size.
-            pid_color: Color of the point value annotations, by default "blue".
-                Any valid matplotlib color string.
-            pid_size: Size of the point value annotations, by default 10.
-                Controls the font size of the annotations.
+            point_label_color: Color of the point value annotations, by
+                default "blue". Any valid matplotlib color string.
+                (Renamed from `pid_color`; the old name still works as a
+                keyword and emits a `DeprecationWarning`.)
+            point_label_size: Size of the point value annotations, by
+                default 10. Controls the font size of the annotations.
+                (Renamed from `pid_size`; the old name still works as a
+                keyword and emits a `DeprecationWarning`.)
             kind: Render kind, by default `"auto"`. One of:
 
                 - `"auto"` — picks the best renderer for the data.
@@ -2206,8 +2292,8 @@ class ArrayGlyph(GeoMixin, Glyph):
                 The point parameter takes an array with the first column as the values to be displayed on top of the
                 points, the second and third columns are the row and column index of the point in the array.
             - The `point_color` and `point_size` parameters are used to customize the appearance of the points,
-                while the `pid_color` and `pid_size` parameters are used to customize the appearance of the point
-                IDs/text.
+                while the `point_label_color` and `point_label_size` parameters are used to customize the
+                appearance of each point's value label.
 
                 ```python
                 >>> array = ArrayGlyph(arr, figsize=(6, 6), title="Display Points", title_size=14)
@@ -2216,8 +2302,8 @@ class ArrayGlyph(GeoMixin, Glyph):
                 ...     points=points,
                 ...     point_color="black",
                 ...     point_size=100,
-                ...     pid_color="orange",
-                ...     pid_size=30,
+                ...     point_label_color="orange",
+                ...     point_label_size=30,
                 ... )
 
                 ```
@@ -2451,6 +2537,15 @@ class ArrayGlyph(GeoMixin, Glyph):
                 f"RGB compositing requires kind='imshow'. Got kind={kind!r}."
             )
 
+        # Resolve deprecated kwarg aliases before the strict `kwargs`
+        # validation below, which would otherwise reject them outright.
+        point_label_color = _resolve_renamed_kwarg(
+            kwargs, "pid_color", "point_label_color", point_label_color, "blue"
+        )
+        point_label_size = _resolve_renamed_kwarg(
+            kwargs, "pid_size", "point_label_size", point_label_size, 10
+        )
+
         for key, val in kwargs.items():
             if key not in self.default_options.keys():
                 raise ValueError(
@@ -2620,7 +2715,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 col, row, color=point_color, s=point_size
             )
             optional_display["points_id"] = self._plot_point_values(
-                ax, points, pid_color, pid_size
+                ax, points, point_label_color, point_label_size
             )
 
         # # Normalize the threshold to the image color range.
@@ -2916,13 +3011,13 @@ class ArrayGlyph(GeoMixin, Glyph):
         self,
         time: list[Any],
         points: np.ndarray = None,
-        text_colors: tuple[str, str] = ("white", "black"),
+        cell_value_text_colors: tuple[str, str] = ("white", "black"),
         interval: int = 200,
-        text_loc: list[Any, Any] = None,
+        label_location: list[Any, Any] = None,
         point_color: str = "red",
         point_size: int = 100,
-        pid_color: str = "blue",
-        pid_size: int = 10,
+        point_label_color: str = "blue",
+        point_label_size: int = 10,
         *,
         label_color: str = "black",
         data_getter: Callable[[int], np.ndarray] | None = None,
@@ -2957,27 +3052,38 @@ class ArrayGlyph(GeoMixin, Glyph):
                 - First column: values to display for each point
                 - Second column: row indices of the points in the array
                 - Third column: column indices of the points in the array
-            text_colors: Two colors to be used for cell value text, by default ("white", "black").
-                The first color is used when the cell value is below the background_color_threshold,
-                and the second color is used when the cell value is above the threshold.
+            cell_value_text_colors: Two colors to be used for cell value
+                text, by default ("white", "black"). The first color is
+                used when the cell value is below the
+                background_color_threshold, and the second color is used
+                when the cell value is above the threshold. (Renamed from
+                `text_colors`; the old name still works as a keyword and
+                emits a `DeprecationWarning`.)
             interval: Delay between frames in milliseconds, by default 200.
                 Controls the speed of the animation (smaller values = faster animation).
-            text_loc: Location of the frame label text as [x, y] coordinates, by default None.
-                When None, the label is anchored just inside the top-left corner using
+            label_location: Location of the frame label text as [x, y]
+                coordinates, by default None. When None, the label is
+                anchored just inside the top-left corner using
                 axes-fraction coordinates, so it stays clear of the top/bottom edges
                 regardless of the array's shape or the axis orientation. A very narrow
                 axes can still overflow horizontally at the default font size, since no
                 anchor choice can fit a long label into less horizontal space than it
                 needs; pass an explicit [x, y] (data coordinates) or a smaller
-                `cbar_label_size` in that case.
+                `cbar_label_size` in that case. (Renamed from `text_loc`;
+                the old name still works as a keyword and emits a
+                `DeprecationWarning`.)
             point_color: Color of the points, by default "red".
                 Any valid matplotlib color string.
             point_size: Size of the points, by default 100.
                 Controls the marker size.
-            pid_color: Color of the point value annotations, by default "blue".
-                Any valid matplotlib color string.
-            pid_size: Size of the point value annotations, by default 10.
-                Controls the font size of the annotations.
+            point_label_color: Color of the point value annotations, by
+                default "blue". Any valid matplotlib color string.
+                (Renamed from `pid_color`; the old name still works as a
+                keyword and emits a `DeprecationWarning`.)
+            point_label_size: Size of the point value annotations, by
+                default 10. Controls the font size of the annotations.
+                (Renamed from `pid_size`; the old name still works as a
+                keyword and emits a `DeprecationWarning`.)
             label_color: Color of the frame label text, by default "black".
                 Any valid matplotlib color string. `ArrayGlyph`-only;
                 `MeshGlyph.animate()` does not yet expose this option.
@@ -3155,8 +3261,8 @@ class ArrayGlyph(GeoMixin, Glyph):
         ...     points=points,
         ...     point_color="black",
         ...     point_size=150,
-        ...     pid_color="white",
-        ...     pid_size=12
+        ...     point_label_color="white",
+        ...     point_label_size=12
         ... )
 
         ```
@@ -3167,7 +3273,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         ...     frame_labels,
         ...     display_cell_value=True,
         ...     num_size=10,
-        ...     text_colors=("yellow", "blue")
+        ...     cell_value_text_colors=("yellow", "blue")
         ... )
 
         ```
@@ -3214,13 +3320,32 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         ```
         """
-        text_loc_is_default = text_loc is None
-        if text_loc_is_default:
+        # Resolve deprecated kwarg aliases before the strict `kwargs`
+        # validation below, which would otherwise reject them outright.
+        cell_value_text_colors = _resolve_renamed_kwarg(
+            kwargs,
+            "text_colors",
+            "cell_value_text_colors",
+            cell_value_text_colors,
+            ("white", "black"),
+        )
+        label_location = _resolve_renamed_kwarg(
+            kwargs, "text_loc", "label_location", label_location, None
+        )
+        point_label_color = _resolve_renamed_kwarg(
+            kwargs, "pid_color", "point_label_color", point_label_color, "blue"
+        )
+        point_label_size = _resolve_renamed_kwarg(
+            kwargs, "pid_size", "point_label_size", point_label_size, 10
+        )
+
+        label_location_is_default = label_location is None
+        if label_location_is_default:
             # Axes-fraction anchor (not data coordinates): stays inside the
             # frame regardless of array shape or axis orientation, unlike a
             # fixed data-coordinate default. See `day_text` below for the
             # matching transform/alignment.
-            text_loc = [0.02, 0.95]
+            label_location = [0.02, 0.95]
 
         for key, val in kwargs.items():
             if key not in self.default_options.keys():
@@ -3443,7 +3568,9 @@ class ArrayGlyph(GeoMixin, Glyph):
             row = points[:, 1]
             col = points[:, 2]
             points_scatter = ax.scatter(col, row, color=point_color, s=point_size)
-            points_id = self._plot_point_values(ax, points, pid_color, pid_size)
+            points_id = self._plot_point_values(
+                ax, points, point_label_color, point_label_size
+            )
 
         # Normalize the threshold to the image color range. With a
         # lazy `data_getter` we only have `frame_0` available
@@ -3460,13 +3587,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                 background_color_threshold = im.norm(np.nanmax(ref_for_threshold)) / 2.0
 
         day_text = ax.text(
-            text_loc[0],
-            text_loc[1],
+            label_location[0],
+            label_location[1],
             " ",
             fontsize=self.default_options["cbar_label_size"],
             color=label_color,
-            transform=ax.transAxes if text_loc_is_default else ax.transData,
-            va="top" if text_loc_is_default else "baseline",
+            transform=ax.transAxes if label_location_is_default else ax.transData,
+            va="top" if label_location_is_default else "baseline",
         )
         self._day_text = day_text
 
@@ -3592,7 +3719,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     """Update cell value"""
                     val = round(vals[x], precision)
                     kw = {
-                        "color": text_colors[
+                        "color": cell_value_text_colors[
                             int(im.norm(vals[x]) > background_color_threshold)
                         ]
                     }
