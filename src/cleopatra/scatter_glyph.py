@@ -148,6 +148,9 @@ class ScatterGlyph(GeoMixin, Glyph):
 
     #: Option keys this glyph accepts (see `Glyph.option_keys`/`filter_kwargs`).
     DEFAULT_OPTIONS = SCATTER_DEFAULT_OPTIONS
+    #: Per-point `values` are a nominal class label just as often as a
+    #: continuous magnitude, so `scheme="categorical"` is supported.
+    _SUPPORTS_CATEGORICAL_SCHEME = True
 
     def __init__(
         self,
@@ -189,6 +192,9 @@ class ScatterGlyph(GeoMixin, Glyph):
         #: The size legend created by `plot` when `size_legend` is truthy
         #: (None otherwise); built via `cleopatra.styles.size_legend`.
         self.size_legend_artist = None
+        #: The disjoint legend created by `plot` when `scheme="categorical"`
+        #: (`None` otherwise); built via `Glyph.create_categorical_legend`.
+        self.category_legend = None
 
     def plot(
         self,
@@ -203,6 +209,12 @@ class ScatterGlyph(GeoMixin, Glyph):
         `_prepare_scalar_mapping`, so `vmin` / `vmax` / `levels` /
         `color_scale` behave as for the other glyphs. With no values,
         a single-colour scatter is drawn and no colorbar is added.
+
+        The one exception is `scheme="categorical"`: `vmin` / `vmax` /
+        `levels` / `color_scale` are ignored (with a warning if set), and
+        instead of a colorbar a `disjoint_legend` is drawn and stored on
+        `self.category_legend` (`self.cbar` stays `None`). See
+        `Glyph._prepare_categorical_mapping`.
 
         When `sizes` was supplied, each marker's area is resolved from
         that magnitude via `cleopatra.styles.resolve_sizes` (honouring
@@ -284,6 +296,11 @@ class ScatterGlyph(GeoMixin, Glyph):
         # Resolve the colorbar choice for this call only (a plot-time
         # override does not persist into the glyph's options).
         draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
+        # Reset both artifacts unconditionally so a re-plot (e.g. switching
+        # `scheme` between calls) never leaves a stale reference from the
+        # previous call -- only one of the two is (re)created below.
+        self.cbar = None
+        self.category_legend = None
 
         marker_area = self._resolve_marker_area()
 
@@ -296,21 +313,38 @@ class ScatterGlyph(GeoMixin, Glyph):
             )
         else:
             norm, cbar_kw, ticks = self._prepare_scalar_mapping(self.values)
+            categorical = self._categorical
+            if categorical is not None:
+                color_array, cmap = categorical["codes"], categorical["cmap"]
+            else:
+                color_array, cmap = np.asarray(self.values), opts["cmap"]
             paths = ax.scatter(
                 self.x,
                 self.y,
-                c=np.asarray(self.values),
+                c=color_array,
                 s=marker_area,
                 marker=opts["marker"],
-                cmap=opts["cmap"],
+                cmap=cmap,
                 norm=norm,
                 vmin=None if norm else ticks[0],
                 vmax=None if norm else ticks[-1],
             )
             if draw_colorbar:
-                self.cbar = self.create_color_bar(ax, paths, cbar_kw)
+                if categorical is not None:
+                    self.category_legend = self.create_categorical_legend(ax)
+                else:
+                    self.cbar = self.create_color_bar(ax, paths, cbar_kw)
 
         if self.sizes is not None and opts["size_legend"]:
+            # `Axes.legend()` is single-slot per axes: `size_legend` calls it
+            # internally, which would otherwise silently evict the
+            # categorical legend just drawn above (matplotlib replaces
+            # `ax.legend_`, so the earlier Legend stops being part of
+            # `ax.get_children()` even though `self.category_legend` still
+            # references it). Re-attach it as a plain artist first, mirroring
+            # the multi-legend pattern in `colors.apply_data_style`.
+            if self.category_legend is not None:
+                ax.add_artist(self.category_legend)
             self.size_legend_artist = self._draw_size_legend(ax, marker_area)
 
         if opts["title"]:

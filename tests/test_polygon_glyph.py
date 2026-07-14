@@ -73,6 +73,20 @@ class TestPolygonGlyphInit:
         with pytest.raises(ValueError, match="must match the number"):
             PolygonGlyph(polygons, values=np.array([1.0, 2.0, 3.0]))
 
+    def test_2d_values_with_matching_row_count_raises(self, polygons):
+        """A 2-D values array is rejected even when its row count matches.
+
+        Test scenario:
+            An accidentally un-flattened `(N, 2)` values array has the right
+            `shape[0]` but the wrong `ndim`; the full-shape check must still
+            reject it rather than silently mis-sizing the colour array once
+            it is later flattened.
+        """
+        values = np.array([[1.0, 2.0], [3.0, 4.0]])
+        assert values.shape[0] == len(polygons), "Fixture assumption: row count matches"
+        with pytest.raises(ValueError, match="must match the number"):
+            PolygonGlyph(polygons, values=values)
+
     def test_invalid_kwarg_raises(self, polygons):
         """An unknown kwarg is rejected by the strict merge.
 

@@ -118,6 +118,9 @@ class PolygonGlyph(GeoMixin, Glyph):
 
     #: Option keys this glyph accepts (see `Glyph.option_keys`/`filter_kwargs`).
     DEFAULT_OPTIONS = POLYGON_DEFAULT_OPTIONS
+    #: Per-polygon `values` are a nominal class label just as often as a
+    #: continuous magnitude, so `scheme="categorical"` is supported.
+    _SUPPORTS_CATEGORICAL_SCHEME = True
 
     def __init__(
         self,
@@ -134,13 +137,20 @@ class PolygonGlyph(GeoMixin, Glyph):
         self.polygons = [np.asarray(p, dtype=float) for p in polygons]
         if values is not None:
             values = np.asarray(values)
-            if values.shape[0] != len(self.polygons):
+            # A full-shape check (not just `shape[0]`) rejects an accidentally
+            # un-flattened 2-D `values` array with a matching row count -- it
+            # would otherwise slip through here and only surface as a
+            # silently mis-sized colour array once `plot()` flattens it.
+            if values.shape != (len(self.polygons),):
                 raise ValueError(
-                    f"values length ({values.shape[0]}) must match the number "
-                    f"of polygons ({len(self.polygons)})."
+                    f"values shape {values.shape} must match the number of "
+                    f"polygons ({len(self.polygons)},)."
                 )
         self.values = values
         self.cbar = None
+        #: The disjoint legend created by `plot` when `scheme="categorical"`
+        #: (`None` otherwise); built via `Glyph.create_categorical_legend`.
+        self.category_legend = None
 
     def plot(
         self,
@@ -158,6 +168,12 @@ class PolygonGlyph(GeoMixin, Glyph):
         the outlines are drawn and no colorbar is added; the outlines
         use `OUTLINE_EDGECOLOR` when `edgecolor` is left at its
         borderless-fill default of `"none"`.
+
+        The one exception is `scheme="categorical"`: `vmin` / `vmax` /
+        `levels` / `color_scale` are ignored (with a warning if set), and
+        instead of a colorbar a `disjoint_legend` is drawn and stored on
+        `self.category_legend` (`self.cbar` stays `None`). See
+        `Glyph._prepare_categorical_mapping`.
 
         Args:
             outline_only: Draw unfilled outlines even when `values` is
@@ -214,6 +230,11 @@ class PolygonGlyph(GeoMixin, Glyph):
         # Resolve the colorbar choice for this call only (a plot-time
         # override does not persist into the glyph's options).
         draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
+        # Reset both artifacts unconditionally so a re-plot (e.g. switching
+        # `scheme` between calls) never leaves a stale reference from the
+        # previous call -- only one of the two is (re)created below.
+        self.cbar = None
+        self.category_legend = None
 
         if outline_only or self.values is None:
             edgecolor = opts["edgecolor"]
@@ -231,10 +252,15 @@ class PolygonGlyph(GeoMixin, Glyph):
             ax.autoscale_view()
         else:
             norm, cbar_kw, ticks = self._prepare_scalar_mapping(self.values)
+            categorical = self._categorical
+            if categorical is not None:
+                color_array, cmap = categorical["codes"], categorical["cmap"]
+            else:
+                color_array, cmap = np.asarray(self.values), opts["cmap"]
             pc = PolyCollection(
                 self.polygons,
-                array=np.asarray(self.values),
-                cmap=opts["cmap"],
+                array=color_array,
+                cmap=cmap,
                 norm=norm,
                 edgecolors=opts["edgecolor"],
                 linewidths=opts["linewidth"],
@@ -244,7 +270,10 @@ class PolygonGlyph(GeoMixin, Glyph):
             ax.add_collection(pc)
             ax.autoscale_view()
             if draw_colorbar:
-                self.cbar = self.create_color_bar(ax, pc, cbar_kw)
+                if categorical is not None:
+                    self.category_legend = self.create_categorical_legend(ax)
+                else:
+                    self.cbar = self.create_color_bar(ax, pc, cbar_kw)
 
         if opts["title"]:
             ax.set_title(opts["title"], fontsize=opts["title_size"])

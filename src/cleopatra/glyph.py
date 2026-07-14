@@ -21,6 +21,7 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.axes import Axes
 from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure, SubFigure
+from matplotlib.legend import Legend
 from matplotlib.ticker import LogFormatter
 
 # `SUPPORTED_VIDEO_FORMAT` is re-imported (not redefined) so the constant has
@@ -29,12 +30,23 @@ from matplotlib.ticker import LogFormatter
 from cleopatra.animation import SUPPORTED_VIDEO_FORMAT  # noqa: F401  (re-export)
 from cleopatra.animation import save_animation as _save_animation
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
-from cleopatra.styles import ColorScale, MidpointNormalize, classify
+from cleopatra.styles import (
+    ColorScale,
+    MidpointNormalize,
+    categorize,
+    classify,
+    disjoint_legend,
+)
 
 #: Upper bound for an integer `levels` value (number of discrete colour
 #: levels / contour lines). A larger request is almost certainly a mistake
 #: and `np.linspace` with a huge count would exhaust memory.
 MAX_DISCRETE_LEVELS = 1000
+
+#: Qualitative colormap `_prepare_categorical_mapping` falls back to when the
+#: caller left `cmap` at the shared continuous/diverging default -- see the
+#: fallback logic there.
+CATEGORICAL_DEFAULT_CMAP = "tab10"
 
 
 def _get_figure_supports_root(get_figure) -> bool:
@@ -195,6 +207,14 @@ class Glyph:
     #: base value is the shared style defaults.
     DEFAULT_OPTIONS: dict = STYLE_DEFAULTS
 
+    #: Whether this glyph's `plot()` reads back the categorical side-channel
+    #: (`self._categorical`) instead of feeding raw `values` straight into
+    #: the mappable. Only true for glyphs whose per-element value is a
+    #: nominal class label rather than a continuous magnitude (e.g.
+    #: `PolygonGlyph`, `ScatterGlyph`) — `scheme="categorical"` is rejected
+    #: for any other glyph rather than silently mis-colouring it.
+    _SUPPORTS_CATEGORICAL_SCHEME = False
+
     def __init__(
         self,
         default_options: dict,
@@ -207,6 +227,9 @@ class Glyph:
         self._vmin: float | None = None
         self._vmax: float | None = None
         self.ticks_spacing: float | None = None
+        #: Set by `_prepare_categorical_mapping` when `scheme="categorical"`
+        #: — `{"codes", "cmap", "colors", "labels"}` — else `None`.
+        self._categorical: dict | None = None
         # Resolve the (fig, ax) binding. An `ax` fully determines its
         # figure, so accept `ax` on its own and derive the figure from it
         # rather than dropping the axes when `fig` is omitted. An explicit
@@ -786,7 +809,11 @@ class Glyph:
         When the `scheme` option is set, the continuous steps above are
         bypassed: control is handed to `_prepare_classified_mapping`, which
         bins the data into discrete colour classes (a `BoundaryNorm`).
-        With `scheme` unset (the default) the behaviour is unchanged.
+        `scheme="categorical"` bypasses them even earlier — before
+        `_resolve_limits`, since a `vmin`/`vmax` range is meaningless for
+        nominal values (and would raise for non-numeric ones) — and hands
+        off to `_prepare_categorical_mapping` instead. With `scheme` unset
+        (the default) the behaviour is unchanged.
 
         Args:
             values: The scalar array to be colour-mapped (e.g. point
@@ -837,6 +864,9 @@ class Glyph:
 
                 ```
         """
+        self._categorical = None
+        if self.default_options.get("scheme") == "categorical":
+            return self._prepare_categorical_mapping(values)
         self._vmin, self._vmax = self._resolve_limits(np.asarray(values))
         if self.default_options.get("ticks_spacing") is None:
             # `or 1.0` guards flat data (vmax == vmin -> spacing 0), which
@@ -854,6 +884,30 @@ class Glyph:
         ticks = self.get_ticks()
         norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
         return norm, cbar_kw, ticks
+
+    def _warn_scheme_overrides_continuous_options(self) -> None:
+        """Warn when a `scheme` is set alongside continuous-only options.
+
+        Shared by `_prepare_classified_mapping` and
+        `_prepare_categorical_mapping`: either scheme owns the norm
+        entirely, so a `color_scale` other than `"linear"` or an explicit
+        `levels` the caller also set is silently ignored rather than
+        applied -- this warns so that conflicting configuration is visible
+        instead of quietly doing nothing.
+        """
+        if self.default_options.get("color_scale", "linear") != "linear":
+            warnings.warn(
+                "`scheme` is set, so `color_scale="
+                f"{self.default_options['color_scale']!r}` is ignored "
+                "(classification builds its own discrete norm).",
+                stacklevel=5,
+            )
+        if self.default_options.get("levels") is not None:
+            warnings.warn(
+                "`scheme` is set, so `levels` is ignored (the classification "
+                "scheme determines the bins).",
+                stacklevel=5,
+            )
 
     def _prepare_classified_mapping(
         self, values: np.ndarray, scheme: str | list | np.ndarray
@@ -908,22 +962,7 @@ class Glyph:
 
                 ```
         """
-        # `scheme` owns the norm, so any continuous `color_scale` / `levels`
-        # the caller also set is ignored here. Warn rather than silently drop
-        # it, so a conflicting configuration is visible.
-        if self.default_options.get("color_scale", "linear") != "linear":
-            warnings.warn(
-                "`scheme` is set, so `color_scale="
-                f"{self.default_options['color_scale']!r}` is ignored "
-                "(classification builds its own discrete norm).",
-                stacklevel=4,
-            )
-        if self.default_options.get("levels") is not None:
-            warnings.warn(
-                "`scheme` is set, so `levels` is ignored (the classification "
-                "scheme determines the bins).",
-                stacklevel=4,
-            )
+        self._warn_scheme_overrides_continuous_options()
         k = self.default_options.get("k", 5)
         bin_edges, norm = classify(values, scheme, k)
         extend = self.default_options.get("extend")
@@ -932,6 +971,210 @@ class Glyph:
             "extend": "neither" if extend is None else extend,
         }
         return norm, cbar_kw, bin_edges
+
+    def _prepare_categorical_mapping(
+        self, values: np.ndarray
+    ) -> tuple[colors.BoundaryNorm, dict, np.ndarray]:
+        """Build the `(norm, cbar_kw, edges)` triple for `scheme="categorical"`.
+
+        The nominal sibling of `_prepare_classified_mapping`: instead of
+        binning a continuous range, `cleopatra.styles.categorize` assigns
+        one colour per distinct value in `values` (sorted when sortable),
+        and this builds a `ListedColormap` + `BoundaryNorm` over the
+        resulting integer class codes — the same construction
+        `colors.apply_data_style` uses for a preset's `categories`, but with
+        the category table auto-derived from the data instead of
+        hand-authored. The mapping (per-element codes, the `ListedColormap`,
+        and the colour/label pairs) is stashed on `self._categorical` for
+        the calling glyph to read back, since — unlike the continuous and
+        classified paths — the array fed to the mappable is these integer
+        codes, not `values` itself (which may not even be numeric).
+
+        Only glyphs with `_SUPPORTS_CATEGORICAL_SCHEME = True` may use this
+        scheme: for any other glyph, `values` are a continuous magnitude
+        (e.g. vector length), where "one colour per distinct float" is
+        almost never what the caller wants, and the glyph's `plot()` does
+        not know to read `self._categorical` back in the first place — it
+        would keep feeding the raw (mismatched) values to the mappable.
+
+        The glyph's `cmap` option drives `categorize`'s palette, with one
+        override: if `cmap` is still at the shared continuous/diverging
+        default (`"coolwarm_r"`, matched by resolved name so a `Colormap`
+        instance equivalent to the default is caught too, not just the bare
+        string) — i.e. the caller never overrode it — it is substituted with
+        `CATEGORICAL_DEFAULT_CMAP` (`"tab10"`) instead, since sampling a
+        diverging gradient at N points would defeat the point of "one
+        distinct colour per class". Any other `cmap`, qualitative or not,
+        is always honoured as given.
+
+        Args:
+            values: The per-element nominal values to categorize.
+
+        Returns:
+            tuple[BoundaryNorm, dict, np.ndarray]: the discrete norm over
+                the integer class codes, an empty colorbar-kwargs dict (a
+                categorical scheme draws a `disjoint_legend`, never a
+                colorbar — see `create_categorical_legend`), and the code
+                boundary edges (`-0.5 .. n_categories - 0.5`).
+
+        Raises:
+            ValueError: If this glyph does not support `scheme="categorical"`,
+                or (propagated from `categorize`) if `values` has no
+                non-null entries.
+
+        Examples:
+            - Three distinct values map to three integer codes and colours:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.polygon_glyph import PolygonGlyph
+                >>> polys = [np.zeros((3, 2))] * 3
+                >>> g = PolygonGlyph(polys, values=np.array(["a", "b", "a"]))
+                >>> norm, cbar_kw, edges = g._prepare_categorical_mapping(
+                ...     np.array(["a", "b", "a"])
+                ... )
+                >>> [float(b) for b in edges]
+                [-0.5, 0.5, 1.5]
+                >>> [float(c) for c in g._categorical["codes"]]
+                [0.0, 1.0, 0.0]
+
+                ```
+        """
+        if not self._SUPPORTS_CATEGORICAL_SCHEME:
+            raise ValueError(
+                f"{type(self).__name__} does not support scheme='categorical' "
+                "(its values are a continuous magnitude, not nominal class "
+                "labels)."
+            )
+        self._warn_scheme_overrides_continuous_options()
+        cmap = self.default_options["cmap"]
+        # Compare by resolved name, not raw `==`: `Colormap` does not
+        # implement equality, so a `Colormap` *instance* equivalent to the
+        # default (e.g. `mpl.colormaps["coolwarm_r"]`, a legitimate way to
+        # pass a colormap) would otherwise never match the string default
+        # and silently bypass the fallback below.
+        cmap_name = cmap if isinstance(cmap, str) else getattr(cmap, "name", None)
+        if cmap_name == STYLE_DEFAULTS["cmap"]:
+            # `cmap` is still at the shared continuous/diverging default
+            # ("coolwarm_r") -- nobody chose it *for* a categorical mapping,
+            # they just never overrode it. Sampling a diverging gradient at
+            # N points defeats the point of "one distinct colour per class",
+            # so fall back to `categorize`'s own qualitative default instead.
+            # An explicit non-default `cmap` (qualitative or not) is always
+            # honoured as given.
+            cmap = CATEGORICAL_DEFAULT_CMAP
+        # Flatten `values` once and reuse it for both `categorize` (which
+        # would otherwise redo the identical `np.asarray(...).ravel()` on
+        # the original, possibly nested/2-D `values`) and the codes lookup
+        # below -- passing an already-flat list back through `categorize`
+        # is a cheap no-op re-wrap, not a second real flattening pass.
+        raw = np.asarray(values, dtype=object).ravel().tolist()
+        categories, palette = categorize(raw, cmap=cmap)
+        lookup = {category: i for i, category in enumerate(categories.tolist())}
+        codes = np.array([lookup.get(v, np.nan) for v in raw], dtype=float)
+        listed_cmap = colors.ListedColormap(palette)
+        edges = np.arange(len(categories) + 1) - 0.5
+        norm = colors.BoundaryNorm(edges, len(palette))
+        self._categorical = {
+            "codes": codes,
+            "cmap": listed_cmap,
+            "colors": palette,
+            "labels": [str(c) for c in categories.tolist()],
+        }
+        return norm, {}, edges
+
+    def create_categorical_legend(self, ax: Axes) -> Legend:
+        """Attach the disjoint legend for a `scheme="categorical"` mapping.
+
+        Reads the category colours/labels `_prepare_categorical_mapping`
+        stashed on `self._categorical` and draws them via
+        `cleopatra.styles.disjoint_legend` — the discrete counterpart to
+        `create_color_bar`, used instead of it whenever `scheme` is
+        `"categorical"` (a colorbar would imply a false ordering over
+        nominal classes). The legend's title defaults to the `cbar_label`
+        option (the same label a continuous plot would put on its
+        colorbar); the `category_legend_kwargs` option is merged over that
+        default and forwarded to `disjoint_legend` (e.g. `loc`, `ncol`,
+        `bbox_to_anchor`, or an explicit `title` override) — the categorical
+        counterpart to `size_legend_kwargs`.
+
+        Args:
+            ax: The axes to attach the legend to.
+
+        Returns:
+            Legend: The created legend artist, already added to `ax`.
+
+        Raises:
+            ValueError: If `self._categorical` has not been populated yet
+                (i.e. `_prepare_categorical_mapping` has not run for this
+                glyph instance).
+
+        Examples:
+            - Prepare a categorical mapping, then draw and inspect the legend:
+                ```python
+                >>> import numpy as np
+                >>> import matplotlib.pyplot as plt
+                >>> from cleopatra.polygon_glyph import PolygonGlyph
+                >>> polys = [np.zeros((3, 2))] * 3
+                >>> g = PolygonGlyph(polys, values=np.array(["a", "b", "a"]))
+                >>> _ = g._prepare_categorical_mapping(np.array(["a", "b", "a"]))
+                >>> fig, ax = plt.subplots()
+                >>> legend = g.create_categorical_legend(ax)
+                >>> [t.get_text() for t in legend.get_texts()]
+                ['a', 'b']
+                >>> plt.close(fig)
+
+                ```
+            - Calling it before a categorical mapping exists raises `ValueError`:
+                ```python
+                >>> import numpy as np
+                >>> import matplotlib.pyplot as plt
+                >>> from cleopatra.polygon_glyph import PolygonGlyph
+                >>> g = PolygonGlyph([np.zeros((3, 2))] * 2, values=np.array(["a", "b"]))
+                >>> fig, ax = plt.subplots()
+                >>> g.create_categorical_legend(ax)
+                Traceback (most recent call last):
+                    ...
+                ValueError: create_categorical_legend() called before a scheme='categorical' mapping was prepared -- call _prepare_scalar_mapping (or plot()) first.
+                >>> plt.close(fig)
+
+                ```
+            - `category_legend_kwargs` overrides the default title and adds
+                a `loc`:
+                ```python
+                >>> import numpy as np
+                >>> import matplotlib.pyplot as plt
+                >>> from cleopatra.polygon_glyph import PolygonGlyph
+                >>> polys = [np.zeros((3, 2))] * 2
+                >>> g = PolygonGlyph(
+                ...     polys, values=np.array(["a", "b"]),
+                ...     category_legend_kwargs={"title": "Class", "loc": "upper left"},
+                ... )
+                >>> _ = g._prepare_categorical_mapping(np.array(["a", "b"]))
+                >>> fig, ax = plt.subplots()
+                >>> legend = g.create_categorical_legend(ax)
+                >>> legend.get_title().get_text()
+                'Class'
+                >>> plt.close(fig)
+
+                ```
+        """
+        categorical = self._categorical
+        if categorical is None:
+            raise ValueError(
+                "create_categorical_legend() called before a "
+                "scheme='categorical' mapping was prepared -- call "
+                "_prepare_scalar_mapping (or plot()) first."
+            )
+        legend_kwargs = {
+            "title": self.default_options.get("cbar_label"),
+            **(self.default_options.get("category_legend_kwargs") or {}),
+        }
+        return disjoint_legend(
+            ax,
+            categorical["colors"],
+            categorical["labels"],
+            **legend_kwargs,
+        )
 
     def create_color_bar(self, ax: Axes, im: Any, cbar_kw: dict) -> Colorbar:
         """Create a colorbar with full customization from default_options.
