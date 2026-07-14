@@ -17,6 +17,7 @@ from cleopatra.array_glyph import (
     _COORD_SHAPE_MISMATCH,
     ArrayGlyph,
     FacetGrid,
+    PointOverlay,
 )
 
 
@@ -238,9 +239,7 @@ class TestPlotArray:
     ):
         array = ArrayGlyph(arr, exclude_value=[no_data_value])
         fig, ax = array.plot(
-            points=points,
-            point_color=gauge_color,
-            point_size=point_size,
+            points=PointOverlay(points, color=gauge_color, size=point_size),
             id_color=id_color,
             id_size=id_size,
             display_cell_value=display_cell_value,
@@ -353,60 +352,14 @@ class TestAnimate:
 class TestRenamedKwargAliases:
     """The legacy `plot`/`animate` kwarg names still work but warn.
 
-    `pid_color`/`pid_size` were renamed to `point_label_color`/
-    `point_label_size`, `text_colors` to `cell_value_text_colors`, and
-    `text_loc` to `label_location`. Each old name is still accepted as a
-    keyword (routed through `**kwargs`), emits a `DeprecationWarning`
-    naming its replacement, and is forwarded to the same effective
-    behaviour as the new name.
+    `text_colors` was renamed to `cell_value_text_colors`, and `text_loc`
+    to `label_location`. Each old name is still accepted as a keyword
+    (routed through `**kwargs`), emits a `DeprecationWarning` naming its
+    replacement, and is forwarded to the same effective behaviour as the
+    new name. The point-styling kwargs (`point_color`, `pid_color`, ...)
+    have since been superseded by `PointOverlay` -- see
+    `TestPointOverlayAliases`.
     """
-
-    def test_plot_pid_color_alias_still_works(self, arr: np.ndarray):
-        """`plot(pid_color=...)` warns and colours the point label."""
-        points = np.array([[5, 1, 1]])
-        array = ArrayGlyph(arr)
-        with pytest.warns(DeprecationWarning, match="point_label_color"):
-            fig, ax = array.plot(points=points, pid_color="lime")
-        label = [t for t in ax.texts if t.get_text() == "5"][0]
-        assert to_rgba(label.get_color()) == to_rgba("lime")
-
-    def test_plot_pid_size_alias_still_works(self, arr: np.ndarray):
-        """`plot(pid_size=...)` warns and sizes the point label."""
-        points = np.array([[5, 1, 1]])
-        array = ArrayGlyph(arr)
-        with pytest.warns(DeprecationWarning, match="point_label_size"):
-            fig, ax = array.plot(points=points, pid_size=42)
-        label = [t for t in ax.texts if t.get_text() == "5"][0]
-        assert label.get_fontsize() == 42
-
-    def test_plot_new_name_wins_over_deprecated_alias(self, arr: np.ndarray):
-        """Passing both names at once still warns, but the new name wins."""
-        points = np.array([[5, 1, 1]])
-        array = ArrayGlyph(arr)
-        with pytest.warns(DeprecationWarning, match="point_label_color"):
-            fig, ax = array.plot(
-                points=points, point_label_color="lime", pid_color="orange"
-            )
-        label = [t for t in ax.texts if t.get_text() == "5"][0]
-        assert to_rgba(label.get_color()) == to_rgba("lime")
-
-    def test_animate_pid_color_alias_still_works(
-        self, coello_data: np.ndarray, animate_time_list: list
-    ):
-        """`animate(pid_color=...)` warns and colours the point label."""
-        points = np.array([[5, 1, 1]])
-        array = ArrayGlyph(coello_data)
-        with pytest.warns(DeprecationWarning, match="point_label_color"):
-            array.animate(animate_time_list, points=points, pid_color="lime")
-
-    def test_animate_pid_size_alias_still_works(
-        self, coello_data: np.ndarray, animate_time_list: list
-    ):
-        """`animate(pid_size=...)` warns and sizes the point label."""
-        points = np.array([[5, 1, 1]])
-        array = ArrayGlyph(coello_data)
-        with pytest.warns(DeprecationWarning, match="point_label_size"):
-            array.animate(animate_time_list, points=points, pid_size=42)
 
     def test_animate_text_colors_alias_still_works(
         self, coello_data: np.ndarray, animate_time_list: list
@@ -429,13 +382,109 @@ class TestRenamedKwargAliases:
             array.animate(animate_time_list, text_loc=[0.1, 0.1])
         assert array._day_text.get_transform() is array.ax.transData
 
-    def test_no_warning_with_only_new_names(self, arr: np.ndarray):
+    def test_no_warning_with_only_new_names(self, coello_data: np.ndarray):
         """Using only the current names raises no deprecation warning."""
+        array = ArrayGlyph(coello_data)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            array.animate(
+                ["t0", "t1", "t2"],
+                cell_value_text_colors=("yellow", "purple"),
+                label_location=[0.1, 0.1],
+            )
+
+
+class TestPointOverlayAliases:
+    """`PointOverlay` is the current way to style `points`; the flat
+    keywords it replaces (`point_color`/`point_size`/`point_label_color`/
+    `point_label_size`, and the older `pid_color`/`pid_size`) still work
+    on a plain array but warn.
+    """
+
+    def test_plain_array_uses_point_overlay_defaults(self, arr: np.ndarray):
+        """A bare array (no styling kwargs) needs no `PointOverlay` and warns nothing."""
         points = np.array([[5, 1, 1]])
         array = ArrayGlyph(arr)
         with warnings.catch_warnings():
             warnings.simplefilter("error", DeprecationWarning)
-            array.plot(points=points, point_label_color="lime", point_label_size=42)
+            fig, ax = array.plot(points=points)
+        label = [t for t in ax.texts if t.get_text() == "5"][0]
+        assert to_rgba(label.get_color()) == to_rgba("blue")  # PointOverlay default
+
+    def test_plot_point_overlay_no_warning(self, arr: np.ndarray):
+        """Passing a `PointOverlay` is the current style and warns nothing."""
+        overlay = PointOverlay(np.array([[5, 1, 1]]), label_color="lime")
+        array = ArrayGlyph(arr)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            fig, ax = array.plot(points=overlay)
+        label = [t for t in ax.texts if t.get_text() == "5"][0]
+        assert to_rgba(label.get_color()) == to_rgba("lime")
+
+    def test_plot_point_color_alias_still_works(self, arr: np.ndarray):
+        """`plot(points=array, point_color=...)` warns and colours the marker."""
+        points = np.array([[5, 1, 1]])
+        array = ArrayGlyph(arr)
+        with pytest.warns(DeprecationWarning, match="PointOverlay"):
+            fig, ax = array.plot(points=points, point_color="lime")
+        assert to_rgba(ax.collections[0].get_facecolor()[0]) == to_rgba("lime")
+
+    def test_plot_point_label_color_alias_still_works(self, arr: np.ndarray):
+        """`plot(points=array, point_label_color=...)` warns and colours the label."""
+        points = np.array([[5, 1, 1]])
+        array = ArrayGlyph(arr)
+        with pytest.warns(DeprecationWarning, match="PointOverlay"):
+            fig, ax = array.plot(points=points, point_label_color="lime")
+        label = [t for t in ax.texts if t.get_text() == "5"][0]
+        assert to_rgba(label.get_color()) == to_rgba("lime")
+
+    def test_plot_pid_color_oldest_alias_still_works(self, arr: np.ndarray):
+        """The oldest `pid_color` alias still resolves to the label colour."""
+        points = np.array([[5, 1, 1]])
+        array = ArrayGlyph(arr)
+        with pytest.warns(DeprecationWarning, match="PointOverlay"):
+            fig, ax = array.plot(points=points, pid_color="lime")
+        label = [t for t in ax.texts if t.get_text() == "5"][0]
+        assert to_rgba(label.get_color()) == to_rgba("lime")
+
+    def test_plot_point_label_color_wins_over_pid_color(self, arr: np.ndarray):
+        """When both label-colour generations are given, the newer one wins."""
+        points = np.array([[5, 1, 1]])
+        array = ArrayGlyph(arr)
+        with pytest.warns(DeprecationWarning, match="PointOverlay"):
+            fig, ax = array.plot(
+                points=points, point_label_color="lime", pid_color="orange"
+            )
+        label = [t for t in ax.texts if t.get_text() == "5"][0]
+        assert to_rgba(label.get_color()) == to_rgba("lime")
+
+    def test_plot_deprecated_kwargs_ignored_with_point_overlay(self, arr: np.ndarray):
+        """A deprecated kwarg alongside a `PointOverlay` is ignored, with a warning."""
+        overlay = PointOverlay(np.array([[5, 1, 1]]), label_color="lime")
+        array = ArrayGlyph(arr)
+        with pytest.warns(UserWarning, match="ignored"):
+            fig, ax = array.plot(points=overlay, point_label_color="orange")
+        label = [t for t in ax.texts if t.get_text() == "5"][0]
+        assert to_rgba(label.get_color()) == to_rgba("lime")
+
+    def test_animate_pid_size_oldest_alias_still_works(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """`animate(points=array, pid_size=...)` warns and sizes the label."""
+        points = np.array([[5, 1, 1]])
+        array = ArrayGlyph(coello_data)
+        with pytest.warns(DeprecationWarning, match="PointOverlay"):
+            array.animate(animate_time_list, points=points, pid_size=42)
+
+    def test_animate_point_overlay_no_warning(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """Passing a `PointOverlay` to `animate` is the current style and warns nothing."""
+        overlay = PointOverlay(np.array([[5, 1, 1]]), size=42)
+        array = ArrayGlyph(coello_data)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            array.animate(animate_time_list, points=overlay)
 
 
 @pytest.mark.plot
