@@ -609,15 +609,19 @@ def _resolve_point_overlay(
 _DEPRECATED_FRAME_LABEL_KWARGS = ("label_location", "label_color", "text_loc")
 
 
-def _resolve_frame_label(frame_label: FrameLabel | None, kwargs: dict) -> FrameLabel:
+def _resolve_frame_label(frame_label: Any, kwargs: dict) -> FrameLabel:
     """Normalise `animate`'s `frame_label` argument into a `FrameLabel`.
 
     Accepts the current calling convention (`frame_label` is already a
-    `FrameLabel`, or `None` for the defaults) as well as the deprecated one
-    (separate `label_location` / `label_color` keywords, or the even older
-    `text_loc` for the location) -- the latter emit a `DeprecationWarning`
-    and are folded into a `FrameLabel` here. Unlike `_resolve_point_overlay`,
-    this never returns `None`: `animate` always draws a frame label, so
+    `FrameLabel`, or `None` for the defaults) as well as two deprecated
+    ones: separate `label_location` / `label_color` keywords (or the even
+    older `text_loc` for the location), and a bare `[x, y]` value at the
+    `frame_label` position itself -- the pre-`FrameLabel` calling shape,
+    still reachable positionally (`animate(time, None, colors, interval,
+    [x, y])`) even though `label_location`/`text_loc` were never
+    positional-only. Any of these emit a `DeprecationWarning` and are
+    folded into a `FrameLabel` here. Unlike `_resolve_point_overlay`, this
+    never returns `None`: `animate` always draws a frame label, so
     `frame_label=None` means "use `FrameLabel`'s own defaults", not "no
     label". Must be called *before* `animate` validates `kwargs` against
     `self.default_options`, which would otherwise reject the deprecated
@@ -625,14 +629,16 @@ def _resolve_frame_label(frame_label: FrameLabel | None, kwargs: dict) -> FrameL
 
     Args:
         frame_label: The raw `frame_label` argument as received by
-            `animate`: a `FrameLabel`, or `None`.
+            `animate`: a `FrameLabel`, `None`, or (deprecated) a plain
+            `[x, y]` value passed positionally.
         kwargs: The method's `**kwargs` dict; mutated in place (any
             deprecated frame-label keys are popped out).
 
     Returns:
         FrameLabel: `frame_label` unchanged if it was already a
             `FrameLabel`; otherwise a new `FrameLabel` built from the
-            (possibly deprecated) location/color kwargs, or the defaults.
+            positional value and/or the (possibly deprecated)
+            location/color kwargs, or the defaults.
     """
     if isinstance(frame_label, FrameLabel):
         used_deprecated = [k for k in _DEPRECATED_FRAME_LABEL_KWARGS if k in kwargs]
@@ -641,20 +647,29 @@ def _resolve_frame_label(frame_label: FrameLabel | None, kwargs: dict) -> FrameL
                 f"{used_deprecated} are ignored when `frame_label` is a "
                 "`FrameLabel` -- set them on the `FrameLabel` instance "
                 "instead.",
-                stacklevel=4,
+                stacklevel=3,
             )
             for key in used_deprecated:
                 kwargs.pop(key)
         return frame_label
-    location, location_key = _pop_first(kwargs, ("label_location", "text_loc"), None)
     color, color_key = _pop_first(kwargs, ("label_color",), "black")
+    # Drain the location kwargs unconditionally (so they never reach the
+    # strict `kwargs` validation), but a plain positional `frame_label`
+    # value below wins over them if both are somehow given at once.
+    kwarg_location, kwarg_location_key = _pop_first(
+        kwargs, ("label_location", "text_loc"), None
+    )
+    if frame_label is not None:
+        location, location_key = frame_label, "frame_label (positional)"
+    else:
+        location, location_key = kwarg_location, kwarg_location_key
     used = [k for k in (location_key, color_key) if k]
     if used:
         warnings.warn(
             f"Passing {used} directly is deprecated; pass a "
             "`cleopatra.array_glyph.FrameLabel` as `frame_label` instead.",
             DeprecationWarning,
-            stacklevel=4,
+            stacklevel=3,
         )
     return FrameLabel(location=location, color=color)
 

@@ -448,6 +448,39 @@ class TestFrameLabelAliases:
             )
         assert array._day_text.get_color() == "yellow"
 
+    def test_positional_legacy_location_still_works(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """A plain `[x, y]` passed positionally at the old `text_loc` slot still works.
+
+        Test scenario:
+            On `main`, `animate`'s 5th positional-or-keyword parameter was
+            `text_loc` (a plain `[x, y]` list); it is now `frame_label`. A
+            stale positional call with a plain list at that position must
+            still position the label (not silently drop it) and warn.
+        """
+        array = ArrayGlyph(coello_data)
+        with pytest.warns(DeprecationWarning, match="FrameLabel"):
+            array.animate(animate_time_list, None, ("white", "black"), 200, [0.3, 0.3])
+        assert array._day_text.get_position() == (0.3, 0.3)
+        assert array._day_text.get_transform() is array.ax.transData
+
+    def test_deprecation_warning_attributes_to_caller(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """The `FrameLabel`-alias deprecation warning points at the caller's line.
+
+        Test scenario:
+            Regression for a `stacklevel` bug: the warning must name this
+            test file/line, not an internal frame (e.g. `warnings.py`).
+        """
+        array = ArrayGlyph(coello_data)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            array.animate(animate_time_list, label_color="yellow")
+        assert len(caught) == 1
+        assert caught[0].filename == __file__
+
 
 class TestPointOverlayAliases:
     """`PointOverlay` is the current way to style `points`; the flat
