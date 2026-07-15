@@ -388,6 +388,34 @@ class TestRenamedKwargAliases:
                 frame_label=FrameLabel(location=[0.1, 0.1]),
             )
 
+    def test_both_given_new_wins_even_at_its_own_default(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """`cell_value_text_colors` wins even when equal to its own default.
+
+        Test scenario:
+            Regression for a false-negative in the "both given" conflict
+            check: passing both the deprecated `text_colors=` and the
+            current `cell_value_text_colors=` -- with the current one
+            happening to equal its own default -- must still fire the
+            conflict warning (not silently prefer the deprecated value,
+            which a plain equality-with-default check cannot tell apart
+            from "the new name was never passed").
+        """
+        array = ArrayGlyph(coello_data)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            array.animate(
+                animate_time_list,
+                display_cell_value=True,
+                cell_value_text_colors=("white", "black"),
+                text_colors=("yellow", "purple"),
+            )
+        messages = [str(w.message) for w in caught]
+        assert any("is deprecated" in m for m in messages)
+        assert any("were given" in m and "wins" in m for m in messages)
+
+
 class TestFrameLabelAliases:
     """`FrameLabel` is the current way to style `animate`'s frame/time
     label; the flat keywords it replaces (`label_location`/`label_color`,

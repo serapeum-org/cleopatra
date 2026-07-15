@@ -99,6 +99,30 @@ _COORD_SHAPE_MISMATCH = "coord array shape does not match the data array"
 _COORD_DTYPE_MISMATCH = "coord arrays must be numeric (integer or float)"
 
 
+class _Unset:
+    """Sentinel type for "the caller did not pass this explicit parameter".
+
+    A plain `object()` sentinel would work too, but this gives `help()` /
+    IDE signature tooltips a readable `<unset>` instead of
+    `<object object at 0x...>` for the parameter default that uses it
+    (`ArrayGlyph.animate`'s `cell_value_text_colors`).
+    """
+
+    def __repr__(self) -> str:
+        return "<unset>"
+
+
+#: Sentinel default for a renamed parameter whose *real* default is
+#: resolved inside `_resolve_renamed_kwarg` rather than in the method
+#: signature. Distinguishes "caller didn't pass this parameter" from
+#: "caller explicitly passed a value equal to its default" -- an ambiguity
+#: a plain equality-with-default check cannot resolve, which previously
+#: made the "both old and new given" conflict detection silently prefer
+#: the deprecated value in that case (the opposite of the documented
+#: "new wins" behaviour).
+_UNSET = _Unset()
+
+
 def _resolve_renamed_kwarg(
     kwargs: dict, old_name: str, new_name: str, new_value: Any, default: Any
 ) -> Any:
@@ -119,18 +143,20 @@ def _resolve_renamed_kwarg(
             `default_options` validation).
         old_name: The deprecated parameter name to look for in `kwargs`.
         new_name: The current parameter name, used in the warning message.
-        new_value: The value the caller's `new_name` argument resolved to
-            (whatever `plot`/`animate` received for it, default or not).
-        default: `new_name`'s own default value. Used only to detect a
-            caller passing *both* names at once (a non-default `new_value`
-            alongside the old name is ambiguous) -- not a fully reliable
-            signal (a caller could explicitly repeat the default), but
-            good enough to warn on the common conflicting case.
+        new_value: The value the caller's `new_name` argument resolved to.
+            `new_name`'s own signature default must be the `_UNSET`
+            sentinel (not a concrete value) so this can tell "the caller
+            didn't pass `new_name`" apart from "the caller explicitly
+            passed `new_name` equal to its real default" -- the two cases
+            a plain equality-with-default check cannot distinguish.
+        default: `new_name`'s real default value, substituted when
+            neither name was given.
 
     Returns:
         Any: `new_value` when `old_name` is absent from `kwargs`, or when
-            both names were given (new wins); otherwise the popped
-            `old_name` value.
+            both names were given (new wins, i.e. `new_value` is not
+            `_UNSET`); otherwise the popped `old_name` value, or `default`
+            when neither was given.
 
     Examples:
         - The old name is used and a `DeprecationWarning` is raised:
@@ -141,7 +167,7 @@ def _resolve_renamed_kwarg(
             ...     warnings.simplefilter("always")
             ...     resolved = _resolve_renamed_kwarg(
             ...         kwargs, "text_colors", "cell_value_text_colors",
-            ...         ("white", "black"), ("white", "black"),
+            ...         _UNSET, ("white", "black"),
             ...     )
             >>> resolved
             ('yellow', 'purple')
@@ -149,6 +175,18 @@ def _resolve_renamed_kwarg(
             False
             >>> issubclass(caught[0].category, DeprecationWarning)
             True
+
+            ```
+        - Both names given: the new one wins even when it is equal to its
+            own default (the false-negative a plain equality check would
+            miss):
+            ```python
+            >>> kwargs = {"text_colors": ("yellow", "purple")}
+            >>> _resolve_renamed_kwarg(
+            ...     kwargs, "text_colors", "cell_value_text_colors",
+            ...     ("white", "black"), ("white", "black"),
+            ... )
+            ('white', 'black')
 
             ```
         - With no old-name alias present, the new value passes through
@@ -166,14 +204,14 @@ def _resolve_renamed_kwarg(
             ```
     """
     if old_name not in kwargs:
-        return new_value
+        return default if new_value is _UNSET else new_value
     old_value = kwargs.pop(old_name)
     warnings.warn(
         f"`{old_name}` is deprecated; use `{new_name}` instead.",
         DeprecationWarning,
         stacklevel=3,
     )
-    if new_value != default:
+    if new_value is not _UNSET:
         warnings.warn(
             f"Both `{old_name}` (deprecated) and `{new_name}` were given; "
             f"`{new_name}` wins.",
@@ -3492,7 +3530,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         self,
         time: list[Any],
         points: np.ndarray | PointOverlay | None = None,
-        cell_value_text_colors: tuple[str, str] = ("white", "black"),
+        cell_value_text_colors: tuple[str, str] | _Unset = _UNSET,
         interval: int = 200,
         frame_label: FrameLabel | None = None,
         *,
