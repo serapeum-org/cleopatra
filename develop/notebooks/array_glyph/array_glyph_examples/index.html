@@ -3154,7 +3154,7 @@ The ArrayGlyph class provides functionality for visualizing arrays and creating 
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
 <span class="n">Config</span><span class="o">.</span><span class="n">set_matplotlib_backend</span><span class="p">()</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span><span class="p">,</span> <span class="n">PointOverlay</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.animation</span><span class="w"> </span><span class="kn">import</span> <span class="n">embed_gif</span>
 <span class="c1"># Set the random seed for reproducibility</span>
 <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
@@ -3164,7 +3164,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from cleopatra.config import Config
 Config.set_matplotlib_backend()
-from cleopatra.array_glyph import ArrayGlyph
+from cleopatra.array_glyph import ArrayGlyph, PointOverlay
 from cleopatra.animation import embed_gif
 # Set the random seed for reproducibility
 np.random.seed(42)</div>
@@ -3924,16 +3924,21 @@ fig, ax = array_glyph_values.plot(
     <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">11</span><span class="p">]</span>   <span class="c1"># Bottom-right region</span>
 <span class="p">])</span>
 
+<span class="c1"># Style the points via a PointOverlay: locations plus marker/label styling</span>
+<span class="n">point_overlay</span> <span class="o">=</span> <span class="n">PointOverlay</span><span class="p">(</span>
+    <span class="n">points</span><span class="p">,</span>
+    <span class="n">color</span><span class="o">=</span><span class="s2">"red"</span><span class="p">,</span>         <span class="c1"># Set point color</span>
+    <span class="n">size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>             <span class="c1"># Set point size</span>
+    <span class="n">label_color</span><span class="o">=</span><span class="s2">"blue"</span><span class="p">,</span>  <span class="c1"># Set point-value label color</span>
+    <span class="n">label_size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>        <span class="c1"># Set point-value label size</span>
+<span class="p">)</span>
+
 <span class="c1"># Initialize the ArrayGlyph with the array</span>
 <span class="n">array_glyph_points</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">point_array</span><span class="p">)</span>
 
 <span class="c1"># Plot with points</span>
 <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">array_glyph_points</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-    <span class="n">points</span><span class="o">=</span><span class="n">points</span><span class="p">,</span>            <span class="c1"># Points to display</span>
-    <span class="n">point_color</span><span class="o">=</span><span class="s2">"red"</span><span class="p">,</span>        <span class="c1"># Set point color</span>
-    <span class="n">point_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>           <span class="c1"># Set point size</span>
-    <span class="n">pid_color</span><span class="o">=</span><span class="s2">"blue"</span><span class="p">,</span>         <span class="c1"># Set point ID color</span>
-    <span class="n">pid_size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>              <span class="c1"># Set point ID size</span>
+    <span class="n">points</span><span class="o">=</span><span class="n">point_overlay</span><span class="p">,</span>     <span class="c1"># Points to display</span>
     <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span>           <span class="c1"># Use the viridis colormap</span>
     <span class="n">title</span><span class="o">=</span><span class="s2">"Array with Points"</span><span class="p">,</span>
     <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
@@ -3951,16 +3956,21 @@ points = np.array([
     [4, 11, 11]   # Bottom-right region
 ])
 
+# Style the points via a PointOverlay: locations plus marker/label styling
+point_overlay = PointOverlay(
+    points,
+    color="red",         # Set point color
+    size=100,             # Set point size
+    label_color="blue",  # Set point-value label color
+    label_size=16,        # Set point-value label size
+)
+
 # Initialize the ArrayGlyph with the array
 array_glyph_points = ArrayGlyph(point_array)
 
 # Plot with points
 fig, ax = array_glyph_points.plot(
-    points=points,            # Points to display
-    point_color="red",        # Set point color
-    point_size=100,           # Set point size
-    pid_color="blue",         # Set point ID color
-    pid_size=16,              # Set point ID size
+    points=point_overlay,     # Points to display
     cmap="viridis",           # Use the viridis colormap
     title="Array with Points",
     figsize=(10, 8)
@@ -3973,14 +3983,6 @@ fig, ax = array_glyph_points.plot(
 <div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>/tmp/ipykernel_2622/1770850275.py:17: DeprecationWarning: Passing `points` as a plain array together with ['point_color', 'point_size', 'pid_color', 'pid_size'] is deprecated; pass a `cleopatra.array_glyph.PointOverlay` instead.
-  fig, ax = array_glyph_points.plot(
-</pre>
-</div>
-</div>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedImage jp-OutputArea-output" tabindex="0">
@@ -4179,10 +4181,10 @@ embed_gif(anim, fps=5)</div>
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
 <div class="jp-OutputPrompt jp-OutputArea-prompt">Out[18]:</div>
 <div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
-<pre>['reference_map.ipynb',
+<pre>['array_glyph_examples.ipynb',
  'rgb_animation.ipynb',
  'animation.gif',
- 'array_glyph_examples.ipynb']</pre>
+ 'reference_map.ipynb']</pre>
 </div>
 </div>
 </div>
