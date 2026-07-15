@@ -2810,12 +2810,12 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">IPython.display</span><span class="w"> </span><span class="kn">import</span> <span class="n">HTML</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span><span class="p">,</span> <span class="n">FrameLabel</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-1">import numpy as np
 from IPython.display import HTML
 
-from cleopatra.array_glyph import ArrayGlyph</div>
+from cleopatra.array_glyph import ArrayGlyph, FrameLabel</div>
 </div>
 </div>
 </div>
@@ -2934,7 +2934,7 @@ rgb_stack.shape</div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"t</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_frames</span><span class="p">)]</span>
 
 <span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">rgb_stack</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">title</span><span class="o">=</span><span class="s2">"RGB time-lapse"</span><span class="p">)</span>
-<span class="n">anim</span> <span class="o">=</span> <span class="n">glyph</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mi">150</span><span class="p">,</span> <span class="n">label_color</span><span class="o">=</span><span class="s2">"white"</span><span class="p">)</span>
+<span class="n">anim</span> <span class="o">=</span> <span class="n">glyph</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mi">150</span><span class="p">,</span> <span class="n">frame_label</span><span class="o">=</span><span class="n">FrameLabel</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">"white"</span><span class="p">))</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="s2">"colorbar drawn?"</span><span class="p">,</span> <span class="n">glyph</span><span class="o">.</span><span class="n">cbar</span><span class="p">)</span>  <span class="c1"># None for true colour</span>
 <span class="n">HTML</span><span class="p">(</span><span class="n">anim</span><span class="o">.</span><span class="n">to_jshtml</span><span class="p">())</span>
@@ -2942,7 +2942,7 @@ rgb_stack.shape</div>
 <div class="clipboard-copy-txt" id="cell-3">labels = [f"t{t}" for t in range(n_frames)]
 
 glyph = ArrayGlyph(rgb_stack, figsize=(4, 4), title="RGB time-lapse")
-anim = glyph.animate(labels, interval=150, label_color="white")
+anim = glyph.animate(labels, interval=150, frame_label=FrameLabel(color="white"))
 
 print("colorbar drawn?", glyph.cbar)  # None for true colour
 HTML(anim.to_jshtml())</div>
@@ -2954,14 +2954,6 @@ HTML(anim.to_jshtml())</div>
 <div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>/tmp/ipykernel_2748/497976636.py:4: DeprecationWarning: Passing ['label_color'] directly is deprecated; pass a `cleopatra.array_glyph.FrameLabel` as `frame_label` instead.
-  anim = glyph.animate(labels, interval=150, label_color="white")
-</pre>
-</div>
-</div>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
@@ -3153,36 +3145,36 @@ input[type=range].anim-slider {
 }
 </style>
 <div class="animation">
-<img alt="No description has been provided for this image" id="_anim_img5bcf09a7594242b88c0cf352eb56e9dc"/>
+<img alt="No description has been provided for this image" id="_anim_img3df11d13b5d04e0cba5d36f278e972c9"/>
 <div class="anim-controls">
-<input class="anim-slider" id="_anim_slider5bcf09a7594242b88c0cf352eb56e9dc" max="1" min="0" name="points" oninput="anim5bcf09a7594242b88c0cf352eb56e9dc.set_frame(parseInt(this.value));" step="1" type="range" value="0"/>
+<input class="anim-slider" id="_anim_slider3df11d13b5d04e0cba5d36f278e972c9" max="1" min="0" name="points" oninput="anim3df11d13b5d04e0cba5d36f278e972c9.set_frame(parseInt(this.value));" step="1" type="range" value="0"/>
 <div class="anim-buttons">
-<button aria-label="Decrease speed" onclick="anim5bcf09a7594242b88c0cf352eb56e9dc.slower()" title="Decrease speed">
+<button aria-label="Decrease speed" onclick="anim3df11d13b5d04e0cba5d36f278e972c9.slower()" title="Decrease speed">
 <i class="fa fa-minus"></i></button>
-<button aria-label="First frame" onclick="anim5bcf09a7594242b88c0cf352eb56e9dc.first_frame()" title="First frame">
+<button aria-label="First frame" onclick="anim3df11d13b5d04e0cba5d36f278e972c9.first_frame()" title="First frame">
 <i class="fa fa-fast-backward"></i></button>
-<button aria-label="Previous frame" onclick="anim5bcf09a7594242b88c0cf352eb56e9dc.previous_frame()" title="Previous frame">
+<button aria-label="Previous frame" onclick="anim3df11d13b5d04e0cba5d36f278e972c9.previous_frame()" title="Previous frame">
 <i class="fa fa-step-backward"></i></button>
-<button aria-label="Play backwards" onclick="anim5bcf09a7594242b88c0cf352eb56e9dc.reverse_animation()" title="Play backwards">
+<button aria-label="Play backwards" onclick="anim3df11d13b5d04e0cba5d36f278e972c9.reverse_animation()" title="Play backwards">
 <i class="fa fa-play fa-flip-horizontal"></i></button>
-<button aria-label="Pause" onclick="anim5bcf09a7594242b88c0cf352eb56e9dc.pause_animation()" title="Pause">
+<button aria-label="Pause" onclick="anim3df11d13b5d04e0cba5d36f278e972c9.pause_animation()" title="Pause">
 <i class="fa fa-pause"></i></button>
-<button aria-label="Play" onclick="anim5bcf09a7594242b88c0cf352eb56e9dc.play_animation()" title="Play">
+<button aria-label="Play" onclick="anim3df11d13b5d04e0cba5d36f278e972c9.play_animation()" title="Play">
 <i class="fa fa-play"></i></button>
-<button aria-label="Next frame" onclick="anim5bcf09a7594242b88c0cf352eb56e9dc.next_frame()" title="Next frame">
+<button aria-label="Next frame" onclick="anim3df11d13b5d04e0cba5d36f278e972c9.next_frame()" title="Next frame">
 <i class="fa fa-step-forward"></i></button>
-<button aria-label="Last frame" onclick="anim5bcf09a7594242b88c0cf352eb56e9dc.last_frame()" title="Last frame">
+<button aria-label="Last frame" onclick="anim3df11d13b5d04e0cba5d36f278e972c9.last_frame()" title="Last frame">
 <i class="fa fa-fast-forward"></i></button>
-<button aria-label="Increase speed" onclick="anim5bcf09a7594242b88c0cf352eb56e9dc.faster()" title="Increase speed">
+<button aria-label="Increase speed" onclick="anim3df11d13b5d04e0cba5d36f278e972c9.faster()" title="Increase speed">
 <i class="fa fa-plus"></i></button>
 </div>
-<form action="#n" aria-label="Repetition mode" class="anim-state" name="_anim_loop_select5bcf09a7594242b88c0cf352eb56e9dc" title="Repetition mode">
-<input id="_anim_radio1_5bcf09a7594242b88c0cf352eb56e9dc" name="state" type="radio" value="once"/>
-<label for="_anim_radio1_5bcf09a7594242b88c0cf352eb56e9dc">Once</label>
-<input checked="" id="_anim_radio2_5bcf09a7594242b88c0cf352eb56e9dc" name="state" type="radio" value="loop"/>
-<label for="_anim_radio2_5bcf09a7594242b88c0cf352eb56e9dc">Loop</label>
-<input id="_anim_radio3_5bcf09a7594242b88c0cf352eb56e9dc" name="state" type="radio" value="reflect"/>
-<label for="_anim_radio3_5bcf09a7594242b88c0cf352eb56e9dc">Reflect</label>
+<form action="#n" aria-label="Repetition mode" class="anim-state" name="_anim_loop_select3df11d13b5d04e0cba5d36f278e972c9" title="Repetition mode">
+<input id="_anim_radio1_3df11d13b5d04e0cba5d36f278e972c9" name="state" type="radio" value="once"/>
+<label for="_anim_radio1_3df11d13b5d04e0cba5d36f278e972c9">Once</label>
+<input checked="" id="_anim_radio2_3df11d13b5d04e0cba5d36f278e972c9" name="state" type="radio" value="loop"/>
+<label for="_anim_radio2_3df11d13b5d04e0cba5d36f278e972c9">Loop</label>
+<input id="_anim_radio3_3df11d13b5d04e0cba5d36f278e972c9" name="state" type="radio" value="reflect"/>
+<label for="_anim_radio3_3df11d13b5d04e0cba5d36f278e972c9">Reflect</label>
 </form>
 </div>
 </div>
@@ -3190,9 +3182,9 @@ input[type=range].anim-slider {
   /* Instantiate the Animation class. */
   /* The IDs given should match those used in the template above. */
   (function() {
-    var img_id = "_anim_img5bcf09a7594242b88c0cf352eb56e9dc";
-    var slider_id = "_anim_slider5bcf09a7594242b88c0cf352eb56e9dc";
-    var loop_select_id = "_anim_loop_select5bcf09a7594242b88c0cf352eb56e9dc";
+    var img_id = "_anim_img3df11d13b5d04e0cba5d36f278e972c9";
+    var slider_id = "_anim_slider3df11d13b5d04e0cba5d36f278e972c9";
+    var loop_select_id = "_anim_loop_select3df11d13b5d04e0cba5d36f278e972c9";
     var frames = new Array(12);
     
   frames[0] = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZAAAAGQCAYAAACAvzbMAAAAOnRFWHRTb2Z0d2FyZQBNYXRwbG90\
@@ -5263,7 +5255,7 @@ AACT/wdPoUEhRja8mQAAAABJRU5ErkJggg==\
     /* set a timeout to make sure all the above elements are created before
        the object is initialized. */
     setTimeout(function() {
-        anim5bcf09a7594242b88c0cf352eb56e9dc = new Animation(frames, img_id, slider_id, 149.0,
+        anim3df11d13b5d04e0cba5d36f278e972c9 = new Animation(frames, img_id, slider_id, 149.0,
                                  loop_select_id);
     }, 0);
   })()
@@ -5317,7 +5309,7 @@ AACT/wdPoUEhRja8mQAAAABJRU5ErkJggg==\
 <span class="n">rgba_stack</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">rgb_stack</span><span class="p">,</span> <span class="n">alpha</span><span class="p">],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
 
 <span class="n">glyph_rgba</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">rgba_stack</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">title</span><span class="o">=</span><span class="s2">"RGBA time-lapse"</span><span class="p">)</span>
-<span class="n">glyph_rgba</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mi">150</span><span class="p">,</span> <span class="n">label_color</span><span class="o">=</span><span class="s2">"white"</span><span class="p">)</span>
+<span class="n">glyph_rgba</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mi">150</span><span class="p">,</span> <span class="n">frame_label</span><span class="o">=</span><span class="n">FrameLabel</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">"white"</span><span class="p">))</span>
 
 <span class="n">out</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">tempfile</span><span class="o">.</span><span class="n">gettempdir</span><span class="p">())</span> <span class="o">/</span> <span class="s2">"cleopatra_rgba.gif"</span>
 <span class="n">glyph_rgba</span><span class="o">.</span><span class="n">save_animation</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">fps</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
@@ -5331,7 +5323,7 @@ alpha = np.ones((n_frames, h, w, 1))
 rgba_stack = np.concatenate([rgb_stack, alpha], axis=-1)
 
 glyph_rgba = ArrayGlyph(rgba_stack, figsize=(4, 4), title="RGBA time-lapse")
-glyph_rgba.animate(labels, interval=150, label_color="white")
+glyph_rgba.animate(labels, interval=150, frame_label=FrameLabel(color="white"))
 
 out = Path(tempfile.gettempdir()) / "cleopatra_rgba.gif"
 glyph_rgba.save_animation(str(out), fps=6)
@@ -5344,14 +5336,6 @@ print("saved:", out.exists(), "| bytes:", out.stat().st_size)</div>
 <div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>/tmp/ipykernel_2748/2031680673.py:9: DeprecationWarning: Passing ['label_color'] directly is deprecated; pass a `cleopatra.array_glyph.FrameLabel` as `frame_label` instead.
-  glyph_rgba.animate(labels, interval=150, label_color="white")
-</pre>
-</div>
-</div>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
@@ -5405,7 +5389,9 @@ print("saved:", out.exists(), "| bytes:", out.stat().st_size)</div>
 <span class="w">    </span><span class="sd">"""Return RGB frame i on demand (here, straight from rgb_stack)."""</span>
     <span class="k">return</span> <span class="n">rgb_stack</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
 
-<span class="n">lazy_anim</span> <span class="o">=</span> <span class="n">lazy_glyph</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">data_getter</span><span class="o">=</span><span class="n">get_frame</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mi">150</span><span class="p">,</span> <span class="n">label_color</span><span class="o">=</span><span class="s2">"white"</span><span class="p">)</span>
+<span class="n">lazy_anim</span> <span class="o">=</span> <span class="n">lazy_glyph</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span>
+    <span class="n">labels</span><span class="p">,</span> <span class="n">data_getter</span><span class="o">=</span><span class="n">get_frame</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mi">150</span><span class="p">,</span> <span class="n">frame_label</span><span class="o">=</span><span class="n">FrameLabel</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">"white"</span><span class="p">)</span>
+<span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"colorbar drawn?"</span><span class="p">,</span> <span class="n">lazy_glyph</span><span class="o">.</span><span class="n">cbar</span><span class="p">)</span>
 <span class="n">HTML</span><span class="p">(</span><span class="n">lazy_anim</span><span class="o">.</span><span class="n">to_jshtml</span><span class="p">())</span>
 </pre></div>
@@ -5416,7 +5402,9 @@ def get_frame(i):
     """Return RGB frame i on demand (here, straight from rgb_stack)."""
     return rgb_stack[i]
 
-lazy_anim = lazy_glyph.animate(labels, data_getter=get_frame, interval=150, label_color="white")
+lazy_anim = lazy_glyph.animate(
+    labels, data_getter=get_frame, interval=150, frame_label=FrameLabel(color="white")
+)
 print("colorbar drawn?", lazy_glyph.cbar)
 HTML(lazy_anim.to_jshtml())</div>
 </div>
@@ -5431,14 +5419,6 @@ HTML(lazy_anim.to_jshtml())</div>
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>colorbar drawn? None
-</pre>
-</div>
-</div>
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>/tmp/ipykernel_2748/1034737179.py:8: DeprecationWarning: Passing ['label_color'] directly is deprecated; pass a `cleopatra.array_glyph.FrameLabel` as `frame_label` instead.
-  lazy_anim = lazy_glyph.animate(labels, data_getter=get_frame, interval=150, label_color="white")
 </pre>
 </div>
 </div>
@@ -5626,36 +5606,36 @@ input[type=range].anim-slider {
 }
 </style>
 <div class="animation">
-<img alt="No description has been provided for this image" id="_anim_img9dd1405469bf4f50980487e68ad2a751"/>
+<img alt="No description has been provided for this image" id="_anim_img37e7318dafb64977832871aea2761f6b"/>
 <div class="anim-controls">
-<input class="anim-slider" id="_anim_slider9dd1405469bf4f50980487e68ad2a751" max="1" min="0" name="points" oninput="anim9dd1405469bf4f50980487e68ad2a751.set_frame(parseInt(this.value));" step="1" type="range" value="0"/>
+<input class="anim-slider" id="_anim_slider37e7318dafb64977832871aea2761f6b" max="1" min="0" name="points" oninput="anim37e7318dafb64977832871aea2761f6b.set_frame(parseInt(this.value));" step="1" type="range" value="0"/>
 <div class="anim-buttons">
-<button aria-label="Decrease speed" onclick="anim9dd1405469bf4f50980487e68ad2a751.slower()" title="Decrease speed">
+<button aria-label="Decrease speed" onclick="anim37e7318dafb64977832871aea2761f6b.slower()" title="Decrease speed">
 <i class="fa fa-minus"></i></button>
-<button aria-label="First frame" onclick="anim9dd1405469bf4f50980487e68ad2a751.first_frame()" title="First frame">
+<button aria-label="First frame" onclick="anim37e7318dafb64977832871aea2761f6b.first_frame()" title="First frame">
 <i class="fa fa-fast-backward"></i></button>
-<button aria-label="Previous frame" onclick="anim9dd1405469bf4f50980487e68ad2a751.previous_frame()" title="Previous frame">
+<button aria-label="Previous frame" onclick="anim37e7318dafb64977832871aea2761f6b.previous_frame()" title="Previous frame">
 <i class="fa fa-step-backward"></i></button>
-<button aria-label="Play backwards" onclick="anim9dd1405469bf4f50980487e68ad2a751.reverse_animation()" title="Play backwards">
+<button aria-label="Play backwards" onclick="anim37e7318dafb64977832871aea2761f6b.reverse_animation()" title="Play backwards">
 <i class="fa fa-play fa-flip-horizontal"></i></button>
-<button aria-label="Pause" onclick="anim9dd1405469bf4f50980487e68ad2a751.pause_animation()" title="Pause">
+<button aria-label="Pause" onclick="anim37e7318dafb64977832871aea2761f6b.pause_animation()" title="Pause">
 <i class="fa fa-pause"></i></button>
-<button aria-label="Play" onclick="anim9dd1405469bf4f50980487e68ad2a751.play_animation()" title="Play">
+<button aria-label="Play" onclick="anim37e7318dafb64977832871aea2761f6b.play_animation()" title="Play">
 <i class="fa fa-play"></i></button>
-<button aria-label="Next frame" onclick="anim9dd1405469bf4f50980487e68ad2a751.next_frame()" title="Next frame">
+<button aria-label="Next frame" onclick="anim37e7318dafb64977832871aea2761f6b.next_frame()" title="Next frame">
 <i class="fa fa-step-forward"></i></button>
-<button aria-label="Last frame" onclick="anim9dd1405469bf4f50980487e68ad2a751.last_frame()" title="Last frame">
+<button aria-label="Last frame" onclick="anim37e7318dafb64977832871aea2761f6b.last_frame()" title="Last frame">
 <i class="fa fa-fast-forward"></i></button>
-<button aria-label="Increase speed" onclick="anim9dd1405469bf4f50980487e68ad2a751.faster()" title="Increase speed">
+<button aria-label="Increase speed" onclick="anim37e7318dafb64977832871aea2761f6b.faster()" title="Increase speed">
 <i class="fa fa-plus"></i></button>
 </div>
-<form action="#n" aria-label="Repetition mode" class="anim-state" name="_anim_loop_select9dd1405469bf4f50980487e68ad2a751" title="Repetition mode">
-<input id="_anim_radio1_9dd1405469bf4f50980487e68ad2a751" name="state" type="radio" value="once"/>
-<label for="_anim_radio1_9dd1405469bf4f50980487e68ad2a751">Once</label>
-<input checked="" id="_anim_radio2_9dd1405469bf4f50980487e68ad2a751" name="state" type="radio" value="loop"/>
-<label for="_anim_radio2_9dd1405469bf4f50980487e68ad2a751">Loop</label>
-<input id="_anim_radio3_9dd1405469bf4f50980487e68ad2a751" name="state" type="radio" value="reflect"/>
-<label for="_anim_radio3_9dd1405469bf4f50980487e68ad2a751">Reflect</label>
+<form action="#n" aria-label="Repetition mode" class="anim-state" name="_anim_loop_select37e7318dafb64977832871aea2761f6b" title="Repetition mode">
+<input id="_anim_radio1_37e7318dafb64977832871aea2761f6b" name="state" type="radio" value="once"/>
+<label for="_anim_radio1_37e7318dafb64977832871aea2761f6b">Once</label>
+<input checked="" id="_anim_radio2_37e7318dafb64977832871aea2761f6b" name="state" type="radio" value="loop"/>
+<label for="_anim_radio2_37e7318dafb64977832871aea2761f6b">Loop</label>
+<input id="_anim_radio3_37e7318dafb64977832871aea2761f6b" name="state" type="radio" value="reflect"/>
+<label for="_anim_radio3_37e7318dafb64977832871aea2761f6b">Reflect</label>
 </form>
 </div>
 </div>
@@ -5663,9 +5643,9 @@ input[type=range].anim-slider {
   /* Instantiate the Animation class. */
   /* The IDs given should match those used in the template above. */
   (function() {
-    var img_id = "_anim_img9dd1405469bf4f50980487e68ad2a751";
-    var slider_id = "_anim_slider9dd1405469bf4f50980487e68ad2a751";
-    var loop_select_id = "_anim_loop_select9dd1405469bf4f50980487e68ad2a751";
+    var img_id = "_anim_img37e7318dafb64977832871aea2761f6b";
+    var slider_id = "_anim_slider37e7318dafb64977832871aea2761f6b";
+    var loop_select_id = "_anim_loop_select37e7318dafb64977832871aea2761f6b";
     var frames = new Array(12);
     
   frames[0] = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZAAAAGQCAYAAACAvzbMAAAAOnRFWHRTb2Z0d2FyZQBNYXRwbG90\
@@ -7515,7 +7495,7 @@ AElFTkSuQmCC\
     /* set a timeout to make sure all the above elements are created before
        the object is initialized. */
     setTimeout(function() {
-        anim9dd1405469bf4f50980487e68ad2a751 = new Animation(frames, img_id, slider_id, 149.0,
+        anim37e7318dafb64977832871aea2761f6b = new Animation(frames, img_id, slider_id, 149.0,
                                  loop_select_id);
     }, 0);
   })()
@@ -7563,13 +7543,13 @@ AElFTkSuQmCC\
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">single_band</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">rgb_stack</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># (time, rows, cols)</span>
 <span class="n">sb_glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">single_band</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Single band"</span><span class="p">)</span>
-<span class="n">sb_anim</span> <span class="o">=</span> <span class="n">sb_glyph</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mi">150</span><span class="p">,</span> <span class="n">label_color</span><span class="o">=</span><span class="s2">"white"</span><span class="p">)</span>
+<span class="n">sb_anim</span> <span class="o">=</span> <span class="n">sb_glyph</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mi">150</span><span class="p">,</span> <span class="n">frame_label</span><span class="o">=</span><span class="n">FrameLabel</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">"white"</span><span class="p">))</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"colorbar drawn?"</span><span class="p">,</span> <span class="n">sb_glyph</span><span class="o">.</span><span class="n">cbar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
 <span class="n">HTML</span><span class="p">(</span><span class="n">sb_anim</span><span class="o">.</span><span class="n">to_jshtml</span><span class="p">())</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-6">single_band = np.linalg.norm(rgb_stack, axis=-1)  # (time, rows, cols)
 sb_glyph = ArrayGlyph(single_band, figsize=(4, 4), title="Single band")
-sb_anim = sb_glyph.animate(labels, interval=150, label_color="white")
+sb_anim = sb_glyph.animate(labels, interval=150, frame_label=FrameLabel(color="white"))
 print("colorbar drawn?", sb_glyph.cbar is not None)
 HTML(sb_anim.to_jshtml())</div>
 </div>
@@ -7580,14 +7560,6 @@ HTML(sb_anim.to_jshtml())</div>
 <div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>/tmp/ipykernel_2748/3380914238.py:3: DeprecationWarning: Passing ['label_color'] directly is deprecated; pass a `cleopatra.array_glyph.FrameLabel` as `frame_label` instead.
-  sb_anim = sb_glyph.animate(labels, interval=150, label_color="white")
-</pre>
-</div>
-</div>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
@@ -7779,36 +7751,36 @@ input[type=range].anim-slider {
 }
 </style>
 <div class="animation">
-<img alt="No description has been provided for this image" id="_anim_img1d3ce3b89784452e909bbbc4f019ad66"/>
+<img alt="No description has been provided for this image" id="_anim_imga48a40de302448c88104a2e5218daa59"/>
 <div class="anim-controls">
-<input class="anim-slider" id="_anim_slider1d3ce3b89784452e909bbbc4f019ad66" max="1" min="0" name="points" oninput="anim1d3ce3b89784452e909bbbc4f019ad66.set_frame(parseInt(this.value));" step="1" type="range" value="0"/>
+<input class="anim-slider" id="_anim_slidera48a40de302448c88104a2e5218daa59" max="1" min="0" name="points" oninput="anima48a40de302448c88104a2e5218daa59.set_frame(parseInt(this.value));" step="1" type="range" value="0"/>
 <div class="anim-buttons">
-<button aria-label="Decrease speed" onclick="anim1d3ce3b89784452e909bbbc4f019ad66.slower()" title="Decrease speed">
+<button aria-label="Decrease speed" onclick="anima48a40de302448c88104a2e5218daa59.slower()" title="Decrease speed">
 <i class="fa fa-minus"></i></button>
-<button aria-label="First frame" onclick="anim1d3ce3b89784452e909bbbc4f019ad66.first_frame()" title="First frame">
+<button aria-label="First frame" onclick="anima48a40de302448c88104a2e5218daa59.first_frame()" title="First frame">
 <i class="fa fa-fast-backward"></i></button>
-<button aria-label="Previous frame" onclick="anim1d3ce3b89784452e909bbbc4f019ad66.previous_frame()" title="Previous frame">
+<button aria-label="Previous frame" onclick="anima48a40de302448c88104a2e5218daa59.previous_frame()" title="Previous frame">
 <i class="fa fa-step-backward"></i></button>
-<button aria-label="Play backwards" onclick="anim1d3ce3b89784452e909bbbc4f019ad66.reverse_animation()" title="Play backwards">
+<button aria-label="Play backwards" onclick="anima48a40de302448c88104a2e5218daa59.reverse_animation()" title="Play backwards">
 <i class="fa fa-play fa-flip-horizontal"></i></button>
-<button aria-label="Pause" onclick="anim1d3ce3b89784452e909bbbc4f019ad66.pause_animation()" title="Pause">
+<button aria-label="Pause" onclick="anima48a40de302448c88104a2e5218daa59.pause_animation()" title="Pause">
 <i class="fa fa-pause"></i></button>
-<button aria-label="Play" onclick="anim1d3ce3b89784452e909bbbc4f019ad66.play_animation()" title="Play">
+<button aria-label="Play" onclick="anima48a40de302448c88104a2e5218daa59.play_animation()" title="Play">
 <i class="fa fa-play"></i></button>
-<button aria-label="Next frame" onclick="anim1d3ce3b89784452e909bbbc4f019ad66.next_frame()" title="Next frame">
+<button aria-label="Next frame" onclick="anima48a40de302448c88104a2e5218daa59.next_frame()" title="Next frame">
 <i class="fa fa-step-forward"></i></button>
-<button aria-label="Last frame" onclick="anim1d3ce3b89784452e909bbbc4f019ad66.last_frame()" title="Last frame">
+<button aria-label="Last frame" onclick="anima48a40de302448c88104a2e5218daa59.last_frame()" title="Last frame">
 <i class="fa fa-fast-forward"></i></button>
-<button aria-label="Increase speed" onclick="anim1d3ce3b89784452e909bbbc4f019ad66.faster()" title="Increase speed">
+<button aria-label="Increase speed" onclick="anima48a40de302448c88104a2e5218daa59.faster()" title="Increase speed">
 <i class="fa fa-plus"></i></button>
 </div>
-<form action="#n" aria-label="Repetition mode" class="anim-state" name="_anim_loop_select1d3ce3b89784452e909bbbc4f019ad66" title="Repetition mode">
-<input id="_anim_radio1_1d3ce3b89784452e909bbbc4f019ad66" name="state" type="radio" value="once"/>
-<label for="_anim_radio1_1d3ce3b89784452e909bbbc4f019ad66">Once</label>
-<input checked="" id="_anim_radio2_1d3ce3b89784452e909bbbc4f019ad66" name="state" type="radio" value="loop"/>
-<label for="_anim_radio2_1d3ce3b89784452e909bbbc4f019ad66">Loop</label>
-<input id="_anim_radio3_1d3ce3b89784452e909bbbc4f019ad66" name="state" type="radio" value="reflect"/>
-<label for="_anim_radio3_1d3ce3b89784452e909bbbc4f019ad66">Reflect</label>
+<form action="#n" aria-label="Repetition mode" class="anim-state" name="_anim_loop_selecta48a40de302448c88104a2e5218daa59" title="Repetition mode">
+<input id="_anim_radio1_a48a40de302448c88104a2e5218daa59" name="state" type="radio" value="once"/>
+<label for="_anim_radio1_a48a40de302448c88104a2e5218daa59">Once</label>
+<input checked="" id="_anim_radio2_a48a40de302448c88104a2e5218daa59" name="state" type="radio" value="loop"/>
+<label for="_anim_radio2_a48a40de302448c88104a2e5218daa59">Loop</label>
+<input id="_anim_radio3_a48a40de302448c88104a2e5218daa59" name="state" type="radio" value="reflect"/>
+<label for="_anim_radio3_a48a40de302448c88104a2e5218daa59">Reflect</label>
 </form>
 </div>
 </div>
@@ -7816,9 +7788,9 @@ input[type=range].anim-slider {
   /* Instantiate the Animation class. */
   /* The IDs given should match those used in the template above. */
   (function() {
-    var img_id = "_anim_img1d3ce3b89784452e909bbbc4f019ad66";
-    var slider_id = "_anim_slider1d3ce3b89784452e909bbbc4f019ad66";
-    var loop_select_id = "_anim_loop_select1d3ce3b89784452e909bbbc4f019ad66";
+    var img_id = "_anim_imga48a40de302448c88104a2e5218daa59";
+    var slider_id = "_anim_slidera48a40de302448c88104a2e5218daa59";
+    var loop_select_id = "_anim_loop_selecta48a40de302448c88104a2e5218daa59";
     var frames = new Array(12);
     
   frames[0] = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZAAAAGQCAYAAACAvzbMAAAAOnRFWHRTb2Z0d2FyZQBNYXRwbG90\
@@ -12467,7 +12439,7 @@ RKQIAwgRESnCAEJERIr8P9TScrH2iwlSAAAAAElFTkSuQmCC\
     /* set a timeout to make sure all the above elements are created before
        the object is initialized. */
     setTimeout(function() {
-        anim1d3ce3b89784452e909bbbc4f019ad66 = new Animation(frames, img_id, slider_id, 149.0,
+        anima48a40de302448c88104a2e5218daa59 = new Animation(frames, img_id, slider_id, 149.0,
                                  loop_select_id);
     }, 0);
   })()
