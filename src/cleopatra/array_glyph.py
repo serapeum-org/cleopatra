@@ -330,6 +330,19 @@ class CellValueOptions(TypedDict, total=False):
     background_color_threshold: float | None
 
 
+class AnimateCellValueOptions(TypedDict, total=False):
+    """Per-cell value-text option specific to `animate` -- `animate` only.
+
+    Attributes:
+        precision: Decimal places each frame's cell value text is rounded
+            to, by default `2`. `animate`-only: `plot`'s equivalent
+            per-cell text (`ArrayGlyph._plot_text`) always rounds to 2
+            decimal places internally and never reads this option.
+    """
+
+    precision: int
+
+
 class DataStyleOptions(TypedDict, total=False):
     """Named data-style preset / relief-shading options shared by `plot`
     and `animate`.
@@ -365,6 +378,7 @@ class AnimateKwargs(
     ColorbarOptions,
     ColorScaleOptions,
     CellValueOptions,
+    AnimateCellValueOptions,
     DataStyleOptions,
     total=False,
 ):
@@ -3606,6 +3620,11 @@ class ArrayGlyph(GeoMixin, Glyph):
                         Threshold for cell value text color, by default None.
                         If cell value > threshold, text is black; otherwise, text is white.
                         If None, uses max(array)/2 as the threshold.
+                    precision : int, optional
+                        Decimal places each frame's cell value text is
+                        rounded to, by default 2. `animate`-only; `plot`'s
+                        equivalent per-cell text always rounds to 2
+                        decimal places internally.
 
                 Data-style preset / relief options:
                     style : str, optional

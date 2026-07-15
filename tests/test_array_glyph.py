@@ -15,9 +15,11 @@ from PIL import Image
 from cleopatra.array_glyph import (
     _COORD_DTYPE_MISMATCH,
     _COORD_SHAPE_MISMATCH,
+    AnimateKwargs,
     ArrayGlyph,
     FacetGrid,
     FrameLabel,
+    PlotKwargs,
     PointOverlay,
 )
 
@@ -386,7 +388,6 @@ class TestRenamedKwargAliases:
                 frame_label=FrameLabel(location=[0.1, 0.1]),
             )
 
-
 class TestFrameLabelAliases:
     """`FrameLabel` is the current way to style `animate`'s frame/time
     label; the flat keywords it replaces (`label_location`/`label_color`,
@@ -539,6 +540,50 @@ class TestPointOverlayAliases:
         with warnings.catch_warnings():
             warnings.simplefilter("error", DeprecationWarning)
             array.animate(animate_time_list, points=overlay)
+
+
+class TestKwargsTypedDicts:
+    """`PlotKwargs`/`AnimateKwargs` should track every kwarg each method
+    actually reads and uses -- a regression test for the kind of drift
+    that let `precision` (a real, animate()-only option) go unmodelled.
+    """
+
+    def test_animate_kwargs_includes_precision(self):
+        """`precision` is animate()-only and genuinely used; must be modelled."""
+        assert "precision" in AnimateKwargs.__annotations__
+
+    def test_plot_kwargs_excludes_precision(self):
+        """`plot()` never reads `precision`, so `PlotKwargs` correctly omits it."""
+        assert "precision" not in PlotKwargs.__annotations__
+
+    def test_plot_kwargs_excludes_explicit_params(self):
+        """`title`/`kind` are explicit `plot()` params, unreachable via its `**kwargs`."""
+        assert "title" not in PlotKwargs.__annotations__
+        assert "kind" not in PlotKwargs.__annotations__
+
+    def test_animate_kwargs_includes_title(self):
+        """`animate()` has no explicit `title` param, so it IS `**kwargs`-reachable."""
+        assert "title" in AnimateKwargs.__annotations__
+
+    def test_precision_is_actually_honoured_by_animate(self):
+        """`precision` (now typed) still rounds the rendered cell-value text.
+
+        Test scenario:
+            Confirms the TypedDict addition didn't just paper over a dead
+            option: a lower `precision` renders fewer decimal places for
+            the same underlying data.
+        """
+        frame = np.array([[1.23456, 2.34567], [3.45678, 4.56789]])
+        stack = np.stack([frame, frame + 0.001])
+        array = ArrayGlyph(stack)
+        array.animate(list(range(2)), display_cell_value=True, precision=1)
+        array.anim._func(0)
+        cell_texts = {
+            t.get_text()
+            for t in array.ax.texts
+            if t.get_text().startswith(("1", "2", "3", "4"))
+        }
+        assert cell_texts == {"1.2", "2.3", "3.5", "4.6"}
 
 
 @pytest.mark.plot
