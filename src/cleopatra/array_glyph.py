@@ -471,7 +471,7 @@ class FrameLabel:
     """
 
     def __init__(
-        self, *, location: list[Any, Any] = None, color: str = "black"
+        self, *, location: list[float] | None = None, color: str = "black"
     ) -> None:
         """Initialise a `FrameLabel`.
 
