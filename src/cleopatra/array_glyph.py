@@ -722,10 +722,17 @@ def _resolve_frame_label(frame_label: Any, kwargs: dict) -> FrameLabel:
         kwargs, ("label_location", "text_loc"), None
     )
     if frame_label is not None:
-        location, location_key = frame_label, "frame_label (positional)"
+        location = frame_label
+        # Report both consumed aliases in this (unusual) combined case --
+        # the keyword is still drained above even though positional wins,
+        # so it must not go unmentioned in the warning.
+        location_keys = ["frame_label (positional)"]
+        if kwarg_location_key:
+            location_keys.append(kwarg_location_key)
     else:
-        location, location_key = kwarg_location, kwarg_location_key
-    used = [k for k in (location_key, color_key) if k]
+        location = kwarg_location
+        location_keys = [kwarg_location_key] if kwarg_location_key else []
+    used = location_keys + ([color_key] if color_key else [])
     if used:
         warnings.warn(
             f"Passing {used} directly is deprecated; pass a "

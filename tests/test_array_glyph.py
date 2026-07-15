@@ -511,6 +511,40 @@ class TestFrameLabelAliases:
         assert len(caught) == 1
         assert caught[0].filename == __file__
 
+    def test_positional_and_keyword_location_both_reported(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """Combining a positional legacy location with `label_location=` warns about both.
+
+        Test scenario:
+            Regression for a message-accuracy bug: when a bare `[x, y]` is
+            passed positionally at the old `text_loc` slot *and*
+            `label_location=` is also given, the keyword is drained (so it
+            can't fail the strict `kwargs` check) even though the
+            positional value wins -- but the warning previously only named
+            `frame_label (positional)`, silently omitting the also-consumed
+            `label_location`. Both must now appear in the message.
+        """
+        array = ArrayGlyph(coello_data)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            array.animate(
+                animate_time_list,
+                None,
+                ("white", "black"),
+                200,
+                [0.3, 0.3],
+                label_location=[0.5, 0.5],
+            )
+        messages = [str(w.message) for w in caught]
+        assert any(
+            "frame_label (positional)" in m and "label_location" in m for m in messages
+        ), f"Expected both aliases named in one message, got: {messages}"
+        assert array._day_text.get_position() == (
+            0.3,
+            0.3,
+        ), "The positional value must still win over the keyword"
+
 
 class TestPointOverlayAliases:
     """`PointOverlay` is the current way to style `points`; the flat
