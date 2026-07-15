@@ -541,6 +541,21 @@ class TestPointOverlayAliases:
             warnings.simplefilter("error", DeprecationWarning)
             array.animate(animate_time_list, points=overlay)
 
+    def test_deprecation_warning_attributes_to_caller(self, arr: np.ndarray):
+        """The `PointOverlay`-alias deprecation warning points at the caller's line.
+
+        Test scenario:
+            Regression for a `stacklevel` bug: the warning must name this
+            test file/line, not an internal frame (e.g. `warnings.py`).
+        """
+        points = np.array([[5, 1, 1]])
+        array = ArrayGlyph(arr)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            array.plot(points=points, pid_color="lime")
+        assert len(caught) == 1
+        assert caught[0].filename == __file__
+
 
 class TestKwargsTypedDicts:
     """`PlotKwargs`/`AnimateKwargs` should track every kwarg each method

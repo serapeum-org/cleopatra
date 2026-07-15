@@ -574,7 +574,7 @@ def _resolve_point_overlay(
                 f"{used_deprecated} are ignored when `points` is a "
                 "`PointOverlay` -- set them on the `PointOverlay` instance "
                 "instead.",
-                stacklevel=4,
+                stacklevel=3,
             )
             for key in used_deprecated:
                 kwargs.pop(key)
@@ -595,7 +595,7 @@ def _resolve_point_overlay(
             f"Passing `points` as a plain array together with {used} is "
             "deprecated; pass a `cleopatra.array_glyph.PointOverlay` instead.",
             DeprecationWarning,
-            stacklevel=4,
+            stacklevel=3,
         )
     return PointOverlay(
         points, color=color, size=size, label_color=label_color, label_size=label_size
