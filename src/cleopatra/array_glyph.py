@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import warnings
 from math import ceil
-from typing import Any, Callable, Sequence
+from typing import Any, Callable, Literal, Sequence, TypedDict, Unpack
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -97,6 +97,650 @@ _COORD_SHAPE_MISMATCH = "coord array shape does not match the data array"
 #: Invariant phrase in the `ValueError` raised by `ArrayGlyph._validate_coords`
 #: when a coord array has a non-numeric dtype.
 _COORD_DTYPE_MISMATCH = "coord arrays must be numeric (integer or float)"
+
+
+class _Unset:
+    """Sentinel type for "the caller did not pass this explicit parameter".
+
+    A plain `object()` sentinel would work too, but this gives `help()` /
+    IDE signature tooltips a readable `<unset>` instead of
+    `<object object at 0x...>` for the parameter default that uses it
+    (`ArrayGlyph.animate`'s `cell_value_text_colors`).
+    """
+
+    def __repr__(self) -> str:
+        return "<unset>"
+
+
+#: Sentinel default for a renamed parameter whose *real* default is
+#: resolved inside `_resolve_renamed_kwarg` rather than in the method
+#: signature. Distinguishes "caller didn't pass this parameter" from
+#: "caller explicitly passed a value equal to its default" -- an ambiguity
+#: a plain equality-with-default check cannot resolve, which previously
+#: made the "both old and new given" conflict detection silently prefer
+#: the deprecated value in that case (the opposite of the documented
+#: "new wins" behaviour).
+_UNSET = _Unset()
+
+
+def _resolve_renamed_kwarg(
+    kwargs: dict, old_name: str, new_name: str, new_value: Any, default: Any
+) -> Any:
+    """Resolve a renamed keyword argument, honouring its deprecated alias.
+
+    Several `ArrayGlyph.animate` parameters were renamed for clarity
+    (e.g. `text_colors` -> `cell_value_text_colors`). Since the old name is
+    no longer an explicit parameter, a caller still using it arrives here
+    through `**kwargs` instead -- this pops it out, emits a
+    `DeprecationWarning`, and returns its value. Must be called *before*
+    `plot`/`animate` validate `kwargs` against `self.default_options` (the
+    old name is never a valid option key, so it would otherwise raise
+    there instead of being resolved).
+
+    Args:
+        kwargs: The method's `**kwargs` dict; mutated in place (the old
+            key, if present, is popped so it never reaches the strict
+            `default_options` validation).
+        old_name: The deprecated parameter name to look for in `kwargs`.
+        new_name: The current parameter name, used in the warning message.
+        new_value: The value the caller's `new_name` argument resolved to.
+            `new_name`'s own signature default must be the `_UNSET`
+            sentinel (not a concrete value) so this can tell "the caller
+            didn't pass `new_name`" apart from "the caller explicitly
+            passed `new_name` equal to its real default" -- the two cases
+            a plain equality-with-default check cannot distinguish.
+        default: `new_name`'s real default value, substituted when
+            neither name was given.
+
+    Returns:
+        Any: `new_value` when `old_name` is absent from `kwargs`, or when
+            both names were given (new wins, i.e. `new_value` is not
+            `_UNSET`); otherwise the popped `old_name` value, or `default`
+            when neither was given.
+
+    Examples:
+        - The old name is used and a `DeprecationWarning` is raised:
+            ```python
+            >>> import warnings
+            >>> kwargs = {"text_colors": ("yellow", "purple")}
+            >>> with warnings.catch_warnings(record=True) as caught:
+            ...     warnings.simplefilter("always")
+            ...     resolved = _resolve_renamed_kwarg(
+            ...         kwargs, "text_colors", "cell_value_text_colors",
+            ...         _UNSET, ("white", "black"),
+            ...     )
+            >>> resolved
+            ('yellow', 'purple')
+            >>> "text_colors" in kwargs
+            False
+            >>> issubclass(caught[0].category, DeprecationWarning)
+            True
+
+            ```
+        - Both names given: the new one wins even when it is equal to its
+            own default (the false-negative a plain equality check would
+            miss):
+            ```python
+            >>> kwargs = {"text_colors": ("yellow", "purple")}
+            >>> _resolve_renamed_kwarg(
+            ...     kwargs, "text_colors", "cell_value_text_colors",
+            ...     ("white", "black"), ("white", "black"),
+            ... )
+            ('white', 'black')
+
+            ```
+        - With no old-name alias present, the new value passes through
+            untouched and `kwargs` is unaffected:
+            ```python
+            >>> kwargs = {"cmap": "viridis"}
+            >>> _resolve_renamed_kwarg(
+            ...     kwargs, "text_colors", "cell_value_text_colors",
+            ...     ("yellow", "purple"), ("white", "black"),
+            ... )
+            ('yellow', 'purple')
+            >>> kwargs
+            {'cmap': 'viridis'}
+
+            ```
+    """
+    if old_name not in kwargs:
+        return default if new_value is _UNSET else new_value
+    old_value = kwargs.pop(old_name)
+    warnings.warn(
+        f"`{old_name}` is deprecated; use `{new_name}` instead.",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+    if new_value is not _UNSET:
+        warnings.warn(
+            f"Both `{old_name}` (deprecated) and `{new_name}` were given; "
+            f"`{new_name}` wins.",
+            stacklevel=3,
+        )
+        return new_value
+    return old_value
+
+
+#: Static typing for the **kwargs `plot`/`animate` accept -- purely a typing
+#: aid (see PEP 692 `Unpack`): with `from __future__ import annotations` the
+#: `**kwargs: Unpack[...]` annotations below are never evaluated at runtime,
+#: so this adds IDE autocomplete / type-checker typo-catching for `**kwargs`
+#: without changing the existing `self.default_options` merge-and-validate
+#: mechanism at all. Grouped to match the methods' own docstring sections;
+#: each group is shared by both methods except `XarrayColourOptions` and
+#: `ContourOptions`, which only `plot` documents (`animate` has no `kind`,
+#: so nothing routes to `contour`/`contourf`, and does not recompute
+#: `vmin`/`vmax` from `robust`/`center`).
+class TitleOption(TypedDict, total=False):
+    """The `title` kwarg -- `animate` only.
+
+    `plot` also accepts a title, but as an explicit named parameter (not
+    via `**kwargs`); mixing `title` into its `Unpack`'d TypedDict too would
+    overlap with that parameter. `animate` has no such parameter, so its
+    `**kwargs` is where `title` is actually reachable.
+
+    Attributes:
+        title: Plot title, by default `'Array Plot'`.
+    """
+
+    title: str | None
+
+
+class PlotAppearanceOptions(TypedDict, total=False):
+    """Colormap/colour-limit options shared by `plot` and `animate`.
+
+    Attributes:
+        title_size: Title font size, by default `15`.
+        cmap: Colormap name or `Colormap` instance, by default `'coolwarm_r'`.
+        vmin: Minimum value for colour scaling, by default `min(array)`.
+        vmax: Maximum value for colour scaling, by default `max(array)`.
+    """
+
+    title_size: int
+    cmap: str | Colormap
+    vmin: float | None
+    vmax: float | None
+
+
+class ColorbarOptions(TypedDict, total=False):
+    """Colorbar placement/label options shared by `plot` and `animate`.
+
+    Attributes:
+        add_colorbar: Whether to draw the glyph's own colorbar, by
+            default `True`.
+        cbar_orientation: Colorbar orientation, by default `'vertical'`.
+        cbar_label_rotation: Rotation angle of the colorbar label, by
+            default `-90`.
+        cbar_label_location: Location of the colorbar label, by default
+            `'bottom'`.
+        cbar_length: Ratio controlling the colorbar's height/width, by
+            default `0.75`.
+        ticks_spacing: Spacing between colorbar ticks, by default `2`.
+        cbar_label_size: Font size of the colorbar label, by default `12`.
+        cbar_label: Label text for the colorbar, by default `'Value'`.
+    """
+
+    add_colorbar: bool
+    cbar_orientation: Literal["vertical", "horizontal"]
+    cbar_label_rotation: float
+    cbar_label_location: Literal[
+        "top", "bottom", "center", "baseline", "center_baseline"
+    ]
+    cbar_length: float
+    ticks_spacing: float
+    cbar_label_size: int
+    cbar_label: str | None
+
+
+class ColorScaleOptions(TypedDict, total=False):
+    """Colour-scaling options shared by `plot` and `animate`.
+
+    Attributes:
+        color_scale: Colour scaling kind, by default `'linear'`. See
+            `cleopatra.styles.ColorScale`.
+        gamma: Exponent for the `'power'` colour scale, by default `0.5`.
+        line_threshold: Threshold for the `'sym-lognorm'` colour scale, by
+            default `0.0001`.
+        line_scale: Scale factor for the `'sym-lognorm'` colour scale, by
+            default `0.001`.
+        bounds: Boundaries for the `'boundary-norm'` colour scale, by
+            default `None`.
+        midpoint: Midpoint value for the `'midpoint'` colour scale, by
+            default `0`.
+    """
+
+    color_scale: ColorScale | str
+    gamma: float
+    line_threshold: float
+    line_scale: float
+    bounds: list[float] | None
+    midpoint: float
+
+
+class XarrayColourOptions(TypedDict, total=False):
+    """Xarray-aligned colour options -- `plot` only.
+
+    Attributes:
+        robust: When `True`, use the 2nd/98th percentile of the data for
+            `vmin`/`vmax`, matching xarray's `robust=True`, by default
+            `False`.
+        center: Diverging-colormap centring value, by default `None`.
+        extend: Colorbar arrow extension, by default `None` (auto-resolve).
+        cbar_kwargs: Extra keyword arguments forwarded to `fig.colorbar`,
+            by default `None`.
+    """
+
+    robust: bool
+    center: float | None
+    extend: Literal["neither", "both", "min", "max"] | None
+    cbar_kwargs: dict[str, Any] | None
+
+
+class ContourOptions(TypedDict, total=False):
+    """Contour-line and discretisation options -- `plot` only.
+
+    Attributes:
+        levels: Discrete colour levels (xarray-aligned), by default `None`.
+        labels: Draw inline numeric labels on a line `contour`'s isolines,
+            by default `False`.
+        label_kw: Extra keyword arguments forwarded to `ax.clabel` when
+            `labels=True`, by default `None`.
+    """
+
+    levels: int | Sequence[float] | None
+    labels: bool
+    label_kw: dict[str, Any] | None
+
+
+class CellValueOptions(TypedDict, total=False):
+    """Per-cell value-text display options shared by `plot` and `animate`.
+
+    Attributes:
+        display_cell_value: Whether to display each cell's value as text,
+            by default `False`.
+        num_size: Font size of the cell value text, by default `8`.
+        background_color_threshold: Threshold for the cell value text
+            colour, by default `None` (uses `max(array) / 2`).
+    """
+
+    display_cell_value: bool
+    num_size: int
+    background_color_threshold: float | None
+
+
+class AnimateCellValueOptions(TypedDict, total=False):
+    """Per-cell value-text option specific to `animate` -- `animate` only.
+
+    Attributes:
+        precision: Decimal places each frame's cell value text is rounded
+            to, by default `2`. `animate`-only: `plot`'s equivalent
+            per-cell text (`ArrayGlyph._plot_text`) always rounds to 2
+            decimal places internally and never reads this option.
+    """
+
+    precision: int
+
+
+class DataStyleOptions(TypedDict, total=False):
+    """Named data-style preset / relief-shading options shared by `plot`
+    and `animate`.
+
+    Attributes:
+        style: Name of a `cleopatra.colors.DATA_STYLES` preset, by default
+            `None`.
+        hillshade: Relief-shade a regular-grid DEM; `True` for defaults,
+            or a dict tuning `vert_exag`/`azimuth`/`altitude`/
+            `blend_mode`/`multidirectional`. By default `False`.
+    """
+
+    style: str | None
+    hillshade: bool | dict[str, Any]
+
+
+class PlotKwargs(
+    PlotAppearanceOptions,
+    ColorbarOptions,
+    ColorScaleOptions,
+    XarrayColourOptions,
+    ContourOptions,
+    CellValueOptions,
+    DataStyleOptions,
+    total=False,
+):
+    """The full set of `**kwargs` `ArrayGlyph.plot` accepts."""
+
+
+class AnimateKwargs(
+    TitleOption,
+    PlotAppearanceOptions,
+    ColorbarOptions,
+    ColorScaleOptions,
+    CellValueOptions,
+    AnimateCellValueOptions,
+    DataStyleOptions,
+    total=False,
+):
+    """The full set of `**kwargs` `ArrayGlyph.animate` accepts."""
+
+
+class PointOverlay:
+    """A point overlay for `ArrayGlyph.plot`/`animate`: locations plus styling.
+
+    Bundles the five point-overlay parameters (`points`, and the marker /
+    value-label colour and size) that `plot`/`animate` previously accepted
+    as five separate, identically-named arguments duplicated across both
+    signatures. Pass an instance as `plot(points=...)` /
+    `animate(points=...)` instead of the individual `point_color` /
+    `point_size` / `point_label_color` / `point_label_size` keywords.
+
+    Attributes:
+        points: `(N, 3)` array: first column the value to display at each
+            point, second/third columns the point's row/column index in
+            the underlying array.
+        color: Marker colour, by default `"red"`. Any valid matplotlib
+            colour string.
+        size: Marker size, by default `100`.
+        label_color: Colour of the point-value text label drawn at each
+            point, by default `"blue"`.
+        label_size: Font size of the point-value text label, by default
+            `10`.
+
+    Examples:
+        - Build an overlay and pass it to `plot`:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.array_glyph import ArrayGlyph, PointOverlay
+            >>> arr = np.arange(9, dtype=float).reshape(3, 3)
+            >>> overlay = PointOverlay(np.array([[5.0, 1, 1]]), color="black")
+            >>> fig, ax = ArrayGlyph(arr).plot(points=overlay)
+            >>> overlay.color
+            'black'
+            >>> overlay.size
+            100
+
+            ```
+    """
+
+    def __init__(
+        self,
+        points: np.ndarray,
+        *,
+        color: str = "red",
+        size: int | float = 100,
+        label_color: str = "blue",
+        label_size: int | float = 10,
+    ) -> None:
+        """Initialise a `PointOverlay`.
+
+        Args:
+            points: `(N, 3)` array: value, row index, column index per point.
+            color: Marker colour, by default `"red"`.
+            size: Marker size, by default `100`.
+            label_color: Point-value label colour, by default `"blue"`.
+            label_size: Point-value label font size, by default `10`.
+        """
+        self.points = points
+        self.color = color
+        self.size = size
+        self.label_color = label_color
+        self.label_size = label_size
+
+
+class FrameLabel:
+    """Styling for the per-frame time label `ArrayGlyph.animate` draws.
+
+    Bundles the two frame-label parameters (`location`, `color`) that
+    `animate` previously accepted as separate `label_location` /
+    `label_color` arguments. Pass an instance as
+    `animate(frame_label=...)` instead.
+
+    Attributes:
+        location: `[x, y]` position for the label, by default `None`.
+            When `None`, the label is anchored just inside the top-left
+            corner using axes-fraction coordinates, so it stays clear of
+            the top/bottom edges regardless of the array's shape or the
+            axis orientation. A very narrow axes can still overflow
+            horizontally at the default font size, since no anchor choice
+            can fit a long label into less horizontal space than it
+            needs; pass an explicit `[x, y]` (data coordinates) in that
+            case.
+        color: Label text colour, by default `"black"`. Any valid
+            matplotlib colour string.
+
+    Examples:
+        - Build a frame label and pass it to `animate`:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.array_glyph import ArrayGlyph, FrameLabel
+            >>> stack = np.arange(3 * 9, dtype=float).reshape(3, 3, 3)
+            >>> label = FrameLabel(location=[0.1, 0.1], color="white")
+            >>> glyph = ArrayGlyph(stack)
+            >>> anim_obj = glyph.animate(["t0", "t1", "t2"], frame_label=label)
+            >>> label.color
+            'white'
+
+            ```
+    """
+
+    def __init__(
+        self, *, location: list[float] | None = None, color: str = "black"
+    ) -> None:
+        """Initialise a `FrameLabel`.
+
+        Args:
+            location: `[x, y]` label position, by default `None` (auto
+                top-left anchor -- see the class docstring).
+            color: Label text colour, by default `"black"`.
+        """
+        self.location = location
+        self.color = color
+
+
+#: Deprecated `plot`/`animate` kwargs that `_resolve_point_overlay` folds
+#: into a `PointOverlay` instead of the (now-removed) individual keywords.
+#: `pid_color`/`pid_size` are the oldest generation (pre-dating even
+#: `point_label_color`/`point_label_size`) and are honoured too, so the
+#: deprecation chain from either generation still lands on `PointOverlay`.
+_DEPRECATED_POINT_STYLE_KWARGS = (
+    "point_color",
+    "point_size",
+    "point_label_color",
+    "point_label_size",
+    "pid_color",
+    "pid_size",
+)
+
+
+def _pop_first(
+    kwargs: dict, names: tuple[str, ...], default: Any
+) -> tuple[Any, str | None]:
+    """Pop every one of `names` present in `kwargs`; return the most-preferred value.
+
+    All matching keys are removed (not just the winner) so none of them
+    linger to fail the caller's subsequent strict `kwargs` validation --
+    e.g. `plot(points=arr, point_label_color=..., pid_color=...)` must pop
+    both, even though only `point_label_color`'s value is used.
+
+    Args:
+        kwargs: Dict to pop from; mutated in place.
+        names: Candidate keys, most-preferred first.
+        default: Value to return if none of `names` are present.
+
+    Returns:
+        tuple[Any, str | None]: The most-preferred present value (or
+            `default`), and the key it came from (`None` if none were
+            present).
+    """
+    present = [name for name in names if name in kwargs]
+    values = {name: kwargs.pop(name) for name in present}
+    if not present:
+        return default, None
+    winner = present[0]
+    return values[winner], winner
+
+
+def _resolve_point_overlay(
+    points: np.ndarray | PointOverlay | None, kwargs: dict
+) -> PointOverlay | None:
+    """Normalise `plot`/`animate`'s `points` argument into a `PointOverlay`.
+
+    Accepts the current calling convention (`points` is already a
+    `PointOverlay`, or `None`) as well as two deprecated generations
+    (`points` is a plain array, styled via separate `point_color` /
+    `point_size` / `point_label_color` / `point_label_size` keywords, or
+    the even older `pid_color` / `pid_size` for the label styling) -- any
+    of these emit a `DeprecationWarning` and are folded into a
+    `PointOverlay` here. The deprecated style keys are drained out of
+    `kwargs` even when `points` is `None` (a no-op, matching their
+    pre-`PointOverlay` behaviour as named parameters with defaults) so
+    they never reach the caller's strict `kwargs` validation. Must be
+    called *before* `plot`/`animate` validate `kwargs` against
+    `self.default_options`, which would otherwise reject the deprecated
+    keys outright.
+
+    Args:
+        points: The raw `points` argument as received by `plot`/`animate`:
+            a `PointOverlay`, a plain `(N, 3)` array, or `None`.
+        kwargs: The method's `**kwargs` dict; mutated in place (any
+            deprecated point-style keys are popped out).
+
+    Returns:
+        PointOverlay | None: `points` unchanged if it was already a
+            `PointOverlay` or `None`; otherwise a new `PointOverlay`
+            wrapping the array and the (possibly deprecated) style kwargs.
+    """
+    if isinstance(points, PointOverlay):
+        used_deprecated = [k for k in _DEPRECATED_POINT_STYLE_KWARGS if k in kwargs]
+        if used_deprecated:
+            warnings.warn(
+                f"{used_deprecated} are ignored when `points` is a "
+                "`PointOverlay` -- set them on the `PointOverlay` instance "
+                "instead.",
+                stacklevel=3,
+            )
+            for key in used_deprecated:
+                kwargs.pop(key)
+        return points
+    if points is None:
+        # Drain the deprecated point-style keys even with no `points` to
+        # style, matching their pre-PointOverlay behaviour (named
+        # parameters with defaults -- legal, if pointless, without
+        # `points`). Skipping this would leave them in `kwargs` to fail
+        # the caller's strict `default_options` validation, breaking the
+        # documented "old keywords still work as `**kwargs`" guarantee.
+        _, color_key = _pop_first(kwargs, ("point_color",), None)
+        _, size_key = _pop_first(kwargs, ("point_size",), None)
+        _, label_color_key = _pop_first(
+            kwargs, ("point_label_color", "pid_color"), None
+        )
+        _, label_size_key = _pop_first(kwargs, ("point_label_size", "pid_size"), None)
+        used = [k for k in (color_key, size_key, label_color_key, label_size_key) if k]
+        if used:
+            warnings.warn(
+                f"{used} have no effect without `points`; pass a "
+                "`cleopatra.array_glyph.PointOverlay` as `points` instead.",
+                DeprecationWarning,
+                stacklevel=3,
+            )
+        return None
+    color, color_key = _pop_first(kwargs, ("point_color",), "red")
+    size, size_key = _pop_first(kwargs, ("point_size",), 100)
+    label_color, label_color_key = _pop_first(
+        kwargs, ("point_label_color", "pid_color"), "blue"
+    )
+    label_size, label_size_key = _pop_first(
+        kwargs, ("point_label_size", "pid_size"), 10
+    )
+    used = [k for k in (color_key, size_key, label_color_key, label_size_key) if k]
+    if used:
+        warnings.warn(
+            f"Passing `points` as a plain array together with {used} is "
+            "deprecated; pass a `cleopatra.array_glyph.PointOverlay` instead.",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+    return PointOverlay(
+        points, color=color, size=size, label_color=label_color, label_size=label_size
+    )
+
+
+#: Deprecated `animate` kwargs that `_resolve_frame_label` folds into a
+#: `FrameLabel` instead of the (now-removed) individual keywords.
+#: `text_loc` is the oldest generation (pre-dating `label_location`) and is
+#: honoured too.
+_DEPRECATED_FRAME_LABEL_KWARGS = ("label_location", "label_color", "text_loc")
+
+
+def _resolve_frame_label(frame_label: Any, kwargs: dict) -> FrameLabel:
+    """Normalise `animate`'s `frame_label` argument into a `FrameLabel`.
+
+    Accepts the current calling convention (`frame_label` is already a
+    `FrameLabel`, or `None` for the defaults) as well as two deprecated
+    ones: separate `label_location` / `label_color` keywords (or the even
+    older `text_loc` for the location), and a bare `[x, y]` value at the
+    `frame_label` position itself -- the pre-`FrameLabel` calling shape,
+    still reachable positionally (`animate(time, None, colors, interval,
+    [x, y])`) even though `label_location`/`text_loc` were never
+    positional-only. Any of these emit a `DeprecationWarning` and are
+    folded into a `FrameLabel` here. Unlike `_resolve_point_overlay`, this
+    never returns `None`: `animate` always draws a frame label, so
+    `frame_label=None` means "use `FrameLabel`'s own defaults", not "no
+    label". Must be called *before* `animate` validates `kwargs` against
+    `self.default_options`, which would otherwise reject the deprecated
+    keys outright.
+
+    Args:
+        frame_label: The raw `frame_label` argument as received by
+            `animate`: a `FrameLabel`, `None`, or (deprecated) a plain
+            `[x, y]` value passed positionally.
+        kwargs: The method's `**kwargs` dict; mutated in place (any
+            deprecated frame-label keys are popped out).
+
+    Returns:
+        FrameLabel: `frame_label` unchanged if it was already a
+            `FrameLabel`; otherwise a new `FrameLabel` built from the
+            positional value and/or the (possibly deprecated)
+            location/color kwargs, or the defaults.
+    """
+    if isinstance(frame_label, FrameLabel):
+        used_deprecated = [k for k in _DEPRECATED_FRAME_LABEL_KWARGS if k in kwargs]
+        if used_deprecated:
+            warnings.warn(
+                f"{used_deprecated} are ignored when `frame_label` is a "
+                "`FrameLabel` -- set them on the `FrameLabel` instance "
+                "instead.",
+                stacklevel=3,
+            )
+            for key in used_deprecated:
+                kwargs.pop(key)
+        return frame_label
+    color, color_key = _pop_first(kwargs, ("label_color",), "black")
+    # Drain the location kwargs unconditionally (so they never reach the
+    # strict `kwargs` validation), but a plain positional `frame_label`
+    # value below wins over them if both are somehow given at once.
+    kwarg_location, kwarg_location_key = _pop_first(
+        kwargs, ("label_location", "text_loc"), None
+    )
+    if frame_label is not None:
+        location = frame_label
+        # Report both consumed aliases in this (unusual) combined case --
+        # the keyword is still drained above even though positional wins,
+        # so it must not go unmentioned in the warning.
+        location_keys = ["frame_label (positional)"]
+        if kwarg_location_key:
+            location_keys.append(kwarg_location_key)
+    else:
+        location = kwarg_location
+        location_keys = [kwarg_location_key] if kwarg_location_key else []
+    used = location_keys + ([color_key] if color_key else [])
+    if used:
+        warnings.warn(
+            f"Passing {used} directly is deprecated; pass a "
+            "`cleopatra.array_glyph.FrameLabel` as `frame_label` instead.",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+    return FrameLabel(location=location, color=color)
 
 
 class FacetGrid:
@@ -1878,15 +2522,11 @@ class ArrayGlyph(GeoMixin, Glyph):
 
     def plot(
         self,
-        points: np.ndarray = None,
-        point_color: str = "red",
-        point_size: int | float = 100,
-        pid_color: str = "blue",
-        pid_size: int | float = 10,
+        points: np.ndarray | PointOverlay | None = None,
         kind: str = "auto",
         ax: Axes | None = None,
         title: str | None = None,
-        **kwargs,
+        **kwargs: Unpack[PlotKwargs],
     ) -> tuple[Figure, Axes]:
         """Plot the array with customizable visualization options.
 
@@ -1895,19 +2535,15 @@ class ArrayGlyph(GeoMixin, Glyph):
         It supports both regular arrays and RGB arrays.
 
         Args:
-            points: Points to display on the array, by default None.
-                Should be a 3-column array where:
-                - First column: values to display for each point
-                - Second column: row indices of the points in the array
-                - Third column: column indices of the points in the array
-            point_color: Color of the points, by default "red".
-                Any valid matplotlib color string.
-            point_size: Size of the points, by default 100.
-                Controls the marker size.
-            pid_color: Color of the point value annotations, by default "blue".
-                Any valid matplotlib color string.
-            pid_size: Size of the point value annotations, by default 10.
-                Controls the font size of the annotations.
+            points: Points to display on the array, by default None. A
+                `PointOverlay` (locations plus marker/label styling), or a
+                plain `(N, 3)` array of `[value, row, col]` per point (a
+                bare array is styled with `PointOverlay`'s own defaults).
+                (Styling `points` via separate `point_color` /
+                `point_size` / `point_label_color` / `point_label_size`
+                keywords is deprecated; pass a `PointOverlay` instead —
+                the old keywords still work as `**kwargs` and emit a
+                `DeprecationWarning`.)
             kind: Render kind, by default `"auto"`. One of:
 
                 - `"auto"` — picks the best renderer for the data.
@@ -2203,22 +2839,23 @@ class ArrayGlyph(GeoMixin, Glyph):
         - Plot points at specific locations in the array:
 
             - you can display points in specific cells in the array and also display a value for each of these points.
-                The point parameter takes an array with the first column as the values to be displayed on top of the
+                The point overlay's array has the first column as the values to be displayed on top of the
                 points, the second and third columns are the row and column index of the point in the array.
-            - The `point_color` and `point_size` parameters are used to customize the appearance of the points,
-                while the `pid_color` and `pid_size` parameters are used to customize the appearance of the point
-                IDs/text.
+            - A `PointOverlay`'s `color`/`size` customize the appearance of the points, while `label_color`/
+                `label_size` customize the appearance of each point's value label.
 
                 ```python
+                >>> from cleopatra.array_glyph import PointOverlay
                 >>> array = ArrayGlyph(arr, figsize=(6, 6), title="Display Points", title_size=14)
                 >>> points = np.array([[1, 0, 0], [2, 1, 1], [3, 2, 2]])
-                >>> fig, ax = array.plot(
-                ...     points=points,
-                ...     point_color="black",
-                ...     point_size=100,
-                ...     pid_color="orange",
-                ...     pid_size=30,
+                >>> overlay = PointOverlay(
+                ...     points,
+                ...     color="black",
+                ...     size=100,
+                ...     label_color="orange",
+                ...     label_size=30,
                 ... )
+                >>> fig, ax = array.plot(points=overlay)
 
                 ```
                 ![display-points](./../images/array_glyph/display-points.png)
@@ -2451,6 +3088,14 @@ class ArrayGlyph(GeoMixin, Glyph):
                 f"RGB compositing requires kind='imshow'. Got kind={kind!r}."
             )
 
+        # Resolve `points` (a `PointOverlay`, or the deprecated plain-array +
+        # separate style kwargs) before the strict `kwargs` validation below,
+        # which would otherwise reject the deprecated keys outright.
+        # `kwargs` is a real, mutable dict at runtime -- mypy's TypedDict
+        # model just does not have a variance-safe way to type "a dict this
+        # helper is allowed to pop deprecated keys from".
+        points = _resolve_point_overlay(points, kwargs)  # type: ignore[arg-type]
+
         for key, val in kwargs.items():
             if key not in self.default_options.keys():
                 raise ValueError(
@@ -2614,13 +3259,13 @@ class ArrayGlyph(GeoMixin, Glyph):
             )
 
         if points is not None and supports_overlay:
-            row = points[:, 1]
-            col = points[:, 2]
+            row = points.points[:, 1]
+            col = points.points[:, 2]
             optional_display["points_scatter"] = ax.scatter(
-                col, row, color=point_color, s=point_size
+                col, row, color=points.color, s=points.size
             )
             optional_display["points_id"] = self._plot_point_values(
-                ax, points, pid_color, pid_size
+                ax, points.points, points.label_color, points.label_size
             )
 
         # # Normalize the threshold to the image color range.
@@ -2915,18 +3560,13 @@ class ArrayGlyph(GeoMixin, Glyph):
     def animate(
         self,
         time: list[Any],
-        points: np.ndarray = None,
-        text_colors: tuple[str, str] = ("white", "black"),
+        points: np.ndarray | PointOverlay | None = None,
+        cell_value_text_colors: tuple[str, str] | _Unset = _UNSET,
         interval: int = 200,
-        text_loc: list[Any, Any] = None,
-        point_color: str = "red",
-        point_size: int = 100,
-        pid_color: str = "blue",
-        pid_size: int = 10,
+        frame_label: FrameLabel | None = None,
         *,
-        label_color: str = "black",
         data_getter: Callable[[int], np.ndarray] | None = None,
-        **kwargs,
+        **kwargs: Unpack[AnimateKwargs],
     ) -> FuncAnimation:
         """Create an animation from a single-band or true-colour stack.
 
@@ -2952,35 +3592,35 @@ class ArrayGlyph(GeoMixin, Glyph):
             time: A list containing labels for each frame in the animation.
                 These could be timestamps, frame numbers, or any other identifiers.
                 The length of this list should match the first dimension of the array.
-            points: Points to display on the array, by default None.
-                Should be a 3-column array where:
-                - First column: values to display for each point
-                - Second column: row indices of the points in the array
-                - Third column: column indices of the points in the array
-            text_colors: Two colors to be used for cell value text, by default ("white", "black").
-                The first color is used when the cell value is below the background_color_threshold,
-                and the second color is used when the cell value is above the threshold.
+            points: Points to display on the array, by default None. A
+                `PointOverlay` (locations plus marker/label styling), or a
+                plain `(N, 3)` array of `[value, row, col]` per point (a
+                bare array is styled with `PointOverlay`'s own defaults).
+                (Styling `points` via separate `point_color` /
+                `point_size` / `point_label_color` / `point_label_size`
+                keywords is deprecated; pass a `PointOverlay` instead —
+                the old keywords still work as `**kwargs` and emit a
+                `DeprecationWarning`.)
+            cell_value_text_colors: Two colors to be used for cell value
+                text, by default ("white", "black"). The first color is
+                used when the cell value is below the
+                background_color_threshold, and the second color is used
+                when the cell value is above the threshold. (Renamed from
+                `text_colors`; the old name still works as a keyword and
+                emits a `DeprecationWarning`.)
             interval: Delay between frames in milliseconds, by default 200.
                 Controls the speed of the animation (smaller values = faster animation).
-            text_loc: Location of the frame label text as [x, y] coordinates, by default None.
-                When None, the label is anchored just inside the top-left corner using
-                axes-fraction coordinates, so it stays clear of the top/bottom edges
-                regardless of the array's shape or the axis orientation. A very narrow
-                axes can still overflow horizontally at the default font size, since no
-                anchor choice can fit a long label into less horizontal space than it
-                needs; pass an explicit [x, y] (data coordinates) or a smaller
-                `cbar_label_size` in that case.
-            point_color: Color of the points, by default "red".
-                Any valid matplotlib color string.
-            point_size: Size of the points, by default 100.
-                Controls the marker size.
-            pid_color: Color of the point value annotations, by default "blue".
-                Any valid matplotlib color string.
-            pid_size: Size of the point value annotations, by default 10.
-                Controls the font size of the annotations.
-            label_color: Color of the frame label text, by default "black".
-                Any valid matplotlib color string. `ArrayGlyph`-only;
+            frame_label: Styling for the per-frame time label, by default
+                None (a `FrameLabel` with its own defaults: auto-anchored
+                top-left, black text). See `FrameLabel` for the
+                `location`/`color` fields and the top-left anchoring
+                behaviour when `location` is left unset. `ArrayGlyph`-only;
                 `MeshGlyph.animate()` does not yet expose this option.
+                (Styling the frame label via separate `label_location` /
+                `label_color` keywords — or the even older `text_loc` for
+                the location — is deprecated; pass a `FrameLabel` instead —
+                the old keywords still work as `**kwargs` and emit a
+                `DeprecationWarning`.)
             data_getter: Optional callable `f(i) -> ndarray` that
                 returns the frame for index `i`, by default None.
                 When set, `self.arr` is no longer iterated; each
@@ -3064,6 +3704,11 @@ class ArrayGlyph(GeoMixin, Glyph):
                         Threshold for cell value text color, by default None.
                         If cell value > threshold, text is black; otherwise, text is white.
                         If None, uses max(array)/2 as the threshold.
+                    precision : int, optional
+                        Decimal places each frame's cell value text is
+                        rounded to, by default 2. `animate`-only; `plot`'s
+                        equivalent per-cell text always rounds to 2
+                        decimal places internally.
 
                 Data-style preset / relief options:
                     style : str, optional
@@ -3147,17 +3792,17 @@ class ArrayGlyph(GeoMixin, Glyph):
         ```
         Animation with points:
         ```python
-        >>> # Create points to display on the animation
-        >>> points = np.array([[1, 2, 3], [2, 5, 5], [3, 8, 8]])
-        >>> animated_array = ArrayGlyph(arr, figsize=(8, 8), title="Animated Array")
-        >>> anim_obj = animated_array.animate(
-        ...     frame_labels,
-        ...     points=points,
-        ...     point_color="black",
-        ...     point_size=150,
-        ...     pid_color="white",
-        ...     pid_size=12
+        >>> # Create a styled point overlay to display on the animation
+        >>> from cleopatra.array_glyph import PointOverlay
+        >>> overlay = PointOverlay(
+        ...     np.array([[1, 2, 3], [2, 5, 5], [3, 8, 8]]),
+        ...     color="black",
+        ...     size=150,
+        ...     label_color="white",
+        ...     label_size=12,
         ... )
+        >>> animated_array = ArrayGlyph(arr, figsize=(8, 8), title="Animated Array")
+        >>> anim_obj = animated_array.animate(frame_labels, points=overlay)
 
         ```
         Animation with cell values displayed:
@@ -3167,7 +3812,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         ...     frame_labels,
         ...     display_cell_value=True,
         ...     num_size=10,
-        ...     text_colors=("yellow", "blue")
+        ...     cell_value_text_colors=("yellow", "blue")
         ... )
 
         ```
@@ -3214,13 +3859,33 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         ```
         """
-        text_loc_is_default = text_loc is None
-        if text_loc_is_default:
+        # Resolve deprecated kwarg aliases before the strict `kwargs`
+        # validation below, which would otherwise reject them outright.
+        # `kwargs` is a real, mutable dict at runtime -- mypy's TypedDict
+        # model just does not have a variance-safe way to type "a dict
+        # these helpers are allowed to pop deprecated keys from".
+        cell_value_text_colors = _resolve_renamed_kwarg(
+            kwargs,  # type: ignore[arg-type]
+            "text_colors",
+            "cell_value_text_colors",
+            cell_value_text_colors,
+            ("white", "black"),
+        )
+        frame_label = _resolve_frame_label(frame_label, kwargs)  # type: ignore[arg-type]
+        points = _resolve_point_overlay(points, kwargs)  # type: ignore[arg-type]
+
+        # Resolved into a local rather than written back onto `frame_label`,
+        # so a `FrameLabel` instance the caller passed in (and might reuse
+        # across calls) is never mutated.
+        label_location_is_default = frame_label.location is None
+        if label_location_is_default:
             # Axes-fraction anchor (not data coordinates): stays inside the
             # frame regardless of array shape or axis orientation, unlike a
             # fixed data-coordinate default. See `day_text` below for the
             # matching transform/alignment.
-            text_loc = [0.02, 0.95]
+            label_location = [0.02, 0.95]
+        else:
+            label_location = frame_label.location
 
         for key, val in kwargs.items():
             if key not in self.default_options.keys():
@@ -3440,10 +4105,12 @@ class ArrayGlyph(GeoMixin, Glyph):
             indices = np.array(indices)
 
         if points is not None:
-            row = points[:, 1]
-            col = points[:, 2]
-            points_scatter = ax.scatter(col, row, color=point_color, s=point_size)
-            points_id = self._plot_point_values(ax, points, pid_color, pid_size)
+            row = points.points[:, 1]
+            col = points.points[:, 2]
+            points_scatter = ax.scatter(col, row, color=points.color, s=points.size)
+            points_id = self._plot_point_values(
+                ax, points.points, points.label_color, points.label_size
+            )
 
         # Normalize the threshold to the image color range. With a
         # lazy `data_getter` we only have `frame_0` available
@@ -3460,13 +4127,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                 background_color_threshold = im.norm(np.nanmax(ref_for_threshold)) / 2.0
 
         day_text = ax.text(
-            text_loc[0],
-            text_loc[1],
+            label_location[0],
+            label_location[1],
             " ",
             fontsize=self.default_options["cbar_label_size"],
-            color=label_color,
-            transform=ax.transAxes if text_loc_is_default else ax.transData,
-            va="top" if text_loc_is_default else "baseline",
+            color=frame_label.color,
+            transform=ax.transAxes if label_location_is_default else ax.transData,
+            va="top" if label_location_is_default else "baseline",
         )
         self._day_text = day_text
 
@@ -3553,7 +4220,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             if points is not None:
                 points_scatter.set_offsets(np.c_[col, row])
                 output.append(points_scatter)
-                update_points = lambda x: points_id[x].set_text(points[x, 0])
+                update_points = lambda x: points_id[x].set_text(points.points[x, 0])
                 list(map(update_points, range(len(col))))
 
                 output += points_id
@@ -3581,7 +4248,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 output.append(points_scatter)
 
                 for x in range(len(col)):
-                    points_id[x].set_text(points[x, 0])
+                    points_id[x].set_text(points.points[x, 0])
 
                 output += points_id
 
@@ -3592,7 +4259,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     """Update cell value"""
                     val = round(vals[x], precision)
                     kw = {
-                        "color": text_colors[
+                        "color": cell_value_text_colors[
                             int(im.norm(vals[x]) > background_color_threshold)
                         ]
                     }

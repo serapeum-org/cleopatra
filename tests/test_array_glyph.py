@@ -15,8 +15,14 @@ from PIL import Image
 from cleopatra.array_glyph import (
     _COORD_DTYPE_MISMATCH,
     _COORD_SHAPE_MISMATCH,
+    _UNSET,
+    AnimateKwargs,
     ArrayGlyph,
     FacetGrid,
+    FrameLabel,
+    PlotKwargs,
+    PointOverlay,
+    _pop_first,
 )
 
 
@@ -238,9 +244,7 @@ class TestPlotArray:
     ):
         array = ArrayGlyph(arr, exclude_value=[no_data_value])
         fig, ax = array.plot(
-            points=points,
-            point_color=gauge_color,
-            point_size=point_size,
+            points=PointOverlay(points, color=gauge_color, size=point_size),
             id_color=id_color,
             id_size=id_size,
             display_cell_value=display_cell_value,
@@ -348,6 +352,549 @@ class TestAnimate:
         array.save_animation(path, fps=2)
         # assert Path(path).exists()
         # os.remove(path)
+
+
+class TestRenamedKwargAliases:
+    """The legacy `plot`/`animate` kwarg names still work but warn.
+
+    `text_colors` was renamed to `cell_value_text_colors`. The old name is
+    still accepted as a keyword (routed through `**kwargs`), emits a
+    `DeprecationWarning` naming its replacement, and is forwarded to the
+    same effective behaviour as the new name. The point-styling kwargs
+    (`point_color`, `pid_color`, ...) have since been superseded by
+    `PointOverlay` -- see `TestPointOverlayAliases`; the frame-label
+    kwargs (`label_location`, `label_color`, `text_loc`) by `FrameLabel`
+    -- see `TestFrameLabelAliases`.
+    """
+
+    def test_animate_text_colors_alias_still_works(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """`animate(text_colors=...)` warns and is forwarded unchanged."""
+        array = ArrayGlyph(coello_data)
+        with pytest.warns(DeprecationWarning, match="cell_value_text_colors"):
+            array.animate(
+                animate_time_list,
+                display_cell_value=True,
+                text_colors=("yellow", "purple"),
+            )
+
+    def test_no_warning_with_only_new_names(self, coello_data: np.ndarray):
+        """Using only the current names raises no deprecation warning."""
+        array = ArrayGlyph(coello_data)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            array.animate(
+                ["t0", "t1", "t2"],
+                cell_value_text_colors=("yellow", "purple"),
+                frame_label=FrameLabel(location=[0.1, 0.1]),
+            )
+
+    def test_both_given_new_wins_even_at_its_own_default(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """`cell_value_text_colors` wins even when equal to its own default.
+
+        Test scenario:
+            Regression for a false-negative in the "both given" conflict
+            check: passing both the deprecated `text_colors=` and the
+            current `cell_value_text_colors=` -- with the current one
+            happening to equal its own default -- must still fire the
+            conflict warning (not silently prefer the deprecated value,
+            which a plain equality-with-default check cannot tell apart
+            from "the new name was never passed").
+        """
+        array = ArrayGlyph(coello_data)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            array.animate(
+                animate_time_list,
+                display_cell_value=True,
+                cell_value_text_colors=("white", "black"),
+                text_colors=("yellow", "purple"),
+            )
+        messages = [str(w.message) for w in caught]
+        assert any("is deprecated" in m for m in messages)
+        assert any("were given" in m and "wins" in m for m in messages)
+
+
+class TestFrameLabelAliases:
+    """`FrameLabel` is the current way to style `animate`'s frame/time
+    label; the flat keywords it replaces (`label_location`/`label_color`,
+    and the older `text_loc`) still work but warn.
+    """
+
+    def test_frame_label_no_warning(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """Passing a `FrameLabel` is the current style and warns nothing."""
+        array = ArrayGlyph(coello_data)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            array.animate(
+                animate_time_list,
+                frame_label=FrameLabel(location=[0.1, 0.1], color="yellow"),
+            )
+        assert array._day_text.get_color() == "yellow"
+        assert array._day_text.get_transform() is array.ax.transData
+
+    def test_label_location_alias_still_works(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """`animate(label_location=...)` warns and positions the frame label."""
+        array = ArrayGlyph(coello_data)
+        with pytest.warns(DeprecationWarning, match="FrameLabel"):
+            array.animate(animate_time_list, label_location=[0.1, 0.1])
+        assert array._day_text.get_transform() is array.ax.transData
+
+    def test_text_loc_oldest_alias_still_works(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """`animate(text_loc=...)` (the oldest name) warns and positions the label."""
+        array = ArrayGlyph(coello_data)
+        with pytest.warns(DeprecationWarning, match="FrameLabel"):
+            array.animate(animate_time_list, text_loc=[0.1, 0.1])
+        assert array._day_text.get_transform() is array.ax.transData
+
+    def test_label_color_alias_still_works(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """`animate(label_color=...)` warns and colours the frame label."""
+        array = ArrayGlyph(coello_data)
+        with pytest.warns(DeprecationWarning, match="FrameLabel"):
+            array.animate(animate_time_list, label_color="yellow")
+        assert array._day_text.get_color() == "yellow"
+
+    def test_deprecated_kwargs_ignored_with_frame_label(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """A deprecated kwarg alongside a `FrameLabel` is ignored, with a warning."""
+        array = ArrayGlyph(coello_data)
+        with pytest.warns(UserWarning, match="ignored"):
+            array.animate(
+                animate_time_list,
+                frame_label=FrameLabel(color="yellow"),
+                label_color="orange",
+            )
+        assert array._day_text.get_color() == "yellow"
+
+    def test_positional_legacy_location_still_works(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """A plain `[x, y]` passed positionally at the old `text_loc` slot still works.
+
+        Test scenario:
+            On `main`, `animate`'s 5th positional-or-keyword parameter was
+            `text_loc` (a plain `[x, y]` list); it is now `frame_label`. A
+            stale positional call with a plain list at that position must
+            still position the label (not silently drop it) and warn.
+        """
+        array = ArrayGlyph(coello_data)
+        with pytest.warns(DeprecationWarning, match="FrameLabel"):
+            array.animate(animate_time_list, None, ("white", "black"), 200, [0.3, 0.3])
+        assert array._day_text.get_position() == (0.3, 0.3)
+        assert array._day_text.get_transform() is array.ax.transData
+
+    def test_deprecation_warning_attributes_to_caller(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """The `FrameLabel`-alias deprecation warning points at the caller's line.
+
+        Test scenario:
+            Regression for a `stacklevel` bug: the warning must name this
+            test file/line, not an internal frame (e.g. `warnings.py`).
+        """
+        array = ArrayGlyph(coello_data)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            array.animate(animate_time_list, label_color="yellow")
+        assert len(caught) == 1
+        assert caught[0].filename == __file__
+
+    def test_positional_and_keyword_location_both_reported(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """Combining a positional legacy location with `label_location=` warns about both.
+
+        Test scenario:
+            Regression for a message-accuracy bug: when a bare `[x, y]` is
+            passed positionally at the old `text_loc` slot *and*
+            `label_location=` is also given, the keyword is drained (so it
+            can't fail the strict `kwargs` check) even though the
+            positional value wins -- but the warning previously only named
+            `frame_label (positional)`, silently omitting the also-consumed
+            `label_location`. Both must now appear in the message.
+        """
+        array = ArrayGlyph(coello_data)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            array.animate(
+                animate_time_list,
+                None,
+                ("white", "black"),
+                200,
+                [0.3, 0.3],
+                label_location=[0.5, 0.5],
+            )
+        messages = [str(w.message) for w in caught]
+        assert any(
+            "frame_label (positional)" in m and "label_location" in m for m in messages
+        ), f"Expected both aliases named in one message, got: {messages}"
+        assert array._day_text.get_position() == (
+            0.3,
+            0.3,
+        ), "The positional value must still win over the keyword"
+
+
+class TestPointOverlayAliases:
+    """`PointOverlay` is the current way to style `points`; the flat
+    keywords it replaces (`point_color`/`point_size`/`point_label_color`/
+    `point_label_size`, and the older `pid_color`/`pid_size`) still work
+    on a plain array but warn.
+    """
+
+    def test_plain_array_uses_point_overlay_defaults(self, arr: np.ndarray):
+        """A bare array (no styling kwargs) needs no `PointOverlay` and warns nothing."""
+        points = np.array([[5, 1, 1]])
+        array = ArrayGlyph(arr)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            fig, ax = array.plot(points=points)
+        label = [t for t in ax.texts if t.get_text() == "5"][0]
+        assert to_rgba(label.get_color()) == to_rgba("blue")  # PointOverlay default
+
+    def test_plot_point_overlay_no_warning(self, arr: np.ndarray):
+        """Passing a `PointOverlay` is the current style and warns nothing."""
+        overlay = PointOverlay(np.array([[5, 1, 1]]), label_color="lime")
+        array = ArrayGlyph(arr)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            fig, ax = array.plot(points=overlay)
+        label = [t for t in ax.texts if t.get_text() == "5"][0]
+        assert to_rgba(label.get_color()) == to_rgba("lime")
+
+    def test_plot_point_color_alias_still_works(self, arr: np.ndarray):
+        """`plot(points=array, point_color=...)` warns and colours the marker."""
+        points = np.array([[5, 1, 1]])
+        array = ArrayGlyph(arr)
+        with pytest.warns(DeprecationWarning, match="PointOverlay"):
+            fig, ax = array.plot(points=points, point_color="lime")
+        assert to_rgba(ax.collections[0].get_facecolor()[0]) == to_rgba("lime")
+
+    def test_plot_point_label_color_alias_still_works(self, arr: np.ndarray):
+        """`plot(points=array, point_label_color=...)` warns and colours the label."""
+        points = np.array([[5, 1, 1]])
+        array = ArrayGlyph(arr)
+        with pytest.warns(DeprecationWarning, match="PointOverlay"):
+            fig, ax = array.plot(points=points, point_label_color="lime")
+        label = [t for t in ax.texts if t.get_text() == "5"][0]
+        assert to_rgba(label.get_color()) == to_rgba("lime")
+
+    def test_plot_pid_color_oldest_alias_still_works(self, arr: np.ndarray):
+        """The oldest `pid_color` alias still resolves to the label colour."""
+        points = np.array([[5, 1, 1]])
+        array = ArrayGlyph(arr)
+        with pytest.warns(DeprecationWarning, match="PointOverlay"):
+            fig, ax = array.plot(points=points, pid_color="lime")
+        label = [t for t in ax.texts if t.get_text() == "5"][0]
+        assert to_rgba(label.get_color()) == to_rgba("lime")
+
+    def test_plot_point_label_color_wins_over_pid_color(self, arr: np.ndarray):
+        """When both label-colour generations are given, the newer one wins."""
+        points = np.array([[5, 1, 1]])
+        array = ArrayGlyph(arr)
+        with pytest.warns(DeprecationWarning, match="PointOverlay"):
+            fig, ax = array.plot(
+                points=points, point_label_color="lime", pid_color="orange"
+            )
+        label = [t for t in ax.texts if t.get_text() == "5"][0]
+        assert to_rgba(label.get_color()) == to_rgba("lime")
+
+    def test_plot_deprecated_kwargs_ignored_with_point_overlay(self, arr: np.ndarray):
+        """A deprecated kwarg alongside a `PointOverlay` is ignored, with a warning."""
+        overlay = PointOverlay(np.array([[5, 1, 1]]), label_color="lime")
+        array = ArrayGlyph(arr)
+        with pytest.warns(UserWarning, match="ignored"):
+            fig, ax = array.plot(points=overlay, point_label_color="orange")
+        label = [t for t in ax.texts if t.get_text() == "5"][0]
+        assert to_rgba(label.get_color()) == to_rgba("lime")
+
+    def test_plot_point_color_without_points_does_not_raise(self, arr: np.ndarray):
+        """`plot(point_color=...)` with no `points` warns instead of raising.
+
+        Test scenario:
+            Regression for a bug where `_resolve_point_overlay` only
+            drained the deprecated point-style kwargs out of `kwargs`
+            when `points` was a plain array or `PointOverlay`, leaving
+            them to fail the strict `kwargs`-vs-`default_options`
+            validation when `points is None` -- contradicting the
+            documented "the old keywords still work as `**kwargs`"
+            guarantee (on `main`, these were named parameters, legal --
+            if pointless -- without `points`).
+        """
+        array = ArrayGlyph(arr)
+        with pytest.warns(DeprecationWarning, match="have no effect"):
+            fig, ax = array.plot(point_color="red")
+        assert fig is not None, "plot() must still succeed, not raise"
+
+    def test_plot_pid_size_without_points_does_not_raise(self, arr: np.ndarray):
+        """The oldest `pid_size` alias with no `points` also warns instead of raising."""
+        array = ArrayGlyph(arr)
+        with pytest.warns(DeprecationWarning, match="have no effect"):
+            fig, ax = array.plot(pid_size=42)
+        assert fig is not None, "plot() must still succeed, not raise"
+
+    def test_animate_point_label_color_without_points_does_not_raise(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """`animate(point_label_color=...)` with no `points` warns instead of raising."""
+        array = ArrayGlyph(coello_data)
+        with pytest.warns(DeprecationWarning, match="have no effect"):
+            anim = array.animate(animate_time_list, point_label_color="lime")
+        assert anim is not None, "animate() must still succeed, not raise"
+
+    def test_plot_no_deprecated_kwargs_and_no_points_warns_nothing(
+        self, arr: np.ndarray
+    ):
+        """Neither `points` nor any deprecated point-style kwarg: no warning at all."""
+        array = ArrayGlyph(arr)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            fig, ax = array.plot()
+        assert fig is not None
+
+    def test_animate_pid_size_oldest_alias_still_works(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """`animate(points=array, pid_size=...)` warns and sizes the label."""
+        points = np.array([[5, 1, 1]])
+        array = ArrayGlyph(coello_data)
+        with pytest.warns(DeprecationWarning, match="PointOverlay"):
+            array.animate(animate_time_list, points=points, pid_size=42)
+
+    def test_animate_point_overlay_no_warning(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """Passing a `PointOverlay` to `animate` is the current style and warns nothing."""
+        overlay = PointOverlay(np.array([[5, 1, 1]]), size=42)
+        array = ArrayGlyph(coello_data)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            array.animate(animate_time_list, points=overlay)
+
+    def test_deprecation_warning_attributes_to_caller(self, arr: np.ndarray):
+        """The `PointOverlay`-alias deprecation warning points at the caller's line.
+
+        Test scenario:
+            Regression for a `stacklevel` bug: the warning must name this
+            test file/line, not an internal frame (e.g. `warnings.py`).
+        """
+        points = np.array([[5, 1, 1]])
+        array = ArrayGlyph(arr)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            array.plot(points=points, pid_color="lime")
+        assert len(caught) == 1
+        assert caught[0].filename == __file__
+
+
+class TestKwargsTypedDicts:
+    """`PlotKwargs`/`AnimateKwargs` should track every kwarg each method
+    actually reads and uses -- a regression test for the kind of drift
+    that let `precision` (a real, animate()-only option) go unmodelled.
+    """
+
+    def test_animate_kwargs_includes_precision(self):
+        """`precision` is animate()-only and genuinely used; must be modelled."""
+        assert "precision" in AnimateKwargs.__annotations__
+
+    def test_plot_kwargs_excludes_precision(self):
+        """`plot()` never reads `precision`, so `PlotKwargs` correctly omits it."""
+        assert "precision" not in PlotKwargs.__annotations__
+
+    def test_plot_kwargs_excludes_explicit_params(self):
+        """`title`/`kind` are explicit `plot()` params, unreachable via its `**kwargs`."""
+        assert "title" not in PlotKwargs.__annotations__
+        assert "kind" not in PlotKwargs.__annotations__
+
+    def test_animate_kwargs_includes_title(self):
+        """`animate()` has no explicit `title` param, so it IS `**kwargs`-reachable."""
+        assert "title" in AnimateKwargs.__annotations__
+
+    def test_precision_is_actually_honoured_by_animate(self):
+        """`precision` (now typed) still rounds the rendered cell-value text.
+
+        Test scenario:
+            Confirms the TypedDict addition didn't just paper over a dead
+            option: a lower `precision` renders fewer decimal places for
+            the same underlying data.
+        """
+        frame = np.array([[1.23456, 2.34567], [3.45678, 4.56789]])
+        stack = np.stack([frame, frame + 0.001])
+        array = ArrayGlyph(stack)
+        array.animate(list(range(2)), display_cell_value=True, precision=1)
+        array.anim._func(0)
+        cell_texts = {
+            t.get_text()
+            for t in array.ax.texts
+            if t.get_text().startswith(("1", "2", "3", "4"))
+        }
+        assert cell_texts == {"1.2", "2.3", "3.5", "4.6"}
+
+
+class TestUnsetSentinel:
+    """`_Unset`/`_UNSET`: the sentinel distinguishing "not passed" from
+    "passed, equal to its default" for `_resolve_renamed_kwarg`'s
+    `new_value` parameter.
+    """
+
+    def test_repr_is_readable(self):
+        """`repr(_UNSET)` reads `<unset>`, not the default `object()` repr.
+
+        Test scenario:
+            The class docstring's whole reason for existing over a plain
+            `object()` sentinel is a readable `help()`/IDE tooltip; a
+            regression here (e.g. deleting `__repr__`) would silently
+            fall back to `<cleopatra.array_glyph._Unset object at 0x...>`.
+        """
+        assert repr(_UNSET) == "<unset>", f"Unexpected repr: {repr(_UNSET)!r}"
+
+    def test_is_singleton_identity(self):
+        """`_UNSET` is a single shared instance, compared with `is` not `==`.
+
+        Test scenario:
+            `_resolve_renamed_kwarg` tests `new_value is _UNSET`; a second
+            `_Unset()` instance must NOT be `is _UNSET` (no `__eq__`
+            override makes two instances equal either), confirming the
+            sentinel can only be obtained by importing `_UNSET` itself.
+        """
+        from cleopatra.array_glyph import _Unset
+
+        other = _Unset()
+        assert other is not _UNSET, "A fresh _Unset() must not be the _UNSET singleton"
+        assert other != _UNSET, "Two distinct _Unset instances must not compare equal"
+
+
+class TestPopFirst:
+    """Direct unit tests for `_pop_first`, the helper `_resolve_point_overlay`
+    and `_resolve_frame_label` use to drain every deprecated alias out of
+    `kwargs` while keeping only the highest-priority value.
+    """
+
+    def test_no_names_present_returns_default(self):
+        """None of `names` in `kwargs`: returns `(default, None)`, `kwargs` untouched."""
+        kwargs = {"cmap": "viridis"}
+        value, key = _pop_first(kwargs, ("point_color", "pid_color"), "red")
+        assert (value, key) == (
+            "red",
+            None,
+        ), f"Expected ('red', None), got {(value, key)}"
+        assert kwargs == {
+            "cmap": "viridis"
+        }, f"kwargs should be untouched, got {kwargs}"
+
+    def test_single_name_present_pops_it(self):
+        """Exactly one of `names` present: it is popped and returned with its key."""
+        kwargs = {"point_color": "lime", "cmap": "viridis"}
+        value, key = _pop_first(kwargs, ("point_color",), "red")
+        assert (value, key) == ("lime", "point_color"), f"Got {(value, key)}"
+        assert "point_color" not in kwargs, "The matched key must be popped"
+        assert kwargs == {
+            "cmap": "viridis"
+        }, f"Unrelated keys must survive, got {kwargs}"
+
+    def test_multiple_names_present_pops_all_returns_highest_priority(self):
+        """Two aliases present: both are popped, but the first-listed one wins.
+
+        Test scenario:
+            Regression for a bug where only the winning name was popped,
+            leaving the loser in `kwargs` to fail the caller's subsequent
+            strict `kwargs`-vs-`default_options` validation.
+        """
+        kwargs = {"point_label_color": "lime", "pid_color": "orange"}
+        value, key = _pop_first(kwargs, ("point_label_color", "pid_color"), "blue")
+        assert (value, key) == ("lime", "point_label_color"), f"Got {(value, key)}"
+        assert kwargs == {}, f"Both aliases must be popped, got {kwargs}"
+
+    def test_priority_order_is_names_order_not_insertion_order(self):
+        """The winner is the first name in `names`, regardless of `kwargs` insertion order.
+
+        Test scenario:
+            `pid_color` is inserted into `kwargs` before `point_label_color`,
+            but `names=("point_label_color", "pid_color")` still prefers
+            `point_label_color` -- priority is positional in `names`, not
+            dict insertion order.
+        """
+        kwargs = {"pid_color": "orange", "point_label_color": "lime"}
+        value, key = _pop_first(kwargs, ("point_label_color", "pid_color"), "blue")
+        assert (value, key) == ("lime", "point_label_color"), f"Got {(value, key)}"
+
+    def test_empty_names_returns_default(self):
+        """An empty `names` tuple always returns `(default, None)`."""
+        kwargs = {"cmap": "viridis"}
+        value, key = _pop_first(kwargs, (), "red")
+        assert (value, key) == (
+            "red",
+            None,
+        ), f"Expected ('red', None), got {(value, key)}"
+        assert kwargs == {
+            "cmap": "viridis"
+        }, f"kwargs should be untouched, got {kwargs}"
+
+
+class TestPointOverlay:
+    """Direct unit tests for `PointOverlay.__init__`'s defaults and
+    attribute assignment, independent of `plot`/`animate` rendering.
+    """
+
+    def test_defaults(self):
+        """Only `points` given: the four styling attributes take their documented defaults."""
+        points = np.array([[5.0, 1, 1]])
+        overlay = PointOverlay(points)
+        assert overlay.points is points, "points must be stored as given, not copied"
+        assert (
+            overlay.color == "red"
+        ), f"Expected default color 'red', got {overlay.color!r}"
+        assert overlay.size == 100, f"Expected default size 100, got {overlay.size!r}"
+        assert (
+            overlay.label_color == "blue"
+        ), f"Expected default label_color 'blue', got {overlay.label_color!r}"
+        assert (
+            overlay.label_size == 10
+        ), f"Expected default label_size 10, got {overlay.label_size!r}"
+
+    def test_explicit_values_stored_verbatim(self):
+        """All four styling keywords, when given, are stored unchanged."""
+        points = np.array([[5.0, 1, 1]])
+        overlay = PointOverlay(
+            points, color="lime", size=42, label_color="orange", label_size=7
+        )
+        assert overlay.color == "lime", f"Got {overlay.color!r}"
+        assert overlay.size == 42, f"Got {overlay.size!r}"
+        assert overlay.label_color == "orange", f"Got {overlay.label_color!r}"
+        assert overlay.label_size == 7, f"Got {overlay.label_size!r}"
+
+
+class TestFrameLabel:
+    """Direct unit tests for `FrameLabel.__init__`'s defaults and attribute
+    assignment, independent of `animate` rendering.
+    """
+
+    def test_defaults(self):
+        """No arguments given: `location` is `None` and `color` is `'black'`."""
+        label = FrameLabel()
+        assert (
+            label.location is None
+        ), f"Expected default location None, got {label.location!r}"
+        assert (
+            label.color == "black"
+        ), f"Expected default color 'black', got {label.color!r}"
+
+    def test_explicit_values_stored_verbatim(self):
+        """Both keywords, when given, are stored unchanged."""
+        label = FrameLabel(location=[0.3, 0.4], color="yellow")
+        assert label.location == [0.3, 0.4], f"Got {label.location!r}"
+        assert label.color == "yellow", f"Got {label.color!r}"
 
 
 @pytest.mark.plot
@@ -1311,25 +1858,13 @@ class TestAnimateEdgeCases:
         assert anim is not None
         assert glyph.default_options["ticks_spacing"] == 50.0
 
-    def test_animate_with_label_color(
+    def test_data_getter_is_keyword_only(
         self,
         coello_data: np.ndarray,
         animate_time_list: list,
         no_data_value: float,
     ):
-        """`animate(label_color=...)` sets the frame label's text color."""
-        glyph = ArrayGlyph(coello_data, exclude_value=[no_data_value])
-        anim = glyph.animate(animate_time_list, label_color="yellow")
-        assert anim is not None
-        assert glyph._day_text.get_color() == "yellow"
-
-    def test_label_color_is_keyword_only(
-        self,
-        coello_data: np.ndarray,
-        animate_time_list: list,
-        no_data_value: float,
-    ):
-        """`label_color` must be keyword-only so no positional argument shifts."""
+        """`data_getter` must be keyword-only so no positional argument shifts."""
         glyph = ArrayGlyph(coello_data, exclude_value=[no_data_value])
         with pytest.raises(TypeError):
             glyph.animate(
@@ -1338,11 +1873,7 @@ class TestAnimateEdgeCases:
                 ("white", "black"),
                 200,
                 None,
-                "red",
-                100,
-                "blue",
-                10,
-                "yellow",
+                lambda i: coello_data,
             )
 
 
@@ -3094,43 +3625,45 @@ class TestAnimateDataGetterEdgeCases:
         finally:
             plt.close(anim._fig)
 
-    def test_data_getter_explicit_text_loc(self) -> None:
-        """A user-supplied `text_loc` skips the default-init branch.
+    def test_data_getter_explicit_frame_label_location(self) -> None:
+        """A user-supplied `FrameLabel(location=...)` skips the default-init branch.
 
         Test scenario:
-            Default `text_loc=None` is rewritten to an axes-fraction anchor;
-            passing an explicit value covers the alternate branch where the
-            rewrite is skipped and data coordinates are used instead.
+            Default `frame_label=None` resolves to an axes-fraction anchor;
+            passing an explicit `FrameLabel` location covers the alternate
+            branch where the rewrite is skipped and data coordinates are
+            used instead.
         """
         stack = self._stack(n=3)
         glyph = ArrayGlyph(stack[0])
         anim = glyph.animate(
             time=list(range(3)),
             data_getter=lambda i: stack[i],
-            text_loc=[0.05, 0.05],
+            frame_label=FrameLabel(location=[0.05, 0.05]),
         )
         try:
             assert isinstance(
                 anim, FuncAnimation
-            ), "explicit text_loc must produce an animation"
+            ), "explicit frame_label location must produce an animation"
             assert glyph._day_text.get_transform() is glyph.ax.transData
         finally:
             plt.close(glyph.fig)
 
-    def test_default_text_loc_label_stays_inside_axes(self) -> None:
+    def test_default_frame_label_location_stays_inside_axes(self) -> None:
         """The default frame label must not clip past the axes bounds.
 
         Test scenario:
             Regression test for the inverted-Y-axis clipping bug: with no
-            explicit `text_loc`, the label's rendered bounding box must sit
-            fully within the axes bounding box on both axes, for a square
-            and a moderately rectangular array shape. Does not cover an
-            extremely narrow axes (e.g. a 20-column array), where the
-            label can still overflow horizontally simply because the
+            explicit `frame_label`, the label's rendered bounding box
+            must sit fully within the axes bounding box on both axes, for
+            a square and a moderately rectangular array shape. Does not
+            cover an extremely narrow axes (e.g. a 20-column array), where
+            the label can still overflow horizontally simply because the
             available width is smaller than the label's rendered text at
             the default font size — a physical-space limit no anchor
             choice can fix; callers with very narrow images should pass
-            an explicit `text_loc` or a smaller `cbar_label_size`.
+            an explicit `FrameLabel(location=...)` or a smaller
+            `cbar_label_size`.
         """
         for shape in [(4, 48, 48), (4, 100, 50)]:
             arr = np.zeros(shape)
