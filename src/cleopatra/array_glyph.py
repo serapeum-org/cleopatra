@@ -590,9 +590,13 @@ def _resolve_point_overlay(
     `point_size` / `point_label_color` / `point_label_size` keywords, or
     the even older `pid_color` / `pid_size` for the label styling) -- any
     of these emit a `DeprecationWarning` and are folded into a
-    `PointOverlay` here. Must be called *before* `plot`/`animate` validate
-    `kwargs` against `self.default_options`, which would otherwise reject
-    the deprecated keys outright.
+    `PointOverlay` here. The deprecated style keys are drained out of
+    `kwargs` even when `points` is `None` (a no-op, matching their
+    pre-`PointOverlay` behaviour as named parameters with defaults) so
+    they never reach the caller's strict `kwargs` validation. Must be
+    called *before* `plot`/`animate` validate `kwargs` against
+    `self.default_options`, which would otherwise reject the deprecated
+    keys outright.
 
     Args:
         points: The raw `points` argument as received by `plot`/`animate`:
@@ -618,6 +622,26 @@ def _resolve_point_overlay(
                 kwargs.pop(key)
         return points
     if points is None:
+        # Drain the deprecated point-style keys even with no `points` to
+        # style, matching their pre-PointOverlay behaviour (named
+        # parameters with defaults -- legal, if pointless, without
+        # `points`). Skipping this would leave them in `kwargs` to fail
+        # the caller's strict `default_options` validation, breaking the
+        # documented "old keywords still work as `**kwargs`" guarantee.
+        _, color_key = _pop_first(kwargs, ("point_color",), None)
+        _, size_key = _pop_first(kwargs, ("point_size",), None)
+        _, label_color_key = _pop_first(
+            kwargs, ("point_label_color", "pid_color"), None
+        )
+        _, label_size_key = _pop_first(kwargs, ("point_label_size", "pid_size"), None)
+        used = [k for k in (color_key, size_key, label_color_key, label_size_key) if k]
+        if used:
+            warnings.warn(
+                f"{used} have no effect without `points`; pass a "
+                "`cleopatra.array_glyph.PointOverlay` as `points` instead.",
+                DeprecationWarning,
+                stacklevel=3,
+            )
         return None
     color, color_key = _pop_first(kwargs, ("point_color",), "red")
     size, size_key = _pop_first(kwargs, ("point_size",), 100)

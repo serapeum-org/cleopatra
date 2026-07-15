@@ -585,6 +585,50 @@ class TestPointOverlayAliases:
         label = [t for t in ax.texts if t.get_text() == "5"][0]
         assert to_rgba(label.get_color()) == to_rgba("lime")
 
+    def test_plot_point_color_without_points_does_not_raise(self, arr: np.ndarray):
+        """`plot(point_color=...)` with no `points` warns instead of raising.
+
+        Test scenario:
+            Regression for a bug where `_resolve_point_overlay` only
+            drained the deprecated point-style kwargs out of `kwargs`
+            when `points` was a plain array or `PointOverlay`, leaving
+            them to fail the strict `kwargs`-vs-`default_options`
+            validation when `points is None` -- contradicting the
+            documented "the old keywords still work as `**kwargs`"
+            guarantee (on `main`, these were named parameters, legal --
+            if pointless -- without `points`).
+        """
+        array = ArrayGlyph(arr)
+        with pytest.warns(DeprecationWarning, match="have no effect"):
+            fig, ax = array.plot(point_color="red")
+        assert fig is not None, "plot() must still succeed, not raise"
+
+    def test_plot_pid_size_without_points_does_not_raise(self, arr: np.ndarray):
+        """The oldest `pid_size` alias with no `points` also warns instead of raising."""
+        array = ArrayGlyph(arr)
+        with pytest.warns(DeprecationWarning, match="have no effect"):
+            fig, ax = array.plot(pid_size=42)
+        assert fig is not None, "plot() must still succeed, not raise"
+
+    def test_animate_point_label_color_without_points_does_not_raise(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """`animate(point_label_color=...)` with no `points` warns instead of raising."""
+        array = ArrayGlyph(coello_data)
+        with pytest.warns(DeprecationWarning, match="have no effect"):
+            anim = array.animate(animate_time_list, point_label_color="lime")
+        assert anim is not None, "animate() must still succeed, not raise"
+
+    def test_plot_no_deprecated_kwargs_and_no_points_warns_nothing(
+        self, arr: np.ndarray
+    ):
+        """Neither `points` nor any deprecated point-style kwarg: no warning at all."""
+        array = ArrayGlyph(arr)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            fig, ax = array.plot()
+        assert fig is not None
+
     def test_animate_pid_size_oldest_alias_still_works(
         self, coello_data: np.ndarray, animate_time_list: list
     ):
