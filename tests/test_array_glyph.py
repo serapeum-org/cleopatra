@@ -15,12 +15,14 @@ from PIL import Image
 from cleopatra.array_glyph import (
     _COORD_DTYPE_MISMATCH,
     _COORD_SHAPE_MISMATCH,
+    _UNSET,
     AnimateKwargs,
     ArrayGlyph,
     FacetGrid,
     FrameLabel,
     PlotKwargs,
     PointOverlay,
+    _pop_first,
 )
 
 
@@ -660,6 +662,161 @@ class TestKwargsTypedDicts:
             if t.get_text().startswith(("1", "2", "3", "4"))
         }
         assert cell_texts == {"1.2", "2.3", "3.5", "4.6"}
+
+
+class TestUnsetSentinel:
+    """`_Unset`/`_UNSET`: the sentinel distinguishing "not passed" from
+    "passed, equal to its default" for `_resolve_renamed_kwarg`'s
+    `new_value` parameter.
+    """
+
+    def test_repr_is_readable(self):
+        """`repr(_UNSET)` reads `<unset>`, not the default `object()` repr.
+
+        Test scenario:
+            The class docstring's whole reason for existing over a plain
+            `object()` sentinel is a readable `help()`/IDE tooltip; a
+            regression here (e.g. deleting `__repr__`) would silently
+            fall back to `<cleopatra.array_glyph._Unset object at 0x...>`.
+        """
+        assert repr(_UNSET) == "<unset>", f"Unexpected repr: {repr(_UNSET)!r}"
+
+    def test_is_singleton_identity(self):
+        """`_UNSET` is a single shared instance, compared with `is` not `==`.
+
+        Test scenario:
+            `_resolve_renamed_kwarg` tests `new_value is _UNSET`; a second
+            `_Unset()` instance must NOT be `is _UNSET` (no `__eq__`
+            override makes two instances equal either), confirming the
+            sentinel can only be obtained by importing `_UNSET` itself.
+        """
+        from cleopatra.array_glyph import _Unset
+
+        other = _Unset()
+        assert other is not _UNSET, "A fresh _Unset() must not be the _UNSET singleton"
+        assert other != _UNSET, "Two distinct _Unset instances must not compare equal"
+
+
+class TestPopFirst:
+    """Direct unit tests for `_pop_first`, the helper `_resolve_point_overlay`
+    and `_resolve_frame_label` use to drain every deprecated alias out of
+    `kwargs` while keeping only the highest-priority value.
+    """
+
+    def test_no_names_present_returns_default(self):
+        """None of `names` in `kwargs`: returns `(default, None)`, `kwargs` untouched."""
+        kwargs = {"cmap": "viridis"}
+        value, key = _pop_first(kwargs, ("point_color", "pid_color"), "red")
+        assert (value, key) == (
+            "red",
+            None,
+        ), f"Expected ('red', None), got {(value, key)}"
+        assert kwargs == {
+            "cmap": "viridis"
+        }, f"kwargs should be untouched, got {kwargs}"
+
+    def test_single_name_present_pops_it(self):
+        """Exactly one of `names` present: it is popped and returned with its key."""
+        kwargs = {"point_color": "lime", "cmap": "viridis"}
+        value, key = _pop_first(kwargs, ("point_color",), "red")
+        assert (value, key) == ("lime", "point_color"), f"Got {(value, key)}"
+        assert "point_color" not in kwargs, "The matched key must be popped"
+        assert kwargs == {
+            "cmap": "viridis"
+        }, f"Unrelated keys must survive, got {kwargs}"
+
+    def test_multiple_names_present_pops_all_returns_highest_priority(self):
+        """Two aliases present: both are popped, but the first-listed one wins.
+
+        Test scenario:
+            Regression for a bug where only the winning name was popped,
+            leaving the loser in `kwargs` to fail the caller's subsequent
+            strict `kwargs`-vs-`default_options` validation.
+        """
+        kwargs = {"point_label_color": "lime", "pid_color": "orange"}
+        value, key = _pop_first(kwargs, ("point_label_color", "pid_color"), "blue")
+        assert (value, key) == ("lime", "point_label_color"), f"Got {(value, key)}"
+        assert kwargs == {}, f"Both aliases must be popped, got {kwargs}"
+
+    def test_priority_order_is_names_order_not_insertion_order(self):
+        """The winner is the first name in `names`, regardless of `kwargs` insertion order.
+
+        Test scenario:
+            `pid_color` is inserted into `kwargs` before `point_label_color`,
+            but `names=("point_label_color", "pid_color")` still prefers
+            `point_label_color` -- priority is positional in `names`, not
+            dict insertion order.
+        """
+        kwargs = {"pid_color": "orange", "point_label_color": "lime"}
+        value, key = _pop_first(kwargs, ("point_label_color", "pid_color"), "blue")
+        assert (value, key) == ("lime", "point_label_color"), f"Got {(value, key)}"
+
+    def test_empty_names_returns_default(self):
+        """An empty `names` tuple always returns `(default, None)`."""
+        kwargs = {"cmap": "viridis"}
+        value, key = _pop_first(kwargs, (), "red")
+        assert (value, key) == (
+            "red",
+            None,
+        ), f"Expected ('red', None), got {(value, key)}"
+        assert kwargs == {
+            "cmap": "viridis"
+        }, f"kwargs should be untouched, got {kwargs}"
+
+
+class TestPointOverlay:
+    """Direct unit tests for `PointOverlay.__init__`'s defaults and
+    attribute assignment, independent of `plot`/`animate` rendering.
+    """
+
+    def test_defaults(self):
+        """Only `points` given: the four styling attributes take their documented defaults."""
+        points = np.array([[5.0, 1, 1]])
+        overlay = PointOverlay(points)
+        assert overlay.points is points, "points must be stored as given, not copied"
+        assert (
+            overlay.color == "red"
+        ), f"Expected default color 'red', got {overlay.color!r}"
+        assert overlay.size == 100, f"Expected default size 100, got {overlay.size!r}"
+        assert (
+            overlay.label_color == "blue"
+        ), f"Expected default label_color 'blue', got {overlay.label_color!r}"
+        assert (
+            overlay.label_size == 10
+        ), f"Expected default label_size 10, got {overlay.label_size!r}"
+
+    def test_explicit_values_stored_verbatim(self):
+        """All four styling keywords, when given, are stored unchanged."""
+        points = np.array([[5.0, 1, 1]])
+        overlay = PointOverlay(
+            points, color="lime", size=42, label_color="orange", label_size=7
+        )
+        assert overlay.color == "lime", f"Got {overlay.color!r}"
+        assert overlay.size == 42, f"Got {overlay.size!r}"
+        assert overlay.label_color == "orange", f"Got {overlay.label_color!r}"
+        assert overlay.label_size == 7, f"Got {overlay.label_size!r}"
+
+
+class TestFrameLabel:
+    """Direct unit tests for `FrameLabel.__init__`'s defaults and attribute
+    assignment, independent of `animate` rendering.
+    """
+
+    def test_defaults(self):
+        """No arguments given: `location` is `None` and `color` is `'black'`."""
+        label = FrameLabel()
+        assert (
+            label.location is None
+        ), f"Expected default location None, got {label.location!r}"
+        assert (
+            label.color == "black"
+        ), f"Expected default color 'black', got {label.color!r}"
+
+    def test_explicit_values_stored_verbatim(self):
+        """Both keywords, when given, are stored unchanged."""
+        label = FrameLabel(location=[0.3, 0.4], color="yellow")
+        assert label.location == [0.3, 0.4], f"Got {label.location!r}"
+        assert label.color == "yellow", f"Got {label.color!r}"
 
 
 @pytest.mark.plot
