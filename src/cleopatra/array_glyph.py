@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import warnings
 from math import ceil
-from typing import Any, Callable, Sequence
+from typing import Any, Callable, Literal, Sequence, TypedDict, Unpack
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -181,6 +181,194 @@ def _resolve_renamed_kwarg(
         )
         return new_value
     return old_value
+
+
+#: Static typing for the **kwargs `plot`/`animate` accept -- purely a typing
+#: aid (see PEP 692 `Unpack`): with `from __future__ import annotations` the
+#: `**kwargs: Unpack[...]` annotations below are never evaluated at runtime,
+#: so this adds IDE autocomplete / type-checker typo-catching for `**kwargs`
+#: without changing the existing `self.default_options` merge-and-validate
+#: mechanism at all. Grouped to match the methods' own docstring sections;
+#: each group is shared by both methods except `XarrayColourOptions` and
+#: `ContourOptions`, which only `plot` documents (`animate` has no `kind`,
+#: so nothing routes to `contour`/`contourf`, and does not recompute
+#: `vmin`/`vmax` from `robust`/`center`).
+class TitleOption(TypedDict, total=False):
+    """The `title` kwarg -- `animate` only.
+
+    `plot` also accepts a title, but as an explicit named parameter (not
+    via `**kwargs`); mixing `title` into its `Unpack`'d TypedDict too would
+    overlap with that parameter. `animate` has no such parameter, so its
+    `**kwargs` is where `title` is actually reachable.
+
+    Attributes:
+        title: Plot title, by default `'Array Plot'`.
+    """
+
+    title: str | None
+
+
+class PlotAppearanceOptions(TypedDict, total=False):
+    """Colormap/colour-limit options shared by `plot` and `animate`.
+
+    Attributes:
+        title_size: Title font size, by default `15`.
+        cmap: Colormap name or `Colormap` instance, by default `'coolwarm_r'`.
+        vmin: Minimum value for colour scaling, by default `min(array)`.
+        vmax: Maximum value for colour scaling, by default `max(array)`.
+    """
+
+    title_size: int
+    cmap: str | Colormap
+    vmin: float | None
+    vmax: float | None
+
+
+class ColorbarOptions(TypedDict, total=False):
+    """Colorbar placement/label options shared by `plot` and `animate`.
+
+    Attributes:
+        add_colorbar: Whether to draw the glyph's own colorbar, by
+            default `True`.
+        cbar_orientation: Colorbar orientation, by default `'vertical'`.
+        cbar_label_rotation: Rotation angle of the colorbar label, by
+            default `-90`.
+        cbar_label_location: Location of the colorbar label, by default
+            `'bottom'`.
+        cbar_length: Ratio controlling the colorbar's height/width, by
+            default `0.75`.
+        ticks_spacing: Spacing between colorbar ticks, by default `2`.
+        cbar_label_size: Font size of the colorbar label, by default `12`.
+        cbar_label: Label text for the colorbar, by default `'Value'`.
+    """
+
+    add_colorbar: bool
+    cbar_orientation: Literal["vertical", "horizontal"]
+    cbar_label_rotation: float
+    cbar_label_location: Literal[
+        "top", "bottom", "center", "baseline", "center_baseline"
+    ]
+    cbar_length: float
+    ticks_spacing: float
+    cbar_label_size: int
+    cbar_label: str | None
+
+
+class ColorScaleOptions(TypedDict, total=False):
+    """Colour-scaling options shared by `plot` and `animate`.
+
+    Attributes:
+        color_scale: Colour scaling kind, by default `'linear'`. See
+            `cleopatra.styles.ColorScale`.
+        gamma: Exponent for the `'power'` colour scale, by default `0.5`.
+        line_threshold: Threshold for the `'sym-lognorm'` colour scale, by
+            default `0.0001`.
+        line_scale: Scale factor for the `'sym-lognorm'` colour scale, by
+            default `0.001`.
+        bounds: Boundaries for the `'boundary-norm'` colour scale, by
+            default `None`.
+        midpoint: Midpoint value for the `'midpoint'` colour scale, by
+            default `0`.
+    """
+
+    color_scale: ColorScale | str
+    gamma: float
+    line_threshold: float
+    line_scale: float
+    bounds: list[float] | None
+    midpoint: float
+
+
+class XarrayColourOptions(TypedDict, total=False):
+    """Xarray-aligned colour options -- `plot` only.
+
+    Attributes:
+        robust: When `True`, use the 2nd/98th percentile of the data for
+            `vmin`/`vmax`, matching xarray's `robust=True`, by default
+            `False`.
+        center: Diverging-colormap centring value, by default `None`.
+        extend: Colorbar arrow extension, by default `None` (auto-resolve).
+        cbar_kwargs: Extra keyword arguments forwarded to `fig.colorbar`,
+            by default `None`.
+    """
+
+    robust: bool
+    center: float | None
+    extend: Literal["neither", "both", "min", "max"] | None
+    cbar_kwargs: dict[str, Any] | None
+
+
+class ContourOptions(TypedDict, total=False):
+    """Contour-line and discretisation options -- `plot` only.
+
+    Attributes:
+        levels: Discrete colour levels (xarray-aligned), by default `None`.
+        labels: Draw inline numeric labels on a line `contour`'s isolines,
+            by default `False`.
+        label_kw: Extra keyword arguments forwarded to `ax.clabel` when
+            `labels=True`, by default `None`.
+    """
+
+    levels: int | Sequence[float] | None
+    labels: bool
+    label_kw: dict[str, Any] | None
+
+
+class CellValueOptions(TypedDict, total=False):
+    """Per-cell value-text display options shared by `plot` and `animate`.
+
+    Attributes:
+        display_cell_value: Whether to display each cell's value as text,
+            by default `False`.
+        num_size: Font size of the cell value text, by default `8`.
+        background_color_threshold: Threshold for the cell value text
+            colour, by default `None` (uses `max(array) / 2`).
+    """
+
+    display_cell_value: bool
+    num_size: int
+    background_color_threshold: float | None
+
+
+class DataStyleOptions(TypedDict, total=False):
+    """Named data-style preset / relief-shading options shared by `plot`
+    and `animate`.
+
+    Attributes:
+        style: Name of a `cleopatra.colors.DATA_STYLES` preset, by default
+            `None`.
+        hillshade: Relief-shade a regular-grid DEM; `True` for defaults,
+            or a dict tuning `vert_exag`/`azimuth`/`altitude`/
+            `blend_mode`/`multidirectional`. By default `False`.
+    """
+
+    style: str | None
+    hillshade: bool | dict[str, Any]
+
+
+class PlotKwargs(
+    PlotAppearanceOptions,
+    ColorbarOptions,
+    ColorScaleOptions,
+    XarrayColourOptions,
+    ContourOptions,
+    CellValueOptions,
+    DataStyleOptions,
+    total=False,
+):
+    """The full set of `**kwargs` `ArrayGlyph.plot` accepts."""
+
+
+class AnimateKwargs(
+    TitleOption,
+    PlotAppearanceOptions,
+    ColorbarOptions,
+    ColorScaleOptions,
+    CellValueOptions,
+    DataStyleOptions,
+    total=False,
+):
+    """The full set of `**kwargs` `ArrayGlyph.animate` accepts."""
 
 
 class PointOverlay:
@@ -2240,7 +2428,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         kind: str = "auto",
         ax: Axes | None = None,
         title: str | None = None,
-        **kwargs,
+        **kwargs: Unpack[PlotKwargs],
     ) -> tuple[Figure, Axes]:
         """Plot the array with customizable visualization options.
 
@@ -2805,7 +2993,10 @@ class ArrayGlyph(GeoMixin, Glyph):
         # Resolve `points` (a `PointOverlay`, or the deprecated plain-array +
         # separate style kwargs) before the strict `kwargs` validation below,
         # which would otherwise reject the deprecated keys outright.
-        points = _resolve_point_overlay(points, kwargs)
+        # `kwargs` is a real, mutable dict at runtime -- mypy's TypedDict
+        # model just does not have a variance-safe way to type "a dict this
+        # helper is allowed to pop deprecated keys from".
+        points = _resolve_point_overlay(points, kwargs)  # type: ignore[arg-type]
 
         for key, val in kwargs.items():
             if key not in self.default_options.keys():
@@ -3277,7 +3468,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         frame_label: FrameLabel | None = None,
         *,
         data_getter: Callable[[int], np.ndarray] | None = None,
-        **kwargs,
+        **kwargs: Unpack[AnimateKwargs],
     ) -> FuncAnimation:
         """Create an animation from a single-band or true-colour stack.
 
@@ -3567,15 +3758,18 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         # Resolve deprecated kwarg aliases before the strict `kwargs`
         # validation below, which would otherwise reject them outright.
+        # `kwargs` is a real, mutable dict at runtime -- mypy's TypedDict
+        # model just does not have a variance-safe way to type "a dict
+        # these helpers are allowed to pop deprecated keys from".
         cell_value_text_colors = _resolve_renamed_kwarg(
-            kwargs,
+            kwargs,  # type: ignore[arg-type]
             "text_colors",
             "cell_value_text_colors",
             cell_value_text_colors,
             ("white", "black"),
         )
-        frame_label = _resolve_frame_label(frame_label, kwargs)
-        points = _resolve_point_overlay(points, kwargs)
+        frame_label = _resolve_frame_label(frame_label, kwargs)  # type: ignore[arg-type]
+        points = _resolve_point_overlay(points, kwargs)  # type: ignore[arg-type]
 
         # Resolved into a local rather than written back onto `frame_label`,
         # so a `FrameLabel` instance the caller passed in (and might reuse
