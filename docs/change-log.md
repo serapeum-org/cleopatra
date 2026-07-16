@@ -1,5 +1,62 @@
 # Changelog
 
+## 0.26.0 (2026-07-16)
+
+
+- refactor(array_glyph)!: clean up plot()/animate()'s kwarg API (#207)
+- - Rename pid_color/pid_size to point_label_color/point_label_size,                        
+    animate()'s text_colors to cell_value_text_colors, and text_loc to                      
+    label_location                                                                          
+  - Bundle the five point-overlay parameters into a new PointOverlay                        
+    class and animate()'s two frame-label parameters into a new                             
+    FrameLabel class                                                                        
+  - Type the remaining **kwargs on both methods via TypedDict + Unpack                      
+    (PEP 692), inert at runtime                                                             
+  - Keep every removed name/shape working via **kwargs behind a                             
+    DeprecationWarning, resolved before the strict kwargs validation                        
+  - Fix bugs found during two rounds of adversarial review: a silent                        
+    positional-arg drop, wrong warning stacklevels, a both-given                            
+    conflict false-negative, a missing precision field, and a crash on                      
+    deprecated point kwargs passed without points                                           
+  - Update the example notebooks to the new PointOverlay/FrameLabel API                     
+                                                                                            
+  BREAKING CHANGE: point_color, point_size, pid_color, pid_size, and                        
+  animate()'s label_color are no longer explicit parameters. Keyword                        
+  calls still work via a deprecated alias with a warning; positional                        
+  calls to these slots now bind to the wrong parameter or raise                             
+  TypeError.                                                                                
+  Closes #208
+- feat(styles,glyphs): distinct-value categorical colouring for PolygonGlyph/ScatterGlyph (#206)
+- Add styles.categorize(values, cmap="tab10") -> (categories, colors), the                        
+  distinct-value counterpart to classify(): one colour per unique value,                          
+  sorted when sortable, cycling past the cmap's size, nulls dropped.                              
+                                                                                                  
+  Wire a "categorical" scheme into the shared Glyph scalar-mapping                                
+  pipeline: _prepare_categorical_mapping builds a ListedColormap +                                
+  BoundaryNorm over per-element integer class codes, and                                          
+  create_categorical_legend draws a disjoint_legend in place of a                                 
+  colorbar. PolygonGlyph and ScatterGlyph opt in via                                              
+  _SUPPORTS_CATEGORICAL_SCHEME; VectorGlyph/FlowGlyph still accept scheme                         
+  for continuous classification but reject "categorical" with a clear                             
+  error.                                                                                          
+                                                                                                  
+  - Validate the full values shape (not just its first dimension) in                              
+    PolygonGlyph, closing a silent colour-array mis-sizing bug                                    
+  - Reset cbar/category_legend unconditionally on every plot() call so a                          
+    scheme-switching re-plot never leaves a stale reference                                       
+  - Fall back to a qualitative cmap when the caller left cmap at the                              
+    glyph's own continuous default, matched by resolved name so a                                 
+    Colormap object is caught the same as the equivalent string                                   
+  - Re-attach the categorical legend via ax.add_artist() before drawing                           
+    ScatterGlyph's size legend, since Axes.legend() is single-slot per                            
+    axes and would otherwise silently evict it                                                    
+  - Add category_legend_kwargs (mirroring size_legend_kwargs) to                                  
+    reposition/restyle the disjoint legend                                                        
+  - categorize() raises the documented TypeError for non-hashable                                 
+    entries and documents the int/bool/float dedup collision                                      
+                                                                                                  
+  Closes #204
+
 ## 0.25.0 (2026-07-12)
 
 
