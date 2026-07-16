@@ -1871,6 +1871,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0250-2026-07-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.25.0 (2026-07-12)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0240-2026-07-12" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2538,6 +2549,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0250-2026-07-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.25.0 (2026-07-12)
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#0240-2026-07-12" class="md-nav__link">
@@ -3208,6 +3230,34 @@
 
 
 <h1 id="changelog"><a class="toclink" href="#changelog">Changelog</a><a class="headerlink" href="#changelog" title="Permanent link">#</a></h1>
+<h2 id="0250-2026-07-12"><a class="toclink" href="#0250-2026-07-12">0.25.0 (2026-07-12)</a><a class="headerlink" href="#0250-2026-07-12" title="Permanent link">#</a></h2>
+<ul>
+<li>feat(glyphs): public apply_style() to (re)apply a data-style preset on an existing glyph (#203)</li>
+<li>
+<p>Add a discoverable way to (re)apply a DATA_STYLES preset on a glyph                           <br />
+  instance that already exists, so a caller holding a rendered glyph can                        <br />
+  restyle it by name without rebuilding it.                                                       </p>
+</li>
+<li>
+<p>Add apply_style(name, **kwargs) and a style read-back property to                           <br />
+    ArrayGlyph, MeshGlyph, and KDEGlyph. apply_style re-renders the glyph                       <br />
+    in place on its own axes (or a fresh figure if never plotted or the                         <br />
+    figure was closed) and forwards extra kwargs (hillshade, ...) to plot.                        </p>
+</li>
+<li>Unify style persistence across the three glyphs: an applied style is                        <br />
+    sticky (survives a plain plot()) and clearable (plot(style=None)).                          <br />
+    MeshGlyph tracks the current style and restores it after its options                        <br />
+    reset; KDEGlyph uses a typed _Unset sentinel so style=None can clear.                         </li>
+<li>Validate a preset name before persisting or clearing, and roll back on                      <br />
+    a bad/categorical name, so a typo can't wipe the render or brick the                        <br />
+    glyph for later plain plots.                                                                  </li>
+<li>Add a shared Glyph._reset_axes_for_restyle helper (root-figure aware,                       <br />
+    reuses an existing axes) and copy MeshGlyph's cached data (preserving a                     <br />
+    masked array's mask). Honour a construction-time MeshGlyph style too.                         </li>
+<li>Document the option and add an apply_style example to the ArrayGlyph,                       <br />
+    MeshGlyph, and KDEGlyph notebooks.                                                            </li>
+</ul>
+<p>Closes #202</p>
 <h2 id="0240-2026-07-12"><a class="toclink" href="#0240-2026-07-12">0.24.0 (2026-07-12)</a><a class="headerlink" href="#0240-2026-07-12" title="Permanent link">#</a></h2>
 <ul>
 <li>feat(glyphs): add a data-style preset option across the surface glyphs (#200)</li>
