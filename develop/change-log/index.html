@@ -1871,6 +1871,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0260-2026-07-16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.26.0 (2026-07-16)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0250-2026-07-12" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2549,6 +2560,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0260-2026-07-16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.26.0 (2026-07-16)
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#0250-2026-07-12" class="md-nav__link">
@@ -3230,6 +3252,64 @@
 
 
 <h1 id="changelog"><a class="toclink" href="#changelog">Changelog</a><a class="headerlink" href="#changelog" title="Permanent link">#</a></h1>
+<h2 id="0260-2026-07-16"><a class="toclink" href="#0260-2026-07-16">0.26.0 (2026-07-16)</a><a class="headerlink" href="#0260-2026-07-16" title="Permanent link">#</a></h2>
+<ul>
+<li>refactor(array_glyph)!: clean up plot()/animate()'s kwarg API (#207)</li>
+<li>
+<ul>
+<li>Rename pid_color/pid_size to point_label_color/point_label_size,                      <br />
+    animate()'s text_colors to cell_value_text_colors, and text_loc to                    <br />
+    label_location                                                                          </li>
+</ul>
+</li>
+<li>Bundle the five point-overlay parameters into a new PointOverlay                      <br />
+    class and animate()'s two frame-label parameters into a new                           <br />
+    FrameLabel class                                                                        </li>
+<li>Type the remaining **kwargs on both methods via TypedDict + Unpack                    <br />
+    (PEP 692), inert at runtime                                                             </li>
+<li>Keep every removed name/shape working via **kwargs behind a                           <br />
+    DeprecationWarning, resolved before the strict kwargs validation                        </li>
+<li>Fix bugs found during two rounds of adversarial review: a silent                      <br />
+    positional-arg drop, wrong warning stacklevels, a both-given                          <br />
+    conflict false-negative, a missing precision field, and a crash on                    <br />
+    deprecated point kwargs passed without points                                           </li>
+<li>Update the example notebooks to the new PointOverlay/FrameLabel API                     </li>
+</ul>
+<p>BREAKING CHANGE: point_color, point_size, pid_color, pid_size, and                      <br />
+  animate()'s label_color are no longer explicit parameters. Keyword                      <br />
+  calls still work via a deprecated alias with a warning; positional                      <br />
+  calls to these slots now bind to the wrong parameter or raise                           <br />
+  TypeError.                                                                              <br />
+  Closes #208
+- feat(styles,glyphs): distinct-value categorical colouring for PolygonGlyph/ScatterGlyph (#206)
+- Add styles.categorize(values, cmap="tab10") -&gt; (categories, colors), the                      <br />
+  distinct-value counterpart to classify(): one colour per unique value,                        <br />
+  sorted when sortable, cycling past the cmap's size, nulls dropped.                              </p>
+<p>Wire a "categorical" scheme into the shared Glyph scalar-mapping                              <br />
+  pipeline: _prepare_categorical_mapping builds a ListedColormap +                              <br />
+  BoundaryNorm over per-element integer class codes, and                                        <br />
+  create_categorical_legend draws a disjoint_legend in place of a                               <br />
+  colorbar. PolygonGlyph and ScatterGlyph opt in via                                            <br />
+  _SUPPORTS_CATEGORICAL_SCHEME; VectorGlyph/FlowGlyph still accept scheme                       <br />
+  for continuous classification but reject "categorical" with a clear                           <br />
+  error.                                                                                          </p>
+<ul>
+<li>Validate the full values shape (not just its first dimension) in                            <br />
+    PolygonGlyph, closing a silent colour-array mis-sizing bug                                    </li>
+<li>Reset cbar/category_legend unconditionally on every plot() call so a                        <br />
+    scheme-switching re-plot never leaves a stale reference                                       </li>
+<li>Fall back to a qualitative cmap when the caller left cmap at the                            <br />
+    glyph's own continuous default, matched by resolved name so a                               <br />
+    Colormap object is caught the same as the equivalent string                                   </li>
+<li>Re-attach the categorical legend via ax.add_artist() before drawing                         <br />
+    ScatterGlyph's size legend, since Axes.legend() is single-slot per                          <br />
+    axes and would otherwise silently evict it                                                    </li>
+<li>Add category_legend_kwargs (mirroring size_legend_kwargs) to                                <br />
+    reposition/restyle the disjoint legend                                                        </li>
+<li>categorize() raises the documented TypeError for non-hashable                               <br />
+    entries and documents the int/bool/float dedup collision                                      </li>
+</ul>
+<p>Closes #204</p>
 <h2 id="0250-2026-07-12"><a class="toclink" href="#0250-2026-07-12">0.25.0 (2026-07-12)</a><a class="headerlink" href="#0250-2026-07-12" title="Permanent link">#</a></h2>
 <ul>
 <li>feat(glyphs): public apply_style() to (re)apply a data-style preset on an existing glyph (#203)</li>
