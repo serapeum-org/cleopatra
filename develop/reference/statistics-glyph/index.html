@@ -3695,24 +3695,24 @@ Create a histogram from 2D data with custom colors:
 <a id="__codelineno-0-430" name="__codelineno-0-430"></a><span class="sd">            ValueError: If an invalid keyword argument is provided.</span>
 <a id="__codelineno-0-431" name="__codelineno-0-431"></a><span class="sd">            ValueError: If the number of colors provided doesn&#39;t match the number of data series</span>
 <a id="__codelineno-0-432" name="__codelineno-0-432"></a><span class="sd">                (columns) in 2D data.</span>
-<a id="__codelineno-0-433" name="__codelineno-0-433"></a><span class="sd">            ValueError: If a ``fig`` was supplied without an ``ax`` and that figure already</span>
-<a id="__codelineno-0-434" name="__codelineno-0-434"></a><span class="sd">                contains axes (pass the target ``ax`` explicitly in that case).</span>
+<a id="__codelineno-0-433" name="__codelineno-0-433"></a><span class="sd">            ValueError: If a `fig` was supplied without an `ax` and that figure already</span>
+<a id="__codelineno-0-434" name="__codelineno-0-434"></a><span class="sd">                contains axes (pass the target `ax` explicitly in that case).</span>
 <a id="__codelineno-0-435" name="__codelineno-0-435"></a>
 <a id="__codelineno-0-436" name="__codelineno-0-436"></a><span class="sd">        Notes:</span>
 <a id="__codelineno-0-437" name="__codelineno-0-437"></a><span class="sd">            For 2D data, multiple histograms will be overlaid on the same plot with</span>
 <a id="__codelineno-0-438" name="__codelineno-0-438"></a><span class="sd">            different colors. The transparency (alpha) can be adjusted to make overlapping</span>
 <a id="__codelineno-0-439" name="__codelineno-0-439"></a><span class="sd">            regions visible.</span>
 <a id="__codelineno-0-440" name="__codelineno-0-440"></a>
-<a id="__codelineno-0-441" name="__codelineno-0-441"></a><span class="sd">            The figure and axes used depend on what was passed to ``__init__``:</span>
+<a id="__codelineno-0-441" name="__codelineno-0-441"></a><span class="sd">            The figure and axes used depend on what was passed to `__init__`:</span>
 <a id="__codelineno-0-442" name="__codelineno-0-442"></a>
-<a id="__codelineno-0-443" name="__codelineno-0-443"></a><span class="sd">            - ``ax`` given: the histogram is drawn into that axes; the returned</span>
-<a id="__codelineno-0-444" name="__codelineno-0-444"></a><span class="sd">              figure is the one explicitly passed as ``fig`` if any, otherwise</span>
+<a id="__codelineno-0-443" name="__codelineno-0-443"></a><span class="sd">            - `ax` given: the histogram is drawn into that axes; the returned</span>
+<a id="__codelineno-0-444" name="__codelineno-0-444"></a><span class="sd">              figure is the one explicitly passed as `fig` if any, otherwise</span>
 <a id="__codelineno-0-445" name="__codelineno-0-445"></a><span class="sd">              the axes&#39; own parent figure.</span>
-<a id="__codelineno-0-446" name="__codelineno-0-446"></a><span class="sd">            - ``fig`` given without ``ax``: a new axes is added to that figure</span>
+<a id="__codelineno-0-446" name="__codelineno-0-446"></a><span class="sd">            - `fig` given without `ax`: a new axes is added to that figure</span>
 <a id="__codelineno-0-447" name="__codelineno-0-447"></a><span class="sd">              and used for drawing (the figure is reused, not replaced). The</span>
-<a id="__codelineno-0-448" name="__codelineno-0-448"></a><span class="sd">              figure must be empty; if it already contains axes a ``ValueError``</span>
-<a id="__codelineno-0-449" name="__codelineno-0-449"></a><span class="sd">              is raised so the caller passes the target ``ax`` explicitly.</span>
-<a id="__codelineno-0-450" name="__codelineno-0-450"></a><span class="sd">            - neither given: a new figure and axes are created with ``figsize``.</span>
+<a id="__codelineno-0-448" name="__codelineno-0-448"></a><span class="sd">              figure must be empty; if it already contains axes a `ValueError`</span>
+<a id="__codelineno-0-449" name="__codelineno-0-449"></a><span class="sd">              is raised so the caller passes the target `ax` explicitly.</span>
+<a id="__codelineno-0-450" name="__codelineno-0-450"></a><span class="sd">            - neither given: a new figure and axes are created with `figsize`.</span>
 <a id="__codelineno-0-451" name="__codelineno-0-451"></a>
 <a id="__codelineno-0-452" name="__codelineno-0-452"></a><span class="sd">        Examples:</span>
 <a id="__codelineno-0-453" name="__codelineno-0-453"></a><span class="sd">            - 1D data.</span>
@@ -5682,24 +5682,24 @@ regions visible.</p>
 <a id="__codelineno-0-430" name="__codelineno-0-430"></a><span class="sd">        ValueError: If an invalid keyword argument is provided.</span>
 <a id="__codelineno-0-431" name="__codelineno-0-431"></a><span class="sd">        ValueError: If the number of colors provided doesn&#39;t match the number of data series</span>
 <a id="__codelineno-0-432" name="__codelineno-0-432"></a><span class="sd">            (columns) in 2D data.</span>
-<a id="__codelineno-0-433" name="__codelineno-0-433"></a><span class="sd">        ValueError: If a ``fig`` was supplied without an ``ax`` and that figure already</span>
-<a id="__codelineno-0-434" name="__codelineno-0-434"></a><span class="sd">            contains axes (pass the target ``ax`` explicitly in that case).</span>
+<a id="__codelineno-0-433" name="__codelineno-0-433"></a><span class="sd">        ValueError: If a `fig` was supplied without an `ax` and that figure already</span>
+<a id="__codelineno-0-434" name="__codelineno-0-434"></a><span class="sd">            contains axes (pass the target `ax` explicitly in that case).</span>
 <a id="__codelineno-0-435" name="__codelineno-0-435"></a>
 <a id="__codelineno-0-436" name="__codelineno-0-436"></a><span class="sd">    Notes:</span>
 <a id="__codelineno-0-437" name="__codelineno-0-437"></a><span class="sd">        For 2D data, multiple histograms will be overlaid on the same plot with</span>
 <a id="__codelineno-0-438" name="__codelineno-0-438"></a><span class="sd">        different colors. The transparency (alpha) can be adjusted to make overlapping</span>
 <a id="__codelineno-0-439" name="__codelineno-0-439"></a><span class="sd">        regions visible.</span>
 <a id="__codelineno-0-440" name="__codelineno-0-440"></a>
-<a id="__codelineno-0-441" name="__codelineno-0-441"></a><span class="sd">        The figure and axes used depend on what was passed to ``__init__``:</span>
+<a id="__codelineno-0-441" name="__codelineno-0-441"></a><span class="sd">        The figure and axes used depend on what was passed to `__init__`:</span>
 <a id="__codelineno-0-442" name="__codelineno-0-442"></a>
-<a id="__codelineno-0-443" name="__codelineno-0-443"></a><span class="sd">        - ``ax`` given: the histogram is drawn into that axes; the returned</span>
-<a id="__codelineno-0-444" name="__codelineno-0-444"></a><span class="sd">          figure is the one explicitly passed as ``fig`` if any, otherwise</span>
+<a id="__codelineno-0-443" name="__codelineno-0-443"></a><span class="sd">        - `ax` given: the histogram is drawn into that axes; the returned</span>
+<a id="__codelineno-0-444" name="__codelineno-0-444"></a><span class="sd">          figure is the one explicitly passed as `fig` if any, otherwise</span>
 <a id="__codelineno-0-445" name="__codelineno-0-445"></a><span class="sd">          the axes&#39; own parent figure.</span>
-<a id="__codelineno-0-446" name="__codelineno-0-446"></a><span class="sd">        - ``fig`` given without ``ax``: a new axes is added to that figure</span>
+<a id="__codelineno-0-446" name="__codelineno-0-446"></a><span class="sd">        - `fig` given without `ax`: a new axes is added to that figure</span>
 <a id="__codelineno-0-447" name="__codelineno-0-447"></a><span class="sd">          and used for drawing (the figure is reused, not replaced). The</span>
-<a id="__codelineno-0-448" name="__codelineno-0-448"></a><span class="sd">          figure must be empty; if it already contains axes a ``ValueError``</span>
-<a id="__codelineno-0-449" name="__codelineno-0-449"></a><span class="sd">          is raised so the caller passes the target ``ax`` explicitly.</span>
-<a id="__codelineno-0-450" name="__codelineno-0-450"></a><span class="sd">        - neither given: a new figure and axes are created with ``figsize``.</span>
+<a id="__codelineno-0-448" name="__codelineno-0-448"></a><span class="sd">          figure must be empty; if it already contains axes a `ValueError`</span>
+<a id="__codelineno-0-449" name="__codelineno-0-449"></a><span class="sd">          is raised so the caller passes the target `ax` explicitly.</span>
+<a id="__codelineno-0-450" name="__codelineno-0-450"></a><span class="sd">        - neither given: a new figure and axes are created with `figsize`.</span>
 <a id="__codelineno-0-451" name="__codelineno-0-451"></a>
 <a id="__codelineno-0-452" name="__codelineno-0-452"></a><span class="sd">    Examples:</span>
 <a id="__codelineno-0-453" name="__codelineno-0-453"></a><span class="sd">        - 1D data.</span>
