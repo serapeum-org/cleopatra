@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.26.1 (2026-07-18)
+
+
+- fix(glyphs): remove orphaned render artists on repeated plot()/animate() calls (#211)
+- - Track each Axes' prior render artists via a shared marker so a second                                                        
+    plot()/animate() call — same glyph instance, or a different glyph                                                            
+    sharing the Axes via `ax=`/`fig=` — removes them instead of leaving                                                          
+    them attached and undriven.                                                                                                  
+  - Extend cleanup to ArrayGlyph, MeshGlyph, StatisticalGlyph, and                                                               
+    VectorGlyph: colorbars, frame-label text, point/cell-value overlays,                                                         
+    and streamplot arrowheads (never actually attached via the returned                                                          
+    collection, so removed by diffing ax.patches instead).                                                                       
+  - Defer cleanup until after each call's own input validation succeeds,                                                         
+    so a failed call (e.g. an invalid color_scale, or a mismatched color                                                         
+    list) no longer destroys a valid prior render before propagating its                                                         
+    exception.                                                                                                                   
+  - Tolerate an artist already partially removed by ax.clear() or a                                                              
+    prior apply_style() call instead of crashing on the second removal                                                           
+    attempt.                                                                                                                     
+  - Add direct unit tests for the shared cleanup helpers and regression                                                          
+    tests covering same-instance repeats, cross-glyph shared axes, and                                                           
+    validation-failure paths across all four glyph classes.                                                                      
+                                                                                                                                 
+  Closes #210
+
 ## 0.26.0 (2026-07-16)
 
 
