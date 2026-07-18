@@ -45,7 +45,7 @@ from cleopatra.colors import (
     resolve_style_norm,
 )
 from cleopatra.geo import GeoMixin
-from cleopatra.glyph import Glyph
+from cleopatra.glyph import Glyph, _clear_prior_render_artists, _mark_render_artists
 from cleopatra.hillshade import resolve_hillshade, shade_faces
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import disjoint_legend
@@ -169,6 +169,9 @@ class MeshGlyph(GeoMixin, Glyph):
         #: Colour-mapped artist from the most recent `plot` call (the
         #: `tripcolor`/`tricontour(f)` mappable); `None` before first render.
         self.im = None
+        #: Per-frame time-label `Text` artist from the most recent
+        #: `animate` call, if any; `None` before any `animate` call.
+        self._day_text = None
         #: Inline contour-label `Text` artists from the most recent
         #: `plot(location="node", filled=False, labels=True)`, or `None`
         #: when labelling was not requested (the default, and for
@@ -1011,6 +1014,14 @@ class MeshGlyph(GeoMixin, Glyph):
         elif self.fig is None:
             self.fig, self.ax = self.create_figure_axes()
 
+        # See `_clear_prior_render_artists`: a prior `plot`/`animate`/
+        # `plot_outline` call on this Axes (this glyph's own, or a
+        # different glyph sharing it via `MeshGlyph(ax=..., fig=...)`)
+        # leaves its image/colorbar artists orphaned unless removed first.
+        _clear_prior_render_artists(self.ax)
+        self.im = None
+        self._cbar = None
+
         ticks = self.get_ticks()
         norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
 
@@ -1103,11 +1114,6 @@ class MeshGlyph(GeoMixin, Glyph):
             }
             self.contour_labels = self.ax.clabel(tpc, **label_kw)
 
-        # Remove previous colorbar before adding a new one.
-        if self._cbar is not None:
-            self._cbar.remove()
-            self._cbar = None
-
         if colorbar:
             self._cbar = self.create_color_bar(self.ax, tpc, cbar_kw)
 
@@ -1125,6 +1131,7 @@ class MeshGlyph(GeoMixin, Glyph):
             )
         self.ax.set_aspect("equal")
 
+        _mark_render_artists(self.ax, self._cbar, self.im)
         return self.fig, self.ax
 
     def animate(
@@ -1234,6 +1241,14 @@ class MeshGlyph(GeoMixin, Glyph):
             self.fig, self.ax = self.create_figure_axes()
         fig, ax = self.fig, self.ax
 
+        # See `_clear_prior_render_artists`: a prior `plot`/`animate`/
+        # `plot_outline` call on this Axes (this glyph's own, or a
+        # different glyph sharing it) leaves its image/colorbar/
+        # frame-label artists orphaned unless removed first.
+        _clear_prior_render_artists(ax)
+        self.im = None
+        self._cbar = None
+
         ticks = self.get_ticks()
         norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
 
@@ -1250,7 +1265,8 @@ class MeshGlyph(GeoMixin, Glyph):
             edgecolor=edgecolor,
             norm=norm,
         )
-        self.create_color_bar(ax, tpc, cbar_kw)
+        self.im = tpc
+        self._cbar = self.create_color_bar(ax, tpc, cbar_kw)
 
         if self.default_options["title"]:
             ax.set_title(
@@ -1266,9 +1282,11 @@ class MeshGlyph(GeoMixin, Glyph):
             fontsize=self.default_options["cbar_label_size"],
             transform=ax.transAxes,
         )
+        self._day_text = day_text
 
         # Track the current mappable so we can remove it cleanly.
         current_mappable = [tpc]
+        _mark_render_artists(ax, self._cbar, self.im, self._day_text)
 
         def _update(i):
             """Update the plot for frame i."""
@@ -1286,6 +1304,14 @@ class MeshGlyph(GeoMixin, Glyph):
                 norm=norm,
             )
             day_text.set_text(str(time[i]))
+            # Keep the public `self.im` and the Axes-level cleanup marker
+            # pointing at the artist actually attached right now -- each
+            # frame replaces the previous mappable outright (tripcolor/
+            # tricontour can't update in place the way imshow can), so the
+            # frame-0 reference recorded further above goes stale the
+            # moment frame 1 renders.
+            self.im = current_mappable[0]
+            _mark_render_artists(ax, self._cbar, self.im, self._day_text)
 
         plt.tight_layout()
         anim = FuncAnimation(
@@ -1351,6 +1377,14 @@ class MeshGlyph(GeoMixin, Glyph):
         elif self.fig is None:
             self.fig, self.ax = plt.subplots(1, 1, figsize=figsize)
 
+        # See `_clear_prior_render_artists`: a prior `plot`/`animate`/
+        # `plot_outline` call on this Axes (this glyph's own, or a
+        # different glyph sharing it) leaves its image/colorbar/outline
+        # artists orphaned unless removed first.
+        _clear_prior_render_artists(self.ax)
+        self.im = None
+        self._cbar = None
+
         segments = self._build_edge_segments()
 
         lc = mcoll.LineCollection(
@@ -1360,9 +1394,10 @@ class MeshGlyph(GeoMixin, Glyph):
         self.ax.autoscale()
         self.ax.set_aspect("equal")
 
-        # An outline carries no scalar mapping, so clear any colour-mapped
-        # artist left on `self.im` by a previous `plot()` call.
-        self.im = None
+        # An outline carries no scalar mapping, so `self.im` stays `None`
+        # (already reset above); only the outline collection is tracked
+        # for the next call's cleanup.
+        _mark_render_artists(self.ax, lc)
 
         return self.fig, self.ax
 
