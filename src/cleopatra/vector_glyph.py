@@ -34,7 +34,7 @@ from matplotlib.figure import Figure
 from matplotlib.quiver import QuiverKey
 
 from cleopatra.geo import GeoMixin
-from cleopatra.glyph import Glyph
+from cleopatra.glyph import Glyph, _clear_prior_render_artists, _mark_render_artists
 from cleopatra.styles import CLASSIFY_OPTIONS
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
@@ -119,6 +119,9 @@ class VectorGlyph(GeoMixin, Glyph):
                 f"and {self.v.shape}."
             )
         self.cbar = None
+        #: The `Quiver`/`Barbs`/streamplot `LineCollection` mappable from
+        #: the most recent `plot` call; `None` before first render.
+        self.im = None
 
     @property
     def magnitude(self) -> np.ndarray:
@@ -203,6 +206,14 @@ class VectorGlyph(GeoMixin, Glyph):
         ax = self.ax
         opts = self.default_options
 
+        # See `_clear_prior_render_artists`: a prior `plot` call on this
+        # Axes (this glyph's own, or a different glyph sharing it via
+        # `VectorGlyph(ax=..., fig=...)`) leaves its mappable/colorbar
+        # orphaned unless removed first.
+        _clear_prior_render_artists(ax)
+        self.im = None
+        self.cbar = None
+
         if title is not None:
             opts["title"] = title
         # Resolve the colorbar choice for this call only (a plot-time
@@ -214,6 +225,7 @@ class VectorGlyph(GeoMixin, Glyph):
         cmap = opts["cmap"]
         clim = {} if norm else {"clim": (ticks[0], ticks[-1])}
 
+        arrow_patches: tuple = ()
         if kind == "quiver":
             im = ax.quiver(
                 self.x,
@@ -238,6 +250,15 @@ class VectorGlyph(GeoMixin, Glyph):
                 **clim,
             )
         else:  # streamplot
+            # `stream.arrows` (a `PatchCollection`) is never actually
+            # attached to the axes -- matplotlib adds each constituent
+            # `FancyArrowPatch` directly via `ax.add_patch()` instead (its
+            # own source comment: "Adding the collection itself is
+            # broken; see #2341"), so `stream.arrows.remove()` raises
+            # `NotImplementedError` and leaves the arrowheads behind.
+            # Diff `ax.patches` before/after to find the actual arrow
+            # artists that were added, so a later cleanup can remove them.
+            patches_before = set(ax.patches)
             stream = ax.streamplot(
                 self.x,
                 self.y,
@@ -248,6 +269,7 @@ class VectorGlyph(GeoMixin, Glyph):
                 norm=norm,
                 density=opts["density"],
             )
+            arrow_patches = tuple(set(ax.patches) - patches_before)
             im = stream.lines
             if im.get_array() is None:
                 im.set_array(np.asarray(mag).ravel())
@@ -257,12 +279,14 @@ class VectorGlyph(GeoMixin, Glyph):
             if norm is None:
                 im.set_clim(ticks[0], ticks[-1])
 
+        self.im = im
         if draw_colorbar:
             self.cbar = self.create_color_bar(ax, im, cbar_kw)
 
         if opts["title"]:
             ax.set_title(opts["title"], fontsize=opts["title_size"])
 
+        _mark_render_artists(ax, self.cbar, self.im, *arrow_patches)
         return self.fig, ax, im
 
     def add_key(
