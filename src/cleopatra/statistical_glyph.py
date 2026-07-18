@@ -430,24 +430,24 @@ class StatisticalGlyph:
             ValueError: If an invalid keyword argument is provided.
             ValueError: If the number of colors provided doesn't match the number of data series
                 (columns) in 2D data.
-            ValueError: If a ``fig`` was supplied without an ``ax`` and that figure already
-                contains axes (pass the target ``ax`` explicitly in that case).
+            ValueError: If a `fig` was supplied without an `ax` and that figure already
+                contains axes (pass the target `ax` explicitly in that case).
 
         Notes:
             For 2D data, multiple histograms will be overlaid on the same plot with
             different colors. The transparency (alpha) can be adjusted to make overlapping
             regions visible.
 
-            The figure and axes used depend on what was passed to ``__init__``:
+            The figure and axes used depend on what was passed to `__init__`:
 
-            - ``ax`` given: the histogram is drawn into that axes; the returned
-              figure is the one explicitly passed as ``fig`` if any, otherwise
+            - `ax` given: the histogram is drawn into that axes; the returned
+              figure is the one explicitly passed as `fig` if any, otherwise
               the axes' own parent figure.
-            - ``fig`` given without ``ax``: a new axes is added to that figure
+            - `fig` given without `ax`: a new axes is added to that figure
               and used for drawing (the figure is reused, not replaced). The
-              figure must be empty; if it already contains axes a ``ValueError``
-              is raised so the caller passes the target ``ax`` explicitly.
-            - neither given: a new figure and axes are created with ``figsize``.
+              figure must be empty; if it already contains axes a `ValueError`
+              is raised so the caller passes the target `ax` explicitly.
+            - neither given: a new figure and axes are created with `figsize`.
 
         Examples:
             - 1D data.
