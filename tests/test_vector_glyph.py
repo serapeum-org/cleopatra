@@ -329,3 +329,151 @@ class TestAddColorbarToggle:
     def test_add_colorbar_in_option_keys(self):
         """`add_colorbar` is an accepted option key."""
         assert "add_colorbar" in VectorGlyph.option_keys(), "add_colorbar missing"
+
+
+class TestSharedAxesArtistCleanup:
+    """`plot()` must not stack mappable/colorbar artists on a shared `Axes`.
+
+    Regression coverage for issue #210, generalised beyond `ArrayGlyph`:
+    the same orphaned-artist defect existed in `VectorGlyph`, reachable
+    through the documented `VectorGlyph(ax=..., fig=...)` construction-time
+    binding that pyramids' `Analysis.plot_vector_field` `ax=` passthrough
+    exposes.
+    """
+
+    @staticmethod
+    def _field():
+        gx, gy = np.meshgrid(np.arange(5), np.arange(5))
+        return gx, gy, np.ones_like(gx, float), np.ones_like(gx, float)
+
+    def test_quiver_repeated_on_same_instance_does_not_stack(self):
+        """A second `plot(kind="quiver")` call on the same instance replaces the mappable."""
+        gx, gy, u, v = self._field()
+        glyph = VectorGlyph(gx, gy, u, v)
+        glyph.plot(kind="quiver")
+        old_im = glyph.im
+        glyph.plot(kind="quiver")
+        assert (
+            len(glyph.ax.collections) == 1
+        ), f"Expected exactly one mappable, got {len(glyph.ax.collections)}"
+        assert (
+            old_im not in glyph.ax.collections
+        ), "The first call's mappable must be removed"
+
+    def test_barbs_two_glyphs_sharing_axes_does_not_stack(self):
+        """A second, different glyph's `plot(kind="barbs")` onto a shared axes replaces it."""
+        gx, gy, u, v = self._field()
+        glyph1 = VectorGlyph(gx, gy, u, v)
+        glyph1.plot(kind="barbs")
+        old_im = glyph1.im
+        axes_count_after_first = len(glyph1.fig.axes)
+
+        glyph2 = VectorGlyph(gx, gy, u, v, ax=glyph1.ax, fig=glyph1.fig)
+        glyph2.plot(kind="barbs")
+
+        assert (
+            len(glyph1.ax.collections) == 1
+        ), f"Expected exactly one mappable, got {len(glyph1.ax.collections)}"
+        assert (
+            old_im not in glyph1.ax.collections
+        ), "The first glyph's mappable must be removed"
+        assert len(glyph1.fig.axes) == axes_count_after_first, (
+            f"Expected {axes_count_after_first} axes after the second glyph's call, "
+            f"got {len(glyph1.fig.axes)}"
+        )
+
+    def test_streamplot_repeated_does_not_leak_arrow_patches(self):
+        """Repeated `plot(kind="streamplot")` calls don't leak arrowhead patches.
+
+        Test scenario:
+            Regression for a matplotlib quirk: `streamplot`'s returned
+            `StreamplotSet.arrows` (a `PatchCollection`) is never actually
+            attached to the axes -- each `FancyArrowPatch` is added via
+            `ax.add_patch()` directly (matplotlib's own source comment:
+            "Adding the collection itself is broken; see #2341") -- so
+            `stream.arrows.remove()` alone raises `NotImplementedError`
+            and leaves every arrowhead behind. `plot()` must diff
+            `ax.patches` before/after `streamplot` to find and track the
+            actual arrow artists.
+        """
+        gx, gy, u, v = self._field()
+        glyph = VectorGlyph(gx, gy, u, v)
+        glyph.plot(kind="streamplot")
+        patches_after_first = len(glyph.ax.patches)
+        glyph.plot(kind="streamplot")
+        assert len(glyph.ax.patches) == patches_after_first, (
+            f"Expected {patches_after_first} arrow patches after the second call, "
+            f"got {len(glyph.ax.patches)} (arrowheads leaked)"
+        )
+        assert (
+            len(glyph.ax.collections) == 1
+        ), f"Expected exactly one line collection, got {len(glyph.ax.collections)}"
+
+    def test_two_glyphs_quiver_then_streamplot_on_shared_axes(self):
+        """A second glyph's `plot(kind="streamplot")` cleans up a first glyph's quiver."""
+        gx, gy, u, v = self._field()
+        glyph1 = VectorGlyph(gx, gy, u, v)
+        glyph1.plot(kind="quiver")
+        old_im = glyph1.im
+
+        glyph2 = VectorGlyph(gx, gy, u, v, ax=glyph1.ax, fig=glyph1.fig)
+        glyph2.plot(kind="streamplot")
+
+        assert (
+            old_im not in glyph1.ax.collections
+        ), "The first glyph's quiver mappable must be removed"
+        assert (
+            len(glyph1.ax.collections) == 1
+        ), f"Expected exactly one mappable, got {len(glyph1.ax.collections)}"
+
+    def test_ax_clear_before_replot_does_not_raise(self):
+        """A caller's own `ax.clear()` before the next `plot()` call doesn't crash.
+
+        Test scenario:
+            Regression: `ax.clear()` detaches the mappable but leaves the
+            colorbar's own (sibling) axes untouched, since a colorbar
+            lives on a separate `Axes`. The next `plot()` call's cleanup
+            then tried to remove that colorbar via a mappable whose
+            `.axes` was already `None` -- `Colorbar.remove()` raises
+            `AttributeError` instead of the `KeyError`/`NotImplementedError`
+            the cleanup already tolerated. `ax.clear()` is an ordinary
+            matplotlib idiom, so it must not crash the next render.
+        """
+        gx, gy, u, v = self._field()
+        glyph = VectorGlyph(gx, gy, u, v)
+        fig, ax, im = glyph.plot(kind="quiver")
+        ax.clear()
+        fig2, ax2, im2 = glyph.plot(kind="quiver")
+        assert (
+            len(ax2.collections) == 1
+        ), f"Expected exactly one mappable, got {len(ax2.collections)}"
+        assert (
+            len(fig2.axes) == 2
+        ), f"Expected 2 axes (plot + colorbar), got {len(fig2.axes)}"
+
+    def test_plot_validation_failure_preserves_prior_render(self):
+        """A failed `plot()` call must not tear down the previous valid render.
+
+        Test scenario:
+            Regression: `_clear_prior_render_artists` used to run before
+            `_prepare_scalar_mapping` validated the new call's magnitude,
+            so an all-NaN magnitude (no finite values to resolve
+            `vmin`/`vmax` from) destroyed the last-good chart along with
+            propagating the `ValueError`.
+        """
+        gx, gy, u, v = self._field()
+        glyph = VectorGlyph(gx, gy, u, v)
+        fig, ax, im = glyph.plot(kind="quiver")
+        axes_count = len(fig.axes)
+        glyph.u = np.full_like(gx, np.nan, dtype=float)
+        glyph.v = np.full_like(gy, np.nan, dtype=float)
+        glyph.default_options["vmin"] = None
+        glyph.default_options["vmax"] = None
+        with pytest.raises(ValueError):
+            glyph.plot(kind="quiver")
+        assert (
+            len(ax.collections) == 1
+        ), f"Expected the prior mappable, got {len(ax.collections)}"
+        assert (
+            len(fig.axes) == axes_count
+        ), f"Expected {axes_count} axes preserved, got {len(fig.axes)}"

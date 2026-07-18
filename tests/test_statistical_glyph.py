@@ -497,6 +497,103 @@ class TestStripes:
         ), f"Unexpected resolved return hint: {hints['return']}"
 
 
+class TestSharedAxesArtistCleanup:
+    """`histogram`/`boxplot`/`multiboxplot`/`stripes` must not stack artists on a shared `Axes`.
+
+    Regression coverage for issue #210, generalised beyond `ArrayGlyph`:
+    the same orphaned-artist defect existed in `StatisticalGlyph`,
+    reachable through the documented `StatisticalGlyph(ax=...)`
+    construction-time binding that pyramids' `Analysis.plot_histogram`/
+    `plot_vector_field` `ax=` passthrough exposes.
+    """
+
+    def test_histogram_two_glyphs_sharing_axes_does_not_stack(self):
+        """A second, different glyph's `histogram()` onto a shared axes replaces the bars."""
+        sg1 = StatisticalGlyph(np.random.default_rng(0).normal(size=100))
+        fig1, ax1, _ = sg1.histogram()
+        bars_after_first = len(ax1.patches)
+
+        sg2 = StatisticalGlyph(np.random.default_rng(1).normal(size=100), ax=ax1)
+        sg2.histogram()
+
+        assert len(ax1.patches) == bars_after_first, (
+            f"Expected {bars_after_first} bars after the second glyph's call, "
+            f"got {len(ax1.patches)}"
+        )
+
+    def test_boxplot_repeated_on_same_instance_does_not_stack(self):
+        """A second `boxplot()` call on the same instance replaces, not stacks, the boxes."""
+        sg = StatisticalGlyph(
+            np.random.default_rng(0).normal(size=(50, 3)), color=["r", "g", "b"]
+        )
+        fig, ax, _ = sg.boxplot()
+        children_after_first = len(ax.get_children())
+        fig, ax, _ = sg.boxplot()
+        assert len(ax.get_children()) == children_after_first, (
+            f"Expected {children_after_first} axes children after the second call, "
+            f"got {len(ax.get_children())}"
+        )
+
+    def test_multiboxplot_two_glyphs_sharing_axes_does_not_stack(self):
+        """A second, different glyph's `multiboxplot()` onto a shared axes replaces the boxes."""
+        sg1 = StatisticalGlyph(
+            np.random.default_rng(0).normal(size=(40, 3)), color=["r", "g", "b"]
+        )
+        fig, ax, _ = sg1.multiboxplot(positions=[1, 2, 4])
+        boxes_after_first = len(ax.patches)
+
+        sg2 = StatisticalGlyph(
+            np.random.default_rng(1).normal(size=(40, 3)), color=["r", "g", "b"]
+        )
+        sg2.multiboxplot(positions=[1, 2, 4], ax=ax)
+
+        assert len(ax.patches) == boxes_after_first, (
+            f"Expected {boxes_after_first} boxes after the second glyph's call, "
+            f"got {len(ax.patches)}"
+        )
+
+    def test_stripes_two_glyphs_sharing_axes_does_not_stack(self):
+        """A second, different glyph's `stripes()` onto a shared axes replaces the bars.
+
+        Test scenario:
+            The second glyph has *fewer* values than the first (3 vs 6) --
+            if the first call's stripes were left orphaned, the axes
+            would end up with 9 bars instead of 3.
+        """
+        sg1 = StatisticalGlyph(np.array([0.1, 0.3, 0.2, 0.6, 0.9, 0.7]))
+        fig, ax, _ = sg1.stripes(cmap="coolwarm")
+
+        sg2 = StatisticalGlyph(np.array([0.2, 0.4, 0.1]))
+        fig, ax, bars2 = sg2.stripes(cmap="coolwarm", ax=ax)
+
+        assert len(ax.patches) == 3, f"Expected 3 bars, got {len(ax.patches)}"
+        assert (
+            len(bars2) == 3
+        ), f"Expected the returned container to hold 3, got {len(bars2)}"
+
+    def test_histogram_validation_failure_preserves_prior_render(self):
+        """A failed `histogram()` call must not tear down the previous valid render.
+
+        Test scenario:
+            Regression: `_clear_prior_render_artists` used to run before
+            the `color` length vs. `num_samples` check, so a mismatched
+            `color` list destroyed the last-good histogram along with
+            propagating the `ValueError`.
+        """
+        sg = StatisticalGlyph(
+            np.random.default_rng(0).normal(size=(50, 2)), color=["r", "g"]
+        )
+        fig, ax, hist = sg.histogram()
+        bars_after_first = len(ax.patches)
+        sg.default_options["color"] = ["r", "g", "b"]
+        with pytest.raises(ValueError):
+            sg.histogram()
+        assert len(ax.patches) == bars_after_first, (
+            f"Expected {bars_after_first} bars preserved after the failed call, "
+            f"got {len(ax.patches)}"
+        )
+
+
 class TestFigParameterRemovedFromRenderers:
     """`fig` is no longer a per-call parameter on the box/stripe renderers.
 

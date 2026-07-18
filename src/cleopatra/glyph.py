@@ -119,6 +119,79 @@ def _immediate_figure(ax: Axes) -> Figure:
     return get_figure()
 
 
+def _clear_prior_render_artists(ax: Axes) -> None:
+    """Remove a prior render call's tracked artists from `ax`.
+
+    Every glyph's `plot`/`animate`-style method creates a fresh set of
+    drawing artists (an image, a colorbar, a frame-label `Text`, a line
+    collection, ...) on every call rather than reusing one -- matplotlib
+    has no "replace the previous artist" primitive for `ax.imshow()`,
+    `fig.colorbar()`, `ax.add_collection()`, etc.; each call always adds a
+    new artist. Calling the method again on the same `Axes` -- from the
+    same glyph instance, or a *different* one sharing it via
+    `SomeGlyph(ax=..., fig=...)` (e.g. the `ax=`/`fig=` passthrough
+    `pyramids`' `Dataset`/`NetCDF`/`Analysis`/`UgridDataset`.plot(ax=...,
+    fig=...) expose) -- would otherwise leave the previous call's artists
+    orphaned: still attached to the `Axes`/`Figure`, and driven by nothing
+    once the owning glyph's own attributes move on to the new call's
+    objects. Ownership is tracked on `ax` itself (not on any glyph
+    instance) via a private marker, precisely so this catches both cases.
+    Must be called before creating this call's own artists.
+
+    Args:
+        ax: The axes a render call is about to draw onto.
+    """
+    prior = getattr(ax, "_cleo_render_artists", None)
+    if prior is None:
+        return
+    # Each removal is best-effort: another code path (e.g.
+    # `Glyph._reset_axes_for_restyle`, used by `apply_style`, or a
+    # caller's own `ax.clear()`) may already have removed one of these
+    # same artists -- or, for a colorbar, only the *image* it is attached
+    # to -- before this marker was consulted. Matplotlib's failure mode
+    # varies by artist kind and by how much of it is already gone:
+    # `KeyError` for a colorbar axes no longer on the figure's axes
+    # stack, `NotImplementedError` for any other artist already detached
+    # from its axes, or `AttributeError` for a colorbar whose mappable
+    # was detached out from under it (`Colorbar.remove()` reads
+    # `self.mappable.axes`, which is `None` in that case, then calls
+    # `.set_subplotspec()` on it) -- e.g. exactly the `ax.clear()` case
+    # above, since `ax.clear()` detaches the image but leaves the
+    # colorbar's own (sibling) axes untouched. None of these should stop
+    # this call's own render.
+    for artist in prior:
+        try:
+            artist.remove()
+        except (KeyError, NotImplementedError, AttributeError):
+            pass
+    ax._cleo_render_artists = None  # type: ignore[attr-defined]
+
+
+def _mark_render_artists(ax: Axes, *artists: Any) -> None:
+    """Record this render call's artists on `ax` for the next call's cleanup.
+
+    Args:
+        ax: The axes this call rendered onto.
+        *artists: The artists this call created, in the order they must be
+            removed on the next call (e.g. a colorbar before the image it
+            is attached to -- `Colorbar.remove()` reads
+            `self.mappable.axes` to restore the image axes' gridspec
+            position, which is only valid while the image artist is
+            still attached). `None` entries (an artist this call didn't
+            create, e.g. no colorbar when `add_colorbar=False`) are
+            dropped.
+    """
+    # `Axes` declares no such attribute -- this is a deliberate, private
+    # marker cleopatra stamps onto the caller's Axes object itself (not a
+    # cleopatra-owned type), matching the same
+    # # type: ignore[attr-defined] trade-off as
+    # `getattr(ax, "_cleo_render_artists", None)` in
+    # `_clear_prior_render_artists` above.
+    ax._cleo_render_artists = [  # type: ignore[attr-defined]
+        a for a in artists if a is not None
+    ]
+
+
 class Glyph:
     """Base class for cleopatra visualization glyphs.
 

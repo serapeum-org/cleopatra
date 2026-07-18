@@ -18,7 +18,13 @@ from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure
 
 import cleopatra.glyph as glyph_mod
-from cleopatra.glyph import MAX_DISCRETE_LEVELS, SUPPORTED_VIDEO_FORMAT, Glyph
+from cleopatra.glyph import (
+    MAX_DISCRETE_LEVELS,
+    SUPPORTED_VIDEO_FORMAT,
+    Glyph,
+    _clear_prior_render_artists,
+    _mark_render_artists,
+)
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import ColorScale, MidpointNormalize
 
@@ -1553,3 +1559,98 @@ class TestGetTicksDegenerateRange:
             8.0,
             10.0,
         ], "ticks changed"
+
+
+class TestClearAndMarkRenderArtists:
+    """Direct unit tests for the shared render-artist cleanup helpers.
+
+    Regression coverage for review finding L1 (issue #210): these helpers
+    were previously only exercised indirectly through each glyph's
+    `plot()`/`animate()` integration tests.
+    """
+
+    @staticmethod
+    def _dummy_artist(remove_error: type[Exception] | None = None):
+        """Build a bare object with a `.remove()` that succeeds or raises `remove_error`."""
+
+        class _Artist:
+            def __init__(self):
+                self.removed = False
+
+            def remove(self):
+                if remove_error is not None:
+                    raise remove_error("boom")
+                self.removed = True
+
+        return _Artist()
+
+    def test_clear_on_axes_without_marker_is_a_no_op(self):
+        """No `_cleo_render_artists` marker set means nothing happens, no raise."""
+        fig, ax = plt.subplots()
+        try:
+            _clear_prior_render_artists(ax)
+            assert getattr(ax, "_cleo_render_artists", None) is None
+        finally:
+            plt.close(fig)
+
+    def test_mark_stores_artists_and_filters_none(self):
+        """`_mark_render_artists` stores the given artists, dropping `None` entries."""
+        fig, ax = plt.subplots()
+        try:
+            a1, a2 = self._dummy_artist(), self._dummy_artist()
+            _mark_render_artists(ax, a1, None, a2)
+            assert ax._cleo_render_artists == [a1, a2]
+        finally:
+            plt.close(fig)
+
+    def test_clear_removes_marked_artists_and_resets_marker(self):
+        """`_clear_prior_render_artists` removes every marked artist and clears the marker."""
+        fig, ax = plt.subplots()
+        try:
+            a1, a2 = self._dummy_artist(), self._dummy_artist()
+            _mark_render_artists(ax, a1, a2)
+            _clear_prior_render_artists(ax)
+            assert a1.removed and a2.removed, "both artists must be removed"
+            assert ax._cleo_render_artists is None
+        finally:
+            plt.close(fig)
+
+    @pytest.mark.parametrize("error", [KeyError, NotImplementedError, AttributeError])
+    def test_clear_tolerates_already_removed_artist(self, error):
+        """A `.remove()` failure from an already-partially-removed artist doesn't stop cleanup.
+
+        Test scenario:
+            Locks in H1's fix: matplotlib raises a different exception type
+            depending on how much of the artist is already detached
+            (`KeyError` for a colorbar axes off the figure's axes stack,
+            `NotImplementedError` for any other artist already detached,
+            `AttributeError` for a colorbar whose mappable was detached out
+            from under it). All three must be swallowed, and the other
+            marked artist must still be removed.
+        """
+        fig, ax = plt.subplots()
+        try:
+            bad = self._dummy_artist(remove_error=error)
+            good = self._dummy_artist()
+            _mark_render_artists(ax, bad, good)
+            _clear_prior_render_artists(ax)
+            assert good.removed, "the other artist must still be removed"
+            assert ax._cleo_render_artists is None
+        finally:
+            plt.close(fig)
+
+    def test_clear_propagates_unexpected_exception_types(self):
+        """An exception outside the tolerated set is not swallowed.
+
+        Test scenario:
+            Guards the narrow scope of the tolerated exception set --
+            `_clear_prior_render_artists` must not turn into a blanket
+            `except Exception: pass` that would hide genuine bugs.
+        """
+        fig, ax = plt.subplots()
+        try:
+            _mark_render_artists(ax, self._dummy_artist(remove_error=RuntimeError))
+            with pytest.raises(RuntimeError):
+                _clear_prior_render_artists(ax)
+        finally:
+            plt.close(fig)

@@ -1226,6 +1226,184 @@ class TestPlotReuse:
             mg.default_options["cmap"] == "coolwarm_r"
         ), f"Should reset to default coolwarm_r, got {mg.default_options['cmap']}"
 
+    def test_no_image_artist_accumulation(self):
+        """Repeated `plot()` calls replace the tripcolor/tricontour mappable, not stack it.
+
+        Test scenario:
+            Regression for issue #210's underlying bug class: `plot()`
+            always creates a fresh `tripcolor`/`tricontour(f)` artist via
+            `_render_mesh`, but only the colorbar had cleanup
+            (`test_no_colorbar_accumulation` above) -- the mappable
+            itself was never removed, so `ax.collections` grew by one
+            every call.
+        """
+        mg = _make_tri_mg()
+        mg.plot(np.array([1.0, 2.0]))
+        old_im = mg.im
+        mg.plot(np.array([3.0, 4.0]))
+        assert (
+            len(mg.ax.collections) == 1
+        ), f"Expected exactly one mesh artist, got {len(mg.ax.collections)}"
+        assert (
+            old_im not in mg.ax.collections
+        ), "The first call's mappable must be removed"
+
+    def test_plot_outline_repeated_does_not_stack_lines(self):
+        """Repeated `plot_outline()` calls replace the wireframe, not stack it."""
+        mg = _make_tri_mg()
+        mg.plot_outline()
+        mg.plot_outline()
+        assert (
+            len(mg.ax.collections) == 1
+        ), f"Expected exactly one outline artist, got {len(mg.ax.collections)}"
+
+
+class TestSharedAxesArtistCleanup:
+    """`plot`/`animate`/`plot_outline` must not stack artists on a shared `Axes`.
+
+    Regression coverage for issue #210, generalised beyond `ArrayGlyph`:
+    the same orphaned-artist defect existed in `MeshGlyph`, reachable
+    through the documented `MeshGlyph(ax=..., fig=...)` construction-time
+    binding that pyramids' `UgridDataset.plot`/`.plot_outline`
+    `ax=`/`fig=` passthrough exposes.
+    """
+
+    def test_two_glyphs_sharing_axes_via_plot_do_not_stack(self):
+        """A second, different glyph's `plot()` onto a shared axes still cleans up."""
+        mg1 = _make_tri_mg()
+        mg1.plot(np.array([1.0, 2.0]))
+        old_im = mg1.im
+        axes_count_after_first = len(mg1.fig.axes)
+
+        mg2 = _make_tri_mg()
+        mg2.plot(np.array([3.0, 4.0]), ax=mg1.ax)
+
+        assert (
+            len(mg1.ax.collections) == 1
+        ), f"Expected exactly one mesh artist, got {len(mg1.ax.collections)}"
+        assert (
+            old_im not in mg1.ax.collections
+        ), "The first glyph's mappable must be removed"
+        assert len(mg1.fig.axes) == axes_count_after_first, (
+            f"Expected {axes_count_after_first} axes after the second glyph's call, "
+            f"got {len(mg1.fig.axes)}"
+        )
+
+    def test_plot_then_animate_on_shared_axes_does_not_stack(self):
+        """A second glyph's `animate()` cleans up a first glyph's `plot()` mappable."""
+        mg1 = _make_tri_mg()
+        mg1.plot(np.array([1.0, 2.0]))
+        old_im = mg1.im
+
+        mg2 = _make_tri_mg()
+        frames = np.array([[1.0, 2.0], [3.0, 4.0]])
+        mg2.ax = mg1.ax
+        mg2.fig = mg1.fig
+        mg2.animate(frames, time=["t0", "t1"])
+
+        assert (
+            len(mg1.ax.collections) == 1
+        ), f"Expected exactly one mesh artist, got {len(mg1.ax.collections)}"
+        assert (
+            old_im not in mg1.ax.collections
+        ), "The first call's mappable must be removed"
+
+    def test_animate_then_plot_on_shared_axes_does_not_stack(self):
+        """A second glyph's `plot()` cleans up a first glyph's `animate()` mappable."""
+        mg1 = _make_tri_mg()
+        frames = np.array([[1.0, 2.0], [3.0, 4.0]])
+        mg1.animate(frames, time=["t0", "t1"])
+        old_im = mg1.im
+
+        mg2 = _make_tri_mg()
+        mg2.plot(np.array([3.0, 4.0]), ax=mg1.ax)
+
+        assert (
+            len(mg1.ax.collections) == 1
+        ), f"Expected exactly one mesh artist, got {len(mg1.ax.collections)}"
+        assert (
+            old_im not in mg1.ax.collections
+        ), "The first call's mappable must be removed"
+
+    def test_apply_style_after_plot_does_not_raise(self):
+        """`apply_style()` after a plain `plot()` cleans up without crashing.
+
+        Test scenario:
+            Regression for an interaction bug: `apply_style()` calls
+            `Glyph._reset_axes_for_restyle()`, which already removes the
+            previous colorbar/artists itself before `plot()` runs -- the
+            shared-axes cleanup must tolerate an already-removed artist
+            rather than crashing on the second removal attempt.
+        """
+        mg = _make_tri_mg()
+        mg.plot(np.array([1.0, 2.0]))
+        fig, ax = mg.apply_style("flow_accumulation")
+        assert (
+            len(ax.collections) == 1
+        ), f"Expected exactly one mesh artist, got {len(ax.collections)}"
+
+    def test_ax_clear_before_replot_does_not_raise(self):
+        """A caller's own `ax.clear()` before the next `plot()` call doesn't crash.
+
+        Test scenario:
+            Regression: `ax.clear()` detaches the mesh mappable but
+            leaves the colorbar's own (sibling) axes untouched, since a
+            colorbar lives on a separate `Axes`. The next `plot()`
+            call's cleanup then tried to remove that colorbar via a
+            mappable whose `.axes` was already `None` -- `Colorbar.
+            remove()` raises `AttributeError` instead of the
+            `KeyError`/`NotImplementedError` the cleanup already
+            tolerated. `ax.clear()` is an ordinary matplotlib idiom, so
+            it must not crash the next render.
+        """
+        mg = _make_tri_mg()
+        fig, ax = mg.plot(np.array([1.0, 2.0]))
+        ax.clear()
+        fig2, ax2 = mg.plot(np.array([3.0, 4.0]))
+        assert (
+            len(ax2.collections) == 1
+        ), f"Expected one mesh artist, got {len(ax2.collections)}"
+        assert (
+            len(fig2.axes) == 2
+        ), f"Expected 2 axes (plot + colorbar), got {len(fig2.axes)}"
+
+    def test_plot_validation_failure_preserves_prior_render(self):
+        """A failed `plot()` call must not tear down the previous valid render.
+
+        Test scenario:
+            Regression: `_clear_prior_render_artists` used to run before
+            the new call's inputs were validated, so a bad `color_scale`
+            destroyed the last-good chart along with propagating the
+            `ValueError`.
+        """
+        mg = _make_tri_mg()
+        fig, ax = mg.plot(np.array([1.0, 2.0]))
+        axes_count = len(fig.axes)
+        with pytest.raises(ValueError):
+            mg.plot(np.array([1.0, 2.0]), color_scale="not-a-real-scale")
+        assert (
+            len(ax.collections) == 1
+        ), f"Expected the prior mesh artist, got {len(ax.collections)}"
+        assert (
+            len(fig.axes) == axes_count
+        ), f"Expected {axes_count} axes preserved, got {len(fig.axes)}"
+
+    def test_animate_validation_failure_preserves_prior_render(self):
+        """A failed `animate()` call must not tear down the previous valid render."""
+        mg = _make_tri_mg()
+        frames = np.array([[1.0, 2.0], [3.0, 4.0]])
+        mg.animate(frames, time=["t0", "t1"])
+        ax = mg.ax
+        axes_count = len(mg.fig.axes)
+        with pytest.raises(ValueError):
+            mg.animate(frames, time=["t0", "t1"], color_scale="not-a-real-scale")
+        assert (
+            len(ax.collections) == 1
+        ), f"Expected the prior mesh artist, got {len(ax.collections)}"
+        assert (
+            len(mg.fig.axes) == axes_count
+        ), f"Expected {axes_count} axes preserved, got {len(mg.fig.axes)}"
+
 
 class TestAnimate:
     """Tests for MeshGlyph.animate()."""
@@ -1241,6 +1419,42 @@ class TestAnimate:
         anim = mg.animate(frames, time=["t0", "t1", "t2"])
         assert anim is not None, "Should return a FuncAnimation"
         assert mg.anim is anim, "Should store animation on instance"
+
+    def test_animate_populates_im_cbar_day_text(self):
+        """`animate()` stores its mappable/colorbar/frame-label on the instance.
+
+        Test scenario:
+            Regression: `animate()` previously discarded
+            `create_color_bar(...)`'s return value and never assigned
+            `self.im`/`self._day_text` at all, so they stayed `None`
+            after an animation -- unlike `plot()`, which always populated
+            them. All three must be set once `animate()` returns.
+        """
+        mg = _make_tri_mg()
+        frames = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+        mg.animate(frames, time=["t0", "t1", "t2"])
+        assert mg.im is not None, "self.im must be set after animate()"
+        assert mg._cbar is not None, "self._cbar must be set after animate()"
+        assert mg._day_text is not None, "self._day_text must be set after animate()"
+
+    def test_repeated_animate_does_not_stack_artists(self):
+        """A second `animate()` call on the same instance replaces, not stacks, artists."""
+        mg = _make_tri_mg()
+        frames = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+        mg.animate(frames, time=["t0", "t1", "t2"])
+        old_im = mg.im
+        axes_count_after_first = len(mg.fig.axes)
+        mg.animate(frames, time=["t0", "t1", "t2"])
+        assert (
+            len(mg.ax.collections) == 1
+        ), f"Expected exactly one mesh artist, got {len(mg.ax.collections)}"
+        assert (
+            old_im not in mg.ax.collections
+        ), "The first call's mappable must be removed"
+        assert len(mg.fig.axes) == axes_count_after_first, (
+            f"Expected {axes_count_after_first} axes after the second call, "
+            f"got {len(mg.fig.axes)}"
+        )
 
     def test_node_animation(self):
         """Test node-centered animation."""

@@ -1794,6 +1794,294 @@ class TestPlotIdempotenceAndPurity:
         assert len(ax2.collections) >= 1
 
 
+class TestSharedAxesArtistCleanup:
+    """`plot`/`animate` must not stack image/colorbar artists on a shared `Axes`.
+
+    Regression coverage for issue #210, generalised beyond `animate()`:
+    the same orphaned-artist defect exists in `plot()`, and in every
+    `plot()`/`animate()` combination, reachable through the documented
+    `ArrayGlyph(ax=..., fig=...)` construction-time binding that
+    pyramids' `Dataset`/`NetCDF`/`Analysis`/`UgridDataset`.plot(ax=...,
+    fig=...) passthrough exposes.
+    """
+
+    def test_replot_same_axes_without_reset_does_not_stack_image(self):
+        """`plot()` called twice on the same glyph, same axes, replaces the image.
+
+        Test scenario:
+            Unlike `test_replot_same_kind_does_not_raise` above, this does
+            NOT reset `glyph.fig`/`glyph.ax` between calls -- exactly the
+            case that used to accumulate artists.
+        """
+        arr = np.arange(25, dtype=float).reshape(5, 5)
+        glyph = ArrayGlyph(arr)
+        glyph.plot()
+        old_im = glyph.im
+        glyph.plot()
+        assert (
+            len(glyph.ax.images) == 1
+        ), f"Expected exactly one image artist, got {len(glyph.ax.images)}"
+        assert old_im not in glyph.ax.images, "The first call's image must be removed"
+
+    def test_two_glyphs_sharing_axes_via_plot_do_not_stack_image_artists(self):
+        """A second, different glyph's `plot()` onto a shared axes still cleans up.
+
+        Test scenario:
+            `ArrayGlyph(arr2, ax=glyph1.ax, fig=glyph1.fig)` -- the
+            `ax=`/`fig=` passthrough pyramids' `Dataset`/`NetCDF`/
+            `Analysis`.plot(ax=..., fig=...) exposes -- lets a *second*,
+            independently constructed glyph plot onto the same axes as a
+            first. Checking only `self.im`/`self.cbar` (both fresh `None`
+            on the new instance) would miss the first glyph's leftover
+            image; cleanup must be tracked per-axes.
+        """
+        glyph1 = ArrayGlyph(np.random.default_rng(0).random((8, 8)))
+        glyph1.plot()
+        old_im = glyph1.im
+        axes_count_after_first = len(glyph1.fig.axes)
+
+        glyph2 = ArrayGlyph(
+            np.random.default_rng(1).random((8, 8)), ax=glyph1.ax, fig=glyph1.fig
+        )
+        glyph2.plot()
+
+        assert (
+            len(glyph1.ax.images) == 1
+        ), f"Expected exactly one image artist, got {len(glyph1.ax.images)}"
+        assert old_im not in glyph1.ax.images, "The first glyph's image must be removed"
+        assert len(glyph1.fig.axes) == axes_count_after_first, (
+            f"Expected {axes_count_after_first} axes after the second glyph's call, "
+            f"got {len(glyph1.fig.axes)}"
+        )
+
+    def test_plot_then_animate_on_shared_axes_does_not_stack(
+        self, animate_time_list: list
+    ):
+        """A second glyph's `animate()` cleans up a first glyph's `plot()` image."""
+        glyph1 = ArrayGlyph(np.random.default_rng(0).random((8, 8)))
+        glyph1.plot()
+        old_im = glyph1.im
+
+        glyph2 = ArrayGlyph(
+            np.random.default_rng(0).random((3, 8, 8)), ax=glyph1.ax, fig=glyph1.fig
+        )
+        glyph2.animate(animate_time_list)
+
+        assert (
+            len(glyph1.ax.images) == 1
+        ), f"Expected exactly one image artist, got {len(glyph1.ax.images)}"
+        assert old_im not in glyph1.ax.images, "The first call's image must be removed"
+
+    def test_animate_then_plot_on_shared_axes_does_not_stack(
+        self, animate_time_list: list
+    ):
+        """A second glyph's `plot()` cleans up a first glyph's `animate()` image."""
+        glyph1 = ArrayGlyph(np.random.default_rng(0).random((3, 8, 8)))
+        glyph1.animate(animate_time_list)
+        old_im = glyph1.im
+
+        glyph2 = ArrayGlyph(
+            np.random.default_rng(0).random((8, 8)), ax=glyph1.ax, fig=glyph1.fig
+        )
+        glyph2.plot()
+
+        assert (
+            len(glyph1.ax.images) == 1
+        ), f"Expected exactly one image artist, got {len(glyph1.ax.images)}"
+        assert old_im not in glyph1.ax.images, "The first call's image must be removed"
+
+    def test_apply_style_after_plot_does_not_raise(self):
+        """`apply_style()` after a plain `plot()` cleans up without crashing.
+
+        Test scenario:
+            Regression for an interaction bug hit while building the
+            shared-axes cleanup: `apply_style()` calls
+            `Glyph._reset_axes_for_restyle()`, which already removes the
+            previous colorbar/artists itself before `plot()` runs -- the
+            shared-axes cleanup must tolerate an already-removed artist
+            (matplotlib raises `KeyError`/`NotImplementedError` for that)
+            rather than crashing on the second removal attempt.
+        """
+        glyph = ArrayGlyph(np.abs(np.random.default_rng(0).normal(size=(20, 20))))
+        glyph.plot()
+        fig, ax = glyph.apply_style("flow_accumulation")
+        assert (
+            len(ax.images) == 1
+        ), f"Expected exactly one image artist, got {len(ax.images)}"
+
+    def test_ax_clear_before_replot_does_not_raise(self):
+        """A caller's own `ax.clear()` before the next `plot()` call doesn't crash.
+
+        Test scenario:
+            Regression: `ax.clear()` detaches the image but leaves the
+            colorbar's own (sibling) axes untouched, since a colorbar
+            lives on a separate `Axes` that `ax.clear()` never reaches.
+            The next `plot()` call's cleanup then tried to remove that
+            colorbar via a mappable whose `.axes` was already `None` --
+            `Colorbar.remove()` reads `self.mappable.axes` and calls
+            `.set_subplotspec()` on it, raising `AttributeError` instead
+            of the `KeyError`/`NotImplementedError` the cleanup already
+            tolerated. `ax.clear()` is an ordinary matplotlib idiom (an
+            interactive-update/GUI-refresh pattern), so it must not crash
+            the next render.
+        """
+        glyph = ArrayGlyph(np.arange(25.0).reshape(5, 5))
+        fig, ax = glyph.plot()
+        ax.clear()
+        fig2, ax2 = glyph.plot()
+        assert len(ax2.images) == 1, f"Expected one image, got {len(ax2.images)}"
+        assert (
+            len(fig2.axes) == 2
+        ), f"Expected 2 axes (plot + colorbar), got {len(fig2.axes)}"
+
+    def test_ax_clear_before_re_animate_does_not_raise(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """A caller's own `ax.clear()` before the next `animate()` call doesn't crash."""
+        glyph = ArrayGlyph(coello_data)
+        glyph.animate(animate_time_list)
+        glyph.ax.clear()
+        anim = glyph.animate(animate_time_list)
+        assert anim is not None
+        assert (
+            len(glyph.ax.images) == 1
+        ), f"Expected one image, got {len(glyph.ax.images)}"
+
+    def test_repeated_plot_display_cell_value_does_not_stack_texts(self):
+        """A second `plot(display_cell_value=True)` call replaces the cell-value texts.
+
+        Test scenario:
+            Regression: only the colorbar/image were tracked by the
+            shared-axes cleanup; the per-cell value `Text` artists
+            (`_plot_text`) were not, so they doubled on a second call.
+        """
+        arr = np.arange(100.0).reshape(10, 10)
+        glyph = ArrayGlyph(arr)
+        glyph.plot(display_cell_value=True)
+        texts_after_first = len(glyph.ax.texts)
+        glyph.plot(display_cell_value=True)
+        assert len(glyph.ax.texts) == texts_after_first, (
+            f"Expected {texts_after_first} cell-value texts after the second call, "
+            f"got {len(glyph.ax.texts)}"
+        )
+
+    def test_repeated_plot_with_points_does_not_stack_overlay(self):
+        """A second `plot(points=...)` call replaces the scatter/label overlay.
+
+        Test scenario:
+            Regression: only the colorbar/image were tracked by the
+            shared-axes cleanup; the point-overlay scatter
+            (`ax.scatter`) and per-point value labels
+            (`_plot_point_values`) were not, so both doubled on a
+            second call.
+        """
+        arr = np.arange(25.0).reshape(5, 5)
+        points = np.array([[5.0, 1, 1], [6.0, 2, 2]])
+        glyph = ArrayGlyph(arr)
+        glyph.plot(points=points)
+        collections_after_first = len(glyph.ax.collections)
+        texts_after_first = len(glyph.ax.texts)
+        glyph.plot(points=points)
+        assert len(glyph.ax.collections) == collections_after_first, (
+            f"Expected {collections_after_first} scatter collections after the "
+            f"second call, got {len(glyph.ax.collections)}"
+        )
+        assert len(glyph.ax.texts) == texts_after_first, (
+            f"Expected {texts_after_first} point-label texts after the second "
+            f"call, got {len(glyph.ax.texts)}"
+        )
+
+    def test_repeated_animate_display_cell_value_does_not_stack_texts(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """A second `animate(display_cell_value=True)` call replaces the cell-value texts."""
+        glyph = ArrayGlyph(coello_data)
+        glyph.animate(animate_time_list, display_cell_value=True)
+        texts_after_first = len(glyph.ax.texts)
+        glyph.animate(animate_time_list, display_cell_value=True)
+        assert len(glyph.ax.texts) == texts_after_first, (
+            f"Expected {texts_after_first} texts after the second call, "
+            f"got {len(glyph.ax.texts)}"
+        )
+
+    def test_repeated_animate_with_points_does_not_stack_overlay(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """A second `animate(points=...)` call replaces the scatter/label overlay."""
+        points = np.array([[5.0, 1, 1], [6.0, 2, 2]])
+        glyph = ArrayGlyph(coello_data)
+        glyph.animate(animate_time_list, points=points)
+        collections_after_first = len(glyph.ax.collections)
+        texts_after_first = len(glyph.ax.texts)
+        glyph.animate(animate_time_list, points=points)
+        assert len(glyph.ax.collections) == collections_after_first, (
+            f"Expected {collections_after_first} scatter collections after the "
+            f"second call, got {len(glyph.ax.collections)}"
+        )
+        assert len(glyph.ax.texts) == texts_after_first, (
+            f"Expected {texts_after_first} texts after the second call, "
+            f"got {len(glyph.ax.texts)}"
+        )
+
+    def test_plot_validation_failure_preserves_prior_render(self):
+        """A failed `plot()` call must not tear down the previous valid render.
+
+        Test scenario:
+            Regression: `_clear_prior_render_artists` used to run before
+            the new call's inputs were validated, so a bad `color_scale`
+            destroyed the last-good chart along with propagating the
+            `ValueError`.
+        """
+        arr = np.arange(25.0).reshape(5, 5)
+        glyph = ArrayGlyph(arr)
+        fig, ax = glyph.plot()
+        axes_count = len(fig.axes)
+        with pytest.raises(ValueError):
+            glyph.plot(color_scale="not-a-real-scale")
+        assert len(ax.images) == 1, f"Expected the prior image, got {len(ax.images)}"
+        assert (
+            len(fig.axes) == axes_count
+        ), f"Expected {axes_count} axes preserved, got {len(fig.axes)}"
+
+    def test_animate_validation_failure_preserves_prior_render(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """A failed `animate()` call must not tear down the previous valid render."""
+        glyph = ArrayGlyph(coello_data)
+        glyph.animate(animate_time_list)
+        ax = glyph.ax
+        axes_count = len(glyph.fig.axes)
+        with pytest.raises(ValueError):
+            glyph.animate(animate_time_list, color_scale="not-a-real-scale")
+        assert len(ax.images) == 1, f"Expected the prior image, got {len(ax.images)}"
+        assert (
+            len(glyph.fig.axes) == axes_count
+        ), f"Expected {axes_count} axes preserved, got {len(glyph.fig.axes)}"
+
+    def test_animate_validation_failure_preserves_im_and_cbar_attributes(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """A failed `animate()` call must not reset `self.im`/`self.cbar` to `None`.
+
+        Test scenario:
+            Regression: an early, unconditional `self.im = None; self.cbar
+            = None; self._day_text = None` ran before the color_scale/norm
+            validation that can raise, so a caught exception left these
+            documented public attributes `None` even though the previous
+            image was still visibly attached to the axes.
+        """
+        glyph = ArrayGlyph(coello_data)
+        glyph.animate(animate_time_list)
+        old_im, old_cbar, old_day_text = glyph.im, glyph.cbar, glyph._day_text
+        with pytest.raises(ValueError):
+            glyph.animate(animate_time_list, color_scale="not-a-real-scale")
+        assert glyph.im is old_im, "self.im must still reference the prior render"
+        assert glyph.cbar is old_cbar, "self.cbar must still reference the prior render"
+        assert (
+            glyph._day_text is old_day_text
+        ), "self._day_text must still reference the prior render"
+
+
 @pytest.mark.plot
 class TestPlotRoundTripSavefig:
     """Round-trip test: rendered figure -> savefig -> non-empty PNG file."""
@@ -1875,6 +2163,120 @@ class TestAnimateEdgeCases:
                 None,
                 lambda i: coello_data,
             )
+
+    def test_repeated_call_replaces_not_stacks_image_artist(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """A second `animate()` call on the same glyph replaces `self.im`, not stacks it.
+
+        Test scenario:
+            Regression for issue #210: a caller re-animating a glyph that
+            already went through `animate()` once (e.g. a downstream
+            consumer's helper that internally calls `animate()`, followed
+            by the caller's own `animate()` call) left the first call's
+            image artist orphaned in `ax.images` -- `ax.imshow()` always
+            adds a new artist rather than replacing one, and nothing
+            removed the old one once `self.im` moved on to the new call's
+            artist. Only one image artist must remain, and it must not be
+            the first call's.
+        """
+        glyph = ArrayGlyph(coello_data)
+        glyph.animate(animate_time_list)
+        old_im = glyph.im
+        glyph.animate(animate_time_list)
+        assert (
+            len(glyph.ax.images) == 1
+        ), f"Expected exactly one image artist, got {len(glyph.ax.images)}"
+        assert old_im not in glyph.ax.images, "The first call's image must be removed"
+        assert glyph.im is not old_im, "self.im must point at the second call's artist"
+
+    def test_repeated_call_on_rgb_stack_replaces_image_artist(self, animate_time_list):
+        """The same replace-not-stack guarantee holds for the RGB/true-colour path.
+
+        Test scenario:
+            The originally reported freeze used a 4-D RGB stack, going
+            through `animate()`'s `rgb_frames` branch (`ax.imshow(frame_0,
+            extent=self.extent)`) rather than the scalar/colormap branch --
+            confirm the same cleanup applies there too.
+        """
+        colours = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
+        stack = np.stack([np.full((5, 5, 3), c, dtype="uint8") for c in colours])
+        glyph = ArrayGlyph(stack)
+        glyph.animate(animate_time_list)
+        old_im = glyph.im
+        glyph.animate(animate_time_list)
+        assert (
+            len(glyph.ax.images) == 1
+        ), f"Expected exactly one image artist, got {len(glyph.ax.images)}"
+        assert old_im not in glyph.ax.images, "The first call's image must be removed"
+
+    def test_repeated_call_replaces_not_stacks_colorbar(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """A second `animate()` call replaces the colorbar axes, not adds another.
+
+        Test scenario:
+            `self.cbar = None` before creating a new colorbar only drops
+            the Python reference -- it does not remove the previous
+            `Colorbar`'s own axes from the figure. Confirm `fig.axes`
+            count stays stable (main axes + one colorbar axes) across
+            repeated calls, not growing by one colorbar axes each time.
+        """
+        glyph = ArrayGlyph(coello_data)
+        glyph.animate(animate_time_list)
+        axes_count_after_first = len(glyph.fig.axes)
+        glyph.animate(animate_time_list)
+        assert len(glyph.fig.axes) == axes_count_after_first, (
+            f"Expected {axes_count_after_first} axes after the second call, "
+            f"got {len(glyph.fig.axes)}"
+        )
+
+    def test_repeated_call_replaces_not_stacks_frame_label_text(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """A second `animate()` call replaces the frame-label text, not adds another."""
+        glyph = ArrayGlyph(coello_data)
+        glyph.animate(animate_time_list)
+        old_day_text = glyph._day_text
+        glyph.animate(animate_time_list)
+        assert (
+            len(glyph.ax.texts) == 1
+        ), f"Expected exactly one frame-label text, got {len(glyph.ax.texts)}"
+        assert (
+            old_day_text not in glyph.ax.texts
+        ), "The first call's label must be removed"
+
+    def test_two_glyphs_sharing_one_axes_do_not_stack_image_artists(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """A second, *different* glyph animating onto a shared axes still cleans up.
+
+        Test scenario:
+            Regression for issue #210's underlying bug class, generalised:
+            `ArrayGlyph(arr2, ax=glyph1.ax, fig=glyph1.fig)` -- the
+            `ax=`/`fig=` passthrough pyramids' `Dataset`/`NetCDF`/
+            `Analysis`.plot(ax=..., fig=...) exposes -- lets a *second*,
+            independently constructed glyph animate onto the same Axes as
+            a first. Checking only `self.im`/`self.cbar` (both fresh
+            `None` on the new instance) would miss the first glyph's
+            leftover image; cleanup must be tracked per-Axes.
+        """
+        glyph1 = ArrayGlyph(coello_data)
+        glyph1.animate(animate_time_list)
+        old_im = glyph1.im
+        axes_count_after_first = len(glyph1.fig.axes)
+
+        glyph2 = ArrayGlyph(coello_data, ax=glyph1.ax, fig=glyph1.fig)
+        glyph2.animate(animate_time_list)
+
+        assert (
+            len(glyph1.ax.images) == 1
+        ), f"Expected exactly one image artist, got {len(glyph1.ax.images)}"
+        assert old_im not in glyph1.ax.images, "The first glyph's image must be removed"
+        assert len(glyph1.fig.axes) == axes_count_after_first, (
+            f"Expected {axes_count_after_first} axes after the second glyph's call, "
+            f"got {len(glyph1.fig.axes)}"
+        )
 
 
 @pytest.mark.plot

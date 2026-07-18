@@ -49,7 +49,12 @@ from cleopatra.colors import (
 )
 from cleopatra.geo import GeoMixin
 from cleopatra.hillshade import resolve_hillshade, shade_grid, shade_rgb
-from cleopatra.glyph import Glyph, _root_figure
+from cleopatra.glyph import (
+    Glyph,
+    _clear_prior_render_artists,
+    _mark_render_artists,
+    _root_figure,
+)
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import ColorScale  # re-exported for convenience  # noqa: F401
 from cleopatra.styles import disjoint_legend, swatch_legend
@@ -1214,6 +1219,11 @@ class ArrayGlyph(GeoMixin, Glyph):
         # reachable as public attributes, even before the first render.
         self.im = None
         self.cbar = None
+        # Per-frame time-label artist from the most recent `animate()`
+        # call, if any -- initialised here (like `im`/`cbar` above) so
+        # `animate()` can always check it before creating a new one,
+        # regardless of whether this is the first call.
+        self._day_text = None
         # Inline contour-label artists from the most recent
         # `plot(kind="contour", labels=True)`, or `None` when labelling
         # was not requested (the default, and for every non-contour
@@ -2264,6 +2274,11 @@ class ArrayGlyph(GeoMixin, Glyph):
             tuple[Figure, Axes]: The figure and axes drawn on.
         """
         layer = self._resolve_style_layer(style)
+        # See `_clear_prior_render_artists`: cleared only once the style
+        # name is known valid, so a prior *valid* render survives a bad
+        # `style` on this call instead of being torn down for a call that
+        # never completes.
+        _clear_prior_render_artists(self.ax)
         # Cast to float BEFORE filling: `ma.filled(int_array, np.nan)` raises
         # `TypeError: Cannot convert fill_value nan to dtype int64` for an
         # integer masked array -- exactly the integer-coded categorical raster
@@ -2317,6 +2332,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         self.ax.set_title(
             self.default_options["title"], fontsize=self.default_options["title_size"]
         )
+        _mark_render_artists(self.ax, self.cbar, self.im)
         return self.fig, self.ax
 
     def apply_colormap(self, cmap: Colormap | str) -> np.ndarray:
@@ -2745,22 +2761,22 @@ class ArrayGlyph(GeoMixin, Glyph):
                 - fig: The matplotlib Figure object
                 - ax: The matplotlib Axes object
 
-            The colour-mapped artist (the ``ScalarMappable`` — e.g. the
-            ``AxesImage`` for ``imshow``, the ``QuadMesh`` for
-            ``pcolormesh``, the ``QuadContourSet`` for
-            ``contour``/``contourf``, or the RGB ``AxesImage``) is also
-            stored on the instance as ``self.im`` after this call, so a
+            The colour-mapped artist (the `ScalarMappable` — e.g. the
+            `AxesImage` for `imshow`, the `QuadMesh` for
+            `pcolormesh`, the `QuadContourSet` for
+            `contour`/`contourf`, or the RGB `AxesImage`) is also
+            stored on the instance as `self.im` after this call, so a
             caller can attach a colorbar/legend or query the colour
-            limits without scraping ``ax.images``/``ax.collections``.
+            limits without scraping `ax.images`/`ax.collections`.
 
         Raises:
             ValueError: If an invalid keyword argument is provided.
 
         Notes:
-            This method does not call ``plt.show()``; it returns the Figure and Axes so
+            This method does not call `plt.show()`; it returns the Figure and Axes so
             the caller can compose, save, or display them. In an interactive session call
-            ``plt.show()`` yourself (or ``fig.savefig(...)`` to write the plot to disk)
-            after ``plot()`` returns.
+            `plt.show()` yourself (or `fig.savefig(...)` to write the plot to disk)
+            after `plot()` returns.
 
         Examples:
         - Basic array plot:
@@ -3165,6 +3181,11 @@ class ArrayGlyph(GeoMixin, Glyph):
                 return self._plot_with_style(style)
 
         if self.rgb:
+            # See `_clear_prior_render_artists`: cleared only once nothing
+            # above this point could still raise, so a prior *valid* render
+            # survives a validation failure instead of being torn down for
+            # a call that never completes.
+            _clear_prior_render_artists(ax)
             self.im = ax.imshow(arr, extent=self.extent)
             self.cbar = None
         else:
@@ -3213,6 +3234,18 @@ class ArrayGlyph(GeoMixin, Glyph):
 
             # creating the ticks/bounds
             ticks = self.get_ticks()
+            # Pre-flight the norm/cbar-kwarg resolution (e.g. an invalid
+            # `color_scale`) before clearing -- it is the actual validation
+            # surface `_plot_im_get_cbar_kw` bundles together with drawing
+            # a few lines below, and is pure (reads `default_options` only,
+            # no `ax` mutation), so calling it here to fail fast costs
+            # nothing beyond `_plot_im_get_cbar_kw` recomputing the same
+            # result. See `_clear_prior_render_artists`: only cleared once
+            # this can no longer raise, so a prior *valid* render survives
+            # a validation failure instead of being torn down for a call
+            # that never completes.
+            self._create_norm_and_cbar_kw(ticks)
+            _clear_prior_render_artists(ax)
             im, cbar_kw = self._plot_im_get_cbar_kw(ax, arr, ticks, kind=effective_kind)
             self.im = im
 
@@ -3273,6 +3306,14 @@ class ArrayGlyph(GeoMixin, Glyph):
         #     im.norm(self.default_options["background_color_threshold"])
         # else:
         #     im.norm(self.vmax) / 2.0
+        _mark_render_artists(
+            ax,
+            self.cbar,
+            self.im,
+            optional_display.get("points_scatter"),
+            *(optional_display.get("points_id") or []),
+            *(optional_display.get("cell_text_value") or []),
+        )
         return fig, ax
 
     def facet(
@@ -3733,8 +3774,8 @@ class ArrayGlyph(GeoMixin, Glyph):
                 in a notebook or saved to a file.
 
             As with `plot`, the first-frame colour-mapped artist is stored on
-            the instance as ``self.im`` (and the colorbar, when drawn, on
-            ``self.cbar``), so a caller can attach a host-owned
+            the instance as `self.im` (and the colorbar, when drawn, on
+            `self.cbar`), so a caller can attach a host-owned
             colorbar/legend without scraping the axes.
 
         Raises:
@@ -3752,9 +3793,9 @@ class ArrayGlyph(GeoMixin, Glyph):
             For example, if the array has shape (10, 20, 30), the animation will have 10 frames,
             each showing a 20x30 slice of the array.
 
-            This method does not call ``plt.show()``; it returns the ``FuncAnimation`` so the
+            This method does not call `plt.show()`; it returns the `FuncAnimation` so the
             caller controls display. In an interactive (non-notebook) session call
-            ``plt.show()`` yourself to play it, or use ``save_animation`` to write it to a file.
+            `plt.show()` yourself to play it, or use `save_animation` to write it to a file.
 
             To display the animation in a Jupyter notebook, you may need to use:
             ```python
@@ -3973,12 +4014,22 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         if rgb_frames:
             # True-colour frames go straight through imshow — no norm,
-            # colormap or colorbar (mirrors `plot`'s RGB branch).
+            # colormap or colorbar (mirrors `plot`'s RGB branch). See
+            # `_clear_prior_render_artists`: cleared only once nothing
+            # above this point could still raise, so a prior *valid*
+            # render survives a validation failure instead of being torn
+            # down for a call that never completes.
+            _clear_prior_render_artists(ax)
             im = ax.imshow(frame_0, extent=self.extent)
             self.im = im
             self.cbar = None
         else:
             ticks = self.get_ticks()
+            # Pre-flight the norm/cbar-kwarg resolution (e.g. an invalid
+            # `color_scale`) before clearing -- see the matching comment
+            # in `plot()`.
+            self._create_norm_and_cbar_kw(ticks)
+            _clear_prior_render_artists(ax)
             im, cbar_kw = self._plot_im_get_cbar_kw(ax, frame_0, ticks)
             self.im = im
 
@@ -4097,6 +4148,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         ax.set_xticks([])
         ax.set_yticks([])
 
+        cell_text_value: list = []
         if show_cell_value:
             indices = get_indices2(frame_0, [np.nan])
             cell_text_value = self._plot_text(
@@ -4104,6 +4156,8 @@ class ArrayGlyph(GeoMixin, Glyph):
             )
             indices = np.array(indices)
 
+        points_scatter = None
+        points_id: list = []
         if points is not None:
             row = points.points[:, 1]
             col = points.points[:, 2]
@@ -4284,6 +4338,23 @@ class ArrayGlyph(GeoMixin, Glyph):
             blit=True,
         )
         self._anim = anim
+        # See `_mark_render_artists`: record this call's artists on the
+        # Axes itself so a later plot()/animate() call -- from this glyph
+        # or a different one sharing this Axes -- can find and remove
+        # them. points_scatter/points_id/cell_text_value are mutated in
+        # place per frame (`.set_offsets()`/`.set_text()` inside
+        # animate_a() below), not swapped for new objects each frame
+        # (unlike MeshGlyph's mappable), so marking them once here stays
+        # valid for the whole animation.
+        _mark_render_artists(
+            ax,
+            self.cbar,
+            self.im,
+            self._day_text,
+            points_scatter,
+            *points_id,
+            *cell_text_value,
+        )
         return anim
 
     # @staticmethod
