@@ -1876,6 +1876,88 @@ class TestAnimateEdgeCases:
                 lambda i: coello_data,
             )
 
+    def test_repeated_call_replaces_not_stacks_image_artist(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """A second `animate()` call on the same glyph replaces `self.im`, not stacks it.
+
+        Test scenario:
+            Regression for issue #210: a caller re-animating a glyph that
+            already went through `animate()` once (e.g. a downstream
+            consumer's helper that internally calls `animate()`, followed
+            by the caller's own `animate()` call) left the first call's
+            image artist orphaned in `ax.images` -- `ax.imshow()` always
+            adds a new artist rather than replacing one, and nothing
+            removed the old one once `self.im` moved on to the new call's
+            artist. Only one image artist must remain, and it must not be
+            the first call's.
+        """
+        glyph = ArrayGlyph(coello_data)
+        glyph.animate(animate_time_list)
+        old_im = glyph.im
+        glyph.animate(animate_time_list)
+        assert (
+            len(glyph.ax.images) == 1
+        ), f"Expected exactly one image artist, got {len(glyph.ax.images)}"
+        assert old_im not in glyph.ax.images, "The first call's image must be removed"
+        assert glyph.im is not old_im, "self.im must point at the second call's artist"
+
+    def test_repeated_call_on_rgb_stack_replaces_image_artist(self, animate_time_list):
+        """The same replace-not-stack guarantee holds for the RGB/true-colour path.
+
+        Test scenario:
+            The originally reported freeze used a 4-D RGB stack, going
+            through `animate()`'s `rgb_frames` branch (`ax.imshow(frame_0,
+            extent=self.extent)`) rather than the scalar/colormap branch --
+            confirm the same cleanup applies there too.
+        """
+        colours = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
+        stack = np.stack([np.full((5, 5, 3), c, dtype="uint8") for c in colours])
+        glyph = ArrayGlyph(stack)
+        glyph.animate(animate_time_list)
+        old_im = glyph.im
+        glyph.animate(animate_time_list)
+        assert (
+            len(glyph.ax.images) == 1
+        ), f"Expected exactly one image artist, got {len(glyph.ax.images)}"
+        assert old_im not in glyph.ax.images, "The first call's image must be removed"
+
+    def test_repeated_call_replaces_not_stacks_colorbar(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """A second `animate()` call replaces the colorbar axes, not adds another.
+
+        Test scenario:
+            `self.cbar = None` before creating a new colorbar only drops
+            the Python reference -- it does not remove the previous
+            `Colorbar`'s own axes from the figure. Confirm `fig.axes`
+            count stays stable (main axes + one colorbar axes) across
+            repeated calls, not growing by one colorbar axes each time.
+        """
+        glyph = ArrayGlyph(coello_data)
+        glyph.animate(animate_time_list)
+        axes_count_after_first = len(glyph.fig.axes)
+        glyph.animate(animate_time_list)
+        assert len(glyph.fig.axes) == axes_count_after_first, (
+            f"Expected {axes_count_after_first} axes after the second call, "
+            f"got {len(glyph.fig.axes)}"
+        )
+
+    def test_repeated_call_replaces_not_stacks_frame_label_text(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """A second `animate()` call replaces the frame-label text, not adds another."""
+        glyph = ArrayGlyph(coello_data)
+        glyph.animate(animate_time_list)
+        old_day_text = glyph._day_text
+        glyph.animate(animate_time_list)
+        assert (
+            len(glyph.ax.texts) == 1
+        ), f"Expected exactly one frame-label text, got {len(glyph.ax.texts)}"
+        assert (
+            old_day_text not in glyph.ax.texts
+        ), "The first call's label must be removed"
+
 
 @pytest.mark.plot
 class TestNanNoDataConvention:

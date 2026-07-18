@@ -1214,6 +1214,11 @@ class ArrayGlyph(GeoMixin, Glyph):
         # reachable as public attributes, even before the first render.
         self.im = None
         self.cbar = None
+        # Per-frame time-label artist from the most recent `animate()`
+        # call, if any -- initialised here (like `im`/`cbar` above) so
+        # `animate()` can always check it before creating a new one,
+        # regardless of whether this is the first call.
+        self._day_text = None
         # Inline contour-label artists from the most recent
         # `plot(kind="contour", labels=True)`, or `None` when labelling
         # was not requested (the default, and for every non-contour
@@ -3962,6 +3967,30 @@ class ArrayGlyph(GeoMixin, Glyph):
             self.fig, self.ax = self.create_figure_axes()
 
         fig, ax = self.fig, self.ax
+
+        # A prior animate() call on this same glyph (e.g. a caller
+        # re-animating a glyph that already went through animate() once,
+        # such as pyramids' DatasetCollection.plot(mode="animate") followed
+        # by its own animate() call) leaves that call's image/colorbar/
+        # frame-label artists on `ax` -- `ax.imshow()` always adds a new
+        # artist rather than replacing one, and the init_func marks it
+        # `animated=True` (blit-owned), so normal redraws silently skip it
+        # and nothing ever removes it once this glyph's `self.im`/`self.anim`
+        # move on to the new call's artists. Remove any such leftovers
+        # before creating this call's own, so they don't linger orphaned in
+        # `ax.images`/`ax.texts`. The colorbar must be removed *before* the
+        # image it is attached to -- `Colorbar.remove()` reads
+        # `self.mappable.axes` to restore the image axes' gridspec position,
+        # which is only valid while the image artist is still attached.
+        if self.cbar is not None:
+            self.cbar.remove()
+            self.cbar = None
+        if self.im is not None:
+            self.im.remove()
+            self.im = None
+        if self._day_text is not None:
+            self._day_text.remove()
+            self._day_text = None
 
         # Per-frame RGBA recipe for a continuous `style` (cmap, colour norm,
         # alpha norm, constant alpha), set in the style branch below and
