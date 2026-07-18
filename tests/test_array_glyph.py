@@ -1947,6 +1947,82 @@ class TestSharedAxesArtistCleanup:
             len(glyph.ax.images) == 1
         ), f"Expected one image, got {len(glyph.ax.images)}"
 
+    def test_repeated_plot_display_cell_value_does_not_stack_texts(self):
+        """A second `plot(display_cell_value=True)` call replaces the cell-value texts.
+
+        Test scenario:
+            Regression: only the colorbar/image were tracked by the
+            shared-axes cleanup; the per-cell value `Text` artists
+            (`_plot_text`) were not, so they doubled on a second call.
+        """
+        arr = np.arange(100.0).reshape(10, 10)
+        glyph = ArrayGlyph(arr)
+        glyph.plot(display_cell_value=True)
+        texts_after_first = len(glyph.ax.texts)
+        glyph.plot(display_cell_value=True)
+        assert len(glyph.ax.texts) == texts_after_first, (
+            f"Expected {texts_after_first} cell-value texts after the second call, "
+            f"got {len(glyph.ax.texts)}"
+        )
+
+    def test_repeated_plot_with_points_does_not_stack_overlay(self):
+        """A second `plot(points=...)` call replaces the scatter/label overlay.
+
+        Test scenario:
+            Regression: only the colorbar/image were tracked by the
+            shared-axes cleanup; the point-overlay scatter
+            (`ax.scatter`) and per-point value labels
+            (`_plot_point_values`) were not, so both doubled on a
+            second call.
+        """
+        arr = np.arange(25.0).reshape(5, 5)
+        points = np.array([[5.0, 1, 1], [6.0, 2, 2]])
+        glyph = ArrayGlyph(arr)
+        glyph.plot(points=points)
+        collections_after_first = len(glyph.ax.collections)
+        texts_after_first = len(glyph.ax.texts)
+        glyph.plot(points=points)
+        assert len(glyph.ax.collections) == collections_after_first, (
+            f"Expected {collections_after_first} scatter collections after the "
+            f"second call, got {len(glyph.ax.collections)}"
+        )
+        assert len(glyph.ax.texts) == texts_after_first, (
+            f"Expected {texts_after_first} point-label texts after the second "
+            f"call, got {len(glyph.ax.texts)}"
+        )
+
+    def test_repeated_animate_display_cell_value_does_not_stack_texts(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """A second `animate(display_cell_value=True)` call replaces the cell-value texts."""
+        glyph = ArrayGlyph(coello_data)
+        glyph.animate(animate_time_list, display_cell_value=True)
+        texts_after_first = len(glyph.ax.texts)
+        glyph.animate(animate_time_list, display_cell_value=True)
+        assert len(glyph.ax.texts) == texts_after_first, (
+            f"Expected {texts_after_first} texts after the second call, "
+            f"got {len(glyph.ax.texts)}"
+        )
+
+    def test_repeated_animate_with_points_does_not_stack_overlay(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """A second `animate(points=...)` call replaces the scatter/label overlay."""
+        points = np.array([[5.0, 1, 1], [6.0, 2, 2]])
+        glyph = ArrayGlyph(coello_data)
+        glyph.animate(animate_time_list, points=points)
+        collections_after_first = len(glyph.ax.collections)
+        texts_after_first = len(glyph.ax.texts)
+        glyph.animate(animate_time_list, points=points)
+        assert len(glyph.ax.collections) == collections_after_first, (
+            f"Expected {collections_after_first} scatter collections after the "
+            f"second call, got {len(glyph.ax.collections)}"
+        )
+        assert len(glyph.ax.texts) == texts_after_first, (
+            f"Expected {texts_after_first} texts after the second call, "
+            f"got {len(glyph.ax.texts)}"
+        )
+
 
 @pytest.mark.plot
 class TestPlotRoundTripSavefig:

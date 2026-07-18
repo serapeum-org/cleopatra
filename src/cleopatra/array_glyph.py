@@ -3294,7 +3294,14 @@ class ArrayGlyph(GeoMixin, Glyph):
         #     im.norm(self.default_options["background_color_threshold"])
         # else:
         #     im.norm(self.vmax) / 2.0
-        _mark_render_artists(ax, self.cbar, self.im)
+        _mark_render_artists(
+            ax,
+            self.cbar,
+            self.im,
+            optional_display.get("points_scatter"),
+            *(optional_display.get("points_id") or []),
+            *(optional_display.get("cell_text_value") or []),
+        )
         return fig, ax
 
     def facet(
@@ -4128,6 +4135,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         ax.set_xticks([])
         ax.set_yticks([])
 
+        cell_text_value: list = []
         if show_cell_value:
             indices = get_indices2(frame_0, [np.nan])
             cell_text_value = self._plot_text(
@@ -4135,6 +4143,8 @@ class ArrayGlyph(GeoMixin, Glyph):
             )
             indices = np.array(indices)
 
+        points_scatter = None
+        points_id: list = []
         if points is not None:
             row = points.points[:, 1]
             col = points.points[:, 2]
@@ -4317,8 +4327,21 @@ class ArrayGlyph(GeoMixin, Glyph):
         self._anim = anim
         # See `_mark_render_artists`: record this call's artists on the
         # Axes itself so a later plot()/animate() call -- from this glyph
-        # or a different one sharing this Axes -- can find and remove them.
-        _mark_render_artists(ax, self.cbar, self.im, self._day_text)
+        # or a different one sharing this Axes -- can find and remove
+        # them. points_scatter/points_id/cell_text_value are mutated in
+        # place per frame (`.set_offsets()`/`.set_text()` inside
+        # animate_a() below), not swapped for new objects each frame
+        # (unlike MeshGlyph's mappable), so marking them once here stays
+        # valid for the whole animation.
+        _mark_render_artists(
+            ax,
+            self.cbar,
+            self.im,
+            self._day_text,
+            points_scatter,
+            *points_id,
+            *cell_text_value,
+        )
         return anim
 
     # @staticmethod
