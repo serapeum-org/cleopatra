@@ -450,3 +450,30 @@ class TestSharedAxesArtistCleanup:
         assert (
             len(fig2.axes) == 2
         ), f"Expected 2 axes (plot + colorbar), got {len(fig2.axes)}"
+
+    def test_plot_validation_failure_preserves_prior_render(self):
+        """A failed `plot()` call must not tear down the previous valid render.
+
+        Test scenario:
+            Regression: `_clear_prior_render_artists` used to run before
+            `_prepare_scalar_mapping` validated the new call's magnitude,
+            so an all-NaN magnitude (no finite values to resolve
+            `vmin`/`vmax` from) destroyed the last-good chart along with
+            propagating the `ValueError`.
+        """
+        gx, gy, u, v = self._field()
+        glyph = VectorGlyph(gx, gy, u, v)
+        fig, ax, im = glyph.plot(kind="quiver")
+        axes_count = len(fig.axes)
+        glyph.u = np.full_like(gx, np.nan, dtype=float)
+        glyph.v = np.full_like(gy, np.nan, dtype=float)
+        glyph.default_options["vmin"] = None
+        glyph.default_options["vmax"] = None
+        with pytest.raises(ValueError):
+            glyph.plot(kind="quiver")
+        assert (
+            len(ax.collections) == 1
+        ), f"Expected the prior mappable, got {len(ax.collections)}"
+        assert (
+            len(fig.axes) == axes_count
+        ), f"Expected {axes_count} axes preserved, got {len(fig.axes)}"

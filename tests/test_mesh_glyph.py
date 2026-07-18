@@ -1367,6 +1367,43 @@ class TestSharedAxesArtistCleanup:
             len(fig2.axes) == 2
         ), f"Expected 2 axes (plot + colorbar), got {len(fig2.axes)}"
 
+    def test_plot_validation_failure_preserves_prior_render(self):
+        """A failed `plot()` call must not tear down the previous valid render.
+
+        Test scenario:
+            Regression: `_clear_prior_render_artists` used to run before
+            the new call's inputs were validated, so a bad `color_scale`
+            destroyed the last-good chart along with propagating the
+            `ValueError`.
+        """
+        mg = _make_tri_mg()
+        fig, ax = mg.plot(np.array([1.0, 2.0]))
+        axes_count = len(fig.axes)
+        with pytest.raises(ValueError):
+            mg.plot(np.array([1.0, 2.0]), color_scale="not-a-real-scale")
+        assert (
+            len(ax.collections) == 1
+        ), f"Expected the prior mesh artist, got {len(ax.collections)}"
+        assert (
+            len(fig.axes) == axes_count
+        ), f"Expected {axes_count} axes preserved, got {len(fig.axes)}"
+
+    def test_animate_validation_failure_preserves_prior_render(self):
+        """A failed `animate()` call must not tear down the previous valid render."""
+        mg = _make_tri_mg()
+        frames = np.array([[1.0, 2.0], [3.0, 4.0]])
+        mg.animate(frames, time=["t0", "t1"])
+        ax = mg.ax
+        axes_count = len(mg.fig.axes)
+        with pytest.raises(ValueError):
+            mg.animate(frames, time=["t0", "t1"], color_scale="not-a-real-scale")
+        assert (
+            len(ax.collections) == 1
+        ), f"Expected the prior mesh artist, got {len(ax.collections)}"
+        assert (
+            len(mg.fig.axes) == axes_count
+        ), f"Expected {axes_count} axes preserved, got {len(mg.fig.axes)}"
+
 
 class TestAnimate:
     """Tests for MeshGlyph.animate()."""

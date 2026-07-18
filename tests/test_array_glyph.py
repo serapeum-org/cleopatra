@@ -2023,6 +2023,41 @@ class TestSharedAxesArtistCleanup:
             f"got {len(glyph.ax.texts)}"
         )
 
+    def test_plot_validation_failure_preserves_prior_render(self):
+        """A failed `plot()` call must not tear down the previous valid render.
+
+        Test scenario:
+            Regression: `_clear_prior_render_artists` used to run before
+            the new call's inputs were validated, so a bad `color_scale`
+            destroyed the last-good chart along with propagating the
+            `ValueError`.
+        """
+        arr = np.arange(25.0).reshape(5, 5)
+        glyph = ArrayGlyph(arr)
+        fig, ax = glyph.plot()
+        axes_count = len(fig.axes)
+        with pytest.raises(ValueError):
+            glyph.plot(color_scale="not-a-real-scale")
+        assert len(ax.images) == 1, f"Expected the prior image, got {len(ax.images)}"
+        assert (
+            len(fig.axes) == axes_count
+        ), f"Expected {axes_count} axes preserved, got {len(fig.axes)}"
+
+    def test_animate_validation_failure_preserves_prior_render(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """A failed `animate()` call must not tear down the previous valid render."""
+        glyph = ArrayGlyph(coello_data)
+        glyph.animate(animate_time_list)
+        ax = glyph.ax
+        axes_count = len(glyph.fig.axes)
+        with pytest.raises(ValueError):
+            glyph.animate(animate_time_list, color_scale="not-a-real-scale")
+        assert len(ax.images) == 1, f"Expected the prior image, got {len(ax.images)}"
+        assert (
+            len(glyph.fig.axes) == axes_count
+        ), f"Expected {axes_count} axes preserved, got {len(glyph.fig.axes)}"
+
 
 @pytest.mark.plot
 class TestPlotRoundTripSavefig:
