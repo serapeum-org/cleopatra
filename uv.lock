@@ -359,7 +359,7 @@ wheels = [
 
 [[package]]
 name = "cleopatra"
-version = "0.26.0"
+version = "0.26.1"
 source = { editable = "." }
 dependencies = [
     { name = "hpc-utils" },
