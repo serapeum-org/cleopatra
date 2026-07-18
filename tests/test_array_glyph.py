@@ -2058,6 +2058,29 @@ class TestSharedAxesArtistCleanup:
             len(glyph.fig.axes) == axes_count
         ), f"Expected {axes_count} axes preserved, got {len(glyph.fig.axes)}"
 
+    def test_animate_validation_failure_preserves_im_and_cbar_attributes(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """A failed `animate()` call must not reset `self.im`/`self.cbar` to `None`.
+
+        Test scenario:
+            Regression: an early, unconditional `self.im = None; self.cbar
+            = None; self._day_text = None` ran before the color_scale/norm
+            validation that can raise, so a caught exception left these
+            documented public attributes `None` even though the previous
+            image was still visibly attached to the axes.
+        """
+        glyph = ArrayGlyph(coello_data)
+        glyph.animate(animate_time_list)
+        old_im, old_cbar, old_day_text = glyph.im, glyph.cbar, glyph._day_text
+        with pytest.raises(ValueError):
+            glyph.animate(animate_time_list, color_scale="not-a-real-scale")
+        assert glyph.im is old_im, "self.im must still reference the prior render"
+        assert glyph.cbar is old_cbar, "self.cbar must still reference the prior render"
+        assert (
+            glyph._day_text is old_day_text
+        ), "self._day_text must still reference the prior render"
+
 
 @pytest.mark.plot
 class TestPlotRoundTripSavefig:

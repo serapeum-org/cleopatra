@@ -571,6 +571,28 @@ class TestSharedAxesArtistCleanup:
             len(bars2) == 3
         ), f"Expected the returned container to hold 3, got {len(bars2)}"
 
+    def test_histogram_validation_failure_preserves_prior_render(self):
+        """A failed `histogram()` call must not tear down the previous valid render.
+
+        Test scenario:
+            Regression: `_clear_prior_render_artists` used to run before
+            the `color` length vs. `num_samples` check, so a mismatched
+            `color` list destroyed the last-good histogram along with
+            propagating the `ValueError`.
+        """
+        sg = StatisticalGlyph(
+            np.random.default_rng(0).normal(size=(50, 2)), color=["r", "g"]
+        )
+        fig, ax, hist = sg.histogram()
+        bars_after_first = len(ax.patches)
+        sg.default_options["color"] = ["r", "g", "b"]
+        with pytest.raises(ValueError):
+            sg.histogram()
+        assert len(ax.patches) == bars_after_first, (
+            f"Expected {bars_after_first} bars preserved after the failed call, "
+            f"got {len(ax.patches)}"
+        )
+
 
 class TestFigParameterRemovedFromRenderers:
     """`fig` is no longer a per-call parameter on the box/stripe renderers.
