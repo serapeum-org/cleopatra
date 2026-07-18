@@ -4004,10 +4004,6 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         fig, ax = self.fig, self.ax
 
-        self.cbar = None
-        self.im = None
-        self._day_text = None
-
         # Per-frame RGBA recipe for a continuous `style` (cmap, colour norm,
         # alpha norm, constant alpha), set in the style branch below and
         # consumed by `_display_frame`. `None` when no style is active.
