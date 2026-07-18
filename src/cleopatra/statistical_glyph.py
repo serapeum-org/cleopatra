@@ -66,6 +66,7 @@ from matplotlib.colors import Normalize
 from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 
+from cleopatra.glyph import _clear_prior_render_artists, _mark_render_artists
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 STATISTICAL_DEFAULT_OPTIONS = {
@@ -542,6 +543,12 @@ class StatisticalGlyph:
         else:
             fig, ax = plt.subplots(figsize=self.default_options["figsize"])
 
+        # See `_clear_prior_render_artists`: a prior `histogram`/`boxplot`/
+        # `multiboxplot`/`stripes` call on this Axes (this glyph's own, or
+        # a different glyph sharing it via `StatisticalGlyph(ax=..., ...)`)
+        # leaves its bars/boxes orphaned unless removed first.
+        _clear_prior_render_artists(ax)
+
         n = []
         bins = []
         patches = []
@@ -587,6 +594,7 @@ class StatisticalGlyph:
         ax.tick_params(axis="x", labelsize=self.default_options["xtick_font_size"])
         ax.tick_params(axis="y", labelsize=self.default_options["ytick_font_size"])
         hist = {"n": n, "bins": bins, "patches": patches}
+        _mark_render_artists(ax, *patches)
         return fig, ax, hist
 
     @staticmethod
@@ -709,6 +717,11 @@ class StatisticalGlyph:
         """
         self._reject_fig_kwarg(kwargs)
         fig, ax = self._resolve_fig_ax(ax)
+        # See `_clear_prior_render_artists`: a prior `histogram`/`boxplot`/
+        # `multiboxplot`/`stripes` call on this Axes (this glyph's own, or
+        # a different glyph sharing it) leaves its bars/boxes orphaned
+        # unless removed first.
+        _clear_prior_render_artists(ax)
         columns = self._columns()
         tick_labels = (
             list(labels)
@@ -738,6 +751,7 @@ class StatisticalGlyph:
             box.set_alpha(self.default_options["alpha"])
         ax.grid(axis="y", alpha=self.default_options["grid_alpha"])
         self._apply_axis_labels(ax)
+        _mark_render_artists(ax, *(a for artists in bp.values() for a in artists))
         return fig, ax, bp
 
     def multiboxplot(
@@ -812,6 +826,11 @@ class StatisticalGlyph:
             )
 
         fig, ax = self._resolve_fig_ax(ax)
+        # See `_clear_prior_render_artists`: a prior `histogram`/`boxplot`/
+        # `multiboxplot`/`stripes` call on this Axes (this glyph's own, or
+        # a different glyph sharing it) leaves its bars/boxes orphaned
+        # unless removed first.
+        _clear_prior_render_artists(ax)
         bp = ax.boxplot(
             columns,
             positions=list(positions),
@@ -829,6 +848,7 @@ class StatisticalGlyph:
         )
         ax.grid(axis="y", alpha=self.default_options["grid_alpha"])
         self._apply_axis_labels(ax)
+        _mark_render_artists(ax, *(a for artists in bp.values() for a in artists))
         return fig, ax, bp
 
     def stripes(
@@ -882,6 +902,11 @@ class StatisticalGlyph:
         if values.ndim != 1:
             raise ValueError(f"stripes requires 1D values; got {values.ndim}D.")
         fig, ax = self._resolve_fig_ax(ax)
+        # See `_clear_prior_render_artists`: a prior `histogram`/`boxplot`/
+        # `multiboxplot`/`stripes` call on this Axes (this glyph's own, or
+        # a different glyph sharing it) leaves its bars/boxes orphaned
+        # unless removed first.
+        _clear_prior_render_artists(ax)
         cmap = cmap if cmap is not None else self.default_options["cmap"]
         cmap_obj = mpl.colormaps[cmap] if isinstance(cmap, str) else cmap
         lo = float(np.nanmin(values)) if vmin is None else vmin
@@ -898,4 +923,5 @@ class StatisticalGlyph:
         ax.set_yticks([])
         ax.set_xlim(-0.5, values.size - 0.5)
         self._apply_axis_labels(ax)
+        _mark_render_artists(ax, bars)
         return fig, ax, bars
