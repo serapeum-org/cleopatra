@@ -543,12 +543,6 @@ class StatisticalGlyph:
         else:
             fig, ax = plt.subplots(figsize=self.default_options["figsize"])
 
-        # See `_clear_prior_render_artists`: a prior `histogram`/`boxplot`/
-        # `multiboxplot`/`stripes` call on this Axes (this glyph's own, or
-        # a different glyph sharing it via `StatisticalGlyph(ax=..., ...)`)
-        # leaves its bars/boxes orphaned unless removed first.
-        _clear_prior_render_artists(ax)
-
         n = []
         bins = []
         patches = []
@@ -564,6 +558,15 @@ class StatisticalGlyph:
                 )
         else:
             num_samples = 1
+
+        # See `_clear_prior_render_artists`: a prior `histogram`/`boxplot`/
+        # `multiboxplot`/`stripes` call on this Axes (this glyph's own, or
+        # a different glyph sharing it via `StatisticalGlyph(ax=..., ...)`)
+        # leaves its bars/boxes orphaned unless removed first. Deferred
+        # until here -- after the `color`/`num_samples` check above, this
+        # call's only validation that can raise -- so a failed call leaves
+        # the previous render intact.
+        _clear_prior_render_artists(ax)
 
         for i in range(num_samples):
             if self.values.ndim == 1:
