@@ -1014,14 +1014,6 @@ class MeshGlyph(GeoMixin, Glyph):
         elif self.fig is None:
             self.fig, self.ax = self.create_figure_axes()
 
-        # See `_clear_prior_render_artists`: a prior `plot`/`animate`/
-        # `plot_outline` call on this Axes (this glyph's own, or a
-        # different glyph sharing it via `MeshGlyph(ax=..., fig=...)`)
-        # leaves its image/colorbar artists orphaned unless removed first.
-        _clear_prior_render_artists(self.ax)
-        self.im = None
-        self._cbar = None
-
         ticks = self.get_ticks()
         norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
 
@@ -1076,10 +1068,22 @@ class MeshGlyph(GeoMixin, Glyph):
                 raise ValueError(
                     "hillshade needs node-centered elevation; pass location='node'"
                 )
+            # See `_clear_prior_render_artists`: a prior `plot`/`animate`/
+            # `plot_outline` call on this Axes (this glyph's own, or a
+            # different glyph sharing it via `MeshGlyph(ax=..., fig=...)`)
+            # leaves its image/colorbar artists orphaned unless removed
+            # first. Deferred until here -- after every check above that can
+            # raise -- so a failed call leaves the previous render intact.
+            _clear_prior_render_artists(self.ax)
+            self.im = None
+            self._cbar = None
             tpc = self._render_shaded_relief(
                 self.ax, data, edgecolor, norm, hillshade, **render_kwargs
             )
         else:
+            _clear_prior_render_artists(self.ax)
+            self.im = None
+            self._cbar = None
             tpc = self._render_mesh(
                 self.ax,
                 data,
@@ -1241,14 +1245,6 @@ class MeshGlyph(GeoMixin, Glyph):
             self.fig, self.ax = self.create_figure_axes()
         fig, ax = self.fig, self.ax
 
-        # See `_clear_prior_render_artists`: a prior `plot`/`animate`/
-        # `plot_outline` call on this Axes (this glyph's own, or a
-        # different glyph sharing it) leaves its image/colorbar/
-        # frame-label artists orphaned unless removed first.
-        _clear_prior_render_artists(ax)
-        self.im = None
-        self._cbar = None
-
         ticks = self.get_ticks()
         norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
 
@@ -1256,6 +1252,16 @@ class MeshGlyph(GeoMixin, Glyph):
         # `self.contour_labels` by a previous `plot(labels=True)` call rather
         # than letting stale label artists leak into the animation state.
         self.contour_labels = None
+
+        # See `_clear_prior_render_artists`: a prior `plot`/`animate`/
+        # `plot_outline` call on this Axes (this glyph's own, or a
+        # different glyph sharing it) leaves its image/colorbar/
+        # frame-label artists orphaned unless removed first. Deferred until
+        # here -- after every check above that can raise -- so a failed call
+        # leaves the previous render intact.
+        _clear_prior_render_artists(ax)
+        self.im = None
+        self._cbar = None
 
         # Render the first frame.
         tpc = self._render_mesh(

@@ -206,14 +206,6 @@ class VectorGlyph(GeoMixin, Glyph):
         ax = self.ax
         opts = self.default_options
 
-        # See `_clear_prior_render_artists`: a prior `plot` call on this
-        # Axes (this glyph's own, or a different glyph sharing it via
-        # `VectorGlyph(ax=..., fig=...)`) leaves its mappable/colorbar
-        # orphaned unless removed first.
-        _clear_prior_render_artists(ax)
-        self.im = None
-        self.cbar = None
-
         if title is not None:
             opts["title"] = title
         # Resolve the colorbar choice for this call only (a plot-time
@@ -224,6 +216,17 @@ class VectorGlyph(GeoMixin, Glyph):
         norm, cbar_kw, ticks = self._prepare_scalar_mapping(mag)
         cmap = opts["cmap"]
         clim = {} if norm else {"clim": (ticks[0], ticks[-1])}
+
+        # See `_clear_prior_render_artists`: a prior `plot` call on this
+        # Axes (this glyph's own, or a different glyph sharing it via
+        # `VectorGlyph(ax=..., fig=...)`) leaves its mappable/colorbar
+        # orphaned unless removed first. Deferred until here -- after
+        # `_prepare_scalar_mapping` (the call's only validation that can
+        # raise) succeeds -- so a failed call leaves the previous render
+        # intact.
+        _clear_prior_render_artists(ax)
+        self.im = None
+        self.cbar = None
 
         arrow_patches: tuple = ()
         if kind == "quiver":

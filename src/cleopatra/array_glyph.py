@@ -2274,6 +2274,11 @@ class ArrayGlyph(GeoMixin, Glyph):
             tuple[Figure, Axes]: The figure and axes drawn on.
         """
         layer = self._resolve_style_layer(style)
+        # See `_clear_prior_render_artists`: cleared only once the style
+        # name is known valid, so a prior *valid* render survives a bad
+        # `style` on this call instead of being torn down for a call that
+        # never completes.
+        _clear_prior_render_artists(self.ax)
         # Cast to float BEFORE filling: `ma.filled(int_array, np.nan)` raises
         # `TypeError: Cannot convert fill_value nan to dtype int64` for an
         # integer masked array -- exactly the integer-coded categorical raster
@@ -3143,16 +3148,6 @@ class ArrayGlyph(GeoMixin, Glyph):
         arr = self.arr
         fig, ax = self.fig, self.ax
 
-        # See `_clear_prior_render_artists`: a prior `plot`/`animate` call on
-        # this Axes (this glyph's own, or a different glyph sharing it via
-        # `ArrayGlyph(ax=..., fig=...)`) leaves its image/colorbar/frame-label
-        # artists orphaned unless removed first. Cleared here, before the
-        # style-preset dispatch below, so both `plot()`'s own render path and
-        # `_plot_with_style` are covered.
-        _clear_prior_render_artists(ax)
-        self.im = None
-        self.cbar = None
-
         # Named data-style preset: resolve the preset's cmap/norm/vmin/vmax/
         # center/categories (and alpha glow / categorical legend) by delegating
         # to `cleopatra.colors.apply_data_style`, so the full preset semantics
@@ -3186,6 +3181,11 @@ class ArrayGlyph(GeoMixin, Glyph):
                 return self._plot_with_style(style)
 
         if self.rgb:
+            # See `_clear_prior_render_artists`: cleared only once nothing
+            # above this point could still raise, so a prior *valid* render
+            # survives a validation failure instead of being torn down for
+            # a call that never completes.
+            _clear_prior_render_artists(ax)
             self.im = ax.imshow(arr, extent=self.extent)
             self.cbar = None
         else:
@@ -3234,6 +3234,18 @@ class ArrayGlyph(GeoMixin, Glyph):
 
             # creating the ticks/bounds
             ticks = self.get_ticks()
+            # Pre-flight the norm/cbar-kwarg resolution (e.g. an invalid
+            # `color_scale`) before clearing -- it is the actual validation
+            # surface `_plot_im_get_cbar_kw` bundles together with drawing
+            # a few lines below, and is pure (reads `default_options` only,
+            # no `ax` mutation), so calling it here to fail fast costs
+            # nothing beyond `_plot_im_get_cbar_kw` recomputing the same
+            # result. See `_clear_prior_render_artists`: only cleared once
+            # this can no longer raise, so a prior *valid* render survives
+            # a validation failure instead of being torn down for a call
+            # that never completes.
+            self._create_norm_and_cbar_kw(ticks)
+            _clear_prior_render_artists(ax)
             im, cbar_kw = self._plot_im_get_cbar_kw(ax, arr, ticks, kind=effective_kind)
             self.im = im
 
@@ -3992,11 +4004,6 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         fig, ax = self.fig, self.ax
 
-        # See `_clear_prior_render_artists`: a prior `plot`/`animate` call on
-        # this Axes (this glyph's own, or a different glyph sharing it)
-        # leaves its image/colorbar/frame-label artists orphaned unless
-        # removed first.
-        _clear_prior_render_artists(ax)
         self.cbar = None
         self.im = None
         self._day_text = None
@@ -4011,12 +4018,22 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         if rgb_frames:
             # True-colour frames go straight through imshow — no norm,
-            # colormap or colorbar (mirrors `plot`'s RGB branch).
+            # colormap or colorbar (mirrors `plot`'s RGB branch). See
+            # `_clear_prior_render_artists`: cleared only once nothing
+            # above this point could still raise, so a prior *valid*
+            # render survives a validation failure instead of being torn
+            # down for a call that never completes.
+            _clear_prior_render_artists(ax)
             im = ax.imshow(frame_0, extent=self.extent)
             self.im = im
             self.cbar = None
         else:
             ticks = self.get_ticks()
+            # Pre-flight the norm/cbar-kwarg resolution (e.g. an invalid
+            # `color_scale`) before clearing -- see the matching comment
+            # in `plot()`.
+            self._create_norm_and_cbar_kw(ticks)
+            _clear_prior_render_artists(ax)
             im, cbar_kw = self._plot_im_get_cbar_kw(ax, frame_0, ticks)
             self.im = im
 
