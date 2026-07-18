@@ -8302,22 +8302,22 @@ isolines (e.g. a constant-value field) yields an empty list.</p>
 <a id="__codelineno-0-2761" name="__codelineno-0-2761"></a><span class="sd">                - fig: The matplotlib Figure object</span>
 <a id="__codelineno-0-2762" name="__codelineno-0-2762"></a><span class="sd">                - ax: The matplotlib Axes object</span>
 <a id="__codelineno-0-2763" name="__codelineno-0-2763"></a>
-<a id="__codelineno-0-2764" name="__codelineno-0-2764"></a><span class="sd">            The colour-mapped artist (the ``ScalarMappable`` — e.g. the</span>
-<a id="__codelineno-0-2765" name="__codelineno-0-2765"></a><span class="sd">            ``AxesImage`` for ``imshow``, the ``QuadMesh`` for</span>
-<a id="__codelineno-0-2766" name="__codelineno-0-2766"></a><span class="sd">            ``pcolormesh``, the ``QuadContourSet`` for</span>
-<a id="__codelineno-0-2767" name="__codelineno-0-2767"></a><span class="sd">            ``contour``/``contourf``, or the RGB ``AxesImage``) is also</span>
-<a id="__codelineno-0-2768" name="__codelineno-0-2768"></a><span class="sd">            stored on the instance as ``self.im`` after this call, so a</span>
+<a id="__codelineno-0-2764" name="__codelineno-0-2764"></a><span class="sd">            The colour-mapped artist (the `ScalarMappable` — e.g. the</span>
+<a id="__codelineno-0-2765" name="__codelineno-0-2765"></a><span class="sd">            `AxesImage` for `imshow`, the `QuadMesh` for</span>
+<a id="__codelineno-0-2766" name="__codelineno-0-2766"></a><span class="sd">            `pcolormesh`, the `QuadContourSet` for</span>
+<a id="__codelineno-0-2767" name="__codelineno-0-2767"></a><span class="sd">            `contour`/`contourf`, or the RGB `AxesImage`) is also</span>
+<a id="__codelineno-0-2768" name="__codelineno-0-2768"></a><span class="sd">            stored on the instance as `self.im` after this call, so a</span>
 <a id="__codelineno-0-2769" name="__codelineno-0-2769"></a><span class="sd">            caller can attach a colorbar/legend or query the colour</span>
-<a id="__codelineno-0-2770" name="__codelineno-0-2770"></a><span class="sd">            limits without scraping ``ax.images``/``ax.collections``.</span>
+<a id="__codelineno-0-2770" name="__codelineno-0-2770"></a><span class="sd">            limits without scraping `ax.images`/`ax.collections`.</span>
 <a id="__codelineno-0-2771" name="__codelineno-0-2771"></a>
 <a id="__codelineno-0-2772" name="__codelineno-0-2772"></a><span class="sd">        Raises:</span>
 <a id="__codelineno-0-2773" name="__codelineno-0-2773"></a><span class="sd">            ValueError: If an invalid keyword argument is provided.</span>
 <a id="__codelineno-0-2774" name="__codelineno-0-2774"></a>
 <a id="__codelineno-0-2775" name="__codelineno-0-2775"></a><span class="sd">        Notes:</span>
-<a id="__codelineno-0-2776" name="__codelineno-0-2776"></a><span class="sd">            This method does not call ``plt.show()``; it returns the Figure and Axes so</span>
+<a id="__codelineno-0-2776" name="__codelineno-0-2776"></a><span class="sd">            This method does not call `plt.show()`; it returns the Figure and Axes so</span>
 <a id="__codelineno-0-2777" name="__codelineno-0-2777"></a><span class="sd">            the caller can compose, save, or display them. In an interactive session call</span>
-<a id="__codelineno-0-2778" name="__codelineno-0-2778"></a><span class="sd">            ``plt.show()`` yourself (or ``fig.savefig(...)`` to write the plot to disk)</span>
-<a id="__codelineno-0-2779" name="__codelineno-0-2779"></a><span class="sd">            after ``plot()`` returns.</span>
+<a id="__codelineno-0-2778" name="__codelineno-0-2778"></a><span class="sd">            `plt.show()` yourself (or `fig.savefig(...)` to write the plot to disk)</span>
+<a id="__codelineno-0-2779" name="__codelineno-0-2779"></a><span class="sd">            after `plot()` returns.</span>
 <a id="__codelineno-0-2780" name="__codelineno-0-2780"></a>
 <a id="__codelineno-0-2781" name="__codelineno-0-2781"></a><span class="sd">        Examples:</span>
 <a id="__codelineno-0-2782" name="__codelineno-0-2782"></a><span class="sd">        - Basic array plot:</span>
@@ -9315,8 +9315,8 @@ isolines (e.g. a constant-value field) yields an empty list.</p>
 <a id="__codelineno-0-3774" name="__codelineno-0-3774"></a><span class="sd">                in a notebook or saved to a file.</span>
 <a id="__codelineno-0-3775" name="__codelineno-0-3775"></a>
 <a id="__codelineno-0-3776" name="__codelineno-0-3776"></a><span class="sd">            As with `plot`, the first-frame colour-mapped artist is stored on</span>
-<a id="__codelineno-0-3777" name="__codelineno-0-3777"></a><span class="sd">            the instance as ``self.im`` (and the colorbar, when drawn, on</span>
-<a id="__codelineno-0-3778" name="__codelineno-0-3778"></a><span class="sd">            ``self.cbar``), so a caller can attach a host-owned</span>
+<a id="__codelineno-0-3777" name="__codelineno-0-3777"></a><span class="sd">            the instance as `self.im` (and the colorbar, when drawn, on</span>
+<a id="__codelineno-0-3778" name="__codelineno-0-3778"></a><span class="sd">            `self.cbar`), so a caller can attach a host-owned</span>
 <a id="__codelineno-0-3779" name="__codelineno-0-3779"></a><span class="sd">            colorbar/legend without scraping the axes.</span>
 <a id="__codelineno-0-3780" name="__codelineno-0-3780"></a>
 <a id="__codelineno-0-3781" name="__codelineno-0-3781"></a><span class="sd">        Raises:</span>
@@ -9334,9 +9334,9 @@ isolines (e.g. a constant-value field) yields an empty list.</p>
 <a id="__codelineno-0-3793" name="__codelineno-0-3793"></a><span class="sd">            For example, if the array has shape (10, 20, 30), the animation will have 10 frames,</span>
 <a id="__codelineno-0-3794" name="__codelineno-0-3794"></a><span class="sd">            each showing a 20x30 slice of the array.</span>
 <a id="__codelineno-0-3795" name="__codelineno-0-3795"></a>
-<a id="__codelineno-0-3796" name="__codelineno-0-3796"></a><span class="sd">            This method does not call ``plt.show()``; it returns the ``FuncAnimation`` so the</span>
+<a id="__codelineno-0-3796" name="__codelineno-0-3796"></a><span class="sd">            This method does not call `plt.show()`; it returns the `FuncAnimation` so the</span>
 <a id="__codelineno-0-3797" name="__codelineno-0-3797"></a><span class="sd">            caller controls display. In an interactive (non-notebook) session call</span>
-<a id="__codelineno-0-3798" name="__codelineno-0-3798"></a><span class="sd">            ``plt.show()`` yourself to play it, or use ``save_animation`` to write it to a file.</span>
+<a id="__codelineno-0-3798" name="__codelineno-0-3798"></a><span class="sd">            `plt.show()` yourself to play it, or use `save_animation` to write it to a file.</span>
 <a id="__codelineno-0-3799" name="__codelineno-0-3799"></a>
 <a id="__codelineno-0-3800" name="__codelineno-0-3800"></a><span class="sd">            To display the animation in a Jupyter notebook, you may need to use:</span>
 <a id="__codelineno-0-3801" name="__codelineno-0-3801"></a><span class="sd">            ```python</span>
@@ -12763,8 +12763,8 @@ Each frame is drawn as true colour, so no colorbar is created
 <a id="__codelineno-0-3774" name="__codelineno-0-3774"></a><span class="sd">            in a notebook or saved to a file.</span>
 <a id="__codelineno-0-3775" name="__codelineno-0-3775"></a>
 <a id="__codelineno-0-3776" name="__codelineno-0-3776"></a><span class="sd">        As with `plot`, the first-frame colour-mapped artist is stored on</span>
-<a id="__codelineno-0-3777" name="__codelineno-0-3777"></a><span class="sd">        the instance as ``self.im`` (and the colorbar, when drawn, on</span>
-<a id="__codelineno-0-3778" name="__codelineno-0-3778"></a><span class="sd">        ``self.cbar``), so a caller can attach a host-owned</span>
+<a id="__codelineno-0-3777" name="__codelineno-0-3777"></a><span class="sd">        the instance as `self.im` (and the colorbar, when drawn, on</span>
+<a id="__codelineno-0-3778" name="__codelineno-0-3778"></a><span class="sd">        `self.cbar`), so a caller can attach a host-owned</span>
 <a id="__codelineno-0-3779" name="__codelineno-0-3779"></a><span class="sd">        colorbar/legend without scraping the axes.</span>
 <a id="__codelineno-0-3780" name="__codelineno-0-3780"></a>
 <a id="__codelineno-0-3781" name="__codelineno-0-3781"></a><span class="sd">    Raises:</span>
@@ -12782,9 +12782,9 @@ Each frame is drawn as true colour, so no colorbar is created
 <a id="__codelineno-0-3793" name="__codelineno-0-3793"></a><span class="sd">        For example, if the array has shape (10, 20, 30), the animation will have 10 frames,</span>
 <a id="__codelineno-0-3794" name="__codelineno-0-3794"></a><span class="sd">        each showing a 20x30 slice of the array.</span>
 <a id="__codelineno-0-3795" name="__codelineno-0-3795"></a>
-<a id="__codelineno-0-3796" name="__codelineno-0-3796"></a><span class="sd">        This method does not call ``plt.show()``; it returns the ``FuncAnimation`` so the</span>
+<a id="__codelineno-0-3796" name="__codelineno-0-3796"></a><span class="sd">        This method does not call `plt.show()`; it returns the `FuncAnimation` so the</span>
 <a id="__codelineno-0-3797" name="__codelineno-0-3797"></a><span class="sd">        caller controls display. In an interactive (non-notebook) session call</span>
-<a id="__codelineno-0-3798" name="__codelineno-0-3798"></a><span class="sd">        ``plt.show()`` yourself to play it, or use ``save_animation`` to write it to a file.</span>
+<a id="__codelineno-0-3798" name="__codelineno-0-3798"></a><span class="sd">        `plt.show()` yourself to play it, or use `save_animation` to write it to a file.</span>
 <a id="__codelineno-0-3799" name="__codelineno-0-3799"></a>
 <a id="__codelineno-0-3800" name="__codelineno-0-3800"></a><span class="sd">        To display the animation in a Jupyter notebook, you may need to use:</span>
 <a id="__codelineno-0-3801" name="__codelineno-0-3801"></a><span class="sd">        ```python</span>
@@ -16367,22 +16367,22 @@ value if 0.0001, and 0.001 respectively.
 <a id="__codelineno-0-2761" name="__codelineno-0-2761"></a><span class="sd">            - fig: The matplotlib Figure object</span>
 <a id="__codelineno-0-2762" name="__codelineno-0-2762"></a><span class="sd">            - ax: The matplotlib Axes object</span>
 <a id="__codelineno-0-2763" name="__codelineno-0-2763"></a>
-<a id="__codelineno-0-2764" name="__codelineno-0-2764"></a><span class="sd">        The colour-mapped artist (the ``ScalarMappable`` — e.g. the</span>
-<a id="__codelineno-0-2765" name="__codelineno-0-2765"></a><span class="sd">        ``AxesImage`` for ``imshow``, the ``QuadMesh`` for</span>
-<a id="__codelineno-0-2766" name="__codelineno-0-2766"></a><span class="sd">        ``pcolormesh``, the ``QuadContourSet`` for</span>
-<a id="__codelineno-0-2767" name="__codelineno-0-2767"></a><span class="sd">        ``contour``/``contourf``, or the RGB ``AxesImage``) is also</span>
-<a id="__codelineno-0-2768" name="__codelineno-0-2768"></a><span class="sd">        stored on the instance as ``self.im`` after this call, so a</span>
+<a id="__codelineno-0-2764" name="__codelineno-0-2764"></a><span class="sd">        The colour-mapped artist (the `ScalarMappable` — e.g. the</span>
+<a id="__codelineno-0-2765" name="__codelineno-0-2765"></a><span class="sd">        `AxesImage` for `imshow`, the `QuadMesh` for</span>
+<a id="__codelineno-0-2766" name="__codelineno-0-2766"></a><span class="sd">        `pcolormesh`, the `QuadContourSet` for</span>
+<a id="__codelineno-0-2767" name="__codelineno-0-2767"></a><span class="sd">        `contour`/`contourf`, or the RGB `AxesImage`) is also</span>
+<a id="__codelineno-0-2768" name="__codelineno-0-2768"></a><span class="sd">        stored on the instance as `self.im` after this call, so a</span>
 <a id="__codelineno-0-2769" name="__codelineno-0-2769"></a><span class="sd">        caller can attach a colorbar/legend or query the colour</span>
-<a id="__codelineno-0-2770" name="__codelineno-0-2770"></a><span class="sd">        limits without scraping ``ax.images``/``ax.collections``.</span>
+<a id="__codelineno-0-2770" name="__codelineno-0-2770"></a><span class="sd">        limits without scraping `ax.images`/`ax.collections`.</span>
 <a id="__codelineno-0-2771" name="__codelineno-0-2771"></a>
 <a id="__codelineno-0-2772" name="__codelineno-0-2772"></a><span class="sd">    Raises:</span>
 <a id="__codelineno-0-2773" name="__codelineno-0-2773"></a><span class="sd">        ValueError: If an invalid keyword argument is provided.</span>
 <a id="__codelineno-0-2774" name="__codelineno-0-2774"></a>
 <a id="__codelineno-0-2775" name="__codelineno-0-2775"></a><span class="sd">    Notes:</span>
-<a id="__codelineno-0-2776" name="__codelineno-0-2776"></a><span class="sd">        This method does not call ``plt.show()``; it returns the Figure and Axes so</span>
+<a id="__codelineno-0-2776" name="__codelineno-0-2776"></a><span class="sd">        This method does not call `plt.show()`; it returns the Figure and Axes so</span>
 <a id="__codelineno-0-2777" name="__codelineno-0-2777"></a><span class="sd">        the caller can compose, save, or display them. In an interactive session call</span>
-<a id="__codelineno-0-2778" name="__codelineno-0-2778"></a><span class="sd">        ``plt.show()`` yourself (or ``fig.savefig(...)`` to write the plot to disk)</span>
-<a id="__codelineno-0-2779" name="__codelineno-0-2779"></a><span class="sd">        after ``plot()`` returns.</span>
+<a id="__codelineno-0-2778" name="__codelineno-0-2778"></a><span class="sd">        `plt.show()` yourself (or `fig.savefig(...)` to write the plot to disk)</span>
+<a id="__codelineno-0-2779" name="__codelineno-0-2779"></a><span class="sd">        after `plot()` returns.</span>
 <a id="__codelineno-0-2780" name="__codelineno-0-2780"></a>
 <a id="__codelineno-0-2781" name="__codelineno-0-2781"></a><span class="sd">    Examples:</span>
 <a id="__codelineno-0-2782" name="__codelineno-0-2782"></a><span class="sd">    - Basic array plot:</span>
