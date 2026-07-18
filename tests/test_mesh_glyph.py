@@ -1342,6 +1342,31 @@ class TestSharedAxesArtistCleanup:
             len(ax.collections) == 1
         ), f"Expected exactly one mesh artist, got {len(ax.collections)}"
 
+    def test_ax_clear_before_replot_does_not_raise(self):
+        """A caller's own `ax.clear()` before the next `plot()` call doesn't crash.
+
+        Test scenario:
+            Regression: `ax.clear()` detaches the mesh mappable but
+            leaves the colorbar's own (sibling) axes untouched, since a
+            colorbar lives on a separate `Axes`. The next `plot()`
+            call's cleanup then tried to remove that colorbar via a
+            mappable whose `.axes` was already `None` -- `Colorbar.
+            remove()` raises `AttributeError` instead of the
+            `KeyError`/`NotImplementedError` the cleanup already
+            tolerated. `ax.clear()` is an ordinary matplotlib idiom, so
+            it must not crash the next render.
+        """
+        mg = _make_tri_mg()
+        fig, ax = mg.plot(np.array([1.0, 2.0]))
+        ax.clear()
+        fig2, ax2 = mg.plot(np.array([3.0, 4.0]))
+        assert (
+            len(ax2.collections) == 1
+        ), f"Expected one mesh artist, got {len(ax2.collections)}"
+        assert (
+            len(fig2.axes) == 2
+        ), f"Expected 2 axes (plot + colorbar), got {len(fig2.axes)}"
+
 
 class TestAnimate:
     """Tests for MeshGlyph.animate()."""

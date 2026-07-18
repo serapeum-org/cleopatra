@@ -147,15 +147,22 @@ def _clear_prior_render_artists(ax: Axes) -> None:
     # Each removal is best-effort: another code path (e.g.
     # `Glyph._reset_axes_for_restyle`, used by `apply_style`, or a
     # caller's own `ax.clear()`) may already have removed one of these
-    # same artists before this marker was consulted -- matplotlib raises
+    # same artists -- or, for a colorbar, only the *image* it is attached
+    # to -- before this marker was consulted. Matplotlib's failure mode
+    # varies by artist kind and by how much of it is already gone:
     # `KeyError` for a colorbar axes no longer on the figure's axes
-    # stack, or `NotImplementedError` for any other artist already
-    # detached from its axes, neither of which should stop this call's
-    # own render.
+    # stack, `NotImplementedError` for any other artist already detached
+    # from its axes, or `AttributeError` for a colorbar whose mappable
+    # was detached out from under it (`Colorbar.remove()` reads
+    # `self.mappable.axes`, which is `None` in that case, then calls
+    # `.set_subplotspec()` on it) -- e.g. exactly the `ax.clear()` case
+    # above, since `ax.clear()` detaches the image but leaves the
+    # colorbar's own (sibling) axes untouched. None of these should stop
+    # this call's own render.
     for artist in prior:
         try:
             artist.remove()
-        except (KeyError, NotImplementedError):
+        except (KeyError, NotImplementedError, AttributeError):
             pass
     ax._cleo_render_artists = None  # type: ignore[attr-defined]
 

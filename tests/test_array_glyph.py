@@ -1909,6 +1909,44 @@ class TestSharedAxesArtistCleanup:
             len(ax.images) == 1
         ), f"Expected exactly one image artist, got {len(ax.images)}"
 
+    def test_ax_clear_before_replot_does_not_raise(self):
+        """A caller's own `ax.clear()` before the next `plot()` call doesn't crash.
+
+        Test scenario:
+            Regression: `ax.clear()` detaches the image but leaves the
+            colorbar's own (sibling) axes untouched, since a colorbar
+            lives on a separate `Axes` that `ax.clear()` never reaches.
+            The next `plot()` call's cleanup then tried to remove that
+            colorbar via a mappable whose `.axes` was already `None` --
+            `Colorbar.remove()` reads `self.mappable.axes` and calls
+            `.set_subplotspec()` on it, raising `AttributeError` instead
+            of the `KeyError`/`NotImplementedError` the cleanup already
+            tolerated. `ax.clear()` is an ordinary matplotlib idiom (an
+            interactive-update/GUI-refresh pattern), so it must not crash
+            the next render.
+        """
+        glyph = ArrayGlyph(np.arange(25.0).reshape(5, 5))
+        fig, ax = glyph.plot()
+        ax.clear()
+        fig2, ax2 = glyph.plot()
+        assert len(ax2.images) == 1, f"Expected one image, got {len(ax2.images)}"
+        assert (
+            len(fig2.axes) == 2
+        ), f"Expected 2 axes (plot + colorbar), got {len(fig2.axes)}"
+
+    def test_ax_clear_before_re_animate_does_not_raise(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """A caller's own `ax.clear()` before the next `animate()` call doesn't crash."""
+        glyph = ArrayGlyph(coello_data)
+        glyph.animate(animate_time_list)
+        glyph.ax.clear()
+        anim = glyph.animate(animate_time_list)
+        assert anim is not None
+        assert (
+            len(glyph.ax.images) == 1
+        ), f"Expected one image, got {len(glyph.ax.images)}"
+
 
 @pytest.mark.plot
 class TestPlotRoundTripSavefig:
