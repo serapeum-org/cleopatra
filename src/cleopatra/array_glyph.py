@@ -743,6 +743,73 @@ def _resolve_frame_label(frame_label: Any, kwargs: dict) -> FrameLabel:
     return FrameLabel(location=location, color=color)
 
 
+def _clear_prior_render_artists(ax: Axes) -> None:
+    """Remove a prior `plot`/`animate` call's image/colorbar/frame-label artists from `ax`.
+
+    `plot`/`animate` each create a fresh image artist (`ax.imshow(...)` or
+    equivalent) and colorbar on every call rather than reusing one, so
+    calling either method again on the same `Axes` -- from the same glyph
+    instance, or a *different* one sharing it via `ArrayGlyph(ax=...,
+    fig=...)` (e.g. the `ax=`/`fig=` passthrough `pyramids`'
+    `Dataset`/`NetCDF`/`Analysis`.plot(ax=..., fig=...) expose) -- would
+    otherwise leave the previous call's artists orphaned: still in
+    `ax.images`/`ax.texts`, marked `animated=True` by `animate`'s
+    `init_func` when applicable (so normal redraws silently skip them),
+    and driven by nothing once the owning glyph's `self.im`/`self.anim`
+    move on to the new call's objects. Ownership is tracked on `ax`
+    itself (not on any glyph instance) via a private marker, precisely so
+    this catches both cases. Must be called before creating this call's
+    own artists.
+
+    Args:
+        ax: The axes a `plot`/`animate` call is about to render onto.
+    """
+    prior = getattr(ax, "_cleo_render_artists", None)
+    if prior is None:
+        return
+    # The colorbar must be removed *before* the image it is attached to --
+    # `Colorbar.remove()` reads `self.mappable.axes` to restore the image
+    # axes' gridspec position, which is only valid while the image artist
+    # is still attached. Each removal is best-effort: another code path
+    # (e.g. `Glyph._reset_axes_for_restyle`, used by `apply_style`, or a
+    # caller's own `ax.clear()`) may already have removed these same
+    # artists before this marker was consulted -- matplotlib raises
+    # `KeyError` for a colorbar axes no longer on the figure's axes stack,
+    # or `NotImplementedError` for any other artist already detached from
+    # its axes, neither of which should stop this call's own render.
+    for artist in (prior.get("cbar"), prior.get("im"), prior.get("day_text")):
+        if artist is None:
+            continue
+        try:
+            artist.remove()
+        except (KeyError, NotImplementedError):
+            pass
+    ax._cleo_render_artists = None  # type: ignore[attr-defined]
+
+
+def _mark_render_artists(ax: Axes, im: Any, cbar: Any, day_text: Any = None) -> None:
+    """Record this `plot`/`animate` call's artists on `ax` for the next call's cleanup.
+
+    Args:
+        ax: The axes this call rendered onto.
+        im: The image artist this call created, or `None`.
+        cbar: The colorbar this call created, or `None` (e.g. a data-style
+            preset draws a swatch legend instead).
+        day_text: The frame-label `Text` artist this call created, or
+            `None` (`plot` has no frame label; only `animate` sets this).
+    """
+    # `Axes` declares no such attribute -- this is a deliberate, private
+    # marker cleopatra stamps onto the caller's Axes object itself (not a
+    # cleopatra-owned type), matching the same # type: ignore[attr-defined]
+    # trade-off as `getattr(ax, "_cleo_render_artists", None)` in
+    # `_clear_prior_render_artists` above.
+    ax._cleo_render_artists = {  # type: ignore[attr-defined]
+        "im": im,
+        "cbar": cbar,
+        "day_text": day_text,
+    }
+
+
 class FacetGrid:
     """Result object for a multi-subplot facet plot.
 
@@ -2322,6 +2389,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         self.ax.set_title(
             self.default_options["title"], fontsize=self.default_options["title_size"]
         )
+        _mark_render_artists(self.ax, self.im, self.cbar)
         return self.fig, self.ax
 
     def apply_colormap(self, cmap: Colormap | str) -> np.ndarray:
@@ -3137,6 +3205,16 @@ class ArrayGlyph(GeoMixin, Glyph):
         arr = self.arr
         fig, ax = self.fig, self.ax
 
+        # See `_clear_prior_render_artists`: a prior `plot`/`animate` call on
+        # this Axes (this glyph's own, or a different glyph sharing it via
+        # `ArrayGlyph(ax=..., fig=...)`) leaves its image/colorbar/frame-label
+        # artists orphaned unless removed first. Cleared here, before the
+        # style-preset dispatch below, so both `plot()`'s own render path and
+        # `_plot_with_style` are covered.
+        _clear_prior_render_artists(ax)
+        self.im = None
+        self.cbar = None
+
         # Named data-style preset: resolve the preset's cmap/norm/vmin/vmax/
         # center/categories (and alpha glow / categorical legend) by delegating
         # to `cleopatra.colors.apply_data_style`, so the full preset semantics
@@ -3278,6 +3356,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         #     im.norm(self.default_options["background_color_threshold"])
         # else:
         #     im.norm(self.vmax) / 2.0
+        _mark_render_artists(ax, self.im, self.cbar)
         return fig, ax
 
     def facet(
@@ -3968,34 +4047,11 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         fig, ax = self.fig, self.ax
 
-        # A prior animate() call on this Axes leaves its image/colorbar/
-        # frame-label artists behind -- `ax.imshow()` always adds a new
-        # artist rather than replacing one, and the init_func marks it
-        # `animated=True` (blit-owned), so normal redraws silently skip it
-        # and nothing removes it once the owning glyph's `self.im`/`self.anim`
-        # move on to a new call's artists. This is tracked per-*Axes* (via a
-        # private marker on `ax`), not per-glyph-instance, because the prior
-        # call may have come from a *different* `ArrayGlyph` sharing this
-        # Axes -- e.g. `ArrayGlyph(arr2, ax=glyph1.ax, fig=glyph1.fig)`, the
-        # pattern pyramids' `Dataset`/`NetCDF`/`Analysis`.plot(ax=..., fig=...)
-        # passthrough exposes. Checking only `self.im`/`self.cbar` would miss
-        # that case, since a fresh glyph instance's own attributes start out
-        # `None` regardless of what is already sitting on the shared Axes.
-        # Remove any such leftovers before creating this call's own, so they
-        # don't linger orphaned in `ax.images`/`ax.texts`. The colorbar must
-        # be removed *before* the image it is attached to -- `Colorbar.remove()`
-        # reads `self.mappable.axes` to restore the image axes' gridspec
-        # position, which is only valid while the image artist is still
-        # attached.
-        prior_artists = getattr(ax, "_cleo_animate_artists", None)
-        if prior_artists is not None:
-            if prior_artists.get("cbar") is not None:
-                prior_artists["cbar"].remove()
-            if prior_artists.get("im") is not None:
-                prior_artists["im"].remove()
-            if prior_artists.get("day_text") is not None:
-                prior_artists["day_text"].remove()
-            ax._cleo_animate_artists = None
+        # See `_clear_prior_render_artists`: a prior `plot`/`animate` call on
+        # this Axes (this glyph's own, or a different glyph sharing it)
+        # leaves its image/colorbar/frame-label artists orphaned unless
+        # removed first.
+        _clear_prior_render_artists(ax)
         self.cbar = None
         self.im = None
         self._day_text = None
@@ -4321,15 +4377,10 @@ class ArrayGlyph(GeoMixin, Glyph):
             blit=True,
         )
         self._anim = anim
-        # Record this call's artists on the Axes itself (not just on
-        # `self`) so a later animate() call -- from this glyph or a
-        # different one sharing this Axes -- can find and remove them.
-        # See the cleanup block near the top of this method.
-        ax._cleo_animate_artists = {
-            "im": self.im,
-            "cbar": self.cbar,
-            "day_text": self._day_text,
-        }
+        # See `_mark_render_artists`: record this call's artists on the
+        # Axes itself so a later plot()/animate() call -- from this glyph
+        # or a different one sharing this Axes -- can find and remove them.
+        _mark_render_artists(ax, self.im, self.cbar, self._day_text)
         return anim
 
     # @staticmethod

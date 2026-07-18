@@ -1794,6 +1794,122 @@ class TestPlotIdempotenceAndPurity:
         assert len(ax2.collections) >= 1
 
 
+class TestSharedAxesArtistCleanup:
+    """`plot`/`animate` must not stack image/colorbar artists on a shared `Axes`.
+
+    Regression coverage for issue #210, generalised beyond `animate()`:
+    the same orphaned-artist defect exists in `plot()`, and in every
+    `plot()`/`animate()` combination, reachable through the documented
+    `ArrayGlyph(ax=..., fig=...)` construction-time binding that
+    pyramids' `Dataset`/`NetCDF`/`Analysis`/`UgridDataset`.plot(ax=...,
+    fig=...) passthrough exposes.
+    """
+
+    def test_replot_same_axes_without_reset_does_not_stack_image(self):
+        """`plot()` called twice on the same glyph, same axes, replaces the image.
+
+        Test scenario:
+            Unlike `test_replot_same_kind_does_not_raise` above, this does
+            NOT reset `glyph.fig`/`glyph.ax` between calls -- exactly the
+            case that used to accumulate artists.
+        """
+        arr = np.arange(25, dtype=float).reshape(5, 5)
+        glyph = ArrayGlyph(arr)
+        glyph.plot()
+        old_im = glyph.im
+        glyph.plot()
+        assert (
+            len(glyph.ax.images) == 1
+        ), f"Expected exactly one image artist, got {len(glyph.ax.images)}"
+        assert old_im not in glyph.ax.images, "The first call's image must be removed"
+
+    def test_two_glyphs_sharing_axes_via_plot_do_not_stack_image_artists(self):
+        """A second, different glyph's `plot()` onto a shared axes still cleans up.
+
+        Test scenario:
+            `ArrayGlyph(arr2, ax=glyph1.ax, fig=glyph1.fig)` -- the
+            `ax=`/`fig=` passthrough pyramids' `Dataset`/`NetCDF`/
+            `Analysis`.plot(ax=..., fig=...) exposes -- lets a *second*,
+            independently constructed glyph plot onto the same axes as a
+            first. Checking only `self.im`/`self.cbar` (both fresh `None`
+            on the new instance) would miss the first glyph's leftover
+            image; cleanup must be tracked per-axes.
+        """
+        glyph1 = ArrayGlyph(np.random.default_rng(0).random((8, 8)))
+        glyph1.plot()
+        old_im = glyph1.im
+        axes_count_after_first = len(glyph1.fig.axes)
+
+        glyph2 = ArrayGlyph(
+            np.random.default_rng(1).random((8, 8)), ax=glyph1.ax, fig=glyph1.fig
+        )
+        glyph2.plot()
+
+        assert (
+            len(glyph1.ax.images) == 1
+        ), f"Expected exactly one image artist, got {len(glyph1.ax.images)}"
+        assert old_im not in glyph1.ax.images, "The first glyph's image must be removed"
+        assert len(glyph1.fig.axes) == axes_count_after_first, (
+            f"Expected {axes_count_after_first} axes after the second glyph's call, "
+            f"got {len(glyph1.fig.axes)}"
+        )
+
+    def test_plot_then_animate_on_shared_axes_does_not_stack(
+        self, animate_time_list: list
+    ):
+        """A second glyph's `animate()` cleans up a first glyph's `plot()` image."""
+        glyph1 = ArrayGlyph(np.random.default_rng(0).random((8, 8)))
+        glyph1.plot()
+        old_im = glyph1.im
+
+        glyph2 = ArrayGlyph(
+            np.random.default_rng(0).random((3, 8, 8)), ax=glyph1.ax, fig=glyph1.fig
+        )
+        glyph2.animate(animate_time_list)
+
+        assert (
+            len(glyph1.ax.images) == 1
+        ), f"Expected exactly one image artist, got {len(glyph1.ax.images)}"
+        assert old_im not in glyph1.ax.images, "The first call's image must be removed"
+
+    def test_animate_then_plot_on_shared_axes_does_not_stack(
+        self, animate_time_list: list
+    ):
+        """A second glyph's `plot()` cleans up a first glyph's `animate()` image."""
+        glyph1 = ArrayGlyph(np.random.default_rng(0).random((3, 8, 8)))
+        glyph1.animate(animate_time_list)
+        old_im = glyph1.im
+
+        glyph2 = ArrayGlyph(
+            np.random.default_rng(0).random((8, 8)), ax=glyph1.ax, fig=glyph1.fig
+        )
+        glyph2.plot()
+
+        assert (
+            len(glyph1.ax.images) == 1
+        ), f"Expected exactly one image artist, got {len(glyph1.ax.images)}"
+        assert old_im not in glyph1.ax.images, "The first call's image must be removed"
+
+    def test_apply_style_after_plot_does_not_raise(self):
+        """`apply_style()` after a plain `plot()` cleans up without crashing.
+
+        Test scenario:
+            Regression for an interaction bug hit while building the
+            shared-axes cleanup: `apply_style()` calls
+            `Glyph._reset_axes_for_restyle()`, which already removes the
+            previous colorbar/artists itself before `plot()` runs -- the
+            shared-axes cleanup must tolerate an already-removed artist
+            (matplotlib raises `KeyError`/`NotImplementedError` for that)
+            rather than crashing on the second removal attempt.
+        """
+        glyph = ArrayGlyph(np.abs(np.random.default_rng(0).normal(size=(20, 20))))
+        glyph.plot()
+        fig, ax = glyph.apply_style("flow_accumulation")
+        assert (
+            len(ax.images) == 1
+        ), f"Expected exactly one image artist, got {len(ax.images)}"
+
+
 @pytest.mark.plot
 class TestPlotRoundTripSavefig:
     """Round-trip test: rendered figure -> savefig -> non-empty PNG file."""
