@@ -1958,6 +1958,38 @@ class TestAnimateEdgeCases:
             old_day_text not in glyph.ax.texts
         ), "The first call's label must be removed"
 
+    def test_two_glyphs_sharing_one_axes_do_not_stack_image_artists(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """A second, *different* glyph animating onto a shared axes still cleans up.
+
+        Test scenario:
+            Regression for issue #210's underlying bug class, generalised:
+            `ArrayGlyph(arr2, ax=glyph1.ax, fig=glyph1.fig)` -- the
+            `ax=`/`fig=` passthrough pyramids' `Dataset`/`NetCDF`/
+            `Analysis`.plot(ax=..., fig=...) exposes -- lets a *second*,
+            independently constructed glyph animate onto the same Axes as
+            a first. Checking only `self.im`/`self.cbar` (both fresh
+            `None` on the new instance) would miss the first glyph's
+            leftover image; cleanup must be tracked per-Axes.
+        """
+        glyph1 = ArrayGlyph(coello_data)
+        glyph1.animate(animate_time_list)
+        old_im = glyph1.im
+        axes_count_after_first = len(glyph1.fig.axes)
+
+        glyph2 = ArrayGlyph(coello_data, ax=glyph1.ax, fig=glyph1.fig)
+        glyph2.animate(animate_time_list)
+
+        assert (
+            len(glyph1.ax.images) == 1
+        ), f"Expected exactly one image artist, got {len(glyph1.ax.images)}"
+        assert old_im not in glyph1.ax.images, "The first glyph's image must be removed"
+        assert len(glyph1.fig.axes) == axes_count_after_first, (
+            f"Expected {axes_count_after_first} axes after the second glyph's call, "
+            f"got {len(glyph1.fig.axes)}"
+        )
+
 
 @pytest.mark.plot
 class TestNanNoDataConvention:

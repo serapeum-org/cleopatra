@@ -3968,29 +3968,37 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         fig, ax = self.fig, self.ax
 
-        # A prior animate() call on this same glyph (e.g. a caller
-        # re-animating a glyph that already went through animate() once,
-        # such as pyramids' DatasetCollection.plot(mode="animate") followed
-        # by its own animate() call) leaves that call's image/colorbar/
-        # frame-label artists on `ax` -- `ax.imshow()` always adds a new
+        # A prior animate() call on this Axes leaves its image/colorbar/
+        # frame-label artists behind -- `ax.imshow()` always adds a new
         # artist rather than replacing one, and the init_func marks it
         # `animated=True` (blit-owned), so normal redraws silently skip it
-        # and nothing ever removes it once this glyph's `self.im`/`self.anim`
-        # move on to the new call's artists. Remove any such leftovers
-        # before creating this call's own, so they don't linger orphaned in
-        # `ax.images`/`ax.texts`. The colorbar must be removed *before* the
-        # image it is attached to -- `Colorbar.remove()` reads
-        # `self.mappable.axes` to restore the image axes' gridspec position,
-        # which is only valid while the image artist is still attached.
-        if self.cbar is not None:
-            self.cbar.remove()
-            self.cbar = None
-        if self.im is not None:
-            self.im.remove()
-            self.im = None
-        if self._day_text is not None:
-            self._day_text.remove()
-            self._day_text = None
+        # and nothing removes it once the owning glyph's `self.im`/`self.anim`
+        # move on to a new call's artists. This is tracked per-*Axes* (via a
+        # private marker on `ax`), not per-glyph-instance, because the prior
+        # call may have come from a *different* `ArrayGlyph` sharing this
+        # Axes -- e.g. `ArrayGlyph(arr2, ax=glyph1.ax, fig=glyph1.fig)`, the
+        # pattern pyramids' `Dataset`/`NetCDF`/`Analysis`.plot(ax=..., fig=...)
+        # passthrough exposes. Checking only `self.im`/`self.cbar` would miss
+        # that case, since a fresh glyph instance's own attributes start out
+        # `None` regardless of what is already sitting on the shared Axes.
+        # Remove any such leftovers before creating this call's own, so they
+        # don't linger orphaned in `ax.images`/`ax.texts`. The colorbar must
+        # be removed *before* the image it is attached to -- `Colorbar.remove()`
+        # reads `self.mappable.axes` to restore the image axes' gridspec
+        # position, which is only valid while the image artist is still
+        # attached.
+        prior_artists = getattr(ax, "_cleo_animate_artists", None)
+        if prior_artists is not None:
+            if prior_artists.get("cbar") is not None:
+                prior_artists["cbar"].remove()
+            if prior_artists.get("im") is not None:
+                prior_artists["im"].remove()
+            if prior_artists.get("day_text") is not None:
+                prior_artists["day_text"].remove()
+            ax._cleo_animate_artists = None
+        self.cbar = None
+        self.im = None
+        self._day_text = None
 
         # Per-frame RGBA recipe for a continuous `style` (cmap, colour norm,
         # alpha norm, constant alpha), set in the style branch below and
@@ -4313,6 +4321,15 @@ class ArrayGlyph(GeoMixin, Glyph):
             blit=True,
         )
         self._anim = anim
+        # Record this call's artists on the Axes itself (not just on
+        # `self`) so a later animate() call -- from this glyph or a
+        # different one sharing this Axes -- can find and remove them.
+        # See the cleanup block near the top of this method.
+        ax._cleo_animate_artists = {
+            "im": self.im,
+            "cbar": self.cbar,
+            "day_text": self._day_text,
+        }
         return anim
 
     # @staticmethod
