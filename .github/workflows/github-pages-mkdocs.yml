@@ -4,14 +4,6 @@ permissions:
   contents: write
   pages: write
 
-# Serialize all docs deploys: deploy-pr, deploy-main, and deploy-release each
-# push to the shared gh-pages branch, and running them concurrently races the
-# git push (non-fast-forward rejection). Queue instead of cancelling so every
-# deploy still lands.
-concurrency:
-  group: mkdocs-deploy
-  cancel-in-progress: false
-
 on:
   push:
     branches:
@@ -30,6 +22,14 @@ jobs:
   deploy-pr:
       if: github.event_name == 'pull_request'
       runs-on: ubuntu-latest
+      # Serialize with deploy-main: both push to the shared gh-pages branch,
+      # and running them concurrently races the git push (non-fast-forward
+      # rejection). deploy-release is deliberately excluded from this group —
+      # a release deploy must run to completion regardless of any PR or other
+      # release build in flight.
+      concurrency:
+        group: mkdocs-deploy-pr-main
+        cancel-in-progress: false
       steps:
       - uses: actions/checkout@v5
         with:
@@ -48,6 +48,9 @@ jobs:
   deploy-main:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    concurrency:
+      group: mkdocs-deploy-pr-main
+      cancel-in-progress: false
     steps:
     - uses: actions/checkout@v5
       with:
