@@ -1183,6 +1183,17 @@ class ArrayGlyph(GeoMixin, Glyph):
         self._validate_extend(self.default_options.get("extend"))
 
         explicit_keys = set(kwargs.keys())
+        # Only the colour limits the caller actually supplied, kept apart from
+        # `default_options` (whose vmin/vmax the plain imshow path overwrites
+        # with the data's auto range). A data-style preset forwards these so an
+        # explicit caller vmin/vmax/center overrides the preset's fixed range,
+        # while an auto-ranged plain plot never leaks a range into a later
+        # `apply_style(...)`. Sticky across plot()s, like `default_options`.
+        self._style_color_overrides = {
+            key: kwargs[key]
+            for key in ("vmin", "vmax", "center")
+            if key in explicit_keys and kwargs[key] is not None
+        }
         self._vmin, self._vmax = self._resolve_color_limits(
             array,
             vmin_kw=kwargs.get("vmin"),
@@ -2287,18 +2298,26 @@ class ArrayGlyph(GeoMixin, Glyph):
         data = np.asarray(ma.filled(ma.asarray(self.arr).astype(float), np.nan), dtype=float)
         legend = bool(self.default_options.get("add_colorbar", True))
         coords = self._coords
+        # Forward an explicit caller vmin/vmax/center so it overrides the
+        # preset's own fixed range (e.g. a Magics preset's decoded ECMWF scale).
+        # Read from `_style_color_overrides`, which holds ONLY user-supplied
+        # limits -- not `default_options`, whose vmin/vmax the plain imshow path
+        # overwrites with the data's auto-resolved range, which would otherwise
+        # leak in here and clobber the preset (and break a diverging `center`).
+        override = dict(self._style_color_overrides)
         if coords is not None:
             # apply_data_style's curvilinear path defaults to shading="flat"
             # (needs cell EDGES) via setdefault; ArrayGlyph stores cell CENTRES,
             # so pass shading="nearest", which trusts the centres.
             images = apply_data_style(
                 self.ax, {layer: data}, style=style, x=coords[0], y=coords[1],
-                legend=legend, shading="nearest",
+                legend=legend, shading="nearest", **override,
             )
         else:
             render_kwargs = {"extent": self.extent} if self.extent is not None else {}
             images = apply_data_style(
-                self.ax, {layer: data}, style=style, legend=legend, **render_kwargs
+                self.ax, {layer: data}, style=style, legend=legend,
+                **render_kwargs, **override,
             )
         self.im = images[layer]
 
@@ -3120,6 +3139,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                 )
             else:
                 self.default_options[key] = val
+
+        # Record colour limits supplied to THIS plot() call so a preset render
+        # honours them (see `_style_color_overrides`). Sticky, and only for
+        # keys actually passed -- an auto-ranged plain plot adds nothing.
+        for key in ("vmin", "vmax", "center"):
+            if key in kwargs and kwargs[key] is not None:
+                self._style_color_overrides[key] = kwargs[key]
 
         self._validate_extend(self.default_options.get("extend"))
 

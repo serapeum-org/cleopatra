@@ -8,7 +8,7 @@
   ],
   "license": "Apache-2.0",
   "generated_utc": "2026-07-10",
-  "note": "Colour data and parameter/label associations derived from ECMWF Magics (Apache-2.0); contains no Magics code. Exact contour levels are not in the open data, so presets carry no vmin/vmax and auto-range. Opacity is opaque unless the source palette carries a built-in alpha ramp, in which case it is an overlay."
+  "note": "Colour data and parameter/label associations derived from ECMWF Magics (Apache-2.0); contains no Magics code. The contour range and interval are encoded in each preset's magics_style name (f<from>t<to>[i<interval>], M=minus) and cleopatra decodes them at load time, so presets render over ECMWF's fixed scale (a caller vmin/vmax still overrides). The exact per-level colour list is not in the open data, so non-linear level scales (e.g. precipitation) band linearly. Opacity is opaque unless the source palette carries a built-in alpha ramp, in which case it is an overlay."
  },
  "presets": {
   "10fg": {

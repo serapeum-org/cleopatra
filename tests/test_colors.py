@@ -13,6 +13,7 @@ from cleopatra.colors import (
     DATA_STYLES,
     Colors,
     _category_boundaries,
+    _decode_magics_range,
     _load_magics_presets,
     _load_preset_asset,
     _resolve_style_norm,
@@ -614,6 +615,72 @@ class TestMagicsPresets:
 
         monkeypatch.setattr(colors_mod.importlib.resources, "files", boom)
         assert _load_magics_presets() == {}, "missing asset should degrade to no presets"
+
+    def test_preset_carries_decoded_fixed_range(self):
+        """A Magics preset whose style name encodes a range ships that vmin/vmax."""
+        layer = DATA_STYLES["2t"]["2t"]
+        assert layer["vmin"] == -48.0 and layer["vmax"] == 56.0
+
+    def test_temperature_family_shares_the_style_range(self):
+        """The whole -48..56 temperature family carries the same decoded range."""
+        for key in ("2t", "2d", "mn2t", "mx2t"):
+            layer = DATA_STYLES[key][key]
+            assert (layer["vmin"], layer["vmax"]) == (-48.0, 56.0), key
+
+    def test_range_without_interval_is_decoded(self):
+        """A style name with a range but no interval (wind f0t80) still gets vmin/vmax."""
+        layer = DATA_STYLES["10fg"]["10fg"]
+        assert (layer["vmin"], layer["vmax"]) == (0.0, 80.0)
+
+    def test_named_palette_preset_has_no_range(self):
+        """A preset whose style name carries no range (aod550) still auto-ranges."""
+        assert "vmin" not in DATA_STYLES["aod550"]["aod550"]
+
+    def test_caller_vmin_vmax_overrides_preset_range(self, ax):
+        """An explicit vmin/vmax at draw time overrides the preset's fixed range."""
+        data = np.linspace(-10.0, 50.0, 400).reshape(20, 20)
+        fig2, ax2 = plt.subplots()
+        base = apply_data_style(ax, {"2t": data}, style="2t", legend=False)
+        over = apply_data_style(ax2, {"2t": data}, style="2t", vmin=-10.0, vmax=50.0, legend=False)
+        assert not np.allclose(base["2t"].get_array(), over["2t"].get_array())
+        plt.close(fig2)
+
+
+class TestMagicsRangeDecoder:
+    """Tests for the Magics `f<from>t<to>[i<interval>]` range decoder."""
+
+    @pytest.mark.parametrize(
+        "style, expected",
+        [
+            ("sh_all_fM48t56i4", (-48.0, 56.0, 4.0)),  # 2t temperature family
+            ("sh_all_fM52t48i4", (-52.0, 48.0, 4.0)),  # potential temperature
+            ("sh_all_f0t18i1_5", (0.0, 18.0, 1.5)),  # underscore decimal interval
+            ("f05t1i01", (0.5, 1.0, 0.1)),  # leading-zero decimals (index scale)
+            ("sh_mc_wind_f0t80", (0.0, 80.0, None)),  # range without interval
+            ("sh_mc_capes_f10t4000", (10.0, 4000.0, None)),  # plain integers
+            ("sh_blured_fM50t50lst_cell", (-50.0, 50.0, None)),  # trailing 'lst'
+            ("sh_blured_f05t300lst", (0.5, 300.0, None)),  # 0.5 mm precip threshold
+        ],
+    )
+    def test_decodes_known_ranges(self, style, expected):
+        """The grammar decodes range/interval, honouring M-minus and decimal encodings."""
+        assert _decode_magics_range(style) == expected
+
+    @pytest.mark.parametrize(
+        "style", ["sh_all_aod", "sh_mf_pdist", "sim_image_wv_fixed_range", "", None]
+    )
+    def test_no_range_returns_none(self, style):
+        """A style with no f<from>t<to> range decodes to None (the preset auto-ranges)."""
+        assert _decode_magics_range(style) is None
+
+    @pytest.mark.parametrize("style", ["f5t5", "f9t2i1", "fM1tM3"])
+    def test_degenerate_or_inverted_range_returns_none(self, style):
+        """A decode yielding vmin >= vmax returns None rather than a bad range."""
+        assert _decode_magics_range(style) is None
+
+    def test_negative_symmetric_range_is_valid(self):
+        """A valid negative-to-positive range (temperature index) decodes normally."""
+        assert _decode_magics_range("sh_blured_fM1t1lst") == (-1.0, 1.0, None)
 
 
 class TestCategoricalPresets:

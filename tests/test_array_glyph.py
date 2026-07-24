@@ -4867,6 +4867,30 @@ class TestArrayGlyphDataStyle:
         assert type(g.im).__name__ == "QuadMesh"
         plt.close("all")
 
+    def test_magics_preset_uses_its_fixed_range_by_default(self):
+        """A Magics preset with an encoded range (2t) maps over its fixed scale, not auto-range.
+
+        The preset resolves to RGBA before imshow, so the applied range is read from the
+        pixel colours: a fixed -48..56 render differs from one auto-ranged to the data extent.
+        """
+        data = np.linspace(-10.0, 50.0, 30 * 40).reshape(30, 40)
+        fixed = ArrayGlyph(data, style="2t")
+        fixed.plot()
+        auto = ArrayGlyph(data, style="2t", vmin=float(data.min()), vmax=float(data.max()))
+        auto.plot()
+        assert not np.allclose(fixed.im.get_array(), auto.im.get_array())
+        plt.close("all")
+
+    def test_glyph_vmin_vmax_overrides_preset_fixed_range(self):
+        """A glyph-level vmin/vmax overrides the preset's encoded fixed range."""
+        data = np.linspace(-10.0, 50.0, 30 * 40).reshape(30, 40)
+        default = ArrayGlyph(data, style="2t")
+        default.plot()
+        override = ArrayGlyph(data, style="2t", vmin=-10.0, vmax=50.0)
+        override.plot()
+        assert not np.allclose(default.im.get_array(), override.im.get_array())
+        plt.close("all")
+
     def test_integer_masked_categorical_input_does_not_crash(self):
         """An integer-coded categorical raster with masked nodata renders (no `ma.filled` TypeError)."""
         rng = np.random.default_rng(2)

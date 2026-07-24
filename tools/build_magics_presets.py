@@ -13,9 +13,12 @@ style data, following the chain that is fully recoverable from that data:
 
 Magics is Apache-2.0; only its colour *data* and parameter/label associations
 are vendored (see ``src/cleopatra/data/MAGICS_NOTICE.txt``), never its code.
-The exact numeric contour levels are NOT in Magics' open data (they live in
-ECMWF's style server), so the generated presets carry no ``vmin``/``vmax`` and
-rely on cleopatra's auto-ranging at draw time.
+The contour range and interval ARE encoded in each style name
+(``f<from>t<to>[i<interval>]``, ``M`` = minus), which is vendored verbatim as
+each preset's ``magics_style``; cleopatra decodes it at load time so presets
+render over ECMWF's fixed scale. The exact per-level colour *list* is not in
+the open data (it lives in ECMWF's style server), so a preset with a non-linear
+level scale still bands linearly between the decoded ``vmin``/``vmax``.
 
 Maintainer dependencies: only ``matplotlib`` (already a cleopatra dependency),
 used to resolve Magics' named colours to hex.
@@ -125,10 +128,14 @@ def main(out_path, magics_ref="develop"):
             "generated_utc": _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%d"),
             "note": (
                 "Colour data and parameter/label associations derived from ECMWF "
-                "Magics (Apache-2.0); contains no Magics code. Exact contour levels "
-                "are not in the open data, so presets carry no vmin/vmax and "
-                "auto-range. Opacity is opaque unless the source palette carries a "
-                "built-in alpha ramp, in which case it is an overlay."
+                "Magics (Apache-2.0); contains no Magics code. The contour range and "
+                "interval are encoded in each preset's magics_style name "
+                "(f<from>t<to>[i<interval>], M=minus) and cleopatra decodes them at "
+                "load time, so presets render over ECMWF's fixed scale (a caller "
+                "vmin/vmax still overrides). The exact per-level colour list is not "
+                "in the open data, so non-linear level scales (e.g. precipitation) "
+                "band linearly. Opacity is opaque unless the source palette carries "
+                "a built-in alpha ramp, in which case it is an overlay."
             ),
         },
         "presets": dict(sorted(presets.items())),

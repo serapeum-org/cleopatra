@@ -1,6 +1,7 @@
 import importlib.resources
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any, List, Tuple, Union
 
@@ -469,6 +470,72 @@ DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
 }
 
 
+#: An ECMWF Magics style name encodes its contour range/interval in an
+#: ``f<from>t<to>[i<interval>]`` grammar (``M`` = minus). The interval is
+#: optional (``sh_mc_wind_f0t80`` = 0..80 with no interval). `_decode_magics_range`
+#: recovers ``(vmin, vmax, step)`` so a preset renders over ECMWF's fixed scale
+#: instead of auto-ranging to whatever data it is handed.
+_MAGICS_RANGE = re.compile(r"f(M?\d+(?:_\d+)?)t(M?\d+(?:_\d+)?)(?:i(\d+(?:_\d+)?))?")
+
+
+def _magics_num(token: str) -> float:
+    """Decode one numeric token of a Magics range name.
+
+    The grammar: ``M`` prefixes a negative; ``_`` is the decimal point
+    (``1_5`` -> 1.5); a leading ``0`` on a multi-digit token marks a decimal
+    (``05`` -> 0.5, ``01`` -> 0.1, matching ECMWF's precip/index scales); ``0``
+    alone is zero, and any other token is an integer (``10`` -> 10, not 1.0).
+
+    Args:
+        token: A single ``from``/``to``/``interval`` token (without the
+            ``f``/``t``/``i`` marker).
+
+    Returns:
+        float: The decoded value.
+    """
+    negative = token.startswith("M")
+    if negative:
+        token = token[1:]
+    if "_" in token:
+        value = float(token.replace("_", "."))
+    elif len(token) > 1 and token[0] == "0":
+        value = float("0." + token[1:])
+    else:
+        value = float(token)
+    return -value if negative else value
+
+
+def _decode_magics_range(
+    magics_style: str | None,
+) -> tuple[float, float, float | None] | None:
+    """Recover ``(vmin, vmax, step)`` from a Magics style name, or ``None``.
+
+    Parses the ``f<from>t<to>[i<interval>]`` range grammar embedded in ECMWF
+    Magics style names (e.g. ``sh_all_fM48t56i4`` -> ``(-48.0, 56.0, 4.0)``,
+    ``sh_mc_wind_f0t80`` -> ``(0.0, 80.0, None)``). Returns ``None`` when the
+    name carries no range, or the decoded range is degenerate (``vmin >=
+    vmax``), so such a preset keeps auto-ranging. Only the range is recovered --
+    the exact per-level colour list is not in the open Magics data, so a preset
+    with a non-linear level scale (e.g. precipitation) still bands linearly.
+
+    Args:
+        magics_style: A Magics style name, or ``None``.
+
+    Returns:
+        The ``(vmin, vmax, step)`` triple (``step`` is ``None`` when the name
+        omits the interval), or ``None`` when no usable range is present.
+    """
+    match = _MAGICS_RANGE.search(magics_style or "")
+    if match is None:
+        return None
+    vmin = _magics_num(match.group(1))
+    vmax = _magics_num(match.group(2))
+    if vmin >= vmax:
+        return None
+    step = _magics_num(match.group(3)) if match.group(3) else None
+    return vmin, vmax, step
+
+
 def _load_preset_asset(
     resource: str, cmap_prefix: str
 ) -> dict[str, dict[str, dict[str, Any]]]:
@@ -522,6 +589,13 @@ def _load_preset_asset(
                 layer["alpha"] = 1.0  # value-linked opacity (overlay) is the default otherwise
             if rec.get("center") is not None:
                 layer["center"] = rec["center"]
+            # Recover the fixed contour range encoded in the Magics style name
+            # (e.g. `2t` -> -48..56) so the preset renders over ECMWF's absolute
+            # scale rather than auto-ranging to the data. A caller-supplied
+            # `vmin`/`vmax` still overrides it at draw time.
+            decoded = _decode_magics_range(rec.get("magics_style"))
+            if decoded is not None:
+                layer["vmin"], layer["vmax"] = decoded[0], decoded[1]
             presets[key] = {key: layer}
         except (KeyError, TypeError, ValueError, AttributeError):
             continue
@@ -854,9 +928,18 @@ def apply_data_style(
         # for a globe's extreme local distortion, so shading="flat" (which
         # trusts the given edges exactly) is the correct default here.
         render_kwargs.setdefault("shading", "flat")
+    # A caller-supplied `vmin`/`vmax`/`center`/`norm` overrides the preset's own
+    # (e.g. a Magics preset's decoded fixed range). These are colour-scale keys,
+    # not `imshow` kwargs, so pull them out of `render_kwargs` and merge them
+    # over each layer's config below.
+    style_override = {
+        key: render_kwargs.pop(key)
+        for key in ("vmin", "vmax", "center", "norm")
+        if key in render_kwargs
+    }
     images: dict[str, Any] = {}
     for i, (name, data) in enumerate(layers.items()):
-        cfg = preset[name]
+        cfg = {**preset[name], **style_override}
         data = np.asarray(data, dtype=float)
 
         categories = cfg.get("categories")
