@@ -254,19 +254,19 @@ def test_unset_crs_is_passthrough(monkeypatch):
     plt.close(fig)
 
 
-def test_add_relief_ignores_self_crs(monkeypatch):
-    """add_relief never receives crs, even when self.crs is set."""
+def test_add_relief_defaults_to_self_crs(monkeypatch):
+    """add_relief defaults crs to self.crs, like add_features/add_tiles."""
     seen = {}
     monkeypatch.setattr(
         refmod, "add_relief", lambda ax, *a, **k: seen.update(kwargs=k) or ax
     )
     fig, ax = plt.subplots()
     glyph = _Dummy(ax)
-    glyph.crs = 4326
+    glyph.crs = 3857
     glyph.add_relief("low")
     assert (
-        "crs" not in seen["kwargs"]
-    ), f"add_relief must not get crs, got {seen['kwargs']}"
+        seen["kwargs"].get("crs") == 3857
+    ), f"add_relief should default crs to self.crs, got {seen['kwargs']}"
     plt.close(fig)
 
 
@@ -281,9 +281,11 @@ def test_basemap_kwargs_helper():
     assert d._basemap_kwargs({"crs": None}) == {"crs": 4326}  # None treated as unset
 
 
-@pytest.mark.parametrize("fn", [tilesmod.add_tiles, refmod.add_features])
+@pytest.mark.parametrize(
+    "fn", [tilesmod.add_tiles, refmod.add_features, refmod.add_relief]
+)
 def test_crs_is_keyword_only_in_helpers(fn):
-    """crs is keyword-only in add_tiles/add_features, so it cannot be positional."""
+    """crs is keyword-only in add_tiles/add_features/add_relief, not positional."""
     kind = inspect.signature(fn).parameters["crs"].kind
     assert kind is inspect.Parameter.KEYWORD_ONLY, f"{fn.__name__}.crs is {kind}"
 
@@ -426,6 +428,37 @@ def test_glyph_crs_drives_reprojected_placement(tmp_path: Path, monkeypatch):
     # In EPSG:3857, lon=0 -> x~=0 m and lon=10 -> x~=1.11e6 m (not lon/lat degrees).
     assert abs(verts[0][0]) < 1.0, f"first vertex not at x~=0: {verts[0]}"
     assert verts[1][0] > 1.0e6, f"second vertex not reprojected to metres: {verts[1]}"
+    plt.close(fig)
+
+
+def test_glyph_crs_drives_relief_warp(tmp_path: Path, monkeypatch):
+    """End-to-end: glyph.crs alone warps the relief backdrop to that CRS."""
+    pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+    Image = pytest.importorskip(
+        "PIL.Image", reason="Pillow not installed (tiles extra)"
+    )
+    monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))
+    arr = np.zeros((4, 8, 3), dtype="uint8")
+    arr[:, :4] = (0, 0, 255)
+    arr[:, 4:] = (255, 0, 0)
+    Image.fromarray(arr).save(tmp_path / "ne_hypso_rgb_720x360.png")
+
+    fig, ax = plt.subplots()
+    glyph = PolygonGlyph([np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0]])], ax=ax)
+    glyph.crs = 3857  # axis CRS recorded once; no crs= on the draw call
+    ax.set_xlim(-2e7, 2e7)
+    ax.set_ylim(-1e7, 1e7)
+    glyph.add_relief("low")
+    placed = np.asarray(ax.images[0].get_array())
+    assert placed.shape[2] == 4, f"relief should warp to RGBA, got {placed.shape}"
+    w = placed.shape[1]
+    west = placed[:, : w // 4].reshape(-1, 4)
+    east = placed[:, -(w // 4) :].reshape(-1, 4)
+    west = west[west[:, 3] > 0]
+    east = east[east[:, 3] > 0]
+    assert west.size and east.size, "expected opaque cells on both strips"
+    assert (west[:, 2] > west[:, 0]).all(), "west should stay blue after the warp"
+    assert (east[:, 0] > east[:, 2]).all(), "east should stay red after the warp"
     plt.close(fig)
 
 
