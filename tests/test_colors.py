@@ -593,12 +593,19 @@ class TestEarthkitPresets:
         assert DATA_STYLES["2d"]["2d"]["cmap"] == "BrBG_r"
         assert DATA_STYLES["10u"]["10u"]["cmap"] == "PiYG"
 
-    def test_colour_list_style_becomes_colormap(self):
-        """A style whose earthkit `colors` is an explicit list becomes a Colormap + levels."""
+    def test_colour_list_with_levels_is_discrete_listed_colormap(self):
+        """A colour-list earthkit preset (with levels) keeps the exact ECMWF colours (ListedColormap)."""
         layer = DATA_STYLES["aod550"]["aod550"]
-        assert isinstance(layer["cmap"], Colormap)
+        assert isinstance(layer["cmap"], ListedColormap)
+        assert layer["cmap"].N == 9  # the 9 exact ECMWF colours, not a 256-entry resample
         assert layer["extend"] == "max"
         assert layer["levels"][0] == 0.1 and layer["levels"][-1] == 1.0
+
+    def test_colour_list_without_levels_stays_continuous(self):
+        """A colour-list earthkit preset with no levels (tp gradient) is a continuous ramp."""
+        layer = DATA_STYLES["tp"]["tp"]
+        assert isinstance(layer["cmap"], LinearSegmentedColormap)
+        assert "levels" not in layer
 
     def test_earthkit_style_renders_banded(self, ax):
         """A vendored earthkit style renders discrete level bands end-to-end."""

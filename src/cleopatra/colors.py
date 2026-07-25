@@ -715,14 +715,18 @@ def _load_earthkit_presets() -> dict[str, dict[str, dict[str, Any]]]:
     for key, rec in records.items():
         try:
             colors = rec["colors"]
-            # A matplotlib colormap name stays a string (resolved at draw time);
-            # an explicit colour list becomes a continuous colormap, banded by the
-            # `levels` + BoundaryNorm at render time (see resolve_style_norm).
-            cmap: Any = (
-                colors
-                if isinstance(colors, str)
-                else LinearSegmentedColormap.from_list(f"earthkit_{key}", colors)
-            )
+            if isinstance(colors, str):
+                # A matplotlib colormap name, resolved at draw time.
+                cmap: Any = colors
+            elif rec.get("levels"):
+                # A colour LIST with levels is a discrete band palette: keep the
+                # exact ECMWF colours (one per band) via a ListedColormap rather
+                # than resampling a continuous interpolation (see resolve_style_norm).
+                cmap = mcolors.ListedColormap(colors, name=f"earthkit_{key}")
+            else:
+                # A colour list with no levels (e.g. `tp`'s white->blue gradient)
+                # is a genuine continuous ramp.
+                cmap = LinearSegmentedColormap.from_list(f"earthkit_{key}", colors)
             layer: dict[str, Any] = {
                 "cmap": cmap,
                 "label": rec["label"],
@@ -825,9 +829,17 @@ def resolve_style_norm(
         cmap_obj = cfg["cmap"]
         if not isinstance(cmap_obj, Colormap):
             cmap_obj = mpl.colormaps[cmap_obj]
-        norm = mcolors.BoundaryNorm(
-            edges, ncolors=cmap_obj.N, extend=cfg.get("extend", "neither")
-        )
+        # A discrete ListedColormap has exactly one colour per band, so its
+        # ncolors cannot absorb the extra under/over slot a norm `extend` needs;
+        # clamp out-of-range values to the end bands instead (the `extend` is a
+        # colorbar hint the swatch legend does not draw). A continuous colormap
+        # has 256 entries, so it honours `extend` freely.
+        if isinstance(cmap_obj, mcolors.ListedColormap):
+            norm = mcolors.BoundaryNorm(edges, ncolors=cmap_obj.N)
+        else:
+            norm = mcolors.BoundaryNorm(
+                edges, ncolors=cmap_obj.N, extend=cfg.get("extend", "neither")
+            )
         return norm, edges[0], edges[-1]
 
     vmin = cfg.get("vmin")
