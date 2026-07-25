@@ -3963,6 +3963,14 @@ class ArrayGlyph(GeoMixin, Glyph):
             else:
                 self.default_options[key] = val
 
+        # Record colour limits supplied to THIS animate() call so a styled
+        # animation honours an explicit caller override of the preset's fixed
+        # range (see `_style_color_overrides`); an auto-ranged plain animation
+        # adds nothing.
+        for key in ("vmin", "vmax", "center"):
+            if key in kwargs and kwargs[key] is not None:
+                self._style_color_overrides[key] = kwargs[key]
+
         # if user did not input ticks spacing use the calculated one.
         if "ticks_spacing" in kwargs.keys():
             self.default_options["ticks_spacing"] = kwargs["ticks_spacing"]
@@ -4087,7 +4095,11 @@ class ArrayGlyph(GeoMixin, Glyph):
                     points = None
                     show_cell_value = False
                 layer = self._resolve_style_layer(style)
-                cfg = DATA_STYLES[style][layer]
+                # Merge an explicit caller vmin/vmax/center over the preset so a
+                # styled animation honours the override just like plot() does
+                # (see `_style_color_overrides`); with none set the preset's own
+                # fixed range (e.g. a Magics preset's decoded ECMWF scale) stands.
+                cfg = {**DATA_STYLES[style][layer], **self._style_color_overrides}
                 hillshade_active = (
                     resolve_hillshade(self.default_options.get("hillshade")) is not None
                 )

@@ -4868,15 +4868,15 @@ class TestArrayGlyphDataStyle:
         plt.close("all")
 
     def test_magics_preset_uses_its_fixed_range_by_default(self):
-        """A Magics preset with an encoded range (2t) maps over its fixed scale, not auto-range.
+        """A Magics preset with an encoded range (mn2t) maps over its fixed scale, not auto-range.
 
         The preset resolves to RGBA before imshow, so the applied range is read from the
         pixel colours: a fixed -48..56 render differs from one auto-ranged to the data extent.
         """
         data = np.linspace(-10.0, 50.0, 30 * 40).reshape(30, 40)
-        fixed = ArrayGlyph(data, style="2t")
+        fixed = ArrayGlyph(data, style="mn2t")
         fixed.plot()
-        auto = ArrayGlyph(data, style="2t", vmin=float(data.min()), vmax=float(data.max()))
+        auto = ArrayGlyph(data, style="mn2t", vmin=float(data.min()), vmax=float(data.max()))
         auto.plot()
         assert not np.allclose(fixed.im.get_array(), auto.im.get_array())
         plt.close("all")
@@ -4884,9 +4884,9 @@ class TestArrayGlyphDataStyle:
     def test_glyph_vmin_vmax_overrides_preset_fixed_range(self):
         """A glyph-level vmin/vmax overrides the preset's encoded fixed range."""
         data = np.linspace(-10.0, 50.0, 30 * 40).reshape(30, 40)
-        default = ArrayGlyph(data, style="2t")
+        default = ArrayGlyph(data, style="mn2t")
         default.plot()
-        override = ArrayGlyph(data, style="2t", vmin=-10.0, vmax=50.0)
+        override = ArrayGlyph(data, style="mn2t", vmin=-10.0, vmax=50.0)
         override.plot()
         assert not np.allclose(default.im.get_array(), override.im.get_array())
         plt.close("all")
@@ -5041,6 +5041,18 @@ class TestArrayGlyphShadedAnimate:
         assert frame.shape[-1] == 4, "animate frames are RGBA"
         alpha = frame[..., 3]
         assert alpha.min() < 0.2 and alpha.max() > 0.8, "opacity ramps with value like plot()"
+        plt.close("all")
+
+    def test_magics_preset_animate_uses_fixed_range_overridable_by_caller(self):
+        """A styled animation honours the preset's fixed range, and a caller vmin/vmax overrides it."""
+        base = np.linspace(-2.0, 39.0, 400).reshape(20, 20)
+        stack = np.stack([base + w for w in (-4.0, 0.0, 8.0)])
+        fixed = ArrayGlyph(stack, style="mn2t")
+        fixed.animate(time=list(range(3)))._func(2)
+        fixed_frame = np.asarray(fixed.im.get_array()).copy()
+        override = ArrayGlyph(stack, style="mn2t", vmin=-10.0, vmax=50.0)
+        override.animate(time=list(range(3)))._func(2)
+        assert not np.allclose(fixed_frame, np.asarray(override.im.get_array()))
         plt.close("all")
 
     def test_hillshade_animate_integer_masked_frame_does_not_crash(self):
