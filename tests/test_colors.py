@@ -619,6 +619,18 @@ class TestEarthkitPresets:
         assert isinstance(layer["cmap"], LinearSegmentedColormap)
         assert "levels" not in layer
 
+    def test_colour_rich_list_preset_honours_extend(self):
+        """cape (255 colours over 16 bands) keeps extend='max' -- it has room for an over colour."""
+        layer = DATA_STYLES["cape"]["cape"]
+        norm, _, _ = _resolve_style_norm(np.linspace(0.0, 5000.0, 400).reshape(20, 20), layer)
+        assert isinstance(norm, BoundaryNorm) and norm.extend == "max"
+
+    def test_one_colour_per_band_preset_drops_extend(self):
+        """aod550 (9 colours, 9 bands) drops extend -- no spare colour for the over slot -- and clamps."""
+        layer = DATA_STYLES["aod550"]["aod550"]
+        norm, _, _ = _resolve_style_norm(np.linspace(0.0, 1.5, 400).reshape(20, 20), layer)
+        assert isinstance(norm, BoundaryNorm) and norm.extend == "neither"
+
     def test_colour_list_preset_renders_exact_discrete_colours(self, ax):
         """A ListedColormap earthkit preset paints each band with its exact palette colour."""
         cmap = DATA_STYLES["aod550"]["aod550"]["cmap"]

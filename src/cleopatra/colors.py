@@ -718,8 +718,9 @@ def _load_earthkit_presets() -> dict[str, dict[str, dict[str, Any]]]:
                 cmap: Any = colors
             elif rec.get("levels"):
                 # A colour LIST with levels is a discrete band palette: keep the
-                # exact ECMWF colours (one per band) via a ListedColormap rather
-                # than resampling a continuous interpolation (see resolve_style_norm).
+                # exact ECMWF colours via a ListedColormap (one per band for
+                # aod550/10si; a fine 255-stop ramp banded by the levels for cape)
+                # rather than resampling a continuous interpolation.
                 cmap = mcolors.ListedColormap(colors, name=f"earthkit_{key}")
             else:
                 # A colour list with no levels (e.g. `tp`'s white->blue gradient)
@@ -840,17 +841,16 @@ def resolve_style_norm(
         cmap_obj = cfg["cmap"]
         if not isinstance(cmap_obj, Colormap):
             cmap_obj = mpl.colormaps[cmap_obj]
-        # A discrete ListedColormap has exactly one colour per band, so its
-        # ncolors cannot absorb the extra under/over slot a norm `extend` needs;
-        # clamp out-of-range values to the end bands instead (the `extend` is a
-        # colorbar hint the swatch legend does not draw). A continuous colormap
-        # has 256 entries, so it honours `extend` freely.
-        if isinstance(cmap_obj, mcolors.ListedColormap):
-            norm = mcolors.BoundaryNorm(edges, ncolors=cmap_obj.N)
-        else:
-            norm = mcolors.BoundaryNorm(
-                edges, ncolors=cmap_obj.N, extend=cfg.get("extend", "neither")
-            )
+        # Honour `extend` unless the colormap lacks a spare colour for each
+        # reserved under/over slot. A continuous colormap (256 entries) always
+        # has room; a one-colour-per-band ListedColormap (aod550=9, 10si=6) does
+        # not, so `extend` is dropped there and out-of-range values clamp to the
+        # end bands -- but a colour-rich list (cape=255 over 16 bands) keeps it.
+        extend = cfg.get("extend", "neither")
+        reserved = {"neither": 0, "min": 1, "max": 1, "both": 2}.get(extend, 0)
+        if cmap_obj.N < (len(edges) - 1) + reserved:
+            extend = "neither"
+        norm = mcolors.BoundaryNorm(edges, ncolors=cmap_obj.N, extend=extend)
         return norm, edges[0], edges[-1]
 
     vmin = cfg.get("vmin")
