@@ -446,12 +446,12 @@ def test_add_relief_lonlat_extent_crops_not_stretches(cache: Path):
     add_relief(ax, "low", extent=(0, -90, 180, 90))  # eastern hemisphere
     placed = np.asarray(ax.images[0].get_array())
     assert placed.shape[1] < 8, f"extent should crop, got full width {placed.shape}"
-    assert placed.shape[0] == 4, (
-        f"full-latitude extent must not crop rows, got {placed.shape}"
-    )
-    assert (placed[..., 0] == 255).all() and (placed[..., 2] == 0).all(), (
-        "the cropped region should be the red eastern half only"
-    )
+    assert (
+        placed.shape[0] == 4
+    ), f"full-latitude extent must not crop rows, got {placed.shape}"
+    assert (placed[..., 0] == 255).all() and (
+        placed[..., 2] == 0
+    ).all(), "the cropped region should be the red eastern half only"
     plt.close(fig)
 
 
@@ -477,12 +477,12 @@ def test_add_relief_lonlat_extent_crops_northern_rows(cache: Path):
     ax.set_ylim(0, 90)
     add_relief(ax, "low", extent=(-180, 0, 180, 90))  # northern hemisphere
     placed = np.asarray(ax.images[0].get_array())
-    assert placed.shape[0] < 4, (
-        f"extent should crop rows, got full height {placed.shape}"
-    )
-    assert (placed[..., 0] == 255).all() and (placed[..., 2] == 0).all(), (
-        "the cropped region should be the red northern rows only"
-    )
+    assert (
+        placed.shape[0] < 4
+    ), f"extent should crop rows, got full height {placed.shape}"
+    assert (placed[..., 0] == 255).all() and (
+        placed[..., 2] == 0
+    ).all(), "the cropped region should be the red northern rows only"
     plt.close(fig)
 
 
@@ -495,7 +495,10 @@ def test_add_relief_non_lonlat_extent_still_stretches(cache: Path):
     ax.set_ylim(6e6, 7e6)
     add_relief(ax, "low", extent=(1e6, 6e6, 2e6, 7e6))  # metres, out of bounds
     placed = np.asarray(ax.images[0].get_array())
-    assert placed.shape[:2] == (4, 8), f"non-lon/lat extent should keep full image, got {placed.shape}"
+    assert placed.shape[:2] == (
+        4,
+        8,
+    ), f"non-lon/lat extent should keep full image, got {placed.shape}"
     assert tuple(ax.images[0].get_extent()) == (1e6, 2e6, 6e6, 7e6)
     plt.close(fig)
 
