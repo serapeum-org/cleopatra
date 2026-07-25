@@ -1349,6 +1349,7 @@ def swatch_legend(
     vmin: float = 0.0,
     vmax: float = 1.0,
     vmax_prefix: str = "≥",
+    vmin_prefix: str = "",
     bounds: Sequence[float] = (0.02, 0.88, 0.32, 0.05),
     text_color: str = "white",
     fontsize: float = 9,
@@ -1377,6 +1378,9 @@ def swatch_legend(
         vmax_prefix: Prefix drawn before the formatted `vmax` label (e.g.
             `"≥"` for an open-ended upper bound, matching the haze style).
             Pass `""` for a plain value.
+        vmin_prefix: Prefix drawn before the formatted `vmin` label (e.g.
+            `"≤"` when the low end is capped, as for a two-sided
+            `extend="both"` contour scale). Defaults to `""` (a plain value).
         bounds: `(x0, y0, width, height)` of the inset axes in `ax`'s
             fraction-of-axes coordinates (see `Axes.inset_axes`).
         text_color: Color for the label and the endpoint values.
@@ -1466,7 +1470,7 @@ def swatch_legend(
     swatch.text(
         0.0,
         -0.3,
-        f"{vmin:g}",
+        f"{vmin_prefix}{vmin:g}",
         ha="left",
         va="top",
         color=text_color,

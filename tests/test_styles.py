@@ -453,6 +453,12 @@ class TestSwatchLegend:
         texts = [t.get_text() for t in swatch.texts]
         assert texts[-1] == "100", f"expected plain '100', got {texts[-1]!r}"
 
+    def test_vmin_prefix_marks_a_capped_low_endpoint(self, ax):
+        """A `vmin_prefix` (e.g. '≤') is drawn before the low endpoint value."""
+        swatch = swatch_legend(ax, "viridis", "T", vmin=-40, vmax=40, vmin_prefix="≤")
+        texts = [t.get_text() for t in swatch.texts]
+        assert texts[1] == "≤-40", f"expected '≤-40' low endpoint, got {texts[1]!r}"
+
     def test_accepts_colormap_object(self, ax):
         """A `Colormap` instance (not just a name string) is accepted directly."""
         from matplotlib.colors import LinearSegmentedColormap

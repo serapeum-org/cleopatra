@@ -735,6 +735,23 @@ class TestContourLevelsStyle:
         with pytest.warns(UserWarning, match="expected units"):
             apply_data_style(ax, {"temperature": kelvin}, style="temperature", legend=False)
 
+    def test_two_sided_extend_legend_caps_the_low_endpoint(self, ax):
+        """A two-sided `extend='both'` levels preset marks both endpoints as capped ('≤'/'≥')."""
+        data = np.linspace(-30.0, 38.0, 400).reshape(20, 20)
+        apply_data_style(ax, {"temperature": data}, style="temperature", legend=True)
+        swatch_texts = [t.get_text() for c in ax.child_axes for t in c.texts]
+        assert "≤-40" in swatch_texts, f"expected a capped '≤-40' low endpoint, got {swatch_texts}"
+        assert "≥40" in swatch_texts, f"expected a capped '≥40' high endpoint, got {swatch_texts}"
+
+    def test_max_extend_legend_leaves_low_endpoint_uncapped(self, ax):
+        """An `extend='max'` levels preset leaves the low endpoint plain (no '≤' cap)."""
+        data = np.linspace(0.05, 4.5, 400).reshape(20, 20)
+        apply_data_style(ax, {"aod550": data}, style="aod550", legend=True)
+        swatch_texts = [t.get_text() for c in ax.child_axes for t in c.texts]
+        assert not any(t.startswith("≤") for t in swatch_texts), (
+            f"an extend='max' preset must not cap the low endpoint, got {swatch_texts}"
+        )
+
 
 class TestFlameColormapsAndPresets:
     """Tests for the flame/heat colormaps and the temperature_flame presets."""

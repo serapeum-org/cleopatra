@@ -1249,12 +1249,24 @@ def apply_data_style(
                 if legend_bounds is not None
                 else (0.02, 0.92 - 0.12 * i, 0.32, 0.06)
             )
+            # Mark the low endpoint as capped ("≤") when the norm reserves an
+            # under-range slot (a two-sided extend="both" or extend="min"
+            # BoundaryNorm), so the legend states the cold-end capping rather
+            # than reading as a hard minimum. The "≥" upper cap is swatch_legend's
+            # default; only the low end needs deriving from `extend`.
+            vmin_prefix = (
+                "≤"
+                if isinstance(norm, mcolors.BoundaryNorm)
+                and norm.extend in ("min", "both")
+                else ""
+            )
             swatch_legend(
                 ax,
                 cfg["cmap"],
                 cfg["label"],
                 vmin=resolved_vmin,
                 vmax=resolved_vmax,
+                vmin_prefix=vmin_prefix,
                 bounds=bounds,
                 norm=norm,
             )
