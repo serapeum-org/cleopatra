@@ -344,8 +344,8 @@ class GeoMixin:
     def crs(self) -> int | str | None:
         """CRS of the data plotted on `self.ax` (EPSG code or CRS string).
 
-        When set, `add_features` / `add_tiles` default `crs=` to it; `None`
-        keeps each helper's own default. The value is **validated on
+        When set, `add_features` / `add_tiles` / `add_relief` default `crs=`
+        to it; `None` keeps each helper's own default. The value is **validated on
         assignment** (see `cleopatra.geo._validate_crs`) so mistakes surface
         at `glyph.crs = ...` rather than later, when a basemap is drawn.
 

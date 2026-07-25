@@ -297,8 +297,9 @@ def add_relief(
         CRS (per-pixel inverse reprojection via pyproj) so it lines up under
         data plotted in that CRS, exactly like `add_features` / `add_tiles`.
         The placement box defaults to the current axis view; parts of the box
-        that fall outside the CRS's domain are left transparent. This path
-        needs pyproj (the `[tiles]` extra).
+        that fall outside the CRS's domain are left transparent. The box (and
+        the axis view it defaults from) is assumed non-inverted -- `west <
+        east`, `south < north`. This path needs pyproj (the `[tiles]` extra).
 
     Args:
         ax: A matplotlib `Axes` with data already plotted (so its limits
@@ -806,7 +807,7 @@ def _make_transformer(crs: int | str) -> Any:
     """
     if importlib.util.find_spec("pyproj") is None:
         raise ImportError(
-            "Reprojecting reference features to a non-EPSG:4326 CRS requires "
+            "Reprojecting reference layers to a non-EPSG:4326 CRS requires "
             "pyproj, provided by the [tiles] extra. Install with "
             "`pip install cleopatra[tiles]`, or plot your data in EPSG:4326."
         )
