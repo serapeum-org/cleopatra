@@ -20,9 +20,11 @@ the unrecognised names would truncate it and mis-weight the ends. The contour
 range and interval are encoded in each style name (``f<from>t<to>[i<interval>]``,
 ``M`` = minus), vendored verbatim as each preset's ``magics_style``; cleopatra
 decodes it at load time so presets render over ECMWF's fixed scale. The colour
-list is recovered in full, but the exact per-level *boundary values* are not
-laid down here -- the ramp is spread linearly across ``[vmin, vmax]`` as a
-continuous colormap rather than discrete Magics bands.
+list is recovered in full, but the exact per-level *boundary values* are not in
+the open data -- so cleopatra lays the palette down as a discrete
+``ListedColormap`` banded over ``[vmin, vmax]`` in equal-width intervals (a
+``BoundaryNorm`` with one band per colour), reproducing the flat Magics
+shaded-contour look rather than a smooth interpolation.
 
 Maintainer dependencies: only ``matplotlib`` (already a cleopatra dependency),
 used to resolve Magics' named colours to hex.
