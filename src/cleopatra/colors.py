@@ -664,13 +664,11 @@ def _load_preset_asset(
             # `vmin`/`vmax` still overrides it at draw time.
             decoded = _decode_magics_range(rec.get("magics_style"))
             if decoded is not None:
+                # Only the fixed range is used; the decoded interval (decoded[2])
+                # is not stored -- the bands partition [vmin, vmax] into
+                # `len(palette)` equal-width intervals (see resolve_style_norm),
+                # which need not equal the ECMWF contour interval.
                 layer["vmin"], layer["vmax"] = decoded[0], decoded[1]
-                if decoded[2] is not None:
-                    # The contour interval (e.g. 4 degC for `2t`): the discrete
-                    # bands are placed at multiples of it, so a band boundary
-                    # lands on ECMWF's real levels (0 degC, the 40 degC magenta
-                    # threshold, ...) rather than at an off-by-a-fraction split.
-                    layer["step"] = decoded[2]
             presets[key] = {key: layer}
         except (KeyError, TypeError, ValueError, AttributeError):
             continue
