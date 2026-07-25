@@ -573,6 +573,24 @@ def test_add_relief_non_4326_masks_out_of_domain(cache: Path):
     plt.close(fig)
 
 
+def test_add_relief_non_4326_bakes_alpha(cache: Path):
+    """On the warp path, alpha is baked into the RGBA alpha channel (imshow
+    gets no scalar alpha=)."""
+    pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+    _blue_west_red_east_relief(cache)
+    fig, ax = plt.subplots()
+    ax.set_xlim(-2e7, 2e7)
+    ax.set_ylim(-1e7, 1e7)
+    add_relief(ax, "low", crs=3857, alpha=0.5)
+    alpha = np.asarray(ax.images[0].get_array())[..., 3]
+    assert set(np.unique(alpha)).issubset(
+        {0, 128}
+    ), f"alpha not baked: {np.unique(alpha)}"
+    assert (alpha == 128).any(), "opaque cells should carry the baked alpha byte"
+    assert ax.images[0].get_alpha() is None, "warp path must not set a scalar alpha"
+    plt.close(fig)
+
+
 def test_add_relief_non_4326_requires_pyproj(
     cache: Path, monkeypatch: pytest.MonkeyPatch
 ):

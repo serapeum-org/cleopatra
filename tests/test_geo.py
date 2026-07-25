@@ -451,6 +451,14 @@ def test_glyph_crs_drives_relief_warp(tmp_path: Path, monkeypatch):
     glyph.add_relief("low")
     placed = np.asarray(ax.images[0].get_array())
     assert placed.shape[2] == 4, f"relief should warp to RGBA, got {placed.shape}"
+    w = placed.shape[1]
+    west = placed[:, : w // 4].reshape(-1, 4)
+    east = placed[:, -(w // 4) :].reshape(-1, 4)
+    west = west[west[:, 3] > 0]
+    east = east[east[:, 3] > 0]
+    assert west.size and east.size, "expected opaque cells on both strips"
+    assert (west[:, 2] > west[:, 0]).all(), "west should stay blue after the warp"
+    assert (east[:, 0] > east[:, 2]).all(), "east should stay red after the warp"
     plt.close(fig)
 
 
