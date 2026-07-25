@@ -420,10 +420,12 @@ def test_add_relief_custom_extent(cache: Path):
     ax.set_xlim(0, 10)
     ax.set_ylim(0, 10)
     add_relief(ax, "low", extent=(0, 0, 10, 10))
-    # (0, 0, 10, 10) is in-bounds, so it exercises the crop branch: this
-    # degree-scale box crops the 4x8 fixture down to a single pixel.
+    # (0, 0, 10, 10) is in-bounds, so it exercises the crop branch: the
+    # degree-scale box crops the 4x8 fixture to a single pixel, placed at that
+    # pixel's SNAPPED edges (true scale) -- which extend past the raw request,
+    # pinning the #177 true-scale registration.
     assert np.asarray(ax.images[0].get_array()).shape[:2] == (1, 1)
-    assert tuple(ax.images[0].get_extent()) == (0.0, 10.0, 0.0, 10.0)
+    assert tuple(ax.images[0].get_extent()) == (0.0, 45.0, 0.0, 45.0)
     plt.close(fig)
 
 

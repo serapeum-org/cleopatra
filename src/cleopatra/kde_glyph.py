@@ -487,6 +487,14 @@ class KDEGlyph(Glyph):
             except ValueError:
                 opts["style"] = prev_style
                 raise
+            # A caller vmin/vmax pins the preset's colour scale: a preset that
+            # auto-ranges by default (e.g. "temperature") then stretches between
+            # the given bounds, exactly as apply_data_style / ArrayGlyph do; None
+            # leaves the preset's own scale (auto-range, or its fixed levels).
+            cfg = {
+                **cfg,
+                **{k: opts[k] for k in ("vmin", "vmax") if opts.get(k) is not None},
+            }
             cmap = cfg["cmap"]
             norm, _, _ = resolve_style_norm(np.asarray(density, dtype=float), cfg)
             # Drop the linear ticks so the colorbar matches the preset norm.

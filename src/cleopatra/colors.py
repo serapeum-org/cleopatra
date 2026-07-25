@@ -1,6 +1,8 @@
 import importlib.resources
 import json
 import os
+import re
+import warnings
 from pathlib import Path
 from typing import Any, List, Tuple, Union
 
@@ -12,7 +14,7 @@ from matplotlib.colors import Colormap, LinearSegmentedColormap
 from matplotlib.image import AxesImage
 from PIL import Image, UnidentifiedImageError
 
-from cleopatra.styles import disjoint_legend, swatch_legend
+from cleopatra.styles import disjoint_legend, swatch_extend_prefixes, swatch_legend
 
 #: Sequential colormaps for the "haze" data style (white at 0.0, saturating
 #: toward the named hue at 1.0) -- the value-modulated-alpha, glowing-rim look
@@ -78,6 +80,29 @@ CAMS_AOD_COLORMAPS: dict[str, Colormap] = {
          "#fdb576", "#fda762", "#fd9a4e", "#fd8c3b", "#f87f2c", "#f3701b",
          "#ec620f", "#e25508", "#d84801", "#c54102", "#b03903", "#9e3303",
          "#8e2d04", "#7f2704"],
+    ),
+}
+
+#: Flame / heat colormaps for rendering a scalar field (typically temperature) as
+#: a glowing plume -- the CAMS aerosol `alpha_scaled_image` technique recoloured
+#: for heat. Pair with **value-linked opacity** (`alpha_scaled_image`, or a
+#: `DATA_STYLES` entry carrying `alpha_vmin`/`alpha_vmax`) over a dark hillshaded
+#: basemap so cool areas fade into the terrain and hot areas glow like fire. Two
+#: flavours: `"white_hot"` blows the hottest values out to yellow-white (the most
+#: fire-like), `"amber"` keeps a warmer gold/orange that is less blown-out. Each
+#: value is a ready `matplotlib.colors.Colormap`; see the `"temperature_flame"` /
+#: `"temperature_flame_amber"` presets in `DATA_STYLES` for the packaged form.
+FLAME_COLORMAPS: dict[str, Colormap] = {
+    # A stand-alone copy of matplotlib's `afmhot` (black -> red -> yellow -> white)
+    # so importing this never depends on it being registered under that name.
+    "white_hot": LinearSegmentedColormap.from_list(
+        "flame_white_hot",
+        ["#000000", "#4d0000", "#990000", "#e02a00", "#ff7a00", "#ffbf1a",
+         "#fff29a", "#ffffff"],
+    ),
+    "amber": LinearSegmentedColormap.from_list(
+        "flame_amber",
+        ["#240000", "#7a0000", "#c81800", "#ff5a00", "#ff9a00", "#ffd21e", "#fff2a8"],
     ),
 }
 
@@ -376,11 +401,45 @@ DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
     },
     # --- Ready-to-use presets for common pyramids GIS/NetCDF-climate fields. ---
     # Opaque full fields (auto-ranged from the data): the whole field is drawn.
+    # A general-purpose temperature ramp: the muted `Spectral_r` colours (blue
+    # cold -> red hot), auto-ranged from the data so it fits ANY continuous field
+    # (a Celsius raster, a KDE density, a normalized index). Pass `vmin`/`vmax`
+    # to pin the scale to a chosen range (e.g. `vmin=-40, vmax=40` for the ECMWF
+    # window); for the fixed, discretely-banded ECMWF 2 m-temperature look in one
+    # word, use the `"2t"` preset instead (fixed -40..40 degC, `extend="both"`).
     "temperature": {
         "temperature": {
-            "cmap": "RdYlBu_r",  # blue (cold) -> red (hot)
+            "cmap": "Spectral_r",  # muted spectral, blue (cold) -> red (hot)
             "label": "Temperature",
-            "alpha": 1.0,
+            "alpha": 1.0,  # opaque full field (like elevation/wind_speed), not a glow
+        },
+    },
+    # Temperature (or any heat field) rendered as a glowing flame/plume: the CAMS
+    # aerosol technique (value-linked opacity -- cool fades to transparent so the
+    # terrain shows, hot glows opaque) recoloured for heat. Compose over a dark
+    # hillshaded backdrop (`apply_blank_canvas` + a `cleopatra.reference` relief),
+    # the way the "haze" style is composed. Colour spans 0..40, opacity ramps in
+    # over 6..32 -- sensible for surface air temperature in degC; override
+    # `vmin`/`vmax` for other ranges. Two flavours: `white_hot` (blows out to
+    # yellow-white) and `amber` (warmer gold/orange, less blown-out).
+    "temperature_flame": {
+        "temperature_flame": {
+            "cmap": FLAME_COLORMAPS["white_hot"],
+            "label": "Temperature",
+            "vmin": 0.0,
+            "vmax": 40.0,
+            "alpha_vmin": 6.0,
+            "alpha_vmax": 32.0,
+        },
+    },
+    "temperature_flame_amber": {
+        "temperature_flame_amber": {
+            "cmap": FLAME_COLORMAPS["amber"],
+            "label": "Temperature",
+            "vmin": 0.0,
+            "vmax": 40.0,
+            "alpha_vmin": 6.0,
+            "alpha_vmax": 32.0,
         },
     },
     "elevation": {
@@ -469,6 +528,72 @@ DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
 }
 
 
+#: An ECMWF Magics style name encodes its contour range/interval in an
+#: ``f<from>t<to>[i<interval>]`` grammar (``M`` = minus). The interval is
+#: optional (``sh_mc_wind_f0t80`` = 0..80 with no interval). `_decode_magics_range`
+#: recovers ``(vmin, vmax, step)`` so a preset renders over ECMWF's fixed scale
+#: instead of auto-ranging to whatever data it is handed.
+_MAGICS_RANGE = re.compile(r"f(M?\d+(?:_\d+)?)t(M?\d+(?:_\d+)?)(?:i(\d+(?:_\d+)?))?")
+
+
+def _magics_num(token: str) -> float:
+    """Decode one numeric token of a Magics range name.
+
+    The grammar: ``M`` prefixes a negative; ``_`` is the decimal point
+    (``1_5`` -> 1.5); a leading ``0`` on a multi-digit token marks a decimal
+    (``05`` -> 0.5, ``01`` -> 0.1, matching ECMWF's precip/index scales); ``0``
+    alone is zero, and any other token is an integer (``10`` -> 10, not 1.0).
+
+    Args:
+        token: A single ``from``/``to``/``interval`` token (without the
+            ``f``/``t``/``i`` marker).
+
+    Returns:
+        float: The decoded value.
+    """
+    negative = token.startswith("M")
+    if negative:
+        token = token[1:]
+    if "_" in token:
+        value = float(token.replace("_", "."))
+    elif len(token) > 1 and token[0] == "0":
+        value = float("0." + token[1:])
+    else:
+        value = float(token)
+    return -value if negative else value
+
+
+def _decode_magics_range(
+    magics_style: str | None,
+) -> tuple[float, float, float | None] | None:
+    """Recover ``(vmin, vmax, step)`` from a Magics style name, or ``None``.
+
+    Parses the ``f<from>t<to>[i<interval>]`` range grammar embedded in ECMWF
+    Magics style names (e.g. ``sh_all_fM48t56i4`` -> ``(-48.0, 56.0, 4.0)``,
+    ``sh_mc_wind_f0t80`` -> ``(0.0, 80.0, None)``). Returns ``None`` when the
+    name carries no range, or the decoded range is degenerate (``vmin >=
+    vmax``), so such a preset keeps auto-ranging. Only the range is recovered --
+    the exact per-level colour list is not in the open Magics data, so a preset
+    with a non-linear level scale (e.g. precipitation) still bands linearly.
+
+    Args:
+        magics_style: A Magics style name, or ``None``.
+
+    Returns:
+        The ``(vmin, vmax, step)`` triple (``step`` is ``None`` when the name
+        omits the interval), or ``None`` when no usable range is present.
+    """
+    match = _MAGICS_RANGE.search(magics_style or "")
+    if match is None:
+        return None
+    vmin = _magics_num(match.group(1))
+    vmax = _magics_num(match.group(2))
+    if vmin >= vmax:
+        return None
+    step = _magics_num(match.group(3)) if match.group(3) else None
+    return vmin, vmax, step
+
+
 def _load_preset_asset(
     resource: str, cmap_prefix: str
 ) -> dict[str, dict[str, dict[str, Any]]]:
@@ -501,7 +626,7 @@ def _load_preset_asset(
         )
         records = json.loads(source).get("presets", {}).items()
     except (
-        FileNotFoundError, ModuleNotFoundError, OSError,
+        ModuleNotFoundError, OSError,
         json.JSONDecodeError, AttributeError,
     ):
         return {}
@@ -512,16 +637,36 @@ def _load_preset_asset(
     presets: dict[str, dict[str, dict[str, Any]]] = {}
     for key, rec in records:
         try:
-            layer: dict[str, Any] = {
-                "cmap": LinearSegmentedColormap.from_list(
-                    f"{cmap_prefix}_{key}", rec["palette"]
-                ),
-                "label": rec["label"],
-            }
+            palette = rec["palette"]
+            # A Magics preset (carries a `magics_style`) is a *discrete* contour
+            # shade: ECMWF renders it as flat colour bands, not a smooth ramp.
+            # Reproduce that with a ListedColormap (paired with a BoundaryNorm in
+            # resolve_style_norm via `bands`) -- a continuous interpolation of
+            # these saturated colours reads as a glossy, over-exposed sheen. Non-
+            # Magics assets (cmocean) are genuinely continuous scientific ramps.
+            is_magics = bool(rec.get("magics_style"))
+            if is_magics:
+                cmap: Colormap = mcolors.ListedColormap(palette, name=f"{cmap_prefix}_{key}")
+            else:
+                cmap = LinearSegmentedColormap.from_list(f"{cmap_prefix}_{key}", palette)
+            layer: dict[str, Any] = {"cmap": cmap, "label": rec["label"]}
+            if is_magics:
+                layer["bands"] = len(palette)  # number of discrete colour bands
             if rec.get("opacity") == "opaque":
                 layer["alpha"] = 1.0  # value-linked opacity (overlay) is the default otherwise
             if rec.get("center") is not None:
                 layer["center"] = rec["center"]
+            # Recover the fixed contour range encoded in the Magics style name
+            # (e.g. `2t` -> -48..56) so the preset renders over ECMWF's absolute
+            # scale rather than auto-ranging to the data. A caller-supplied
+            # `vmin`/`vmax` still overrides it at draw time.
+            decoded = _decode_magics_range(rec.get("magics_style"))
+            if decoded is not None:
+                # Only the fixed range is used; the decoded interval (decoded[2])
+                # is not stored -- the bands partition [vmin, vmax] into
+                # `len(palette)` equal-width intervals (see resolve_style_norm),
+                # which need not equal the ECMWF contour interval.
+                layer["vmin"], layer["vmax"] = decoded[0], decoded[1]
             presets[key] = {key: layer}
         except (KeyError, TypeError, ValueError, AttributeError):
             continue
@@ -538,6 +683,61 @@ def _load_magics_presets() -> dict[str, dict[str, dict[str, Any]]]:
     return _load_preset_asset("magics_presets.json", "magics")
 
 
+def _load_earthkit_presets() -> dict[str, dict[str, dict[str, Any]]]:
+    """Load ECMWF's *default* parameter styles from the vendored earthkit asset.
+
+    Each preset is the `optimal` Style variant from ECMWF's earthkit-plots style
+    library (Apache-2.0; see `tools/build_earthkit_presets.py`): a colormap (a
+    matplotlib name or an explicit colour list) plus discrete contour `levels`
+    and an `extend` cap -- the professional weather-service look (e.g. `"2t"` ->
+    muted `Spectral_r` in 2 degC bands). Keyed by GRIB shortName so these
+    override the Magics rainbow presets for the same parameters. Never raises: a
+    missing/malformed asset degrades to `{}`.
+    """
+    try:
+        raw = (
+            importlib.resources.files("cleopatra.data")
+            .joinpath("earthkit_presets.json")
+            .read_text(encoding="utf-8")
+        )
+    except (ModuleNotFoundError, OSError):
+        return {}
+    try:
+        records = json.loads(raw).get("presets", {})
+    except (ValueError, AttributeError):
+        return {}
+
+    presets: dict[str, dict[str, dict[str, Any]]] = {}
+    for key, rec in records.items():
+        try:
+            colors = rec["colors"]
+            if isinstance(colors, str):
+                # A matplotlib colormap name, resolved at draw time.
+                cmap: Any = colors
+            elif rec.get("levels"):
+                # A colour LIST with levels is a discrete band palette: keep the
+                # exact ECMWF colours via a ListedColormap (one per band for
+                # aod550/10si; a fine 255-stop ramp banded by the levels for cape)
+                # rather than resampling a continuous interpolation.
+                cmap = mcolors.ListedColormap(colors, name=f"earthkit_{key}")
+            else:
+                # A colour list with no levels (e.g. `tp`'s white->blue gradient)
+                # is a genuine continuous ramp.
+                cmap = LinearSegmentedColormap.from_list(f"earthkit_{key}", colors)
+            layer: dict[str, Any] = {
+                "cmap": cmap,
+                "label": rec["label"],
+                "alpha": 1.0,
+            }
+            if rec.get("levels"):
+                layer["levels"] = rec["levels"]
+                layer["extend"] = rec.get("extend", "neither")
+            presets[key] = {key: layer}
+        except (KeyError, TypeError, ValueError):
+            continue
+    return presets
+
+
 #: Register the vendored preset libraries into `DATA_STYLES` at import, alongside
 #: the hand-authored presets above: the full ECMWF/Magics parameter set (keyed
 #: by GRIB shortName, e.g. `"2t"`, `"tp"`, `"aod550"`) and the cmocean
@@ -545,6 +745,9 @@ def _load_magics_presets() -> dict[str, dict[str, dict[str, Any]]]:
 #: `"bathymetry"`). List them all with `sorted(DATA_STYLES)`.
 DATA_STYLES.update(_load_magics_presets())
 DATA_STYLES.update(_load_preset_asset("cmocean_presets.json", "cmocean"))
+# ECMWF's default (earthkit) styles load LAST so they win over the Magics rainbow
+# for the same GRIB shortNames -- the professional banded look is the default.
+DATA_STYLES.update(_load_earthkit_presets())
 
 
 def category_boundaries(values: list[float]) -> list[float]:
@@ -570,17 +773,49 @@ def category_boundaries(values: list[float]) -> list[float]:
     return [lower] + mids + [upper]
 
 
+def _warn_if_outside_fixed_range(data: np.ndarray, lo: float, hi: float) -> None:
+    """Warn when finite `data` lies entirely outside a preset's fixed scale `[lo, hi]`.
+
+    A preset that fixes its colour range (contour `levels` or a decoded Magics
+    `vmin`/`vmax`) renders the whole field as one edge colour if the data is in
+    the wrong units -- the classic footgun being 2 m temperature in Kelvin
+    (~250-320) hitting a Celsius scale. Surface it instead of failing silently.
+    """
+    finite = data[np.isfinite(data)]
+    if finite.size and (float(finite.min()) > hi or float(finite.max()) < lo):
+        warnings.warn(
+            f"data range [{float(finite.min()):g}, {float(finite.max()):g}] lies entirely "
+            f"outside the style's fixed scale [{lo:g}, {hi:g}]; the whole field will render "
+            "as one edge colour. Is the data in the expected units (e.g. degC, not K)?",
+            stacklevel=3,
+        )
+
+
 def resolve_style_norm(
     data: np.ndarray, cfg: dict[str, Any]
 ) -> tuple[mcolors.Normalize, float, float]:
     """Resolve the colour `Normalize` (and its concrete bounds) for one layer.
 
-    Honours a `DATA_STYLES` layer's optional `vmin`/`vmax` (auto-ranged from
-    the data's finite values when omitted -- essential for real GIS/climate
-    fields whose absolute range varies) and an optional diverging `center`.
-    When `center` is set and a bound is missing, the range is made symmetric
-    around it (`center +/- max|data - center|`), so the colormap's midpoint
-    lands exactly on `center` -- the anomaly-map convention.
+    Resolution order:
+
+    - **Explicit `levels`** (the ECMWF / earthkit contour model) resolve to a
+      discrete `BoundaryNorm` over those boundaries, with `extend` capping the
+      out-of-range ends -- unless the caller supplied `vmin`/`vmax`/`center` or a
+      non-linear `norm` kind (`"log"`/`"symlog"`) merged into `cfg`, which take
+      precedence and fall through to the continuous path below so the override
+      actually rescales the map.
+    - Otherwise the bounds come from the layer's `vmin`/`vmax` (auto-ranged from
+      the data's finite values when omitted -- essential for real GIS/climate
+      fields whose absolute range varies) and an optional diverging `center`
+      (a missing bound is made symmetric around it, `center +/- max|data -
+      center|`, so the colormap midpoint lands on `center`).
+    - A layer with `bands` (a Magics discrete shade) becomes a `BoundaryNorm`
+      partitioning `[vmin, vmax]` into `bands` equal intervals; a `norm` kind of
+      `"log"`/`"symlog"` selects the matching non-linear norm.
+
+    When a fixed scale (`levels`, or an explicit `vmin`/`vmax`) does not overlap
+    the data at all, a `UserWarning` is emitted (the units-mismatch footgun,
+    e.g. Kelvin data on a Celsius scale).
 
     Args:
         data: The layer's 2D data array (finite values drive auto-ranging).
@@ -590,6 +825,40 @@ def resolve_style_norm(
         tuple: `(norm, vmin, vmax)` -- the colour normalization and the
         concrete bounds it resolved to (reused for the layer's legend).
     """
+    levels = cfg.get("levels")
+    norm_kind = cfg.get("norm")
+    # A caller-supplied vmin/vmax/center -- or a non-linear norm kind
+    # ("log"/"symlog") -- merged into cfg by apply_data_style's style override
+    # takes precedence over the preset's own fixed levels: fall through to the
+    # continuous vmin/vmax path below so the override actually rescales the map
+    # rather than being silently ignored. Honouring a string norm kind here is
+    # what keeps it consistent with a Normalize *instance* override (which
+    # apply_data_style applies after this call); otherwise "log"/"symlog" would
+    # be dropped on a levels preset while an instance of the same norm is kept.
+    caller_override = any(
+        cfg.get(key) is not None for key in ("vmin", "vmax", "center")
+    ) or (isinstance(norm_kind, str) and norm_kind in ("log", "symlog"))
+    if levels is not None and not caller_override:
+        # Explicit contour LEVELS (the ECMWF / earthkit-plots model): discrete
+        # bands at fixed boundaries with `extend` capping the out-of-range ends
+        # -- the look of a professional weather-service map.
+        edges = [float(v) for v in levels]
+        _warn_if_outside_fixed_range(data, edges[0], edges[-1])
+        cmap_obj = cfg["cmap"]
+        if not isinstance(cmap_obj, Colormap):
+            cmap_obj = mpl.colormaps[cmap_obj]
+        # Honour `extend` unless the colormap lacks a spare colour for each
+        # reserved under/over slot. A continuous colormap (256 entries) always
+        # has room; a one-colour-per-band ListedColormap (aod550=9, 10si=6) does
+        # not, so `extend` is dropped there and out-of-range values clamp to the
+        # end bands -- but a colour-rich list (cape=255 over 16 bands) keeps it.
+        extend = cfg.get("extend", "neither")
+        reserved = {"neither": 0, "min": 1, "max": 1, "both": 2}.get(extend, 0)
+        if cmap_obj.N < (len(edges) - 1) + reserved:
+            extend = "neither"
+        norm = mcolors.BoundaryNorm(edges, ncolors=cmap_obj.N, extend=extend)
+        return norm, edges[0], edges[-1]
+
     vmin = cfg.get("vmin")
     vmax = cfg.get("vmax")
     center = cfg.get("center")
@@ -613,7 +882,18 @@ def resolve_style_norm(
     if vmin == vmax:
         vmax = vmin + 1.0
 
-    norm_kind = cfg.get("norm")
+    bands = cfg.get("bands")
+    if bands and norm_kind in (None, "linear") and center is None:
+        # Discrete contour bands (Magics-style shade), each mapped to one entry
+        # of the paired ListedColormap: the flat, banded ECMWF look, not a smooth
+        # (over-exposed) interpolation of the same colours. Partition [vmin, vmax]
+        # into `bands` equal intervals so the edges stay within the declared range
+        # -- every palette colour is reachable and the legend agrees (a
+        # step-aligned partition could overshoot vmax and strand the top colours).
+        if cfg.get("vmin") is not None or cfg.get("vmax") is not None:
+            _warn_if_outside_fixed_range(data, vmin, vmax)
+        boundaries = np.linspace(vmin, vmax, bands + 1)
+        return mcolors.BoundaryNorm(boundaries, bands), vmin, vmax
     if norm_kind in (None, "linear") and center is not None:
         # Diverging: put `center` on the colormap midpoint regardless of how
         # the bounds were resolved (auto-symmetric or explicit vmin/vmax).
@@ -752,7 +1032,11 @@ def apply_data_style(
             in the same order as `layers`, overriding the auto-stacked
             default.
         **render_kwargs: Forwarded to every `alpha_scaled_image` (or
-            `alpha_scaled_mesh`, when `x`/`y` are given) call.
+            `alpha_scaled_mesh`, when `x`/`y` are given) call. A `vmin`/`vmax`/
+            `center` here overrides the preset's own colour scale (e.g. a fixed
+            Magics range or contour `levels`); a string `norm` (`"log"`/
+            `"symlog"`) overrides the preset's norm kind and a `Normalize`
+            instance is used directly as the colour norm.
 
     Returns:
         dict[str, Any]: The image (or mesh) artist for each layer, keyed by
@@ -854,9 +1138,29 @@ def apply_data_style(
         # for a globe's extreme local distortion, so shading="flat" (which
         # trusts the given edges exactly) is the correct default here.
         render_kwargs.setdefault("shading", "flat")
+    # A caller-supplied `vmin`/`vmax`/`center` overrides the preset's own colour
+    # scale (e.g. a Magics preset's decoded fixed range). These are colour-scale
+    # keys, not `imshow` kwargs, so pull them out of `render_kwargs` and merge
+    # them over each layer's config below.
+    style_override = {}
+    for key in ("vmin", "vmax", "center"):
+        if key in render_kwargs:
+            value = render_kwargs.pop(key)
+            # Pop it (so it never reaches imshow), but only override the preset when
+            # it is actually set -- an explicit None must not wipe a fixed range.
+            if value is not None:
+                style_override[key] = value
+    # A caller `norm=`: a string kind ("linear"/"log"/"symlog") overrides the
+    # preset's norm kind via cfg; a Normalize *instance* is used directly as the
+    # colour norm. Pop it either way so it never collides with the norm
+    # alpha_scaled_image is already given, nor is mis-read as a kind string.
+    norm_override = render_kwargs.pop("norm", None)
+    if isinstance(norm_override, str):
+        style_override["norm"] = norm_override
+        norm_override = None
     images: dict[str, Any] = {}
     for i, (name, data) in enumerate(layers.items()):
-        cfg = preset[name]
+        cfg = {**preset[name], **style_override}
         data = np.asarray(data, dtype=float)
 
         categories = cfg.get("categories")
@@ -910,6 +1214,21 @@ def apply_data_style(
             continue
 
         norm, resolved_vmin, resolved_vmax = resolve_style_norm(data, cfg)
+        if norm_override is not None:
+            # A caller-supplied Normalize instance is used directly as the norm.
+            # Label the legend with the INSTANCE's own range, not the preset's
+            # resolved bounds: otherwise a levels preset would label the swatch
+            # with its fixed level endpoints (e.g. -40..40) while the map uses the
+            # instance's scale, and the swatch gradient -- sampled through the
+            # instance across [vmin, vmax] -- would feed a LogNorm the preset's
+            # negative levels. Fall back to the data's own range for any bound the
+            # instance leaves unset (matplotlib autoscales the map the same way).
+            norm = norm_override
+            finite = data[np.isfinite(data)]
+            data_lo = float(finite.min()) if finite.size else resolved_vmin
+            data_hi = float(finite.max()) if finite.size else resolved_vmax
+            resolved_vmin = norm.vmin if norm.vmin is not None else data_lo
+            resolved_vmax = norm.vmax if norm.vmax is not None else data_hi
 
         alpha_const = cfg.get("alpha")
         alpha_vmin = cfg.get("alpha_vmin")
@@ -940,12 +1259,20 @@ def apply_data_style(
                 if legend_bounds is not None
                 else (0.02, 0.92 - 0.12 * i, 0.32, 0.06)
             )
+            # Mark each endpoint as capped ("≤"/"≥") only where the norm reserves
+            # an out-of-range slot, so the legend states the capping the map
+            # applies -- a two-sided BoundaryNorm caps both ends, a `neither`/
+            # downgraded one caps neither, and a continuous norm keeps the
+            # open-ended "≥". Derived in one helper shared with animate().
+            vmin_prefix, vmax_prefix = swatch_extend_prefixes(norm)
             swatch_legend(
                 ax,
                 cfg["cmap"],
                 cfg["label"],
                 vmin=resolved_vmin,
                 vmax=resolved_vmax,
+                vmin_prefix=vmin_prefix,
+                vmax_prefix=vmax_prefix,
                 bounds=bounds,
                 norm=norm,
             )

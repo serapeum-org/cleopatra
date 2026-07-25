@@ -287,11 +287,12 @@ def add_relief(
         (the default, `crs=None`) a lon/lat `extent` within the global bounds
         is **cropped** out of the global image and placed over that box, so a
         regional call shows that region's terrain rather than the whole world
-        squashed into it. The crop is sliced on the relief's pixel grid and
-        drawn at the requested box, so an off-grid `extent` can shift the
-        backdrop by up to one pixel (0.5 deg at `"low"`, 0.25 deg at
-        `"medium"`); grid-aligned extents register exactly. `extent=None`
-        places the whole globe (the axis limits crop the view).
+        squashed into it (the recurring #177 footgun). The crop is placed at
+        its **snapped pixel edges** so the terrain registers at true scale; the
+        axis limits (preserved below) then clip to the requested view.
+        `extent=None` places the whole globe. An `extent` OUTSIDE the global
+        lon/lat bounds on a 4326 axis is instead stretched by `imshow` to fit
+        -- visually acceptable for small extents but not a true reprojection.
 
         For a **non-EPSG:4326 `crs`** the relief is **warped** into the axis
         CRS (per-pixel inverse reprojection via pyproj) so it lines up under
@@ -308,9 +309,11 @@ def add_relief(
             `available_relief_resolutions`).
         extent: `(west, south, east, north)` placement in axis units. On an
             EPSG:4326 axis, `None` (default) uses the whole global relief
-            `(-180, -90, 180, 90)`; see `Note` for crop-vs-stretch. For a
-            non-4326 `crs`, `None` fills the current axis view and any box is
-            interpreted in the axis CRS's units.
+            `(-180, -90, 180, 90)`, and a box within the global bounds is
+            cropped out and placed at true scale (a regional view shows only
+            that region); see `Note` for crop-vs-stretch. For a non-4326 `crs`,
+            `None` fills the current axis view and any box is interpreted in the
+            axis CRS's units.
         alpha: Backdrop opacity in `[0, 1]`.
         zorder: Matplotlib draw order (`-1` puts it behind all data).
         interpolation: Interpolation passed to `ax.imshow`.
@@ -383,6 +386,13 @@ def add_relief(
                     rows, max(r0 + 1, int(np.ceil((gn - south) / (gn - gs) * rows)))
                 )
                 rgb = rgb[r0:r1, c0:c1]
+                # Place the crop at its SNAPPED pixel edges (not the raw
+                # request) so the terrain registers at true scale; the axis
+                # limits (restored below) then clip to the requested view.
+                west = gw + c0 / cols * (ge - gw)
+                east = gw + c1 / cols * (ge - gw)
+                north = gn - r0 / rows * (gn - gs)
+                south = gn - r1 / rows * (gn - gs)
         ax.imshow(
             rgb,
             extent=[west, east, south, north],
