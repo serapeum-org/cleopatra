@@ -4867,6 +4867,42 @@ class TestArrayGlyphDataStyle:
         assert type(g.im).__name__ == "QuadMesh"
         plt.close("all")
 
+    def test_magics_preset_uses_its_fixed_range_by_default(self):
+        """A Magics preset with an encoded range (mn2t) maps over its fixed scale, not auto-range.
+
+        The preset resolves to RGBA before imshow, so the applied range is read from the
+        pixel colours: a fixed -48..56 render differs from one auto-ranged to the data extent.
+        """
+        data = np.linspace(-10.0, 50.0, 30 * 40).reshape(30, 40)
+        fixed = ArrayGlyph(data, style="mn2t")
+        fixed.plot()
+        auto = ArrayGlyph(data, style="mn2t", vmin=float(data.min()), vmax=float(data.max()))
+        auto.plot()
+        assert not np.allclose(fixed.im.get_array(), auto.im.get_array())
+        plt.close("all")
+
+    def test_explicit_colour_limit_is_sticky_into_a_later_styled_plot(self):
+        """An explicit vmin/vmax persists to a later styled plot (sticky, like default_options)."""
+        data = np.linspace(-30.0, 50.0, 30 * 40).reshape(30, 40)
+        g = ArrayGlyph(data)
+        g.plot(vmin=5.0, vmax=20.0)  # plain plot sets an explicit range...
+        g.plot(style="mn2t")  # ...which sticks into the styled render (not mn2t's -48..56)
+        sticky = np.asarray(g.im.get_array()).copy()
+        fresh = ArrayGlyph(data, style="mn2t")
+        fresh.plot()  # a fresh glyph uses mn2t's own fixed range
+        assert not np.allclose(sticky, np.asarray(fresh.im.get_array()))
+        plt.close("all")
+
+    def test_glyph_vmin_vmax_overrides_preset_fixed_range(self):
+        """A glyph-level vmin/vmax overrides the preset's encoded fixed range."""
+        data = np.linspace(-10.0, 50.0, 30 * 40).reshape(30, 40)
+        default = ArrayGlyph(data, style="mn2t")
+        default.plot()
+        override = ArrayGlyph(data, style="mn2t", vmin=-10.0, vmax=50.0)
+        override.plot()
+        assert not np.allclose(default.im.get_array(), override.im.get_array())
+        plt.close("all")
+
     def test_integer_masked_categorical_input_does_not_crash(self):
         """An integer-coded categorical raster with masked nodata renders (no `ma.filled` TypeError)."""
         rng = np.random.default_rng(2)
@@ -5004,6 +5040,18 @@ class TestArrayGlyphShadedAnimate:
         assert len(g.ax.child_axes) == 1
         plt.close("all")
 
+    def test_styled_animate_legend_caps_endpoints_like_plot(self):
+        """A two-sided `extend='both'` preset's animation swatch caps both endpoints
+        ('≤'/'≥') from the norm's extend, matching the plot() legend (M2 parity)."""
+        base = np.linspace(-30.0, 38.0, 400).reshape(20, 20)
+        stack = np.stack([base + w for w in (-2.0, 0.0, 5.0)])
+        g = ArrayGlyph(stack, style="2t")
+        g.animate(time=list(range(3)))
+        swatch_texts = [t.get_text() for c in g.ax.child_axes for t in c.texts]
+        assert "≤-40" in swatch_texts, f"animate legend should cap the low endpoint, got {swatch_texts}"
+        assert "≥40" in swatch_texts, f"animate legend should cap the high endpoint, got {swatch_texts}"
+        plt.close("all")
+
     def test_continuous_style_animate_reproduces_alpha_glow(self):
         """A value-linked-opacity preset fades low cells in animate too (plot/animate parity)."""
         rng = np.random.default_rng(8)
@@ -5017,6 +5065,18 @@ class TestArrayGlyphShadedAnimate:
         assert frame.shape[-1] == 4, "animate frames are RGBA"
         alpha = frame[..., 3]
         assert alpha.min() < 0.2 and alpha.max() > 0.8, "opacity ramps with value like plot()"
+        plt.close("all")
+
+    def test_magics_preset_animate_uses_fixed_range_overridable_by_caller(self):
+        """A styled animation honours the preset's fixed range, and a caller vmin/vmax overrides it."""
+        base = np.linspace(-2.0, 39.0, 400).reshape(20, 20)
+        stack = np.stack([base + w for w in (-4.0, 0.0, 8.0)])
+        fixed = ArrayGlyph(stack, style="mn2t")
+        fixed.animate(time=list(range(3)))._func(2)
+        fixed_frame = np.asarray(fixed.im.get_array()).copy()
+        override = ArrayGlyph(stack, style="mn2t", vmin=-10.0, vmax=50.0)
+        override.animate(time=list(range(3)))._func(2)
+        assert not np.allclose(fixed_frame, np.asarray(override.im.get_array()))
         plt.close("all")
 
     def test_hillshade_animate_integer_masked_frame_does_not_crash(self):

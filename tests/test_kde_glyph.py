@@ -571,7 +571,7 @@ class TestKDEGlyphDataStyle:
         """A continuous preset set at construction colours the density."""
         x, y = self._cloud()
         _, _, cs = KDEGlyph(x, y, gridsize=40, style="temperature").plot()
-        assert cs.get_cmap().name == "RdYlBu_r"
+        assert cs.get_cmap().name == "Spectral_r"
         plt.close("all")
 
     def test_continuous_preset_at_plot_time(self):
@@ -613,9 +613,26 @@ class TestKDEGlyphDataStyle:
         g = KDEGlyph(x, y, gridsize=40)
         default_cmap = g.default_options["cmap"]
         _, _, cs = g.plot(style="temperature")
-        assert cs.get_cmap().name == "RdYlBu_r"
+        assert cs.get_cmap().name == "Spectral_r"
         assert g.default_options["cmap"] == default_cmap
         assert g.style == "temperature"  # the name persists for read-back
+        plt.close("all")
+
+    def test_continuous_preset_auto_ranges_to_the_data(self):
+        """A continuous preset ('temperature') auto-ranges to the density, so a
+        small-magnitude field still gets a full gradient (not one flat band)."""
+        x, y = self._cloud()
+        _, _, cs = KDEGlyph(x, y, gridsize=50, style="temperature").plot()
+        assert cs.norm.vmax < 1.0, f"temperature must auto-range to the density, got vmax={cs.norm.vmax}"
+        colours = np.unique(np.round(np.asarray(cs.get_facecolor()), 3), axis=0)
+        assert len(colours) > 1, f"expected a multi-colour gradient, got {len(colours)}"
+        plt.close("all")
+
+    def test_style_vmin_vmax_pins_the_colour_scale(self):
+        """A construction-time `vmin`/`vmax` pins a styled density's colour scale (default None auto-ranges)."""
+        x, y = self._cloud()
+        _, _, cs = KDEGlyph(x, y, gridsize=40, style="temperature", vmin=-40, vmax=40).plot()
+        assert (cs.norm.vmin, cs.norm.vmax) == (-40.0, 40.0)
         plt.close("all")
 
 
@@ -635,7 +652,7 @@ class TestKDEGlyphApplyStyle:
         g = KDEGlyph(x, y, gridsize=40)
         g.plot()
         _, _, cs = g.apply_style("temperature")
-        assert g.style == "temperature" and cs.get_cmap().name == "RdYlBu_r"
+        assert g.style == "temperature" and cs.get_cmap().name == "Spectral_r"
         plt.close("all")
 
     def test_apply_style_categorical_raises(self):

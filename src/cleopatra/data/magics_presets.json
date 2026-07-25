@@ -4,11 +4,12 @@
   "source_ref": "develop",
   "source_files": [
    "share/magics/styles/default/palettes.json",
-   "share/magics/styles/default/contours.json"
+   "share/magics/styles/default/contours.json",
+   "src/common/Colour.cc"
   ],
   "license": "Apache-2.0",
-  "generated_utc": "2026-07-10",
-  "note": "Colour data and parameter/label associations derived from ECMWF Magics (Apache-2.0); contains no Magics code. Exact contour levels are not in the open data, so presets carry no vmin/vmax and auto-range. Opacity is opaque unless the source palette carries a built-in alpha ramp, in which case it is an overlay."
+  "generated_utc": "2026-07-24",
+  "note": "Colour data and parameter/label associations derived from ECMWF Magics (Apache-2.0); contains no Magics code. Palette colours are resolved from rgb() values and Magics' named-colour table (Colour.cc), so the full ramp is kept. The contour range and interval are encoded in each preset's magics_style name (f<from>t<to>[i<interval>], M=minus) and cleopatra decodes them at load time, so presets render over ECMWF's fixed scale (a caller vmin/vmax still overrides). The exact per-level boundary values are not in the open data, so the ramp is spread linearly across the range. Opacity is opaque unless the source palette carries a built-in alpha ramp, in which case it is an overlay."
  },
  "presets": {
   "10fg": {
@@ -72,8 +73,20 @@
     "#000080",
     "#0000d9",
     "#4000ff",
+    "#8000ff",
+    "#0080ff",
+    "#00ffff",
+    "#00ff80",
+    "#80ff00",
+    "#daff00",
     "#ffff00",
-    "#ffa500",
+    "#fff500",
+    "#ffda00",
+    "#ffb000",
+    "#ff8000",
+    "#ff4f00",
+    "#ff2500",
+    "#ff0a00",
     "#ff0000",
     "#ff00ff",
     "#ff00ff",
@@ -94,8 +107,20 @@
     "#000080",
     "#0000d9",
     "#4000ff",
+    "#8000ff",
+    "#0080ff",
+    "#00ffff",
+    "#00ff80",
+    "#80ff00",
+    "#daff00",
     "#ffff00",
-    "#ffa500",
+    "#fff500",
+    "#ffda00",
+    "#ffb000",
+    "#ff8000",
+    "#ff4f00",
+    "#ff2500",
+    "#ff0a00",
     "#ff0000",
     "#ff00ff",
     "#ff00ff",
@@ -231,6 +256,11 @@
   "clbt": {
    "label": "Cloudy brightness temperature",
    "palette": [
+    "#8fdaff",
+    "#a1e0ff",
+    "#b3e6ff",
+    "#c5ecff",
+    "#d7f2ff",
     "#010101",
     "#010101",
     "#fcfcfc",
@@ -298,9 +328,11 @@
    "label": "Convective precipitation",
    "palette": [
     "#00ffff",
+    "#0080ff",
     "#0000ff",
+    "#da00ff",
     "#ff00ff",
-    "#ffa500",
+    "#ff8000",
     "#ff0000"
    ],
    "opacity": "opaque",
@@ -427,14 +459,26 @@
    "label": "GEMS Total column ozone",
    "palette": [
     "#000000",
-    "#000080",
+    "#000066",
     "#0000ff",
+    "#0080ff",
+    "#73a3ff",
+    "#00ffff",
+    "#00ff80",
+    "#80ff00",
+    "#daff00",
     "#ffff00",
-    "#ffa500",
+    "#ffda00",
+    "#ffb000",
+    "#ff8000",
+    "#ff4f00",
     "#ff0000",
-    "#a52a2a",
-    "#f5f5dc",
-    "#d2b48c"
+    "#991608",
+    "#681000",
+    "#520300",
+    "#d9b777",
+    "#ffe2ab",
+    "#665433"
    ],
    "opacity": "opaque",
    "magics_style": "sh_all_tco3"
@@ -494,9 +538,11 @@
    "label": "Large-scale precipitation",
    "palette": [
     "#00ffff",
+    "#0080ff",
     "#0000ff",
+    "#da00ff",
     "#ff00ff",
-    "#ffa500",
+    "#ff8000",
     "#ff0000"
    ],
    "opacity": "opaque",
@@ -635,8 +681,20 @@
     "#000080",
     "#0000d9",
     "#4000ff",
+    "#8000ff",
+    "#0080ff",
+    "#00ffff",
+    "#00ff80",
+    "#80ff00",
+    "#daff00",
     "#ffff00",
-    "#ffa500",
+    "#fff500",
+    "#ffda00",
+    "#ffb000",
+    "#ff8000",
+    "#ff4f00",
+    "#ff2500",
+    "#ff0a00",
     "#ff0000",
     "#ff00ff",
     "#ff00ff",
@@ -673,10 +731,16 @@
    "label": "Mean period of total swell",
    "palette": [
     "#0000ff",
+    "#0080ff",
+    "#73a3ff",
+    "#25ff00",
     "#ffff00",
-    "#ffa500",
+    "#ffda00",
+    "#ffb000",
+    "#ff8000",
     "#ff0000",
-    "#a52a2a"
+    "#681000",
+    "#333333"
    ],
    "opacity": "opaque",
    "magics_style": "sh_all_f0t18i1_5"
@@ -685,10 +749,16 @@
    "label": "Mean period of wind waves",
    "palette": [
     "#0000ff",
+    "#0080ff",
+    "#73a3ff",
+    "#25ff00",
     "#ffff00",
-    "#ffa500",
+    "#ffda00",
+    "#ffb000",
+    "#ff8000",
     "#ff0000",
-    "#a52a2a"
+    "#681000",
+    "#333333"
    ],
    "opacity": "opaque",
    "magics_style": "sh_all_f0t18i1_5"
@@ -717,10 +787,16 @@
    "label": "Mean wave period",
    "palette": [
     "#0000ff",
+    "#0080ff",
+    "#73a3ff",
+    "#25ff00",
     "#ffff00",
-    "#ffa500",
+    "#ffda00",
+    "#ffb000",
+    "#ff8000",
     "#ff0000",
-    "#a52a2a"
+    "#681000",
+    "#333333"
    ],
    "opacity": "opaque",
    "magics_style": "sh_all_f0t18i1_5"
@@ -735,8 +811,20 @@
     "#000080",
     "#0000d9",
     "#4000ff",
+    "#8000ff",
+    "#0080ff",
+    "#00ffff",
+    "#00ff80",
+    "#80ff00",
+    "#daff00",
     "#ffff00",
-    "#ffa500",
+    "#fff500",
+    "#ffda00",
+    "#ffb000",
+    "#ff8000",
+    "#ff4f00",
+    "#ff2500",
+    "#ff0a00",
     "#ff0000",
     "#ff00ff",
     "#ff00ff",
@@ -793,11 +881,16 @@
   "ph": {
    "label": "Probability of a hurricane",
    "palette": [
-    "#800080",
+    "#ff00ff",
+    "#ff4f00",
+    "#ffb000",
     "#ffff00",
+    "#25ff00",
+    "#008c30",
     "#00ffff",
+    "#0080ff",
     "#0000ff",
-    "#ee82ee"
+    "#7b12b2"
    ],
    "opacity": "opaque",
    "magics_style": "genesis_prob"
@@ -833,12 +926,22 @@
     "#473347",
     "#330066",
     "#590080",
+    "#8000ff",
+    "#0080ff",
     "#00ccff",
+    "#00ffff",
+    "#00ff80",
+    "#80ff00",
+    "#daff00",
     "#ffff80",
     "#ffff00",
+    "#ffda00",
+    "#ffb000",
     "#ff7300",
     "#ff0000",
     "#cc0000",
+    "#80002c",
+    "#cc3d6f",
     "#ff00ff",
     "#ff80ff",
     "#ffbfff"
@@ -849,11 +952,16 @@
   "ptd": {
    "label": "Probability of a tropical depression",
    "palette": [
-    "#800080",
+    "#ff00ff",
+    "#ff4f00",
+    "#ffb000",
     "#ffff00",
+    "#25ff00",
+    "#008c30",
     "#00ffff",
+    "#0080ff",
     "#0000ff",
-    "#ee82ee"
+    "#7b12b2"
    ],
    "opacity": "opaque",
    "magics_style": "genesis_prob"
@@ -861,11 +969,16 @@
   "pts": {
    "label": "Probability of a tropical storm",
    "palette": [
-    "#800080",
+    "#ff00ff",
+    "#ff4f00",
+    "#ffb000",
     "#ffff00",
+    "#25ff00",
+    "#008c30",
     "#00ffff",
+    "#0080ff",
     "#0000ff",
-    "#ee82ee"
+    "#7b12b2"
    ],
    "opacity": "opaque",
    "magics_style": "genesis_prob"
@@ -874,11 +987,16 @@
    "label": "Specific humidity",
    "palette": [
     "#ff0000",
-    "#ffd700",
+    "#f07961",
+    "#bf9313",
     "#ffff00",
-    "#40e0d0",
+    "#80ff00",
+    "#008c30",
+    "#00ffff",
+    "#1cb8a6",
+    "#0080ff",
     "#0000ff",
-    "#ee82ee",
+    "#7b12b2",
     "#ab05c9",
     "#ff01c7"
    ],
@@ -889,9 +1007,11 @@
    "label": "Snowfall",
    "palette": [
     "#00ffff",
+    "#0080ff",
     "#0000ff",
+    "#da00ff",
     "#ff00ff",
-    "#ffa500",
+    "#ff8000",
     "#ff0000"
    ],
    "opacity": "opaque",
@@ -915,10 +1035,16 @@
    "label": "Significant wave height of all waves with period larger than 10s",
    "palette": [
     "#0000ff",
+    "#0080ff",
+    "#73a3ff",
+    "#25ff00",
     "#ffff00",
-    "#ffa500",
+    "#ffda00",
+    "#ffb000",
+    "#ff8000",
     "#ff0000",
-    "#a52a2a"
+    "#681000",
+    "#333333"
    ],
    "opacity": "opaque",
    "magics_style": "sh_all_f0t20lst"
@@ -927,10 +1053,16 @@
    "label": "Significant height of total swell",
    "palette": [
     "#0000ff",
+    "#0080ff",
+    "#73a3ff",
+    "#25ff00",
     "#ffff00",
-    "#ffa500",
+    "#ffda00",
+    "#ffb000",
+    "#ff8000",
     "#ff0000",
-    "#a52a2a"
+    "#681000",
+    "#333333"
    ],
    "opacity": "opaque",
    "magics_style": "sh_all_f0t20lst"
@@ -939,10 +1071,16 @@
    "label": "Significant height of wind waves",
    "palette": [
     "#0000ff",
+    "#0080ff",
+    "#73a3ff",
+    "#25ff00",
     "#ffff00",
-    "#ffa500",
+    "#ffda00",
+    "#ffb000",
+    "#ff8000",
     "#ff0000",
-    "#a52a2a"
+    "#681000",
+    "#333333"
    ],
    "opacity": "opaque",
    "magics_style": "sh_all_f0t20lst"
@@ -1010,10 +1148,16 @@
    "label": "Significant height of combined wind waves and swell",
    "palette": [
     "#0000ff",
+    "#0080ff",
+    "#73a3ff",
+    "#25ff00",
     "#ffff00",
-    "#ffa500",
+    "#ffda00",
+    "#ffb000",
+    "#ff8000",
     "#ff0000",
-    "#a52a2a"
+    "#681000",
+    "#333333"
    ],
    "opacity": "opaque",
    "magics_style": "sh_all_f0t20lst"
@@ -1027,12 +1171,22 @@
     "#473347",
     "#330066",
     "#590080",
+    "#8000ff",
+    "#0080ff",
     "#00ccff",
+    "#00ffff",
+    "#00ff80",
+    "#80ff00",
+    "#daff00",
     "#ffff80",
     "#ffff00",
+    "#ffda00",
+    "#ffb000",
     "#ff7300",
     "#ff0000",
     "#cc0000",
+    "#80002c",
+    "#cc3d6f",
     "#ff00ff",
     "#ff80ff",
     "#ffbfff"
@@ -1149,7 +1303,7 @@
     "#ab0f1a",
     "#f006e0",
     "#6e11a6",
-    "#000080"
+    "#000066"
    ],
    "opacity": "overlay",
    "magics_style": "sh_red_f44t70"
@@ -1158,9 +1312,11 @@
    "label": "Total precipitation",
    "palette": [
     "#00ffff",
+    "#0080ff",
     "#0000ff",
+    "#da00ff",
     "#ff00ff",
-    "#ffa500",
+    "#ff8000",
     "#ff0000"
    ],
    "opacity": "opaque",
@@ -1306,7 +1462,10 @@
    "label": "Wind speed",
    "palette": [
     "#ffff66",
+    "#daff00",
     "#94ff00",
+    "#6ca632",
+    "#00734b",
     "#005447",
     "#004247",
     "#003370",

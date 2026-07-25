@@ -57,7 +57,7 @@ from cleopatra.glyph import (
 )
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import ColorScale  # re-exported for convenience  # noqa: F401
-from cleopatra.styles import disjoint_legend, swatch_legend
+from cleopatra.styles import disjoint_legend, swatch_extend_prefixes, swatch_legend
 
 ARRAY_DEFAULT_OPTIONS: dict[str, Any] = {
     "vmin": None,
@@ -1187,6 +1187,20 @@ class ArrayGlyph(GeoMixin, Glyph):
         self._validate_extend(self.default_options.get("extend"))
 
         explicit_keys = set(kwargs.keys())
+        # Only the colour limits the caller actually supplied, kept apart from
+        # `default_options` (whose vmin/vmax the plain imshow path overwrites
+        # with the data's auto range). A data-style preset forwards these so an
+        # explicit caller vmin/vmax/center overrides the preset's fixed range.
+        # Like `default_options`, an explicitly-set limit is STICKY: it persists
+        # across later plot()/animate() calls -- including styled ones -- until
+        # the caller sets a new value, so a limit given on a plain plot also
+        # applies to a subsequent styled render. An auto-ranged plain plot
+        # contributes nothing (only caller-supplied, non-None values are kept).
+        self._style_color_overrides = {
+            key: kwargs[key]
+            for key in ("vmin", "vmax", "center")
+            if key in explicit_keys and kwargs[key] is not None
+        }
         self._vmin, self._vmax = self._resolve_color_limits(
             array,
             vmin_kw=kwargs.get("vmin"),
@@ -2303,20 +2317,28 @@ class ArrayGlyph(GeoMixin, Glyph):
         data = np.asarray(ma.filled(ma.asarray(self.arr).astype(float), np.nan), dtype=float)
         legend = bool(self.default_options.get("add_colorbar", True))
         coords = self._coords
+        # Forward an explicit caller vmin/vmax/center so it overrides the
+        # preset's own fixed range (e.g. a Magics preset's decoded ECMWF scale).
+        # Read from `_style_color_overrides`, which holds ONLY user-supplied
+        # limits -- not `default_options`, whose vmin/vmax the plain imshow path
+        # overwrites with the data's auto-resolved range, which would otherwise
+        # leak in here and clobber the preset (and break a diverging `center`).
+        override = dict(self._style_color_overrides)
         if coords is not None:
             # apply_data_style's curvilinear path defaults to shading="flat"
             # (needs cell EDGES) via setdefault; ArrayGlyph stores cell CENTRES,
             # so pass shading="nearest", which trusts the centres.
             images = apply_data_style(
                 self.ax, {layer: data}, style=style, x=coords[0], y=coords[1],
-                legend=legend, shading="nearest",
+                legend=legend, shading="nearest", **override,
             )
         else:
             render_kwargs: dict[str, Any] = (
                 {"extent": self.extent} if self.extent is not None else {}
             )
             images = apply_data_style(
-                self.ax, {layer: data}, style=style, legend=legend, **render_kwargs
+                self.ax, {layer: data}, style=style, legend=legend,
+                **render_kwargs, **override,
             )
         self.im = images[layer]
 
@@ -3141,6 +3163,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                 )
             else:
                 self.default_options[key] = val
+
+        # Record colour limits supplied to THIS plot() call so a preset render
+        # honours them (see `_style_color_overrides`). Sticky, and only for
+        # keys actually passed -- an auto-ranged plain plot adds nothing.
+        for key in ("vmin", "vmax", "center"):
+            if key in kwargs and kwargs[key] is not None:
+                self._style_color_overrides[key] = kwargs[key]
 
         self._validate_extend(self.default_options.get("extend"))
 
@@ -3978,6 +4007,14 @@ class ArrayGlyph(GeoMixin, Glyph):
             else:
                 self.default_options[key] = val
 
+        # Record colour limits supplied to THIS animate() call so a styled
+        # animation honours an explicit caller override of the preset's fixed
+        # range (see `_style_color_overrides`); an auto-ranged plain animation
+        # adds nothing.
+        for key in ("vmin", "vmax", "center"):
+            if key in kwargs and kwargs[key] is not None:
+                self._style_color_overrides[key] = kwargs[key]
+
         # if user did not input ticks spacing use the calculated one.
         if "ticks_spacing" in kwargs.keys():
             self.default_options["ticks_spacing"] = kwargs["ticks_spacing"]
@@ -4104,7 +4141,11 @@ class ArrayGlyph(GeoMixin, Glyph):
                     points = None
                     show_cell_value = False
                 layer = self._resolve_style_layer(style)
-                cfg = DATA_STYLES[style][layer]
+                # Merge an explicit caller vmin/vmax/center over the preset so a
+                # styled animation honours the override just like plot() does
+                # (see `_style_color_overrides`); with none set the preset's own
+                # fixed range (e.g. a Magics preset's decoded ECMWF scale) stands.
+                cfg = {**DATA_STYLES[style][layer], **self._style_color_overrides}
                 hillshade_active = (
                     resolve_hillshade(self.default_options.get("hillshade")) is not None
                 )
@@ -4163,11 +4204,15 @@ class ArrayGlyph(GeoMixin, Glyph):
                         # repeated animate() calls don't stack legends.
                         for _inset in list(ax.child_axes):
                             _inset.remove()
-                        # Same bounds as apply_data_style's swatch (plot path),
-                        # so a plot and its animation align exactly.
+                        # Same bounds AND endpoint caps as apply_data_style's
+                        # swatch (plot path), so a plot and its animation align
+                        # exactly -- both derive the "≤"/"≥" caps from the norm's
+                        # extend via the shared helper.
+                        vmin_prefix, vmax_prefix = swatch_extend_prefixes(style_norm)
                         swatch_legend(
                             ax, cfg["cmap"], cfg["label"],
                             vmin=style_vmin, vmax=style_vmax, norm=style_norm,
+                            vmin_prefix=vmin_prefix, vmax_prefix=vmax_prefix,
                             bounds=(0.02, 0.92, 0.32, 0.06),
                         )
                     alpha_vmin = cfg.get("alpha_vmin")

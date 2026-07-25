@@ -453,6 +453,12 @@ class TestSwatchLegend:
         texts = [t.get_text() for t in swatch.texts]
         assert texts[-1] == "100", f"expected plain '100', got {texts[-1]!r}"
 
+    def test_vmin_prefix_marks_a_capped_low_endpoint(self, ax):
+        """A `vmin_prefix` (e.g. '≤') is drawn before the low endpoint value."""
+        swatch = swatch_legend(ax, "viridis", "T", vmin=-40, vmax=40, vmin_prefix="≤")
+        texts = [t.get_text() for t in swatch.texts]
+        assert texts[1] == "≤-40", f"expected '≤-40' low endpoint, got {texts[1]!r}"
+
     def test_accepts_colormap_object(self, ax):
         """A `Colormap` instance (not just a name string) is accepted directly."""
         from matplotlib.colors import LinearSegmentedColormap
@@ -461,6 +467,20 @@ class TestSwatchLegend:
         swatch = swatch_legend(ax, cmap, "Custom")
         assert swatch.images, "gradient image should be drawn on the swatch"
         assert swatch.images[0].get_cmap() is cmap, "custom cmap should be used as-is"
+
+    def test_boundary_norm_swatch_matches_the_norm_not_a_raw_ramp(self, ax):
+        """A BoundaryNorm swatch paints exactly cmap(norm(midpoints)), honouring extend (not a 0..1 ramp)."""
+        from matplotlib.colors import BoundaryNorm
+
+        cmap = plt.get_cmap("viridis")
+        norm = BoundaryNorm([0, 1, 2, 3, 4], ncolors=cmap.N, extend="both")  # 4 in-range bands
+        swatch = swatch_legend(ax, cmap, "T", vmin=0, vmax=4, norm=norm)
+        bands = np.asarray(swatch.images[0].get_array())[0]  # (4, 4) RGBA, one row per band
+        mids = np.array([0.5, 1.5, 2.5, 3.5])
+        assert bands.shape[0] == 4, "swatch should show 4 discrete bands"
+        assert np.allclose(bands, np.asarray(cmap(norm(mids)))), "bands must match the map's colours"
+        # `extend` reserves the colormap ends for under/over, so band 0 is not cmap(0.0).
+        assert not np.allclose(bands[0], cmap(0.0)), "extend must shift in-range bands off the ends"
 
     def test_no_axes_ticks_or_spines(self, ax):
         """The swatch is chrome-free: no ticks and no visible spines."""

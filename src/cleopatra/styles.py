@@ -1356,6 +1356,49 @@ def histogram_legend(
     return ax.barh(centers, counts, height=widths, color=bar_colors, **bar_kwargs)
 
 
+def swatch_extend_prefixes(norm: colors.Normalize | None) -> tuple[str, str]:
+    """Return `(vmin_prefix, vmax_prefix)` endpoint-cap markers for `swatch_legend`.
+
+    A discrete `BoundaryNorm` caps whichever ends its `extend` reserves an
+    out-of-range slot for -- `"≤"` on the low end for `extend` in `{"min",
+    "both"}` and `"≥"` on the high end for `extend` in `{"max", "both"}` -- so the
+    legend states the capping the map actually applies. Any other norm (a
+    continuous `Normalize` or `None`, as the haze/flame presets use, whose fixed
+    `vmax` clamps everything above it) keeps the open-ended `"≥"` upper default
+    and a plain low endpoint.
+
+    Deriving both prefixes from the resolved norm in one place keeps the `plot()`
+    and `animate()` swatch legends consistent (they call this helper from both
+    `apply_data_style` and `ArrayGlyph.animate`).
+
+    Args:
+        norm: The resolved colour normalization a swatch will be drawn for.
+
+    Returns:
+        tuple[str, str]: `(vmin_prefix, vmax_prefix)` to pass to `swatch_legend`.
+
+    Examples:
+        - A two-sided contour scale caps both ends; a continuous norm keeps `≥`:
+            ```python
+            >>> import matplotlib.colors as mc
+            >>> from cleopatra.styles import swatch_extend_prefixes
+            >>> swatch_extend_prefixes(mc.BoundaryNorm([0, 1, 2], 256, extend="both"))
+            ('≤', '≥')
+            >>> swatch_extend_prefixes(mc.BoundaryNorm([0, 1, 2], 2))
+            ('', '')
+            >>> swatch_extend_prefixes(mc.Normalize(0, 1))
+            ('', '≥')
+
+            ```
+    """
+    if isinstance(norm, colors.BoundaryNorm):
+        return (
+            "≤" if norm.extend in ("min", "both") else "",
+            "≥" if norm.extend in ("max", "both") else "",
+        )
+    return "", "≥"
+
+
 def swatch_legend(
     ax: Axes,
     cmap: str | colors.Colormap,
@@ -1364,6 +1407,7 @@ def swatch_legend(
     vmin: float = 0.0,
     vmax: float = 1.0,
     vmax_prefix: str = "≥",
+    vmin_prefix: str = "",
     bounds: tuple[float, float, float, float] = (0.02, 0.88, 0.32, 0.05),
     text_color: str = "white",
     fontsize: float = 9,
@@ -1392,6 +1436,9 @@ def swatch_legend(
         vmax_prefix: Prefix drawn before the formatted `vmax` label (e.g.
             `"≥"` for an open-ended upper bound, matching the haze style).
             Pass `""` for a plain value.
+        vmin_prefix: Prefix drawn before the formatted `vmin` label (e.g.
+            `"≤"` when the low end is capped, as for a two-sided
+            `extend="both"` contour scale). Defaults to `""` (a plain value).
         bounds: `(x0, y0, width, height)` of the inset axes in `ax`'s
             fraction-of-axes coordinates (see `Axes.inset_axes`).
         text_color: Color for the label and the endpoint values.
@@ -1436,16 +1483,33 @@ def swatch_legend(
     """
     cmap_obj = mpl.colormaps[cmap] if isinstance(cmap, str) else cmap
     swatch = ax.inset_axes(bounds)
-    if norm is None:
-        gradient = np.linspace(0.0, 1.0, 256).reshape(1, -1)
+    if isinstance(norm, colors.BoundaryNorm):
+        # Discrete bands: paint the SAME flat band colours the map uses by
+        # sampling the colormap through the norm at each band's midpoint. This
+        # honours the under/over slots the norm reserves when it has `extend`
+        # (a raw 0..1 ramp would shift the in-range bands), so the legend matches
+        # the map exactly -- for a ListedColormap or a continuous colormap alike.
+        edges = np.asarray(norm.boundaries, dtype=float)
+        mids = (edges[:-1] + edges[1:]) / 2.0
+        band_rgba = np.asarray(cmap_obj(norm(mids)))
+        swatch.imshow(
+            band_rgba.reshape(1, -1, 4), aspect="auto",
+            interpolation="nearest", extent=(0, 1, 0, 1),
+        )
     else:
-        # Position along the bar is linear in data (vmin..vmax); sample the
-        # colour through `norm` so a nonlinear (log/symlog) mapping shows its
-        # true, compressed progression instead of a misleading linear ramp.
-        gradient = np.asarray(
-            norm(np.linspace(vmin, vmax, 256)), dtype=float
-        ).reshape(1, -1)
-    swatch.imshow(gradient, aspect="auto", cmap=cmap_obj, vmin=0.0, vmax=1.0, extent=(0, 1, 0, 1))
+        if norm is None:
+            # A plain linear position along the bar (0..1).
+            gradient = np.linspace(0.0, 1.0, 256).reshape(1, -1)
+        else:
+            # Position along the bar is linear in data (vmin..vmax); sample the
+            # colour through `norm` so a nonlinear (log/symlog) mapping shows its
+            # true, compressed progression instead of a misleading linear ramp.
+            gradient = np.asarray(
+                norm(np.linspace(vmin, vmax, 256)), dtype=float
+            ).reshape(1, -1)
+        swatch.imshow(
+            gradient, aspect="auto", cmap=cmap_obj, vmin=0.0, vmax=1.0, extent=(0, 1, 0, 1)
+        )
     swatch.set_xticks([])
     swatch.set_yticks([])
     for spine in swatch.spines.values():
@@ -1464,7 +1528,7 @@ def swatch_legend(
     swatch.text(
         0.0,
         -0.3,
-        f"{vmin:g}",
+        f"{vmin_prefix}{vmin:g}",
         ha="left",
         va="top",
         color=text_color,
