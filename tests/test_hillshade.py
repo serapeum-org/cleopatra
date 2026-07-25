@@ -54,7 +54,9 @@ class TestResolveHillshade:
     @pytest.mark.parametrize("value", [False, 4, [0, 90, 180]])
     def test_multidirectional_valid_forms(self, value):
         """False, an int, and a sequence are all accepted for `multidirectional`."""
-        assert resolve_hillshade({"multidirectional": value})["multidirectional"] == value
+        assert (
+            resolve_hillshade({"multidirectional": value})["multidirectional"] == value
+        )
 
     @pytest.mark.parametrize("bad", [True, "north", 1.5])
     def test_multidirectional_invalid_forms_raise_clearly(self, bad):
@@ -99,7 +101,9 @@ class TestShadeGrid:
 
     def test_multidirectional_sequence_of_azimuths(self, dem):
         """An explicit sequence of azimuths averages those directions."""
-        rgba = shade_grid(dem, "terrain", vert_exag=5, multidirectional=[0.0, 90.0, 180.0])
+        rgba = shade_grid(
+            dem, "terrain", vert_exag=5, multidirectional=[0.0, 90.0, 180.0]
+        )
         assert rgba.shape == dem.shape + (4,)
         assert np.all(np.isfinite(rgba))
 
@@ -167,6 +171,13 @@ class TestShadeFaces:
         verts, faces, facecolors = quad
         z = np.array([0.0, 0.0, 1.0, 1.0])
         shaded = shade_faces(
-            verts, faces, z, facecolors, dx=2.0, dy=2.0, multidirectional=3, fraction=1.0
+            verts,
+            faces,
+            z,
+            facecolors,
+            dx=2.0,
+            dy=2.0,
+            multidirectional=3,
+            fraction=1.0,
         )
         assert shaded.shape == (2, 4)

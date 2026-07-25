@@ -56,7 +56,7 @@ plt.show()
 ```
 """
 
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -66,7 +66,11 @@ from matplotlib.colors import Normalize
 from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 
-from cleopatra.glyph import _clear_prior_render_artists, _mark_render_artists, _root_figure
+from cleopatra.glyph import (
+    _clear_prior_render_artists,
+    _mark_render_artists,
+    _root_figure,
+)
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 STATISTICAL_DEFAULT_OPTIONS = {
@@ -157,9 +161,9 @@ class StatisticalGlyph:
 
     def __init__(
         self,
-        values: Union[List, np.ndarray],
-        fig: Optional[Figure] = None,
-        ax: Optional[Axes] = None,
+        values: list | np.ndarray,
+        fig: Figure | None = None,
+        ax: Axes | None = None,
         **kwargs,
     ):
         """Initialize the StatisticalGlyph object with values and optional customization parameters.
@@ -300,7 +304,7 @@ class StatisticalGlyph:
         self._values = values
 
     @property
-    def default_options(self) -> Dict:
+    def default_options(self) -> dict:
         """Get the default options for histogram plotting.
 
         This property returns the dictionary of default options used for creating
@@ -394,7 +398,7 @@ class StatisticalGlyph:
         keys = cls.option_keys()
         return {key: val for key, val in kwargs.items() if key in keys}
 
-    def histogram(self, **kwargs) -> Tuple[Figure, Axes, Dict]:
+    def histogram(self, **kwargs) -> tuple[Figure, Axes, dict]:
         """Create a histogram from the stored numerical values.
 
         This method generates a histogram visualization of the numerical values stored
@@ -622,7 +626,7 @@ class StatisticalGlyph:
                 "StatisticalGlyph(values, fig=...)."
             )
 
-    def _resolve_fig_ax(self, ax: Axes | None) -> Tuple[Figure, Axes]:
+    def _resolve_fig_ax(self, ax: Axes | None) -> tuple[Figure, Axes]:
         """Return a `(fig, ax)` pair, creating one when none is given.
 
         These renderers compose into a caller-supplied axes when provided
@@ -650,7 +654,7 @@ class StatisticalGlyph:
             return self._fig, self._fig.add_subplot(111)
         return plt.subplots(figsize=self.default_options["figsize"])
 
-    def _columns(self) -> List[np.ndarray]:
+    def _columns(self) -> list[np.ndarray]:
         """Split the stored values into one 1D array per series.
 
         Returns:
@@ -677,7 +681,7 @@ class StatisticalGlyph:
         notch: bool = False,
         showfliers: bool = True,
         **kwargs,
-    ) -> Tuple[Figure, Axes, Dict]:
+    ) -> tuple[Figure, Axes, dict]:
         """Draw a box-and-whisker plot of the stored values.
 
         One box is drawn for 1D values; for 2D values one box is drawn
@@ -764,7 +768,7 @@ class StatisticalGlyph:
         ax: Axes | None = None,
         widths: float = 0.5,
         **kwargs,
-    ) -> Tuple[Figure, Axes, Dict]:
+    ) -> tuple[Figure, Axes, dict]:
         """Draw grouped boxes at explicit x positions.
 
         Like `boxplot`, but the boxes are placed at caller-controlled
@@ -824,8 +828,7 @@ class StatisticalGlyph:
             )
         if labels is not None and len(labels) != n:
             raise ValueError(
-                f"labels length ({len(labels)}) must match the number of "
-                f"columns ({n})."
+                f"labels length ({len(labels)}) must match the number of columns ({n})."
             )
 
         fig, ax = self._resolve_fig_ax(ax)
@@ -861,7 +864,7 @@ class StatisticalGlyph:
         vmin: float | None = None,
         vmax: float | None = None,
         **kwargs,
-    ) -> Tuple[Figure, Axes, BarContainer]:
+    ) -> tuple[Figure, Axes, BarContainer]:
         """Draw a warming-stripes band: one colour bar per value.
 
         Each stored value becomes a full-height vertical stripe coloured

@@ -165,9 +165,9 @@ class TestMeshGlyphProperties:
 
     def test_n_edges_with_edges(self, quad_with_edges):
         """Test edge count when edge connectivity provided."""
-        assert (
-            quad_with_edges.n_edges == 4
-        ), f"Expected 4, got {quad_with_edges.n_edges}"
+        assert quad_with_edges.n_edges == 4, (
+            f"Expected 4, got {quad_with_edges.n_edges}"
+        )
 
     def test_nodes_per_face_triangular(self, triangle_glyph):
         """Test nodes per face for pure triangular mesh."""
@@ -194,9 +194,9 @@ class TestTriangulation:
     def test_mixed_mesh(self, mixed_glyph):
         """Test triangulation of mixed mesh: 1 quad (2 tri) + 2 tri = 4."""
         tri = mixed_glyph.triangulation
-        assert (
-            tri.triangles.shape[0] == 4
-        ), f"Expected 4 triangles, got {tri.triangles.shape[0]}"
+        assert tri.triangles.shape[0] == 4, (
+            f"Expected 4 triangles, got {tri.triangles.shape[0]}"
+        )
 
     def test_cached(self, triangle_glyph):
         """Test triangulation is cached."""
@@ -224,9 +224,9 @@ class TestTriangulation:
             fill_value=-1,
         )
         tri = mg.triangulation
-        assert (
-            tri.triangles.shape[0] == 1
-        ), f"Expected 1 triangle (degenerate skipped), got {tri.triangles.shape[0]}"
+        assert tri.triangles.shape[0] == 1, (
+            f"Expected 1 triangle (degenerate skipped), got {tri.triangles.shape[0]}"
+        )
 
     def test_triangle_node_indices_correct(self, triangle_glyph):
         """Test that triangle node indices match input face connectivity."""
@@ -749,17 +749,17 @@ class TestContourLabels:
         )
         assert len(mg.contour_labels) > 0
         red = to_rgba("red")
-        assert all(
-            to_rgba(t.get_color()) == red for t in mg.contour_labels
-        ), "every label should be red when label_kw={'colors': 'red'}"
+        assert all(to_rgba(t.get_color()) == red for t in mg.contour_labels), (
+            "every label should be red when label_kw={'colors': 'red'}"
+        )
         plt.close(fig)
 
     def test_contour_labels_none_before_any_render(self):
         """`contour_labels` is None on a freshly constructed glyph."""
         mg = self._grid_glyph()
-        assert (
-            mg.contour_labels is None
-        ), f"Expected None before render, got {mg.contour_labels!r}"
+        assert mg.contour_labels is None, (
+            f"Expected None before render, got {mg.contour_labels!r}"
+        )
 
     def test_animate_resets_stale_contour_labels(self):
         """`animate()` clears labels left by a prior `plot(labels=True)`."""
@@ -1024,12 +1024,12 @@ class TestMeshGlyphSubplots:
         )
         mg2.plot(data * 2, location="face", ax=axes[1], title="Right")
 
-        assert (
-            axes[0].get_title() == "Left"
-        ), f"Expected 'Left', got '{axes[0].get_title()}'"
-        assert (
-            axes[1].get_title() == "Right"
-        ), f"Expected 'Right', got '{axes[1].get_title()}'"
+        assert axes[0].get_title() == "Left", (
+            f"Expected 'Left', got '{axes[0].get_title()}'"
+        )
+        assert axes[1].get_title() == "Right", (
+            f"Expected 'Right', got '{axes[1].get_title()}'"
+        )
         assert len(fig.axes) >= 2, f"Expected at least 2 axes, got {len(fig.axes)}"
         plt.close(fig)
 
@@ -1172,9 +1172,9 @@ class TestPlotReuse:
         """
         mg = _make_tri_mg()
         mg.plot(np.array([0.0, 0.1]))
-        assert mg.default_options["ticks_spacing"] == pytest.approx(
-            0.01
-        ), f"Expected ticks_spacing=0.01, got {mg.default_options['ticks_spacing']}"
+        assert mg.default_options["ticks_spacing"] == pytest.approx(0.01), (
+            f"Expected ticks_spacing=0.01, got {mg.default_options['ticks_spacing']}"
+        )
 
     def test_constant_data_does_not_crash(self):
         """Test that plotting constant data (vmin==vmax) does not crash.
@@ -1195,9 +1195,9 @@ class TestPlotReuse:
         """
         mg = _make_tri_mg()
         fig, ax = mg.plot(np.array([0.0, 10.0]), ticks_spacing=2.5)
-        assert (
-            mg.ticks_spacing == 2.5
-        ), f"Expected explicit ticks_spacing=2.5, got {mg.ticks_spacing}"
+        assert mg.ticks_spacing == 2.5, (
+            f"Expected explicit ticks_spacing=2.5, got {mg.ticks_spacing}"
+        )
         plt.close(fig)
 
     def test_all_nan_data_raises(self):
@@ -1218,13 +1218,13 @@ class TestPlotReuse:
         """
         mg = _make_tri_mg()
         mg.plot(np.array([1.0, 2.0]), cmap="plasma")
-        assert (
-            mg.default_options["cmap"] == "plasma"
-        ), "Should be plasma after first call"
+        assert mg.default_options["cmap"] == "plasma", (
+            "Should be plasma after first call"
+        )
         mg.plot(np.array([3.0, 4.0]))
-        assert (
-            mg.default_options["cmap"] == "coolwarm_r"
-        ), f"Should reset to default coolwarm_r, got {mg.default_options['cmap']}"
+        assert mg.default_options["cmap"] == "coolwarm_r", (
+            f"Should reset to default coolwarm_r, got {mg.default_options['cmap']}"
+        )
 
     def test_no_image_artist_accumulation(self):
         """Repeated `plot()` calls replace the tripcolor/tricontour mappable, not stack it.
@@ -1241,21 +1241,21 @@ class TestPlotReuse:
         mg.plot(np.array([1.0, 2.0]))
         old_im = mg.im
         mg.plot(np.array([3.0, 4.0]))
-        assert (
-            len(mg.ax.collections) == 1
-        ), f"Expected exactly one mesh artist, got {len(mg.ax.collections)}"
-        assert (
-            old_im not in mg.ax.collections
-        ), "The first call's mappable must be removed"
+        assert len(mg.ax.collections) == 1, (
+            f"Expected exactly one mesh artist, got {len(mg.ax.collections)}"
+        )
+        assert old_im not in mg.ax.collections, (
+            "The first call's mappable must be removed"
+        )
 
     def test_plot_outline_repeated_does_not_stack_lines(self):
         """Repeated `plot_outline()` calls replace the wireframe, not stack it."""
         mg = _make_tri_mg()
         mg.plot_outline()
         mg.plot_outline()
-        assert (
-            len(mg.ax.collections) == 1
-        ), f"Expected exactly one outline artist, got {len(mg.ax.collections)}"
+        assert len(mg.ax.collections) == 1, (
+            f"Expected exactly one outline artist, got {len(mg.ax.collections)}"
+        )
 
 
 class TestSharedAxesArtistCleanup:
@@ -1278,12 +1278,12 @@ class TestSharedAxesArtistCleanup:
         mg2 = _make_tri_mg()
         mg2.plot(np.array([3.0, 4.0]), ax=mg1.ax)
 
-        assert (
-            len(mg1.ax.collections) == 1
-        ), f"Expected exactly one mesh artist, got {len(mg1.ax.collections)}"
-        assert (
-            old_im not in mg1.ax.collections
-        ), "The first glyph's mappable must be removed"
+        assert len(mg1.ax.collections) == 1, (
+            f"Expected exactly one mesh artist, got {len(mg1.ax.collections)}"
+        )
+        assert old_im not in mg1.ax.collections, (
+            "The first glyph's mappable must be removed"
+        )
         assert len(mg1.fig.axes) == axes_count_after_first, (
             f"Expected {axes_count_after_first} axes after the second glyph's call, "
             f"got {len(mg1.fig.axes)}"
@@ -1301,12 +1301,12 @@ class TestSharedAxesArtistCleanup:
         mg2.fig = mg1.fig
         mg2.animate(frames, time=["t0", "t1"])
 
-        assert (
-            len(mg1.ax.collections) == 1
-        ), f"Expected exactly one mesh artist, got {len(mg1.ax.collections)}"
-        assert (
-            old_im not in mg1.ax.collections
-        ), "The first call's mappable must be removed"
+        assert len(mg1.ax.collections) == 1, (
+            f"Expected exactly one mesh artist, got {len(mg1.ax.collections)}"
+        )
+        assert old_im not in mg1.ax.collections, (
+            "The first call's mappable must be removed"
+        )
 
     def test_animate_then_plot_on_shared_axes_does_not_stack(self):
         """A second glyph's `plot()` cleans up a first glyph's `animate()` mappable."""
@@ -1318,12 +1318,12 @@ class TestSharedAxesArtistCleanup:
         mg2 = _make_tri_mg()
         mg2.plot(np.array([3.0, 4.0]), ax=mg1.ax)
 
-        assert (
-            len(mg1.ax.collections) == 1
-        ), f"Expected exactly one mesh artist, got {len(mg1.ax.collections)}"
-        assert (
-            old_im not in mg1.ax.collections
-        ), "The first call's mappable must be removed"
+        assert len(mg1.ax.collections) == 1, (
+            f"Expected exactly one mesh artist, got {len(mg1.ax.collections)}"
+        )
+        assert old_im not in mg1.ax.collections, (
+            "The first call's mappable must be removed"
+        )
 
     def test_apply_style_after_plot_does_not_raise(self):
         """`apply_style()` after a plain `plot()` cleans up without crashing.
@@ -1338,9 +1338,9 @@ class TestSharedAxesArtistCleanup:
         mg = _make_tri_mg()
         mg.plot(np.array([1.0, 2.0]))
         fig, ax = mg.apply_style("flow_accumulation")
-        assert (
-            len(ax.collections) == 1
-        ), f"Expected exactly one mesh artist, got {len(ax.collections)}"
+        assert len(ax.collections) == 1, (
+            f"Expected exactly one mesh artist, got {len(ax.collections)}"
+        )
 
     def test_ax_clear_before_replot_does_not_raise(self):
         """A caller's own `ax.clear()` before the next `plot()` call doesn't crash.
@@ -1360,12 +1360,12 @@ class TestSharedAxesArtistCleanup:
         fig, ax = mg.plot(np.array([1.0, 2.0]))
         ax.clear()
         fig2, ax2 = mg.plot(np.array([3.0, 4.0]))
-        assert (
-            len(ax2.collections) == 1
-        ), f"Expected one mesh artist, got {len(ax2.collections)}"
-        assert (
-            len(fig2.axes) == 2
-        ), f"Expected 2 axes (plot + colorbar), got {len(fig2.axes)}"
+        assert len(ax2.collections) == 1, (
+            f"Expected one mesh artist, got {len(ax2.collections)}"
+        )
+        assert len(fig2.axes) == 2, (
+            f"Expected 2 axes (plot + colorbar), got {len(fig2.axes)}"
+        )
 
     def test_plot_validation_failure_preserves_prior_render(self):
         """A failed `plot()` call must not tear down the previous valid render.
@@ -1381,12 +1381,12 @@ class TestSharedAxesArtistCleanup:
         axes_count = len(fig.axes)
         with pytest.raises(ValueError):
             mg.plot(np.array([1.0, 2.0]), color_scale="not-a-real-scale")
-        assert (
-            len(ax.collections) == 1
-        ), f"Expected the prior mesh artist, got {len(ax.collections)}"
-        assert (
-            len(fig.axes) == axes_count
-        ), f"Expected {axes_count} axes preserved, got {len(fig.axes)}"
+        assert len(ax.collections) == 1, (
+            f"Expected the prior mesh artist, got {len(ax.collections)}"
+        )
+        assert len(fig.axes) == axes_count, (
+            f"Expected {axes_count} axes preserved, got {len(fig.axes)}"
+        )
 
     def test_animate_validation_failure_preserves_prior_render(self):
         """A failed `animate()` call must not tear down the previous valid render."""
@@ -1397,12 +1397,12 @@ class TestSharedAxesArtistCleanup:
         axes_count = len(mg.fig.axes)
         with pytest.raises(ValueError):
             mg.animate(frames, time=["t0", "t1"], color_scale="not-a-real-scale")
-        assert (
-            len(ax.collections) == 1
-        ), f"Expected the prior mesh artist, got {len(ax.collections)}"
-        assert (
-            len(mg.fig.axes) == axes_count
-        ), f"Expected {axes_count} axes preserved, got {len(mg.fig.axes)}"
+        assert len(ax.collections) == 1, (
+            f"Expected the prior mesh artist, got {len(ax.collections)}"
+        )
+        assert len(mg.fig.axes) == axes_count, (
+            f"Expected {axes_count} axes preserved, got {len(mg.fig.axes)}"
+        )
 
 
 class TestAnimate:
@@ -1445,12 +1445,12 @@ class TestAnimate:
         old_im = mg.im
         axes_count_after_first = len(mg.fig.axes)
         mg.animate(frames, time=["t0", "t1", "t2"])
-        assert (
-            len(mg.ax.collections) == 1
-        ), f"Expected exactly one mesh artist, got {len(mg.ax.collections)}"
-        assert (
-            old_im not in mg.ax.collections
-        ), "The first call's mappable must be removed"
+        assert len(mg.ax.collections) == 1, (
+            f"Expected exactly one mesh artist, got {len(mg.ax.collections)}"
+        )
+        assert old_im not in mg.ax.collections, (
+            "The first call's mappable must be removed"
+        )
         assert len(mg.fig.axes) == axes_count_after_first, (
             f"Expected {axes_count_after_first} axes after the second call, "
             f"got {len(mg.fig.axes)}"
@@ -1529,12 +1529,12 @@ class TestAnimate:
         assert anim is not None, "Should return a FuncAnimation"
         assert mg.vmin == 0.0, f"Expected explicit vmin=0.0, got {mg.vmin}"
         assert mg.vmax == 10.0, f"Expected explicit vmax=10.0, got {mg.vmax}"
-        assert (
-            mg.ticks_spacing == 2.0
-        ), f"Expected explicit ticks_spacing=2.0, got {mg.ticks_spacing}"
-        assert (
-            mg.ax.get_title() == "My Animation"
-        ), f"Expected title 'My Animation', got {mg.ax.get_title()!r}"
+        assert mg.ticks_spacing == 2.0, (
+            f"Expected explicit ticks_spacing=2.0, got {mg.ticks_spacing}"
+        )
+        assert mg.ax.get_title() == "My Animation", (
+            f"Expected title 'My Animation', got {mg.ax.get_title()!r}"
+        )
         plt.close(mg.fig)
 
     def test_animate_update_advances_frame(self):
@@ -1625,10 +1625,17 @@ class TestMeshGlyphHillshade:
     def _terrain_mesh(n=12):
         gx, gy = np.meshgrid(np.linspace(0, 10, n), np.linspace(0, 10, n))
         nx, ny = gx.ravel(), gy.ravel()
-        z = 50.0 + 150.0 * np.exp(-(((nx - 7) / 2) ** 2 + ((ny - 5) / 3) ** 2)) + 6.0 * np.sin(nx)
+        z = (
+            50.0
+            + 150.0 * np.exp(-(((nx - 7) / 2) ** 2 + ((ny - 5) / 3) ** 2))
+            + 6.0 * np.sin(nx)
+        )
         faces = np.array(
-            [[j * n + i, j * n + i + 1, j * n + i + n + 1, j * n + i + n]
-             for j in range(n - 1) for i in range(n - 1)]
+            [
+                [j * n + i, j * n + i + 1, j * n + i + n + 1, j * n + i + n]
+                for j in range(n - 1)
+                for i in range(n - 1)
+            ]
         )
         return nx, ny, faces, z
 
@@ -1669,7 +1676,9 @@ class TestMeshGlyphHillshade:
         nx, ny, faces, z = self._terrain_mesh()
         mg = MeshGlyph(nx, ny, faces, hillshade=True)
         mg.plot(z, location="node", cmap="terrain")
-        assert type(mg.im).__name__ == "PolyCollection", "constructor hillshade should shade"
+        assert type(mg.im).__name__ == "PolyCollection", (
+            "constructor hillshade should shade"
+        )
         assert mg.im.get_array() is None, "shaded relief uses explicit facecolors"
         plt.close("all")
 
@@ -1693,10 +1702,18 @@ class TestMeshGlyphHillshade:
         """
         nx, ny, faces, z = self._terrain_mesh()
         mg = MeshGlyph(nx, ny, faces)
-        mg.plot(z, location="node", cmap="terrain", color_scale="power",
-                gamma=0.4, hillshade=True)
+        mg.plot(
+            z,
+            location="node",
+            cmap="terrain",
+            color_scale="power",
+            gamma=0.4,
+            hillshade=True,
+        )
         assert type(mg.im).__name__ == "PolyCollection"
-        assert type(mg.im.norm).__name__ == "PowerNorm", "the color_scale norm is applied"
+        assert type(mg.im.norm).__name__ == "PowerNorm", (
+            "the color_scale norm is applied"
+        )
         plt.close("all")
 
     def test_hillshade_makes_nodata_faces_transparent(self):
@@ -1746,9 +1763,11 @@ class TestMeshGlyphDataStyle:
     def test_categorical_preset_draws_disjoint_legend(self):
         """A categorical preset renders a discrete legend and no colorbar."""
         nx, ny, faces = self._mesh()
-        d8 = np.random.default_rng(1).choice(
-            [1, 2, 4, 8, 16, 32, 64, 128], size=len(faces)
-        ).astype(float)
+        d8 = (
+            np.random.default_rng(1)
+            .choice([1, 2, 4, 8, 16, 32, 64, 128], size=len(faces))
+            .astype(float)
+        )
         g = MeshGlyph(nx, ny, faces)
         _, ax = g.plot(d8, location="face", style="flow_direction_d8")
         assert ax.get_legend() is not None
@@ -1776,9 +1795,11 @@ class TestMeshGlyphDataStyle:
     def test_categorical_preset_with_node_location_warns(self):
         """A categorical preset on node data warns (tricontourf interpolates class codes)."""
         nx, ny, faces = self._mesh()
-        codes = np.random.default_rng(2).choice(
-            [1, 2, 4, 8, 16, 32, 64, 128], size=len(nx)
-        ).astype(float)
+        codes = (
+            np.random.default_rng(2)
+            .choice([1, 2, 4, 8, 16, 32, 64, 128], size=len(nx))
+            .astype(float)
+        )
         with pytest.warns(UserWarning, match="interpolates discrete class codes"):
             MeshGlyph(nx, ny, faces).plot(
                 codes, location="node", style="flow_direction_d8"

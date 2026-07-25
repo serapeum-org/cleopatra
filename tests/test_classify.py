@@ -31,15 +31,13 @@ from cleopatra.polygon_glyph import PolygonGlyph
 from cleopatra.scatter_glyph import ScatterGlyph
 from cleopatra.styles import (
     CLASSIFY_OPTIONS,
-)
-from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
-from cleopatra.styles import (
     JENKS_SCHEMES,
     NUMPY_SCHEMES,
     _fisher_jenks_edges,
     _scheme_edges,
     classify,
 )
+from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.vector_glyph import VectorGlyph
 
 
@@ -184,9 +182,9 @@ class TestClassify:
         mean, std = data.mean(), data.std()
         assert np.isclose(edges_k5[0], data.min()), "first edge should be data min"
         assert np.isclose(edges_k5[-1], data.max()), "last edge should be data max"
-        assert any(
-            np.isclose(edges_k5, mean)
-        ), f"mean break {mean} missing from {edges_k5}"
+        assert any(np.isclose(edges_k5, mean)), (
+            f"mean break {mean} missing from {edges_k5}"
+        )
         assert any(np.isclose(edges_k5, mean - std)), "mean-σ break missing"
 
     def test_explicit_edges_used_verbatim_sorted(self, ramp):
@@ -207,9 +205,9 @@ class TestClassify:
             boundaries equal the edges.
         """
         edges, norm = classify(ramp, "equal_interval", k=5)
-        assert isinstance(
-            norm, mcolors.BoundaryNorm
-        ), f"Expected BoundaryNorm, got {type(norm)}"
+        assert isinstance(norm, mcolors.BoundaryNorm), (
+            f"Expected BoundaryNorm, got {type(norm)}"
+        )
         assert np.allclose(norm.boundaries, edges), "norm boundaries must equal edges"
 
     def test_case_insensitive_scheme_name(self, ramp):
@@ -233,9 +231,9 @@ class TestClassify:
         dirty = np.concatenate([clean, [np.nan, np.inf, -np.inf]])
         edges_clean, _ = classify(clean, "equal_interval", k=5)
         edges_dirty, _ = classify(dirty, "equal_interval", k=5)
-        assert np.allclose(
-            edges_clean, edges_dirty
-        ), "Non-finite values must be ignored"
+        assert np.allclose(edges_clean, edges_dirty), (
+            "Non-finite values must be ignored"
+        )
 
     def test_duplicate_edges_collapsed(self):
         """Repeated quantile edges are de-duplicated to keep edges increasing.
@@ -247,9 +245,9 @@ class TestClassify:
         data = np.array([0.0] * 90 + [1.0] * 10)
         edges, norm = classify(data, "quantiles", k=5)
         assert np.all(np.diff(edges) > 0), f"Edges must strictly increase: {edges}"
-        assert isinstance(
-            norm, mcolors.BoundaryNorm
-        ), "Should still build a BoundaryNorm"
+        assert isinstance(norm, mcolors.BoundaryNorm), (
+            "Should still build a BoundaryNorm"
+        )
 
     def test_no_finite_values_raises(self):
         """All-non-finite input raises a clear ``ValueError``.
@@ -316,9 +314,9 @@ class TestSchemeEdges:
             returns edges without error.
         """
         edges = _scheme_edges(np.arange(100.0), "std_mean", k=0)
-        assert (
-            edges[0] == 0.0 and edges[-1] == 99.0
-        ), f"Unexpected std_mean edges: {edges}"
+        assert edges[0] == 0.0 and edges[-1] == 99.0, (
+            f"Unexpected std_mean edges: {edges}"
+        )
 
 
 class TestFisherJenksEdges:
@@ -438,9 +436,9 @@ class TestFisherJenksEdges:
         data = np.array([0.0, 1, 2, 3, 4, 50, 51, 52, 200, 201])
         base, _ = classify(data, "fisher_jenks", k=3)
         shifted, _ = classify(data + 1e9, "fisher_jenks", k=3)
-        assert np.allclose(
-            shifted - 1e9, base
-        ), f"Breaks should be shift-invariant; {shifted - 1e9} != {base}"
+        assert np.allclose(shifted - 1e9, base), (
+            f"Breaks should be shift-invariant; {shifted - 1e9} != {base}"
+        )
 
     def test_large_input_samples_and_warns(self, monkeypatch):
         """Above `MAX_JENKS_N` the DP runs on a quantile sample and warns (M1).
@@ -460,9 +458,9 @@ class TestFisherJenksEdges:
             edges, _ = classify(data, "fisher_jenks", k=5)
         assert len(edges) == 6, f"k=5 should give 6 edges, got {len(edges)}"
         assert np.all(np.diff(edges) > 0), f"Edges must be increasing: {edges}"
-        assert np.isclose(edges[0], data.min()) and np.isclose(
-            edges[-1], data.max()
-        ), "Sampled breaks should still span the full data range"
+        assert np.isclose(edges[0], data.min()) and np.isclose(edges[-1], data.max()), (
+            "Sampled breaks should still span the full data range"
+        )
 
     def test_below_cap_does_not_warn(self, monkeypatch, recwarn):
         """At or below `MAX_JENKS_N` no sampling warning is emitted (M1).
@@ -517,9 +515,9 @@ class TestGlyphPrepareClassifiedMapping:
         """
         g = Glyph(default_options=_make_options(scheme="quantiles", k=4))
         _, cbar_kw, _ = g._prepare_classified_mapping(np.arange(100.0), "quantiles")
-        assert (
-            cbar_kw["extend"] == "neither"
-        ), f"extend should be 'neither', got {cbar_kw['extend']}"
+        assert cbar_kw["extend"] == "neither", (
+            f"extend should be 'neither', got {cbar_kw['extend']}"
+        )
 
     def test_explicit_extend_is_honoured(self):
         """An explicit ``extend`` option is forwarded unchanged.
@@ -542,9 +540,9 @@ class TestGlyphPrepareClassifiedMapping:
         """
         g = Glyph(default_options=_make_options(scheme="equal_interval", k=5))
         norm, _, edges = g._prepare_scalar_mapping(np.arange(100.0))
-        assert isinstance(
-            norm, mcolors.BoundaryNorm
-        ), "scheme must route to BoundaryNorm"
+        assert isinstance(norm, mcolors.BoundaryNorm), (
+            "scheme must route to BoundaryNorm"
+        )
         assert len(edges) == 6, f"k=5 should give 6 edges, got {len(edges)}"
 
     def test_prepare_scalar_mapping_unchanged_without_scheme(self):
@@ -591,9 +589,9 @@ class TestScatterGlyphScheme:
         x, y, v = xy_values
         glyph = ScatterGlyph(x, y, values=v, scheme="quantiles", k=5)
         _, _, paths = glyph.plot()
-        assert isinstance(
-            paths.norm, mcolors.BoundaryNorm
-        ), "scheme should set a BoundaryNorm"
+        assert isinstance(paths.norm, mcolors.BoundaryNorm), (
+            "scheme should set a BoundaryNorm"
+        )
         assert len(paths.norm.boundaries) == 6, "k=5 should give 6 boundaries"
 
     def test_raw_values_preserved(self, xy_values):
@@ -638,9 +636,9 @@ class TestScatterGlyphScheme:
         x, y, v = xy_values
         glyph = ScatterGlyph(x, y, values=v)
         _, _, paths = glyph.plot()
-        assert not isinstance(
-            paths.norm, mcolors.BoundaryNorm
-        ), "No scheme -> no BoundaryNorm"
+        assert not isinstance(paths.norm, mcolors.BoundaryNorm), (
+            "No scheme -> no BoundaryNorm"
+        )
 
 
 class TestPolygonGlyphScheme:
@@ -666,9 +664,9 @@ class TestPolygonGlyphScheme:
         polys, values = polys_values
         glyph = PolygonGlyph(polys, values=values, scheme="quantiles", k=5)
         _, _, pc = glyph.plot()
-        assert isinstance(
-            pc.norm, mcolors.BoundaryNorm
-        ), "choropleth should use a BoundaryNorm"
+        assert isinstance(pc.norm, mcolors.BoundaryNorm), (
+            "choropleth should use a BoundaryNorm"
+        )
         assert len(pc.norm.boundaries) - 1 == 5, "Six boundaries delimit five classes"
 
     def test_raw_values_preserved(self, polys_values):
@@ -692,9 +690,9 @@ class TestPolygonGlyphScheme:
         glyph = PolygonGlyph(polys, values=values, scheme="quantiles", k=5)
         glyph.plot()
         assert glyph.cbar is not None, "A discrete colorbar should be drawn"
-        assert isinstance(
-            glyph.cbar.norm, mcolors.BoundaryNorm
-        ), "Colorbar norm should be discrete"
+        assert isinstance(glyph.cbar.norm, mcolors.BoundaryNorm), (
+            "Colorbar norm should be discrete"
+        )
 
     def test_scheme_none_regression(self, polys_values):
         """``scheme=None`` keeps the continuous choropleth behaviour.
@@ -705,9 +703,9 @@ class TestPolygonGlyphScheme:
         polys, values = polys_values
         glyph = PolygonGlyph(polys, values=values)
         _, _, pc = glyph.plot()
-        assert not isinstance(
-            pc.norm, mcolors.BoundaryNorm
-        ), "No scheme -> no BoundaryNorm"
+        assert not isinstance(pc.norm, mcolors.BoundaryNorm), (
+            "No scheme -> no BoundaryNorm"
+        )
 
 
 class TestSchemeGlyphScope:
@@ -734,9 +732,9 @@ class TestSchemeGlyphScope:
             `scheme` and `k` are in the class's option keys.
         """
         keys = glyph_cls.option_keys()
-        assert (
-            "scheme" in keys and "k" in keys
-        ), f"{glyph_cls.__name__} should accept scheme/k"
+        assert "scheme" in keys and "k" in keys, (
+            f"{glyph_cls.__name__} should accept scheme/k"
+        )
 
     def test_array_glyph_rejects_scheme(self):
         """`ArrayGlyph` rejects `scheme` instead of silently ignoring it.
@@ -844,9 +842,9 @@ class TestClassifyTwoDimensional:
         grid = np.arange(100.0).reshape(10, 10)
         edges_2d, _ = classify(grid, "quantiles", k=4)
         edges_1d, _ = classify(np.arange(100.0), "quantiles", k=4)
-        assert np.allclose(
-            edges_2d, edges_1d
-        ), f"2-D edges {edges_2d} should match 1-D edges {edges_1d}"
+        assert np.allclose(edges_2d, edges_1d), (
+            f"2-D edges {edges_2d} should match 1-D edges {edges_1d}"
+        )
 
     def test_2d_values_with_non_finite(self):
         """Non-finite cells in a 2-D array are ignored when binning.
@@ -892,13 +890,13 @@ class TestVectorGlyphScheme:
         x, y, u, v = field
         glyph = VectorGlyph(x, y, u, v, scheme="quantiles", k=5)
         _, _, im = glyph.plot(kind="quiver")
-        assert isinstance(
-            im.norm, mcolors.BoundaryNorm
-        ), "scheme should set a BoundaryNorm"
+        assert isinstance(im.norm, mcolors.BoundaryNorm), (
+            "scheme should set a BoundaryNorm"
+        )
         assert len(im.norm.boundaries) == 6, "k=5 should give 6 boundaries"
-        assert np.allclose(
-            im.get_array(), np.hypot(u, v).ravel()
-        ), "Quiver should carry the raw magnitude array"
+        assert np.allclose(im.get_array(), np.hypot(u, v).ravel()), (
+            "Quiver should carry the raw magnitude array"
+        )
 
     def test_barbs_scheme_discrete_colorbar(self, field):
         """A classified barbs plot draws a discrete colorbar.
@@ -911,9 +909,9 @@ class TestVectorGlyphScheme:
         glyph = VectorGlyph(x, y, u, v, scheme="equal_interval", k=4)
         glyph.plot(kind="barbs")
         assert glyph.cbar is not None, "A colorbar should be drawn"
-        assert isinstance(
-            glyph.cbar.norm, mcolors.BoundaryNorm
-        ), "Colorbar norm should be discrete"
+        assert isinstance(glyph.cbar.norm, mcolors.BoundaryNorm), (
+            "Colorbar norm should be discrete"
+        )
 
     def test_streamplot_scheme_uses_boundary_norm(self):
         """A classified streamplot colours its lines via a BoundaryNorm.
@@ -928,14 +926,14 @@ class TestVectorGlyphScheme:
         v = y + 1.0
         glyph = VectorGlyph(x, y, u, v, scheme="quantiles", k=4)
         _, _, im = glyph.plot(kind="streamplot")
-        assert isinstance(
-            im.norm, mcolors.BoundaryNorm
-        ), "scheme should set a BoundaryNorm"
+        assert isinstance(im.norm, mcolors.BoundaryNorm), (
+            "scheme should set a BoundaryNorm"
+        )
         assert len(im.norm.boundaries) == 5, "k=4 should give 5 boundaries"
         assert glyph.cbar is not None, "A discrete colorbar should be drawn"
-        assert isinstance(
-            glyph.cbar.norm, mcolors.BoundaryNorm
-        ), "Colorbar norm should be discrete"
+        assert isinstance(glyph.cbar.norm, mcolors.BoundaryNorm), (
+            "Colorbar norm should be discrete"
+        )
 
     def test_scheme_none_regression(self, field):
         """`scheme=None` keeps the continuous vector colouring.
@@ -946,6 +944,6 @@ class TestVectorGlyphScheme:
         x, y, u, v = field
         glyph = VectorGlyph(x, y, u, v)
         _, _, im = glyph.plot(kind="quiver")
-        assert not isinstance(
-            im.norm, mcolors.BoundaryNorm
-        ), "No scheme -> no BoundaryNorm"
+        assert not isinstance(im.norm, mcolors.BoundaryNorm), (
+            "No scheme -> no BoundaryNorm"
+        )

@@ -52,6 +52,7 @@ from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 #: the temporary at ~`MAX_KDE_BLOCK` floats (a few tens of MB).
 MAX_KDE_BLOCK = 4_000_000
 
+
 class _Unset:
     """Sentinel type for `plot(style=...)`'s tri-state default.
 
@@ -368,8 +369,11 @@ class KDEGlyph(Glyph):
             )
         self._reset_axes_for_restyle()
         return self.plot(
-            ax=self.ax, title=title, add_colorbar=add_colorbar,
-            hillshade=hillshade, style=style,
+            ax=self.ax,
+            title=title,
+            add_colorbar=add_colorbar,
+            hillshade=hillshade,
+            style=style,
         )
 
     def plot(
@@ -514,11 +518,18 @@ class KDEGlyph(Glyph):
             # "density terrain" (peaks and ridges) reads by form. The shaded
             # RGBA image carries no scalar array, so the colorbar attaches to a
             # ScalarMappable proxy carrying the same cmap/norm.
-            hs_norm = norm if norm is not None else Normalize(
-                vmin=float(density.min()), vmax=float(density.max())
+            hs_norm = (
+                norm
+                if norm is not None
+                else Normalize(vmin=float(density.min()), vmax=float(density.max()))
             )
             rgba = shade_grid(density, cmap, norm=hs_norm, **hillshade)
-            extent = (float(gx.min()), float(gx.max()), float(gy.min()), float(gy.max()))
+            extent = (
+                float(gx.min()),
+                float(gx.max()),
+                float(gy.min()),
+                float(gy.max()),
+            )
             mappable = ax.imshow(rgba, extent=extent, origin="lower", aspect="auto")
             self._apply_clip(mappable)
             self.im = mappable
@@ -531,9 +542,7 @@ class KDEGlyph(Glyph):
             return self.fig, ax, mappable
 
         render = ax.contourf if opts["shade"] else ax.contour
-        contour_set = render(
-            gx, gy, density, levels=level_edges, cmap=cmap, norm=norm
-        )
+        contour_set = render(gx, gy, density, levels=level_edges, cmap=cmap, norm=norm)
         self._apply_clip(contour_set)
         self.im = contour_set
 

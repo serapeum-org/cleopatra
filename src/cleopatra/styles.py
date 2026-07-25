@@ -5,8 +5,9 @@ from __future__ import annotations
 import copy
 import warnings
 from collections import OrderedDict
+from collections.abc import Callable, Sequence
 from enum import StrEnum
-from typing import Any, Callable, Sequence, cast
+from typing import Any, cast
 
 import matplotlib as mpl
 import matplotlib.colors as colors
@@ -58,7 +59,7 @@ class ColorScale(StrEnum):
     MIDPOINT = "midpoint"
 
     @classmethod
-    def _missing_(cls, value: object) -> "ColorScale | None":
+    def _missing_(cls, value: object) -> ColorScale | None:
         """Resolve a case-insensitive string to a member, else `None`.
 
         Called by `enum.Enum` when a direct value lookup fails. Only
@@ -1193,7 +1194,9 @@ def width_legend(
     return ax.legend(handles=handles, **kwargs)
 
 
-def colorbar_legend(mappable: ScalarMappable, ax: Axes | None = None, **kwargs) -> Colorbar:
+def colorbar_legend(
+    mappable: ScalarMappable, ax: Axes | None = None, **kwargs
+) -> Colorbar:
     """Attach a continuous colorbar legend for a mappable.
 
     A thin, glyph-agnostic wrapper over `Figure.colorbar` for callers
@@ -1493,8 +1496,10 @@ def swatch_legend(
         mids = (edges[:-1] + edges[1:]) / 2.0
         band_rgba = np.asarray(cmap_obj(norm(mids)))
         swatch.imshow(
-            band_rgba.reshape(1, -1, 4), aspect="auto",
-            interpolation="nearest", extent=(0, 1, 0, 1),
+            band_rgba.reshape(1, -1, 4),
+            aspect="auto",
+            interpolation="nearest",
+            extent=(0, 1, 0, 1),
         )
     else:
         if norm is None:
@@ -1508,7 +1513,12 @@ def swatch_legend(
                 norm(np.linspace(vmin, vmax, 256)), dtype=float
             ).reshape(1, -1)
         swatch.imshow(
-            gradient, aspect="auto", cmap=cmap_obj, vmin=0.0, vmax=1.0, extent=(0, 1, 0, 1)
+            gradient,
+            aspect="auto",
+            cmap=cmap_obj,
+            vmin=0.0,
+            vmax=1.0,
+            extent=(0, 1, 0, 1),
         )
     swatch.set_xticks([])
     swatch.set_yticks([])

@@ -37,7 +37,6 @@ import matplotlib.tri as mtri
 import numpy as np
 from matplotlib.animation import FuncAnimation
 from matplotlib.colorbar import Colorbar
-
 from matplotlib.colors import BoundaryNorm, ListedColormap
 
 from cleopatra.colors import (
@@ -552,7 +551,9 @@ class MeshGlyph(GeoMixin, Glyph):
         # the counter restarts at 0 within every group. np.repeat emits
         # nothing for zero-size groups, so empty groups are handled naturally.
         group_start = np.cumsum(sizes) - sizes
-        return np.asarray(np.arange(total, dtype=np.intp) - np.repeat(group_start, sizes))
+        return np.asarray(
+            np.arange(total, dtype=np.intp) - np.repeat(group_start, sizes)
+        )
 
     def _map_face_to_triangle_values(self, face_values: np.ndarray) -> np.ndarray:
         """Map per-face values to per-triangle values.
@@ -596,8 +597,7 @@ class MeshGlyph(GeoMixin, Glyph):
         expected = self.n_faces if location == "face" else self.n_nodes
         if len(data) != expected:
             raise ValueError(
-                f"data length ({len(data)}) does not match "
-                f"n_{location}s ({expected})."
+                f"data length ({len(data)}) does not match n_{location}s ({expected})."
             )
 
     def _render_mesh(
@@ -698,7 +698,10 @@ class MeshGlyph(GeoMixin, Glyph):
         tri_faces = tri.triangles
         tri_z = z_nodes[tri_faces].mean(axis=1)  # per-triangle base value
 
-        kw: dict[str, Any] = {"cmap": self.default_options["cmap"], "edgecolors": edgecolor}
+        kw: dict[str, Any] = {
+            "cmap": self.default_options["cmap"],
+            "edgecolors": edgecolor,
+        }
         if norm is not None:
             kw["norm"] = norm
         else:
@@ -1211,8 +1214,7 @@ class MeshGlyph(GeoMixin, Glyph):
         n_frames = len(frames)
         if len(time) != n_frames:
             raise ValueError(
-                f"time length ({len(time)}) does not match "
-                f"frame count ({n_frames})."
+                f"time length ({len(time)}) does not match frame count ({n_frames})."
             )
         expected = self.n_faces if location == "face" else self.n_nodes
         for i, frame in enumerate(frames):

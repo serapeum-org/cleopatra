@@ -21,6 +21,7 @@ Re-run (from the repo root)::
 
     python tools/build_cmocean_presets.py src/cleopatra/data/cmocean_presets.json
 """
+
 import datetime as _dt
 import json
 import sys
@@ -36,20 +37,20 @@ N_POINTS = 64
 #: (cmocean map, preset key, legend label, diverging center or None).
 CURATED = [
     ("thermal", "sea_surface_temperature", "Sea surface temperature", None),
-    ("haline",  "salinity",                "Salinity", None),
-    ("deep",    "bathymetry",              "Ocean depth", None),
-    ("topo",    "topography",              "Topography (land & sea)", 0.0),
-    ("turbid",  "turbidity",               "Turbidity / sediment", None),
-    ("speed",   "current_speed",           "Current speed", None),
-    ("dense",   "water_density",           "Water density", None),
-    ("algae",   "chlorophyll",             "Chlorophyll", None),
-    ("oxy",     "dissolved_oxygen",        "Dissolved oxygen", None),
-    ("ice",     "sea_ice",                 "Sea ice", None),
-    ("solar",   "solar_radiation",         "Solar radiation", None),
-    ("rain",    "rainfall",                "Rainfall", None),
-    ("phase",   "phase",                   "Phase / direction (cyclic)", None),
-    ("balance", "sea_level_anomaly",       "Sea-level anomaly", 0.0),
-    ("curl",    "vorticity",               "Vorticity", 0.0),
+    ("haline", "salinity", "Salinity", None),
+    ("deep", "bathymetry", "Ocean depth", None),
+    ("topo", "topography", "Topography (land & sea)", 0.0),
+    ("turbid", "turbidity", "Turbidity / sediment", None),
+    ("speed", "current_speed", "Current speed", None),
+    ("dense", "water_density", "Water density", None),
+    ("algae", "chlorophyll", "Chlorophyll", None),
+    ("oxy", "dissolved_oxygen", "Dissolved oxygen", None),
+    ("ice", "sea_ice", "Sea ice", None),
+    ("solar", "solar_radiation", "Solar radiation", None),
+    ("rain", "rainfall", "Rainfall", None),
+    ("phase", "phase", "Phase / direction (cyclic)", None),
+    ("balance", "sea_level_anomaly", "Sea-level anomaly", 0.0),
+    ("curl", "vorticity", "Vorticity", 0.0),
 ]
 
 
@@ -59,7 +60,12 @@ def main(out_path):
     for cm_name, key, label, center in CURATED:
         cmap = getattr(cmocean.cm, cm_name)
         palette = [to_hex(cmap(float(x))) for x in xs]
-        rec = {"label": label, "palette": palette, "opacity": "opaque", "cmocean_map": cm_name}
+        rec = {
+            "label": label,
+            "palette": palette,
+            "opacity": "opaque",
+            "cmocean_map": cm_name,
+        }
         if center is not None:
             rec["center"] = center
         presets[key] = rec
@@ -70,7 +76,7 @@ def main(out_path):
             "source_version": cmocean.__version__,
             "license": "MIT",
             "copyright": "Copyright (c) 2015 Kristen M. Thyng",
-            "generated_utc": _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%d"),
+            "generated_utc": _dt.datetime.now(_dt.UTC).strftime("%Y-%m-%d"),
             "n_points": N_POINTS,
             "note": (
                 "Colour data derived from the cmocean collection (MIT). Each "

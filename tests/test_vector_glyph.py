@@ -55,9 +55,9 @@ class TestVectorGlyphInit:
             u=3, v=4 -> every magnitude is 5.
         """
         glyph = VectorGlyph(*field)
-        assert np.allclose(
-            glyph.magnitude, 5.0
-        ), f"Magnitude should be 5 everywhere, got {glyph.magnitude}"
+        assert np.allclose(glyph.magnitude, 5.0), (
+            f"Magnitude should be 5 everywhere, got {glyph.magnitude}"
+        )
 
     def test_ticks_spacing_defaults_none(self, field):
         """ticks_spacing defaults to None for auto-derivation.
@@ -66,9 +66,9 @@ class TestVectorGlyphInit:
             The option dict leaves ticks_spacing unset.
         """
         glyph = VectorGlyph(*field)
-        assert (
-            glyph.default_options["ticks_spacing"] is None
-        ), "ticks_spacing should default to None"
+        assert glyph.default_options["ticks_spacing"] is None, (
+            "ticks_spacing should default to None"
+        )
 
     def test_mismatched_uv_raises(self, field):
         """u and v of different shapes raise ValueError.
@@ -139,9 +139,9 @@ class TestVectorGlyphPlot:
         v = np.ones_like(y)
         glyph = VectorGlyph(x, y, u, v)
         _, _, im = glyph.plot(kind="streamplot")
-        assert (
-            im.get_array() is not None
-        ), "Streamplot lines should carry a colour array"
+        assert im.get_array() is not None, (
+            "Streamplot lines should carry a colour array"
+        )
         assert glyph.cbar is not None, "A colorbar should be attached"
 
     def test_streamplot_clim_pinned_to_tick_range(self):
@@ -199,9 +199,9 @@ class TestVectorGlyphPlot:
         """
         glyph = VectorGlyph(*field, levels=3, vmin=0.0, vmax=6.0)
         _, _, im = glyph.plot(kind="quiver")
-        assert isinstance(
-            im.norm, mcolors.BoundaryNorm
-        ), f"levels should yield a BoundaryNorm, got {type(im.norm)}"
+        assert isinstance(im.norm, mcolors.BoundaryNorm), (
+            f"levels should yield a BoundaryNorm, got {type(im.norm)}"
+        )
 
     def test_plot_on_supplied_axes(self, field):
         """Plotting onto a supplied axes reuses that axes/figure.
@@ -249,9 +249,9 @@ class TestVectorGlyphAddKey:
         _, _, im = glyph.plot(kind="quiver")
         key = glyph.add_key(im, value=5.0, label="5 m/s")
         assert isinstance(key, QuiverKey), f"Expected QuiverKey, got {type(key)}"
-        assert (
-            key.text.get_text() == "5 m/s"
-        ), f"Unexpected label: {key.text.get_text()}"
+        assert key.text.get_text() == "5 m/s", (
+            f"Unexpected label: {key.text.get_text()}"
+        )
 
     def test_add_key_default_label_is_value(self, field):
         """With no label, the numeric value is rendered.
@@ -262,9 +262,9 @@ class TestVectorGlyphAddKey:
         glyph = VectorGlyph(*field)
         _, _, im = glyph.plot(kind="quiver")
         key = glyph.add_key(im, value=7.0)
-        assert (
-            key.text.get_text() == "7"
-        ), f"Default label should be '7', got {key.text.get_text()}"
+        assert key.text.get_text() == "7", (
+            f"Default label should be '7', got {key.text.get_text()}"
+        )
 
 
 def test_vector_default_options_extend_style_defaults():
@@ -319,9 +319,9 @@ class TestAddColorbarToggle:
         glyph = VectorGlyph(gx, gy, u, v)
         fig, ax, _ = glyph.plot(add_colorbar=False)
         try:
-            assert (
-                glyph.cbar is None
-            ), "plot(add_colorbar=False) should skip the colorbar"
+            assert glyph.cbar is None, (
+                "plot(add_colorbar=False) should skip the colorbar"
+            )
             assert len(fig.axes) == 1, f"expected 1 axes, got {len(fig.axes)}"
         finally:
             plt.close(fig)
@@ -353,12 +353,12 @@ class TestSharedAxesArtistCleanup:
         glyph.plot(kind="quiver")
         old_im = glyph.im
         glyph.plot(kind="quiver")
-        assert (
-            len(glyph.ax.collections) == 1
-        ), f"Expected exactly one mappable, got {len(glyph.ax.collections)}"
-        assert (
-            old_im not in glyph.ax.collections
-        ), "The first call's mappable must be removed"
+        assert len(glyph.ax.collections) == 1, (
+            f"Expected exactly one mappable, got {len(glyph.ax.collections)}"
+        )
+        assert old_im not in glyph.ax.collections, (
+            "The first call's mappable must be removed"
+        )
 
     def test_barbs_two_glyphs_sharing_axes_does_not_stack(self):
         """A second, different glyph's `plot(kind="barbs")` onto a shared axes replaces it."""
@@ -371,12 +371,12 @@ class TestSharedAxesArtistCleanup:
         glyph2 = VectorGlyph(gx, gy, u, v, ax=glyph1.ax, fig=glyph1.fig)
         glyph2.plot(kind="barbs")
 
-        assert (
-            len(glyph1.ax.collections) == 1
-        ), f"Expected exactly one mappable, got {len(glyph1.ax.collections)}"
-        assert (
-            old_im not in glyph1.ax.collections
-        ), "The first glyph's mappable must be removed"
+        assert len(glyph1.ax.collections) == 1, (
+            f"Expected exactly one mappable, got {len(glyph1.ax.collections)}"
+        )
+        assert old_im not in glyph1.ax.collections, (
+            "The first glyph's mappable must be removed"
+        )
         assert len(glyph1.fig.axes) == axes_count_after_first, (
             f"Expected {axes_count_after_first} axes after the second glyph's call, "
             f"got {len(glyph1.fig.axes)}"
@@ -405,9 +405,9 @@ class TestSharedAxesArtistCleanup:
             f"Expected {patches_after_first} arrow patches after the second call, "
             f"got {len(glyph.ax.patches)} (arrowheads leaked)"
         )
-        assert (
-            len(glyph.ax.collections) == 1
-        ), f"Expected exactly one line collection, got {len(glyph.ax.collections)}"
+        assert len(glyph.ax.collections) == 1, (
+            f"Expected exactly one line collection, got {len(glyph.ax.collections)}"
+        )
 
     def test_two_glyphs_quiver_then_streamplot_on_shared_axes(self):
         """A second glyph's `plot(kind="streamplot")` cleans up a first glyph's quiver."""
@@ -419,12 +419,12 @@ class TestSharedAxesArtistCleanup:
         glyph2 = VectorGlyph(gx, gy, u, v, ax=glyph1.ax, fig=glyph1.fig)
         glyph2.plot(kind="streamplot")
 
-        assert (
-            old_im not in glyph1.ax.collections
-        ), "The first glyph's quiver mappable must be removed"
-        assert (
-            len(glyph1.ax.collections) == 1
-        ), f"Expected exactly one mappable, got {len(glyph1.ax.collections)}"
+        assert old_im not in glyph1.ax.collections, (
+            "The first glyph's quiver mappable must be removed"
+        )
+        assert len(glyph1.ax.collections) == 1, (
+            f"Expected exactly one mappable, got {len(glyph1.ax.collections)}"
+        )
 
     def test_ax_clear_before_replot_does_not_raise(self):
         """A caller's own `ax.clear()` before the next `plot()` call doesn't crash.
@@ -444,12 +444,12 @@ class TestSharedAxesArtistCleanup:
         fig, ax, im = glyph.plot(kind="quiver")
         ax.clear()
         fig2, ax2, im2 = glyph.plot(kind="quiver")
-        assert (
-            len(ax2.collections) == 1
-        ), f"Expected exactly one mappable, got {len(ax2.collections)}"
-        assert (
-            len(fig2.axes) == 2
-        ), f"Expected 2 axes (plot + colorbar), got {len(fig2.axes)}"
+        assert len(ax2.collections) == 1, (
+            f"Expected exactly one mappable, got {len(ax2.collections)}"
+        )
+        assert len(fig2.axes) == 2, (
+            f"Expected 2 axes (plot + colorbar), got {len(fig2.axes)}"
+        )
 
     def test_plot_validation_failure_preserves_prior_render(self):
         """A failed `plot()` call must not tear down the previous valid render.
@@ -471,9 +471,9 @@ class TestSharedAxesArtistCleanup:
         glyph.default_options["vmax"] = None
         with pytest.raises(ValueError):
             glyph.plot(kind="quiver")
-        assert (
-            len(ax.collections) == 1
-        ), f"Expected the prior mappable, got {len(ax.collections)}"
-        assert (
-            len(fig.axes) == axes_count
-        ), f"Expected {axes_count} axes preserved, got {len(fig.axes)}"
+        assert len(ax.collections) == 1, (
+            f"Expected the prior mappable, got {len(ax.collections)}"
+        )
+        assert len(fig.axes) == axes_count, (
+            f"Expected {axes_count} axes preserved, got {len(fig.axes)}"
+        )

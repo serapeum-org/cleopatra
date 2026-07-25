@@ -43,9 +43,8 @@ from matplotlib.legend import Legend
 
 from cleopatra.geo import GeoMixin
 from cleopatra.glyph import Glyph, _root_figure
-from cleopatra.styles import CLASSIFY_OPTIONS
+from cleopatra.styles import CLASSIFY_OPTIONS, resolve_sizes, size_legend
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
-from cleopatra.styles import resolve_sizes, size_legend
 
 #: Option keys for ScatterGlyph. `ticks_spacing` is `None` so the shared
 #: `_prepare_scalar_mapping` helper auto-derives it from the data range.
@@ -180,8 +179,7 @@ class ScatterGlyph(GeoMixin, Glyph):
             values = np.asarray(values)
             if values.shape != self.x.shape:
                 raise ValueError(
-                    f"values must match x/y shape {self.x.shape}, got "
-                    f"{values.shape}."
+                    f"values must match x/y shape {self.x.shape}, got {values.shape}."
                 )
         if sizes is not None:
             sizes = np.asarray(sizes)

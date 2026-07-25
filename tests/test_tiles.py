@@ -74,9 +74,9 @@ class TestGetProvider:
     def test_resolve_cartodb_positron(self):
         """A dotted string resolves to a provider with `build_url`."""
         provider = get_provider("CartoDB.Positron")
-        assert hasattr(
-            provider, "build_url"
-        ), f"Provider should have build_url method: {provider}"
+        assert hasattr(provider, "build_url"), (
+            f"Provider should have build_url method: {provider}"
+        )
 
     def test_invalid_provider_raises_value_error(self):
         """An unknown provider name raises `ValueError`."""
@@ -280,9 +280,9 @@ class TestAddTilesBehaviour:
         # (1e6, 6e6, 1.2e6, 6.2e6) reproject to these EPSG:4326 [w, e, s, n]
         # degrees (precomputed, not re-derived from the production helper).
         got = mock_ax.imshow.call_args.kwargs["extent"]
-        assert got == pytest.approx(
-            [8.9832, 10.7798, 47.3537, 48.5569], abs=1e-4
-        ), f"imshow extent should be the mosaic's reprojected bounds, got {got}"
+        assert got == pytest.approx([8.9832, 10.7798, 47.3537, 48.5569], abs=1e-4), (
+            f"imshow extent should be the mosaic's reprojected bounds, got {got}"
+        )
         assert got != [10.0, 11.0, 50.0, 51.0], "extent must not be the raw data bounds"
 
     def test_nonmercator_falls_back_to_data_bounds_when_mosaic_overflows(self, mock_ax):
@@ -337,9 +337,9 @@ class TestAddTilesBehaviour:
         ):
             add_tiles(mock_ax, crs=4326)
         west, east, south, north = mock_ax.imshow.call_args.kwargs["extent"]
-        assert (
-            west <= 10.0 and east >= 11.0 and south <= 50.0 and north >= 51.0
-        ), f"mosaic extent {(west, east, south, north)} should envelop the data bounds"
+        assert west <= 10.0 and east >= 11.0 and south <= 50.0 and north >= 51.0, (
+            f"mosaic extent {(west, east, south, north)} should envelop the data bounds"
+        )
 
     def test_min_tiles_across_forwarded_to_auto_zoom(self, mock_ax, _patch_tiles):
         """`add_tiles(min_tiles_across=...)` is forwarded to `auto_zoom` for zoom='auto'."""
@@ -531,9 +531,9 @@ class TestRequireTilesExtra:
     def test_available_returns_silently(self):
         """When deps are present, the helper is a no-op and returns `None`."""
         result = _require_tiles_extra()
-        assert (
-            result is None
-        ), f"_require_tiles_extra should return None on success, got {result!r}"
+        assert result is None, (
+            f"_require_tiles_extra should return None on success, got {result!r}"
+        )
 
     def test_missing_raises_with_install_hint(self, monkeypatch):
         """When `_TILES_AVAILABLE` is False, raise `ImportError` with the hint."""
@@ -571,9 +571,9 @@ class TestAutoZoomEdgeCases:
             expected_min: Lower bound on the expected zoom value.
         """
         result = auto_zoom(bounds)
-        assert (
-            result >= expected_min
-        ), f"auto_zoom{bounds} should be >= {expected_min}, got {result}"
+        assert result >= expected_min, (
+            f"auto_zoom{bounds} should be >= {expected_min}, got {result}"
+        )
 
 
 class TestDensifyAndReprojectEdgeCases:
@@ -625,9 +625,9 @@ class TestDensifyAndReprojectEdgeCases:
             "EPSG:3857",
             n_points=2,
         )
-        assert all(
-            np.isfinite([west, south, east, north])
-        ), f"Bounds should all be finite, got ({west}, {south}, {east}, {north})"
+        assert all(np.isfinite([west, south, east, north])), (
+            f"Bounds should all be finite, got ({west}, {south}, {east}, {north})"
+        )
 
 
 class TestFetchSingleTile:
@@ -669,9 +669,9 @@ class TestFetchSingleTile:
 
             with pytest.raises(ConnectionError, match="Failed to fetch tile"):
                 fetch_single_tile(tile, provider, timeout=1, retries=1)
-            assert (
-                mock_urlopen.call_count == 2
-            ), f"Expected 2 attempts (retries=1), got {mock_urlopen.call_count}"
+            assert mock_urlopen.call_count == 2, (
+                f"Expected 2 attempts (retries=1), got {mock_urlopen.call_count}"
+            )
 
     def test_retries_and_succeeds(self):
         """A transient `URLError` is retried and a later success is returned."""
@@ -690,9 +690,9 @@ class TestFetchSingleTile:
                 successful_response,
             ]
             _, returned_bytes = fetch_single_tile(tile, provider, timeout=1, retries=2)
-        assert (
-            returned_bytes == png
-        ), f"Expected png bytes after retry, got {len(returned_bytes)} bytes"
+        assert returned_bytes == png, (
+            f"Expected png bytes after retry, got {len(returned_bytes)} bytes"
+        )
 
     def test_raises_after_all_retries_exhausted(self):
         """All retries failing raises `ConnectionError` referencing the tile."""
@@ -705,9 +705,9 @@ class TestFetchSingleTile:
             mock_urlopen.side_effect = urllib.error.URLError("permanent")
             with pytest.raises(ConnectionError, match="z=7/x=5/y=6"):
                 fetch_single_tile(tile, provider, timeout=1, retries=2)
-            assert (
-                mock_urlopen.call_count == 3
-            ), f"Expected 3 attempts, got {mock_urlopen.call_count}"
+            assert mock_urlopen.call_count == 3, (
+                f"Expected 3 attempts, got {mock_urlopen.call_count}"
+            )
 
     @pytest.mark.parametrize(
         "header",
@@ -774,9 +774,9 @@ class TestFetchSingleTile:
         ua = self._captured_user_agent(mock_urlopen)
         assert ua == USER_AGENT
         assert ua.startswith("cleopatra/"), f"UA should start with 'cleopatra/': {ua!r}"
-        assert (
-            "github.com/serapeum-org/cleopatra" in ua
-        ), f"UA should carry a contact URL: {ua!r}"
+        assert "github.com/serapeum-org/cleopatra" in ua, (
+            f"UA should carry a contact URL: {ua!r}"
+        )
         assert ua != "cleopatra/Python", "the old placeholder UA must be gone"
 
     def test_custom_user_agent_is_sent_verbatim(self):
@@ -865,9 +865,9 @@ class TestFetchTiles:
         with patch.object(tiles_mod, "fetch_single_tile", side_effect=fake_single):
             result = fetch_tiles(tiles, provider, max_workers=2, timeout=1, retries=0)
 
-        assert set(result.keys()) == set(
-            tiles
-        ), f"Result should be keyed by all input tiles, got {set(result.keys())}"
+        assert set(result.keys()) == set(tiles), (
+            f"Result should be keyed by all input tiles, got {set(result.keys())}"
+        )
         for v in result.values():
             assert v == png, "All tile values should be the mocked PNG bytes"
 
@@ -951,9 +951,9 @@ class TestStitchTiles:
         assert west < east, f"west {west} < east {east} should hold"
         assert south < north, f"south {south} < north {north} should hold"
         for v in extent:
-            assert isinstance(
-                v, float
-            ), f"Extent component should be float, got {type(v)}"
+            assert isinstance(v, float), (
+                f"Extent component should be float, got {type(v)}"
+            )
 
 
 class TestAddTilesAdditionalValidation:
@@ -985,9 +985,9 @@ class TestAddTilesAdditionalValidation:
         add_tiles(mock_ax, crs=3857, attribution=True)
         if mock_ax.text.called:
             placed_text = mock_ax.text.call_args[0][2]
-            assert (
-                "<" not in placed_text
-            ), f"Attribution text should be HTML-stripped, got: {placed_text!r}"
+            assert "<" not in placed_text, (
+                f"Attribution text should be HTML-stripped, got: {placed_text!r}"
+            )
 
     def test_attribution_unescapes_html_entities(self, mock_ax, _patch_tiles):
         """`attribution=True` strips tags *and* unescapes HTML entities."""
@@ -999,9 +999,9 @@ class TestAddTilesAdditionalValidation:
         add_tiles(mock_ax, source=provider, crs=3857, attribution=True)
         mock_ax.text.assert_called_once()
         placed = mock_ax.text.call_args[0][2]
-        assert (
-            placed == "© OpenStreetMap & contributors"
-        ), f"expected entities unescaped, got {placed!r}"
+        assert placed == "© OpenStreetMap & contributors", (
+            f"expected entities unescaped, got {placed!r}"
+        )
 
 
 class TestStitchTilesPerformance:

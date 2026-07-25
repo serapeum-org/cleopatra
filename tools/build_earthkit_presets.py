@@ -30,6 +30,7 @@ Re-run (from the repo root)::
 ``<ref>`` defaults to ``main``; the resolved ref and generation date are recorded
 in the asset's ``_meta`` block.
 """
+
 import datetime as _dt
 import json
 import re
@@ -128,7 +129,9 @@ def _safe_out_path(out_path):
     """
     base = Path.cwd().resolve()
     resolved = Path(out_path)
-    resolved = resolved.resolve() if resolved.is_absolute() else (base / resolved).resolve()
+    resolved = (
+        resolved.resolve() if resolved.is_absolute() else (base / resolved).resolve()
+    )
     if resolved != base and base not in resolved.parents:
         raise ValueError(f"refusing to write outside {base}: {out_path!r}")
     return resolved
@@ -142,7 +145,7 @@ def main(out_path, ref="main"):
             "source_ref": ref,
             "source_files": ["src/earthkit/plots/data/styles/auto-styles/<param>.yml"],
             "license": "Apache-2.0",
-            "generated_utc": _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%d"),
+            "generated_utc": _dt.datetime.now(_dt.UTC).strftime("%Y-%m-%d"),
             "note": (
                 "ECMWF's default parameter styles, from earthkit-plots' open style "
                 "library (Apache-2.0). Each preset is the `optimal` Style variant: a "
@@ -156,7 +159,9 @@ def main(out_path, ref="main"):
     }
     with open(_safe_out_path(out_path), "w", encoding="utf-8") as fh:
         json.dump(asset, fh, indent=1, ensure_ascii=False)
-    print(f"wrote {len(presets)} earthkit presets to {out_path}; skipped {len(skipped)}")
+    print(
+        f"wrote {len(presets)} earthkit presets to {out_path}; skipped {len(skipped)}"
+    )
     for short, stem in skipped:
         print(f"  skipped {short} ({stem}): optimal variant is not a shadable Style")
     # Surface curated params whose optimal variant declares no contour levels

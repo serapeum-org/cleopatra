@@ -95,8 +95,7 @@ def _as_xy(array: Any, name: str) -> np.ndarray:
     xy = np.asarray(array, dtype=float)
     if xy.ndim != 2 or xy.shape[1] != 2:
         raise ValueError(
-            f"{name} must be an (N, 2) array of x/y coordinates, "
-            f"got shape {xy.shape}."
+            f"{name} must be an (N, 2) array of x/y coordinates, got shape {xy.shape}."
         )
     return xy
 
@@ -439,8 +438,7 @@ def _bin_edges(centers: np.ndarray) -> np.ndarray:
     centers = np.asarray(centers, dtype=float)
     if centers.size < 2:
         raise ValueError(
-            "at least 2 centres are required to infer bin edges, got "
-            f"{centers.size}"
+            f"at least 2 centres are required to infer bin edges, got {centers.size}"
         )
     mid = (centers[:-1] + centers[1:]) / 2.0
     first = centers[0] - (mid[0] - centers[0])

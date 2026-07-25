@@ -101,32 +101,35 @@ change_type_order = ["BREAKING CHANGE", "feat", "fix", "refactor", "perf", "buil
 packages = ["src/cleopatra"]
 
 
-# extend-ignore (NOT ignore) so flake8's default-ignore list is preserved —
-# that default list already silences the black-conflict codes E704/W503/W504.
-# E203, E701 are Black's officially recommended flake8 ignores; the rest are
-# project style choices. See:
-# https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html
-[tool.flake8]
-extend-ignore = ["E203", "E266", "E501", "E701", "E704", "E722", "C901", "E741", "E731", "W503"]
-max-line-length = 88
-max-complexity = 18
-select = "B,C,E,F,W,T4"
-
-[tool.black]
+[tool.ruff]
 line-length = 88
-skip-string-normalization = true
+target-version = "py311"  # requires-python floors at 3.11
 
-[tool.isort]
-profile = "black"
-line_length = 88
-multi_line_output = 3
+[tool.ruff.format]
+# black had skip-string-normalization = true → preserve existing quotes.
+quote-style = "preserve"
 
-# nbqa runs flake8 on notebook code cells. Tutorial notebooks intentionally place
-# imports next to where they are first used (teaching in context), and setup such as
-# `%matplotlib inline` must run before imports — both legitimately trip E402. E402
-# stays enforced for real .py modules; it is ignored only for notebooks here.
-[tool.nbqa.addopts]
-flake8 = ["--extend-ignore=E402"]
+[tool.ruff.lint]
+# The *effective* flake8 rule set was E/F/W: the old config's B/C/T4 selectors
+# were inert (flake8-bugbear / flake8-print were never installed as
+# additional_dependencies). Add I (isort) and UP (pyupgrade) to fold in those
+# two standalone hooks.
+select = ["E", "F", "W", "I", "UP"]
+# Mirror the old [tool.flake8].extend-ignore. E704 and W503 are dropped — ruff
+# does not implement either (both are formatter-owned pycodestyle codes black
+# conflicts with), so there is nothing to ignore.
+ignore = ["E203", "E266", "E501", "E701", "E722", "C901", "E741", "E731"]
+
+[tool.ruff.lint.per-file-ignores]
+# flake8 excluded examples/ and tests/ from linting, and the old bare pyupgrade
+# never modernized their typing — so drop E/F/W and UP there, keeping only
+# import-sorting (I), which isort did run everywhere.
+"tests/**" = ["E", "F", "W", "UP"]
+"examples/**" = ["E", "F", "W", "UP"]
+# Tutorial notebooks import next to first use and run setup (e.g. `%matplotlib
+# inline`) before imports — both legitimately trip E402, which stays enforced
+# for real .py modules; it is ignored only for notebooks here.
+"*.ipynb" = ["E402"]
 
 [tool.bandit]
 exclude_dirs = ["tests", "examples", "docs", "planning"]

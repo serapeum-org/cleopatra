@@ -56,30 +56,83 @@ CAMS_AOD_COLORMAPS: dict[str, Colormap] = {
     # Magics `sh_BuYlRd_aod` -- the canonical CAMS AOD scale.
     "blue_yellow_red": LinearSegmentedColormap.from_list(
         "cams_aod_blue_yellow_red",
-        ["#d3d7eb", "#a8afd7", "#8892bf", "#a3a891", "#bebd65", "#d8d239",
-         "#f3e70b", "#f4c60a", "#f6a508", "#f88406", "#f96205", "#fb4103",
-         "#fd2001", "#ff0000"],
+        [
+            "#d3d7eb",
+            "#a8afd7",
+            "#8892bf",
+            "#a3a891",
+            "#bebd65",
+            "#d8d239",
+            "#f3e70b",
+            "#f4c60a",
+            "#f6a508",
+            "#f88406",
+            "#f96205",
+            "#fb4103",
+            "#fd2001",
+            "#ff0000",
+        ],
     ),
     # Magics `sh_BuYlRdBr_aod` -- like blue_yellow_red but fading to dark maroon.
     "blue_yellow_red_brown": LinearSegmentedColormap.from_list(
         "cams_aod_blue_yellow_red_brown",
-        ["#d2d2ff", "#a1a1ff", "#7070ff", "#8787c7", "#b8b876", "#e9e926",
-         "#ffda00", "#ff8a00", "#ff3900", "#f40000", "#c40000", "#930000",
-         "#640000"],
+        [
+            "#d2d2ff",
+            "#a1a1ff",
+            "#7070ff",
+            "#8787c7",
+            "#b8b876",
+            "#e9e926",
+            "#ffda00",
+            "#ff8a00",
+            "#ff3900",
+            "#f40000",
+            "#c40000",
+            "#930000",
+            "#640000",
+        ],
     ),
     # Magics `sh_all_aod` / `sh_all_aod550` -- the blue->cyan->green->yellow->red scale.
     "blue_red": LinearSegmentedColormap.from_list(
         "cams_aod_blue_red",
-        ["#0000f1", "#004cff", "#00b1ff", "#29ffce", "#7dff7a", "#ceff29",
-         "#ffc400", "#ff6800", "#f10800", "#800000"],
+        [
+            "#0000f1",
+            "#004cff",
+            "#00b1ff",
+            "#29ffce",
+            "#7dff7a",
+            "#ceff29",
+            "#ffc400",
+            "#ff6800",
+            "#f10800",
+            "#800000",
+        ],
     ),
     # Magics `sh_Oranges_aod` -- white->dark-orange (natively alpha-ramped; see above).
     "oranges": LinearSegmentedColormap.from_list(
         "cams_aod_oranges",
-        ["#ffefe0", "#fee9d4", "#fee2c6", "#fdd9b4", "#fdd0a2", "#fdc38d",
-         "#fdb576", "#fda762", "#fd9a4e", "#fd8c3b", "#f87f2c", "#f3701b",
-         "#ec620f", "#e25508", "#d84801", "#c54102", "#b03903", "#9e3303",
-         "#8e2d04", "#7f2704"],
+        [
+            "#ffefe0",
+            "#fee9d4",
+            "#fee2c6",
+            "#fdd9b4",
+            "#fdd0a2",
+            "#fdc38d",
+            "#fdb576",
+            "#fda762",
+            "#fd9a4e",
+            "#fd8c3b",
+            "#f87f2c",
+            "#f3701b",
+            "#ec620f",
+            "#e25508",
+            "#d84801",
+            "#c54102",
+            "#b03903",
+            "#9e3303",
+            "#8e2d04",
+            "#7f2704",
+        ],
     ),
 }
 
@@ -97,8 +150,16 @@ FLAME_COLORMAPS: dict[str, Colormap] = {
     # so importing this never depends on it being registered under that name.
     "white_hot": LinearSegmentedColormap.from_list(
         "flame_white_hot",
-        ["#000000", "#4d0000", "#990000", "#e02a00", "#ff7a00", "#ffbf1a",
-         "#fff29a", "#ffffff"],
+        [
+            "#000000",
+            "#4d0000",
+            "#990000",
+            "#e02a00",
+            "#ff7a00",
+            "#ffbf1a",
+            "#fff29a",
+            "#ffffff",
+        ],
     ),
     "amber": LinearSegmentedColormap.from_list(
         "flame_amber",
@@ -628,8 +689,10 @@ def _load_preset_asset(
         )
         records = json.loads(source).get("presets", {}).items()
     except (
-        ModuleNotFoundError, OSError,
-        json.JSONDecodeError, AttributeError,
+        ModuleNotFoundError,
+        OSError,
+        json.JSONDecodeError,
+        AttributeError,
     ):
         return {}
 
@@ -648,14 +711,20 @@ def _load_preset_asset(
             # Magics assets (cmocean) are genuinely continuous scientific ramps.
             is_magics = bool(rec.get("magics_style"))
             if is_magics:
-                cmap: Colormap = mcolors.ListedColormap(palette, name=f"{cmap_prefix}_{key}")
+                cmap: Colormap = mcolors.ListedColormap(
+                    palette, name=f"{cmap_prefix}_{key}"
+                )
             else:
-                cmap = LinearSegmentedColormap.from_list(f"{cmap_prefix}_{key}", palette)
+                cmap = LinearSegmentedColormap.from_list(
+                    f"{cmap_prefix}_{key}", palette
+                )
             layer: dict[str, Any] = {"cmap": cmap, "label": rec["label"]}
             if is_magics:
                 layer["bands"] = len(palette)  # number of discrete colour bands
             if rec.get("opacity") == "opaque":
-                layer["alpha"] = 1.0  # value-linked opacity (overlay) is the default otherwise
+                layer["alpha"] = (
+                    1.0  # value-linked opacity (overlay) is the default otherwise
+                )
             if rec.get("center") is not None:
                 layer["center"] = rec["center"]
             # Recover the fixed contour range encoded in the Magics style name
@@ -858,7 +927,9 @@ def resolve_style_norm(
         reserved = {"neither": 0, "min": 1, "max": 1, "both": 2}.get(extend, 0)
         if cmap_obj.N < (len(edges) - 1) + reserved:
             extend = "neither"
-        norm: mcolors.Normalize = mcolors.BoundaryNorm(edges, ncolors=cmap_obj.N, extend=extend)
+        norm: mcolors.Normalize = mcolors.BoundaryNorm(
+            edges, ncolors=cmap_obj.N, extend=extend
+        )
         return norm, edges[0], edges[-1]
 
     vmin = cfg.get("vmin")
@@ -915,8 +986,10 @@ def resolve_style_norm(
         # here instead of letting matplotlib raise an opaque "vmin must be less
         # or equal to vmax" deep inside the draw.
         positive = finite[finite > 0] if finite.size else finite
-        lo = vmin if (vmin is not None and vmin > 0) else (
-            float(positive.min()) if positive.size else None
+        lo = (
+            vmin
+            if (vmin is not None and vmin > 0)
+            else (float(positive.min()) if positive.size else None)
         )
         # `lo >= vmax` (not just `>`) so a single-positive-value range like
         # data [0, 5] -- where the only positive value is both the lower and
@@ -1186,12 +1259,22 @@ def apply_data_style(
             if curvilinear:
                 assert x is not None and y is not None
                 images[name] = alpha_scaled_mesh(
-                    ax, x, y, cat_data, cat_cmap, norm=cat_norm, constant_alpha=1.0,
+                    ax,
+                    x,
+                    y,
+                    cat_data,
+                    cat_cmap,
+                    norm=cat_norm,
+                    constant_alpha=1.0,
                     **render_kwargs,
                 )
             else:
                 images[name] = alpha_scaled_image(
-                    ax, cat_data, cat_cmap, norm=cat_norm, constant_alpha=1.0,
+                    ax,
+                    cat_data,
+                    cat_cmap,
+                    norm=cat_norm,
+                    constant_alpha=1.0,
                     **render_kwargs,
                 )
             if legend:
@@ -1203,12 +1286,20 @@ def apply_data_style(
                 if legend_bounds is not None:
                     x0, y0 = legend_bounds[i][0], legend_bounds[i][1]
                     leg = disjoint_legend(
-                        ax, cat_colors, cat_labels, title=cfg["label"],
-                        loc="upper left", bbox_to_anchor=(x0, y0),
+                        ax,
+                        cat_colors,
+                        cat_labels,
+                        title=cfg["label"],
+                        loc="upper left",
+                        bbox_to_anchor=(x0, y0),
                     )
                 else:
                     leg = disjoint_legend(
-                        ax, cat_colors, cat_labels, title=cfg["label"], loc="upper right"
+                        ax,
+                        cat_colors,
+                        cat_labels,
+                        title=cfg["label"],
+                        loc="upper right",
                     )
                 if prior_legend is not None and prior_legend is not leg:
                     ax.add_artist(prior_legend)
@@ -1234,7 +1325,9 @@ def apply_data_style(
         alpha_const = cfg.get("alpha")
         alpha_vmin = cfg.get("alpha_vmin")
         alpha_vmax = cfg.get("alpha_vmax")
-        if alpha_const is not None and (alpha_vmin is not None or alpha_vmax is not None):
+        if alpha_const is not None and (
+            alpha_vmin is not None or alpha_vmax is not None
+        ):
             raise ValueError(
                 f"data style layer {name!r} sets both a constant 'alpha' and "
                 "'alpha_vmin'/'alpha_vmax'; those are mutually exclusive"
@@ -1247,13 +1340,25 @@ def apply_data_style(
         if curvilinear:
             assert x is not None and y is not None
             images[name] = alpha_scaled_mesh(
-                ax, x, y, data, cfg["cmap"], norm=norm, alpha_norm=alpha_norm,
-                constant_alpha=alpha_const, **render_kwargs,
+                ax,
+                x,
+                y,
+                data,
+                cfg["cmap"],
+                norm=norm,
+                alpha_norm=alpha_norm,
+                constant_alpha=alpha_const,
+                **render_kwargs,
             )
         else:
             images[name] = alpha_scaled_image(
-                ax, data, cfg["cmap"], norm=norm, alpha_norm=alpha_norm,
-                constant_alpha=alpha_const, **render_kwargs,
+                ax,
+                data,
+                cfg["cmap"],
+                norm=norm,
+                alpha_norm=alpha_norm,
+                constant_alpha=alpha_const,
+                **render_kwargs,
             )
         if legend:
             bounds = (

@@ -25,8 +25,9 @@ The `Array` class has the following methods:
 from __future__ import annotations
 
 import warnings
+from collections.abc import Callable, Sequence
 from math import ceil
-from typing import Any, Callable, Literal, Sequence, TypedDict, Unpack, cast
+from typing import Any, Literal, TypedDict, Unpack, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -48,16 +49,20 @@ from cleopatra.colors import (
     resolve_style_norm,
 )
 from cleopatra.geo import GeoMixin
-from cleopatra.hillshade import resolve_hillshade, shade_grid, shade_rgb
 from cleopatra.glyph import (
     Glyph,
     _clear_prior_render_artists,
     _mark_render_artists,
     _root_figure,
 )
+from cleopatra.hillshade import resolve_hillshade, shade_grid, shade_rgb
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
-from cleopatra.styles import ColorScale  # re-exported for convenience  # noqa: F401
-from cleopatra.styles import disjoint_legend, swatch_extend_prefixes, swatch_legend
+from cleopatra.styles import (
+    ColorScale,  # re-exported for convenience  # noqa: F401
+    disjoint_legend,
+    swatch_extend_prefixes,
+    swatch_legend,
+)
 
 ARRAY_DEFAULT_OPTIONS: dict[str, Any] = {
     "vmin": None,
@@ -1903,7 +1908,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         values = values[np.isfinite(values)]
         if values.size == 0:
             raise ValueError(
-                "Cannot compute robust vmin/vmax: array has no finite " "values."
+                "Cannot compute robust vmin/vmax: array has no finite values."
             )
         vmin_robust = float(np.nanpercentile(values, ROBUST_LOWER_PERCENTILE))
         vmax_robust = float(np.nanpercentile(values, ROBUST_UPPER_PERCENTILE))
@@ -2201,7 +2206,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         if hillshade is not None:
             if kind == "imshow":
                 hs_norm = norm if norm is not None else Normalize(vmin=vmin, vmax=vmax)
-                elevation = np.asarray(ma.filled(ma.asarray(plot_arr).astype(float), np.nan), dtype=float)
+                elevation = np.asarray(
+                    ma.filled(ma.asarray(plot_arr).astype(float), np.nan), dtype=float
+                )
                 im.set_data(shade_grid(elevation, cmap, norm=hs_norm, **hillshade))
             else:
                 warnings.warn(
@@ -2314,7 +2321,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         # integer masked array -- exactly the integer-coded categorical raster
         # (e.g. `flow_direction_d8` with nodata masked via `exclude_value`) these
         # presets target.
-        data = np.asarray(ma.filled(ma.asarray(self.arr).astype(float), np.nan), dtype=float)
+        data = np.asarray(
+            ma.filled(ma.asarray(self.arr).astype(float), np.nan), dtype=float
+        )
         legend = bool(self.default_options.get("add_colorbar", True))
         coords = self._coords
         # Forward an explicit caller vmin/vmax/center so it overrides the
@@ -2329,16 +2338,26 @@ class ArrayGlyph(GeoMixin, Glyph):
             # (needs cell EDGES) via setdefault; ArrayGlyph stores cell CENTRES,
             # so pass shading="nearest", which trusts the centres.
             images = apply_data_style(
-                self.ax, {layer: data}, style=style, x=coords[0], y=coords[1],
-                legend=legend, shading="nearest", **override,
+                self.ax,
+                {layer: data},
+                style=style,
+                x=coords[0],
+                y=coords[1],
+                legend=legend,
+                shading="nearest",
+                **override,
             )
         else:
             render_kwargs: dict[str, Any] = (
                 {"extent": self.extent} if self.extent is not None else {}
             )
             images = apply_data_style(
-                self.ax, {layer: data}, style=style, legend=legend,
-                **render_kwargs, **override,
+                self.ax,
+                {layer: data},
+                style=style,
+                legend=legend,
+                **render_kwargs,
+                **override,
             )
         self.im = images[layer]
 
@@ -2349,7 +2368,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         # MeshGlyph -- nor to a curvilinear `QuadMesh` (no 2D RGBA grid to light).
         hillshade = resolve_hillshade(self.default_options.get("hillshade"))
         if hillshade is not None:
-            categorical = resolve_single_layer_style(style)[1].get("categories") is not None
+            categorical = (
+                resolve_single_layer_style(style)[1].get("categories") is not None
+            )
             if categorical or coords is not None:
                 kind = "categorical" if categorical else "curvilinear"
                 warnings.warn(
@@ -3559,8 +3580,7 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         if extents is not None and len(extents) != n_panels:
             raise ValueError(
-                f"`extents` has {len(extents)} entries but there are "
-                f"{n_panels} panels."
+                f"`extents` has {len(extents)} entries but there are {n_panels} panels."
             )
 
         # Guaranteed by the branches above: `row is None` requires `col`
@@ -4184,7 +4204,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                     im.set_norm(cat_norm)
                     if self.default_options["add_colorbar"]:
                         disjoint_legend(
-                            ax, cat_colors, cat_labels, title=cfg["label"],
+                            ax,
+                            cat_colors,
+                            cat_labels,
+                            title=cfg["label"],
                             loc="upper right",
                         )
                     style_render = ("categorical", cat_cmap, cat_norm, cat_values)
@@ -4196,7 +4219,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                     # the per-frame RGBA (see `_display_frame`).
                     stack = array if data_getter is None else frame_0
                     style_norm, style_vmin, style_vmax = resolve_style_norm(
-                        np.asarray(ma.filled(ma.asarray(stack).astype(float), np.nan), dtype=float),
+                        np.asarray(
+                            ma.filled(ma.asarray(stack).astype(float), np.nan),
+                            dtype=float,
+                        ),
                         cfg,
                     )
                     im.set_data(frame_0_scalar)
@@ -4216,9 +4242,14 @@ class ArrayGlyph(GeoMixin, Glyph):
                         # extend via the shared helper.
                         vmin_prefix, vmax_prefix = swatch_extend_prefixes(style_norm)
                         swatch_legend(
-                            ax, cfg["cmap"], cfg["label"],
-                            vmin=style_vmin, vmax=style_vmax, norm=style_norm,
-                            vmin_prefix=vmin_prefix, vmax_prefix=vmax_prefix,
+                            ax,
+                            cfg["cmap"],
+                            cfg["label"],
+                            vmin=style_vmin,
+                            vmax=style_vmax,
+                            norm=style_norm,
+                            vmin_prefix=vmin_prefix,
+                            vmax_prefix=vmax_prefix,
                             bounds=(0.02, 0.92, 0.32, 0.06),
                         )
                     alpha_vmin = cfg.get("alpha_vmin")
@@ -4229,7 +4260,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                         else None
                     )
                     style_render = (
-                        "continuous", cfg["cmap"], style_norm, style_alpha_norm,
+                        "continuous",
+                        cfg["cmap"],
+                        style_norm,
+                        style_alpha_norm,
                         cfg.get("alpha"),
                     )
 
@@ -4355,7 +4389,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                 return rgba
             if hillshade_opts is not None and not rgb_frames:
                 # Cast before filling: integer masked frames reject a NaN fill.
-                elevation = np.asarray(ma.filled(ma.asarray(frame).astype(float), np.nan), dtype=float)
+                elevation = np.asarray(
+                    ma.filled(ma.asarray(frame).astype(float), np.nan), dtype=float
+                )
                 return shade_grid(elevation, im.cmap, norm=im.norm, **hillshade_opts)
             return frame
 

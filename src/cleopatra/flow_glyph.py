@@ -30,7 +30,8 @@ Examples:
 
 from __future__ import annotations
 
-from typing import Sequence, cast
+from collections.abc import Sequence
+from typing import cast
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -41,9 +42,8 @@ from matplotlib.legend import Legend
 
 from cleopatra.geo import GeoMixin
 from cleopatra.glyph import Glyph, _root_figure
-from cleopatra.styles import CLASSIFY_OPTIONS
+from cleopatra.styles import CLASSIFY_OPTIONS, resolve_sizes, width_legend
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
-from cleopatra.styles import resolve_sizes, width_legend
 
 #: Option keys for FlowGlyph. `ticks_spacing` is `None` so the shared
 #: `_prepare_scalar_mapping` helper auto-derives it from the values. The

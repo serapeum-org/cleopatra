@@ -33,9 +33,9 @@ def test_module_doctests_execute():
         results = doctest.testmod(statistical_glyph_module, verbose=False)
     finally:
         plt.close("all")
-    assert (
-        results.failed == 0
-    ), f"{results.failed} doctest example(s) failed in statistical_glyph"
+    assert results.failed == 0, (
+        f"{results.failed} doctest example(s) failed in statistical_glyph"
+    )
     assert results.attempted > 0, (
         "no doctest examples were collected from statistical_glyph; the module's docstring "
         "examples may have been moved or removed, silently dropping this coverage"
@@ -58,15 +58,15 @@ def test_histogram_does_not_call_plt_show(monkeypatch):
     np.random.seed(1)
     x = 4 + np.random.normal(0, 1.5, 200)
     fig, ax, hist = StatisticalGlyph(x).histogram()
-    assert (
-        calls == []
-    ), f"histogram() should not call plt.show(); was called {len(calls)} time(s)"
-    assert isinstance(
-        fig, Figure
-    ), f"histogram() should return a Figure, got {type(fig)}"
-    assert isinstance(
-        hist, dict
-    ), f"histogram() should return a dict of results, got {type(hist)}"
+    assert calls == [], (
+        f"histogram() should not call plt.show(); was called {len(calls)} time(s)"
+    )
+    assert isinstance(fig, Figure), (
+        f"histogram() should return a Figure, got {type(fig)}"
+    )
+    assert isinstance(hist, dict), (
+        f"histogram() should return a dict of results, got {type(hist)}"
+    )
 
 
 def test_histogram_one_sample():
@@ -152,9 +152,9 @@ class TestHistogramFigAxInjection:
         stat = StatisticalGlyph(self._data(), fig=fig0)
         with pytest.raises(ValueError, match=r"already contains axes") as exc:
             stat.histogram()
-        assert "ax=" in str(
-            exc.value
-        ), f"error should point the caller to `ax=`, got: {exc.value}"
+        assert "ax=" in str(exc.value), (
+            f"error should point the caller to `ax=`, got: {exc.value}"
+        )
 
     def test_no_fig_no_ax_creates_new_figure_and_axes(self):
         """Test that omitting both ``fig`` and ``ax`` creates fresh objects.
@@ -166,12 +166,12 @@ class TestHistogramFigAxInjection:
         other_fig, other_ax = plt.subplots()
         stat = StatisticalGlyph(self._data())
         fig, ax, _ = stat.histogram()
-        assert isinstance(
-            fig, Figure
-        ), f"histogram() should return a Figure, got {type(fig)}"
-        assert isinstance(
-            ax, Axes
-        ), f"histogram() should return an Axes, got {type(ax)}"
+        assert isinstance(fig, Figure), (
+            f"histogram() should return a Figure, got {type(fig)}"
+        )
+        assert isinstance(ax, Axes), (
+            f"histogram() should return an Axes, got {type(ax)}"
+        )
         assert fig is not other_fig, "a new figure should have been created"
         assert ax is not other_ax, "a new axes should have been created"
 
@@ -189,12 +189,12 @@ class TestHistogramFigAxInjection:
             self._data(), ax=ax0, xlabel="X values", ylabel="Counts"
         )
         _, ax, _ = stat.histogram()
-        assert (
-            ax.get_xlabel() == "X values"
-        ), f"xlabel not applied to injected axes: {ax.get_xlabel()!r}"
-        assert (
-            ax.get_ylabel() == "Counts"
-        ), f"ylabel not applied to injected axes: {ax.get_ylabel()!r}"
+        assert ax.get_xlabel() == "X values", (
+            f"xlabel not applied to injected axes: {ax.get_xlabel()!r}"
+        )
+        assert ax.get_ylabel() == "Counts", (
+            f"ylabel not applied to injected axes: {ax.get_ylabel()!r}"
+        )
 
 
 class TestStatisticalGlyphValidationAndState:
@@ -215,12 +215,12 @@ class TestStatisticalGlyphValidationAndState:
         stat = StatisticalGlyph(np.random.normal(0, 1, 100))
         new_values = np.random.normal(5, 2, 50)
         stat.values = new_values
-        assert (
-            stat.values is new_values
-        ), "the values setter should store the assigned array"
-        assert stat.values.shape == (
-            50,
-        ), f"expected shape (50,), got {stat.values.shape}"
+        assert stat.values is new_values, (
+            "the values setter should store the assigned array"
+        )
+        assert stat.values.shape == (50,), (
+            f"expected shape (50,), got {stat.values.shape}"
+        )
 
     def test_histogram_invalid_kwarg_raises(self):
         """Test that an unknown ``histogram()`` keyword raises ``ValueError``.
@@ -233,9 +233,9 @@ class TestStatisticalGlyphValidationAndState:
         stat = StatisticalGlyph(np.random.normal(0, 1, 100))
         with pytest.raises(ValueError, match=r"not correct") as exc:
             stat.histogram(not_a_real_option=123)
-        assert "not_a_real_option" in str(
-            exc.value
-        ), f"error should name the bad kwarg: {exc.value}"
+        assert "not_a_real_option" in str(exc.value), (
+            f"error should name the bad kwarg: {exc.value}"
+        )
 
     def test_histogram_color_count_mismatch_raises(self):
         """Test that 2D data with too few colors raises ``ValueError``.
@@ -250,9 +250,9 @@ class TestStatisticalGlyphValidationAndState:
         stat = StatisticalGlyph(data_2d)
         with pytest.raises(ValueError, match=r"number of colors") as exc:
             stat.histogram()
-        assert "samples:3" in str(
-            exc.value
-        ), f"error should report the sample count: {exc.value}"
+        assert "samples:3" in str(exc.value), (
+            f"error should report the sample count: {exc.value}"
+        )
 
 
 def test_histogram_multiple_sample():
@@ -350,9 +350,9 @@ class TestBoxplot:
         np.random.seed(1)
         stat = StatisticalGlyph(np.random.normal(0, 1, 40))
         _, ax, _ = stat.boxplot()
-        assert [t.get_text() for t in ax.get_xticklabels()] == [
-            "1"
-        ], "Single series should be labelled '1'"
+        assert [t.get_text() for t in ax.get_xticklabels()] == ["1"], (
+            "Single series should be labelled '1'"
+        )
 
     def test_positions_via_kwargs_keep_ticks_aligned(self):
         """Forwarded `positions` keep tick locations under the boxes (L1 fix).
@@ -439,9 +439,9 @@ class TestStripes:
         series = np.array([0.1, 0.3, 0.2, 0.6, 0.9, 0.7])
         stat = StatisticalGlyph(series)
         fig, ax, bars = stat.stripes(cmap="coolwarm")
-        assert isinstance(
-            bars, BarContainer
-        ), f"Expected BarContainer, got {type(bars)}"
+        assert isinstance(bars, BarContainer), (
+            f"Expected BarContainer, got {type(bars)}"
+        )
         assert len(bars) == 6, f"Expected 6 stripes, got {len(bars)}"
         assert list(ax.get_yticks()) == [], "Stripes should hide y ticks"
 
@@ -454,9 +454,9 @@ class TestStripes:
         series = np.array([0.0, 1.0, 2.0, 3.0, 4.0])
         stat = StatisticalGlyph(series)
         _, _, bars = stat.stripes(cmap="coolwarm")
-        assert (
-            bars.patches[0].get_facecolor() != bars.patches[-1].get_facecolor()
-        ), "First and last stripe should differ in colour"
+        assert bars.patches[0].get_facecolor() != bars.patches[-1].get_facecolor(), (
+            "First and last stripe should differ in colour"
+        )
 
     def test_explicit_limits_respected(self):
         """Explicit vmin/vmax drive the normalization without error.
@@ -567,9 +567,9 @@ class TestSharedAxesArtistCleanup:
         fig, ax, bars2 = sg2.stripes(cmap="coolwarm", ax=ax)
 
         assert len(ax.patches) == 3, f"Expected 3 bars, got {len(ax.patches)}"
-        assert (
-            len(bars2) == 3
-        ), f"Expected the returned container to hold 3, got {len(bars2)}"
+        assert len(bars2) == 3, (
+            f"Expected the returned container to hold 3, got {len(bars2)}"
+        )
 
     def test_histogram_validation_failure_preserves_prior_render(self):
         """A failed `histogram()` call must not tear down the previous valid render.
@@ -692,9 +692,9 @@ class TestFigParameterRemovedFromRenderers:
         fig = plt.figure()
         stat = StatisticalGlyph(np.arange(12, dtype=float).reshape(4, 3), fig=fig)
         out_fig, out_ax, _ = stat.multiboxplot(positions=[1, 2, 3])
-        assert (
-            out_fig is fig
-        ), "multiboxplot should add an axes to the constructor figure"
+        assert out_fig is fig, (
+            "multiboxplot should add an axes to the constructor figure"
+        )
         assert out_ax in fig.axes, "the new axes must belong to that figure"
 
 
@@ -754,9 +754,9 @@ class TestOptionKeysAndFilterKwargs:
         """
         first = StatisticalGlyph.option_keys()
         first.add("totally_unknown")
-        assert (
-            "totally_unknown" not in StatisticalGlyph.option_keys()
-        ), "returned set must be independent"
+        assert "totally_unknown" not in StatisticalGlyph.option_keys(), (
+            "returned set must be independent"
+        )
 
     def test_option_keys_matches_instance_accepted_keys(self):
         """Class-level `option_keys()` matches a built instance's option keys.
@@ -766,9 +766,9 @@ class TestOptionKeysAndFilterKwargs:
             an instance's `default_options` keys equal `option_keys()`.
         """
         stat = StatisticalGlyph(np.arange(10, dtype=float))
-        assert StatisticalGlyph.option_keys() == set(
-            stat.default_options
-        ), "class option_keys must match the instance's accepted keys"
+        assert StatisticalGlyph.option_keys() == set(stat.default_options), (
+            "class option_keys must match the instance's accepted keys"
+        )
 
     def test_filter_kwargs_does_not_mutate_input(self):
         """`filter_kwargs` leaves the caller's dict untouched and returns a copy.

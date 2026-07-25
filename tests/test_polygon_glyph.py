@@ -60,9 +60,9 @@ class TestPolygonGlyphInit:
         glyph = PolygonGlyph(polygons)
         assert glyph.default_options["edgecolor"] == "none", "Default edgecolor 'none'"
         assert glyph.default_options["linewidth"] == 0.5, "Default linewidth 0.5"
-        assert (
-            glyph.default_options["ticks_spacing"] is None
-        ), "ticks_spacing should default to None for auto-derivation"
+        assert glyph.default_options["ticks_spacing"] is None, (
+            "ticks_spacing should default to None for auto-derivation"
+        )
 
     def test_mismatched_values_raises(self, polygons):
         """A values array not matching polygon count raises ValueError.
@@ -109,15 +109,15 @@ class TestPolygonGlyphPlot:
         """
         glyph = PolygonGlyph(polygons, values=np.array([10.0, 20.0]))
         fig, ax, pc = glyph.plot()
-        assert isinstance(
-            pc, PolyCollection
-        ), f"Expected PolyCollection, got {type(pc)}"
+        assert isinstance(pc, PolyCollection), (
+            f"Expected PolyCollection, got {type(pc)}"
+        )
         np.testing.assert_array_almost_equal(
             pc.get_array(), [10.0, 20.0], err_msg="Array should equal values"
         )
-        assert (
-            glyph.cbar is not None
-        ), "A colorbar should be attached for filled polygons"
+        assert glyph.cbar is not None, (
+            "A colorbar should be attached for filled polygons"
+        )
         assert pc in ax.collections, "The collection should be added to the axes"
 
     def test_no_values_is_outline(self, polygons):
@@ -154,12 +154,12 @@ class TestPolygonGlyphPlot:
         _, _, pc = glyph.plot(outline_only=True)
         edgecolors = pc.get_edgecolor()
         assert len(edgecolors) > 0, "outline mode should set at least one edge colour"
-        assert np.allclose(
-            edgecolors[0], mcolors.to_rgba(OUTLINE_EDGECOLOR)
-        ), f"expected the {OUTLINE_EDGECOLOR!r} fallback, got {edgecolors[0]}"
-        assert np.allclose(
-            pc.get_facecolor(), np.empty((0, 4))
-        ), "outline mode should leave the polygons unfilled"
+        assert np.allclose(edgecolors[0], mcolors.to_rgba(OUTLINE_EDGECOLOR)), (
+            f"expected the {OUTLINE_EDGECOLOR!r} fallback, got {edgecolors[0]}"
+        )
+        assert np.allclose(pc.get_facecolor(), np.empty((0, 4))), (
+            "outline mode should leave the polygons unfilled"
+        )
 
     def test_no_values_edges_are_visible_by_default(self, polygons):
         """The implicit outline path (no values) is visible too.
@@ -170,9 +170,9 @@ class TestPolygonGlyphPlot:
         """
         glyph = PolygonGlyph(polygons)
         _, _, pc = glyph.plot()
-        assert np.allclose(
-            pc.get_edgecolor()[0], mcolors.to_rgba(OUTLINE_EDGECOLOR)
-        ), "no-values outlines should use the visible fallback edge colour"
+        assert np.allclose(pc.get_edgecolor()[0], mcolors.to_rgba(OUTLINE_EDGECOLOR)), (
+            "no-values outlines should use the visible fallback edge colour"
+        )
 
     def test_outline_only_honours_explicit_edgecolor(self, polygons):
         """An explicit edgecolor is not overridden by the fallback.
@@ -182,9 +182,9 @@ class TestPolygonGlyphPlot:
         """
         glyph = PolygonGlyph(polygons, edgecolor="navy", linewidth=1.5)
         _, _, pc = glyph.plot(outline_only=True)
-        assert np.allclose(
-            pc.get_edgecolor()[0], mcolors.to_rgba("navy")
-        ), "an explicit edgecolor should be honoured in outline mode"
+        assert np.allclose(pc.get_edgecolor()[0], mcolors.to_rgba("navy")), (
+            "an explicit edgecolor should be honoured in outline mode"
+        )
         assert pc.get_linewidth()[0] == 1.5, "linewidth should be forwarded"
 
     def test_filled_polygons_keep_borderless_default(self, polygons):
@@ -197,9 +197,9 @@ class TestPolygonGlyphPlot:
         glyph = PolygonGlyph(polygons, values=np.array([10.0, 20.0]))
         _, _, pc = glyph.plot()
         edgecolors = pc.get_edgecolor()
-        assert (
-            len(edgecolors) == 0 or edgecolors[0][3] == 0.0
-        ), f"filled polygons should stay borderless, got edges {edgecolors}"
+        assert len(edgecolors) == 0 or edgecolors[0][3] == 0.0, (
+            f"filled polygons should stay borderless, got edges {edgecolors}"
+        )
 
     def test_auto_limits_from_values(self, polygons):
         """Colour limits auto-resolve from the value range (pinned spacing).
@@ -225,9 +225,9 @@ class TestPolygonGlyphPlot:
             polygons, values=np.array([0.0, 10.0]), levels=4, vmin=0.0, vmax=10.0
         )
         _, _, pc = glyph.plot()
-        assert isinstance(
-            pc.norm, mcolors.BoundaryNorm
-        ), f"levels should yield a BoundaryNorm, got {type(pc.norm)}"
+        assert isinstance(pc.norm, mcolors.BoundaryNorm), (
+            f"levels should yield a BoundaryNorm, got {type(pc.norm)}"
+        )
 
     def test_edgecolor_and_linewidth_forwarded(self, polygons):
         """edgecolor/linewidth options reach the PolyCollection.
@@ -237,9 +237,9 @@ class TestPolygonGlyphPlot:
         """
         glyph = PolygonGlyph(polygons, edgecolor="black", linewidth=2.0)
         _, _, pc = glyph.plot()
-        assert np.allclose(
-            pc.get_edgecolor()[0], mcolors.to_rgba("black")
-        ), "edgecolor should be forwarded"
+        assert np.allclose(pc.get_edgecolor()[0], mcolors.to_rgba("black")), (
+            "edgecolor should be forwarded"
+        )
         assert pc.get_linewidth()[0] == 2.0, "linewidth should be forwarded"
 
     def test_plot_on_supplied_axes(self, polygons):
@@ -325,9 +325,9 @@ class TestAddColorbarToggle:
         glyph = PolygonGlyph(self._polys(), values=np.array([1.0, 2.0]))
         fig, ax, _ = glyph.plot(add_colorbar=False)
         try:
-            assert (
-                glyph.cbar is None
-            ), "plot(add_colorbar=False) should skip the colorbar"
+            assert glyph.cbar is None, (
+                "plot(add_colorbar=False) should skip the colorbar"
+            )
             assert len(fig.axes) == 1, f"expected 1 axes, got {len(fig.axes)}"
         finally:
             plt.close(fig)

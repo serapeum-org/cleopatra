@@ -9,7 +9,6 @@ def test_create_config():
 
 
 class TestSetMatplotlibBackend:
-
     def test_set_set_matplotlib_backend(self):
         Config.set_matplotlib_backend()
         backend = plt.get_backend()

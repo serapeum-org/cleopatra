@@ -37,6 +37,7 @@ Examples::
     python tools/build_basemap_assets.py --out-dir dist/basemap \
         --skip-vectors --relief-src ./tif
 """
+
 from __future__ import annotations
 
 import argparse

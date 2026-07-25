@@ -36,6 +36,7 @@ Re-run (from the repo root)::
 ``<magics_ref>`` defaults to ``develop``; the resolved ref and generation date
 are recorded in the asset's ``_meta`` block.
 """
+
 import colorsys
 import datetime as _dt
 import json
@@ -45,7 +46,9 @@ import urllib.request
 
 from matplotlib.colors import to_hex, to_rgba
 
-BASE_TEMPLATE = "https://raw.githubusercontent.com/ecmwf/magics/{ref}/share/magics/styles"
+BASE_TEMPLATE = (
+    "https://raw.githubusercontent.com/ecmwf/magics/{ref}/share/magics/styles"
+)
 REPO_TEMPLATE = "https://raw.githubusercontent.com/ecmwf/magics/{ref}"
 
 #: Matches a Magics named-colour definition in ``src/common/Colour.cc``:
@@ -187,11 +190,13 @@ def main(out_path, magics_ref="develop"):
         "_meta": {
             "source": "ecmwf/magics",
             "source_ref": magics_ref,
-            "source_files": ["share/magics/styles/default/palettes.json",
-                             "share/magics/styles/default/contours.json",
-                             "src/common/Colour.cc"],
+            "source_files": [
+                "share/magics/styles/default/palettes.json",
+                "share/magics/styles/default/contours.json",
+                "src/common/Colour.cc",
+            ],
             "license": "Apache-2.0",
-            "generated_utc": _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%d"),
+            "generated_utc": _dt.datetime.now(_dt.UTC).strftime("%Y-%m-%d"),
             "note": (
                 "Colour data and parameter/label associations derived from ECMWF "
                 "Magics (Apache-2.0); contains no Magics code. Palette colours are "
@@ -210,10 +215,14 @@ def main(out_path, magics_ref="develop"):
     }
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(asset, f, indent=1, ensure_ascii=False)
-    print(f"wrote {len(presets)} presets to {out_path}; skipped {len(skipped)} (no shade palette)")
+    print(
+        f"wrote {len(presets)} presets to {out_path}; skipped {len(skipped)} (no shade palette)"
+    )
     if unresolved:
-        print(f"WARNING: {len(unresolved)} colour name(s) still unresolved "
-              f"(palettes truncated): {', '.join(unresolved)}")
+        print(
+            f"WARNING: {len(unresolved)} colour name(s) still unresolved "
+            f"(palettes truncated): {', '.join(unresolved)}"
+        )
 
 
 if __name__ == "__main__":
