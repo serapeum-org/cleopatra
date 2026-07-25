@@ -57,7 +57,7 @@ from cleopatra.glyph import (
 )
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import ColorScale  # re-exported for convenience  # noqa: F401
-from cleopatra.styles import disjoint_legend, swatch_legend
+from cleopatra.styles import disjoint_legend, swatch_extend_prefixes, swatch_legend
 
 ARRAY_DEFAULT_OPTIONS = {
     "vmin": None,
@@ -4161,11 +4161,15 @@ class ArrayGlyph(GeoMixin, Glyph):
                         # repeated animate() calls don't stack legends.
                         for _inset in list(ax.child_axes):
                             _inset.remove()
-                        # Same bounds as apply_data_style's swatch (plot path),
-                        # so a plot and its animation align exactly.
+                        # Same bounds AND endpoint caps as apply_data_style's
+                        # swatch (plot path), so a plot and its animation align
+                        # exactly -- both derive the "≤"/"≥" caps from the norm's
+                        # extend via the shared helper.
+                        vmin_prefix, vmax_prefix = swatch_extend_prefixes(style_norm)
                         swatch_legend(
                             ax, cfg["cmap"], cfg["label"],
                             vmin=style_vmin, vmax=style_vmax, norm=style_norm,
+                            vmin_prefix=vmin_prefix, vmax_prefix=vmax_prefix,
                             bounds=(0.02, 0.92, 0.32, 0.06),
                         )
                     alpha_vmin = cfg.get("alpha_vmin")

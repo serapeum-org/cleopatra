@@ -5040,6 +5040,18 @@ class TestArrayGlyphShadedAnimate:
         assert len(g.ax.child_axes) == 1
         plt.close("all")
 
+    def test_styled_animate_legend_caps_endpoints_like_plot(self):
+        """A two-sided `extend='both'` preset's animation swatch caps both endpoints
+        ('≤'/'≥') from the norm's extend, matching the plot() legend (M2 parity)."""
+        base = np.linspace(-30.0, 38.0, 400).reshape(20, 20)
+        stack = np.stack([base + w for w in (-2.0, 0.0, 5.0)])
+        g = ArrayGlyph(stack, style="2t")
+        g.animate(time=list(range(3)))
+        swatch_texts = [t.get_text() for c in g.ax.child_axes for t in c.texts]
+        assert "≤-40" in swatch_texts, f"animate legend should cap the low endpoint, got {swatch_texts}"
+        assert "≥40" in swatch_texts, f"animate legend should cap the high endpoint, got {swatch_texts}"
+        plt.close("all")
+
     def test_continuous_style_animate_reproduces_alpha_glow(self):
         """A value-linked-opacity preset fades low cells in animate too (plot/animate parity)."""
         rng = np.random.default_rng(8)
