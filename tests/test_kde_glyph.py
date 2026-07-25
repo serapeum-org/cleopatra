@@ -571,7 +571,7 @@ class TestKDEGlyphDataStyle:
         """A continuous preset set at construction colours the density."""
         x, y = self._cloud()
         _, _, cs = KDEGlyph(x, y, gridsize=40, style="temperature").plot()
-        assert cs.get_cmap().name == "RdYlBu_r"
+        assert cs.get_cmap().name == "Spectral_r"
         plt.close("all")
 
     def test_continuous_preset_at_plot_time(self):
@@ -613,7 +613,7 @@ class TestKDEGlyphDataStyle:
         g = KDEGlyph(x, y, gridsize=40)
         default_cmap = g.default_options["cmap"]
         _, _, cs = g.plot(style="temperature")
-        assert cs.get_cmap().name == "RdYlBu_r"
+        assert cs.get_cmap().name == "Spectral_r"
         assert g.default_options["cmap"] == default_cmap
         assert g.style == "temperature"  # the name persists for read-back
         plt.close("all")
@@ -635,7 +635,7 @@ class TestKDEGlyphApplyStyle:
         g = KDEGlyph(x, y, gridsize=40)
         g.plot()
         _, _, cs = g.apply_style("temperature")
-        assert g.style == "temperature" and cs.get_cmap().name == "RdYlBu_r"
+        assert g.style == "temperature" and cs.get_cmap().name == "Spectral_r"
         plt.close("all")
 
     def test_apply_style_categorical_raises(self):

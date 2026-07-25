@@ -82,6 +82,29 @@ CAMS_AOD_COLORMAPS: dict[str, Colormap] = {
     ),
 }
 
+#: Flame / heat colormaps for rendering a scalar field (typically temperature) as
+#: a glowing plume -- the CAMS aerosol `alpha_scaled_image` technique recoloured
+#: for heat. Pair with **value-linked opacity** (`alpha_scaled_image`, or a
+#: `DATA_STYLES` entry carrying `alpha_vmin`/`alpha_vmax`) over a dark hillshaded
+#: basemap so cool areas fade into the terrain and hot areas glow like fire. Two
+#: flavours: `"white_hot"` blows the hottest values out to yellow-white (the most
+#: fire-like), `"amber"` keeps a warmer gold/orange that is less blown-out. Each
+#: value is a ready `matplotlib.colors.Colormap`; see the `"temperature_flame"` /
+#: `"temperature_flame_amber"` presets in `DATA_STYLES` for the packaged form.
+FLAME_COLORMAPS: dict[str, Colormap] = {
+    # A stand-alone copy of matplotlib's `afmhot` (black -> red -> yellow -> white)
+    # so importing this never depends on it being registered under that name.
+    "white_hot": LinearSegmentedColormap.from_list(
+        "flame_white_hot",
+        ["#000000", "#4d0000", "#990000", "#e02a00", "#ff7a00", "#ffbf1a",
+         "#fff29a", "#ffffff"],
+    ),
+    "amber": LinearSegmentedColormap.from_list(
+        "flame_amber",
+        ["#240000", "#7a0000", "#c81800", "#ff5a00", "#ff9a00", "#ffd21e", "#fff2a8"],
+    ),
+}
+
 
 def alpha_scaled_image(
     ax: Axes,
@@ -377,11 +400,47 @@ DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
     },
     # --- Ready-to-use presets for common pyramids GIS/NetCDF-climate fields. ---
     # Opaque full fields (auto-ranged from the data): the whole field is drawn.
+    # ECMWF's default 2 m-temperature look (earthkit-plots `2t.yml` `optimal`
+    # variant): the muted `Spectral_r` ramp banded at 2 degC contour levels over
+    # -40..40 degC with the out-of-range ends capped (`extend="both"`), rather
+    # than a smooth ramp or the garish blue->magenta Magics rainbow. Override
+    # `levels`/`extend` for other ranges; a caller vmin/vmax is ignored while
+    # `levels` is set (levels define the scale).
     "temperature": {
         "temperature": {
-            "cmap": "RdYlBu_r",  # blue (cold) -> red (hot)
+            "cmap": "Spectral_r",  # muted spectral, blue (cold) -> red (hot)
             "label": "Temperature",
+            "levels": list(range(-40, 41, 2)),  # 2 degC bands, ECMWF default
+            "extend": "both",
             "alpha": 1.0,
+        },
+    },
+    # Temperature (or any heat field) rendered as a glowing flame/plume: the CAMS
+    # aerosol technique (value-linked opacity -- cool fades to transparent so the
+    # terrain shows, hot glows opaque) recoloured for heat. Compose over a dark
+    # hillshaded backdrop (`apply_blank_canvas` + a `cleopatra.reference` relief),
+    # the way the "haze" style is composed. Colour spans 0..40, opacity ramps in
+    # over 6..32 -- sensible for surface air temperature in degC; override
+    # `vmin`/`vmax` for other ranges. Two flavours: `white_hot` (blows out to
+    # yellow-white) and `amber` (warmer gold/orange, less blown-out).
+    "temperature_flame": {
+        "temperature_flame": {
+            "cmap": FLAME_COLORMAPS["white_hot"],
+            "label": "Temperature",
+            "vmin": 0.0,
+            "vmax": 40.0,
+            "alpha_vmin": 6.0,
+            "alpha_vmax": 32.0,
+        },
+    },
+    "temperature_flame_amber": {
+        "temperature_flame_amber": {
+            "cmap": FLAME_COLORMAPS["amber"],
+            "label": "Temperature",
+            "vmin": 0.0,
+            "vmax": 40.0,
+            "alpha_vmin": 6.0,
+            "alpha_vmax": 32.0,
         },
     },
     "elevation": {
@@ -579,12 +638,21 @@ def _load_preset_asset(
     presets: dict[str, dict[str, dict[str, Any]]] = {}
     for key, rec in records:
         try:
-            layer: dict[str, Any] = {
-                "cmap": LinearSegmentedColormap.from_list(
-                    f"{cmap_prefix}_{key}", rec["palette"]
-                ),
-                "label": rec["label"],
-            }
+            palette = rec["palette"]
+            # A Magics preset (carries a `magics_style`) is a *discrete* contour
+            # shade: ECMWF renders it as flat colour bands, not a smooth ramp.
+            # Reproduce that with a ListedColormap (paired with a BoundaryNorm in
+            # resolve_style_norm via `bands`) -- a continuous interpolation of
+            # these saturated colours reads as a glossy, over-exposed sheen. Non-
+            # Magics assets (cmocean) are genuinely continuous scientific ramps.
+            is_magics = bool(rec.get("magics_style"))
+            if is_magics:
+                cmap: Colormap = mcolors.ListedColormap(palette, name=f"{cmap_prefix}_{key}")
+            else:
+                cmap = LinearSegmentedColormap.from_list(f"{cmap_prefix}_{key}", palette)
+            layer: dict[str, Any] = {"cmap": cmap, "label": rec["label"]}
+            if is_magics:
+                layer["bands"] = len(palette)  # number of discrete colour bands
             if rec.get("opacity") == "opaque":
                 layer["alpha"] = 1.0  # value-linked opacity (overlay) is the default otherwise
             if rec.get("center") is not None:
@@ -596,6 +664,12 @@ def _load_preset_asset(
             decoded = _decode_magics_range(rec.get("magics_style"))
             if decoded is not None:
                 layer["vmin"], layer["vmax"] = decoded[0], decoded[1]
+                if decoded[2] is not None:
+                    # The contour interval (e.g. 4 degC for `2t`): the discrete
+                    # bands are placed at multiples of it, so a band boundary
+                    # lands on ECMWF's real levels (0 degC, the 40 degC magenta
+                    # threshold, ...) rather than at an off-by-a-fraction split.
+                    layer["step"] = decoded[2]
             presets[key] = {key: layer}
         except (KeyError, TypeError, ValueError, AttributeError):
             continue
@@ -612,6 +686,56 @@ def _load_magics_presets() -> dict[str, dict[str, dict[str, Any]]]:
     return _load_preset_asset("magics_presets.json", "magics")
 
 
+def _load_earthkit_presets() -> dict[str, dict[str, dict[str, Any]]]:
+    """Load ECMWF's *default* parameter styles from the vendored earthkit asset.
+
+    Each preset is the `optimal` Style variant from ECMWF's earthkit-plots style
+    library (Apache-2.0; see `tools/build_earthkit_presets.py`): a colormap (a
+    matplotlib name or an explicit colour list) plus discrete contour `levels`
+    and an `extend` cap -- the professional weather-service look (e.g. `"2t"` ->
+    muted `Spectral_r` in 2 degC bands). Keyed by GRIB shortName so these
+    override the Magics rainbow presets for the same parameters. Never raises: a
+    missing/malformed asset degrades to `{}`.
+    """
+    try:
+        raw = (
+            importlib.resources.files("cleopatra.data")
+            .joinpath("earthkit_presets.json")
+            .read_text(encoding="utf-8")
+        )
+    except (FileNotFoundError, ModuleNotFoundError, OSError):
+        return {}
+    try:
+        records = json.loads(raw).get("presets", {})
+    except (ValueError, AttributeError):
+        return {}
+
+    presets: dict[str, dict[str, dict[str, Any]]] = {}
+    for key, rec in records.items():
+        try:
+            colors = rec["colors"]
+            # A matplotlib colormap name stays a string (resolved at draw time);
+            # an explicit colour list becomes a continuous colormap, banded by the
+            # `levels` + BoundaryNorm at render time (see resolve_style_norm).
+            cmap: Any = (
+                colors
+                if isinstance(colors, str)
+                else LinearSegmentedColormap.from_list(f"earthkit_{key}", colors)
+            )
+            layer: dict[str, Any] = {
+                "cmap": cmap,
+                "label": rec["label"],
+                "alpha": 1.0,
+            }
+            if rec.get("levels"):
+                layer["levels"] = rec["levels"]
+                layer["extend"] = rec.get("extend", "neither")
+            presets[key] = {key: layer}
+        except (KeyError, TypeError, ValueError):
+            continue
+    return presets
+
+
 #: Register the vendored preset libraries into `DATA_STYLES` at import, alongside
 #: the hand-authored presets above: the full ECMWF/Magics parameter set (keyed
 #: by GRIB shortName, e.g. `"2t"`, `"tp"`, `"aod550"`) and the cmocean
@@ -619,6 +743,9 @@ def _load_magics_presets() -> dict[str, dict[str, dict[str, Any]]]:
 #: `"bathymetry"`). List them all with `sorted(DATA_STYLES)`.
 DATA_STYLES.update(_load_magics_presets())
 DATA_STYLES.update(_load_preset_asset("cmocean_presets.json", "cmocean"))
+# ECMWF's default (earthkit) styles load LAST so they win over the Magics rainbow
+# for the same GRIB shortNames -- the professional banded look is the default.
+DATA_STYLES.update(_load_earthkit_presets())
 
 
 def category_boundaries(values: list[float]) -> list[float]:
@@ -664,6 +791,22 @@ def resolve_style_norm(
         tuple: `(norm, vmin, vmax)` -- the colour normalization and the
         concrete bounds it resolved to (reused for the layer's legend).
     """
+    levels = cfg.get("levels")
+    if levels is not None:
+        # Explicit contour LEVELS (the ECMWF / earthkit-plots model): discrete
+        # bands at fixed boundaries with `extend` capping the out-of-range ends
+        # -- the look of a professional weather-service map. Colours are sampled
+        # from the layer's (continuous) colormap across the bands, and the
+        # colorbar shows the level values with triangular extend arrows.
+        edges = [float(v) for v in levels]
+        cmap_obj = cfg["cmap"]
+        if not isinstance(cmap_obj, Colormap):
+            cmap_obj = mpl.colormaps[cmap_obj]
+        norm = mcolors.BoundaryNorm(
+            edges, ncolors=cmap_obj.N, extend=cfg.get("extend", "neither")
+        )
+        return norm, edges[0], edges[-1]
+
     vmin = cfg.get("vmin")
     vmax = cfg.get("vmax")
     center = cfg.get("center")
@@ -688,6 +831,21 @@ def resolve_style_norm(
         vmax = vmin + 1.0
 
     norm_kind = cfg.get("norm")
+    bands = cfg.get("bands")
+    if bands and norm_kind in (None, "linear") and center is None:
+        # Discrete contour bands (Magics-style shade), each mapped to one entry
+        # of the paired ListedColormap: the flat, banded ECMWF look, not a
+        # smooth (over-exposed) interpolation of the same colours. Place the
+        # band edges on the decoded contour interval when it spans the range, so
+        # they fall on ECMWF's real levels (magenta only above +40 degC for 2t,
+        # not bleeding down into the high-30s); otherwise partition [vmin, vmax]
+        # evenly so the whole range is always covered.
+        step = cfg.get("step")
+        if step and step * bands >= (vmax - vmin) - 1e-9:
+            boundaries = vmin + step * np.arange(bands + 1)
+        else:
+            boundaries = np.linspace(vmin, vmax, bands + 1)
+        return mcolors.BoundaryNorm(boundaries, bands), vmin, vmax
     if norm_kind in (None, "linear") and center is not None:
         # Diverging: put `center` on the colormap midpoint regardless of how
         # the bounds were resolved (auto-symmetric or explicit vmin/vmax).
