@@ -837,17 +837,12 @@ def resolve_style_norm(
     bands = cfg.get("bands")
     if bands and norm_kind in (None, "linear") and center is None:
         # Discrete contour bands (Magics-style shade), each mapped to one entry
-        # of the paired ListedColormap: the flat, banded ECMWF look, not a
-        # smooth (over-exposed) interpolation of the same colours. Place the
-        # band edges on the decoded contour interval when it spans the range, so
-        # they fall on ECMWF's real levels (magenta only above +40 degC for 2t,
-        # not bleeding down into the high-30s); otherwise partition [vmin, vmax]
-        # evenly so the whole range is always covered.
-        step = cfg.get("step")
-        if step and step * bands >= (vmax - vmin) - 1e-9:
-            boundaries = vmin + step * np.arange(bands + 1)
-        else:
-            boundaries = np.linspace(vmin, vmax, bands + 1)
+        # of the paired ListedColormap: the flat, banded ECMWF look, not a smooth
+        # (over-exposed) interpolation of the same colours. Partition [vmin, vmax]
+        # into `bands` equal intervals so the edges stay within the declared range
+        # -- every palette colour is reachable and the legend agrees (a
+        # step-aligned partition could overshoot vmax and strand the top colours).
+        boundaries = np.linspace(vmin, vmax, bands + 1)
         return mcolors.BoundaryNorm(boundaries, bands), vmin, vmax
     if norm_kind in (None, "linear") and center is not None:
         # Diverging: put `center` on the colormap midpoint regardless of how

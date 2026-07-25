@@ -791,15 +791,17 @@ class TestMagicsPresets:
         assert isinstance(layer["cmap"], ListedColormap)
         assert layer["bands"] == layer["cmap"].N == 27
 
-    def test_banded_preset_resolves_to_boundary_norm_on_the_interval(self):
-        """The band edges fall on the decoded contour interval (4 degC for mn2t)."""
-        layer = DATA_STYLES["mn2t"]["mn2t"]
-        data = np.linspace(-40.0, 40.0, 400).reshape(20, 20)
+    @pytest.mark.parametrize("key", ["mn2t", "tpi"])
+    def test_banded_preset_edges_stay_within_the_range(self, key):
+        """Band edges partition [vmin, vmax] exactly -- no overshoot beyond vmax (every colour reachable)."""
+        layer = DATA_STYLES[key][key]
+        data = np.linspace(layer["vmin"], layer["vmax"], 400).reshape(20, 20)
         norm, vmin, vmax = _resolve_style_norm(data, layer)
         assert isinstance(norm, BoundaryNorm)
         edges = np.asarray(norm.boundaries)
-        assert edges[0] == -48.0
-        assert np.allclose(np.diff(edges), 4.0), "bands must be the 4 degC contour interval"
+        assert edges[0] == vmin == layer["vmin"]
+        assert edges[-1] == vmax == layer["vmax"]  # no phantom band beyond vmax
+        assert len(edges) == layer["bands"] + 1
 
     def test_banded_render_produces_few_distinct_colours(self, ax):
         """A banded preset paints flat bands, so a smooth field renders in few colours."""
