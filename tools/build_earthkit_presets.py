@@ -35,6 +35,7 @@ import json
 import re
 import sys
 import urllib.request
+from pathlib import Path
 
 import yaml
 
@@ -117,6 +118,22 @@ def build(ref):
     return presets, skipped
 
 
+def _safe_out_path(out_path):
+    """Resolve `out_path` and confine it to the current working directory tree.
+
+    This is a maintainer-only CLI whose destination comes from `argv`, so
+    canonicalise the path and reject anything that resolves outside the invoking
+    directory (the repo) before opening it -- a stray or `..`-laden argument must
+    not escape the tree (path traversal, CWE-22).
+    """
+    base = Path.cwd().resolve()
+    resolved = Path(out_path)
+    resolved = resolved.resolve() if resolved.is_absolute() else (base / resolved).resolve()
+    if resolved != base and base not in resolved.parents:
+        raise ValueError(f"refusing to write outside {base}: {out_path!r}")
+    return resolved
+
+
 def main(out_path, ref="main"):
     presets, skipped = build(ref)
     asset = {
@@ -137,7 +154,7 @@ def main(out_path, ref="main"):
         },
         "presets": dict(sorted(presets.items())),
     }
-    with open(out_path, "w", encoding="utf-8") as fh:
+    with open(_safe_out_path(out_path), "w", encoding="utf-8") as fh:
         json.dump(asset, fh, indent=1, ensure_ascii=False)
     print(f"wrote {len(presets)} earthkit presets to {out_path}; skipped {len(skipped)}")
     for short, stem in skipped:
