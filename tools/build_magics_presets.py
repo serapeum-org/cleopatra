@@ -12,7 +12,7 @@ style data, following the chain that is fully recoverable from that data:
           -> colours (rgb()/HSL()/named) + any alpha ramp
 
 Magics is Apache-2.0; only its colour *data* and parameter/label associations
-are vendored (see ``src/cleopatra/data/MAGICS_NOTICE.txt``), never its code.
+are vendored, never its code.
 Palette entries may be ``rgb()``/``HSL()`` values **or** Magics named colours
 (``greenish_blue``, ``orangish_red``, ...); the names are resolved from Magics'
 own colour table (``src/common/Colour.cc``) so the full ramp is kept -- dropping

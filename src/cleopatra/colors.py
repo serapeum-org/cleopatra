@@ -747,9 +747,8 @@ def _load_preset_asset(
 def _load_magics_presets() -> dict[str, dict[str, dict[str, Any]]]:
     """Load the ECMWF/Magics parameter-preset library (Apache-2.0).
 
-    Colour ramps and parameter labels derived from ecmwf/magics (see
-    `MAGICS_NOTICE.txt`), keyed by GRIB shortName. Thin wrapper over
-    `_load_preset_asset`.
+    Colour ramps and parameter labels derived from ecmwf/magics, keyed by
+    GRIB shortName. Thin wrapper over `_load_preset_asset`.
     """
     return _load_preset_asset("magics_presets.json", "magics")
 
@@ -815,7 +814,7 @@ def _load_earthkit_presets() -> dict[str, dict[str, dict[str, Any]]]:
 #: ocean/hydrology/DEM set (keyed by variable, e.g. `"salinity"`,
 #: `"bathymetry"`). List them all with `sorted(DATA_STYLES)`.
 DATA_STYLES.update(_load_magics_presets())
-DATA_STYLES.update(_load_preset_asset("cmocean_presets.json", "cmocean"))
+DATA_STYLES.update(_load_preset_asset("ocean_presets.json", "cmocean"))
 # ECMWF's default (earthkit) styles load LAST so they win over the Magics rainbow
 # for the same GRIB shortNames -- the professional banded look is the default.
 DATA_STYLES.update(_load_earthkit_presets())

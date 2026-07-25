@@ -1,4 +1,4 @@
-"""Color presets.:
+"""Color presets.
 
 - ``magics_presets.json`` -- colour data and parameter labels derived from the
   ECMWF Magics style library.
