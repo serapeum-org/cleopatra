@@ -652,6 +652,17 @@ class TestContourLevelsStyle:
         distinct = len(np.unique(np.round(rgb, 3), axis=0))
         assert distinct <= 41, f"expected discrete level bands, got {distinct} colours"
 
+    def test_caller_override_rescales_a_levels_preset(self, ax):
+        """An explicit caller vmin/vmax overrides a levels preset's fixed scale (not a silent no-op)."""
+        data = np.linspace(-40.0, 100.0, 400).reshape(20, 20)
+        fig2, ax2 = plt.subplots()
+        base = apply_data_style(ax, {"temperature": data}, style="temperature", legend=False)
+        over = apply_data_style(
+            ax2, {"temperature": data}, style="temperature", vmin=-40.0, vmax=100.0, legend=False
+        )
+        assert not np.allclose(base["temperature"].get_array(), over["temperature"].get_array())
+        plt.close(fig2)
+
 
 class TestFlameColormapsAndPresets:
     """Tests for the flame/heat colormaps and the temperature_flame presets."""

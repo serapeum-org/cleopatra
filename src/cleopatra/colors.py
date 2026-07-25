@@ -792,12 +792,15 @@ def resolve_style_norm(
         concrete bounds it resolved to (reused for the layer's legend).
     """
     levels = cfg.get("levels")
-    if levels is not None:
+    # A caller-supplied vmin/vmax/center (merged into cfg by apply_data_style's
+    # style override) takes precedence over the preset's own fixed levels: fall
+    # through to the continuous vmin/vmax path below so the override actually
+    # rescales the map rather than being silently ignored.
+    caller_override = any(cfg.get(key) is not None for key in ("vmin", "vmax", "center"))
+    if levels is not None and not caller_override:
         # Explicit contour LEVELS (the ECMWF / earthkit-plots model): discrete
         # bands at fixed boundaries with `extend` capping the out-of-range ends
-        # -- the look of a professional weather-service map. Colours are sampled
-        # from the layer's (continuous) colormap across the bands, and the
-        # colorbar shows the level values with triangular extend arrows.
+        # -- the look of a professional weather-service map.
         edges = [float(v) for v in levels]
         cmap_obj = cfg["cmap"]
         if not isinstance(cmap_obj, Colormap):
