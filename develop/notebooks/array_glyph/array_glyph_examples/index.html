@@ -3150,22 +3150,30 @@ The ArrayGlyph class provides functionality for visualizing arrays and creating 
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
+
 <span class="n">Config</span><span class="o">.</span><span class="n">set_matplotlib_backend</span><span class="p">()</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span><span class="p">,</span> <span class="n">PointOverlay</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.animation</span><span class="w"> </span><span class="kn">import</span> <span class="n">embed_gif</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span><span class="p">,</span> <span class="n">PointOverlay</span>
+
 <span class="c1"># Set the random seed for reproducibility</span>
 <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-1">import os
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
+
 from cleopatra.config import Config
+
 Config.set_matplotlib_backend()
-from cleopatra.array_glyph import ArrayGlyph, PointOverlay
 from cleopatra.animation import embed_gif
+from cleopatra.array_glyph import ArrayGlyph, PointOverlay
+
 # Set the random seed for reproducibility
 np.random.seed(42)</div>
 </div>
@@ -3350,10 +3358,14 @@ Max value: 81.0
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">complex_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>  <span class="c1"># Random values between 0 and 1</span>
-<span class="n">complex_array</span><span class="p">[</span><span class="mi">5</span><span class="p">:</span><span class="mi">15</span><span class="p">,</span> <span class="mi">5</span><span class="p">:</span><span class="mi">15</span><span class="p">]</span> <span class="o">=</span> <span class="n">complex_array</span><span class="p">[</span><span class="mi">5</span><span class="p">:</span><span class="mi">15</span><span class="p">,</span> <span class="mi">5</span><span class="p">:</span><span class="mi">15</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span>  <span class="c1"># Increase values in the center</span>
+<span class="n">complex_array</span><span class="p">[</span><span class="mi">5</span><span class="p">:</span><span class="mi">15</span><span class="p">,</span> <span class="mi">5</span><span class="p">:</span><span class="mi">15</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">complex_array</span><span class="p">[</span><span class="mi">5</span><span class="p">:</span><span class="mi">15</span><span class="p">,</span> <span class="mi">5</span><span class="p">:</span><span class="mi">15</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span>
+<span class="p">)</span>  <span class="c1"># Increase values in the center</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-5">complex_array = np.random.rand(20, 20)  # Random values between 0 and 1
-complex_array[5:15, 5:15] = complex_array[5:15, 5:15] * 2  # Increase values in the center</div>
+complex_array[5:15, 5:15] = (
+    complex_array[5:15, 5:15] * 2
+)  # Increase values in the center</div>
 </div>
 </div>
 </div>
@@ -3395,20 +3407,20 @@ complex_array[5:15, 5:15] = complex_array[5:15, 5:15] * 2  # Increase values in 
 
 <span class="c1"># Plot with custom settings</span>
 <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">array_glyph_custom</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-    <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span>           <span class="c1"># Use the viridis colormap</span>
-    <span class="n">title</span><span class="o">=</span><span class="s2">"Custom Array Plot"</span><span class="p">,</span> <span class="c1"># Add a title</span>
-    <span class="n">ticks_spacing</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>          <span class="c1"># Set tick spacing</span>
-    <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>           <span class="c1"># Set figure size</span>
+    <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span>  <span class="c1"># Use the viridis colormap</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">"Custom Array Plot"</span><span class="p">,</span>  <span class="c1"># Add a title</span>
+    <span class="n">ticks_spacing</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>  <span class="c1"># Set tick spacing</span>
+    <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span>  <span class="c1"># Set figure size</span>
 <span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-6">array_glyph_custom = ArrayGlyph(complex_array)
 
 # Plot with custom settings
 fig, ax = array_glyph_custom.plot(
-    cmap="viridis",           # Use the viridis colormap
-    title="Custom Array Plot", # Add a title
-    ticks_spacing=0.5,          # Set tick spacing
-    figsize=(10, 8)           # Set figure size
+    cmap="viridis",  # Use the viridis colormap
+    title="Custom Array Plot",  # Add a title
+    ticks_spacing=0.5,  # Set tick spacing
+    figsize=(10, 8),  # Set figure size
 )</div>
 </div>
 </div>
@@ -3551,15 +3563,11 @@ fig, ax = array_glyph_custom.plot(
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">fig1</span><span class="p">,</span> <span class="n">ax1</span> <span class="o">=</span> <span class="n">array_glyph_scales</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-    <span class="n">color_scale</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">,</span>
-    <span class="n">cmap</span><span class="o">=</span><span class="s2">"RdBu_r"</span><span class="p">,</span>
-    <span class="n">title</span><span class="o">=</span><span class="s2">"Linear Scale"</span>
+    <span class="n">color_scale</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"RdBu_r"</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Linear Scale"</span>
 <span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-9">fig1, ax1 = array_glyph_scales.plot(
-    color_scale="linear",
-    cmap="RdBu_r",
-    title="Linear Scale"
+    color_scale="linear", cmap="RdBu_r", title="Linear Scale"
 )</div>
 </div>
 </div>
@@ -3610,16 +3618,12 @@ fig, ax = array_glyph_custom.plot(
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">array_glyph_scales</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">mixed_array</span><span class="p">)</span>
 <span class="n">fig2</span><span class="p">,</span> <span class="n">ax2</span> <span class="o">=</span> <span class="n">array_glyph_scales</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-    <span class="n">color_scale</span><span class="o">=</span><span class="s2">"power"</span><span class="p">,</span>
-    <span class="n">cmap</span><span class="o">=</span><span class="s2">"RdBu_r"</span><span class="p">,</span>
-    <span class="n">title</span><span class="o">=</span><span class="s2">"Power Scale"</span>
+    <span class="n">color_scale</span><span class="o">=</span><span class="s2">"power"</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"RdBu_r"</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Power Scale"</span>
 <span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-10">array_glyph_scales = ArrayGlyph(mixed_array)
 fig2, ax2 = array_glyph_scales.plot(
-    color_scale="power",
-    cmap="RdBu_r",
-    title="Power Scale"
+    color_scale="power", cmap="RdBu_r", title="Power Scale"
 )</div>
 </div>
 </div>
@@ -3673,9 +3677,7 @@ fig2, ax2 = array_glyph_scales.plot(
 <span class="n">array_glyph_positive</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">positive_array</span><span class="p">)</span>
 
 <span class="n">fig3</span><span class="p">,</span> <span class="n">ax3</span> <span class="o">=</span> <span class="n">array_glyph_positive</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-    <span class="n">color_scale</span><span class="o">=</span><span class="s2">"sym-lognorm"</span><span class="p">,</span>
-    <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span>
-    <span class="n">title</span><span class="o">=</span><span class="s2">"Log Scale"</span>
+    <span class="n">color_scale</span><span class="o">=</span><span class="s2">"sym-lognorm"</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Log Scale"</span>
 <span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-11"># For log scale, we need positive values
@@ -3683,9 +3685,7 @@ positive_array = np.abs(mixed_array) + 0.1  # Make all values positive and non-z
 array_glyph_positive = ArrayGlyph(positive_array)
 
 fig3, ax3 = array_glyph_positive.plot(
-    color_scale="sym-lognorm",
-    cmap="viridis",
-    title="Log Scale"
+    color_scale="sym-lognorm", cmap="viridis", title="Log Scale"
 )</div>
 </div>
 </div>
@@ -3739,7 +3739,7 @@ fig3, ax3 = array_glyph_positive.plot(
     <span class="n">color_scale</span><span class="o">=</span><span class="s2">"midpoint"</span><span class="p">,</span>
     <span class="n">midpoint</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>  <span class="c1"># Set the midpoint at 0</span>
     <span class="n">cmap</span><span class="o">=</span><span class="s2">"RdBu_r"</span><span class="p">,</span>
-    <span class="n">title</span><span class="o">=</span><span class="s2">"Midpoint Scale"</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">"Midpoint Scale"</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-12">array_glyph_scales = ArrayGlyph(mixed_array)
@@ -3747,7 +3747,7 @@ fig4, ax4 = array_glyph_scales.plot(
     color_scale="midpoint",
     midpoint=0,  # Set the midpoint at 0
     cmap="RdBu_r",
-    title="Midpoint Scale"
+    title="Midpoint Scale",
 )</div>
 </div>
 </div>
@@ -3845,11 +3845,11 @@ small_array = np.random.randint(0, 100, (5, 5))</div>
 
 <span class="c1"># Plot with cell values displayed</span>
 <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">array_glyph_values</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-    <span class="n">display_cell_value</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>   <span class="c1"># Display cell values</span>
-    <span class="n">num_size</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>               <span class="c1"># Set text font size</span>
-    <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span>            <span class="c1"># Use the viridis colormap</span>
+    <span class="n">display_cell_value</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Display cell values</span>
+    <span class="n">num_size</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>  <span class="c1"># Set text font size</span>
+    <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span>  <span class="c1"># Use the viridis colormap</span>
     <span class="n">title</span><span class="o">=</span><span class="s2">"Array with Cell Values"</span><span class="p">,</span>
-    <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+    <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
 <span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-14"># Initialize the ArrayGlyph with the array
@@ -3857,11 +3857,11 @@ array_glyph_values = ArrayGlyph(small_array)
 
 # Plot with cell values displayed
 fig, ax = array_glyph_values.plot(
-    display_cell_value=True,   # Display cell values
-    num_size=12,               # Set text font size
-    cmap="viridis",            # Use the viridis colormap
+    display_cell_value=True,  # Display cell values
+    num_size=12,  # Set text font size
+    cmap="viridis",  # Use the viridis colormap
     title="Array with Cell Values",
-    figsize=(8, 6)
+    figsize=(8, 6),
 )</div>
 </div>
 </div>
@@ -3917,20 +3917,22 @@ fig, ax = array_glyph_values.plot(
 
 <span class="c1"># Create some points to display on the array</span>
 <span class="c1"># Points are specified as [value, row, column] coordinates</span>
-<span class="n">points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
-    <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>    <span class="c1"># Top-left region</span>
-    <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">11</span><span class="p">],</span>   <span class="c1"># Top-right region</span>
-    <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>   <span class="c1"># Bottom-left region</span>
-    <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">11</span><span class="p">]</span>   <span class="c1"># Bottom-right region</span>
-<span class="p">])</span>
+<span class="n">points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>  <span class="c1"># Top-left region</span>
+        <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">11</span><span class="p">],</span>  <span class="c1"># Top-right region</span>
+        <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>  <span class="c1"># Bottom-left region</span>
+        <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">11</span><span class="p">],</span>  <span class="c1"># Bottom-right region</span>
+    <span class="p">]</span>
+<span class="p">)</span>
 
 <span class="c1"># Style the points via a PointOverlay: locations plus marker/label styling</span>
 <span class="n">point_overlay</span> <span class="o">=</span> <span class="n">PointOverlay</span><span class="p">(</span>
     <span class="n">points</span><span class="p">,</span>
-    <span class="n">color</span><span class="o">=</span><span class="s2">"red"</span><span class="p">,</span>         <span class="c1"># Set point color</span>
-    <span class="n">size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>             <span class="c1"># Set point size</span>
+    <span class="n">color</span><span class="o">=</span><span class="s2">"red"</span><span class="p">,</span>  <span class="c1"># Set point color</span>
+    <span class="n">size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>  <span class="c1"># Set point size</span>
     <span class="n">label_color</span><span class="o">=</span><span class="s2">"blue"</span><span class="p">,</span>  <span class="c1"># Set point-value label color</span>
-    <span class="n">label_size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>        <span class="c1"># Set point-value label size</span>
+    <span class="n">label_size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>  <span class="c1"># Set point-value label size</span>
 <span class="p">)</span>
 
 <span class="c1"># Initialize the ArrayGlyph with the array</span>
@@ -3938,10 +3940,10 @@ fig, ax = array_glyph_values.plot(
 
 <span class="c1"># Plot with points</span>
 <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">array_glyph_points</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-    <span class="n">points</span><span class="o">=</span><span class="n">point_overlay</span><span class="p">,</span>     <span class="c1"># Points to display</span>
-    <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span>           <span class="c1"># Use the viridis colormap</span>
+    <span class="n">points</span><span class="o">=</span><span class="n">point_overlay</span><span class="p">,</span>  <span class="c1"># Points to display</span>
+    <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span>  <span class="c1"># Use the viridis colormap</span>
     <span class="n">title</span><span class="o">=</span><span class="s2">"Array with Points"</span><span class="p">,</span>
-    <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+    <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span>
 <span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-15"># Create an array
@@ -3949,20 +3951,22 @@ point_array = np.random.rand(15, 15)
 
 # Create some points to display on the array
 # Points are specified as [value, row, column] coordinates
-points = np.array([
-    [1, 3, 3],    # Top-left region
-    [2, 3, 11],   # Top-right region
-    [3, 11, 3],   # Bottom-left region
-    [4, 11, 11]   # Bottom-right region
-])
+points = np.array(
+    [
+        [1, 3, 3],  # Top-left region
+        [2, 3, 11],  # Top-right region
+        [3, 11, 3],  # Bottom-left region
+        [4, 11, 11],  # Bottom-right region
+    ]
+)
 
 # Style the points via a PointOverlay: locations plus marker/label styling
 point_overlay = PointOverlay(
     points,
-    color="red",         # Set point color
-    size=100,             # Set point size
+    color="red",  # Set point color
+    size=100,  # Set point size
     label_color="blue",  # Set point-value label color
-    label_size=16,        # Set point-value label size
+    label_size=16,  # Set point-value label size
 )
 
 # Initialize the ArrayGlyph with the array
@@ -3970,10 +3974,10 @@ array_glyph_points = ArrayGlyph(point_array)
 
 # Plot with points
 fig, ax = array_glyph_points.plot(
-    points=point_overlay,     # Points to display
-    cmap="viridis",           # Use the viridis colormap
+    points=point_overlay,  # Points to display
+    cmap="viridis",  # Use the viridis colormap
     title="Array with Points",
-    figsize=(10, 8)
+    figsize=(10, 8),
 )</div>
 </div>
 </div>
@@ -4042,11 +4046,11 @@ fig, ax = array_glyph_points.plot(
 <span class="c1"># Create the animation</span>
 <span class="n">anim</span> <span class="o">=</span> <span class="n">array_glyph_animation</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span>
     <span class="n">time</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_frames</span><span class="p">)),</span>  <span class="c1"># Time points</span>
-    <span class="n">points</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>                 <span class="c1"># No points to display</span>
-    <span class="n">interval</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>                <span class="c1"># Interval between frames (ms)</span>
-    <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span>              <span class="c1"># Use the viridis colormap</span>
+    <span class="n">points</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># No points to display</span>
+    <span class="n">interval</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>  <span class="c1"># Interval between frames (ms)</span>
+    <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span>  <span class="c1"># Use the viridis colormap</span>
     <span class="n">title</span><span class="o">=</span><span class="s2">"Array Animation"</span><span class="p">,</span>
-    <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+    <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span>
 <span class="p">)</span>
 
 <span class="c1"># Display the animation inline as a looping GIF. `embed_gif` renders it to a GIF</span>
@@ -4076,11 +4080,11 @@ array_glyph_animation = ArrayGlyph(animation_array)
 # Create the animation
 anim = array_glyph_animation.animate(
     time=list(range(n_frames)),  # Time points
-    points=None,                 # No points to display
-    interval=200,                # Interval between frames (ms)
-    cmap="viridis",              # Use the viridis colormap
+    points=None,  # No points to display
+    interval=200,  # Interval between frames (ms)
+    cmap="viridis",  # Use the viridis colormap
     title="Array Animation",
-    figsize=(10, 8)
+    figsize=(10, 8),
 )
 
 # Display the animation inline as a looping GIF. `embed_gif` renders it to a GIF
@@ -4249,14 +4253,11 @@ embed_gif(anim, fps=5)</div>
 <span class="c1"># Initialize the ArrayGlyph with cutoff values</span>
 <span class="n">array_glyph_cutoff</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span>
     <span class="n">wide_range_array</span><span class="p">,</span>
-    <span class="n">cutoff</span><span class="o">=</span><span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">]</span>  <span class="c1"># Set minimum and maximum values</span>
+    <span class="n">cutoff</span><span class="o">=</span><span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">],</span>  <span class="c1"># Set minimum and maximum values</span>
 <span class="p">)</span>
 
 <span class="c1"># Plot the array</span>
-<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">array_glyph_cutoff</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-    <span class="n">title</span><span class="o">=</span><span class="s2">"Array with Cutoff Values"</span><span class="p">,</span>
-    <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
-<span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">array_glyph_cutoff</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"Array with Cutoff Values"</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-19"># Create an array with a wide range of values
 wide_range_array = np.random.exponential(scale=2.0, size=(15, 15))
@@ -4264,14 +4265,11 @@ wide_range_array = np.random.exponential(scale=2.0, size=(15, 15))
 # Initialize the ArrayGlyph with cutoff values
 array_glyph_cutoff = ArrayGlyph(
     wide_range_array,
-    cutoff=[1.0, 5.0]  # Set minimum and maximum values
+    cutoff=[1.0, 5.0],  # Set minimum and maximum values
 )
 
 # Plot the array
-fig, ax = array_glyph_cutoff.plot(
-    title="Array with Cutoff Values",
-    figsize=(8, 6)
-)</div>
+fig, ax = array_glyph_cutoff.plot(title="Array with Cutoff Values", figsize=(8, 6))</div>
 </div>
 </div>
 </div>
@@ -4322,25 +4320,23 @@ fig, ax = array_glyph_cutoff.plot(
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="c1"># Initialize the ArrayGlyph with percentile cutoff</span>
 <span class="n">array_glyph_percentile</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span>
     <span class="n">wide_range_array</span><span class="p">,</span>
-    <span class="n">percentile</span><span class="o">=</span><span class="mi">2</span>  <span class="c1"># Exclude values below 2nd percentile and above 98th percentile</span>
+    <span class="n">percentile</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>  <span class="c1"># Exclude values below 2nd percentile and above 98th percentile</span>
 <span class="p">)</span>
 
 <span class="c1"># Plot the array</span>
 <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">array_glyph_percentile</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-    <span class="n">title</span><span class="o">=</span><span class="s2">"Array with Percentile Cutoff"</span><span class="p">,</span>
-    <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">"Array with Percentile Cutoff"</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
 <span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-20"># Initialize the ArrayGlyph with percentile cutoff
 array_glyph_percentile = ArrayGlyph(
     wide_range_array,
-    percentile=2  # Exclude values below 2nd percentile and above 98th percentile
+    percentile=2,  # Exclude values below 2nd percentile and above 98th percentile
 )
 
 # Plot the array
 fig, ax = array_glyph_percentile.plot(
-    title="Array with Percentile Cutoff",
-    figsize=(8, 6)
+    title="Array with Percentile Cutoff", figsize=(8, 6)
 )</div>
 </div>
 </div>
@@ -4396,14 +4392,11 @@ fig, ax = array_glyph_percentile.plot(
 <span class="c1"># Initialize the ArrayGlyph with excluded values</span>
 <span class="n">array_glyph_exclude</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span>
     <span class="n">exclude_array</span><span class="p">,</span>
-    <span class="n">exclude_value</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">9999</span><span class="p">]</span>  <span class="c1"># Exclude values equal to -9999</span>
+    <span class="n">exclude_value</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">9999</span><span class="p">],</span>  <span class="c1"># Exclude values equal to -9999</span>
 <span class="p">)</span>
 
 <span class="c1"># Plot the array</span>
-<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">array_glyph_exclude</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-    <span class="n">title</span><span class="o">=</span><span class="s2">"Array with Excluded Values"</span><span class="p">,</span>
-    <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
-<span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">array_glyph_exclude</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"Array with Excluded Values"</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-21"># Create an array with some specific values to exclude
 exclude_array = np.random.rand(15, 15)
@@ -4412,14 +4405,11 @@ exclude_array[5:10, 5:10] = -9999  # Set some values to -9999 (to be excluded)
 # Initialize the ArrayGlyph with excluded values
 array_glyph_exclude = ArrayGlyph(
     exclude_array,
-    exclude_value=[-9999]  # Exclude values equal to -9999
+    exclude_value=[-9999],  # Exclude values equal to -9999
 )
 
 # Plot the array
-fig, ax = array_glyph_exclude.plot(
-    title="Array with Excluded Values",
-    figsize=(8, 6)
-)</div>
+fig, ax = array_glyph_exclude.plot(title="Array with Excluded Values", figsize=(8, 6))</div>
 </div>
 </div>
 </div>
@@ -4477,12 +4467,12 @@ fig, ax = array_glyph_exclude.plot(
 
 <span class="c1"># Plot with a custom colorbar</span>
 <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">array_glyph_colorbar</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-    <span class="n">cbar_label</span><span class="o">=</span><span class="s2">"Values"</span><span class="p">,</span>              <span class="c1"># Set colorbar label</span>
-    <span class="n">cbar_orientation</span><span class="o">=</span><span class="s2">"horizontal"</span><span class="p">,</span>    <span class="c1"># Set colorbar orientation</span>
-    <span class="n">cbar_length</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>                  <span class="c1"># Shrink the colorbar</span>
-    <span class="n">cmap</span><span class="o">=</span><span class="s2">"plasma"</span><span class="p">,</span>                    <span class="c1"># Use the plasma colormap</span>
+    <span class="n">cbar_label</span><span class="o">=</span><span class="s2">"Values"</span><span class="p">,</span>  <span class="c1"># Set colorbar label</span>
+    <span class="n">cbar_orientation</span><span class="o">=</span><span class="s2">"horizontal"</span><span class="p">,</span>  <span class="c1"># Set colorbar orientation</span>
+    <span class="n">cbar_length</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>  <span class="c1"># Shrink the colorbar</span>
+    <span class="n">cmap</span><span class="o">=</span><span class="s2">"plasma"</span><span class="p">,</span>  <span class="c1"># Use the plasma colormap</span>
     <span class="n">title</span><span class="o">=</span><span class="s2">"Array with Custom Colorbar"</span><span class="p">,</span>
-    <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+    <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span>
 <span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-22"># Create an array
@@ -4493,12 +4483,12 @@ array_glyph_colorbar = ArrayGlyph(colorbar_array)
 
 # Plot with a custom colorbar
 fig, ax = array_glyph_colorbar.plot(
-    cbar_label="Values",              # Set colorbar label
-    cbar_orientation="horizontal",    # Set colorbar orientation
-    cbar_length=0.8,                  # Shrink the colorbar
-    cmap="plasma",                    # Use the plasma colormap
+    cbar_label="Values",  # Set colorbar label
+    cbar_orientation="horizontal",  # Set colorbar orientation
+    cbar_length=0.8,  # Shrink the colorbar
+    cmap="plasma",  # Use the plasma colormap
     title="Array with Custom Colorbar",
-    figsize=(10, 8)
+    figsize=(10, 8),
 )</div>
 </div>
 </div>
@@ -4553,16 +4543,22 @@ Pass <code>hillshade=True</code> for defaults, or a dict to tune <code>vert_exag
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="c1"># a wide-range synthetic DEM: a broad gentle plain plus a steep ridge and fine texture</span>
 <span class="n">yy</span><span class="p">,</span> <span class="n">xx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mgrid</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">140</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="mi">180</span><span class="p">]</span>
-<span class="n">dem</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span> <span class="o">+</span> <span class="mf">0.3</span> <span class="o">*</span> <span class="n">yy</span>
-       <span class="o">+</span> <span class="mi">900</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(((</span><span class="n">xx</span> <span class="o">-</span> <span class="mi">130</span><span class="p">)</span> <span class="o">/</span> <span class="mi">20</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">((</span><span class="n">yy</span> <span class="o">-</span> <span class="mi">70</span><span class="p">)</span> <span class="o">/</span> <span class="mi">45</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span>
-       <span class="o">+</span> <span class="mi">30</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">xx</span> <span class="o">/</span> <span class="mi">7</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">yy</span> <span class="o">/</span> <span class="mi">7</span><span class="p">))</span>
+<span class="n">dem</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="mi">10</span>
+    <span class="o">+</span> <span class="mf">0.3</span> <span class="o">*</span> <span class="n">yy</span>
+    <span class="o">+</span> <span class="mi">900</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(((</span><span class="n">xx</span> <span class="o">-</span> <span class="mi">130</span><span class="p">)</span> <span class="o">/</span> <span class="mi">20</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">((</span><span class="n">yy</span> <span class="o">-</span> <span class="mi">70</span><span class="p">)</span> <span class="o">/</span> <span class="mi">45</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="o">+</span> <span class="mi">30</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">xx</span> <span class="o">/</span> <span class="mi">7</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">yy</span> <span class="o">/</span> <span class="mi">7</span><span class="p">)</span>
+<span class="p">)</span>
 <span class="n">dem</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">dem</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-23"># a wide-range synthetic DEM: a broad gentle plain plus a steep ridge and fine texture
 yy, xx = np.mgrid[0:140, 0:180]
-dem = (10 + 0.3 * yy
-       + 900 * np.exp(-(((xx - 130) / 20) ** 2 + ((yy - 70) / 45) ** 2))
-       + 30 * np.sin(xx / 7) * np.cos(yy / 7))
+dem = (
+    10
+    + 0.3 * yy
+    + 900 * np.exp(-(((xx - 130) / 20) ** 2 + ((yy - 70) / 45) ** 2))
+    + 30 * np.sin(xx / 7) * np.cos(yy / 7)
+)
 dem.min(), dem.max()</div>
 </div>
 </div>
@@ -4741,11 +4737,15 @@ surface). It composes with the <code>topography</code> data-style preset and the
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="c1"># A DEM styled by the 'topography' preset, and the same DEM relief-shaded (style + hillshade compose)</span>
 <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">dem</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">'topography'</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"style='topography'"</span><span class="p">)</span>
-<span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">dem</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">'topography'</span><span class="p">,</span> <span class="n">hillshade</span><span class="o">=</span><span class="p">{</span><span class="s1">'vert_exag'</span><span class="p">:</span> <span class="mi">8</span><span class="p">})</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"style='topography' + hillshade"</span><span class="p">)</span>
+<span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">dem</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">'topography'</span><span class="p">,</span> <span class="n">hillshade</span><span class="o">=</span><span class="p">{</span><span class="s1">'vert_exag'</span><span class="p">:</span> <span class="mi">8</span><span class="p">})</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">"style='topography' + hillshade"</span>
+<span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-26"># A DEM styled by the 'topography' preset, and the same DEM relief-shaded (style + hillshade compose)
 ArrayGlyph(dem, style='topography').plot(title="style='topography'")
-ArrayGlyph(dem, style='topography', hillshade={'vert_exag': 8}).plot(title="style='topography' + hillshade")</div>
+ArrayGlyph(dem, style='topography', hillshade={'vert_exag': 8}).plot(
+    title="style='topography' + hillshade"
+)</div>
 </div>
 </div>
 </div>
@@ -4807,16 +4807,26 @@ ArrayGlyph(dem, style='topography', hillshade={'vert_exag': 8}).plot(title="styl
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
 <span class="c1"># a synthetic flow-accumulation field and a D8 direction raster</span>
 <span class="n">accum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="mi">100</span><span class="p">)))</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="mi">80</span>
-<span class="n">d8</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">choice</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">],</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">40</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+<span class="n">d8</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">choice</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">],</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">40</span><span class="p">))</span>
+    <span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+<span class="p">)</span>
 <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">accum</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">'flow_accumulation'</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"style='flow_accumulation'"</span><span class="p">)</span>
 <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">d8</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">'flow_direction_d8'</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"style='flow_direction_d8'"</span><span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-27">import numpy as np
+
 # a synthetic flow-accumulation field and a D8 direction raster
 accum = np.abs(np.random.default_rng(0).normal(size=(80, 100))).cumsum(axis=1) * 80
-d8 = np.random.default_rng(1).choice([1, 2, 4, 8, 16, 32, 64, 128], size=(40, 40)).astype(float)
+d8 = (
+    np.random.default_rng(1)
+    .choice([1, 2, 4, 8, 16, 32, 64, 128], size=(40, 40))
+    .astype(float)
+)
 ArrayGlyph(accum, style='flow_accumulation').plot(title="style='flow_accumulation'")
 ArrayGlyph(d8, style='flow_direction_d8').plot(title="style='flow_direction_d8'")</div>
 </div>
@@ -4883,10 +4893,10 @@ ArrayGlyph(d8, style='flow_direction_d8').plot(title="style='flow_direction_d8'"
 <span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'default colouring'</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">'style before:'</span><span class="p">,</span> <span class="n">glyph</span><span class="o">.</span><span class="n">style</span><span class="p">)</span>
 
-<span class="n">glyph</span><span class="o">.</span><span class="n">apply_style</span><span class="p">(</span><span class="s1">'flow_accumulation'</span><span class="p">)</span>          <span class="c1"># restyle in place, by name</span>
+<span class="n">glyph</span><span class="o">.</span><span class="n">apply_style</span><span class="p">(</span><span class="s1">'flow_accumulation'</span><span class="p">)</span>  <span class="c1"># restyle in place, by name</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">'style after apply_style:'</span><span class="p">,</span> <span class="n">glyph</span><span class="o">.</span><span class="n">style</span><span class="p">)</span>
 
-<span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'still flow_accumulation (sticky)'</span><span class="p">)</span>   <span class="c1"># a plain plot keeps it</span>
+<span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'still flow_accumulation (sticky)'</span><span class="p">)</span>  <span class="c1"># a plain plot keeps it</span>
 <span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">'cleared back to default'</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">'style after plot(style=None):'</span><span class="p">,</span> <span class="n">glyph</span><span class="o">.</span><span class="n">style</span><span class="p">)</span>
 </pre></div>
@@ -4894,10 +4904,10 @@ ArrayGlyph(d8, style='flow_direction_d8').plot(title="style='flow_direction_d8'"
 glyph.plot(title='default colouring')
 print('style before:', glyph.style)
 
-glyph.apply_style('flow_accumulation')          # restyle in place, by name
+glyph.apply_style('flow_accumulation')  # restyle in place, by name
 print('style after apply_style:', glyph.style)
 
-glyph.plot(title='still flow_accumulation (sticky)')   # a plain plot keeps it
+glyph.plot(title='still flow_accumulation (sticky)')  # a plain plot keeps it
 glyph.plot(style=None, title='cleared back to default')
 print('style after plot(style=None):', glyph.style)</div>
 </div>

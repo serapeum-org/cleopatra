@@ -2652,15 +2652,15 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styles</span><span class="w"> </span><span class="kn">import</span> <span class="n">Styles</span><span class="p">,</span> <span class="n">Scale</span><span class="p">,</span> <span class="n">MidpointNormalize</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.colors</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">colors</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styles</span><span class="w"> </span><span class="kn">import</span> <span class="n">MidpointNormalize</span><span class="p">,</span> <span class="n">Scale</span><span class="p">,</span> <span class="n">Styles</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-1">import numpy as np
-import matplotlib.pyplot as plt
-from cleopatra.styles import Styles, Scale, MidpointNormalize
-import matplotlib.colors as colors</div>
+<div class="clipboard-copy-txt" id="cell-1">import matplotlib.pyplot as plt
+import numpy as np
+
+from cleopatra.styles import MidpointNormalize, Scale, Styles</div>
 </div>
 </div>
 </div>
@@ -2703,10 +2703,16 @@ import matplotlib.colors as colors</div>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="c1"># Get a list of available line style names</span>
 <span class="n">line_style_names</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">"solid"</span><span class="p">,</span> <span class="s2">"dotted"</span><span class="p">,</span> <span class="s2">"dashed"</span><span class="p">,</span> <span class="s2">"dashdot"</span><span class="p">,</span> 
-    <span class="s2">"loosely dotted"</span><span class="p">,</span> <span class="s2">"densely dotted"</span><span class="p">,</span> 
-    <span class="s2">"loosely dashed"</span><span class="p">,</span> <span class="s2">"densely dashed"</span><span class="p">,</span> 
-    <span class="s2">"loosely dashdotted"</span><span class="p">,</span> <span class="s2">"densely dashdotted"</span>
+    <span class="s2">"solid"</span><span class="p">,</span>
+    <span class="s2">"dotted"</span><span class="p">,</span>
+    <span class="s2">"dashed"</span><span class="p">,</span>
+    <span class="s2">"dashdot"</span><span class="p">,</span>
+    <span class="s2">"loosely dotted"</span><span class="p">,</span>
+    <span class="s2">"densely dotted"</span><span class="p">,</span>
+    <span class="s2">"loosely dashed"</span><span class="p">,</span>
+    <span class="s2">"densely dashed"</span><span class="p">,</span>
+    <span class="s2">"loosely dashdotted"</span><span class="p">,</span>
+    <span class="s2">"densely dashdotted"</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="c1"># Create a figure to display different line styles</span>
@@ -2718,7 +2724,14 @@ import matplotlib.colors as colors</div>
     <span class="n">line_style</span> <span class="o">=</span> <span class="n">Styles</span><span class="o">.</span><span class="n">get_line_style</span><span class="p">(</span><span class="n">style_name</span><span class="p">)</span>
 
     <span class="c1"># Plot a line with this style</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="n">linestyle</span><span class="o">=</span><span class="n">line_style</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'blue'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">style_name</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+        <span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span>
+        <span class="n">linestyle</span><span class="o">=</span><span class="n">line_style</span><span class="p">,</span>
+        <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="n">color</span><span class="o">=</span><span class="s1">'blue'</span><span class="p">,</span>
+        <span class="n">label</span><span class="o">=</span><span class="n">style_name</span><span class="p">,</span>
+    <span class="p">)</span>
 
     <span class="c1"># Add the style name as text</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">1.1</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">style_name</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">'center'</span><span class="p">)</span>
@@ -2732,10 +2745,16 @@ import matplotlib.colors as colors</div>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-2"># Get a list of available line style names
 line_style_names = [
-    "solid", "dotted", "dashed", "dashdot", 
-    "loosely dotted", "densely dotted", 
-    "loosely dashed", "densely dashed", 
-    "loosely dashdotted", "densely dashdotted"
+    "solid",
+    "dotted",
+    "dashed",
+    "dashdot",
+    "loosely dotted",
+    "densely dotted",
+    "loosely dashed",
+    "densely dashed",
+    "loosely dashdotted",
+    "densely dashdotted",
 ]
 
 # Create a figure to display different line styles
@@ -2747,7 +2766,14 @@ for i, style_name in enumerate(line_style_names):
     line_style = Styles.get_line_style(style_name)
 
     # Plot a line with this style
-    plt.plot([0, 1], [i, i], linestyle=line_style, linewidth=2, color='blue', label=style_name)
+    plt.plot(
+        [0, 1],
+        [i, i],
+        linestyle=line_style,
+        linewidth=2,
+        color='blue',
+        label=style_name,
+    )
 
     # Add the style name as text
     plt.text(1.1, i, style_name, va='center')
@@ -2816,7 +2842,29 @@ plt.show()</div>
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="c1"># Create a list of standard matplotlib markers</span>
-<span class="n">standard_markers</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'o'</span><span class="p">,</span> <span class="s1">'s'</span><span class="p">,</span> <span class="s1">'D'</span><span class="p">,</span> <span class="s1">'^'</span><span class="p">,</span> <span class="s1">'v'</span><span class="p">,</span> <span class="s1">'&lt;'</span><span class="p">,</span> <span class="s1">'&gt;'</span><span class="p">,</span> <span class="s1">'p'</span><span class="p">,</span> <span class="s1">'*'</span><span class="p">,</span> <span class="s1">'h'</span><span class="p">,</span> <span class="s1">'+'</span><span class="p">,</span> <span class="s1">'x'</span><span class="p">,</span> <span class="s1">'|'</span><span class="p">,</span> <span class="s1">'_'</span><span class="p">,</span> <span class="s1">'.'</span><span class="p">,</span> <span class="s1">','</span><span class="p">,</span> <span class="s1">'1'</span><span class="p">,</span> <span class="s1">'2'</span><span class="p">,</span> <span class="s1">'3'</span><span class="p">,</span> <span class="s1">'4'</span><span class="p">,</span> <span class="s1">'8'</span><span class="p">]</span>
+<span class="n">standard_markers</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s1">'o'</span><span class="p">,</span>
+    <span class="s1">'s'</span><span class="p">,</span>
+    <span class="s1">'D'</span><span class="p">,</span>
+    <span class="s1">'^'</span><span class="p">,</span>
+    <span class="s1">'v'</span><span class="p">,</span>
+    <span class="s1">'&lt;'</span><span class="p">,</span>
+    <span class="s1">'&gt;'</span><span class="p">,</span>
+    <span class="s1">'p'</span><span class="p">,</span>
+    <span class="s1">'*'</span><span class="p">,</span>
+    <span class="s1">'h'</span><span class="p">,</span>
+    <span class="s1">'+'</span><span class="p">,</span>
+    <span class="s1">'x'</span><span class="p">,</span>
+    <span class="s1">'|'</span><span class="p">,</span>
+    <span class="s1">'_'</span><span class="p">,</span>
+    <span class="s1">'.'</span><span class="p">,</span>
+    <span class="s1">','</span><span class="p">,</span>
+    <span class="s1">'1'</span><span class="p">,</span>
+    <span class="s1">'2'</span><span class="p">,</span>
+    <span class="s1">'3'</span><span class="p">,</span>
+    <span class="s1">'4'</span><span class="p">,</span>
+    <span class="s1">'8'</span><span class="p">,</span>
+<span class="p">]</span>
 
 <span class="c1"># Create a figure to display different marker styles</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
@@ -2845,7 +2893,29 @@ plt.show()</div>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-3"># Create a list of standard matplotlib markers
-standard_markers = ['o', 's', 'D', '^', 'v', '&lt;', '&gt;', 'p', '*', 'h', '+', 'x', '|', '_', '.', ',', '1', '2', '3', '4', '8']
+standard_markers = [
+    'o',
+    's',
+    'D',
+    '^',
+    'v',
+    '&lt;',
+    '&gt;',
+    'p',
+    '*',
+    'h',
+    '+',
+    'x',
+    '|',
+    '_',
+    '.',
+    ',',
+    '1',
+    '2',
+    '3',
+    '4',
+    '8',
+]
 
 # Create a figure to display different marker styles
 plt.figure(figsize=(12, 8))
@@ -2923,7 +2993,7 @@ plt.show()</div>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="c1"># Create some sample data</span>
 <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
-<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x</span><span class="o">/</span><span class="mi">5</span><span class="p">)</span>  <span class="c1"># Exponential data that grows quickly</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x</span> <span class="o">/</span> <span class="mi">5</span><span class="p">)</span>  <span class="c1"># Exponential data that grows quickly</span>
 
 <span class="c1"># 2.1 Log Scale</span>
 <span class="c1"># The log_scale method applies a logarithmic scale to the data.</span>
@@ -2953,7 +3023,7 @@ plt.show()</div>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-4"># Create some sample data
 x = np.linspace(0, 10, 100)
-y = np.exp(x/5)  # Exponential data that grows quickly
+y = np.exp(x / 5)  # Exponential data that grows quickly
 
 # 2.1 Log Scale
 # The log_scale method applies a logarithmic scale to the data.
@@ -3170,9 +3240,12 @@ plt.show()</div>
 <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span>
 
 <span class="c1"># Create a custom scaling function that scales data to range [0, 1]</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">custom_scale</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">old_min</span><span class="o">=-</span><span class="mi">10</span><span class="p">,</span> <span class="n">old_max</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Scale values from range [old_min, old_max] to range [0, 1]"""</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">values</span> <span class="o">-</span> <span class="n">old_min</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">old_max</span> <span class="o">-</span> <span class="n">old_min</span><span class="p">)</span>
+
 
 <span class="c1"># Apply custom scale to the data</span>
 <span class="n">y_scaled</span> <span class="o">=</span> <span class="n">custom_scale</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
@@ -3204,9 +3277,12 @@ x = np.linspace(0, 10, 100)
 y = np.sin(x) * 10
 
 # Create a custom scaling function that scales data to range [0, 1]
+
+
 def custom_scale(values, old_min=-10, old_max=10):
     """Scale values from range [old_min, old_max] to range [0, 1]"""
     return (values - old_min) / (old_max - old_min)
+
 
 # Apply custom scale to the data
 y_scaled = custom_scale(y)
@@ -3408,7 +3484,9 @@ plt.show()</div>
 <span class="c1"># Now, let's use MidpointNormalize with midpoint at 0</span>
 <span class="n">midpoint_norm_0</span> <span class="o">=</span> <span class="n">MidpointNormalize</span><span class="p">(</span><span class="n">vmin</span><span class="o">=-</span><span class="mi">3</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">midpoint</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-<span class="n">mid_norm_plot</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">pcolormesh</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="n">midpoint_norm_0</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'RdBu_r'</span><span class="p">,</span> <span class="n">shading</span><span class="o">=</span><span class="s1">'auto'</span><span class="p">)</span>
+<span class="n">mid_norm_plot</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">pcolormesh</span><span class="p">(</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="n">midpoint_norm_0</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'RdBu_r'</span><span class="p">,</span> <span class="n">shading</span><span class="o">=</span><span class="s1">'auto'</span>
+<span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">mid_norm_plot</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">"MidpointNormalize (midpoint=0)"</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">'equal'</span><span class="p">)</span>
@@ -3417,7 +3495,9 @@ plt.show()</div>
 <span class="c1"># Let's use MidpointNormalize with midpoint at 1</span>
 <span class="n">midpoint_norm_1</span> <span class="o">=</span> <span class="n">MidpointNormalize</span><span class="p">(</span><span class="n">vmin</span><span class="o">=-</span><span class="mi">3</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">midpoint</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
-<span class="n">mid_norm_plot_1</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">pcolormesh</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="n">midpoint_norm_1</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'RdBu_r'</span><span class="p">,</span> <span class="n">shading</span><span class="o">=</span><span class="s1">'auto'</span><span class="p">)</span>
+<span class="n">mid_norm_plot_1</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">pcolormesh</span><span class="p">(</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="n">midpoint_norm_1</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'RdBu_r'</span><span class="p">,</span> <span class="n">shading</span><span class="o">=</span><span class="s1">'auto'</span>
+<span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">mid_norm_plot_1</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">"MidpointNormalize (midpoint=1)"</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">'equal'</span><span class="p">)</span>
@@ -3446,7 +3526,9 @@ plt.axis('equal')
 # Now, let's use MidpointNormalize with midpoint at 0
 midpoint_norm_0 = MidpointNormalize(vmin=-3, vmax=3, midpoint=0)
 plt.subplot(1, 3, 2)
-mid_norm_plot = plt.pcolormesh(X, Y, Z, norm=midpoint_norm_0, cmap='RdBu_r', shading='auto')
+mid_norm_plot = plt.pcolormesh(
+    X, Y, Z, norm=midpoint_norm_0, cmap='RdBu_r', shading='auto'
+)
 plt.colorbar(mid_norm_plot)
 plt.title("MidpointNormalize (midpoint=0)")
 plt.axis('equal')
@@ -3455,7 +3537,9 @@ plt.axis('equal')
 # Let's use MidpointNormalize with midpoint at 1
 midpoint_norm_1 = MidpointNormalize(vmin=-3, vmax=3, midpoint=1)
 plt.subplot(1, 3, 3)
-mid_norm_plot_1 = plt.pcolormesh(X, Y, Z, norm=midpoint_norm_1, cmap='RdBu_r', shading='auto')
+mid_norm_plot_1 = plt.pcolormesh(
+    X, Y, Z, norm=midpoint_norm_1, cmap='RdBu_r', shading='auto'
+)
 plt.colorbar(mid_norm_plot_1)
 plt.title("MidpointNormalize (midpoint=1)")
 plt.axis('equal')
@@ -3515,8 +3599,8 @@ plt.show()</div>
 <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
 <span class="n">y1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 <span class="n">y2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-<span class="n">y3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x</span><span class="o">/</span><span class="mi">10</span><span class="p">)</span>
-<span class="n">y4</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">x</span><span class="o">/</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">y3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x</span> <span class="o">/</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">y4</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">x</span> <span class="o">/</span> <span class="mi">10</span><span class="p">)</span>
 
 <span class="c1"># Create a figure with different line styles and markers</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
@@ -3525,24 +3609,52 @@ plt.show()</div>
 <span class="n">markers</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'o'</span><span class="p">,</span> <span class="s1">'s'</span><span class="p">,</span> <span class="s1">'^'</span><span class="p">,</span> <span class="s1">'D'</span><span class="p">]</span>
 
 <span class="c1"># Plot with solid line style</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="n">Styles</span><span class="o">.</span><span class="n">get_line_style</span><span class="p">(</span><span class="s2">"solid"</span><span class="p">),</span> 
-         <span class="n">marker</span><span class="o">=</span><span class="n">markers</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> 
-         <span class="n">markevery</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"sin(x)"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">x</span><span class="p">,</span>
+    <span class="n">y1</span><span class="p">,</span>
+    <span class="n">linestyle</span><span class="o">=</span><span class="n">Styles</span><span class="o">.</span><span class="n">get_line_style</span><span class="p">(</span><span class="s2">"solid"</span><span class="p">),</span>
+    <span class="n">marker</span><span class="o">=</span><span class="n">markers</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+    <span class="n">markersize</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+    <span class="n">markevery</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">"sin(x)"</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="c1"># Plot with dashed line style</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y2</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="n">Styles</span><span class="o">.</span><span class="n">get_line_style</span><span class="p">(</span><span class="s2">"dashed"</span><span class="p">),</span> 
-         <span class="n">marker</span><span class="o">=</span><span class="n">markers</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> 
-         <span class="n">markevery</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"cos(x)"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">x</span><span class="p">,</span>
+    <span class="n">y2</span><span class="p">,</span>
+    <span class="n">linestyle</span><span class="o">=</span><span class="n">Styles</span><span class="o">.</span><span class="n">get_line_style</span><span class="p">(</span><span class="s2">"dashed"</span><span class="p">),</span>
+    <span class="n">marker</span><span class="o">=</span><span class="n">markers</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+    <span class="n">markersize</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+    <span class="n">markevery</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">"cos(x)"</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="c1"># Plot with dashdot line style</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y3</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="n">Styles</span><span class="o">.</span><span class="n">get_line_style</span><span class="p">(</span><span class="s2">"dashdot"</span><span class="p">),</span> 
-         <span class="n">marker</span><span class="o">=</span><span class="n">markers</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> 
-         <span class="n">markevery</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"sin(x) * exp(x/10)"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">x</span><span class="p">,</span>
+    <span class="n">y3</span><span class="p">,</span>
+    <span class="n">linestyle</span><span class="o">=</span><span class="n">Styles</span><span class="o">.</span><span class="n">get_line_style</span><span class="p">(</span><span class="s2">"dashdot"</span><span class="p">),</span>
+    <span class="n">marker</span><span class="o">=</span><span class="n">markers</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+    <span class="n">markersize</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+    <span class="n">markevery</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">"sin(x) * exp(x/10)"</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="c1"># Plot with dotted line style</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y4</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="n">Styles</span><span class="o">.</span><span class="n">get_line_style</span><span class="p">(</span><span class="s2">"dotted"</span><span class="p">),</span> 
-         <span class="n">marker</span><span class="o">=</span><span class="n">markers</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> 
-         <span class="n">markevery</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"cos(x) * exp(-x/10)"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">x</span><span class="p">,</span>
+    <span class="n">y4</span><span class="p">,</span>
+    <span class="n">linestyle</span><span class="o">=</span><span class="n">Styles</span><span class="o">.</span><span class="n">get_line_style</span><span class="p">(</span><span class="s2">"dotted"</span><span class="p">),</span>
+    <span class="n">marker</span><span class="o">=</span><span class="n">markers</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
+    <span class="n">markersize</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+    <span class="n">markevery</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">"cos(x) * exp(-x/10)"</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">"Combining Different Styles"</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">"x"</span><span class="p">)</span>
@@ -3556,8 +3668,8 @@ plt.show()</div>
 x = np.linspace(0, 10, 100)
 y1 = np.sin(x)
 y2 = np.cos(x)
-y3 = np.sin(x) * np.exp(x/10)
-y4 = np.cos(x) * np.exp(-x/10)
+y3 = np.sin(x) * np.exp(x / 10)
+y4 = np.cos(x) * np.exp(-x / 10)
 
 # Create a figure with different line styles and markers
 plt.figure(figsize=(12, 8))
@@ -3566,24 +3678,52 @@ plt.figure(figsize=(12, 8))
 markers = ['o', 's', '^', 'D']
 
 # Plot with solid line style
-plt.plot(x, y1, linestyle=Styles.get_line_style("solid"), 
-         marker=markers[0], markersize=8, 
-         markevery=10, linewidth=2, label="sin(x)")
+plt.plot(
+    x,
+    y1,
+    linestyle=Styles.get_line_style("solid"),
+    marker=markers[0],
+    markersize=8,
+    markevery=10,
+    linewidth=2,
+    label="sin(x)",
+)
 
 # Plot with dashed line style
-plt.plot(x, y2, linestyle=Styles.get_line_style("dashed"), 
-         marker=markers[1], markersize=8, 
-         markevery=10, linewidth=2, label="cos(x)")
+plt.plot(
+    x,
+    y2,
+    linestyle=Styles.get_line_style("dashed"),
+    marker=markers[1],
+    markersize=8,
+    markevery=10,
+    linewidth=2,
+    label="cos(x)",
+)
 
 # Plot with dashdot line style
-plt.plot(x, y3, linestyle=Styles.get_line_style("dashdot"), 
-         marker=markers[2], markersize=8, 
-         markevery=10, linewidth=2, label="sin(x) * exp(x/10)")
+plt.plot(
+    x,
+    y3,
+    linestyle=Styles.get_line_style("dashdot"),
+    marker=markers[2],
+    markersize=8,
+    markevery=10,
+    linewidth=2,
+    label="sin(x) * exp(x/10)",
+)
 
 # Plot with dotted line style
-plt.plot(x, y4, linestyle=Styles.get_line_style("dotted"), 
-         marker=markers[3], markersize=8, 
-         markevery=10, linewidth=2, label="cos(x) * exp(-x/10)")
+plt.plot(
+    x,
+    y4,
+    linestyle=Styles.get_line_style("dotted"),
+    marker=markers[3],
+    markersize=8,
+    markevery=10,
+    linewidth=2,
+    label="cos(x) * exp(-x/10)",
+)
 
 plt.title("Combining Different Styles")
 plt.xlabel("x")

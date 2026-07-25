@@ -2974,39 +2974,39 @@ live in <code>cleopatra.animation</code>; <code>ArrayGlyph</code> builds the ani
 <span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.animation</span><span class="w"> </span><span class="kn">import</span> <span class="n">FuncAnimation</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">IPython.display</span><span class="w"> </span><span class="kn">import</span> <span class="n">HTML</span><span class="p">,</span> <span class="n">Image</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.animation</span><span class="w"> </span><span class="kn">import</span> <span class="n">FuncAnimation</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.animation</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">SUPPORTED_VIDEO_FORMAT</span><span class="p">,</span>
+    <span class="n">embed_gif</span><span class="p">,</span>
     <span class="n">save_animation</span><span class="p">,</span>
+    <span class="n">to_bytes</span><span class="p">,</span>
     <span class="n">to_gif</span><span class="p">,</span>
     <span class="n">to_mp4</span><span class="p">,</span>
-    <span class="n">to_bytes</span><span class="p">,</span>
-    <span class="n">embed_gif</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-1">import base64
 import tempfile
 from pathlib import Path
 
-import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+import numpy as np
 from IPython.display import HTML, Image
+from matplotlib.animation import FuncAnimation
 
-from cleopatra.array_glyph import ArrayGlyph
 from cleopatra.animation import (
     SUPPORTED_VIDEO_FORMAT,
+    embed_gif,
     save_animation,
+    to_bytes,
     to_gif,
     to_mp4,
-    to_bytes,
-    embed_gif,
-)</div>
+)
+from cleopatra.array_glyph import ArrayGlyph</div>
 </div>
 </div>
 </div>
@@ -3045,10 +3045,12 @@ it, but <code>IPython.display.Image</code> does not sniff the WebP format, so we
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">out_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s1">'cleopatra_anim_'</span><span class="p">))</span>
 
+
 <span class="k">def</span><span class="w"> </span><span class="nf">show_webp</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Embed an animated .webp inline as a data URI."""</span>
     <span class="n">encoded</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">HTML</span><span class="p">(</span><span class="sa">f</span><span class="s1">'&lt;img src="data:image/webp;base64,</span><span class="si">{</span><span class="n">encoded</span><span class="si">}</span><span class="s1">" alt="animated webp"&gt;'</span><span class="p">)</span>
+
 
 <span class="k">def</span><span class="w"> </span><span class="nf">kib</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""File size in kibibytes, rounded for display."""</span>
@@ -3056,10 +3058,12 @@ it, but <code>IPython.display.Image</code> does not sniff the WebP format, so we
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-2">out_dir = Path(tempfile.mkdtemp(prefix='cleopatra_anim_'))
 
+
 def show_webp(path):
     """Embed an animated .webp inline as a data URI."""
     encoded = base64.b64encode(Path(path).read_bytes()).decode()
     return HTML(f'<img alt="animated webp" src="data:image/webp;base64,{encoded}"/>')
+
 
 def kib(path):
     """File size in kibibytes, rounded for display."""
@@ -3108,7 +3112,9 @@ stack directly.</p>
 <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_frames</span><span class="p">):</span>
     <span class="n">cx</span> <span class="o">=</span> <span class="n">width</span> <span class="o">*</span> <span class="p">(</span><span class="n">t</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">n_frames</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
     <span class="n">cy</span> <span class="o">=</span> <span class="n">height</span> <span class="o">*</span> <span class="p">(</span><span class="n">t</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">n_frames</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">blob_stack</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">((</span><span class="n">cols</span> <span class="o">-</span> <span class="n">cx</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">rows</span> <span class="o">-</span> <span class="n">cy</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">height</span> <span class="o">/</span> <span class="mi">6</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">blob_stack</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span>
+        <span class="o">-</span><span class="p">((</span><span class="n">cols</span> <span class="o">-</span> <span class="n">cx</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">rows</span> <span class="o">-</span> <span class="n">cy</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">height</span> <span class="o">/</span> <span class="mi">6</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="p">)</span>
 
 <span class="n">frame_labels</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">'t</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s1">'</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_frames</span><span class="p">)]</span>
 <span class="n">blob_stack</span><span class="o">.</span><span class="n">shape</span>
@@ -3120,7 +3126,9 @@ blob_stack = np.zeros((n_frames, height, width))
 for t in range(n_frames):
     cx = width * (t + 1) / (n_frames + 1)
     cy = height * (t + 1) / (n_frames + 1)
-    blob_stack[t] = np.exp(-((cols - cx) ** 2 + (rows - cy) ** 2) / (2 * (height / 6) ** 2))
+    blob_stack[t] = np.exp(
+        -((cols - cx) ** 2 + (rows - cy) ** 2) / (2 * (height / 6) ** 2)
+    )
 
 frame_labels = [f't{t}' for t in range(n_frames)]
 blob_stack.shape</div>
@@ -3371,36 +3379,36 @@ input[type=range].anim-slider {
 }
 </style>
 <div class="animation">
-<img alt="No description has been provided for this image" id="_anim_img31cd6de30f944386837a7663ed13f361"/>
+<img alt="No description has been provided for this image" id="_anim_img6ff30501d42249d38bb996669b86b017"/>
 <div class="anim-controls">
-<input class="anim-slider" id="_anim_slider31cd6de30f944386837a7663ed13f361" max="1" min="0" name="points" oninput="anim31cd6de30f944386837a7663ed13f361.set_frame(parseInt(this.value));" step="1" type="range" value="0"/>
+<input class="anim-slider" id="_anim_slider6ff30501d42249d38bb996669b86b017" max="1" min="0" name="points" oninput="anim6ff30501d42249d38bb996669b86b017.set_frame(parseInt(this.value));" step="1" type="range" value="0"/>
 <div class="anim-buttons">
-<button aria-label="Decrease speed" onclick="anim31cd6de30f944386837a7663ed13f361.slower()" title="Decrease speed">
+<button aria-label="Decrease speed" onclick="anim6ff30501d42249d38bb996669b86b017.slower()" title="Decrease speed">
 <i class="fa fa-minus"></i></button>
-<button aria-label="First frame" onclick="anim31cd6de30f944386837a7663ed13f361.first_frame()" title="First frame">
+<button aria-label="First frame" onclick="anim6ff30501d42249d38bb996669b86b017.first_frame()" title="First frame">
 <i class="fa fa-fast-backward"></i></button>
-<button aria-label="Previous frame" onclick="anim31cd6de30f944386837a7663ed13f361.previous_frame()" title="Previous frame">
+<button aria-label="Previous frame" onclick="anim6ff30501d42249d38bb996669b86b017.previous_frame()" title="Previous frame">
 <i class="fa fa-step-backward"></i></button>
-<button aria-label="Play backwards" onclick="anim31cd6de30f944386837a7663ed13f361.reverse_animation()" title="Play backwards">
+<button aria-label="Play backwards" onclick="anim6ff30501d42249d38bb996669b86b017.reverse_animation()" title="Play backwards">
 <i class="fa fa-play fa-flip-horizontal"></i></button>
-<button aria-label="Pause" onclick="anim31cd6de30f944386837a7663ed13f361.pause_animation()" title="Pause">
+<button aria-label="Pause" onclick="anim6ff30501d42249d38bb996669b86b017.pause_animation()" title="Pause">
 <i class="fa fa-pause"></i></button>
-<button aria-label="Play" onclick="anim31cd6de30f944386837a7663ed13f361.play_animation()" title="Play">
+<button aria-label="Play" onclick="anim6ff30501d42249d38bb996669b86b017.play_animation()" title="Play">
 <i class="fa fa-play"></i></button>
-<button aria-label="Next frame" onclick="anim31cd6de30f944386837a7663ed13f361.next_frame()" title="Next frame">
+<button aria-label="Next frame" onclick="anim6ff30501d42249d38bb996669b86b017.next_frame()" title="Next frame">
 <i class="fa fa-step-forward"></i></button>
-<button aria-label="Last frame" onclick="anim31cd6de30f944386837a7663ed13f361.last_frame()" title="Last frame">
+<button aria-label="Last frame" onclick="anim6ff30501d42249d38bb996669b86b017.last_frame()" title="Last frame">
 <i class="fa fa-fast-forward"></i></button>
-<button aria-label="Increase speed" onclick="anim31cd6de30f944386837a7663ed13f361.faster()" title="Increase speed">
+<button aria-label="Increase speed" onclick="anim6ff30501d42249d38bb996669b86b017.faster()" title="Increase speed">
 <i class="fa fa-plus"></i></button>
 </div>
-<form action="#n" aria-label="Repetition mode" class="anim-state" name="_anim_loop_select31cd6de30f944386837a7663ed13f361" title="Repetition mode">
-<input id="_anim_radio1_31cd6de30f944386837a7663ed13f361" name="state" type="radio" value="once"/>
-<label for="_anim_radio1_31cd6de30f944386837a7663ed13f361">Once</label>
-<input checked="" id="_anim_radio2_31cd6de30f944386837a7663ed13f361" name="state" type="radio" value="loop"/>
-<label for="_anim_radio2_31cd6de30f944386837a7663ed13f361">Loop</label>
-<input id="_anim_radio3_31cd6de30f944386837a7663ed13f361" name="state" type="radio" value="reflect"/>
-<label for="_anim_radio3_31cd6de30f944386837a7663ed13f361">Reflect</label>
+<form action="#n" aria-label="Repetition mode" class="anim-state" name="_anim_loop_select6ff30501d42249d38bb996669b86b017" title="Repetition mode">
+<input id="_anim_radio1_6ff30501d42249d38bb996669b86b017" name="state" type="radio" value="once"/>
+<label for="_anim_radio1_6ff30501d42249d38bb996669b86b017">Once</label>
+<input checked="" id="_anim_radio2_6ff30501d42249d38bb996669b86b017" name="state" type="radio" value="loop"/>
+<label for="_anim_radio2_6ff30501d42249d38bb996669b86b017">Loop</label>
+<input id="_anim_radio3_6ff30501d42249d38bb996669b86b017" name="state" type="radio" value="reflect"/>
+<label for="_anim_radio3_6ff30501d42249d38bb996669b86b017">Reflect</label>
 </form>
 </div>
 </div>
@@ -3408,9 +3416,9 @@ input[type=range].anim-slider {
   /* Instantiate the Animation class. */
   /* The IDs given should match those used in the template above. */
   (function() {
-    var img_id = "_anim_img31cd6de30f944386837a7663ed13f361";
-    var slider_id = "_anim_slider31cd6de30f944386837a7663ed13f361";
-    var loop_select_id = "_anim_loop_select31cd6de30f944386837a7663ed13f361";
+    var img_id = "_anim_img6ff30501d42249d38bb996669b86b017";
+    var slider_id = "_anim_slider6ff30501d42249d38bb996669b86b017";
+    var loop_select_id = "_anim_loop_select6ff30501d42249d38bb996669b86b017";
     var frames = new Array(12);
     
   frames[0] = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZAAAAGQCAYAAACAvzbMAAAAOnRFWHRTb2Z0d2FyZQBNYXRwbG90\
@@ -7293,7 +7301,7 @@ lC636Mq3pwAAAABJRU5ErkJggg==\
     /* set a timeout to make sure all the above elements are created before
        the object is initialized. */
     setTimeout(function() {
-        anim31cd6de30f944386837a7663ed13f361 = new Animation(frames, img_id, slider_id, 149.0,
+        anim6ff30501d42249d38bb996669b86b017 = new Animation(frames, img_id, slider_id, 149.0,
                                  loop_select_id);
     }, 0);
   })()
@@ -7357,7 +7365,7 @@ Image(gif_path)</div>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>wrote /tmp/cleopatra_anim_rmyhj6_l/blob.gif -&gt; 253.7 KiB
+<pre>wrote /tmp/cleopatra_anim_gzelezae/blob.gif -&gt; 253.7 KiB
 </pre>
 </div>
 </div>
@@ -7764,7 +7772,9 @@ animated straight through the ffmpeg path.</p>
 <span class="n">odd_ax</span> <span class="o">=</span> <span class="n">odd_fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
 <span class="n">odd_im</span> <span class="o">=</span> <span class="n">odd_ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">blob_stack</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'viridis'</span><span class="p">)</span>
 <span class="n">odd_ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">'off'</span><span class="p">)</span>
-<span class="n">odd_anim</span> <span class="o">=</span> <span class="n">FuncAnimation</span><span class="p">(</span><span class="n">odd_fig</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">i</span><span class="p">:</span> <span class="p">(</span><span class="n">odd_im</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">blob_stack</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="ow">or</span> <span class="n">odd_im</span><span class="p">,),</span> <span class="n">frames</span><span class="o">=</span><span class="n">n_frames</span><span class="p">)</span>
+<span class="n">odd_anim</span> <span class="o">=</span> <span class="n">FuncAnimation</span><span class="p">(</span>
+    <span class="n">odd_fig</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">i</span><span class="p">:</span> <span class="p">(</span><span class="n">odd_im</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">blob_stack</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="ow">or</span> <span class="n">odd_im</span><span class="p">,),</span> <span class="n">frames</span><span class="o">=</span><span class="n">n_frames</span>
+<span class="p">)</span>
 
 <span class="n">px_w</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">odd_fig</span><span class="o">.</span><span class="n">get_figwidth</span><span class="p">()</span> <span class="o">*</span> <span class="n">odd_fig</span><span class="o">.</span><span class="n">dpi</span><span class="p">))</span>
 <span class="n">px_h</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">odd_fig</span><span class="o">.</span><span class="n">get_figheight</span><span class="p">()</span> <span class="o">*</span> <span class="n">odd_fig</span><span class="o">.</span><span class="n">dpi</span><span class="p">))</span>
@@ -7776,7 +7786,9 @@ animated straight through the ffmpeg path.</p>
 odd_ax = odd_fig.add_subplot(111)
 odd_im = odd_ax.imshow(blob_stack[0], cmap='viridis')
 odd_ax.axis('off')
-odd_anim = FuncAnimation(odd_fig, lambda i: (odd_im.set_data(blob_stack[i]) or odd_im,), frames=n_frames)
+odd_anim = FuncAnimation(
+    odd_fig, lambda i: (odd_im.set_data(blob_stack[i]) or odd_im,), frames=n_frames
+)
 
 px_w = int(round(odd_fig.get_figwidth() * odd_fig.dpi))
 px_h = int(round(odd_fig.get_figheight() * odd_fig.dpi))

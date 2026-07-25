@@ -2760,14 +2760,16 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.line_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">LineGlyph</span>
+
 <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-1">%matplotlib inline
 import numpy as np
-import matplotlib.pyplot as plt
+
 from cleopatra.line_glyph import LineGlyph
+
 x = np.linspace(0, 2 * np.pi, 100)</div>
 </div>
 </div>
@@ -2822,7 +2824,7 @@ ax.legend()</div>
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
 <div class="jp-OutputPrompt jp-OutputArea-prompt">Out[2]:</div>
 <div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
-<pre>&lt;matplotlib.legend.Legend at 0x7f442c5fb3b0&gt;</pre>
+<pre>&lt;matplotlib.legend.Legend at 0x7f1c2c2c9a30&gt;</pre>
 </div>
 </div>
 <div class="jp-OutputArea-child">
@@ -2865,10 +2867,14 @@ ax.legend()</div>
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">xb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>
-<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">bars</span> <span class="o">=</span> <span class="n">LineGlyph</span><span class="p">(</span><span class="n">xb</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">3.</span><span class="p">,</span> <span class="mf">5.</span><span class="p">,</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">8.</span><span class="p">,</span> <span class="mf">4.</span><span class="p">,</span> <span class="mf">6.</span><span class="p">]))</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'Bars'</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">bars</span> <span class="o">=</span> <span class="n">LineGlyph</span><span class="p">(</span><span class="n">xb</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">3.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">8.0</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">,</span> <span class="mf">6.0</span><span class="p">]))</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span>
+    <span class="n">title</span><span class="o">=</span><span class="s1">'Bars'</span>
+<span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-3">xb = np.arange(6)
-fig, ax, bars = LineGlyph(xb, np.array([3., 5., 2., 8., 4., 6.])).bar(title='Bars')</div>
+fig, ax, bars = LineGlyph(xb, np.array([3.0, 5.0, 2.0, 8.0, 4.0, 6.0])).bar(
+    title='Bars'
+)</div>
 </div>
 </div>
 </div>

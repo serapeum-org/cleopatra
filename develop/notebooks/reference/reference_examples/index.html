@@ -2985,6 +2985,7 @@ of this notebook are equivalent and also work on a plain axes.</p>
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.scatter_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScatterGlyph</span>
 
 <span class="c1"># A few cities as (lon, lat) points.</span>
@@ -2999,6 +3000,7 @@ of this notebook are equivalent and also work on a plain axes.</p>
 <span class="n">glyph</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"ScatterGlyph + glyph.add_features (GeoMixin)"</span><span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-2">import numpy as np
+
 from cleopatra.scatter_glyph import ScatterGlyph
 
 # A few cities as (lon, lat) points.
@@ -3368,19 +3370,23 @@ aspect keeps the shapes true.</p>
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="mf">2.0e6</span><span class="p">,</span> <span class="mf">5.0e6</span><span class="p">)</span>   <span class="c1"># Web Mercator metres over Europe</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="mf">2.0e6</span><span class="p">,</span> <span class="mf">5.0e6</span><span class="p">)</span>  <span class="c1"># Web Mercator metres over Europe</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mf">4.0e6</span><span class="p">,</span> <span class="mf">1.1e7</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">"equal"</span><span class="p">)</span>
-<span class="n">add_features</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="s2">"land"</span><span class="p">,</span> <span class="s2">"50m"</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="mi">3857</span><span class="p">,</span> <span class="n">facecolors</span><span class="o">=</span><span class="s2">"0.9"</span><span class="p">,</span> <span class="n">edgecolors</span><span class="o">=</span><span class="s2">"0.5"</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=</span><span class="mf">0.4</span><span class="p">)</span>
+<span class="n">add_features</span><span class="p">(</span>
+    <span class="n">ax</span><span class="p">,</span> <span class="s2">"land"</span><span class="p">,</span> <span class="s2">"50m"</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="mi">3857</span><span class="p">,</span> <span class="n">facecolors</span><span class="o">=</span><span class="s2">"0.9"</span><span class="p">,</span> <span class="n">edgecolors</span><span class="o">=</span><span class="s2">"0.5"</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=</span><span class="mf">0.4</span>
+<span class="p">)</span>
 <span class="n">add_features</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="s2">"coastline"</span><span class="p">,</span> <span class="s2">"50m"</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="mi">3857</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s2">"navy"</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"Reprojected to Web Mercator (EPSG:3857)"</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-7">fig, ax = plt.subplots(figsize=(6, 6))
-ax.set_xlim(-2.0e6, 5.0e6)   # Web Mercator metres over Europe
+ax.set_xlim(-2.0e6, 5.0e6)  # Web Mercator metres over Europe
 ax.set_ylim(4.0e6, 1.1e7)
 ax.set_aspect("equal")
-add_features(ax, "land", "50m", crs=3857, facecolors="0.9", edgecolors="0.5", linewidths=0.4)
+add_features(
+    ax, "land", "50m", crs=3857, facecolors="0.9", edgecolors="0.5", linewidths=0.4
+)
 add_features(ax, "coastline", "50m", crs=3857, colors="navy", linewidths=0.7)
 ax.set_title("Reprojected to Web Mercator (EPSG:3857)")
 plt.show()</div>

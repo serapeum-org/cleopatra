@@ -3229,12 +3229,14 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.statistical_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">StatisticalGlyph</span>
 
 <span class="c1"># Set the random seed for reproducibility</span>
 <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-1">import numpy as np
+
 from cleopatra.statistical_glyph import StatisticalGlyph
 
 # Set the random seed for reproducibility
@@ -3485,27 +3487,27 @@ Bin edges: [0.34774335 0.8440597  1.34037605 1.8366924  2.33300874]... (showing 
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">fig_1d_custom</span><span class="p">,</span> <span class="n">ax_1d_custom</span><span class="p">,</span> <span class="n">hist_1d_custom</span> <span class="o">=</span> <span class="n">stat_plot_1d_custom</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span>
-    <span class="n">bins</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>                <span class="c1"># Increase the number of bins</span>
-    <span class="n">color</span><span class="o">=</span><span class="p">[</span><span class="s2">"#FF5733"</span><span class="p">],</span>      <span class="c1"># Change the color to orange-red</span>
-    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>              <span class="c1"># Slightly increase transparency</span>
-    <span class="n">rwidth</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span>             <span class="c1"># Increase the width of the bins</span>
-    <span class="n">xlabel</span><span class="o">=</span><span class="s2">"Values"</span><span class="p">,</span>         <span class="c1"># Add x-axis label</span>
-    <span class="n">ylabel</span><span class="o">=</span><span class="s2">"Frequency"</span><span class="p">,</span>      <span class="c1"># Add y-axis label</span>
-    <span class="n">xlabel_font_size</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>    <span class="c1"># Set x-axis label font size</span>
-    <span class="n">ylabel_font_size</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>    <span class="c1"># Set y-axis label font size</span>
-    <span class="n">grid_alpha</span><span class="o">=</span><span class="mf">0.3</span>          <span class="c1"># Reduce grid transparency</span>
+    <span class="n">bins</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>  <span class="c1"># Increase the number of bins</span>
+    <span class="n">color</span><span class="o">=</span><span class="p">[</span><span class="s2">"#FF5733"</span><span class="p">],</span>  <span class="c1"># Change the color to orange-red</span>
+    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>  <span class="c1"># Slightly increase transparency</span>
+    <span class="n">rwidth</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span>  <span class="c1"># Increase the width of the bins</span>
+    <span class="n">xlabel</span><span class="o">=</span><span class="s2">"Values"</span><span class="p">,</span>  <span class="c1"># Add x-axis label</span>
+    <span class="n">ylabel</span><span class="o">=</span><span class="s2">"Frequency"</span><span class="p">,</span>  <span class="c1"># Add y-axis label</span>
+    <span class="n">xlabel_font_size</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>  <span class="c1"># Set x-axis label font size</span>
+    <span class="n">ylabel_font_size</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>  <span class="c1"># Set y-axis label font size</span>
+    <span class="n">grid_alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>  <span class="c1"># Reduce grid transparency</span>
 <span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-6">fig_1d_custom, ax_1d_custom, hist_1d_custom = stat_plot_1d_custom.histogram(
-    bins=20,                # Increase the number of bins
-    color=["#FF5733"],      # Change the color to orange-red
-    alpha=0.8,              # Slightly increase transparency
-    rwidth=0.9,             # Increase the width of the bins
-    xlabel="Values",         # Add x-axis label
-    ylabel="Frequency",      # Add y-axis label
-    xlabel_font_size=12,    # Set x-axis label font size
-    ylabel_font_size=12,    # Set y-axis label font size
-    grid_alpha=0.3          # Reduce grid transparency
+    bins=20,  # Increase the number of bins
+    color=["#FF5733"],  # Change the color to orange-red
+    alpha=0.8,  # Slightly increase transparency
+    rwidth=0.9,  # Increase the width of the bins
+    xlabel="Values",  # Add x-axis label
+    ylabel="Frequency",  # Add y-axis label
+    xlabel_font_size=12,  # Set x-axis label font size
+    ylabel_font_size=12,  # Set y-axis label font size
+    grid_alpha=0.3,  # Reduce grid transparency
 )</div>
 </div>
 </div>
@@ -3721,15 +3723,15 @@ data_2d[:, 2] = 7 + np.random.normal(0, 0.8, 200)  # Mean of 7, std of 0.8</div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">stat_plot_2d_custom</span> <span class="o">=</span> <span class="n">StatisticalGlyph</span><span class="p">(</span>
     <span class="n">data_2d</span><span class="p">,</span>
     <span class="n">color</span><span class="o">=</span><span class="p">[</span><span class="s2">"#FF5733"</span><span class="p">,</span> <span class="s2">"#33FF57"</span><span class="p">,</span> <span class="s2">"#3357FF"</span><span class="p">],</span>  <span class="c1"># Custom colors</span>
-    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>                                <span class="c1"># Set transparency</span>
-    <span class="n">rwidth</span><span class="o">=</span><span class="mf">0.8</span>                                <span class="c1"># Set bin width</span>
+    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>  <span class="c1"># Set transparency</span>
+    <span class="n">rwidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>  <span class="c1"># Set bin width</span>
 <span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-10">stat_plot_2d_custom = StatisticalGlyph(
     data_2d,
     color=["#FF5733", "#33FF57", "#3357FF"],  # Custom colors
-    alpha=0.5,                                # Set transparency
-    rwidth=0.8                                # Set bin width
+    alpha=0.5,  # Set transparency
+    rwidth=0.8,  # Set bin width
 )</div>
 </div>
 </div>
@@ -3767,27 +3769,27 @@ data_2d[:, 2] = 7 + np.random.normal(0, 0.8, 200)  # Mean of 7, std of 0.8</div>
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">fig_2d_custom</span><span class="p">,</span> <span class="n">ax_2d_custom</span><span class="p">,</span> <span class="n">hist_2d_custom</span> <span class="o">=</span> <span class="n">stat_plot_2d_custom</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span>
-    <span class="n">bins</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span>                <span class="c1"># Increase the number of bins</span>
-    <span class="n">xlabel</span><span class="o">=</span><span class="s2">"Values"</span><span class="p">,</span>         <span class="c1"># Add x-axis label</span>
-    <span class="n">ylabel</span><span class="o">=</span><span class="s2">"Frequency"</span><span class="p">,</span>      <span class="c1"># Add y-axis label</span>
-    <span class="n">xlabel_font_size</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span>    <span class="c1"># Set x-axis label font size</span>
-    <span class="n">ylabel_font_size</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span>    <span class="c1"># Set y-axis label font size</span>
-    <span class="n">xtick_font_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>     <span class="c1"># Set x-axis tick font size</span>
-    <span class="n">ytick_font_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>     <span class="c1"># Set y-axis tick font size</span>
-    <span class="n">grid_alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>         <span class="c1"># Reduce grid transparency</span>
-    <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>         <span class="c1"># Set figure size</span>
+    <span class="n">bins</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span>  <span class="c1"># Increase the number of bins</span>
+    <span class="n">xlabel</span><span class="o">=</span><span class="s2">"Values"</span><span class="p">,</span>  <span class="c1"># Add x-axis label</span>
+    <span class="n">ylabel</span><span class="o">=</span><span class="s2">"Frequency"</span><span class="p">,</span>  <span class="c1"># Add y-axis label</span>
+    <span class="n">xlabel_font_size</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span>  <span class="c1"># Set x-axis label font size</span>
+    <span class="n">ylabel_font_size</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span>  <span class="c1"># Set y-axis label font size</span>
+    <span class="n">xtick_font_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>  <span class="c1"># Set x-axis tick font size</span>
+    <span class="n">ytick_font_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>  <span class="c1"># Set y-axis tick font size</span>
+    <span class="n">grid_alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>  <span class="c1"># Reduce grid transparency</span>
+    <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>  <span class="c1"># Set figure size</span>
 <span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-11">fig_2d_custom, ax_2d_custom, hist_2d_custom = stat_plot_2d_custom.histogram(
-    bins=25,                # Increase the number of bins
-    xlabel="Values",         # Add x-axis label
-    ylabel="Frequency",      # Add y-axis label
-    xlabel_font_size=14,    # Set x-axis label font size
-    ylabel_font_size=14,    # Set y-axis label font size
-    xtick_font_size=10,     # Set x-axis tick font size
-    ytick_font_size=10,     # Set y-axis tick font size
-    grid_alpha=0.2,         # Reduce grid transparency
-    figsize=(10, 6)         # Set figure size
+    bins=25,  # Increase the number of bins
+    xlabel="Values",  # Add x-axis label
+    ylabel="Frequency",  # Add y-axis label
+    xlabel_font_size=14,  # Set x-axis label font size
+    ylabel_font_size=14,  # Set y-axis label font size
+    xtick_font_size=10,  # Set x-axis tick font size
+    ytick_font_size=10,  # Set y-axis tick font size
+    grid_alpha=0.2,  # Reduce grid transparency
+    figsize=(10, 6),  # Set figure size
 )</div>
 </div>
 </div>
@@ -4008,14 +4010,14 @@ data_distributions = np.zeros((n_samples, 3))</div>
     <span class="n">data_distributions</span><span class="p">,</span>
     <span class="n">color</span><span class="o">=</span><span class="p">[</span><span class="s2">"#3498DB"</span><span class="p">,</span> <span class="s2">"#E74C3C"</span><span class="p">,</span> <span class="s2">"#2ECC71"</span><span class="p">],</span>  <span class="c1"># Blue, Red, Green</span>
     <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span>
-    <span class="n">rwidth</span><span class="o">=</span><span class="mf">0.9</span>
+    <span class="n">rwidth</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-16">stat_plot_distributions = StatisticalGlyph(
     data_distributions,
     color=["#3498DB", "#E74C3C", "#2ECC71"],  # Blue, Red, Green
     alpha=0.6,
-    rwidth=0.9
+    rwidth=0.9,
 )</div>
 </div>
 </div>
@@ -4053,20 +4055,14 @@ data_distributions = np.zeros((n_samples, 3))</div>
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">fig_dist</span><span class="p">,</span> <span class="n">ax_dist</span><span class="p">,</span> <span class="n">hist_dist</span> <span class="o">=</span> <span class="n">stat_plot_distributions</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span>
-    <span class="n">bins</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
-    <span class="n">xlabel</span><span class="o">=</span><span class="s2">"Values"</span><span class="p">,</span>
-    <span class="n">ylabel</span><span class="o">=</span><span class="s2">"Frequency"</span><span class="p">,</span>
-    <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span>
+    <span class="n">bins</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">xlabel</span><span class="o">=</span><span class="s2">"Values"</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="s2">"Frequency"</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span>
 <span class="p">)</span>
 
 <span class="c1"># Add a legend to identify the distributions</span>
 <span class="n">ax_dist</span><span class="o">.</span><span class="n">legend</span><span class="p">([</span><span class="s2">"Normal"</span><span class="p">,</span> <span class="s2">"Exponential"</span><span class="p">,</span> <span class="s2">"Uniform"</span><span class="p">])</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-17">fig_dist, ax_dist, hist_dist = stat_plot_distributions.histogram(
-    bins=30,
-    xlabel="Values",
-    ylabel="Frequency",
-    figsize=(12, 7)
+    bins=30, xlabel="Values", ylabel="Frequency", figsize=(12, 7)
 )
 
 # Add a legend to identify the distributions
@@ -4082,7 +4078,7 @@ ax_dist.legend(["Normal", "Exponential", "Uniform"])</div>
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
 <div class="jp-OutputPrompt jp-OutputArea-prompt">Out[17]:</div>
 <div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
-<pre>&lt;matplotlib.legend.Legend at 0x7ffb2838fda0&gt;</pre>
+<pre>&lt;matplotlib.legend.Legend at 0x7f76bdadec30&gt;</pre>
 </div>
 </div>
 <div class="jp-OutputArea-child">
@@ -4131,7 +4127,7 @@ ax_dist.legend(["Normal", "Exponential", "Uniform"])</div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="k">try</span><span class="p">:</span>
     <span class="c1"># Create a Statistic object with 2D data but only 2 colors for 3 columns</span>
     <span class="n">stat_plot_error</span> <span class="o">=</span> <span class="n">StatisticalGlyph</span><span class="p">(</span><span class="n">data_2d</span><span class="p">)</span>
-    
+
     <span class="c1"># This should raise an error because we're providing only 2 colors for 3 columns</span>
     <span class="n">fig_error</span><span class="p">,</span> <span class="n">ax_error</span><span class="p">,</span> <span class="n">hist_error</span> <span class="o">=</span> <span class="n">stat_plot_error</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="p">[</span><span class="s2">"red"</span><span class="p">,</span> <span class="s2">"green"</span><span class="p">])</span>
 <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -4140,7 +4136,7 @@ ax_dist.legend(["Normal", "Exponential", "Uniform"])</div>
 <div class="clipboard-copy-txt" id="cell-18">try:
     # Create a Statistic object with 2D data but only 2 colors for 3 columns
     stat_plot_error = StatisticalGlyph(data_2d)
-    
+
     # This should raise an error because we're providing only 2 colors for 3 columns
     fig_error, ax_error, hist_error = stat_plot_error.histogram(color=["red", "green"])
 except ValueError as e:
