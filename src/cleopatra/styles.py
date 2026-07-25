@@ -1341,6 +1341,49 @@ def histogram_legend(
     return ax.barh(centers, counts, height=widths, color=bar_colors, **bar_kwargs)
 
 
+def swatch_extend_prefixes(norm: colors.Normalize | None) -> tuple[str, str]:
+    """Return `(vmin_prefix, vmax_prefix)` endpoint-cap markers for `swatch_legend`.
+
+    A discrete `BoundaryNorm` caps whichever ends its `extend` reserves an
+    out-of-range slot for -- `"≤"` on the low end for `extend` in `{"min",
+    "both"}` and `"≥"` on the high end for `extend` in `{"max", "both"}` -- so the
+    legend states the capping the map actually applies. Any other norm (a
+    continuous `Normalize` or `None`, as the haze/flame presets use, whose fixed
+    `vmax` clamps everything above it) keeps the open-ended `"≥"` upper default
+    and a plain low endpoint.
+
+    Deriving both prefixes from the resolved norm in one place keeps the `plot()`
+    and `animate()` swatch legends consistent (they call this helper from both
+    `apply_data_style` and `ArrayGlyph.animate`).
+
+    Args:
+        norm: The resolved colour normalization a swatch will be drawn for.
+
+    Returns:
+        tuple[str, str]: `(vmin_prefix, vmax_prefix)` to pass to `swatch_legend`.
+
+    Examples:
+        - A two-sided contour scale caps both ends; a continuous norm keeps `≥`:
+            ```python
+            >>> import matplotlib.colors as mc
+            >>> from cleopatra.styles import swatch_extend_prefixes
+            >>> swatch_extend_prefixes(mc.BoundaryNorm([0, 1, 2], 256, extend="both"))
+            ('≤', '≥')
+            >>> swatch_extend_prefixes(mc.BoundaryNorm([0, 1, 2], 2))
+            ('', '')
+            >>> swatch_extend_prefixes(mc.Normalize(0, 1))
+            ('', '≥')
+
+            ```
+    """
+    if isinstance(norm, colors.BoundaryNorm):
+        return (
+            "≤" if norm.extend in ("min", "both") else "",
+            "≥" if norm.extend in ("max", "both") else "",
+        )
+    return "", "≥"
+
+
 def swatch_legend(
     ax: Axes,
     cmap: str | colors.Colormap,
