@@ -295,6 +295,12 @@ class TestApplyDataStyle:
         # Must not raise "data style 'norm' must be 'linear'/'log'/'symlog'".
         apply_data_style(ax, {"wind_speed": data}, style="wind_speed", norm=Normalize(0, 10), legend=False)
 
+    def test_string_norm_override_selects_the_norm_kind(self, ax):
+        """A string `norm=` overrides the preset's norm kind (e.g. 'log') via cfg and renders."""
+        data = np.array([[1.0, 10.0], [100.0, 1000.0]])  # positive -> valid LogNorm window
+        img = apply_data_style(ax, {"wind_speed": data}, style="wind_speed", norm="log", legend=False)
+        assert np.asarray(img["wind_speed"].get_array()).shape[-1] == 4  # rendered RGBA, no raise
+
     @pytest.mark.parametrize("layer", ["organic_matter", "dust"])
     def test_haze_layers_declare_decoupled_alpha(self, layer):
         """Every 'haze' layer sets a narrower alpha_vmin/alpha_vmax than its colour vmin/vmax."""
@@ -612,6 +618,16 @@ class TestEarthkitPresets:
         layer = DATA_STYLES["tp"]["tp"]
         assert isinstance(layer["cmap"], LinearSegmentedColormap)
         assert "levels" not in layer
+
+    def test_colour_list_preset_renders_exact_discrete_colours(self, ax):
+        """A ListedColormap earthkit preset paints each band with its exact palette colour."""
+        cmap = DATA_STYLES["aod550"]["aod550"]["cmap"]
+        levels = DATA_STYLES["aod550"]["aod550"]["levels"]
+        data = np.array([[levels[0] + 1e-3, levels[4] + 1e-3]])  # falls in band 0 and band 4
+        img = apply_data_style(ax, {"aod550": data}, style="aod550", legend=False)["aod550"]
+        rgb = np.asarray(img.get_array())[..., :3]
+        assert np.allclose(rgb[0, 0], to_rgb(cmap.colors[0]), atol=1 / 255)
+        assert np.allclose(rgb[0, 1], to_rgb(cmap.colors[4]), atol=1 / 255)
 
     def test_earthkit_style_renders_banded(self, ax):
         """A vendored earthkit style renders discrete level bands end-to-end."""
