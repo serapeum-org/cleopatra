@@ -284,8 +284,11 @@ def add_relief(
     Note:
         The relief image is equirectangular (EPSG:4326). A lon/lat `extent`
         within the global bounds is **cropped** out of the global image and
-        placed over that box, so a regional call shows only that region's
-        terrain at true scale -- not the whole world squashed into it.
+        placed over that box, so a regional call shows that region's terrain
+        rather than the whole world squashed into it. The crop is sliced on
+        the relief's pixel grid and drawn at the requested box, so an off-grid
+        `extent` can shift the backdrop by up to one pixel (0.5 deg at `"low"`,
+        0.25 deg at `"medium"`); grid-aligned extents register exactly.
         `extent=None` places the whole globe (the axis limits crop the
         view). An `extent` outside the lon/lat bounds -- e.g. axes in a
         projected CRS's units (metres) -- is stretched to fit, which is not
@@ -298,10 +301,9 @@ def add_relief(
         resolution: `"low"` or `"medium"` (see
             `available_relief_resolutions`).
         extent: `(west, south, east, north)` placement in axis units.
-            `None` (default) places the whole global EPSG:4326 relief
-            `(-180, -90, 180, 90)`. A lon/lat box within those bounds crops
-            the relief to that region; a box outside them (e.g. projected
-            metres) stretches the whole image onto it.
+            `None` (default) uses the whole global EPSG:4326 relief
+            `(-180, -90, 180, 90)`. See `Note` for how an in-bounds lon/lat
+            box (cropped) differs from an out-of-bounds one (stretched).
         alpha: Backdrop opacity in `[0, 1]`.
         zorder: Matplotlib draw order (`-1` puts it behind all data).
         interpolation: Interpolation passed to `ax.imshow`.
