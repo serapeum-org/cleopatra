@@ -61,7 +61,14 @@ _RANGE = re.compile(r"range\(\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*\)")
 
 
 def parse_levels(levels):
-    """earthkit `levels` (a ``range(a, b, c)`` string or an explicit list) -> list | None."""
+    """earthkit `levels` (a ``range(a, b, c)`` string or an explicit list) -> list | None.
+
+    The ``range(a, b, c)`` strings use Python's stop-exclusive semantics, exactly
+    as earthkit-plots evaluates them: ``2t`` is written ``range(-40, 41, 2)`` to
+    yield levels ``-40..40`` (stop is one step past the top level). So decode with
+    a plain ``range()`` -- treating the stop as inclusive would append a spurious
+    top level and shift the whole banded scale.
+    """
     if levels is None:
         return None
     if isinstance(levels, str):
