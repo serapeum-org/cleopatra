@@ -419,6 +419,9 @@ def test_add_relief_custom_extent(cache: Path):
     ax.set_xlim(0, 10)
     ax.set_ylim(0, 10)
     add_relief(ax, "low", extent=(0, 0, 10, 10))
+    # (0, 0, 10, 10) is in-bounds, so it exercises the crop branch: this
+    # degree-scale box crops the 4x8 fixture down to a single pixel.
+    assert np.asarray(ax.images[0].get_array()).shape[:2] == (1, 1)
     assert tuple(ax.images[0].get_extent()) == (0.0, 10.0, 0.0, 10.0)
     plt.close(fig)
 
@@ -480,6 +483,7 @@ def test_add_relief_lonlat_extent_crops_northern_rows(cache: Path):
     assert (
         placed.shape[0] < 4
     ), f"extent should crop rows, got full height {placed.shape}"
+    assert placed.shape[1] == 8, "full-longitude extent keeps all columns"
     assert (placed[..., 0] == 255).all() and (
         placed[..., 2] == 0
     ).all(), "the cropped region should be the red northern rows only"
