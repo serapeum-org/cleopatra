@@ -282,20 +282,28 @@ def add_relief(
     backdrop never changes the view.
 
     Note:
-        The relief image is equirectangular (EPSG:4326). When placed with
-        a non-EPSG:4326 `extent` it is simply stretched by `imshow` to fit
-        those bounds -- visually acceptable for small extents but not a
-        true reprojection. For a pixel-accurate backdrop in another
-        projection, reproject the source before drawing.
+        The relief image is equirectangular (EPSG:4326). A lon/lat `extent`
+        within the global bounds is CROPPED out of it and placed at true
+        scale, so a regional view shows only that region's terrain -- never
+        the whole globe squashed into the data's box (the recurring #177
+        footgun). An `extent` OUTSIDE the global lon/lat bounds (axes in a
+        non-EPSG:4326 CRS, e.g. metres) is instead stretched by `imshow` to
+        fit those bounds -- visually acceptable for small extents but not a
+        true reprojection; reproject the source for a pixel-accurate backdrop
+        in another projection.
 
     Args:
         ax: A matplotlib `Axes` with data already plotted (so its limits
             define the view).
         resolution: `"low"` or `"medium"` (see
             `available_relief_resolutions`).
-        extent: `(west, south, east, north)` placement in axis units.
-            Defaults to the global EPSG:4326 extent
-            `(-180, -90, 180, 90)`.
+        extent: `(west, south, east, north)` lon/lat region to draw. A box
+            within the global EPSG:4326 bounds is cropped out of the relief
+            and placed at true scale (a regional view shows only that region).
+            Omit it (the default global `(-180, -90, 180, 90)`) to place the
+            full relief and let the axis limits crop the view. An extent
+            outside the lon/lat bounds is treated as a non-4326 placement (the
+            full image is stretched to fit -- see Note).
         alpha: Backdrop opacity in `[0, 1]`.
         zorder: Matplotlib draw order (`-1` puts it behind all data).
         interpolation: Interpolation passed to `ax.imshow`.
@@ -341,7 +349,23 @@ def add_relief(
     """
     _validate_axes(ax)
     rgb = relief(resolution)
-    west, south, east, north = extent if extent is not None else _RELIEF_EXTENT_4326
+    if extent is None:
+        west, south, east, north = _RELIEF_EXTENT_4326
+    else:
+        west, south, east, north = extent
+        # A lon/lat sub-region is CROPPED out of the global relief and placed at
+        # true scale -- not the whole globe stretched into the box (which would
+        # show the entire world under regional data; see #177). An extent outside
+        # the global lon/lat bounds (axes in a non-EPSG:4326 CRS, e.g. metres)
+        # falls through to the old whole-image placement.
+        gw, gs, ge, gn = _RELIEF_EXTENT_4326
+        if gw <= west < east <= ge and gs <= south < north <= gn:
+            rows, cols = rgb.shape[:2]
+            c0 = max(0, int(np.floor((west - gw) / (ge - gw) * cols)))
+            c1 = min(cols, max(c0 + 1, int(np.ceil((east - gw) / (ge - gw) * cols))))
+            r0 = max(0, int(np.floor((gn - north) / (gn - gs) * rows)))
+            r1 = min(rows, max(r0 + 1, int(np.ceil((gn - south) / (gn - gs) * rows))))
+            rgb = rgb[r0:r1, c0:c1]
 
     xlim, ylim = ax.get_xlim(), ax.get_ylim()
     ax.imshow(

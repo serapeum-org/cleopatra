@@ -423,6 +423,46 @@ def test_add_relief_custom_extent(cache: Path):
     plt.close(fig)
 
 
+def test_add_relief_lonlat_extent_crops_not_stretches(cache: Path):
+    """A lon/lat sub-region is cropped out of the relief, not the whole globe stretched (#177).
+
+    The eastern hemisphere is painted red, the western half blue; drawing an
+    eastern-hemisphere extent must place only red pixels, never the whole
+    (part-blue) image squashed into the box.
+    """
+    Image = pytest.importorskip("PIL.Image", reason="Pillow not installed (tiles extra)")
+    arr = np.zeros((90, 180, 3), dtype="uint8")
+    arr[:, 90:, 0] = 255  # eastern hemisphere (lon 0..180) red
+    arr[:, :90, 2] = 255  # western hemisphere (lon -180..0) blue
+    Image.fromarray(arr).save(cache / "ne_hypso_rgb_720x360.png")
+
+    fig, ax = plt.subplots()
+    ax.set_xlim(20, 80)
+    ax.set_ylim(10, 50)
+    add_relief(ax, "low", extent=(20, 10, 80, 50))
+    placed = np.asarray(ax.images[0].get_array())
+    assert tuple(ax.images[0].get_extent()) == (20.0, 80.0, 10.0, 50.0)
+    assert placed.shape[:2] != arr.shape[:2], "the full global image was placed, not a crop"
+    assert placed[..., 0].min() == 255 and placed[..., 2].max() == 0, (
+        "an eastern-hemisphere extent must contain only the red (eastern) pixels"
+    )
+    plt.close(fig)
+
+
+def test_add_relief_non_lonlat_extent_still_stretches(cache: Path):
+    """An extent outside the lon/lat bounds (a non-4326 CRS in metres) keeps the whole-image placement."""
+    Image = pytest.importorskip("PIL.Image", reason="Pillow not installed (tiles extra)")
+    arr = (np.random.default_rng(3).random((6, 12, 3)) * 255).astype("uint8")
+    Image.fromarray(arr).save(cache / "ne_hypso_rgb_720x360.png")
+
+    fig, ax = plt.subplots()
+    web_mercator_box = (-2.0e6, 4.0e6, 2.0e6, 8.0e6)  # metres, far outside lon/lat
+    add_relief(ax, "low", extent=web_mercator_box)
+    placed = np.asarray(ax.images[0].get_array())
+    assert placed.shape[:2] == arr.shape[:2], "a non-lonlat extent should place the full image (stretched)"
+    plt.close(fig)
+
+
 def test_add_relief_bad_axes():
     with pytest.raises(TypeError, match="matplotlib.axes.Axes"):
         add_relief(object())
