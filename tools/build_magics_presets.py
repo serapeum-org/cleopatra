@@ -83,6 +83,26 @@ def fetch_magics_colours(magics_ref):
     return table
 
 
+def _parse_rgb(c):
+    """A Magics ``rgb()``/``rgba()`` string -> (hex, alpha|None), or None.
+
+    Components may be integer 0-255 or float 0-1; the stray ``256`` some Magics
+    entries carry is clamped (an out-of-range data quirk).
+    """
+    is_float = "." in c
+    vals = [float(x) for x in re.findall(r"[\d.]+", c.replace(" ", ""))]
+    if len(vals) < 3:
+        return None
+    rgb, alpha = vals[:3], (vals[3] if len(vals) > 3 else None)
+    out = [
+        min(255, max(0, round(v * 255) if (is_float and v <= 1.0) else round(v)))
+        for v in rgb
+    ]
+    return "#{:02x}{:02x}{:02x}".format(*out), (
+        round(alpha, 4) if alpha is not None else None
+    )
+
+
 def parse_color(c, named_colours):
     """A Magics colour string -> (hex, alpha|None), or None if unresolvable.
 
@@ -96,17 +116,7 @@ def parse_color(c, named_colours):
     """
     c = c.strip()
     if c.lower().startswith(("rgb(", "rgba(")):
-        is_float = "." in c
-        nums = re.findall(r"[\d.]+", c.replace(" ", ""))
-        vals = [float(x) for x in nums]
-        if len(vals) < 3:
-            return None
-        rgb, alpha = vals[:3], (vals[3] if len(vals) > 3 else None)
-        out = []
-        for v in rgb:
-            iv = round(v * 255) if (is_float and v <= 1.0) else round(v)
-            out.append(min(255, max(0, iv)))
-        return "#{:02x}{:02x}{:02x}".format(*out), (round(alpha, 4) if alpha is not None else None)
+        return _parse_rgb(c)
     if c.lower().startswith("hsl("):
         # HSL(hue 0-360, sat 0-1, light 0-1); colorsys uses HLS component order.
         nums = [float(x) for x in re.findall(r"[-\d.]+", c)]
