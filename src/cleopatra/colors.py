@@ -1137,11 +1137,14 @@ def apply_data_style(
     # scale (e.g. a Magics preset's decoded fixed range). These are colour-scale
     # keys, not `imshow` kwargs, so pull them out of `render_kwargs` and merge
     # them over each layer's config below.
-    style_override = {
-        key: render_kwargs.pop(key)
-        for key in ("vmin", "vmax", "center")
-        if key in render_kwargs
-    }
+    style_override = {}
+    for key in ("vmin", "vmax", "center"):
+        if key in render_kwargs:
+            value = render_kwargs.pop(key)
+            # Pop it (so it never reaches imshow), but only override the preset when
+            # it is actually set -- an explicit None must not wipe a fixed range.
+            if value is not None:
+                style_override[key] = value
     # A caller `norm=`: a string kind ("linear"/"log"/"symlog") overrides the
     # preset's norm kind via cfg; a Normalize *instance* is used directly as the
     # colour norm. Pop it either way so it never collides with the norm

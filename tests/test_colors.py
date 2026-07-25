@@ -892,6 +892,15 @@ class TestMagicsPresets:
             layer = DATA_STYLES[key][key]
             assert (layer["vmin"], layer["vmax"]) == (-48.0, 56.0), key
 
+    def test_explicit_none_vmin_does_not_wipe_fixed_range(self, ax):
+        """Passing vmin=None to apply_data_style keeps the preset's fixed range (not auto-range)."""
+        data = np.linspace(-10.0, 50.0, 400).reshape(20, 20)
+        fig2, ax2 = plt.subplots()
+        base = apply_data_style(ax, {"mn2t": data}, style="mn2t", legend=False)
+        none = apply_data_style(ax2, {"mn2t": data}, style="mn2t", vmin=None, legend=False)
+        assert np.allclose(base["mn2t"].get_array(), none["mn2t"].get_array())
+        plt.close(fig2)
+
     def test_data_outside_fixed_range_warns(self, ax):
         """A fixed-range Magics preset warns when the data is entirely outside its scale."""
         kelvin = np.full((4, 4), 290.0)  # far above mn2t's decoded -48..56 degC scale
