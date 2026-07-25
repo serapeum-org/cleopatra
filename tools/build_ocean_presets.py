@@ -1,11 +1,9 @@
-#!/usr/bin/env python3
-"""Build cleopatra's cmocean preset asset (maintainer-side, offline).
+"""Build cleopatra's ocean preset asset (maintainer-side, offline).
 
 This script is **not** part of the shipped package and is **not** run at
 import or install time. It is the one-off, maintainer-machine tool that
-derives ``src/cleopatra/data/cmocean_presets.json`` from the ``cmocean``
-oceanography colormap collection (MIT, Copyright (c) 2015 Kristen M. Thyng;
-see ``src/cleopatra/data/CMOCEAN_NOTICE.txt``).
+derives ``src/cleopatra/data/ocean_presets.json`` from the ``cmocean``
+oceanography colormap collection.
 
 Each curated cmocean colormap is sampled to hex control points and paired with
 an ocean/hydrology/DEM variable label and an opacity policy (all opaque -- these
@@ -19,7 +17,7 @@ cleopatra; it is not a runtime dependency).
 
 Re-run (from the repo root)::
 
-    python tools/build_cmocean_presets.py src/cleopatra/data/cmocean_presets.json
+    python tools/build_ocean_presets.py src/cleopatra/data/ocean_presets.json
 """
 
 import datetime as _dt
