@@ -9,6 +9,7 @@ and the real read/parse/draw path is exercised offline.
 from __future__ import annotations
 
 import gzip
+import importlib.util
 import io
 import json
 import urllib.error
@@ -504,6 +505,73 @@ def test_add_relief_non_lonlat_extent_still_stretches(cache: Path):
         8,
     ), f"non-lon/lat extent should keep full image, got {placed.shape}"
     assert tuple(ax.images[0].get_extent()) == (1e6, 2e6, 6e6, 7e6)
+    plt.close(fig)
+
+
+def test_add_relief_crs_4326_places_without_warp(cache: Path):
+    """An explicit crs=4326 keeps the lon/lat path (RGB, no reprojection)."""
+    _blue_west_red_east_relief(cache)
+    fig, ax = plt.subplots()
+    ax.set_xlim(-180, 180)
+    ax.set_ylim(-90, 90)
+    add_relief(ax, "low", crs=4326)
+    placed = np.asarray(ax.images[0].get_array())
+    assert placed.shape[2] == 3, f"4326 path should stay RGB, got {placed.shape}"
+    plt.close(fig)
+
+
+def test_add_relief_non_4326_crs_warps_and_aligns(cache: Path):
+    """A non-4326 crs warps the relief into that CRS, keeping the west/east
+    (longitude) order of the source."""
+    pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+    _blue_west_red_east_relief(cache)
+    fig, ax = plt.subplots()
+    ax.set_xlim(-2e7, 2e7)  # ~full-world EPSG:3857 metres
+    ax.set_ylim(-1e7, 1e7)
+    add_relief(ax, "low", crs=3857)
+    placed = np.asarray(ax.images[0].get_array())
+    assert placed.shape[2] == 4, f"warp path should be RGBA, got {placed.shape}"
+    w = placed.shape[1]
+    west = placed[:, : w // 4].reshape(-1, 4)
+    east = placed[:, -(w // 4) :].reshape(-1, 4)
+    west = west[west[:, 3] > 0]
+    east = east[east[:, 3] > 0]
+    assert (west[:, 2] > west[:, 0]).all(), "western strip should stay blue"
+    assert (east[:, 0] > east[:, 2]).all(), "eastern strip should stay red"
+    plt.close(fig)
+
+
+def test_add_relief_non_4326_masks_out_of_domain(cache: Path):
+    """Cells outside the target CRS's domain (an orthographic disc) are left
+    transparent instead of crashing."""
+    pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+    _blue_west_red_east_relief(cache)
+    fig, ax = plt.subplots()
+    ax.set_xlim(-1e7, 1e7)
+    ax.set_ylim(-1e7, 1e7)
+    add_relief(ax, "low", crs="+proj=ortho +lat_0=0 +lon_0=0 +datum=WGS84")
+    alpha = np.asarray(ax.images[0].get_array())[..., 3]
+    assert (alpha == 0).any(), "corners outside the ortho disc should be transparent"
+    assert (alpha > 0).any(), "the disc centre should be opaque"
+    plt.close(fig)
+
+
+def test_add_relief_non_4326_requires_pyproj(
+    cache: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """Without pyproj, a non-4326 crs raises an actionable ImportError."""
+    _blue_west_red_east_relief(cache)
+    real_find_spec = importlib.util.find_spec
+    monkeypatch.setattr(
+        importlib.util,
+        "find_spec",
+        lambda name: None if name == "pyproj" else real_find_spec(name),
+    )
+    fig, ax = plt.subplots()
+    ax.set_xlim(-2e7, 2e7)
+    ax.set_ylim(-1e7, 1e7)
+    with pytest.raises(ImportError, match="pyproj"):
+        add_relief(ax, "low", crs=3857)
     plt.close(fig)
 
 
