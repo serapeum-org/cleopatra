@@ -366,6 +366,13 @@ def add_relief(
             r0 = max(0, int(np.floor((gn - north) / (gn - gs) * rows)))
             r1 = min(rows, max(r0 + 1, int(np.ceil((gn - south) / (gn - gs) * rows))))
             rgb = rgb[r0:r1, c0:c1]
+            # Place the crop at the extent of the SNAPPED pixel edges (not the raw
+            # request) so the terrain sits at true scale; the crop covers the
+            # requested region and the axis limits (preserved below) clip the view.
+            west = gw + c0 / cols * (ge - gw)
+            east = gw + c1 / cols * (ge - gw)
+            north = gn - r0 / rows * (gn - gs)
+            south = gn - r1 / rows * (gn - gs)
 
     xlim, ylim = ax.get_xlim(), ax.get_ylim()
     ax.imshow(

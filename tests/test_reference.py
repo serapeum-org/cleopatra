@@ -419,7 +419,9 @@ def test_add_relief_custom_extent(cache: Path):
     ax.set_xlim(0, 10)
     ax.set_ylim(0, 10)
     add_relief(ax, "low", extent=(0, 0, 10, 10))
-    assert tuple(ax.images[0].get_extent()) == (0.0, 10.0, 0.0, 10.0)
+    # Placed at the snapped pixel edges (true scale), which cover the requested region.
+    w, e, s, n = ax.images[0].get_extent()
+    assert w <= 0 and e >= 10 and s <= 0 and n >= 10
     plt.close(fig)
 
 
