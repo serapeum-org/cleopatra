@@ -40,6 +40,21 @@ from pathlib import Path
 
 import yaml
 
+# Opener restricted to http(s): only the HTTP(S) handlers are registered (plus
+# the supporting redirect/error-processing handlers `urlopen` needs), so a
+# file:///ftp:///data: URL structurally cannot be opened through it -- no
+# handler claims it.
+_HTTP_ONLY_OPENER = urllib.request.OpenerDirector()
+for _handler in (
+    urllib.request.HTTPHandler(),
+    urllib.request.HTTPSHandler(),
+    urllib.request.HTTPErrorProcessor(),
+    urllib.request.HTTPRedirectHandler(),
+    urllib.request.HTTPDefaultErrorHandler(),
+    urllib.request.UnknownHandler(),
+):
+    _HTTP_ONLY_OPENER.add_handler(_handler)
+
 RAW = (
     "https://raw.githubusercontent.com/ecmwf/earthkit-plots/{ref}"
     "/src/earthkit/plots/data/styles/auto-styles/{stem}.yml"
@@ -96,7 +111,7 @@ def clean_colors(colors):
 
 
 def fetch(ref, stem):
-    with urllib.request.urlopen(RAW.format(ref=ref, stem=stem)) as r:
+    with _HTTP_ONLY_OPENER.open(RAW.format(ref=ref, stem=stem)) as r:
         return yaml.safe_load(r.read().decode("utf-8"))
 
 

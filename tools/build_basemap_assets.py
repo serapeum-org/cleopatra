@@ -48,6 +48,21 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+# Opener restricted to http(s): only the HTTP(S) handlers are registered (plus
+# the supporting redirect/error-processing handlers `urlopen` needs), so a
+# file:///ftp:///data: URL structurally cannot be opened through it -- no
+# handler claims it -- rather than relying on the string check below alone.
+_HTTP_ONLY_OPENER = urllib.request.OpenerDirector()
+for _handler in (
+    urllib.request.HTTPHandler(),
+    urllib.request.HTTPSHandler(),
+    urllib.request.HTTPErrorProcessor(),
+    urllib.request.HTTPRedirectHandler(),
+    urllib.request.HTTPDefaultErrorHandler(),
+    urllib.request.UnknownHandler(),
+):
+    _HTTP_ONLY_OPENER.add_handler(_handler)
+
 # --- runtime-mirrored maps (keep in sync with cleopatra/reference.py) -------
 
 #: layer -> (Natural Earth category, dataset stem). Geometry kind is
@@ -99,7 +114,7 @@ def _download(url: str, dest: Path) -> Path:
     _log(f"  fetch   {url}")
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(request, timeout=120) as response:
+        with _HTTP_ONLY_OPENER.open(request, timeout=120) as response:
             data = response.read()
     except (urllib.error.URLError, OSError) as e:
         raise ConnectionError(f"Failed to download {url!r}: {e}") from e

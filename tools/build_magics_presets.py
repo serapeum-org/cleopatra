@@ -46,6 +46,21 @@ import urllib.request
 
 from matplotlib.colors import to_hex, to_rgba
 
+# Opener restricted to http(s): only the HTTP(S) handlers are registered (plus
+# the supporting redirect/error-processing handlers `urlopen` needs), so a
+# file:///ftp:///data: URL structurally cannot be opened through it -- no
+# handler claims it.
+_HTTP_ONLY_OPENER = urllib.request.OpenerDirector()
+for _handler in (
+    urllib.request.HTTPHandler(),
+    urllib.request.HTTPSHandler(),
+    urllib.request.HTTPErrorProcessor(),
+    urllib.request.HTTPRedirectHandler(),
+    urllib.request.HTTPDefaultErrorHandler(),
+    urllib.request.UnknownHandler(),
+):
+    _HTTP_ONLY_OPENER.add_handler(_handler)
+
 BASE_TEMPLATE = (
     "https://raw.githubusercontent.com/ecmwf/magics/{ref}/share/magics/styles"
 )
@@ -60,7 +75,7 @@ _RGB_DEF = re.compile(
 
 
 def fetch(base, path):
-    with urllib.request.urlopen(f"{base}/{path}") as r:
+    with _HTTP_ONLY_OPENER.open(f"{base}/{path}") as r:
         return json.load(r)
 
 
@@ -75,7 +90,7 @@ def fetch_magics_colours(magics_ref):
     (components float 0-1); the ``undefined`` = -1 sentinel is skipped.
     """
     url = REPO_TEMPLATE.format(ref=magics_ref) + "/src/common/Colour.cc"
-    with urllib.request.urlopen(url) as r:
+    with _HTTP_ONLY_OPENER.open(url) as r:
         src = r.read().decode("utf-8", "replace")
     table = {}
     for name, red, green, blue in _RGB_DEF.findall(src):

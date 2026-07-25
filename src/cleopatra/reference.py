@@ -62,6 +62,7 @@ from matplotlib.collections import LineCollection, PathCollection
 from matplotlib.path import Path as MplPath
 
 from cleopatra import __version__
+from cleopatra._net import urlopen_http
 
 logger = logging.getLogger(__name__)
 
@@ -144,7 +145,7 @@ def _download(
             "Fetching reference asset %s (attempt %d/%d)", url, attempt + 1, retries
         )
         try:
-            with urllib.request.urlopen(request, timeout=timeout) as response:
+            with urlopen_http(request, timeout=timeout) as response:
                 with open(tmp, "wb") as handle:
                     shutil.copyfileobj(response, handle)
             tmp.replace(dest)
