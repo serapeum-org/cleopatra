@@ -11,7 +11,9 @@ from matplotlib.colors import (
     Colormap,
     LinearSegmentedColormap,
     ListedColormap,
+    LogNorm,
     Normalize,
+    SymLogNorm,
     to_hex,
     to_rgb,
 )
@@ -702,6 +704,29 @@ class TestContourLevelsStyle:
             ax2, {"temperature": data}, style="temperature", vmin=-40.0, vmax=100.0, legend=False
         )
         assert not np.allclose(base["temperature"].get_array(), over["temperature"].get_array())
+        plt.close(fig2)
+
+    def test_string_norm_kind_overrides_a_levels_preset(self):
+        """A caller string `norm='log'`/`'symlog'` rescales a levels preset (matching a
+        Normalize instance), while `'linear'` keeps the discrete bands."""
+        data = np.array([[0.5, 1.0, 2.0, 3.5]])  # strictly positive, valid for LogNorm
+        cfg = {"cmap": "viridis", "levels": [0, 1, 2, 3, 4], "extend": "both"}
+        assert isinstance(_resolve_style_norm(data, cfg)[0], BoundaryNorm)
+        assert isinstance(_resolve_style_norm(data, {**cfg, "norm": "log"})[0], LogNorm)
+        assert isinstance(_resolve_style_norm(data, {**cfg, "norm": "symlog"})[0], SymLogNorm)
+        # 'linear' is the implicit default and must not abandon the banding.
+        assert isinstance(_resolve_style_norm(data, {**cfg, "norm": "linear"})[0], BoundaryNorm)
+
+    def test_string_norm_log_is_not_a_silent_noop_on_a_levels_preset(self, ax):
+        """Through `apply_data_style`, a string `norm='log'` on a levels preset changes the
+        rendered pixels instead of being silently dropped (the L1 inconsistency)."""
+        data = np.linspace(0.05, 4.5, 400).reshape(20, 20)  # positive, spans the aod550 levels
+        fig2, ax2 = plt.subplots()
+        base = apply_data_style(ax, {"aod550": data}, style="aod550", legend=False)
+        logged = apply_data_style(
+            ax2, {"aod550": data}, style="aod550", norm="log", legend=False
+        )
+        assert not np.allclose(base["aod550"].get_array(), logged["aod550"].get_array())
         plt.close(fig2)
 
     def test_data_outside_fixed_levels_warns(self, ax):

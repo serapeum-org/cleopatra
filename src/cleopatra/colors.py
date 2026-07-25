@@ -802,9 +802,10 @@ def resolve_style_norm(
 
     - **Explicit `levels`** (the ECMWF / earthkit contour model) resolve to a
       discrete `BoundaryNorm` over those boundaries, with `extend` capping the
-      out-of-range ends -- unless the caller supplied `vmin`/`vmax`/`center`
-      (merged into `cfg`), which take precedence and fall through to the
-      continuous path below so the override actually rescales the map.
+      out-of-range ends -- unless the caller supplied `vmin`/`vmax`/`center` or a
+      non-linear `norm` kind (`"log"`/`"symlog"`) merged into `cfg`, which take
+      precedence and fall through to the continuous path below so the override
+      actually rescales the map.
     - Otherwise the bounds come from the layer's `vmin`/`vmax` (auto-ranged from
       the data's finite values when omitted -- essential for real GIS/climate
       fields whose absolute range varies) and an optional diverging `center`
@@ -827,11 +828,18 @@ def resolve_style_norm(
         concrete bounds it resolved to (reused for the layer's legend).
     """
     levels = cfg.get("levels")
-    # A caller-supplied vmin/vmax/center (merged into cfg by apply_data_style's
-    # style override) takes precedence over the preset's own fixed levels: fall
-    # through to the continuous vmin/vmax path below so the override actually
-    # rescales the map rather than being silently ignored.
-    caller_override = any(cfg.get(key) is not None for key in ("vmin", "vmax", "center"))
+    norm_kind = cfg.get("norm")
+    # A caller-supplied vmin/vmax/center -- or a non-linear norm kind
+    # ("log"/"symlog") -- merged into cfg by apply_data_style's style override
+    # takes precedence over the preset's own fixed levels: fall through to the
+    # continuous vmin/vmax path below so the override actually rescales the map
+    # rather than being silently ignored. Honouring a string norm kind here is
+    # what keeps it consistent with a Normalize *instance* override (which
+    # apply_data_style applies after this call); otherwise "log"/"symlog" would
+    # be dropped on a levels preset while an instance of the same norm is kept.
+    caller_override = any(
+        cfg.get(key) is not None for key in ("vmin", "vmax", "center")
+    ) or (isinstance(norm_kind, str) and norm_kind in ("log", "symlog"))
     if levels is not None and not caller_override:
         # Explicit contour LEVELS (the ECMWF / earthkit-plots model): discrete
         # bands at fixed boundaries with `extend` capping the out-of-range ends
@@ -876,7 +884,6 @@ def resolve_style_norm(
     if vmin == vmax:
         vmax = vmin + 1.0
 
-    norm_kind = cfg.get("norm")
     bands = cfg.get("bands")
     if bands and norm_kind in (None, "linear") and center is None:
         # Discrete contour bands (Magics-style shade), each mapped to one entry
