@@ -583,10 +583,9 @@ def test_add_relief_non_4326_bakes_alpha(cache: Path):
     ax.set_ylim(-1e7, 1e7)
     add_relief(ax, "low", crs=3857, alpha=0.5)
     alpha = np.asarray(ax.images[0].get_array())[..., 3]
-    assert set(np.unique(alpha)).issubset(
-        {0, 128}
-    ), f"alpha not baked: {np.unique(alpha)}"
-    assert (alpha == 128).any(), "opaque cells should carry the baked alpha byte"
+    # This full-world 3857 box is entirely in-domain, so every cell is opaque
+    # at the baked byte round(0.5 * 255) == 128 -- assert that exactly.
+    assert set(np.unique(alpha)) == {128}, f"alpha not baked to 128: {np.unique(alpha)}"
     assert ax.images[0].get_alpha() is None, "warp path must not set a scalar alpha"
     plt.close(fig)
 
