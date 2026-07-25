@@ -289,6 +289,12 @@ class TestApplyDataStyle:
             f"unexpected haze layers: {set(DATA_STYLES['haze'])}"
         )
 
+    def test_normalize_object_norm_does_not_raise(self, ax):
+        """A Normalize-instance `norm=` is left to imshow (no-op on RGBA), not mis-read as a kind."""
+        data = np.array([[0.0, 10.0], [5.0, 8.0]])
+        # Must not raise "data style 'norm' must be 'linear'/'log'/'symlog'".
+        apply_data_style(ax, {"wind_speed": data}, style="wind_speed", norm=Normalize(0, 10), legend=False)
+
     @pytest.mark.parametrize("layer", ["organic_matter", "dust"])
     def test_haze_layers_declare_decoupled_alpha(self, layer):
         """Every 'haze' layer sets a narrower alpha_vmin/alpha_vmax than its colour vmin/vmax."""

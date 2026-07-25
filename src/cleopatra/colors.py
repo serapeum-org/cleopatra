@@ -1118,15 +1118,23 @@ def apply_data_style(
         # for a globe's extreme local distortion, so shading="flat" (which
         # trusts the given edges exactly) is the correct default here.
         render_kwargs.setdefault("shading", "flat")
-    # A caller-supplied `vmin`/`vmax`/`center`/`norm` overrides the preset's own
-    # (e.g. a Magics preset's decoded fixed range). These are colour-scale keys,
-    # not `imshow` kwargs, so pull them out of `render_kwargs` and merge them
-    # over each layer's config below.
+    # A caller-supplied `vmin`/`vmax`/`center` overrides the preset's own colour
+    # scale (e.g. a Magics preset's decoded fixed range). These are colour-scale
+    # keys, not `imshow` kwargs, so pull them out of `render_kwargs` and merge
+    # them over each layer's config below.
     style_override = {
         key: render_kwargs.pop(key)
-        for key in ("vmin", "vmax", "center", "norm")
+        for key in ("vmin", "vmax", "center")
         if key in render_kwargs
     }
+    # A caller `norm=`: a string kind ("linear"/"log"/"symlog") overrides the
+    # preset's norm kind via cfg; a Normalize *instance* is used directly as the
+    # colour norm. Pop it either way so it never collides with the norm
+    # alpha_scaled_image is already given, nor is mis-read as a kind string.
+    norm_override = render_kwargs.pop("norm", None)
+    if isinstance(norm_override, str):
+        style_override["norm"] = norm_override
+        norm_override = None
     images: dict[str, Any] = {}
     for i, (name, data) in enumerate(layers.items()):
         cfg = {**preset[name], **style_override}
@@ -1183,6 +1191,9 @@ def apply_data_style(
             continue
 
         norm, resolved_vmin, resolved_vmax = resolve_style_norm(data, cfg)
+        if norm_override is not None:
+            # A caller-supplied Normalize instance is used directly as the norm.
+            norm = norm_override
 
         alpha_const = cfg.get("alpha")
         alpha_vmin = cfg.get("alpha_vmin")
