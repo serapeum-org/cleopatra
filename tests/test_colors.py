@@ -739,6 +739,18 @@ class TestContourLevelsStyle:
         assert not np.allclose(base["aod550"].get_array(), logged["aod550"].get_array())
         plt.close(fig2)
 
+    def test_instance_norm_labels_legend_with_its_own_range_on_a_levels_preset(self, ax):
+        """An instance `norm=` on a levels preset labels the swatch with the instance's range,
+        not the preset's fixed level endpoints (L1)."""
+        data = np.linspace(1.0, 90.0, 400).reshape(20, 20)  # positive, valid for LogNorm
+        apply_data_style(ax, {"2t": data}, style="2t", norm=LogNorm(vmin=1, vmax=100), legend=True)
+        swatch_texts = [t.get_text() for c in ax.child_axes for t in c.texts]
+        assert "1" in swatch_texts, f"low endpoint should be the instance vmin (1), got {swatch_texts}"
+        assert "≥100" in swatch_texts, f"high endpoint should be the instance vmax (100), got {swatch_texts}"
+        assert "-40" not in swatch_texts and "≤-40" not in swatch_texts, (
+            f"must not label with the preset's fixed level endpoints, got {swatch_texts}"
+        )
+
     def test_data_outside_fixed_levels_warns(self, ax):
         """Data entirely outside a levels preset's scale warns (Celsius levels, Kelvin data footgun)."""
         kelvin = np.full((4, 4), 290.0)  # ~17 degC in K, far above the -40..40 degC 2t levels

@@ -1216,7 +1216,19 @@ def apply_data_style(
         norm, resolved_vmin, resolved_vmax = resolve_style_norm(data, cfg)
         if norm_override is not None:
             # A caller-supplied Normalize instance is used directly as the norm.
+            # Label the legend with the INSTANCE's own range, not the preset's
+            # resolved bounds: otherwise a levels preset would label the swatch
+            # with its fixed level endpoints (e.g. -40..40) while the map uses the
+            # instance's scale, and the swatch gradient -- sampled through the
+            # instance across [vmin, vmax] -- would feed a LogNorm the preset's
+            # negative levels. Fall back to the data's own range for any bound the
+            # instance leaves unset (matplotlib autoscales the map the same way).
             norm = norm_override
+            finite = data[np.isfinite(data)]
+            data_lo = float(finite.min()) if finite.size else resolved_vmin
+            data_hi = float(finite.max()) if finite.size else resolved_vmax
+            resolved_vmin = norm.vmin if norm.vmin is not None else data_lo
+            resolved_vmax = norm.vmax if norm.vmax is not None else data_hi
 
         alpha_const = cfg.get("alpha")
         alpha_vmin = cfg.get("alpha_vmin")
