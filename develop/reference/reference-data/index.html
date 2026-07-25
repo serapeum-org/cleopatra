@@ -2921,17 +2921,14 @@ backdrop never changes the view.</p>
 <details class="note" open>
   <summary>Note</summary>
   <p>The relief image is equirectangular (EPSG:4326). A lon/lat <code>extent</code>
-within the global bounds is <strong>cropped</strong> out of the global image and
-placed over that box, so a regional call shows that region's terrain
-rather than the whole world squashed into it. The crop is sliced on
-the relief's pixel grid and drawn at the requested box, so an off-grid
-<code>extent</code> can shift the backdrop by up to one pixel (0.5 deg at <code>"low"</code>,
-0.25 deg at <code>"medium"</code>); grid-aligned extents register exactly.
-<code>extent=None</code> places the whole globe (the axis limits crop the
-view). An <code>extent</code> outside the lon/lat bounds -- e.g. axes in a
-projected CRS's units (metres) -- is stretched to fit, which is not
-a true reprojection; reproject the source for a pixel-accurate
-backdrop in another projection.</p>
+within the global bounds is CROPPED out of it and placed at true
+scale, so a regional view shows only that region's terrain -- never
+the whole globe squashed into the data's box (the recurring #177
+footgun). An <code>extent</code> OUTSIDE the global lon/lat bounds (axes in a
+non-EPSG:4326 CRS, e.g. metres) is instead stretched by <code>imshow</code> to
+fit those bounds -- visually acceptable for small extents but not a
+true reprojection; reproject the source for a pixel-accurate backdrop
+in another projection.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -2988,10 +2985,13 @@ define the view).</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p><code>(west, south, east, north)</code> placement in axis units.
-<code>None</code> (default) uses the whole global EPSG:4326 relief
-<code>(-180, -90, 180, 90)</code>. See <code>Note</code> for how an in-bounds lon/lat
-box (cropped) differs from an out-of-bounds one (stretched).</p>
+                <p><code>(west, south, east, north)</code> lon/lat region to draw. A box
+within the global EPSG:4326 bounds is cropped out of the relief
+and placed at true scale (a regional view shows only that region).
+Omit it (the default global <code>(-180, -90, 180, 90)</code>) to place the
+full relief and let the axis limits crop the view. An extent
+outside the lon/lat bounds is treated as a non-4326 placement (the
+full image is stretched to fit -- see Note).</p>
               </div>
             </td>
             <td>
@@ -3289,27 +3289,27 @@ fails.</p>
 <a id="__codelineno-0-283" name="__codelineno-0-283"></a>
 <a id="__codelineno-0-284" name="__codelineno-0-284"></a><span class="sd">    Note:</span>
 <a id="__codelineno-0-285" name="__codelineno-0-285"></a><span class="sd">        The relief image is equirectangular (EPSG:4326). A lon/lat `extent`</span>
-<a id="__codelineno-0-286" name="__codelineno-0-286"></a><span class="sd">        within the global bounds is **cropped** out of the global image and</span>
-<a id="__codelineno-0-287" name="__codelineno-0-287"></a><span class="sd">        placed over that box, so a regional call shows that region&#39;s terrain</span>
-<a id="__codelineno-0-288" name="__codelineno-0-288"></a><span class="sd">        rather than the whole world squashed into it. The crop is sliced on</span>
-<a id="__codelineno-0-289" name="__codelineno-0-289"></a><span class="sd">        the relief&#39;s pixel grid and drawn at the requested box, so an off-grid</span>
-<a id="__codelineno-0-290" name="__codelineno-0-290"></a><span class="sd">        `extent` can shift the backdrop by up to one pixel (0.5 deg at `&quot;low&quot;`,</span>
-<a id="__codelineno-0-291" name="__codelineno-0-291"></a><span class="sd">        0.25 deg at `&quot;medium&quot;`); grid-aligned extents register exactly.</span>
-<a id="__codelineno-0-292" name="__codelineno-0-292"></a><span class="sd">        `extent=None` places the whole globe (the axis limits crop the</span>
-<a id="__codelineno-0-293" name="__codelineno-0-293"></a><span class="sd">        view). An `extent` outside the lon/lat bounds -- e.g. axes in a</span>
-<a id="__codelineno-0-294" name="__codelineno-0-294"></a><span class="sd">        projected CRS&#39;s units (metres) -- is stretched to fit, which is not</span>
-<a id="__codelineno-0-295" name="__codelineno-0-295"></a><span class="sd">        a true reprojection; reproject the source for a pixel-accurate</span>
-<a id="__codelineno-0-296" name="__codelineno-0-296"></a><span class="sd">        backdrop in another projection.</span>
-<a id="__codelineno-0-297" name="__codelineno-0-297"></a>
-<a id="__codelineno-0-298" name="__codelineno-0-298"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-299" name="__codelineno-0-299"></a><span class="sd">        ax: A matplotlib `Axes` with data already plotted (so its limits</span>
-<a id="__codelineno-0-300" name="__codelineno-0-300"></a><span class="sd">            define the view).</span>
-<a id="__codelineno-0-301" name="__codelineno-0-301"></a><span class="sd">        resolution: `&quot;low&quot;` or `&quot;medium&quot;` (see</span>
-<a id="__codelineno-0-302" name="__codelineno-0-302"></a><span class="sd">            `available_relief_resolutions`).</span>
-<a id="__codelineno-0-303" name="__codelineno-0-303"></a><span class="sd">        extent: `(west, south, east, north)` placement in axis units.</span>
-<a id="__codelineno-0-304" name="__codelineno-0-304"></a><span class="sd">            `None` (default) uses the whole global EPSG:4326 relief</span>
-<a id="__codelineno-0-305" name="__codelineno-0-305"></a><span class="sd">            `(-180, -90, 180, 90)`. See `Note` for how an in-bounds lon/lat</span>
-<a id="__codelineno-0-306" name="__codelineno-0-306"></a><span class="sd">            box (cropped) differs from an out-of-bounds one (stretched).</span>
+<a id="__codelineno-0-286" name="__codelineno-0-286"></a><span class="sd">        within the global bounds is CROPPED out of it and placed at true</span>
+<a id="__codelineno-0-287" name="__codelineno-0-287"></a><span class="sd">        scale, so a regional view shows only that region&#39;s terrain -- never</span>
+<a id="__codelineno-0-288" name="__codelineno-0-288"></a><span class="sd">        the whole globe squashed into the data&#39;s box (the recurring #177</span>
+<a id="__codelineno-0-289" name="__codelineno-0-289"></a><span class="sd">        footgun). An `extent` OUTSIDE the global lon/lat bounds (axes in a</span>
+<a id="__codelineno-0-290" name="__codelineno-0-290"></a><span class="sd">        non-EPSG:4326 CRS, e.g. metres) is instead stretched by `imshow` to</span>
+<a id="__codelineno-0-291" name="__codelineno-0-291"></a><span class="sd">        fit those bounds -- visually acceptable for small extents but not a</span>
+<a id="__codelineno-0-292" name="__codelineno-0-292"></a><span class="sd">        true reprojection; reproject the source for a pixel-accurate backdrop</span>
+<a id="__codelineno-0-293" name="__codelineno-0-293"></a><span class="sd">        in another projection.</span>
+<a id="__codelineno-0-294" name="__codelineno-0-294"></a>
+<a id="__codelineno-0-295" name="__codelineno-0-295"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-296" name="__codelineno-0-296"></a><span class="sd">        ax: A matplotlib `Axes` with data already plotted (so its limits</span>
+<a id="__codelineno-0-297" name="__codelineno-0-297"></a><span class="sd">            define the view).</span>
+<a id="__codelineno-0-298" name="__codelineno-0-298"></a><span class="sd">        resolution: `&quot;low&quot;` or `&quot;medium&quot;` (see</span>
+<a id="__codelineno-0-299" name="__codelineno-0-299"></a><span class="sd">            `available_relief_resolutions`).</span>
+<a id="__codelineno-0-300" name="__codelineno-0-300"></a><span class="sd">        extent: `(west, south, east, north)` lon/lat region to draw. A box</span>
+<a id="__codelineno-0-301" name="__codelineno-0-301"></a><span class="sd">            within the global EPSG:4326 bounds is cropped out of the relief</span>
+<a id="__codelineno-0-302" name="__codelineno-0-302"></a><span class="sd">            and placed at true scale (a regional view shows only that region).</span>
+<a id="__codelineno-0-303" name="__codelineno-0-303"></a><span class="sd">            Omit it (the default global `(-180, -90, 180, 90)`) to place the</span>
+<a id="__codelineno-0-304" name="__codelineno-0-304"></a><span class="sd">            full relief and let the axis limits crop the view. An extent</span>
+<a id="__codelineno-0-305" name="__codelineno-0-305"></a><span class="sd">            outside the lon/lat bounds is treated as a non-4326 placement (the</span>
+<a id="__codelineno-0-306" name="__codelineno-0-306"></a><span class="sd">            full image is stretched to fit -- see Note).</span>
 <a id="__codelineno-0-307" name="__codelineno-0-307"></a><span class="sd">        alpha: Backdrop opacity in `[0, 1]`.</span>
 <a id="__codelineno-0-308" name="__codelineno-0-308"></a><span class="sd">        zorder: Matplotlib draw order (`-1` puts it behind all data).</span>
 <a id="__codelineno-0-309" name="__codelineno-0-309"></a><span class="sd">        interpolation: Interpolation passed to `ax.imshow`.</span>
@@ -3359,13 +3359,13 @@ fails.</p>
 <a id="__codelineno-0-353" name="__codelineno-0-353"></a>        <span class="n">west</span><span class="p">,</span> <span class="n">south</span><span class="p">,</span> <span class="n">east</span><span class="p">,</span> <span class="n">north</span> <span class="o">=</span> <span class="n">_RELIEF_EXTENT_4326</span>
 <a id="__codelineno-0-354" name="__codelineno-0-354"></a>    <span class="k">else</span><span class="p">:</span>
 <a id="__codelineno-0-355" name="__codelineno-0-355"></a>        <span class="n">west</span><span class="p">,</span> <span class="n">south</span><span class="p">,</span> <span class="n">east</span><span class="p">,</span> <span class="n">north</span> <span class="o">=</span> <span class="n">extent</span>
-<a id="__codelineno-0-356" name="__codelineno-0-356"></a>        <span class="n">gw</span><span class="p">,</span> <span class="n">gs</span><span class="p">,</span> <span class="n">ge</span><span class="p">,</span> <span class="n">gn</span> <span class="o">=</span> <span class="n">_RELIEF_EXTENT_4326</span>
-<a id="__codelineno-0-357" name="__codelineno-0-357"></a>        <span class="k">if</span> <span class="n">gw</span> <span class="o">&lt;=</span> <span class="n">west</span> <span class="o">&lt;</span> <span class="n">east</span> <span class="o">&lt;=</span> <span class="n">ge</span> <span class="ow">and</span> <span class="n">gs</span> <span class="o">&lt;=</span> <span class="n">south</span> <span class="o">&lt;</span> <span class="n">north</span> <span class="o">&lt;=</span> <span class="n">gn</span><span class="p">:</span>
-<a id="__codelineno-0-358" name="__codelineno-0-358"></a>            <span class="c1"># A lon/lat sub-region: crop the global relief array to it and</span>
-<a id="__codelineno-0-359" name="__codelineno-0-359"></a>            <span class="c1"># place the crop over that box, instead of stretching the whole</span>
-<a id="__codelineno-0-360" name="__codelineno-0-360"></a>            <span class="c1"># global image onto the box (the issue #177 footgun). `extent`</span>
-<a id="__codelineno-0-361" name="__codelineno-0-361"></a>            <span class="c1"># is None (whole globe) and non-lon/lat extents -- e.g. axes in</span>
-<a id="__codelineno-0-362" name="__codelineno-0-362"></a>            <span class="c1"># projected metres -- keep the previous whole-image placement.</span>
+<a id="__codelineno-0-356" name="__codelineno-0-356"></a>        <span class="c1"># A lon/lat sub-region is CROPPED out of the global relief and placed at</span>
+<a id="__codelineno-0-357" name="__codelineno-0-357"></a>        <span class="c1"># true scale -- not the whole globe stretched into the box (which would</span>
+<a id="__codelineno-0-358" name="__codelineno-0-358"></a>        <span class="c1"># show the entire world under regional data; see #177). An extent outside</span>
+<a id="__codelineno-0-359" name="__codelineno-0-359"></a>        <span class="c1"># the global lon/lat bounds (axes in a non-EPSG:4326 CRS, e.g. metres)</span>
+<a id="__codelineno-0-360" name="__codelineno-0-360"></a>        <span class="c1"># falls through to the old whole-image placement.</span>
+<a id="__codelineno-0-361" name="__codelineno-0-361"></a>        <span class="n">gw</span><span class="p">,</span> <span class="n">gs</span><span class="p">,</span> <span class="n">ge</span><span class="p">,</span> <span class="n">gn</span> <span class="o">=</span> <span class="n">_RELIEF_EXTENT_4326</span>
+<a id="__codelineno-0-362" name="__codelineno-0-362"></a>        <span class="k">if</span> <span class="n">gw</span> <span class="o">&lt;=</span> <span class="n">west</span> <span class="o">&lt;</span> <span class="n">east</span> <span class="o">&lt;=</span> <span class="n">ge</span> <span class="ow">and</span> <span class="n">gs</span> <span class="o">&lt;=</span> <span class="n">south</span> <span class="o">&lt;</span> <span class="n">north</span> <span class="o">&lt;=</span> <span class="n">gn</span><span class="p">:</span>
 <a id="__codelineno-0-363" name="__codelineno-0-363"></a>            <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span> <span class="o">=</span> <span class="n">rgb</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
 <a id="__codelineno-0-364" name="__codelineno-0-364"></a>            <span class="n">c0</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">((</span><span class="n">west</span> <span class="o">-</span> <span class="n">gw</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">ge</span> <span class="o">-</span> <span class="n">gw</span><span class="p">)</span> <span class="o">*</span> <span class="n">cols</span><span class="p">)))</span>
 <a id="__codelineno-0-365" name="__codelineno-0-365"></a>            <span class="n">c1</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">cols</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">c0</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">((</span><span class="n">east</span> <span class="o">-</span> <span class="n">gw</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">ge</span> <span class="o">-</span> <span class="n">gw</span><span class="p">)</span> <span class="o">*</span> <span class="n">cols</span><span class="p">))))</span>
