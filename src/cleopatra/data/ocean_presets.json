@@ -1,13 +1,4 @@
 {
-    "_meta": {
-        "source": "cmocean",
-        "source_version": "v3.0.3",
-        "license": "MIT",
-        "copyright": "Copyright (c) 2015 Kristen M. Thyng",
-        "generated_utc": "2026-07-11",
-        "n_points": 64,
-        "note": "Colour data derived from the cmocean collection (MIT). Each curated colormap is sampled to hex control points and exposed as an ocean/hydrology/DEM preset that auto-ranges. Diverging maps and the land+sea topography map carry center=0."
-    },
     "presets": {
         "bathymetry": {
             "label": "Ocean depth",

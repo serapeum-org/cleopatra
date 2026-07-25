@@ -20,7 +20,6 @@ Re-run (from the repo root)::
     python tools/build_ocean_presets.py src/cleopatra/data/ocean_presets.json
 """
 
-import datetime as _dt
 import json
 import sys
 
@@ -69,20 +68,6 @@ def main(out_path):
         presets[key] = rec
 
     asset = {
-        "_meta": {
-            "source": "cmocean",
-            "source_version": cmocean.__version__,
-            "license": "MIT",
-            "copyright": "Copyright (c) 2015 Kristen M. Thyng",
-            "generated_utc": _dt.datetime.now(_dt.UTC).strftime("%Y-%m-%d"),
-            "n_points": N_POINTS,
-            "note": (
-                "Colour data derived from the cmocean collection (MIT). Each "
-                "curated colormap is sampled to hex control points and exposed as "
-                "an ocean/hydrology/DEM preset that auto-ranges. Diverging maps and "
-                "the land+sea topography map carry center=0."
-            ),
-        },
         "presets": dict(sorted(presets.items())),
     }
     with open(out_path, "w", encoding="utf-8") as f:
