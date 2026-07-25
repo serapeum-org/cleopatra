@@ -46,6 +46,7 @@ dev = [
     "pre-commit>=3.7.1",
     "pre-commit-hooks>=4.6.0",
     "nbval>=0.11.0",
+    "mypy>=1.10.0",
 ]
 
 docs = [
@@ -100,8 +101,13 @@ change_type_order = ["BREAKING CHANGE", "feat", "fix", "refactor", "perf", "buil
 packages = ["src/cleopatra"]
 
 
+# extend-ignore (NOT ignore) so flake8's default-ignore list is preserved —
+# that default list already silences the black-conflict codes E704/W503/W504.
+# E203, E701 are Black's officially recommended flake8 ignores; the rest are
+# project style choices. See:
+# https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html
 [tool.flake8]
-ignore = "E203, E266, E501, W503, D403, D414, C901, E731"
+extend-ignore = ["E203", "E266", "E501", "E701", "E704", "E722", "C901", "E741", "E731", "W503"]
 max-line-length = 88
 max-complexity = 18
 select = "B,C,E,F,W,T4"
@@ -114,6 +120,39 @@ skip-string-normalization = true
 profile = "black"
 line_length = 88
 multi_line_output = 3
+
+# nbqa runs flake8 on notebook code cells. Tutorial notebooks intentionally place
+# imports next to where they are first used (teaching in context), and setup such as
+# `%matplotlib inline` must run before imports — both legitimately trip E402. E402
+# stays enforced for real .py modules; it is ignored only for notebooks here.
+[tool.nbqa.addopts]
+flake8 = ["--extend-ignore=E402"]
+
+[tool.bandit]
+exclude_dirs = ["tests", "examples", "docs", "planning"]
+skips = ["B101"]
+
+# Checker target is 3.12 even though `requires-python` floors at 3.11: numpy 2.5
+# ships PEP 695 `type` statements in its stubs, which mypy only parses when the
+# target is >= 3.12 (at 3.11 it aborts with a syntax error before checking any
+# source). This only widens the *typing* target; actual 3.11 runtime
+# compatibility is covered by the test matrix, not by mypy.
+[tool.mypy]
+python_version = "3.12"
+mypy_path = "src"
+packages = ["cleopatra"]
+explicit_package_bases = true
+warn_return_any = true
+warn_unused_configs = false
+disallow_untyped_defs = false
+check_untyped_defs = true
+ignore_missing_imports = true
+exclude = [
+    "tests/",
+    "examples/",
+    "docs/",
+    "planning/",
+]
 
 [tool.pytest.ini_options]
 env = ["MPLBACKEND=Agg"]

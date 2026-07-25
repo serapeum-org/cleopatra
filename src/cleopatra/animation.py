@@ -18,7 +18,7 @@ import os
 import shutil
 import tempfile
 import warnings
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import matplotlib as mpl
 from matplotlib.animation import FFMpegWriter, FuncAnimation, PillowWriter
@@ -107,10 +107,12 @@ class _OptimizedPillowWriter(PillowWriter):
         # Mirrors matplotlib's PillowWriter.finish body (it cannot be delegated
         # because the parent hardcodes loop=0 and passes no optimize). Re-check
         # against matplotlib.animation.PillowWriter.finish on version bumps.
-        self._frames[0].save(
+        # `_frames` is a private PillowWriter implementation attribute (not
+        # in its type stub), populated by the parent's frame-grabbing logic.
+        self._frames[0].save(  # type: ignore[attr-defined]
             self.outfile,
             save_all=True,
-            append_images=self._frames[1:],
+            append_images=self._frames[1:],  # type: ignore[attr-defined]
             duration=int(1000 / self.fps),
             loop=self._loop,
             optimize=self._optimize,
@@ -375,7 +377,7 @@ def save_animation(
             "rate-control modes for the encoder."
         )
 
-    save_kwargs = {} if dpi is None else {"dpi": dpi}
+    save_kwargs: dict[str, Any] = {} if dpi is None else {"dpi": dpi}
 
     if video_format in _PILLOW_FORMATS:
         anim.save(
@@ -385,7 +387,7 @@ def save_animation(
         )
     else:
         _ensure_ffmpeg_available()
-        writer_kwargs = {
+        writer_kwargs: dict[str, Any] = {
             "fps": fps,
             "extra_args": _build_ffmpeg_extra_args(pix_fmt, crf, preset, extra_args),
         }

@@ -36,6 +36,7 @@ import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 import numpy as np
 from matplotlib.animation import FuncAnimation
+from matplotlib.colorbar import Colorbar
 
 from matplotlib.colors import BoundaryNorm, ListedColormap
 
@@ -165,10 +166,10 @@ class MeshGlyph(GeoMixin, Glyph):
         self._cached_triangulation: mtri.Triangulation | None = None
         self._cached_tri_array: np.ndarray | None = None
         self._cached_nodes_per_face: np.ndarray | None = None
-        self._cbar = None
+        self._cbar: Colorbar | None = None
         #: Colour-mapped artist from the most recent `plot` call (the
         #: `tripcolor`/`tricontour(f)` mappable); `None` before first render.
-        self.im = None
+        self.im: Any = None
         #: Per-frame time-label `Text` artist from the most recent
         #: `animate` call, if any; `None` before any `animate` call.
         self._day_text = None
@@ -191,7 +192,7 @@ class MeshGlyph(GeoMixin, Glyph):
         self._style_state = self.default_options.get("style")
         #: Last `(data, location)` rendered, so `apply_style` can restyle in
         #: place without the caller re-supplying the mesh data.
-        self._last_data = None
+        self._last_data: np.ndarray | None = None
         self._last_location = "face"
 
     @property
@@ -271,7 +272,7 @@ class MeshGlyph(GeoMixin, Glyph):
 
                 ```
         """
-        return self._face_nodes.shape[0]
+        return int(self._face_nodes.shape[0])
 
     @property
     def n_nodes(self) -> int:
@@ -551,7 +552,7 @@ class MeshGlyph(GeoMixin, Glyph):
         # the counter restarts at 0 within every group. np.repeat emits
         # nothing for zero-size groups, so empty groups are handled naturally.
         group_start = np.cumsum(sizes) - sizes
-        return np.arange(total, dtype=np.intp) - np.repeat(group_start, sizes)
+        return np.asarray(np.arange(total, dtype=np.intp) - np.repeat(group_start, sizes))
 
     def _map_face_to_triangle_values(self, face_values: np.ndarray) -> np.ndarray:
         """Map per-face values to per-triangle values.
@@ -1393,8 +1394,11 @@ class MeshGlyph(GeoMixin, Glyph):
 
         segments = self._build_edge_segments()
 
+        # LineCollection's stub wants a sequence of array-likes rather than
+        # the single (N, 2, 2) ndarray `_build_edge_segments` returns (which
+        # it also accepts at runtime); a list of its rows satisfies both.
         lc = mcoll.LineCollection(
-            segments, colors=color, linewidths=linewidth, **kwargs
+            list(segments), colors=color, linewidths=linewidth, **kwargs
         )
         self.ax.add_collection(lc)
         self.ax.autoscale()

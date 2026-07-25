@@ -1,7 +1,7 @@
 fail_fast: true
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-toml
         name: "[py -  check] check toml"
@@ -28,9 +28,6 @@ repos:
         name: "[py   -  check] debug statements"
       - id: detect-private-key
         name: "[cred -  check] private keys"
-      - id: fix-encoding-pragma
-        name: "[file - format] coding pragma"
-        args: [ --remove ]
       - id: mixed-line-ending
         name: "[file - format] mixed line ending"
         args: [ --fix=auto ]
@@ -44,8 +41,12 @@ repos:
       - id: check-yaml
         name: "[yaml -  check] validate yaml"
         exclude: '^mkdocs\.yml$'
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.21.2
+    hooks:
+      -   id: pyupgrade
   - repo: https://github.com/pycqa/flake8
-    rev: 7.2.0
+    rev: 7.3.0
     hooks:
       - id: flake8
         additional_dependencies: [Flake8-pyproject]
@@ -68,16 +69,35 @@ repos:
 #         name: "[py   - check] pydocstyle"
 #         files: ^hydrolib/.*\.py$
   - repo: https://github.com/pycqa/isort
-    rev: 6.0.1
+    rev: 9.0.0b1
     hooks:
       - id: isort
         name: "[py   - format] isort"
   - repo: https://github.com/psf/black
-    rev: 25.1.0
+    rev: 26.5.1
     hooks:
       - id: black
+
+  # Run the same Python linters / formatters on notebook code cells.
+  # nbqa wraps each tool so it sees only the code cells and does not
+  # touch the surrounding JSON envelope (cell metadata, outputs,
+  # kernel info).
+  - repo: https://github.com/nbQA-dev/nbQA
+    rev: 1.9.1
+    hooks:
+      - id: nbqa-pyupgrade
+        name: "[ipynb - format] pyupgrade"
+      - id: nbqa-isort
+        name: "[ipynb - format] isort"
+      - id: nbqa-black
+        name: "[ipynb - format] black"
+      - id: nbqa-flake8
+        name: "[ipynb -   lint] flake8"
+        additional_dependencies: [Flake8-pyproject]
+        exclude: ^(examples/|tests/)
+
   - repo: https://github.com/lovesegfault/beautysh
-    rev: v6.2.1
+    rev: v6.4.3
     hooks:
       - id: beautysh
         name: "[bash - format] beautysh"
@@ -105,13 +125,13 @@ repos:
         name: "[bash -   format] check-summary-punctuation"
 
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.8.3
+    rev: 1.9.4
     hooks:
       - id: bandit
-        args: ["--skip=B101"]
+        args: ["-c", "pyproject.toml"]
 
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.25.1
+    rev: v8.30.0
     hooks:
       - id: gitleaks
 
@@ -119,13 +139,14 @@ repos:
     rev: v1.5.0
     hooks:
       - id: detect-secrets
+        exclude: '\.(ipynb|drawio)$'
   - repo: https://github.com/bridgecrewio/checkov
-    rev: 3.2.416
+    rev: 3.3.8
     hooks:
       - id: checkov
 
   - repo: https://github.com/trufflesecurity/truffleHog
-    rev: v3.88.29
+    rev: v3.95.9
     hooks:
       - id: trufflehog
 
@@ -139,7 +160,7 @@ repos:
 #         pass_filenames: false
 
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.6.3
+    rev: v4.16.5
     hooks:
       - id: commitizen
         stages: [commit-msg]
@@ -150,6 +171,16 @@ repos:
     rev: 0.9.1
     hooks:
       - id: nbstripout
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: "[py   -  type] mypy"
+        entry: mypy
+        language: system
+        pass_filenames: false
+        always_run: true
+        types: [python]
 
   - repo: local
     hooks:

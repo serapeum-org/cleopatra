@@ -32,14 +32,17 @@ Examples:
 
 from __future__ import annotations
 
+from typing import cast
+
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.collections import PathCollection
+from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure
 from matplotlib.legend import Legend
 
 from cleopatra.geo import GeoMixin
-from cleopatra.glyph import Glyph
+from cleopatra.glyph import Glyph, _root_figure
 from cleopatra.styles import CLASSIFY_OPTIONS
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import resolve_sizes, size_legend
@@ -159,8 +162,8 @@ class ScatterGlyph(GeoMixin, Glyph):
         values: np.ndarray | None = None,
         *,
         sizes: np.ndarray | None = None,
-        ax: Axes = None,
-        fig: Figure = None,
+        ax: Axes | None = None,
+        fig: Figure | None = None,
         **kwargs,
     ):
         super().__init__(
@@ -188,17 +191,17 @@ class ScatterGlyph(GeoMixin, Glyph):
                 )
         self.values = values
         self.sizes = sizes
-        self.cbar = None
+        self.cbar: Colorbar | None = None
         #: The size legend created by `plot` when `size_legend` is truthy
         #: (None otherwise); built via `cleopatra.styles.size_legend`.
-        self.size_legend_artist = None
+        self.size_legend_artist: Legend | None = None
         #: The disjoint legend created by `plot` when `scheme="categorical"`
         #: (`None` otherwise); built via `Glyph.create_categorical_legend`.
-        self.category_legend = None
+        self.category_legend: Legend | None = None
 
     def plot(
         self,
-        ax: Axes = None,
+        ax: Axes | None = None,
         title: str | None = None,
         add_colorbar: bool | None = None,
     ) -> tuple[Figure, Axes, PathCollection]:
@@ -285,10 +288,11 @@ class ScatterGlyph(GeoMixin, Glyph):
         """
         if ax is not None:
             self.ax = ax
-            self.fig = ax.get_figure()
+            self.fig = _root_figure(ax)
         elif self.ax is None:
             self.fig, self.ax = self.create_figure_axes()
         ax = self.ax
+        assert self.fig is not None
         opts = self.default_options
 
         if title is not None:
@@ -345,7 +349,11 @@ class ScatterGlyph(GeoMixin, Glyph):
             # the multi-legend pattern in `colors.apply_data_style`.
             if self.category_legend is not None:
                 ax.add_artist(self.category_legend)
-            self.size_legend_artist = self._draw_size_legend(ax, marker_area)
+            # `_resolve_marker_area` returns an ndarray whenever `self.sizes`
+            # is not None (the branch this code is already inside).
+            self.size_legend_artist = self._draw_size_legend(
+                ax, cast(np.ndarray, marker_area)
+            )
 
         if opts["title"]:
             ax.set_title(opts["title"], fontsize=opts["title_size"])
@@ -365,7 +373,7 @@ class ScatterGlyph(GeoMixin, Glyph):
                 area array spanning `size_limits` monotonically in `sizes`.
         """
         if self.sizes is None:
-            return self.default_options["point_size"]
+            return float(self.default_options["point_size"])
         size_min, size_max = self.default_options["size_limits"]
         return resolve_sizes(
             self.sizes,

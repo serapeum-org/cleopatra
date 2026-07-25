@@ -41,6 +41,7 @@ from collections.abc import Sequence
 from typing import Any
 
 import numpy as np
+from matplotlib.axes import Axes
 from matplotlib.patches import PathPatch
 from matplotlib.path import Path
 
@@ -305,7 +306,7 @@ def _visible_hemisphere(
     cos_c = np.sin(lat0_rad) * np.sin(lat_rad) + np.cos(lat0_rad) * np.cos(
         lat_rad
     ) * np.cos(lon_rad - lon0_rad)
-    return cos_c >= 0
+    return np.asarray(cos_c >= 0)
 
 
 def _split_visible_runs(xy: np.ndarray, visible: np.ndarray) -> list[np.ndarray]:

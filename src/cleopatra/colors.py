@@ -2,7 +2,7 @@ import importlib.resources
 import json
 import os
 from pathlib import Path
-from typing import Any, List, Tuple, Union
+from typing import Any, cast
 
 import matplotlib as mpl
 import numpy as np
@@ -214,7 +214,7 @@ def alpha_rgba(
         alpha = np.clip(np.asarray(alpha_norm(data), dtype=float), 0.0, 1.0)
     finite_mask = np.isfinite(data)
     rgba[..., 3] = np.where(finite_mask, alpha, 0.0)
-    return rgba
+    return np.asarray(rgba)
 
 
 def alpha_scaled_mesh(
@@ -298,7 +298,9 @@ def alpha_scaled_mesh(
     rgba = alpha_rgba(data, cmap, norm, alpha_norm, constant_alpha)
     mesh = ax.pcolormesh(x, y, data, **pcolormesh_kwargs)
     mesh.set_array(None)
-    mesh.set_facecolor(rgba.reshape(-1, 4))
+    # matplotlib's Collection.set_facecolor accepts an (N, 4) RGBA array at
+    # runtime; its stub only spells out scalar/sequence-of-scalar color forms.
+    mesh.set_facecolor(rgba.reshape(-1, 4))  # type: ignore[arg-type]
     return mesh
 
 
@@ -880,6 +882,7 @@ def apply_data_style(
             # out-of-range and silently rendered transparent.
             cat_data = np.where(np.isin(data, cat_values), data, np.nan)
             if curvilinear:
+                assert x is not None and y is not None
                 images[name] = alpha_scaled_mesh(
                     ax, x, y, cat_data, cat_cmap, norm=cat_norm, constant_alpha=1.0,
                     **render_kwargs,
@@ -925,6 +928,7 @@ def apply_data_style(
             else None
         )
         if curvilinear:
+            assert x is not None and y is not None
             images[name] = alpha_scaled_mesh(
                 ax, x, y, data, cfg["cmap"], norm=norm, alpha_norm=alpha_norm,
                 constant_alpha=alpha_const, **render_kwargs,
@@ -950,6 +954,14 @@ def apply_data_style(
                 norm=norm,
             )
     return images
+
+
+#: A single color as the `Colors` class accepts it: a hex string (with or
+#: without the leading "#") or an RGB tuple (0-1 normalized or 0-255 range).
+_ColorEntry = str | tuple[float, float, float]
+#: A `Colors.__init__`/`color_value` value: one color, or a list of colors
+#: (hex strings and RGB tuples may be freely mixed within the list).
+ColorValue = _ColorEntry | list[_ColorEntry]
 
 
 class Colors:
@@ -1012,9 +1024,7 @@ class Colors:
 
     def __init__(
         self,
-        color_value: Union[
-            List[str], str, Tuple[float, float, float], List[Tuple[float, float, float]]
-        ],
+        color_value: ColorValue,
     ):
         """Initialize a Colors object with the given color value(s).
 
@@ -1085,18 +1095,21 @@ class Colors:
             ```
         """
         # convert the hex color to a list if it is a string
+        color_list: list[_ColorEntry]
         if isinstance(color_value, str) or isinstance(color_value, tuple):
-            color_value = [color_value]
-        elif not isinstance(color_value, list):
+            color_list = [color_value]
+        elif isinstance(color_value, list):
+            color_list = color_value
+        else:
             raise ValueError(
                 "The color_value must be a list of hex colors, list of tuples (RGB color), a single hex "
                 "or single RGB tuple color."
             )
 
-        self._color_value = color_value
+        self._color_value: list[_ColorEntry] = color_list
 
     @classmethod
-    def create_from_image(cls, path: Union[str, os.PathLike]) -> "Colors":
+    def create_from_image(cls, path: str | os.PathLike) -> "Colors":
         """Create a color object from an image.
 
         if you have an image of a color ramp, and you want to extract the colors from it, you can use this method.
@@ -1130,18 +1143,24 @@ class Colors:
         except UnidentifiedImageError:
             raise ValueError(f"The file {path} is not a valid image.")
         width, height = image.size
-        color_values = [image.getpixel((x, int(height / 2))) for x in range(width)]
+        # `.convert("RGB")` above guarantees a 3-int-tuple pixel at every
+        # coordinate; `Image.getpixel`'s general stub is looser (it also
+        # covers single-band/palette modes), so tell mypy what mode this is.
+        color_values = cast(
+            "list[_ColorEntry]",
+            [image.getpixel((x, int(height / 2))) for x in range(width)],
+        )
 
         return cls(color_values)
 
-    def get_type(self) -> List[str]:
+    def get_type(self) -> list[str]:
         """Determine the type of each color value.
 
         This method analyzes each color value stored in the object and determines
         its type: hex, rgb (values 0-255), or rgb-normalized (values 0-1).
 
         Returns:
-            List[str]: A list of strings indicating the type of each color value.
+            list[str]: A list of strings indicating the type of each color value.
                 Possible values are:
                 - 'hex': Hexadecimal color string
                 - 'rgb': RGB tuple with values between 0-255
@@ -1203,7 +1222,7 @@ class Colors:
         return color_type
 
     @property
-    def color_value(self) -> Union[List[str], List[Tuple[float, float, float]]]:
+    def color_value(self) -> list[_ColorEntry]:
         """Get the color values stored in the object.
 
         This property returns the color values that were provided when initializing
@@ -1212,7 +1231,7 @@ class Colors:
         between 0-1.
 
         Returns:
-            Union[List[str], List[Tuple[float, float, float]]]: A list containing the color values. Each element can be:
+            list[_ColorEntry]: A list containing the color values. Each element can be:
                 - A hex color string (e.g., "#ff0000" or "ff0000")
                 - An RGB tuple with values between 0-255 (e.g., (255, 0, 0))
                 - A normalized RGB tuple with values between 0-1 (e.g., (1.0, 0.0, 0.0))
@@ -1244,7 +1263,7 @@ class Colors:
         """
         return self._color_value
 
-    def to_hex(self) -> List[str]:
+    def to_hex(self) -> list[str]:
         """Convert all color values to hexadecimal format.
 
         This method converts all color values stored in the object to hexadecimal format.
@@ -1252,7 +1271,7 @@ class Colors:
         Hex colors remain unchanged.
 
         Returns:
-            List[str]: A list of hexadecimal color strings. Each string is in the format '#RRGGBB'.
+            list[str]: A list of hexadecimal color strings. Each string is in the format '#RRGGBB'.
 
         Notes:
             - RGB tuples with values between 0-255 are first normalized to 0-1 range before conversion
@@ -1291,27 +1310,29 @@ class Colors:
 
         ```
         """
-        converted_color = []
+        converted_color: list[str] = []
         color_type = self.get_type()
         for ind, color_i in enumerate(self.color_value):
             if color_type[ind] == "hex":
-                converted_color.append(color_i)
+                # get_type() tagged this entry "hex", so it is a str.
+                converted_color.append(cast(str, color_i))
             elif color_type[ind] == "rgb":
-                # Normalize the RGB values to be between 0 and 1
-                rgb_color_normalized = tuple(value / 255 for value in color_i)
+                # get_type() tagged this entry "rgb", so it is a 3-tuple.
+                r, g, b = cast("tuple[float, float, float]", color_i)
+                rgb_color_normalized = (r / 255, g / 255, b / 255)
                 converted_color.append(mcolors.to_hex(rgb_color_normalized))
             else:
                 converted_color.append(mcolors.to_hex(color_i))
         return converted_color
 
-    def is_valid_hex(self) -> List[bool]:
+    def is_valid_hex(self) -> list[bool]:
         """Check if each color value is a valid hexadecimal color.
 
         This method checks each color value stored in the object to determine
         if it is a valid hexadecimal color string.
 
         Returns:
-            List[bool]: A list of boolean values, one for each color value in the object.
+            list[bool]: A list of boolean values, one for each color value in the object.
                 True indicates the color is a valid hex color, False otherwise.
 
         Notes:
@@ -1346,7 +1367,7 @@ class Colors:
         return [self._is_valid_hex_i(col) for col in self.color_value]
 
     @staticmethod
-    def _is_valid_hex_i(hex_color: str) -> bool:
+    def _is_valid_hex_i(hex_color: _ColorEntry) -> bool:
         """Check if a single color value is a valid hexadecimal color.
 
         This static method checks if the provided color value is a valid
@@ -1393,7 +1414,7 @@ class Colors:
         else:
             return True if mcolors.is_color_like(hex_color) else False
 
-    def is_valid_rgb(self) -> List[bool]:
+    def is_valid_rgb(self) -> list[bool]:
         """Check if each color value is a valid RGB color.
 
         This method checks each color value stored in the object to determine
@@ -1401,7 +1422,7 @@ class Colors:
         normalized values between 0-1).
 
         Returns:
-            List[bool]: A list of boolean values, one for each color value in the object.
+            list[bool]: A list of boolean values, one for each color value in the object.
                 True indicates the color is a valid RGB tuple, False otherwise.
 
         Notes:
@@ -1536,7 +1557,7 @@ class Colors:
 
     def to_rgb(
         self, normalized: bool = True
-    ) -> List[Tuple[Union[int, float], Union[int, float], Union[int, float]]]:
+    ) -> list[tuple[int | float, int | float, int | float]]:
         """Convert all color values to RGB format.
 
         This method converts all color values stored in the object to RGB format.
@@ -1550,7 +1571,7 @@ class Colors:
                 - If False, returns RGB values scaled between 0 and 255
 
         Returns:
-            List[Tuple[Union[int, float], Union[int, float], Union[int, float]]]: A list of RGB tuples.
+            list[tuple[int | float, int | float, int | float]]: A list of RGB tuples.
                 Each tuple contains three values (R, G, B).
                 - If normalized=True, values are floats between 0.0 and 1.0
                 - If normalized=False, values are integers between 0 and 255
@@ -1599,13 +1620,13 @@ class Colors:
         ```
         """
         color_type = self.get_type()
-        rgb = []
+        rgb: list[tuple[int | float, int | float, int | float]] = []
         if normalized:
             for ind, color_i in enumerate(self.color_value):
                 # if the color is in RGB format (0-255), normalize the values to be between 0 and 1
                 if color_type[ind] == "rgb":
-                    rgb_color_normalized = tuple(value / 255 for value in color_i)
-                    rgb.append(rgb_color_normalized)
+                    r, g, b = cast("tuple[float, float, float]", color_i)
+                    rgb.append((r / 255, g / 255, b / 255))
                 else:
                     # any other format, just convert it to RGB
                     rgb.append(mcolors.to_rgb(color_i))
@@ -1613,14 +1634,15 @@ class Colors:
             for ind, color_i in enumerate(self.color_value):
                 # if the color is in RGB format (0-255), normalize the values to be between 0 and 1
                 if color_type[ind] == "rgb":
-                    rgb.append(color_i)
+                    rgb.append(cast("tuple[int, int, int]", color_i))
                 else:
                     # any other format, just convert it to RGB
-                    rgb.append(tuple([int(c * 255) for c in mcolors.to_rgb(color_i)]))
+                    r, g, b = mcolors.to_rgb(color_i)
+                    rgb.append((int(r * 255), int(g * 255), int(b * 255)))
 
         return rgb
 
-    def get_color_map(self, name: str = None) -> Colormap:
+    def get_color_map(self, name: str | None = None) -> Colormap:
         """Get color ramp from a color values in stored in the object.
 
         Args:

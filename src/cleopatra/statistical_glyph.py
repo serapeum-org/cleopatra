@@ -66,7 +66,7 @@ from matplotlib.colors import Normalize
 from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 
-from cleopatra.glyph import _clear_prior_render_artists, _mark_render_artists
+from cleopatra.glyph import _clear_prior_render_artists, _mark_render_artists, _root_figure
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 STATISTICAL_DEFAULT_OPTIONS = {
@@ -530,7 +530,7 @@ class StatisticalGlyph:
 
         if self._ax is not None:
             ax = self._ax
-            fig = self._fig if self._fig is not None else ax.get_figure()
+            fig = self._fig if self._fig is not None else _root_figure(ax)
         elif self._fig is not None:
             fig = self._fig
             if fig.axes:
@@ -645,7 +645,7 @@ class StatisticalGlyph:
         if ax is None:
             ax = self._ax
         if ax is not None:
-            return ax.figure, ax
+            return _root_figure(ax), ax
         if self._fig is not None:
             return self._fig, self._fig.add_subplot(111)
         return plt.subplots(figsize=self.default_options["figsize"])
@@ -672,7 +672,7 @@ class StatisticalGlyph:
 
     def boxplot(
         self,
-        ax: Axes = None,
+        ax: Axes | None = None,
         labels: Sequence[str] | None = None,
         notch: bool = False,
         showfliers: bool = True,
@@ -761,7 +761,7 @@ class StatisticalGlyph:
         self,
         positions: Sequence[float] | None = None,
         labels: Sequence[str] | None = None,
-        ax: Axes = None,
+        ax: Axes | None = None,
         widths: float = 0.5,
         **kwargs,
     ) -> Tuple[Figure, Axes, Dict]:
@@ -856,7 +856,7 @@ class StatisticalGlyph:
 
     def stripes(
         self,
-        ax: Axes = None,
+        ax: Axes | None = None,
         cmap=None,
         vmin: float | None = None,
         vmax: float | None = None,

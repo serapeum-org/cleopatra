@@ -566,6 +566,8 @@ class GeoMixin:
         arr = im.get_array() if im is not None and hasattr(im, "get_array") else None
         if arr is None:
             return False
+        # `arr` is only non-None when `im` is too (see above).
+        assert im is not None
         # Decimate so the decision costs O(1) memory on large rasters.
         if getattr(arr, "ndim", 0) >= 2:
             sy = max(1, arr.shape[0] // 256)

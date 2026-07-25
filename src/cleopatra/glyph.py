@@ -11,7 +11,7 @@ import inspect
 import math
 import os
 import warnings
-from typing import Any
+from typing import Any, cast
 
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
@@ -79,13 +79,20 @@ def _root_figure(ax: Axes) -> Figure:
     """
     get_figure = ax.get_figure
     if _get_figure_supports_root(get_figure):
-        return get_figure(root=True)
-    fig = get_figure()
+        root_fig = get_figure(root=True)
+        # `ax` is a live, attached axes, so its root figure always resolves.
+        assert root_fig is not None
+        return root_fig
+    fig: Figure | SubFigure | None = get_figure()
     seen: set[int] = set()
     while isinstance(fig, SubFigure) and id(fig) not in seen:
         seen.add(id(fig))
         fig = fig.figure
-    return fig
+    assert fig is not None
+    # The `seen` guard exists only to defend against a pathological
+    # SubFigure parent cycle; it should never actually trigger, so `fig`
+    # is a real `Figure` by the time the loop above exits normally.
+    return cast(Figure, fig)
 
 
 def _figure_is_open(fig: Figure | None) -> bool:
@@ -99,7 +106,7 @@ def _figure_is_open(fig: Figure | None) -> bool:
     return num is not None and plt.fignum_exists(num)
 
 
-def _immediate_figure(ax: Axes) -> Figure:
+def _immediate_figure(ax: Axes) -> Figure | SubFigure:
     """Return the figure `ax` is directly attached to (its immediate parent).
 
     Deprecation-safe counterpart to `_root_figure`: on matplotlib >= 3.10 it
@@ -115,8 +122,12 @@ def _immediate_figure(ax: Axes) -> Figure:
     """
     get_figure = ax.get_figure
     if _get_figure_supports_root(get_figure):
-        return get_figure(root=False)
-    return get_figure()
+        fig = get_figure(root=False)
+    else:
+        fig = get_figure()
+    # `ax` is a live, attached axes, so its immediate figure always resolves.
+    assert fig is not None
+    return fig
 
 
 def _clear_prior_render_artists(ax: Axes) -> None:
@@ -291,8 +302,8 @@ class Glyph:
     def __init__(
         self,
         default_options: dict,
-        fig: Figure = None,
-        ax: Axes = None,
+        fig: Figure | None = None,
+        ax: Axes | None = None,
         **kwargs,
     ):
         self._default_options = default_options.copy()
@@ -303,13 +314,15 @@ class Glyph:
         #: Set by `_prepare_categorical_mapping` when `scheme="categorical"`
         #: — `{"codes", "cmap", "colors", "labels"}` — else `None`.
         self._categorical: dict | None = None
+        #: Set by a subclass's `animate()`; exposed read-only via `anim`.
+        self._anim: FuncAnimation | None = None
         # Resolve the (fig, ax) binding. An `ax` fully determines its
         # figure, so accept `ax` on its own and derive the figure from it
         # rather than dropping the axes when `fig` is omitted. An explicit
         # `fig` is honoured (and wins for the figure handle when both are
         # given); passing neither leaves both unset until render time.
         if ax is not None:
-            self.ax = ax
+            self.ax: Axes | None = ax
             if fig is not None:
                 # A mismatched (fig, ax) pair leaves self.fig and
                 # self.ax.figure disagreeing — almost always a caller mistake.
@@ -322,7 +335,7 @@ class Glyph:
                         "only `ax` (its figure is derived automatically).",
                         stacklevel=2,
                     )
-                self.fig = fig
+                self.fig: Figure | None = fig
             else:
                 self.fig = _root_figure(ax)
         elif fig is not None:
@@ -435,7 +448,7 @@ class Glyph:
     @property
     def anim(self) -> FuncAnimation:
         """Animation object created by `animate()`."""
-        if hasattr(self, "_anim") and self._anim is not None:
+        if self._anim is not None:
             return self._anim
         raise ValueError(
             "Please first use the animate method to create the animation object"
@@ -490,22 +503,23 @@ class Glyph:
         was closed, or it was built with a figure but no axes, a fresh axes is
         created instead (on the existing figure when one is still open).
         """
-        ax = getattr(self, "ax", None)
-        fig = getattr(self, "fig", None)
+        ax = self.ax
+        fig = self.fig
         # Decide liveness by the ROOT figure's number: a SubFigure has no number
         # of its own, so resolving the root detects a closed parent Figure too.
         root = _root_figure(ax) if ax is not None else fig
         ax_live = ax is not None and _figure_is_open(root)
         if ax_live:
+            assert ax is not None
             for attr in ("cbar", "_cbar"):
                 cbar = getattr(self, attr, None)
                 if cbar is not None:
                     cbar.remove()
                     setattr(self, attr, None)
-            for inset in list(self.ax.child_axes):
+            for inset in list(ax.child_axes):
                 inset.remove()
-            self.ax.clear()
-        elif _figure_is_open(fig):
+            ax.clear()
+        elif fig is not None and _figure_is_open(fig):
             # A live figure with no (live) axes -- e.g. a `fig`-only construction:
             # reuse an existing axes on it if present, else add one, rather than
             # crashing when `plot` dereferences `self.ax` (or overlapping a
@@ -651,6 +665,8 @@ class Glyph:
         levels = self.default_options.get("levels")
         bounds_from_levels = self._levels_to_bounds(levels, vmin, vmax)
 
+        norm: colors.Normalize | None
+        cbar_kw: dict[str, Any]
         if color_scale == ColorScale.LINEAR:
             if bounds_from_levels is not None:
                 norm = colors.BoundaryNorm(boundaries=bounds_from_levels, ncolors=256)
@@ -1411,6 +1427,9 @@ class Glyph:
 
                 ```
         """
+        # Callers plot (or bind `ax=`) before adjusting ticks, same
+        # precondition as the rest of this class's post-render methods.
+        assert self.ax is not None
         if axis == "x":
             ticks_fn = ticker.FuncFormatter(
                 lambda x, pos: fmt.format(x * multiply_value + add_value)

@@ -242,9 +242,9 @@ def shade_rgb(
         elevation, azimuth, altitude, vert_exag, multidirectional, fraction, dx, dy
     )
     ls = LightSource(azdeg=azimuth, altdeg=altitude)
-    shaded = np.clip(
+    shaded = np.asarray(np.clip(
         _blend_fn(ls, blend_mode)(rgb[..., :3], intensity[..., np.newaxis]), 0.0, 1.0
-    )
+    ))
     if rgb.shape[-1] == 4:
         return np.concatenate([shaded, rgb[..., 3:4]], axis=-1)
     return shaded
