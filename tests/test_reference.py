@@ -423,6 +423,47 @@ def test_add_relief_custom_extent(cache: Path):
     plt.close(fig)
 
 
+def _blue_west_red_east_relief(cache: Path) -> None:
+    """Write a synthetic relief PNG: blue western half, red eastern half."""
+    Image = pytest.importorskip(
+        "PIL.Image", reason="Pillow not installed (tiles extra)"
+    )
+    arr = np.zeros((4, 8, 3), dtype="uint8")
+    arr[:, :4] = (0, 0, 255)  # western half blue
+    arr[:, 4:] = (255, 0, 0)  # eastern half red
+    Image.fromarray(arr).save(cache / "ne_hypso_rgb_720x360.png")
+
+
+def test_add_relief_lonlat_extent_crops_not_stretches(cache: Path):
+    """A lon/lat sub-region extent crops the relief (issue #177) rather than
+    stretching the whole global image onto the box."""
+    _blue_west_red_east_relief(cache)
+    fig, ax = plt.subplots()
+    ax.set_xlim(0, 180)
+    ax.set_ylim(-90, 90)
+    add_relief(ax, "low", extent=(0, -90, 180, 90))  # eastern hemisphere
+    placed = np.asarray(ax.images[0].get_array())
+    assert placed.shape[1] < 8, f"extent should crop, got full width {placed.shape}"
+    assert (placed[..., 0] == 255).all() and (placed[..., 2] == 0).all(), (
+        "the cropped region should be the red eastern half only"
+    )
+    plt.close(fig)
+
+
+def test_add_relief_non_lonlat_extent_still_stretches(cache: Path):
+    """An extent outside the lon/lat bounds (e.g. projected metres) keeps the
+    whole-image stretch placement."""
+    _blue_west_red_east_relief(cache)
+    fig, ax = plt.subplots()
+    ax.set_xlim(1e6, 2e6)
+    ax.set_ylim(6e6, 7e6)
+    add_relief(ax, "low", extent=(1e6, 6e6, 2e6, 7e6))  # metres, out of bounds
+    placed = np.asarray(ax.images[0].get_array())
+    assert placed.shape[:2] == (4, 8), f"non-lon/lat extent should keep full image, got {placed.shape}"
+    assert tuple(ax.images[0].get_extent()) == (1e6, 2e6, 6e6, 7e6)
+    plt.close(fig)
+
+
 def test_add_relief_bad_axes():
     with pytest.raises(TypeError, match="matplotlib.axes.Axes"):
         add_relief(object())

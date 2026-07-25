@@ -282,11 +282,15 @@ def add_relief(
     backdrop never changes the view.
 
     Note:
-        The relief image is equirectangular (EPSG:4326). When placed with
-        a non-EPSG:4326 `extent` it is simply stretched by `imshow` to fit
-        those bounds -- visually acceptable for small extents but not a
-        true reprojection. For a pixel-accurate backdrop in another
-        projection, reproject the source before drawing.
+        The relief image is equirectangular (EPSG:4326). A lon/lat `extent`
+        within the global bounds is **cropped** out of the global image and
+        placed over that box, so a regional call shows only that region's
+        terrain at true scale -- not the whole world squashed into it.
+        `extent=None` places the whole globe (the axis limits crop the
+        view). An `extent` outside the lon/lat bounds -- e.g. axes in a
+        projected CRS's units (metres) -- is stretched to fit, which is not
+        a true reprojection; reproject the source for a pixel-accurate
+        backdrop in another projection.
 
     Args:
         ax: A matplotlib `Axes` with data already plotted (so its limits
@@ -294,8 +298,10 @@ def add_relief(
         resolution: `"low"` or `"medium"` (see
             `available_relief_resolutions`).
         extent: `(west, south, east, north)` placement in axis units.
-            Defaults to the global EPSG:4326 extent
-            `(-180, -90, 180, 90)`.
+            `None` (default) places the whole global EPSG:4326 relief
+            `(-180, -90, 180, 90)`. A lon/lat box within those bounds crops
+            the relief to that region; a box outside them (e.g. projected
+            metres) stretches the whole image onto it.
         alpha: Backdrop opacity in `[0, 1]`.
         zorder: Matplotlib draw order (`-1` puts it behind all data).
         interpolation: Interpolation passed to `ax.imshow`.
@@ -341,7 +347,23 @@ def add_relief(
     """
     _validate_axes(ax)
     rgb = relief(resolution)
-    west, south, east, north = extent if extent is not None else _RELIEF_EXTENT_4326
+    if extent is None:
+        west, south, east, north = _RELIEF_EXTENT_4326
+    else:
+        west, south, east, north = extent
+        gw, gs, ge, gn = _RELIEF_EXTENT_4326
+        if gw <= west < east <= ge and gs <= south < north <= gn:
+            # A lon/lat sub-region: crop the global relief array to it and
+            # place the crop over that box, instead of stretching the whole
+            # global image onto the box (the issue #177 footgun). `extent`
+            # is None (whole globe) and non-lon/lat extents -- e.g. axes in
+            # projected metres -- keep the previous whole-image placement.
+            rows, cols = rgb.shape[:2]
+            c0 = max(0, int(np.floor((west - gw) / (ge - gw) * cols)))
+            c1 = min(cols, max(c0 + 1, int(np.ceil((east - gw) / (ge - gw) * cols))))
+            r0 = max(0, int(np.floor((gn - north) / (gn - gs) * rows)))
+            r1 = min(rows, max(r0 + 1, int(np.ceil((gn - south) / (gn - gs) * rows))))
+            rgb = rgb[r0:r1, c0:c1]
 
     xlim, ylim = ax.get_xlim(), ax.get_ylim()
     ax.imshow(
