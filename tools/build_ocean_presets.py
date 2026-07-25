@@ -61,7 +61,7 @@ def main(out_path):
             "label": label,
             "palette": palette,
             "opacity": "opaque",
-            "cmocean_map": cm_name,
+            "continuous_colormap": cm_name,
         }
         if center is not None:
             rec["center"] = center

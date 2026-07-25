@@ -69,7 +69,7 @@
                 "#281a2c"
             ],
             "opacity": "opaque",
-            "cmocean_map": "deep"
+            "continuous_colormap": "deep"
         },
         "chlorophyll": {
             "label": "Chlorophyll",
@@ -140,7 +140,7 @@
                 "#122414"
             ],
             "opacity": "opaque",
-            "cmocean_map": "algae"
+            "continuous_colormap": "algae"
         },
         "current_speed": {
             "label": "Current speed",
@@ -211,7 +211,7 @@
                 "#172313"
             ],
             "opacity": "opaque",
-            "cmocean_map": "speed"
+            "continuous_colormap": "speed"
         },
         "dissolved_oxygen": {
             "label": "Dissolved oxygen",
@@ -282,7 +282,7 @@
                 "#ddaf19"
             ],
             "opacity": "opaque",
-            "cmocean_map": "oxy"
+            "continuous_colormap": "oxy"
         },
         "phase": {
             "label": "Phase / direction (cyclic)",
@@ -353,7 +353,7 @@
                 "#a8780d"
             ],
             "opacity": "opaque",
-            "cmocean_map": "phase"
+            "continuous_colormap": "phase"
         },
         "rainfall": {
             "label": "Rainfall",
@@ -424,7 +424,7 @@
                 "#221b38"
             ],
             "opacity": "opaque",
-            "cmocean_map": "rain"
+            "continuous_colormap": "rain"
         },
         "salinity": {
             "label": "Salinity",
@@ -495,7 +495,7 @@
                 "#fdef9a"
             ],
             "opacity": "opaque",
-            "cmocean_map": "haline"
+            "continuous_colormap": "haline"
         },
         "sea_ice": {
             "label": "Sea ice",
@@ -566,7 +566,7 @@
                 "#eafdfd"
             ],
             "opacity": "opaque",
-            "cmocean_map": "ice"
+            "continuous_colormap": "ice"
         },
         "sea_level_anomaly": {
             "label": "Sea-level anomaly",
@@ -637,7 +637,7 @@
                 "#3c0912"
             ],
             "opacity": "opaque",
-            "cmocean_map": "balance",
+            "continuous_colormap": "balance",
             "center": 0.0
         },
         "sea_surface_temperature": {
@@ -709,7 +709,7 @@
                 "#e8fa5b"
             ],
             "opacity": "opaque",
-            "cmocean_map": "thermal"
+            "continuous_colormap": "thermal"
         },
         "solar_radiation": {
             "label": "Solar radiation",
@@ -780,7 +780,7 @@
                 "#e1fd4b"
             ],
             "opacity": "opaque",
-            "cmocean_map": "solar"
+            "continuous_colormap": "solar"
         },
         "topography": {
             "label": "Topography (land & sea)",
@@ -851,7 +851,7 @@
                 "#f9fde4"
             ],
             "opacity": "opaque",
-            "cmocean_map": "topo",
+            "continuous_colormap": "topo",
             "center": 0.0
         },
         "turbidity": {
@@ -923,7 +923,7 @@
                 "#221f1b"
             ],
             "opacity": "opaque",
-            "cmocean_map": "turbid"
+            "continuous_colormap": "turbid"
         },
         "vorticity": {
             "label": "Vorticity",
@@ -994,7 +994,7 @@
                 "#340d35"
             ],
             "opacity": "opaque",
-            "cmocean_map": "curl",
+            "continuous_colormap": "curl",
             "center": 0.0
         },
         "water_density": {
@@ -1066,7 +1066,7 @@
                 "#360e24"
             ],
             "opacity": "opaque",
-            "cmocean_map": "dense"
+            "continuous_colormap": "dense"
         }
     }
 }
