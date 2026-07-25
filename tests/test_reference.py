@@ -536,6 +536,7 @@ def test_add_relief_non_4326_crs_warps_and_aligns(cache: Path):
     east = placed[:, -(w // 4) :].reshape(-1, 4)
     west = west[west[:, 3] > 0]
     east = east[east[:, 3] > 0]
+    assert west.size and east.size, "expected opaque cells on both strips"
     assert (west[:, 2] > west[:, 0]).all(), "western strip should stay blue"
     assert (east[:, 0] > east[:, 2]).all(), "eastern strip should stay red"
     plt.close(fig)
