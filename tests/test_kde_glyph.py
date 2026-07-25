@@ -618,6 +618,23 @@ class TestKDEGlyphDataStyle:
         assert g.style == "temperature"  # the name persists for read-back
         plt.close("all")
 
+    def test_continuous_preset_auto_ranges_to_the_data(self):
+        """A continuous preset ('temperature') auto-ranges to the density, so a
+        small-magnitude field still gets a full gradient (not one flat band)."""
+        x, y = self._cloud()
+        _, _, cs = KDEGlyph(x, y, gridsize=50, style="temperature").plot()
+        assert cs.norm.vmax < 1.0, f"temperature must auto-range to the density, got vmax={cs.norm.vmax}"
+        colours = np.unique(np.round(np.asarray(cs.get_facecolor()), 3), axis=0)
+        assert len(colours) > 1, f"expected a multi-colour gradient, got {len(colours)}"
+        plt.close("all")
+
+    def test_style_vmin_vmax_pins_the_colour_scale(self):
+        """A construction-time `vmin`/`vmax` pins a styled density's colour scale (default None auto-ranges)."""
+        x, y = self._cloud()
+        _, _, cs = KDEGlyph(x, y, gridsize=40, style="temperature", vmin=-40, vmax=40).plot()
+        assert (cs.norm.vmin, cs.norm.vmax) == (-40.0, 40.0)
+        plt.close("all")
+
 
 class TestKDEGlyphApplyStyle:
     """Tests for the public `apply_style` method and `style` read-back."""

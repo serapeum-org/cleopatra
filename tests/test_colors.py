@@ -394,8 +394,8 @@ class TestApplyDataStyle:
             rather than a hard-coded 0-1.
         """
         # `wind_speed` (viridis) auto-ranges -- no vmin/vmax/levels -- so it is
-        # the right probe for the data-min/max behaviour. (`temperature` now
-        # carries fixed ECMWF contour levels, so it does not auto-range.)
+        # the right probe for the data-min/max behaviour. (The fixed ECMWF
+        # contour scale lives under the `2t` preset, not `temperature`.)
         cmap = plt.get_cmap("viridis")
         images = apply_data_style(
             ax, {"wind_speed": np.array([[10.0, 30.0]])}, style="wind_speed"
@@ -670,17 +670,27 @@ class TestContourLevelsStyle:
         yield ax
         plt.close(fig)
 
-    def test_temperature_uses_ecmwf_spectral_bands(self):
-        """The `temperature` preset is ECMWF's default: Spectral_r banded at 2 degC over -40..40."""
-        layer = DATA_STYLES["temperature"]["temperature"]
+    def test_2t_uses_ecmwf_spectral_bands(self):
+        """The earthkit `2t` preset is ECMWF's default: Spectral_r banded at 2 degC over -40..40."""
+        layer = DATA_STYLES["2t"]["2t"]
         assert layer["cmap"] == "Spectral_r"
         assert layer["extend"] == "both"
         assert layer["levels"][0] == -40 and layer["levels"][-1] == 40
         assert layer["levels"][1] - layer["levels"][0] == 2  # 2 degC interval
 
+    def test_temperature_is_a_generic_auto_ranging_ramp(self):
+        """The `temperature` preset is a generic Spectral_r ramp with no fixed levels, so it
+        auto-ranges to the data (the fixed ECMWF scale lives under `2t`)."""
+        layer = DATA_STYLES["temperature"]["temperature"]
+        assert layer["cmap"] == "Spectral_r"
+        assert "levels" not in layer and "extend" not in layer
+        norm, vmin, vmax = _resolve_style_norm(np.array([[5.0, 25.0]]), layer)
+        assert not isinstance(norm, BoundaryNorm)
+        assert (vmin, vmax) == (5.0, 25.0)  # fit to the data, not a fixed -40..40
+
     def test_levels_resolve_to_boundary_norm_with_extend(self):
         """A preset carrying `levels`/`extend` resolves to a BoundaryNorm honouring both."""
-        layer = DATA_STYLES["temperature"]["temperature"]
+        layer = DATA_STYLES["2t"]["2t"]
         norm, vmin, vmax = _resolve_style_norm(np.array([[0.0, 25.0]]), layer)
         assert isinstance(norm, BoundaryNorm)
         assert norm.extend == "both"
@@ -690,8 +700,8 @@ class TestContourLevelsStyle:
     def test_levels_render_discrete_bands(self, ax):
         """A continuous field styled with `levels` paints in a small set of banded colours."""
         data = np.linspace(-30.0, 38.0, 60 * 60).reshape(60, 60)
-        img = apply_data_style(ax, {"temperature": data}, style="temperature", legend=False)
-        rgb = np.asarray(img["temperature"].get_array())[..., :3].reshape(-1, 3)
+        img = apply_data_style(ax, {"2t": data}, style="2t", legend=False)
+        rgb = np.asarray(img["2t"].get_array())[..., :3].reshape(-1, 3)
         distinct = len(np.unique(np.round(rgb, 3), axis=0))
         assert distinct <= 41, f"expected discrete level bands, got {distinct} colours"
 
@@ -699,11 +709,11 @@ class TestContourLevelsStyle:
         """An explicit caller vmin/vmax overrides a levels preset's fixed scale (not a silent no-op)."""
         data = np.linspace(-40.0, 100.0, 400).reshape(20, 20)
         fig2, ax2 = plt.subplots()
-        base = apply_data_style(ax, {"temperature": data}, style="temperature", legend=False)
+        base = apply_data_style(ax, {"2t": data}, style="2t", legend=False)
         over = apply_data_style(
-            ax2, {"temperature": data}, style="temperature", vmin=-40.0, vmax=100.0, legend=False
+            ax2, {"2t": data}, style="2t", vmin=-40.0, vmax=100.0, legend=False
         )
-        assert not np.allclose(base["temperature"].get_array(), over["temperature"].get_array())
+        assert not np.allclose(base["2t"].get_array(), over["2t"].get_array())
         plt.close(fig2)
 
     def test_string_norm_kind_overrides_a_levels_preset(self):
@@ -731,14 +741,14 @@ class TestContourLevelsStyle:
 
     def test_data_outside_fixed_levels_warns(self, ax):
         """Data entirely outside a levels preset's scale warns (Celsius levels, Kelvin data footgun)."""
-        kelvin = np.full((4, 4), 290.0)  # ~17 degC in K, far above the -40..40 degC temperature levels
+        kelvin = np.full((4, 4), 290.0)  # ~17 degC in K, far above the -40..40 degC 2t levels
         with pytest.warns(UserWarning, match="expected units"):
-            apply_data_style(ax, {"temperature": kelvin}, style="temperature", legend=False)
+            apply_data_style(ax, {"2t": kelvin}, style="2t", legend=False)
 
     def test_two_sided_extend_legend_caps_the_low_endpoint(self, ax):
         """A two-sided `extend='both'` levels preset marks both endpoints as capped ('≤'/'≥')."""
         data = np.linspace(-30.0, 38.0, 400).reshape(20, 20)
-        apply_data_style(ax, {"temperature": data}, style="temperature", legend=True)
+        apply_data_style(ax, {"2t": data}, style="2t", legend=True)
         swatch_texts = [t.get_text() for c in ax.child_axes for t in c.texts]
         assert "≤-40" in swatch_texts, f"expected a capped '≤-40' low endpoint, got {swatch_texts}"
         assert "≥40" in swatch_texts, f"expected a capped '≥40' high endpoint, got {swatch_texts}"

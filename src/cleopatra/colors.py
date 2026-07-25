@@ -401,19 +401,17 @@ DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
     },
     # --- Ready-to-use presets for common pyramids GIS/NetCDF-climate fields. ---
     # Opaque full fields (auto-ranged from the data): the whole field is drawn.
-    # ECMWF's default 2 m-temperature look (earthkit-plots `2t.yml` `optimal`
-    # variant): the muted `Spectral_r` ramp banded at 2 degC contour levels over
-    # -40..40 degC with the out-of-range ends capped (`extend="both"`), rather
-    # than a smooth ramp or the garish blue->magenta Magics rainbow. Override
-    # `levels`/`extend` for other ranges; a caller vmin/vmax is ignored while
-    # `levels` is set (levels define the scale).
+    # A general-purpose temperature ramp: the muted `Spectral_r` colours (blue
+    # cold -> red hot), auto-ranged from the data so it fits ANY continuous field
+    # (a Celsius raster, a KDE density, a normalized index). Pass `vmin`/`vmax`
+    # to pin the scale to a chosen range (e.g. `vmin=-40, vmax=40` for the ECMWF
+    # window); for the fixed, discretely-banded ECMWF 2 m-temperature look in one
+    # word, use the `"2t"` preset instead (fixed -40..40 degC, `extend="both"`).
     "temperature": {
         "temperature": {
             "cmap": "Spectral_r",  # muted spectral, blue (cold) -> red (hot)
             "label": "Temperature",
-            "levels": list(range(-40, 41, 2)),  # 2 degC bands, ECMWF default
-            "extend": "both",
-            "alpha": 1.0,
+            "alpha": 1.0,  # opaque full field (like elevation/wind_speed), not a glow
         },
     },
     # Temperature (or any heat field) rendered as a glowing flame/plume: the CAMS
