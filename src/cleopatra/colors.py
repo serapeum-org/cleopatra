@@ -2,6 +2,7 @@ import importlib.resources
 import json
 import os
 import re
+import warnings
 from pathlib import Path
 from typing import Any, List, Tuple, Union
 
@@ -771,6 +772,24 @@ def category_boundaries(values: list[float]) -> list[float]:
     return [lower] + mids + [upper]
 
 
+def _warn_if_outside_fixed_range(data: np.ndarray, lo: float, hi: float) -> None:
+    """Warn when finite `data` lies entirely outside a preset's fixed scale `[lo, hi]`.
+
+    A preset that fixes its colour range (contour `levels` or a decoded Magics
+    `vmin`/`vmax`) renders the whole field as one edge colour if the data is in
+    the wrong units -- the classic footgun being 2 m temperature in Kelvin
+    (~250-320) hitting a Celsius scale. Surface it instead of failing silently.
+    """
+    finite = data[np.isfinite(data)]
+    if finite.size and (float(finite.min()) > hi or float(finite.max()) < lo):
+        warnings.warn(
+            f"data range [{float(finite.min()):g}, {float(finite.max()):g}] lies entirely "
+            f"outside the style's fixed scale [{lo:g}, {hi:g}]; the whole field will render "
+            "as one edge colour. Is the data in the expected units (e.g. degC, not K)?",
+            stacklevel=3,
+        )
+
+
 def resolve_style_norm(
     data: np.ndarray, cfg: dict[str, Any]
 ) -> tuple[mcolors.Normalize, float, float]:
@@ -802,6 +821,7 @@ def resolve_style_norm(
         # bands at fixed boundaries with `extend` capping the out-of-range ends
         # -- the look of a professional weather-service map.
         edges = [float(v) for v in levels]
+        _warn_if_outside_fixed_range(data, edges[0], edges[-1])
         cmap_obj = cfg["cmap"]
         if not isinstance(cmap_obj, Colormap):
             cmap_obj = mpl.colormaps[cmap_obj]
@@ -842,6 +862,8 @@ def resolve_style_norm(
         # into `bands` equal intervals so the edges stay within the declared range
         # -- every palette colour is reachable and the legend agrees (a
         # step-aligned partition could overshoot vmax and strand the top colours).
+        if cfg.get("vmin") is not None or cfg.get("vmax") is not None:
+            _warn_if_outside_fixed_range(data, vmin, vmax)
         boundaries = np.linspace(vmin, vmax, bands + 1)
         return mcolors.BoundaryNorm(boundaries, bands), vmin, vmax
     if norm_kind in (None, "linear") and center is not None:

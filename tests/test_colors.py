@@ -663,6 +663,12 @@ class TestContourLevelsStyle:
         assert not np.allclose(base["temperature"].get_array(), over["temperature"].get_array())
         plt.close(fig2)
 
+    def test_data_outside_fixed_levels_warns(self, ax):
+        """Data entirely outside a levels preset's scale warns (Celsius levels, Kelvin data footgun)."""
+        kelvin = np.full((4, 4), 290.0)  # ~17 degC in K, far above the -40..40 degC temperature levels
+        with pytest.warns(UserWarning, match="expected units"):
+            apply_data_style(ax, {"temperature": kelvin}, style="temperature", legend=False)
+
 
 class TestFlameColormapsAndPresets:
     """Tests for the flame/heat colormaps and the temperature_flame presets."""
@@ -764,7 +770,7 @@ class TestMagicsPresets:
     def test_magics_preset_renders_opaque_field(self, ax):
         """A Magics preset draws end-to-end; an opaque one fills the field, NaN transparent."""
         images = apply_data_style(
-            ax, {"mn2t": np.array([[250.0, 300.0], [np.nan, 275.0]])}, style="mn2t"
+            ax, {"mn2t": np.array([[-20.0, 30.0], [np.nan, 5.0]])}, style="mn2t"
         )
         alpha = images["mn2t"].get_array()[..., 3]
         assert alpha[0, 0] == alpha[0, 1] == alpha[1, 1] == 1.0, f"not opaque: {alpha}"
@@ -844,6 +850,12 @@ class TestMagicsPresets:
         for key in ("mn2t", "mx2t"):
             layer = DATA_STYLES[key][key]
             assert (layer["vmin"], layer["vmax"]) == (-48.0, 56.0), key
+
+    def test_data_outside_fixed_range_warns(self, ax):
+        """A fixed-range Magics preset warns when the data is entirely outside its scale."""
+        kelvin = np.full((4, 4), 290.0)  # far above mn2t's decoded -48..56 degC scale
+        with pytest.warns(UserWarning, match="expected units"):
+            apply_data_style(ax, {"mn2t": kelvin}, style="mn2t", legend=False)
 
     def test_range_without_interval_is_decoded(self):
         """A style name with a range but no interval (wind f0t80) still gets vmin/vmax."""
