@@ -472,7 +472,10 @@ def _warp_relief(
     row = np.clip(((gn - lat_safe) / (gn - gs) * rows).astype(int), 0, rows - 1)
 
     out = np.zeros((out_h, out_w, 4), dtype=np.uint8)
-    out[..., :3] = rgb[row, col]
+    # Zero the RGB of masked cells too (not just their alpha), so a bilinear
+    # imshow blends the domain edge toward transparent-black rather than an
+    # arbitrary sampled terrain colour.
+    out[..., :3] = np.where(valid[..., None], rgb[row, col], np.uint8(0))
     fill = np.uint8(round(float(np.clip(alpha, 0.0, 1.0)) * 255))
     out[..., 3] = np.where(valid, fill, np.uint8(0))
     return out
