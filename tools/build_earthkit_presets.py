@@ -131,6 +131,15 @@ def main(out_path, ref="main"):
     print(f"wrote {len(presets)} earthkit presets to {out_path}; skipped {len(skipped)}")
     for short, stem in skipped:
         print(f"  skipped {short} ({stem}): optimal variant is not a shadable Style")
+    # Surface curated params whose optimal variant declares no contour levels
+    # (or a spec parse_levels can't read): they load as a continuous auto-ranged
+    # ramp, not discrete bands -- flag it so it is a deliberate choice, not silent.
+    no_levels = [short for short, rec in presets.items() if rec["levels"] is None]
+    if no_levels:
+        print(
+            f"  NOTE: {len(no_levels)} preset(s) have no contour levels "
+            f"(continuous, auto-ranged): {', '.join(sorted(no_levels))}"
+        )
 
 
 if __name__ == "__main__":
