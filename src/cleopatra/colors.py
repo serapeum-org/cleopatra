@@ -799,12 +799,25 @@ def resolve_style_norm(
 ) -> tuple[mcolors.Normalize, float, float]:
     """Resolve the colour `Normalize` (and its concrete bounds) for one layer.
 
-    Honours a `DATA_STYLES` layer's optional `vmin`/`vmax` (auto-ranged from
-    the data's finite values when omitted -- essential for real GIS/climate
-    fields whose absolute range varies) and an optional diverging `center`.
-    When `center` is set and a bound is missing, the range is made symmetric
-    around it (`center +/- max|data - center|`), so the colormap's midpoint
-    lands exactly on `center` -- the anomaly-map convention.
+    Resolution order:
+
+    - **Explicit `levels`** (the ECMWF / earthkit contour model) resolve to a
+      discrete `BoundaryNorm` over those boundaries, with `extend` capping the
+      out-of-range ends -- unless the caller supplied `vmin`/`vmax`/`center`
+      (merged into `cfg`), which take precedence and fall through to the
+      continuous path below so the override actually rescales the map.
+    - Otherwise the bounds come from the layer's `vmin`/`vmax` (auto-ranged from
+      the data's finite values when omitted -- essential for real GIS/climate
+      fields whose absolute range varies) and an optional diverging `center`
+      (a missing bound is made symmetric around it, `center +/- max|data -
+      center|`, so the colormap midpoint lands on `center`).
+    - A layer with `bands` (a Magics discrete shade) becomes a `BoundaryNorm`
+      partitioning `[vmin, vmax]` into `bands` equal intervals; a `norm` kind of
+      `"log"`/`"symlog"` selects the matching non-linear norm.
+
+    When a fixed scale (`levels`, or an explicit `vmin`/`vmax`) does not overlap
+    the data at all, a `UserWarning` is emitted (the units-mismatch footgun,
+    e.g. Kelvin data on a Celsius scale).
 
     Args:
         data: The layer's 2D data array (finite values drive auto-ranging).
@@ -1016,7 +1029,11 @@ def apply_data_style(
             in the same order as `layers`, overriding the auto-stacked
             default.
         **render_kwargs: Forwarded to every `alpha_scaled_image` (or
-            `alpha_scaled_mesh`, when `x`/`y` are given) call.
+            `alpha_scaled_mesh`, when `x`/`y` are given) call. A `vmin`/`vmax`/
+            `center` here overrides the preset's own colour scale (e.g. a fixed
+            Magics range or contour `levels`); a string `norm` (`"log"`/
+            `"symlog"`) overrides the preset's norm kind and a `Normalize`
+            instance is used directly as the colour norm.
 
     Returns:
         dict[str, Any]: The image (or mesh) artist for each layer, keyed by
