@@ -1186,9 +1186,12 @@ class ArrayGlyph(GeoMixin, Glyph):
         # Only the colour limits the caller actually supplied, kept apart from
         # `default_options` (whose vmin/vmax the plain imshow path overwrites
         # with the data's auto range). A data-style preset forwards these so an
-        # explicit caller vmin/vmax/center overrides the preset's fixed range,
-        # while an auto-ranged plain plot never leaks a range into a later
-        # `apply_style(...)`. Sticky across plot()s, like `default_options`.
+        # explicit caller vmin/vmax/center overrides the preset's fixed range.
+        # Like `default_options`, an explicitly-set limit is STICKY: it persists
+        # across later plot()/animate() calls -- including styled ones -- until
+        # the caller sets a new value, so a limit given on a plain plot also
+        # applies to a subsequent styled render. An auto-ranged plain plot
+        # contributes nothing (only caller-supplied, non-None values are kept).
         self._style_color_overrides = {
             key: kwargs[key]
             for key in ("vmin", "vmax", "center")

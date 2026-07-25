@@ -4881,6 +4881,18 @@ class TestArrayGlyphDataStyle:
         assert not np.allclose(fixed.im.get_array(), auto.im.get_array())
         plt.close("all")
 
+    def test_explicit_colour_limit_is_sticky_into_a_later_styled_plot(self):
+        """An explicit vmin/vmax persists to a later styled plot (sticky, like default_options)."""
+        data = np.linspace(-30.0, 50.0, 30 * 40).reshape(30, 40)
+        g = ArrayGlyph(data)
+        g.plot(vmin=5.0, vmax=20.0)  # plain plot sets an explicit range...
+        g.plot(style="mn2t")  # ...which sticks into the styled render (not mn2t's -48..56)
+        sticky = np.asarray(g.im.get_array()).copy()
+        fresh = ArrayGlyph(data, style="mn2t")
+        fresh.plot()  # a fresh glyph uses mn2t's own fixed range
+        assert not np.allclose(sticky, np.asarray(fresh.im.get_array()))
+        plt.close("all")
+
     def test_glyph_vmin_vmax_overrides_preset_fixed_range(self):
         """A glyph-level vmin/vmax overrides the preset's encoded fixed range."""
         data = np.linspace(-10.0, 50.0, 30 * 40).reshape(30, 40)
