@@ -273,48 +273,62 @@ def add_relief(
     alpha: float = 1.0,
     zorder: int = -1,
     interpolation: str = "bilinear",
+    crs: int | str | None = None,
 ) -> Any:
     """Draw a global hypsometric relief backdrop under existing data.
 
-    The `cartopy` `GeoAxes.stock_img()` analogue. Assumes the axes are
-    in EPSG:4326 (lon/lat); for data in another CRS pass `extent` in the
-    axes' own units. The current axis limits are preserved so adding the
-    backdrop never changes the view.
+    The `cartopy` `GeoAxes.stock_img()` analogue. Assumes the axes are in
+    EPSG:4326 (lon/lat) unless `crs` says otherwise, in which case the relief
+    is warped into that CRS. The current axis limits are preserved so adding
+    the backdrop never changes the view.
 
     Note:
-        The relief image is equirectangular (EPSG:4326). A lon/lat `extent`
-        within the global bounds is CROPPED out of it and placed at true
-        scale, so a regional view shows only that region's terrain -- never
-        the whole globe squashed into the data's box (the recurring #177
-        footgun). An `extent` OUTSIDE the global lon/lat bounds (axes in a
-        non-EPSG:4326 CRS, e.g. metres) is instead stretched by `imshow` to
-        fit those bounds -- visually acceptable for small extents but not a
-        true reprojection; reproject the source for a pixel-accurate backdrop
-        in another projection.
+        The relief image is equirectangular (EPSG:4326). On an EPSG:4326 axis
+        (the default, `crs=None`) a lon/lat `extent` within the global bounds
+        is **cropped** out of the global image and placed over that box, so a
+        regional call shows that region's terrain rather than the whole world
+        squashed into it (the recurring #177 footgun). The crop is placed at
+        its **snapped pixel edges** so the terrain registers at true scale; the
+        axis limits (preserved below) then clip to the requested view.
+        `extent=None` places the whole globe. An `extent` OUTSIDE the global
+        lon/lat bounds on a 4326 axis is instead stretched by `imshow` to fit
+        -- visually acceptable for small extents but not a true reprojection.
+
+        For a **non-EPSG:4326 `crs`** the relief is **warped** into the axis
+        CRS (per-pixel inverse reprojection via pyproj) so it lines up under
+        data plotted in that CRS, exactly like `add_features` / `add_tiles`.
+        The placement box defaults to the current axis view; parts of the box
+        that fall outside the CRS's domain are left transparent. The box (and
+        the axis view it defaults from) is assumed non-inverted -- `west <
+        east`, `south < north`. This path needs pyproj (the `[tiles]` extra).
 
     Args:
         ax: A matplotlib `Axes` with data already plotted (so its limits
             define the view).
         resolution: `"low"` or `"medium"` (see
             `available_relief_resolutions`).
-        extent: `(west, south, east, north)` lon/lat region to draw. A box
-            within the global EPSG:4326 bounds is cropped out of the relief
-            and placed at true scale (a regional view shows only that region).
-            Omit it (the default global `(-180, -90, 180, 90)`) to place the
-            full relief and let the axis limits crop the view. An extent
-            outside the lon/lat bounds is treated as a non-4326 placement (the
-            full image is stretched to fit -- see Note).
+        extent: `(west, south, east, north)` placement in axis units. On an
+            EPSG:4326 axis, `None` (default) uses the whole global relief
+            `(-180, -90, 180, 90)`, and a box within the global bounds is
+            cropped out and placed at true scale (a regional view shows only
+            that region); see `Note` for crop-vs-stretch. For a non-4326 `crs`,
+            `None` fills the current axis view and any box is interpreted in the
+            axis CRS's units.
         alpha: Backdrop opacity in `[0, 1]`.
         zorder: Matplotlib draw order (`-1` puts it behind all data).
         interpolation: Interpolation passed to `ax.imshow`.
+        crs: CRS of the data on the axis. `None` or EPSG:4326 places the
+            relief in lon/lat with no reprojection; any other CRS (int EPSG
+            code or CRS string) warps the relief into it.
 
     Returns:
         matplotlib.axes.Axes: The same axes, for chaining.
 
     Raises:
-        ImportError: If Pillow (the `[tiles]` extra) is not installed.
+        ImportError: If Pillow (the `[tiles]` extra) is not installed, or if
+            a non-EPSG:4326 `crs` is requested without pyproj (also `[tiles]`).
         TypeError: If `ax` is not a matplotlib Axes.
-        ValueError: If `resolution` is unknown.
+        ValueError: If `resolution` or `crs` is unknown.
         ConnectionError: If the asset must be downloaded and the fetch
             fails.
 
@@ -349,44 +363,132 @@ def add_relief(
     """
     _validate_axes(ax)
     rgb = relief(resolution)
-    if extent is None:
-        west, south, east, north = _RELIEF_EXTENT_4326
-    else:
-        west, south, east, north = extent
-        # A lon/lat sub-region is CROPPED out of the global relief and placed at
-        # true scale -- not the whole globe stretched into the box (which would
-        # show the entire world under regional data; see #177). An extent outside
-        # the global lon/lat bounds (axes in a non-EPSG:4326 CRS, e.g. metres)
-        # falls through to the old whole-image placement.
-        gw, gs, ge, gn = _RELIEF_EXTENT_4326
-        if gw <= west < east <= ge and gs <= south < north <= gn:
-            rows, cols = rgb.shape[:2]
-            c0 = max(0, int(np.floor((west - gw) / (ge - gw) * cols)))
-            c1 = min(cols, max(c0 + 1, int(np.ceil((east - gw) / (ge - gw) * cols))))
-            r0 = max(0, int(np.floor((gn - north) / (gn - gs) * rows)))
-            r1 = min(rows, max(r0 + 1, int(np.ceil((gn - south) / (gn - gs) * rows))))
-            rgb = rgb[r0:r1, c0:c1]
-            # Place the crop at the extent of the SNAPPED pixel edges (not the raw
-            # request) so the terrain sits at true scale; the crop covers the
-            # requested region and the axis limits (preserved below) clip the view.
-            west = gw + c0 / cols * (ge - gw)
-            east = gw + c1 / cols * (ge - gw)
-            north = gn - r0 / rows * (gn - gs)
-            south = gn - r1 / rows * (gn - gs)
-
     xlim, ylim = ax.get_xlim(), ax.get_ylim()
-    ax.imshow(
-        rgb,
-        extent=[west, east, south, north],
-        origin="upper",
-        alpha=alpha,
-        zorder=zorder,
-        interpolation=interpolation,
-        aspect=ax.get_aspect(),
-    )
+    if _is_4326(crs):
+        if extent is None:
+            west, south, east, north = _RELIEF_EXTENT_4326
+        else:
+            west, south, east, north = extent
+            gw, gs, ge, gn = _RELIEF_EXTENT_4326
+            if gw <= west < east <= ge and gs <= south < north <= gn:
+                # A lon/lat sub-region: crop the global relief array to it and
+                # place the crop over that box, instead of stretching the whole
+                # global image onto the box (the issue #177 footgun). `extent`
+                # is None (whole globe) and non-lon/lat extents -- e.g. axes in
+                # projected metres -- keep the previous whole-image placement.
+                rows, cols = rgb.shape[:2]
+                c0 = max(0, int(np.floor((west - gw) / (ge - gw) * cols)))
+                c1 = min(
+                    cols, max(c0 + 1, int(np.ceil((east - gw) / (ge - gw) * cols)))
+                )
+                r0 = max(0, int(np.floor((gn - north) / (gn - gs) * rows)))
+                r1 = min(
+                    rows, max(r0 + 1, int(np.ceil((gn - south) / (gn - gs) * rows)))
+                )
+                rgb = rgb[r0:r1, c0:c1]
+                # Place the crop at its SNAPPED pixel edges (not the raw
+                # request) so the terrain registers at true scale; the axis
+                # limits (restored below) then clip to the requested view.
+                west = gw + c0 / cols * (ge - gw)
+                east = gw + c1 / cols * (ge - gw)
+                north = gn - r0 / rows * (gn - gs)
+                south = gn - r1 / rows * (gn - gs)
+        ax.imshow(
+            rgb,
+            extent=[west, east, south, north],
+            origin="upper",
+            alpha=alpha,
+            zorder=zorder,
+            interpolation=interpolation,
+            aspect=ax.get_aspect(),
+        )
+    else:
+        # Non-EPSG:4326 axis: warp the global relief into the axis CRS so the
+        # terrain lines up under the data, exactly like add_features/add_tiles.
+        # The placement box defaults to the current axis view. Needs pyproj.
+        if extent is None:
+            west, east = xlim
+            south, north = ylim
+        else:
+            west, south, east, north = extent
+        warped = _warp_relief(rgb, (west, south, east, north), crs, alpha)  # type: ignore[arg-type]
+        ax.imshow(
+            warped,
+            extent=[west, east, south, north],
+            origin="upper",
+            zorder=zorder,
+            interpolation=interpolation,
+            aspect=ax.get_aspect(),
+        )
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
     return ax
+
+
+def _warp_relief(
+    rgb: np.ndarray,
+    box: tuple[float, float, float, float],
+    crs: int | str,
+    alpha: float,
+    *,
+    max_side: int = 1024,
+) -> np.ndarray:
+    """Warp the global EPSG:4326 relief into a non-4326 CRS placement box.
+
+    Builds an output grid over `box` in the target CRS's units, inverse-
+    transforms each cell centre to lon/lat with pyproj, and samples the
+    global relief (nearest neighbour). Cells whose inverse transform falls
+    outside the CRS's domain (non-finite) are left transparent, so partial
+    coverage -- an orthographic disc, a UTM band -- degrades gracefully.
+
+    Args:
+        rgb: The global EPSG:4326 relief, an `(H, W, 3)` uint8 array
+            (north-up, west-to-east).
+        box: `(west, south, east, north)` placement in the target CRS units.
+        crs: The target (axis) CRS -- an int EPSG code or CRS string.
+        alpha: Backdrop opacity in `[0, 1]`, baked into the alpha channel.
+        max_side: Longest side of the output grid, in pixels.
+
+    Returns:
+        numpy.ndarray: An `(out_h, out_w, 4)` uint8 RGBA array to `imshow`
+        at `box` with `origin="upper"`.
+    """
+    west, south, east, north = box
+    rows, cols = rgb.shape[:2]
+    gw, gs, ge, gn = _RELIEF_EXTENT_4326
+
+    span_x = abs(east - west)
+    span_y = abs(north - south)
+    aspect = span_x / span_y if span_y else 1.0
+    if aspect >= 1.0:
+        out_w, out_h = max_side, max(1, round(max_side / aspect))
+    else:
+        out_w, out_h = max(1, round(max_side * aspect)), max_side
+
+    transformer = _make_transformer(crs)
+    xs = west + (np.arange(out_w) + 0.5) / out_w * (east - west)
+    ys = north - (np.arange(out_h) + 0.5) / out_h * (north - south)
+    grid_x, grid_y = np.meshgrid(xs, ys)
+    lon, lat = transformer.transform(
+        grid_x.ravel(), grid_y.ravel(), direction="INVERSE"
+    )
+    lon = np.asarray(lon, dtype=float).reshape(out_h, out_w)
+    lat = np.asarray(lat, dtype=float).reshape(out_h, out_w)
+
+    valid = np.isfinite(lon) & np.isfinite(lat)
+    lon_wrapped = ((np.where(valid, lon, 0.0) - gw) % (ge - gw)) + gw
+    lat_safe = np.where(valid, lat, gn)
+    col = np.clip(((lon_wrapped - gw) / (ge - gw) * cols).astype(int), 0, cols - 1)
+    row = np.clip(((gn - lat_safe) / (gn - gs) * rows).astype(int), 0, rows - 1)
+
+    out = np.zeros((out_h, out_w, 4), dtype=np.uint8)
+    # Zero the RGB of masked cells too (not just their alpha), so a bilinear
+    # imshow blends the domain edge toward transparent-black rather than an
+    # arbitrary sampled terrain colour.
+    out[..., :3] = np.where(valid[..., None], rgb[row, col], np.uint8(0))
+    fill = np.uint8(round(float(np.clip(alpha, 0.0, 1.0)) * 255))
+    out[..., 3] = np.where(valid, fill, np.uint8(0))
+    return out
 
 
 # --------------------------------------------------------------------------
@@ -718,7 +820,7 @@ def _make_transformer(crs: int | str) -> Any:
     """
     if importlib.util.find_spec("pyproj") is None:
         raise ImportError(
-            "Reprojecting reference features to a non-EPSG:4326 CRS requires "
+            "Reprojecting reference layers to a non-EPSG:4326 CRS requires "
             "pyproj, provided by the [tiles] extra. Install with "
             "`pip install cleopatra[tiles]`, or plot your data in EPSG:4326."
         )

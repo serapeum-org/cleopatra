@@ -326,12 +326,12 @@ class GeoMixin:
     plotting, or pass `ax=` explicitly.
 
     Set `self.crs` to the CRS of the data plotted on the axes (an EPSG code
-    or CRS string) and `add_features` / `add_tiles` default their `crs=`
-    argument to it, so the reference layer is placed in matching
-    coordinates without restating it on every call. An explicit `crs=`
-    still wins; leaving `self.crs` as `None` preserves each helper's own
-    default. `add_relief` ignores `crs` -- relief is a fixed EPSG:4326
-    raster placed by `extent`.
+    or CRS string) and `add_features` / `add_tiles` / `add_relief` default
+    their `crs=` argument to it, so the reference layer is placed in matching
+    coordinates without restating it on every call. An explicit `crs=` still
+    wins; leaving `self.crs` as `None` preserves each helper's own default.
+    For `add_relief`, a non-EPSG:4326 `crs` warps the relief raster into the
+    axis CRS (a 4326 axis places it in lon/lat, unchanged).
     """
 
     #: Set by `cleopatra.glyph.Glyph`; the axes the basemap is drawn on.
@@ -344,8 +344,8 @@ class GeoMixin:
     def crs(self) -> int | str | None:
         """CRS of the data plotted on `self.ax` (EPSG code or CRS string).
 
-        When set, `add_features` / `add_tiles` default `crs=` to it; `None`
-        keeps each helper's own default. The value is **validated on
+        When set, `add_features` / `add_tiles` / `add_relief` default `crs=`
+        to it; `None` keeps each helper's own default. The value is **validated on
         assignment** (see `cleopatra.geo._validate_crs`) so mistakes surface
         at `glyph.crs = ...` rather than later, when a basemap is drawn.
 
@@ -387,8 +387,9 @@ class GeoMixin:
 
         Only injects when `self.crs` is set and `crs` is absent (or `None`)
         in `kwargs`, so the default `self.crs is None` is a pure pass-through
-        and an explicit `crs=` always wins. `crs` is keyword-only in both
-        `add_features` and `add_tiles`, so it always arrives via `kwargs`.
+        and an explicit `crs=` always wins. `crs` is keyword-only in
+        `add_features`, `add_tiles`, and `add_relief`, so it always arrives
+        via `kwargs`.
 
         Args:
             kwargs: The keyword arguments destined for the basemap helper.
@@ -465,8 +466,11 @@ class GeoMixin:
         """Draw a hypsometric relief backdrop under the glyph's data.
 
         Thin wrapper over `cleopatra.reference.add_relief`; arguments are
-        forwarded unchanged (e.g. `resolution`, `extent`, `alpha`).
-        Requires the `cleopatra[tiles]` extra (Pillow).
+        forwarded unchanged (e.g. `resolution`, `extent`, `alpha`). When
+        `crs` is omitted it defaults to `self.crs`, so on a non-EPSG:4326
+        axis the relief is warped to match the data (an explicit `crs=` still
+        wins). Requires the `cleopatra[tiles]` extra (Pillow, and pyproj for a
+        non-4326 `crs`).
 
         Args:
             *args: Positional arguments for
@@ -474,7 +478,9 @@ class GeoMixin:
                 `resolution`.
             ax: Axes to draw on. Defaults to the glyph's `self.ax`.
             **kwargs: Keyword arguments for
-                `cleopatra.reference.add_relief`.
+                `cleopatra.reference.add_relief`. A `crs` keyword is
+                defaulted to `self.crs` when omitted; an explicit `crs=`
+                overrides it.
 
         Returns:
             matplotlib.axes.Axes: The axes, for chaining.
@@ -486,7 +492,9 @@ class GeoMixin:
             cleopatra.reference.add_relief: The underlying implementation and
                 its full parameter list.
         """
-        return reference.add_relief(self._basemap_axes(ax), *args, **kwargs)
+        return reference.add_relief(
+            self._basemap_axes(ax), *args, **self._basemap_kwargs(kwargs)
+        )
 
     def add_labels(
         self, points: dict[str, tuple[float, float]], *, ax: Any = None, **kwargs: Any
