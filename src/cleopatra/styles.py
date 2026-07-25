@@ -1421,11 +1421,17 @@ def swatch_legend(
     """
     cmap_obj = mpl.colormaps[cmap] if isinstance(cmap, str) else cmap
     swatch = ax.inset_axes(bounds)
-    if norm is None or isinstance(norm, colors.BoundaryNorm):
-        # A plain linear position along the bar (0..1). For a BoundaryNorm the
-        # discretisation is carried by a paired ListedColormap, so sampling the
-        # norm here would return raw bin indices (not 0..1) and break the bar;
-        # a linear 0..1 ramp through the ListedColormap shows the bands cleanly.
+    if isinstance(norm, colors.BoundaryNorm):
+        # Discrete bands: snap the 0..1 ramp to the norm's band count so the bar
+        # shows the SAME flat bands as the map (whether the cmap is a discrete
+        # ListedColormap or a continuous colormap sampled by the BoundaryNorm) --
+        # not a smooth ramp that misrepresents a banded field. Sampling the norm
+        # itself would return raw bin indices (not 0..1) and blow out the bar.
+        n_bands = max(len(np.asarray(norm.boundaries)) - 1, 1)
+        idx = np.clip((np.linspace(0.0, 1.0, 256) * n_bands).astype(int), 0, n_bands - 1)
+        gradient = (idx / max(n_bands - 1, 1)).reshape(1, -1)
+    elif norm is None:
+        # A plain linear position along the bar (0..1).
         gradient = np.linspace(0.0, 1.0, 256).reshape(1, -1)
     else:
         # Position along the bar is linear in data (vmin..vmax); sample the

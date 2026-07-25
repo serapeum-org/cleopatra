@@ -462,6 +462,15 @@ class TestSwatchLegend:
         assert swatch.images, "gradient image should be drawn on the swatch"
         assert swatch.images[0].get_cmap() is cmap, "custom cmap should be used as-is"
 
+    def test_boundary_norm_renders_discrete_bands(self, ax):
+        """A BoundaryNorm swatch shows flat bands matching the norm's band count, not a smooth ramp."""
+        from matplotlib.colors import BoundaryNorm
+
+        norm = BoundaryNorm([0, 1, 2, 3, 4], ncolors=256)  # 4 bands
+        swatch = swatch_legend(ax, "viridis", "T", vmin=0, vmax=4, norm=norm)
+        gradient = np.asarray(swatch.images[0].get_array())
+        assert len(np.unique(np.round(gradient, 4))) == 4, "swatch should show 4 discrete bands"
+
     def test_no_axes_ticks_or_spines(self, ax):
         """The swatch is chrome-free: no ticks and no visible spines."""
         swatch = swatch_legend(ax, "viridis", "Dust")
