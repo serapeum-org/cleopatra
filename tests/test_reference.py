@@ -428,6 +428,8 @@ def _blue_west_red_east_relief(cache: Path) -> None:
     Image = pytest.importorskip(
         "PIL.Image", reason="Pillow not installed (tiles extra)"
     )
+    # The filename is the fixed relief cache key; the tiny 8x4 array stands in
+    # for the real 720x360 asset (dimensions are read from content, not name).
     arr = np.zeros((4, 8, 3), dtype="uint8")
     arr[:, :4] = (0, 0, 255)  # western half blue
     arr[:, 4:] = (255, 0, 0)  # eastern half red
@@ -444,8 +446,42 @@ def test_add_relief_lonlat_extent_crops_not_stretches(cache: Path):
     add_relief(ax, "low", extent=(0, -90, 180, 90))  # eastern hemisphere
     placed = np.asarray(ax.images[0].get_array())
     assert placed.shape[1] < 8, f"extent should crop, got full width {placed.shape}"
+    assert placed.shape[0] == 4, (
+        f"full-latitude extent must not crop rows, got {placed.shape}"
+    )
     assert (placed[..., 0] == 255).all() and (placed[..., 2] == 0).all(), (
         "the cropped region should be the red eastern half only"
+    )
+    plt.close(fig)
+
+
+def _red_north_blue_south_relief(cache: Path) -> None:
+    """Write a synthetic relief PNG: red northern (top) rows, blue southern."""
+    Image = pytest.importorskip(
+        "PIL.Image", reason="Pillow not installed (tiles extra)"
+    )
+    # The filename is the fixed relief cache key; the tiny 8x4 array stands in
+    # for the real 720x360 asset (dimensions are read from content, not name).
+    arr = np.zeros((4, 8, 3), dtype="uint8")
+    arr[:2] = (255, 0, 0)  # northern (top) rows red
+    arr[2:] = (0, 0, 255)  # southern (bottom) rows blue
+    Image.fromarray(arr).save(cache / "ne_hypso_rgb_720x360.png")
+
+
+def test_add_relief_lonlat_extent_crops_northern_rows(cache: Path):
+    """A northern-hemisphere extent crops the top rows (north-up +
+    `origin="upper"`) rather than flipping or stretching latitude."""
+    _red_north_blue_south_relief(cache)
+    fig, ax = plt.subplots()
+    ax.set_xlim(-180, 180)
+    ax.set_ylim(0, 90)
+    add_relief(ax, "low", extent=(-180, 0, 180, 90))  # northern hemisphere
+    placed = np.asarray(ax.images[0].get_array())
+    assert placed.shape[0] < 4, (
+        f"extent should crop rows, got full height {placed.shape}"
+    )
+    assert (placed[..., 0] == 255).all() and (placed[..., 2] == 0).all(), (
+        "the cropped region should be the red northern rows only"
     )
     plt.close(fig)
 
