@@ -1196,7 +1196,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         # the caller sets a new value, so a limit given on a plain plot also
         # applies to a subsequent styled render. An auto-ranged plain plot
         # contributes nothing (only caller-supplied, non-None values are kept).
-        self._style_color_overrides = {
+        self._style_color_overrides: dict[str, Any] = {
             key: kwargs[key]
             for key in ("vmin", "vmax", "center")
             if key in explicit_keys and kwargs[key] is not None
@@ -3167,9 +3167,12 @@ class ArrayGlyph(GeoMixin, Glyph):
         # Record colour limits supplied to THIS plot() call so a preset render
         # honours them (see `_style_color_overrides`). Sticky, and only for
         # keys actually passed -- an auto-ranged plain plot adds nothing.
+        # `kwargs` is a real, mutable dict at runtime -- mypy's TypedDict model
+        # just does not support indexing it with a non-literal (loop) key.
+        kwargs_dict = cast(dict, kwargs)
         for key in ("vmin", "vmax", "center"):
-            if key in kwargs and kwargs[key] is not None:
-                self._style_color_overrides[key] = kwargs[key]
+            if key in kwargs_dict and kwargs_dict[key] is not None:
+                self._style_color_overrides[key] = kwargs_dict[key]
 
         self._validate_extend(self.default_options.get("extend"))
 
@@ -4011,9 +4014,12 @@ class ArrayGlyph(GeoMixin, Glyph):
         # animation honours an explicit caller override of the preset's fixed
         # range (see `_style_color_overrides`); an auto-ranged plain animation
         # adds nothing.
+        # `kwargs` is a real, mutable dict at runtime -- mypy's TypedDict model
+        # just does not support indexing it with a non-literal (loop) key.
+        kwargs_dict = cast(dict, kwargs)
         for key in ("vmin", "vmax", "center"):
-            if key in kwargs and kwargs[key] is not None:
-                self._style_color_overrides[key] = kwargs[key]
+            if key in kwargs_dict and kwargs_dict[key] is not None:
+                self._style_color_overrides[key] = kwargs_dict[key]
 
         # if user did not input ticks spacing use the calculated one.
         if "ticks_spacing" in kwargs.keys():

@@ -858,7 +858,7 @@ def resolve_style_norm(
         reserved = {"neither": 0, "min": 1, "max": 1, "both": 2}.get(extend, 0)
         if cmap_obj.N < (len(edges) - 1) + reserved:
             extend = "neither"
-        norm = mcolors.BoundaryNorm(edges, ncolors=cmap_obj.N, extend=extend)
+        norm: mcolors.Normalize = mcolors.BoundaryNorm(edges, ncolors=cmap_obj.N, extend=extend)
         return norm, edges[0], edges[-1]
 
     vmin = cfg.get("vmin")
@@ -904,9 +904,7 @@ def resolve_style_norm(
                 f"diverging 'center' ({center}) must lie strictly between "
                 f"vmin ({vmin}) and vmax ({vmax})"
             )
-        norm: mcolors.Normalize = mcolors.TwoSlopeNorm(
-            vcenter=center, vmin=vmin, vmax=vmax
-        )
+        norm = mcolors.TwoSlopeNorm(vcenter=center, vmin=vmin, vmax=vmax)
     elif norm_kind in (None, "linear"):
         norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
     elif norm_kind == "log":
@@ -1144,7 +1142,7 @@ def apply_data_style(
     # scale (e.g. a Magics preset's decoded fixed range). These are colour-scale
     # keys, not `imshow` kwargs, so pull them out of `render_kwargs` and merge
     # them over each layer's config below.
-    style_override = {}
+    style_override: dict[str, Any] = {}
     for key in ("vmin", "vmax", "center"):
         if key in render_kwargs:
             value = render_kwargs.pop(key)
