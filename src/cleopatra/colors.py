@@ -626,7 +626,7 @@ def _load_preset_asset(
         )
         records = json.loads(source).get("presets", {}).items()
     except (
-        FileNotFoundError, ModuleNotFoundError, OSError,
+        ModuleNotFoundError, OSError,
         json.JSONDecodeError, AttributeError,
     ):
         return {}
@@ -700,7 +700,7 @@ def _load_earthkit_presets() -> dict[str, dict[str, dict[str, Any]]]:
             .joinpath("earthkit_presets.json")
             .read_text(encoding="utf-8")
         )
-    except (FileNotFoundError, ModuleNotFoundError, OSError):
+    except (ModuleNotFoundError, OSError):
         return {}
     try:
         records = json.loads(raw).get("presets", {})
