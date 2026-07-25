@@ -33,12 +33,10 @@ Re-run (from the repo root)::
 
     python tools/build_magics_presets.py src/cleopatra/data/magics_presets.json [<magics_ref>]
 
-``<magics_ref>`` defaults to ``develop``; the resolved ref and generation date
-are recorded in the asset's ``_meta`` block.
+``<magics_ref>`` defaults to ``develop``.
 """
 
 import colorsys
-import datetime as _dt
 import json
 import re
 import sys
@@ -202,30 +200,6 @@ def build(magics_ref):
 def main(out_path, magics_ref="develop"):
     presets, skipped, unresolved = build(magics_ref)
     asset = {
-        "_meta": {
-            "source": "ecmwf/magics",
-            "source_ref": magics_ref,
-            "source_files": [
-                "share/magics/styles/default/palettes.json",
-                "share/magics/styles/default/contours.json",
-                "src/common/Colour.cc",
-            ],
-            "license": "Apache-2.0",
-            "generated_utc": _dt.datetime.now(_dt.UTC).strftime("%Y-%m-%d"),
-            "note": (
-                "Colour data and parameter/label associations derived from ECMWF "
-                "Magics (Apache-2.0); contains no Magics code. Palette colours are "
-                "resolved from rgb() values and Magics' named-colour table "
-                "(Colour.cc), so the full ramp is kept. The contour range and "
-                "interval are encoded in each preset's magics_style name "
-                "(f<from>t<to>[i<interval>], M=minus) and cleopatra decodes them at "
-                "load time, so presets render over ECMWF's fixed scale (a caller "
-                "vmin/vmax still overrides). The exact per-level boundary values are "
-                "not in the open data, so the ramp is spread linearly across the "
-                "range. Opacity is opaque unless the source palette carries a "
-                "built-in alpha ramp, in which case it is an overlay."
-            ),
-        },
         "presets": dict(sorted(presets.items())),
     }
     with open(out_path, "w", encoding="utf-8") as f:

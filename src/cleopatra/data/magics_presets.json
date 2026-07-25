@@ -1,16 +1,4 @@
 {
-    "_meta": {
-        "source": "ecmwf/magics",
-        "source_ref": "develop",
-        "source_files": [
-            "share/magics/styles/default/palettes.json",
-            "share/magics/styles/default/contours.json",
-            "src/common/Colour.cc"
-        ],
-        "license": "Apache-2.0",
-        "generated_utc": "2026-07-24",
-        "note": "Colour data and parameter/label associations derived from ECMWF Magics (Apache-2.0); contains no Magics code. Palette colours are resolved from rgb() values and Magics' named-colour table (Colour.cc), so the full ramp is kept. The contour range and interval are encoded in each preset's magics_style name (f<from>t<to>[i<interval>], M=minus) and cleopatra decodes them at load time, so presets render over ECMWF's fixed scale (a caller vmin/vmax still overrides). The exact per-level boundary values are not in the open data, so the ramp is spread linearly across the range. Opacity is opaque unless the source palette carries a built-in alpha ramp, in which case it is an overlay."
-    },
     "presets": {
         "10fg": {
             "label": "10 metre wind gust since previous post-processing",
