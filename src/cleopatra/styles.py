@@ -1422,25 +1422,32 @@ def swatch_legend(
     cmap_obj = mpl.colormaps[cmap] if isinstance(cmap, str) else cmap
     swatch = ax.inset_axes(bounds)
     if isinstance(norm, colors.BoundaryNorm):
-        # Discrete bands: snap the 0..1 ramp to the norm's band count so the bar
-        # shows the SAME flat bands as the map (whether the cmap is a discrete
-        # ListedColormap or a continuous colormap sampled by the BoundaryNorm) --
-        # not a smooth ramp that misrepresents a banded field. Sampling the norm
-        # itself would return raw bin indices (not 0..1) and blow out the bar.
-        n_bands = max(len(np.asarray(norm.boundaries)) - 1, 1)
-        idx = np.clip((np.linspace(0.0, 1.0, 256) * n_bands).astype(int), 0, n_bands - 1)
-        gradient = (idx / max(n_bands - 1, 1)).reshape(1, -1)
-    elif norm is None:
-        # A plain linear position along the bar (0..1).
-        gradient = np.linspace(0.0, 1.0, 256).reshape(1, -1)
+        # Discrete bands: paint the SAME flat band colours the map uses by
+        # sampling the colormap through the norm at each band's midpoint. This
+        # honours the under/over slots the norm reserves when it has `extend`
+        # (a raw 0..1 ramp would shift the in-range bands), so the legend matches
+        # the map exactly -- for a ListedColormap or a continuous colormap alike.
+        edges = np.asarray(norm.boundaries, dtype=float)
+        mids = (edges[:-1] + edges[1:]) / 2.0
+        band_rgba = np.asarray(cmap_obj(norm(mids)))
+        swatch.imshow(
+            band_rgba.reshape(1, -1, 4), aspect="auto",
+            interpolation="nearest", extent=(0, 1, 0, 1),
+        )
     else:
-        # Position along the bar is linear in data (vmin..vmax); sample the
-        # colour through `norm` so a nonlinear (log/symlog) mapping shows its
-        # true, compressed progression instead of a misleading linear ramp.
-        gradient = np.asarray(
-            norm(np.linspace(vmin, vmax, 256)), dtype=float
-        ).reshape(1, -1)
-    swatch.imshow(gradient, aspect="auto", cmap=cmap_obj, vmin=0.0, vmax=1.0, extent=(0, 1, 0, 1))
+        if norm is None:
+            # A plain linear position along the bar (0..1).
+            gradient = np.linspace(0.0, 1.0, 256).reshape(1, -1)
+        else:
+            # Position along the bar is linear in data (vmin..vmax); sample the
+            # colour through `norm` so a nonlinear (log/symlog) mapping shows its
+            # true, compressed progression instead of a misleading linear ramp.
+            gradient = np.asarray(
+                norm(np.linspace(vmin, vmax, 256)), dtype=float
+            ).reshape(1, -1)
+        swatch.imshow(
+            gradient, aspect="auto", cmap=cmap_obj, vmin=0.0, vmax=1.0, extent=(0, 1, 0, 1)
+        )
     swatch.set_xticks([])
     swatch.set_yticks([])
     for spine in swatch.spines.values():

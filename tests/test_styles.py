@@ -462,14 +462,19 @@ class TestSwatchLegend:
         assert swatch.images, "gradient image should be drawn on the swatch"
         assert swatch.images[0].get_cmap() is cmap, "custom cmap should be used as-is"
 
-    def test_boundary_norm_renders_discrete_bands(self, ax):
-        """A BoundaryNorm swatch shows flat bands matching the norm's band count, not a smooth ramp."""
+    def test_boundary_norm_swatch_matches_the_norm_not_a_raw_ramp(self, ax):
+        """A BoundaryNorm swatch paints exactly cmap(norm(midpoints)), honouring extend (not a 0..1 ramp)."""
         from matplotlib.colors import BoundaryNorm
 
-        norm = BoundaryNorm([0, 1, 2, 3, 4], ncolors=256)  # 4 bands
-        swatch = swatch_legend(ax, "viridis", "T", vmin=0, vmax=4, norm=norm)
-        gradient = np.asarray(swatch.images[0].get_array())
-        assert len(np.unique(np.round(gradient, 4))) == 4, "swatch should show 4 discrete bands"
+        cmap = plt.get_cmap("viridis")
+        norm = BoundaryNorm([0, 1, 2, 3, 4], ncolors=cmap.N, extend="both")  # 4 in-range bands
+        swatch = swatch_legend(ax, cmap, "T", vmin=0, vmax=4, norm=norm)
+        bands = np.asarray(swatch.images[0].get_array())[0]  # (4, 4) RGBA, one row per band
+        mids = np.array([0.5, 1.5, 2.5, 3.5])
+        assert bands.shape[0] == 4, "swatch should show 4 discrete bands"
+        assert np.allclose(bands, np.asarray(cmap(norm(mids)))), "bands must match the map's colours"
+        # `extend` reserves the colormap ends for under/over, so band 0 is not cmap(0.0).
+        assert not np.allclose(bands[0], cmap(0.0)), "extend must shift in-range bands off the ends"
 
     def test_no_axes_ticks_or_spines(self, ax):
         """The swatch is chrome-free: no ticks and no visible spines."""
