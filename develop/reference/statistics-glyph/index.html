@@ -3795,7 +3795,7 @@ Create a histogram from 2D data with custom colors:
 <a id="__codelineno-0-530" name="__codelineno-0-530"></a>
 <a id="__codelineno-0-531" name="__codelineno-0-531"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
 <a id="__codelineno-0-532" name="__codelineno-0-532"></a>            <span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span>
-<a id="__codelineno-0-533" name="__codelineno-0-533"></a>            <span class="n">fig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fig</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_root_figure</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+<a id="__codelineno-0-533" name="__codelineno-0-533"></a>            <span class="n">fig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fig</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_figure</span><span class="p">()</span>
 <a id="__codelineno-0-534" name="__codelineno-0-534"></a>        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
 <a id="__codelineno-0-535" name="__codelineno-0-535"></a>            <span class="n">fig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fig</span>
 <a id="__codelineno-0-536" name="__codelineno-0-536"></a>            <span class="k">if</span> <span class="n">fig</span><span class="o">.</span><span class="n">axes</span><span class="p">:</span>
@@ -3910,7 +3910,7 @@ Create a histogram from 2D data with custom colors:
 <a id="__codelineno-0-645" name="__codelineno-0-645"></a>        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
 <a id="__codelineno-0-646" name="__codelineno-0-646"></a>            <span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span>
 <a id="__codelineno-0-647" name="__codelineno-0-647"></a>        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-648" name="__codelineno-0-648"></a>            <span class="k">return</span> <span class="n">_root_figure</span><span class="p">(</span><span class="n">ax</span><span class="p">),</span> <span class="n">ax</span>
+<a id="__codelineno-0-648" name="__codelineno-0-648"></a>            <span class="k">return</span> <span class="n">ax</span><span class="o">.</span><span class="n">figure</span><span class="p">,</span> <span class="n">ax</span>
 <a id="__codelineno-0-649" name="__codelineno-0-649"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
 <a id="__codelineno-0-650" name="__codelineno-0-650"></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
 <a id="__codelineno-0-651" name="__codelineno-0-651"></a>        <span class="k">return</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">&quot;figsize&quot;</span><span class="p">])</span>
@@ -3937,7 +3937,7 @@ Create a histogram from 2D data with custom colors:
 <a id="__codelineno-0-672" name="__codelineno-0-672"></a>
 <a id="__codelineno-0-673" name="__codelineno-0-673"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">boxplot</span><span class="p">(</span>
 <a id="__codelineno-0-674" name="__codelineno-0-674"></a>        <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-675" name="__codelineno-0-675"></a>        <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-675" name="__codelineno-0-675"></a>        <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-676" name="__codelineno-0-676"></a>        <span class="n">labels</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-677" name="__codelineno-0-677"></a>        <span class="n">notch</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <a id="__codelineno-0-678" name="__codelineno-0-678"></a>        <span class="n">showfliers</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -4026,7 +4026,7 @@ Create a histogram from 2D data with custom colors:
 <a id="__codelineno-0-761" name="__codelineno-0-761"></a>        <span class="bp">self</span><span class="p">,</span>
 <a id="__codelineno-0-762" name="__codelineno-0-762"></a>        <span class="n">positions</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-763" name="__codelineno-0-763"></a>        <span class="n">labels</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-764" name="__codelineno-0-764"></a>        <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-764" name="__codelineno-0-764"></a>        <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-765" name="__codelineno-0-765"></a>        <span class="n">widths</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
 <a id="__codelineno-0-766" name="__codelineno-0-766"></a>        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <a id="__codelineno-0-767" name="__codelineno-0-767"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Figure</span><span class="p">,</span> <span class="n">Axes</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]:</span>
@@ -4121,7 +4121,7 @@ Create a histogram from 2D data with custom colors:
 <a id="__codelineno-0-856" name="__codelineno-0-856"></a>
 <a id="__codelineno-0-857" name="__codelineno-0-857"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">stripes</span><span class="p">(</span>
 <a id="__codelineno-0-858" name="__codelineno-0-858"></a>        <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-859" name="__codelineno-0-859"></a>        <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-859" name="__codelineno-0-859"></a>        <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-860" name="__codelineno-0-860"></a>        <span class="n">cmap</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-861" name="__codelineno-0-861"></a>        <span class="n">vmin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-862" name="__codelineno-0-862"></a>        <span class="n">vmax</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4738,7 +4738,7 @@ there are more series than colours). Composes into a supplied
                 <code>ax</code>
             </td>
             <td>
-                  <code><span title="matplotlib.axes.Axes">Axes</span> | None</code>
+                  <code><span title="matplotlib.axes.Axes">Axes</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -4952,7 +4952,7 @@ dict returned by <code>Axes.boxplot</code> (keys: <code>boxes</code>,
 <span class="normal"><a href="#__codelineno-0-757">757</a></span>
 <span class="normal"><a href="#__codelineno-0-758">758</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-673" name="__codelineno-0-673"></a><span class="k">def</span><span class="w"> </span><span class="nf">boxplot</span><span class="p">(</span>
 <a id="__codelineno-0-674" name="__codelineno-0-674"></a>    <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-675" name="__codelineno-0-675"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-675" name="__codelineno-0-675"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-676" name="__codelineno-0-676"></a>    <span class="n">labels</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-677" name="__codelineno-0-677"></a>    <span class="n">notch</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <a id="__codelineno-0-678" name="__codelineno-0-678"></a>    <span class="n">showfliers</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -5782,7 +5782,7 @@ regions visible.</p>
 <a id="__codelineno-0-530" name="__codelineno-0-530"></a>
 <a id="__codelineno-0-531" name="__codelineno-0-531"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
 <a id="__codelineno-0-532" name="__codelineno-0-532"></a>        <span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span>
-<a id="__codelineno-0-533" name="__codelineno-0-533"></a>        <span class="n">fig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fig</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_root_figure</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+<a id="__codelineno-0-533" name="__codelineno-0-533"></a>        <span class="n">fig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fig</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_figure</span><span class="p">()</span>
 <a id="__codelineno-0-534" name="__codelineno-0-534"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
 <a id="__codelineno-0-535" name="__codelineno-0-535"></a>        <span class="n">fig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fig</span>
 <a id="__codelineno-0-536" name="__codelineno-0-536"></a>        <span class="k">if</span> <span class="n">fig</span><span class="o">.</span><span class="n">axes</span><span class="p">:</span>
@@ -5925,7 +5925,7 @@ each position.</p>
                 <code>ax</code>
             </td>
             <td>
-                  <code><span title="matplotlib.axes.Axes">Axes</span> | None</code>
+                  <code><span title="matplotlib.axes.Axes">Axes</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -6138,7 +6138,7 @@ binding, not a parameter here.</p>
 <a id="__codelineno-0-761" name="__codelineno-0-761"></a>    <span class="bp">self</span><span class="p">,</span>
 <a id="__codelineno-0-762" name="__codelineno-0-762"></a>    <span class="n">positions</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-763" name="__codelineno-0-763"></a>    <span class="n">labels</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-764" name="__codelineno-0-764"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-764" name="__codelineno-0-764"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-765" name="__codelineno-0-765"></a>    <span class="n">widths</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
 <a id="__codelineno-0-766" name="__codelineno-0-766"></a>    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <a id="__codelineno-0-767" name="__codelineno-0-767"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Figure</span><span class="p">,</span> <span class="n">Axes</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]:</span>
@@ -6396,7 +6396,7 @@ into a supplied <code>ax</code>/<code>fig</code> and does not call <code>plt.sho
                 <code>ax</code>
             </td>
             <td>
-                  <code><span title="matplotlib.axes.Axes">Axes</span> | None</code>
+                  <code><span title="matplotlib.axes.Axes">Axes</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -6615,7 +6615,7 @@ the bar container (one bar per value).</p>
 <span class="normal"><a href="#__codelineno-0-929">929</a></span>
 <span class="normal"><a href="#__codelineno-0-930">930</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-857" name="__codelineno-0-857"></a><span class="k">def</span><span class="w"> </span><span class="nf">stripes</span><span class="p">(</span>
 <a id="__codelineno-0-858" name="__codelineno-0-858"></a>    <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-859" name="__codelineno-0-859"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-859" name="__codelineno-0-859"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-860" name="__codelineno-0-860"></a>    <span class="n">cmap</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-861" name="__codelineno-0-861"></a>    <span class="n">vmin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-862" name="__codelineno-0-862"></a>    <span class="n">vmax</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>

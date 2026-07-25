@@ -2653,9 +2653,7 @@ axis CRS (a 4326 axis places it in lon/lat, unchanged).</p>
 <span class="normal"><a href="#__codelineno-0-716">716</a></span>
 <span class="normal"><a href="#__codelineno-0-717">717</a></span>
 <span class="normal"><a href="#__codelineno-0-718">718</a></span>
-<span class="normal"><a href="#__codelineno-0-719">719</a></span>
-<span class="normal"><a href="#__codelineno-0-720">720</a></span>
-<span class="normal"><a href="#__codelineno-0-721">721</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-321" name="__codelineno-0-321"></a><span class="k">class</span><span class="w"> </span><span class="nc">GeoMixin</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-719">719</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-321" name="__codelineno-0-321"></a><span class="k">class</span><span class="w"> </span><span class="nc">GeoMixin</span><span class="p">:</span>
 <a id="__codelineno-0-322" name="__codelineno-0-322"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Mixin giving geographic glyphs `add_tiles` / `add_features` / `add_relief`.</span>
 <a id="__codelineno-0-323" name="__codelineno-0-323"></a>
 <a id="__codelineno-0-324" name="__codelineno-0-324"></a><span class="sd">    The host class is expected to expose the plotted axes as `self.ax`</span>
@@ -2903,159 +2901,157 @@ axis CRS (a 4326 axis places it in lon/lat, unchanged).</p>
 <a id="__codelineno-0-566" name="__codelineno-0-566"></a>        <span class="n">arr</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">get_array</span><span class="p">()</span> <span class="k">if</span> <span class="n">im</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="s2">&quot;get_array&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
 <a id="__codelineno-0-567" name="__codelineno-0-567"></a>        <span class="k">if</span> <span class="n">arr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
 <a id="__codelineno-0-568" name="__codelineno-0-568"></a>            <span class="k">return</span> <span class="kc">False</span>
-<a id="__codelineno-0-569" name="__codelineno-0-569"></a>        <span class="c1"># `arr` is only non-None when `im` is too (see above).</span>
-<a id="__codelineno-0-570" name="__codelineno-0-570"></a>        <span class="k">assert</span> <span class="n">im</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-<a id="__codelineno-0-571" name="__codelineno-0-571"></a>        <span class="c1"># Decimate so the decision costs O(1) memory on large rasters.</span>
-<a id="__codelineno-0-572" name="__codelineno-0-572"></a>        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="s2">&quot;ndim&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
-<a id="__codelineno-0-573" name="__codelineno-0-573"></a>            <span class="n">sy</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">//</span> <span class="mi">256</span><span class="p">)</span>
-<a id="__codelineno-0-574" name="__codelineno-0-574"></a>            <span class="n">sx</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">//</span> <span class="mi">256</span><span class="p">)</span>
-<a id="__codelineno-0-575" name="__codelineno-0-575"></a>            <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[::</span><span class="n">sy</span><span class="p">,</span> <span class="p">::</span><span class="n">sx</span><span class="p">]</span>
-<a id="__codelineno-0-576" name="__codelineno-0-576"></a>        <span class="c1"># Render through the image&#39;s norm+colormap so a colormapped field is</span>
-<a id="__codelineno-0-577" name="__codelineno-0-577"></a>        <span class="c1"># judged by what is shown, not by its data units; RGB(A) passes through.</span>
-<a id="__codelineno-0-578" name="__codelineno-0-578"></a>        <span class="n">rgba</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">to_rgba</span><span class="p">(</span><span class="n">arr</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-<a id="__codelineno-0-579" name="__codelineno-0-579"></a>        <span class="k">if</span> <span class="n">rgba</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-580" name="__codelineno-0-580"></a>            <span class="k">return</span> <span class="kc">False</span>
-<a id="__codelineno-0-581" name="__codelineno-0-581"></a>        <span class="n">rgb</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="n">rgba</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">],</span> <span class="n">rgba</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
-<a id="__codelineno-0-582" name="__codelineno-0-582"></a>        <span class="n">opaque</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">&gt;</span> <span class="mi">0</span>
-<a id="__codelineno-0-583" name="__codelineno-0-583"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">opaque</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
-<a id="__codelineno-0-584" name="__codelineno-0-584"></a>            <span class="k">return</span> <span class="kc">False</span>
-<a id="__codelineno-0-585" name="__codelineno-0-585"></a>        <span class="n">lum</span> <span class="o">=</span> <span class="mf">0.2126</span> <span class="o">*</span> <span class="n">rgb</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.7152</span> <span class="o">*</span> <span class="n">rgb</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.0722</span> <span class="o">*</span> <span class="n">rgb</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
-<a id="__codelineno-0-586" name="__codelineno-0-586"></a>        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">lum</span><span class="p">[</span><span class="n">opaque</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">)</span>
-<a id="__codelineno-0-587" name="__codelineno-0-587"></a>
-<a id="__codelineno-0-588" name="__codelineno-0-588"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">add_reference_map</span><span class="p">(</span>
-<a id="__codelineno-0-589" name="__codelineno-0-589"></a>        <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-590" name="__codelineno-0-590"></a>        <span class="n">style</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ecmwf&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-591" name="__codelineno-0-591"></a>        <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-592" name="__codelineno-0-592"></a>        <span class="n">ax</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-593" name="__codelineno-0-593"></a>        <span class="n">extent</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-594" name="__codelineno-0-594"></a>        <span class="n">resolution</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-595" name="__codelineno-0-595"></a>        <span class="n">graticule_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-596" name="__codelineno-0-596"></a>        <span class="n">zorder</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
-<a id="__codelineno-0-597" name="__codelineno-0-597"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<a id="__codelineno-0-598" name="__codelineno-0-598"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Dress the glyph&#39;s axes in a weather-centre reference-map style.</span>
-<a id="__codelineno-0-599" name="__codelineno-0-599"></a>
-<a id="__codelineno-0-600" name="__codelineno-0-600"></a><span class="sd">        One call composes the recipe that otherwise takes ~15 lines of</span>
-<a id="__codelineno-0-601" name="__codelineno-0-601"></a><span class="sd">        matplotlib after `plot`/`animate`: grey Natural Earth `coastline`</span>
-<a id="__codelineno-0-602" name="__codelineno-0-602"></a><span class="sd">        + `borders`, a dashed lon/lat graticule, `°W`/`°N` degree labels,</span>
-<a id="__codelineno-0-603" name="__codelineno-0-603"></a><span class="sd">        and a subtle frame. It layers on top of the existing data, so call</span>
-<a id="__codelineno-0-604" name="__codelineno-0-604"></a><span class="sd">        it after plotting.</span>
-<a id="__codelineno-0-605" name="__codelineno-0-605"></a>
-<a id="__codelineno-0-606" name="__codelineno-0-606"></a><span class="sd">        The map is drawn in the axes&#39; current geographic coordinates. Pass</span>
-<a id="__codelineno-0-607" name="__codelineno-0-607"></a><span class="sd">        `extent` (or construct the glyph with `extent=`) so the axes are</span>
-<a id="__codelineno-0-608" name="__codelineno-0-608"></a><span class="sd">        georeferenced — otherwise the coastlines cannot align with the data</span>
-<a id="__codelineno-0-609" name="__codelineno-0-609"></a><span class="sd">        and a warning is emitted. Deriving that extent from a source dataset</span>
-<a id="__codelineno-0-610" name="__codelineno-0-610"></a><span class="sd">        is the caller&#39;s job (cleopatra renders supplied coordinates; it does</span>
-<a id="__codelineno-0-611" name="__codelineno-0-611"></a><span class="sd">        not read geotransforms).</span>
-<a id="__codelineno-0-612" name="__codelineno-0-612"></a>
-<a id="__codelineno-0-613" name="__codelineno-0-613"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-614" name="__codelineno-0-614"></a><span class="sd">            style: A name from `available_map_styles()` (`&quot;ecmwf&quot;`,</span>
-<a id="__codelineno-0-615" name="__codelineno-0-615"></a><span class="sd">                `&quot;ecmwf-dark&quot;`), or `&quot;auto&quot;` to pick between them from the</span>
-<a id="__codelineno-0-616" name="__codelineno-0-616"></a><span class="sd">                background luminance (dark backgrounds get the lighter</span>
-<a id="__codelineno-0-617" name="__codelineno-0-617"></a><span class="sd">                `&quot;ecmwf-dark&quot;` greys so coastlines stay visible). Default</span>
-<a id="__codelineno-0-618" name="__codelineno-0-618"></a><span class="sd">                `&quot;ecmwf&quot;`.</span>
-<a id="__codelineno-0-619" name="__codelineno-0-619"></a><span class="sd">            ax: Axes to draw on. Defaults to the glyph&#39;s `self.ax`.</span>
-<a id="__codelineno-0-620" name="__codelineno-0-620"></a><span class="sd">            extent: Optional `[xmin, ymin, xmax, ymax]` (i.e.</span>
-<a id="__codelineno-0-621" name="__codelineno-0-621"></a><span class="sd">                `[west, south, east, north]`) in the axes&#39; CRS -- the same</span>
-<a id="__codelineno-0-622" name="__codelineno-0-622"></a><span class="sd">                order as `ArrayGlyph(extent=...)`. When given, the image and</span>
-<a id="__codelineno-0-623" name="__codelineno-0-623"></a><span class="sd">                axis limits are set to it (handling the pixel-coordinate</span>
-<a id="__codelineno-0-624" name="__codelineno-0-624"></a><span class="sd">                RGB/animate case); when omitted the current axis limits are</span>
-<a id="__codelineno-0-625" name="__codelineno-0-625"></a><span class="sd">                used.</span>
-<a id="__codelineno-0-626" name="__codelineno-0-626"></a><span class="sd">            resolution: Natural Earth resolution for the coastline/borders</span>
-<a id="__codelineno-0-627" name="__codelineno-0-627"></a><span class="sd">                (`&quot;110m&quot;`/`&quot;50m&quot;`/`&quot;10m&quot;`). Defaults to the style&#39;s value.</span>
-<a id="__codelineno-0-628" name="__codelineno-0-628"></a><span class="sd">            graticule_step: Degree spacing for the graticule. Defaults to a</span>
-<a id="__codelineno-0-629" name="__codelineno-0-629"></a><span class="sd">                &quot;nice&quot; step giving ~6 divisions across the wider span.</span>
-<a id="__codelineno-0-630" name="__codelineno-0-630"></a><span class="sd">            zorder: Draw order for the reference layers (drawn above the</span>
-<a id="__codelineno-0-631" name="__codelineno-0-631"></a><span class="sd">                data; the graticule sits just below the coastlines).</span>
-<a id="__codelineno-0-632" name="__codelineno-0-632"></a>
-<a id="__codelineno-0-633" name="__codelineno-0-633"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-634" name="__codelineno-0-634"></a><span class="sd">            matplotlib.axes.Axes: The decorated axes, for chaining.</span>
-<a id="__codelineno-0-635" name="__codelineno-0-635"></a>
-<a id="__codelineno-0-636" name="__codelineno-0-636"></a><span class="sd">        Raises:</span>
-<a id="__codelineno-0-637" name="__codelineno-0-637"></a><span class="sd">            RuntimeError: If the glyph has no axes yet and `ax` is not given.</span>
-<a id="__codelineno-0-638" name="__codelineno-0-638"></a><span class="sd">            ValueError: If `style` is not a known preset or `&quot;auto&quot;`, or if</span>
-<a id="__codelineno-0-639" name="__codelineno-0-639"></a><span class="sd">                `graticule_step` is given and is not a positive number.</span>
-<a id="__codelineno-0-640" name="__codelineno-0-640"></a>
-<a id="__codelineno-0-641" name="__codelineno-0-641"></a><span class="sd">        Examples:</span>
-<a id="__codelineno-0-642" name="__codelineno-0-642"></a><span class="sd">            - Dress a georeferenced field in the ECMWF look:</span>
-<a id="__codelineno-0-643" name="__codelineno-0-643"></a><span class="sd">                ```python</span>
-<a id="__codelineno-0-644" name="__codelineno-0-644"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-645" name="__codelineno-0-645"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.array_glyph import ArrayGlyph</span>
-<a id="__codelineno-0-646" name="__codelineno-0-646"></a><span class="sd">                &gt;&gt;&gt; data = np.random.rand(20, 30)</span>
-<a id="__codelineno-0-647" name="__codelineno-0-647"></a><span class="sd">                &gt;&gt;&gt; glyph = ArrayGlyph(data, extent=[-100, 15, -40, 55])</span>
-<a id="__codelineno-0-648" name="__codelineno-0-648"></a><span class="sd">                &gt;&gt;&gt; fig, ax = glyph.plot()  # doctest: +SKIP</span>
-<a id="__codelineno-0-649" name="__codelineno-0-649"></a><span class="sd">                &gt;&gt;&gt; glyph.add_reference_map(&quot;ecmwf&quot;)  # doctest: +SKIP</span>
+<a id="__codelineno-0-569" name="__codelineno-0-569"></a>        <span class="c1"># Decimate so the decision costs O(1) memory on large rasters.</span>
+<a id="__codelineno-0-570" name="__codelineno-0-570"></a>        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="s2">&quot;ndim&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+<a id="__codelineno-0-571" name="__codelineno-0-571"></a>            <span class="n">sy</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">//</span> <span class="mi">256</span><span class="p">)</span>
+<a id="__codelineno-0-572" name="__codelineno-0-572"></a>            <span class="n">sx</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">//</span> <span class="mi">256</span><span class="p">)</span>
+<a id="__codelineno-0-573" name="__codelineno-0-573"></a>            <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[::</span><span class="n">sy</span><span class="p">,</span> <span class="p">::</span><span class="n">sx</span><span class="p">]</span>
+<a id="__codelineno-0-574" name="__codelineno-0-574"></a>        <span class="c1"># Render through the image&#39;s norm+colormap so a colormapped field is</span>
+<a id="__codelineno-0-575" name="__codelineno-0-575"></a>        <span class="c1"># judged by what is shown, not by its data units; RGB(A) passes through.</span>
+<a id="__codelineno-0-576" name="__codelineno-0-576"></a>        <span class="n">rgba</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">to_rgba</span><span class="p">(</span><span class="n">arr</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<a id="__codelineno-0-577" name="__codelineno-0-577"></a>        <span class="k">if</span> <span class="n">rgba</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-578" name="__codelineno-0-578"></a>            <span class="k">return</span> <span class="kc">False</span>
+<a id="__codelineno-0-579" name="__codelineno-0-579"></a>        <span class="n">rgb</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="n">rgba</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">],</span> <span class="n">rgba</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
+<a id="__codelineno-0-580" name="__codelineno-0-580"></a>        <span class="n">opaque</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">&gt;</span> <span class="mi">0</span>
+<a id="__codelineno-0-581" name="__codelineno-0-581"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">opaque</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+<a id="__codelineno-0-582" name="__codelineno-0-582"></a>            <span class="k">return</span> <span class="kc">False</span>
+<a id="__codelineno-0-583" name="__codelineno-0-583"></a>        <span class="n">lum</span> <span class="o">=</span> <span class="mf">0.2126</span> <span class="o">*</span> <span class="n">rgb</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.7152</span> <span class="o">*</span> <span class="n">rgb</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.0722</span> <span class="o">*</span> <span class="n">rgb</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
+<a id="__codelineno-0-584" name="__codelineno-0-584"></a>        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">lum</span><span class="p">[</span><span class="n">opaque</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">)</span>
+<a id="__codelineno-0-585" name="__codelineno-0-585"></a>
+<a id="__codelineno-0-586" name="__codelineno-0-586"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">add_reference_map</span><span class="p">(</span>
+<a id="__codelineno-0-587" name="__codelineno-0-587"></a>        <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-588" name="__codelineno-0-588"></a>        <span class="n">style</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ecmwf&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-589" name="__codelineno-0-589"></a>        <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-0-590" name="__codelineno-0-590"></a>        <span class="n">ax</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-591" name="__codelineno-0-591"></a>        <span class="n">extent</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-592" name="__codelineno-0-592"></a>        <span class="n">resolution</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-593" name="__codelineno-0-593"></a>        <span class="n">graticule_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-594" name="__codelineno-0-594"></a>        <span class="n">zorder</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+<a id="__codelineno-0-595" name="__codelineno-0-595"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<a id="__codelineno-0-596" name="__codelineno-0-596"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Dress the glyph&#39;s axes in a weather-centre reference-map style.</span>
+<a id="__codelineno-0-597" name="__codelineno-0-597"></a>
+<a id="__codelineno-0-598" name="__codelineno-0-598"></a><span class="sd">        One call composes the recipe that otherwise takes ~15 lines of</span>
+<a id="__codelineno-0-599" name="__codelineno-0-599"></a><span class="sd">        matplotlib after `plot`/`animate`: grey Natural Earth `coastline`</span>
+<a id="__codelineno-0-600" name="__codelineno-0-600"></a><span class="sd">        + `borders`, a dashed lon/lat graticule, `°W`/`°N` degree labels,</span>
+<a id="__codelineno-0-601" name="__codelineno-0-601"></a><span class="sd">        and a subtle frame. It layers on top of the existing data, so call</span>
+<a id="__codelineno-0-602" name="__codelineno-0-602"></a><span class="sd">        it after plotting.</span>
+<a id="__codelineno-0-603" name="__codelineno-0-603"></a>
+<a id="__codelineno-0-604" name="__codelineno-0-604"></a><span class="sd">        The map is drawn in the axes&#39; current geographic coordinates. Pass</span>
+<a id="__codelineno-0-605" name="__codelineno-0-605"></a><span class="sd">        `extent` (or construct the glyph with `extent=`) so the axes are</span>
+<a id="__codelineno-0-606" name="__codelineno-0-606"></a><span class="sd">        georeferenced — otherwise the coastlines cannot align with the data</span>
+<a id="__codelineno-0-607" name="__codelineno-0-607"></a><span class="sd">        and a warning is emitted. Deriving that extent from a source dataset</span>
+<a id="__codelineno-0-608" name="__codelineno-0-608"></a><span class="sd">        is the caller&#39;s job (cleopatra renders supplied coordinates; it does</span>
+<a id="__codelineno-0-609" name="__codelineno-0-609"></a><span class="sd">        not read geotransforms).</span>
+<a id="__codelineno-0-610" name="__codelineno-0-610"></a>
+<a id="__codelineno-0-611" name="__codelineno-0-611"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-612" name="__codelineno-0-612"></a><span class="sd">            style: A name from `available_map_styles()` (`&quot;ecmwf&quot;`,</span>
+<a id="__codelineno-0-613" name="__codelineno-0-613"></a><span class="sd">                `&quot;ecmwf-dark&quot;`), or `&quot;auto&quot;` to pick between them from the</span>
+<a id="__codelineno-0-614" name="__codelineno-0-614"></a><span class="sd">                background luminance (dark backgrounds get the lighter</span>
+<a id="__codelineno-0-615" name="__codelineno-0-615"></a><span class="sd">                `&quot;ecmwf-dark&quot;` greys so coastlines stay visible). Default</span>
+<a id="__codelineno-0-616" name="__codelineno-0-616"></a><span class="sd">                `&quot;ecmwf&quot;`.</span>
+<a id="__codelineno-0-617" name="__codelineno-0-617"></a><span class="sd">            ax: Axes to draw on. Defaults to the glyph&#39;s `self.ax`.</span>
+<a id="__codelineno-0-618" name="__codelineno-0-618"></a><span class="sd">            extent: Optional `[xmin, ymin, xmax, ymax]` (i.e.</span>
+<a id="__codelineno-0-619" name="__codelineno-0-619"></a><span class="sd">                `[west, south, east, north]`) in the axes&#39; CRS -- the same</span>
+<a id="__codelineno-0-620" name="__codelineno-0-620"></a><span class="sd">                order as `ArrayGlyph(extent=...)`. When given, the image and</span>
+<a id="__codelineno-0-621" name="__codelineno-0-621"></a><span class="sd">                axis limits are set to it (handling the pixel-coordinate</span>
+<a id="__codelineno-0-622" name="__codelineno-0-622"></a><span class="sd">                RGB/animate case); when omitted the current axis limits are</span>
+<a id="__codelineno-0-623" name="__codelineno-0-623"></a><span class="sd">                used.</span>
+<a id="__codelineno-0-624" name="__codelineno-0-624"></a><span class="sd">            resolution: Natural Earth resolution for the coastline/borders</span>
+<a id="__codelineno-0-625" name="__codelineno-0-625"></a><span class="sd">                (`&quot;110m&quot;`/`&quot;50m&quot;`/`&quot;10m&quot;`). Defaults to the style&#39;s value.</span>
+<a id="__codelineno-0-626" name="__codelineno-0-626"></a><span class="sd">            graticule_step: Degree spacing for the graticule. Defaults to a</span>
+<a id="__codelineno-0-627" name="__codelineno-0-627"></a><span class="sd">                &quot;nice&quot; step giving ~6 divisions across the wider span.</span>
+<a id="__codelineno-0-628" name="__codelineno-0-628"></a><span class="sd">            zorder: Draw order for the reference layers (drawn above the</span>
+<a id="__codelineno-0-629" name="__codelineno-0-629"></a><span class="sd">                data; the graticule sits just below the coastlines).</span>
+<a id="__codelineno-0-630" name="__codelineno-0-630"></a>
+<a id="__codelineno-0-631" name="__codelineno-0-631"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-0-632" name="__codelineno-0-632"></a><span class="sd">            matplotlib.axes.Axes: The decorated axes, for chaining.</span>
+<a id="__codelineno-0-633" name="__codelineno-0-633"></a>
+<a id="__codelineno-0-634" name="__codelineno-0-634"></a><span class="sd">        Raises:</span>
+<a id="__codelineno-0-635" name="__codelineno-0-635"></a><span class="sd">            RuntimeError: If the glyph has no axes yet and `ax` is not given.</span>
+<a id="__codelineno-0-636" name="__codelineno-0-636"></a><span class="sd">            ValueError: If `style` is not a known preset or `&quot;auto&quot;`, or if</span>
+<a id="__codelineno-0-637" name="__codelineno-0-637"></a><span class="sd">                `graticule_step` is given and is not a positive number.</span>
+<a id="__codelineno-0-638" name="__codelineno-0-638"></a>
+<a id="__codelineno-0-639" name="__codelineno-0-639"></a><span class="sd">        Examples:</span>
+<a id="__codelineno-0-640" name="__codelineno-0-640"></a><span class="sd">            - Dress a georeferenced field in the ECMWF look:</span>
+<a id="__codelineno-0-641" name="__codelineno-0-641"></a><span class="sd">                ```python</span>
+<a id="__codelineno-0-642" name="__codelineno-0-642"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-643" name="__codelineno-0-643"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.array_glyph import ArrayGlyph</span>
+<a id="__codelineno-0-644" name="__codelineno-0-644"></a><span class="sd">                &gt;&gt;&gt; data = np.random.rand(20, 30)</span>
+<a id="__codelineno-0-645" name="__codelineno-0-645"></a><span class="sd">                &gt;&gt;&gt; glyph = ArrayGlyph(data, extent=[-100, 15, -40, 55])</span>
+<a id="__codelineno-0-646" name="__codelineno-0-646"></a><span class="sd">                &gt;&gt;&gt; fig, ax = glyph.plot()  # doctest: +SKIP</span>
+<a id="__codelineno-0-647" name="__codelineno-0-647"></a><span class="sd">                &gt;&gt;&gt; glyph.add_reference_map(&quot;ecmwf&quot;)  # doctest: +SKIP</span>
+<a id="__codelineno-0-648" name="__codelineno-0-648"></a>
+<a id="__codelineno-0-649" name="__codelineno-0-649"></a><span class="sd">                ```</span>
 <a id="__codelineno-0-650" name="__codelineno-0-650"></a>
-<a id="__codelineno-0-651" name="__codelineno-0-651"></a><span class="sd">                ```</span>
-<a id="__codelineno-0-652" name="__codelineno-0-652"></a>
-<a id="__codelineno-0-653" name="__codelineno-0-653"></a><span class="sd">        See Also:</span>
-<a id="__codelineno-0-654" name="__codelineno-0-654"></a><span class="sd">            add_features: The Natural Earth layer helper this composes.</span>
-<a id="__codelineno-0-655" name="__codelineno-0-655"></a><span class="sd">            available_map_styles: The built-in preset names.</span>
-<a id="__codelineno-0-656" name="__codelineno-0-656"></a><span class="sd">        &quot;&quot;&quot;</span>
-<a id="__codelineno-0-657" name="__codelineno-0-657"></a>        <span class="k">if</span> <span class="n">graticule_step</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span>
-<a id="__codelineno-0-658" name="__codelineno-0-658"></a>            <span class="ow">not</span> <span class="n">math</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">graticule_step</span><span class="p">)</span> <span class="ow">or</span> <span class="n">graticule_step</span> <span class="o">&lt;=</span> <span class="mi">0</span>
-<a id="__codelineno-0-659" name="__codelineno-0-659"></a>        <span class="p">):</span>
-<a id="__codelineno-0-660" name="__codelineno-0-660"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-661" name="__codelineno-0-661"></a>                <span class="s2">&quot;graticule_step must be a positive, finite number, got &quot;</span>
-<a id="__codelineno-0-662" name="__codelineno-0-662"></a>                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">graticule_step</span><span class="si">}</span><span class="s2">&quot;</span>
-<a id="__codelineno-0-663" name="__codelineno-0-663"></a>            <span class="p">)</span>
-<a id="__codelineno-0-664" name="__codelineno-0-664"></a>        <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_basemap_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
-<a id="__codelineno-0-665" name="__codelineno-0-665"></a>
-<a id="__codelineno-0-666" name="__codelineno-0-666"></a>        <span class="n">resolved</span> <span class="o">=</span> <span class="n">style</span>
-<a id="__codelineno-0-667" name="__codelineno-0-667"></a>        <span class="k">if</span> <span class="n">style</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-668" name="__codelineno-0-668"></a>            <span class="n">resolved</span> <span class="o">=</span> <span class="s2">&quot;ecmwf-dark&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_background_is_dark</span><span class="p">(</span><span class="n">target</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;ecmwf&quot;</span>
-<a id="__codelineno-0-669" name="__codelineno-0-669"></a>        <span class="k">if</span> <span class="n">resolved</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">REFERENCE_MAP_STYLES</span><span class="p">:</span>
-<a id="__codelineno-0-670" name="__codelineno-0-670"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-671" name="__codelineno-0-671"></a>                <span class="sa">f</span><span class="s2">&quot;Unknown map style </span><span class="si">{</span><span class="n">style</span><span class="si">!r}</span><span class="s2">; available: &quot;</span>
-<a id="__codelineno-0-672" name="__codelineno-0-672"></a>                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">available_map_styles</span><span class="p">()</span><span class="si">}</span><span class="s2"> (or &#39;auto&#39;).&quot;</span>
-<a id="__codelineno-0-673" name="__codelineno-0-673"></a>            <span class="p">)</span>
-<a id="__codelineno-0-674" name="__codelineno-0-674"></a>        <span class="n">preset</span> <span class="o">=</span> <span class="n">REFERENCE_MAP_STYLES</span><span class="p">[</span><span class="n">resolved</span><span class="p">]</span>
-<a id="__codelineno-0-675" name="__codelineno-0-675"></a>
-<a id="__codelineno-0-676" name="__codelineno-0-676"></a>        <span class="k">if</span> <span class="n">extent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-677" name="__codelineno-0-677"></a>            <span class="c1"># `[xmin, ymin, xmax, ymax]` == `[west, south, east, north]`,</span>
-<a id="__codelineno-0-678" name="__codelineno-0-678"></a>            <span class="c1"># the same order as ArrayGlyph(extent=...); matplotlib wants</span>
-<a id="__codelineno-0-679" name="__codelineno-0-679"></a>            <span class="c1"># `(xmin, xmax, ymin, ymax)` for `set_extent`.</span>
-<a id="__codelineno-0-680" name="__codelineno-0-680"></a>            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">extent</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span>
-<a id="__codelineno-0-681" name="__codelineno-0-681"></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-682" name="__codelineno-0-682"></a>                    <span class="s2">&quot;extent must be [xmin, ymin, xmax, ymax] &quot;</span>
-<a id="__codelineno-0-683" name="__codelineno-0-683"></a>                    <span class="sa">f</span><span class="s2">&quot;(4 values), got </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">extent</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
-<a id="__codelineno-0-684" name="__codelineno-0-684"></a>                <span class="p">)</span>
-<a id="__codelineno-0-685" name="__codelineno-0-685"></a>            <span class="n">west</span><span class="p">,</span> <span class="n">south</span><span class="p">,</span> <span class="n">east</span><span class="p">,</span> <span class="n">north</span> <span class="o">=</span> <span class="n">extent</span>
-<a id="__codelineno-0-686" name="__codelineno-0-686"></a>            <span class="n">im</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;im&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-<a id="__codelineno-0-687" name="__codelineno-0-687"></a>            <span class="k">if</span> <span class="n">im</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="s2">&quot;set_extent&quot;</span><span class="p">):</span>
-<a id="__codelineno-0-688" name="__codelineno-0-688"></a>                <span class="n">im</span><span class="o">.</span><span class="n">set_extent</span><span class="p">((</span><span class="n">west</span><span class="p">,</span> <span class="n">east</span><span class="p">,</span> <span class="n">south</span><span class="p">,</span> <span class="n">north</span><span class="p">))</span>
-<a id="__codelineno-0-689" name="__codelineno-0-689"></a>            <span class="n">target</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">west</span><span class="p">,</span> <span class="n">east</span><span class="p">)</span>
-<a id="__codelineno-0-690" name="__codelineno-0-690"></a>            <span class="n">target</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">south</span><span class="p">,</span> <span class="n">north</span><span class="p">)</span>
-<a id="__codelineno-0-691" name="__codelineno-0-691"></a>        <span class="k">elif</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;extent&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-692" name="__codelineno-0-692"></a>            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-<a id="__codelineno-0-693" name="__codelineno-0-693"></a>                <span class="s2">&quot;add_reference_map: the glyph has no geographic extent, so &quot;</span>
-<a id="__codelineno-0-694" name="__codelineno-0-694"></a>                <span class="s2">&quot;coastlines/borders may not align with the data. Pass &quot;</span>
-<a id="__codelineno-0-695" name="__codelineno-0-695"></a>                <span class="s2">&quot;extent=[west, south, east, north] or construct the glyph &quot;</span>
-<a id="__codelineno-0-696" name="__codelineno-0-696"></a>                <span class="s2">&quot;with extent=.&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-697" name="__codelineno-0-697"></a>                <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-<a id="__codelineno-0-698" name="__codelineno-0-698"></a>            <span class="p">)</span>
-<a id="__codelineno-0-699" name="__codelineno-0-699"></a>
-<a id="__codelineno-0-700" name="__codelineno-0-700"></a>        <span class="n">res</span> <span class="o">=</span> <span class="n">resolution</span> <span class="ow">or</span> <span class="n">preset</span><span class="p">[</span><span class="s2">&quot;resolution&quot;</span><span class="p">]</span>
-<a id="__codelineno-0-701" name="__codelineno-0-701"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_features</span><span class="p">(</span>
-<a id="__codelineno-0-702" name="__codelineno-0-702"></a>            <span class="s2">&quot;coastline&quot;</span><span class="p">,</span> <span class="n">res</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="n">zorder</span><span class="p">,</span> <span class="o">**</span><span class="n">preset</span><span class="p">[</span><span class="s2">&quot;coastline&quot;</span><span class="p">]</span>
-<a id="__codelineno-0-703" name="__codelineno-0-703"></a>        <span class="p">)</span>
-<a id="__codelineno-0-704" name="__codelineno-0-704"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_features</span><span class="p">(</span><span class="s2">&quot;borders&quot;</span><span class="p">,</span> <span class="n">res</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="n">zorder</span><span class="p">,</span> <span class="o">**</span><span class="n">preset</span><span class="p">[</span><span class="s2">&quot;borders&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-705" name="__codelineno-0-705"></a>
-<a id="__codelineno-0-706" name="__codelineno-0-706"></a>        <span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span>
-<a id="__codelineno-0-707" name="__codelineno-0-707"></a>        <span class="n">ymin</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
-<a id="__codelineno-0-708" name="__codelineno-0-708"></a>        <span class="n">step</span> <span class="o">=</span> <span class="p">(</span>
-<a id="__codelineno-0-709" name="__codelineno-0-709"></a>            <span class="n">graticule_step</span>
-<a id="__codelineno-0-710" name="__codelineno-0-710"></a>            <span class="k">if</span> <span class="n">graticule_step</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-<a id="__codelineno-0-711" name="__codelineno-0-711"></a>            <span class="k">else</span> <span class="n">_nice_step</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">xmax</span> <span class="o">-</span> <span class="n">xmin</span><span class="p">),</span> <span class="nb">abs</span><span class="p">(</span><span class="n">ymax</span> <span class="o">-</span> <span class="n">ymin</span><span class="p">)))</span>
-<a id="__codelineno-0-712" name="__codelineno-0-712"></a>        <span class="p">)</span>
-<a id="__codelineno-0-713" name="__codelineno-0-713"></a>        <span class="n">target</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">MultipleLocator</span><span class="p">(</span><span class="n">step</span><span class="p">))</span>
-<a id="__codelineno-0-714" name="__codelineno-0-714"></a>        <span class="n">target</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">MultipleLocator</span><span class="p">(</span><span class="n">step</span><span class="p">))</span>
-<a id="__codelineno-0-715" name="__codelineno-0-715"></a>        <span class="n">target</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">FuncFormatter</span><span class="p">(</span><span class="n">_lon_formatter</span><span class="p">))</span>
-<a id="__codelineno-0-716" name="__codelineno-0-716"></a>        <span class="n">target</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">FuncFormatter</span><span class="p">(</span><span class="n">_lat_formatter</span><span class="p">))</span>
-<a id="__codelineno-0-717" name="__codelineno-0-717"></a>        <span class="n">target</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="n">zorder</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">preset</span><span class="p">[</span><span class="s2">&quot;graticule&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-718" name="__codelineno-0-718"></a>        <span class="n">target</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">preset</span><span class="p">[</span><span class="s2">&quot;labels&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-719" name="__codelineno-0-719"></a>        <span class="k">for</span> <span class="n">spine</span> <span class="ow">in</span> <span class="n">target</span><span class="o">.</span><span class="n">spines</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
-<a id="__codelineno-0-720" name="__codelineno-0-720"></a>            <span class="n">spine</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="o">**</span><span class="n">preset</span><span class="p">[</span><span class="s2">&quot;spines&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-721" name="__codelineno-0-721"></a>        <span class="k">return</span> <span class="n">target</span>
+<a id="__codelineno-0-651" name="__codelineno-0-651"></a><span class="sd">        See Also:</span>
+<a id="__codelineno-0-652" name="__codelineno-0-652"></a><span class="sd">            add_features: The Natural Earth layer helper this composes.</span>
+<a id="__codelineno-0-653" name="__codelineno-0-653"></a><span class="sd">            available_map_styles: The built-in preset names.</span>
+<a id="__codelineno-0-654" name="__codelineno-0-654"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-655" name="__codelineno-0-655"></a>        <span class="k">if</span> <span class="n">graticule_step</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span>
+<a id="__codelineno-0-656" name="__codelineno-0-656"></a>            <span class="ow">not</span> <span class="n">math</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">graticule_step</span><span class="p">)</span> <span class="ow">or</span> <span class="n">graticule_step</span> <span class="o">&lt;=</span> <span class="mi">0</span>
+<a id="__codelineno-0-657" name="__codelineno-0-657"></a>        <span class="p">):</span>
+<a id="__codelineno-0-658" name="__codelineno-0-658"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-659" name="__codelineno-0-659"></a>                <span class="s2">&quot;graticule_step must be a positive, finite number, got &quot;</span>
+<a id="__codelineno-0-660" name="__codelineno-0-660"></a>                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">graticule_step</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-661" name="__codelineno-0-661"></a>            <span class="p">)</span>
+<a id="__codelineno-0-662" name="__codelineno-0-662"></a>        <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_basemap_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+<a id="__codelineno-0-663" name="__codelineno-0-663"></a>
+<a id="__codelineno-0-664" name="__codelineno-0-664"></a>        <span class="n">resolved</span> <span class="o">=</span> <span class="n">style</span>
+<a id="__codelineno-0-665" name="__codelineno-0-665"></a>        <span class="k">if</span> <span class="n">style</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-666" name="__codelineno-0-666"></a>            <span class="n">resolved</span> <span class="o">=</span> <span class="s2">&quot;ecmwf-dark&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_background_is_dark</span><span class="p">(</span><span class="n">target</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;ecmwf&quot;</span>
+<a id="__codelineno-0-667" name="__codelineno-0-667"></a>        <span class="k">if</span> <span class="n">resolved</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">REFERENCE_MAP_STYLES</span><span class="p">:</span>
+<a id="__codelineno-0-668" name="__codelineno-0-668"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-669" name="__codelineno-0-669"></a>                <span class="sa">f</span><span class="s2">&quot;Unknown map style </span><span class="si">{</span><span class="n">style</span><span class="si">!r}</span><span class="s2">; available: &quot;</span>
+<a id="__codelineno-0-670" name="__codelineno-0-670"></a>                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">available_map_styles</span><span class="p">()</span><span class="si">}</span><span class="s2"> (or &#39;auto&#39;).&quot;</span>
+<a id="__codelineno-0-671" name="__codelineno-0-671"></a>            <span class="p">)</span>
+<a id="__codelineno-0-672" name="__codelineno-0-672"></a>        <span class="n">preset</span> <span class="o">=</span> <span class="n">REFERENCE_MAP_STYLES</span><span class="p">[</span><span class="n">resolved</span><span class="p">]</span>
+<a id="__codelineno-0-673" name="__codelineno-0-673"></a>
+<a id="__codelineno-0-674" name="__codelineno-0-674"></a>        <span class="k">if</span> <span class="n">extent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-675" name="__codelineno-0-675"></a>            <span class="c1"># `[xmin, ymin, xmax, ymax]` == `[west, south, east, north]`,</span>
+<a id="__codelineno-0-676" name="__codelineno-0-676"></a>            <span class="c1"># the same order as ArrayGlyph(extent=...); matplotlib wants</span>
+<a id="__codelineno-0-677" name="__codelineno-0-677"></a>            <span class="c1"># `(xmin, xmax, ymin, ymax)` for `set_extent`.</span>
+<a id="__codelineno-0-678" name="__codelineno-0-678"></a>            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">extent</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span>
+<a id="__codelineno-0-679" name="__codelineno-0-679"></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-680" name="__codelineno-0-680"></a>                    <span class="s2">&quot;extent must be [xmin, ymin, xmax, ymax] &quot;</span>
+<a id="__codelineno-0-681" name="__codelineno-0-681"></a>                    <span class="sa">f</span><span class="s2">&quot;(4 values), got </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">extent</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-682" name="__codelineno-0-682"></a>                <span class="p">)</span>
+<a id="__codelineno-0-683" name="__codelineno-0-683"></a>            <span class="n">west</span><span class="p">,</span> <span class="n">south</span><span class="p">,</span> <span class="n">east</span><span class="p">,</span> <span class="n">north</span> <span class="o">=</span> <span class="n">extent</span>
+<a id="__codelineno-0-684" name="__codelineno-0-684"></a>            <span class="n">im</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;im&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<a id="__codelineno-0-685" name="__codelineno-0-685"></a>            <span class="k">if</span> <span class="n">im</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="s2">&quot;set_extent&quot;</span><span class="p">):</span>
+<a id="__codelineno-0-686" name="__codelineno-0-686"></a>                <span class="n">im</span><span class="o">.</span><span class="n">set_extent</span><span class="p">((</span><span class="n">west</span><span class="p">,</span> <span class="n">east</span><span class="p">,</span> <span class="n">south</span><span class="p">,</span> <span class="n">north</span><span class="p">))</span>
+<a id="__codelineno-0-687" name="__codelineno-0-687"></a>            <span class="n">target</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">west</span><span class="p">,</span> <span class="n">east</span><span class="p">)</span>
+<a id="__codelineno-0-688" name="__codelineno-0-688"></a>            <span class="n">target</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">south</span><span class="p">,</span> <span class="n">north</span><span class="p">)</span>
+<a id="__codelineno-0-689" name="__codelineno-0-689"></a>        <span class="k">elif</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;extent&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-690" name="__codelineno-0-690"></a>            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+<a id="__codelineno-0-691" name="__codelineno-0-691"></a>                <span class="s2">&quot;add_reference_map: the glyph has no geographic extent, so &quot;</span>
+<a id="__codelineno-0-692" name="__codelineno-0-692"></a>                <span class="s2">&quot;coastlines/borders may not align with the data. Pass &quot;</span>
+<a id="__codelineno-0-693" name="__codelineno-0-693"></a>                <span class="s2">&quot;extent=[west, south, east, north] or construct the glyph &quot;</span>
+<a id="__codelineno-0-694" name="__codelineno-0-694"></a>                <span class="s2">&quot;with extent=.&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-695" name="__codelineno-0-695"></a>                <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+<a id="__codelineno-0-696" name="__codelineno-0-696"></a>            <span class="p">)</span>
+<a id="__codelineno-0-697" name="__codelineno-0-697"></a>
+<a id="__codelineno-0-698" name="__codelineno-0-698"></a>        <span class="n">res</span> <span class="o">=</span> <span class="n">resolution</span> <span class="ow">or</span> <span class="n">preset</span><span class="p">[</span><span class="s2">&quot;resolution&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-699" name="__codelineno-0-699"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_features</span><span class="p">(</span>
+<a id="__codelineno-0-700" name="__codelineno-0-700"></a>            <span class="s2">&quot;coastline&quot;</span><span class="p">,</span> <span class="n">res</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="n">zorder</span><span class="p">,</span> <span class="o">**</span><span class="n">preset</span><span class="p">[</span><span class="s2">&quot;coastline&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-701" name="__codelineno-0-701"></a>        <span class="p">)</span>
+<a id="__codelineno-0-702" name="__codelineno-0-702"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_features</span><span class="p">(</span><span class="s2">&quot;borders&quot;</span><span class="p">,</span> <span class="n">res</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="n">zorder</span><span class="p">,</span> <span class="o">**</span><span class="n">preset</span><span class="p">[</span><span class="s2">&quot;borders&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-703" name="__codelineno-0-703"></a>
+<a id="__codelineno-0-704" name="__codelineno-0-704"></a>        <span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span>
+<a id="__codelineno-0-705" name="__codelineno-0-705"></a>        <span class="n">ymin</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
+<a id="__codelineno-0-706" name="__codelineno-0-706"></a>        <span class="n">step</span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-0-707" name="__codelineno-0-707"></a>            <span class="n">graticule_step</span>
+<a id="__codelineno-0-708" name="__codelineno-0-708"></a>            <span class="k">if</span> <span class="n">graticule_step</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-0-709" name="__codelineno-0-709"></a>            <span class="k">else</span> <span class="n">_nice_step</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">xmax</span> <span class="o">-</span> <span class="n">xmin</span><span class="p">),</span> <span class="nb">abs</span><span class="p">(</span><span class="n">ymax</span> <span class="o">-</span> <span class="n">ymin</span><span class="p">)))</span>
+<a id="__codelineno-0-710" name="__codelineno-0-710"></a>        <span class="p">)</span>
+<a id="__codelineno-0-711" name="__codelineno-0-711"></a>        <span class="n">target</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">MultipleLocator</span><span class="p">(</span><span class="n">step</span><span class="p">))</span>
+<a id="__codelineno-0-712" name="__codelineno-0-712"></a>        <span class="n">target</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">MultipleLocator</span><span class="p">(</span><span class="n">step</span><span class="p">))</span>
+<a id="__codelineno-0-713" name="__codelineno-0-713"></a>        <span class="n">target</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">FuncFormatter</span><span class="p">(</span><span class="n">_lon_formatter</span><span class="p">))</span>
+<a id="__codelineno-0-714" name="__codelineno-0-714"></a>        <span class="n">target</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">FuncFormatter</span><span class="p">(</span><span class="n">_lat_formatter</span><span class="p">))</span>
+<a id="__codelineno-0-715" name="__codelineno-0-715"></a>        <span class="n">target</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="n">zorder</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">preset</span><span class="p">[</span><span class="s2">&quot;graticule&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-716" name="__codelineno-0-716"></a>        <span class="n">target</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">preset</span><span class="p">[</span><span class="s2">&quot;labels&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-717" name="__codelineno-0-717"></a>        <span class="k">for</span> <span class="n">spine</span> <span class="ow">in</span> <span class="n">target</span><span class="o">.</span><span class="n">spines</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+<a id="__codelineno-0-718" name="__codelineno-0-718"></a>            <span class="n">spine</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="o">**</span><span class="n">preset</span><span class="p">[</span><span class="s2">&quot;spines&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-719" name="__codelineno-0-719"></a>        <span class="k">return</span> <span class="n">target</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -3805,7 +3801,9 @@ available_map_styles: The built-in preset names.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/cleopatra/geo.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-588">588</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-586">586</a></span>
+<span class="normal"><a href="#__codelineno-0-587">587</a></span>
+<span class="normal"><a href="#__codelineno-0-588">588</a></span>
 <span class="normal"><a href="#__codelineno-0-589">589</a></span>
 <span class="normal"><a href="#__codelineno-0-590">590</a></span>
 <span class="normal"><a href="#__codelineno-0-591">591</a></span>
@@ -3936,142 +3934,140 @@ available_map_styles: The built-in preset names.</p>
 <span class="normal"><a href="#__codelineno-0-716">716</a></span>
 <span class="normal"><a href="#__codelineno-0-717">717</a></span>
 <span class="normal"><a href="#__codelineno-0-718">718</a></span>
-<span class="normal"><a href="#__codelineno-0-719">719</a></span>
-<span class="normal"><a href="#__codelineno-0-720">720</a></span>
-<span class="normal"><a href="#__codelineno-0-721">721</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-588" name="__codelineno-0-588"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_reference_map</span><span class="p">(</span>
-<a id="__codelineno-0-589" name="__codelineno-0-589"></a>    <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-590" name="__codelineno-0-590"></a>    <span class="n">style</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ecmwf&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-591" name="__codelineno-0-591"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-592" name="__codelineno-0-592"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-593" name="__codelineno-0-593"></a>    <span class="n">extent</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-594" name="__codelineno-0-594"></a>    <span class="n">resolution</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-595" name="__codelineno-0-595"></a>    <span class="n">graticule_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-596" name="__codelineno-0-596"></a>    <span class="n">zorder</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
-<a id="__codelineno-0-597" name="__codelineno-0-597"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<a id="__codelineno-0-598" name="__codelineno-0-598"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Dress the glyph&#39;s axes in a weather-centre reference-map style.</span>
-<a id="__codelineno-0-599" name="__codelineno-0-599"></a>
-<a id="__codelineno-0-600" name="__codelineno-0-600"></a><span class="sd">    One call composes the recipe that otherwise takes ~15 lines of</span>
-<a id="__codelineno-0-601" name="__codelineno-0-601"></a><span class="sd">    matplotlib after `plot`/`animate`: grey Natural Earth `coastline`</span>
-<a id="__codelineno-0-602" name="__codelineno-0-602"></a><span class="sd">    + `borders`, a dashed lon/lat graticule, `°W`/`°N` degree labels,</span>
-<a id="__codelineno-0-603" name="__codelineno-0-603"></a><span class="sd">    and a subtle frame. It layers on top of the existing data, so call</span>
-<a id="__codelineno-0-604" name="__codelineno-0-604"></a><span class="sd">    it after plotting.</span>
-<a id="__codelineno-0-605" name="__codelineno-0-605"></a>
-<a id="__codelineno-0-606" name="__codelineno-0-606"></a><span class="sd">    The map is drawn in the axes&#39; current geographic coordinates. Pass</span>
-<a id="__codelineno-0-607" name="__codelineno-0-607"></a><span class="sd">    `extent` (or construct the glyph with `extent=`) so the axes are</span>
-<a id="__codelineno-0-608" name="__codelineno-0-608"></a><span class="sd">    georeferenced — otherwise the coastlines cannot align with the data</span>
-<a id="__codelineno-0-609" name="__codelineno-0-609"></a><span class="sd">    and a warning is emitted. Deriving that extent from a source dataset</span>
-<a id="__codelineno-0-610" name="__codelineno-0-610"></a><span class="sd">    is the caller&#39;s job (cleopatra renders supplied coordinates; it does</span>
-<a id="__codelineno-0-611" name="__codelineno-0-611"></a><span class="sd">    not read geotransforms).</span>
-<a id="__codelineno-0-612" name="__codelineno-0-612"></a>
-<a id="__codelineno-0-613" name="__codelineno-0-613"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-614" name="__codelineno-0-614"></a><span class="sd">        style: A name from `available_map_styles()` (`&quot;ecmwf&quot;`,</span>
-<a id="__codelineno-0-615" name="__codelineno-0-615"></a><span class="sd">            `&quot;ecmwf-dark&quot;`), or `&quot;auto&quot;` to pick between them from the</span>
-<a id="__codelineno-0-616" name="__codelineno-0-616"></a><span class="sd">            background luminance (dark backgrounds get the lighter</span>
-<a id="__codelineno-0-617" name="__codelineno-0-617"></a><span class="sd">            `&quot;ecmwf-dark&quot;` greys so coastlines stay visible). Default</span>
-<a id="__codelineno-0-618" name="__codelineno-0-618"></a><span class="sd">            `&quot;ecmwf&quot;`.</span>
-<a id="__codelineno-0-619" name="__codelineno-0-619"></a><span class="sd">        ax: Axes to draw on. Defaults to the glyph&#39;s `self.ax`.</span>
-<a id="__codelineno-0-620" name="__codelineno-0-620"></a><span class="sd">        extent: Optional `[xmin, ymin, xmax, ymax]` (i.e.</span>
-<a id="__codelineno-0-621" name="__codelineno-0-621"></a><span class="sd">            `[west, south, east, north]`) in the axes&#39; CRS -- the same</span>
-<a id="__codelineno-0-622" name="__codelineno-0-622"></a><span class="sd">            order as `ArrayGlyph(extent=...)`. When given, the image and</span>
-<a id="__codelineno-0-623" name="__codelineno-0-623"></a><span class="sd">            axis limits are set to it (handling the pixel-coordinate</span>
-<a id="__codelineno-0-624" name="__codelineno-0-624"></a><span class="sd">            RGB/animate case); when omitted the current axis limits are</span>
-<a id="__codelineno-0-625" name="__codelineno-0-625"></a><span class="sd">            used.</span>
-<a id="__codelineno-0-626" name="__codelineno-0-626"></a><span class="sd">        resolution: Natural Earth resolution for the coastline/borders</span>
-<a id="__codelineno-0-627" name="__codelineno-0-627"></a><span class="sd">            (`&quot;110m&quot;`/`&quot;50m&quot;`/`&quot;10m&quot;`). Defaults to the style&#39;s value.</span>
-<a id="__codelineno-0-628" name="__codelineno-0-628"></a><span class="sd">        graticule_step: Degree spacing for the graticule. Defaults to a</span>
-<a id="__codelineno-0-629" name="__codelineno-0-629"></a><span class="sd">            &quot;nice&quot; step giving ~6 divisions across the wider span.</span>
-<a id="__codelineno-0-630" name="__codelineno-0-630"></a><span class="sd">        zorder: Draw order for the reference layers (drawn above the</span>
-<a id="__codelineno-0-631" name="__codelineno-0-631"></a><span class="sd">            data; the graticule sits just below the coastlines).</span>
-<a id="__codelineno-0-632" name="__codelineno-0-632"></a>
-<a id="__codelineno-0-633" name="__codelineno-0-633"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-634" name="__codelineno-0-634"></a><span class="sd">        matplotlib.axes.Axes: The decorated axes, for chaining.</span>
-<a id="__codelineno-0-635" name="__codelineno-0-635"></a>
-<a id="__codelineno-0-636" name="__codelineno-0-636"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-637" name="__codelineno-0-637"></a><span class="sd">        RuntimeError: If the glyph has no axes yet and `ax` is not given.</span>
-<a id="__codelineno-0-638" name="__codelineno-0-638"></a><span class="sd">        ValueError: If `style` is not a known preset or `&quot;auto&quot;`, or if</span>
-<a id="__codelineno-0-639" name="__codelineno-0-639"></a><span class="sd">            `graticule_step` is given and is not a positive number.</span>
-<a id="__codelineno-0-640" name="__codelineno-0-640"></a>
-<a id="__codelineno-0-641" name="__codelineno-0-641"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-642" name="__codelineno-0-642"></a><span class="sd">        - Dress a georeferenced field in the ECMWF look:</span>
-<a id="__codelineno-0-643" name="__codelineno-0-643"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-644" name="__codelineno-0-644"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-645" name="__codelineno-0-645"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.array_glyph import ArrayGlyph</span>
-<a id="__codelineno-0-646" name="__codelineno-0-646"></a><span class="sd">            &gt;&gt;&gt; data = np.random.rand(20, 30)</span>
-<a id="__codelineno-0-647" name="__codelineno-0-647"></a><span class="sd">            &gt;&gt;&gt; glyph = ArrayGlyph(data, extent=[-100, 15, -40, 55])</span>
-<a id="__codelineno-0-648" name="__codelineno-0-648"></a><span class="sd">            &gt;&gt;&gt; fig, ax = glyph.plot()  # doctest: +SKIP</span>
-<a id="__codelineno-0-649" name="__codelineno-0-649"></a><span class="sd">            &gt;&gt;&gt; glyph.add_reference_map(&quot;ecmwf&quot;)  # doctest: +SKIP</span>
+<span class="normal"><a href="#__codelineno-0-719">719</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-586" name="__codelineno-0-586"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_reference_map</span><span class="p">(</span>
+<a id="__codelineno-0-587" name="__codelineno-0-587"></a>    <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-588" name="__codelineno-0-588"></a>    <span class="n">style</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ecmwf&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-589" name="__codelineno-0-589"></a>    <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-0-590" name="__codelineno-0-590"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-591" name="__codelineno-0-591"></a>    <span class="n">extent</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-592" name="__codelineno-0-592"></a>    <span class="n">resolution</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-593" name="__codelineno-0-593"></a>    <span class="n">graticule_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-594" name="__codelineno-0-594"></a>    <span class="n">zorder</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+<a id="__codelineno-0-595" name="__codelineno-0-595"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<a id="__codelineno-0-596" name="__codelineno-0-596"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Dress the glyph&#39;s axes in a weather-centre reference-map style.</span>
+<a id="__codelineno-0-597" name="__codelineno-0-597"></a>
+<a id="__codelineno-0-598" name="__codelineno-0-598"></a><span class="sd">    One call composes the recipe that otherwise takes ~15 lines of</span>
+<a id="__codelineno-0-599" name="__codelineno-0-599"></a><span class="sd">    matplotlib after `plot`/`animate`: grey Natural Earth `coastline`</span>
+<a id="__codelineno-0-600" name="__codelineno-0-600"></a><span class="sd">    + `borders`, a dashed lon/lat graticule, `°W`/`°N` degree labels,</span>
+<a id="__codelineno-0-601" name="__codelineno-0-601"></a><span class="sd">    and a subtle frame. It layers on top of the existing data, so call</span>
+<a id="__codelineno-0-602" name="__codelineno-0-602"></a><span class="sd">    it after plotting.</span>
+<a id="__codelineno-0-603" name="__codelineno-0-603"></a>
+<a id="__codelineno-0-604" name="__codelineno-0-604"></a><span class="sd">    The map is drawn in the axes&#39; current geographic coordinates. Pass</span>
+<a id="__codelineno-0-605" name="__codelineno-0-605"></a><span class="sd">    `extent` (or construct the glyph with `extent=`) so the axes are</span>
+<a id="__codelineno-0-606" name="__codelineno-0-606"></a><span class="sd">    georeferenced — otherwise the coastlines cannot align with the data</span>
+<a id="__codelineno-0-607" name="__codelineno-0-607"></a><span class="sd">    and a warning is emitted. Deriving that extent from a source dataset</span>
+<a id="__codelineno-0-608" name="__codelineno-0-608"></a><span class="sd">    is the caller&#39;s job (cleopatra renders supplied coordinates; it does</span>
+<a id="__codelineno-0-609" name="__codelineno-0-609"></a><span class="sd">    not read geotransforms).</span>
+<a id="__codelineno-0-610" name="__codelineno-0-610"></a>
+<a id="__codelineno-0-611" name="__codelineno-0-611"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-612" name="__codelineno-0-612"></a><span class="sd">        style: A name from `available_map_styles()` (`&quot;ecmwf&quot;`,</span>
+<a id="__codelineno-0-613" name="__codelineno-0-613"></a><span class="sd">            `&quot;ecmwf-dark&quot;`), or `&quot;auto&quot;` to pick between them from the</span>
+<a id="__codelineno-0-614" name="__codelineno-0-614"></a><span class="sd">            background luminance (dark backgrounds get the lighter</span>
+<a id="__codelineno-0-615" name="__codelineno-0-615"></a><span class="sd">            `&quot;ecmwf-dark&quot;` greys so coastlines stay visible). Default</span>
+<a id="__codelineno-0-616" name="__codelineno-0-616"></a><span class="sd">            `&quot;ecmwf&quot;`.</span>
+<a id="__codelineno-0-617" name="__codelineno-0-617"></a><span class="sd">        ax: Axes to draw on. Defaults to the glyph&#39;s `self.ax`.</span>
+<a id="__codelineno-0-618" name="__codelineno-0-618"></a><span class="sd">        extent: Optional `[xmin, ymin, xmax, ymax]` (i.e.</span>
+<a id="__codelineno-0-619" name="__codelineno-0-619"></a><span class="sd">            `[west, south, east, north]`) in the axes&#39; CRS -- the same</span>
+<a id="__codelineno-0-620" name="__codelineno-0-620"></a><span class="sd">            order as `ArrayGlyph(extent=...)`. When given, the image and</span>
+<a id="__codelineno-0-621" name="__codelineno-0-621"></a><span class="sd">            axis limits are set to it (handling the pixel-coordinate</span>
+<a id="__codelineno-0-622" name="__codelineno-0-622"></a><span class="sd">            RGB/animate case); when omitted the current axis limits are</span>
+<a id="__codelineno-0-623" name="__codelineno-0-623"></a><span class="sd">            used.</span>
+<a id="__codelineno-0-624" name="__codelineno-0-624"></a><span class="sd">        resolution: Natural Earth resolution for the coastline/borders</span>
+<a id="__codelineno-0-625" name="__codelineno-0-625"></a><span class="sd">            (`&quot;110m&quot;`/`&quot;50m&quot;`/`&quot;10m&quot;`). Defaults to the style&#39;s value.</span>
+<a id="__codelineno-0-626" name="__codelineno-0-626"></a><span class="sd">        graticule_step: Degree spacing for the graticule. Defaults to a</span>
+<a id="__codelineno-0-627" name="__codelineno-0-627"></a><span class="sd">            &quot;nice&quot; step giving ~6 divisions across the wider span.</span>
+<a id="__codelineno-0-628" name="__codelineno-0-628"></a><span class="sd">        zorder: Draw order for the reference layers (drawn above the</span>
+<a id="__codelineno-0-629" name="__codelineno-0-629"></a><span class="sd">            data; the graticule sits just below the coastlines).</span>
+<a id="__codelineno-0-630" name="__codelineno-0-630"></a>
+<a id="__codelineno-0-631" name="__codelineno-0-631"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-632" name="__codelineno-0-632"></a><span class="sd">        matplotlib.axes.Axes: The decorated axes, for chaining.</span>
+<a id="__codelineno-0-633" name="__codelineno-0-633"></a>
+<a id="__codelineno-0-634" name="__codelineno-0-634"></a><span class="sd">    Raises:</span>
+<a id="__codelineno-0-635" name="__codelineno-0-635"></a><span class="sd">        RuntimeError: If the glyph has no axes yet and `ax` is not given.</span>
+<a id="__codelineno-0-636" name="__codelineno-0-636"></a><span class="sd">        ValueError: If `style` is not a known preset or `&quot;auto&quot;`, or if</span>
+<a id="__codelineno-0-637" name="__codelineno-0-637"></a><span class="sd">            `graticule_step` is given and is not a positive number.</span>
+<a id="__codelineno-0-638" name="__codelineno-0-638"></a>
+<a id="__codelineno-0-639" name="__codelineno-0-639"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-640" name="__codelineno-0-640"></a><span class="sd">        - Dress a georeferenced field in the ECMWF look:</span>
+<a id="__codelineno-0-641" name="__codelineno-0-641"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-642" name="__codelineno-0-642"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-643" name="__codelineno-0-643"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.array_glyph import ArrayGlyph</span>
+<a id="__codelineno-0-644" name="__codelineno-0-644"></a><span class="sd">            &gt;&gt;&gt; data = np.random.rand(20, 30)</span>
+<a id="__codelineno-0-645" name="__codelineno-0-645"></a><span class="sd">            &gt;&gt;&gt; glyph = ArrayGlyph(data, extent=[-100, 15, -40, 55])</span>
+<a id="__codelineno-0-646" name="__codelineno-0-646"></a><span class="sd">            &gt;&gt;&gt; fig, ax = glyph.plot()  # doctest: +SKIP</span>
+<a id="__codelineno-0-647" name="__codelineno-0-647"></a><span class="sd">            &gt;&gt;&gt; glyph.add_reference_map(&quot;ecmwf&quot;)  # doctest: +SKIP</span>
+<a id="__codelineno-0-648" name="__codelineno-0-648"></a>
+<a id="__codelineno-0-649" name="__codelineno-0-649"></a><span class="sd">            ```</span>
 <a id="__codelineno-0-650" name="__codelineno-0-650"></a>
-<a id="__codelineno-0-651" name="__codelineno-0-651"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-652" name="__codelineno-0-652"></a>
-<a id="__codelineno-0-653" name="__codelineno-0-653"></a><span class="sd">    See Also:</span>
-<a id="__codelineno-0-654" name="__codelineno-0-654"></a><span class="sd">        add_features: The Natural Earth layer helper this composes.</span>
-<a id="__codelineno-0-655" name="__codelineno-0-655"></a><span class="sd">        available_map_styles: The built-in preset names.</span>
-<a id="__codelineno-0-656" name="__codelineno-0-656"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-657" name="__codelineno-0-657"></a>    <span class="k">if</span> <span class="n">graticule_step</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span>
-<a id="__codelineno-0-658" name="__codelineno-0-658"></a>        <span class="ow">not</span> <span class="n">math</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">graticule_step</span><span class="p">)</span> <span class="ow">or</span> <span class="n">graticule_step</span> <span class="o">&lt;=</span> <span class="mi">0</span>
-<a id="__codelineno-0-659" name="__codelineno-0-659"></a>    <span class="p">):</span>
-<a id="__codelineno-0-660" name="__codelineno-0-660"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-661" name="__codelineno-0-661"></a>            <span class="s2">&quot;graticule_step must be a positive, finite number, got &quot;</span>
-<a id="__codelineno-0-662" name="__codelineno-0-662"></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">graticule_step</span><span class="si">}</span><span class="s2">&quot;</span>
-<a id="__codelineno-0-663" name="__codelineno-0-663"></a>        <span class="p">)</span>
-<a id="__codelineno-0-664" name="__codelineno-0-664"></a>    <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_basemap_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
-<a id="__codelineno-0-665" name="__codelineno-0-665"></a>
-<a id="__codelineno-0-666" name="__codelineno-0-666"></a>    <span class="n">resolved</span> <span class="o">=</span> <span class="n">style</span>
-<a id="__codelineno-0-667" name="__codelineno-0-667"></a>    <span class="k">if</span> <span class="n">style</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-668" name="__codelineno-0-668"></a>        <span class="n">resolved</span> <span class="o">=</span> <span class="s2">&quot;ecmwf-dark&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_background_is_dark</span><span class="p">(</span><span class="n">target</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;ecmwf&quot;</span>
-<a id="__codelineno-0-669" name="__codelineno-0-669"></a>    <span class="k">if</span> <span class="n">resolved</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">REFERENCE_MAP_STYLES</span><span class="p">:</span>
-<a id="__codelineno-0-670" name="__codelineno-0-670"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-671" name="__codelineno-0-671"></a>            <span class="sa">f</span><span class="s2">&quot;Unknown map style </span><span class="si">{</span><span class="n">style</span><span class="si">!r}</span><span class="s2">; available: &quot;</span>
-<a id="__codelineno-0-672" name="__codelineno-0-672"></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">available_map_styles</span><span class="p">()</span><span class="si">}</span><span class="s2"> (or &#39;auto&#39;).&quot;</span>
-<a id="__codelineno-0-673" name="__codelineno-0-673"></a>        <span class="p">)</span>
-<a id="__codelineno-0-674" name="__codelineno-0-674"></a>    <span class="n">preset</span> <span class="o">=</span> <span class="n">REFERENCE_MAP_STYLES</span><span class="p">[</span><span class="n">resolved</span><span class="p">]</span>
-<a id="__codelineno-0-675" name="__codelineno-0-675"></a>
-<a id="__codelineno-0-676" name="__codelineno-0-676"></a>    <span class="k">if</span> <span class="n">extent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-677" name="__codelineno-0-677"></a>        <span class="c1"># `[xmin, ymin, xmax, ymax]` == `[west, south, east, north]`,</span>
-<a id="__codelineno-0-678" name="__codelineno-0-678"></a>        <span class="c1"># the same order as ArrayGlyph(extent=...); matplotlib wants</span>
-<a id="__codelineno-0-679" name="__codelineno-0-679"></a>        <span class="c1"># `(xmin, xmax, ymin, ymax)` for `set_extent`.</span>
-<a id="__codelineno-0-680" name="__codelineno-0-680"></a>        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">extent</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span>
-<a id="__codelineno-0-681" name="__codelineno-0-681"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-682" name="__codelineno-0-682"></a>                <span class="s2">&quot;extent must be [xmin, ymin, xmax, ymax] &quot;</span>
-<a id="__codelineno-0-683" name="__codelineno-0-683"></a>                <span class="sa">f</span><span class="s2">&quot;(4 values), got </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">extent</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
-<a id="__codelineno-0-684" name="__codelineno-0-684"></a>            <span class="p">)</span>
-<a id="__codelineno-0-685" name="__codelineno-0-685"></a>        <span class="n">west</span><span class="p">,</span> <span class="n">south</span><span class="p">,</span> <span class="n">east</span><span class="p">,</span> <span class="n">north</span> <span class="o">=</span> <span class="n">extent</span>
-<a id="__codelineno-0-686" name="__codelineno-0-686"></a>        <span class="n">im</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;im&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-<a id="__codelineno-0-687" name="__codelineno-0-687"></a>        <span class="k">if</span> <span class="n">im</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="s2">&quot;set_extent&quot;</span><span class="p">):</span>
-<a id="__codelineno-0-688" name="__codelineno-0-688"></a>            <span class="n">im</span><span class="o">.</span><span class="n">set_extent</span><span class="p">((</span><span class="n">west</span><span class="p">,</span> <span class="n">east</span><span class="p">,</span> <span class="n">south</span><span class="p">,</span> <span class="n">north</span><span class="p">))</span>
-<a id="__codelineno-0-689" name="__codelineno-0-689"></a>        <span class="n">target</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">west</span><span class="p">,</span> <span class="n">east</span><span class="p">)</span>
-<a id="__codelineno-0-690" name="__codelineno-0-690"></a>        <span class="n">target</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">south</span><span class="p">,</span> <span class="n">north</span><span class="p">)</span>
-<a id="__codelineno-0-691" name="__codelineno-0-691"></a>    <span class="k">elif</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;extent&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-692" name="__codelineno-0-692"></a>        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-<a id="__codelineno-0-693" name="__codelineno-0-693"></a>            <span class="s2">&quot;add_reference_map: the glyph has no geographic extent, so &quot;</span>
-<a id="__codelineno-0-694" name="__codelineno-0-694"></a>            <span class="s2">&quot;coastlines/borders may not align with the data. Pass &quot;</span>
-<a id="__codelineno-0-695" name="__codelineno-0-695"></a>            <span class="s2">&quot;extent=[west, south, east, north] or construct the glyph &quot;</span>
-<a id="__codelineno-0-696" name="__codelineno-0-696"></a>            <span class="s2">&quot;with extent=.&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-697" name="__codelineno-0-697"></a>            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-<a id="__codelineno-0-698" name="__codelineno-0-698"></a>        <span class="p">)</span>
-<a id="__codelineno-0-699" name="__codelineno-0-699"></a>
-<a id="__codelineno-0-700" name="__codelineno-0-700"></a>    <span class="n">res</span> <span class="o">=</span> <span class="n">resolution</span> <span class="ow">or</span> <span class="n">preset</span><span class="p">[</span><span class="s2">&quot;resolution&quot;</span><span class="p">]</span>
-<a id="__codelineno-0-701" name="__codelineno-0-701"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">add_features</span><span class="p">(</span>
-<a id="__codelineno-0-702" name="__codelineno-0-702"></a>        <span class="s2">&quot;coastline&quot;</span><span class="p">,</span> <span class="n">res</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="n">zorder</span><span class="p">,</span> <span class="o">**</span><span class="n">preset</span><span class="p">[</span><span class="s2">&quot;coastline&quot;</span><span class="p">]</span>
-<a id="__codelineno-0-703" name="__codelineno-0-703"></a>    <span class="p">)</span>
-<a id="__codelineno-0-704" name="__codelineno-0-704"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">add_features</span><span class="p">(</span><span class="s2">&quot;borders&quot;</span><span class="p">,</span> <span class="n">res</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="n">zorder</span><span class="p">,</span> <span class="o">**</span><span class="n">preset</span><span class="p">[</span><span class="s2">&quot;borders&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-705" name="__codelineno-0-705"></a>
-<a id="__codelineno-0-706" name="__codelineno-0-706"></a>    <span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span>
-<a id="__codelineno-0-707" name="__codelineno-0-707"></a>    <span class="n">ymin</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
-<a id="__codelineno-0-708" name="__codelineno-0-708"></a>    <span class="n">step</span> <span class="o">=</span> <span class="p">(</span>
-<a id="__codelineno-0-709" name="__codelineno-0-709"></a>        <span class="n">graticule_step</span>
-<a id="__codelineno-0-710" name="__codelineno-0-710"></a>        <span class="k">if</span> <span class="n">graticule_step</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-<a id="__codelineno-0-711" name="__codelineno-0-711"></a>        <span class="k">else</span> <span class="n">_nice_step</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">xmax</span> <span class="o">-</span> <span class="n">xmin</span><span class="p">),</span> <span class="nb">abs</span><span class="p">(</span><span class="n">ymax</span> <span class="o">-</span> <span class="n">ymin</span><span class="p">)))</span>
-<a id="__codelineno-0-712" name="__codelineno-0-712"></a>    <span class="p">)</span>
-<a id="__codelineno-0-713" name="__codelineno-0-713"></a>    <span class="n">target</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">MultipleLocator</span><span class="p">(</span><span class="n">step</span><span class="p">))</span>
-<a id="__codelineno-0-714" name="__codelineno-0-714"></a>    <span class="n">target</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">MultipleLocator</span><span class="p">(</span><span class="n">step</span><span class="p">))</span>
-<a id="__codelineno-0-715" name="__codelineno-0-715"></a>    <span class="n">target</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">FuncFormatter</span><span class="p">(</span><span class="n">_lon_formatter</span><span class="p">))</span>
-<a id="__codelineno-0-716" name="__codelineno-0-716"></a>    <span class="n">target</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">FuncFormatter</span><span class="p">(</span><span class="n">_lat_formatter</span><span class="p">))</span>
-<a id="__codelineno-0-717" name="__codelineno-0-717"></a>    <span class="n">target</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="n">zorder</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">preset</span><span class="p">[</span><span class="s2">&quot;graticule&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-718" name="__codelineno-0-718"></a>    <span class="n">target</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">preset</span><span class="p">[</span><span class="s2">&quot;labels&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-719" name="__codelineno-0-719"></a>    <span class="k">for</span> <span class="n">spine</span> <span class="ow">in</span> <span class="n">target</span><span class="o">.</span><span class="n">spines</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
-<a id="__codelineno-0-720" name="__codelineno-0-720"></a>        <span class="n">spine</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="o">**</span><span class="n">preset</span><span class="p">[</span><span class="s2">&quot;spines&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-721" name="__codelineno-0-721"></a>    <span class="k">return</span> <span class="n">target</span>
+<a id="__codelineno-0-651" name="__codelineno-0-651"></a><span class="sd">    See Also:</span>
+<a id="__codelineno-0-652" name="__codelineno-0-652"></a><span class="sd">        add_features: The Natural Earth layer helper this composes.</span>
+<a id="__codelineno-0-653" name="__codelineno-0-653"></a><span class="sd">        available_map_styles: The built-in preset names.</span>
+<a id="__codelineno-0-654" name="__codelineno-0-654"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-655" name="__codelineno-0-655"></a>    <span class="k">if</span> <span class="n">graticule_step</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span>
+<a id="__codelineno-0-656" name="__codelineno-0-656"></a>        <span class="ow">not</span> <span class="n">math</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">graticule_step</span><span class="p">)</span> <span class="ow">or</span> <span class="n">graticule_step</span> <span class="o">&lt;=</span> <span class="mi">0</span>
+<a id="__codelineno-0-657" name="__codelineno-0-657"></a>    <span class="p">):</span>
+<a id="__codelineno-0-658" name="__codelineno-0-658"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-659" name="__codelineno-0-659"></a>            <span class="s2">&quot;graticule_step must be a positive, finite number, got &quot;</span>
+<a id="__codelineno-0-660" name="__codelineno-0-660"></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">graticule_step</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-661" name="__codelineno-0-661"></a>        <span class="p">)</span>
+<a id="__codelineno-0-662" name="__codelineno-0-662"></a>    <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_basemap_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+<a id="__codelineno-0-663" name="__codelineno-0-663"></a>
+<a id="__codelineno-0-664" name="__codelineno-0-664"></a>    <span class="n">resolved</span> <span class="o">=</span> <span class="n">style</span>
+<a id="__codelineno-0-665" name="__codelineno-0-665"></a>    <span class="k">if</span> <span class="n">style</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-666" name="__codelineno-0-666"></a>        <span class="n">resolved</span> <span class="o">=</span> <span class="s2">&quot;ecmwf-dark&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_background_is_dark</span><span class="p">(</span><span class="n">target</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;ecmwf&quot;</span>
+<a id="__codelineno-0-667" name="__codelineno-0-667"></a>    <span class="k">if</span> <span class="n">resolved</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">REFERENCE_MAP_STYLES</span><span class="p">:</span>
+<a id="__codelineno-0-668" name="__codelineno-0-668"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-669" name="__codelineno-0-669"></a>            <span class="sa">f</span><span class="s2">&quot;Unknown map style </span><span class="si">{</span><span class="n">style</span><span class="si">!r}</span><span class="s2">; available: &quot;</span>
+<a id="__codelineno-0-670" name="__codelineno-0-670"></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">available_map_styles</span><span class="p">()</span><span class="si">}</span><span class="s2"> (or &#39;auto&#39;).&quot;</span>
+<a id="__codelineno-0-671" name="__codelineno-0-671"></a>        <span class="p">)</span>
+<a id="__codelineno-0-672" name="__codelineno-0-672"></a>    <span class="n">preset</span> <span class="o">=</span> <span class="n">REFERENCE_MAP_STYLES</span><span class="p">[</span><span class="n">resolved</span><span class="p">]</span>
+<a id="__codelineno-0-673" name="__codelineno-0-673"></a>
+<a id="__codelineno-0-674" name="__codelineno-0-674"></a>    <span class="k">if</span> <span class="n">extent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-675" name="__codelineno-0-675"></a>        <span class="c1"># `[xmin, ymin, xmax, ymax]` == `[west, south, east, north]`,</span>
+<a id="__codelineno-0-676" name="__codelineno-0-676"></a>        <span class="c1"># the same order as ArrayGlyph(extent=...); matplotlib wants</span>
+<a id="__codelineno-0-677" name="__codelineno-0-677"></a>        <span class="c1"># `(xmin, xmax, ymin, ymax)` for `set_extent`.</span>
+<a id="__codelineno-0-678" name="__codelineno-0-678"></a>        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">extent</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span>
+<a id="__codelineno-0-679" name="__codelineno-0-679"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-680" name="__codelineno-0-680"></a>                <span class="s2">&quot;extent must be [xmin, ymin, xmax, ymax] &quot;</span>
+<a id="__codelineno-0-681" name="__codelineno-0-681"></a>                <span class="sa">f</span><span class="s2">&quot;(4 values), got </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">extent</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-682" name="__codelineno-0-682"></a>            <span class="p">)</span>
+<a id="__codelineno-0-683" name="__codelineno-0-683"></a>        <span class="n">west</span><span class="p">,</span> <span class="n">south</span><span class="p">,</span> <span class="n">east</span><span class="p">,</span> <span class="n">north</span> <span class="o">=</span> <span class="n">extent</span>
+<a id="__codelineno-0-684" name="__codelineno-0-684"></a>        <span class="n">im</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;im&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<a id="__codelineno-0-685" name="__codelineno-0-685"></a>        <span class="k">if</span> <span class="n">im</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="s2">&quot;set_extent&quot;</span><span class="p">):</span>
+<a id="__codelineno-0-686" name="__codelineno-0-686"></a>            <span class="n">im</span><span class="o">.</span><span class="n">set_extent</span><span class="p">((</span><span class="n">west</span><span class="p">,</span> <span class="n">east</span><span class="p">,</span> <span class="n">south</span><span class="p">,</span> <span class="n">north</span><span class="p">))</span>
+<a id="__codelineno-0-687" name="__codelineno-0-687"></a>        <span class="n">target</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">west</span><span class="p">,</span> <span class="n">east</span><span class="p">)</span>
+<a id="__codelineno-0-688" name="__codelineno-0-688"></a>        <span class="n">target</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">south</span><span class="p">,</span> <span class="n">north</span><span class="p">)</span>
+<a id="__codelineno-0-689" name="__codelineno-0-689"></a>    <span class="k">elif</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;extent&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-690" name="__codelineno-0-690"></a>        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+<a id="__codelineno-0-691" name="__codelineno-0-691"></a>            <span class="s2">&quot;add_reference_map: the glyph has no geographic extent, so &quot;</span>
+<a id="__codelineno-0-692" name="__codelineno-0-692"></a>            <span class="s2">&quot;coastlines/borders may not align with the data. Pass &quot;</span>
+<a id="__codelineno-0-693" name="__codelineno-0-693"></a>            <span class="s2">&quot;extent=[west, south, east, north] or construct the glyph &quot;</span>
+<a id="__codelineno-0-694" name="__codelineno-0-694"></a>            <span class="s2">&quot;with extent=.&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-695" name="__codelineno-0-695"></a>            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+<a id="__codelineno-0-696" name="__codelineno-0-696"></a>        <span class="p">)</span>
+<a id="__codelineno-0-697" name="__codelineno-0-697"></a>
+<a id="__codelineno-0-698" name="__codelineno-0-698"></a>    <span class="n">res</span> <span class="o">=</span> <span class="n">resolution</span> <span class="ow">or</span> <span class="n">preset</span><span class="p">[</span><span class="s2">&quot;resolution&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-699" name="__codelineno-0-699"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">add_features</span><span class="p">(</span>
+<a id="__codelineno-0-700" name="__codelineno-0-700"></a>        <span class="s2">&quot;coastline&quot;</span><span class="p">,</span> <span class="n">res</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="n">zorder</span><span class="p">,</span> <span class="o">**</span><span class="n">preset</span><span class="p">[</span><span class="s2">&quot;coastline&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-701" name="__codelineno-0-701"></a>    <span class="p">)</span>
+<a id="__codelineno-0-702" name="__codelineno-0-702"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">add_features</span><span class="p">(</span><span class="s2">&quot;borders&quot;</span><span class="p">,</span> <span class="n">res</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="n">zorder</span><span class="p">,</span> <span class="o">**</span><span class="n">preset</span><span class="p">[</span><span class="s2">&quot;borders&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-703" name="__codelineno-0-703"></a>
+<a id="__codelineno-0-704" name="__codelineno-0-704"></a>    <span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span>
+<a id="__codelineno-0-705" name="__codelineno-0-705"></a>    <span class="n">ymin</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
+<a id="__codelineno-0-706" name="__codelineno-0-706"></a>    <span class="n">step</span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-0-707" name="__codelineno-0-707"></a>        <span class="n">graticule_step</span>
+<a id="__codelineno-0-708" name="__codelineno-0-708"></a>        <span class="k">if</span> <span class="n">graticule_step</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-0-709" name="__codelineno-0-709"></a>        <span class="k">else</span> <span class="n">_nice_step</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">xmax</span> <span class="o">-</span> <span class="n">xmin</span><span class="p">),</span> <span class="nb">abs</span><span class="p">(</span><span class="n">ymax</span> <span class="o">-</span> <span class="n">ymin</span><span class="p">)))</span>
+<a id="__codelineno-0-710" name="__codelineno-0-710"></a>    <span class="p">)</span>
+<a id="__codelineno-0-711" name="__codelineno-0-711"></a>    <span class="n">target</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">MultipleLocator</span><span class="p">(</span><span class="n">step</span><span class="p">))</span>
+<a id="__codelineno-0-712" name="__codelineno-0-712"></a>    <span class="n">target</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">MultipleLocator</span><span class="p">(</span><span class="n">step</span><span class="p">))</span>
+<a id="__codelineno-0-713" name="__codelineno-0-713"></a>    <span class="n">target</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">FuncFormatter</span><span class="p">(</span><span class="n">_lon_formatter</span><span class="p">))</span>
+<a id="__codelineno-0-714" name="__codelineno-0-714"></a>    <span class="n">target</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">FuncFormatter</span><span class="p">(</span><span class="n">_lat_formatter</span><span class="p">))</span>
+<a id="__codelineno-0-715" name="__codelineno-0-715"></a>    <span class="n">target</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="n">zorder</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">preset</span><span class="p">[</span><span class="s2">&quot;graticule&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-716" name="__codelineno-0-716"></a>    <span class="n">target</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">preset</span><span class="p">[</span><span class="s2">&quot;labels&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-717" name="__codelineno-0-717"></a>    <span class="k">for</span> <span class="n">spine</span> <span class="ow">in</span> <span class="n">target</span><span class="o">.</span><span class="n">spines</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+<a id="__codelineno-0-718" name="__codelineno-0-718"></a>        <span class="n">spine</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="o">**</span><span class="n">preset</span><span class="p">[</span><span class="s2">&quot;spines&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-719" name="__codelineno-0-719"></a>    <span class="k">return</span> <span class="n">target</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
