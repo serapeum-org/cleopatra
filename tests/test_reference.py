@@ -542,6 +542,22 @@ def test_add_relief_non_4326_crs_warps_and_aligns(cache: Path):
     plt.close(fig)
 
 
+def test_add_relief_non_4326_explicit_extent_tall_box(cache: Path):
+    """A non-4326 crs with an explicit, taller-than-wide extent warps to that
+    box (exercises the explicit-extent and aspect<1 grid-sizing branches)."""
+    pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+    _blue_west_red_east_relief(cache)
+    fig, ax = plt.subplots()
+    ax.set_xlim(-1e6, 1e6)
+    ax.set_ylim(-2e7, 2e7)
+    add_relief(ax, "low", extent=(-1e6, -2e7, 1e6, 2e7), crs=3857)
+    placed = np.asarray(ax.images[0].get_array())
+    assert placed.shape[2] == 4, f"warp path should be RGBA, got {placed.shape}"
+    assert placed.shape[0] > placed.shape[1], "a tall box should be taller than wide"
+    assert tuple(ax.images[0].get_extent()) == (-1e6, 1e6, -2e7, 2e7)
+    plt.close(fig)
+
+
 def test_add_relief_non_4326_masks_out_of_domain(cache: Path):
     """Cells outside the target CRS's domain (an orthographic disc) are left
     transparent instead of crashing."""
