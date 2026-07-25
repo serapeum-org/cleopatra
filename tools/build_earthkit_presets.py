@@ -19,6 +19,10 @@ Only a **curated set** of common parameters is vendored (see ``PARAMS``); extend
 it to add more. Only ECMWF's colour *data* + level/label associations are
 copied, never any earthkit code.
 
+Maintainer dependencies: only ``PyYAML`` (``import yaml``), used to parse the
+earthkit style files -- not a cleopatra runtime dependency; install it in the
+maintainer environment before re-running.
+
 Re-run (from the repo root)::
 
     python tools/build_earthkit_presets.py src/cleopatra/data/earthkit_presets.json [<ref>]
