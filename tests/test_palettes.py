@@ -1,6 +1,13 @@
 """Tests for `cleopatra.palettes` -- the unified Palette record and registry."""
+import numpy as np
 import pytest
-from matplotlib.colors import Colormap, ListedColormap
+from matplotlib.colors import (
+    BoundaryNorm,
+    CenteredNorm,
+    Colormap,
+    ListedColormap,
+    Normalize,
+)
 
 from cleopatra.palettes import (
     PALETTES,
@@ -56,6 +63,66 @@ class TestPalette:
     def test_default_source(self):
         """Source defaults to 'cleopatra'."""
         assert Palette("p", "cyclic", ("#000", "#fff")).source == "cleopatra"
+
+
+class TestDefaultNorm:
+    """Palette.default_norm -- the kind-driven norm."""
+
+    def test_sequential_is_linear_normalize(self):
+        """A sequential palette yields a plain linear Normalize over the bounds."""
+        norm = Palette("s", "sequential", ("#fff", "#000")).default_norm(vmin=2, vmax=8)
+        assert type(norm) is Normalize
+        assert (norm.vmin, norm.vmax) == (2, 8)
+
+    def test_sequential_autoranges_from_data(self):
+        """With no explicit bounds, sequential auto-ranges from the finite data range."""
+        data = np.array([[1.0, np.nan], [3.0, 5.0]])
+        norm = Palette("s", "sequential", ("#fff", "#000")).default_norm(data)
+        assert (norm.vmin, norm.vmax) == (1.0, 5.0)
+
+    def test_diverging_is_symmetric_centered(self):
+        """A diverging palette yields a CenteredNorm symmetric about 0 by default."""
+        norm = Palette("d", "diverging", ("#00f", "#fff", "#f00")).default_norm(vmin=-5, vmax=8)
+        assert isinstance(norm, CenteredNorm)
+        assert norm.vcenter == 0.0
+        assert norm.halfrange == 8.0  # max(|-5|, |8|)
+
+    def test_diverging_honours_center(self):
+        """An explicit center shifts the diverging norm's midpoint and halfrange."""
+        norm = Palette("d", "diverging", ("#00f", "#fff", "#f00")).default_norm(
+            vmin=10, vmax=30, center=20
+        )
+        assert norm.vcenter == 20.0
+        assert norm.halfrange == 10.0
+
+    def test_diverging_without_bounds_autoscales(self):
+        """With no bounds or data, diverging returns a CenteredNorm that autoscales at draw."""
+        norm = Palette("d", "diverging", ("#00f", "#fff", "#f00")).default_norm()
+        assert isinstance(norm, CenteredNorm)
+        assert norm.vcenter == 0.0 and norm.halfrange is None
+
+    def test_qualitative_is_indexed_boundary_norm(self):
+        """A qualitative palette yields a BoundaryNorm mapping class index k to swatch k."""
+        norm = Palette("q", "qualitative", ("#f00", "#0f0", "#00f")).default_norm()
+        assert isinstance(norm, BoundaryNorm)
+        assert norm.Ncmap == 3  # one colour slot per class
+        assert int(norm(0)) == 0 and int(norm(2)) == 2
+
+    def test_cyclic_is_linear_normalize(self):
+        """A cyclic palette uses a linear Normalize (the wrapping lives in the colormap)."""
+        norm = Palette("c", "cyclic", ("#f00", "#0f0", "#f00")).default_norm(vmin=0, vmax=360)
+        assert type(norm) is Normalize
+
+    def test_explicit_bounds_ignore_data(self):
+        """When both vmin and vmax are given, the data range is not consulted."""
+        data = np.array([-999.0, 999.0])
+        norm = Palette("s", "sequential", ("#fff", "#000")).default_norm(data, vmin=0, vmax=1)
+        assert (norm.vmin, norm.vmax) == (0, 1)
+
+    def test_all_nan_data_leaves_bounds_unset(self):
+        """All-NaN data yields no finite range, so bounds stay None (autoscale at draw)."""
+        norm = Palette("s", "sequential", ("#fff", "#000")).default_norm(np.full(4, np.nan))
+        assert norm.vmin is None and norm.vmax is None
 
 
 class TestRegistry:

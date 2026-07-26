@@ -27,7 +27,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
-from matplotlib.colors import Colormap, ListedColormap
+import numpy as np
+from matplotlib.colors import (
+    BoundaryNorm,
+    CenteredNorm,
+    Colormap,
+    ListedColormap,
+    Normalize,
+)
 
 from cleopatra.perceptual import perceptual_colormap
 
@@ -123,6 +130,75 @@ class Palette:
         if self.kind is PaletteKind.QUALITATIVE:
             return ListedColormap(list(self.colors), name=self.name)
         return perceptual_colormap(self.name, list(self.colors), n)
+
+    def default_norm(
+        self,
+        data: np.ndarray | None = None,
+        *,
+        vmin: float | None = None,
+        vmax: float | None = None,
+        center: float | None = None,
+    ) -> Normalize:
+        """Return the matplotlib norm that suits this palette's `kind`.
+
+        The companion to `to_colormap`: pairing a palette's colormap with the norm
+        its kind implies gives a sensible default rendering without hand-picking a
+        norm every time.
+
+        - `sequential` / `cyclic`: a linear `Normalize` over `[vmin, vmax]`.
+        - `diverging`: a `CenteredNorm` symmetric about `center` (default `0.0`),
+            so the colormap's neutral midpoint lands on the centre and both ends are
+            equidistant.
+        - `qualitative`: a `BoundaryNorm` over the `N` discrete class indices, so an
+            integer class `k` maps to swatch `k`.
+
+        Concrete bounds are taken from `vmin`/`vmax` when given, else from `data`'s
+        finite range; a missing bound left as `None` autoscales at draw time. `data`
+        and the bounds are ignored for `qualitative`.
+
+        Args:
+            data: Optional array to auto-range from when `vmin`/`vmax` are omitted.
+            vmin: Lower bound (continuous kinds).
+            vmax: Upper bound (continuous kinds).
+            center: Centre for a `diverging` norm. Defaults to `0.0`.
+
+        Returns:
+            matplotlib.colors.Normalize: The norm for this palette's kind.
+
+        Examples:
+            ```python
+            >>> from cleopatra.palettes import Palette
+            >>> from matplotlib.colors import BoundaryNorm, CenteredNorm, Normalize
+            >>> seq = Palette("s", "sequential", ("#ffffff", "#000000"))
+            >>> type(seq.default_norm(vmin=0, vmax=10)) is Normalize
+            True
+            >>> div = Palette("d", "diverging", ("#0000ff", "#ffffff", "#ff0000"))
+            >>> isinstance(div.default_norm(vmin=-5, vmax=8), CenteredNorm)
+            True
+            >>> Palette("q", "qualitative", ("#f00", "#0f0", "#00f")).default_norm().Ncmap
+            3
+
+            ```
+        """
+        if self.kind is PaletteKind.QUALITATIVE:
+            n = len(self.colors)
+            return BoundaryNorm(np.arange(n + 1) - 0.5, n)
+
+        if (vmin is None or vmax is None) and data is not None:
+            finite = np.asarray(data, dtype=float)
+            finite = finite[np.isfinite(finite)]
+            if finite.size:
+                vmin = float(finite.min()) if vmin is None else vmin
+                vmax = float(finite.max()) if vmax is None else vmax
+
+        if self.kind is PaletteKind.DIVERGING:
+            vcenter = 0.0 if center is None else float(center)
+            halfrange = None
+            if vmin is not None and vmax is not None:
+                halfrange = max(abs(vmin - vcenter), abs(vmax - vcenter)) or None
+            return CenteredNorm(vcenter=vcenter, halfrange=halfrange)
+
+        return Normalize(vmin=vmin, vmax=vmax)
 
 
 #: The global palette registry, keyed by name. Populate it with `register`.

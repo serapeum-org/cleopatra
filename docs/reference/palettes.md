@@ -11,6 +11,11 @@ colormap (and, downstream, its natural norm and legend): continuous kinds
 (via [`cleopatra.perceptual`](perceptual.md)); a `qualitative` palette keeps its
 exact class swatches as a `ListedColormap`.
 
+The kind is also what drives `Palette.default_norm` — pair it with `to_colormap` to
+get both the colours and the matching matplotlib norm in one step: a symmetric
+`CenteredNorm` for `diverging`, a `BoundaryNorm` over the class indices for
+`qualitative`, and a linear `Normalize` otherwise.
+
 The built-in **haze / CAMS-AOD / flame** families live here and register at import,
 so the registry is populated whether you import `cleopatra.palettes` or
 `cleopatra.colors`. Their `name → Colormap` dicts (`HAZE_COLORMAPS`,
@@ -66,8 +71,11 @@ from cleopatra.palettes import Palette, PaletteKind, register, get_palette, avai
 # register a diverging palette (interpolated perceptually when built)
 register(Palette("temp_anomaly", PaletteKind.DIVERGING, ("#762a83", "#f4f4f4", "#1b7837")))
 
-cmap = get_palette("temp_anomaly").to_colormap()   # a LinearSegmentedColormap
-print(available_palettes("diverging"))             # ['temp_anomaly', ...]
+p = get_palette("temp_anomaly")
+cmap = p.to_colormap()                # a LinearSegmentedColormap
+norm = p.default_norm(vmin=-4, vmax=6)  # a CenteredNorm symmetric about 0
+print(available_palettes("diverging"))  # ['temp_anomaly', ...]
+# ... then: ax.imshow(data, cmap=cmap, norm=norm)
 ```
 
 ### Discover the built-in families
