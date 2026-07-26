@@ -252,9 +252,9 @@ class TestGlyphPrepareCategoricalMapping:
         g._prepare_categorical_mapping(np.array(["b", "a", "b"]))
         categorical = g._categorical
         assert set(categorical) == {"codes", "cmap", "colors", "labels"}
-        assert np.allclose(
-            categorical["codes"], [1.0, 0.0, 1.0]
-        ), f"Unexpected codes: {categorical['codes']}"
+        assert np.allclose(categorical["codes"], [1.0, 0.0, 1.0]), (
+            f"Unexpected codes: {categorical['codes']}"
+        )
         assert categorical["labels"] == ["a", "b"]
         assert isinstance(categorical["cmap"], mcolors.ListedColormap)
 
@@ -482,9 +482,7 @@ class TestPolygonGlyphCategorical:
         glyph = PolygonGlyph(polys, values=codes, scheme="categorical")
         _, _, pc = glyph.plot()
         assert len(pc.cmap.colors) == 4, f"Expected 4 colours: {pc.cmap.colors}"
-        assert set(
-            glyph.category_legend.get_texts()[i].get_text() for i in range(4)
-        ) == {
+        assert {glyph.category_legend.get_texts()[i].get_text() for i in range(4)} == {
             "1",
             "2",
             "4",
@@ -539,7 +537,9 @@ class TestPolygonGlyphCategorical:
         assert glyph.category_legend is None, "Stale legend must be cleared"
         assert glyph.cbar is not None, "The new continuous plot should draw a colorbar"
 
-    def test_replot_from_continuous_to_categorical_clears_colorbar(self, polys_land_use):
+    def test_replot_from_continuous_to_categorical_clears_colorbar(
+        self, polys_land_use
+    ):
         """Switching `scheme` on for a re-plot drops the stale colorbar.
 
         Test scenario:
@@ -555,7 +555,9 @@ class TestPolygonGlyphCategorical:
         glyph.values = labels
         glyph.plot()
         assert glyph.cbar is None, "Stale colorbar must be cleared"
-        assert glyph.category_legend is not None, "The new categorical plot draws a legend"
+        assert glyph.category_legend is not None, (
+            "The new categorical plot draws a legend"
+        )
 
 
 class TestScatterGlyphCategorical:

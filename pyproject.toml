@@ -46,6 +46,7 @@ dev = [
     "pre-commit>=3.7.1",
     "pre-commit-hooks>=4.6.0",
     "nbval>=0.11.0",
+    "mypy>=1.10.0",
 ]
 
 docs = [
@@ -100,20 +101,61 @@ change_type_order = ["BREAKING CHANGE", "feat", "fix", "refactor", "perf", "buil
 packages = ["src/cleopatra"]
 
 
-[tool.flake8]
-ignore = "E203, E266, E501, W503, D403, D414, C901, E731"
-max-line-length = 88
-max-complexity = 18
-select = "B,C,E,F,W,T4"
-
-[tool.black]
+[tool.ruff]
 line-length = 88
-skip-string-normalization = true
+target-version = "py311"  # requires-python floors at 3.11
 
-[tool.isort]
-profile = "black"
-line_length = 88
-multi_line_output = 3
+[tool.ruff.format]
+# black had skip-string-normalization = true → preserve existing quotes.
+quote-style = "preserve"
+
+[tool.ruff.lint]
+# The *effective* flake8 rule set was E/F/W: the old config's B/C/T4 selectors
+# were inert (flake8-bugbear / flake8-print were never installed as
+# additional_dependencies). Add I (isort) and UP (pyupgrade) to fold in those
+# two standalone hooks.
+select = ["E", "F", "W", "I", "UP"]
+# Mirror the old [tool.flake8].extend-ignore. E704 and W503 are dropped — ruff
+# does not implement either (both are formatter-owned pycodestyle codes black
+# conflicts with), so there is nothing to ignore.
+ignore = ["E203", "E266", "E501", "E701", "E722", "C901", "E741", "E731"]
+
+[tool.ruff.lint.per-file-ignores]
+# flake8 excluded examples/ and tests/ from linting, and the old bare pyupgrade
+# never modernized their typing — so drop E/F/W and UP there, keeping only
+# import-sorting (I), which isort did run everywhere.
+"tests/**" = ["E", "F", "W", "UP"]
+"examples/**" = ["E", "F", "W", "UP"]
+# Tutorial notebooks import next to first use and run setup (e.g. `%matplotlib
+# inline`) before imports — both legitimately trip E402, which stays enforced
+# for real .py modules; it is ignored only for notebooks here.
+"*.ipynb" = ["E402"]
+
+[tool.bandit]
+exclude_dirs = ["tests", "examples", "docs", "planning"]
+skips = ["B101"]
+
+# Checker target is 3.12 even though `requires-python` floors at 3.11: numpy 2.5
+# ships PEP 695 `type` statements in its stubs, which mypy only parses when the
+# target is >= 3.12 (at 3.11 it aborts with a syntax error before checking any
+# source). This only widens the *typing* target; actual 3.11 runtime
+# compatibility is covered by the test matrix, not by mypy.
+[tool.mypy]
+python_version = "3.12"
+mypy_path = "src"
+packages = ["cleopatra"]
+explicit_package_bases = true
+warn_return_any = true
+warn_unused_configs = false
+disallow_untyped_defs = false
+check_untyped_defs = true
+ignore_missing_imports = true
+exclude = [
+    "tests/",
+    "examples/",
+    "docs/",
+    "planning/",
+]
 
 [tool.pytest.ini_options]
 env = ["MPLBACKEND=Agg"]

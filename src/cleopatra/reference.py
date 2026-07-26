@@ -53,6 +53,7 @@ import os
 import shutil
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 from typing import Any
@@ -62,6 +63,7 @@ from matplotlib.collections import LineCollection, PathCollection
 from matplotlib.path import Path as MplPath
 
 from cleopatra import __version__
+from cleopatra._net import urlopen_http
 
 logger = logging.getLogger(__name__)
 
@@ -133,16 +135,18 @@ def _download(
     """
     if dest.exists():
         return dest
-    if not url.lower().startswith(("http://", "https://")):
+    if urllib.parse.urlsplit(url).scheme.lower() not in ("http", "https"):
         raise ValueError(f"Refusing to fetch non-http(s) URL: {url!r}")
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     dest.parent.mkdir(parents=True, exist_ok=True)
     tmp = dest.with_suffix(dest.suffix + ".part")
     last_error: Exception | None = None
     for attempt in range(retries):
-        logger.debug("Fetching reference asset %s (attempt %d/%d)", url, attempt + 1, retries)
+        logger.debug(
+            "Fetching reference asset %s (attempt %d/%d)", url, attempt + 1, retries
+        )
         try:
-            with urllib.request.urlopen(request, timeout=timeout) as response:
+            with urlopen_http(request, timeout=timeout) as response:
                 with open(tmp, "wb") as handle:
                     shutil.copyfileobj(response, handle)
             tmp.replace(dest)
@@ -721,8 +725,7 @@ def _load_features(layer: str, resolution: str) -> list[dict]:
         raise ValueError(f"Unknown layer {layer!r}. Choose from {available_layers()}.")
     if resolution not in _RESOLUTIONS:
         raise ValueError(
-            f"Unknown resolution {resolution!r}. "
-            f"Choose from {available_resolutions()}."
+            f"Unknown resolution {resolution!r}. Choose from {available_resolutions()}."
         )
     stem = _LAYERS[layer][0]
     name = f"ne_{resolution}_{stem}.geojson.gz"
@@ -832,7 +835,7 @@ def _make_transformer(crs: int | str) -> Any:
         return Transformer.from_crs("EPSG:4326", dst, always_xy=True)
     except CRSError as e:
         raise ValueError(
-            f"Invalid CRS {crs!r}: {e}. Provide a valid EPSG code or CRS " "string."
+            f"Invalid CRS {crs!r}: {e}. Provide a valid EPSG code or CRS string."
         ) from e
 
 

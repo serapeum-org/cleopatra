@@ -73,9 +73,9 @@ class TestKDEGlyphInit:
         assert glyph.x.dtype == float, "x should be stored as float"
         assert glyph.clip_path is None, "clip_path should default to None"
         assert glyph.cbar is None, "cbar should be None before plotting"
-        assert (
-            glyph.default_options["gridsize"] == 100
-        ), "default gridsize should be 100"
+        assert glyph.default_options["gridsize"] == 100, (
+            "default gridsize should be 100"
+        )
 
     def test_clip_path_stored(self, cloud):
         """A supplied clip_path is stored on the glyph.
@@ -144,9 +144,9 @@ class TestKDEGlyphBandwidth:
         x, y = cloud
         glyph = KDEGlyph(x, y)
         expected = x.size ** (-1.0 / 6.0)
-        assert np.isclose(
-            glyph._bandwidth(), expected
-        ), f"Expected Scott's factor {expected}, got {glyph._bandwidth()}"
+        assert np.isclose(glyph._bandwidth(), expected), (
+            f"Expected Scott's factor {expected}, got {glyph._bandwidth()}"
+        )
 
     def test_bw_method_multiplier(self, cloud):
         """``bw_method`` scales Scott's rule linearly.
@@ -157,9 +157,9 @@ class TestKDEGlyphBandwidth:
         x, y = cloud
         glyph = KDEGlyph(x, y, bw_method=2.0)
         expected = 2.0 * x.size ** (-1.0 / 6.0)
-        assert np.isclose(
-            glyph._bandwidth(), expected
-        ), f"Expected {expected}, got {glyph._bandwidth()}"
+        assert np.isclose(glyph._bandwidth(), expected), (
+            f"Expected {expected}, got {glyph._bandwidth()}"
+        )
 
 
 class TestKDEGlyphEvaluate:
@@ -215,9 +215,9 @@ class TestKDEGlyphEvaluate:
         peak = np.unravel_index(int(np.argmax(density)), density.shape)
         near_x = min(abs(gx[peak] - 0.0), abs(gx[peak] - 5.0))
         near_y = min(abs(gy[peak] - 0.0), abs(gy[peak] - 5.0))
-        assert (
-            near_x < 1.0 and near_y < 1.0
-        ), f"Peak {(gx[peak], gy[peak])} not near a cluster centre"
+        assert near_x < 1.0 and near_y < 1.0, (
+            f"Peak {(gx[peak], gy[peak])} not near a cluster centre"
+        )
 
     @pytest.mark.parametrize(
         "x, y",
@@ -269,9 +269,9 @@ class TestKDEGlyphResolveLevels:
         assert edges.size == 6, f"Expected 6 edges, got {edges.size}"
         assert np.isclose(edges[0], density.min()), "First edge should be density min"
         assert np.isclose(edges[-1], density.max()), "Last edge should be density max"
-        assert np.allclose(
-            np.diff(edges), np.diff(edges)[0]
-        ), "Edges should be evenly spaced"
+        assert np.allclose(np.diff(edges), np.diff(edges)[0]), (
+            "Edges should be evenly spaced"
+        )
 
     def test_sequence_levels_sorted(self, cloud):
         """An explicit ``levels`` sequence is sorted ascending.
@@ -282,9 +282,9 @@ class TestKDEGlyphResolveLevels:
         x, y = cloud
         glyph = KDEGlyph(x, y, gridsize=30, levels=[0.3, 0.1, 0.2])
         edges = glyph._resolve_levels(np.zeros((3, 3)))
-        assert np.allclose(
-            edges, [0.1, 0.2, 0.3]
-        ), f"Edges should be sorted, got {edges}"
+        assert np.allclose(edges, [0.1, 0.2, 0.3]), (
+            f"Edges should be sorted, got {edges}"
+        )
 
 
 class TestKDEGlyphApplyClip:
@@ -327,12 +327,12 @@ class TestKDEGlyphApplyClip:
         glyph = KDEGlyph(x, y, gridsize=30, clip_path=Circle((0, 0), 1.0))
         _, ax, cs = glyph.plot()
         path = cs.get_clip_path().get_fully_transformed_path()
-        assert path.contains_point(
-            ax.transData.transform((0.0, 0.0))
-        ), "Clip should keep data point (0, 0) inside the circle"
-        assert not path.contains_point(
-            ax.transData.transform((5.0, 5.0))
-        ), "Clip should exclude data point (5, 5) outside the circle"
+        assert path.contains_point(ax.transData.transform((0.0, 0.0))), (
+            "Clip should keep data point (0, 0) inside the circle"
+        )
+        assert not path.contains_point(ax.transData.transform((5.0, 5.0))), (
+            "Clip should exclude data point (5, 5) outside the circle"
+        )
 
     def test_standalone_patch_not_mutated(self, cloud):
         """The glyph clips without mutating the caller's patch.
@@ -347,9 +347,9 @@ class TestKDEGlyphApplyClip:
         before = patch.get_transform().get_matrix().copy()
         KDEGlyph(x, y, gridsize=20, clip_path=patch).plot()
         assert patch.axes is None, "clip patch should not be attached to the glyph axes"
-        assert np.allclose(
-            patch.get_transform().get_matrix(), before
-        ), "clip patch transform should be left unchanged"
+        assert np.allclose(patch.get_transform().get_matrix(), before), (
+            "clip patch transform should be left unchanged"
+        )
 
     def test_attached_patch_used_as_is(self, cloud):
         """A Patch already added to an axes is used with its own transform.
@@ -405,9 +405,9 @@ class TestKDEGlyphPlot:
         x, y = cloud
         glyph = KDEGlyph(x, y, gridsize=40)
         fig, ax, cs = glyph.plot()
-        assert isinstance(
-            cs, QuadContourSet
-        ), f"Expected QuadContourSet, got {type(cs)}"
+        assert isinstance(cs, QuadContourSet), (
+            f"Expected QuadContourSet, got {type(cs)}"
+        )
         assert cs.filled, "shade=True should produce filled contours"
         assert glyph.cbar is not None, "A colorbar should be drawn by default"
 
@@ -442,9 +442,9 @@ class TestKDEGlyphPlot:
         x, y = cloud
         glyph = KDEGlyph(x, y, gridsize=30)
         _, ax, _ = glyph.plot(title="Density")
-        assert (
-            ax.get_title() == "Density"
-        ), f"Title should be 'Density', got {ax.get_title()!r}"
+        assert ax.get_title() == "Density", (
+            f"Title should be 'Density', got {ax.get_title()!r}"
+        )
 
     def test_levels_option_controls_contour_count(self, cloud):
         """The ``levels`` option drives the number of contour levels.
@@ -542,7 +542,9 @@ class TestKDEGlyphHillshade:
     def test_hillshade_at_plot_time(self):
         """`hillshade` passed to `plot()` shades, mirroring ArrayGlyph/MeshGlyph."""
         x, y = self._cloud()
-        _, _, im = KDEGlyph(x, y, gridsize=40, cmap="magma").plot(hillshade={"vert_exag": 20})
+        _, _, im = KDEGlyph(x, y, gridsize=40, cmap="magma").plot(
+            hillshade={"vert_exag": 20}
+        )
         assert type(im).__name__ == "AxesImage"
         assert im.get_array().shape[-1] == 4
         plt.close("all")
@@ -623,7 +625,9 @@ class TestKDEGlyphDataStyle:
         small-magnitude field still gets a full gradient (not one flat band)."""
         x, y = self._cloud()
         _, _, cs = KDEGlyph(x, y, gridsize=50, style="temperature").plot()
-        assert cs.norm.vmax < 1.0, f"temperature must auto-range to the density, got vmax={cs.norm.vmax}"
+        assert cs.norm.vmax < 1.0, (
+            f"temperature must auto-range to the density, got vmax={cs.norm.vmax}"
+        )
         colours = np.unique(np.round(np.asarray(cs.get_facecolor()), 3), axis=0)
         assert len(colours) > 1, f"expected a multi-colour gradient, got {len(colours)}"
         plt.close("all")
@@ -631,7 +635,9 @@ class TestKDEGlyphDataStyle:
     def test_style_vmin_vmax_pins_the_colour_scale(self):
         """A construction-time `vmin`/`vmax` pins a styled density's colour scale (default None auto-ranges)."""
         x, y = self._cloud()
-        _, _, cs = KDEGlyph(x, y, gridsize=40, style="temperature", vmin=-40, vmax=40).plot()
+        _, _, cs = KDEGlyph(
+            x, y, gridsize=40, style="temperature", vmin=-40, vmax=40
+        ).plot()
         assert (cs.norm.vmin, cs.norm.vmax) == (-40.0, 40.0)
         plt.close("all")
 

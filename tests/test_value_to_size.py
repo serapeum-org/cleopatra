@@ -81,9 +81,9 @@ class TestResolveSizes:
         """
         values = np.array([3.0, 1.0, 2.0, 8.0, 5.0])
         sizes = resolve_sizes(values, 10.0, 200.0, scale=scale)
-        assert np.array_equal(
-            np.argsort(sizes), np.argsort(values)
-        ), f"{scale} mapping is not monotonic: {sizes}"
+        assert np.array_equal(np.argsort(sizes), np.argsort(values)), (
+            f"{scale} mapping is not monotonic: {sizes}"
+        )
 
     @pytest.mark.parametrize("scale", ["linear", "log", "sqrt"])
     def test_spans_exactly_the_limits(self, scale):
@@ -127,9 +127,9 @@ class TestResolveSizes:
             No spread to encode -> each size is (out_min + out_max) / 2.
         """
         sizes = resolve_sizes(np.full(4, 7.0), 10.0, 50.0)
-        assert np.allclose(
-            sizes, 30.0
-        ), f"Constant input should map to 30.0, got {sizes}"
+        assert np.allclose(sizes, 30.0), (
+            f"Constant input should map to 30.0, got {sizes}"
+        )
 
     def test_preserves_input_shape(self):
         """The output has the same shape as the input array.
@@ -240,9 +240,9 @@ class TestSizeLegend:
         """
         fig, ax = plt.subplots()
         legend = size_legend(ax, [10.0, 20.0], ["a", "b"], title="Population")
-        assert (
-            legend.get_title().get_text() == "Population"
-        ), "title kwarg should be forwarded"
+        assert legend.get_title().get_text() == "Population", (
+            "title kwarg should be forwarded"
+        )
 
     def test_negative_area_clamped(self):
         """A negative area is clamped to zero markersize (no math error).
@@ -284,9 +284,9 @@ class TestScatterGlyphSizes:
         out = paths.get_sizes()
         assert np.isclose(out.min(), 10.0), f"min area should be 10, got {out.min()}"
         assert np.isclose(out.max(), 200.0), f"max area should be 200, got {out.max()}"
-        assert np.array_equal(
-            np.argsort(out), np.argsort([2.0, 1.0, 5.0, 3.0, 9.0])
-        ), f"Areas not monotonic in input: {out}"
+        assert np.array_equal(np.argsort(out), np.argsort([2.0, 1.0, 5.0, 3.0, 9.0])), (
+            f"Areas not monotonic in input: {out}"
+        )
 
     def test_size_scale_option_applied(self, xy):
         """The ``size_scale`` option drives the transform used.
@@ -317,9 +317,9 @@ class TestScatterGlyphSizes:
         x, y = xy
         glyph = ScatterGlyph(x, y, sizes=np.arange(1.0, 6.0), size_legend=True)
         glyph.plot()
-        assert isinstance(
-            glyph.size_legend_artist, Legend
-        ), "A size legend should be drawn"
+        assert isinstance(glyph.size_legend_artist, Legend), (
+            "A size legend should be drawn"
+        )
         texts = [t.get_text() for t in glyph.size_legend_artist.get_texts()]
         assert len(texts) == 3, f"Default legend should have 3 entries, got {texts}"
 
@@ -350,9 +350,9 @@ class TestScatterGlyphSizes:
         x, y = xy
         glyph = ScatterGlyph(x, y, sizes=np.arange(1.0, 6.0))
         glyph.plot()
-        assert (
-            glyph.size_legend_artist is None
-        ), "No legend should be drawn when disabled"
+        assert glyph.size_legend_artist is None, (
+            "No legend should be drawn when disabled"
+        )
 
     def test_color_and_size_independent(self, xy):
         """Colour (``values``) and size (``sizes``) combine independently.
@@ -366,13 +366,13 @@ class TestScatterGlyphSizes:
         sizes = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
         glyph = ScatterGlyph(x, y, values=values, sizes=sizes, size_limits=(10, 100))
         _, _, paths = glyph.plot()
-        assert np.array_equal(
-            paths.get_array(), values
-        ), "Colour array must be the raw values"
+        assert np.array_equal(paths.get_array(), values), (
+            "Colour array must be the raw values"
+        )
         out = paths.get_sizes()
-        assert np.array_equal(
-            np.argsort(out), np.argsort(sizes)
-        ), "Sizes must follow sizes array"
+        assert np.array_equal(np.argsort(out), np.argsort(sizes)), (
+            "Sizes must follow sizes array"
+        )
 
     def test_sizes_none_regression(self, xy):
         """``sizes=None`` keeps the original scalar-size behaviour.
@@ -384,9 +384,9 @@ class TestScatterGlyphSizes:
         glyph = ScatterGlyph(x, y, point_size=42)
         _, _, paths = glyph.plot()
         out = paths.get_sizes()
-        assert np.all(
-            out == 42
-        ), f"All markers should use point_size 42, got {set(out)}"
+        assert np.all(out == 42), (
+            f"All markers should use point_size 42, got {set(out)}"
+        )
         assert glyph.size_legend_artist is None, "No legend without sizes"
 
     def test_resolve_marker_area_scalar_without_sizes(self, xy):
@@ -410,9 +410,9 @@ class TestScatterGlyphSizes:
         glyph = ScatterGlyph(x, y, sizes=np.arange(1.0, 6.0), size_limits=(10, 200))
         areas = glyph._resolve_marker_area()
         assert isinstance(areas, np.ndarray), "Should return a per-point array"
-        assert np.isclose(areas.min(), 10.0) and np.isclose(
-            areas.max(), 200.0
-        ), f"Areas should span size_limits, got [{areas.min()}, {areas.max()}]"
+        assert np.isclose(areas.min(), 10.0) and np.isclose(areas.max(), 200.0), (
+            f"Areas should span size_limits, got [{areas.min()}, {areas.max()}]"
+        )
 
     def test_mismatched_sizes_raises(self, xy):
         """A ``sizes`` array not matching x/y length raises ``ValueError``.

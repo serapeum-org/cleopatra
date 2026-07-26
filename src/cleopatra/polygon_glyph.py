@@ -35,15 +35,17 @@ Examples:
 
 from __future__ import annotations
 
-from typing import Sequence
+from collections.abc import Sequence
 
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.collections import PolyCollection
+from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure
+from matplotlib.legend import Legend
 
 from cleopatra.geo import GeoMixin
-from cleopatra.glyph import Glyph
+from cleopatra.glyph import Glyph, _root_figure
 from cleopatra.styles import CLASSIFY_OPTIONS
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
@@ -127,8 +129,8 @@ class PolygonGlyph(GeoMixin, Glyph):
         polygons: Sequence[np.ndarray],
         values: np.ndarray | None = None,
         *,
-        ax: Axes = None,
-        fig: Figure = None,
+        ax: Axes | None = None,
+        fig: Figure | None = None,
         **kwargs,
     ):
         super().__init__(
@@ -147,15 +149,15 @@ class PolygonGlyph(GeoMixin, Glyph):
                     f"polygons ({len(self.polygons)},)."
                 )
         self.values = values
-        self.cbar = None
+        self.cbar: Colorbar | None = None
         #: The disjoint legend created by `plot` when `scheme="categorical"`
         #: (`None` otherwise); built via `Glyph.create_categorical_legend`.
-        self.category_legend = None
+        self.category_legend: Legend | None = None
 
     def plot(
         self,
         outline_only: bool = False,
-        ax: Axes = None,
+        ax: Axes | None = None,
         title: str | None = None,
         add_colorbar: bool | None = None,
     ) -> tuple[Figure, Axes, PolyCollection]:
@@ -219,10 +221,11 @@ class PolygonGlyph(GeoMixin, Glyph):
         """
         if ax is not None:
             self.ax = ax
-            self.fig = ax.get_figure()
+            self.fig = _root_figure(ax)
         elif self.ax is None:
             self.fig, self.ax = self.create_figure_axes()
         ax = self.ax
+        assert self.fig is not None
         opts = self.default_options
 
         if title is not None:

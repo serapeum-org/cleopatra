@@ -41,6 +41,7 @@ from collections.abc import Sequence
 from typing import Any
 
 import numpy as np
+from matplotlib.axes import Axes
 from matplotlib.patches import PathPatch
 from matplotlib.path import Path
 
@@ -94,8 +95,7 @@ def _as_xy(array: Any, name: str) -> np.ndarray:
     xy = np.asarray(array, dtype=float)
     if xy.ndim != 2 or xy.shape[1] != 2:
         raise ValueError(
-            f"{name} must be an (N, 2) array of x/y coordinates, "
-            f"got shape {xy.shape}."
+            f"{name} must be an (N, 2) array of x/y coordinates, got shape {xy.shape}."
         )
     return xy
 
@@ -305,7 +305,7 @@ def _visible_hemisphere(
     cos_c = np.sin(lat0_rad) * np.sin(lat_rad) + np.cos(lat0_rad) * np.cos(
         lat_rad
     ) * np.cos(lon_rad - lon0_rad)
-    return cos_c >= 0
+    return np.asarray(cos_c >= 0)
 
 
 def _split_visible_runs(xy: np.ndarray, visible: np.ndarray) -> list[np.ndarray]:
@@ -438,8 +438,7 @@ def _bin_edges(centers: np.ndarray) -> np.ndarray:
     centers = np.asarray(centers, dtype=float)
     if centers.size < 2:
         raise ValueError(
-            "at least 2 centres are required to infer bin edges, got "
-            f"{centers.size}"
+            f"at least 2 centres are required to infer bin edges, got {centers.size}"
         )
     mid = (centers[:-1] + centers[1:]) / 2.0
     first = centers[0] - (mid[0] - centers[0])

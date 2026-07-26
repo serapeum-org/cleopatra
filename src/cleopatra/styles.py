@@ -5,8 +5,9 @@ from __future__ import annotations
 import copy
 import warnings
 from collections import OrderedDict
+from collections.abc import Callable, Sequence
 from enum import StrEnum
-from typing import Any, Callable, Sequence
+from typing import Any, cast
 
 import matplotlib as mpl
 import matplotlib.colors as colors
@@ -58,7 +59,7 @@ class ColorScale(StrEnum):
     MIDPOINT = "midpoint"
 
     @classmethod
-    def _missing_(cls, value: object) -> "ColorScale | None":
+    def _missing_(cls, value: object) -> ColorScale | None:
         """Resolve a case-insensitive string to a member, else `None`.
 
         Called by `enum.Enum` when a direct value lookup fails. Only
@@ -82,7 +83,7 @@ class ColorScale(StrEnum):
         return None
 
 
-DEFAULT_OPTIONS = {
+DEFAULT_OPTIONS: dict[str, Any] = {
     "figsize": (8, 8),
     "title": None,
     "title_size": 15,
@@ -276,6 +277,7 @@ class Styles:
                 )
                 print(msg)
                 print(list(Styles.line_styles))
+                return None
         else:
             return list(Styles.line_styles.items())[style][1]
 
@@ -713,11 +715,17 @@ def resolve_sizes(
     else:  # linear
         transformed = values
 
+    # `values` was coerced to `np.ndarray` above, so `Scale.log_scale`/`np.sqrt`
+    # always return one here too -- but their signatures also allow a scalar
+    # `float` (for non-array callers), which is the type `transformed` would
+    # otherwise carry.
+    transformed = np.asarray(transformed, dtype=float)
+
     lo, hi = float(transformed.min()), float(transformed.max())
     if hi == lo:
         midpoint = (out_min + out_max) / 2.0
         return np.full(values.shape, midpoint, dtype=float)
-    return Scale.rescale(transformed, lo, hi, out_min, out_max)
+    return np.asarray(Scale.rescale(transformed, lo, hi, out_min, out_max))
 
 
 class MidpointNormalize(colors.Normalize):
@@ -851,7 +859,11 @@ class MidpointNormalize(colors.Normalize):
         self.midpoint = midpoint
         colors.Normalize.__init__(self, vmin, vmax, clip)
 
-    def __call__(
+    # matplotlib.colors.Normalize.__call__ is overloaded per input type
+    # (float -> float, ndarray -> MaskedArray); this override deliberately
+    # always returns a MaskedArray (see docstring/doctests below) for a
+    # consistent result regardless of scalar vs. array input.
+    def __call__(  # type: ignore[override]
         self, value: float | np.ndarray, clip: bool | None = None
     ) -> np.ma.MaskedArray:
         """Normalize data values to the [0, 1] range with a fixed midpoint.
@@ -930,7 +942,11 @@ class MidpointNormalize(colors.Normalize):
         """
         # I'm ignoring masked values and all kinds of edge cases to make a
         # simple example...
-        x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
+        # vmin/vmax/midpoint are resolved (non-None) by the time `__call__`
+        # actually runs -- either passed explicitly, or already resolved by
+        # matplotlib before this norm is invoked on real data.
+        x = cast("list[float]", [self.vmin, self.midpoint, self.vmax])
+        y = [0.0, 0.5, 1.0]
 
         return np.ma.masked_array(np.interp(value, x, y))
 
@@ -1178,7 +1194,9 @@ def width_legend(
     return ax.legend(handles=handles, **kwargs)
 
 
-def colorbar_legend(mappable: ScalarMappable, ax: Axes = None, **kwargs) -> Colorbar:
+def colorbar_legend(
+    mappable: ScalarMappable, ax: Axes | None = None, **kwargs
+) -> Colorbar:
     """Attach a continuous colorbar legend for a mappable.
 
     A thin, glyph-agnostic wrapper over `Figure.colorbar` for callers
@@ -1393,7 +1411,7 @@ def swatch_legend(
     vmax: float = 1.0,
     vmax_prefix: str = "≥",
     vmin_prefix: str = "",
-    bounds: Sequence[float] = (0.02, 0.88, 0.32, 0.05),
+    bounds: tuple[float, float, float, float] = (0.02, 0.88, 0.32, 0.05),
     text_color: str = "white",
     fontsize: float = 9,
     norm: colors.Normalize | None = None,
@@ -1478,8 +1496,10 @@ def swatch_legend(
         mids = (edges[:-1] + edges[1:]) / 2.0
         band_rgba = np.asarray(cmap_obj(norm(mids)))
         swatch.imshow(
-            band_rgba.reshape(1, -1, 4), aspect="auto",
-            interpolation="nearest", extent=(0, 1, 0, 1),
+            band_rgba.reshape(1, -1, 4),
+            aspect="auto",
+            interpolation="nearest",
+            extent=(0, 1, 0, 1),
         )
     else:
         if norm is None:
@@ -1493,7 +1513,12 @@ def swatch_legend(
                 norm(np.linspace(vmin, vmax, 256)), dtype=float
             ).reshape(1, -1)
         swatch.imshow(
-            gradient, aspect="auto", cmap=cmap_obj, vmin=0.0, vmax=1.0, extent=(0, 1, 0, 1)
+            gradient,
+            aspect="auto",
+            cmap=cmap_obj,
+            vmin=0.0,
+            vmax=1.0,
+            extent=(0, 1, 0, 1),
         )
     swatch.set_xticks([])
     swatch.set_yticks([])
@@ -1615,7 +1640,7 @@ MAX_JENKS_N = 5_000
 
 def classify(
     values: np.ndarray | Sequence[float],
-    scheme: str | Sequence[float],
+    scheme: str | np.ndarray | Sequence[float],
     k: int = 5,
 ) -> tuple[np.ndarray, colors.BoundaryNorm]:
     """Bin a continuous array into discrete colour classes.
@@ -1907,9 +1932,9 @@ def _scheme_edges(finite: np.ndarray, scheme: str, k: int) -> np.ndarray:
         if k < 1:
             raise ValueError(f"`k` must be >= 1, got {k}.")
         if name == "quantiles":
-            return np.quantile(finite, np.linspace(0.0, 1.0, k + 1))
+            return np.asarray(np.quantile(finite, np.linspace(0.0, 1.0, k + 1)))
         if name == "percentiles":
-            return np.percentile(finite, np.linspace(0.0, 100.0, k + 1))
+            return np.asarray(np.percentile(finite, np.linspace(0.0, 100.0, k + 1)))
         # name == "equal_interval"
         return np.linspace(float(finite.min()), float(finite.max()), k + 1)
 

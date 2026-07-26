@@ -36,7 +36,7 @@ import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 import numpy as np
 from matplotlib.animation import FuncAnimation
-
+from matplotlib.colorbar import Colorbar
 from matplotlib.colors import BoundaryNorm, ListedColormap
 
 from cleopatra.colors import (
@@ -165,10 +165,10 @@ class MeshGlyph(GeoMixin, Glyph):
         self._cached_triangulation: mtri.Triangulation | None = None
         self._cached_tri_array: np.ndarray | None = None
         self._cached_nodes_per_face: np.ndarray | None = None
-        self._cbar = None
+        self._cbar: Colorbar | None = None
         #: Colour-mapped artist from the most recent `plot` call (the
         #: `tripcolor`/`tricontour(f)` mappable); `None` before first render.
-        self.im = None
+        self.im: Any = None
         #: Per-frame time-label `Text` artist from the most recent
         #: `animate` call, if any; `None` before any `animate` call.
         self._day_text = None
@@ -191,7 +191,7 @@ class MeshGlyph(GeoMixin, Glyph):
         self._style_state = self.default_options.get("style")
         #: Last `(data, location)` rendered, so `apply_style` can restyle in
         #: place without the caller re-supplying the mesh data.
-        self._last_data = None
+        self._last_data: np.ndarray | None = None
         self._last_location = "face"
 
     @property
@@ -271,7 +271,7 @@ class MeshGlyph(GeoMixin, Glyph):
 
                 ```
         """
-        return self._face_nodes.shape[0]
+        return int(self._face_nodes.shape[0])
 
     @property
     def n_nodes(self) -> int:
@@ -551,7 +551,9 @@ class MeshGlyph(GeoMixin, Glyph):
         # the counter restarts at 0 within every group. np.repeat emits
         # nothing for zero-size groups, so empty groups are handled naturally.
         group_start = np.cumsum(sizes) - sizes
-        return np.arange(total, dtype=np.intp) - np.repeat(group_start, sizes)
+        return np.asarray(
+            np.arange(total, dtype=np.intp) - np.repeat(group_start, sizes)
+        )
 
     def _map_face_to_triangle_values(self, face_values: np.ndarray) -> np.ndarray:
         """Map per-face values to per-triangle values.
@@ -595,8 +597,7 @@ class MeshGlyph(GeoMixin, Glyph):
         expected = self.n_faces if location == "face" else self.n_nodes
         if len(data) != expected:
             raise ValueError(
-                f"data length ({len(data)}) does not match "
-                f"n_{location}s ({expected})."
+                f"data length ({len(data)}) does not match n_{location}s ({expected})."
             )
 
     def _render_mesh(
@@ -697,7 +698,10 @@ class MeshGlyph(GeoMixin, Glyph):
         tri_faces = tri.triangles
         tri_z = z_nodes[tri_faces].mean(axis=1)  # per-triangle base value
 
-        kw: dict[str, Any] = {"cmap": self.default_options["cmap"], "edgecolors": edgecolor}
+        kw: dict[str, Any] = {
+            "cmap": self.default_options["cmap"],
+            "edgecolors": edgecolor,
+        }
         if norm is not None:
             kw["norm"] = norm
         else:
@@ -1210,8 +1214,7 @@ class MeshGlyph(GeoMixin, Glyph):
         n_frames = len(frames)
         if len(time) != n_frames:
             raise ValueError(
-                f"time length ({len(time)}) does not match "
-                f"frame count ({n_frames})."
+                f"time length ({len(time)}) does not match frame count ({n_frames})."
             )
         expected = self.n_faces if location == "face" else self.n_nodes
         for i, frame in enumerate(frames):
@@ -1393,8 +1396,11 @@ class MeshGlyph(GeoMixin, Glyph):
 
         segments = self._build_edge_segments()
 
+        # LineCollection's stub wants a sequence of array-likes rather than
+        # the single (N, 2, 2) ndarray `_build_edge_segments` returns (which
+        # it also accepts at runtime); a list of its rows satisfies both.
         lc = mcoll.LineCollection(
-            segments, colors=color, linewidths=linewidth, **kwargs
+            list(segments), colors=color, linewidths=linewidth, **kwargs
         )
         self.ax.add_collection(lc)
         self.ax.autoscale()

@@ -1,10 +1,9 @@
 import importlib.resources
 import json
 import os
-import re
 import warnings
 from pathlib import Path
-from typing import Any, List, Tuple, Union
+from typing import Any, cast
 
 import matplotlib as mpl
 import numpy as np
@@ -56,30 +55,83 @@ CAMS_AOD_COLORMAPS: dict[str, Colormap] = {
     # Magics `sh_BuYlRd_aod` -- the canonical CAMS AOD scale.
     "blue_yellow_red": LinearSegmentedColormap.from_list(
         "cams_aod_blue_yellow_red",
-        ["#d3d7eb", "#a8afd7", "#8892bf", "#a3a891", "#bebd65", "#d8d239",
-         "#f3e70b", "#f4c60a", "#f6a508", "#f88406", "#f96205", "#fb4103",
-         "#fd2001", "#ff0000"],
+        [
+            "#d3d7eb",
+            "#a8afd7",
+            "#8892bf",
+            "#a3a891",
+            "#bebd65",
+            "#d8d239",
+            "#f3e70b",
+            "#f4c60a",
+            "#f6a508",
+            "#f88406",
+            "#f96205",
+            "#fb4103",
+            "#fd2001",
+            "#ff0000",
+        ],
     ),
     # Magics `sh_BuYlRdBr_aod` -- like blue_yellow_red but fading to dark maroon.
     "blue_yellow_red_brown": LinearSegmentedColormap.from_list(
         "cams_aod_blue_yellow_red_brown",
-        ["#d2d2ff", "#a1a1ff", "#7070ff", "#8787c7", "#b8b876", "#e9e926",
-         "#ffda00", "#ff8a00", "#ff3900", "#f40000", "#c40000", "#930000",
-         "#640000"],
+        [
+            "#d2d2ff",
+            "#a1a1ff",
+            "#7070ff",
+            "#8787c7",
+            "#b8b876",
+            "#e9e926",
+            "#ffda00",
+            "#ff8a00",
+            "#ff3900",
+            "#f40000",
+            "#c40000",
+            "#930000",
+            "#640000",
+        ],
     ),
     # Magics `sh_all_aod` / `sh_all_aod550` -- the blue->cyan->green->yellow->red scale.
     "blue_red": LinearSegmentedColormap.from_list(
         "cams_aod_blue_red",
-        ["#0000f1", "#004cff", "#00b1ff", "#29ffce", "#7dff7a", "#ceff29",
-         "#ffc400", "#ff6800", "#f10800", "#800000"],
+        [
+            "#0000f1",
+            "#004cff",
+            "#00b1ff",
+            "#29ffce",
+            "#7dff7a",
+            "#ceff29",
+            "#ffc400",
+            "#ff6800",
+            "#f10800",
+            "#800000",
+        ],
     ),
     # Magics `sh_Oranges_aod` -- white->dark-orange (natively alpha-ramped; see above).
     "oranges": LinearSegmentedColormap.from_list(
         "cams_aod_oranges",
-        ["#ffefe0", "#fee9d4", "#fee2c6", "#fdd9b4", "#fdd0a2", "#fdc38d",
-         "#fdb576", "#fda762", "#fd9a4e", "#fd8c3b", "#f87f2c", "#f3701b",
-         "#ec620f", "#e25508", "#d84801", "#c54102", "#b03903", "#9e3303",
-         "#8e2d04", "#7f2704"],
+        [
+            "#ffefe0",
+            "#fee9d4",
+            "#fee2c6",
+            "#fdd9b4",
+            "#fdd0a2",
+            "#fdc38d",
+            "#fdb576",
+            "#fda762",
+            "#fd9a4e",
+            "#fd8c3b",
+            "#f87f2c",
+            "#f3701b",
+            "#ec620f",
+            "#e25508",
+            "#d84801",
+            "#c54102",
+            "#b03903",
+            "#9e3303",
+            "#8e2d04",
+            "#7f2704",
+        ],
     ),
 }
 
@@ -97,8 +149,16 @@ FLAME_COLORMAPS: dict[str, Colormap] = {
     # so importing this never depends on it being registered under that name.
     "white_hot": LinearSegmentedColormap.from_list(
         "flame_white_hot",
-        ["#000000", "#4d0000", "#990000", "#e02a00", "#ff7a00", "#ffbf1a",
-         "#fff29a", "#ffffff"],
+        [
+            "#000000",
+            "#4d0000",
+            "#990000",
+            "#e02a00",
+            "#ff7a00",
+            "#ffbf1a",
+            "#fff29a",
+            "#ffffff",
+        ],
     ),
     "amber": LinearSegmentedColormap.from_list(
         "flame_amber",
@@ -239,7 +299,7 @@ def alpha_rgba(
         alpha = np.clip(np.asarray(alpha_norm(data), dtype=float), 0.0, 1.0)
     finite_mask = np.isfinite(data)
     rgba[..., 3] = np.where(finite_mask, alpha, 0.0)
-    return rgba
+    return np.asarray(rgba)
 
 
 def alpha_scaled_mesh(
@@ -323,7 +383,9 @@ def alpha_scaled_mesh(
     rgba = alpha_rgba(data, cmap, norm, alpha_norm, constant_alpha)
     mesh = ax.pcolormesh(x, y, data, **pcolormesh_kwargs)
     mesh.set_array(None)
-    mesh.set_facecolor(rgba.reshape(-1, 4))
+    # matplotlib's Collection.set_facecolor accepts an (N, 4) RGBA array at
+    # runtime; its stub only spells out scalar/sequence-of-scalar color forms.
+    mesh.set_facecolor(rgba.reshape(-1, 4))  # type: ignore[arg-type]
     return mesh
 
 
@@ -406,7 +468,8 @@ DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
     # (a Celsius raster, a KDE density, a normalized index). Pass `vmin`/`vmax`
     # to pin the scale to a chosen range (e.g. `vmin=-40, vmax=40` for the ECMWF
     # window); for the fixed, discretely-banded ECMWF 2 m-temperature look in one
-    # word, use the `"2t"` preset instead (fixed -40..40 degC, `extend="both"`).
+    # word, use the `"temperature_2m"` preset instead (fixed -40..40 degC,
+    # `extend="both"`).
     "temperature": {
         "temperature": {
             "cmap": "Spectral_r",  # muted spectral, blue (cold) -> red (hot)
@@ -528,87 +591,21 @@ DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
 }
 
 
-#: An ECMWF Magics style name encodes its contour range/interval in an
-#: ``f<from>t<to>[i<interval>]`` grammar (``M`` = minus). The interval is
-#: optional (``sh_mc_wind_f0t80`` = 0..80 with no interval). `_decode_magics_range`
-#: recovers ``(vmin, vmax, step)`` so a preset renders over ECMWF's fixed scale
-#: instead of auto-ranging to whatever data it is handed.
-_MAGICS_RANGE = re.compile(r"f(M?\d+(?:_\d+)?)t(M?\d+(?:_\d+)?)(?:i(\d+(?:_\d+)?))?")
-
-
-def _magics_num(token: str) -> float:
-    """Decode one numeric token of a Magics range name.
-
-    The grammar: ``M`` prefixes a negative; ``_`` is the decimal point
-    (``1_5`` -> 1.5); a leading ``0`` on a multi-digit token marks a decimal
-    (``05`` -> 0.5, ``01`` -> 0.1, matching ECMWF's precip/index scales); ``0``
-    alone is zero, and any other token is an integer (``10`` -> 10, not 1.0).
-
-    Args:
-        token: A single ``from``/``to``/``interval`` token (without the
-            ``f``/``t``/``i`` marker).
-
-    Returns:
-        float: The decoded value.
-    """
-    negative = token.startswith("M")
-    if negative:
-        token = token[1:]
-    if "_" in token:
-        value = float(token.replace("_", "."))
-    elif len(token) > 1 and token[0] == "0":
-        value = float("0." + token[1:])
-    else:
-        value = float(token)
-    return -value if negative else value
-
-
-def _decode_magics_range(
-    magics_style: str | None,
-) -> tuple[float, float, float | None] | None:
-    """Recover ``(vmin, vmax, step)`` from a Magics style name, or ``None``.
-
-    Parses the ``f<from>t<to>[i<interval>]`` range grammar embedded in ECMWF
-    Magics style names (e.g. ``sh_all_fM48t56i4`` -> ``(-48.0, 56.0, 4.0)``,
-    ``sh_mc_wind_f0t80`` -> ``(0.0, 80.0, None)``). Returns ``None`` when the
-    name carries no range, or the decoded range is degenerate (``vmin >=
-    vmax``), so such a preset keeps auto-ranging. Only the range is recovered --
-    the exact per-level colour list is not in the open Magics data, so a preset
-    with a non-linear level scale (e.g. precipitation) still bands linearly.
-
-    Args:
-        magics_style: A Magics style name, or ``None``.
-
-    Returns:
-        The ``(vmin, vmax, step)`` triple (``step`` is ``None`` when the name
-        omits the interval), or ``None`` when no usable range is present.
-    """
-    match = _MAGICS_RANGE.search(magics_style or "")
-    if match is None:
-        return None
-    vmin = _magics_num(match.group(1))
-    vmax = _magics_num(match.group(2))
-    if vmin >= vmax:
-        return None
-    step = _magics_num(match.group(3)) if match.group(3) else None
-    return vmin, vmax, step
-
-
 def _load_preset_asset(
     resource: str, cmap_prefix: str
 ) -> dict[str, dict[str, dict[str, Any]]]:
-    """Build `DATA_STYLES` entries from a vendored preset asset under `cleopatra.data`.
+    """Build `DATA_STYLES` entries from a vendored continuous-colormap preset asset.
 
-    Shared by the ECMWF/Magics and cmocean preset libraries. Each asset maps a
-    preset key to a `palette` (hex control points), a `label`, an `opacity`
-    policy (`"opaque"` -> a plain field via constant alpha; otherwise a
-    value-linked overlay), and an optional diverging `center`. Every preset is a
-    single layer keyed by its own name and carries no `vmin`/`vmax`, so it
-    auto-ranges.
+    Used for the cmocean ocean/hydrology/DEM preset library. Each asset maps a
+    preset key to a `palette` (hex control points sampled from a continuous
+    colormap), a `label`, an `opacity` policy (`"opaque"` -> a plain field via
+    constant alpha; otherwise a value-linked overlay), and an optional diverging
+    `center`. Every preset is a single layer keyed by its own name and carries no
+    `vmin`/`vmax`, so it auto-ranges.
 
     Args:
         resource: The asset filename inside the `cleopatra.data` package.
-        cmap_prefix: A prefix for the generated colormap names (e.g. `"magics"`).
+        cmap_prefix: A prefix for the generated colormap names (e.g. `"cmocean"`).
 
     Returns:
         dict: `DATA_STYLES`-shaped presets, or an empty mapping if the asset is
@@ -624,10 +621,12 @@ def _load_preset_asset(
             .joinpath(resource)
             .read_text(encoding="utf-8")
         )
-        records = json.loads(source).get("presets", {}).items()
+        records = json.loads(source).items()
     except (
-        ModuleNotFoundError, OSError,
-        json.JSONDecodeError, AttributeError,
+        ModuleNotFoundError,
+        OSError,
+        json.JSONDecodeError,
+        AttributeError,
     ):
         return {}
 
@@ -638,116 +637,115 @@ def _load_preset_asset(
     for key, rec in records:
         try:
             palette = rec["palette"]
-            # A Magics preset (carries a `magics_style`) is a *discrete* contour
-            # shade: ECMWF renders it as flat colour bands, not a smooth ramp.
-            # Reproduce that with a ListedColormap (paired with a BoundaryNorm in
-            # resolve_style_norm via `bands`) -- a continuous interpolation of
-            # these saturated colours reads as a glossy, over-exposed sheen. Non-
-            # Magics assets (cmocean) are genuinely continuous scientific ramps.
-            is_magics = bool(rec.get("magics_style"))
-            if is_magics:
-                cmap: Colormap = mcolors.ListedColormap(palette, name=f"{cmap_prefix}_{key}")
-            else:
-                cmap = LinearSegmentedColormap.from_list(f"{cmap_prefix}_{key}", palette)
+            cmap: Colormap = LinearSegmentedColormap.from_list(
+                f"{cmap_prefix}_{key}", palette
+            )
             layer: dict[str, Any] = {"cmap": cmap, "label": rec["label"]}
-            if is_magics:
-                layer["bands"] = len(palette)  # number of discrete colour bands
             if rec.get("opacity") == "opaque":
-                layer["alpha"] = 1.0  # value-linked opacity (overlay) is the default otherwise
+                layer["alpha"] = (
+                    1.0  # value-linked opacity (overlay) is the default otherwise
+                )
             if rec.get("center") is not None:
                 layer["center"] = rec["center"]
-            # Recover the fixed contour range encoded in the Magics style name
-            # (e.g. `2t` -> -48..56) so the preset renders over ECMWF's absolute
-            # scale rather than auto-ranging to the data. A caller-supplied
-            # `vmin`/`vmax` still overrides it at draw time.
-            decoded = _decode_magics_range(rec.get("magics_style"))
-            if decoded is not None:
-                # Only the fixed range is used; the decoded interval (decoded[2])
-                # is not stored -- the bands partition [vmin, vmax] into
-                # `len(palette)` equal-width intervals (see resolve_style_norm),
-                # which need not equal the ECMWF contour interval.
-                layer["vmin"], layer["vmax"] = decoded[0], decoded[1]
             presets[key] = {key: layer}
         except (KeyError, TypeError, ValueError, AttributeError):
             continue
     return presets
 
 
-def _load_magics_presets() -> dict[str, dict[str, dict[str, Any]]]:
-    """Load the ECMWF/Magics parameter-preset library (Apache-2.0).
+def _weather_cmap(key: str, colors: Any, levels: Any, bands: Any) -> Any:
+    """Resolve one weather preset's `colors` field to a cmap (name or object).
 
-    Colour ramps and parameter labels derived from ecmwf/magics (see
-    `MAGICS_NOTICE.txt`), keyed by GRIB shortName. Thin wrapper over
-    `_load_preset_asset`.
+    A colour LIST with explicit `levels` or a `bands` count is a discrete
+    palette: keep it as a `ListedColormap` rather than a smooth ramp -- a
+    continuous interpolation of these saturated colours reads as a glossy,
+    over-exposed sheen (Magics presets), or would blur the exact ECMWF
+    colours the `levels` are meant to band (earthkit-plots presets). A
+    matplotlib colormap NAME (str) is returned as-is, resolved at draw time.
+    A colour list with neither `levels` nor `bands` (e.g.
+    `total_precipitation`'s white->blue gradient) is a genuine continuous
+    ramp.
     """
-    return _load_preset_asset("magics_presets.json", "magics")
+    if levels:
+        return (
+            mcolors.ListedColormap(colors, name=f"weather_{key}")
+            if isinstance(colors, list)
+            else colors
+        )
+    if bands:
+        return mcolors.ListedColormap(colors, name=f"weather_{key}")
+    if isinstance(colors, str):
+        return colors
+    return LinearSegmentedColormap.from_list(f"weather_{key}", colors)
 
 
-def _load_earthkit_presets() -> dict[str, dict[str, dict[str, Any]]]:
-    """Load ECMWF's *default* parameter styles from the vendored earthkit asset.
+def _load_weather_presets() -> dict[str, dict[str, dict[str, Any]]]:
+    """Load the merged ECMWF weather preset library (Apache-2.0), keyed by a descriptive name.
 
-    Each preset is the `optimal` Style variant from ECMWF's earthkit-plots style
-    library (Apache-2.0; see `tools/build_earthkit_presets.py`): a colormap (a
-    matplotlib name or an explicit colour list) plus discrete contour `levels`
-    and an `extend` cap -- the professional weather-service look (e.g. `"2t"` ->
-    muted `Spectral_r` in 2 degC bands). Keyed by GRIB shortName so these
-    override the Magics rainbow presets for the same parameters. Never raises: a
-    missing/malformed asset degrades to `{}`.
+    Merged from two sources at build time (see `tools/build_weather_presets.py`)
+    into one record per GRIB shortName, then renamed to its descriptive key --
+    each record is one of three shapes:
+
+    - **Equal-width banded** (vendored from Magics): a discrete `colors` list
+      plus a `bands` count (`len(colors)`), rendered as a `ListedColormap` with
+      `bands` equal-width intervals. A `vmin`/`vmax` is also present when the
+      parameter's original Magics style name encoded a fixed range; otherwise
+      the bands auto-range to the data.
+    - **Explicit contour levels** (vendored from earthkit-plots' curated ECMWF
+      defaults, which supersede the Magics record for the same shortName): a
+      `colors` list or matplotlib colormap name, plus explicit `levels` and an
+      `extend` cap, rendered as a `BoundaryNorm` at those exact boundaries.
+    - **Continuous** (colour list with neither `bands` nor `levels`, e.g.
+      `total_precipitation`'s rain gradient): a genuine `LinearSegmentedColormap`.
+
+    Never raises: a missing/malformed asset degrades to `{}`.
     """
     try:
         raw = (
             importlib.resources.files("cleopatra.data")
-            .joinpath("earthkit_presets.json")
+            .joinpath("weather_presets.json")
             .read_text(encoding="utf-8")
         )
     except (ModuleNotFoundError, OSError):
         return {}
     try:
-        records = json.loads(raw).get("presets", {})
-    except (ValueError, AttributeError):
+        records = json.loads(raw)
+    except ValueError:
+        return {}
+    if not isinstance(records, dict):
         return {}
 
     presets: dict[str, dict[str, dict[str, Any]]] = {}
     for key, rec in records.items():
         try:
             colors = rec["colors"]
-            if isinstance(colors, str):
-                # A matplotlib colormap name, resolved at draw time.
-                cmap: Any = colors
-            elif rec.get("levels"):
-                # A colour LIST with levels is a discrete band palette: keep the
-                # exact ECMWF colours via a ListedColormap (one per band for
-                # aod550/10si; a fine 255-stop ramp banded by the levels for cape)
-                # rather than resampling a continuous interpolation.
-                cmap = mcolors.ListedColormap(colors, name=f"earthkit_{key}")
-            else:
-                # A colour list with no levels (e.g. `tp`'s white->blue gradient)
-                # is a genuine continuous ramp.
-                cmap = LinearSegmentedColormap.from_list(f"earthkit_{key}", colors)
-            layer: dict[str, Any] = {
-                "cmap": cmap,
-                "label": rec["label"],
-                "alpha": 1.0,
-            }
-            if rec.get("levels"):
-                layer["levels"] = rec["levels"]
+            levels = rec.get("levels")
+            bands = rec.get("bands")
+            cmap = _weather_cmap(key, colors, levels, bands)
+            layer: dict[str, Any] = {"cmap": cmap, "label": rec["label"]}
+            if rec.get("opacity") == "opaque":
+                layer["alpha"] = 1.0
+            if levels:
+                layer["levels"] = levels
                 layer["extend"] = rec.get("extend", "neither")
+            elif bands:
+                layer["bands"] = bands
+                if "vmin" in rec:
+                    layer["vmin"], layer["vmax"] = rec["vmin"], rec["vmax"]
             presets[key] = {key: layer}
-        except (KeyError, TypeError, ValueError):
+        except (KeyError, TypeError, ValueError, AttributeError):
             continue
     return presets
 
 
 #: Register the vendored preset libraries into `DATA_STYLES` at import, alongside
-#: the hand-authored presets above: the full ECMWF/Magics parameter set (keyed
-#: by GRIB shortName, e.g. `"2t"`, `"tp"`, `"aod550"`) and the cmocean
+#: the hand-authored presets above: the merged ECMWF weather parameter set
+#: (keyed by a descriptive parameter name, e.g. `"temperature_2m"`,
+#: `"total_precipitation"`, `"aerosol_optical_depth_550nm"`) and the cmocean
 #: ocean/hydrology/DEM set (keyed by variable, e.g. `"salinity"`,
 #: `"bathymetry"`). List them all with `sorted(DATA_STYLES)`.
-DATA_STYLES.update(_load_magics_presets())
-DATA_STYLES.update(_load_preset_asset("cmocean_presets.json", "cmocean"))
-# ECMWF's default (earthkit) styles load LAST so they win over the Magics rainbow
-# for the same GRIB shortNames -- the professional banded look is the default.
-DATA_STYLES.update(_load_earthkit_presets())
+DATA_STYLES.update(_load_preset_asset("ocean_presets.json", "ocean"))
+DATA_STYLES.update(_load_weather_presets())
 
 
 def category_boundaries(values: list[float]) -> list[float]:
@@ -856,7 +854,9 @@ def resolve_style_norm(
         reserved = {"neither": 0, "min": 1, "max": 1, "both": 2}.get(extend, 0)
         if cmap_obj.N < (len(edges) - 1) + reserved:
             extend = "neither"
-        norm = mcolors.BoundaryNorm(edges, ncolors=cmap_obj.N, extend=extend)
+        norm: mcolors.Normalize = mcolors.BoundaryNorm(
+            edges, ncolors=cmap_obj.N, extend=extend
+        )
         return norm, edges[0], edges[-1]
 
     vmin = cfg.get("vmin")
@@ -902,9 +902,7 @@ def resolve_style_norm(
                 f"diverging 'center' ({center}) must lie strictly between "
                 f"vmin ({vmin}) and vmax ({vmax})"
             )
-        norm: mcolors.Normalize = mcolors.TwoSlopeNorm(
-            vcenter=center, vmin=vmin, vmax=vmax
-        )
+        norm = mcolors.TwoSlopeNorm(vcenter=center, vmin=vmin, vmax=vmax)
     elif norm_kind in (None, "linear"):
         norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
     elif norm_kind == "log":
@@ -915,8 +913,10 @@ def resolve_style_norm(
         # here instead of letting matplotlib raise an opaque "vmin must be less
         # or equal to vmax" deep inside the draw.
         positive = finite[finite > 0] if finite.size else finite
-        lo = vmin if (vmin is not None and vmin > 0) else (
-            float(positive.min()) if positive.size else None
+        lo = (
+            vmin
+            if (vmin is not None and vmin > 0)
+            else (float(positive.min()) if positive.size else None)
         )
         # `lo >= vmax` (not just `>`) so a single-positive-value range like
         # data [0, 5] -- where the only positive value is both the lower and
@@ -1142,7 +1142,7 @@ def apply_data_style(
     # scale (e.g. a Magics preset's decoded fixed range). These are colour-scale
     # keys, not `imshow` kwargs, so pull them out of `render_kwargs` and merge
     # them over each layer's config below.
-    style_override = {}
+    style_override: dict[str, Any] = {}
     for key in ("vmin", "vmax", "center"):
         if key in render_kwargs:
             value = render_kwargs.pop(key)
@@ -1184,13 +1184,24 @@ def apply_data_style(
             # out-of-range and silently rendered transparent.
             cat_data = np.where(np.isin(data, cat_values), data, np.nan)
             if curvilinear:
+                assert x is not None and y is not None
                 images[name] = alpha_scaled_mesh(
-                    ax, x, y, cat_data, cat_cmap, norm=cat_norm, constant_alpha=1.0,
+                    ax,
+                    x,
+                    y,
+                    cat_data,
+                    cat_cmap,
+                    norm=cat_norm,
+                    constant_alpha=1.0,
                     **render_kwargs,
                 )
             else:
                 images[name] = alpha_scaled_image(
-                    ax, cat_data, cat_cmap, norm=cat_norm, constant_alpha=1.0,
+                    ax,
+                    cat_data,
+                    cat_cmap,
+                    norm=cat_norm,
+                    constant_alpha=1.0,
                     **render_kwargs,
                 )
             if legend:
@@ -1202,12 +1213,20 @@ def apply_data_style(
                 if legend_bounds is not None:
                     x0, y0 = legend_bounds[i][0], legend_bounds[i][1]
                     leg = disjoint_legend(
-                        ax, cat_colors, cat_labels, title=cfg["label"],
-                        loc="upper left", bbox_to_anchor=(x0, y0),
+                        ax,
+                        cat_colors,
+                        cat_labels,
+                        title=cfg["label"],
+                        loc="upper left",
+                        bbox_to_anchor=(x0, y0),
                     )
                 else:
                     leg = disjoint_legend(
-                        ax, cat_colors, cat_labels, title=cfg["label"], loc="upper right"
+                        ax,
+                        cat_colors,
+                        cat_labels,
+                        title=cfg["label"],
+                        loc="upper right",
                     )
                 if prior_legend is not None and prior_legend is not leg:
                     ax.add_artist(prior_legend)
@@ -1233,7 +1252,9 @@ def apply_data_style(
         alpha_const = cfg.get("alpha")
         alpha_vmin = cfg.get("alpha_vmin")
         alpha_vmax = cfg.get("alpha_vmax")
-        if alpha_const is not None and (alpha_vmin is not None or alpha_vmax is not None):
+        if alpha_const is not None and (
+            alpha_vmin is not None or alpha_vmax is not None
+        ):
             raise ValueError(
                 f"data style layer {name!r} sets both a constant 'alpha' and "
                 "'alpha_vmin'/'alpha_vmax'; those are mutually exclusive"
@@ -1244,14 +1265,27 @@ def apply_data_style(
             else None
         )
         if curvilinear:
+            assert x is not None and y is not None
             images[name] = alpha_scaled_mesh(
-                ax, x, y, data, cfg["cmap"], norm=norm, alpha_norm=alpha_norm,
-                constant_alpha=alpha_const, **render_kwargs,
+                ax,
+                x,
+                y,
+                data,
+                cfg["cmap"],
+                norm=norm,
+                alpha_norm=alpha_norm,
+                constant_alpha=alpha_const,
+                **render_kwargs,
             )
         else:
             images[name] = alpha_scaled_image(
-                ax, data, cfg["cmap"], norm=norm, alpha_norm=alpha_norm,
-                constant_alpha=alpha_const, **render_kwargs,
+                ax,
+                data,
+                cfg["cmap"],
+                norm=norm,
+                alpha_norm=alpha_norm,
+                constant_alpha=alpha_const,
+                **render_kwargs,
             )
         if legend:
             bounds = (
@@ -1277,6 +1311,14 @@ def apply_data_style(
                 norm=norm,
             )
     return images
+
+
+#: A single color as the `Colors` class accepts it: a hex string (with or
+#: without the leading "#") or an RGB tuple (0-1 normalized or 0-255 range).
+_ColorEntry = str | tuple[float, float, float]
+#: A `Colors.__init__`/`color_value` value: one color, or a list of colors
+#: (hex strings and RGB tuples may be freely mixed within the list).
+ColorValue = _ColorEntry | list[_ColorEntry]
 
 
 class Colors:
@@ -1339,9 +1381,7 @@ class Colors:
 
     def __init__(
         self,
-        color_value: Union[
-            List[str], str, Tuple[float, float, float], List[Tuple[float, float, float]]
-        ],
+        color_value: ColorValue,
     ):
         """Initialize a Colors object with the given color value(s).
 
@@ -1412,18 +1452,21 @@ class Colors:
             ```
         """
         # convert the hex color to a list if it is a string
+        color_list: list[_ColorEntry]
         if isinstance(color_value, str) or isinstance(color_value, tuple):
-            color_value = [color_value]
-        elif not isinstance(color_value, list):
+            color_list = [color_value]
+        elif isinstance(color_value, list):
+            color_list = color_value
+        else:
             raise ValueError(
                 "The color_value must be a list of hex colors, list of tuples (RGB color), a single hex "
                 "or single RGB tuple color."
             )
 
-        self._color_value = color_value
+        self._color_value: list[_ColorEntry] = color_list
 
     @classmethod
-    def create_from_image(cls, path: Union[str, os.PathLike]) -> "Colors":
+    def create_from_image(cls, path: str | os.PathLike) -> "Colors":
         """Create a color object from an image.
 
         if you have an image of a color ramp, and you want to extract the colors from it, you can use this method.
@@ -1457,18 +1500,24 @@ class Colors:
         except UnidentifiedImageError:
             raise ValueError(f"The file {path} is not a valid image.")
         width, height = image.size
-        color_values = [image.getpixel((x, int(height / 2))) for x in range(width)]
+        # `.convert("RGB")` above guarantees a 3-int-tuple pixel at every
+        # coordinate; `Image.getpixel`'s general stub is looser (it also
+        # covers single-band/palette modes), so tell mypy what mode this is.
+        color_values = cast(
+            "list[_ColorEntry]",
+            [image.getpixel((x, int(height / 2))) for x in range(width)],
+        )
 
         return cls(color_values)
 
-    def get_type(self) -> List[str]:
+    def get_type(self) -> list[str]:
         """Determine the type of each color value.
 
         This method analyzes each color value stored in the object and determines
         its type: hex, rgb (values 0-255), or rgb-normalized (values 0-1).
 
         Returns:
-            List[str]: A list of strings indicating the type of each color value.
+            list[str]: A list of strings indicating the type of each color value.
                 Possible values are:
                 - 'hex': Hexadecimal color string
                 - 'rgb': RGB tuple with values between 0-255
@@ -1530,7 +1579,7 @@ class Colors:
         return color_type
 
     @property
-    def color_value(self) -> Union[List[str], List[Tuple[float, float, float]]]:
+    def color_value(self) -> list[_ColorEntry]:
         """Get the color values stored in the object.
 
         This property returns the color values that were provided when initializing
@@ -1539,7 +1588,7 @@ class Colors:
         between 0-1.
 
         Returns:
-            Union[List[str], List[Tuple[float, float, float]]]: A list containing the color values. Each element can be:
+            list[_ColorEntry]: A list containing the color values. Each element can be:
                 - A hex color string (e.g., "#ff0000" or "ff0000")
                 - An RGB tuple with values between 0-255 (e.g., (255, 0, 0))
                 - A normalized RGB tuple with values between 0-1 (e.g., (1.0, 0.0, 0.0))
@@ -1571,7 +1620,7 @@ class Colors:
         """
         return self._color_value
 
-    def to_hex(self) -> List[str]:
+    def to_hex(self) -> list[str]:
         """Convert all color values to hexadecimal format.
 
         This method converts all color values stored in the object to hexadecimal format.
@@ -1579,7 +1628,7 @@ class Colors:
         Hex colors remain unchanged.
 
         Returns:
-            List[str]: A list of hexadecimal color strings. Each string is in the format '#RRGGBB'.
+            list[str]: A list of hexadecimal color strings. Each string is in the format '#RRGGBB'.
 
         Notes:
             - RGB tuples with values between 0-255 are first normalized to 0-1 range before conversion
@@ -1618,27 +1667,29 @@ class Colors:
 
         ```
         """
-        converted_color = []
+        converted_color: list[str] = []
         color_type = self.get_type()
         for ind, color_i in enumerate(self.color_value):
             if color_type[ind] == "hex":
-                converted_color.append(color_i)
+                # get_type() tagged this entry "hex", so it is a str.
+                converted_color.append(cast(str, color_i))
             elif color_type[ind] == "rgb":
-                # Normalize the RGB values to be between 0 and 1
-                rgb_color_normalized = tuple(value / 255 for value in color_i)
+                # get_type() tagged this entry "rgb", so it is a 3-tuple.
+                r, g, b = cast("tuple[float, float, float]", color_i)
+                rgb_color_normalized = (r / 255, g / 255, b / 255)
                 converted_color.append(mcolors.to_hex(rgb_color_normalized))
             else:
                 converted_color.append(mcolors.to_hex(color_i))
         return converted_color
 
-    def is_valid_hex(self) -> List[bool]:
+    def is_valid_hex(self) -> list[bool]:
         """Check if each color value is a valid hexadecimal color.
 
         This method checks each color value stored in the object to determine
         if it is a valid hexadecimal color string.
 
         Returns:
-            List[bool]: A list of boolean values, one for each color value in the object.
+            list[bool]: A list of boolean values, one for each color value in the object.
                 True indicates the color is a valid hex color, False otherwise.
 
         Notes:
@@ -1673,7 +1724,7 @@ class Colors:
         return [self._is_valid_hex_i(col) for col in self.color_value]
 
     @staticmethod
-    def _is_valid_hex_i(hex_color: str) -> bool:
+    def _is_valid_hex_i(hex_color: _ColorEntry) -> bool:
         """Check if a single color value is a valid hexadecimal color.
 
         This static method checks if the provided color value is a valid
@@ -1720,7 +1771,7 @@ class Colors:
         else:
             return True if mcolors.is_color_like(hex_color) else False
 
-    def is_valid_rgb(self) -> List[bool]:
+    def is_valid_rgb(self) -> list[bool]:
         """Check if each color value is a valid RGB color.
 
         This method checks each color value stored in the object to determine
@@ -1728,7 +1779,7 @@ class Colors:
         normalized values between 0-1).
 
         Returns:
-            List[bool]: A list of boolean values, one for each color value in the object.
+            list[bool]: A list of boolean values, one for each color value in the object.
                 True indicates the color is a valid RGB tuple, False otherwise.
 
         Notes:
@@ -1863,7 +1914,7 @@ class Colors:
 
     def to_rgb(
         self, normalized: bool = True
-    ) -> List[Tuple[Union[int, float], Union[int, float], Union[int, float]]]:
+    ) -> list[tuple[int | float, int | float, int | float]]:
         """Convert all color values to RGB format.
 
         This method converts all color values stored in the object to RGB format.
@@ -1877,7 +1928,7 @@ class Colors:
                 - If False, returns RGB values scaled between 0 and 255
 
         Returns:
-            List[Tuple[Union[int, float], Union[int, float], Union[int, float]]]: A list of RGB tuples.
+            list[tuple[int | float, int | float, int | float]]: A list of RGB tuples.
                 Each tuple contains three values (R, G, B).
                 - If normalized=True, values are floats between 0.0 and 1.0
                 - If normalized=False, values are integers between 0 and 255
@@ -1926,13 +1977,13 @@ class Colors:
         ```
         """
         color_type = self.get_type()
-        rgb = []
+        rgb: list[tuple[int | float, int | float, int | float]] = []
         if normalized:
             for ind, color_i in enumerate(self.color_value):
                 # if the color is in RGB format (0-255), normalize the values to be between 0 and 1
                 if color_type[ind] == "rgb":
-                    rgb_color_normalized = tuple(value / 255 for value in color_i)
-                    rgb.append(rgb_color_normalized)
+                    r, g, b = cast("tuple[float, float, float]", color_i)
+                    rgb.append((r / 255, g / 255, b / 255))
                 else:
                     # any other format, just convert it to RGB
                     rgb.append(mcolors.to_rgb(color_i))
@@ -1940,14 +1991,15 @@ class Colors:
             for ind, color_i in enumerate(self.color_value):
                 # if the color is in RGB format (0-255), normalize the values to be between 0 and 1
                 if color_type[ind] == "rgb":
-                    rgb.append(color_i)
+                    rgb.append(cast("tuple[int, int, int]", color_i))
                 else:
                     # any other format, just convert it to RGB
-                    rgb.append(tuple([int(c * 255) for c in mcolors.to_rgb(color_i)]))
+                    r, g, b = mcolors.to_rgb(color_i)
+                    rgb.append((int(r * 255), int(g * 255), int(b * 255)))
 
         return rgb
 
-    def get_color_map(self, name: str = None) -> Colormap:
+    def get_color_map(self, name: str | None = None) -> Colormap:
         """Get color ramp from a color values in stored in the object.
 
         Args:

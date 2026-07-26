@@ -28,13 +28,21 @@ Examples:
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 from matplotlib.axes import Axes
+from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure
 from matplotlib.quiver import QuiverKey
 
 from cleopatra.geo import GeoMixin
-from cleopatra.glyph import Glyph, _clear_prior_render_artists, _mark_render_artists
+from cleopatra.glyph import (
+    Glyph,
+    _clear_prior_render_artists,
+    _mark_render_artists,
+    _root_figure,
+)
 from cleopatra.styles import CLASSIFY_OPTIONS
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
@@ -105,8 +113,8 @@ class VectorGlyph(GeoMixin, Glyph):
         u: np.ndarray,
         v: np.ndarray,
         *,
-        ax: Axes = None,
-        fig: Figure = None,
+        ax: Axes | None = None,
+        fig: Figure | None = None,
         **kwargs,
     ):
         super().__init__(
@@ -118,20 +126,20 @@ class VectorGlyph(GeoMixin, Glyph):
                 f"u and v must have the same shape, got {self.u.shape} "
                 f"and {self.v.shape}."
             )
-        self.cbar = None
+        self.cbar: Colorbar | None = None
         #: The `Quiver`/`Barbs`/streamplot `LineCollection` mappable from
         #: the most recent `plot` call; `None` before first render.
-        self.im = None
+        self.im: Any = None
 
     @property
     def magnitude(self) -> np.ndarray:
         """Per-vector magnitude `hypot(u, v)` used for colour mapping."""
-        return np.hypot(self.u, self.v)
+        return np.asarray(np.hypot(self.u, self.v))
 
     def plot(
         self,
         kind: str = "quiver",
-        ax: Axes = None,
+        ax: Axes | None = None,
         title: str | None = None,
         add_colorbar: bool | None = None,
     ):
@@ -200,7 +208,7 @@ class VectorGlyph(GeoMixin, Glyph):
 
         if ax is not None:
             self.ax = ax
-            self.fig = ax.get_figure()
+            self.fig = _root_figure(ax)
         elif self.ax is None:
             self.fig, self.ax = self.create_figure_axes()
         ax = self.ax
@@ -229,6 +237,9 @@ class VectorGlyph(GeoMixin, Glyph):
         self.cbar = None
 
         arrow_patches: tuple = ()
+        # `im` holds whichever mappable the selected `kind` produces
+        # (Quiver / Barbs / the streamplot LineCollection).
+        im: Any
         if kind == "quiver":
             im = ax.quiver(
                 self.x,
@@ -341,4 +352,7 @@ class VectorGlyph(GeoMixin, Glyph):
                 ```
         """
         text = label if label is not None else f"{value:g}"
-        return self.ax.quiverkey(im, x, y, value, text, labelpos=labelpos, **kwargs)
+        key: QuiverKey = self.ax.quiverkey(
+            im, x, y, value, text, labelpos=labelpos, **kwargs
+        )
+        return key

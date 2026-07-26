@@ -145,9 +145,9 @@ class TestAsXy:
         """
         with pytest.raises(ValueError, match=r"must be an \(N, 2\) array") as exc:
             _as_xy(bad_input, "boundary_xy")
-        assert "boundary_xy" in str(
-            exc.value
-        ), f"Error should name the argument for shape {shape_desc}, got: {exc.value}"
+        assert "boundary_xy" in str(exc.value), (
+            f"Error should name the argument for shape {shape_desc}, got: {exc.value}"
+        )
 
     def test_error_message_includes_argument_name(self):
         """Include the caller-supplied name in the error message.
@@ -158,9 +158,9 @@ class TestAsXy:
         """
         with pytest.raises(ValueError, match=r"graticule_lines\[2\]") as exc:
             _as_xy(np.arange(3), "graticule_lines[2]")
-        assert "graticule_lines[2]" in str(
-            exc.value
-        ), f"Argument name missing from message: {exc.value}"
+        assert "graticule_lines[2]" in str(exc.value), (
+            f"Argument name missing from message: {exc.value}"
+        )
 
 
 class TestApplyProjectionFrame:
@@ -206,12 +206,12 @@ class TestApplyProjectionFrame:
             ylim=(-1, 1),
             graticule_lines=[meridian],
         )
-        assert patch.get_edgecolor()[:3] == pytest.approx(
-            (0.0, 0.0, 0.0)
-        ), f"Expected black boundary, got {patch.get_edgecolor()}"
-        assert (
-            patch.get_linewidth() == DEFAULT_BOUNDARY_KW["linewidth"]
-        ), f"Expected lw {DEFAULT_BOUNDARY_KW['linewidth']}, got {patch.get_linewidth()}"
+        assert patch.get_edgecolor()[:3] == pytest.approx((0.0, 0.0, 0.0)), (
+            f"Expected black boundary, got {patch.get_edgecolor()}"
+        )
+        assert patch.get_linewidth() == DEFAULT_BOUNDARY_KW["linewidth"], (
+            f"Expected lw {DEFAULT_BOUNDARY_KW['linewidth']}, got {patch.get_linewidth()}"
+        )
         line = axes.lines[0]
         assert line.get_linewidth() == DEFAULT_GRATICULE_KW["linewidth"], (
             f"Expected graticule lw {DEFAULT_GRATICULE_KW['linewidth']}, "
@@ -273,9 +273,9 @@ class TestApplyProjectionFrame:
         assert clip_path is not None, "Image should have a clip path set"
         verts = clip_path.get_fully_transformed_path().vertices
         expected = len(patch.get_path().vertices)
-        assert (
-            len(verts) == expected
-        ), f"Clip path should follow the boundary ({expected} verts), got {len(verts)}"
+        assert len(verts) == expected, (
+            f"Clip path should follow the boundary ({expected} verts), got {len(verts)}"
+        )
 
     def test_collection_clipped_to_boundary(self, axes, globe_boundary):
         """Clip a pre-existing collection (scatter) to the boundary.
@@ -335,9 +335,9 @@ class TestApplyProjectionFrame:
             ylim=(-1, 1),
             clip_artists=False,
         )
-        assert (
-            image.get_clip_path() is default_clip
-        ), "Image clip path should be untouched when clip_artists=False"
+        assert image.get_clip_path() is default_clip, (
+            "Image clip path should be untouched when clip_artists=False"
+        )
 
     def test_graticule_lines_drawn(self, axes, globe_boundary):
         """Draw one Line2D per supplied graticule polyline.
@@ -354,9 +354,9 @@ class TestApplyProjectionFrame:
             ylim=(-1, 1),
             graticule_lines=[meridian, equator],
         )
-        assert (
-            len(axes.lines) == 2
-        ), f"Expected 2 graticule lines, got {len(axes.lines)}"
+        assert len(axes.lines) == 2, (
+            f"Expected 2 graticule lines, got {len(axes.lines)}"
+        )
 
     def test_graticule_default_none_draws_nothing(self, axes, globe_boundary):
         """Draw no graticule when ``graticule_lines`` is omitted.
@@ -400,15 +400,15 @@ class TestApplyProjectionFrame:
             boundary_kw={"edgecolor": "red", "linewidth": 2.0},
             graticule_kw={"color": "blue"},
         )
-        assert patch.get_edgecolor()[:3] == pytest.approx(
-            (1.0, 0.0, 0.0)
-        ), f"Expected red boundary, got {patch.get_edgecolor()}"
-        assert (
-            patch.get_linewidth() == 2.0
-        ), f"Expected lw 2.0, got {patch.get_linewidth()}"
-        assert (
-            axes.lines[0].get_color() == "blue"
-        ), f"Expected blue graticule, got {axes.lines[0].get_color()}"
+        assert patch.get_edgecolor()[:3] == pytest.approx((1.0, 0.0, 0.0)), (
+            f"Expected red boundary, got {patch.get_edgecolor()}"
+        )
+        assert patch.get_linewidth() == 2.0, (
+            f"Expected lw 2.0, got {patch.get_linewidth()}"
+        )
+        assert axes.lines[0].get_color() == "blue", (
+            f"Expected blue graticule, got {axes.lines[0].get_color()}"
+        )
 
     def test_does_not_mutate_caller_style_dicts(self, axes, globe_boundary, meridian):
         """Leave the caller-supplied style dicts unmodified.
@@ -428,12 +428,12 @@ class TestApplyProjectionFrame:
             boundary_kw=boundary_kw,
             graticule_kw=graticule_kw,
         )
-        assert boundary_kw == {
-            "edgecolor": "red"
-        }, f"boundary_kw was mutated: {boundary_kw}"
-        assert graticule_kw == {
-            "color": "blue"
-        }, f"graticule_kw was mutated: {graticule_kw}"
+        assert boundary_kw == {"edgecolor": "red"}, (
+            f"boundary_kw was mutated: {boundary_kw}"
+        )
+        assert graticule_kw == {"color": "blue"}, (
+            f"graticule_kw was mutated: {graticule_kw}"
+        )
 
     def test_accepts_plain_list_geometry(self, axes):
         """Coerce plain-list boundary and graticule geometry.
@@ -478,9 +478,9 @@ class TestApplyProjectionFrame:
             apply_projection_frame(
                 object(), boundary_xy=globe_boundary, xlim=(-1, 1), ylim=(-1, 1)
             )
-        assert "object" in str(
-            exc.value
-        ), f"Error should report the bad type name, got: {exc.value}"
+        assert "object" in str(exc.value), (
+            f"Error should report the bad type name, got: {exc.value}"
+        )
 
     def test_axes_missing_add_patch_raises_type_error(self, globe_boundary):
         """Raise ``TypeError`` when ``ax`` has ``set_xlim`` but not ``add_patch``.
@@ -594,7 +594,10 @@ class TestVisibleHemisphere:
         from cleopatra.projection import _visible_hemisphere
 
         visible = _visible_hemisphere(
-            np.array([0.0, 0.0]), np.array([90.0, -90.0]), center_lat=90.0, center_lon=0.0
+            np.array([0.0, 0.0]),
+            np.array([90.0, -90.0]),
+            center_lat=90.0,
+            center_lon=0.0,
         )
         assert visible[0] and not visible[1], f"unexpected visibility: {visible}"
 
@@ -660,9 +663,13 @@ class TestOrthographicGrid:
         lon = np.array([0.0, 90.0])
         lat = np.array([90.0, -90.0])
         data = np.array([[1.0, 2.0], [3.0, 4.0]])
-        _, _, masked = orthographic_grid(lon, lat, data, center_lat=90.0, center_lon=0.0)
+        _, _, masked = orthographic_grid(
+            lon, lat, data, center_lat=90.0, center_lon=0.0
+        )
         np.testing.assert_array_equal(masked[0], [1.0, 2.0])
-        assert np.all(np.isnan(masked[1])), f"far hemisphere should be NaN, got {masked[1]}"
+        assert np.all(np.isnan(masked[1])), (
+            f"far hemisphere should be NaN, got {masked[1]}"
+        )
 
     def test_2d_lon_lat_matching_data_shape_is_accepted(self):
         """Already-2D lon/lat (matching data's shape) bypasses the meshgrid step."""
@@ -685,9 +692,7 @@ class TestOrthographicGrid:
         """Without pyproj installed, a clear `ImportError` is raised."""
         import cleopatra.projection as proj_mod
 
-        monkeypatch.setattr(
-            proj_mod.importlib.util, "find_spec", lambda name: None
-        )
+        monkeypatch.setattr(proj_mod.importlib.util, "find_spec", lambda name: None)
         with pytest.raises(ImportError, match=r"\[tiles\]"):
             orthographic_grid(np.array([0.0]), np.array([0.0]), np.array([[1.0]]))
 
@@ -852,9 +857,7 @@ class TestOrthographicGraticule:
         """Without pyproj installed, a clear `ImportError` is raised."""
         import cleopatra.projection as proj_mod
 
-        monkeypatch.setattr(
-            proj_mod.importlib.util, "find_spec", lambda name: None
-        )
+        monkeypatch.setattr(proj_mod.importlib.util, "find_spec", lambda name: None)
         with pytest.raises(ImportError, match=r"\[tiles\]"):
             orthographic_graticule()
 
@@ -918,7 +921,9 @@ class TestApplyProjectionStyle:
         `test_flat_returns_edge_shaped_coordinates`.
         """
         lon, lat, data = grid
-        _, _, out = projection_module.apply_projection_style(ax, lon, lat, data, style="flat")
+        _, _, out = projection_module.apply_projection_style(
+            ax, lon, lat, data, style="flat"
+        )
         assert len(ax.patches) == 0, "flat style should draw no boundary"
         assert len(ax.lines) == 0, "flat style should draw no graticule"
         np.testing.assert_array_equal(out, data)
@@ -932,7 +937,9 @@ class TestApplyProjectionStyle:
             `test_globe_and_flat_x_y_both_feed_alpha_scaled_mesh`.
         """
         lon, lat, data = grid
-        x, y, _ = projection_module.apply_projection_style(ax, lon, lat, data, style="flat")
+        x, y, _ = projection_module.apply_projection_style(
+            ax, lon, lat, data, style="flat"
+        )
         assert x.shape == y.shape == (len(lat) + 1, len(lon) + 1), (
             f"expected edge shape {(len(lat) + 1, len(lon) + 1)}, got x={x.shape}, y={y.shape}"
         )
@@ -943,13 +950,17 @@ class TestApplyProjectionStyle:
         lon2d, lat2d = np.meshgrid(lon, lat)
         for style in ("globe", "flat"):
             with pytest.raises(ValueError, match="1D lon/lat"):
-                projection_module.apply_projection_style(ax, lon2d, lat2d, data, style=style)
+                projection_module.apply_projection_style(
+                    ax, lon2d, lat2d, data, style=style
+                )
 
     def test_unknown_style_raises_key_error(self, ax, grid):
         """An unregistered `style` name raises `KeyError`."""
         lon, lat, data = grid
         with pytest.raises(KeyError, match="Unknown projection style"):
-            projection_module.apply_projection_style(ax, lon, lat, data, style="mercator")
+            projection_module.apply_projection_style(
+                ax, lon, lat, data, style="mercator"
+            )
 
     def test_overrides_change_the_globe_center(self, ax, grid):
         """`center_lat`/`center_lon` overrides change which hemisphere is visible.
@@ -965,7 +976,9 @@ class TestApplyProjectionStyle:
         _, _, masked = projection_module.apply_projection_style(
             ax, lon, lat, data, style="globe", center_lat=-90.0, center_lon=0.0
         )
-        assert masked[1, 0] == 3.0, "the (re-centred) pole cell itself must stay visible"
+        assert masked[1, 0] == 3.0, (
+            "the (re-centred) pole cell itself must stay visible"
+        )
         assert np.all(np.isnan(masked[0])), "North Pole should now be masked"
 
     def test_globe_and_flat_x_y_both_feed_alpha_scaled_mesh(self, ax, grid):
@@ -1078,7 +1091,9 @@ class TestApplyProjectionStyle:
         np.testing.assert_array_equal(x1, x2)
         np.testing.assert_array_equal(y1, y2)
         np.testing.assert_array_equal(
-            masked1, masked2, err_msg="masking should be identical regardless of draw_frame"
+            masked1,
+            masked2,
+            err_msg="masking should be identical regardless of draw_frame",
         )
 
     def test_draw_frame_false_skips_graticule_too(self, ax, grid):

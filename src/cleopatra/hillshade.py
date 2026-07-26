@@ -17,6 +17,7 @@ Both share the same light direction and blend, provided by
 `.blend_soft_light` / `.blend_hsv`). Only the mesh face-normal illumination is
 new maths. Pure numpy + matplotlib -- no new dependency.
 """
+
 from typing import Any
 
 import matplotlib as mpl
@@ -26,14 +27,14 @@ from matplotlib.colors import Colormap, LightSource, Normalize
 #: Default hillshade settings. Override any subset via a glyph's `hillshade`
 #: option (``hillshade=True`` uses all defaults; ``hillshade={...}`` overrides).
 DEFAULT_HILLSHADE: dict[str, Any] = {
-    "azimuth": 315.0,       #: light compass direction in degrees (315 = NW, cartographic default)
-    "altitude": 45.0,       #: light height above the horizon in degrees
-    "vert_exag": 1.0,       #: vertical exaggeration -- the main relief-contrast knob
+    "azimuth": 315.0,  #: light compass direction in degrees (315 = NW, cartographic default)
+    "altitude": 45.0,  #: light height above the horizon in degrees
+    "vert_exag": 1.0,  #: vertical exaggeration -- the main relief-contrast knob
     "blend_mode": "overlay",  #: "overlay" / "soft" / "hsv" (overlay/soft suit terrain)
     "multidirectional": False,  #: False, an int N (N evenly-spaced azimuths), or a sequence of azimuths
-    "fraction": 1.0,        #: increases the contrast of the illumination
-    "dx": 1.0,              #: grid spacing in x (affects slope; grid path only)
-    "dy": 1.0,              #: grid spacing in y (affects slope; grid path only)
+    "fraction": 1.0,  #: increases the contrast of the illumination
+    "dx": 1.0,  #: grid spacing in x (affects slope; grid path only)
+    "dy": 1.0,  #: grid spacing in y (affects slope; grid path only)
 }
 
 _BLEND_MODES = ("overlay", "soft", "hsv")
@@ -192,9 +193,7 @@ def shade_grid(
     shaded_rgb = _blend_fn(ls, blend_mode)(rgb, intensity[..., np.newaxis])
     shaded_rgb = np.clip(shaded_rgb, 0.0, 1.0)
 
-    rgba = np.concatenate(
-        [shaded_rgb, np.ones(elevation.shape + (1,))], axis=-1
-    )
+    rgba = np.concatenate([shaded_rgb, np.ones(elevation.shape + (1,))], axis=-1)
     rgba[~finite] = 0.0
     return rgba
 
@@ -242,8 +241,12 @@ def shade_rgb(
         elevation, azimuth, altitude, vert_exag, multidirectional, fraction, dx, dy
     )
     ls = LightSource(azdeg=azimuth, altdeg=altitude)
-    shaded = np.clip(
-        _blend_fn(ls, blend_mode)(rgb[..., :3], intensity[..., np.newaxis]), 0.0, 1.0
+    shaded = np.asarray(
+        np.clip(
+            _blend_fn(ls, blend_mode)(rgb[..., :3], intensity[..., np.newaxis]),
+            0.0,
+            1.0,
+        )
     )
     if rgb.shape[-1] == 4:
         return np.concatenate([shaded, rgb[..., 3:4]], axis=-1)

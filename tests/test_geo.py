@@ -91,9 +91,9 @@ def test_add_features_delegates_with_axes_and_args(monkeypatch):
     assert result is ax, "method should return the function's result"
     assert seen["ax"] is ax, f"expected self.ax forwarded, got {seen['ax']}"
     assert seen["args"] == ("coastline", "50m"), f"args not forwarded: {seen['args']}"
-    assert seen["kwargs"] == {
-        "colors": "navy"
-    }, f"kwargs not forwarded: {seen['kwargs']}"
+    assert seen["kwargs"] == {"colors": "navy"}, (
+        f"kwargs not forwarded: {seen['kwargs']}"
+    )
     plt.close(fig)
 
 
@@ -209,9 +209,9 @@ def test_crs_defaults_to_self_crs_when_omitted(monkeypatch):
     glyph = _Dummy(ax)
     glyph.crs = 4326
     glyph.add_features("coastline", "50m")
-    assert (
-        seen.get("crs") == 4326
-    ), f"expected crs defaulted to 4326, got {seen.get('crs')}"
+    assert seen.get("crs") == 4326, (
+        f"expected crs defaulted to 4326, got {seen.get('crs')}"
+    )
     plt.close(fig)
 
     seen.clear()
@@ -220,9 +220,9 @@ def test_crs_defaults_to_self_crs_when_omitted(monkeypatch):
     glyph = _Dummy(ax)
     glyph.crs = "EPSG:3857"
     glyph.add_tiles()
-    assert (
-        seen.get("crs") == "EPSG:3857"
-    ), f"expected crs defaulted, got {seen.get('crs')}"
+    assert seen.get("crs") == "EPSG:3857", (
+        f"expected crs defaulted, got {seen.get('crs')}"
+    )
     plt.close(fig)
 
 
@@ -248,9 +248,9 @@ def test_unset_crs_is_passthrough(monkeypatch):
     )
     fig, ax = plt.subplots()
     _Dummy(ax).add_features("coastline", "50m")  # crs left at class default None
-    assert (
-        "crs" not in seen["kwargs"]
-    ), f"crs should not be injected, got {seen['kwargs']}"
+    assert "crs" not in seen["kwargs"], (
+        f"crs should not be injected, got {seen['kwargs']}"
+    )
     plt.close(fig)
 
 
@@ -264,9 +264,9 @@ def test_add_relief_defaults_to_self_crs(monkeypatch):
     glyph = _Dummy(ax)
     glyph.crs = 3857
     glyph.add_relief("low")
-    assert (
-        seen["kwargs"].get("crs") == 3857
-    ), f"add_relief should default crs to self.crs, got {seen['kwargs']}"
+    assert seen["kwargs"].get("crs") == 3857, (
+        f"add_relief should default crs to self.crs, got {seen['kwargs']}"
+    )
     plt.close(fig)
 
 

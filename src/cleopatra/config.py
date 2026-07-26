@@ -51,8 +51,13 @@ class Config:
             plt.switch_backend(backend)
             logger.info("Matplotlib backend set to %s", backend)
         elif is_notebook():
+            # IPython is a soft dependency (ships with Jupyter); is_notebook()
+            # returning True already proves it is importable and a shell is
+            # active.
+            from IPython import get_ipython
+
             magic = "notebook" if interactive else "inline"
-            get_ipython().run_line_magic("matplotlib", magic)  # noqa: F821
+            get_ipython().run_line_magic("matplotlib", magic)
             logger.info("Matplotlib set to %%matplotlib %s for Jupyter", magic)
         else:
             plt.switch_backend("Agg")
@@ -62,13 +67,17 @@ class Config:
 
 def is_notebook() -> bool:
     """Return True if the code is running in a Jupyter notebook / qtconsole."""
+    # IPython is a soft dependency (not declared/required): it ships with
+    # Jupyter, but importing cleopatra.config must not require it.
     try:
-        shell = get_ipython().__class__.__name__  # noqa: F821
-        if shell == "ZMQInteractiveShell":
-            return True  # Jupyter notebook or qtconsole
-        elif shell == "TerminalInteractiveShell":
-            return False  # Terminal running IPython
-        else:
-            return False  # Other type (probably not an IPython environment)
-    except NameError:
-        return False  # Probably standard Python interpreter
+        from IPython import get_ipython
+    except ModuleNotFoundError:
+        return False  # IPython is not installed.
+
+    shell = get_ipython().__class__.__name__
+    if shell == "ZMQInteractiveShell":
+        return True  # Jupyter notebook or qtconsole
+    elif shell == "TerminalInteractiveShell":
+        return False  # Terminal running IPython
+    else:
+        return False  # Other type (probably not an IPython environment)

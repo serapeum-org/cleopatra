@@ -33,7 +33,7 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
-from cleopatra.glyph import Glyph
+from cleopatra.glyph import Glyph, _root_figure
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 #: Option keys for LineGlyph (no scalar-mapping keys; this glyph does
@@ -91,8 +91,8 @@ class LineGlyph(Glyph):
         x: np.ndarray,
         y: np.ndarray,
         *,
-        ax: Axes = None,
-        fig: Figure = None,
+        ax: Axes | None = None,
+        fig: Figure | None = None,
         **kwargs,
     ):
         super().__init__(default_options=LINE_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs)
@@ -115,7 +115,7 @@ class LineGlyph(Glyph):
         """Set up and return the axes to draw on, creating one if needed."""
         if ax is not None:
             self.ax = ax
-            self.fig = ax.get_figure()
+            self.fig = _root_figure(ax)
         elif self.ax is None:
             self.fig, self.ax = self.create_figure_axes()
         return self.ax
@@ -132,7 +132,7 @@ class LineGlyph(Glyph):
 
     def line(
         self,
-        ax: Axes = None,
+        ax: Axes | None = None,
         title: str | None = None,
         label: str | list[str] | None = None,
         color=None,
@@ -191,7 +191,7 @@ class LineGlyph(Glyph):
 
     def bar(
         self,
-        ax: Axes = None,
+        ax: Axes | None = None,
         title: str | None = None,
         color=None,
         **kwargs,
@@ -239,7 +239,7 @@ class LineGlyph(Glyph):
     def fill_between(
         self,
         y2: float | np.ndarray = 0.0,
-        ax: Axes = None,
+        ax: Axes | None = None,
         title: str | None = None,
         color=None,
         alpha: float | None = None,

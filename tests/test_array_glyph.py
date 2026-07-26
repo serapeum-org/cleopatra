@@ -27,7 +27,6 @@ from cleopatra.array_glyph import (
 
 
 class TestProperties:
-
     def test__str__(self):
         arr = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
         array = ArrayGlyph(arr)
@@ -789,9 +788,9 @@ class TestPopFirst:
             "red",
             None,
         ), f"Expected ('red', None), got {(value, key)}"
-        assert kwargs == {
-            "cmap": "viridis"
-        }, f"kwargs should be untouched, got {kwargs}"
+        assert kwargs == {"cmap": "viridis"}, (
+            f"kwargs should be untouched, got {kwargs}"
+        )
 
     def test_single_name_present_pops_it(self):
         """Exactly one of `names` present: it is popped and returned with its key."""
@@ -799,9 +798,9 @@ class TestPopFirst:
         value, key = _pop_first(kwargs, ("point_color",), "red")
         assert (value, key) == ("lime", "point_color"), f"Got {(value, key)}"
         assert "point_color" not in kwargs, "The matched key must be popped"
-        assert kwargs == {
-            "cmap": "viridis"
-        }, f"Unrelated keys must survive, got {kwargs}"
+        assert kwargs == {"cmap": "viridis"}, (
+            f"Unrelated keys must survive, got {kwargs}"
+        )
 
     def test_multiple_names_present_pops_all_returns_highest_priority(self):
         """Two aliases present: both are popped, but the first-listed one wins.
@@ -837,9 +836,9 @@ class TestPopFirst:
             "red",
             None,
         ), f"Expected ('red', None), got {(value, key)}"
-        assert kwargs == {
-            "cmap": "viridis"
-        }, f"kwargs should be untouched, got {kwargs}"
+        assert kwargs == {"cmap": "viridis"}, (
+            f"kwargs should be untouched, got {kwargs}"
+        )
 
 
 class TestPointOverlay:
@@ -852,16 +851,16 @@ class TestPointOverlay:
         points = np.array([[5.0, 1, 1]])
         overlay = PointOverlay(points)
         assert overlay.points is points, "points must be stored as given, not copied"
-        assert (
-            overlay.color == "red"
-        ), f"Expected default color 'red', got {overlay.color!r}"
+        assert overlay.color == "red", (
+            f"Expected default color 'red', got {overlay.color!r}"
+        )
         assert overlay.size == 100, f"Expected default size 100, got {overlay.size!r}"
-        assert (
-            overlay.label_color == "blue"
-        ), f"Expected default label_color 'blue', got {overlay.label_color!r}"
-        assert (
-            overlay.label_size == 10
-        ), f"Expected default label_size 10, got {overlay.label_size!r}"
+        assert overlay.label_color == "blue", (
+            f"Expected default label_color 'blue', got {overlay.label_color!r}"
+        )
+        assert overlay.label_size == 10, (
+            f"Expected default label_size 10, got {overlay.label_size!r}"
+        )
 
     def test_explicit_values_stored_verbatim(self):
         """All four styling keywords, when given, are stored unchanged."""
@@ -883,12 +882,12 @@ class TestFrameLabel:
     def test_defaults(self):
         """No arguments given: `location` is `None` and `color` is `'black'`."""
         label = FrameLabel()
-        assert (
-            label.location is None
-        ), f"Expected default location None, got {label.location!r}"
-        assert (
-            label.color == "black"
-        ), f"Expected default color 'black', got {label.color!r}"
+        assert label.location is None, (
+            f"Expected default location None, got {label.location!r}"
+        )
+        assert label.color == "black", (
+            f"Expected default color 'black', got {label.color!r}"
+        )
 
     def test_explicit_values_stored_verbatim(self):
         """Both keywords, when given, are stored unchanged."""
@@ -934,12 +933,12 @@ class TestAnimateRGB:
         """
         glyph = ArrayGlyph(self._rgb_stack(channels=channels))
         anim = glyph.animate(self._LABELS)
-        assert isinstance(
-            anim, FuncAnimation
-        ), f"expected FuncAnimation, got {type(anim).__name__}"
-        assert (
-            glyph.cbar is None
-        ), f"RGB animation must have no colorbar, got {glyph.cbar}"
+        assert isinstance(anim, FuncAnimation), (
+            f"expected FuncAnimation, got {type(anim).__name__}"
+        )
+        assert glyph.cbar is None, (
+            f"RGB animation must have no colorbar, got {glyph.cbar}"
+        )
         assert glyph.im is not None, "first-frame artist should be stored on self.im"
 
     def test_rgb_animation_renders_to_gif(self, tmp_path):
@@ -975,12 +974,12 @@ class TestAnimateRGB:
             return np.full((8, 8, 3), i / 3.0)
 
         anim = glyph.animate(self._LABELS, data_getter=get_rgb)
-        assert isinstance(
-            anim, FuncAnimation
-        ), f"expected FuncAnimation, got {type(anim).__name__}"
-        assert (
-            glyph.cbar is None
-        ), f"RGB data_getter animation must have no colorbar, got {glyph.cbar}"
+        assert isinstance(anim, FuncAnimation), (
+            f"expected FuncAnimation, got {type(anim).__name__}"
+        )
+        assert glyph.cbar is None, (
+            f"RGB data_getter animation must have no colorbar, got {glyph.cbar}"
+        )
 
     def test_data_getter_rgb_renders_to_gif(self, tmp_path):
         """Playing a lazy RGB animation fetches and renders every frame.
@@ -1016,9 +1015,9 @@ class TestAnimateRGB:
         glyph = ArrayGlyph(np.zeros((8, 8)))
         with pytest.raises(ValueError, match="do not match") as exc:
             glyph.animate(self._LABELS, data_getter=lambda i: np.zeros((5, 5, 3)))
-        assert "do not match" in str(
-            exc.value
-        ), f"unexpected error message: {exc.value}"
+        assert "do not match" in str(exc.value), (
+            f"unexpected error message: {exc.value}"
+        )
 
     def test_display_cell_value_ignored_for_rgb(self):
         """`display_cell_value=True` is silently skipped for RGB frames.
@@ -1030,9 +1029,9 @@ class TestAnimateRGB:
         """
         glyph = ArrayGlyph(self._rgb_stack())
         anim = glyph.animate(self._LABELS, display_cell_value=True)
-        assert isinstance(
-            anim, FuncAnimation
-        ), f"expected FuncAnimation, got {type(anim).__name__}"
+        assert isinstance(anim, FuncAnimation), (
+            f"expected FuncAnimation, got {type(anim).__name__}"
+        )
         assert glyph.cbar is None, "RGB animation must have no colorbar"
 
     def test_single_band_3d_path_unchanged(self):
@@ -1045,9 +1044,9 @@ class TestAnimateRGB:
         single_band = np.linspace(0.0, 1.0, 3 * 8 * 8).reshape(3, 8, 8)
         glyph = ArrayGlyph(single_band)
         anim = glyph.animate(self._LABELS)
-        assert isinstance(
-            anim, FuncAnimation
-        ), f"expected FuncAnimation, got {type(anim).__name__}"
+        assert isinstance(anim, FuncAnimation), (
+            f"expected FuncAnimation, got {type(anim).__name__}"
+        )
         assert glyph.cbar is not None, "single-band animation should keep its colorbar"
 
     def test_2d_without_data_getter_raises_naming_both_dims(self):
@@ -1062,9 +1061,9 @@ class TestAnimateRGB:
         with pytest.raises(ValueError) as exc:
             glyph.animate(self._LABELS)
         msg = str(exc.value)
-        assert (
-            "3-D" in msg and "4-D" in msg
-        ), f"message should name both 3-D and 4-D, got: {msg}"
+        assert "3-D" in msg and "4-D" in msg, (
+            f"message should name both 3-D and 4-D, got: {msg}"
+        )
 
 
 class TestNoImplicitShow:
@@ -1096,12 +1095,12 @@ class TestNoImplicitShow:
         monkeypatch.setattr(plt, "show", lambda *a, **k: calls.append(1))
         array = ArrayGlyph(arr, exclude_value=[no_data_value])
         fig, ax = array.plot(title="Flow Accumulation")
-        assert (
-            calls == []
-        ), f"plot() should not call plt.show(); was called {len(calls)} time(s)"
-        assert isinstance(
-            fig, Figure
-        ), f"plot() should return a Figure, got {type(fig)}"
+        assert calls == [], (
+            f"plot() should not call plt.show(); was called {len(calls)} time(s)"
+        )
+        assert isinstance(fig, Figure), (
+            f"plot() should return a Figure, got {type(fig)}"
+        )
         assert ax is not None, "plot() should return an Axes alongside the Figure"
 
     def test_animate_does_not_call_plt_show(
@@ -1127,12 +1126,12 @@ class TestNoImplicitShow:
         monkeypatch.setattr(plt, "show", lambda *a, **k: calls.append(1))
         array = ArrayGlyph(coello_data, exclude_value=[no_data_value])
         anim = array.animate(animate_time_list, title="Flow Accumulation")
-        assert (
-            calls == []
-        ), f"animate() should not call plt.show(); was called {len(calls)} time(s)"
-        assert isinstance(
-            anim, FuncAnimation
-        ), f"animate() should return a FuncAnimation, got {type(anim)}"
+        assert calls == [], (
+            f"animate() should not call plt.show(); was called {len(calls)} time(s)"
+        )
+        assert isinstance(anim, FuncAnimation), (
+            f"animate() should return a FuncAnimation, got {type(anim)}"
+        )
 
 
 def test_scale_percentile():
@@ -1412,9 +1411,9 @@ class TestColourKwargs:
         images = ax.get_images()
         assert images, "expected at least one AxesImage from imshow"
         norm = images[0].norm
-        assert isinstance(
-            norm, BoundaryNorm
-        ), f"levels=int should switch to BoundaryNorm, got {type(norm)}"
+        assert isinstance(norm, BoundaryNorm), (
+            f"levels=int should switch to BoundaryNorm, got {type(norm)}"
+        )
         assert len(norm.boundaries) == 5
 
     def test_levels_list_uses_explicit_edges(self):
@@ -1465,8 +1464,7 @@ class TestColourKwargs:
         parent_h = ax.get_position().height
         cbar_h = cbar.ax.get_position().height
         assert cbar_h <= parent_h * 0.75, (
-            "shrink=0.5 should produce a shorter colorbar than the "
-            "default shrink=0.75"
+            "shrink=0.5 should produce a shorter colorbar than the default shrink=0.75"
         )
 
     def test_robust_combined_with_center(self):
@@ -1729,9 +1727,9 @@ class TestPlotRecomputeBranch:
         glyph = ArrayGlyph(arr)
         before_vmin = glyph.vmin
         glyph.plot(robust=True)
-        assert (
-            glyph.vmin > before_vmin
-        ), "Robust pass on plot should clip the lower outlier"
+        assert glyph.vmin > before_vmin, (
+            "Robust pass on plot should clip the lower outlier"
+        )
         assert glyph.vmax < 1000.0, "Robust pass on plot should clip the upper outlier"
 
     def test_passing_center_in_plot_switches_cmap(self):
@@ -1769,9 +1767,9 @@ class TestPlotRecomputeBranch:
         arr = np.concatenate([body, [-1000.0, 1000.0]]).reshape(10, 10)
         glyph = ArrayGlyph(arr)
         glyph.plot(robust=True, ticks_spacing=0.1)
-        assert (
-            glyph.default_options["ticks_spacing"] == 0.1
-        ), "Explicit ticks_spacing must win over the recompute path"
+        assert glyph.default_options["ticks_spacing"] == 0.1, (
+            "Explicit ticks_spacing must win over the recompute path"
+        )
 
 
 @pytest.mark.plot
@@ -1818,9 +1816,9 @@ class TestSharedAxesArtistCleanup:
         glyph.plot()
         old_im = glyph.im
         glyph.plot()
-        assert (
-            len(glyph.ax.images) == 1
-        ), f"Expected exactly one image artist, got {len(glyph.ax.images)}"
+        assert len(glyph.ax.images) == 1, (
+            f"Expected exactly one image artist, got {len(glyph.ax.images)}"
+        )
         assert old_im not in glyph.ax.images, "The first call's image must be removed"
 
     def test_two_glyphs_sharing_axes_via_plot_do_not_stack_image_artists(self):
@@ -1845,9 +1843,9 @@ class TestSharedAxesArtistCleanup:
         )
         glyph2.plot()
 
-        assert (
-            len(glyph1.ax.images) == 1
-        ), f"Expected exactly one image artist, got {len(glyph1.ax.images)}"
+        assert len(glyph1.ax.images) == 1, (
+            f"Expected exactly one image artist, got {len(glyph1.ax.images)}"
+        )
         assert old_im not in glyph1.ax.images, "The first glyph's image must be removed"
         assert len(glyph1.fig.axes) == axes_count_after_first, (
             f"Expected {axes_count_after_first} axes after the second glyph's call, "
@@ -1867,9 +1865,9 @@ class TestSharedAxesArtistCleanup:
         )
         glyph2.animate(animate_time_list)
 
-        assert (
-            len(glyph1.ax.images) == 1
-        ), f"Expected exactly one image artist, got {len(glyph1.ax.images)}"
+        assert len(glyph1.ax.images) == 1, (
+            f"Expected exactly one image artist, got {len(glyph1.ax.images)}"
+        )
         assert old_im not in glyph1.ax.images, "The first call's image must be removed"
 
     def test_animate_then_plot_on_shared_axes_does_not_stack(
@@ -1885,9 +1883,9 @@ class TestSharedAxesArtistCleanup:
         )
         glyph2.plot()
 
-        assert (
-            len(glyph1.ax.images) == 1
-        ), f"Expected exactly one image artist, got {len(glyph1.ax.images)}"
+        assert len(glyph1.ax.images) == 1, (
+            f"Expected exactly one image artist, got {len(glyph1.ax.images)}"
+        )
         assert old_im not in glyph1.ax.images, "The first call's image must be removed"
 
     def test_apply_style_after_plot_does_not_raise(self):
@@ -1905,9 +1903,9 @@ class TestSharedAxesArtistCleanup:
         glyph = ArrayGlyph(np.abs(np.random.default_rng(0).normal(size=(20, 20))))
         glyph.plot()
         fig, ax = glyph.apply_style("flow_accumulation")
-        assert (
-            len(ax.images) == 1
-        ), f"Expected exactly one image artist, got {len(ax.images)}"
+        assert len(ax.images) == 1, (
+            f"Expected exactly one image artist, got {len(ax.images)}"
+        )
 
     def test_ax_clear_before_replot_does_not_raise(self):
         """A caller's own `ax.clear()` before the next `plot()` call doesn't crash.
@@ -1930,9 +1928,9 @@ class TestSharedAxesArtistCleanup:
         ax.clear()
         fig2, ax2 = glyph.plot()
         assert len(ax2.images) == 1, f"Expected one image, got {len(ax2.images)}"
-        assert (
-            len(fig2.axes) == 2
-        ), f"Expected 2 axes (plot + colorbar), got {len(fig2.axes)}"
+        assert len(fig2.axes) == 2, (
+            f"Expected 2 axes (plot + colorbar), got {len(fig2.axes)}"
+        )
 
     def test_ax_clear_before_re_animate_does_not_raise(
         self, coello_data: np.ndarray, animate_time_list: list
@@ -1943,9 +1941,9 @@ class TestSharedAxesArtistCleanup:
         glyph.ax.clear()
         anim = glyph.animate(animate_time_list)
         assert anim is not None
-        assert (
-            len(glyph.ax.images) == 1
-        ), f"Expected one image, got {len(glyph.ax.images)}"
+        assert len(glyph.ax.images) == 1, (
+            f"Expected one image, got {len(glyph.ax.images)}"
+        )
 
     def test_repeated_plot_display_cell_value_does_not_stack_texts(self):
         """A second `plot(display_cell_value=True)` call replaces the cell-value texts.
@@ -2039,9 +2037,9 @@ class TestSharedAxesArtistCleanup:
         with pytest.raises(ValueError):
             glyph.plot(color_scale="not-a-real-scale")
         assert len(ax.images) == 1, f"Expected the prior image, got {len(ax.images)}"
-        assert (
-            len(fig.axes) == axes_count
-        ), f"Expected {axes_count} axes preserved, got {len(fig.axes)}"
+        assert len(fig.axes) == axes_count, (
+            f"Expected {axes_count} axes preserved, got {len(fig.axes)}"
+        )
 
     def test_animate_validation_failure_preserves_prior_render(
         self, coello_data: np.ndarray, animate_time_list: list
@@ -2054,9 +2052,9 @@ class TestSharedAxesArtistCleanup:
         with pytest.raises(ValueError):
             glyph.animate(animate_time_list, color_scale="not-a-real-scale")
         assert len(ax.images) == 1, f"Expected the prior image, got {len(ax.images)}"
-        assert (
-            len(glyph.fig.axes) == axes_count
-        ), f"Expected {axes_count} axes preserved, got {len(glyph.fig.axes)}"
+        assert len(glyph.fig.axes) == axes_count, (
+            f"Expected {axes_count} axes preserved, got {len(glyph.fig.axes)}"
+        )
 
     def test_animate_validation_failure_preserves_im_and_cbar_attributes(
         self, coello_data: np.ndarray, animate_time_list: list
@@ -2077,9 +2075,9 @@ class TestSharedAxesArtistCleanup:
             glyph.animate(animate_time_list, color_scale="not-a-real-scale")
         assert glyph.im is old_im, "self.im must still reference the prior render"
         assert glyph.cbar is old_cbar, "self.cbar must still reference the prior render"
-        assert (
-            glyph._day_text is old_day_text
-        ), "self._day_text must still reference the prior render"
+        assert glyph._day_text is old_day_text, (
+            "self._day_text must still reference the prior render"
+        )
 
 
 @pytest.mark.plot
@@ -2184,9 +2182,9 @@ class TestAnimateEdgeCases:
         glyph.animate(animate_time_list)
         old_im = glyph.im
         glyph.animate(animate_time_list)
-        assert (
-            len(glyph.ax.images) == 1
-        ), f"Expected exactly one image artist, got {len(glyph.ax.images)}"
+        assert len(glyph.ax.images) == 1, (
+            f"Expected exactly one image artist, got {len(glyph.ax.images)}"
+        )
         assert old_im not in glyph.ax.images, "The first call's image must be removed"
         assert glyph.im is not old_im, "self.im must point at the second call's artist"
 
@@ -2205,9 +2203,9 @@ class TestAnimateEdgeCases:
         glyph.animate(animate_time_list)
         old_im = glyph.im
         glyph.animate(animate_time_list)
-        assert (
-            len(glyph.ax.images) == 1
-        ), f"Expected exactly one image artist, got {len(glyph.ax.images)}"
+        assert len(glyph.ax.images) == 1, (
+            f"Expected exactly one image artist, got {len(glyph.ax.images)}"
+        )
         assert old_im not in glyph.ax.images, "The first call's image must be removed"
 
     def test_repeated_call_replaces_not_stacks_colorbar(
@@ -2239,12 +2237,12 @@ class TestAnimateEdgeCases:
         glyph.animate(animate_time_list)
         old_day_text = glyph._day_text
         glyph.animate(animate_time_list)
-        assert (
-            len(glyph.ax.texts) == 1
-        ), f"Expected exactly one frame-label text, got {len(glyph.ax.texts)}"
-        assert (
-            old_day_text not in glyph.ax.texts
-        ), "The first call's label must be removed"
+        assert len(glyph.ax.texts) == 1, (
+            f"Expected exactly one frame-label text, got {len(glyph.ax.texts)}"
+        )
+        assert old_day_text not in glyph.ax.texts, (
+            "The first call's label must be removed"
+        )
 
     def test_two_glyphs_sharing_one_axes_do_not_stack_image_artists(
         self, coello_data: np.ndarray, animate_time_list: list
@@ -2269,9 +2267,9 @@ class TestAnimateEdgeCases:
         glyph2 = ArrayGlyph(coello_data, ax=glyph1.ax, fig=glyph1.fig)
         glyph2.animate(animate_time_list)
 
-        assert (
-            len(glyph1.ax.images) == 1
-        ), f"Expected exactly one image artist, got {len(glyph1.ax.images)}"
+        assert len(glyph1.ax.images) == 1, (
+            f"Expected exactly one image artist, got {len(glyph1.ax.images)}"
+        )
         assert old_im not in glyph1.ax.images, "The first glyph's image must be removed"
         assert len(glyph1.fig.axes) == axes_count_after_first, (
             f"Expected {axes_count_after_first} axes after the second glyph's call, "
@@ -2517,9 +2515,9 @@ class TestContourLabels:
             reachable and `None` before `plot`/`animate` is ever called.
         """
         glyph = ArrayGlyph(self._smooth_arr())
-        assert (
-            glyph.contour_labels is None
-        ), f"Expected None before render, got {glyph.contour_labels!r}"
+        assert glyph.contour_labels is None, (
+            f"Expected None before render, got {glyph.contour_labels!r}"
+        )
 
     @pytest.mark.parametrize("kind", ["imshow", "pcolormesh", "auto"])
     def test_labels_true_is_noop_for_non_contour_kinds(self, kind):
@@ -2536,9 +2534,9 @@ class TestContourLabels:
         glyph = ArrayGlyph(self._smooth_arr())
         fig, ax = glyph.plot(kind=kind, labels=True)
         assert isinstance(fig, Figure)
-        assert (
-            glyph.contour_labels is None
-        ), f"kind={kind!r} should not draw labels, got {glyph.contour_labels!r}"
+        assert glyph.contour_labels is None, (
+            f"kind={kind!r} should not draw labels, got {glyph.contour_labels!r}"
+        )
 
     def test_label_kw_forwards_arbitrary_clabel_kwarg(self):
         """A non-default `label_kw` key (`colors`) reaches `ax.clabel`.
@@ -2551,9 +2549,9 @@ class TestContourLabels:
         fig, ax = glyph.plot(kind="contour", labels=True, label_kw={"colors": "red"})
         assert len(glyph.contour_labels) > 0
         red = to_rgba("red")
-        assert all(
-            to_rgba(t.get_color()) == red for t in glyph.contour_labels
-        ), "every label should be red when label_kw={'colors': 'red'}"
+        assert all(to_rgba(t.get_color()) == red for t in glyph.contour_labels), (
+            "every label should be red when label_kw={'colors': 'red'}"
+        )
 
     def test_labels_with_curvilinear_coords(self):
         """`labels=True` works on the `coords=` (curvilinear) contour path.
@@ -3098,9 +3096,9 @@ class TestCoordsCurvilinearEdgeCases:
         glyph = ArrayGlyph(arr, coords=(x, y))
         fig, ax = glyph.plot(kind="auto")
         try:
-            assert isinstance(
-                fig, Figure
-            ), "descending coords must still produce a Figure"
+            assert isinstance(fig, Figure), (
+                "descending coords must still produce a Figure"
+            )
             assert len(ax.collections) >= 1, "expected at least one mesh artist"
         finally:
             plt.close(fig)
@@ -3213,9 +3211,9 @@ class TestCoordsCurvilinearEdgeCases:
         fig, ax = glyph.plot(kind="auto")
         try:
             assert isinstance(fig, Figure), f"dtype {dtype} must render"
-            assert glyph.coords[0].dtype == np.dtype(
-                dtype
-            ), f"coord dtype must be preserved; got {glyph.coords[0].dtype}"
+            assert glyph.coords[0].dtype == np.dtype(dtype), (
+                f"coord dtype must be preserved; got {glyph.coords[0].dtype}"
+            )
         finally:
             plt.close(fig)
 
@@ -3356,9 +3354,9 @@ class TestFacetingEdgeCases:
                 4,
             ), f"expected 5x4 grid; got {result.axes.shape}"
             visible = [ax for ax in result.axes.ravel() if ax.get_visible()]
-            assert (
-                len(visible) == 20
-            ), f"all 20 panels must be visible; got {len(visible)}"
+            assert len(visible) == 20, (
+                f"all 20 panels must be visible; got {len(visible)}"
+            )
         finally:
             plt.close(result.fig)
 
@@ -3480,12 +3478,12 @@ class TestFacetingEdgeCases:
         result = ArrayGlyph(stack).facet(col="t")
         try:
             first = result.axes.ravel()[0].get_images()[0]
-            assert first.norm.vmin == pytest.approx(
-                0.0
-            ), f"global vmin must be 0; got {first.norm.vmin}"
-            assert first.norm.vmax == pytest.approx(
-                100.0
-            ), f"global vmax must be 100; got {first.norm.vmax}"
+            assert first.norm.vmin == pytest.approx(0.0), (
+                f"global vmin must be 0; got {first.norm.vmin}"
+            )
+            assert first.norm.vmax == pytest.approx(100.0), (
+                f"global vmax must be 100; got {first.norm.vmax}"
+            )
         finally:
             plt.close(result.fig)
 
@@ -3535,9 +3533,9 @@ class TestFacetingEdgeCases:
         stack = self._stack(n=5)
         result = ArrayGlyph(stack).facet(col="t", col_wrap=3)
         try:
-            assert (
-                len(result.name_dicts) == 5
-            ), f"name_dicts must match rendered count; got {len(result.name_dicts)}"
+            assert len(result.name_dicts) == 5, (
+                f"name_dicts must match rendered count; got {len(result.name_dicts)}"
+            )
         finally:
             plt.close(result.fig)
 
@@ -3554,9 +3552,9 @@ class TestFacetingEdgeCases:
             col="t", row="lev", col_coords=["A", "B"], row_coords=[10, 20]
         )
         try:
-            assert (
-                len(result.name_dicts) == 4
-            ), f"expected 4 panels; got {len(result.name_dicts)}"
+            assert len(result.name_dicts) == 4, (
+                f"expected 4 panels; got {len(result.name_dicts)}"
+            )
             for nd in result.name_dicts:
                 assert set(nd.keys()) == {
                     "t",
@@ -3585,12 +3583,12 @@ class TestFacetingEdgeCases:
             first = result.axes.ravel()[0].get_images()[0]
             for ax in result.axes.ravel():
                 ims = ax.get_images()
-                assert (
-                    ims[0].norm.vmin == first.norm.vmin
-                ), f"vmin must be shared; got {ims[0].norm.vmin} vs {first.norm.vmin}"
-                assert (
-                    ims[0].norm.vmax == first.norm.vmax
-                ), f"vmax must be shared; got {ims[0].norm.vmax} vs {first.norm.vmax}"
+                assert ims[0].norm.vmin == first.norm.vmin, (
+                    f"vmin must be shared; got {ims[0].norm.vmin} vs {first.norm.vmin}"
+                )
+                assert ims[0].norm.vmax == first.norm.vmax, (
+                    f"vmax must be shared; got {ims[0].norm.vmax} vs {first.norm.vmax}"
+                )
         finally:
             plt.close(result.fig)
 
@@ -3609,15 +3607,15 @@ class TestFacetingEdgeCases:
             first = result.axes.ravel()[0].get_images()[0]
             for ax in result.axes.ravel():
                 ims = ax.get_images()
-                assert (
-                    ims[0].norm.vmin == first.norm.vmin
-                ), f"vmin not shared across subplots: {ims[0].norm.vmin}"
-                assert (
-                    ims[0].norm.vmax == first.norm.vmax
-                ), f"vmax not shared across subplots: {ims[0].norm.vmax}"
-            assert first.norm.vmin == pytest.approx(
-                -first.norm.vmax
-            ), "centring around 0 must yield symmetric limits"
+                assert ims[0].norm.vmin == first.norm.vmin, (
+                    f"vmin not shared across subplots: {ims[0].norm.vmin}"
+                )
+                assert ims[0].norm.vmax == first.norm.vmax, (
+                    f"vmax not shared across subplots: {ims[0].norm.vmax}"
+                )
+            assert first.norm.vmin == pytest.approx(-first.norm.vmax), (
+                "centring around 0 must yield symmetric limits"
+            )
         finally:
             plt.close(result.fig)
 
@@ -3700,9 +3698,9 @@ class TestFacetingEdgeCases:
         result = glyph.facet(col="t")
         try:
             first = result.axes.ravel()[0].get_images()[0]
-            assert (
-                first.norm.vmin > -999.0
-            ), "masked values must be excluded from global vmin"
+            assert first.norm.vmin > -999.0, (
+                "masked values must be excluded from global vmin"
+            )
         finally:
             plt.close(result.fig)
 
@@ -3780,12 +3778,12 @@ class TestFacetingCrossFeature:
         try:
             for ax in result.axes.ravel():
                 if ax.get_visible():
-                    assert (
-                        len(ax.collections) >= 1
-                    ), "every visible panel must hold a QuadMesh"
-                    assert (
-                        len(ax.get_images()) == 0
-                    ), "pcolormesh path must not produce AxesImages"
+                    assert len(ax.collections) >= 1, (
+                        "every visible panel must hold a QuadMesh"
+                    )
+                    assert len(ax.get_images()) == 0, (
+                        "pcolormesh path must not produce AxesImages"
+                    )
         finally:
             plt.close(result.fig)
 
@@ -3843,9 +3841,9 @@ class TestAnimateDataGetterEdgeCases:
         try:
             assert isinstance(anim, FuncAnimation), "animate must return FuncAnimation"
             assert observed, "getter must be invoked at least once during init"
-            assert all(
-                isinstance(x, int) for x in observed
-            ), f"all calls must be positional ints; got {observed}"
+            assert all(isinstance(x, int) for x in observed), (
+                f"all calls must be positional ints; got {observed}"
+            )
         finally:
             plt.close(glyph.fig)
 
@@ -3931,9 +3929,9 @@ class TestAnimateDataGetterEdgeCases:
         try:
             glyph.save_animation(str(out), fps=2)
             unique_indices = set(calls)
-            assert (
-                max(unique_indices) >= 5
-            ), f"getter must see the trailing time index; saw {sorted(unique_indices)}"
+            assert max(unique_indices) >= 5, (
+                f"getter must see the trailing time index; saw {sorted(unique_indices)}"
+            )
         finally:
             plt.close(anim._fig)
 
@@ -3973,9 +3971,9 @@ class TestAnimateDataGetterEdgeCases:
             display_cell_value=False,
         )
         try:
-            assert isinstance(
-                anim, FuncAnimation
-            ), "data_getter + display_cell_value=False must animate"
+            assert isinstance(anim, FuncAnimation), (
+                "data_getter + display_cell_value=False must animate"
+            )
         finally:
             plt.close(glyph.fig)
 
@@ -3990,12 +3988,12 @@ class TestAnimateDataGetterEdgeCases:
             vmax=1.5,
         )
         try:
-            assert (
-                glyph.default_options["vmin"] == -0.5
-            ), f"vmin must be -0.5; got {glyph.default_options['vmin']}"
-            assert (
-                glyph.default_options["vmax"] == 1.5
-            ), f"vmax must be 1.5; got {glyph.default_options['vmax']}"
+            assert glyph.default_options["vmin"] == -0.5, (
+                f"vmin must be -0.5; got {glyph.default_options['vmin']}"
+            )
+            assert glyph.default_options["vmax"] == 1.5, (
+                f"vmax must be 1.5; got {glyph.default_options['vmax']}"
+            )
         finally:
             plt.close(glyph.fig)
 
@@ -4044,9 +4042,9 @@ class TestAnimateDataGetterEdgeCases:
             frame_label=FrameLabel(location=[0.05, 0.05]),
         )
         try:
-            assert isinstance(
-                anim, FuncAnimation
-            ), "explicit frame_label location must produce an animation"
+            assert isinstance(anim, FuncAnimation), (
+                "explicit frame_label location must produce an animation"
+            )
             assert glyph._day_text.get_transform() is glyph.ax.transData
         finally:
             plt.close(glyph.fig)
@@ -4077,10 +4075,18 @@ class TestAnimateDataGetterEdgeCases:
                 renderer = glyph.fig.canvas.get_renderer()
                 label_bbox = glyph._day_text.get_window_extent(renderer=renderer)
                 axes_bbox = glyph.ax.get_window_extent(renderer=renderer)
-                assert label_bbox.y1 <= axes_bbox.y1, f"label clips above axes for {shape}"
-                assert label_bbox.y0 >= axes_bbox.y0, f"label clips below axes for {shape}"
-                assert label_bbox.x1 <= axes_bbox.x1, f"label clips right of axes for {shape}"
-                assert label_bbox.x0 >= axes_bbox.x0, f"label clips left of axes for {shape}"
+                assert label_bbox.y1 <= axes_bbox.y1, (
+                    f"label clips above axes for {shape}"
+                )
+                assert label_bbox.y0 >= axes_bbox.y0, (
+                    f"label clips below axes for {shape}"
+                )
+                assert label_bbox.x1 <= axes_bbox.x1, (
+                    f"label clips right of axes for {shape}"
+                )
+                assert label_bbox.x0 >= axes_bbox.x0, (
+                    f"label clips left of axes for {shape}"
+                )
             finally:
                 plt.close(glyph.fig)
 
@@ -4101,9 +4107,9 @@ class TestAnimateDataGetterEdgeCases:
             background_color_threshold=0.5,
         )
         try:
-            assert isinstance(
-                anim, FuncAnimation
-            ), "explicit threshold must not break the animate path"
+            assert isinstance(anim, FuncAnimation), (
+                "explicit threshold must not break the animate path"
+            )
         finally:
             plt.close(glyph.fig)
 
@@ -4239,9 +4245,9 @@ class TestMappableAndColorbarToggle:
         glyph = ArrayGlyph(self._rgb_arr(), rgb=[0, 1, 2])
         fig, ax = glyph.plot(kind="imshow")
         try:
-            assert isinstance(
-                glyph.im, AxesImage
-            ), f"RGB im should be AxesImage, got {type(glyph.im).__name__}"
+            assert isinstance(glyph.im, AxesImage), (
+                f"RGB im should be AxesImage, got {type(glyph.im).__name__}"
+            )
             assert glyph.cbar is None, "RGB path must not create a colorbar"
         finally:
             plt.close(fig)
@@ -4260,9 +4266,9 @@ class TestMappableAndColorbarToggle:
         fig, ax = glyph.plot(kind="imshow", add_colorbar=False)
         try:
             host_cbar = fig.colorbar(glyph.im, ax=ax)
-            assert isinstance(
-                host_cbar, Colorbar
-            ), "host should be able to build a colorbar from glyph.im"
+            assert isinstance(host_cbar, Colorbar), (
+                "host should be able to build a colorbar from glyph.im"
+            )
         finally:
             plt.close(fig)
 
@@ -4281,9 +4287,9 @@ class TestMappableAndColorbarToggle:
         try:
             assert isinstance(glyph.im, AxesImage)
             glyph.plot(kind="pcolormesh")
-            assert isinstance(
-                glyph.im, QuadMesh
-            ), "im should reflect the most recent render kind"
+            assert isinstance(glyph.im, QuadMesh), (
+                "im should reflect the most recent render kind"
+            )
         finally:
             plt.close(fig)
 
@@ -4299,9 +4305,9 @@ class TestMappableAndColorbarToggle:
         glyph = ArrayGlyph(self._stack())
         anim = glyph.animate(list(range(3)))
         try:
-            assert isinstance(
-                glyph.im, AxesImage
-            ), f"animate should set im to AxesImage, got {type(glyph.im).__name__}"
+            assert isinstance(glyph.im, AxesImage), (
+                f"animate should set im to AxesImage, got {type(glyph.im).__name__}"
+            )
         finally:
             plt.close(anim._fig)
 
@@ -4318,9 +4324,9 @@ class TestMappableAndColorbarToggle:
         glyph = ArrayGlyph(self._sample_arr())
         fig, ax = glyph.plot(kind="imshow", add_colorbar=False)
         try:
-            assert (
-                glyph.default_options["add_colorbar"] is False
-            ), "add_colorbar should be merged into default_options"
+            assert glyph.default_options["add_colorbar"] is False, (
+                "add_colorbar should be merged into default_options"
+            )
         finally:
             plt.close(fig)
 
@@ -4335,9 +4341,9 @@ class TestMappableAndColorbarToggle:
         fig, ax = glyph.plot(kind="imshow")
         try:
             assert glyph.cbar is not None, "default plot should create a colorbar"
-            assert (
-                len(fig.axes) == 2
-            ), f"colorbar should add a second axes, got {len(fig.axes)}"
+            assert len(fig.axes) == 2, (
+                f"colorbar should add a second axes, got {len(fig.axes)}"
+            )
         finally:
             plt.close(fig)
 
@@ -4356,9 +4362,9 @@ class TestMappableAndColorbarToggle:
         fig, ax = glyph.plot(kind=kind, add_colorbar=False)
         try:
             assert glyph.cbar is None, f"kind={kind!r}: cbar should be None"
-            assert (
-                len(fig.axes) == 1
-            ), f"kind={kind!r}: no colorbar axes expected, got {len(fig.axes)}"
+            assert len(fig.axes) == 1, (
+                f"kind={kind!r}: no colorbar axes expected, got {len(fig.axes)}"
+            )
             assert glyph.im is not None, f"kind={kind!r}: mappable should still be set"
         finally:
             plt.close(fig)
@@ -4379,12 +4385,12 @@ class TestMappableAndColorbarToggle:
             g2.plot(kind="contour", add_colorbar=False)
 
             assert g1.cbar is None and g2.cbar is None, "no per-glyph colorbars"
-            assert (
-                len(fig.axes) == 1
-            ), f"shared axes should stay single, got {len(fig.axes)} axes"
-            assert (
-                g1.im is not None and g2.im is not None
-            ), "each layer must expose its mappable for aggregation"
+            assert len(fig.axes) == 1, (
+                f"shared axes should stay single, got {len(fig.axes)} axes"
+            )
+            assert g1.im is not None and g2.im is not None, (
+                "each layer must expose its mappable for aggregation"
+            )
         finally:
             plt.close(fig)
 
@@ -4419,9 +4425,9 @@ class TestMappableAndColorbarToggle:
         try:
             assert glyph.cbar is None, "animate add_colorbar=False should skip cbar"
             assert glyph.im is not None, "animate should still expose the mappable"
-            assert (
-                len(anim._fig.axes) == 1
-            ), f"no colorbar axes expected, got {len(anim._fig.axes)}"
+            assert len(anim._fig.axes) == 1, (
+                f"no colorbar axes expected, got {len(anim._fig.axes)}"
+            )
         finally:
             plt.close(anim._fig)
 
@@ -4485,9 +4491,9 @@ class TestPlotAxAndTitleParams:
         try:
             glyph = ArrayGlyph(self._arr(), ax=ax, fig=fig)
             out_fig, out_ax = glyph.plot(kind="imshow")
-            assert (
-                out_ax is ax
-            ), "constructor axes should be used when plot(ax=) omitted"
+            assert out_ax is ax, (
+                "constructor axes should be used when plot(ax=) omitted"
+            )
             assert out_fig is fig, "constructor figure should be reused"
         finally:
             plt.close(fig)
@@ -4518,9 +4524,9 @@ class TestPlotAxAndTitleParams:
         try:
             glyph = ArrayGlyph(self._arr())
             _, out_ax = glyph.plot(ax=ax, title="My Field", kind="imshow")
-            assert (
-                out_ax.get_title() == "My Field"
-            ), f"title should be set, got {out_ax.get_title()!r}"
+            assert out_ax.get_title() == "My Field", (
+                f"title should be set, got {out_ax.get_title()!r}"
+            )
         finally:
             plt.close(fig)
 
@@ -4535,9 +4541,9 @@ class TestPlotAxAndTitleParams:
         try:
             glyph = ArrayGlyph(self._arr(), title="ctor title")
             _, out_ax = glyph.plot(ax=ax, title="plot title", kind="imshow")
-            assert (
-                out_ax.get_title() == "plot title"
-            ), f"plot title should win, got {out_ax.get_title()!r}"
+            assert out_ax.get_title() == "plot title", (
+                f"plot title should win, got {out_ax.get_title()!r}"
+            )
         finally:
             plt.close(fig)
 
@@ -4644,9 +4650,9 @@ class TestScaleToRgbPerBand:
         out = glyph.scale_to_rgb()
         assert out.dtype == np.uint8, f"expected uint8, got {out.dtype}"
         assert out[0].tolist() == [28, 56, 85], f"global scaling changed: {out[0]}"
-        assert np.array_equal(
-            glyph.arr, before
-        ), "scale_to_rgb must not mutate self.arr"
+        assert np.array_equal(glyph.arr, before), (
+            "scale_to_rgb must not mutate self.arr"
+        )
 
     def test_per_band_stretches_each_band_to_full_range(self):
         """`per_band=True` maps each band independently across 0-255.
@@ -4730,9 +4736,9 @@ class TestScaleToRgbPerBand:
             _warnings.simplefilter("error")  # no stray cast warning may surface
             out = ArrayGlyph(np.zeros((4, 4))).scale_to_rgb(stack, per_band=True)
         assert out.dtype == np.uint8, "expected uint8 output"
-        assert (
-            int(out[..., 0].max()) == 255
-        ), "finite values should still stretch to 255"
+        assert int(out[..., 0].max()) == 255, (
+            "finite values should still stretch to 255"
+        )
         assert int(out[0, 0, 0]) == 0, "the NaN pixel should map to 0"
 
 
@@ -4742,9 +4748,12 @@ class TestArrayGlyphHillshade:
     @staticmethod
     def _dem():
         yy, xx = np.mgrid[0:30, 0:40]
-        return 10.0 + 0.5 * yy + 200.0 * np.exp(
-            -(((xx - 30) / 6) ** 2 + ((yy - 15) / 8) ** 2)
-        ) + 8.0 * np.sin(xx / 4.0)
+        return (
+            10.0
+            + 0.5 * yy
+            + 200.0 * np.exp(-(((xx - 30) / 6) ** 2 + ((yy - 15) / 8) ** 2))
+            + 8.0 * np.sin(xx / 4.0)
+        )
 
     def test_off_by_default_draws_scalar_image(self):
         """Without hillshade the imshow image carries a scalar array."""
@@ -4770,7 +4779,8 @@ class TestArrayGlyphHillshade:
     def test_hillshade_options_dict(self):
         """A dict of hillshade overrides (vert_exag, multidirectional) is honoured."""
         _, ax = ArrayGlyph(
-            self._dem(), cmap="gist_earth",
+            self._dem(),
+            cmap="gist_earth",
             hillshade={"vert_exag": 6, "azimuth": 300, "multidirectional": 3},
         ).plot()
         assert ax.images[0].get_array().shape[-1] == 4
@@ -4778,8 +4788,12 @@ class TestArrayGlyphHillshade:
 
     def test_hillshade_warns_on_non_imshow_kind(self):
         """`hillshade` on a kind it cannot shade warns instead of silently no-op-ing."""
-        with pytest.warns(UserWarning, match="hillshade is only applied to kind='imshow'"):
-            ArrayGlyph(self._dem(), cmap="terrain", hillshade=True).plot(kind="pcolormesh")
+        with pytest.warns(
+            UserWarning, match="hillshade is only applied to kind='imshow'"
+        ):
+            ArrayGlyph(self._dem(), cmap="terrain", hillshade=True).plot(
+                kind="pcolormesh"
+            )
         plt.close("all")
 
 
@@ -4868,15 +4882,17 @@ class TestArrayGlyphDataStyle:
         plt.close("all")
 
     def test_magics_preset_uses_its_fixed_range_by_default(self):
-        """A Magics preset with an encoded range (mn2t) maps over its fixed scale, not auto-range.
+        """A Magics preset with an encoded range (min_temperature_2m) maps over its fixed scale, not auto-range.
 
         The preset resolves to RGBA before imshow, so the applied range is read from the
         pixel colours: a fixed -48..56 render differs from one auto-ranged to the data extent.
         """
         data = np.linspace(-10.0, 50.0, 30 * 40).reshape(30, 40)
-        fixed = ArrayGlyph(data, style="mn2t")
+        fixed = ArrayGlyph(data, style="min_temperature_2m")
         fixed.plot()
-        auto = ArrayGlyph(data, style="mn2t", vmin=float(data.min()), vmax=float(data.max()))
+        auto = ArrayGlyph(
+            data, style="min_temperature_2m", vmin=float(data.min()), vmax=float(data.max())
+        )
         auto.plot()
         assert not np.allclose(fixed.im.get_array(), auto.im.get_array())
         plt.close("all")
@@ -4886,19 +4902,21 @@ class TestArrayGlyphDataStyle:
         data = np.linspace(-30.0, 50.0, 30 * 40).reshape(30, 40)
         g = ArrayGlyph(data)
         g.plot(vmin=5.0, vmax=20.0)  # plain plot sets an explicit range...
-        g.plot(style="mn2t")  # ...which sticks into the styled render (not mn2t's -48..56)
+        g.plot(
+            style="min_temperature_2m"
+        )  # ...which sticks into the styled render (not min_temperature_2m's -48..56)
         sticky = np.asarray(g.im.get_array()).copy()
-        fresh = ArrayGlyph(data, style="mn2t")
-        fresh.plot()  # a fresh glyph uses mn2t's own fixed range
+        fresh = ArrayGlyph(data, style="min_temperature_2m")
+        fresh.plot()  # a fresh glyph uses min_temperature_2m's own fixed range
         assert not np.allclose(sticky, np.asarray(fresh.im.get_array()))
         plt.close("all")
 
     def test_glyph_vmin_vmax_overrides_preset_fixed_range(self):
         """A glyph-level vmin/vmax overrides the preset's encoded fixed range."""
         data = np.linspace(-10.0, 50.0, 30 * 40).reshape(30, 40)
-        default = ArrayGlyph(data, style="mn2t")
+        default = ArrayGlyph(data, style="min_temperature_2m")
         default.plot()
-        override = ArrayGlyph(data, style="mn2t", vmin=-10.0, vmax=50.0)
+        override = ArrayGlyph(data, style="min_temperature_2m", vmin=-10.0, vmax=50.0)
         override.plot()
         assert not np.allclose(default.im.get_array(), override.im.get_array())
         plt.close("all")
@@ -4906,7 +4924,9 @@ class TestArrayGlyphDataStyle:
     def test_integer_masked_categorical_input_does_not_crash(self):
         """An integer-coded categorical raster with masked nodata renders (no `ma.filled` TypeError)."""
         rng = np.random.default_rng(2)
-        d8 = rng.choice([0, 1, 2, 4, 8, 16, 32, 64, 128], size=(20, 20))  # int dtype, 0 = nodata
+        d8 = rng.choice(
+            [0, 1, 2, 4, 8, 16, 32, 64, 128], size=(20, 20)
+        )  # int dtype, 0 = nodata
         g = ArrayGlyph(d8, style="flow_direction_d8", exclude_value=[0])
         _, ax = g.plot()
         assert ax.get_legend() is not None
@@ -4935,14 +4955,18 @@ class TestArrayGlyphDataStyle:
 
     def test_plot_style_with_hillshade_composes(self):
         """In `plot`, `style` + `hillshade` compose: the preset RGBA is relief-shaded."""
-        g = ArrayGlyph(self._accum(), style="flow_accumulation", hillshade={"vert_exag": 5})
+        g = ArrayGlyph(
+            self._accum(), style="flow_accumulation", hillshade={"vert_exag": 5}
+        )
         g.plot()
         shaded = np.asarray(g.im.get_array())
         assert shaded.ndim == 3 and shaded.shape[-1] == 4
         g2 = ArrayGlyph(self._accum(), style="flow_accumulation")
         g2.plot()
         base = np.asarray(g2.im.get_array())
-        assert not np.allclose(shaded[..., :3], base[..., :3]), "hillshade lit the preset colours"
+        assert not np.allclose(shaded[..., :3], base[..., :3]), (
+            "hillshade lit the preset colours"
+        )
         plt.close("all")
 
     def test_categorical_style_with_hillshade_warns_not_shaded(self):
@@ -4961,7 +4985,9 @@ class TestArrayGlyphDataStyle:
         x = np.linspace(-3.0, 3.0, nx)
         y = np.linspace(-3.0, 3.0, ny)
         with pytest.warns(UserWarning, match="curvilinear data-style preset"):
-            ArrayGlyph(arr, coords=(x, y), style="flow_accumulation", hillshade=True).plot()
+            ArrayGlyph(
+                arr, coords=(x, y), style="flow_accumulation", hillshade=True
+            ).plot()
         plt.close("all")
 
     def test_unknown_style_with_coords_reports_style_error_first(self):
@@ -5045,11 +5071,15 @@ class TestArrayGlyphShadedAnimate:
         ('≤'/'≥') from the norm's extend, matching the plot() legend (M2 parity)."""
         base = np.linspace(-30.0, 38.0, 400).reshape(20, 20)
         stack = np.stack([base + w for w in (-2.0, 0.0, 5.0)])
-        g = ArrayGlyph(stack, style="2t")
+        g = ArrayGlyph(stack, style="temperature_2m")
         g.animate(time=list(range(3)))
         swatch_texts = [t.get_text() for c in g.ax.child_axes for t in c.texts]
-        assert "≤-40" in swatch_texts, f"animate legend should cap the low endpoint, got {swatch_texts}"
-        assert "≥40" in swatch_texts, f"animate legend should cap the high endpoint, got {swatch_texts}"
+        assert "≤-40" in swatch_texts, (
+            f"animate legend should cap the low endpoint, got {swatch_texts}"
+        )
+        assert "≥40" in swatch_texts, (
+            f"animate legend should cap the high endpoint, got {swatch_texts}"
+        )
         plt.close("all")
 
     def test_continuous_style_animate_reproduces_alpha_glow(self):
@@ -5064,17 +5094,19 @@ class TestArrayGlyphShadedAnimate:
         frame = np.asarray(g.im.get_array())
         assert frame.shape[-1] == 4, "animate frames are RGBA"
         alpha = frame[..., 3]
-        assert alpha.min() < 0.2 and alpha.max() > 0.8, "opacity ramps with value like plot()"
+        assert alpha.min() < 0.2 and alpha.max() > 0.8, (
+            "opacity ramps with value like plot()"
+        )
         plt.close("all")
 
     def test_magics_preset_animate_uses_fixed_range_overridable_by_caller(self):
         """A styled animation honours the preset's fixed range, and a caller vmin/vmax overrides it."""
         base = np.linspace(-2.0, 39.0, 400).reshape(20, 20)
         stack = np.stack([base + w for w in (-4.0, 0.0, 8.0)])
-        fixed = ArrayGlyph(stack, style="mn2t")
+        fixed = ArrayGlyph(stack, style="min_temperature_2m")
         fixed.animate(time=list(range(3)))._func(2)
         fixed_frame = np.asarray(fixed.im.get_array()).copy()
-        override = ArrayGlyph(stack, style="mn2t", vmin=-10.0, vmax=50.0)
+        override = ArrayGlyph(stack, style="min_temperature_2m", vmin=-10.0, vmax=50.0)
         override.animate(time=list(range(3)))._func(2)
         assert not np.allclose(fixed_frame, np.asarray(override.im.get_array()))
         plt.close("all")

@@ -35,13 +35,14 @@ from typing import Any
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.cm import ScalarMappable
+from matplotlib.colorbar import Colorbar
 from matplotlib.colors import Normalize
 from matplotlib.figure import Figure
 from matplotlib.patches import Patch
 from matplotlib.path import Path as MplPath
 
 from cleopatra.colors import resolve_single_layer_style, resolve_style_norm
-from cleopatra.glyph import Glyph
+from cleopatra.glyph import Glyph, _root_figure
 from cleopatra.hillshade import resolve_hillshade, shade_grid
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
@@ -50,6 +51,7 @@ from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 #: large `gridsize` / point count never materialises one giant array; this caps
 #: the temporary at ~`MAX_KDE_BLOCK` floats (a few tens of MB).
 MAX_KDE_BLOCK = 4_000_000
+
 
 class _Unset:
     """Sentinel type for `plot(style=...)`'s tri-state default.
@@ -148,8 +150,8 @@ class KDEGlyph(Glyph):
         y: np.ndarray,
         *,
         clip_path: MplPath | Patch | None = None,
-        ax: Axes = None,
-        fig: Figure = None,
+        ax: Axes | None = None,
+        fig: Figure | None = None,
         **kwargs,
     ):
         super().__init__(default_options=KDE_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs)
@@ -168,7 +170,10 @@ class KDEGlyph(Glyph):
                 f"bw_method must be a positive float or None, got {bw_method}."
             )
         self.clip_path = clip_path
-        self.cbar = None
+        self.cbar: Colorbar | None = None
+        #: The `AxesImage` (hillshaded) or `QuadContourSet` mappable from
+        #: the most recent `plot` call; `None` before first render.
+        self.im: Any = None
 
     def _bandwidth(self) -> float:
         """Return Scott's-rule bandwidth, scaled by the `bw_method` option.
@@ -183,7 +188,7 @@ class KDEGlyph(Glyph):
         """
         n = self.x.size
         multiplier = self.default_options["bw_method"] or 1.0
-        return multiplier * n ** (-1.0 / 6.0)
+        return float(multiplier * n ** (-1.0 / 6.0))
 
     def evaluate(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Evaluate the KDE on a regular grid spanning the point bounds.
@@ -297,6 +302,8 @@ class KDEGlyph(Glyph):
         clip = self.clip_path
         if clip is None:
             return
+        # `_apply_clip` is only called from `plot()` after `self.ax` is resolved.
+        assert self.ax is not None
         if isinstance(clip, Patch):
             if clip.axes is None:
                 # Clip in data coordinates without mutating the caller's patch.
@@ -362,13 +369,16 @@ class KDEGlyph(Glyph):
             )
         self._reset_axes_for_restyle()
         return self.plot(
-            ax=self.ax, title=title, add_colorbar=add_colorbar,
-            hillshade=hillshade, style=style,
+            ax=self.ax,
+            title=title,
+            add_colorbar=add_colorbar,
+            hillshade=hillshade,
+            style=style,
         )
 
     def plot(
         self,
-        ax: Axes = None,
+        ax: Axes | None = None,
         title: str | None = None,
         add_colorbar: bool | None = None,
         hillshade: bool | dict | None = None,
@@ -444,7 +454,7 @@ class KDEGlyph(Glyph):
         """
         if ax is not None:
             self.ax = ax
-            self.fig = ax.get_figure()
+            self.fig = _root_figure(ax)
         elif self.ax is None:
             self.fig, self.ax = self.create_figure_axes()
         ax = self.ax
@@ -508,11 +518,18 @@ class KDEGlyph(Glyph):
             # "density terrain" (peaks and ridges) reads by form. The shaded
             # RGBA image carries no scalar array, so the colorbar attaches to a
             # ScalarMappable proxy carrying the same cmap/norm.
-            hs_norm = norm if norm is not None else Normalize(
-                vmin=float(density.min()), vmax=float(density.max())
+            hs_norm = (
+                norm
+                if norm is not None
+                else Normalize(vmin=float(density.min()), vmax=float(density.max()))
             )
             rgba = shade_grid(density, cmap, norm=hs_norm, **hillshade)
-            extent = [float(gx.min()), float(gx.max()), float(gy.min()), float(gy.max())]
+            extent = (
+                float(gx.min()),
+                float(gx.max()),
+                float(gy.min()),
+                float(gy.max()),
+            )
             mappable = ax.imshow(rgba, extent=extent, origin="lower", aspect="auto")
             self._apply_clip(mappable)
             self.im = mappable
@@ -525,9 +542,7 @@ class KDEGlyph(Glyph):
             return self.fig, ax, mappable
 
         render = ax.contourf if opts["shade"] else ax.contour
-        contour_set = render(
-            gx, gy, density, levels=level_edges, cmap=cmap, norm=norm
-        )
+        contour_set = render(gx, gy, density, levels=level_edges, cmap=cmap, norm=norm)
         self._apply_clip(contour_set)
         self.im = contour_set
 

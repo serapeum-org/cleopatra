@@ -42,6 +42,7 @@ import logging
 import math
 import re
 import urllib.error
+import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
@@ -49,6 +50,7 @@ from typing import Any
 import numpy as np
 
 from cleopatra import __version__
+from cleopatra._net import urlopen_http
 
 logger = logging.getLogger(__name__)
 
@@ -413,6 +415,7 @@ def fetch_single_tile(
         tuple[Any, bytes]: The original tile and its PNG/JPEG bytes.
 
     Raises:
+        ValueError: If the provider's URL template is not an `http(s)` URL.
         ConnectionError: If the tile cannot be fetched after all
             retries are exhausted.
 
@@ -453,6 +456,8 @@ def fetch_single_tile(
             ```
     """
     url = provider.build_url(x=tile.x, y=tile.y, z=tile.z)
+    if urllib.parse.urlsplit(url).scheme.lower() not in ("http", "https"):
+        raise ValueError(f"Refusing to fetch non-http(s) tile URL: {url!r}")
     last_error: Exception | None = None
     result_bytes: bytes | None = None
     for attempt in range(retries + 1):
@@ -461,7 +466,7 @@ def fetch_single_tile(
                 url,
                 headers={"User-Agent": user_agent},
             )
-            response = urllib.request.urlopen(request, timeout=timeout)
+            response = urlopen_http(request, timeout=timeout)
             data = response.read()
             if not _looks_like_image(data):
                 raise OSError(

@@ -265,9 +265,9 @@ def test_add_features_zorder_and_style_passthrough(cache: Path):
     add_features(ax, "coastline", "110m", zorder=5, linewidths=2.5)
     lc = next(c for c in ax.collections if isinstance(c, LineCollection))
     assert lc.get_zorder() == 5, f"zorder not forwarded: {lc.get_zorder()}"
-    assert (
-        lc.get_linewidths()[0] == 2.5
-    ), f"linewidth not forwarded: {lc.get_linewidths()}"
+    assert lc.get_linewidths()[0] == 2.5, (
+        f"linewidth not forwarded: {lc.get_linewidths()}"
+    )
     plt.close(fig)
 
 
@@ -403,9 +403,9 @@ def test_add_relief_passes_imshow_params(cache: Path):
     img = ax.images[0]
     assert img.get_alpha() == 0.5, f"alpha not forwarded: {img.get_alpha()}"
     assert img.get_zorder() == -3, f"zorder not forwarded: {img.get_zorder()}"
-    assert (
-        img.get_interpolation() == "nearest"
-    ), f"interpolation not forwarded: {img.get_interpolation()}"
+    assert img.get_interpolation() == "nearest", (
+        f"interpolation not forwarded: {img.get_interpolation()}"
+    )
     plt.close(fig)
 
 
@@ -452,12 +452,12 @@ def test_add_relief_lonlat_extent_crops_not_stretches(cache: Path):
     add_relief(ax, "low", extent=(0, -90, 180, 90))  # eastern hemisphere
     placed = np.asarray(ax.images[0].get_array())
     assert placed.shape[1] < 8, f"extent should crop, got full width {placed.shape}"
-    assert (
-        placed.shape[0] == 4
-    ), f"full-latitude extent must not crop rows, got {placed.shape}"
-    assert (placed[..., 0] == 255).all() and (
-        placed[..., 2] == 0
-    ).all(), "the cropped region should be the red eastern half only"
+    assert placed.shape[0] == 4, (
+        f"full-latitude extent must not crop rows, got {placed.shape}"
+    )
+    assert (placed[..., 0] == 255).all() and (placed[..., 2] == 0).all(), (
+        "the cropped region should be the red eastern half only"
+    )
     plt.close(fig)
 
 
@@ -483,13 +483,13 @@ def test_add_relief_lonlat_extent_crops_northern_rows(cache: Path):
     ax.set_ylim(0, 90)
     add_relief(ax, "low", extent=(-180, 0, 180, 90))  # northern hemisphere
     placed = np.asarray(ax.images[0].get_array())
-    assert (
-        placed.shape[0] < 4
-    ), f"extent should crop rows, got full height {placed.shape}"
+    assert placed.shape[0] < 4, (
+        f"extent should crop rows, got full height {placed.shape}"
+    )
     assert placed.shape[1] == 8, "full-longitude extent keeps all columns"
-    assert (placed[..., 0] == 255).all() and (
-        placed[..., 2] == 0
-    ).all(), "the cropped region should be the red northern rows only"
+    assert (placed[..., 0] == 255).all() and (placed[..., 2] == 0).all(), (
+        "the cropped region should be the red northern rows only"
+    )
     plt.close(fig)
 
 
@@ -646,8 +646,8 @@ def test_download_streams_to_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     """A successful download is streamed to `dest`, leaving no `.part` file."""
     payload = b"reference-asset-bytes"
     monkeypatch.setattr(
-        reference.urllib.request,
-        "urlopen",
+        reference,
+        "urlopen_http",
         lambda request, timeout=None: io.BytesIO(payload),
     )
     dest = tmp_path / "asset.bin"
@@ -667,7 +667,7 @@ def test_download_failure_raises_and_cleans_part(
         calls.append(1)
         raise urllib.error.URLError("network down")
 
-    monkeypatch.setattr(reference.urllib.request, "urlopen", boom)
+    monkeypatch.setattr(reference, "urlopen_http", boom)
     monkeypatch.setattr(reference.time, "sleep", lambda seconds: None)
     dest = tmp_path / "asset.bin"
     with pytest.raises(ConnectionError, match="Failed to download"):
@@ -690,7 +690,7 @@ def test_download_retries_transient_failure_then_succeeds(
             raise urllib.error.URLError("temporary hiccup")
         return io.BytesIO(payload)
 
-    monkeypatch.setattr(reference.urllib.request, "urlopen", flaky_then_ok)
+    monkeypatch.setattr(reference, "urlopen_http", flaky_then_ok)
     monkeypatch.setattr(reference.time, "sleep", lambda seconds: None)
     dest = tmp_path / "asset.bin"
     out = reference._download("https://example.com/asset.bin", dest, retries=3)

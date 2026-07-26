@@ -21,15 +21,13 @@ from matplotlib.image import AxesImage
 
 from cleopatra.colors import (
     CAMS_AOD_COLORMAPS,
+    DATA_STYLES,
     FLAME_COLORMAPS,
     HAZE_COLORMAPS,
-    DATA_STYLES,
     Colors,
     _category_boundaries,
-    _decode_magics_range,
-    _load_earthkit_presets,
-    _load_magics_presets,
     _load_preset_asset,
+    _load_weather_presets,
     _resolve_style_norm,
     alpha_scaled_image,
     alpha_scaled_mesh,
@@ -42,9 +40,10 @@ class TestHazeColormaps:
 
     def test_has_organic_matter_and_dust(self):
         """The two documented preset names are present, and only those two."""
-        assert set(HAZE_COLORMAPS) == {"organic_matter", "dust"}, (
-            f"unexpected preset names: {set(HAZE_COLORMAPS)}"
-        )
+        assert set(HAZE_COLORMAPS) == {
+            "organic_matter",
+            "dust",
+        }, f"unexpected preset names: {set(HAZE_COLORMAPS)}"
 
     @pytest.mark.parametrize("name", ["organic_matter", "dust"])
     def test_entries_are_colormaps(self, name):
@@ -56,15 +55,20 @@ class TestHazeColormaps:
     @pytest.mark.parametrize("name", ["organic_matter", "dust"])
     def test_starts_white_at_zero(self, name):
         """Every haze colormap starts at opaque white for value 0.0."""
-        assert HAZE_COLORMAPS[name](0.0) == (1.0, 1.0, 1.0, 1.0), (
-            f"{name}(0.0) should be white, got {HAZE_COLORMAPS[name](0.0)}"
-        )
+        assert HAZE_COLORMAPS[name](0.0) == (
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+        ), f"{name}(0.0) should be white, got {HAZE_COLORMAPS[name](0.0)}"
 
     def test_dust_ends_dark_brown(self):
         """The dust colormap saturates to a dark brown at value 1.0."""
         r, g, b, a = HAZE_COLORMAPS["dust"](1.0)
         assert a == 1.0, "alpha should be opaque"
-        assert r > g > b, f"dust top stop should be brown-toned, got rgb=({r}, {g}, {b})"
+        assert r > g > b, (
+            f"dust top stop should be brown-toned, got rgb=({r}, {g}, {b})"
+        )
 
     def test_organic_matter_ends_purple(self):
         """The organic_matter colormap saturates to a deep purple at value 1.0."""
@@ -104,7 +108,9 @@ class TestCamsAodColormaps:
         assert CAMS_AOD_COLORMAPS[name](0.0)[3] == 1.0, f"{name}(0.0) should be opaque"
         assert CAMS_AOD_COLORMAPS[name](1.0)[3] == 1.0, f"{name}(1.0) should be opaque"
 
-    @pytest.mark.parametrize("name", ["blue_yellow_red", "blue_yellow_red_brown", "blue_red"])
+    @pytest.mark.parametrize(
+        "name", ["blue_yellow_red", "blue_yellow_red_brown", "blue_red"]
+    )
     def test_blue_low_end(self, name):
         """The blue-to-red AOD scales start blue-dominant at value 0.0."""
         r, g, b, _ = CAMS_AOD_COLORMAPS[name](0.0)
@@ -114,12 +120,16 @@ class TestCamsAodColormaps:
     def test_red_high_end(self, name):
         """The red-topped AOD scales saturate red-dominant at value 1.0."""
         r, g, b, _ = CAMS_AOD_COLORMAPS[name](1.0)
-        assert r > g and r > b, f"{name}(1.0) should be red-toned, got rgb=({r}, {g}, {b})"
+        assert r > g and r > b, (
+            f"{name}(1.0) should be red-toned, got rgb=({r}, {g}, {b})"
+        )
 
     def test_oranges_low_end_is_near_white(self):
         """The `oranges` scale starts near white (its Magics form fades in via alpha)."""
         r, g, b, _ = CAMS_AOD_COLORMAPS["oranges"](0.0)
-        assert min(r, g, b) > 0.85, f"oranges(0.0) should be near white, got rgb=({r}, {g}, {b})"
+        assert min(r, g, b) > 0.85, (
+            f"oranges(0.0) should be near white, got rgb=({r}, {g}, {b})"
+        )
 
 
 class TestAlphaScaledImage:
@@ -154,8 +164,12 @@ class TestAlphaScaledImage:
             ax, data, "viridis", alpha_norm=Normalize(vmin=0.0, vmax=5.0, clip=False)
         )
         alpha = img.get_array()[..., 3]
-        assert alpha[0, 0] == 0.0, f"NaN pixel should be transparent, got alpha={alpha[0, 0]}"
-        assert alpha[0, 1] == 1.0, f"finite max value should be opaque, got {alpha[0, 1]}"
+        assert alpha[0, 0] == 0.0, (
+            f"NaN pixel should be transparent, got alpha={alpha[0, 0]}"
+        )
+        assert alpha[0, 1] == 1.0, (
+            f"finite max value should be opaque, got {alpha[0, 1]}"
+        )
 
     def test_decoupled_alpha_norm(self, ax):
         """A separate `alpha_norm` drives opacity independently of `norm`."""
@@ -177,7 +191,10 @@ class TestAlphaScaledImage:
         img = alpha_scaled_image(ax, np.array([[0.0, 1.0]]), HAZE_COLORMAPS["dust"])
         rgb = img.get_array()[0, 1, :3]
         np.testing.assert_allclose(
-            rgb, [0.165, 0.031, 0.0], atol=0.01, err_msg=f"unexpected top-stop colour: {rgb}"
+            rgb,
+            [0.165, 0.031, 0.0],
+            atol=0.01,
+            err_msg=f"unexpected top-stop colour: {rgb}",
         )
 
     def test_constant_alpha_makes_field_opaque(self, ax):
@@ -199,7 +216,9 @@ class TestAlphaScaledImage:
 
     def test_constant_alpha_is_clipped(self, ax):
         """An out-of-range `constant_alpha` is clipped into [0, 1]."""
-        img = alpha_scaled_image(ax, np.array([[0.0, 1.0]]), "viridis", constant_alpha=2.5)
+        img = alpha_scaled_image(
+            ax, np.array([[0.0, 1.0]]), "viridis", constant_alpha=2.5
+        )
         assert img.get_array()[0, 1, 3] == 1.0, "constant_alpha > 1 should clip to 1.0"
 
     def test_non_2d_data_raises(self, ax):
@@ -287,21 +306,34 @@ class TestApplyDataStyle:
 
     def test_haze_preset_has_both_layers(self):
         """The registered 'haze' preset defines exactly organic_matter and dust."""
-        assert set(DATA_STYLES["haze"]) == {"organic_matter", "dust"}, (
-            f"unexpected haze layers: {set(DATA_STYLES['haze'])}"
-        )
+        assert set(DATA_STYLES["haze"]) == {
+            "organic_matter",
+            "dust",
+        }, f"unexpected haze layers: {set(DATA_STYLES['haze'])}"
 
     def test_normalize_object_norm_does_not_raise(self, ax):
         """A Normalize-instance `norm=` is left to imshow (no-op on RGBA), not mis-read as a kind."""
         data = np.array([[0.0, 10.0], [5.0, 8.0]])
         # Must not raise "data style 'norm' must be 'linear'/'log'/'symlog'".
-        apply_data_style(ax, {"wind_speed": data}, style="wind_speed", norm=Normalize(0, 10), legend=False)
+        apply_data_style(
+            ax,
+            {"wind_speed": data},
+            style="wind_speed",
+            norm=Normalize(0, 10),
+            legend=False,
+        )
 
     def test_string_norm_override_selects_the_norm_kind(self, ax):
         """A string `norm=` overrides the preset's norm kind (e.g. 'log') via cfg and renders."""
-        data = np.array([[1.0, 10.0], [100.0, 1000.0]])  # positive -> valid LogNorm window
-        img = apply_data_style(ax, {"wind_speed": data}, style="wind_speed", norm="log", legend=False)
-        assert np.asarray(img["wind_speed"].get_array()).shape[-1] == 4  # rendered RGBA, no raise
+        data = np.array(
+            [[1.0, 10.0], [100.0, 1000.0]]
+        )  # positive -> valid LogNorm window
+        img = apply_data_style(
+            ax, {"wind_speed": data}, style="wind_speed", norm="log", legend=False
+        )
+        assert (
+            np.asarray(img["wind_speed"].get_array()).shape[-1] == 4
+        )  # rendered RGBA, no raise
 
     @pytest.mark.parametrize("layer", ["organic_matter", "dust"])
     def test_haze_layers_declare_decoupled_alpha(self, layer):
@@ -323,7 +355,9 @@ class TestApplyDataStyle:
         """
         images = apply_data_style(ax, {"dust": np.array([[0.5, 1.0]])})
         alpha = images["dust"].get_array()[..., 3]
-        assert alpha[0, 0] == 1.0, f"expected fully opaque at data=0.5, got alpha={alpha[0, 0]}"
+        assert alpha[0, 0] == 1.0, (
+            f"expected fully opaque at data=0.5, got alpha={alpha[0, 0]}"
+        )
 
     def test_cams_aod_preset_has_single_aod_layer(self):
         """The registered 'cams_aod' preset defines exactly one 'aod' layer."""
@@ -360,7 +394,12 @@ class TestApplyDataStyle:
         assert alpha[0, 1] == 1.0, f"AOD 1.0 should be opaque, got {alpha[0, 1]}"
 
     CLIMATE_PRESETS = [
-        "temperature", "elevation", "vegetation", "wind_speed", "anomaly", "precipitation",
+        "temperature",
+        "elevation",
+        "vegetation",
+        "wind_speed",
+        "anomaly",
+        "precipitation",
     ]
 
     @pytest.mark.parametrize("style", CLIMATE_PRESETS)
@@ -383,7 +422,9 @@ class TestApplyDataStyle:
         assert alpha[0, 0] == alpha[0, 1] == alpha[1, 1] == 1.0, (
             f"{style} finite cells should be opaque, got {alpha}"
         )
-        assert alpha[1, 0] == 0.0, f"{style} NaN cell should be transparent, got {alpha[1, 0]}"
+        assert alpha[1, 0] == 0.0, (
+            f"{style} NaN cell should be transparent, got {alpha[1, 0]}"
+        )
 
     def test_auto_range_uses_data_min_max(self, ax):
         """A preset without vmin/vmax auto-ranges the colour norm to the data.
@@ -395,18 +436,22 @@ class TestApplyDataStyle:
         """
         # `wind_speed` (viridis) auto-ranges -- no vmin/vmax/levels -- so it is
         # the right probe for the data-min/max behaviour. (The fixed ECMWF
-        # contour scale lives under the `2t` preset, not `temperature`.)
+        # contour scale lives under the `temperature_2m` preset, not `temperature`.)
         cmap = plt.get_cmap("viridis")
         images = apply_data_style(
             ax, {"wind_speed": np.array([[10.0, 30.0]])}, style="wind_speed"
         )
         rgba = images["wind_speed"].get_array()
         np.testing.assert_allclose(
-            rgba[0, 0, :3], cmap(0.0)[:3], atol=1e-6,
+            rgba[0, 0, :3],
+            cmap(0.0)[:3],
+            atol=1e-6,
             err_msg="min value should map to the colormap start",
         )
         np.testing.assert_allclose(
-            rgba[0, 1, :3], cmap(1.0)[:3], atol=1e-6,
+            rgba[0, 1, :3],
+            cmap(1.0)[:3],
+            atol=1e-6,
             err_msg="max value should map to the colormap end",
         )
 
@@ -433,7 +478,9 @@ class TestApplyDataStyle:
         )
         rgba = images["anomaly"].get_array()
         np.testing.assert_allclose(
-            rgba[0, 2, :3], cmap(0.5)[:3], atol=0.02,
+            rgba[0, 2, :3],
+            cmap(0.5)[:3],
+            atol=0.02,
             err_msg="the 0.0 cell should map to the colormap midpoint",
         )
 
@@ -446,15 +493,20 @@ class TestApplyDataStyle:
         assert alpha[0, 0] == 0.0, f"dry cell should be transparent, got {alpha[0, 0]}"
         assert alpha[0, 1] == 1.0, f"wettest cell should be opaque, got {alpha[0, 1]}"
 
-    def test_constant_alpha_and_decoupled_alpha_are_mutually_exclusive(self, ax, monkeypatch):
+    def test_constant_alpha_and_decoupled_alpha_are_mutually_exclusive(
+        self, ax, monkeypatch
+    ):
         """A preset combining a constant 'alpha' with alpha_vmin/vmax raises ValueError."""
         import cleopatra.colors as colors_mod
 
         bad = {
             "bad": {
                 "x": {
-                    "cmap": "viridis", "label": "X",
-                    "alpha": 1.0, "alpha_vmin": 0.1, "alpha_vmax": 0.5,
+                    "cmap": "viridis",
+                    "label": "X",
+                    "alpha": 1.0,
+                    "alpha_vmin": 0.1,
+                    "alpha_vmax": 0.5,
                 }
             }
         }
@@ -473,7 +525,9 @@ class TestApplyDataStyle:
         import cleopatra.colors as colors_mod
 
         custom_styles = {
-            "plain": {"dust": {"cmap": "viridis", "label": "Plain", "vmin": 0.0, "vmax": 1.0}}
+            "plain": {
+                "dust": {"cmap": "viridis", "label": "Plain", "vmin": 0.0, "vmax": 1.0}
+            }
         }
         monkeypatch.setattr(colors_mod, "DATA_STYLES", custom_styles)
         images = apply_data_style(ax, {"dust": np.array([[0.5, 1.0]])}, style="plain")
@@ -484,9 +538,15 @@ class TestApplyDataStyle:
 
     def test_draws_one_image_per_layer(self, ax):
         """Each key in `layers` produces one returned `AxesImage`, drawn on `ax`."""
-        layers = {"dust": np.array([[0.0, 1.0]]), "organic_matter": np.array([[0.2, 0.8]])}
+        layers = {
+            "dust": np.array([[0.0, 1.0]]),
+            "organic_matter": np.array([[0.2, 0.8]]),
+        }
         images = apply_data_style(ax, layers)
-        assert set(images) == {"dust", "organic_matter"}, f"unexpected keys: {set(images)}"
+        assert set(images) == {
+            "dust",
+            "organic_matter",
+        }, f"unexpected keys: {set(images)}"
         for img in images.values():
             assert isinstance(img, AxesImage), f"expected AxesImage, got {type(img)}"
             assert img in ax.images, "image should be drawn on ax"
@@ -502,8 +562,13 @@ class TestApplyDataStyle:
 
     def test_legend_true_attaches_one_swatch_per_layer(self, ax):
         """`legend=True` (the default) attaches one swatch legend per layer."""
-        apply_data_style(ax, {"dust": np.array([[0.0, 1.0]]), "organic_matter": np.array([[0.0, 1.0]])})
-        assert len(ax.child_axes) == 2, f"expected 2 swatch legends, got {len(ax.child_axes)}"
+        apply_data_style(
+            ax,
+            {"dust": np.array([[0.0, 1.0]]), "organic_matter": np.array([[0.0, 1.0]])},
+        )
+        assert len(ax.child_axes) == 2, (
+            f"expected 2 swatch legends, got {len(ax.child_axes)}"
+        )
 
     def test_legend_false_attaches_no_swatch(self, ax):
         """`legend=False` draws the layers without any swatch legend."""
@@ -541,7 +606,9 @@ class TestApplyDataStyle:
     def test_forwards_alpha_scaled_image_kwargs(self, ax):
         """Extra kwargs (e.g. `zorder`) reach the underlying `alpha_scaled_image`."""
         images = apply_data_style(ax, {"dust": np.array([[0.0, 1.0]])}, zorder=5)
-        assert images["dust"].get_zorder() == 5, "zorder not forwarded to alpha_scaled_image"
+        assert images["dust"].get_zorder() == 5, (
+            "zorder not forwarded to alpha_scaled_image"
+        )
 
     def test_x_y_dispatches_to_alpha_scaled_mesh(self, ax):
         """Passing `x`/`y` renders every layer as a `QuadMesh`, not an `AxesImage`."""
@@ -581,7 +648,7 @@ class TestApplyDataStyle:
 
 
 class TestEarthkitPresets:
-    """Tests for the vendored ECMWF/earthkit default parameter styles."""
+    """Tests for the earthkit-plots half of the merged `weather_presets.json` library."""
 
     @pytest.fixture
     def ax(self):
@@ -591,12 +658,22 @@ class TestEarthkitPresets:
 
     def test_target_parameters_registered(self):
         """The curated ECMWF parameter set is registered by GRIB shortName."""
-        for key in ["2t", "2d", "aod550", "duaod550", "10u", "10v", "10si", "tp", "cape"]:
+        for key in [
+            "temperature_2m",
+            "dewpoint_temperature_2m",
+            "aerosol_optical_depth_550nm",
+            "dust_aerosol_optical_depth_550nm",
+            "wind_u_10m",
+            "wind_v_10m",
+            "wind_speed_10m",
+            "total_precipitation",
+            "convective_available_potential_energy",
+        ]:
             assert key in DATA_STYLES, f"missing earthkit preset {key}"
 
     def test_earthkit_overrides_magics_neon_2t(self):
-        """The earthkit 2t (Spectral_r, banded) overrides the Magics rainbow ListedColormap."""
-        layer = DATA_STYLES["2t"]["2t"]
+        """The earthkit temperature_2m (Spectral_r, banded) overrides the Magics rainbow ListedColormap."""
+        layer = DATA_STYLES["temperature_2m"]["temperature_2m"]
         assert layer["cmap"] == "Spectral_r"
         assert layer["extend"] == "both"
         assert layer["levels"][0] == -40 and layer["levels"][-1] == 40
@@ -604,41 +681,51 @@ class TestEarthkitPresets:
 
     def test_cmap_name_style_stays_a_name(self):
         """A style whose earthkit `colors` is a matplotlib name keeps it as a string cmap."""
-        assert DATA_STYLES["2d"]["2d"]["cmap"] == "BrBG_r"
-        assert DATA_STYLES["10u"]["10u"]["cmap"] == "PiYG"
+        assert DATA_STYLES["dewpoint_temperature_2m"]["dewpoint_temperature_2m"]["cmap"] == "BrBG_r"
+        assert DATA_STYLES["wind_u_10m"]["wind_u_10m"]["cmap"] == "PiYG"
 
     def test_colour_list_with_levels_is_discrete_listed_colormap(self):
         """A colour-list earthkit preset (with levels) keeps the exact ECMWF colours (ListedColormap)."""
-        layer = DATA_STYLES["aod550"]["aod550"]
+        layer = DATA_STYLES["aerosol_optical_depth_550nm"]["aerosol_optical_depth_550nm"]
         assert isinstance(layer["cmap"], ListedColormap)
-        assert layer["cmap"].N == 9  # the 9 exact ECMWF colours, not a 256-entry resample
+        assert (
+            layer["cmap"].N == 9
+        )  # the 9 exact ECMWF colours, not a 256-entry resample
         assert layer["extend"] == "max"
         assert layer["levels"][0] == 0.1 and layer["levels"][-1] == 1.0
 
     def test_colour_list_without_levels_stays_continuous(self):
-        """A colour-list earthkit preset with no levels (tp gradient) is a continuous ramp."""
-        layer = DATA_STYLES["tp"]["tp"]
+        """A colour-list earthkit preset with no levels (total_precipitation gradient) is a continuous ramp."""
+        layer = DATA_STYLES["total_precipitation"]["total_precipitation"]
         assert isinstance(layer["cmap"], LinearSegmentedColormap)
         assert "levels" not in layer
 
     def test_colour_rich_list_preset_honours_extend(self):
-        """cape (255 colours over 16 bands) keeps extend='max' -- it has room for an over colour."""
-        layer = DATA_STYLES["cape"]["cape"]
-        norm, _, _ = _resolve_style_norm(np.linspace(0.0, 5000.0, 400).reshape(20, 20), layer)
+        """convective_available_potential_energy (255 colours over 16 bands) keeps extend='max' -- it has room for an over colour."""
+        layer = DATA_STYLES["convective_available_potential_energy"]["convective_available_potential_energy"]
+        norm, _, _ = _resolve_style_norm(
+            np.linspace(0.0, 5000.0, 400).reshape(20, 20), layer
+        )
         assert isinstance(norm, BoundaryNorm) and norm.extend == "max"
 
     def test_one_colour_per_band_preset_drops_extend(self):
-        """aod550 (9 colours, 9 bands) drops extend -- no spare colour for the over slot -- and clamps."""
-        layer = DATA_STYLES["aod550"]["aod550"]
-        norm, _, _ = _resolve_style_norm(np.linspace(0.0, 1.5, 400).reshape(20, 20), layer)
+        """aerosol_optical_depth_550nm (9 colours, 9 bands) drops extend -- no spare colour for the over slot -- and clamps."""
+        layer = DATA_STYLES["aerosol_optical_depth_550nm"]["aerosol_optical_depth_550nm"]
+        norm, _, _ = _resolve_style_norm(
+            np.linspace(0.0, 1.5, 400).reshape(20, 20), layer
+        )
         assert isinstance(norm, BoundaryNorm) and norm.extend == "neither"
 
     def test_colour_list_preset_renders_exact_discrete_colours(self, ax):
         """A ListedColormap earthkit preset paints each band with its exact palette colour."""
-        cmap = DATA_STYLES["aod550"]["aod550"]["cmap"]
-        levels = DATA_STYLES["aod550"]["aod550"]["levels"]
-        data = np.array([[levels[0] + 1e-3, levels[4] + 1e-3]])  # falls in band 0 and band 4
-        img = apply_data_style(ax, {"aod550": data}, style="aod550", legend=False)["aod550"]
+        cmap = DATA_STYLES["aerosol_optical_depth_550nm"]["aerosol_optical_depth_550nm"]["cmap"]
+        levels = DATA_STYLES["aerosol_optical_depth_550nm"]["aerosol_optical_depth_550nm"]["levels"]
+        data = np.array(
+            [[levels[0] + 1e-3, levels[4] + 1e-3]]
+        )  # falls in band 0 and band 4
+        img = apply_data_style(ax, {"aerosol_optical_depth_550nm": data}, style="aerosol_optical_depth_550nm", legend=False)[
+            "aerosol_optical_depth_550nm"
+        ]
         rgb = np.asarray(img.get_array())[..., :3]
         assert np.allclose(rgb[0, 0], to_rgb(cmap.colors[0]), atol=1 / 255)
         assert np.allclose(rgb[0, 1], to_rgb(cmap.colors[4]), atol=1 / 255)
@@ -646,19 +733,19 @@ class TestEarthkitPresets:
     def test_earthkit_style_renders_banded(self, ax):
         """A vendored earthkit style renders discrete level bands end-to-end."""
         data = np.linspace(-10.0, 38.0, 60 * 60).reshape(60, 60)
-        img = apply_data_style(ax, {"2t": data}, style="2t", legend=False)
-        rgb = np.asarray(img["2t"].get_array())[..., :3].reshape(-1, 3)
+        img = apply_data_style(ax, {"temperature_2m": data}, style="temperature_2m", legend=False)
+        rgb = np.asarray(img["temperature_2m"].get_array())[..., :3].reshape(-1, 3)
         assert len(np.unique(np.round(rgb, 3), axis=0)) <= 43  # ~41 bands + extend
 
     def test_loader_degrades_without_asset(self, monkeypatch):
-        """A missing earthkit asset degrades to no presets rather than raising."""
+        """A missing weather asset degrades to no presets rather than raising."""
         import cleopatra.colors as colors_mod
 
         def boom(_pkg):
             raise FileNotFoundError("no data package")
 
         monkeypatch.setattr(colors_mod.importlib.resources, "files", boom)
-        assert _load_earthkit_presets() == {}
+        assert _load_weather_presets() == {}
 
 
 class TestContourLevelsStyle:
@@ -671,8 +758,8 @@ class TestContourLevelsStyle:
         plt.close(fig)
 
     def test_2t_uses_ecmwf_spectral_bands(self):
-        """The earthkit `2t` preset is ECMWF's default: Spectral_r banded at 2 degC over -40..40."""
-        layer = DATA_STYLES["2t"]["2t"]
+        """The earthkit `temperature_2m` preset is ECMWF's default: Spectral_r banded at 2 degC over -40..40."""
+        layer = DATA_STYLES["temperature_2m"]["temperature_2m"]
         assert layer["cmap"] == "Spectral_r"
         assert layer["extend"] == "both"
         assert layer["levels"][0] == -40 and layer["levels"][-1] == 40
@@ -680,7 +767,7 @@ class TestContourLevelsStyle:
 
     def test_temperature_is_a_generic_auto_ranging_ramp(self):
         """The `temperature` preset is a generic Spectral_r ramp with no fixed levels, so it
-        auto-ranges to the data (the fixed ECMWF scale lives under `2t`)."""
+        auto-ranges to the data (the fixed ECMWF scale lives under `temperature_2m`)."""
         layer = DATA_STYLES["temperature"]["temperature"]
         assert layer["cmap"] == "Spectral_r"
         assert "levels" not in layer and "extend" not in layer
@@ -690,7 +777,7 @@ class TestContourLevelsStyle:
 
     def test_levels_resolve_to_boundary_norm_with_extend(self):
         """A preset carrying `levels`/`extend` resolves to a BoundaryNorm honouring both."""
-        layer = DATA_STYLES["2t"]["2t"]
+        layer = DATA_STYLES["temperature_2m"]["temperature_2m"]
         norm, vmin, vmax = _resolve_style_norm(np.array([[0.0, 25.0]]), layer)
         assert isinstance(norm, BoundaryNorm)
         assert norm.extend == "both"
@@ -700,8 +787,8 @@ class TestContourLevelsStyle:
     def test_levels_render_discrete_bands(self, ax):
         """A continuous field styled with `levels` paints in a small set of banded colours."""
         data = np.linspace(-30.0, 38.0, 60 * 60).reshape(60, 60)
-        img = apply_data_style(ax, {"2t": data}, style="2t", legend=False)
-        rgb = np.asarray(img["2t"].get_array())[..., :3].reshape(-1, 3)
+        img = apply_data_style(ax, {"temperature_2m": data}, style="temperature_2m", legend=False)
+        rgb = np.asarray(img["temperature_2m"].get_array())[..., :3].reshape(-1, 3)
         distinct = len(np.unique(np.round(rgb, 3), axis=0))
         assert distinct <= 41, f"expected discrete level bands, got {distinct} colours"
 
@@ -709,11 +796,11 @@ class TestContourLevelsStyle:
         """An explicit caller vmin/vmax overrides a levels preset's fixed scale (not a silent no-op)."""
         data = np.linspace(-40.0, 100.0, 400).reshape(20, 20)
         fig2, ax2 = plt.subplots()
-        base = apply_data_style(ax, {"2t": data}, style="2t", legend=False)
+        base = apply_data_style(ax, {"temperature_2m": data}, style="temperature_2m", legend=False)
         over = apply_data_style(
-            ax2, {"2t": data}, style="2t", vmin=-40.0, vmax=100.0, legend=False
+            ax2, {"temperature_2m": data}, style="temperature_2m", vmin=-40.0, vmax=100.0, legend=False
         )
-        assert not np.allclose(base["2t"].get_array(), over["2t"].get_array())
+        assert not np.allclose(base["temperature_2m"].get_array(), over["temperature_2m"].get_array())
         plt.close(fig2)
 
     def test_string_norm_kind_overrides_a_levels_preset(self):
@@ -723,53 +810,76 @@ class TestContourLevelsStyle:
         cfg = {"cmap": "viridis", "levels": [0, 1, 2, 3, 4], "extend": "both"}
         assert isinstance(_resolve_style_norm(data, cfg)[0], BoundaryNorm)
         assert isinstance(_resolve_style_norm(data, {**cfg, "norm": "log"})[0], LogNorm)
-        assert isinstance(_resolve_style_norm(data, {**cfg, "norm": "symlog"})[0], SymLogNorm)
+        assert isinstance(
+            _resolve_style_norm(data, {**cfg, "norm": "symlog"})[0], SymLogNorm
+        )
         # 'linear' is the implicit default and must not abandon the banding.
-        assert isinstance(_resolve_style_norm(data, {**cfg, "norm": "linear"})[0], BoundaryNorm)
+        assert isinstance(
+            _resolve_style_norm(data, {**cfg, "norm": "linear"})[0], BoundaryNorm
+        )
 
     def test_string_norm_log_is_not_a_silent_noop_on_a_levels_preset(self, ax):
         """Through `apply_data_style`, a string `norm='log'` on a levels preset changes the
         rendered pixels instead of being silently dropped (the L1 inconsistency)."""
-        data = np.linspace(0.05, 4.5, 400).reshape(20, 20)  # positive, spans the aod550 levels
+        data = np.linspace(0.05, 4.5, 400).reshape(
+            20, 20
+        )  # positive, spans the aerosol_optical_depth_550nm levels
         fig2, ax2 = plt.subplots()
-        base = apply_data_style(ax, {"aod550": data}, style="aod550", legend=False)
+        base = apply_data_style(ax, {"aerosol_optical_depth_550nm": data}, style="aerosol_optical_depth_550nm", legend=False)
         logged = apply_data_style(
-            ax2, {"aod550": data}, style="aod550", norm="log", legend=False
+            ax2, {"aerosol_optical_depth_550nm": data}, style="aerosol_optical_depth_550nm", norm="log", legend=False
         )
-        assert not np.allclose(base["aod550"].get_array(), logged["aod550"].get_array())
+        assert not np.allclose(base["aerosol_optical_depth_550nm"].get_array(), logged["aerosol_optical_depth_550nm"].get_array())
         plt.close(fig2)
 
-    def test_instance_norm_labels_legend_with_its_own_range_on_a_levels_preset(self, ax):
+    def test_instance_norm_labels_legend_with_its_own_range_on_a_levels_preset(
+        self, ax
+    ):
         """An instance `norm=` on a levels preset labels the swatch with the instance's range,
         not the preset's fixed level endpoints (L1)."""
-        data = np.linspace(1.0, 90.0, 400).reshape(20, 20)  # positive, valid for LogNorm
-        apply_data_style(ax, {"2t": data}, style="2t", norm=LogNorm(vmin=1, vmax=100), legend=True)
+        data = np.linspace(1.0, 90.0, 400).reshape(
+            20, 20
+        )  # positive, valid for LogNorm
+        apply_data_style(
+            ax, {"temperature_2m": data}, style="temperature_2m", norm=LogNorm(vmin=1, vmax=100), legend=True
+        )
         swatch_texts = [t.get_text() for c in ax.child_axes for t in c.texts]
-        assert "1" in swatch_texts, f"low endpoint should be the instance vmin (1), got {swatch_texts}"
-        assert "≥100" in swatch_texts, f"high endpoint should be the instance vmax (100), got {swatch_texts}"
+        assert "1" in swatch_texts, (
+            f"low endpoint should be the instance vmin (1), got {swatch_texts}"
+        )
+        assert "≥100" in swatch_texts, (
+            f"high endpoint should be the instance vmax (100), got {swatch_texts}"
+        )
         assert "-40" not in swatch_texts and "≤-40" not in swatch_texts, (
             f"must not label with the preset's fixed level endpoints, got {swatch_texts}"
         )
 
     def test_data_outside_fixed_levels_warns(self, ax):
         """Data entirely outside a levels preset's scale warns (Celsius levels, Kelvin data footgun)."""
-        kelvin = np.full((4, 4), 290.0)  # ~17 degC in K, far above the -40..40 degC 2t levels
+        kelvin = np.full(
+            (4, 4), 290.0
+        )  # ~17 degC in K, far above the -40..40 degC temperature_2m levels
         with pytest.warns(UserWarning, match="expected units"):
-            apply_data_style(ax, {"2t": kelvin}, style="2t", legend=False)
+            apply_data_style(ax, {"temperature_2m": kelvin}, style="temperature_2m", legend=False)
 
     def test_two_sided_extend_legend_caps_the_low_endpoint(self, ax):
         """A two-sided `extend='both'` levels preset marks both endpoints as capped ('≤'/'≥')."""
         data = np.linspace(-30.0, 38.0, 400).reshape(20, 20)
-        apply_data_style(ax, {"2t": data}, style="2t", legend=True)
+        apply_data_style(ax, {"temperature_2m": data}, style="temperature_2m", legend=True)
         swatch_texts = [t.get_text() for c in ax.child_axes for t in c.texts]
-        assert "≤-40" in swatch_texts, f"expected a capped '≤-40' low endpoint, got {swatch_texts}"
-        assert "≥40" in swatch_texts, f"expected a capped '≥40' high endpoint, got {swatch_texts}"
+        assert "≤-40" in swatch_texts, (
+            f"expected a capped '≤-40' low endpoint, got {swatch_texts}"
+        )
+        assert "≥40" in swatch_texts, (
+            f"expected a capped '≥40' high endpoint, got {swatch_texts}"
+        )
 
     def test_downgraded_extend_legend_caps_neither_endpoint(self, ax):
-        """`aod550`'s extend='max' is downgraded to 'neither' (its 9-colour ListedColormap
-        has no spare over-slot), so the legend caps NEITHER end -- not a spurious '≥'."""
+        """`aerosol_optical_depth_550nm`'s extend='max' is downgraded to 'neither' (its 9-colour ListedColormap
+        has no spare over-slot), so the legend caps NEITHER end -- not a spurious '≥'.
+        """
         data = np.linspace(0.05, 4.5, 400).reshape(20, 20)
-        apply_data_style(ax, {"aod550": data}, style="aod550", legend=True)
+        apply_data_style(ax, {"aerosol_optical_depth_550nm": data}, style="aerosol_optical_depth_550nm", legend=True)
         swatch_texts = [t.get_text() for c in ax.child_axes for t in c.texts]
         assert not any(t.startswith("≤") for t in swatch_texts), (
             f"a downgraded extend must not cap the low endpoint, got {swatch_texts}"
@@ -779,10 +889,10 @@ class TestContourLevelsStyle:
         )
 
     def test_max_extend_with_room_caps_only_the_high_endpoint(self, ax):
-        """A colour-rich `extend='max'` preset (cape keeps its over-slot) caps only the high
+        """A colour-rich `extend='max'` preset (convective_available_potential_energy keeps its over-slot) caps only the high
         end ('≥'), leaving the low endpoint plain."""
         data = np.linspace(100.0, 4500.0, 400).reshape(20, 20)
-        apply_data_style(ax, {"cape": data}, style="cape", legend=True)
+        apply_data_style(ax, {"convective_available_potential_energy": data}, style="convective_available_potential_energy", legend=True)
         swatch_texts = [t.get_text() for c in ax.child_axes for t in c.texts]
         assert any(t.startswith("≥") for t in swatch_texts), (
             f"a kept extend='max' should cap the high endpoint, got {swatch_texts}"
@@ -832,14 +942,16 @@ class TestFlameColormapsAndPresets:
     def test_flame_preset_render_ties_opacity_to_value(self, ax):
         """A flame preset renders RGBA whose alpha rises with the value (cool fades, hot glows)."""
         data = np.linspace(0.0, 40.0, 400).reshape(20, 20)
-        img = apply_data_style(ax, {"temperature_flame": data}, style="temperature_flame", legend=False)
+        img = apply_data_style(
+            ax, {"temperature_flame": data}, style="temperature_flame", legend=False
+        )
         alpha = np.asarray(img["temperature_flame"].get_array())[..., 3]
         assert alpha.flat[0] < 0.1, "coolest cell should be nearly transparent"
         assert alpha.flat[-1] == 1.0, "hottest cell should be fully opaque"
 
 
 class TestMagicsPresets:
-    """Tests for the ECMWF/Magics preset library loaded into `DATA_STYLES`."""
+    """Tests for the ECMWF/Magics half of the merged `weather_presets.json` library."""
 
     @pytest.fixture
     def ax(self):
@@ -849,20 +961,26 @@ class TestMagicsPresets:
         plt.close(fig)
 
     HAND_AUTHORED = {
-        "haze", "cams_aod", "temperature", "elevation",
-        "vegetation", "wind_speed", "anomaly", "precipitation",
+        "haze",
+        "cams_aod",
+        "temperature",
+        "elevation",
+        "vegetation",
+        "wind_speed",
+        "anomaly",
+        "precipitation",
     }
 
     def test_known_parameters_are_registered(self):
         """Well-known GRIB parameters resolve to Magics presets carrying their real labels.
 
-        (Uses `mn2t`/`mx2t`: the `2t`/`tp`/`aod550` shortNames are now the earthkit
+        (Uses `min_temperature_2m`/`max_temperature_2m`: the `temperature_2m`/`total_precipitation`/`aerosol_optical_depth_550nm` shortNames are now the earthkit
         default styles -- see `TestEarthkitPresets`.)
         """
-        assert DATA_STYLES["mn2t"]["mn2t"]["label"].startswith(
+        assert DATA_STYLES["min_temperature_2m"]["min_temperature_2m"]["label"].startswith(
             "Minimum temperature at 2 metres"
         )
-        assert DATA_STYLES["mx2t"]["mx2t"]["label"].startswith(
+        assert DATA_STYLES["max_temperature_2m"]["max_temperature_2m"]["label"].startswith(
             "Maximum temperature at 2 metres"
         )
 
@@ -873,28 +991,28 @@ class TestMagicsPresets:
 
     def test_preset_layer_structure(self):
         """Each Magics preset is a single layer keyed by its own name, with a Colormap."""
-        entry = DATA_STYLES["mn2t"]
-        assert set(entry) == {"mn2t"}, f"unexpected layers: {set(entry)}"
-        layer = entry["mn2t"]
+        entry = DATA_STYLES["min_temperature_2m"]
+        assert set(entry) == {"min_temperature_2m"}, f"unexpected layers: {set(entry)}"
+        layer = entry["min_temperature_2m"]
         assert isinstance(layer["cmap"], Colormap), f"cmap is {type(layer['cmap'])}"
         assert isinstance(layer["label"], str) and layer["label"]
 
     def test_opaque_preset_carries_constant_alpha(self):
         """An opaque Magics field (min 2m temperature) sets alpha=1.0 -- a full opaque field."""
-        assert DATA_STYLES["mn2t"]["mn2t"]["alpha"] == 1.0
+        assert DATA_STYLES["min_temperature_2m"]["min_temperature_2m"]["alpha"] == 1.0
 
     def test_overlay_preset_has_no_constant_alpha(self):
         """An alpha-ramped Magics field (high cloud cover) is a value-linked overlay."""
-        assert "alpha" not in DATA_STYLES["hcc"]["hcc"], (
+        assert "alpha" not in DATA_STYLES["high_cloud_cover"]["high_cloud_cover"], (
             "an alpha-ramped Magics palette should map to the overlay policy"
         )
 
     def test_magics_preset_renders_opaque_field(self, ax):
         """A Magics preset draws end-to-end; an opaque one fills the field, NaN transparent."""
         images = apply_data_style(
-            ax, {"mn2t": np.array([[-20.0, 30.0], [np.nan, 5.0]])}, style="mn2t"
+            ax, {"min_temperature_2m": np.array([[-20.0, 30.0], [np.nan, 5.0]])}, style="min_temperature_2m"
         )
-        alpha = images["mn2t"].get_array()[..., 3]
+        alpha = images["min_temperature_2m"].get_array()[..., 3]
         assert alpha[0, 0] == alpha[0, 1] == alpha[1, 1] == 1.0, f"not opaque: {alpha}"
         assert alpha[1, 0] == 0.0, f"NaN cell should be transparent, got {alpha[1, 0]}"
 
@@ -906,20 +1024,22 @@ class TestMagicsPresets:
             raise FileNotFoundError("no data package")
 
         monkeypatch.setattr(colors_mod.importlib.resources, "files", boom)
-        assert _load_magics_presets() == {}, "missing asset should degrade to no presets"
+        assert _load_weather_presets() == {}, (
+            "missing asset should degrade to no presets"
+        )
 
     def test_preset_carries_decoded_fixed_range(self):
         """A Magics preset whose style name encodes a range ships that vmin/vmax."""
-        layer = DATA_STYLES["mn2t"]["mn2t"]
+        layer = DATA_STYLES["min_temperature_2m"]["min_temperature_2m"]
         assert layer["vmin"] == -48.0 and layer["vmax"] == 56.0
 
     def test_magics_preset_is_discrete_banded(self):
         """A Magics preset renders as flat discrete bands (ListedColormap + band count)."""
-        layer = DATA_STYLES["mn2t"]["mn2t"]
+        layer = DATA_STYLES["min_temperature_2m"]["min_temperature_2m"]
         assert isinstance(layer["cmap"], ListedColormap)
         assert layer["bands"] == layer["cmap"].N == 27
 
-    @pytest.mark.parametrize("key", ["mn2t", "tpi"])
+    @pytest.mark.parametrize("key", ["min_temperature_2m", "total_precipitation_index"])
     def test_banded_preset_edges_stay_within_the_range(self, key):
         """Band edges partition [vmin, vmax] exactly -- no overshoot beyond vmax (every colour reachable)."""
         layer = DATA_STYLES[key][key]
@@ -934,10 +1054,12 @@ class TestMagicsPresets:
     def test_banded_render_produces_few_distinct_colours(self, ax):
         """A banded preset paints flat bands, so a smooth field renders in few colours."""
         data = np.linspace(-30.0, 45.0, 60 * 60).reshape(60, 60)
-        img = apply_data_style(ax, {"mn2t": data}, style="mn2t", legend=False)["mn2t"]
+        img = apply_data_style(ax, {"min_temperature_2m": data}, style="min_temperature_2m", legend=False)["min_temperature_2m"]
         rgb = np.asarray(img.get_array())[..., :3].reshape(-1, 3)
         distinct = np.unique(np.round(rgb, 3), axis=0)
-        assert len(distinct) <= 27, f"expected discrete bands, got {len(distinct)} colours"
+        assert len(distinct) <= 27, (
+            f"expected discrete bands, got {len(distinct)} colours"
+        )
 
     def test_cmocean_preset_stays_continuous(self):
         """A non-Magics (cmocean) preset is a genuine continuous ramp, not banded."""
@@ -946,30 +1068,34 @@ class TestMagicsPresets:
         assert "bands" not in layer
 
     def test_temperature_preset_keeps_full_colour_ramp(self):
-        """The vendored 2t palette keeps its full blue->green->yellow->red->magenta ramp.
+        """The vendored min_temperature_2m palette keeps its full blue->green->yellow->red->magenta ramp.
 
         Magics palettes name intermediate colours (`greenish_blue`, `yellow_green`, ...)
         that are not matplotlib colours; dropping the unrecognised names truncates the
         ramp and over-weights the magenta cap (whole summers rendered magenta). Guard
         the shipped asset: the ramp is long and the green mid-band survives.
+
+        (Uses `min_temperature_2m`, not `temperature_2m`: `temperature_2m` is now the earthkit default -- see
+        `TestEarthkitPresets` -- but `min_temperature_2m` is from the same Magics temperature
+        family and keeps the same long named-colour ramp.)
         """
         rec = json.loads(
             importlib.resources.files("cleopatra.data")
-            .joinpath("magics_presets.json")
+            .joinpath("weather_presets.json")
             .read_text()
-        )["presets"]["2t"]
-        palette = rec["palette"]
-        assert len(palette) >= 27, f"2t ramp truncated to {len(palette)} colours"
-        assert any(
-            g > r and g > b and g > 0.5 for r, g, b in map(to_rgb, palette)
-        ), "the green transition band (Magics named colours) must be preserved"
+        )["min_temperature_2m"]
+        palette = rec["colors"]
+        assert len(palette) >= 27, f"min_temperature_2m ramp truncated to {len(palette)} colours"
+        assert any(g > r and g > b and g > 0.5 for r, g, b in map(to_rgb, palette)), (
+            "the green transition band (Magics named colours) must be preserved"
+        )
 
     def test_temperature_family_shares_the_style_range(self):
         """The Magics -48..56 temperature family carries the same decoded range.
 
-        (`2t`/`2d` are now the earthkit default; `mn2t`/`mx2t` remain Magics.)
+        (`temperature_2m`/`dewpoint_temperature_2m` are now the earthkit default; `min_temperature_2m`/`max_temperature_2m` remain Magics.)
         """
-        for key in ("mn2t", "mx2t"):
+        for key in ("min_temperature_2m", "max_temperature_2m"):
             layer = DATA_STYLES[key][key]
             assert (layer["vmin"], layer["vmax"]) == (-48.0, 56.0), key
 
@@ -977,71 +1103,38 @@ class TestMagicsPresets:
         """Passing vmin=None to apply_data_style keeps the preset's fixed range (not auto-range)."""
         data = np.linspace(-10.0, 50.0, 400).reshape(20, 20)
         fig2, ax2 = plt.subplots()
-        base = apply_data_style(ax, {"mn2t": data}, style="mn2t", legend=False)
-        none = apply_data_style(ax2, {"mn2t": data}, style="mn2t", vmin=None, legend=False)
-        assert np.allclose(base["mn2t"].get_array(), none["mn2t"].get_array())
+        base = apply_data_style(ax, {"min_temperature_2m": data}, style="min_temperature_2m", legend=False)
+        none = apply_data_style(
+            ax2, {"min_temperature_2m": data}, style="min_temperature_2m", vmin=None, legend=False
+        )
+        assert np.allclose(base["min_temperature_2m"].get_array(), none["min_temperature_2m"].get_array())
         plt.close(fig2)
 
     def test_data_outside_fixed_range_warns(self, ax):
         """A fixed-range Magics preset warns when the data is entirely outside its scale."""
-        kelvin = np.full((4, 4), 290.0)  # far above mn2t's decoded -48..56 degC scale
+        kelvin = np.full((4, 4), 290.0)  # far above min_temperature_2m's decoded -48..56 degC scale
         with pytest.warns(UserWarning, match="expected units"):
-            apply_data_style(ax, {"mn2t": kelvin}, style="mn2t", legend=False)
+            apply_data_style(ax, {"min_temperature_2m": kelvin}, style="min_temperature_2m", legend=False)
 
     def test_range_without_interval_is_decoded(self):
         """A style name with a range but no interval (wind f0t80) still gets vmin/vmax."""
-        layer = DATA_STYLES["10fg"]["10fg"]
+        layer = DATA_STYLES["wind_gust_10m"]["wind_gust_10m"]
         assert (layer["vmin"], layer["vmax"]) == (0.0, 80.0)
 
     def test_named_palette_preset_has_no_range(self):
-        """A Magics preset whose style name carries no range (co) still auto-ranges."""
-        assert "vmin" not in DATA_STYLES["co"]["co"]
+        """A Magics preset whose style name carries no range (carbon_monoxide) still auto-ranges."""
+        assert "vmin" not in DATA_STYLES["carbon_monoxide"]["carbon_monoxide"]
 
     def test_caller_vmin_vmax_overrides_preset_range(self, ax):
         """An explicit vmin/vmax at draw time overrides the preset's fixed range."""
         data = np.linspace(-10.0, 50.0, 400).reshape(20, 20)
         fig2, ax2 = plt.subplots()
-        base = apply_data_style(ax, {"mn2t": data}, style="mn2t", legend=False)
-        over = apply_data_style(ax2, {"mn2t": data}, style="mn2t", vmin=-10.0, vmax=50.0, legend=False)
-        assert not np.allclose(base["mn2t"].get_array(), over["mn2t"].get_array())
+        base = apply_data_style(ax, {"min_temperature_2m": data}, style="min_temperature_2m", legend=False)
+        over = apply_data_style(
+            ax2, {"min_temperature_2m": data}, style="min_temperature_2m", vmin=-10.0, vmax=50.0, legend=False
+        )
+        assert not np.allclose(base["min_temperature_2m"].get_array(), over["min_temperature_2m"].get_array())
         plt.close(fig2)
-
-
-class TestMagicsRangeDecoder:
-    """Tests for the Magics `f<from>t<to>[i<interval>]` range decoder."""
-
-    @pytest.mark.parametrize(
-        "style, expected",
-        [
-            ("sh_all_fM48t56i4", (-48.0, 56.0, 4.0)),  # 2t temperature family
-            ("sh_all_fM52t48i4", (-52.0, 48.0, 4.0)),  # potential temperature
-            ("sh_all_f0t18i1_5", (0.0, 18.0, 1.5)),  # underscore decimal interval
-            ("f05t1i01", (0.5, 1.0, 0.1)),  # leading-zero decimals (index scale)
-            ("sh_mc_wind_f0t80", (0.0, 80.0, None)),  # range without interval
-            ("sh_mc_capes_f10t4000", (10.0, 4000.0, None)),  # plain integers
-            ("sh_blured_fM50t50lst_cell", (-50.0, 50.0, None)),  # trailing 'lst'
-            ("sh_blured_f05t300lst", (0.5, 300.0, None)),  # 0.5 mm precip threshold
-        ],
-    )
-    def test_decodes_known_ranges(self, style, expected):
-        """The grammar decodes range/interval, honouring M-minus and decimal encodings."""
-        assert _decode_magics_range(style) == expected
-
-    @pytest.mark.parametrize(
-        "style", ["sh_all_aod", "sh_mf_pdist", "sim_image_wv_fixed_range", "", None]
-    )
-    def test_no_range_returns_none(self, style):
-        """A style with no f<from>t<to> range decodes to None (the preset auto-ranges)."""
-        assert _decode_magics_range(style) is None
-
-    @pytest.mark.parametrize("style", ["f5t5", "f9t2i1", "fM1tM3"])
-    def test_degenerate_or_inverted_range_returns_none(self, style):
-        """A decode yielding vmin >= vmax returns None rather than a bad range."""
-        assert _decode_magics_range(style) is None
-
-    def test_negative_symmetric_range_is_valid(self):
-        """A valid negative-to-positive range (temperature index) decodes normally."""
-        assert _decode_magics_range("sh_blured_fM1t1lst") == (-1.0, 1.0, None)
 
 
 class TestCategoricalPresets:
@@ -1059,7 +1152,11 @@ class TestCategoricalPresets:
         cfg = DATA_STYLES["flood_status"]["flood_status"]
         assert "categories" in cfg and "cmap" not in cfg
         assert [c[2] for c in cfg["categories"]] == [
-            "Normal", "Action", "Minor", "Moderate", "Major"
+            "Normal",
+            "Action",
+            "Minor",
+            "Moderate",
+            "Major",
         ]
 
     def test_category_boundaries_are_midpoints_and_half_gaps(self):
@@ -1073,36 +1170,54 @@ class TestCategoricalPresets:
     def test_each_class_maps_to_its_colour(self, ax):
         """Every class code renders as exactly its declared category colour."""
         data = np.array([[0.0, 1.0, 2.0], [3.0, 4.0, 4.0]])
-        img = apply_data_style(ax, {"flood_status": data}, style="flood_status")["flood_status"]
+        img = apply_data_style(ax, {"flood_status": data}, style="flood_status")[
+            "flood_status"
+        ]
         rgba = img.get_array()
         expected = ["#2c7fb8", "#31a354", "#ffeb3b", "#ff7f00", "#e31a1c"]
         got = [
-            to_hex(rgba[0, 0, :3]), to_hex(rgba[0, 1, :3]), to_hex(rgba[0, 2, :3]),
-            to_hex(rgba[1, 0, :3]), to_hex(rgba[1, 1, :3]),
+            to_hex(rgba[0, 0, :3]),
+            to_hex(rgba[0, 1, :3]),
+            to_hex(rgba[0, 2, :3]),
+            to_hex(rgba[1, 0, :3]),
+            to_hex(rgba[1, 1, :3]),
         ]
         assert got == expected, f"class colours wrong: {got}"
 
     def test_categorical_is_opaque_with_nan_transparent(self, ax):
         """Classes are drawn fully opaque; NaN (no-data) is transparent."""
         data = np.array([[0.0, 4.0], [np.nan, 2.0]])
-        img = apply_data_style(ax, {"flood_status": data}, style="flood_status")["flood_status"]
+        img = apply_data_style(ax, {"flood_status": data}, style="flood_status")[
+            "flood_status"
+        ]
         alpha = img.get_array()[..., 3]
         assert alpha[0, 0] == alpha[0, 1] == alpha[1, 1] == 1.0, f"not opaque: {alpha}"
         assert alpha[1, 0] == 0.0, f"NaN should be transparent, got {alpha[1, 0]}"
 
     def test_categorical_attaches_a_disjoint_legend(self, ax):
         """A categorical preset gets a discrete matplotlib legend, titled by `label`."""
-        apply_data_style(ax, {"flood_status": np.array([[0.0, 4.0]])}, style="flood_status")
+        apply_data_style(
+            ax, {"flood_status": np.array([[0.0, 4.0]])}, style="flood_status"
+        )
         legend = ax.get_legend()
         assert legend is not None, "categorical preset should attach a legend"
         assert [t.get_text() for t in legend.get_texts()] == [
-            "Normal", "Action", "Minor", "Moderate", "Major"
+            "Normal",
+            "Action",
+            "Minor",
+            "Moderate",
+            "Major",
         ]
         assert legend.get_title().get_text() == "Flood status"
 
     def test_categorical_legend_can_be_suppressed(self, ax):
         """`legend=False` draws the classes without a legend."""
-        apply_data_style(ax, {"flood_status": np.array([[0.0, 4.0]])}, style="flood_status", legend=False)
+        apply_data_style(
+            ax,
+            {"flood_status": np.array([[0.0, 4.0]])},
+            style="flood_status",
+            legend=False,
+        )
         assert ax.get_legend() is None, "no legend expected when legend=False"
 
     def test_categorical_legend_honours_bounds_and_stacks(self, ax, monkeypatch):
@@ -1112,8 +1227,14 @@ class TestCategoricalPresets:
         styles = dict(
             colors_mod.DATA_STYLES,
             two={
-                "a": {"categories": [(0, "#111111", "A"), (1, "#eeeeee", "B")], "label": "A"},
-                "b": {"categories": [(0, "#ff0000", "X"), (1, "#00ff00", "Y")], "label": "B"},
+                "a": {
+                    "categories": [(0, "#111111", "A"), (1, "#eeeeee", "B")],
+                    "label": "A",
+                },
+                "b": {
+                    "categories": [(0, "#ff0000", "X"), (1, "#00ff00", "Y")],
+                    "label": "B",
+                },
             },
         )
         monkeypatch.setattr(colors_mod, "DATA_STYLES", styles)
@@ -1136,12 +1257,17 @@ class TestCategoricalPresets:
             the first/last category at full opacity.
         """
         img = apply_data_style(
-            ax, {"flood_status": np.array([[-3.0, 0.0, 4.0, 7.0]])}, style="flood_status"
+            ax,
+            {"flood_status": np.array([[-3.0, 0.0, 4.0, 7.0]])},
+            style="flood_status",
         )["flood_status"]
         alpha = img.get_array()[..., 3]
-        assert list(alpha[0]) == [0.0, 1.0, 1.0, 0.0], (
-            f"only declared codes should be opaque, got {list(alpha[0])}"
-        )
+        assert list(alpha[0]) == [
+            0.0,
+            1.0,
+            1.0,
+            0.0,
+        ], f"only declared codes should be opaque, got {list(alpha[0])}"
 
 
 class TestFlowRasterPresets:
@@ -1163,7 +1289,9 @@ class TestFlowRasterPresets:
     def test_flow_direction_d8_maps_codes_to_cyclic_colours(self, ax):
         """Each D8 code renders as its declared cyclic colour."""
         img = apply_data_style(
-            ax, {"flow_direction_d8": np.array([[1.0, 128.0]])}, style="flow_direction_d8"
+            ax,
+            {"flow_direction_d8": np.array([[1.0, 128.0]])},
+            style="flow_direction_d8",
         )["flow_direction_d8"]
         rgba = img.get_array()
         assert to_hex(rgba[0, 0, :3]) == "#e2d9e2"
@@ -1176,7 +1304,9 @@ class TestFlowRasterPresets:
     def test_flow_accumulation_fades_zeros_shows_channels(self, ax):
         """Zero-accumulation cells fade out; high-accumulation channels are opaque."""
         img = apply_data_style(
-            ax, {"flow_accumulation": np.array([[0.0, 9000.0]])}, style="flow_accumulation"
+            ax,
+            {"flow_accumulation": np.array([[0.0, 9000.0]])},
+            style="flow_accumulation",
         )["flow_accumulation"]
         alpha = img.get_array()[..., 3]
         assert alpha[0, 0] == 0.0, f"zero cell should be transparent, got {alpha[0, 0]}"
@@ -1198,9 +1328,7 @@ class TestStyleNormKinds:
 
     def test_log_norm_clamps_vmin_to_positive(self):
         """`norm='log'` yields a `LogNorm` with a positive vmin even if data hits 0."""
-        norm, _, _ = _resolve_style_norm(
-            np.array([0.0, 5.0, 100.0]), {"norm": "log"}
-        )
+        norm, _, _ = _resolve_style_norm(np.array([0.0, 5.0, 100.0]), {"norm": "log"})
         assert type(norm).__name__ == "LogNorm"
         assert norm.vmin > 0, "LogNorm needs a positive lower bound"
 
@@ -1223,7 +1351,9 @@ class TestStyleNormKinds:
     def test_center_outside_bounds_raises(self):
         """A `center` not strictly inside [vmin, vmax] raises a clear `ValueError`."""
         with pytest.raises(ValueError, match="must lie strictly between"):
-            _resolve_style_norm(np.array([1.0, 10.0]), {"center": 0, "vmin": 1, "vmax": 10})
+            _resolve_style_norm(
+                np.array([1.0, 10.0]), {"center": 0, "vmin": 1, "vmax": 10}
+            )
 
     def test_log_reports_clamped_positive_vmin(self):
         """The `log` branch reports the clamped positive lower bound (matches the LogNorm).
@@ -1281,9 +1411,20 @@ class TestCmoceanPresets:
     def test_the_batch_was_loaded(self):
         """The full curated cmocean batch is registered as presets."""
         expected = {
-            "salinity", "bathymetry", "topography", "turbidity", "current_speed",
-            "chlorophyll", "dissolved_oxygen", "sea_surface_temperature", "sea_ice",
-            "solar_radiation", "rainfall", "phase", "sea_level_anomaly", "vorticity",
+            "salinity",
+            "bathymetry",
+            "topography",
+            "turbidity",
+            "current_speed",
+            "chlorophyll",
+            "dissolved_oxygen",
+            "sea_surface_temperature",
+            "sea_ice",
+            "solar_radiation",
+            "rainfall",
+            "phase",
+            "sea_level_anomaly",
+            "vorticity",
             "water_density",
         }
         assert expected <= set(DATA_STYLES), f"missing: {expected - set(DATA_STYLES)}"
@@ -1291,7 +1432,9 @@ class TestCmoceanPresets:
     def test_diverging_and_land_sea_presets_center_on_zero(self):
         """The diverging and land+sea presets render symmetric about zero."""
         for key in ("sea_level_anomaly", "vorticity", "topography"):
-            assert DATA_STYLES[key][key].get("center") == 0.0, f"{key} should center on 0"
+            assert DATA_STYLES[key][key].get("center") == 0.0, (
+                f"{key} should center on 0"
+            )
 
     def test_preset_is_an_opaque_single_layer(self):
         """Each cmocean preset is one opaque layer with a ready Colormap."""
@@ -1302,7 +1445,9 @@ class TestCmoceanPresets:
     def test_cmocean_preset_renders_opaque_field(self, ax):
         """A cmocean preset draws end-to-end: opaque field, NaN transparent."""
         images = apply_data_style(
-            ax, {"bathymetry": np.array([[0.0, 5000.0], [np.nan, 2000.0]])}, style="bathymetry"
+            ax,
+            {"bathymetry": np.array([[0.0, 5000.0], [np.nan, 2000.0]])},
+            style="bathymetry",
         )
         alpha = images["bathymetry"].get_array()[..., 3]
         assert alpha[0, 0] == alpha[0, 1] == alpha[1, 1] == 1.0, f"not opaque: {alpha}"
@@ -1330,12 +1475,12 @@ class TestCmoceanPresets:
     def test_malformed_json_degrades_to_empty(self, monkeypatch):
         """A corrupt (invalid JSON) asset returns {} instead of crashing the import."""
         self._patch_asset_text(monkeypatch, "{not valid json")
-        assert _load_preset_asset("magics_presets.json", "magics") == {}
+        assert _load_preset_asset("ocean_presets.json", "ocean") == {}
 
     def test_non_mapping_json_degrades_to_empty(self, monkeypatch):
         """A structurally-wrong (non-object) asset returns {}, never raises."""
         self._patch_asset_text(monkeypatch, "[1, 2, 3]")
-        assert _load_preset_asset("magics_presets.json", "magics") == {}
+        assert _load_preset_asset("ocean_presets.json", "ocean") == {}
 
     def test_one_bad_record_is_skipped_others_survive(self, monkeypatch):
         """A single malformed record is skipped; the sibling well-formed presets load."""
@@ -1343,16 +1488,17 @@ class TestCmoceanPresets:
 
         asset = json.dumps(
             {
-                "presets": {
-                    "good1": {"palette": ["#000000", "#ffffff"], "label": "Good 1"},
-                    "bad": {"label": "no palette"},
-                    "good2": {"palette": ["#ff0000", "#00ff00"], "label": "Good 2"},
-                }
+                "good1": {"palette": ["#000000", "#ffffff"], "label": "Good 1"},
+                "bad": {"label": "no palette"},
+                "good2": {"palette": ["#ff0000", "#00ff00"], "label": "Good 2"},
             }
         )
         self._patch_asset_text(monkeypatch, asset)
-        loaded = _load_preset_asset("magics_presets.json", "magics")
-        assert set(loaded) == {"good1", "good2"}, f"bad record should not drop siblings: {loaded}"
+        loaded = _load_preset_asset("ocean_presets.json", "ocean")
+        assert set(loaded) == {
+            "good1",
+            "good2",
+        }, f"bad record should not drop siblings: {loaded}"
 
 
 class TestCreateColors:

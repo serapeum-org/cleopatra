@@ -30,19 +30,20 @@ Examples:
 
 from __future__ import annotations
 
-from typing import Sequence
+from collections.abc import Sequence
+from typing import cast
 
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.collections import LineCollection
+from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure
 from matplotlib.legend import Legend
 
 from cleopatra.geo import GeoMixin
-from cleopatra.glyph import Glyph
-from cleopatra.styles import CLASSIFY_OPTIONS
+from cleopatra.glyph import Glyph, _root_figure
+from cleopatra.styles import CLASSIFY_OPTIONS, resolve_sizes, width_legend
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
-from cleopatra.styles import resolve_sizes, width_legend
 
 #: Option keys for FlowGlyph. `ticks_spacing` is `None` so the shared
 #: `_prepare_scalar_mapping` helper auto-derives it from the values. The
@@ -141,8 +142,8 @@ class FlowGlyph(GeoMixin, Glyph):
         *,
         values: np.ndarray | None = None,
         widths: np.ndarray | None = None,
-        ax: Axes = None,
-        fig: Figure = None,
+        ax: Axes | None = None,
+        fig: Figure | None = None,
         **kwargs,
     ):
         super().__init__(default_options=FLOW_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs)
@@ -164,10 +165,10 @@ class FlowGlyph(GeoMixin, Glyph):
                 )
         self.values = values
         self.widths = widths
-        self.cbar = None
+        self.cbar: Colorbar | None = None
         #: The width legend created by `plot` when `size_legend` is truthy
         #: (None otherwise); built via `cleopatra.styles.width_legend`.
-        self.size_legend_artist = None
+        self.size_legend_artist: Legend | None = None
 
     def _resolve_linewidths(self) -> float | np.ndarray:
         """Resolve the per-path line widths for the collection.
@@ -183,7 +184,7 @@ class FlowGlyph(GeoMixin, Glyph):
                 `widths`.
         """
         if self.widths is None:
-            return self.default_options["line_width"]
+            return float(self.default_options["line_width"])
         width_min, width_max = self.default_options["width_limits"]
         return resolve_sizes(
             self.widths,
@@ -223,7 +224,7 @@ class FlowGlyph(GeoMixin, Glyph):
 
     def plot(
         self,
-        ax: Axes = None,
+        ax: Axes | None = None,
         title: str | None = None,
         add_colorbar: bool | None = None,
     ) -> tuple[Figure, Axes, LineCollection]:
@@ -307,10 +308,11 @@ class FlowGlyph(GeoMixin, Glyph):
         """
         if ax is not None:
             self.ax = ax
-            self.fig = ax.get_figure()
+            self.fig = _root_figure(ax)
         elif self.ax is None:
             self.fig, self.ax = self.create_figure_axes()
         ax = self.ax
+        assert self.fig is not None
         opts = self.default_options
 
         if title is not None:
@@ -360,7 +362,11 @@ class FlowGlyph(GeoMixin, Glyph):
         ax.autoscale_view()
 
         if self.widths is not None and opts["size_legend"]:
-            self.size_legend_artist = self._draw_width_legend(ax, linewidths)
+            # `_resolve_linewidths` returns an ndarray whenever `self.widths`
+            # is not None (the branch this code is already inside).
+            self.size_legend_artist = self._draw_width_legend(
+                ax, cast(np.ndarray, linewidths)
+            )
 
         if opts["title"]:
             ax.set_title(opts["title"], fontsize=opts["title_size"])
