@@ -4882,16 +4882,16 @@ class TestArrayGlyphDataStyle:
         plt.close("all")
 
     def test_magics_preset_uses_its_fixed_range_by_default(self):
-        """A Magics preset with an encoded range (mn2t) maps over its fixed scale, not auto-range.
+        """A Magics preset with an encoded range (min_temperature_2m) maps over its fixed scale, not auto-range.
 
         The preset resolves to RGBA before imshow, so the applied range is read from the
         pixel colours: a fixed -48..56 render differs from one auto-ranged to the data extent.
         """
         data = np.linspace(-10.0, 50.0, 30 * 40).reshape(30, 40)
-        fixed = ArrayGlyph(data, style="mn2t")
+        fixed = ArrayGlyph(data, style="min_temperature_2m")
         fixed.plot()
         auto = ArrayGlyph(
-            data, style="mn2t", vmin=float(data.min()), vmax=float(data.max())
+            data, style="min_temperature_2m", vmin=float(data.min()), vmax=float(data.max())
         )
         auto.plot()
         assert not np.allclose(fixed.im.get_array(), auto.im.get_array())
@@ -4903,20 +4903,20 @@ class TestArrayGlyphDataStyle:
         g = ArrayGlyph(data)
         g.plot(vmin=5.0, vmax=20.0)  # plain plot sets an explicit range...
         g.plot(
-            style="mn2t"
-        )  # ...which sticks into the styled render (not mn2t's -48..56)
+            style="min_temperature_2m"
+        )  # ...which sticks into the styled render (not min_temperature_2m's -48..56)
         sticky = np.asarray(g.im.get_array()).copy()
-        fresh = ArrayGlyph(data, style="mn2t")
-        fresh.plot()  # a fresh glyph uses mn2t's own fixed range
+        fresh = ArrayGlyph(data, style="min_temperature_2m")
+        fresh.plot()  # a fresh glyph uses min_temperature_2m's own fixed range
         assert not np.allclose(sticky, np.asarray(fresh.im.get_array()))
         plt.close("all")
 
     def test_glyph_vmin_vmax_overrides_preset_fixed_range(self):
         """A glyph-level vmin/vmax overrides the preset's encoded fixed range."""
         data = np.linspace(-10.0, 50.0, 30 * 40).reshape(30, 40)
-        default = ArrayGlyph(data, style="mn2t")
+        default = ArrayGlyph(data, style="min_temperature_2m")
         default.plot()
-        override = ArrayGlyph(data, style="mn2t", vmin=-10.0, vmax=50.0)
+        override = ArrayGlyph(data, style="min_temperature_2m", vmin=-10.0, vmax=50.0)
         override.plot()
         assert not np.allclose(default.im.get_array(), override.im.get_array())
         plt.close("all")
@@ -5071,7 +5071,7 @@ class TestArrayGlyphShadedAnimate:
         ('≤'/'≥') from the norm's extend, matching the plot() legend (M2 parity)."""
         base = np.linspace(-30.0, 38.0, 400).reshape(20, 20)
         stack = np.stack([base + w for w in (-2.0, 0.0, 5.0)])
-        g = ArrayGlyph(stack, style="2t")
+        g = ArrayGlyph(stack, style="temperature_2m")
         g.animate(time=list(range(3)))
         swatch_texts = [t.get_text() for c in g.ax.child_axes for t in c.texts]
         assert "≤-40" in swatch_texts, (
@@ -5103,10 +5103,10 @@ class TestArrayGlyphShadedAnimate:
         """A styled animation honours the preset's fixed range, and a caller vmin/vmax overrides it."""
         base = np.linspace(-2.0, 39.0, 400).reshape(20, 20)
         stack = np.stack([base + w for w in (-4.0, 0.0, 8.0)])
-        fixed = ArrayGlyph(stack, style="mn2t")
+        fixed = ArrayGlyph(stack, style="min_temperature_2m")
         fixed.animate(time=list(range(3)))._func(2)
         fixed_frame = np.asarray(fixed.im.get_array()).copy()
-        override = ArrayGlyph(stack, style="mn2t", vmin=-10.0, vmax=50.0)
+        override = ArrayGlyph(stack, style="min_temperature_2m", vmin=-10.0, vmax=50.0)
         override.animate(time=list(range(3)))._func(2)
         assert not np.allclose(fixed_frame, np.asarray(override.im.get_array()))
         plt.close("all")

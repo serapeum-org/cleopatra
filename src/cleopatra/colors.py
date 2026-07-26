@@ -468,7 +468,8 @@ DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
     # (a Celsius raster, a KDE density, a normalized index). Pass `vmin`/`vmax`
     # to pin the scale to a chosen range (e.g. `vmin=-40, vmax=40` for the ECMWF
     # window); for the fixed, discretely-banded ECMWF 2 m-temperature look in one
-    # word, use the `"2t"` preset instead (fixed -40..40 degC, `extend="both"`).
+    # word, use the `"temperature_2m"` preset instead (fixed -40..40 degC,
+    # `extend="both"`).
     "temperature": {
         "temperature": {
             "cmap": "Spectral_r",  # muted spectral, blue (cold) -> red (hot)
@@ -667,8 +668,8 @@ def _load_weather_presets() -> dict[str, dict[str, dict[str, Any]]]:
       defaults, which supersede the Magics record for the same shortName): a
       `colors` list or matplotlib colormap name, plus explicit `levels` and an
       `extend` cap, rendered as a `BoundaryNorm` at those exact boundaries.
-    - **Continuous** (colour list with neither `bands` nor `levels`, e.g. `tp`'s
-      rain gradient): a genuine `LinearSegmentedColormap`.
+    - **Continuous** (colour list with neither `bands` nor `levels`, e.g.
+      `total_precipitation`'s rain gradient): a genuine `LinearSegmentedColormap`.
 
     Never raises: a missing/malformed asset degrades to `{}`.
     """
@@ -708,8 +709,9 @@ def _load_weather_presets() -> dict[str, dict[str, dict[str, Any]]]:
             elif isinstance(colors, str):
                 cmap = colors
             else:
-                # A colour list with neither levels nor bands (e.g. `tp`'s
-                # white->blue gradient) is a genuine continuous ramp.
+                # A colour list with neither levels nor bands (e.g.
+                # `total_precipitation`'s white->blue gradient) is a genuine
+                # continuous ramp.
                 cmap = LinearSegmentedColormap.from_list(f"weather_{key}", colors)
             layer: dict[str, Any] = {"cmap": cmap, "label": rec["label"]}
             if rec.get("opacity") == "opaque":
@@ -729,7 +731,8 @@ def _load_weather_presets() -> dict[str, dict[str, dict[str, Any]]]:
 
 #: Register the vendored preset libraries into `DATA_STYLES` at import, alongside
 #: the hand-authored presets above: the merged ECMWF weather parameter set
-#: (keyed by GRIB shortName, e.g. `"2t"`, `"tp"`, `"aod550"`) and the cmocean
+#: (keyed by a descriptive parameter name, e.g. `"temperature_2m"`,
+#: `"total_precipitation"`, `"aerosol_optical_depth_550nm"`) and the cmocean
 #: ocean/hydrology/DEM set (keyed by variable, e.g. `"salinity"`,
 #: `"bathymetry"`). List them all with `sorted(DATA_STYLES)`.
 DATA_STYLES.update(_load_preset_asset("ocean_presets.json", "cmocean"))

@@ -1,299 +1,6 @@
 {
  "presets": {
-  "10fg": {
-   "label": "10 metre wind gust since previous post-processing",
-   "colors": [
-    "#d9fced",
-    "#73faf5",
-    "#00baff",
-    "#002eff",
-    "#0803a3",
-    "#29fc24",
-    "#91ff00",
-    "#d4ff00",
-    "#fffa00",
-    "#ffd900",
-    "#ffa100",
-    "#ff6600",
-    "#ff1f00",
-    "#ff00ab",
-    "#d900ff",
-    "#78038c"
-   ],
-   "opacity": "opaque",
-   "bands": 16,
-   "vmin": 0.0,
-   "vmax": 80.0
-  },
-  "10fgi": {
-   "label": "10 metre wind gust index",
-   "colors": [
-    "#000000",
-    "#000000",
-    "#010100",
-    "#ffbf00",
-    "#ff8000",
-    "#ff4000",
-    "#010000"
-   ],
-   "opacity": "overlay",
-   "bands": 7,
-   "vmin": 0.5,
-   "vmax": 1.0
-  },
-  "10si": {
-   "label": "10 m wind speed",
-   "colors": [
-    "#85AAEE",
-    "#208EFC",
-    "#6CA632",
-    "#FFB000",
-    "#FF0000",
-    "#7A11B1"
-   ],
-   "levels": [
-    12.0,
-    15.0,
-    20.0,
-    25.0,
-    30.0,
-    35.0,
-    50.0
-   ],
-   "extend": "neither",
-   "units": "m s-1",
-   "opacity": "opaque"
-  },
-  "10u": {
-   "label": "10 m U wind component",
-   "colors": "PiYG",
-   "levels": [
-    -26,
-    -24,
-    -22,
-    -20,
-    -18,
-    -16,
-    -14,
-    -12,
-    -10,
-    -8,
-    -6,
-    -4,
-    -2,
-    0,
-    2,
-    4,
-    6,
-    8,
-    10,
-    12,
-    14,
-    16,
-    18,
-    20,
-    22,
-    24,
-    26
-   ],
-   "extend": "both",
-   "units": "m s-1",
-   "opacity": "opaque"
-  },
-  "10v": {
-   "label": "10 m V wind component",
-   "colors": "PiYG",
-   "levels": [
-    -26,
-    -24,
-    -22,
-    -20,
-    -18,
-    -16,
-    -14,
-    -12,
-    -10,
-    -8,
-    -6,
-    -4,
-    -2,
-    0,
-    2,
-    4,
-    6,
-    8,
-    10,
-    12,
-    14,
-    16,
-    18,
-    20,
-    22,
-    24,
-    26
-   ],
-   "extend": "both",
-   "units": "m s-1",
-   "opacity": "opaque"
-  },
-  "10wsi": {
-   "label": "10 metre speed index",
-   "colors": [
-    "#000000",
-    "#000000",
-    "#010100",
-    "#ffbf00",
-    "#ff8000",
-    "#ff4000",
-    "#010000"
-   ],
-   "opacity": "overlay",
-   "bands": 7,
-   "vmin": 0.5,
-   "vmax": 1.0
-  },
-  "2d": {
-   "label": "2 m dewpoint temperature",
-   "colors": "BrBG_r",
-   "levels": [
-    -40,
-    -38,
-    -36,
-    -34,
-    -32,
-    -30,
-    -28,
-    -26,
-    -24,
-    -22,
-    -20,
-    -18,
-    -16,
-    -14,
-    -12,
-    -10,
-    -8,
-    -6,
-    -4,
-    -2,
-    0,
-    2,
-    4,
-    6,
-    8,
-    10,
-    12,
-    14,
-    16,
-    18,
-    20,
-    22,
-    24,
-    26,
-    28,
-    30,
-    32,
-    34
-   ],
-   "extend": "both",
-   "units": "celsius",
-   "opacity": "opaque"
-  },
-  "2t": {
-   "label": "2 m temperature",
-   "colors": "Spectral_r",
-   "levels": [
-    -40,
-    -38,
-    -36,
-    -34,
-    -32,
-    -30,
-    -28,
-    -26,
-    -24,
-    -22,
-    -20,
-    -18,
-    -16,
-    -14,
-    -12,
-    -10,
-    -8,
-    -6,
-    -4,
-    -2,
-    0,
-    2,
-    4,
-    6,
-    8,
-    10,
-    12,
-    14,
-    16,
-    18,
-    20,
-    22,
-    24,
-    26,
-    28,
-    30,
-    32,
-    34,
-    36,
-    38,
-    40
-   ],
-   "extend": "both",
-   "units": "celsius",
-   "opacity": "opaque"
-  },
-  "2ti": {
-   "label": "2 metre temperature index",
-   "colors": [
-    "#ff00da",
-    "#3c00ff",
-    "#00adff",
-    "#00ff69",
-    "#80ff00",
-    "#000000",
-    "#000000",
-    "#000000",
-    "#000000",
-    "#000000",
-    "#010100",
-    "#ffbf00",
-    "#ff8000",
-    "#ff4000",
-    "#010000"
-   ],
-   "opacity": "overlay",
-   "bands": 15,
-   "vmin": -1.0,
-   "vmax": 1.0
-  },
-  "2tp": {
-   "label": "2 metre temperature probability",
-   "colors": [
-    "#7805c4",
-    "#6b54d4",
-    "#2442f0",
-    "#0282db",
-    "#06adb8",
-    "#03d1d9",
-    "#75f2bf",
-    "#26de94",
-    "#96e30c",
-    "#e0f22b",
-    "#fcb806",
-    "#eb7d21",
-    "#e63030"
-   ],
-   "opacity": "opaque",
-   "bands": 13
-  },
-  "aod550": {
+  "aerosol_optical_depth_550nm": {
    "label": "Total aerosol optical depth at 550 nm",
    "colors": [
     "#0000f1",
@@ -322,7 +29,169 @@
    "units": null,
    "opacity": "opaque"
   },
-  "cape": {
+  "air_temperature": {
+   "label": "Temperature",
+   "colors": [
+    "#e033e0",
+    "#ad33ad",
+    "#7a337a",
+    "#473347",
+    "#330066",
+    "#590080",
+    "#8000ff",
+    "#0080ff",
+    "#00ccff",
+    "#00ffff",
+    "#00ff80",
+    "#80ff00",
+    "#daff00",
+    "#ffff80",
+    "#ffff00",
+    "#ffda00",
+    "#ffb000",
+    "#ff7300",
+    "#ff0000",
+    "#cc0000",
+    "#80002c",
+    "#cc3d6f",
+    "#ff00ff",
+    "#ff80ff",
+    "#ffbfff"
+   ],
+   "opacity": "opaque",
+   "bands": 25,
+   "vmin": -52.0,
+   "vmax": 48.0
+  },
+  "carbon_monoxide": {
+   "label": "Carbon monoxide",
+   "colors": [
+    "#265ba0",
+    "#269170",
+    "#6bb25b",
+    "#a8c96b",
+    "#fff49b",
+    "#f4d138",
+    "#eab538",
+    "#dd8740",
+    "#cc3533",
+    "#9b1623",
+    "#561919",
+    "#341919"
+   ],
+   "opacity": "opaque",
+   "bands": 12
+  },
+  "ch4_column_mean_molar_fraction": {
+   "label": "CH4 column-mean molar fraction",
+   "colors": [
+    "#0d0d0d",
+    "#7d008e",
+    "#2d00a4",
+    "#0000dd",
+    "#0082dd",
+    "#00a4bb",
+    "#00aa88",
+    "#00a400",
+    "#00d200",
+    "#00ff00",
+    "#ccf900",
+    "#f9d700",
+    "#ff9900",
+    "#f40000",
+    "#d20000",
+    "#66001f"
+   ],
+   "opacity": "opaque",
+   "bands": 16
+  },
+  "cloudy_brightness_temperature": {
+   "label": "Cloudy brightness temperature",
+   "colors": [
+    "#8fdaff",
+    "#a1e0ff",
+    "#b3e6ff",
+    "#c5ecff",
+    "#d7f2ff",
+    "#010101",
+    "#010101",
+    "#fcfcfc",
+    "#f7f7f7",
+    "#f2f2f2",
+    "#f0f0f0",
+    "#ededed",
+    "#e8e8e8",
+    "#e3e3e3",
+    "#dbdbdb",
+    "#d4d4d4",
+    "#cccccc",
+    "#c4c4c4",
+    "#bdbdbd",
+    "#b5b5b5",
+    "#b0b0b0",
+    "#a8a8a8",
+    "#a1a1a1",
+    "#999999",
+    "#919191",
+    "#8a8a8a",
+    "#828282",
+    "#7d7d7d",
+    "#757575",
+    "#6e6e6e",
+    "#666666",
+    "#5e5e5e",
+    "#575757",
+    "#4f4f4f",
+    "#4a4a4a",
+    "#424242",
+    "#3b3b3b",
+    "#333333",
+    "#2b2b2b",
+    "#242424",
+    "#1c1c1c",
+    "#171717",
+    "#0f0f0f",
+    "#080808",
+    "#000000"
+   ],
+   "opacity": "opaque",
+   "bands": 45
+  },
+  "co2_column_mean_molar_fraction": {
+   "label": "CO2 column-mean molar fraction",
+   "colors": [
+    "#5e4fa2",
+    "#4e63ac",
+    "#3d79b6",
+    "#3990ba",
+    "#4ea7b0",
+    "#62bda7",
+    "#7ccaa5",
+    "#94d4a4",
+    "#aedea3",
+    "#c6e89f",
+    "#ddf19a",
+    "#ecf7a1",
+    "#f6fbb0",
+    "#fffebe",
+    "#fff3ac",
+    "#fee797",
+    "#fed884",
+    "#fdc574",
+    "#fdb163",
+    "#fa9857",
+    "#f7814c",
+    "#f26944",
+    "#e55749",
+    "#d9444d",
+    "#c72e4c",
+    "#b11747",
+    "#9e0142"
+   ],
+   "opacity": "opaque",
+   "bands": 27
+  },
+  "convective_available_potential_energy": {
    "label": "Convective available potential energy",
    "colors": [
     "#ff0000",
@@ -604,7 +473,7 @@
    "units": null,
    "opacity": "opaque"
   },
-  "capei": {
+  "convective_available_potential_energy_index": {
    "label": "Convective available potential energy index",
    "colors": [
     "#000000",
@@ -620,7 +489,7 @@
    "vmin": 0.5,
    "vmax": 1.0
   },
-  "capes": {
+  "convective_available_potential_energy_shear": {
    "label": "Convective available potential energy shear",
    "colors": [
     "#bfbff2",
@@ -643,7 +512,7 @@
    "vmin": 10.0,
    "vmax": 4000.0
   },
-  "capesi": {
+  "convective_available_potential_energy_shear_index": {
    "label": "Convective available potential energy shear index",
    "colors": [
     "#000000",
@@ -659,7 +528,7 @@
    "vmin": 0.5,
    "vmax": 1.0
   },
-  "cin": {
+  "convective_inhibition": {
    "label": "Convective inhibition",
    "colors": [
     "#fc0606",
@@ -675,78 +544,7 @@
    "vmin": 0.0,
    "vmax": 900.0
   },
-  "clbt": {
-   "label": "Cloudy brightness temperature",
-   "colors": [
-    "#8fdaff",
-    "#a1e0ff",
-    "#b3e6ff",
-    "#c5ecff",
-    "#d7f2ff",
-    "#010101",
-    "#010101",
-    "#fcfcfc",
-    "#f7f7f7",
-    "#f2f2f2",
-    "#f0f0f0",
-    "#ededed",
-    "#e8e8e8",
-    "#e3e3e3",
-    "#dbdbdb",
-    "#d4d4d4",
-    "#cccccc",
-    "#c4c4c4",
-    "#bdbdbd",
-    "#b5b5b5",
-    "#b0b0b0",
-    "#a8a8a8",
-    "#a1a1a1",
-    "#999999",
-    "#919191",
-    "#8a8a8a",
-    "#828282",
-    "#7d7d7d",
-    "#757575",
-    "#6e6e6e",
-    "#666666",
-    "#5e5e5e",
-    "#575757",
-    "#4f4f4f",
-    "#4a4a4a",
-    "#424242",
-    "#3b3b3b",
-    "#333333",
-    "#2b2b2b",
-    "#242424",
-    "#1c1c1c",
-    "#171717",
-    "#0f0f0f",
-    "#080808",
-    "#000000"
-   ],
-   "opacity": "opaque",
-   "bands": 45
-  },
-  "co": {
-   "label": "Carbon monoxide",
-   "colors": [
-    "#265ba0",
-    "#269170",
-    "#6bb25b",
-    "#a8c96b",
-    "#fff49b",
-    "#f4d138",
-    "#eab538",
-    "#dd8740",
-    "#cc3533",
-    "#9b1623",
-    "#561919",
-    "#341919"
-   ],
-   "opacity": "opaque",
-   "bands": 12
-  },
-  "cp": {
+  "convective_precipitation": {
    "label": "Convective precipitation",
    "colors": [
     "#00ffff",
@@ -762,7 +560,7 @@
    "vmin": 0.5,
    "vmax": 300.0
   },
-  "crfrate": {
+  "convective_rainfall_rate": {
    "label": "Convective rainfall rate",
    "colors": [
     "#38ffff",
@@ -784,7 +582,54 @@
    "opacity": "opaque",
    "bands": 15
   },
-  "d": {
+  "dewpoint_temperature_2m": {
+   "label": "2 m dewpoint temperature",
+   "colors": "BrBG_r",
+   "levels": [
+    -40,
+    -38,
+    -36,
+    -34,
+    -32,
+    -30,
+    -28,
+    -26,
+    -24,
+    -22,
+    -20,
+    -18,
+    -16,
+    -14,
+    -12,
+    -10,
+    -8,
+    -6,
+    -4,
+    -2,
+    0,
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16,
+    18,
+    20,
+    22,
+    24,
+    26,
+    28,
+    30,
+    32,
+    34
+   ],
+   "extend": "both",
+   "units": "celsius",
+   "opacity": "opaque"
+  },
+  "divergence": {
    "label": "Divergence",
    "colors": [
     "#00004c",
@@ -820,7 +665,7 @@
    "vmin": -50.0,
    "vmax": 50.0
   },
-  "duaod550": {
+  "dust_aerosol_optical_depth_550nm": {
    "label": "Dust aerosol optical depth at 550 nm",
    "colors": [
     "#0000f1",
@@ -849,79 +694,7 @@
    "units": null,
    "opacity": "opaque"
   },
-  "frpfire": {
-   "label": "Wildfire radiative power",
-   "colors": [
-    "#350000",
-    "#5f0000",
-    "#890000",
-    "#b30000",
-    "#dd0000",
-    "#ff0800",
-    "#ff3200",
-    "#ff5c00",
-    "#ff8600",
-    "#ffb000",
-    "#ffda00",
-    "#ffff07",
-    "#ffff46",
-    "#ffff85",
-    "#ffffc4",
-    "#ffffff"
-   ],
-   "opacity": "opaque",
-   "bands": 16
-  },
-  "go3": {
-   "label": "GEMS Ozone",
-   "colors": [
-    "#9bc7ea",
-    "#009ee0",
-    "#007bbf",
-    "#265ba0",
-    "#269170",
-    "#6bb25b",
-    "#a8c96b",
-    "#fff49b",
-    "#f4d138",
-    "#eab538",
-    "#dd8740",
-    "#cc3533",
-    "#9b1623",
-    "#561919"
-   ],
-   "opacity": "opaque",
-   "bands": 14
-  },
-  "gtco3": {
-   "label": "GEMS Total column ozone",
-   "colors": [
-    "#000000",
-    "#000066",
-    "#0000ff",
-    "#0080ff",
-    "#73a3ff",
-    "#00ffff",
-    "#00ff80",
-    "#80ff00",
-    "#daff00",
-    "#ffff00",
-    "#ffda00",
-    "#ffb000",
-    "#ff8000",
-    "#ff4f00",
-    "#ff0000",
-    "#991608",
-    "#681000",
-    "#520300",
-    "#d9b777",
-    "#ffe2ab",
-    "#665433"
-   ],
-   "opacity": "opaque",
-   "bands": 21
-  },
-  "hcc": {
+  "high_cloud_cover": {
    "label": "High cloud cover",
    "colors": [
     "#000000",
@@ -940,7 +713,24 @@
    "opacity": "overlay",
    "bands": 12
   },
-  "kx": {
+  "hurricane_probability": {
+   "label": "Probability of a hurricane",
+   "colors": [
+    "#ff00ff",
+    "#ff4f00",
+    "#ffb000",
+    "#ffff00",
+    "#25ff00",
+    "#008c30",
+    "#00ffff",
+    "#0080ff",
+    "#0000ff",
+    "#7b12b2"
+   ],
+   "opacity": "opaque",
+   "bands": 10
+  },
+  "k_index": {
    "label": "K index",
    "colors": [
     "#ebf006",
@@ -955,26 +745,7 @@
    "vmin": 15.0,
    "vmax": 60.0
   },
-  "lcc": {
-   "label": "Low cloud cover",
-   "colors": [
-    "#000000",
-    "#a8a8a8",
-    "#a8a8a8",
-    "#a8a8a8",
-    "#a8a8a8",
-    "#a8a8a8",
-    "#a8a8a8",
-    "#a8a8a8",
-    "#a8a8a8",
-    "#a8a8a8",
-    "#a8a8a8",
-    "#a8a8a8"
-   ],
-   "opacity": "overlay",
-   "bands": 12
-  },
-  "lsp": {
+  "large_scale_precipitation": {
    "label": "Large-scale precipitation",
    "colors": [
     "#00ffff",
@@ -990,7 +761,7 @@
    "vmin": 0.5,
    "vmax": 300.0
   },
-  "lsrrate": {
+  "large_scale_rainfall_rate": {
    "label": "Large scale rainfall rate",
    "colors": [
     "#38ffff",
@@ -1012,7 +783,26 @@
    "opacity": "opaque",
    "bands": 15
   },
-  "maxswh": {
+  "low_cloud_cover": {
+   "label": "Low cloud cover",
+   "colors": [
+    "#000000",
+    "#a8a8a8",
+    "#a8a8a8",
+    "#a8a8a8",
+    "#a8a8a8",
+    "#a8a8a8",
+    "#a8a8a8",
+    "#a8a8a8",
+    "#a8a8a8",
+    "#a8a8a8",
+    "#a8a8a8",
+    "#a8a8a8"
+   ],
+   "opacity": "overlay",
+   "bands": 12
+  },
+  "max_significant_wave_height": {
    "label": "Maximum of significant wave height",
    "colors": [
     "#d1f2f2",
@@ -1032,7 +822,7 @@
    "vmin": 0.0,
    "vmax": 20.0
   },
-  "maxswhi": {
+  "max_significant_wave_height_index": {
    "label": "Maximum of significant wave height index",
    "colors": [
     "#000000",
@@ -1048,220 +838,7 @@
    "vmin": 0.5,
    "vmax": 1.0
   },
-  "mcc": {
-   "label": "Medium cloud cover",
-   "colors": [
-    "#000000",
-    "#cccccc",
-    "#cccccc",
-    "#cccccc",
-    "#cccccc",
-    "#cccccc",
-    "#cccccc",
-    "#cccccc",
-    "#cccccc",
-    "#cccccc",
-    "#cccccc",
-    "#cccccc"
-   ],
-   "opacity": "overlay",
-   "bands": 12
-  },
-  "mean10ws": {
-   "label": "Mean of 10 metre wind speed",
-   "colors": [
-    "#d9fced",
-    "#73faf5",
-    "#00baff",
-    "#002eff",
-    "#0803a3",
-    "#29fc24",
-    "#91ff00",
-    "#d4ff00",
-    "#fffa00",
-    "#ffd900",
-    "#ffa100",
-    "#ff6600",
-    "#ff1f00",
-    "#ff00ab",
-    "#d900ff",
-    "#78038c"
-   ],
-   "opacity": "opaque",
-   "bands": 16,
-   "vmin": 0.0,
-   "vmax": 80.0
-  },
-  "mean2t": {
-   "label": "Mean temperature at 2 metres",
-   "colors": [
-    "#8200c2",
-    "#ed00fa",
-    "#ff7df5",
-    "#d47aff",
-    "#0808d6",
-    "#007aff",
-    "#00a6ff",
-    "#00d1ff",
-    "#00f7ff",
-    "#c9fcff",
-    "#008233",
-    "#38db78",
-    "#00ff3d",
-    "#a1ff00",
-    "#faff00",
-    "#ffd600",
-    "#ffa100",
-    "#ff6b00",
-    "#ff2600",
-    "#c7030d"
-   ],
-   "opacity": "opaque",
-   "bands": 20,
-   "vmin": -80.0,
-   "vmax": 60.0
-  },
-  "mn2t": {
-   "label": "Minimum temperature at 2 metres since previous post-processing",
-   "colors": [
-    "#000080",
-    "#000080",
-    "#000080",
-    "#000080",
-    "#000080",
-    "#0000d9",
-    "#4000ff",
-    "#8000ff",
-    "#0080ff",
-    "#00ffff",
-    "#00ff80",
-    "#80ff00",
-    "#daff00",
-    "#ffff00",
-    "#fff500",
-    "#ffda00",
-    "#ffb000",
-    "#ff8000",
-    "#ff4f00",
-    "#ff2500",
-    "#ff0a00",
-    "#ff0000",
-    "#ff00ff",
-    "#ff00ff",
-    "#ff00ff",
-    "#ff00ff",
-    "#ff00ff"
-   ],
-   "opacity": "opaque",
-   "bands": 27,
-   "vmin": -48.0,
-   "vmax": 56.0
-  },
-  "mn2ti": {
-   "label": "Minimum temperature at 2 metres index",
-   "colors": [
-    "#ff00da",
-    "#3c00ff",
-    "#00adff",
-    "#00ff69",
-    "#80ff00",
-    "#000000",
-    "#000000",
-    "#000000",
-    "#000000",
-    "#000000",
-    "#010100",
-    "#ffbf00",
-    "#ff8000",
-    "#ff4000",
-    "#010000"
-   ],
-   "opacity": "overlay",
-   "bands": 15,
-   "vmin": -1.0,
-   "vmax": 1.0
-  },
-  "mpts": {
-   "label": "Mean period of total swell",
-   "colors": [
-    "#0000ff",
-    "#0080ff",
-    "#73a3ff",
-    "#25ff00",
-    "#ffff00",
-    "#ffda00",
-    "#ffb000",
-    "#ff8000",
-    "#ff0000",
-    "#681000",
-    "#333333"
-   ],
-   "opacity": "opaque",
-   "bands": 11,
-   "vmin": 0.0,
-   "vmax": 18.0
-  },
-  "mpww": {
-   "label": "Mean period of wind waves",
-   "colors": [
-    "#0000ff",
-    "#0080ff",
-    "#73a3ff",
-    "#25ff00",
-    "#ffff00",
-    "#ffda00",
-    "#ffb000",
-    "#ff8000",
-    "#ff0000",
-    "#681000",
-    "#333333"
-   ],
-   "opacity": "opaque",
-   "bands": 11,
-   "vmin": 0.0,
-   "vmax": 18.0
-  },
-  "mslpp": {
-   "label": "Mean sea level pressure probability",
-   "colors": [
-    "#7805c4",
-    "#6b54d4",
-    "#2442f0",
-    "#0282db",
-    "#06adb8",
-    "#03d1d9",
-    "#75f2bf",
-    "#26de94",
-    "#96e30c",
-    "#e0f22b",
-    "#fcb806",
-    "#eb7d21",
-    "#e63030"
-   ],
-   "opacity": "opaque",
-   "bands": 13
-  },
-  "mwp": {
-   "label": "Mean wave period",
-   "colors": [
-    "#0000ff",
-    "#0080ff",
-    "#73a3ff",
-    "#25ff00",
-    "#ffff00",
-    "#ffda00",
-    "#ffb000",
-    "#ff8000",
-    "#ff0000",
-    "#681000",
-    "#333333"
-   ],
-   "opacity": "opaque",
-   "bands": 11,
-   "vmin": 0.0,
-   "vmax": 18.0
-  },
-  "mx2t": {
+  "max_temperature_2m": {
    "label": "Maximum temperature at 2 metres since previous post-processing",
    "colors": [
     "#000080",
@@ -1297,7 +874,7 @@
    "vmin": -48.0,
    "vmax": 56.0
   },
-  "mx2ti": {
+  "max_temperature_2m_index": {
    "label": "Maximum temperature at 2 metres index",
    "colors": [
     "#ff00da",
@@ -1321,7 +898,220 @@
    "vmin": -1.0,
    "vmax": 1.0
   },
-  "no2": {
+  "mean_period_total_swell": {
+   "label": "Mean period of total swell",
+   "colors": [
+    "#0000ff",
+    "#0080ff",
+    "#73a3ff",
+    "#25ff00",
+    "#ffff00",
+    "#ffda00",
+    "#ffb000",
+    "#ff8000",
+    "#ff0000",
+    "#681000",
+    "#333333"
+   ],
+   "opacity": "opaque",
+   "bands": 11,
+   "vmin": 0.0,
+   "vmax": 18.0
+  },
+  "mean_period_wind_waves": {
+   "label": "Mean period of wind waves",
+   "colors": [
+    "#0000ff",
+    "#0080ff",
+    "#73a3ff",
+    "#25ff00",
+    "#ffff00",
+    "#ffda00",
+    "#ffb000",
+    "#ff8000",
+    "#ff0000",
+    "#681000",
+    "#333333"
+   ],
+   "opacity": "opaque",
+   "bands": 11,
+   "vmin": 0.0,
+   "vmax": 18.0
+  },
+  "mean_sea_level_pressure_probability": {
+   "label": "Mean sea level pressure probability",
+   "colors": [
+    "#7805c4",
+    "#6b54d4",
+    "#2442f0",
+    "#0282db",
+    "#06adb8",
+    "#03d1d9",
+    "#75f2bf",
+    "#26de94",
+    "#96e30c",
+    "#e0f22b",
+    "#fcb806",
+    "#eb7d21",
+    "#e63030"
+   ],
+   "opacity": "opaque",
+   "bands": 13
+  },
+  "mean_temperature_2m": {
+   "label": "Mean temperature at 2 metres",
+   "colors": [
+    "#8200c2",
+    "#ed00fa",
+    "#ff7df5",
+    "#d47aff",
+    "#0808d6",
+    "#007aff",
+    "#00a6ff",
+    "#00d1ff",
+    "#00f7ff",
+    "#c9fcff",
+    "#008233",
+    "#38db78",
+    "#00ff3d",
+    "#a1ff00",
+    "#faff00",
+    "#ffd600",
+    "#ffa100",
+    "#ff6b00",
+    "#ff2600",
+    "#c7030d"
+   ],
+   "opacity": "opaque",
+   "bands": 20,
+   "vmin": -80.0,
+   "vmax": 60.0
+  },
+  "mean_wave_period": {
+   "label": "Mean wave period",
+   "colors": [
+    "#0000ff",
+    "#0080ff",
+    "#73a3ff",
+    "#25ff00",
+    "#ffff00",
+    "#ffda00",
+    "#ffb000",
+    "#ff8000",
+    "#ff0000",
+    "#681000",
+    "#333333"
+   ],
+   "opacity": "opaque",
+   "bands": 11,
+   "vmin": 0.0,
+   "vmax": 18.0
+  },
+  "mean_wind_speed_10m": {
+   "label": "Mean of 10 metre wind speed",
+   "colors": [
+    "#d9fced",
+    "#73faf5",
+    "#00baff",
+    "#002eff",
+    "#0803a3",
+    "#29fc24",
+    "#91ff00",
+    "#d4ff00",
+    "#fffa00",
+    "#ffd900",
+    "#ffa100",
+    "#ff6600",
+    "#ff1f00",
+    "#ff00ab",
+    "#d900ff",
+    "#78038c"
+   ],
+   "opacity": "opaque",
+   "bands": 16,
+   "vmin": 0.0,
+   "vmax": 80.0
+  },
+  "medium_cloud_cover": {
+   "label": "Medium cloud cover",
+   "colors": [
+    "#000000",
+    "#cccccc",
+    "#cccccc",
+    "#cccccc",
+    "#cccccc",
+    "#cccccc",
+    "#cccccc",
+    "#cccccc",
+    "#cccccc",
+    "#cccccc",
+    "#cccccc",
+    "#cccccc"
+   ],
+   "opacity": "overlay",
+   "bands": 12
+  },
+  "min_temperature_2m": {
+   "label": "Minimum temperature at 2 metres since previous post-processing",
+   "colors": [
+    "#000080",
+    "#000080",
+    "#000080",
+    "#000080",
+    "#000080",
+    "#0000d9",
+    "#4000ff",
+    "#8000ff",
+    "#0080ff",
+    "#00ffff",
+    "#00ff80",
+    "#80ff00",
+    "#daff00",
+    "#ffff00",
+    "#fff500",
+    "#ffda00",
+    "#ffb000",
+    "#ff8000",
+    "#ff4f00",
+    "#ff2500",
+    "#ff0a00",
+    "#ff0000",
+    "#ff00ff",
+    "#ff00ff",
+    "#ff00ff",
+    "#ff00ff",
+    "#ff00ff"
+   ],
+   "opacity": "opaque",
+   "bands": 27,
+   "vmin": -48.0,
+   "vmax": 56.0
+  },
+  "min_temperature_2m_index": {
+   "label": "Minimum temperature at 2 metres index",
+   "colors": [
+    "#ff00da",
+    "#3c00ff",
+    "#00adff",
+    "#00ff69",
+    "#80ff00",
+    "#000000",
+    "#000000",
+    "#000000",
+    "#000000",
+    "#000000",
+    "#010100",
+    "#ffbf00",
+    "#ff8000",
+    "#ff4000",
+    "#010000"
+   ],
+   "opacity": "overlay",
+   "bands": 15,
+   "vmin": -1.0,
+   "vmax": 1.0
+  },
+  "nitrogen_dioxide": {
    "label": "Nitrogen dioxide",
    "colors": [
     "#9bc7ea",
@@ -1342,46 +1132,28 @@
    "opacity": "opaque",
    "bands": 14
   },
-  "ph": {
-   "label": "Probability of a hurricane",
+  "ozone": {
+   "label": "GEMS Ozone",
    "colors": [
-    "#ff00ff",
-    "#ff4f00",
-    "#ffb000",
-    "#ffff00",
-    "#25ff00",
-    "#008c30",
-    "#00ffff",
-    "#0080ff",
-    "#0000ff",
-    "#7b12b2"
+    "#9bc7ea",
+    "#009ee0",
+    "#007bbf",
+    "#265ba0",
+    "#269170",
+    "#6bb25b",
+    "#a8c96b",
+    "#fff49b",
+    "#f4d138",
+    "#eab538",
+    "#dd8740",
+    "#cc3533",
+    "#9b1623",
+    "#561919"
    ],
    "opacity": "opaque",
-   "bands": 10
+   "bands": 14
   },
-  "prate": {
-   "label": "Precipitation rate",
-   "colors": [
-    "#38ffff",
-    "#209afd",
-    "#0e27fd",
-    "#34fe28",
-    "#27c71d",
-    "#1a9613",
-    "#fffe30",
-    "#fec627",
-    "#fc761d",
-    "#fc0016",
-    "#c5000e",
-    "#940008",
-    "#fc1ffe",
-    "#9524f8",
-    "#ffffff"
-   ],
-   "opacity": "opaque",
-   "bands": 15
-  },
-  "pt": {
+  "potential_temperature": {
    "label": "Potential temperature",
    "colors": [
     "#e033e0",
@@ -1415,154 +1187,8 @@
    "vmin": -52.0,
    "vmax": 48.0
   },
-  "ptd": {
-   "label": "Probability of a tropical depression",
-   "colors": [
-    "#ff00ff",
-    "#ff4f00",
-    "#ffb000",
-    "#ffff00",
-    "#25ff00",
-    "#008c30",
-    "#00ffff",
-    "#0080ff",
-    "#0000ff",
-    "#7b12b2"
-   ],
-   "opacity": "opaque",
-   "bands": 10
-  },
-  "pts": {
-   "label": "Probability of a tropical storm",
-   "colors": [
-    "#ff00ff",
-    "#ff4f00",
-    "#ffb000",
-    "#ffff00",
-    "#25ff00",
-    "#008c30",
-    "#00ffff",
-    "#0080ff",
-    "#0000ff",
-    "#7b12b2"
-   ],
-   "opacity": "opaque",
-   "bands": 10
-  },
-  "q": {
-   "label": "Specific humidity",
-   "colors": [
-    "#ff0000",
-    "#f07961",
-    "#bf9313",
-    "#ffff00",
-    "#80ff00",
-    "#008c30",
-    "#00ffff",
-    "#1cb8a6",
-    "#0080ff",
-    "#0000ff",
-    "#7b12b2",
-    "#ab05c9",
-    "#ff01c7"
-   ],
-   "opacity": "opaque",
-   "bands": 13
-  },
-  "sf": {
-   "label": "Snowfall",
-   "colors": [
-    "#00ffff",
-    "#0080ff",
-    "#0000ff",
-    "#da00ff",
-    "#ff00ff",
-    "#ff8000",
-    "#ff0000"
-   ],
-   "opacity": "opaque",
-   "bands": 7,
-   "vmin": 0.5,
-   "vmax": 300.0
-  },
-  "sfi": {
-   "label": "Snowfall index",
-   "colors": [
-    "#000000",
-    "#000000",
-    "#010100",
-    "#ffbf00",
-    "#ff8000",
-    "#ff4000",
-    "#010000"
-   ],
-   "opacity": "overlay",
-   "bands": 7,
-   "vmin": 0.5,
-   "vmax": 1.0
-  },
-  "sh10": {
-   "label": "Significant wave height of all waves with period larger than 10s",
-   "colors": [
-    "#0000ff",
-    "#0080ff",
-    "#73a3ff",
-    "#25ff00",
-    "#ffff00",
-    "#ffda00",
-    "#ffb000",
-    "#ff8000",
-    "#ff0000",
-    "#681000",
-    "#333333"
-   ],
-   "opacity": "opaque",
-   "bands": 11,
-   "vmin": 0.0,
-   "vmax": 20.0
-  },
-  "shts": {
-   "label": "Significant height of total swell",
-   "colors": [
-    "#0000ff",
-    "#0080ff",
-    "#73a3ff",
-    "#25ff00",
-    "#ffff00",
-    "#ffda00",
-    "#ffb000",
-    "#ff8000",
-    "#ff0000",
-    "#681000",
-    "#333333"
-   ],
-   "opacity": "opaque",
-   "bands": 11,
-   "vmin": 0.0,
-   "vmax": 20.0
-  },
-  "shww": {
-   "label": "Significant height of wind waves",
-   "colors": [
-    "#0000ff",
-    "#0080ff",
-    "#73a3ff",
-    "#25ff00",
-    "#ffff00",
-    "#ffda00",
-    "#ffb000",
-    "#ff8000",
-    "#ff0000",
-    "#681000",
-    "#333333"
-   ],
-   "opacity": "opaque",
-   "bands": 11,
-   "vmin": 0.0,
-   "vmax": 20.0
-  },
-  "srweq": {
-   "label": "Snow fall rate water equivalent",
+  "precipitation_rate": {
+   "label": "Precipitation rate",
    "colors": [
     "#38ffff",
     "#209afd",
@@ -1583,304 +1209,7 @@
    "opacity": "opaque",
    "bands": 15
   },
-  "stl1p": {
-   "label": "Soil temperature level 1 probability",
-   "colors": [
-    "#7805c4",
-    "#6b54d4",
-    "#2442f0",
-    "#0282db",
-    "#06adb8",
-    "#03d1d9",
-    "#75f2bf",
-    "#26de94",
-    "#96e30c",
-    "#e0f22b",
-    "#fcb806",
-    "#eb7d21",
-    "#e63030"
-   ],
-   "opacity": "opaque",
-   "bands": 13
-  },
-  "suaod550": {
-   "label": "Sulphate Aerosol Optical Depth at 550nm",
-   "colors": [
-    "#0000f1",
-    "#004cff",
-    "#00b1ff",
-    "#29ffce",
-    "#7dff7a",
-    "#ceff29",
-    "#ffc400",
-    "#ff6800",
-    "#f10800",
-    "#800000"
-   ],
-   "opacity": "opaque",
-   "bands": 10
-  },
-  "swh": {
-   "label": "Significant height of combined wind waves and swell",
-   "colors": [
-    "#0000ff",
-    "#0080ff",
-    "#73a3ff",
-    "#25ff00",
-    "#ffff00",
-    "#ffda00",
-    "#ffb000",
-    "#ff8000",
-    "#ff0000",
-    "#681000",
-    "#333333"
-   ],
-   "opacity": "opaque",
-   "bands": 11,
-   "vmin": 0.0,
-   "vmax": 20.0
-  },
-  "t": {
-   "label": "Temperature",
-   "colors": [
-    "#e033e0",
-    "#ad33ad",
-    "#7a337a",
-    "#473347",
-    "#330066",
-    "#590080",
-    "#8000ff",
-    "#0080ff",
-    "#00ccff",
-    "#00ffff",
-    "#00ff80",
-    "#80ff00",
-    "#daff00",
-    "#ffff80",
-    "#ffff00",
-    "#ffda00",
-    "#ffb000",
-    "#ff7300",
-    "#ff0000",
-    "#cc0000",
-    "#80002c",
-    "#cc3d6f",
-    "#ff00ff",
-    "#ff80ff",
-    "#ffbfff"
-   ],
-   "opacity": "opaque",
-   "bands": 25,
-   "vmin": -52.0,
-   "vmax": 48.0
-  },
-  "tcch4": {
-   "label": "CH4 column-mean molar fraction",
-   "colors": [
-    "#0d0d0d",
-    "#7d008e",
-    "#2d00a4",
-    "#0000dd",
-    "#0082dd",
-    "#00a4bb",
-    "#00aa88",
-    "#00a400",
-    "#00d200",
-    "#00ff00",
-    "#ccf900",
-    "#f9d700",
-    "#ff9900",
-    "#f40000",
-    "#d20000",
-    "#66001f"
-   ],
-   "opacity": "opaque",
-   "bands": 16
-  },
-  "tcco": {
-   "label": "Total column Carbon monoxide",
-   "colors": [
-    "#9bc7ea",
-    "#009ee0",
-    "#007bbf",
-    "#265ba0",
-    "#269170",
-    "#6bb25b",
-    "#a8c96b",
-    "#fff49b",
-    "#f4d138",
-    "#eab538",
-    "#dd8740",
-    "#cc3533",
-    "#9b1623",
-    "#561919"
-   ],
-   "opacity": "opaque",
-   "bands": 14
-  },
-  "tcco2": {
-   "label": "CO2 column-mean molar fraction",
-   "colors": [
-    "#5e4fa2",
-    "#4e63ac",
-    "#3d79b6",
-    "#3990ba",
-    "#4ea7b0",
-    "#62bda7",
-    "#7ccaa5",
-    "#94d4a4",
-    "#aedea3",
-    "#c6e89f",
-    "#ddf19a",
-    "#ecf7a1",
-    "#f6fbb0",
-    "#fffebe",
-    "#fff3ac",
-    "#fee797",
-    "#fed884",
-    "#fdc574",
-    "#fdb163",
-    "#fa9857",
-    "#f7814c",
-    "#f26944",
-    "#e55749",
-    "#d9444d",
-    "#c72e4c",
-    "#b11747",
-    "#9e0142"
-   ],
-   "opacity": "opaque",
-   "bands": 27
-  },
-  "tcso2": {
-   "label": "Total column Sulphur dioxide",
-   "colors": [
-    "#9bc7ea",
-    "#009ee0",
-    "#007bbf",
-    "#265ba0",
-    "#269170",
-    "#6bb25b",
-    "#a8c96b",
-    "#fff49b",
-    "#f4d138",
-    "#eab538",
-    "#dd8740",
-    "#cc3533",
-    "#9b1623",
-    "#561919"
-   ],
-   "opacity": "opaque",
-   "bands": 14
-  },
-  "totalx": {
-   "label": "Total totals index",
-   "colors": [
-    "#000000",
-    "#ebf006",
-    "#f09e06",
-    "#f04006",
-    "#ab0f1a",
-    "#f006e0",
-    "#6e11a6",
-    "#000066"
-   ],
-   "opacity": "overlay",
-   "bands": 8,
-   "vmin": 44.0,
-   "vmax": 70.0
-  },
-  "tp": {
-   "label": "Total precipitation",
-   "colors": [
-    "#ffffff",
-    "#6FAFD6",
-    "#08326E"
-   ],
-   "levels": null,
-   "extend": "max",
-   "units": null,
-   "opacity": "opaque"
-  },
-  "tpi": {
-   "label": "Total precipitation index",
-   "colors": [
-    "#000000",
-    "#000000",
-    "#010100",
-    "#ffbf00",
-    "#ff8000",
-    "#ff4000",
-    "#010000"
-   ],
-   "opacity": "overlay",
-   "bands": 7,
-   "vmin": 0.5,
-   "vmax": 1.0
-  },
-  "tpp": {
-   "label": "Total precipitation probability",
-   "colors": [
-    "#7805c4",
-    "#6b54d4",
-    "#2442f0",
-    "#0282db",
-    "#06adb8",
-    "#03d1d9",
-    "#75f2bf",
-    "#26de94",
-    "#96e30c",
-    "#e0f22b",
-    "#fcb806",
-    "#eb7d21",
-    "#e63030"
-   ],
-   "opacity": "opaque",
-   "bands": 13
-  },
-  "uvbed": {
-   "label": " UV biologically effective dose",
-   "colors": [
-    "#42a631",
-    "#a5c600",
-    "#fff300",
-    "#ffd700",
-    "#f7b200",
-    "#ef8a00",
-    "#e66900",
-    "#e63510",
-    "#e62484",
-    "#b565a5",
-    "#847db5",
-    "#7ba6ff",
-    "#63beff",
-    "#4adbff"
-   ],
-   "opacity": "opaque",
-   "bands": 14
-  },
-  "uvbedcs": {
-   "label": " UV biologically effective dose clear-sky",
-   "colors": [
-    "#42a631",
-    "#a5c600",
-    "#fff300",
-    "#ffd700",
-    "#f7b200",
-    "#ef8a00",
-    "#e66900",
-    "#e63510",
-    "#e62484",
-    "#b565a5",
-    "#847db5",
-    "#7ba6ff",
-    "#63beff",
-    "#4adbff"
-   ],
-   "opacity": "opaque",
-   "bands": 14
-  },
-  "vo": {
+  "relative_vorticity": {
    "label": "Vorticity (relative)",
    "colors": [
     "#00004c",
@@ -1916,7 +1245,521 @@
    "vmin": -50.0,
    "vmax": 50.0
   },
-  "w": {
+  "significant_height_total_swell": {
+   "label": "Significant height of total swell",
+   "colors": [
+    "#0000ff",
+    "#0080ff",
+    "#73a3ff",
+    "#25ff00",
+    "#ffff00",
+    "#ffda00",
+    "#ffb000",
+    "#ff8000",
+    "#ff0000",
+    "#681000",
+    "#333333"
+   ],
+   "opacity": "opaque",
+   "bands": 11,
+   "vmin": 0.0,
+   "vmax": 20.0
+  },
+  "significant_height_wind_waves": {
+   "label": "Significant height of wind waves",
+   "colors": [
+    "#0000ff",
+    "#0080ff",
+    "#73a3ff",
+    "#25ff00",
+    "#ffff00",
+    "#ffda00",
+    "#ffb000",
+    "#ff8000",
+    "#ff0000",
+    "#681000",
+    "#333333"
+   ],
+   "opacity": "opaque",
+   "bands": 11,
+   "vmin": 0.0,
+   "vmax": 20.0
+  },
+  "significant_wave_height_combined": {
+   "label": "Significant height of combined wind waves and swell",
+   "colors": [
+    "#0000ff",
+    "#0080ff",
+    "#73a3ff",
+    "#25ff00",
+    "#ffff00",
+    "#ffda00",
+    "#ffb000",
+    "#ff8000",
+    "#ff0000",
+    "#681000",
+    "#333333"
+   ],
+   "opacity": "opaque",
+   "bands": 11,
+   "vmin": 0.0,
+   "vmax": 20.0
+  },
+  "significant_wave_height_over_10s_period": {
+   "label": "Significant wave height of all waves with period larger than 10s",
+   "colors": [
+    "#0000ff",
+    "#0080ff",
+    "#73a3ff",
+    "#25ff00",
+    "#ffff00",
+    "#ffda00",
+    "#ffb000",
+    "#ff8000",
+    "#ff0000",
+    "#681000",
+    "#333333"
+   ],
+   "opacity": "opaque",
+   "bands": 11,
+   "vmin": 0.0,
+   "vmax": 20.0
+  },
+  "snowfall": {
+   "label": "Snowfall",
+   "colors": [
+    "#00ffff",
+    "#0080ff",
+    "#0000ff",
+    "#da00ff",
+    "#ff00ff",
+    "#ff8000",
+    "#ff0000"
+   ],
+   "opacity": "opaque",
+   "bands": 7,
+   "vmin": 0.5,
+   "vmax": 300.0
+  },
+  "snowfall_index": {
+   "label": "Snowfall index",
+   "colors": [
+    "#000000",
+    "#000000",
+    "#010100",
+    "#ffbf00",
+    "#ff8000",
+    "#ff4000",
+    "#010000"
+   ],
+   "opacity": "overlay",
+   "bands": 7,
+   "vmin": 0.5,
+   "vmax": 1.0
+  },
+  "snowfall_rate_water_equivalent": {
+   "label": "Snow fall rate water equivalent",
+   "colors": [
+    "#38ffff",
+    "#209afd",
+    "#0e27fd",
+    "#34fe28",
+    "#27c71d",
+    "#1a9613",
+    "#fffe30",
+    "#fec627",
+    "#fc761d",
+    "#fc0016",
+    "#c5000e",
+    "#940008",
+    "#fc1ffe",
+    "#9524f8",
+    "#ffffff"
+   ],
+   "opacity": "opaque",
+   "bands": 15
+  },
+  "soil_temperature_level1_probability": {
+   "label": "Soil temperature level 1 probability",
+   "colors": [
+    "#7805c4",
+    "#6b54d4",
+    "#2442f0",
+    "#0282db",
+    "#06adb8",
+    "#03d1d9",
+    "#75f2bf",
+    "#26de94",
+    "#96e30c",
+    "#e0f22b",
+    "#fcb806",
+    "#eb7d21",
+    "#e63030"
+   ],
+   "opacity": "opaque",
+   "bands": 13
+  },
+  "specific_humidity": {
+   "label": "Specific humidity",
+   "colors": [
+    "#ff0000",
+    "#f07961",
+    "#bf9313",
+    "#ffff00",
+    "#80ff00",
+    "#008c30",
+    "#00ffff",
+    "#1cb8a6",
+    "#0080ff",
+    "#0000ff",
+    "#7b12b2",
+    "#ab05c9",
+    "#ff01c7"
+   ],
+   "opacity": "opaque",
+   "bands": 13
+  },
+  "sulphate_aerosol_optical_depth_550nm": {
+   "label": "Sulphate Aerosol Optical Depth at 550nm",
+   "colors": [
+    "#0000f1",
+    "#004cff",
+    "#00b1ff",
+    "#29ffce",
+    "#7dff7a",
+    "#ceff29",
+    "#ffc400",
+    "#ff6800",
+    "#f10800",
+    "#800000"
+   ],
+   "opacity": "opaque",
+   "bands": 10
+  },
+  "temperature_2m": {
+   "label": "2 m temperature",
+   "colors": "Spectral_r",
+   "levels": [
+    -40,
+    -38,
+    -36,
+    -34,
+    -32,
+    -30,
+    -28,
+    -26,
+    -24,
+    -22,
+    -20,
+    -18,
+    -16,
+    -14,
+    -12,
+    -10,
+    -8,
+    -6,
+    -4,
+    -2,
+    0,
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16,
+    18,
+    20,
+    22,
+    24,
+    26,
+    28,
+    30,
+    32,
+    34,
+    36,
+    38,
+    40
+   ],
+   "extend": "both",
+   "units": "celsius",
+   "opacity": "opaque"
+  },
+  "temperature_2m_index": {
+   "label": "2 metre temperature index",
+   "colors": [
+    "#ff00da",
+    "#3c00ff",
+    "#00adff",
+    "#00ff69",
+    "#80ff00",
+    "#000000",
+    "#000000",
+    "#000000",
+    "#000000",
+    "#000000",
+    "#010100",
+    "#ffbf00",
+    "#ff8000",
+    "#ff4000",
+    "#010000"
+   ],
+   "opacity": "overlay",
+   "bands": 15,
+   "vmin": -1.0,
+   "vmax": 1.0
+  },
+  "temperature_2m_probability": {
+   "label": "2 metre temperature probability",
+   "colors": [
+    "#7805c4",
+    "#6b54d4",
+    "#2442f0",
+    "#0282db",
+    "#06adb8",
+    "#03d1d9",
+    "#75f2bf",
+    "#26de94",
+    "#96e30c",
+    "#e0f22b",
+    "#fcb806",
+    "#eb7d21",
+    "#e63030"
+   ],
+   "opacity": "opaque",
+   "bands": 13
+  },
+  "total_column_carbon_monoxide": {
+   "label": "Total column Carbon monoxide",
+   "colors": [
+    "#9bc7ea",
+    "#009ee0",
+    "#007bbf",
+    "#265ba0",
+    "#269170",
+    "#6bb25b",
+    "#a8c96b",
+    "#fff49b",
+    "#f4d138",
+    "#eab538",
+    "#dd8740",
+    "#cc3533",
+    "#9b1623",
+    "#561919"
+   ],
+   "opacity": "opaque",
+   "bands": 14
+  },
+  "total_column_ozone": {
+   "label": "GEMS Total column ozone",
+   "colors": [
+    "#000000",
+    "#000066",
+    "#0000ff",
+    "#0080ff",
+    "#73a3ff",
+    "#00ffff",
+    "#00ff80",
+    "#80ff00",
+    "#daff00",
+    "#ffff00",
+    "#ffda00",
+    "#ffb000",
+    "#ff8000",
+    "#ff4f00",
+    "#ff0000",
+    "#991608",
+    "#681000",
+    "#520300",
+    "#d9b777",
+    "#ffe2ab",
+    "#665433"
+   ],
+   "opacity": "opaque",
+   "bands": 21
+  },
+  "total_column_sulphur_dioxide": {
+   "label": "Total column Sulphur dioxide",
+   "colors": [
+    "#9bc7ea",
+    "#009ee0",
+    "#007bbf",
+    "#265ba0",
+    "#269170",
+    "#6bb25b",
+    "#a8c96b",
+    "#fff49b",
+    "#f4d138",
+    "#eab538",
+    "#dd8740",
+    "#cc3533",
+    "#9b1623",
+    "#561919"
+   ],
+   "opacity": "opaque",
+   "bands": 14
+  },
+  "total_precipitation": {
+   "label": "Total precipitation",
+   "colors": [
+    "#ffffff",
+    "#6FAFD6",
+    "#08326E"
+   ],
+   "levels": null,
+   "extend": "max",
+   "units": null,
+   "opacity": "opaque"
+  },
+  "total_precipitation_index": {
+   "label": "Total precipitation index",
+   "colors": [
+    "#000000",
+    "#000000",
+    "#010100",
+    "#ffbf00",
+    "#ff8000",
+    "#ff4000",
+    "#010000"
+   ],
+   "opacity": "overlay",
+   "bands": 7,
+   "vmin": 0.5,
+   "vmax": 1.0
+  },
+  "total_precipitation_probability": {
+   "label": "Total precipitation probability",
+   "colors": [
+    "#7805c4",
+    "#6b54d4",
+    "#2442f0",
+    "#0282db",
+    "#06adb8",
+    "#03d1d9",
+    "#75f2bf",
+    "#26de94",
+    "#96e30c",
+    "#e0f22b",
+    "#fcb806",
+    "#eb7d21",
+    "#e63030"
+   ],
+   "opacity": "opaque",
+   "bands": 13
+  },
+  "total_totals_index": {
+   "label": "Total totals index",
+   "colors": [
+    "#000000",
+    "#ebf006",
+    "#f09e06",
+    "#f04006",
+    "#ab0f1a",
+    "#f006e0",
+    "#6e11a6",
+    "#000066"
+   ],
+   "opacity": "overlay",
+   "bands": 8,
+   "vmin": 44.0,
+   "vmax": 70.0
+  },
+  "total_wind_speed": {
+   "label": "Wind speed",
+   "colors": [
+    "#ffff66",
+    "#daff00",
+    "#94ff00",
+    "#6ca632",
+    "#00734b",
+    "#005447",
+    "#004247",
+    "#003370",
+    "#0033a3"
+   ],
+   "opacity": "opaque",
+   "bands": 9,
+   "vmin": 10.0,
+   "vmax": 100.0
+  },
+  "tropical_depression_probability": {
+   "label": "Probability of a tropical depression",
+   "colors": [
+    "#ff00ff",
+    "#ff4f00",
+    "#ffb000",
+    "#ffff00",
+    "#25ff00",
+    "#008c30",
+    "#00ffff",
+    "#0080ff",
+    "#0000ff",
+    "#7b12b2"
+   ],
+   "opacity": "opaque",
+   "bands": 10
+  },
+  "tropical_storm_probability": {
+   "label": "Probability of a tropical storm",
+   "colors": [
+    "#ff00ff",
+    "#ff4f00",
+    "#ffb000",
+    "#ffff00",
+    "#25ff00",
+    "#008c30",
+    "#00ffff",
+    "#0080ff",
+    "#0000ff",
+    "#7b12b2"
+   ],
+   "opacity": "opaque",
+   "bands": 10
+  },
+  "uv_biologically_effective_dose": {
+   "label": " UV biologically effective dose",
+   "colors": [
+    "#42a631",
+    "#a5c600",
+    "#fff300",
+    "#ffd700",
+    "#f7b200",
+    "#ef8a00",
+    "#e66900",
+    "#e63510",
+    "#e62484",
+    "#b565a5",
+    "#847db5",
+    "#7ba6ff",
+    "#63beff",
+    "#4adbff"
+   ],
+   "opacity": "opaque",
+   "bands": 14
+  },
+  "uv_biologically_effective_dose_clear_sky": {
+   "label": " UV biologically effective dose clear-sky",
+   "colors": [
+    "#42a631",
+    "#a5c600",
+    "#fff300",
+    "#ffd700",
+    "#f7b200",
+    "#ef8a00",
+    "#e66900",
+    "#e63510",
+    "#e62484",
+    "#b565a5",
+    "#847db5",
+    "#7ba6ff",
+    "#63beff",
+    "#4adbff"
+   ],
+   "opacity": "opaque",
+   "bands": 14
+  },
+  "vertical_velocity": {
    "label": "Vertical velocity",
    "colors": [
     "#000066",
@@ -1944,23 +1787,180 @@
    "vmin": -5.0,
    "vmax": 5.0
   },
-  "ws": {
-   "label": "Wind speed",
+  "wildfire_radiative_power": {
+   "label": "Wildfire radiative power",
    "colors": [
-    "#ffff66",
-    "#daff00",
-    "#94ff00",
-    "#6ca632",
-    "#00734b",
-    "#005447",
-    "#004247",
-    "#003370",
-    "#0033a3"
+    "#350000",
+    "#5f0000",
+    "#890000",
+    "#b30000",
+    "#dd0000",
+    "#ff0800",
+    "#ff3200",
+    "#ff5c00",
+    "#ff8600",
+    "#ffb000",
+    "#ffda00",
+    "#ffff07",
+    "#ffff46",
+    "#ffff85",
+    "#ffffc4",
+    "#ffffff"
    ],
    "opacity": "opaque",
-   "bands": 9,
-   "vmin": 10.0,
-   "vmax": 100.0
+   "bands": 16
+  },
+  "wind_gust_10m": {
+   "label": "10 metre wind gust since previous post-processing",
+   "colors": [
+    "#d9fced",
+    "#73faf5",
+    "#00baff",
+    "#002eff",
+    "#0803a3",
+    "#29fc24",
+    "#91ff00",
+    "#d4ff00",
+    "#fffa00",
+    "#ffd900",
+    "#ffa100",
+    "#ff6600",
+    "#ff1f00",
+    "#ff00ab",
+    "#d900ff",
+    "#78038c"
+   ],
+   "opacity": "opaque",
+   "bands": 16,
+   "vmin": 0.0,
+   "vmax": 80.0
+  },
+  "wind_gust_10m_index": {
+   "label": "10 metre wind gust index",
+   "colors": [
+    "#000000",
+    "#000000",
+    "#010100",
+    "#ffbf00",
+    "#ff8000",
+    "#ff4000",
+    "#010000"
+   ],
+   "opacity": "overlay",
+   "bands": 7,
+   "vmin": 0.5,
+   "vmax": 1.0
+  },
+  "wind_speed_10m": {
+   "label": "10 m wind speed",
+   "colors": [
+    "#85AAEE",
+    "#208EFC",
+    "#6CA632",
+    "#FFB000",
+    "#FF0000",
+    "#7A11B1"
+   ],
+   "levels": [
+    12.0,
+    15.0,
+    20.0,
+    25.0,
+    30.0,
+    35.0,
+    50.0
+   ],
+   "extend": "neither",
+   "units": "m s-1",
+   "opacity": "opaque"
+  },
+  "wind_speed_10m_index": {
+   "label": "10 metre speed index",
+   "colors": [
+    "#000000",
+    "#000000",
+    "#010100",
+    "#ffbf00",
+    "#ff8000",
+    "#ff4000",
+    "#010000"
+   ],
+   "opacity": "overlay",
+   "bands": 7,
+   "vmin": 0.5,
+   "vmax": 1.0
+  },
+  "wind_u_10m": {
+   "label": "10 m U wind component",
+   "colors": "PiYG",
+   "levels": [
+    -26,
+    -24,
+    -22,
+    -20,
+    -18,
+    -16,
+    -14,
+    -12,
+    -10,
+    -8,
+    -6,
+    -4,
+    -2,
+    0,
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16,
+    18,
+    20,
+    22,
+    24,
+    26
+   ],
+   "extend": "both",
+   "units": "m s-1",
+   "opacity": "opaque"
+  },
+  "wind_v_10m": {
+   "label": "10 m V wind component",
+   "colors": "PiYG",
+   "levels": [
+    -26,
+    -24,
+    -22,
+    -20,
+    -18,
+    -16,
+    -14,
+    -12,
+    -10,
+    -8,
+    -6,
+    -4,
+    -2,
+    0,
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16,
+    18,
+    20,
+    22,
+    24,
+    26
+   ],
+   "extend": "both",
+   "units": "m s-1",
+   "opacity": "opaque"
   }
  }
 }

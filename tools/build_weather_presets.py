@@ -335,6 +335,106 @@ def transform_earthkit(raw_presets):
     return out
 
 
+#: GRIB shortName -> the descriptive `DATA_STYLES` key it ships under. Both
+#: Magics and earthkit-plots index their upstream data by shortName (needed to
+#: join contours.json/palettes.json, or locate the right auto-style YAML), so
+#: fetching stays shortName-keyed throughout `build_magics`/`build_earthkit`;
+#: this is applied once, at the very end, to the merged asset's keys.
+SHORTNAME_TO_NAME = {
+    "10fg": "wind_gust_10m",
+    "10fgi": "wind_gust_10m_index",
+    "10si": "wind_speed_10m",
+    "10u": "wind_u_10m",
+    "10v": "wind_v_10m",
+    "10wsi": "wind_speed_10m_index",
+    "2d": "dewpoint_temperature_2m",
+    "2t": "temperature_2m",
+    "2ti": "temperature_2m_index",
+    "2tp": "temperature_2m_probability",
+    "aod550": "aerosol_optical_depth_550nm",
+    "cape": "convective_available_potential_energy",
+    "capei": "convective_available_potential_energy_index",
+    "capes": "convective_available_potential_energy_shear",
+    "capesi": "convective_available_potential_energy_shear_index",
+    "cin": "convective_inhibition",
+    "clbt": "cloudy_brightness_temperature",
+    "co": "carbon_monoxide",
+    "cp": "convective_precipitation",
+    "crfrate": "convective_rainfall_rate",
+    "d": "divergence",
+    "duaod550": "dust_aerosol_optical_depth_550nm",
+    "frpfire": "wildfire_radiative_power",
+    "go3": "ozone",
+    "gtco3": "total_column_ozone",
+    "hcc": "high_cloud_cover",
+    "kx": "k_index",
+    "lcc": "low_cloud_cover",
+    "lsp": "large_scale_precipitation",
+    "lsrrate": "large_scale_rainfall_rate",
+    "maxswh": "max_significant_wave_height",
+    "maxswhi": "max_significant_wave_height_index",
+    "mcc": "medium_cloud_cover",
+    "mean10ws": "mean_wind_speed_10m",
+    "mean2t": "mean_temperature_2m",
+    "mn2t": "min_temperature_2m",
+    "mn2ti": "min_temperature_2m_index",
+    "mpts": "mean_period_total_swell",
+    "mpww": "mean_period_wind_waves",
+    "mslpp": "mean_sea_level_pressure_probability",
+    "mwp": "mean_wave_period",
+    "mx2t": "max_temperature_2m",
+    "mx2ti": "max_temperature_2m_index",
+    "no2": "nitrogen_dioxide",
+    "ph": "hurricane_probability",
+    "prate": "precipitation_rate",
+    "pt": "potential_temperature",
+    "ptd": "tropical_depression_probability",
+    "pts": "tropical_storm_probability",
+    "q": "specific_humidity",
+    "sf": "snowfall",
+    "sfi": "snowfall_index",
+    "sh10": "significant_wave_height_over_10s_period",
+    "shts": "significant_height_total_swell",
+    "shww": "significant_height_wind_waves",
+    "srweq": "snowfall_rate_water_equivalent",
+    "stl1p": "soil_temperature_level1_probability",
+    "suaod550": "sulphate_aerosol_optical_depth_550nm",
+    "swh": "significant_wave_height_combined",
+    "t": "air_temperature",
+    "tcch4": "ch4_column_mean_molar_fraction",
+    "tcco": "total_column_carbon_monoxide",
+    "tcco2": "co2_column_mean_molar_fraction",
+    "tcso2": "total_column_sulphur_dioxide",
+    "totalx": "total_totals_index",
+    "tp": "total_precipitation",
+    "tpi": "total_precipitation_index",
+    "tpp": "total_precipitation_probability",
+    "uvbed": "uv_biologically_effective_dose",
+    "uvbedcs": "uv_biologically_effective_dose_clear_sky",
+    "vo": "relative_vorticity",
+    "w": "vertical_velocity",
+    "ws": "total_wind_speed",
+}
+
+
+def rename_to_descriptive_keys(merged_presets):
+    """Rename a merged (shortName-keyed) preset dict to its `SHORTNAME_TO_NAME` keys.
+
+    A shortName absent from `SHORTNAME_TO_NAME` (e.g. a new upstream parameter)
+    keeps its raw code rather than crashing the build -- add it to the map and
+    re-run once its descriptive name is chosen.
+    """
+    out = {}
+    unmapped = []
+    for key, rec in merged_presets.items():
+        name = SHORTNAME_TO_NAME.get(key)
+        if name is None:
+            unmapped.append(key)
+            name = key
+        out[name] = rec
+    return out, unmapped
+
+
 def _safe_out_path(out_path):
     """Resolve `out_path` and confine it to the current working directory tree.
 
@@ -360,9 +460,15 @@ def main(out_path, magics_ref="develop", earthkit_ref="main"):
         **transform_magics(magics_presets),
         **transform_earthkit(earthkit_presets),
     }
-    asset = {"presets": dict(sorted(merged.items()))}
+    renamed, unmapped = rename_to_descriptive_keys(merged)
+    asset = {"presets": dict(sorted(renamed.items()))}
     with open(_safe_out_path(out_path), "w", encoding="utf-8") as f:
         json.dump(asset, f, indent=1, ensure_ascii=False)
+    if unmapped:
+        print(
+            f"WARNING: {len(unmapped)} shortName(s) have no descriptive name in "
+            f"SHORTNAME_TO_NAME, kept as-is: {', '.join(sorted(unmapped))}"
+        )
     print(
         f"wrote {len(merged)} weather presets to {out_path} "
         f"({len(magics_presets) - len(EARTHKIT_OVERRIDE_KEYS)} Magics + "
