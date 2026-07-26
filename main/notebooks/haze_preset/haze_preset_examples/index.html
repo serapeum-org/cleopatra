@@ -3046,22 +3046,28 @@ grid standing in for real "Organic Matter" and "Dust" aerosol forecasts.</p>
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.colors</span><span class="w"> </span><span class="kn">import</span> <span class="n">HAZE_COLORMAPS</span><span class="p">,</span> <span class="n">alpha_scaled_image</span><span class="p">,</span> <span class="n">alpha_scaled_mesh</span><span class="p">,</span> <span class="n">apply_data_style</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.colors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">alpha_scaled_mesh</span><span class="p">,</span>
+    <span class="n">apply_data_style</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.geo</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_point_labels</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.projection</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_projection_style</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styles</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_blank_canvas</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.geo</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_point_labels</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-1">%matplotlib inline
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
-from cleopatra.colors import HAZE_COLORMAPS, alpha_scaled_image, alpha_scaled_mesh, apply_data_style
+from cleopatra.colors import (
+    alpha_scaled_mesh,
+    apply_data_style,
+)
+from cleopatra.geo import add_point_labels
 from cleopatra.projection import apply_projection_style
-from cleopatra.styles import apply_blank_canvas
-from cleopatra.geo import add_point_labels</div>
+from cleopatra.styles import apply_blank_canvas</div>
 </div>
 </div>
 </div>
@@ -3102,13 +3108,17 @@ the North Atlantic -- each a Gaussian blob on a lon/lat grid, values in <code>[0
 <span class="n">lat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="mi">90</span><span class="p">,</span> <span class="mi">90</span><span class="p">)</span>
 <span class="n">lon_grid</span><span class="p">,</span> <span class="n">lat_grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">)</span>
 
+
 <span class="k">def</span><span class="w"> </span><span class="nf">blob</span><span class="p">(</span><span class="n">center_lon</span><span class="p">,</span> <span class="n">center_lat</span><span class="p">,</span> <span class="n">spread_deg</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""A blob that is actually circular on the sphere (great-circle distance)."""</span>
     <span class="n">lon0</span><span class="p">,</span> <span class="n">lat0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">center_lon</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">center_lat</span><span class="p">)</span>
     <span class="n">lon_r</span><span class="p">,</span> <span class="n">lat_r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">lon_grid</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">lat_grid</span><span class="p">)</span>
-    <span class="n">cos_c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">lat0</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">lat_r</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lat0</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lat_r</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lon_r</span> <span class="o">-</span> <span class="n">lon0</span><span class="p">)</span>
+    <span class="n">cos_c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">lat0</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">lat_r</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lat0</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lat_r</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span>
+        <span class="n">lon_r</span> <span class="o">-</span> <span class="n">lon0</span>
+    <span class="p">)</span>
     <span class="n">angular_deg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">cos_c</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">angular_deg</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">spread_deg</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">angular_deg</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">spread_deg</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+
 
 <span class="n">organic_matter</span> <span class="o">=</span> <span class="n">blob</span><span class="p">(</span><span class="o">-</span><span class="mi">30</span><span class="p">,</span> <span class="mi">65</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.9</span>
 <span class="n">dust</span> <span class="o">=</span> <span class="n">blob</span><span class="p">(</span><span class="o">-</span><span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">15</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.85</span>
@@ -3118,13 +3128,17 @@ the North Atlantic -- each a Gaussian blob on a lon/lat grid, values in <code>[0
 lat = np.linspace(-90, 90, 90)
 lon_grid, lat_grid = np.meshgrid(lon, lat)
 
+
 def blob(center_lon, center_lat, spread_deg):
     """A blob that is actually circular on the sphere (great-circle distance)."""
     lon0, lat0 = np.radians(center_lon), np.radians(center_lat)
     lon_r, lat_r = np.radians(lon_grid), np.radians(lat_grid)
-    cos_c = np.sin(lat0) * np.sin(lat_r) + np.cos(lat0) * np.cos(lat_r) * np.cos(lon_r - lon0)
+    cos_c = np.sin(lat0) * np.sin(lat_r) + np.cos(lat0) * np.cos(lat_r) * np.cos(
+        lon_r - lon0
+    )
     angular_deg = np.degrees(np.arccos(np.clip(cos_c, -1, 1)))
-    return np.exp(-(angular_deg ** 2) / (2 * spread_deg ** 2))
+    return np.exp(-(angular_deg**2) / (2 * spread_deg**2))
+
 
 organic_matter = blob(-30, 65, 20) * 0.9
 dust = blob(-20, 30, 15) * 0.85
@@ -3188,7 +3202,9 @@ the first call uses the default <code>draw_frame=True</code>, and every call aft
     <span class="n">ax</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">dust</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">'globe'</span><span class="p">,</span> <span class="n">draw_frame</span><span class="o">=</span><span class="kc">False</span>
 <span class="p">)</span>
 
-<span class="n">images</span> <span class="o">=</span> <span class="n">apply_data_style</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="p">{</span><span class="s1">'organic_matter'</span><span class="p">:</span> <span class="n">om_masked</span><span class="p">,</span> <span class="s1">'dust'</span><span class="p">:</span> <span class="n">dust_masked</span><span class="p">},</span> <span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">)</span>
+<span class="n">images</span> <span class="o">=</span> <span class="n">apply_data_style</span><span class="p">(</span>
+    <span class="n">ax</span><span class="p">,</span> <span class="p">{</span><span class="s1">'organic_matter'</span><span class="p">:</span> <span class="n">om_masked</span><span class="p">,</span> <span class="s1">'dust'</span><span class="p">:</span> <span class="n">dust_masked</span><span class="p">},</span> <span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span>
+<span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Aerosol Optical Depth'</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'white'</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s1">'left'</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s1">'bold'</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
@@ -3200,7 +3216,9 @@ _, _, dust_masked = apply_projection_style(
     ax, lon, lat, dust, style='globe', draw_frame=False
 )
 
-images = apply_data_style(ax, {'organic_matter': om_masked, 'dust': dust_masked}, x=x, y=y)
+images = apply_data_style(
+    ax, {'organic_matter': om_masked, 'dust': dust_masked}, x=x, y=y
+)
 ax.set_title('Aerosol Optical Depth', color='white', loc='left', fontweight='bold')
 plt.show()</div>
 </div>
@@ -3269,8 +3287,10 @@ with north at the top -- needed for anything else plotted afterwards (e.g. city 
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
 <span class="n">apply_blank_canvas</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
 <span class="n">apply_data_style</span><span class="p">(</span>
-    <span class="n">ax</span><span class="p">,</span> <span class="p">{</span><span class="s1">'organic_matter'</span><span class="p">:</span> <span class="n">organic_matter</span><span class="p">,</span> <span class="s1">'dust'</span><span class="p">:</span> <span class="n">dust</span><span class="p">},</span>
-    <span class="n">extent</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="mi">180</span><span class="p">,</span> <span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="mi">90</span><span class="p">],</span> <span class="n">origin</span><span class="o">=</span><span class="s1">'lower'</span><span class="p">,</span>
+    <span class="n">ax</span><span class="p">,</span>
+    <span class="p">{</span><span class="s1">'organic_matter'</span><span class="p">:</span> <span class="n">organic_matter</span><span class="p">,</span> <span class="s1">'dust'</span><span class="p">:</span> <span class="n">dust</span><span class="p">},</span>
+    <span class="n">extent</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="mi">180</span><span class="p">,</span> <span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="mi">90</span><span class="p">],</span>
+    <span class="n">origin</span><span class="o">=</span><span class="s1">'lower'</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Same data style, flat axes'</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'white'</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s1">'left'</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
@@ -3278,8 +3298,10 @@ with north at the top -- needed for anything else plotted afterwards (e.g. city 
 <div class="clipboard-copy-txt" id="cell-4">fig, ax = plt.subplots(figsize=(6, 4))
 apply_blank_canvas(ax)
 apply_data_style(
-    ax, {'organic_matter': organic_matter, 'dust': dust},
-    extent=[-180, 180, -90, 90], origin='lower',
+    ax,
+    {'organic_matter': organic_matter, 'dust': dust},
+    extent=[-180, 180, -90, 90],
+    origin='lower',
 )
 ax.set_title('Same data style, flat axes', color='white', loc='left')
 plt.show()</div>
@@ -3333,14 +3355,18 @@ layer is drawn on the globe via <code>alpha_scaled_mesh</code> directly, with no
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
 <span class="n">apply_blank_canvas</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
-<span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">masked</span> <span class="o">=</span> <span class="n">apply_projection_style</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">dust</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">'globe'</span><span class="p">,</span> <span class="n">center_lat</span><span class="o">=</span><span class="mf">30.0</span><span class="p">,</span> <span class="n">center_lon</span><span class="o">=-</span><span class="mf">30.0</span><span class="p">)</span>
+<span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">masked</span> <span class="o">=</span> <span class="n">apply_projection_style</span><span class="p">(</span>
+    <span class="n">ax</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">dust</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">'globe'</span><span class="p">,</span> <span class="n">center_lat</span><span class="o">=</span><span class="mf">30.0</span><span class="p">,</span> <span class="n">center_lon</span><span class="o">=-</span><span class="mf">30.0</span>
+<span class="p">)</span>
 <span class="n">alpha_scaled_mesh</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">masked</span><span class="p">,</span> <span class="s1">'viridis'</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Globe, plain colormap'</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'white'</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s1">'left'</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-5">fig, ax = plt.subplots(figsize=(5, 5))
 apply_blank_canvas(ax)
-x, y, masked = apply_projection_style(ax, lon, lat, dust, style='globe', center_lat=30.0, center_lon=-30.0)
+x, y, masked = apply_projection_style(
+    ax, lon, lat, dust, style='globe', center_lat=30.0, center_lon=-30.0
+)
 alpha_scaled_mesh(ax, x, y, masked, 'viridis')
 ax.set_title('Globe, plain colormap', color='white', loc='left')
 plt.show()</div>
@@ -3473,27 +3499,37 @@ reprojecting first with <code>orthographic_points</code> (see the animation belo
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
 <span class="n">apply_blank_canvas</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
 <span class="n">apply_data_style</span><span class="p">(</span>
-    <span class="n">ax</span><span class="p">,</span> <span class="p">{</span><span class="s1">'organic_matter'</span><span class="p">:</span> <span class="n">organic_matter</span><span class="p">,</span> <span class="s1">'dust'</span><span class="p">:</span> <span class="n">dust</span><span class="p">},</span>
-    <span class="n">extent</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="mi">180</span><span class="p">,</span> <span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="mi">90</span><span class="p">],</span> <span class="n">origin</span><span class="o">=</span><span class="s1">'lower'</span><span class="p">,</span>
+    <span class="n">ax</span><span class="p">,</span>
+    <span class="p">{</span><span class="s1">'organic_matter'</span><span class="p">:</span> <span class="n">organic_matter</span><span class="p">,</span> <span class="s1">'dust'</span><span class="p">:</span> <span class="n">dust</span><span class="p">},</span>
+    <span class="n">extent</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="mi">180</span><span class="p">,</span> <span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="mi">90</span><span class="p">],</span>
+    <span class="n">origin</span><span class="o">=</span><span class="s1">'lower'</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="n">add_point_labels</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="p">{</span>
-    <span class="s1">'London'</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">51.5</span><span class="p">),</span>
-    <span class="s1">'Reykjavik'</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="mf">21.9</span><span class="p">,</span> <span class="mf">64.1</span><span class="p">),</span>
-    <span class="s1">'Toronto'</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="mf">79.4</span><span class="p">,</span> <span class="mf">43.7</span><span class="p">),</span>
-<span class="p">})</span>
+<span class="n">add_point_labels</span><span class="p">(</span>
+    <span class="n">ax</span><span class="p">,</span>
+    <span class="p">{</span>
+        <span class="s1">'London'</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">51.5</span><span class="p">),</span>
+        <span class="s1">'Reykjavik'</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="mf">21.9</span><span class="p">,</span> <span class="mf">64.1</span><span class="p">),</span>
+        <span class="s1">'Toronto'</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="mf">79.4</span><span class="p">,</span> <span class="mf">43.7</span><span class="p">),</span>
+    <span class="p">},</span>
+<span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-7">fig, ax = plt.subplots(figsize=(6, 4))
 apply_blank_canvas(ax)
 apply_data_style(
-    ax, {'organic_matter': organic_matter, 'dust': dust},
-    extent=[-180, 180, -90, 90], origin='lower',
+    ax,
+    {'organic_matter': organic_matter, 'dust': dust},
+    extent=[-180, 180, -90, 90],
+    origin='lower',
 )
-add_point_labels(ax, {
-    'London': (-0.1, 51.5),
-    'Reykjavik': (-21.9, 64.1),
-    'Toronto': (-79.4, 43.7),
-})
+add_point_labels(
+    ax,
+    {
+        'London': (-0.1, 51.5),
+        'Reykjavik': (-21.9, 64.1),
+        'Toronto': (-79.4, 43.7),
+    },
+)
 plt.show()</div>
 </div>
 </div>
@@ -3545,7 +3581,9 @@ with and without it.</p>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">extent</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="mi">180</span><span class="p">,</span> <span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="mi">90</span><span class="p">]</span>
 <span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax_default</span><span class="p">,</span> <span class="n">ax_blank</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mf">3.5</span><span class="p">))</span>
-<span class="n">apply_data_style</span><span class="p">(</span><span class="n">ax_default</span><span class="p">,</span> <span class="p">{</span><span class="s1">'dust'</span><span class="p">:</span> <span class="n">dust</span><span class="p">},</span> <span class="n">extent</span><span class="o">=</span><span class="n">extent</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">'lower'</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">apply_data_style</span><span class="p">(</span>
+    <span class="n">ax_default</span><span class="p">,</span> <span class="p">{</span><span class="s1">'dust'</span><span class="p">:</span> <span class="n">dust</span><span class="p">},</span> <span class="n">extent</span><span class="o">=</span><span class="n">extent</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">'lower'</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span>
+<span class="p">)</span>
 <span class="n">ax_default</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'default axes'</span><span class="p">)</span>
 
 <span class="n">apply_data_style</span><span class="p">(</span><span class="n">ax_blank</span><span class="p">,</span> <span class="p">{</span><span class="s1">'dust'</span><span class="p">:</span> <span class="n">dust</span><span class="p">},</span> <span class="n">extent</span><span class="o">=</span><span class="n">extent</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">'lower'</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -3555,7 +3593,9 @@ with and without it.</p>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-8">extent = [-180, 180, -90, 90]
 fig, (ax_default, ax_blank) = plt.subplots(1, 2, figsize=(9, 3.5))
-apply_data_style(ax_default, {'dust': dust}, extent=extent, origin='lower', legend=False)
+apply_data_style(
+    ax_default, {'dust': dust}, extent=extent, origin='lower', legend=False
+)
 ax_default.set_title('default axes')
 
 apply_data_style(ax_blank, {'dust': dust}, extent=extent, origin='lower', legend=False)
@@ -3632,8 +3672,12 @@ Points on the far hemisphere come back <code>NaN</code>; drop those before plott
 <span class="n">cities</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'London'</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">51.5</span><span class="p">),</span> <span class="s1">'Reykjavik'</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="mf">21.9</span><span class="p">,</span> <span class="mf">64.1</span><span class="p">),</span> <span class="s1">'Toronto'</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="mf">79.4</span><span class="p">,</span> <span class="mf">43.7</span><span class="p">)}</span>
 <span class="n">city_lon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">lon</span> <span class="k">for</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span> <span class="ow">in</span> <span class="n">cities</span><span class="o">.</span><span class="n">values</span><span class="p">()])</span>
 <span class="n">city_lat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">lat</span> <span class="k">for</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span> <span class="ow">in</span> <span class="n">cities</span><span class="o">.</span><span class="n">values</span><span class="p">()])</span>
-<span class="n">cx</span><span class="p">,</span> <span class="n">cy</span> <span class="o">=</span> <span class="n">orthographic_points</span><span class="p">(</span><span class="n">city_lon</span><span class="p">,</span> <span class="n">city_lat</span><span class="p">,</span> <span class="n">center_lat</span><span class="o">=</span><span class="n">view_lat</span><span class="p">,</span> <span class="n">center_lon</span><span class="o">=</span><span class="n">view_lon</span><span class="p">)</span>
-<span class="n">projected_cities</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">cities</span><span class="p">,</span> <span class="n">cx</span><span class="p">,</span> <span class="n">cy</span><span class="p">)</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">x</span><span class="p">)}</span>
+<span class="n">cx</span><span class="p">,</span> <span class="n">cy</span> <span class="o">=</span> <span class="n">orthographic_points</span><span class="p">(</span>
+    <span class="n">city_lon</span><span class="p">,</span> <span class="n">city_lat</span><span class="p">,</span> <span class="n">center_lat</span><span class="o">=</span><span class="n">view_lat</span><span class="p">,</span> <span class="n">center_lon</span><span class="o">=</span><span class="n">view_lon</span>
+<span class="p">)</span>
+<span class="n">projected_cities</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">name</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">cities</span><span class="p">,</span> <span class="n">cx</span><span class="p">,</span> <span class="n">cy</span><span class="p">)</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="p">}</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-9">from cleopatra.projection import orthographic_points
 
@@ -3641,8 +3685,12 @@ view_lat, view_lon = 55.0, -30.0  # mid-Atlantic view, matching the plumes below
 cities = {'London': (-0.1, 51.5), 'Reykjavik': (-21.9, 64.1), 'Toronto': (-79.4, 43.7)}
 city_lon = np.array([lon for lon, lat in cities.values()])
 city_lat = np.array([lat for lon, lat in cities.values()])
-cx, cy = orthographic_points(city_lon, city_lat, center_lat=view_lat, center_lon=view_lon)
-projected_cities = {name: (x, y) for name, x, y in zip(cities, cx, cy) if np.isfinite(x)}</div>
+cx, cy = orthographic_points(
+    city_lon, city_lat, center_lat=view_lat, center_lon=view_lon
+)
+projected_cities = {
+    name: (x, y) for name, x, y in zip(cities, cx, cy) if np.isfinite(x)
+}</div>
 </div>
 </div>
 </div>
@@ -3691,12 +3739,23 @@ across the mid-Atlantic -- the same west-to-east transport the real CAMS forecas
         <span class="n">ax</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">om_t</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">'globe'</span><span class="p">,</span> <span class="n">center_lat</span><span class="o">=</span><span class="n">view_lat</span><span class="p">,</span> <span class="n">center_lon</span><span class="o">=</span><span class="n">view_lon</span>
     <span class="p">)</span>
     <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">dust_m</span> <span class="o">=</span> <span class="n">apply_projection_style</span><span class="p">(</span>
-        <span class="n">ax</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">dust_t</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">'globe'</span><span class="p">,</span>
-        <span class="n">center_lat</span><span class="o">=</span><span class="n">view_lat</span><span class="p">,</span> <span class="n">center_lon</span><span class="o">=</span><span class="n">view_lon</span><span class="p">,</span> <span class="n">draw_frame</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">ax</span><span class="p">,</span>
+        <span class="n">lon</span><span class="p">,</span>
+        <span class="n">lat</span><span class="p">,</span>
+        <span class="n">dust_t</span><span class="p">,</span>
+        <span class="n">style</span><span class="o">=</span><span class="s1">'globe'</span><span class="p">,</span>
+        <span class="n">center_lat</span><span class="o">=</span><span class="n">view_lat</span><span class="p">,</span>
+        <span class="n">center_lon</span><span class="o">=</span><span class="n">view_lon</span><span class="p">,</span>
+        <span class="n">draw_frame</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">apply_data_style</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="p">{</span><span class="s1">'organic_matter'</span><span class="p">:</span> <span class="n">om_m</span><span class="p">,</span> <span class="s1">'dust'</span><span class="p">:</span> <span class="n">dust_m</span><span class="p">},</span> <span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">)</span>
     <span class="n">add_point_labels</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">projected_cities</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">marker_size</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Aerosol Optical Depth -- Day </span><span class="si">{</span><span class="n">day</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s1">'</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'white'</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s1">'left'</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s1">'bold'</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s1">'Aerosol Optical Depth -- Day </span><span class="si">{</span><span class="n">day</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s1">'</span><span class="p">,</span>
+        <span class="n">color</span><span class="o">=</span><span class="s1">'white'</span><span class="p">,</span>
+        <span class="n">loc</span><span class="o">=</span><span class="s1">'left'</span><span class="p">,</span>
+        <span class="n">fontweight</span><span class="o">=</span><span class="s1">'bold'</span><span class="p">,</span>
+    <span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-10">def animate(day):
     ax.clear()
@@ -3707,12 +3766,23 @@ across the mid-Atlantic -- the same west-to-east transport the real CAMS forecas
         ax, lon, lat, om_t, style='globe', center_lat=view_lat, center_lon=view_lon
     )
     _, _, dust_m = apply_projection_style(
-        ax, lon, lat, dust_t, style='globe',
-        center_lat=view_lat, center_lon=view_lon, draw_frame=False,
+        ax,
+        lon,
+        lat,
+        dust_t,
+        style='globe',
+        center_lat=view_lat,
+        center_lon=view_lon,
+        draw_frame=False,
     )
     apply_data_style(ax, {'organic_matter': om_m, 'dust': dust_m}, x=x, y=y)
     add_point_labels(ax, projected_cities, fontsize=7, marker_size=3)
-    ax.set_title(f'Aerosol Optical Depth -- Day {day + 1}', color='white', loc='left', fontweight='bold')</div>
+    ax.set_title(
+        f'Aerosol Optical Depth -- Day {day + 1}',
+        color='white',
+        loc='left',
+        fontweight='bold',
+    )</div>
 </div>
 </div>
 </div>
@@ -3751,8 +3821,9 @@ those bytes inline.</p>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.animation</span><span class="w"> </span><span class="kn">import</span> <span class="n">FuncAnimation</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">IPython.display</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">IPython.display</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.animation</span><span class="w"> </span><span class="kn">import</span> <span class="n">FuncAnimation</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.animation</span><span class="w"> </span><span class="kn">import</span> <span class="n">to_gif</span>
 
 <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
@@ -3761,8 +3832,9 @@ those bytes inline.</p>
 <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
 <span class="n">Image</span><span class="p">(</span><span class="n">gif_bytes</span><span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-11">from matplotlib.animation import FuncAnimation
-from IPython.display import Image
+<div class="clipboard-copy-txt" id="cell-11">from IPython.display import Image
+from matplotlib.animation import FuncAnimation
+
 from cleopatra.animation import to_gif
 
 fig, ax = plt.subplots(figsize=(5, 5))

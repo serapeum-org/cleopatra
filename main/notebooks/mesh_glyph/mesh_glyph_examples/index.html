@@ -3345,10 +3345,10 @@ triangles internally. Use <code>fill_value=-1</code> to pad rows for faces with 
 <span class="c1"># 4 quads + 2 triangles — padded with -1</span>
 <span class="n">face_conn</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
     <span class="p">[</span>
-        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>   <span class="c1"># quad</span>
-        <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span>   <span class="c1"># quad</span>
-        <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span>   <span class="c1"># quad</span>
-        <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">7</span><span class="p">],</span>   <span class="c1"># quad</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>  <span class="c1"># quad</span>
+        <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span>  <span class="c1"># quad</span>
+        <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span>  <span class="c1"># quad</span>
+        <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">7</span><span class="p">],</span>  <span class="c1"># quad</span>
         <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span>  <span class="c1"># triangle (bottom-right)</span>
         <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span>  <span class="c1"># triangle (right side)</span>
     <span class="p">]</span>
@@ -3373,10 +3373,10 @@ mixed_y = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2, 2, 0], dtype=float)
 # 4 quads + 2 triangles — padded with -1
 face_conn = np.array(
     [
-        [0, 1, 4, 3],   # quad
-        [1, 2, 5, 4],   # quad
-        [3, 4, 7, 6],   # quad
-        [4, 5, 8, 7],   # quad
+        [0, 1, 4, 3],  # quad
+        [1, 2, 5, 4],  # quad
+        [3, 4, 7, 6],  # quad
+        [4, 5, 8, 7],  # quad
         [2, 10, 5, -1],  # triangle (bottom-right)
         [5, 10, 9, -1],  # triangle (right side)
     ]
@@ -3427,16 +3427,29 @@ Nodes per face: [4 4 4 4 3 3]
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
 
 <span class="c1"># Left: face data</span>
-<span class="n">mg_mixed</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">face_values</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="s2">"face"</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"coolwarm"</span><span class="p">,</span>
-              <span class="n">edgecolor</span><span class="o">=</span><span class="s2">"black"</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Mixed Mesh — Face Data"</span><span class="p">)</span>
+<span class="n">mg_mixed</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">face_values</span><span class="p">,</span>
+    <span class="n">location</span><span class="o">=</span><span class="s2">"face"</span><span class="p">,</span>
+    <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+    <span class="n">cmap</span><span class="o">=</span><span class="s2">"coolwarm"</span><span class="p">,</span>
+    <span class="n">edgecolor</span><span class="o">=</span><span class="s2">"black"</span><span class="p">,</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">"Mixed Mesh — Face Data"</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"x"</span><span class="p">)</span>
 <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"y"</span><span class="p">)</span>
 
 <span class="c1"># Right: wireframe only</span>
 <span class="n">mg_mixed</span><span class="o">.</span><span class="n">plot_outline</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">"darkgreen"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.5</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">mixed_x</span><span class="p">,</span> <span class="n">mixed_y</span><span class="p">)):</span>
-    <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s2">"center"</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s2">"bottom"</span><span class="p">,</span>
-                     <span class="n">fontweight</span><span class="o">=</span><span class="s2">"bold"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"darkgreen"</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span>
+        <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">),</span>
+        <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span>
+        <span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s2">"center"</span><span class="p">,</span>
+        <span class="n">va</span><span class="o">=</span><span class="s2">"bottom"</span><span class="p">,</span>
+        <span class="n">fontweight</span><span class="o">=</span><span class="s2">"bold"</span><span class="p">,</span>
+        <span class="n">color</span><span class="o">=</span><span class="s2">"darkgreen"</span><span class="p">,</span>
+    <span class="p">)</span>
 <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"Mixed Mesh — Wireframe with Node IDs"</span><span class="p">)</span>
 <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"x"</span><span class="p">)</span>
 <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"y"</span><span class="p">)</span>
@@ -3447,16 +3460,29 @@ Nodes per face: [4 4 4 4 3 3]
 <div class="clipboard-copy-txt" id="cell-8">fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
 # Left: face data
-mg_mixed.plot(face_values, location="face", ax=axes[0], cmap="coolwarm",
-              edgecolor="black", title="Mixed Mesh — Face Data")
+mg_mixed.plot(
+    face_values,
+    location="face",
+    ax=axes[0],
+    cmap="coolwarm",
+    edgecolor="black",
+    title="Mixed Mesh — Face Data",
+)
 axes[0].set_xlabel("x")
 axes[0].set_ylabel("y")
 
 # Right: wireframe only
 mg_mixed.plot_outline(ax=axes[1], color="darkgreen", linewidth=1.5)
 for i, (x, y) in enumerate(zip(mixed_x, mixed_y)):
-    axes[1].annotate(str(i), (x, y), fontsize=9, ha="center", va="bottom",
-                     fontweight="bold", color="darkgreen")
+    axes[1].annotate(
+        str(i),
+        (x, y),
+        fontsize=9,
+        ha="center",
+        va="bottom",
+        fontweight="bold",
+        color="darkgreen",
+    )
 axes[1].set_title("Mixed Mesh — Wireframe with Node IDs")
 axes[1].set_xlabel("x")
 axes[1].set_ylabel("y")
@@ -3474,7 +3500,7 @@ plt.show()</div>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>/tmp/ipykernel_2658/4163639591.py:18: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
+<pre>/tmp/ipykernel_2903/3050513185.py:31: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
   plt.tight_layout()
 </pre>
 </div>
@@ -3525,7 +3551,7 @@ bed elevation.</p>
 <span class="c1"># River centreline: sinusoidal path</span>
 <span class="n">s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
 <span class="n">cx_line</span> <span class="o">=</span> <span class="n">s</span> <span class="o">*</span> <span class="mi">50</span> <span class="o">/</span> <span class="p">(</span><span class="mi">4</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>  <span class="c1"># 0..50 m along x</span>
-<span class="n">cy_line</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>         <span class="c1"># sinusoidal meander</span>
+<span class="n">cy_line</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>  <span class="c1"># sinusoidal meander</span>
 
 <span class="c1"># Scatter points around the centreline with a channel half-width of ~3 m</span>
 <span class="n">n_river</span> <span class="o">=</span> <span class="mi">600</span>
@@ -3542,7 +3568,11 @@ bed elevation.</p>
 <span class="n">fcx</span> <span class="o">=</span> <span class="n">rx</span><span class="p">[</span><span class="n">faces_river</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 <span class="n">fcy</span> <span class="o">=</span> <span class="n">ry</span><span class="p">[</span><span class="n">faces_river</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 <span class="n">dist_from_centre</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">fcy</span> <span class="o">-</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">fcx</span> <span class="o">*</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">50</span><span class="p">))</span>
-<span class="n">bed_elevation</span> <span class="o">=</span> <span class="o">-</span><span class="mf">2.0</span> <span class="o">+</span> <span class="mf">1.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">dist_from_centre</span> <span class="o">/</span> <span class="n">dist_from_centre</span><span class="o">.</span><span class="n">max</span><span class="p">())</span> <span class="o">+</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">fcx</span><span class="p">))</span>
+<span class="n">bed_elevation</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="o">-</span><span class="mf">2.0</span>
+    <span class="o">+</span> <span class="mf">1.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">dist_from_centre</span> <span class="o">/</span> <span class="n">dist_from_centre</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+    <span class="o">+</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">fcx</span><span class="p">))</span>
+<span class="p">)</span>
 
 <span class="n">mg_river</span> <span class="o">=</span> <span class="n">MeshGlyph</span><span class="p">(</span><span class="n">rx</span><span class="p">,</span> <span class="n">ry</span><span class="p">,</span> <span class="n">faces_river</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"River mesh: </span><span class="si">{</span><span class="n">mg_river</span><span class="o">.</span><span class="n">n_nodes</span><span class="si">}</span><span class="s2"> nodes, </span><span class="si">{</span><span class="n">mg_river</span><span class="o">.</span><span class="n">n_faces</span><span class="si">}</span><span class="s2"> faces"</span><span class="p">)</span>
@@ -3552,7 +3582,7 @@ bed elevation.</p>
 # River centreline: sinusoidal path
 s = np.linspace(0, 4 * np.pi, 200)
 cx_line = s * 50 / (4 * np.pi)  # 0..50 m along x
-cy_line = 4 * np.sin(s)         # sinusoidal meander
+cy_line = 4 * np.sin(s)  # sinusoidal meander
 
 # Scatter points around the centreline with a channel half-width of ~3 m
 n_river = 600
@@ -3569,7 +3599,11 @@ faces_river = tri_river.triangles
 fcx = rx[faces_river].mean(axis=1)
 fcy = ry[faces_river].mean(axis=1)
 dist_from_centre = np.abs(fcy - 4 * np.sin(fcx * 4 * np.pi / 50))
-bed_elevation = -2.0 + 1.5 * (dist_from_centre / dist_from_centre.max()) + rng.normal(0, 0.1, len(fcx))
+bed_elevation = (
+    -2.0
+    + 1.5 * (dist_from_centre / dist_from_centre.max())
+    + rng.normal(0, 0.1, len(fcx))
+)
 
 mg_river = MeshGlyph(rx, ry, faces_river)
 print(f"River mesh: {mg_river.n_nodes} nodes, {mg_river.n_faces} faces")</div>
@@ -3684,7 +3718,7 @@ plt.show()</div>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>/tmp/ipykernel_2658/3167997537.py:30: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
+<pre>/tmp/ipykernel_2903/3167997537.py:30: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
   plt.tight_layout()
 </pre>
 </div>
@@ -3754,7 +3788,9 @@ pass it to <code>MeshGlyph</code> for faster vectorized wireframe rendering.</p>
 <span class="n">edge_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span>
 
 <span class="n">mg_quad</span> <span class="o">=</span> <span class="n">MeshGlyph</span><span class="p">(</span><span class="n">gx</span><span class="p">,</span> <span class="n">gy</span><span class="p">,</span> <span class="n">quad_faces</span><span class="p">,</span> <span class="n">edge_node_connectivity</span><span class="o">=</span><span class="n">edge_arr</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Quad grid: </span><span class="si">{</span><span class="n">mg_quad</span><span class="o">.</span><span class="n">n_nodes</span><span class="si">}</span><span class="s2"> nodes, </span><span class="si">{</span><span class="n">mg_quad</span><span class="o">.</span><span class="n">n_faces</span><span class="si">}</span><span class="s2"> faces, </span><span class="si">{</span><span class="n">mg_quad</span><span class="o">.</span><span class="n">n_edges</span><span class="si">}</span><span class="s2"> edges"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">"Quad grid: </span><span class="si">{</span><span class="n">mg_quad</span><span class="o">.</span><span class="n">n_nodes</span><span class="si">}</span><span class="s2"> nodes, </span><span class="si">{</span><span class="n">mg_quad</span><span class="o">.</span><span class="n">n_faces</span><span class="si">}</span><span class="s2"> faces, </span><span class="si">{</span><span class="n">mg_quad</span><span class="o">.</span><span class="n">n_edges</span><span class="si">}</span><span class="s2"> edges"</span>
+<span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-11"># Build a simple structured quad grid with explicit edges
 nx, ny = 6, 4
@@ -3781,7 +3817,9 @@ for i in range(ny - 1):
 edge_arr = np.array(edges)
 
 mg_quad = MeshGlyph(gx, gy, quad_faces, edge_node_connectivity=edge_arr)
-print(f"Quad grid: {mg_quad.n_nodes} nodes, {mg_quad.n_faces} faces, {mg_quad.n_edges} edges")</div>
+print(
+    f"Quad grid: {mg_quad.n_nodes} nodes, {mg_quad.n_faces} faces, {mg_quad.n_edges} edges"
+)</div>
 </div>
 </div>
 </div>
@@ -3823,8 +3861,14 @@ print(f"Quad grid: {mg_quad.n_nodes} nodes, {mg_quad.n_faces} faces, {mg_quad.n_
 
 <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
 
-<span class="n">mg_quad</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">quad_data</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="s2">"face"</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"PiYG"</span><span class="p">,</span>
-             <span class="n">edgecolor</span><span class="o">=</span><span class="s2">"black"</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Quad Grid — Face Data"</span><span class="p">)</span>
+<span class="n">mg_quad</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">quad_data</span><span class="p">,</span>
+    <span class="n">location</span><span class="o">=</span><span class="s2">"face"</span><span class="p">,</span>
+    <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+    <span class="n">cmap</span><span class="o">=</span><span class="s2">"PiYG"</span><span class="p">,</span>
+    <span class="n">edgecolor</span><span class="o">=</span><span class="s2">"black"</span><span class="p">,</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">"Quad Grid — Face Data"</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"x"</span><span class="p">)</span>
 <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"y"</span><span class="p">)</span>
 
@@ -3840,8 +3884,14 @@ print(f"Quad grid: {mg_quad.n_nodes} nodes, {mg_quad.n_faces} faces, {mg_quad.n_
 
 fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
-mg_quad.plot(quad_data, location="face", ax=axes[0], cmap="PiYG",
-             edgecolor="black", title="Quad Grid — Face Data")
+mg_quad.plot(
+    quad_data,
+    location="face",
+    ax=axes[0],
+    cmap="PiYG",
+    edgecolor="black",
+    title="Quad Grid — Face Data",
+)
 axes[0].set_xlabel("x")
 axes[0].set_ylabel("y")
 
@@ -3863,7 +3913,7 @@ plt.show()</div>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>/tmp/ipykernel_2658/3619596528.py:15: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
+<pre>/tmp/ipykernel_2903/959532724.py:21: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
   plt.tight_layout()
 </pre>
 </div>
@@ -3911,14 +3961,26 @@ difference between flat face colouring and smooth node interpolation.</p>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
 
 <span class="c1"># Face-centered (flat colours per triangle)</span>
-<span class="n">mg</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">face_depth</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="s2">"face"</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"RdYlBu_r"</span><span class="p">,</span>
-        <span class="n">edgecolor</span><span class="o">=</span><span class="s2">"lightgrey"</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Face-Centered (tripcolor)"</span><span class="p">)</span>
+<span class="n">mg</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">face_depth</span><span class="p">,</span>
+    <span class="n">location</span><span class="o">=</span><span class="s2">"face"</span><span class="p">,</span>
+    <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+    <span class="n">cmap</span><span class="o">=</span><span class="s2">"RdYlBu_r"</span><span class="p">,</span>
+    <span class="n">edgecolor</span><span class="o">=</span><span class="s2">"lightgrey"</span><span class="p">,</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">"Face-Centered (tripcolor)"</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"x [m]"</span><span class="p">)</span>
 <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"y [m]"</span><span class="p">)</span>
 
 <span class="c1"># Node-centered (smooth contour interpolation)</span>
-<span class="n">mg</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">node_elevation</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="s2">"node"</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"RdYlBu_r"</span><span class="p">,</span>
-        <span class="n">levels</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Node-Centered (tricontourf)"</span><span class="p">)</span>
+<span class="n">mg</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">node_elevation</span><span class="p">,</span>
+    <span class="n">location</span><span class="o">=</span><span class="s2">"node"</span><span class="p">,</span>
+    <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+    <span class="n">cmap</span><span class="o">=</span><span class="s2">"RdYlBu_r"</span><span class="p">,</span>
+    <span class="n">levels</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">"Node-Centered (tricontourf)"</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"x [m]"</span><span class="p">)</span>
 <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"y [m]"</span><span class="p">)</span>
 
@@ -3928,14 +3990,26 @@ difference between flat face colouring and smooth node interpolation.</p>
 <div class="clipboard-copy-txt" id="cell-13">fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
 # Face-centered (flat colours per triangle)
-mg.plot(face_depth, location="face", ax=axes[0], cmap="RdYlBu_r",
-        edgecolor="lightgrey", title="Face-Centered (tripcolor)")
+mg.plot(
+    face_depth,
+    location="face",
+    ax=axes[0],
+    cmap="RdYlBu_r",
+    edgecolor="lightgrey",
+    title="Face-Centered (tripcolor)",
+)
 axes[0].set_xlabel("x [m]")
 axes[0].set_ylabel("y [m]")
 
 # Node-centered (smooth contour interpolation)
-mg.plot(node_elevation, location="node", ax=axes[1], cmap="RdYlBu_r",
-        levels=15, title="Node-Centered (tricontourf)")
+mg.plot(
+    node_elevation,
+    location="node",
+    ax=axes[1],
+    cmap="RdYlBu_r",
+    levels=15,
+    title="Node-Centered (tricontourf)",
+)
 axes[1].set_xlabel("x [m]")
 axes[1].set_ylabel("y [m]")
 
@@ -3952,7 +4026,7 @@ plt.show()</div>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>/tmp/ipykernel_2658/3743595969.py:15: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
+<pre>/tmp/ipykernel_2903/1896367310.py:27: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
   plt.tight_layout()
 </pre>
 </div>
@@ -4013,19 +4087,35 @@ reads by form. Hillshade needs the per-node elevation (the surface geometry), so
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">n</span> <span class="o">=</span> <span class="mi">20</span>
 <span class="n">gx</span><span class="p">,</span> <span class="n">gy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">n</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
 <span class="n">node_x</span><span class="p">,</span> <span class="n">node_y</span> <span class="o">=</span> <span class="n">gx</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">gy</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
-<span class="n">elevation</span> <span class="o">=</span> <span class="p">(</span><span class="mi">40</span> <span class="o">+</span> <span class="mi">250</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(((</span><span class="n">node_x</span> <span class="o">-</span> <span class="mi">7</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">((</span><span class="n">node_y</span> <span class="o">-</span> <span class="mi">5</span><span class="p">)</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span>
-             <span class="o">+</span> <span class="mi">8</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">node_x</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">node_y</span><span class="p">))</span>
-<span class="n">faces</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">j</span> <span class="o">*</span> <span class="n">n</span> <span class="o">+</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">*</span> <span class="n">n</span> <span class="o">+</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">j</span> <span class="o">*</span> <span class="n">n</span> <span class="o">+</span> <span class="n">i</span> <span class="o">+</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">j</span> <span class="o">*</span> <span class="n">n</span> <span class="o">+</span> <span class="n">i</span> <span class="o">+</span> <span class="n">n</span><span class="p">]</span>
-                  <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)])</span>
+<span class="n">elevation</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="mi">40</span>
+    <span class="o">+</span> <span class="mi">250</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(((</span><span class="n">node_x</span> <span class="o">-</span> <span class="mi">7</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">((</span><span class="n">node_y</span> <span class="o">-</span> <span class="mi">5</span><span class="p">)</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="o">+</span> <span class="mi">8</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">node_x</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">node_y</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="n">faces</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">[</span><span class="n">j</span> <span class="o">*</span> <span class="n">n</span> <span class="o">+</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">*</span> <span class="n">n</span> <span class="o">+</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">j</span> <span class="o">*</span> <span class="n">n</span> <span class="o">+</span> <span class="n">i</span> <span class="o">+</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">j</span> <span class="o">*</span> <span class="n">n</span> <span class="o">+</span> <span class="n">i</span> <span class="o">+</span> <span class="n">n</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="p">]</span>
+<span class="p">)</span>
 <span class="n">elevation</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">elevation</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-14">n = 20
 gx, gy = np.meshgrid(np.linspace(0, 10, n), np.linspace(0, 10, n))
 node_x, node_y = gx.ravel(), gy.ravel()
-elevation = (40 + 250 * np.exp(-(((node_x - 7) / 2) ** 2 + ((node_y - 5) / 3) ** 2))
-             + 8 * np.sin(node_x) * np.cos(node_y))
-faces = np.array([[j * n + i, j * n + i + 1, j * n + i + n + 1, j * n + i + n]
-                  for j in range(n - 1) for i in range(n - 1)])
+elevation = (
+    40
+    + 250 * np.exp(-(((node_x - 7) / 2) ** 2 + ((node_y - 5) / 3) ** 2))
+    + 8 * np.sin(node_x) * np.cos(node_y)
+)
+faces = np.array(
+    [
+        [j * n + i, j * n + i + 1, j * n + i + n + 1, j * n + i + n]
+        for j in range(n - 1)
+        for i in range(n - 1)
+    ]
+)
 elevation.min(), elevation.max()</div>
 </div>
 </div>
@@ -4064,12 +4154,22 @@ elevation.min(), elevation.max()</div>
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">mg</span> <span class="o">=</span> <span class="n">MeshGlyph</span><span class="p">(</span><span class="n">node_x</span><span class="p">,</span> <span class="n">node_y</span><span class="p">,</span> <span class="n">faces</span><span class="p">)</span>
-<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">mg</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">elevation</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="s1">'node'</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'terrain'</span><span class="p">,</span>
-                  <span class="n">hillshade</span><span class="o">=</span><span class="p">{</span><span class="s1">'vert_exag'</span><span class="p">:</span> <span class="mi">3</span><span class="p">},</span> <span class="n">title</span><span class="o">=</span><span class="s1">'Terrain mesh with hillshade'</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">mg</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">elevation</span><span class="p">,</span>
+    <span class="n">location</span><span class="o">=</span><span class="s1">'node'</span><span class="p">,</span>
+    <span class="n">cmap</span><span class="o">=</span><span class="s1">'terrain'</span><span class="p">,</span>
+    <span class="n">hillshade</span><span class="o">=</span><span class="p">{</span><span class="s1">'vert_exag'</span><span class="p">:</span> <span class="mi">3</span><span class="p">},</span>
+    <span class="n">title</span><span class="o">=</span><span class="s1">'Terrain mesh with hillshade'</span><span class="p">,</span>
+<span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-15">mg = MeshGlyph(node_x, node_y, faces)
-fig, ax = mg.plot(elevation, location='node', cmap='terrain',
-                  hillshade={'vert_exag': 3}, title='Terrain mesh with hillshade')</div>
+fig, ax = mg.plot(
+    elevation,
+    location='node',
+    cmap='terrain',
+    hillshade={'vert_exag': 3},
+    title='Terrain mesh with hillshade',
+)</div>
 </div>
 </div>
 </div>
@@ -4134,14 +4234,14 @@ the mesh (<code>shade_faces</code>) geometry instead of the raster grid.</p>
 <span class="n">mg</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">elevation</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="s1">'node'</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">'topography'</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"style='topography'"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">'style:'</span><span class="p">,</span> <span class="n">mg</span><span class="o">.</span><span class="n">style</span><span class="p">)</span>
 
-<span class="n">mg</span><span class="o">.</span><span class="n">apply_style</span><span class="p">(</span><span class="s1">'elevation'</span><span class="p">)</span>          <span class="c1"># restyle in place, reusing the data</span>
+<span class="n">mg</span><span class="o">.</span><span class="n">apply_style</span><span class="p">(</span><span class="s1">'elevation'</span><span class="p">)</span>  <span class="c1"># restyle in place, reusing the data</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">'style after apply_style:'</span><span class="p">,</span> <span class="n">mg</span><span class="o">.</span><span class="n">style</span><span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-16">mg = MeshGlyph(node_x, node_y, faces)
 mg.plot(elevation, location='node', style='topography', title="style='topography'")
 print('style:', mg.style)
 
-mg.apply_style('elevation')          # restyle in place, reusing the data
+mg.apply_style('elevation')  # restyle in place, reusing the data
 print('style after apply_style:', mg.style)</div>
 </div>
 </div>

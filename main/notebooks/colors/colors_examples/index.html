@@ -3473,9 +3473,11 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.colors</span><span class="w"> </span><span class="kn">import</span> <span class="n">Colors</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-1">import matplotlib.pyplot as plt
+
 from cleopatra.colors import Colors</div>
 </div>
 </div>
@@ -3530,10 +3532,10 @@ from cleopatra.colors import Colors</div>
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">hex_color</span> <span class="o">=</span> <span class="n">Colors</span><span class="p">(</span><span class="s2">"#FF5733"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Hex color: </span><span class="si">{</span><span class="n">hex_color</span><span class="o">.</span><span class="n">color_value</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="c1"># pragma: allowlist secret</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Hex color: </span><span class="si">{</span><span class="n">hex_color</span><span class="o">.</span><span class="n">color_value</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>  <span class="c1"># pragma: allowlist secret</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-2">hex_color = Colors("#FF5733")
-print(f"Hex color: {hex_color.color_value}") # pragma: allowlist secret</div>
+print(f"Hex color: {hex_color.color_value}")  # pragma: allowlist secret</div>
 </div>
 </div>
 </div>
@@ -4002,8 +4004,7 @@ print(f"List of colors in hex: {hex_values}")</div>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-10">named_to_rgb = Colors("orange")
 rgb_value = named_to_rgb.to_rgb(normalized=True)
-print(f"Orange in normalized RGB: {rgb_value}")
-</div>
+print(f"Orange in normalized RGB: {rgb_value}")</div>
 </div>
 </div>
 </div>
@@ -4689,8 +4690,14 @@ hex_colors = colors_obj.to_hex()</div>
 
 <span class="c1"># Add color names as labels</span>
 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">bar</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bars</span><span class="p">):</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">bar</span><span class="o">.</span><span class="n">get_x</span><span class="p">()</span> <span class="o">+</span> <span class="n">bar</span><span class="o">.</span><span class="n">get_width</span><span class="p">()</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">color_names</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> 
-             <span class="n">ha</span><span class="o">=</span><span class="s1">'center'</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">'center'</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'white'</span> <span class="k">if</span> <span class="n">color_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'blue'</span><span class="p">,</span> <span class="s1">'purple'</span><span class="p">]</span> <span class="k">else</span> <span class="s1">'black'</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
+        <span class="n">bar</span><span class="o">.</span><span class="n">get_x</span><span class="p">()</span> <span class="o">+</span> <span class="n">bar</span><span class="o">.</span><span class="n">get_width</span><span class="p">()</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">color_names</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">'center'</span><span class="p">,</span>
+        <span class="n">va</span><span class="o">=</span><span class="s1">'center'</span><span class="p">,</span>
+        <span class="n">color</span><span class="o">=</span><span class="s1">'white'</span> <span class="k">if</span> <span class="n">color_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'blue'</span><span class="p">,</span> <span class="s1">'purple'</span><span class="p">]</span> <span class="k">else</span> <span class="s1">'black'</span><span class="p">,</span>
+    <span class="p">)</span>
 
 <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">"Visualization of Different Colors"</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">([])</span>
@@ -4702,8 +4709,14 @@ bars = plt.bar(range(len(color_names)), [1] * len(color_names), color=hex_colors
 
 # Add color names as labels
 for i, bar in enumerate(bars):
-    plt.text(bar.get_x() + bar.get_width()/2, 0.5, color_names[i], 
-             ha='center', va='center', color='white' if color_names[i] in ['blue', 'purple'] else 'black')
+    plt.text(
+        bar.get_x() + bar.get_width() / 2,
+        0.5,
+        color_names[i],
+        ha='center',
+        va='center',
+        color='white' if color_names[i] in ['blue', 'purple'] else 'black',
+    )
 
 plt.title("Visualization of Different Colors")
 plt.xticks([])
@@ -4777,7 +4790,7 @@ plt.show()</div>
     <span class="s2">"#9467bd"</span><span class="p">,</span>  <span class="c1"># Purple</span>
     <span class="s2">"#8c564b"</span><span class="p">,</span>  <span class="c1"># Brown</span>
     <span class="s2">"#e377c2"</span><span class="p">,</span>  <span class="c1"># Pink</span>
-    <span class="s2">"#7f7f7f"</span>   <span class="c1"># Gray</span>
+    <span class="s2">"#7f7f7f"</span><span class="p">,</span>  <span class="c1"># Gray</span>
 <span class="p">]</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-23">custom_colors = [
@@ -4788,7 +4801,7 @@ plt.show()</div>
     "#9467bd",  # Purple
     "#8c564b",  # Brown
     "#e377c2",  # Pink
-    "#7f7f7f"   # Gray
+    "#7f7f7f",  # Gray
 ]</div>
 </div>
 </div>
@@ -4871,8 +4884,14 @@ rgb_palette = custom_palette.to_rgb(normalized=True)</div>
 <span class="c1"># Add RGB values as labels</span>
 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">bar</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bars</span><span class="p">):</span>
     <span class="n">rgb_values</span> <span class="o">=</span> <span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">rgb_palette</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">bar</span><span class="o">.</span><span class="n">get_x</span><span class="p">()</span> <span class="o">+</span> <span class="n">bar</span><span class="o">.</span><span class="n">get_width</span><span class="p">()</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">rgb_values</span><span class="p">),</span> 
-             <span class="n">ha</span><span class="o">=</span><span class="s1">'center'</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">'center'</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'white'</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">]</span> <span class="k">else</span> <span class="s1">'black'</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
+        <span class="n">bar</span><span class="o">.</span><span class="n">get_x</span><span class="p">()</span> <span class="o">+</span> <span class="n">bar</span><span class="o">.</span><span class="n">get_width</span><span class="p">()</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="mf">0.5</span><span class="p">,</span>
+        <span class="nb">str</span><span class="p">(</span><span class="n">rgb_values</span><span class="p">),</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">'center'</span><span class="p">,</span>
+        <span class="n">va</span><span class="o">=</span><span class="s1">'center'</span><span class="p">,</span>
+        <span class="n">color</span><span class="o">=</span><span class="s1">'white'</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">]</span> <span class="k">else</span> <span class="s1">'black'</span><span class="p">,</span>
+    <span class="p">)</span>
 
 <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">"Custom Color Palette with RGB Values"</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">([])</span>
@@ -4885,8 +4904,14 @@ bars = plt.bar(range(len(custom_colors)), [1] * len(custom_colors), color=custom
 # Add RGB values as labels
 for i, bar in enumerate(bars):
     rgb_values = [round(val, 2) for val in rgb_palette[i]]
-    plt.text(bar.get_x() + bar.get_width()/2, 0.5, str(rgb_values), 
-             ha='center', va='center', color='white' if i in [0, 2, 4, 5] else 'black')
+    plt.text(
+        bar.get_x() + bar.get_width() / 2,
+        0.5,
+        str(rgb_values),
+        ha='center',
+        va='center',
+        color='white' if i in [0, 2, 4, 5] else 'black',
+    )
 
 plt.title("Custom Color Palette with RGB Values")
 plt.xticks([])
