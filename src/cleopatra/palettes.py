@@ -24,9 +24,11 @@ Example:
 """
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 
+import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import (
     BoundaryNorm,
@@ -35,6 +37,7 @@ from matplotlib.colors import (
     ListedColormap,
     Normalize,
 )
+from matplotlib.figure import Figure
 
 from cleopatra.perceptual import make_diverging, perceptual_colormap
 
@@ -45,6 +48,7 @@ __all__ = [
     "get_palette",
     "available_palettes",
     "PALETTES",
+    "preview_palettes",
     "HAZE_COLORMAPS",
     "CAMS_AOD_COLORMAPS",
     "FLAME_COLORMAPS",
@@ -271,6 +275,98 @@ def available_palettes(kind: PaletteKind | str | None = None) -> list[str]:
         return sorted(PALETTES)
     kind = PaletteKind(kind)
     return sorted(n for n, p in PALETTES.items() if p.kind is kind)
+
+
+#: Order kinds are grouped in for display (`preview_palettes`).
+_KIND_ORDER = (
+    PaletteKind.SEQUENTIAL,
+    PaletteKind.DIVERGING,
+    PaletteKind.CYCLIC,
+    PaletteKind.QUALITATIVE,
+)
+
+
+def preview_palettes(
+    kind: PaletteKind | str | None = None,
+    *,
+    names: Sequence[str] | None = None,
+    n: int = 256,
+) -> Figure:
+    """Render registered palettes as a grouped swatch grid.
+
+    Each palette is drawn as a horizontal strip of its colormap -- continuous
+    kinds show a smooth ramp, `qualitative` shows its discrete class swatches --
+    labelled with its name and `source`, under a bold heading per `PaletteKind`.
+    A quick way to browse the registry (including anything you have `register`ed).
+
+    Args:
+        kind: Show only this kind (a `PaletteKind` or its string value). Ignored
+            when `names` is given. Defaults to `None` (every registered palette).
+        names: An explicit list of palette names to show instead of filtering by
+            `kind`; still grouped by kind in the grid.
+        n: Levels used to build each continuous colormap. Defaults to 256.
+
+    Returns:
+        matplotlib.figure.Figure: The swatch-grid figure (save or show it
+        yourself; cleopatra never changes the active backend).
+
+    Raises:
+        KeyError: If a name in `names` is not registered.
+        ValueError: If no palettes match the selection.
+
+    Examples:
+        ```python
+        >>> import matplotlib
+        >>> matplotlib.use("Agg")
+        >>> import matplotlib.pyplot as plt
+        >>> from cleopatra.palettes import preview_palettes
+        >>> fig = preview_palettes("diverging")
+        >>> len(fig.axes) > 0
+        True
+        >>> plt.close(fig)
+
+        ```
+    """
+    if names is not None:
+        selected = [get_palette(name) for name in names]
+    elif kind is not None:
+        selected = [PALETTES[name] for name in available_palettes(kind)]
+    else:
+        selected = [PALETTES[name] for name in available_palettes()]
+    if not selected:
+        raise ValueError("no palettes to preview for the given selection")
+
+    # A header row per non-empty kind group, then that group's palette rows.
+    rows: list[tuple[str, object]] = []
+    for group in _KIND_ORDER:
+        members = [p for p in selected if p.kind is group]
+        if not members:
+            continue
+        rows.append(("header", f"{group.value.title()}  ({len(members)})"))
+        rows.extend(("palette", p) for p in members)
+
+    grad = np.linspace(0, 1, n).reshape(1, -1)
+    fig, axes = plt.subplots(len(rows), 1, figsize=(8.5, 0.42 * len(rows)))
+    axes = np.atleast_1d(axes)
+    fig.subplots_adjust(left=0.28, right=0.985, top=0.99, bottom=0.02, hspace=0.55)
+    for ax, (row_type, payload) in zip(axes, rows):
+        ax.set_xticks([])
+        ax.set_yticks([])
+        if row_type == "header":
+            for spine in ax.spines.values():
+                spine.set_visible(False)
+            ax.text(0.0, 0.5, payload, fontsize=12, fontweight="bold",
+                    va="center", ha="left", transform=ax.transAxes)
+            continue
+        ax.imshow(grad, aspect="auto", cmap=payload.to_colormap(n), extent=(0, 1, 0, 1))
+        for spine in ax.spines.values():
+            spine.set_edgecolor("0.6")
+            spine.set_linewidth(0.5)
+        ax.text(-0.02, 0.5, payload.name, fontsize=9, family="monospace",
+                va="center", ha="right", transform=ax.transAxes)
+        ax.text(1.008, 0.5, payload.source, fontsize=6.5, color="0.45",
+                va="center", ha="left", transform=ax.transAxes)
+    return fig
 
 
 # --------------------------------------------------------------------------

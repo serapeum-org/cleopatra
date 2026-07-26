@@ -87,6 +87,25 @@ kind). `PALETTES` is the underlying `name → Palette` mapping.
       show_source: true
       heading_level: 3
 
+## Preview
+
+Browse the registry as a grouped swatch grid — a quick way to see every palette (or
+just one kind, or an explicit list) at a glance. Returns the matplotlib `Figure`.
+
+```python
+from cleopatra.palettes import preview_palettes
+
+fig = preview_palettes()                 # all registered palettes, grouped by kind
+fig = preview_palettes("diverging")      # just the diverging maps
+fig.savefig("palettes.png", dpi=130, bbox_inches="tight")
+```
+
+::: cleopatra.palettes.preview_palettes
+    options:
+      show_root_heading: true
+      show_source: true
+      heading_level: 3
+
 ## Examples
 
 ### Register and use a palette

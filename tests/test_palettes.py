@@ -1,6 +1,10 @@
 """Tests for `cleopatra.palettes` -- the unified Palette record and registry."""
+import matplotlib
 import numpy as np
 import pytest
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 from matplotlib.colors import (
     BoundaryNorm,
     CenteredNorm,
@@ -9,6 +13,7 @@ from matplotlib.colors import (
     ListedColormap,
     Normalize,
 )
+from matplotlib.figure import Figure
 
 from cleopatra.perceptual import srgb_to_lab
 
@@ -18,6 +23,7 @@ from cleopatra.palettes import (
     PaletteKind,
     available_palettes,
     get_palette,
+    preview_palettes,
     register,
 )
 
@@ -215,3 +221,43 @@ class TestCuratedPalettes:
         dists = [np.sqrt(((lab[i] - lab[j]) ** 2).sum())
                  for i in range(len(lab)) for j in range(i + 1, len(lab))]
         assert min(dists) > 25.0
+
+
+class TestPreviewPalettes:
+    """preview_palettes -- the swatch-grid catalog."""
+
+    def test_returns_figure_for_all_palettes(self):
+        """With no filter, every palette plus one header per kind group is drawn."""
+        fig = preview_palettes()
+        try:
+            n_headers = len({p.kind for p in PALETTES.values()})
+            assert isinstance(fig, Figure)
+            assert len(fig.axes) == len(PALETTES) + n_headers
+        finally:
+            plt.close(fig)
+
+    def test_filter_by_kind(self):
+        """Filtering to one kind draws only its palettes plus a single header."""
+        fig = preview_palettes("diverging")
+        try:
+            assert len(fig.axes) == len(available_palettes("diverging")) + 1
+        finally:
+            plt.close(fig)
+
+    def test_explicit_names_are_grouped(self):
+        """Explicit names from two kinds yield two headers and two palette rows."""
+        fig = preview_palettes(names=["haze_dust", "category12"])
+        try:
+            assert len(fig.axes) == 4  # sequential header+row, qualitative header+row
+        finally:
+            plt.close(fig)
+
+    def test_unknown_name_raises(self):
+        """An unregistered name in `names` raises KeyError."""
+        with pytest.raises(KeyError):
+            preview_palettes(names=["does_not_exist"])
+
+    def test_empty_selection_raises(self):
+        """A kind with no registered palettes raises ValueError."""
+        with pytest.raises(ValueError, match="no palettes"):
+            preview_palettes("cyclic")
