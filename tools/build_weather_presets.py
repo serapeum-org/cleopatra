@@ -173,17 +173,40 @@ def parse_color(c, named_colours):
         return None
 
 
+def _magics_style_to_palette(palettes):
+    """Map each Magics style name (as tagged in `palettes.json`) to its palette record."""
+    style_to_palette = {}
+    for pval in palettes.values():
+        for tag in pval.get("tags", []):
+            style_to_palette.setdefault(str(tag), pval)
+    return style_to_palette
+
+
+def _resolve_palette_colours(pal, named_colours):
+    """Resolve one Magics palette's colour strings -> (hexes, alphas, unresolved).
+
+    A colour we still cannot resolve would silently truncate the palette
+    (mis-weighting the ramp), so it is returned for the caller's report
+    rather than dropped unseen.
+    """
+    hexes, alphas, unresolved = [], [], set()
+    for c in pal.get("values", []):
+        parsed = parse_color(c, named_colours)
+        if parsed is None:
+            unresolved.add(c.strip())
+            continue
+        hexes.append(parsed[0])
+        alphas.append(parsed[1])
+    return hexes, alphas, unresolved
+
+
 def build_magics(magics_ref):
     """Fetch + resolve every Magics parameter style -> (presets, skipped, unresolved)."""
     base = MAGICS_BASE_TEMPLATE.format(ref=magics_ref)
     palettes = fetch_magics(base, "default/palettes.json")
     contours = fetch_magics(base, "default/contours.json")
     named_colours = fetch_magics_colours(magics_ref)
-
-    style_to_palette = {}
-    for pval in palettes.values():
-        for tag in pval.get("tags", []):
-            style_to_palette.setdefault(str(tag), pval)
+    style_to_palette = _magics_style_to_palette(palettes)
 
     presets, skipped, unresolved = {}, [], set()
     for entry in contours:
@@ -196,14 +219,8 @@ def build_magics(magics_ref):
         if pal is None:
             skipped.append((short, style))
             continue
-        hexes, alphas = [], []
-        for c in pal.get("values", []):
-            parsed = parse_color(c, named_colours)
-            if parsed is None:
-                unresolved.add(c.strip())
-                continue
-            hexes.append(parsed[0])
-            alphas.append(parsed[1])
+        hexes, alphas, pal_unresolved = _resolve_palette_colours(pal, named_colours)
+        unresolved |= pal_unresolved
         if len(hexes) < 2:
             skipped.append((short, style))
             continue

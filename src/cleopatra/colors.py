@@ -653,6 +653,32 @@ def _load_preset_asset(
     return presets
 
 
+def _weather_cmap(key: str, colors: Any, levels: Any, bands: Any) -> Any:
+    """Resolve one weather preset's `colors` field to a cmap (name or object).
+
+    A colour LIST with explicit `levels` or a `bands` count is a discrete
+    palette: keep it as a `ListedColormap` rather than a smooth ramp -- a
+    continuous interpolation of these saturated colours reads as a glossy,
+    over-exposed sheen (Magics presets), or would blur the exact ECMWF
+    colours the `levels` are meant to band (earthkit-plots presets). A
+    matplotlib colormap NAME (str) is returned as-is, resolved at draw time.
+    A colour list with neither `levels` nor `bands` (e.g.
+    `total_precipitation`'s white->blue gradient) is a genuine continuous
+    ramp.
+    """
+    if levels:
+        return (
+            mcolors.ListedColormap(colors, name=f"weather_{key}")
+            if isinstance(colors, list)
+            else colors
+        )
+    if bands:
+        return mcolors.ListedColormap(colors, name=f"weather_{key}")
+    if isinstance(colors, str):
+        return colors
+    return LinearSegmentedColormap.from_list(f"weather_{key}", colors)
+
+
 def _load_weather_presets() -> dict[str, dict[str, dict[str, Any]]]:
     """Load the merged ECMWF weather preset library (Apache-2.0), keyed by a descriptive name.
 
@@ -695,27 +721,7 @@ def _load_weather_presets() -> dict[str, dict[str, dict[str, Any]]]:
             colors = rec["colors"]
             levels = rec.get("levels")
             bands = rec.get("bands")
-            if levels:
-                # A colour LIST with explicit levels is a discrete band palette:
-                # keep the exact ECMWF colours via a ListedColormap. A colormap
-                # NAME (str) is resolved at draw time instead.
-                cmap: Any = (
-                    mcolors.ListedColormap(colors, name=f"weather_{key}")
-                    if isinstance(colors, list)
-                    else colors
-                )
-            elif bands:
-                # A Magics preset renders as flat colour bands, not a smooth
-                # ramp -- a continuous interpolation of these saturated colours
-                # reads as a glossy, over-exposed sheen.
-                cmap = mcolors.ListedColormap(colors, name=f"weather_{key}")
-            elif isinstance(colors, str):
-                cmap = colors
-            else:
-                # A colour list with neither levels nor bands (e.g.
-                # `total_precipitation`'s white->blue gradient) is a genuine
-                # continuous ramp.
-                cmap = LinearSegmentedColormap.from_list(f"weather_{key}", colors)
+            cmap = _weather_cmap(key, colors, levels, bands)
             layer: dict[str, Any] = {"cmap": cmap, "label": rec["label"]}
             if rec.get("opacity") == "opaque":
                 layer["alpha"] = 1.0
