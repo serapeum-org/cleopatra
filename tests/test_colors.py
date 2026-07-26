@@ -33,6 +33,7 @@ from cleopatra.colors import (
     alpha_scaled_mesh,
     apply_data_style,
 )
+from cleopatra.perceptual import perceptual_uniformity
 
 
 class TestHazeColormaps:
@@ -1066,6 +1067,12 @@ class TestMagicsPresets:
         layer = DATA_STYLES["bathymetry"]["bathymetry"]
         assert isinstance(layer["cmap"], LinearSegmentedColormap)
         assert "bands" not in layer
+
+    @pytest.mark.parametrize("style", ["bathymetry", "salinity", "total_precipitation"])
+    def test_continuous_presets_are_perceptually_even(self, style):
+        """Continuous ocean/weather ramps are interpolated in CIELAB, so their per-step
+        colour change is even (a plain RGB `from_list` of the same palette scores far higher)."""
+        assert perceptual_uniformity(DATA_STYLES[style][style]["cmap"]) < 0.05
 
     def test_temperature_preset_keeps_full_colour_ramp(self):
         """The vendored min_temperature_2m palette keeps its full blue->green->yellow->red->magenta ramp.

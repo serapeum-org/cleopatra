@@ -35,7 +35,7 @@ from typing import Sequence
 
 import matplotlib.colors as mcolors
 import numpy as np
-from matplotlib.colors import Colormap, ListedColormap
+from matplotlib.colors import Colormap, LinearSegmentedColormap
 
 __all__ = [
     "srgb_to_lab",
@@ -182,11 +182,13 @@ def interp_perceptual(anchors: Sequence, n: int = 256) -> np.ndarray:
     return out
 
 
-def perceptual_colormap(name: str, anchors: Sequence, n: int = 256) -> ListedColormap:
-    """Build a `ListedColormap` from anchors interpolated in CIELAB.
+def perceptual_colormap(name: str, anchors: Sequence, n: int = 256) -> LinearSegmentedColormap:
+    """Build a `LinearSegmentedColormap` from anchors interpolated in CIELAB.
 
-    The perceptually-uniform counterpart of
-    `matplotlib.colors.LinearSegmentedColormap.from_list`.
+    A perceptually-uniform, drop-in replacement for
+    `matplotlib.colors.LinearSegmentedColormap.from_list`: the same call shape and
+    (continuous) return type, but the anchors are interpolated in CIELAB so the
+    ramp reads as an even progression rather than banding.
 
     Args:
         name: Name for the resulting colormap.
@@ -194,7 +196,7 @@ def perceptual_colormap(name: str, anchors: Sequence, n: int = 256) -> ListedCol
         n: Number of quantisation levels. Defaults to 256.
 
     Returns:
-        matplotlib.colors.ListedColormap: The perceptually-interpolated map.
+        matplotlib.colors.LinearSegmentedColormap: The perceptually-interpolated map.
 
     Examples:
         ```python
@@ -207,7 +209,7 @@ def perceptual_colormap(name: str, anchors: Sequence, n: int = 256) -> ListedCol
 
         ```
     """
-    return ListedColormap(interp_perceptual(anchors, n), name=name)
+    return LinearSegmentedColormap.from_list(name, interp_perceptual(anchors, n), N=n)
 
 
 def make_diverging(
@@ -229,7 +231,7 @@ def make_diverging(
             arms are lightness-symmetric.
 
     Returns:
-        matplotlib.colors.ListedColormap: The diverging colormap.
+        matplotlib.colors.LinearSegmentedColormap: The diverging colormap.
 
     Examples:
         ```python
@@ -250,7 +252,7 @@ def make_diverging(
     half = n // 2
     arm_lo = interp_perceptual([low_rgb, center], half)
     arm_hi = interp_perceptual([center, high_rgb], n - half)
-    return ListedColormap(np.vstack([arm_lo, arm_hi]), name="diverging")
+    return LinearSegmentedColormap.from_list("diverging", np.vstack([arm_lo, arm_hi]), N=n)
 
 
 def make_categorical(

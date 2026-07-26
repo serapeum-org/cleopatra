@@ -14,6 +14,7 @@ from matplotlib.image import AxesImage
 from PIL import Image, UnidentifiedImageError
 
 from cleopatra.palettes import CAMS_AOD_COLORMAPS, FLAME_COLORMAPS, HAZE_COLORMAPS
+from cleopatra.perceptual import perceptual_colormap
 from cleopatra.styles import disjoint_legend, swatch_extend_prefixes, swatch_legend
 
 #: The haze / CAMS-AOD / flame colour families now live in `cleopatra.palettes`
@@ -492,9 +493,9 @@ def _load_preset_asset(
     for key, rec in records:
         try:
             palette = rec["palette"]
-            cmap: Colormap = LinearSegmentedColormap.from_list(
-                f"{cmap_prefix}_{key}", palette
-            )
+            # Interpolate the control points in CIELAB (perceptually even) rather
+            # than RGB, so the continuous ocean/hydrology ramps don't band.
+            cmap: Colormap = perceptual_colormap(f"{cmap_prefix}_{key}", palette)
             layer: dict[str, Any] = {"cmap": cmap, "label": rec["label"]}
             if rec.get("opacity") == "opaque":
                 layer["alpha"] = (
@@ -525,7 +526,8 @@ def _load_weather_presets() -> dict[str, dict[str, dict[str, Any]]]:
       `colors` list or matplotlib colormap name, plus explicit `levels` and an
       `extend` cap, rendered as a `BoundaryNorm` at those exact boundaries.
     - **Continuous** (colour list with neither `bands` nor `levels`, e.g.
-      `total_precipitation`'s rain gradient): a genuine `LinearSegmentedColormap`.
+      `total_precipitation`'s rain gradient): a genuine `LinearSegmentedColormap`,
+      interpolated perceptually (CIELAB) so it progresses evenly to the eye.
 
     Never raises: a missing/malformed asset degrades to `{}`.
     """
@@ -569,8 +571,9 @@ def _load_weather_presets() -> dict[str, dict[str, dict[str, Any]]]:
             else:
                 # A colour list with neither levels nor bands (e.g.
                 # `total_precipitation`'s white->blue gradient) is a genuine
-                # continuous ramp.
-                cmap = LinearSegmentedColormap.from_list(f"weather_{key}", colors)
+                # continuous ramp, interpolated perceptually (CIELAB) so it
+                # progresses evenly rather than banding as an RGB ramp would.
+                cmap = perceptual_colormap(f"weather_{key}", colors)
             layer: dict[str, Any] = {"cmap": cmap, "label": rec["label"]}
             if rec.get("opacity") == "opaque":
                 layer["alpha"] = 1.0
