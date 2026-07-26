@@ -138,8 +138,10 @@ class TestMakeCategorical:
         assert all(c.startswith("#") for c in cols)
 
     def test_deterministic(self):
-        """The greedy selection is deterministic across calls."""
-        assert make_categorical(12) == make_categorical(12)
+        """The greedy selection is deterministic across separate calls."""
+        first = make_categorical(12)
+        second = make_categorical(12)
+        assert first == second
 
     def test_colours_are_well_separated(self):
         """The minimum pairwise Lab distance clears a distinguishability floor."""
