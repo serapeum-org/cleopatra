@@ -645,7 +645,7 @@ class TestFetchSingleTile:
         tile = Tile(0, 0, 0)
         provider = self._make_provider()
 
-        with patch("urllib.request.urlopen") as mock_urlopen:
+        with patch("cleopatra.tiles.urlopen_http") as mock_urlopen:
             mock_response = MagicMock()
             mock_response.read.return_value = png
             mock_urlopen.return_value = mock_response
@@ -662,7 +662,7 @@ class TestFetchSingleTile:
         tile = Tile(1, 2, 3)
         provider = self._make_provider()
 
-        with patch("urllib.request.urlopen") as mock_urlopen:
+        with patch("cleopatra.tiles.urlopen_http") as mock_urlopen:
             mock_response = MagicMock()
             mock_response.read.return_value = b"<html>not-an-image</html>"
             mock_urlopen.return_value = mock_response
@@ -684,7 +684,7 @@ class TestFetchSingleTile:
         successful_response = MagicMock()
         successful_response.read.return_value = png
 
-        with patch("urllib.request.urlopen") as mock_urlopen:
+        with patch("cleopatra.tiles.urlopen_http") as mock_urlopen:
             mock_urlopen.side_effect = [
                 urllib.error.URLError("transient"),
                 successful_response,
@@ -701,7 +701,7 @@ class TestFetchSingleTile:
         tile = Tile(5, 6, 7)
         provider = self._make_provider()
 
-        with patch("urllib.request.urlopen") as mock_urlopen:
+        with patch("cleopatra.tiles.urlopen_http") as mock_urlopen:
             mock_urlopen.side_effect = urllib.error.URLError("permanent")
             with pytest.raises(ConnectionError, match="z=7/x=5/y=6"):
                 fetch_single_tile(tile, provider, timeout=1, retries=2)
@@ -747,7 +747,7 @@ class TestFetchSingleTile:
         body = header + b"\x00" * 64
         tile = Tile(0, 0, 0)
         provider = self._make_provider()
-        with patch("urllib.request.urlopen") as mock_urlopen:
+        with patch("cleopatra.tiles.urlopen_http") as mock_urlopen:
             mock_response = MagicMock()
             mock_response.read.return_value = body
             mock_urlopen.return_value = mock_response
@@ -766,7 +766,7 @@ class TestFetchSingleTile:
 
         png = _make_tile_png(size=32)
         provider = self._make_provider()
-        with patch("urllib.request.urlopen") as mock_urlopen:
+        with patch("cleopatra.tiles.urlopen_http") as mock_urlopen:
             mock_response = MagicMock()
             mock_response.read.return_value = png
             mock_urlopen.return_value = mock_response
@@ -784,7 +784,7 @@ class TestFetchSingleTile:
         png = _make_tile_png(size=32)
         provider = self._make_provider()
         custom = "myapp/2.0 (+https://example.test)"
-        with patch("urllib.request.urlopen") as mock_urlopen:
+        with patch("cleopatra.tiles.urlopen_http") as mock_urlopen:
             mock_response = MagicMock()
             mock_response.read.return_value = png
             mock_urlopen.return_value = mock_response

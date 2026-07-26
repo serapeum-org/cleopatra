@@ -646,8 +646,8 @@ def test_download_streams_to_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     """A successful download is streamed to `dest`, leaving no `.part` file."""
     payload = b"reference-asset-bytes"
     monkeypatch.setattr(
-        reference.urllib.request,
-        "urlopen",
+        reference,
+        "urlopen_http",
         lambda request, timeout=None: io.BytesIO(payload),
     )
     dest = tmp_path / "asset.bin"
@@ -667,7 +667,7 @@ def test_download_failure_raises_and_cleans_part(
         calls.append(1)
         raise urllib.error.URLError("network down")
 
-    monkeypatch.setattr(reference.urllib.request, "urlopen", boom)
+    monkeypatch.setattr(reference, "urlopen_http", boom)
     monkeypatch.setattr(reference.time, "sleep", lambda seconds: None)
     dest = tmp_path / "asset.bin"
     with pytest.raises(ConnectionError, match="Failed to download"):
@@ -690,7 +690,7 @@ def test_download_retries_transient_failure_then_succeeds(
             raise urllib.error.URLError("temporary hiccup")
         return io.BytesIO(payload)
 
-    monkeypatch.setattr(reference.urllib.request, "urlopen", flaky_then_ok)
+    monkeypatch.setattr(reference, "urlopen_http", flaky_then_ok)
     monkeypatch.setattr(reference.time, "sleep", lambda seconds: None)
     dest = tmp_path / "asset.bin"
     out = reference._download("https://example.com/asset.bin", dest, retries=3)
