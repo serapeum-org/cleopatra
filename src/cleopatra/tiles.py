@@ -42,6 +42,7 @@ import logging
 import math
 import re
 import urllib.error
+import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
@@ -455,7 +456,7 @@ def fetch_single_tile(
             ```
     """
     url = provider.build_url(x=tile.x, y=tile.y, z=tile.z)
-    if not url.lower().startswith(("http://", "https://")):
+    if urllib.parse.urlsplit(url).scheme.lower() not in ("http", "https"):
         raise ValueError(f"Refusing to fetch non-http(s) tile URL: {url!r}")
     last_error: Exception | None = None
     result_bytes: bytes | None = None

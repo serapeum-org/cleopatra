@@ -53,6 +53,7 @@ import os
 import shutil
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 from typing import Any
@@ -134,7 +135,7 @@ def _download(
     """
     if dest.exists():
         return dest
-    if not url.lower().startswith(("http://", "https://")):
+    if urllib.parse.urlsplit(url).scheme.lower() not in ("http", "https"):
         raise ValueError(f"Refusing to fetch non-http(s) URL: {url!r}")
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     dest.parent.mkdir(parents=True, exist_ok=True)
