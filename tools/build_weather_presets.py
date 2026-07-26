@@ -318,6 +318,15 @@ def transform_magics(raw_presets):
         rng = decode_magics_range(rec.get("magics_style"))
         if rng is not None:
             merged["vmin"], merged["vmax"] = rng
+            # A diverging field (range straddling zero) must not be a value-linked
+            # "overlay": cleopatra ties opacity monotonically to value, so the
+            # strong negative anomalies would render transparent while the quiet
+            # centre stays opaque -- inverting the intent. Magics' own alpha ramp
+            # for such fields is symmetric (faint near zero), which the single
+            # monotonic overlay policy can't reproduce, so fall back to an opaque
+            # field rather than silently hiding half the signal.
+            if merged["opacity"] == "overlay" and rng[0] < 0 < rng[1]:
+                merged["opacity"] = "opaque"
         out[key] = merged
     return out
 

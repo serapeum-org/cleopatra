@@ -659,7 +659,7 @@
    "#800000",
    "#4c0000"
   ],
-  "opacity": "overlay",
+  "opacity": "opaque",
   "bands": 27,
   "vmin": -50.0,
   "vmax": 50.0
@@ -892,7 +892,7 @@
    "#ff4000",
    "#010000"
   ],
-  "opacity": "overlay",
+  "opacity": "opaque",
   "bands": 15,
   "vmin": -1.0,
   "vmax": 1.0
@@ -1105,7 +1105,7 @@
    "#ff4000",
    "#010000"
   ],
-  "opacity": "overlay",
+  "opacity": "opaque",
   "bands": 15,
   "vmin": -1.0,
   "vmax": 1.0
@@ -1239,7 +1239,7 @@
    "#800000",
    "#4c0000"
   ],
-  "opacity": "overlay",
+  "opacity": "opaque",
   "bands": 27,
   "vmin": -50.0,
   "vmax": 50.0
@@ -1504,7 +1504,7 @@
    "#ff4000",
    "#010000"
   ],
-  "opacity": "overlay",
+  "opacity": "opaque",
   "bands": 15,
   "vmin": -1.0,
   "vmax": 1.0
@@ -1781,7 +1781,7 @@
    "#990000",
    "#660000"
   ],
-  "opacity": "overlay",
+  "opacity": "opaque",
   "bands": 19,
   "vmin": -5.0,
   "vmax": 5.0
