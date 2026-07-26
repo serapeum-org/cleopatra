@@ -22,6 +22,7 @@ Re-run (from the repo root)::
 
 import json
 import sys
+from pathlib import Path
 
 import cmocean
 import numpy as np
@@ -51,6 +52,24 @@ CURATED = [
 ]
 
 
+def _safe_out_path(out_path):
+    """Resolve `out_path` and confine it to the current working directory tree.
+
+    This is a maintainer-only CLI whose destination comes from `argv`, so
+    canonicalise the path and reject anything that resolves outside the invoking
+    directory (the repo) before opening it -- a stray or `..`-laden argument must
+    not escape the tree (path traversal, CWE-22).
+    """
+    base = Path.cwd().resolve()
+    resolved = Path(out_path)
+    resolved = (
+        resolved.resolve() if resolved.is_absolute() else (base / resolved).resolve()
+    )
+    if resolved != base and base not in resolved.parents:
+        raise ValueError(f"refusing to write outside {base}: {out_path!r}")
+    return resolved
+
+
 def main(out_path):
     xs = np.linspace(0.0, 1.0, N_POINTS)
     presets = {}
@@ -67,7 +86,7 @@ def main(out_path):
         presets[key] = rec
 
     asset = dict(sorted(presets.items()))
-    with open(out_path, "w", encoding="utf-8") as f:
+    with open(_safe_out_path(out_path), "w", encoding="utf-8") as f:
         json.dump(asset, f, indent=1, ensure_ascii=False)
     print(f"wrote {len(presets)} cmocean presets to {out_path}")
 
