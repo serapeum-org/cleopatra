@@ -1,7 +1,6 @@
 import importlib.resources
 import json
 import os
-import re
 import warnings
 from pathlib import Path
 from typing import Any, cast
@@ -591,87 +590,21 @@ DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
 }
 
 
-#: An ECMWF Magics style name encodes its contour range/interval in an
-#: ``f<from>t<to>[i<interval>]`` grammar (``M`` = minus). The interval is
-#: optional (``sh_mc_wind_f0t80`` = 0..80 with no interval). `_decode_magics_range`
-#: recovers ``(vmin, vmax, step)`` so a preset renders over ECMWF's fixed scale
-#: instead of auto-ranging to whatever data it is handed.
-_MAGICS_RANGE = re.compile(r"f(M?\d+(?:_\d+)?)t(M?\d+(?:_\d+)?)(?:i(\d+(?:_\d+)?))?")
-
-
-def _magics_num(token: str) -> float:
-    """Decode one numeric token of a Magics range name.
-
-    The grammar: ``M`` prefixes a negative; ``_`` is the decimal point
-    (``1_5`` -> 1.5); a leading ``0`` on a multi-digit token marks a decimal
-    (``05`` -> 0.5, ``01`` -> 0.1, matching ECMWF's precip/index scales); ``0``
-    alone is zero, and any other token is an integer (``10`` -> 10, not 1.0).
-
-    Args:
-        token: A single ``from``/``to``/``interval`` token (without the
-            ``f``/``t``/``i`` marker).
-
-    Returns:
-        float: The decoded value.
-    """
-    negative = token.startswith("M")
-    if negative:
-        token = token[1:]
-    if "_" in token:
-        value = float(token.replace("_", "."))
-    elif len(token) > 1 and token[0] == "0":
-        value = float("0." + token[1:])
-    else:
-        value = float(token)
-    return -value if negative else value
-
-
-def _decode_magics_range(
-    magics_style: str | None,
-) -> tuple[float, float, float | None] | None:
-    """Recover ``(vmin, vmax, step)`` from a Magics style name, or ``None``.
-
-    Parses the ``f<from>t<to>[i<interval>]`` range grammar embedded in ECMWF
-    Magics style names (e.g. ``sh_all_fM48t56i4`` -> ``(-48.0, 56.0, 4.0)``,
-    ``sh_mc_wind_f0t80`` -> ``(0.0, 80.0, None)``). Returns ``None`` when the
-    name carries no range, or the decoded range is degenerate (``vmin >=
-    vmax``), so such a preset keeps auto-ranging. Only the range is recovered --
-    the exact per-level colour list is not in the open Magics data, so a preset
-    with a non-linear level scale (e.g. precipitation) still bands linearly.
-
-    Args:
-        magics_style: A Magics style name, or ``None``.
-
-    Returns:
-        The ``(vmin, vmax, step)`` triple (``step`` is ``None`` when the name
-        omits the interval), or ``None`` when no usable range is present.
-    """
-    match = _MAGICS_RANGE.search(magics_style or "")
-    if match is None:
-        return None
-    vmin = _magics_num(match.group(1))
-    vmax = _magics_num(match.group(2))
-    if vmin >= vmax:
-        return None
-    step = _magics_num(match.group(3)) if match.group(3) else None
-    return vmin, vmax, step
-
-
 def _load_preset_asset(
     resource: str, cmap_prefix: str
 ) -> dict[str, dict[str, dict[str, Any]]]:
-    """Build `DATA_STYLES` entries from a vendored preset asset under `cleopatra.data`.
+    """Build `DATA_STYLES` entries from a vendored continuous-colormap preset asset.
 
-    Shared by the ECMWF/Magics and cmocean preset libraries. Each asset maps a
-    preset key to a `palette` (hex control points), a `label`, an `opacity`
-    policy (`"opaque"` -> a plain field via constant alpha; otherwise a
-    value-linked overlay), and an optional diverging `center`. Every preset is a
-    single layer keyed by its own name and carries no `vmin`/`vmax`, so it
-    auto-ranges.
+    Used for the cmocean ocean/hydrology/DEM preset library. Each asset maps a
+    preset key to a `palette` (hex control points sampled from a continuous
+    colormap), a `label`, an `opacity` policy (`"opaque"` -> a plain field via
+    constant alpha; otherwise a value-linked overlay), and an optional diverging
+    `center`. Every preset is a single layer keyed by its own name and carries no
+    `vmin`/`vmax`, so it auto-ranges.
 
     Args:
         resource: The asset filename inside the `cleopatra.data` package.
-        cmap_prefix: A prefix for the generated colormap names (e.g. `"magics"`).
+        cmap_prefix: A prefix for the generated colormap names (e.g. `"cmocean"`).
 
     Returns:
         dict: `DATA_STYLES`-shaped presets, or an empty mapping if the asset is
@@ -703,71 +636,46 @@ def _load_preset_asset(
     for key, rec in records:
         try:
             palette = rec["palette"]
-            # A Magics preset (carries a `magics_style`) is a *discrete* contour
-            # shade: ECMWF renders it as flat colour bands, not a smooth ramp.
-            # Reproduce that with a ListedColormap (paired with a BoundaryNorm in
-            # resolve_style_norm via `bands`) -- a continuous interpolation of
-            # these saturated colours reads as a glossy, over-exposed sheen. Non-
-            # Magics assets (cmocean) are genuinely continuous scientific ramps.
-            is_magics = bool(rec.get("magics_style"))
-            if is_magics:
-                cmap: Colormap = mcolors.ListedColormap(
-                    palette, name=f"{cmap_prefix}_{key}"
-                )
-            else:
-                cmap = LinearSegmentedColormap.from_list(
-                    f"{cmap_prefix}_{key}", palette
-                )
+            cmap: Colormap = LinearSegmentedColormap.from_list(
+                f"{cmap_prefix}_{key}", palette
+            )
             layer: dict[str, Any] = {"cmap": cmap, "label": rec["label"]}
-            if is_magics:
-                layer["bands"] = len(palette)  # number of discrete colour bands
             if rec.get("opacity") == "opaque":
                 layer["alpha"] = (
                     1.0  # value-linked opacity (overlay) is the default otherwise
                 )
             if rec.get("center") is not None:
                 layer["center"] = rec["center"]
-            # Recover the fixed contour range encoded in the Magics style name
-            # (e.g. `2t` -> -48..56) so the preset renders over ECMWF's absolute
-            # scale rather than auto-ranging to the data. A caller-supplied
-            # `vmin`/`vmax` still overrides it at draw time.
-            decoded = _decode_magics_range(rec.get("magics_style"))
-            if decoded is not None:
-                # Only the fixed range is used; the decoded interval (decoded[2])
-                # is not stored -- the bands partition [vmin, vmax] into
-                # `len(palette)` equal-width intervals (see resolve_style_norm),
-                # which need not equal the ECMWF contour interval.
-                layer["vmin"], layer["vmax"] = decoded[0], decoded[1]
             presets[key] = {key: layer}
         except (KeyError, TypeError, ValueError, AttributeError):
             continue
     return presets
 
 
-def _load_magics_presets() -> dict[str, dict[str, dict[str, Any]]]:
-    """Load the ECMWF/Magics parameter-preset library (Apache-2.0).
+def _load_weather_presets() -> dict[str, dict[str, dict[str, Any]]]:
+    """Load the merged ECMWF weather preset library (Apache-2.0), keyed by GRIB shortName.
 
-    Colour ramps and parameter labels derived from ecmwf/magics, keyed by
-    GRIB shortName. Thin wrapper over `_load_preset_asset`.
-    """
-    return _load_preset_asset("magics_presets.json", "magics")
+    Merged from two sources at build time (see `tools/build_weather_presets.py`)
+    into one record per shortName -- each record is one of three shapes:
 
+    - **Equal-width banded** (vendored from Magics): a discrete `colors` list
+      plus a `bands` count (`len(colors)`), rendered as a `ListedColormap` with
+      `bands` equal-width intervals. A `vmin`/`vmax` is also present when the
+      parameter's original Magics style name encoded a fixed range; otherwise
+      the bands auto-range to the data.
+    - **Explicit contour levels** (vendored from earthkit-plots' curated ECMWF
+      defaults, which supersede the Magics record for the same shortName): a
+      `colors` list or matplotlib colormap name, plus explicit `levels` and an
+      `extend` cap, rendered as a `BoundaryNorm` at those exact boundaries.
+    - **Continuous** (colour list with neither `bands` nor `levels`, e.g. `tp`'s
+      rain gradient): a genuine `LinearSegmentedColormap`.
 
-def _load_earthkit_presets() -> dict[str, dict[str, dict[str, Any]]]:
-    """Load ECMWF's *default* parameter styles from the vendored earthkit asset.
-
-    Each preset is the `optimal` Style variant from ECMWF's earthkit-plots style
-    library (Apache-2.0; see `tools/build_earthkit_presets.py`): a colormap (a
-    matplotlib name or an explicit colour list) plus discrete contour `levels`
-    and an `extend` cap -- the professional weather-service look (e.g. `"2t"` ->
-    muted `Spectral_r` in 2 degC bands). Keyed by GRIB shortName so these
-    override the Magics rainbow presets for the same parameters. Never raises: a
-    missing/malformed asset degrades to `{}`.
+    Never raises: a missing/malformed asset degrades to `{}`.
     """
     try:
         raw = (
             importlib.resources.files("cleopatra.data")
-            .joinpath("earthkit_presets.json")
+            .joinpath("weather_presets.json")
             .read_text(encoding="utf-8")
         )
     except (ModuleNotFoundError, OSError):
@@ -781,43 +689,51 @@ def _load_earthkit_presets() -> dict[str, dict[str, dict[str, Any]]]:
     for key, rec in records.items():
         try:
             colors = rec["colors"]
-            if isinstance(colors, str):
-                # A matplotlib colormap name, resolved at draw time.
-                cmap: Any = colors
-            elif rec.get("levels"):
-                # A colour LIST with levels is a discrete band palette: keep the
-                # exact ECMWF colours via a ListedColormap (one per band for
-                # aod550/10si; a fine 255-stop ramp banded by the levels for cape)
-                # rather than resampling a continuous interpolation.
-                cmap = mcolors.ListedColormap(colors, name=f"earthkit_{key}")
+            levels = rec.get("levels")
+            bands = rec.get("bands")
+            if levels:
+                # A colour LIST with explicit levels is a discrete band palette:
+                # keep the exact ECMWF colours via a ListedColormap. A colormap
+                # NAME (str) is resolved at draw time instead.
+                cmap: Any = (
+                    mcolors.ListedColormap(colors, name=f"weather_{key}")
+                    if isinstance(colors, list)
+                    else colors
+                )
+            elif bands:
+                # A Magics preset renders as flat colour bands, not a smooth
+                # ramp -- a continuous interpolation of these saturated colours
+                # reads as a glossy, over-exposed sheen.
+                cmap = mcolors.ListedColormap(colors, name=f"weather_{key}")
+            elif isinstance(colors, str):
+                cmap = colors
             else:
-                # A colour list with no levels (e.g. `tp`'s white->blue gradient)
-                # is a genuine continuous ramp.
-                cmap = LinearSegmentedColormap.from_list(f"earthkit_{key}", colors)
-            layer: dict[str, Any] = {
-                "cmap": cmap,
-                "label": rec["label"],
-                "alpha": 1.0,
-            }
-            if rec.get("levels"):
-                layer["levels"] = rec["levels"]
+                # A colour list with neither levels nor bands (e.g. `tp`'s
+                # white->blue gradient) is a genuine continuous ramp.
+                cmap = LinearSegmentedColormap.from_list(f"weather_{key}", colors)
+            layer: dict[str, Any] = {"cmap": cmap, "label": rec["label"]}
+            if rec.get("opacity") == "opaque":
+                layer["alpha"] = 1.0
+            if levels:
+                layer["levels"] = levels
                 layer["extend"] = rec.get("extend", "neither")
+            elif bands:
+                layer["bands"] = bands
+                if "vmin" in rec:
+                    layer["vmin"], layer["vmax"] = rec["vmin"], rec["vmax"]
             presets[key] = {key: layer}
-        except (KeyError, TypeError, ValueError):
+        except (KeyError, TypeError, ValueError, AttributeError):
             continue
     return presets
 
 
 #: Register the vendored preset libraries into `DATA_STYLES` at import, alongside
-#: the hand-authored presets above: the full ECMWF/Magics parameter set (keyed
-#: by GRIB shortName, e.g. `"2t"`, `"tp"`, `"aod550"`) and the cmocean
+#: the hand-authored presets above: the merged ECMWF weather parameter set
+#: (keyed by GRIB shortName, e.g. `"2t"`, `"tp"`, `"aod550"`) and the cmocean
 #: ocean/hydrology/DEM set (keyed by variable, e.g. `"salinity"`,
 #: `"bathymetry"`). List them all with `sorted(DATA_STYLES)`.
-DATA_STYLES.update(_load_magics_presets())
 DATA_STYLES.update(_load_preset_asset("ocean_presets.json", "cmocean"))
-# ECMWF's default (earthkit) styles load LAST so they win over the Magics rainbow
-# for the same GRIB shortNames -- the professional banded look is the default.
-DATA_STYLES.update(_load_earthkit_presets())
+DATA_STYLES.update(_load_weather_presets())
 
 
 def category_boundaries(values: list[float]) -> list[float]:

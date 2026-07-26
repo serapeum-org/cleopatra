@@ -26,10 +26,8 @@ from cleopatra.colors import (
     HAZE_COLORMAPS,
     Colors,
     _category_boundaries,
-    _decode_magics_range,
-    _load_earthkit_presets,
-    _load_magics_presets,
     _load_preset_asset,
+    _load_weather_presets,
     _resolve_style_norm,
     alpha_scaled_image,
     alpha_scaled_mesh,
@@ -650,7 +648,7 @@ class TestApplyDataStyle:
 
 
 class TestEarthkitPresets:
-    """Tests for the vendored ECMWF/earthkit default parameter styles."""
+    """Tests for the earthkit-plots half of the merged `weather_presets.json` library."""
 
     @pytest.fixture
     def ax(self):
@@ -740,14 +738,14 @@ class TestEarthkitPresets:
         assert len(np.unique(np.round(rgb, 3), axis=0)) <= 43  # ~41 bands + extend
 
     def test_loader_degrades_without_asset(self, monkeypatch):
-        """A missing earthkit asset degrades to no presets rather than raising."""
+        """A missing weather asset degrades to no presets rather than raising."""
         import cleopatra.colors as colors_mod
 
         def boom(_pkg):
             raise FileNotFoundError("no data package")
 
         monkeypatch.setattr(colors_mod.importlib.resources, "files", boom)
-        assert _load_earthkit_presets() == {}
+        assert _load_weather_presets() == {}
 
 
 class TestContourLevelsStyle:
@@ -953,7 +951,7 @@ class TestFlameColormapsAndPresets:
 
 
 class TestMagicsPresets:
-    """Tests for the ECMWF/Magics preset library loaded into `DATA_STYLES`."""
+    """Tests for the ECMWF/Magics half of the merged `weather_presets.json` library."""
 
     @pytest.fixture
     def ax(self):
@@ -1026,7 +1024,7 @@ class TestMagicsPresets:
             raise FileNotFoundError("no data package")
 
         monkeypatch.setattr(colors_mod.importlib.resources, "files", boom)
-        assert _load_magics_presets() == {}, (
+        assert _load_weather_presets() == {}, (
             "missing asset should degrade to no presets"
         )
 
@@ -1070,20 +1068,24 @@ class TestMagicsPresets:
         assert "bands" not in layer
 
     def test_temperature_preset_keeps_full_colour_ramp(self):
-        """The vendored 2t palette keeps its full blue->green->yellow->red->magenta ramp.
+        """The vendored mn2t palette keeps its full blue->green->yellow->red->magenta ramp.
 
         Magics palettes name intermediate colours (`greenish_blue`, `yellow_green`, ...)
         that are not matplotlib colours; dropping the unrecognised names truncates the
         ramp and over-weights the magenta cap (whole summers rendered magenta). Guard
         the shipped asset: the ramp is long and the green mid-band survives.
+
+        (Uses `mn2t`, not `2t`: `2t` is now the earthkit default -- see
+        `TestEarthkitPresets` -- but `mn2t` is from the same Magics temperature
+        family and keeps the same long named-colour ramp.)
         """
         rec = json.loads(
             importlib.resources.files("cleopatra.data")
-            .joinpath("magics_presets.json")
+            .joinpath("weather_presets.json")
             .read_text()
-        )["presets"]["2t"]
-        palette = rec["palette"]
-        assert len(palette) >= 27, f"2t ramp truncated to {len(palette)} colours"
+        )["presets"]["mn2t"]
+        palette = rec["colors"]
+        assert len(palette) >= 27, f"mn2t ramp truncated to {len(palette)} colours"
         assert any(g > r and g > b and g > 0.5 for r, g, b in map(to_rgb, palette)), (
             "the green transition band (Magics named colours) must be preserved"
         )
@@ -1133,43 +1135,6 @@ class TestMagicsPresets:
         )
         assert not np.allclose(base["mn2t"].get_array(), over["mn2t"].get_array())
         plt.close(fig2)
-
-
-class TestMagicsRangeDecoder:
-    """Tests for the Magics `f<from>t<to>[i<interval>]` range decoder."""
-
-    @pytest.mark.parametrize(
-        "style, expected",
-        [
-            ("sh_all_fM48t56i4", (-48.0, 56.0, 4.0)),  # 2t temperature family
-            ("sh_all_fM52t48i4", (-52.0, 48.0, 4.0)),  # potential temperature
-            ("sh_all_f0t18i1_5", (0.0, 18.0, 1.5)),  # underscore decimal interval
-            ("f05t1i01", (0.5, 1.0, 0.1)),  # leading-zero decimals (index scale)
-            ("sh_mc_wind_f0t80", (0.0, 80.0, None)),  # range without interval
-            ("sh_mc_capes_f10t4000", (10.0, 4000.0, None)),  # plain integers
-            ("sh_blured_fM50t50lst_cell", (-50.0, 50.0, None)),  # trailing 'lst'
-            ("sh_blured_f05t300lst", (0.5, 300.0, None)),  # 0.5 mm precip threshold
-        ],
-    )
-    def test_decodes_known_ranges(self, style, expected):
-        """The grammar decodes range/interval, honouring M-minus and decimal encodings."""
-        assert _decode_magics_range(style) == expected
-
-    @pytest.mark.parametrize(
-        "style", ["sh_all_aod", "sh_mf_pdist", "sim_image_wv_fixed_range", "", None]
-    )
-    def test_no_range_returns_none(self, style):
-        """A style with no f<from>t<to> range decodes to None (the preset auto-ranges)."""
-        assert _decode_magics_range(style) is None
-
-    @pytest.mark.parametrize("style", ["f5t5", "f9t2i1", "fM1tM3"])
-    def test_degenerate_or_inverted_range_returns_none(self, style):
-        """A decode yielding vmin >= vmax returns None rather than a bad range."""
-        assert _decode_magics_range(style) is None
-
-    def test_negative_symmetric_range_is_valid(self):
-        """A valid negative-to-positive range (temperature index) decodes normally."""
-        assert _decode_magics_range("sh_blured_fM1t1lst") == (-1.0, 1.0, None)
 
 
 class TestCategoricalPresets:
@@ -1510,12 +1475,12 @@ class TestCmoceanPresets:
     def test_malformed_json_degrades_to_empty(self, monkeypatch):
         """A corrupt (invalid JSON) asset returns {} instead of crashing the import."""
         self._patch_asset_text(monkeypatch, "{not valid json")
-        assert _load_preset_asset("magics_presets.json", "magics") == {}
+        assert _load_preset_asset("ocean_presets.json", "cmocean") == {}
 
     def test_non_mapping_json_degrades_to_empty(self, monkeypatch):
         """A structurally-wrong (non-object) asset returns {}, never raises."""
         self._patch_asset_text(monkeypatch, "[1, 2, 3]")
-        assert _load_preset_asset("magics_presets.json", "magics") == {}
+        assert _load_preset_asset("ocean_presets.json", "cmocean") == {}
 
     def test_one_bad_record_is_skipped_others_survive(self, monkeypatch):
         """A single malformed record is skipped; the sibling well-formed presets load."""
@@ -1531,7 +1496,7 @@ class TestCmoceanPresets:
             }
         )
         self._patch_asset_text(monkeypatch, asset)
-        loaded = _load_preset_asset("magics_presets.json", "magics")
+        loaded = _load_preset_asset("ocean_presets.json", "cmocean")
         assert set(loaded) == {
             "good1",
             "good2",
