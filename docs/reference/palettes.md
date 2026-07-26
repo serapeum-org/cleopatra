@@ -22,6 +22,32 @@ so the registry is populated whether you import `cleopatra.palettes` or
 `CAMS_AOD_COLORMAPS`, `FLAME_COLORMAPS`) are still importable from `cleopatra.colors`
 for backward compatibility.
 
+## Curated palettes
+
+A small set of net-new palettes ships pre-registered — **generated** with this
+package's own tools (`make_diverging` / `make_categorical`), not vendored or copied
+from any other library:
+
+| Name | Kind | Notes |
+|------|------|-------|
+| `diverging_blue_red` | diverging | blue ↔ red, lightness-balanced, neutral centre |
+| `diverging_purple_green` | diverging | purple ↔ green |
+| `diverging_brown_teal` | diverging | brown ↔ teal (moisture/precip anomalies) |
+| `category12` | qualitative | 12 maximally-distinguishable class colours |
+| `category20` | qualitative | 20 class colours (the first 12 match `category12`) |
+
+The diverging maps are built on demand from their two endpoints (so the centre lands
+exactly on the midpoint); the categorical swatches were generated once with
+`make_categorical` (greedy max-min in CIELAB) and frozen for a stable identity. Fetch
+any of them like the built-ins:
+
+```python
+from cleopatra.palettes import get_palette, available_palettes
+
+available_palettes("diverging")     # ['diverging_blue_red', 'diverging_brown_teal', ...]
+cmap = get_palette("category12").to_colormap()   # a 12-colour ListedColormap
+```
+
 ## PaletteKind
 
 ::: cleopatra.palettes.PaletteKind

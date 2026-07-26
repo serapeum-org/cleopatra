@@ -36,7 +36,7 @@ from matplotlib.colors import (
     Normalize,
 )
 
-from cleopatra.perceptual import perceptual_colormap
+from cleopatra.perceptual import make_diverging, perceptual_colormap
 
 __all__ = [
     "PaletteKind",
@@ -117,8 +117,14 @@ class Palette:
     def to_colormap(self, n: int = 256) -> Colormap:
         """Build a matplotlib `Colormap` from this palette.
 
-        Continuous kinds interpolate the colours perceptually (CIELAB); a
-        `qualitative` palette keeps its exact swatches as a `ListedColormap`.
+        The colormap is constructed according to `kind`:
+
+        - `qualitative`: the exact swatches as a `ListedColormap` (no interpolation).
+        - `diverging`: `make_diverging` from the first and last colours, so the
+            neutral centre lands exactly on the midpoint and the arms are
+            lightness-balanced. A three-colour diverging palette uses its middle
+            colour as the neutral centre; otherwise a near-white default is used.
+        - `sequential` / `cyclic`: the colours interpolated perceptually (CIELAB).
 
         Args:
             n: Levels for continuous kinds. Defaults to 256. Ignored for
@@ -129,6 +135,11 @@ class Palette:
         """
         if self.kind is PaletteKind.QUALITATIVE:
             return ListedColormap(list(self.colors), name=self.name)
+        if self.kind is PaletteKind.DIVERGING:
+            center = self.colors[1] if len(self.colors) == 3 else "#f4f4f4"
+            return make_diverging(
+                self.colors[0], self.colors[-1], n, center=center, name=self.name
+            )
         return perceptual_colormap(self.name, list(self.colors), n)
 
     def default_norm(
@@ -335,3 +346,44 @@ CAMS_AOD_COLORMAPS: dict[str, Colormap] = {
 FLAME_COLORMAPS: dict[str, Colormap] = {
     k: get_palette(f"flame_{k}").to_colormap() for k in _FLAME_ANCHORS
 }
+
+
+# --------------------------------------------------------------------------
+# Curated palettes -- net-new and generated with this module's own tools, not
+# vendored from any package. Diverging maps are built on demand from their two
+# endpoints by `to_colormap` (via `make_diverging`, which balances the arms and
+# lands the neutral centre on the midpoint). The categorical swatches were
+# generated once with `make_categorical` (greedy max-min in CIELAB) and frozen
+# here so each named palette has a stable identity.
+# --------------------------------------------------------------------------
+
+for _name, _low, _high in [
+    ("diverging_blue_red", "#2166ac", "#b2182b"),
+    ("diverging_purple_green", "#762a83", "#1b7837"),
+    ("diverging_brown_teal", "#8c510a", "#01665e"),
+]:
+    register(Palette(_name, PaletteKind.DIVERGING, (_low, _high)))
+del _name, _low, _high
+
+register(
+    Palette(
+        "category12",
+        PaletteKind.QUALITATIVE,
+        (
+            "#520af5", "#0ae30a", "#f50a0a", "#2e9bbf", "#f564bf", "#89760a",
+            "#0ae3ad", "#5276f5", "#894040", "#0a6440", "#f50af5", "#e3bff5",
+        ),
+    )
+)
+register(
+    Palette(
+        "category20",
+        PaletteKind.QUALITATIVE,
+        (
+            "#520af5", "#0ae30a", "#f50a0a", "#2e9bbf", "#f564bf", "#89760a",
+            "#0ae3ad", "#5276f5", "#894040", "#0a6440", "#f50af5", "#e3bff5",
+            "#f5890a", "#f5bf9b", "#add11c", "#645289", "#0a890a", "#f54064",
+            "#891cad", "#add189",
+        ),
+    )
+)

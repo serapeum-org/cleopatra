@@ -213,8 +213,13 @@ def perceptual_colormap(name: str, anchors: Sequence, n: int = 256) -> LinearSeg
 
 
 def make_diverging(
-    low, high, n: int = 256, center: str = "#f4f4f4", balance: bool = True
-) -> ListedColormap:
+    low,
+    high,
+    n: int = 256,
+    center: str = "#f4f4f4",
+    balance: bool = True,
+    name: str = "diverging",
+) -> LinearSegmentedColormap:
     """Construct a perceptually-uniform diverging colormap from two endpoints.
 
     Builds two Lab-interpolated arms from a light neutral `center` out to each
@@ -229,6 +234,7 @@ def make_diverging(
         center: The neutral midpoint colour. Defaults to a near-white grey.
         balance: If `True` (default), equalise the two endpoints' `L*` so the
             arms are lightness-symmetric.
+        name: Name for the resulting colormap. Defaults to `"diverging"`.
 
     Returns:
         matplotlib.colors.LinearSegmentedColormap: The diverging colormap.
@@ -252,7 +258,7 @@ def make_diverging(
     half = n // 2
     arm_lo = interp_perceptual([low_rgb, center], half)
     arm_hi = interp_perceptual([center, high_rgb], n - half)
-    return LinearSegmentedColormap.from_list("diverging", np.vstack([arm_lo, arm_hi]), N=n)
+    return LinearSegmentedColormap.from_list(name, np.vstack([arm_lo, arm_hi]), N=n)
 
 
 def make_categorical(

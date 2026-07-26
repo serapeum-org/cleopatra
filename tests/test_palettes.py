@@ -5,9 +5,12 @@ from matplotlib.colors import (
     BoundaryNorm,
     CenteredNorm,
     Colormap,
+    LinearSegmentedColormap,
     ListedColormap,
     Normalize,
 )
+
+from cleopatra.perceptual import srgb_to_lab
 
 from cleopatra.palettes import (
     PALETTES,
@@ -167,3 +170,48 @@ class TestBuiltinsRegistered:
     def test_cams_records_magics_provenance(self):
         """The CAMS palettes record their ECMWF/Magics provenance in source."""
         assert get_palette("cams_aod_blue_red").source == "ecmwf-magics"
+
+
+class TestCuratedPalettes:
+    """The curated, generated palettes registered at import (not vendored)."""
+
+    @pytest.mark.parametrize(
+        "name, kind",
+        [
+            ("diverging_blue_red", PaletteKind.DIVERGING),
+            ("diverging_purple_green", PaletteKind.DIVERGING),
+            ("diverging_brown_teal", PaletteKind.DIVERGING),
+            ("category12", PaletteKind.QUALITATIVE),
+            ("category20", PaletteKind.QUALITATIVE),
+        ],
+    )
+    def test_registered_with_expected_kind(self, name, kind):
+        """Each curated palette is registered under its expected kind."""
+        assert get_palette(name).kind is kind
+
+    def test_diverging_builds_continuous_with_light_centre(self):
+        """A curated diverging palette builds a continuous map whose centre is lighter than its ends."""
+        cmap = get_palette("diverging_blue_red").to_colormap()
+        assert isinstance(cmap, LinearSegmentedColormap)
+        l_mid = srgb_to_lab(cmap(0.5)[:3])[0]
+        l_lo = srgb_to_lab(cmap(0.0)[:3])[0]
+        l_hi = srgb_to_lab(cmap(1.0)[:3])[0]
+        assert l_mid > l_lo and l_mid > l_hi
+
+    @pytest.mark.parametrize("name, n", [("category12", 12), ("category20", 20)])
+    def test_category_palettes_are_listed_and_distinct(self, name, n):
+        """The categorical palettes hold n distinct swatches and build an n-colour ListedColormap."""
+        pal = get_palette(name)
+        assert len(pal.colors) == n == len(set(pal.colors))
+        cmap = pal.to_colormap()
+        assert isinstance(cmap, ListedColormap) and cmap.N == n
+
+    def test_category_colours_are_well_separated(self):
+        """category12's minimum pairwise CIELAB distance clears a distinguishability floor."""
+        lab = srgb_to_lab(
+            np.array([[int(c[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+                      for c in get_palette("category12").colors])
+        )
+        dists = [np.sqrt(((lab[i] - lab[j]) ** 2).sum())
+                 for i in range(len(lab)) for j in range(i + 1, len(lab))]
+        assert min(dists) > 25.0
