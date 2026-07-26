@@ -738,7 +738,7 @@ def _load_weather_presets() -> dict[str, dict[str, dict[str, Any]]]:
 #: `"total_precipitation"`, `"aerosol_optical_depth_550nm"`) and the cmocean
 #: ocean/hydrology/DEM set (keyed by variable, e.g. `"salinity"`,
 #: `"bathymetry"`). List them all with `sorted(DATA_STYLES)`.
-DATA_STYLES.update(_load_preset_asset("ocean_presets.json", "cmocean"))
+DATA_STYLES.update(_load_preset_asset("ocean_presets.json", "ocean"))
 DATA_STYLES.update(_load_weather_presets())
 
 

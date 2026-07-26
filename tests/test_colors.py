@@ -1475,12 +1475,12 @@ class TestCmoceanPresets:
     def test_malformed_json_degrades_to_empty(self, monkeypatch):
         """A corrupt (invalid JSON) asset returns {} instead of crashing the import."""
         self._patch_asset_text(monkeypatch, "{not valid json")
-        assert _load_preset_asset("ocean_presets.json", "cmocean") == {}
+        assert _load_preset_asset("ocean_presets.json", "ocean") == {}
 
     def test_non_mapping_json_degrades_to_empty(self, monkeypatch):
         """A structurally-wrong (non-object) asset returns {}, never raises."""
         self._patch_asset_text(monkeypatch, "[1, 2, 3]")
-        assert _load_preset_asset("ocean_presets.json", "cmocean") == {}
+        assert _load_preset_asset("ocean_presets.json", "ocean") == {}
 
     def test_one_bad_record_is_skipped_others_survive(self, monkeypatch):
         """A single malformed record is skipped; the sibling well-formed presets load."""
@@ -1494,7 +1494,7 @@ class TestCmoceanPresets:
             }
         )
         self._patch_asset_text(monkeypatch, asset)
-        loaded = _load_preset_asset("ocean_presets.json", "cmocean")
+        loaded = _load_preset_asset("ocean_presets.json", "ocean")
         assert set(loaded) == {
             "good1",
             "good2",
