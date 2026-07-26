@@ -121,6 +121,8 @@ nav:
     - Animations (save/embed): reference/animation.md
     - Colors: reference/colors-glyph.md
     - Styles: reference/styles-glyph.md
+    - Perceptual colour toolkit: reference/perceptual.md
+    - Palettes (registry): reference/palettes.md
     - Config: reference/config.md
   - Examples:
     - ArrayGlyph: notebooks/array_glyph/array_glyph_examples.ipynb
