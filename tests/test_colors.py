@@ -1083,7 +1083,7 @@ class TestMagicsPresets:
             importlib.resources.files("cleopatra.data")
             .joinpath("weather_presets.json")
             .read_text()
-        )["presets"]["min_temperature_2m"]
+        )["min_temperature_2m"]
         palette = rec["colors"]
         assert len(palette) >= 27, f"min_temperature_2m ramp truncated to {len(palette)} colours"
         assert any(g > r and g > b and g > 0.5 for r, g, b in map(to_rgb, palette)), (
@@ -1488,11 +1488,9 @@ class TestCmoceanPresets:
 
         asset = json.dumps(
             {
-                "presets": {
-                    "good1": {"palette": ["#000000", "#ffffff"], "label": "Good 1"},
-                    "bad": {"label": "no palette"},
-                    "good2": {"palette": ["#ff0000", "#00ff00"], "label": "Good 2"},
-                }
+                "good1": {"palette": ["#000000", "#ffffff"], "label": "Good 1"},
+                "bad": {"label": "no palette"},
+                "good2": {"palette": ["#ff0000", "#00ff00"], "label": "Good 2"},
             }
         )
         self._patch_asset_text(monkeypatch, asset)

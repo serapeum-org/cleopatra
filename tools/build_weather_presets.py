@@ -461,7 +461,7 @@ def main(out_path, magics_ref="develop", earthkit_ref="main"):
         **transform_earthkit(earthkit_presets),
     }
     renamed, unmapped = rename_to_descriptive_keys(merged)
-    asset = {"presets": dict(sorted(renamed.items()))}
+    asset = dict(sorted(renamed.items()))
     with open(_safe_out_path(out_path), "w", encoding="utf-8") as f:
         json.dump(asset, f, indent=1, ensure_ascii=False)
     if unmapped:

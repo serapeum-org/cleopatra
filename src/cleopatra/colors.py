@@ -621,7 +621,7 @@ def _load_preset_asset(
             .joinpath(resource)
             .read_text(encoding="utf-8")
         )
-        records = json.loads(source).get("presets", {}).items()
+        records = json.loads(source).items()
     except (
         ModuleNotFoundError,
         OSError,
@@ -654,10 +654,11 @@ def _load_preset_asset(
 
 
 def _load_weather_presets() -> dict[str, dict[str, dict[str, Any]]]:
-    """Load the merged ECMWF weather preset library (Apache-2.0), keyed by GRIB shortName.
+    """Load the merged ECMWF weather preset library (Apache-2.0), keyed by a descriptive name.
 
     Merged from two sources at build time (see `tools/build_weather_presets.py`)
-    into one record per shortName -- each record is one of three shapes:
+    into one record per GRIB shortName, then renamed to its descriptive key --
+    each record is one of three shapes:
 
     - **Equal-width banded** (vendored from Magics): a discrete `colors` list
       plus a `bands` count (`len(colors)`), rendered as a `ListedColormap` with
@@ -682,8 +683,10 @@ def _load_weather_presets() -> dict[str, dict[str, dict[str, Any]]]:
     except (ModuleNotFoundError, OSError):
         return {}
     try:
-        records = json.loads(raw).get("presets", {})
-    except (ValueError, AttributeError):
+        records = json.loads(raw)
+    except ValueError:
+        return {}
+    if not isinstance(records, dict):
         return {}
 
     presets: dict[str, dict[str, dict[str, Any]]] = {}

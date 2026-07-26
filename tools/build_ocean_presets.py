@@ -67,9 +67,7 @@ def main(out_path):
             rec["center"] = center
         presets[key] = rec
 
-    asset = {
-        "presets": dict(sorted(presets.items())),
-    }
+    asset = dict(sorted(presets.items()))
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(asset, f, indent=1, ensure_ascii=False)
     print(f"wrote {len(presets)} cmocean presets to {out_path}")
