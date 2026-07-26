@@ -133,6 +133,18 @@ class TestDefaultNorm:
         norm = Palette("s", "sequential", ("#fff", "#000")).default_norm(np.full(4, np.nan))
         assert norm.vmin is None and norm.vmax is None
 
+    def test_partial_bounds_fill_only_the_missing_one(self):
+        """Given only vmin and data, vmax (and only vmax) is auto-ranged."""
+        data = np.array([2.0, 4.0, 6.0])
+        norm = Palette("s", "sequential", ("#fff", "#000")).default_norm(data, vmin=0.0)
+        assert (norm.vmin, norm.vmax) == (0.0, 6.0)
+
+    def test_partial_bounds_fill_missing_vmin(self):
+        """Given only vmax and data, vmin (and only vmin) is auto-ranged."""
+        data = np.array([2.0, 4.0, 6.0])
+        norm = Palette("s", "sequential", ("#fff", "#000")).default_norm(data, vmax=10.0)
+        assert (norm.vmin, norm.vmax) == (2.0, 10.0)
+
 
 class TestRegistry:
     """register / get_palette / available_palettes."""

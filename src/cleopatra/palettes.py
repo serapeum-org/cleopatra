@@ -85,6 +85,42 @@ class PaletteKind(StrEnum):
         return None
 
 
+def _auto_bounds(
+    data: np.ndarray | None, vmin: float | None, vmax: float | None
+) -> tuple[float | None, float | None]:
+    """Fill missing `vmin`/`vmax` from the finite range of `data`.
+
+    A bound already given is kept; a bound left `None` with no usable data stays
+    `None`, so the norm autoscales at draw time.
+    """
+    if data is None or (vmin is not None and vmax is not None):
+        return vmin, vmax
+    finite = np.asarray(data, dtype=float)
+    finite = finite[np.isfinite(finite)]
+    if not finite.size:
+        return vmin, vmax
+    if vmin is None:
+        vmin = float(finite.min())
+    if vmax is None:
+        vmax = float(finite.max())
+    return vmin, vmax
+
+
+def _centered_norm(
+    vmin: float | None, vmax: float | None, center: float | None
+) -> CenteredNorm:
+    """A `CenteredNorm` symmetric about `center` (default 0).
+
+    The halfrange is derived from `vmin`/`vmax` when both are given (so the map
+    spans the data symmetrically); otherwise it is left to autoscale.
+    """
+    vcenter = 0.0 if center is None else float(center)
+    halfrange = None
+    if vmin is not None and vmax is not None:
+        halfrange = max(abs(vmin - vcenter), abs(vmax - vcenter)) or None
+    return CenteredNorm(vcenter=vcenter, halfrange=halfrange)
+
+
 @dataclass(frozen=True)
 class Palette:
     """One colour palette: name, kind, colours, and provenance.
@@ -198,21 +234,9 @@ class Palette:
         if self.kind is PaletteKind.QUALITATIVE:
             n = len(self.colors)
             return BoundaryNorm(np.arange(n + 1) - 0.5, n)
-
-        if (vmin is None or vmax is None) and data is not None:
-            finite = np.asarray(data, dtype=float)
-            finite = finite[np.isfinite(finite)]
-            if finite.size:
-                vmin = float(finite.min()) if vmin is None else vmin
-                vmax = float(finite.max()) if vmax is None else vmax
-
+        vmin, vmax = _auto_bounds(data, vmin, vmax)
         if self.kind is PaletteKind.DIVERGING:
-            vcenter = 0.0 if center is None else float(center)
-            halfrange = None
-            if vmin is not None and vmax is not None:
-                halfrange = max(abs(vmin - vcenter), abs(vmax - vcenter)) or None
-            return CenteredNorm(vcenter=vcenter, halfrange=halfrange)
-
+            return _centered_norm(vmin, vmax, center)
         return Normalize(vmin=vmin, vmax=vmax)
 
 
