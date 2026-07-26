@@ -67,8 +67,7 @@
    "#2b1d32",
    "#281a2c"
   ],
-  "opacity": "opaque",
-  "continuous_colormap": "deep"
+  "opacity": "opaque"
  },
  "chlorophyll": {
   "label": "Chlorophyll",
@@ -138,8 +137,7 @@
    "#132817",
    "#122414"
   ],
-  "opacity": "opaque",
-  "continuous_colormap": "algae"
+  "opacity": "opaque"
  },
  "current_speed": {
   "label": "Current speed",
@@ -209,8 +207,7 @@
    "#182716",
    "#172313"
   ],
-  "opacity": "opaque",
-  "continuous_colormap": "speed"
+  "opacity": "opaque"
  },
  "dissolved_oxygen": {
   "label": "Dissolved oxygen",
@@ -280,8 +277,7 @@
    "#dfb51c",
    "#ddaf19"
   ],
-  "opacity": "opaque",
-  "continuous_colormap": "oxy"
+  "opacity": "opaque"
  },
  "phase": {
   "label": "Phase / direction (cyclic)",
@@ -351,8 +347,7 @@
    "#a17c0d",
    "#a8780d"
   ],
-  "opacity": "opaque",
-  "continuous_colormap": "phase"
+  "opacity": "opaque"
  },
  "rainfall": {
   "label": "Rainfall",
@@ -422,8 +417,7 @@
    "#221f3b",
    "#221b38"
   ],
-  "opacity": "opaque",
-  "continuous_colormap": "rain"
+  "opacity": "opaque"
  },
  "salinity": {
   "label": "Salinity",
@@ -493,8 +487,7 @@
    "#f7ec92",
    "#fdef9a"
   ],
-  "opacity": "opaque",
-  "continuous_colormap": "haline"
+  "opacity": "opaque"
  },
  "sea_ice": {
   "label": "Sea ice",
@@ -564,8 +557,7 @@
    "#e3f9fa",
    "#eafdfd"
   ],
-  "opacity": "opaque",
-  "continuous_colormap": "ice"
+  "opacity": "opaque"
  },
  "sea_level_anomaly": {
   "label": "Sea-level anomaly",
@@ -636,7 +628,6 @@
    "#3c0912"
   ],
   "opacity": "opaque",
-  "continuous_colormap": "balance",
   "center": 0.0
  },
  "sea_surface_temperature": {
@@ -707,8 +698,7 @@
    "#ebf457",
    "#e8fa5b"
   ],
-  "opacity": "opaque",
-  "continuous_colormap": "thermal"
+  "opacity": "opaque"
  },
  "solar_radiation": {
   "label": "Solar radiation",
@@ -778,8 +768,7 @@
    "#e0f848",
    "#e1fd4b"
   ],
-  "opacity": "opaque",
-  "continuous_colormap": "solar"
+  "opacity": "opaque"
  },
  "topography": {
   "label": "Topography (land & sea)",
@@ -850,7 +839,6 @@
    "#f9fde4"
   ],
   "opacity": "opaque",
-  "continuous_colormap": "topo",
   "center": 0.0
  },
  "turbidity": {
@@ -921,8 +909,7 @@
    "#26211d",
    "#221f1b"
   ],
-  "opacity": "opaque",
-  "continuous_colormap": "turbid"
+  "opacity": "opaque"
  },
  "vorticity": {
   "label": "Vorticity",
@@ -993,7 +980,6 @@
    "#340d35"
   ],
   "opacity": "opaque",
-  "continuous_colormap": "curl",
   "center": 0.0
  },
  "water_density": {
@@ -1064,7 +1050,6 @@
    "#3b0f29",
    "#360e24"
   ],
-  "opacity": "opaque",
-  "continuous_colormap": "dense"
+  "opacity": "opaque"
  }
 }
