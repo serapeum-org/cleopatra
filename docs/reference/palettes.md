@@ -92,6 +92,8 @@ kind). `PALETTES` is the underlying `name → Palette` mapping.
 Browse the registry as a grouped swatch grid — a quick way to see every palette (or
 just one kind, or an explicit list) at a glance. Returns the matplotlib `Figure`.
 
+![The registered cleopatra palettes, grouped by kind](../images/palettes/palette_grid.png)
+
 ```python
 from cleopatra.palettes import preview_palettes
 
