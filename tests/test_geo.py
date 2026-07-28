@@ -701,3 +701,89 @@ def test_add_reference_map_integration(tmp_path: Path, monkeypatch):
     assert ax.spines["bottom"].get_edgecolor() == (0.6, 0.6, 0.6, 1.0)
     assert ax.xaxis.get_gridlines()[0].get_visible(), "graticule not drawn"
     plt.close(fig)
+
+
+class TestBasemapAlignmentCheck:
+    """`_check_basemap_alignment`: the opt-in mis-georeferencing warning."""
+
+    @staticmethod
+    def _relief(ref_land: np.ndarray) -> np.ndarray:
+        """RGB where ocean is blue-dominant and land is green."""
+        rgb = np.zeros((*ref_land.shape, 3), dtype=np.uint8)
+        rgb[..., 2] = 255  # blue everywhere == ocean by default
+        rgb[ref_land] = (0, 255, 0)  # land: green (not blue-dominant)
+        return rgb
+
+    def test_no_extent_skips_before_fetching_relief(self, monkeypatch):
+        fetched = []
+        monkeypatch.setattr(
+            refmod,
+            "relief",
+            lambda res="low": fetched.append(1) or np.zeros((4, 4, 3), np.uint8),
+        )
+        glyph = ArrayGlyph(np.arange(3 * 10 * 10, dtype=float).reshape(3, 10, 10))
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            glyph._check_basemap_alignment()
+        assert caught == [] and fetched == []
+
+    def test_no_land_sea_boundary_skips(self, monkeypatch):
+        monkeypatch.setattr(
+            refmod, "relief", lambda res="low": np.zeros((4, 4, 3), np.uint8)
+        )
+        glyph = ArrayGlyph(np.ones((3, 10, 10)), extent=[0, 0, 10, 10])  # all finite
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            glyph._check_basemap_alignment()
+        assert caught == []
+
+    def test_relief_unavailable_never_fails(self, monkeypatch):
+        def offline(res="low"):
+            raise ConnectionError("no network")
+
+        monkeypatch.setattr(refmod, "relief", offline)
+        arr = np.ones((3, 10, 20))
+        arr[:, :, 10:] = np.nan  # half land, half sea
+        glyph = ArrayGlyph(arr, extent=[-20, -10, 20, 10])
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            glyph._check_basemap_alignment()
+        assert caught == []
+
+    def test_opt_in_wiring(self, monkeypatch):
+        seen = []
+        monkeypatch.setattr(
+            ArrayGlyph, "_check_basemap_alignment", lambda self, *a, **k: seen.append(1)
+        )
+        glyph = ArrayGlyph(np.ones((3, 10, 10)), extent=[0, 0, 10, 10])
+        glyph._draw_basemap({"relief": False, "features": [], "check_alignment": True})
+        assert seen == [1]
+        glyph._draw_basemap({"relief": False, "features": []})  # opt-in absent
+        assert seen == [1]  # not called again
+
+    def test_warns_on_misregistration_but_not_when_aligned(self, monkeypatch):
+        rows, cols = np.mgrid[0:180, 0:360]
+        ref_land = (rows + cols) % 2 == 0  # global 1-cell checkerboard
+        monkeypatch.setattr(refmod, "relief", lambda res="low": self._relief(ref_land))
+
+        def sample(extent, n=20):
+            xmin, ymin, xmax, ymax = extent
+            lons = np.linspace(xmin, xmax, n)
+            lats = np.linspace(ymax, ymin, n)  # origin="upper"
+            ci = np.clip(((lons + 180) / 360 * 360).astype(int), 0, 359)
+            ri = np.clip(((90 - lats) / 180 * 180).astype(int), 0, 179)
+            return ref_land[np.ix_(ri, ci)]
+
+        e0 = [0.0, 0.0, 20.0, 20.0]
+        land = sample(e0)
+        data = np.broadcast_to(np.where(land, 1.0, np.nan), (3, 20, 20)).copy()
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            ArrayGlyph(data, extent=e0)._check_basemap_alignment()
+        assert not any("alignment" in str(x.message) for x in caught)
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            ArrayGlyph(data, extent=[1.0, 0.0, 21.0, 20.0])._check_basemap_alignment()
+        assert any("alignment" in str(x.message) for x in caught)

@@ -610,6 +610,11 @@ class GeoMixin:
                     * ``features`` -- an iterable of layer names (``str``) or
                       ``(layer, style_dict)`` pairs (default ``coastline`` and
                       ``borders``).
+                    * ``check_alignment`` -- ``True`` to run an opt-in
+                      mis-georeferencing check (off by default): warns when the
+                      data's land/sea mask matches the relief better at a shifted
+                      position, i.e. the extent looks wrong. See
+                      `_check_basemap_alignment`.
         """
         if callable(spec):
             spec(self)
@@ -636,6 +641,83 @@ class GeoMixin:
         for feature in features:
             layer, style = (feature, {}) if isinstance(feature, str) else feature
             self.add_features(layer, resolution, **{"zorder": 3, **style})
+
+        if cfg.get("check_alignment"):
+            self._check_basemap_alignment()
+
+    def _check_basemap_alignment(
+        self, resolution: str = "low", *, margin: float = 0.06
+    ) -> None:
+        """Warn (opt-in) when the data looks mis-georeferenced against the relief.
+
+        Compares the data's own land/sea mask (finite = land, masked/NaN = sea)
+        with the relief's ocean at the data's `extent`, and at a few one/two-cell
+        shifts. If some shift matches the relief markedly better than the given
+        extent does, the extent is likely wrong -- a bad offset, or a scale error
+        (non-square / wrong pixel size) that drifts the field off the coastline
+        progressively toward the edges. Because a shift can only *partly*
+        compensate a scale error, even the residual improvement is a reliable
+        tell. Testing "does a shift help?" rather than an absolute agreement
+        threshold self-calibrates for coastline complexity and relief coarseness.
+
+        This is a **heuristic diagnostic**, so it only *warns* (never corrects,
+        and never raises). It no-ops when it cannot judge: no `extent`, no
+        land/sea boundary in the data (all land or all sea), or the relief cannot
+        be fetched (offline / no Pillow). It keys off the finite/NaN mask, so it
+        is meaningful only for land-masked fields; a field defined over sea too
+        has no boundary to check and is skipped.
+
+        Args:
+            resolution: Relief product used as the land/sea reference
+                (`"low"`/`"medium"`). Low is enough for a coarse check.
+            margin: Minimum agreement gain from shifting that triggers the
+                warning. `0.06` sits between an aligned field (a shift barely
+                helps) and a misregistered one (a shift helps clearly).
+        """
+        extent = getattr(self, "extent", None)
+        arr = getattr(self, "arr", None)
+        if extent is None or arr is None:
+            return
+        frame = arr[0] if getattr(arr, "ndim", 2) >= 3 else arr
+        data = np.ma.filled(np.ma.asarray(frame).astype(float), np.nan)
+        if data.ndim != 2:
+            return
+        land = np.isfinite(data)
+        frac = float(land.mean())
+        if not 0.05 < frac < 0.95:
+            return  # no usable land/sea boundary to compare against
+
+        try:
+            rgb = reference.relief(resolution)
+        except Exception:  # noqa: BLE001 -- offline / no Pillow: skip, never fail a plot
+            return
+        red, green, blue = (rgb[:, :, i].astype(int) for i in range(3))
+        ref_land = ~((blue > red + 8) & (blue > green + 8))  # ocean == blue-dominant
+        rel_h, rel_w = ref_land.shape
+
+        xmin, xmax, ymin, ymax = extent
+        rows, cols = land.shape
+        dx, dy = (xmax - xmin) / cols, (ymax - ymin) / rows
+
+        def agreement(shift_x: float, shift_y: float) -> float:
+            lons = np.linspace(xmin + shift_x, xmax + shift_x, cols)
+            lats = np.linspace(ymax + shift_y, ymin + shift_y, rows)  # origin="upper"
+            col = np.clip(((lons + 180.0) / 360.0 * rel_w).astype(int), 0, rel_w - 1)
+            row = np.clip(((90.0 - lats) / 180.0 * rel_h).astype(int), 0, rel_h - 1)
+            return float((ref_land[np.ix_(row, col)] == land).mean())
+
+        here = agreement(0.0, 0.0)
+        steps = (-2, -1, 0, 1, 2)
+        best = max(agreement(i * dx, j * dy) for i in steps for j in steps)
+        if best - here > margin:
+            warnings.warn(
+                "basemap alignment: the data's land/sea mask matches the "
+                f"reference relief better when shifted ({here:.2f} -> {best:.2f} "
+                "agreement). The extent may be mis-georeferenced (wrong pixel "
+                "size or offset); verify it -- a scale error misaligns "
+                "progressively toward the edges.",
+                stacklevel=3,
+            )
 
     def add_reference_map(
         self,
