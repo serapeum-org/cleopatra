@@ -5332,104 +5332,339 @@ class TestArrayGlyphApplyStyle:
 
 
 class TestAnimateFullBleed:
-    """`animate(full_bleed=True)` fills the figure edge-to-edge, chrome-free."""
+    """Tests for `ArrayGlyph.animate(full_bleed=...)` and `_apply_full_bleed`.
+
+    Cover the full-bleed layout the flag drives: filling the whole figure,
+    stripping chrome, painting a black canvas, resizing the figure to the data
+    aspect, skipping `tight_layout`, composing with a basemap, and the degenerate
+    branches (`extent=None`, a zero-width extent) that must not resize or crash.
+    """
 
     @staticmethod
     def _stack() -> np.ndarray:
+        """Return a small 3-frame single-band stack `(3, 20, 30)` for animating."""
         return np.arange(3 * 20 * 30, dtype=float).reshape(3, 20, 30)
 
     def test_full_bleed_fills_figure_and_strips_chrome(self):
-        # extent [xmin, ymin, xmax, ymax] -> width 40, height 20
+        """Fills the figure, hides ticks/spines, and paints a black canvas.
+
+        Test scenario:
+            With a georeferenced extent and `full_bleed=True`, the axes must
+            occupy the entire figure `[0, 0, 1, 1]`, carry no ticks and no
+            visible spines, and both axes and figure backgrounds must be black
+            (so a semi-transparent relief reads dark).
+        """
         glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
         glyph.animate(["a", "b", "c"], full_bleed=True, add_colorbar=False, title="")
-        assert tuple(round(v, 6) for v in glyph.ax.get_position().bounds) == (
-            0.0,
-            0.0,
-            1.0,
-            1.0,
-        )
-        assert list(glyph.ax.get_xticks()) == []
-        assert list(glyph.ax.get_yticks()) == []
-        assert not any(s.get_visible() for s in glyph.ax.spines.values())
-        # a black canvas is painted so a semi-transparent relief reads dark
-        assert glyph.ax.get_facecolor() == (0.0, 0.0, 0.0, 1.0)
-        assert glyph.fig.get_facecolor() == (0.0, 0.0, 0.0, 1.0)
+        bounds = tuple(round(v, 6) for v in glyph.ax.get_position().bounds)
+        assert bounds == (0.0, 0.0, 1.0, 1.0), f"axes should fill the figure, got {bounds}"
+        assert list(glyph.ax.get_xticks()) == [], "x ticks should be stripped"
+        assert list(glyph.ax.get_yticks()) == [], "y ticks should be stripped"
+        visible = [s for s in glyph.ax.spines.values() if s.get_visible()]
+        assert not visible, f"all spines should be hidden, {len(visible)} still visible"
+        assert glyph.ax.get_facecolor() == (0.0, 0.0, 0.0, 1.0), "axes canvas should be black"
+        assert glyph.fig.get_facecolor() == (0.0, 0.0, 0.0, 1.0), "figure canvas should be black"
         plt.close("all")
 
     def test_full_bleed_resizes_figure_to_data_aspect(self):
-        # width 40 / height 20 == 2, so the figure aspect is driven to 2.
+        """Resizes the figure so its aspect matches the data box (no distortion).
+
+        Test scenario:
+            A data box 40 wide x 20 tall has aspect 2.0. Starting from a square
+            `figsize=(8, 8)`, `full_bleed=True` must drive the figure aspect
+            (width / height) to 2.0 by adjusting the height.
+        """
         glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0], figsize=(8, 8))
         glyph.animate(["a", "b", "c"], full_bleed=True, add_colorbar=False)
         fig_w, fig_h = glyph.fig.get_size_inches()
-        assert round(fig_w / fig_h, 3) == 2.0
+        ratio = round(fig_w / fig_h, 3)
+        assert ratio == 2.0, f"figure aspect should match data aspect 2.0, got {ratio}"
         plt.close("all")
 
-    def test_default_layout_is_not_full_bleed(self):
+    def test_full_bleed_false_keeps_default_layout(self):
+        """`full_bleed=False` (the default) leaves the normal padded layout.
+
+        Test scenario:
+            Without `full_bleed`, `tight_layout` runs and the axes keeps its
+            default subplot margins, so it must NOT occupy the whole figure.
+        """
         glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
         glyph.animate(["a", "b", "c"])
-        assert tuple(glyph.ax.get_position().bounds) != (0.0, 0.0, 1.0, 1.0)
+        bounds = tuple(glyph.ax.get_position().bounds)
+        assert bounds != (0.0, 0.0, 1.0, 1.0), f"default layout should not be full-bleed, got {bounds}"
+        plt.close("all")
+
+    def test_full_bleed_without_extent_still_fills(self):
+        """With no extent, the axes still fills the figure (aspect unknown, no resize).
+
+        Test scenario:
+            A glyph built without `extent` has no data box to match, so the
+            figure is not resized, but the axes must still fill `[0, 0, 1, 1]`
+            without raising.
+        """
+        glyph = ArrayGlyph(self._stack())
+        glyph.animate(["a", "b", "c"], full_bleed=True, add_colorbar=False, title="")
+        bounds = tuple(round(v, 6) for v in glyph.ax.get_position().bounds)
+        assert bounds == (0.0, 0.0, 1.0, 1.0), f"axes should fill the figure with no extent, got {bounds}"
+        plt.close("all")
+
+    def test_full_bleed_zero_width_extent_skips_resize(self):
+        """A degenerate (zero-width) extent skips the resize without dividing by zero.
+
+        Test scenario:
+            `_apply_full_bleed` guards the aspect division on `width > 0 and
+            height > 0`. With a zero-width extent it must skip the resize, still
+            position the axes at `[0, 0, 1, 1]`, and never raise ZeroDivisionError.
+        """
+        glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 0.0, 20.0])
+        glyph.fig, glyph.ax = glyph.create_figure_axes()
+        glyph._apply_full_bleed()
+        bounds = tuple(round(v, 6) for v in glyph.ax.get_position().bounds)
+        assert bounds == (0.0, 0.0, 1.0, 1.0), f"axes should still fill on a degenerate extent, got {bounds}"
+        plt.close("all")
+
+    def test_full_bleed_emits_no_tight_layout_warning(self):
+        """`full_bleed` skips `tight_layout`, so its incompatibility warning never fires.
+
+        Test scenario:
+            A full-figure axes is incompatible with `tight_layout` and would
+            warn. Because `full_bleed` skips `tight_layout`, animating with it
+            must emit no such UserWarning.
+        """
+        glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            glyph.animate(["a", "b", "c"], full_bleed=True, add_colorbar=False, title="")
+        offenders = [str(w.message) for w in caught if "tight_layout" in str(w.message)]
+        assert offenders == [], f"full_bleed should skip tight_layout; got warnings {offenders}"
+        plt.close("all")
+
+    def test_full_bleed_composes_with_basemap(self, monkeypatch):
+        """`full_bleed=True` and `basemap=True` together: fill AND draw the backdrop.
+
+        Test scenario:
+            The flame use case combines both. The axes must fill `[0, 0, 1, 1]`
+            (full-bleed) while the relief and features are still drawn (basemap),
+            proving the two features do not clobber each other.
+        """
+        drawn: list = []
+        monkeypatch.setattr(refmod, "add_relief", lambda ax, *a, **k: drawn.append("relief") or ax)
+        monkeypatch.setattr(refmod, "add_features", lambda ax, *a, **k: drawn.append("features") or ax)
+        glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
+        glyph.animate(
+            ["a", "b", "c"], full_bleed=True, basemap=True, add_colorbar=False, title=""
+        )
+        bounds = tuple(round(v, 6) for v in glyph.ax.get_position().bounds)
+        assert bounds == (0.0, 0.0, 1.0, 1.0), f"combined full_bleed should fill, got {bounds}"
+        assert "relief" in drawn, "relief should still be drawn under full_bleed"
+        assert "features" in drawn, "features should still be drawn under full_bleed"
         plt.close("all")
 
 
 class TestAnimateBasemap:
-    """`animate(basemap=...)` composes a reference backdrop via GeoMixin methods."""
+    """Tests for `ArrayGlyph.animate(basemap=...)`.
+
+    Cover every `basemap` form the `animate` parameter forwards to
+    `GeoMixin._draw_basemap`: `None`, `True`, a callable, and the dict spec
+    (relief on/off/string/kwargs, feature resolution and per-layer styles, and
+    the opt-in `check_alignment`). Reference downloads are monkeypatched with
+    spies, so no test needs the network or the `[tiles]` extra.
+    """
 
     @staticmethod
     def _stack() -> np.ndarray:
+        """Return a small 3-frame single-band stack `(3, 20, 30)` for animating."""
         return np.arange(3 * 20 * 30, dtype=float).reshape(3, 20, 30)
 
+    @staticmethod
+    def _spy_relief(monkeypatch) -> list:
+        """Replace `reference.add_relief` with a spy; return its call log.
+
+        Args:
+            monkeypatch: pytest monkeypatch fixture.
+
+        Returns:
+            list: One `(args, kwargs)` tuple appended per `add_relief` call.
+        """
+        calls: list = []
+        monkeypatch.setattr(refmod, "add_relief", lambda ax, *a, **k: calls.append((a, k)) or ax)
+        return calls
+
+    @staticmethod
+    def _spy_features(monkeypatch) -> list:
+        """Replace `reference.add_features` with a spy; return its call log.
+
+        Args:
+            monkeypatch: pytest monkeypatch fixture.
+
+        Returns:
+            list: One `(args, kwargs)` tuple appended per `add_features` call.
+        """
+        calls: list = []
+        monkeypatch.setattr(refmod, "add_features", lambda ax, *a, **k: calls.append((a, k)) or ax)
+        return calls
+
     def test_basemap_true_composes_relief_and_features(self, monkeypatch):
-        relief: list = []
-        features: list = []
-        monkeypatch.setattr(
-            refmod, "add_relief", lambda ax, *a, **k: relief.append((a, k)) or ax
-        )
-        monkeypatch.setattr(
-            refmod, "add_features", lambda ax, *a, **k: features.append((a, k)) or ax
-        )
+        """`basemap=True` draws a low relief under, coastline+borders over.
+
+        Test scenario:
+            The default backdrop must call `add_relief("low", zorder=-2)` and
+            `add_features` for `coastline` then `borders`, all at `zorder=3`.
+        """
+        relief = self._spy_relief(monkeypatch)
+        features = self._spy_features(monkeypatch)
         glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
         glyph.animate(["a", "b", "c"], basemap=True, add_colorbar=False)
-        assert relief and relief[0][0] == ("low",)
-        assert relief[0][1]["zorder"] == -2
-        assert [args[0] for args, _ in features] == ["coastline", "borders"]
-        assert all(kwargs["zorder"] == 3 for _, kwargs in features)
+        assert relief, "relief should be drawn for basemap=True"
+        assert relief[0][0] == ("low",), f"relief resolution should be 'low', got {relief[0][0]}"
+        assert relief[0][1]["zorder"] == -2, f"relief should sit under data (zorder -2), got {relief[0][1].get('zorder')}"
+        layers = [args[0] for args, _ in features]
+        assert layers == ["coastline", "borders"], f"default features should be coastline+borders, got {layers}"
+        assert all(kw["zorder"] == 3 for _, kw in features), "features should sit over data (zorder 3)"
+        plt.close("all")
+
+    def test_basemap_none_draws_nothing(self, monkeypatch):
+        """`basemap=None` (default) draws no reference layers.
+
+        Test scenario:
+            Without a `basemap`, neither `add_relief` nor `add_features` runs.
+        """
+        relief = self._spy_relief(monkeypatch)
+        features = self._spy_features(monkeypatch)
+        glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
+        glyph.animate(["a", "b", "c"])
+        assert relief == [], "no relief should be drawn without a basemap"
+        assert features == [], "no features should be drawn without a basemap"
+        plt.close("all")
+
+    def test_basemap_callable_receives_glyph(self):
+        """A callable `basemap` is invoked once with the glyph itself.
+
+        Test scenario:
+            `basemap=f` must call `f(glyph)` exactly once, passing the glyph so
+            the caller can draw anything on its axes.
+        """
+        seen: list = []
+        glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
+        glyph.animate(["a", "b", "c"], basemap=lambda g: seen.append(g), add_colorbar=False)
+        assert seen == [glyph], f"callable basemap should be called once with the glyph, got {seen}"
         plt.close("all")
 
     def test_basemap_dict_skips_relief_and_selects_features(self, monkeypatch):
-        relief: list = []
-        features: list = []
-        monkeypatch.setattr(
-            refmod, "add_relief", lambda ax, *a, **k: relief.append(a) or ax
-        )
-        monkeypatch.setattr(
-            refmod, "add_features", lambda ax, *a, **k: features.append(a[0]) or ax
-        )
+        """A dict with `relief=False` skips relief and draws only chosen features.
+
+        Test scenario:
+            `{"relief": False, "features": ["coastline"]}` must draw no relief
+            and exactly one feature layer, `coastline`.
+        """
+        relief = self._spy_relief(monkeypatch)
+        features = self._spy_features(monkeypatch)
         glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
         glyph.animate(
             ["a", "b", "c"],
             basemap={"relief": False, "features": ["coastline"]},
             add_colorbar=False,
         )
-        assert relief == []
-        assert features == ["coastline"]
+        assert relief == [], "relief=False should draw no relief"
+        assert [args[0] for args, _ in features] == ["coastline"], "only coastline should be drawn"
         plt.close("all")
 
-    def test_basemap_callable_receives_glyph(self):
+    def test_basemap_relief_resolution_string(self, monkeypatch):
+        """A string `relief` selects that relief resolution (defaults otherwise).
+
+        Test scenario:
+            `{"relief": "medium"}` must call `add_relief("medium", ...)` while
+            keeping the default `zorder=-2`.
+        """
+        relief = self._spy_relief(monkeypatch)
+        self._spy_features(monkeypatch)
+        glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
+        glyph.animate(["a", "b", "c"], basemap={"relief": "medium"}, add_colorbar=False)
+        assert relief and relief[0][0] == ("medium",), f"relief resolution should be 'medium', got {relief and relief[0][0]}"
+        assert relief[0][1]["zorder"] == -2, "relief should keep default zorder -2"
+        plt.close("all")
+
+    def test_basemap_relief_kwargs_dict(self, monkeypatch):
+        """A dict `relief` forwards `add_relief` keyword overrides.
+
+        Test scenario:
+            `{"relief": {"resolution": "medium", "alpha": 0.9, "zorder": -5}}`
+            must call `add_relief("medium", alpha=0.9, zorder=-5)`.
+        """
+        relief = self._spy_relief(monkeypatch)
+        self._spy_features(monkeypatch)
+        glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
+        glyph.animate(
+            ["a", "b", "c"],
+            basemap={"relief": {"resolution": "medium", "alpha": 0.9, "zorder": -5}},
+            add_colorbar=False,
+        )
+        assert relief and relief[0][0] == ("medium",), f"relief resolution should be 'medium', got {relief and relief[0][0]}"
+        kwargs = relief[0][1]
+        assert kwargs["alpha"] == 0.9, f"relief alpha override should be 0.9, got {kwargs.get('alpha')}"
+        assert kwargs["zorder"] == -5, f"relief zorder override should be -5, got {kwargs.get('zorder')}"
+        plt.close("all")
+
+    def test_basemap_feature_resolution_override(self, monkeypatch):
+        """A `resolution` key sets the Natural Earth resolution for features.
+
+        Test scenario:
+            `{"relief": False, "resolution": "110m"}` must draw the default
+            features at `110m` rather than the `50m` default.
+        """
+        self._spy_relief(monkeypatch)
+        features = self._spy_features(monkeypatch)
+        glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
+        glyph.animate(
+            ["a", "b", "c"], basemap={"relief": False, "resolution": "110m"}, add_colorbar=False
+        )
+        assert features, "features should be drawn"
+        resolutions = {args[1] for args, _ in features}
+        assert resolutions == {"110m"}, f"features should use the '110m' resolution, got {resolutions}"
+        plt.close("all")
+
+    def test_basemap_feature_tuple_applies_style(self, monkeypatch):
+        """`(layer, style)` feature tuples pass per-layer style overrides.
+
+        Test scenario:
+            `{"relief": False, "features": [("rivers", {"colors": "blue"})]}`
+            must call `add_features("rivers", "50m", colors="blue", zorder=3)`.
+        """
+        self._spy_relief(monkeypatch)
+        features = self._spy_features(monkeypatch)
+        glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
+        glyph.animate(
+            ["a", "b", "c"],
+            basemap={"relief": False, "features": [("rivers", {"colors": "blue"})]},
+            add_colorbar=False,
+        )
+        assert len(features) == 1, f"exactly one feature should be drawn, got {len(features)}"
+        args, kwargs = features[0]
+        assert args == ("rivers", "50m"), f"layer/resolution should be rivers/50m, got {args}"
+        assert kwargs["colors"] == "blue", f"style override colors=blue should pass through, got {kwargs.get('colors')}"
+        assert kwargs["zorder"] == 3, f"features should sit over data (zorder 3), got {kwargs.get('zorder')}"
+        plt.close("all")
+
+    def test_basemap_check_alignment_opt_in(self, monkeypatch):
+        """`check_alignment=True` in the spec runs the alignment check.
+
+        Test scenario:
+            `{"check_alignment": True, "relief": False, "features": []}` must
+            invoke `_check_basemap_alignment` once; omitting the key must not.
+        """
         seen: list = []
-        glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
-        glyph.animate(["a", "b", "c"], basemap=lambda g: seen.append(g), add_colorbar=False)
-        assert seen == [glyph]
-        plt.close("all")
-
-    def test_no_basemap_draws_nothing(self, monkeypatch):
-        called: list = []
         monkeypatch.setattr(
-            refmod, "add_relief", lambda ax, *a, **k: called.append("relief") or ax
-        )
-        monkeypatch.setattr(
-            refmod, "add_features", lambda ax, *a, **k: called.append("features") or ax
+            ArrayGlyph, "_check_basemap_alignment", lambda self, *a, **k: seen.append(1)
         )
         glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
-        glyph.animate(["a", "b", "c"])
-        assert called == []
+        glyph.animate(
+            ["a", "b", "c"],
+            basemap={"check_alignment": True, "relief": False, "features": []},
+            add_colorbar=False,
+        )
+        assert seen == [1], f"check_alignment=True should run the check once, got {seen}"
+        glyph.animate(
+            ["a", "b", "c"], basemap={"relief": False, "features": []}, add_colorbar=False
+        )
+        assert seen == [1], "omitting check_alignment must not run the check"
         plt.close("all")
