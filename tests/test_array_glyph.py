@@ -12,6 +12,7 @@ from matplotlib.figure import Figure
 from matplotlib.text import Text
 from PIL import Image
 
+import cleopatra.reference as refmod
 from cleopatra.array_glyph import (
     _COORD_DTYPE_MISMATCH,
     _COORD_SHAPE_MISMATCH,
@@ -5327,4 +5328,108 @@ class TestArrayGlyphApplyStyle:
         g.plot()
         g.apply_style("flow_accumulation", add_colorbar=False)
         assert len(g.ax.child_axes) == 0
+        plt.close("all")
+
+
+class TestAnimateFullBleed:
+    """`animate(full_bleed=True)` fills the figure edge-to-edge, chrome-free."""
+
+    @staticmethod
+    def _stack() -> np.ndarray:
+        return np.arange(3 * 20 * 30, dtype=float).reshape(3, 20, 30)
+
+    def test_full_bleed_fills_figure_and_strips_chrome(self):
+        # extent [xmin, ymin, xmax, ymax] -> width 40, height 20
+        glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
+        glyph.animate(["a", "b", "c"], full_bleed=True, add_colorbar=False, title="")
+        assert tuple(round(v, 6) for v in glyph.ax.get_position().bounds) == (
+            0.0,
+            0.0,
+            1.0,
+            1.0,
+        )
+        assert list(glyph.ax.get_xticks()) == []
+        assert list(glyph.ax.get_yticks()) == []
+        assert not any(s.get_visible() for s in glyph.ax.spines.values())
+        # a black canvas is painted so a semi-transparent relief reads dark
+        assert glyph.ax.get_facecolor() == (0.0, 0.0, 0.0, 1.0)
+        assert glyph.fig.get_facecolor() == (0.0, 0.0, 0.0, 1.0)
+        plt.close("all")
+
+    def test_full_bleed_resizes_figure_to_data_aspect(self):
+        # width 40 / height 20 == 2, so the figure aspect is driven to 2.
+        glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0], figsize=(8, 8))
+        glyph.animate(["a", "b", "c"], full_bleed=True, add_colorbar=False)
+        fig_w, fig_h = glyph.fig.get_size_inches()
+        assert round(fig_w / fig_h, 3) == 2.0
+        plt.close("all")
+
+    def test_default_layout_is_not_full_bleed(self):
+        glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
+        glyph.animate(["a", "b", "c"])
+        assert tuple(glyph.ax.get_position().bounds) != (0.0, 0.0, 1.0, 1.0)
+        plt.close("all")
+
+
+class TestAnimateBasemap:
+    """`animate(basemap=...)` composes a reference backdrop via GeoMixin methods."""
+
+    @staticmethod
+    def _stack() -> np.ndarray:
+        return np.arange(3 * 20 * 30, dtype=float).reshape(3, 20, 30)
+
+    def test_basemap_true_composes_relief_and_features(self, monkeypatch):
+        relief: list = []
+        features: list = []
+        monkeypatch.setattr(
+            refmod, "add_relief", lambda ax, *a, **k: relief.append((a, k)) or ax
+        )
+        monkeypatch.setattr(
+            refmod, "add_features", lambda ax, *a, **k: features.append((a, k)) or ax
+        )
+        glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
+        glyph.animate(["a", "b", "c"], basemap=True, add_colorbar=False)
+        assert relief and relief[0][0] == ("low",)
+        assert relief[0][1]["zorder"] == -2
+        assert [args[0] for args, _ in features] == ["coastline", "borders"]
+        assert all(kwargs["zorder"] == 3 for _, kwargs in features)
+        plt.close("all")
+
+    def test_basemap_dict_skips_relief_and_selects_features(self, monkeypatch):
+        relief: list = []
+        features: list = []
+        monkeypatch.setattr(
+            refmod, "add_relief", lambda ax, *a, **k: relief.append(a) or ax
+        )
+        monkeypatch.setattr(
+            refmod, "add_features", lambda ax, *a, **k: features.append(a[0]) or ax
+        )
+        glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
+        glyph.animate(
+            ["a", "b", "c"],
+            basemap={"relief": False, "features": ["coastline"]},
+            add_colorbar=False,
+        )
+        assert relief == []
+        assert features == ["coastline"]
+        plt.close("all")
+
+    def test_basemap_callable_receives_glyph(self):
+        seen: list = []
+        glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
+        glyph.animate(["a", "b", "c"], basemap=lambda g: seen.append(g), add_colorbar=False)
+        assert seen == [glyph]
+        plt.close("all")
+
+    def test_no_basemap_draws_nothing(self, monkeypatch):
+        called: list = []
+        monkeypatch.setattr(
+            refmod, "add_relief", lambda ax, *a, **k: called.append("relief") or ax
+        )
+        monkeypatch.setattr(
+            refmod, "add_features", lambda ax, *a, **k: called.append("features") or ax
+        )
+        glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
+        glyph.animate(["a", "b", "c"])
+        assert called == []
         plt.close("all")

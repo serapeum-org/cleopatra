@@ -585,6 +585,58 @@ class GeoMixin:
         lum = 0.2126 * rgb[..., 0] + 0.7152 * rgb[..., 1] + 0.0722 * rgb[..., 2]
         return bool(np.mean(lum[opaque]) < 0.5)
 
+    def _draw_basemap(self, spec: Any) -> None:
+        """Compose a reference basemap under/over the glyph's data.
+
+        Drives the glyph's own `add_relief` / `add_features` from a compact
+        `spec` -- the engine behind `ArrayGlyph.animate(basemap=...)`. The
+        relief is drawn first (below the data by default, `zorder=-2`) and the
+        vector features after (above, `zorder=3`), so on a value-linked-opacity
+        style the cool areas reveal the terrain while the data glows on top.
+
+        Args:
+            spec: The basemap specification. One of:
+
+                * a **callable** ``f(glyph)`` -- invoked with the glyph for
+                  full control (draw whatever you like on `self.ax`);
+                * ``True`` -- the default backdrop: a `"low"` relief under the
+                  data plus grey `coastline` and `borders` (`"50m"`) over it;
+                * a **dict** with optional keys:
+                    * ``relief`` -- ``False`` to skip it, ``True`` for the
+                      default, a resolution string (e.g. ``"medium"``), or a
+                      dict of `add_relief` keyword arguments;
+                    * ``resolution`` -- Natural Earth resolution for the
+                      features (default ``"50m"``);
+                    * ``features`` -- an iterable of layer names (``str``) or
+                      ``(layer, style_dict)`` pairs (default ``coastline`` and
+                      ``borders``).
+        """
+        if callable(spec):
+            spec(self)
+            return
+        cfg: dict = {} if spec is True else dict(spec)
+
+        relief = cfg.get("relief", True)
+        if relief:
+            relief_kwargs: dict = {"resolution": "low", "alpha": 0.55, "zorder": -2}
+            if isinstance(relief, str):
+                relief_kwargs["resolution"] = relief
+            elif isinstance(relief, dict):
+                relief_kwargs.update(relief)
+            self.add_relief(relief_kwargs.pop("resolution"), **relief_kwargs)
+
+        resolution = cfg.get("resolution", "50m")
+        features = cfg.get(
+            "features",
+            (
+                ("coastline", {"colors": "0.6", "linewidths": 0.5}),
+                ("borders", {"colors": "0.4", "linewidths": 0.4}),
+            ),
+        )
+        for feature in features:
+            layer, style = (feature, {}) if isinstance(feature, str) else feature
+            self.add_features(layer, resolution, **{"zorder": 3, **style})
+
     def add_reference_map(
         self,
         style: str = "ecmwf",

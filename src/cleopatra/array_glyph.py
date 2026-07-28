@@ -3683,6 +3683,35 @@ class ArrayGlyph(GeoMixin, Glyph):
         result = FacetGrid(fig=fig, axes=axes, cbar=cbar, name_dicts=name_dicts)
         return result
 
+    def _apply_full_bleed(self) -> None:
+        """Give the axes the whole figure, chrome-free (for `animate(full_bleed=True)`).
+
+        Hides ticks and spines, paints a black canvas (axes + figure
+        background, like `styles.apply_blank_canvas` -- so a semi-transparent
+        relief backdrop reads dark and no-data cells are black rather than
+        white), resizes the figure so its aspect matches the georeferenced data
+        box (from `extent`) so the map fills the frame without distortion, then
+        hands the axes the entire figure area (`set_position([0, 0, 1, 1])`,
+        `aspect="auto"`). Without an `extent` the aspect is unknown, so the axes
+        still fills but may stretch. The caller (`animate`) skips its
+        `tight_layout` when this runs.
+        """
+        ax, fig = self.ax, self.fig
+        if self.extent is not None:
+            xmin, xmax, ymin, ymax = self.extent
+            width, height = abs(xmax - xmin), abs(ymax - ymin)
+            if width > 0 and height > 0:
+                fig_width = fig.get_size_inches()[0]
+                fig.set_size_inches(fig_width, fig_width * height / width, forward=True)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+        ax.set_facecolor("black")
+        fig.patch.set_facecolor("black")
+        ax.set_aspect("auto")
+        ax.set_position([0, 0, 1, 1])
+
     def animate(
         self,
         time: list[Any],
@@ -3692,6 +3721,8 @@ class ArrayGlyph(GeoMixin, Glyph):
         frame_label: FrameLabel | None = None,
         *,
         data_getter: Callable[[int], np.ndarray] | None = None,
+        full_bleed: bool = False,
+        basemap: bool | dict | Callable[[Any], None] | None = None,
         **kwargs: Unpack[AnimateKwargs],
     ) -> FuncAnimation:
         """Create an animation from a single-band or true-colour stack.
@@ -3758,6 +3789,29 @@ class ArrayGlyph(GeoMixin, Glyph):
                 axes) must match `self.arr.shape[-2:]`. When None
                 (default) the existing behaviour is preserved and
                 `self.arr[i]` supplies frame `i`.
+            full_bleed: When True, the map fills the whole figure edge-to-edge
+                with no chrome, by default False. Ticks and spines are hidden, a
+                black canvas is painted (axes + figure background, so a
+                semi-transparent relief backdrop reads dark and no-data cells
+                are black), the figure is resized so its aspect matches the
+                georeferenced data box (from `extent`, so the fill introduces no
+                distortion), and the axes is given the entire figure area
+                (`set_position([0, 0, 1, 1])`, `aspect="auto"`); the internal
+                `tight_layout` is skipped. Intended for chrome-free maps -- a
+                colorbar or title has no room, so pair it with
+                `add_colorbar=False` (and no `title`). Without an `extent` the
+                axes still fills the figure but may stretch.
+            basemap: A reference backdrop drawn via the glyph's own
+                `add_relief` / `add_features` and composed with the frames by
+                `zorder` (relief under the data, coastline/borders over it), by
+                default None (no basemap). Accepts ``True`` for a sensible
+                default (a `"low"` relief plus grey `"50m"` coastline and
+                borders), a **dict** to configure it (keys ``relief``,
+                ``resolution``, ``features`` -- see `GeoMixin._draw_basemap`),
+                or a **callable** ``f(glyph)`` for full control. On a
+                value-linked-opacity `style` (e.g. `temperature_flame`) the cool
+                areas reveal the terrain while the data glows on top. Drawing
+                the relief needs the `[tiles]` extra (Pillow).
             **kwargs: Additional keyword arguments for customizing the animation.
 
                 Plot appearance:
@@ -4464,7 +4518,16 @@ class ArrayGlyph(GeoMixin, Glyph):
 
             return output
 
-        plt.tight_layout()
+        # Reference backdrop (relief under the frames, coastline/borders over
+        # them) drawn via the glyph's own GeoMixin methods; layered by zorder.
+        if basemap is not None:
+            self._draw_basemap(basemap)
+        # `full_bleed` fills the figure and skips `tight_layout` (which cannot
+        # position a full-figure axes and would warn); otherwise tidy as before.
+        if full_bleed:
+            self._apply_full_bleed()
+        else:
+            plt.tight_layout()
         anim = FuncAnimation(
             fig,
             animate_a,
