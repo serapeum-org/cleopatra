@@ -4038,6 +4038,35 @@ class ArrayGlyph(GeoMixin, Glyph):
         True
 
         ```
+        Full-bleed layout (`full_bleed=True`): no chrome (ticks/spines), a black
+        canvas, and the axes taking the entire figure:
+        ```python
+        >>> import numpy as np
+        >>> from cleopatra.array_glyph import ArrayGlyph
+        >>> stack = np.arange(3 * 6 * 8, dtype=float).reshape(3, 6, 8)
+        >>> glyph = ArrayGlyph(stack, extent=[0, 0, 8, 6])
+        >>> anim_obj = glyph.animate(
+        ...     ["t0", "t1", "t2"], full_bleed=True, add_colorbar=False
+        ... )
+        >>> tuple(round(float(v), 3) for v in glyph.ax.get_position().bounds)
+        (0.0, 0.0, 1.0, 1.0)
+        >>> glyph.ax.get_facecolor()
+        (0.0, 0.0, 0.0, 1.0)
+
+        ```
+        Compose a reference basemap under the frames (`basemap=True`) -- relief
+        below, coastline and borders over. The `animate` call is `+SKIP`ped in
+        doctest because it downloads the `[tiles]` assets on first use:
+        ```python
+        >>> import numpy as np
+        >>> from cleopatra.array_glyph import ArrayGlyph
+        >>> stack = np.arange(3 * 20 * 30, dtype=float).reshape(3, 20, 30)
+        >>> glyph = ArrayGlyph(stack, extent=[-12, 34, 32, 64])
+        >>> anim_obj = glyph.animate(  # doctest: +SKIP
+        ...     ["t0", "t1", "t2"], basemap=True, full_bleed=True, add_colorbar=False
+        ... )
+
+        ```
         """
         # Resolve deprecated kwarg aliases before the strict `kwargs`
         # validation below, which would otherwise reject them outright.
