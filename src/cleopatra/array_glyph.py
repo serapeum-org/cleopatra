@@ -2606,6 +2606,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         kind: str = "auto",
         ax: Axes | None = None,
         title: str | None = None,
+        full_bleed: bool = False,
         **kwargs: Unpack[PlotKwargs],
     ) -> tuple[Figure, Axes]:
         """Plot the array with customizable visualization options.
@@ -2657,6 +2658,13 @@ class ArrayGlyph(GeoMixin, Glyph):
             title: Plot title, by default None. A convenience shortcut
                 equivalent to the `title` option; when given it
                 overrides the `title` set at construction.
+            full_bleed: When True, the map fills the whole figure edge-to-edge
+                with no surrounding margin, by default False. Hides ticks and
+                spines, paints a black canvas, and resizes the figure to the
+                data box's aspect so the fill has no distortion (same as
+                `animate(full_bleed=...)`). Intended for chrome-free maps -- a
+                title has no room, so omit it; a scale swatch (from `style`)
+                still fits inside.
             **kwargs: Additional keyword arguments for customizing the plot.
 
                 Plot appearance:
@@ -3252,7 +3260,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                         "'points' and 'display_cell_value' are ignored with 'style'.",
                         stacklevel=2,
                     )
-                return self._plot_with_style(style)
+                self._plot_with_style(style)
+                if full_bleed:
+                    self._apply_full_bleed()
+                return self.fig, self.ax
 
         if self.rgb:
             # See `_clear_prior_render_artists`: cleared only once nothing
@@ -3389,6 +3400,8 @@ class ArrayGlyph(GeoMixin, Glyph):
             *(optional_display.get("points_id") or []),
             *(optional_display.get("cell_text_value") or []),
         )
+        if full_bleed:
+            self._apply_full_bleed()
         return fig, ax
 
     def facet(

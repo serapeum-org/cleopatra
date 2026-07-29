@@ -5668,3 +5668,53 @@ class TestAnimateBasemap:
         )
         assert seen == [1], "omitting check_alignment must not run the check"
         plt.close("all")
+
+
+class TestPlotFullBleed:
+    """`ArrayGlyph.plot(full_bleed=True)` fills the figure edge-to-edge, chrome-free."""
+
+    @staticmethod
+    def _field() -> np.ndarray:
+        """Return a small 2-D field `(20, 30)` for a single static plot."""
+        return np.arange(20 * 30, dtype=float).reshape(20, 30)
+
+    def test_plot_full_bleed_fills_and_strips_chrome(self):
+        """The cmap path fills the figure, hides chrome, and paints a black canvas.
+
+        Test scenario:
+            `plot(cmap=..., full_bleed=True)` on a georeferenced field must give
+            the axes the whole figure `[0, 0, 1, 1]`, remove ticks and spines,
+            and set both axes and figure backgrounds black.
+        """
+        glyph = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        glyph.plot(cmap="viridis", full_bleed=True)
+        bounds = tuple(round(v, 6) for v in glyph.ax.get_position().bounds)
+        assert bounds == (0.0, 0.0, 1.0, 1.0), f"axes should fill the figure, got {bounds}"
+        assert list(glyph.ax.get_xticks()) == [], "x ticks should be stripped"
+        assert not any(s.get_visible() for s in glyph.ax.spines.values()), "spines should be hidden"
+        assert glyph.ax.get_facecolor() == (0.0, 0.0, 0.0, 1.0), "canvas should be black"
+        plt.close("all")
+
+    def test_plot_full_bleed_style_path_fills(self):
+        """The styled path also honours full_bleed.
+
+        Test scenario:
+            `plot(style="temperature_2m", full_bleed=True)` returns via the
+            style branch, which must still fill the figure `[0, 0, 1, 1]`.
+        """
+        glyph = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        glyph.plot(style="temperature_2m", vmin=-10, vmax=40, full_bleed=True)
+        bounds = tuple(round(v, 6) for v in glyph.ax.get_position().bounds)
+        assert bounds == (0.0, 0.0, 1.0, 1.0), f"styled full-bleed should fill, got {bounds}"
+        plt.close("all")
+
+    def test_plot_default_is_not_full_bleed(self):
+        """`full_bleed=False` (default) keeps the normal padded layout.
+
+        Test scenario:
+            A plain `plot()` must NOT occupy the whole figure.
+        """
+        glyph = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        glyph.plot(cmap="viridis")
+        assert tuple(glyph.ax.get_position().bounds) != (0.0, 0.0, 1.0, 1.0), "default plot should not be full-bleed"
+        plt.close("all")
