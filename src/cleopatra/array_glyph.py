@@ -2606,7 +2606,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         kind: str = "auto",
         ax: Axes | None = None,
         title: str | None = None,
-        full_bleed: bool = False,
+        full_bleed: bool | str = False,
         **kwargs: Unpack[PlotKwargs],
     ) -> tuple[Figure, Axes]:
         """Plot the array with customizable visualization options.
@@ -2658,11 +2658,14 @@ class ArrayGlyph(GeoMixin, Glyph):
             title: Plot title, by default None. A convenience shortcut
                 equivalent to the `title` option; when given it
                 overrides the `title` set at construction.
-            full_bleed: When True, the map fills the whole figure edge-to-edge
-                with no surrounding margin, by default False. Hides ticks and
-                spines, paints a black canvas, and resizes the figure to the
-                data box's aspect so the fill has no distortion (same as
-                `animate(full_bleed=...)`). Intended for chrome-free maps -- a
+            full_bleed: Fill the whole figure edge-to-edge with no surrounding
+                margin, by default False. `True` hides ticks and spines and
+                resizes the figure to the data box's aspect so the fill has no
+                distortion, leaving the canvas colour untouched (masked / no-data
+                cells keep the default background). Pass a colour string instead
+                (e.g. `"black"`) to also paint the canvas that colour -- e.g. so
+                a semi-transparent relief reads dark. Same flag as
+                `animate(full_bleed=...)`. Intended for chrome-free maps -- a
                 title has no room, so omit it; a scale swatch (from `style`)
                 still fits inside.
             **kwargs: Additional keyword arguments for customizing the plot.
@@ -3262,7 +3265,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     )
                 self._plot_with_style(style)
                 if full_bleed:
-                    self._apply_full_bleed()
+                    self._apply_full_bleed(facecolor=full_bleed if isinstance(full_bleed, str) else None)
                 return self.fig, self.ax
 
         if self.rgb:
@@ -3401,7 +3404,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             *(optional_display.get("cell_text_value") or []),
         )
         if full_bleed:
-            self._apply_full_bleed()
+            self._apply_full_bleed(facecolor=full_bleed if isinstance(full_bleed, str) else None)
         return fig, ax
 
     def facet(
@@ -3696,18 +3699,24 @@ class ArrayGlyph(GeoMixin, Glyph):
         result = FacetGrid(fig=fig, axes=axes, cbar=cbar, name_dicts=name_dicts)
         return result
 
-    def _apply_full_bleed(self) -> None:
-        """Give the axes the whole figure, chrome-free (for `animate(full_bleed=True)`).
+    def _apply_full_bleed(self, facecolor: str | None = None) -> None:
+        """Give the axes the whole figure, chrome-free (for `full_bleed=...`).
 
-        Hides ticks and spines, paints a black canvas (axes + figure
-        background, like `styles.apply_blank_canvas` -- so a semi-transparent
-        relief backdrop reads dark and no-data cells are black rather than
-        white), resizes the figure so its aspect matches the georeferenced data
-        box (from `extent`) so the map fills the frame without distortion, then
-        hands the axes the entire figure area (`set_position([0, 0, 1, 1])`,
-        `aspect="auto"`). Without an `extent` the aspect is unknown, so the axes
-        still fills but may stretch. The caller (`animate`) skips its
-        `tight_layout` when this runs.
+        Hides ticks and spines, resizes the figure so its aspect matches the
+        georeferenced data box (from `extent`) so the map fills the frame
+        without distortion, then hands the axes the entire figure area
+        (`set_position([0, 0, 1, 1])`, `aspect="auto"`). Without an `extent` the
+        aspect is unknown, so the axes still fills but may stretch. The caller
+        skips its `tight_layout` when this runs.
+
+        The canvas colour is left untouched unless `facecolor` is given -- so
+        masked / no-data cells keep the default background, not black. Pass a
+        `facecolor` (e.g. `"black"`) only when the backdrop should be painted,
+        e.g. so a semi-transparent relief reads dark.
+
+        Args:
+            facecolor: Optional axes + figure background colour. `None`
+                (default) leaves the canvas unchanged.
         """
         ax, fig = self.ax, self.fig
         if self.extent is not None:
@@ -3720,8 +3729,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         ax.set_yticks([])
         for spine in ax.spines.values():
             spine.set_visible(False)
-        ax.set_facecolor("black")
-        fig.patch.set_facecolor("black")
+        if facecolor is not None:
+            ax.set_facecolor(facecolor)
+            fig.patch.set_facecolor(facecolor)
         ax.set_aspect("auto")
         ax.set_position([0, 0, 1, 1])
 
@@ -3734,7 +3744,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         frame_label: FrameLabel | None = None,
         *,
         data_getter: Callable[[int], np.ndarray] | None = None,
-        full_bleed: bool = False,
+        full_bleed: bool | str = False,
         basemap: bool | dict | Callable[[Any], None] | None = None,
         **kwargs: Unpack[AnimateKwargs],
     ) -> FuncAnimation:
@@ -3802,18 +3812,19 @@ class ArrayGlyph(GeoMixin, Glyph):
                 axes) must match `self.arr.shape[-2:]`. When None
                 (default) the existing behaviour is preserved and
                 `self.arr[i]` supplies frame `i`.
-            full_bleed: When True, the map fills the whole figure edge-to-edge
-                with no chrome, by default False. Ticks and spines are hidden, a
-                black canvas is painted (axes + figure background, so a
-                semi-transparent relief backdrop reads dark and no-data cells
-                are black), the figure is resized so its aspect matches the
-                georeferenced data box (from `extent`, so the fill introduces no
-                distortion), and the axes is given the entire figure area
-                (`set_position([0, 0, 1, 1])`, `aspect="auto"`); the internal
-                `tight_layout` is skipped. Intended for chrome-free maps -- a
-                colorbar or title has no room, so pair it with
-                `add_colorbar=False` (and no `title`). Without an `extent` the
-                axes still fills the figure but may stretch.
+            full_bleed: Fill the whole figure edge-to-edge with no chrome, by
+                default False. `True` hides ticks and spines, resizes the figure
+                so its aspect matches the georeferenced data box (from `extent`,
+                so the fill introduces no distortion), and gives the axes the
+                entire figure area (`set_position([0, 0, 1, 1])`,
+                `aspect="auto"`); the internal `tight_layout` is skipped. The
+                canvas colour is left untouched, so masked / no-data cells keep
+                the default background rather than turning black. Pass a colour
+                string instead (e.g. `"black"`) to also paint the canvas that
+                colour -- e.g. so a semi-transparent relief backdrop reads dark.
+                Intended for chrome-free maps -- a colorbar or title has no room,
+                so pair it with `add_colorbar=False` (and no `title`). Without an
+                `extent` the axes still fills the figure but may stretch.
             basemap: A reference backdrop drawn via the glyph's own
                 `add_relief` / `add_features` and composed with the frames by
                 `zorder` (relief under the data, coastline/borders over it), by
@@ -4051,15 +4062,16 @@ class ArrayGlyph(GeoMixin, Glyph):
         True
 
         ```
-        Full-bleed layout (`full_bleed=True`): no chrome (ticks/spines), a black
-        canvas, and the axes taking the entire figure:
+        Full-bleed layout: no chrome (ticks/spines) and the axes taking the whole
+        figure. `full_bleed=True` leaves the canvas colour alone; pass a colour
+        (`full_bleed="black"`) to also paint it, so masked cells read dark:
         ```python
         >>> import numpy as np
         >>> from cleopatra.array_glyph import ArrayGlyph
         >>> stack = np.arange(3 * 6 * 8, dtype=float).reshape(3, 6, 8)
         >>> glyph = ArrayGlyph(stack, extent=[0, 0, 8, 6])
         >>> anim_obj = glyph.animate(
-        ...     ["t0", "t1", "t2"], full_bleed=True, add_colorbar=False
+        ...     ["t0", "t1", "t2"], full_bleed="black", add_colorbar=False
         ... )
         >>> tuple(round(float(v), 3) for v in glyph.ax.get_position().bounds)
         (0.0, 0.0, 1.0, 1.0)
@@ -4567,7 +4579,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         # `full_bleed` fills the figure and skips `tight_layout` (which cannot
         # position a full-figure axes and would warn); otherwise tidy as before.
         if full_bleed:
-            self._apply_full_bleed()
+            self._apply_full_bleed(facecolor=full_bleed if isinstance(full_bleed, str) else None)
         else:
             plt.tight_layout()
         anim = FuncAnimation(

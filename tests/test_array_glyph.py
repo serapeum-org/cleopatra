@@ -5346,13 +5346,13 @@ class TestAnimateFullBleed:
         return np.arange(3 * 20 * 30, dtype=float).reshape(3, 20, 30)
 
     def test_full_bleed_fills_figure_and_strips_chrome(self):
-        """Fills the figure, hides ticks/spines, and paints a black canvas.
+        """`full_bleed=True` fills the figure and hides chrome, canvas untouched.
 
         Test scenario:
             With a georeferenced extent and `full_bleed=True`, the axes must
-            occupy the entire figure `[0, 0, 1, 1]`, carry no ticks and no
-            visible spines, and both axes and figure backgrounds must be black
-            (so a semi-transparent relief reads dark).
+            occupy the entire figure `[0, 0, 1, 1]` and carry no ticks and no
+            visible spines. `True` does not paint the canvas, so the axes
+            background stays the default (not black).
         """
         glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
         glyph.animate(["a", "b", "c"], full_bleed=True, add_colorbar=False, title="")
@@ -5362,8 +5362,23 @@ class TestAnimateFullBleed:
         assert list(glyph.ax.get_yticks()) == [], "y ticks should be stripped"
         visible = [s for s in glyph.ax.spines.values() if s.get_visible()]
         assert not visible, f"all spines should be hidden, {len(visible)} still visible"
+        assert glyph.ax.get_facecolor() != (0.0, 0.0, 0.0, 1.0), "True must not paint a black canvas"
+        plt.close("all")
+
+    def test_full_bleed_colour_paints_canvas(self):
+        """A colour string fills AND paints the axes + figure canvas that colour.
+
+        Test scenario:
+            `full_bleed="black"` fills the figure `[0, 0, 1, 1]` and sets both
+            the axes and figure backgrounds to black (so masked cells / a
+            semi-transparent relief read dark).
+        """
+        glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
+        glyph.animate(["a", "b", "c"], full_bleed="black", add_colorbar=False, title="")
         assert glyph.ax.get_facecolor() == (0.0, 0.0, 0.0, 1.0), "axes canvas should be black"
         assert glyph.fig.get_facecolor() == (0.0, 0.0, 0.0, 1.0), "figure canvas should be black"
+        bounds = tuple(round(v, 6) for v in glyph.ax.get_position().bounds)
+        assert bounds == (0.0, 0.0, 1.0, 1.0), f"colour full-bleed should still fill, got {bounds}"
         plt.close("all")
 
     def test_full_bleed_resizes_figure_to_data_aspect(self):
@@ -5679,12 +5694,12 @@ class TestPlotFullBleed:
         return np.arange(20 * 30, dtype=float).reshape(20, 30)
 
     def test_plot_full_bleed_fills_and_strips_chrome(self):
-        """The cmap path fills the figure, hides chrome, and paints a black canvas.
+        """The cmap path fills the figure and hides chrome (canvas untouched).
 
         Test scenario:
             `plot(cmap=..., full_bleed=True)` on a georeferenced field must give
-            the axes the whole figure `[0, 0, 1, 1]`, remove ticks and spines,
-            and set both axes and figure backgrounds black.
+            the axes the whole figure `[0, 0, 1, 1]` and remove ticks and spines;
+            `True` leaves the canvas colour at its default.
         """
         glyph = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         glyph.plot(cmap="viridis", full_bleed=True)
@@ -5692,7 +5707,19 @@ class TestPlotFullBleed:
         assert bounds == (0.0, 0.0, 1.0, 1.0), f"axes should fill the figure, got {bounds}"
         assert list(glyph.ax.get_xticks()) == [], "x ticks should be stripped"
         assert not any(s.get_visible() for s in glyph.ax.spines.values()), "spines should be hidden"
-        assert glyph.ax.get_facecolor() == (0.0, 0.0, 0.0, 1.0), "canvas should be black"
+        assert glyph.ax.get_facecolor() != (0.0, 0.0, 0.0, 1.0), "True must not paint a black canvas"
+        plt.close("all")
+
+    def test_plot_full_bleed_colour_paints_canvas(self):
+        """A colour string for full_bleed paints the plot canvas that colour.
+
+        Test scenario:
+            `plot(cmap=..., full_bleed="black")` fills the figure and sets the
+            axes background black.
+        """
+        glyph = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        glyph.plot(cmap="viridis", full_bleed="black")
+        assert glyph.ax.get_facecolor() == (0.0, 0.0, 0.0, 1.0), "full_bleed='black' should paint a black canvas"
         plt.close("all")
 
     def test_plot_full_bleed_style_path_fills(self):
