@@ -297,7 +297,7 @@ class ColorbarOptions(TypedDict, total=False):
     Note:
         Colorbar *placement* (edge, inside/outside, backing box) is set
         through the `colorbar=` parameter of `plot` / `animate` with a
-        `ColorbarSpec`, not through this dict.
+        `ColorBar`, not through this dict.
     """
 
     add_colorbar: bool
@@ -684,14 +684,14 @@ def _resolve_point_overlay(
     )
 
 
-class ColorbarSpec:
+class ColorBar:
     """Placement (and backing box) for the colorbar `plot` / `animate` draws.
 
     Bundles the colorbar-layout choices -- which edge it sits on, whether it
     is inset *inside* the frame, and its backing box -- into one value passed
     as `plot(colorbar=...)` / `animate(colorbar=...)`, mirroring `FrameLabel`.
     Pass `colorbar=True` / `False` / `None` for the simple cases and a
-    `ColorbarSpec` for placement control.
+    `ColorBar` for placement control.
 
     Attributes:
         location: Edge the colorbar sits on -- `"left"`, `"right"`, `"top"`,
@@ -719,16 +719,16 @@ class ColorbarSpec:
     Examples:
         - An inside colorbar on the right -- its box defaults on:
             ```python
-            >>> from cleopatra.array_glyph import ColorbarSpec
-            >>> spec = ColorbarSpec(location="right", inside=True)
+            >>> from cleopatra.array_glyph import ColorBar
+            >>> spec = ColorBar(location="right", inside=True)
             >>> spec.inside, spec.box
             (True, True)
 
             ```
         - Black title + tick numbers, outside on the bottom (no box):
             ```python
-            >>> from cleopatra.array_glyph import ColorbarSpec
-            >>> spec = ColorbarSpec(location="bottom", label_color="black", tick_color="black")
+            >>> from cleopatra.array_glyph import ColorBar
+            >>> spec = ColorBar(location="bottom", label_color="black", tick_color="black")
             >>> (spec.box, spec.label_color, spec.tick_color)
             (None, 'black', 'black')
 
@@ -744,7 +744,7 @@ class ColorbarSpec:
         label_color: str | None = None,
         tick_color: str | None = None,
     ) -> None:
-        """Initialise a `ColorbarSpec`.
+        """Initialise a `ColorBar`.
 
         Args:
             location: Edge to sit on (`"left"`/`"right"`/`"top"`/`"bottom"`),
@@ -766,29 +766,29 @@ class ColorbarSpec:
         self.tick_color = tick_color
 
 
-def _resolve_colorbar(colorbar: bool | ColorbarSpec | None) -> dict:
+def _resolve_colorbar(colorbar: bool | ColorBar | None) -> dict:
     """Translate a `colorbar=` argument into `default_options` updates.
 
     Args:
         colorbar: `None` (default) leaves the colorbar options untouched --
             matplotlib's placement, honouring the legacy `add_colorbar`;
             `False` suppresses the colorbar; `True` draws a default one; a
-            `ColorbarSpec` sets its placement and backing box.
+            `ColorBar` sets its placement and backing box.
 
     Returns:
         dict: Updates to merge into `default_options` (empty for `None`).
 
     Raises:
-        TypeError: If `colorbar` is not a bool, `ColorbarSpec`, or `None`.
+        TypeError: If `colorbar` is not a bool, `ColorBar`, or `None`.
 
     Examples:
-        - `False` suppresses the colorbar; a `ColorbarSpec` maps onto the
+        - `False` suppresses the colorbar; a `ColorBar` maps onto the
             internal `cbar_*` keys `create_color_bar` reads:
             ```python
-            >>> from cleopatra.array_glyph import _resolve_colorbar, ColorbarSpec
+            >>> from cleopatra.array_glyph import _resolve_colorbar, ColorBar
             >>> _resolve_colorbar(False)
             {'add_colorbar': False}
-            >>> _resolve_colorbar(ColorbarSpec(location="left", inside=True))["cbar_location"]
+            >>> _resolve_colorbar(ColorBar(location="left", inside=True))["cbar_location"]
             'left'
 
             ```
@@ -806,7 +806,7 @@ def _resolve_colorbar(colorbar: bool | ColorbarSpec | None) -> dict:
             "cbar_label_color": None,
             "cbar_tick_color": None,
         }
-    if isinstance(colorbar, ColorbarSpec):
+    if isinstance(colorbar, ColorBar):
         return {
             "add_colorbar": True,
             "cbar_location": colorbar.location,
@@ -816,7 +816,7 @@ def _resolve_colorbar(colorbar: bool | ColorbarSpec | None) -> dict:
             "cbar_tick_color": colorbar.tick_color,
         }
     raise TypeError(
-        "colorbar must be a bool, ColorbarSpec, or None, got "
+        "colorbar must be a bool, ColorBar, or None, got "
         f"{type(colorbar).__name__}."
     )
 
@@ -2763,7 +2763,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         title: str | None = None,
         full_bleed: bool | str = False,
         basemap: bool | dict | Callable[[Any], None] | None = None,
-        colorbar: bool | ColorbarSpec | None = None,
+        colorbar: bool | ColorBar | None = None,
         **kwargs: Unpack[PlotKwargs],
     ) -> tuple[Figure, Axes]:
         """Plot the array with customizable visualization options.
@@ -2839,7 +2839,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             colorbar: Colorbar presence and placement. `None` (default) keeps
                 matplotlib's placement (honouring the legacy `add_colorbar`);
                 `False` draws no colorbar; `True` a default one. Pass a
-                `ColorbarSpec` for control -- an edge (`location`), an `inside`
+                `ColorBar` for control -- an edge (`location`), an `inside`
                 inset that tracks `full_bleed`, a backing `box` (defaulted on
                 for an inset), and text colours (`label_color` for the title,
                 `tick_color` for the tick numbers). Same flag as `animate(colorbar=)`.
@@ -3371,7 +3371,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             else:
                 self.default_options[key] = val
 
-        # `colorbar=` (a ColorbarSpec / bool) resolves last, so it wins over
+        # `colorbar=` (a ColorBar / bool) resolves last, so it wins over
         # the default `add_colorbar` and any internal cbar_* key.
         self.default_options.update(_resolve_colorbar(colorbar))
 
@@ -3929,7 +3929,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         data_getter: Callable[[int], np.ndarray] | None = None,
         full_bleed: bool | str = False,
         basemap: bool | dict | Callable[[Any], None] | None = None,
-        colorbar: bool | ColorbarSpec | None = None,
+        colorbar: bool | ColorBar | None = None,
         **kwargs: Unpack[AnimateKwargs],
     ) -> FuncAnimation:
         """Create an animation from a single-band or true-colour stack.
@@ -4023,7 +4023,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             colorbar: Colorbar presence and placement. `None` (default) keeps
                 matplotlib's placement (honouring the legacy `add_colorbar`);
                 `False` draws no colorbar; `True` a default one. Pass a
-                `ColorbarSpec` for control -- an edge (`location`), an `inside`
+                `ColorBar` for control -- an edge (`location`), an `inside`
                 inset that tracks `full_bleed`, a backing `box` (defaulted on
                 for an inset), and text colours (`label_color` for the title,
                 `tick_color` for the tick numbers). Same flag as `plot(colorbar=)`.
@@ -4329,7 +4329,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             else:
                 self.default_options[key] = val
 
-        # `colorbar=` (a ColorbarSpec / bool) resolves last, so it wins over
+        # `colorbar=` (a ColorBar / bool) resolves last, so it wins over
         # the default `add_colorbar` and any internal cbar_* key.
         self.default_options.update(_resolve_colorbar(colorbar))
 

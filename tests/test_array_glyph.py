@@ -20,7 +20,7 @@ from cleopatra.array_glyph import (
     _resolve_colorbar,
     AnimateKwargs,
     ArrayGlyph,
-    ColorbarSpec,
+    ColorBar,
     FacetGrid,
     FrameLabel,
     PlotKwargs,
@@ -5856,7 +5856,7 @@ class TestPlotBasemap:
 
 
 class TestColorbarPlacement:
-    """`plot`/`animate` colorbar placement via `colorbar=` / `ColorbarSpec`."""
+    """`plot`/`animate` colorbar placement via `colorbar=` / `ColorBar`."""
 
     @staticmethod
     def _field() -> np.ndarray:
@@ -5864,35 +5864,35 @@ class TestColorbarPlacement:
         return np.arange(20 * 30, dtype=float).reshape(20, 30)
 
     def test_spec_inside_defaults_box_on(self):
-        """`ColorbarSpec(inside=True)` defaults its box on; outside leaves it off.
+        """`ColorBar(inside=True)` defaults its box on; outside leaves it off.
 
         Test scenario:
             An inset over data wants a panel, so `box` defaults to `True` when
             `inside` is set, stays `None` otherwise, and an explicit `False` wins.
         """
-        assert ColorbarSpec(inside=True).box is True, "inside should default the box on"
-        assert ColorbarSpec(location="right").box is None, "outside should leave the box off"
-        assert ColorbarSpec(inside=True, box=False).box is False, "explicit box=False must win"
+        assert ColorBar(inside=True).box is True, "inside should default the box on"
+        assert ColorBar(location="right").box is None, "outside should leave the box off"
+        assert ColorBar(inside=True, box=False).box is False, "explicit box=False must win"
 
     def test_location_left_is_vertical(self):
-        """`ColorbarSpec(location='left')` yields a vertical bar.
+        """`ColorBar(location='left')` yields a vertical bar.
 
         Test scenario:
             A left/right location forces a vertical colorbar.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(cmap="viridis", colorbar=ColorbarSpec(location="left"))
+        g.plot(cmap="viridis", colorbar=ColorBar(location="left"))
         assert g.cbar.orientation == "vertical", "left location should be a vertical bar"
         plt.close("all")
 
     def test_location_bottom_is_horizontal(self):
-        """`ColorbarSpec(location='bottom')` yields a horizontal bar.
+        """`ColorBar(location='bottom')` yields a horizontal bar.
 
         Test scenario:
             A top/bottom location forces a horizontal colorbar.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(cmap="viridis", colorbar=ColorbarSpec(location="bottom"))
+        g.plot(cmap="viridis", colorbar=ColorBar(location="bottom"))
         assert g.cbar.orientation == "horizontal", "bottom location should be a horizontal bar"
         plt.close("all")
 
@@ -5904,14 +5904,14 @@ class TestColorbarPlacement:
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         with pytest.raises(ValueError, match="cbar_location"):
-            g.plot(cmap="viridis", colorbar=ColorbarSpec(location="middle"))
+            g.plot(cmap="viridis", colorbar=ColorBar(location="middle"))
         plt.close("all")
 
     def test_invalid_colorbar_type_raises(self):
-        """A non-bool / non-`ColorbarSpec` `colorbar` raises `TypeError`.
+        """A non-bool / non-`ColorBar` `colorbar` raises `TypeError`.
 
         Test scenario:
-            `colorbar='right'` (a bare string) is rejected -- use a `ColorbarSpec`.
+            `colorbar='right'` (a bare string) is rejected -- use a `ColorBar`.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         with pytest.raises(TypeError, match="colorbar must be"):
@@ -5942,14 +5942,14 @@ class TestColorbarPlacement:
         plt.close("all")
 
     def test_inside_colorbar_is_axes_child(self):
-        """`ColorbarSpec(inside=True)` insets the colorbar as a child of the axes.
+        """`ColorBar(inside=True)` insets the colorbar as a child of the axes.
 
         Test scenario:
             An inset (unlike an outside colorbar) is a child of `ax`, so it
             tracks the axes through `full_bleed`.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(cmap="viridis", colorbar=ColorbarSpec(location="right", inside=True))
+        g.plot(cmap="viridis", colorbar=ColorBar(location="right", inside=True))
         assert g.cbar.ax in g.ax.child_axes, "inside colorbar should be an inset child of the data axes"
         plt.close("all")
 
@@ -5968,12 +5968,12 @@ class TestColorbarPlacement:
         """An inside spec draws one backing patch by default; `box=False` drops it.
 
         Test scenario:
-            `ColorbarSpec(inside=True)` adds one rectangle; `box=False` adds none.
+            `ColorBar(inside=True)` adds one rectangle; `box=False` adds none.
         """
         g_box = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g_box.plot(cmap="viridis", colorbar=ColorbarSpec(inside=True))
+        g_box.plot(cmap="viridis", colorbar=ColorBar(inside=True))
         g_no = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g_no.plot(cmap="viridis", colorbar=ColorbarSpec(inside=True, box=False))
+        g_no.plot(cmap="viridis", colorbar=ColorBar(inside=True, box=False))
         assert len(g_box.ax.patches) == len(g_no.ax.patches) + 1, "inside box should default on (one extra patch)"
         plt.close("all")
 
@@ -5981,10 +5981,10 @@ class TestColorbarPlacement:
         """A colour-string box paints the panel that colour.
 
         Test scenario:
-            `ColorbarSpec(inside=True, box='black')` gives a black backing rectangle.
+            `ColorBar(inside=True, box='black')` gives a black backing rectangle.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(cmap="viridis", colorbar=ColorbarSpec(inside=True, box="black"))
+        g.plot(cmap="viridis", colorbar=ColorBar(inside=True, box="black"))
         assert g.ax.patches[-1].get_facecolor()[:3] == (0.0, 0.0, 0.0), "box='black' should paint a black panel"
         plt.close("all")
 
@@ -5996,7 +5996,7 @@ class TestColorbarPlacement:
         """
         stack = np.arange(3 * 20 * 30, dtype=float).reshape(3, 20, 30)
         g = ArrayGlyph(stack, extent=[0.0, 0.0, 40.0, 20.0])
-        g.animate(["a", "b", "c"], cmap="viridis", colorbar=ColorbarSpec(inside=True))
+        g.animate(["a", "b", "c"], cmap="viridis", colorbar=ColorBar(inside=True))
         assert g.cbar.ax in g.ax.child_axes, "inside colorbar should inset in an animation too"
         plt.close("all")
 
@@ -6011,7 +6011,7 @@ class TestColorbarPlacement:
             All four edges produce an inset child (so all track `full_bleed`).
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(cmap="viridis", colorbar=ColorbarSpec(location=location, inside=True))
+        g.plot(cmap="viridis", colorbar=ColorBar(location=location, inside=True))
         assert g.cbar.ax in g.ax.child_axes, f"inside {location} should be an inset child"
         plt.close("all")
 
@@ -6030,7 +6030,7 @@ class TestColorbarPlacement:
             Left/right are vertical; top/bottom are horizontal.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(cmap="viridis", colorbar=ColorbarSpec(location=location))
+        g.plot(cmap="viridis", colorbar=ColorBar(location=location))
         assert g.cbar.orientation == orientation, f"{location} should be {orientation}, got {g.cbar.orientation}"
         plt.close("all")
 
@@ -6042,7 +6042,7 @@ class TestColorbarPlacement:
             half-opaque panel.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(cmap="viridis", colorbar=ColorbarSpec(inside=True, box={"facecolor": "black", "alpha": 0.5}))
+        g.plot(cmap="viridis", colorbar=ColorBar(inside=True, box={"facecolor": "black", "alpha": 0.5}))
         patch = g.ax.patches[-1]
         assert patch.get_facecolor()[:3] == (0.0, 0.0, 0.0), f"box facecolor not applied: {patch.get_facecolor()}"
         assert patch.get_alpha() == 0.5, f"box alpha not applied: {patch.get_alpha()}"
@@ -6056,7 +6056,7 @@ class TestColorbarPlacement:
             colorbar axes, so it covers the map yet stays behind the bar/labels.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(cmap="viridis", colorbar=ColorbarSpec(inside=True))
+        g.plot(cmap="viridis", colorbar=ColorBar(inside=True))
         box = g.ax.patches[-1]
         assert box.get_zorder() < g.cbar.ax.get_zorder(), "box should render below the colorbar inset"
         assert box.get_zorder() > g.im.get_zorder(), "box should render above the data image"
@@ -6092,10 +6092,10 @@ class TestColorbarPlacement:
         """`tick_color` colours the colorbar's tick labels.
 
         Test scenario:
-            `ColorbarSpec(tick_color="red")` turns the tick numbers red.
+            `ColorBar(tick_color="red")` turns the tick numbers red.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(cmap="viridis", colorbar=ColorbarSpec(tick_color="red"))
+        g.plot(cmap="viridis", colorbar=ColorBar(tick_color="red"))
         color = g.cbar.ax.get_yticklabels()[0].get_color()
         assert to_rgba(color) == to_rgba("red"), f"tick labels should be red, got {color}"
         plt.close("all")
@@ -6104,11 +6104,11 @@ class TestColorbarPlacement:
         """`label_color` colours a style swatch's title, leaving endpoints white.
 
         Test scenario:
-            On a `style` plot, `ColorbarSpec(label_color="black")` makes the
+            On a `style` plot, `ColorBar(label_color="black")` makes the
             bold title black while the endpoint values stay white.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(style="temperature_2m", vmin=-10, vmax=40, colorbar=ColorbarSpec(label_color="black"))
+        g.plot(style="temperature_2m", vmin=-10, vmax=40, colorbar=ColorBar(label_color="black"))
         texts = [t for cax in g.ax.child_axes for t in cax.texts]
         title = next(t for t in texts if t.get_fontweight() == "bold")
         values = [t for t in texts if t.get_fontweight() != "bold"]
@@ -6120,11 +6120,11 @@ class TestColorbarPlacement:
         """`tick_color` colours a style swatch's endpoint values.
 
         Test scenario:
-            `ColorbarSpec(tick_color="red")` turns the swatch endpoint numbers
+            `ColorBar(tick_color="red")` turns the swatch endpoint numbers
             red while the title stays white.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(style="temperature_2m", vmin=-10, vmax=40, colorbar=ColorbarSpec(tick_color="red"))
+        g.plot(style="temperature_2m", vmin=-10, vmax=40, colorbar=ColorBar(tick_color="red"))
         texts = [t for cax in g.ax.child_axes for t in cax.texts]
         title = next(t for t in texts if t.get_fontweight() == "bold")
         values = [t for t in texts if t.get_fontweight() != "bold"]
@@ -6136,27 +6136,27 @@ class TestColorbarPlacement:
         """`label_color` colours the swatch title in an animation too.
 
         Test scenario:
-            An animated `style` honours `ColorbarSpec(label_color=...)`.
+            An animated `style` honours `ColorBar(label_color=...)`.
         """
         stack = np.arange(3 * 20 * 30, dtype=float).reshape(3, 20, 30)
         g = ArrayGlyph(stack, extent=[0.0, 0.0, 40.0, 20.0])
         g.animate(["a", "b", "c"], style="temperature_2m", vmin=-10, vmax=40,
-                  colorbar=ColorbarSpec(label_color="black"))
+                  colorbar=ColorBar(label_color="black"))
         title = next(t for cax in g.ax.child_axes for t in cax.texts if t.get_fontweight() == "bold")
         assert to_rgba(title.get_color()) == to_rgba("black"), "animated swatch title should be black"
         plt.close("all")
 
 
-class TestColorbarSpec:
-    """Tests for the `ColorbarSpec` placement/box config object."""
+class TestColorBar:
+    """Tests for the `ColorBar` placement/box config object."""
 
     def test_defaults(self):
-        """A bare `ColorbarSpec` has no location, is outside, and draws no box.
+        """A bare `ColorBar` has no location, is outside, and draws no box.
 
         Test scenario:
             The zero-argument construction reflects "matplotlib default placement".
         """
-        spec = ColorbarSpec()
+        spec = ColorBar()
         assert spec.location is None, f"default location should be None, got {spec.location}"
         assert spec.inside is False, f"default inside should be False, got {spec.inside}"
         assert spec.box is None, f"default box should be None, got {spec.box}"
@@ -6167,7 +6167,7 @@ class TestColorbarSpec:
         Test scenario:
             An inset over data almost always wants a panel.
         """
-        assert ColorbarSpec(inside=True).box is True, "inside should default box to True"
+        assert ColorBar(inside=True).box is True, "inside should default box to True"
 
     def test_outside_leaves_box_off(self):
         """An outside spec leaves `box` as `None` (no panel).
@@ -6175,7 +6175,7 @@ class TestColorbarSpec:
         Test scenario:
             A gutter colorbar needs no backing box.
         """
-        assert ColorbarSpec(location="right").box is None, "outside should leave box None"
+        assert ColorBar(location="right").box is None, "outside should leave box None"
 
     @pytest.mark.parametrize("box", [False, True, "black", {"facecolor": "black"}])
     def test_explicit_box_preserved_even_when_inside(self, box):
@@ -6187,7 +6187,7 @@ class TestColorbarSpec:
         Test scenario:
             The inside default only applies when `box` is left `None`.
         """
-        assert ColorbarSpec(inside=True, box=box).box == box, f"explicit box {box!r} should be preserved"
+        assert ColorBar(inside=True, box=box).box == box, f"explicit box {box!r} should be preserved"
 
     def test_fields_stored(self):
         """`location` and `inside` are stored as given.
@@ -6195,18 +6195,18 @@ class TestColorbarSpec:
         Test scenario:
             The object is a plain data holder for the three fields.
         """
-        spec = ColorbarSpec(location="top", inside=True)
+        spec = ColorBar(location="top", inside=True)
         assert spec.location == "top", f"location not stored: {spec.location}"
         assert spec.inside is True, f"inside not stored: {spec.inside}"
 
     def test_keyword_only(self):
-        """`ColorbarSpec` is keyword-only, mirroring `FrameLabel`.
+        """`ColorBar` is keyword-only, mirroring `FrameLabel`.
 
         Test scenario:
             A positional argument raises `TypeError`.
         """
         with pytest.raises(TypeError):
-            ColorbarSpec("right")
+            ColorBar("right")
 
     def test_color_fields_default_none_and_store(self):
         """`label_color` / `tick_color` default to `None` and store as given.
@@ -6214,9 +6214,9 @@ class TestColorbarSpec:
         Test scenario:
             The two text-colour fields are plain optional holders.
         """
-        assert ColorbarSpec().label_color is None, "label_color should default to None"
-        assert ColorbarSpec().tick_color is None, "tick_color should default to None"
-        spec = ColorbarSpec(label_color="black", tick_color="red")
+        assert ColorBar().label_color is None, "label_color should default to None"
+        assert ColorBar().tick_color is None, "tick_color should default to None"
+        spec = ColorBar(label_color="black", tick_color="red")
         assert (spec.label_color, spec.tick_color) == ("black", "red"), "colour fields should store verbatim"
 
 
@@ -6257,13 +6257,13 @@ class TestResolveColorbar:
         assert out == expected, f"True should reset to default placement, got {out}"
 
     def test_spec_maps_fields(self):
-        """A `ColorbarSpec` maps its fields onto the internal `cbar_*` keys.
+        """A `ColorBar` maps its fields onto the internal `cbar_*` keys.
 
         Test scenario:
             location/inside/box/colours land on the matching cbar_* keys.
         """
         out = _resolve_colorbar(
-            ColorbarSpec(location="left", inside=True, box="black", label_color="k", tick_color="red")
+            ColorBar(location="left", inside=True, box="black", label_color="k", tick_color="red")
         )
         expected = {
             "add_colorbar": True,
@@ -6277,7 +6277,7 @@ class TestResolveColorbar:
 
     @pytest.mark.parametrize("bad", ["right", 1, 1.5, ["right"], {"location": "right"}])
     def test_invalid_type_raises(self, bad):
-        """A non-bool / non-`ColorbarSpec` / non-`None` value raises `TypeError`.
+        """A non-bool / non-`ColorBar` / non-`None` value raises `TypeError`.
 
         Args:
             bad: An unsupported `colorbar` value (string, int, float, list, dict).
