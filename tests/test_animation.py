@@ -14,6 +14,7 @@ from unittest.mock import MagicMock
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import numpy as np
 import pytest
 from matplotlib.animation import FuncAnimation
 from PIL import Image
@@ -700,6 +701,42 @@ class TestOptimizedPillowWriter:
         assert captured.get("optimize") is False, (
             f"optimize flag not forwarded to Pillow: {captured}"
         )
+
+    def test_gif_shared_palette_keeps_constant_region_stable(self, tmp_path):
+        """A region that never changes stays byte-identical across GIF frames.
+
+        Test scenario:
+            An animation whose top half is constant white and bottom half is
+            random. A per-frame GIF palette would re-quantise/re-dither the
+            white top and make it shimmer; the writer's shared palette keeps it
+            byte-stable frame-to-frame.
+        """
+        rng = np.random.default_rng(0)
+        fig, ax = plt.subplots()
+        ax.set_position([0, 0, 1, 1])
+        ax.set_axis_off()
+        im = ax.imshow(np.zeros((40, 40, 3)))
+
+        def update(_):
+            frame = rng.random((40, 40, 3))
+            frame[:20] = 1.0  # constant white top half
+            im.set_data(frame)
+            return (im,)
+
+        anim = FuncAnimation(fig, update, frames=6, blit=False)
+        out = tmp_path / "const.gif"
+        save_animation(anim, str(out), fps=4)
+
+        gif = Image.open(out)
+        gif.seek(0)
+        first = np.asarray(gif.convert("RGB")).copy()
+        gif.seek(5)
+        last = np.asarray(gif.convert("RGB")).copy()
+        top = slice(0, first.shape[0] // 3)  # safely inside the constant white top
+        changed = (np.abs(first[top].astype(int) - last[top].astype(int)).sum(2) > 8).mean()
+        plt.close("all")
+
+        assert changed == 0.0, f"shared palette should keep a constant region byte-stable, got {changed}"
 
 
 class TestQualityControls:
