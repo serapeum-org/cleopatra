@@ -1417,7 +1417,11 @@ class Glyph:
             merged_kw.update(user_kwargs)
             cbar = fig.colorbar(im, ax=ax, **merged_kw)
 
-        cbar.ax.tick_params(labelsize=10)
+        tick_color = self.default_options.get("cbar_tick_color")
+        label_color = self.default_options.get("cbar_label_color")
+        cbar.ax.tick_params(
+            labelsize=10, **({"colors": tick_color} if tick_color else {})
+        )
         label_text = (
             user_label if user_label is not None else self.default_options["cbar_label"]
         )
@@ -1425,6 +1429,7 @@ class Glyph:
             label_text,
             fontsize=self.default_options["cbar_label_size"],
             loc=self.default_options["cbar_label_location"],
+            **({"color": label_color} if label_color else {}),
         )
         # Draw the backing box last -- once the labels exist -- so it encloses
         # them (an inside colorbar overlays the data, so it needs the panel).

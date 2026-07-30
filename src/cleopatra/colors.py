@@ -847,6 +847,8 @@ def apply_data_style(
     y: np.ndarray | None = None,
     legend: bool = True,
     legend_bounds: list[tuple[float, float, float, float]] | None = None,
+    swatch_text_color: str = "white",
+    swatch_value_color: str | None = None,
     **render_kwargs: Any,
 ) -> dict[str, Any]:
     """Draw one or more named data layers with a registered `DATA_STYLES` preset.
@@ -886,6 +888,10 @@ def apply_data_style(
         legend_bounds: Explicit `(x0, y0, width, height)` per layer legend,
             in the same order as `layers`, overriding the auto-stacked
             default.
+        swatch_text_color: Colour of each swatch legend's title, by default
+            `"white"`.
+        swatch_value_color: Optional colour for the swatch endpoint values, by
+            default `None` (reuse `swatch_text_color`).
         **render_kwargs: Forwarded to every `alpha_scaled_image` (or
             `alpha_scaled_mesh`, when `x`/`y` are given) call. A `vmin`/`vmax`/
             `center` here overrides the preset's own colour scale (e.g. a fixed
@@ -1164,6 +1170,8 @@ def apply_data_style(
                 vmax_prefix=vmax_prefix,
                 bounds=bounds,
                 norm=norm,
+                text_color=swatch_text_color,
+                value_color=swatch_value_color,
             )
     return images
 

@@ -83,6 +83,8 @@ ARRAY_DEFAULT_OPTIONS: dict[str, Any] = {
     "cbar_location": None,
     "cbar_inside": False,
     "cbar_box": None,
+    "cbar_label_color": None,
+    "cbar_tick_color": None,
     "labels": False,
     "label_kw": None,
     "hillshade": False,
@@ -706,6 +708,13 @@ class ColorbarSpec:
             `matplotlib.patches.Rectangle` kwargs for full control. Defaults to
             `None`, which becomes `True` when `inside` is set (an inset over
             moving data almost always wants a panel) and stays off otherwise.
+        label_color: Colour of the scale's title text -- the colorbar's axis
+            label and, for a `style` preset, the swatch legend's title (and
+            endpoint values). `None` (default) keeps the default (white for the
+            swatch; matplotlib's default for a colorbar label).
+        tick_color: Colour of the colorbar's tick labels (the numbers). `None`
+            (default) keeps matplotlib's default. Applies to a real colorbar
+            only, not the swatch legend a `style` preset draws.
 
     Examples:
         - An inside colorbar on the right -- its box defaults on:
@@ -716,11 +725,12 @@ class ColorbarSpec:
             (True, True)
 
             ```
-        - An outside colorbar on the bottom draws no box:
+        - Black title + tick numbers, outside on the bottom (no box):
             ```python
             >>> from cleopatra.array_glyph import ColorbarSpec
-            >>> ColorbarSpec(location="bottom").box is None
-            True
+            >>> spec = ColorbarSpec(location="bottom", label_color="black", tick_color="black")
+            >>> (spec.box, spec.label_color, spec.tick_color)
+            (None, 'black', 'black')
 
             ```
     """
@@ -731,6 +741,8 @@ class ColorbarSpec:
         location: Literal["left", "right", "top", "bottom"] | None = None,
         inside: bool = False,
         box: bool | str | dict | None = None,
+        label_color: str | None = None,
+        tick_color: str | None = None,
     ) -> None:
         """Initialise a `ColorbarSpec`.
 
@@ -740,12 +752,18 @@ class ColorbarSpec:
             inside: Inset the colorbar inside the frame, by default `False`.
             box: Backing panel for an inside colorbar (`True` / colour / dict),
                 or `None` to default it on when `inside` is set.
+            label_color: Colour of the scale title / colorbar label (and the
+                swatch title for a `style` preset); `None` keeps the default.
+            tick_color: Colour of the colorbar's tick numbers; `None` keeps
+                matplotlib's default.
         """
         self.location = location
         self.inside = inside
         # An inset over moving data almost always wants a panel: default the
         # box on when `inside` is set and the caller did not decide explicitly.
         self.box = True if (inside and box is None) else box
+        self.label_color = label_color
+        self.tick_color = tick_color
 
 
 def _resolve_colorbar(colorbar: bool | ColorbarSpec | None) -> dict:
@@ -785,6 +803,8 @@ def _resolve_colorbar(colorbar: bool | ColorbarSpec | None) -> dict:
             "cbar_location": None,
             "cbar_inside": False,
             "cbar_box": None,
+            "cbar_label_color": None,
+            "cbar_tick_color": None,
         }
     if isinstance(colorbar, ColorbarSpec):
         return {
@@ -792,6 +812,8 @@ def _resolve_colorbar(colorbar: bool | ColorbarSpec | None) -> dict:
             "cbar_location": colorbar.location,
             "cbar_inside": colorbar.inside,
             "cbar_box": colorbar.box,
+            "cbar_label_color": colorbar.label_color,
+            "cbar_tick_color": colorbar.tick_color,
         }
     raise TypeError(
         "colorbar must be a bool, ColorbarSpec, or None, got "
@@ -2470,6 +2492,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                 y=coords[1],
                 legend=legend,
                 shading="nearest",
+                swatch_text_color=self.default_options.get("cbar_label_color")
+                or "white",
+                swatch_value_color=self.default_options.get("cbar_tick_color")
+                or "white",
                 **override,
             )
         else:
@@ -2481,6 +2507,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                 {layer: data},
                 style=style,
                 legend=legend,
+                swatch_text_color=self.default_options.get("cbar_label_color")
+                or "white",
+                swatch_value_color=self.default_options.get("cbar_tick_color")
+                or "white",
                 **render_kwargs,
                 **override,
             )
@@ -2809,9 +2839,10 @@ class ArrayGlyph(GeoMixin, Glyph):
             colorbar: Colorbar presence and placement. `None` (default) keeps
                 matplotlib's placement (honouring the legacy `add_colorbar`);
                 `False` draws no colorbar; `True` a default one. Pass a
-                `ColorbarSpec` for placement control -- an edge (`location`),
-                an `inside` inset that tracks `full_bleed`, and a backing `box`
-                (defaulted on for an inset). Same flag as `animate(colorbar=)`.
+                `ColorbarSpec` for control -- an edge (`location`), an `inside`
+                inset that tracks `full_bleed`, a backing `box` (defaulted on
+                for an inset), and text colours (`label_color` for the title,
+                `tick_color` for the tick numbers). Same flag as `animate(colorbar=)`.
             **kwargs: Additional keyword arguments for customizing the plot.
 
                 Plot appearance:
@@ -3992,9 +4023,10 @@ class ArrayGlyph(GeoMixin, Glyph):
             colorbar: Colorbar presence and placement. `None` (default) keeps
                 matplotlib's placement (honouring the legacy `add_colorbar`);
                 `False` draws no colorbar; `True` a default one. Pass a
-                `ColorbarSpec` for placement control -- an edge (`location`),
-                an `inside` inset that tracks `full_bleed`, and a backing `box`
-                (defaulted on for an inset). Same flag as `plot(colorbar=)`.
+                `ColorbarSpec` for control -- an edge (`location`), an `inside`
+                inset that tracks `full_bleed`, a backing `box` (defaulted on
+                for an inset), and text colours (`label_color` for the title,
+                `tick_color` for the tick numbers). Same flag as `plot(colorbar=)`.
             **kwargs: Additional keyword arguments for customizing the animation.
 
                 Plot appearance:
@@ -4522,6 +4554,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                             vmin_prefix=vmin_prefix,
                             vmax_prefix=vmax_prefix,
                             bounds=(0.02, 0.92, 0.32, 0.06),
+                            text_color=self.default_options.get("cbar_label_color")
+                            or "white",
+                            value_color=self.default_options.get("cbar_tick_color")
+                            or "white",
                         )
                     alpha_vmin = cfg.get("alpha_vmin")
                     alpha_vmax = cfg.get("alpha_vmax")

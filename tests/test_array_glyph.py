@@ -6088,6 +6088,64 @@ class TestColorbarPlacement:
         assert g.cbar is None, "add_colorbar=False should still suppress when colorbar is unset"
         plt.close("all")
 
+    def test_tick_color_colours_colorbar_ticks(self):
+        """`tick_color` colours the colorbar's tick labels.
+
+        Test scenario:
+            `ColorbarSpec(tick_color="red")` turns the tick numbers red.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g.plot(cmap="viridis", colorbar=ColorbarSpec(tick_color="red"))
+        color = g.cbar.ax.get_yticklabels()[0].get_color()
+        assert to_rgba(color) == to_rgba("red"), f"tick labels should be red, got {color}"
+        plt.close("all")
+
+    def test_label_color_colours_swatch_title_only(self):
+        """`label_color` colours a style swatch's title, leaving endpoints white.
+
+        Test scenario:
+            On a `style` plot, `ColorbarSpec(label_color="black")` makes the
+            bold title black while the endpoint values stay white.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g.plot(style="temperature_2m", vmin=-10, vmax=40, colorbar=ColorbarSpec(label_color="black"))
+        texts = [t for cax in g.ax.child_axes for t in cax.texts]
+        title = next(t for t in texts if t.get_fontweight() == "bold")
+        values = [t for t in texts if t.get_fontweight() != "bold"]
+        assert to_rgba(title.get_color()) == to_rgba("black"), "swatch title should be black"
+        assert all(to_rgba(t.get_color()) == to_rgba("white") for t in values), "endpoints should stay white"
+        plt.close("all")
+
+    def test_tick_color_colours_swatch_endpoints(self):
+        """`tick_color` colours a style swatch's endpoint values.
+
+        Test scenario:
+            `ColorbarSpec(tick_color="red")` turns the swatch endpoint numbers
+            red while the title stays white.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g.plot(style="temperature_2m", vmin=-10, vmax=40, colorbar=ColorbarSpec(tick_color="red"))
+        texts = [t for cax in g.ax.child_axes for t in cax.texts]
+        title = next(t for t in texts if t.get_fontweight() == "bold")
+        values = [t for t in texts if t.get_fontweight() != "bold"]
+        assert to_rgba(title.get_color()) == to_rgba("white"), "swatch title should stay white"
+        assert all(to_rgba(t.get_color()) == to_rgba("red") for t in values), "endpoints should be red"
+        plt.close("all")
+
+    def test_label_color_swatch_in_animation(self):
+        """`label_color` colours the swatch title in an animation too.
+
+        Test scenario:
+            An animated `style` honours `ColorbarSpec(label_color=...)`.
+        """
+        stack = np.arange(3 * 20 * 30, dtype=float).reshape(3, 20, 30)
+        g = ArrayGlyph(stack, extent=[0.0, 0.0, 40.0, 20.0])
+        g.animate(["a", "b", "c"], style="temperature_2m", vmin=-10, vmax=40,
+                  colorbar=ColorbarSpec(label_color="black"))
+        title = next(t for cax in g.ax.child_axes for t in cax.texts if t.get_fontweight() == "bold")
+        assert to_rgba(title.get_color()) == to_rgba("black"), "animated swatch title should be black"
+        plt.close("all")
+
 
 class TestColorbarSpec:
     """Tests for the `ColorbarSpec` placement/box config object."""
@@ -6150,6 +6208,17 @@ class TestColorbarSpec:
         with pytest.raises(TypeError):
             ColorbarSpec("right")
 
+    def test_color_fields_default_none_and_store(self):
+        """`label_color` / `tick_color` default to `None` and store as given.
+
+        Test scenario:
+            The two text-colour fields are plain optional holders.
+        """
+        assert ColorbarSpec().label_color is None, "label_color should default to None"
+        assert ColorbarSpec().tick_color is None, "tick_color should default to None"
+        spec = ColorbarSpec(label_color="black", tick_color="red")
+        assert (spec.label_color, spec.tick_color) == ("black", "red"), "colour fields should store verbatim"
+
 
 class TestResolveColorbar:
     """Tests for the `_resolve_colorbar` front-door parser."""
@@ -6177,17 +6246,33 @@ class TestResolveColorbar:
             A bare `True` means "default outside colorbar".
         """
         out = _resolve_colorbar(True)
-        expected = {"add_colorbar": True, "cbar_location": None, "cbar_inside": False, "cbar_box": None}
+        expected = {
+            "add_colorbar": True,
+            "cbar_location": None,
+            "cbar_inside": False,
+            "cbar_box": None,
+            "cbar_label_color": None,
+            "cbar_tick_color": None,
+        }
         assert out == expected, f"True should reset to default placement, got {out}"
 
     def test_spec_maps_fields(self):
         """A `ColorbarSpec` maps its fields onto the internal `cbar_*` keys.
 
         Test scenario:
-            location/inside/box land on cbar_location/cbar_inside/cbar_box.
+            location/inside/box/colours land on the matching cbar_* keys.
         """
-        out = _resolve_colorbar(ColorbarSpec(location="left", inside=True, box="black"))
-        expected = {"add_colorbar": True, "cbar_location": "left", "cbar_inside": True, "cbar_box": "black"}
+        out = _resolve_colorbar(
+            ColorbarSpec(location="left", inside=True, box="black", label_color="k", tick_color="red")
+        )
+        expected = {
+            "add_colorbar": True,
+            "cbar_location": "left",
+            "cbar_inside": True,
+            "cbar_box": "black",
+            "cbar_label_color": "k",
+            "cbar_tick_color": "red",
+        }
         assert out == expected, f"spec fields not mapped, got {out}"
 
     @pytest.mark.parametrize("bad", ["right", 1, 1.5, ["right"], {"location": "right"}])

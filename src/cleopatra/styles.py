@@ -1413,6 +1413,7 @@ def swatch_legend(
     vmin_prefix: str = "",
     bounds: tuple[float, float, float, float] = (0.02, 0.88, 0.32, 0.05),
     text_color: str = "white",
+    value_color: str | None = None,
     fontsize: float = 9,
     norm: colors.Normalize | None = None,
 ) -> Axes:
@@ -1444,7 +1445,11 @@ def swatch_legend(
             `extend="both"` contour scale). Defaults to `""` (a plain value).
         bounds: `(x0, y0, width, height)` of the inset axes in `ax`'s
             fraction-of-axes coordinates (see `Axes.inset_axes`).
-        text_color: Color for the label and the endpoint values.
+        text_color: Color for the title label (and the endpoint values unless
+            `value_color` overrides them).
+        value_color: Optional color for the two endpoint values, by default
+            `None` (reuse `text_color`). Lets the numbers keep a readable
+            colour while the title takes another.
         fontsize: Font size (points) for the label; endpoint labels use
             `fontsize * 0.8`.
         norm: Optional `matplotlib.colors.Normalize` the layer is drawn with.
@@ -1535,13 +1540,16 @@ def swatch_legend(
         fontweight="bold",
         transform=swatch.transAxes,
     )
+    # Endpoint values may take their own colour (they sit below the bar, often
+    # over the map); default to the title colour when `value_color` is unset.
+    endpoint_color = value_color if value_color is not None else text_color
     swatch.text(
         0.0,
         -0.3,
         f"{vmin_prefix}{vmin:g}",
         ha="left",
         va="top",
-        color=text_color,
+        color=endpoint_color,
         fontsize=fontsize * 0.8,
         transform=swatch.transAxes,
     )
@@ -1551,7 +1559,7 @@ def swatch_legend(
         f"{vmax_prefix}{vmax:g}",
         ha="right",
         va="top",
-        color=text_color,
+        color=endpoint_color,
         fontsize=fontsize * 0.8,
         transform=swatch.transAxes,
     )
