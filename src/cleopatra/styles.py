@@ -18,7 +18,7 @@ from matplotlib.colorbar import Colorbar
 from matplotlib.container import BarContainer
 from matplotlib.legend import Legend
 from matplotlib.lines import Line2D
-from matplotlib.patches import Patch
+from matplotlib.patches import Patch, Rectangle
 
 
 class ColorScale(StrEnum):
@@ -1416,6 +1416,7 @@ def swatch_legend(
     value_color: str | None = None,
     fontsize: float = 9,
     norm: colors.Normalize | None = None,
+    box: bool | str | dict | None = None,
 ) -> Axes:
     """Draw a compact two-stop gradient swatch with its label baked into the bar.
 
@@ -1450,6 +1451,12 @@ def swatch_legend(
         value_color: Optional color for the two endpoint values, by default
             `None` (reuse `text_color`). Lets the numbers keep a readable
             colour while the title takes another.
+        box: Optional opaque backing panel behind the swatch and its endpoint
+            values, so an animated field cannot show through the labels.
+            `None`/`False` (default) draws none; `True` a white panel; a colour
+            string a panel of that colour; a dict of `Rectangle` kwargs. On a
+            white panel, set `text_color`/`value_color` dark so they stay
+            legible.
         fontsize: Font size (points) for the label; endpoint labels use
             `fontsize * 0.8`.
         norm: Optional `matplotlib.colors.Normalize` the layer is drawn with.
@@ -1563,6 +1570,40 @@ def swatch_legend(
         fontsize=fontsize * 0.8,
         transform=swatch.transAxes,
     )
+    if box:
+        # Opaque backing panel behind the swatch + its endpoint values, so an
+        # animated field cannot show through the labels (mirrors the colorbar
+        # box). Sized to the swatch's tight bounding box, drawn above the data
+        # but below the swatch itself.
+        swatch.set_zorder(6)
+        kw: dict = {"facecolor": "white", "edgecolor": "0.6", "linewidth": 0.6}
+        if isinstance(box, str):
+            kw["facecolor"] = box
+        elif isinstance(box, dict):
+            kw = {**kw, **box}
+        bx0, by0, bw, bh = bounds
+        x0, y0, x1, y1 = bx0, by0 - 0.06, bx0 + bw, by0 + bh
+        fig = ax.figure
+        try:
+            fig.canvas.draw()
+            bb = swatch.get_tightbbox(fig.canvas.get_renderer())
+            inv = ax.transAxes.inverted()
+            x0, y0 = inv.transform((bb.x0, bb.y0))
+            x1, y1 = inv.transform((bb.x1, bb.y1))
+        except Exception:  # pragma: no cover - renderer unavailable on some backends
+            pass
+        pad = 0.012
+        ax.add_patch(
+            Rectangle(
+                (x0 - pad, y0 - pad),
+                (x1 - x0) + 2 * pad,
+                (y1 - y0) + 2 * pad,
+                transform=ax.transAxes,
+                zorder=5,
+                clip_on=False,
+                **kw,
+            )
+        )
     return swatch
 
 

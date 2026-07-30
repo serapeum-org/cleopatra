@@ -849,6 +849,7 @@ def apply_data_style(
     legend_bounds: list[tuple[float, float, float, float]] | None = None,
     swatch_text_color: str = "white",
     swatch_value_color: str | None = None,
+    swatch_box: bool | str | dict | None = None,
     **render_kwargs: Any,
 ) -> dict[str, Any]:
     """Draw one or more named data layers with a registered `DATA_STYLES` preset.
@@ -892,6 +893,8 @@ def apply_data_style(
             `"white"`.
         swatch_value_color: Optional colour for the swatch endpoint values, by
             default `None` (reuse `swatch_text_color`).
+        swatch_box: Optional opaque backing panel behind each swatch legend
+            (`True` / colour / dict), by default `None` (none).
         **render_kwargs: Forwarded to every `alpha_scaled_image` (or
             `alpha_scaled_mesh`, when `x`/`y` are given) call. A `vmin`/`vmax`/
             `center` here overrides the preset's own colour scale (e.g. a fixed
@@ -999,12 +1002,14 @@ def apply_data_style(
         # for a globe's extreme local distortion, so shading="flat" (which
         # trusts the given edges exactly) is the correct default here.
         render_kwargs.setdefault("shading", "flat")
-    # A caller-supplied `vmin`/`vmax`/`center` overrides the preset's own colour
-    # scale (e.g. a Magics preset's decoded fixed range). These are colour-scale
-    # keys, not `imshow` kwargs, so pull them out of `render_kwargs` and merge
-    # them over each layer's config below.
+    # A caller-supplied `vmin`/`vmax`/`center`/`cmap` overrides the preset's own
+    # colour scale / colormap (e.g. a Magics preset's decoded fixed range).
+    # These override cfg, not `imshow` kwargs, so pull them out of `render_kwargs`
+    # and merge them over each layer's config below (`cmap` becomes cfg["cmap"],
+    # which the render reads positionally -- leaving it in render_kwargs would
+    # collide with that positional argument).
     style_override: dict[str, Any] = {}
-    for key in ("vmin", "vmax", "center"):
+    for key in ("vmin", "vmax", "center", "cmap"):
         if key in render_kwargs:
             value = render_kwargs.pop(key)
             # Pop it (so it never reaches imshow), but only override the preset when
@@ -1172,6 +1177,7 @@ def apply_data_style(
                 norm=norm,
                 text_color=swatch_text_color,
                 value_color=swatch_value_color,
+                box=swatch_box,
             )
     return images
 

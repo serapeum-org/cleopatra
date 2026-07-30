@@ -6146,6 +6146,20 @@ class TestColorbarPlacement:
         assert to_rgba(title.get_color()) == to_rgba("black"), "animated swatch title should be black"
         plt.close("all")
 
+    def test_box_draws_backing_panel_behind_swatch(self):
+        """`box=True` on a `style` plot draws a backing panel behind the swatch.
+
+        Test scenario:
+            A boxed swatch adds exactly one rectangle to the data axes vs. the
+            same style with no box (so a moving field can't show through it).
+        """
+        g_box = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g_box.plot(style="temperature_2m", vmin=-10, vmax=40, colorbar=ColorBar(box=True))
+        g_no = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g_no.plot(style="temperature_2m", vmin=-10, vmax=40, colorbar=ColorBar())
+        assert len(g_box.ax.patches) == len(g_no.ax.patches) + 1, "box=True should add one swatch backing panel"
+        plt.close("all")
+
 
 class TestColorBar:
     """Tests for the `ColorBar` placement/box config object."""
@@ -6287,3 +6301,106 @@ class TestResolveColorbar:
         """
         with pytest.raises(TypeError, match="colorbar must be"):
             _resolve_colorbar(bad)
+
+
+class TestStylePrecedence:
+    """Explicit args override a `style=` preset (defaults < preset < explicit)."""
+
+    @staticmethod
+    def _field() -> np.ndarray:
+        """Return a smooth temperature-like field spanning the preset range."""
+        return np.linspace(-15.0, 42.0, 600).reshape(20, 30)
+
+    def test_cmap_overrides_preset(self):
+        """An explicit `cmap=` overrides the preset's own colormap.
+
+        Test scenario:
+            `style="temperature_2m", cmap="viridis"` renders different colours
+            than the preset's Spectral_r default (defaults < preset < explicit).
+        """
+        g_def = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g_def.plot(style="temperature_2m", vmin=-15, vmax=42)
+        g_ov = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g_ov.plot(style="temperature_2m", vmin=-15, vmax=42, cmap="viridis")
+        differ = not np.allclose(
+            np.nan_to_num(np.asarray(g_def.im.get_array())),
+            np.nan_to_num(np.asarray(g_ov.im.get_array())),
+        )
+        assert differ, "explicit cmap should override the preset's colormap"
+        plt.close("all")
+
+    def test_placement_colorbar_overrides_swatch(self):
+        """A placement `ColorBar` on a style draws a real colorbar (no swatch).
+
+        Test scenario:
+            `colorbar=ColorBar(location="right", inside=True)` overrides the
+            preset's swatch with a real, tick-marked colorbar.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g.plot(style="temperature_2m", vmin=-15, vmax=42,
+               colorbar=ColorBar(location="right", inside=True))
+        assert g.cbar is not None, "placement ColorBar should draw a real colorbar on a style"
+        plt.close("all")
+
+    def test_styled_colorbar_ticks_span_the_data_range(self):
+        """The styled colorbar's ticks are in the preset's data range, not 0..1.
+
+        Test scenario:
+            The colorbar is built from the preset's norm, so its ticks span the
+            temperature range (a negative low, a >30 high), not the baked 0..1.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g.plot(style="temperature_2m", vmin=-15, vmax=42,
+               colorbar=ColorBar(location="right", inside=True))
+        ticks = [float(t) for t in g.cbar.get_ticks()]
+        assert min(ticks) < 0 and max(ticks) > 30, f"styled colorbar ticks should span the data range, got {ticks}"
+        plt.close("all")
+
+    def test_colorbar_true_overrides_swatch(self):
+        """`colorbar=True` on a style draws a default real colorbar.
+
+        Test scenario:
+            A bare `True` overrides the swatch with a default-placed colorbar.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g.plot(style="temperature_2m", vmin=-15, vmax=42, colorbar=True)
+        assert g.cbar is not None, "colorbar=True should draw a real colorbar on a style"
+        plt.close("all")
+
+    def test_colours_only_colorbar_keeps_swatch(self):
+        """A colours-only `ColorBar` on a style keeps the swatch (no colorbar).
+
+        Test scenario:
+            `colorbar=ColorBar(label_color="black")` styles the swatch in place;
+            no real colorbar is drawn (`self.cbar` stays None).
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g.plot(style="temperature_2m", vmin=-15, vmax=42, colorbar=ColorBar(label_color="black"))
+        assert g.cbar is None, "colours-only ColorBar should keep the swatch, not a real colorbar"
+        plt.close("all")
+
+    def test_placement_colorbar_in_animation(self):
+        """A placement `ColorBar` overrides the swatch in an animation too.
+
+        Test scenario:
+            An animated `style` with a placement `ColorBar` draws a real colorbar.
+        """
+        stack = np.linspace(-15, 42, 3 * 600).reshape(3, 20, 30)
+        g = ArrayGlyph(stack, extent=[0.0, 0.0, 40.0, 20.0])
+        g.animate(["a", "b", "c"], style="temperature_2m", vmin=-15, vmax=42,
+                  colorbar=ColorBar(location="right", inside=True))
+        assert g.cbar is not None, "placement ColorBar should draw a real colorbar in a styled animation"
+        plt.close("all")
+
+    def test_categorical_style_keeps_discrete_legend(self):
+        """A categorical preset ignores the colorbar override (keeps its legend).
+
+        Test scenario:
+            A colorbar is meaningless for class codes, so a placement `ColorBar`
+            does not draw one -- `self.cbar` stays None.
+        """
+        codes = np.array([[1, 2, 4, 8], [16, 32, 64, 128]], dtype=float)
+        g = ArrayGlyph(codes, extent=[0.0, 0.0, 4.0, 2.0])
+        g.plot(style="flow_direction_d8", colorbar=ColorBar(location="right", inside=True))
+        assert g.cbar is None, "categorical style should keep its discrete legend, not a colorbar"
+        plt.close("all")

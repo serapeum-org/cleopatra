@@ -35,9 +35,11 @@ import numpy.ma as ma
 from hpc.indexing import get_indices2
 from matplotlib.animation import FuncAnimation
 from matplotlib.axes import Axes
+from matplotlib.cm import ScalarMappable
 from matplotlib.colorbar import Colorbar
 from matplotlib.colors import BoundaryNorm, Colormap, ListedColormap, Normalize
 from matplotlib.figure import Figure
+from matplotlib.ticker import MaxNLocator
 from PIL import Image
 
 from cleopatra.colors import (
@@ -1350,9 +1352,12 @@ class ArrayGlyph(GeoMixin, Glyph):
         # contributes nothing (only caller-supplied, non-None values are kept).
         self._style_color_overrides: dict[str, Any] = {
             key: kwargs[key]
-            for key in ("vmin", "vmax", "center")
+            for key in ("vmin", "vmax", "center", "cmap")
             if key in explicit_keys and kwargs[key] is not None
         }
+        #: Whether the latest plot()/animate() call explicitly requested a real
+        #: colorbar (a truthy `colorbar=`), which overrides a preset's swatch.
+        self._style_wants_colorbar: bool = False
         self._vmin, self._vmax = self._resolve_color_limits(
             array,
             vmin_kw=kwargs.get("vmin"),
@@ -2441,6 +2446,29 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         return resolve_single_layer_style(style)[0]
 
+    def _style_cbar_kw(self, norm: Normalize) -> dict:
+        """Colorbar tick kwargs for a real colorbar drawn over a `style` preset.
+
+        A preset's norm is often a banded `BoundaryNorm` whose many raw
+        boundaries would over-crowd the axis, so derive a clean, readable set of
+        ~8 ticks across `norm`'s range for `create_color_bar` instead. Falls
+        back to matplotlib's auto-ticking when the norm has no finite range.
+
+        Args:
+            norm: The preset's colour norm (carries the data-range vmin/vmax).
+
+        Returns:
+            dict: `{"ticks": [...]}`, or `{}` to let matplotlib auto-tick.
+        """
+        lo = getattr(norm, "vmin", None)
+        hi = getattr(norm, "vmax", None)
+        if lo is None or hi is None or lo == hi:
+            return {}
+        ticks = [
+            float(t) for t in MaxNLocator(nbins=8).tick_values(lo, hi) if lo <= t <= hi
+        ]
+        return {"ticks": ticks} if ticks else {}
+
     def _plot_with_style(self, style: str) -> tuple[Figure, Axes]:
         """Render the array with a named `DATA_STYLES` preset.
 
@@ -2457,7 +2485,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         Returns:
             tuple[Figure, Axes]: The figure and axes drawn on.
         """
-        layer = self._resolve_style_layer(style)
+        layer, style_cfg = resolve_single_layer_style(style)
         # See `_clear_prior_render_artists`: cleared only once the style
         # name is known valid, so a prior *valid* render survives a bad
         # `style` on this call instead of being torn down for a call that
@@ -2472,6 +2500,13 @@ class ArrayGlyph(GeoMixin, Glyph):
             ma.filled(ma.asarray(self.arr).astype(float), np.nan), dtype=float
         )
         legend = bool(self.default_options.get("add_colorbar", True))
+        # An explicit `colorbar=` overrides a CONTINUOUS preset's swatch with a
+        # real colorbar (drawn after the image below); categorical presets keep
+        # their discrete legend (a colorbar is meaningless for class codes).
+        override_colorbar = (
+            self._style_wants_colorbar and style_cfg.get("categories") is None
+        )
+        draw_swatch = legend and not override_colorbar
         coords = self._coords
         # Forward an explicit caller vmin/vmax/center so it overrides the
         # preset's own fixed range (e.g. a Magics preset's decoded ECMWF scale).
@@ -2490,12 +2525,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                 style=style,
                 x=coords[0],
                 y=coords[1],
-                legend=legend,
+                legend=draw_swatch,
                 shading="nearest",
                 swatch_text_color=self.default_options.get("cbar_label_color")
                 or "white",
                 swatch_value_color=self.default_options.get("cbar_tick_color")
                 or "white",
+                swatch_box=self.default_options.get("cbar_box"),
                 **override,
             )
         else:
@@ -2506,11 +2542,12 @@ class ArrayGlyph(GeoMixin, Glyph):
                 self.ax,
                 {layer: data},
                 style=style,
-                legend=legend,
+                legend=draw_swatch,
                 swatch_text_color=self.default_options.get("cbar_label_color")
                 or "white",
                 swatch_value_color=self.default_options.get("cbar_tick_color")
                 or "white",
+                swatch_box=self.default_options.get("cbar_box"),
                 **render_kwargs,
                 **override,
             )
@@ -2535,9 +2572,23 @@ class ArrayGlyph(GeoMixin, Glyph):
                 )
             else:
                 self.im.set_data(shade_rgb(self.im.get_array(), data, **hillshade))
-        # Presets present their scale via a swatch / categorical legend, not a
-        # matplotlib colorbar.
-        self.cbar = None
+        # Presets present their scale via a swatch / categorical legend -- unless
+        # the caller explicitly asked for a real colorbar (`colorbar=`), which
+        # overrides that with a matplotlib colorbar built from the preset's
+        # colormap + norm (`create_color_bar` honours the `ColorBar` placement).
+        if override_colorbar:
+            # The drawn image bakes RGBA, so it cannot itself drive a colorbar;
+            # build a mappable carrying the preset's colormap + norm and hand it
+            # to `create_color_bar`, which honours the `ColorBar` placement.
+            cbar_cfg = {**style_cfg, **override}
+            cbar_norm, _lo, _hi = resolve_style_norm(data, cbar_cfg)
+            mappable = ScalarMappable(norm=cbar_norm, cmap=cbar_cfg["cmap"])
+            mappable.set_array([])
+            self.cbar = self.create_color_bar(
+                self.ax, mappable, self._style_cbar_kw(cbar_norm)
+            )
+        else:
+            self.cbar = None
         # Match the imshow path: with no extent (and no curvilinear coords) hide
         # the pixel-index tick labels.
         if self.extent is None and coords is None:
@@ -2843,6 +2894,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                 inset that tracks `full_bleed`, a backing `box` (defaulted on
                 for an inset), and text colours (`label_color` for the title,
                 `tick_color` for the tick numbers). Same flag as `animate(colorbar=)`.
+                On a `style=` preset, a placement `ColorBar` (or `True`) overrides
+                the swatch with a real colorbar; a colours-only `ColorBar` styles
+                the swatch in place (defaults < preset < explicit).
             **kwargs: Additional keyword arguments for customizing the plot.
 
                 Plot appearance:
@@ -3381,9 +3435,17 @@ class ArrayGlyph(GeoMixin, Glyph):
         # `kwargs` is a real, mutable dict at runtime -- mypy's TypedDict model
         # just does not support indexing it with a non-literal (loop) key.
         kwargs_dict = cast(dict, kwargs)
-        for key in ("vmin", "vmax", "center"):
+        for key in ("vmin", "vmax", "center", "cmap"):
             if key in kwargs_dict and kwargs_dict[key] is not None:
                 self._style_color_overrides[key] = kwargs_dict[key]
+        # A `colorbar=` that requests PLACEMENT (a `ColorBar` with `location`/
+        # `inside`, or `colorbar=True`) overrides a preset's swatch with a real
+        # colorbar. A `ColorBar` carrying only colours/box styles the swatch in
+        # place instead, so the ECMWF swatch is kept.
+        self._style_wants_colorbar = colorbar is True or (
+            isinstance(colorbar, ColorBar)
+            and (colorbar.location is not None or colorbar.inside)
+        )
 
         self._validate_extend(self.default_options.get("extend"))
 
@@ -4027,6 +4089,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                 inset that tracks `full_bleed`, a backing `box` (defaulted on
                 for an inset), and text colours (`label_color` for the title,
                 `tick_color` for the tick numbers). Same flag as `plot(colorbar=)`.
+                On a `style=` preset, a placement `ColorBar` (or `True`) overrides
+                the swatch with a real colorbar; a colours-only `ColorBar` styles
+                the swatch in place (defaults < preset < explicit).
             **kwargs: Additional keyword arguments for customizing the animation.
 
                 Plot appearance:
@@ -4340,9 +4405,17 @@ class ArrayGlyph(GeoMixin, Glyph):
         # `kwargs` is a real, mutable dict at runtime -- mypy's TypedDict model
         # just does not support indexing it with a non-literal (loop) key.
         kwargs_dict = cast(dict, kwargs)
-        for key in ("vmin", "vmax", "center"):
+        for key in ("vmin", "vmax", "center", "cmap"):
             if key in kwargs_dict and kwargs_dict[key] is not None:
                 self._style_color_overrides[key] = kwargs_dict[key]
+        # A `colorbar=` that requests PLACEMENT (a `ColorBar` with `location`/
+        # `inside`, or `colorbar=True`) overrides a preset's swatch with a real
+        # colorbar. A `ColorBar` carrying only colours/box styles the swatch in
+        # place instead, so the ECMWF swatch is kept.
+        self._style_wants_colorbar = colorbar is True or (
+            isinstance(colorbar, ColorBar)
+            and (colorbar.location is not None or colorbar.inside)
+        )
 
         # if user did not input ticks spacing use the calculated one.
         if "ticks_spacing" in kwargs.keys():
@@ -4534,7 +4607,19 @@ class ArrayGlyph(GeoMixin, Glyph):
                     if self.cbar is not None:
                         self.cbar.remove()
                         self.cbar = None
-                    if self.default_options["add_colorbar"]:
+                    if self._style_wants_colorbar:
+                        # Explicit `colorbar=` overrides the preset's swatch with
+                        # a real colorbar built from the preset's colormap + norm
+                        # (a fixed-scale mappable -- the frames update the image,
+                        # not the scale).
+                        for _inset in list(ax.child_axes):
+                            _inset.remove()
+                        mappable = ScalarMappable(norm=style_norm, cmap=cfg["cmap"])
+                        mappable.set_array([])
+                        self.cbar = self.create_color_bar(
+                            ax, mappable, self._style_cbar_kw(style_norm)
+                        )
+                    elif self.default_options["add_colorbar"]:
                         # Remove a swatch inset from a previous render so
                         # repeated animate() calls don't stack legends.
                         for _inset in list(ax.child_axes):
@@ -4558,6 +4643,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                             or "white",
                             value_color=self.default_options.get("cbar_tick_color")
                             or "white",
+                            box=self.default_options.get("cbar_box"),
                         )
                     alpha_vmin = cfg.get("alpha_vmin")
                     alpha_vmax = cfg.get("alpha_vmax")
