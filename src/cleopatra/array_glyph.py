@@ -2607,6 +2607,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         ax: Axes | None = None,
         title: str | None = None,
         full_bleed: bool | str = False,
+        basemap: bool | dict | Callable[[Any], None] | None = None,
         **kwargs: Unpack[PlotKwargs],
     ) -> tuple[Figure, Axes]:
         """Plot the array with customizable visualization options.
@@ -2668,6 +2669,17 @@ class ArrayGlyph(GeoMixin, Glyph):
                 `animate(full_bleed=...)`. Intended for chrome-free maps -- a
                 title has no room, so omit it; a scale swatch (from `style`)
                 still fits inside.
+            basemap: A reference backdrop drawn via the glyph's own
+                `add_relief` / `add_features`, composed by `zorder` (relief
+                under the data, coastline/borders over it), by default None (no
+                basemap). Accepts ``True`` for a sensible default (a `"low"`
+                relief plus grey `"50m"` coastline and borders), a **dict** to
+                configure it (keys ``relief``, ``resolution``, ``features`` --
+                see `GeoMixin._draw_basemap`), or a **callable** ``f(glyph)``
+                for full control. Same flag as `animate(basemap=...)`. On a
+                projected axis, set `self.crs` first so the relief is warped to
+                match the data. Drawing the relief needs the `[tiles]` extra
+                (Pillow, and pyproj for a non-4326 `crs`).
             **kwargs: Additional keyword arguments for customizing the plot.
 
                 Plot appearance:
@@ -3264,6 +3276,8 @@ class ArrayGlyph(GeoMixin, Glyph):
                         stacklevel=2,
                     )
                 self._plot_with_style(style)
+                if basemap is not None:
+                    self._draw_basemap(basemap)
                 if full_bleed:
                     self._apply_full_bleed(facecolor=full_bleed if isinstance(full_bleed, str) else None)
                 return self.fig, self.ax
@@ -3403,6 +3417,8 @@ class ArrayGlyph(GeoMixin, Glyph):
             *(optional_display.get("points_id") or []),
             *(optional_display.get("cell_text_value") or []),
         )
+        if basemap is not None:
+            self._draw_basemap(basemap)
         if full_bleed:
             self._apply_full_bleed(facecolor=full_bleed if isinstance(full_bleed, str) else None)
         return fig, ax

@@ -5745,3 +5745,109 @@ class TestPlotFullBleed:
         glyph.plot(cmap="viridis")
         assert tuple(glyph.ax.get_position().bounds) != (0.0, 0.0, 1.0, 1.0), "default plot should not be full-bleed"
         plt.close("all")
+
+
+class TestPlotBasemap:
+    """`ArrayGlyph.plot(basemap=...)` composes a reference backdrop under the field.
+
+    The `plot` basemap forwards to the same `GeoMixin._draw_basemap` engine as
+    `animate`, on both the cmap path and the styled path, and composes with
+    `full_bleed`. Reference downloads are monkeypatched with spies, so no test
+    needs the network or the `[tiles]` extra.
+    """
+
+    @staticmethod
+    def _field() -> np.ndarray:
+        """Return a small 2-D field `(20, 30)` for a single static plot."""
+        return np.arange(20 * 30, dtype=float).reshape(20, 30)
+
+    @staticmethod
+    def _spy_relief(monkeypatch) -> list:
+        """Replace `reference.add_relief` with a spy; return its `(args, kwargs)` log."""
+        calls: list = []
+        monkeypatch.setattr(refmod, "add_relief", lambda ax, *a, **k: calls.append((a, k)) or ax)
+        return calls
+
+    @staticmethod
+    def _spy_features(monkeypatch) -> list:
+        """Replace `reference.add_features` with a spy; return its `(args, kwargs)` log."""
+        calls: list = []
+        monkeypatch.setattr(refmod, "add_features", lambda ax, *a, **k: calls.append((a, k)) or ax)
+        return calls
+
+    def test_basemap_true_composes_relief_and_features(self, monkeypatch):
+        """`plot(basemap=True)` draws a low relief under, coastline+borders over.
+
+        Test scenario:
+            The cmap path must call `add_relief("low", zorder=-2)` and
+            `add_features` for `coastline` then `borders`, all at `zorder=3`.
+        """
+        relief = self._spy_relief(monkeypatch)
+        features = self._spy_features(monkeypatch)
+        glyph = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        glyph.plot(cmap="viridis", basemap=True)
+        assert relief, "relief should be drawn for basemap=True"
+        assert relief[0][0] == ("low",), f"relief resolution should be 'low', got {relief[0][0]}"
+        assert relief[0][1]["zorder"] == -2, f"relief should sit under data (zorder -2), got {relief[0][1].get('zorder')}"
+        layers = [args[0] for args, _ in features]
+        assert layers == ["coastline", "borders"], f"default features should be coastline+borders, got {layers}"
+        assert all(kw["zorder"] == 3 for _, kw in features), "features should sit over data (zorder 3)"
+        plt.close("all")
+
+    def test_basemap_true_on_style_path(self, monkeypatch):
+        """The styled path also composes the basemap.
+
+        Test scenario:
+            `plot(style="temperature_2m", basemap=True)` returns via the style
+            branch and must still draw the relief and the two default features.
+        """
+        relief = self._spy_relief(monkeypatch)
+        features = self._spy_features(monkeypatch)
+        glyph = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        glyph.plot(style="temperature_2m", vmin=-10, vmax=40, basemap=True)
+        assert relief, "styled path should draw the relief"
+        layers = [args[0] for args, _ in features]
+        assert layers == ["coastline", "borders"], f"styled path features should be coastline+borders, got {layers}"
+        plt.close("all")
+
+    def test_basemap_none_draws_nothing(self, monkeypatch):
+        """`plot()` without a `basemap` draws no reference layers.
+
+        Test scenario:
+            Neither `add_relief` nor `add_features` runs by default.
+        """
+        relief = self._spy_relief(monkeypatch)
+        features = self._spy_features(monkeypatch)
+        glyph = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        glyph.plot(cmap="viridis")
+        assert relief == [], "no relief should be drawn without a basemap"
+        assert features == [], "no features should be drawn without a basemap"
+        plt.close("all")
+
+    def test_basemap_callable_receives_glyph(self):
+        """A callable `basemap` is invoked once with the glyph itself.
+
+        Test scenario:
+            `plot(basemap=f)` must call `f(glyph)` exactly once, passing the glyph.
+        """
+        seen: list = []
+        glyph = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        glyph.plot(cmap="viridis", basemap=lambda g: seen.append(g))
+        assert seen == [glyph], f"callable basemap should be called once with the glyph, got {seen}"
+        plt.close("all")
+
+    def test_basemap_composes_with_full_bleed(self, monkeypatch):
+        """`basemap` and `full_bleed` combine: backdrop drawn, figure filled.
+
+        Test scenario:
+            `plot(cmap=..., basemap=True, full_bleed=True)` must draw the relief
+            AND give the axes the whole figure `[0, 0, 1, 1]`.
+        """
+        relief = self._spy_relief(monkeypatch)
+        self._spy_features(monkeypatch)
+        glyph = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        glyph.plot(cmap="viridis", basemap=True, full_bleed=True)
+        assert relief, "relief should be drawn under a full-bleed plot"
+        bounds = tuple(round(v, 6) for v in glyph.ax.get_position().bounds)
+        assert bounds == (0.0, 0.0, 1.0, 1.0), f"full-bleed with basemap should fill the figure, got {bounds}"
+        plt.close("all")
