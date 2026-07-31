@@ -723,6 +723,8 @@ class ColorBar:
             `matplotlib.patches.Rectangle` kwargs for full control. Defaults to
             `None`, which becomes `True` when `inside` is set (an inset over
             moving data almost always wants a panel) and stays off otherwise.
+            Only an *inside* colorbar draws a box; it is ignored when
+            `inside=False` (an outside colorbar sits in its own gutter).
         label_color: Colour of the scale's title text -- the colorbar's axis
             label and, for a `style` preset, the swatch legend's title (and
             endpoint values). `None` (default) keeps the default (white for the
@@ -2887,8 +2889,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                 (e.g. `"black"`) to also paint the canvas that colour -- e.g. so
                 a semi-transparent relief reads dark. Same flag as
                 `animate(full_bleed=...)`. Intended for chrome-free maps -- a
-                title has no room, so omit it; a scale swatch (from `style`)
-                still fits inside.
+                colorbar or title has no room, so pair it with
+                `add_colorbar=False` and omit the title (an outside colorbar is
+                otherwise left floating over the filled axes); a scale swatch
+                (from `style`) still fits inside.
             basemap: A reference backdrop drawn via the glyph's own
                 `add_relief` / `add_features`, composed by `zorder` (relief
                 under the data, coastline/borders over it), by default None (no
