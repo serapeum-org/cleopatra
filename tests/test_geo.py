@@ -34,6 +34,8 @@ import cleopatra.tiles as tilesmod  # noqa: E402
 from cleopatra.array_glyph import ArrayGlyph  # noqa: E402
 from cleopatra.flow_glyph import FlowGlyph  # noqa: E402
 from cleopatra.geo import (  # noqa: E402
+    Basemap,
+    Feature,
     GeoMixin,
     _lat_formatter,
     _lon_formatter,
@@ -787,3 +789,130 @@ class TestBasemapAlignmentCheck:
             warnings.simplefilter("always")
             ArrayGlyph(data, extent=[1.0, 0.0, 21.0, 20.0])._check_basemap_alignment()
         assert any("alignment" in str(x.message) for x in caught)
+
+
+class TestFeature:
+    """`Feature`: a typed Natural Earth layer for a `Basemap`."""
+
+    def test_layer_and_style_stored(self):
+        """The layer name and style keywords are captured verbatim."""
+        f = Feature("coastline", colors="0.55", linewidths=0.5)
+        assert f.layer == "coastline", f"Got layer {f.layer!r}"
+        assert f.style == {"colors": "0.55", "linewidths": 0.5}, f"Got style {f.style!r}"
+
+    def test_no_style_is_empty_dict(self):
+        """With no style keywords the style is an empty dict."""
+        assert Feature("borders").style == {}, "Expected empty style"
+
+    @pytest.mark.parametrize(
+        "layer", ["coastline", "land", "ocean", "rivers", "lakes", "borders"]
+    )
+    def test_all_known_layers_accepted(self, layer):
+        """Every layer `reference.available_layers()` reports is accepted."""
+        assert Feature(layer).layer == layer, f"{layer!r} should be accepted"
+
+    def test_unknown_layer_raises(self):
+        """An unknown layer is rejected at construction with a helpful message."""
+        with pytest.raises(ValueError, match=r"Unknown basemap feature layer 'countries'"):
+            Feature("countries")
+
+
+class TestBasemap:
+    """`Basemap`: the typed, validated form of the `basemap=` dict."""
+
+    def test_defaults(self):
+        """Defaults mirror `basemap=True`: relief on, default features, 50m."""
+        bm = Basemap()
+        assert bm.relief is True, f"Got relief {bm.relief!r}"
+        assert bm.features is None, f"Got features {bm.features!r}"
+        assert bm.resolution == "50m", f"Got resolution {bm.resolution!r}"
+        assert bm.check_alignment is False, f"Got check_alignment {bm.check_alignment!r}"
+
+    def test_explicit_values_stored(self):
+        """All keywords are stored; `features` is materialised into a list copy."""
+        feats = (Feature("coastline"), Feature("borders"))
+        bm = Basemap(relief="medium", features=feats, resolution="10m", check_alignment=True)
+        assert bm.relief == "medium", f"Got relief {bm.relief!r}"
+        assert bm.features == list(feats), "features should be a list copy of the iterable"
+        assert bm.resolution == "10m", f"Got resolution {bm.resolution!r}"
+        assert bm.check_alignment is True, f"Got check_alignment {bm.check_alignment!r}"
+
+    def test_unknown_relief_resolution_raises(self):
+        """A string `relief` that is not a known resolution is rejected."""
+        with pytest.raises(ValueError, match=r"Unknown relief resolution 'ultra'"):
+            Basemap(relief="ultra")
+
+    def test_bool_and_dict_relief_pass_through(self):
+        """`relief` as a bool or dict is stored without a resolution check."""
+        assert Basemap(relief=False).relief is False, "False relief must pass through"
+        cfg = {"resolution": "low", "alpha": 0.3}
+        assert Basemap(relief=cfg).relief == cfg, "dict relief must pass through"
+
+    def test_as_config_omits_features_when_unset(self):
+        """`_as_config` drops `features` when None so the default still applies."""
+        cfg = Basemap()._as_config()
+        assert "features" not in cfg, f"features should be omitted, got {cfg}"
+        assert cfg == {"relief": True, "resolution": "50m", "check_alignment": False}, cfg
+
+    def test_as_config_includes_features_when_set(self):
+        """`_as_config` includes the features list when provided."""
+        feats = [Feature("ocean")]
+        assert Basemap(relief=False, features=feats)._as_config()["features"] == feats
+
+    def test_reexported_from_array_glyph(self):
+        """`Basemap`/`Feature` are the same objects re-exported from array_glyph."""
+        from cleopatra.array_glyph import Basemap as B2
+        from cleopatra.array_glyph import Feature as F2
+
+        assert B2 is Basemap and F2 is Feature, "re-exports must be the same classes"
+
+
+class TestDrawBasemapRouting:
+    """`_draw_basemap` treats a `Basemap`/`Feature` like the equivalent dict."""
+
+    @staticmethod
+    def _record(monkeypatch):
+        """Patch add_relief/add_features to record calls; return the two logs."""
+        relief_calls: list = []
+        feature_calls: list = []
+        monkeypatch.setattr(
+            ArrayGlyph, "add_relief", lambda self, *a, **k: relief_calls.append((a, k))
+        )
+        monkeypatch.setattr(
+            ArrayGlyph, "add_features", lambda self, *a, **k: feature_calls.append((a, k))
+        )
+        return relief_calls, feature_calls
+
+    def test_basemap_matches_equivalent_dict(self, monkeypatch):
+        """A `Basemap` yields the same add_relief/add_features calls as its dict."""
+        glyph = ArrayGlyph(np.ones((3, 5, 5)), extent=[0, 0, 5, 5])
+        r1, f1 = self._record(monkeypatch)
+        glyph._draw_basemap(
+            Basemap(
+                relief=False,
+                features=[
+                    Feature("coastline", colors="0.55"),
+                    Feature("borders", colors="0.45"),
+                ],
+            )
+        )
+        r2, f2 = self._record(monkeypatch)
+        glyph._draw_basemap(
+            {
+                "relief": False,
+                "features": [
+                    ("coastline", {"colors": "0.55"}),
+                    ("borders", {"colors": "0.45"}),
+                ],
+            }
+        )
+        assert (r1, f1) == (r2, f2), "Basemap should route identically to the dict form"
+
+    def test_feature_zorder_overrides_default(self, monkeypatch):
+        """A `Feature`'s own `zorder` overrides the default feature zorder (3)."""
+        glyph = ArrayGlyph(np.ones((3, 5, 5)), extent=[0, 0, 5, 5])
+        _, feats = self._record(monkeypatch)
+        glyph._draw_basemap(Basemap(relief=False, features=[Feature("ocean", zorder=-2)]))
+        (args, kwargs), = feats
+        assert args[0] == "ocean", f"Got layer {args[0]!r}"
+        assert kwargs["zorder"] == -2, f"Feature zorder should win, got {kwargs.get('zorder')}"

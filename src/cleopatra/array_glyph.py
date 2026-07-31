@@ -50,6 +50,8 @@ from cleopatra.colors import (
     resolve_single_layer_style,
     resolve_style_norm,
 )
+from cleopatra.geo import Basemap as Basemap
+from cleopatra.geo import Feature as Feature
 from cleopatra.geo import GeoMixin
 from cleopatra.glyph import (
     Glyph,
@@ -2824,7 +2826,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         ax: Axes | None = None,
         title: str | None = None,
         full_bleed: bool | str = False,
-        basemap: bool | dict | Callable[[Any], None] | None = None,
+        basemap: bool | dict | Basemap | Callable[[Any], None] | None = None,
         colorbar: bool | ColorBar | None = None,
         **kwargs: Unpack[PlotKwargs],
     ) -> tuple[Figure, Axes]:
@@ -2891,10 +2893,12 @@ class ArrayGlyph(GeoMixin, Glyph):
                 `add_relief` / `add_features`, composed by `zorder` (relief
                 under the data, coastline/borders over it), by default None (no
                 basemap). Accepts ``True`` for a sensible default (a `"low"`
-                relief plus grey `"50m"` coastline and borders), a **dict** to
-                configure it (keys ``relief``, ``resolution``, ``features`` --
-                see `GeoMixin._draw_basemap`), or a **callable** ``f(glyph)``
-                for full control. Same flag as `animate(basemap=...)`. On a
+                relief plus grey `"50m"` coastline and borders), a `Basemap`
+                (the typed, validated form -- `relief` / `features` /
+                `resolution` / `check_alignment`, with `features` taking
+                `Feature` objects), a **dict** with the same keys (see
+                `GeoMixin._draw_basemap`), or a **callable** ``f(glyph)`` for
+                full control. Same flag as `animate(basemap=...)`. On a
                 projected axis, set `self.crs` first so the relief is warped to
                 match the data. Drawing the relief needs the `[tiles]` extra
                 (Pillow, and pyproj for a non-4326 `crs`).
@@ -4001,7 +4005,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         *,
         data_getter: Callable[[int], np.ndarray] | None = None,
         full_bleed: bool | str = False,
-        basemap: bool | dict | Callable[[Any], None] | None = None,
+        basemap: bool | dict | Basemap | Callable[[Any], None] | None = None,
         colorbar: bool | ColorBar | None = None,
         **kwargs: Unpack[AnimateKwargs],
     ) -> FuncAnimation:
@@ -4087,12 +4091,14 @@ class ArrayGlyph(GeoMixin, Glyph):
                 `zorder` (relief under the data, coastline/borders over it), by
                 default None (no basemap). Accepts ``True`` for a sensible
                 default (a `"low"` relief plus grey `"50m"` coastline and
-                borders), a **dict** to configure it (keys ``relief``,
-                ``resolution``, ``features`` -- see `GeoMixin._draw_basemap`),
-                or a **callable** ``f(glyph)`` for full control. On a
-                value-linked-opacity `style` (e.g. `temperature_flame`) the cool
-                areas reveal the terrain while the data glows on top. Drawing
-                the relief needs the `[tiles]` extra (Pillow).
+                borders), a `Basemap` (the typed, validated form -- `relief` /
+                `features` / `resolution` / `check_alignment`, with `features`
+                taking `Feature` objects), a **dict** with the same keys (see
+                `GeoMixin._draw_basemap`), or a **callable** ``f(glyph)`` for
+                full control. On a value-linked-opacity `style` (e.g.
+                `temperature_flame`) the cool areas reveal the terrain while the
+                data glows on top. Drawing the relief needs the `[tiles]` extra
+                (Pillow).
             colorbar: Colorbar presence and placement. `None` (default) keeps
                 matplotlib's placement (honouring the legacy `add_colorbar`);
                 `False` draws no colorbar; `True` a default one. Pass a

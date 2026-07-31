@@ -30,6 +30,7 @@ from __future__ import annotations
 import importlib.util
 import math
 import warnings
+from collections.abc import Iterable
 from typing import Any
 
 import numpy as np
@@ -318,6 +319,164 @@ def add_point_labels(
     return ax
 
 
+class Feature:
+    """A Natural Earth reference layer for a `Basemap`.
+
+    Pairs a layer name with its matplotlib style keywords, so a `Basemap`'s
+    `features` list reads as typed values instead of raw `(name, dict)`
+    tuples. The style keywords are forwarded verbatim to
+    `GeoMixin.add_features` (e.g. `colors`, `linewidths`, `facecolor`,
+    `alpha`, `zorder`).
+
+    Attributes:
+        layer: The Natural Earth layer to draw -- one of
+            `cleopatra.reference.available_layers()` (`"coastline"`,
+            `"borders"`, `"land"`, `"ocean"`, `"rivers"`, `"lakes"`).
+        style: The style keywords forwarded to `add_features`.
+
+    Examples:
+        - A thin grey coastline:
+            ```python
+            >>> from cleopatra.geo import Feature
+            >>> f = Feature("coastline", colors="0.55", linewidths=0.5)
+            >>> f.layer, f.style
+            ('coastline', {'colors': '0.55', 'linewidths': 0.5})
+
+            ```
+        - An unknown layer is rejected at construction:
+            ```python
+            >>> Feature("countries")
+            Traceback (most recent call last):
+            ValueError: Unknown basemap feature layer 'countries'. Choose from ['coastline', 'land', 'ocean', 'rivers', 'lakes', 'borders'].
+
+            ```
+    """
+
+    def __init__(self, layer: str, **style: Any) -> None:
+        """Initialise a `Feature`.
+
+        Args:
+            layer: Natural Earth layer name (see
+                `cleopatra.reference.available_layers`).
+            **style: Style keywords forwarded to `add_features`
+                (`colors`, `linewidths`, `facecolor`, `alpha`, `zorder`, ...).
+
+        Raises:
+            ValueError: If `layer` is not a known Natural Earth layer.
+        """
+        valid = reference.available_layers()
+        if layer not in valid:
+            raise ValueError(
+                f"Unknown basemap feature layer {layer!r}. Choose from {valid}."
+            )
+        self.layer = layer
+        self.style = style
+
+
+class Basemap:
+    """Structured spec for `ArrayGlyph.plot` / `animate`'s `basemap=`.
+
+    Bundles the reference-backdrop choices -- the hypsometric relief drawn
+    under the data, the Natural Earth feature layers drawn over it, and the
+    opt-in alignment check -- into one value, mirroring `ColorBar` /
+    `FrameLabel`. `plot`/`animate` still accept `basemap=True` (the default
+    backdrop), a plain `dict`, or a `callable f(glyph)`; a `Basemap` is the
+    typed, validated form, and `_draw_basemap` consumes any of them.
+
+    Attributes:
+        relief: The hypsometric relief drawn under the data (`zorder=-2`).
+            `True` (default) draws the default low-resolution relief;
+            `False` skips it; a resolution string (`"low"` / `"medium"`, see
+            `cleopatra.reference.available_relief_resolutions`) picks the
+            product; a dict of `add_relief` keyword arguments overrides
+            resolution / alpha / zorder in full.
+        features: The Natural Earth layers drawn over the relief
+            (`zorder=3`). `None` (default) draws grey `coastline` +
+            `borders`. Otherwise an iterable of `Feature` (preferred), bare
+            layer-name strings, or `(layer, style_dict)` tuples.
+        resolution: Natural Earth resolution for the features (`"10m"` /
+            `"50m"` / `"110m"`), by default `"50m"`.
+        check_alignment: Run the opt-in mis-georeferencing check
+            (`_check_basemap_alignment`), by default `False`.
+
+    Examples:
+        - The default backdrop, spelled out:
+            ```python
+            >>> from cleopatra.geo import Basemap
+            >>> bm = Basemap()
+            >>> bm.relief, bm.features, bm.resolution
+            (True, None, '50m')
+
+            ```
+        - A "dark ocean" basemap -- no relief, a thin coastline + borders:
+            ```python
+            >>> from cleopatra.geo import Basemap, Feature
+            >>> bm = Basemap(relief=False,
+            ...              features=[Feature("coastline", colors="0.55"),
+            ...                        Feature("borders", colors="0.45")])
+            >>> bm.relief, [f.layer for f in bm.features]
+            (False, ['coastline', 'borders'])
+
+            ```
+    """
+
+    def __init__(
+        self,
+        *,
+        relief: bool | str | dict = True,
+        features: Iterable[Feature | str | tuple] | None = None,
+        resolution: str = "50m",
+        check_alignment: bool = False,
+    ) -> None:
+        """Initialise a `Basemap`.
+
+        Args:
+            relief: Relief backdrop -- `True` / `False`, a resolution string
+                (`"low"` / `"medium"`), or a dict of `add_relief` kwargs.
+            features: Layers over the relief -- an iterable of `Feature`,
+                layer-name strings, or `(layer, style_dict)` tuples; `None`
+                keeps the default `coastline` + `borders`.
+            resolution: Natural Earth resolution for the features, by default
+                `"50m"`.
+            check_alignment: Opt-in mis-georeferencing check, by default
+                `False`.
+
+        Raises:
+            ValueError: If `relief` is a string that is not a known relief
+                resolution.
+        """
+        if isinstance(relief, str) and (
+            relief not in reference.available_relief_resolutions()
+        ):
+            raise ValueError(
+                f"Unknown relief resolution {relief!r}. "
+                f"Choose from {reference.available_relief_resolutions()}."
+            )
+        self.relief = relief
+        self.features = list(features) if features is not None else None
+        self.resolution = resolution
+        self.check_alignment = check_alignment
+
+    def _as_config(self) -> dict:
+        """Normalise to the dict form `_draw_basemap` consumes.
+
+        Omits `features` when unset so `_draw_basemap`'s default
+        (`coastline` + `borders`) still applies.
+
+        Returns:
+            dict: The `{relief, resolution, check_alignment[, features]}`
+                config `_draw_basemap` understands.
+        """
+        cfg: dict = {
+            "relief": self.relief,
+            "resolution": self.resolution,
+            "check_alignment": self.check_alignment,
+        }
+        if self.features is not None:
+            cfg["features"] = self.features
+        return cfg
+
+
 class GeoMixin:
     """Mixin giving geographic glyphs `add_tiles` / `add_features` / `add_relief`.
 
@@ -601,6 +760,10 @@ class GeoMixin:
                   full control (draw whatever you like on `self.ax`);
                 * ``True`` -- the default backdrop: a `"low"` relief under the
                   data plus grey `coastline` and `borders` (`"50m"`) over it;
+                * a **`Basemap`** -- the typed, validated form of the dict
+                  below (its `relief` / `features` / `resolution` /
+                  `check_alignment` fields, `features` taking `Feature`
+                  objects); normalised via `Basemap._as_config`;
                 * a **dict** with optional keys:
                     * ``relief`` -- ``False`` to skip it, ``True`` for the
                       default, a resolution string (e.g. ``"medium"``), or a
@@ -619,6 +782,8 @@ class GeoMixin:
         if callable(spec):
             spec(self)
             return
+        if isinstance(spec, Basemap):
+            spec = spec._as_config()
         cfg: dict = {} if spec is True else dict(spec)
 
         relief = cfg.get("relief", True)
@@ -639,7 +804,12 @@ class GeoMixin:
             ),
         )
         for feature in features:
-            layer, style = (feature, {}) if isinstance(feature, str) else feature
+            if isinstance(feature, Feature):
+                layer, style = feature.layer, feature.style
+            elif isinstance(feature, str):
+                layer, style = feature, {}
+            else:
+                layer, style = feature
             self.add_features(layer, resolution, **{"zorder": 3, **style})
 
         if cfg.get("check_alignment"):
