@@ -37,7 +37,7 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.axes import Axes
 from matplotlib.cm import ScalarMappable
 from matplotlib.colorbar import Colorbar
-from matplotlib.colors import BoundaryNorm, Colormap, ListedColormap, Normalize
+from matplotlib.colors import BoundaryNorm, Colormap, ListedColormap, Normalize, to_rgb
 from matplotlib.figure import Figure
 from matplotlib.ticker import MaxNLocator
 from PIL import Image
@@ -781,6 +781,40 @@ class ColorBar:
         self.box = True if (inside and box is None) else box
         self.label_color = label_color
         self.tick_color = tick_color
+
+
+def _swatch_text_default(box: bool | str | dict | None) -> str:
+    """Default swatch title/value colour that stays legible over `box`.
+
+    With no backing panel the swatch sits directly on the map, where white
+    reads on the usual dark relief/data backgrounds (the historical default).
+    With a panel, choose black or white by the panel's luminance so the title
+    and endpoint values never render invisibly (e.g. white-on-white when the
+    default `box=True` draws a white panel).
+
+    Args:
+        box: The resolved `cbar_box` -- `None`/`False` (no panel), `True` (a
+            white panel), a colour string, or a dict of `Rectangle` kwargs
+            (its `facecolor` decides).
+
+    Returns:
+        str: `"white"` when there is no panel or the panel is dark, `"black"`
+            when the panel is light.
+    """
+    if not box:
+        return "white"
+    if box is True:
+        facecolor: Any = "white"
+    elif isinstance(box, dict):
+        facecolor = box.get("facecolor", "white")
+    else:
+        facecolor = box
+    try:
+        r, g, b = to_rgb(facecolor)
+    except (ValueError, TypeError):
+        return "white"
+    # Rec. 709 relative luminance: dark text on a light panel and vice versa.
+    return "black" if (0.2126 * r + 0.7152 * g + 0.0722 * b) > 0.5 else "white"
 
 
 def _resolve_colorbar(colorbar: bool | ColorBar | None) -> dict:
@@ -2543,9 +2577,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                 legend=draw_swatch,
                 shading="nearest",
                 swatch_text_color=self.default_options.get("cbar_label_color")
-                or "white",
+                or _swatch_text_default(self.default_options.get("cbar_box")),
                 swatch_value_color=self.default_options.get("cbar_tick_color")
-                or "white",
+                or _swatch_text_default(self.default_options.get("cbar_box")),
                 swatch_box=self.default_options.get("cbar_box"),
                 **override,
             )
@@ -2559,9 +2593,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                 style=style,
                 legend=draw_swatch,
                 swatch_text_color=self.default_options.get("cbar_label_color")
-                or "white",
+                or _swatch_text_default(self.default_options.get("cbar_box")),
                 swatch_value_color=self.default_options.get("cbar_tick_color")
-                or "white",
+                or _swatch_text_default(self.default_options.get("cbar_box")),
                 swatch_box=self.default_options.get("cbar_box"),
                 **render_kwargs,
                 **override,
@@ -4661,9 +4695,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                             vmax_prefix=vmax_prefix,
                             bounds=(0.02, 0.92, 0.32, 0.06),
                             text_color=self.default_options.get("cbar_label_color")
-                            or "white",
+                            or _swatch_text_default(self.default_options.get("cbar_box")),
                             value_color=self.default_options.get("cbar_tick_color")
-                            or "white",
+                            or _swatch_text_default(self.default_options.get("cbar_box")),
                             box=self.default_options.get("cbar_box"),
                         )
                     alpha_vmin = cfg.get("alpha_vmin")
