@@ -239,6 +239,11 @@ def make_diverging(
     Returns:
         matplotlib.colors.LinearSegmentedColormap: The diverging colormap.
 
+    Raises:
+        ValueError: If `n < 4`. The colormap is built from two perceptual arms
+            (`low`->`center` and `center`->`high`), each needing at least two
+            samples, so `n` must be at least 4.
+
     Examples:
         ```python
         >>> from cleopatra.perceptual import make_diverging, srgb_to_lab
@@ -250,6 +255,11 @@ def make_diverging(
 
         ```
     """
+    if n < 4:
+        raise ValueError(
+            f"make_diverging needs n >= 4 (two perceptual arms of >= 2 samples "
+            f"each); got n={n}."
+        )
     lo = srgb_to_lab(_to_rgb([low])[0])
     hi = srgb_to_lab(_to_rgb([high])[0])
     if balance:
@@ -359,4 +369,10 @@ def perceptual_uniformity(cmap: Colormap | np.ndarray, n: int = 256) -> float:
         lut = np.asarray(cmap, dtype=float)[:, :3]
     lab = srgb_to_lab(lut)
     de = np.sqrt(((lab[1:] - lab[:-1]) ** 2).sum(axis=1))
-    return float(de.std() / de.mean())
+    mean = de.mean()
+    # A constant (single-colour) LUT has every per-step DeltaE == 0, so the
+    # mean is 0; its steps are trivially "even", so report 0.0 rather than
+    # dividing by zero (which returns nan and warns).
+    if mean == 0:
+        return 0.0
+    return float(de.std() / mean)
