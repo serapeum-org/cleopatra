@@ -738,6 +738,46 @@ class TestOptimizedPillowWriter:
 
         assert changed == 0.0, f"shared palette should keep a constant region byte-stable, got {changed}"
 
+    def test_gif_reserves_black_for_crisp_overlays(self, tmp_path):
+        """A pure-black overlay on a colourful field stays black in the GIF.
+
+        Test scenario:
+            A colourful (random-RGB) animated field with a constant pure-black
+            block in the corner -- standing in for the date label / colourbar
+            ticks drawn on the frame. With every palette slot spent on the
+            photographic colours the block would quantise to a muddy dark grey
+            and read as faded; the writer pins pure black into the palette so
+            the block stays black.
+        """
+        rng = np.random.default_rng(1)
+        fig, ax = plt.subplots()
+        ax.set_position([0, 0, 1, 1])
+        ax.set_axis_off()
+        im = ax.imshow(np.zeros((60, 60, 3)), interpolation="nearest")
+
+        def update(_):
+            frame = rng.random((60, 60, 3))  # colourful -- fills the palette
+            frame[:20, :30] = 0.0  # constant pure-black block (the "overlay")
+            im.set_data(frame)
+            return (im,)
+
+        anim = FuncAnimation(fig, update, frames=6, blit=False)
+        out = tmp_path / "black.gif"
+        save_animation(anim, str(out), fps=4)
+
+        gif = Image.open(out)
+        gif.seek(3)
+        arr = np.asarray(gif.convert("RGB")).copy()
+        h, w, _ = arr.shape
+        block = arr[: h // 6, : w // 4]  # safely inside the black block
+        darkest = int(block.sum(2).min())
+        plt.close("all")
+
+        assert darkest <= 12, (
+            "reserved-black palette should keep a pure-black overlay black, "
+            f"got darkest pixel sum {darkest} (0 = pure black)"
+        )
+
 
 class TestQualityControls:
     """Tests for the crf/bitrate/codec/preset/dpi/gif controls of `save_animation`."""

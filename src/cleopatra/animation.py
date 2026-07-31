@@ -130,7 +130,19 @@ class _OptimizedPillowWriter(PillowWriter):
             montage = Image.new("RGB", (tw, th * len(rgb)))
             for i, frame in enumerate(rgb):
                 montage.paste(frame.resize((tw, th)), (0, i * th))
-            palette = montage.quantize(colors=256, method=Image.Quantize.MEDIANCUT)
+            # Reserve pure black and white in the shared palette. A single-colour
+            # overlay drawn on the frame -- the date label, colourbar ticks and
+            # label -- is a tiny fraction of the montage, so MEDIANCUT spends no
+            # palette entry on it and it quantises to the nearest *photographic*
+            # colour: a black label over a colourful map lands on a muddy dark
+            # grey and reads as faded. Quantising to 254 colours and pinning
+            # black/white into the last two slots keeps such overlays crisp
+            # without meaningfully changing the photographic colours.
+            base = montage.quantize(colors=254, method=Image.Quantize.MEDIANCUT)
+            pal = (list(base.getpalette() or []) + [0] * 768)[:768]
+            pal[254 * 3 : 254 * 3 + 6] = [0, 0, 0, 255, 255, 255]
+            palette = Image.new("P", (1, 1))
+            palette.putpalette(pal)
             frames = [
                 f.quantize(palette=palette, dither=Image.Dither.FLOYDSTEINBERG)
                 for f in rgb
