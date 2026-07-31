@@ -717,21 +717,27 @@ class ColorBar:
             `location` (overlaying the data) rather than in an outside gutter,
             by default `False`. An inset is a child of the data axes, so it
             tracks the axes through `full_bleed`.
-        box: Backing panel behind an *inside* colorbar, so the data does not
-            show through its tick labels. `False` draws none; `True` an opaque
-            white panel; a colour string a panel of that colour; a dict of
+        box: Backing panel behind the scale, so the data does not show through
+            its labels. `False` draws none; `True` an opaque white panel; a
+            colour string a panel of that colour; a dict of
             `matplotlib.patches.Rectangle` kwargs for full control. Defaults to
             `None`, which becomes `True` when `inside` is set (an inset over
             moving data almost always wants a panel) and stays off otherwise.
-            Only an *inside* colorbar draws a box; it is ignored when
-            `inside=False` (an outside colorbar sits in its own gutter).
+            For a real colorbar the panel backs an *inside* colorbar only (it is
+            ignored when `inside=False`, which sits in its own gutter); for a
+            `style` preset's swatch legend it backs the swatch regardless of
+            placement, and the swatch title/values then default to a colour that
+            contrasts with the panel (an explicit `label_color`/`tick_color`
+            still wins).
         label_color: Colour of the scale's title text -- the colorbar's axis
-            label and, for a `style` preset, the swatch legend's title (and
-            endpoint values). `None` (default) keeps the default (white for the
-            swatch; matplotlib's default for a colorbar label).
-        tick_color: Colour of the colorbar's tick labels (the numbers). `None`
-            (default) keeps matplotlib's default. Applies to a real colorbar
-            only, not the swatch legend a `style` preset draws.
+            label and, for a `style` preset, the swatch legend's title (the
+            endpoint values take `tick_color`, not this). `None` (default) keeps
+            the default: matplotlib's for a colorbar label; for the swatch, a
+            colour that contrasts with `box`, else white.
+        tick_color: Colour of the tick labels (the numbers) of a real colorbar
+            and, for a `style` preset, the swatch legend's endpoint values.
+            `None` (default) keeps matplotlib's default for a colorbar; for the
+            swatch it defaults to a colour that contrasts with `box`, else white.
 
     Examples:
         - An inside colorbar on the right -- its box defaults on:
