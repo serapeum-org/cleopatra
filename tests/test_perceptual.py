@@ -1,4 +1,6 @@
 """Tests for `cleopatra.perceptual` -- the numpy-only perceptual colour toolkit."""
+import warnings
+
 import numpy as np
 import pytest
 from matplotlib.colors import Colormap, LinearSegmentedColormap
@@ -126,6 +128,11 @@ class TestMakeDiverging:
         l_hi = srgb_to_lab(cmap(1.0)[:3])[0]
         assert abs(l_lo - l_hi) > 2.0
 
+    def test_small_n_raises(self):
+        """n < 4 (too few for two >=2-sample arms) raises a clear ValueError."""
+        with pytest.raises(ValueError, match=r"needs n >= 4"):
+            make_diverging("#762a83", "#1b7837", n=3)
+
 
 class TestMakeCategorical:
     """glasbey-style categorical palette generation."""
@@ -156,6 +163,16 @@ class TestMakeCategorical:
         with pytest.raises(ValueError):
             make_categorical(0)
 
+    def test_impossible_filter_raises(self):
+        """An l_range/c_min that empties the candidate gamut raises, not crashes."""
+        with pytest.raises(ValueError, match=r"cannot produce 5 distinct colours"):
+            make_categorical(5, c_min=500.0)
+
+    def test_exceeding_candidate_count_raises(self):
+        """Requesting more colours than the filtered gamut holds raises, not truncates."""
+        with pytest.raises(ValueError, match=r"cannot produce 5000 distinct colours"):
+            make_categorical(5000)
+
 
 class TestUniformityMetric:
     """The perceptual-uniformity diagnostic."""
@@ -169,3 +186,9 @@ class TestUniformityMetric:
     def test_zero_for_even_ramp(self):
         """A Lab-uniform ramp scores near zero (very even steps)."""
         assert perceptual_uniformity(interp_perceptual(["#ffffff", "#000000"])) < 0.05
+
+    def test_constant_map_is_zero_without_warning(self):
+        """A constant (single-colour) LUT scores 0.0 with no divide-by-zero warning."""
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            assert perceptual_uniformity(np.tile([0.2, 0.4, 0.6], (16, 1))) == 0.0
