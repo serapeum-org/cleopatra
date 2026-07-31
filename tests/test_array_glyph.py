@@ -5949,8 +5949,9 @@ class TestColorbarPlacement:
             Only left/right/top/bottom (or None) are accepted.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        spec = ColorBar(location="middle")
         with pytest.raises(ValueError, match="cbar_location"):
-            g.plot(cmap="viridis", colorbar=ColorBar(location="middle"))
+            g.plot(cmap="viridis", colorbar=spec)
         plt.close("all")
 
     def test_invalid_colorbar_type_raises(self):
