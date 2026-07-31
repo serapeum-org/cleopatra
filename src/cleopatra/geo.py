@@ -859,7 +859,8 @@ class GeoMixin:
 
         try:
             rgb = reference.relief(resolution)
-        except Exception:  # noqa: BLE001 -- offline / no Pillow: skip, never fail a plot
+        except Exception:  # noqa: BLE001
+            # offline / no Pillow: skip the check, never fail a plot
             return
         red, green, blue = (rgb[:, :, i].astype(int) for i in range(3))
         ref_land = ~((blue > red + 8) & (blue > green + 8))  # ocean == blue-dominant
@@ -871,7 +872,7 @@ class GeoMixin:
 
         def agreement(shift_x: float, shift_y: float) -> float:
             lons = np.linspace(xmin + shift_x, xmax + shift_x, cols)
-            lats = np.linspace(ymax + shift_y, ymin + shift_y, rows)  # origin="upper"
+            lats = np.linspace(ymax + shift_y, ymin + shift_y, rows)  # high to low: upper image origin
             col = np.clip(((lons + 180.0) / 360.0 * rel_w).astype(int), 0, rel_w - 1)
             row = np.clip(((90.0 - lats) / 180.0 * rel_h).astype(int), 0, rel_h - 1)
             return float((ref_land[np.ix_(row, col)] == land).mean())
