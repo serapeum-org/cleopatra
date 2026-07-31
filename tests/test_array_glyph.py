@@ -1069,9 +1069,8 @@ class TestAnimateRGB:
         with pytest.raises(ValueError) as exc:
             glyph.animate(self._LABELS)
         msg = str(exc.value)
-        assert "3-D" in msg and "4-D" in msg, (
-            f"message should name both 3-D and 4-D, got: {msg}"
-        )
+        assert '3-D' in msg, f'message should name both 3-D and 4-D, got: {msg}'
+        assert '4-D' in msg, f'message should name both 3-D and 4-D, got: {msg}'
 
 
 class TestNoImplicitShow:
@@ -4422,13 +4421,13 @@ class TestMappableAndColorbarToggle:
             g2 = ArrayGlyph(self._sample_arr(), ax=ax, fig=fig)
             g2.plot(kind="contour", add_colorbar=False)
 
-            assert g1.cbar is None and g2.cbar is None, "no per-glyph colorbars"
+            assert g1.cbar is None, 'no per-glyph colorbars'
+            assert g2.cbar is None, 'no per-glyph colorbars'
             assert len(fig.axes) == 1, (
                 f"shared axes should stay single, got {len(fig.axes)} axes"
             )
-            assert g1.im is not None and g2.im is not None, (
-                "each layer must expose its mappable for aggregation"
-            )
+            assert g1.im is not None, 'each layer must expose its mappable for aggregation'
+            assert g2.im is not None, 'each layer must expose its mappable for aggregation'
         finally:
             plt.close(fig)
 
@@ -4702,7 +4701,8 @@ class TestScaleToRgbPerBand:
         rng = np.random.default_rng(0)
         stack = rng.uniform(10.0, 200.0, size=(8, 8, 3))
         out = ArrayGlyph(np.zeros((4, 4))).scale_to_rgb(stack, per_band=True)
-        assert out.shape == (8, 8, 3) and out.dtype == np.uint8, "shape/dtype wrong"
+        assert out.shape == (8, 8, 3), 'shape/dtype wrong'
+        assert out.dtype == np.uint8, 'shape/dtype wrong'
         for band in range(3):
             assert int(out[..., band].min()) == 0, f"band {band} min should be 0"
             assert int(out[..., band].max()) == 255, f"band {band} max should be 255"
@@ -4735,7 +4735,8 @@ class TestScaleToRgbPerBand:
             all-zero uint8 array instead.
         """
         out = ArrayGlyph(np.zeros((3, 3))).scale_to_rgb()
-        assert out.dtype == np.uint8 and int(out.max()) == 0, "expected all-zero uint8"
+        assert out.dtype == np.uint8, 'expected all-zero uint8'
+        assert int(out.max()) == 0, 'expected all-zero uint8'
 
     def test_per_band_all_nan_band_is_zero_filled_without_warning(self):
         """An all-NaN (or flat) band yields a zero band and emits no warning.
@@ -4974,7 +4975,8 @@ class TestArrayGlyphDataStyle:
         """A style plot with no extent hides pixel-index ticks, like the imshow path."""
         g = ArrayGlyph(self._accum(), style="flow_accumulation")
         _, ax = g.plot()
-        assert ax.get_xticks().size == 0 and ax.get_yticks().size == 0
+        assert ax.get_xticks().size == 0
+        assert ax.get_yticks().size == 0
         plt.close("all")
 
     def test_points_with_style_warns(self):
@@ -4998,7 +5000,8 @@ class TestArrayGlyphDataStyle:
         )
         g.plot()
         shaded = np.asarray(g.im.get_array())
-        assert shaded.ndim == 3 and shaded.shape[-1] == 4
+        assert shaded.ndim == 3
+        assert shaded.shape[-1] == 4
         g2 = ArrayGlyph(self._accum(), style="flow_accumulation")
         g2.plot()
         base = np.asarray(g2.im.get_array())
@@ -5060,7 +5063,8 @@ class TestArrayGlyphShadedAnimate:
         anim = g.animate(time=list(range(5)))
         anim._func(2)  # drive a mid-sequence frame through animate_a
         arr = np.asarray(g.im.get_array())
-        assert arr.ndim == 3 and arr.shape[-1] == 4
+        assert arr.ndim == 3
+        assert arr.shape[-1] == 4
         plt.close("all")
 
     def test_continuous_style_applies_preset_cmap_and_norm(self):
@@ -5087,7 +5091,8 @@ class TestArrayGlyphShadedAnimate:
         assert g.im.cmap.name == "Blues"
         assert type(g.im.norm).__name__ == "SymLogNorm"
         frame = np.asarray(g.im.get_array())
-        assert frame.ndim == 3 and frame.shape[-1] == 4
+        assert frame.ndim == 3
+        assert frame.shape[-1] == 4
         plt.close("all")
 
     def test_continuous_style_uses_swatch_legend_like_plot(self):
@@ -5132,9 +5137,8 @@ class TestArrayGlyphShadedAnimate:
         frame = np.asarray(g.im.get_array())
         assert frame.shape[-1] == 4, "animate frames are RGBA"
         alpha = frame[..., 3]
-        assert alpha.min() < 0.2 and alpha.max() > 0.8, (
-            "opacity ramps with value like plot()"
-        )
+        assert alpha.min() < 0.2, 'opacity ramps with value like plot()'
+        assert alpha.max() > 0.8, 'opacity ramps with value like plot()'
         plt.close("all")
 
     def test_magics_preset_animate_uses_fixed_range_overridable_by_caller(self):
@@ -5202,7 +5206,8 @@ class TestArrayGlyphShadedAnimate:
         anim = g.animate(time=list(range(3)))
         anim._func(1)
         frame = np.asarray(g.im.get_array())
-        assert frame.ndim == 3 and frame.shape[-1] == 4, "categorical frames are RGBA"
+        assert frame.ndim == 3, 'categorical frames are RGBA'
+        assert frame.shape[-1] == 4, 'categorical frames are RGBA'
         assert g.ax.get_legend() is not None, "a discrete legend is drawn"
         assert g.cbar is None, "categorical presets use a legend, not a colorbar"
         plt.close("all")
@@ -5233,7 +5238,8 @@ class TestArrayGlyphShadedAnimate:
         )
         g = ArrayGlyph(d8, style="flow_direction_d8")
         g.animate(time=list(range(3)), add_colorbar=False)
-        assert g.cbar is None and g.ax.get_legend() is None
+        assert g.cbar is None
+        assert g.ax.get_legend() is None
         plt.close("all")
 
     def test_categorical_animate_masks_out_of_range_codes(self):
@@ -5270,7 +5276,8 @@ class TestArrayGlyphApplyStyle:
         g.plot()
         g.apply_style("topography")
         assert g.style == "topography"
-        assert g.cbar is None and len(g.ax.child_axes) == 1
+        assert g.cbar is None
+        assert len(g.ax.child_axes) == 1
         plt.close("all")
 
     def test_apply_style_repeated_does_not_stack_legends(self):
@@ -5295,7 +5302,8 @@ class TestArrayGlyphApplyStyle:
         """apply_style works before any plot() (renders on a fresh figure)."""
         g = ArrayGlyph(self._dem())
         fig, ax = g.apply_style("elevation")
-        assert fig is not None and g.style == "elevation"
+        assert fig is not None
+        assert g.style == 'elevation'
         plt.close("all")
 
     def test_apply_style_unknown_name_raises(self):
@@ -5347,7 +5355,8 @@ class TestArrayGlyphApplyStyle:
         fig = plt.figure()
         g = ArrayGlyph(self._dem(), fig=fig)
         g.apply_style("elevation")
-        assert g.ax is not None and g.style == "elevation"
+        assert g.ax is not None
+        assert g.style == 'elevation'
         plt.close("all")
 
     def test_apply_style_takes_ownership_of_its_axes(self):
@@ -5632,7 +5641,8 @@ class TestAnimateBasemap:
         self._spy_features(monkeypatch)
         glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
         glyph.animate(["a", "b", "c"], basemap={"relief": "medium"}, add_colorbar=False)
-        assert relief and relief[0][0] == ("medium",), f"relief resolution should be 'medium', got {relief and relief[0][0]}"
+        assert relief, f"relief resolution should be 'medium', got {relief and relief[0][0]}"
+        assert relief[0][0] == ('medium',), f"relief resolution should be 'medium', got {relief and relief[0][0]}"
         assert relief[0][1]["zorder"] == -2, "relief should keep default zorder -2"
         plt.close("all")
 
@@ -5651,7 +5661,8 @@ class TestAnimateBasemap:
             basemap={"relief": {"resolution": "medium", "alpha": 0.9, "zorder": -5}},
             add_colorbar=False,
         )
-        assert relief and relief[0][0] == ("medium",), f"relief resolution should be 'medium', got {relief and relief[0][0]}"
+        assert relief, f"relief resolution should be 'medium', got {relief and relief[0][0]}"
+        assert relief[0][0] == ('medium',), f"relief resolution should be 'medium', got {relief and relief[0][0]}"
         kwargs = relief[0][1]
         assert kwargs["alpha"] == 0.9, f"relief alpha override should be 0.9, got {kwargs.get('alpha')}"
         assert kwargs["zorder"] == -5, f"relief zorder override should be -5, got {kwargs.get('zorder')}"
@@ -6388,7 +6399,8 @@ class TestStylePrecedence:
         g.plot(style="temperature_2m", vmin=-15, vmax=42,
                colorbar=ColorBar(location="right", inside=True))
         ticks = [float(t) for t in g.cbar.get_ticks()]
-        assert min(ticks) < 0 and max(ticks) > 30, f"styled colorbar ticks should span the data range, got {ticks}"
+        assert min(ticks) < 0, f'styled colorbar ticks should span the data range, got {ticks}'
+        assert max(ticks) > 30, f'styled colorbar ticks should span the data range, got {ticks}'
         plt.close("all")
 
     def test_colorbar_true_overrides_swatch(self):

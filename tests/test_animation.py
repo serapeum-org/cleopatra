@@ -287,7 +287,8 @@ class TestToBytes:
         """A ``fmt="webp"`` render returns RIFF/WEBP bytes."""
         data = to_bytes(tiny_anim, fmt="webp", fps=2)
 
-        assert data[:4] == b"RIFF" and data[8:12] == b"WEBP", "not WebP bytes"
+        assert data[:4] == b'RIFF', 'not WebP bytes'
+        assert data[8:12] == b'WEBP', 'not WebP bytes'
 
     def test_leading_dot_and_case_tolerated(self, tiny_anim):
         """``fmt`` accepts a leading dot and mixed case (e.g. ``".GIF"``)."""
@@ -468,9 +469,8 @@ class TestOddDimensionAutoPad:
         (line,) = ax.plot([0, 1], [0, 0])
         width = int(round(fig.get_figwidth() * fig.dpi))
         height = int(round(fig.get_figheight() * fig.dpi))
-        assert width % 2 == 1 and height % 2 == 1, (
-            f"fixture must be odd-sized to exercise the pad, got {width}x{height}"
-        )
+        assert width % 2 == 1, f'fixture must be odd-sized to exercise the pad, got {width}x{height}'
+        assert height % 2 == 1, f'fixture must be odd-sized to exercise the pad, got {width}x{height}'
         anim = FuncAnimation(fig, lambda i: (line,), frames=2)
         out = tmp_path / "odd.mp4"
 
@@ -497,7 +497,8 @@ class TestWebP:
 
         assert returned == str(out), "should return the written path"
         raw = out.read_bytes()
-        assert raw[:4] == b"RIFF" and raw[8:12] == b"WEBP", "not a WebP file"
+        assert raw[:4] == b'RIFF', 'not a WebP file'
+        assert raw[8:12] == b'WEBP', 'not a WebP file'
         assert getattr(Image.open(out), "n_frames", 1) > 1, "WebP is not animated"
 
     def test_webp_routes_to_pillow_writer(self, monkeypatch):

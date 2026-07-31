@@ -112,7 +112,8 @@ class TestMakeDiverging:
         l_lo = srgb_to_lab(cmap(0.0)[:3])[0]
         l_mid = srgb_to_lab(cmap(0.5)[:3])[0]
         l_hi = srgb_to_lab(cmap(1.0)[:3])[0]
-        assert l_mid > l_lo and l_mid > l_hi
+        assert l_mid > l_lo
+        assert l_mid > l_hi
 
     def test_balance_equalises_endpoint_lightness(self):
         """With balance=True the two ends share (near) equal lightness."""

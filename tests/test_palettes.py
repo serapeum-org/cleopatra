@@ -116,14 +116,16 @@ class TestDefaultNorm:
         """With no bounds or data, diverging returns a CenteredNorm that autoscales at draw."""
         norm = Palette("d", "diverging", ("#00f", "#fff", "#f00")).default_norm()
         assert isinstance(norm, CenteredNorm)
-        assert norm.vcenter == 0.0 and norm.halfrange is None
+        assert norm.vcenter == 0.0
+        assert norm.halfrange is None
 
     def test_qualitative_is_indexed_boundary_norm(self):
         """A qualitative palette yields a BoundaryNorm mapping class index k to swatch k."""
         norm = Palette("q", "qualitative", ("#f00", "#0f0", "#00f")).default_norm()
         assert isinstance(norm, BoundaryNorm)
         assert norm.Ncmap == 3  # one colour slot per class
-        assert int(norm(0)) == 0 and int(norm(2)) == 2
+        assert int(norm(0)) == 0
+        assert int(norm(2)) == 2
 
     def test_cyclic_is_linear_normalize(self):
         """A cyclic palette uses a linear Normalize (the wrapping lives in the colormap)."""
@@ -139,7 +141,8 @@ class TestDefaultNorm:
     def test_all_nan_data_leaves_bounds_unset(self):
         """All-NaN data yields no finite range, so bounds stay None (autoscale at draw)."""
         norm = Palette("s", "sequential", ("#fff", "#000")).default_norm(np.full(4, np.nan))
-        assert norm.vmin is None and norm.vmax is None
+        assert norm.vmin is None
+        assert norm.vmax is None
 
     def test_partial_bounds_fill_only_the_missing_one(self):
         """Given only vmin and data, vmax (and only vmax) is auto-ranged."""
@@ -179,7 +182,8 @@ class TestRegistry:
         """available_palettes(kind) returns only that kind, sorted."""
         register(Palette("q_one", "qualitative", ("#000", "#fff")))
         got = available_palettes("qualitative")
-        assert "q_one" in got and got == sorted(got)
+        assert 'q_one' in got
+        assert got == sorted(got)
         assert "q_one" not in available_palettes("sequential")
 
 
@@ -222,7 +226,8 @@ class TestCuratedPalettes:
         l_mid = srgb_to_lab(cmap(0.5)[:3])[0]
         l_lo = srgb_to_lab(cmap(0.0)[:3])[0]
         l_hi = srgb_to_lab(cmap(1.0)[:3])[0]
-        assert l_mid > l_lo and l_mid > l_hi
+        assert l_mid > l_lo
+        assert l_mid > l_hi
 
     @pytest.mark.parametrize("name, n", [("category12", 12), ("category20", 20)])
     def test_category_palettes_are_listed_and_distinct(self, name, n):
@@ -230,7 +235,8 @@ class TestCuratedPalettes:
         pal = get_palette(name)
         assert len(pal.colors) == n == len(set(pal.colors))
         cmap = pal.to_colormap()
-        assert isinstance(cmap, ListedColormap) and cmap.N == n
+        assert isinstance(cmap, ListedColormap)
+        assert cmap.N == n
 
     def test_category_colours_are_well_separated(self):
         """category12's minimum pairwise CIELAB distance clears a distinguishability floor."""

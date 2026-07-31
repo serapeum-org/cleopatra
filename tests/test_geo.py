@@ -107,7 +107,9 @@ def test_add_relief_delegates(monkeypatch):
     )
     fig, ax = plt.subplots()
     _Dummy(ax).add_relief("low", alpha=0.5)
-    assert seen["ax"] is ax and seen["a"] == ("low",) and seen["k"] == {"alpha": 0.5}
+    assert seen['ax'] is ax
+    assert seen['a'] == ('low',)
+    assert seen['k'] == {'alpha': 0.5}
     plt.close(fig)
 
 
@@ -168,7 +170,8 @@ class TestAddPointLabels:
         """An empty mapping draws no artists and still returns `ax`."""
         result = add_point_labels(ax, {})
         assert result is ax, "should return ax even with no points"
-        assert len(ax.lines) == 0 and len(ax.texts) == 0
+        assert len(ax.lines) == 0
+        assert len(ax.texts) == 0
 
     def test_returns_the_same_axes(self, ax):
         """The function returns `ax` itself, enabling call chaining."""
@@ -197,7 +200,8 @@ def test_add_tiles_delegates(monkeypatch):
     )
     fig, ax = plt.subplots()
     _Dummy(ax).add_tiles(crs=3857)
-    assert seen["ax"] is ax and seen["k"] == {"crs": 3857}
+    assert seen['ax'] is ax
+    assert seen['k'] == {'crs': 3857}
     plt.close(fig)
 
 
@@ -458,7 +462,8 @@ def test_glyph_crs_drives_relief_warp(tmp_path: Path, monkeypatch):
     east = placed[:, -(w // 4) :].reshape(-1, 4)
     west = west[west[:, 3] > 0]
     east = east[east[:, 3] > 0]
-    assert west.size and east.size, "expected opaque cells on both strips"
+    assert west.size, 'expected opaque cells on both strips'
+    assert east.size, 'expected opaque cells on both strips'
     assert (west[:, 2] > west[:, 0]).all(), "west should stay blue after the warp"
     assert (east[:, 0] > east[:, 2]).all(), "east should stay red after the warp"
     plt.close(fig)
@@ -698,7 +703,8 @@ def test_add_reference_map_integration(tmp_path: Path, monkeypatch):
     assert all(c.get_zorder() == 5 for c in lcs)
     assert ax.xaxis.get_major_formatter()(-75) == "75°W"
     # the reference layers must not perturb the data extent
-    assert ax.get_xlim() == xlim0 and ax.get_ylim() == ylim0
+    assert ax.get_xlim() == xlim0
+    assert ax.get_ylim() == ylim0
     # the preset styling reaches the real axes (frame + visible graticule)
     assert ax.spines["bottom"].get_edgecolor() == (0.6, 0.6, 0.6, 1.0)
     assert ax.xaxis.get_gridlines()[0].get_visible(), "graticule not drawn"
@@ -727,7 +733,8 @@ class TestBasemapAlignmentCheck:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
             glyph._check_basemap_alignment()
-        assert caught == [] and fetched == []
+        assert caught == []
+        assert fetched == []
 
     def test_no_land_sea_boundary_skips(self, monkeypatch):
         monkeypatch.setattr(
@@ -864,7 +871,8 @@ class TestBasemap:
         from cleopatra.array_glyph import Basemap as B2
         from cleopatra.array_glyph import Feature as F2
 
-        assert B2 is Basemap and F2 is Feature, "re-exports must be the same classes"
+        assert B2 is Basemap, 're-exports must be the same classes'
+        assert F2 is Feature, 're-exports must be the same classes'
 
 
 class TestDrawBasemapRouting:
