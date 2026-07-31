@@ -18,6 +18,7 @@ from cleopatra.array_glyph import (
     _COORD_SHAPE_MISMATCH,
     _UNSET,
     _resolve_colorbar,
+    _swatch_text_default,
     AnimateKwargs,
     ArrayGlyph,
     ColorBar,
@@ -6437,4 +6438,48 @@ class TestStylePrecedence:
         g = ArrayGlyph(codes, extent=[0.0, 0.0, 4.0, 2.0])
         g.plot(style="flow_direction_d8", colorbar=ColorBar(location="right", inside=True))
         assert g.cbar is None, "categorical style should keep its discrete legend, not a colorbar"
+        plt.close("all")
+
+
+class TestSwatchTextDefault:
+    """`_swatch_text_default`: legible swatch text colour over a backing box."""
+
+    @pytest.mark.parametrize(
+        "box, expected",
+        [
+            (None, "white"),  # no panel -> white over the map
+            (False, "white"),  # no panel
+            (True, "black"),  # default white panel -> dark text
+            ("white", "black"),  # light panel -> dark text
+            ("#111111", "white"),  # dark panel -> light text
+            ({"facecolor": "#eeeeee"}, "black"),  # light dict panel
+            ({"facecolor": "navy"}, "white"),  # dark dict panel
+            ({}, "white"),  # empty dict is falsy -> treated as no panel
+            ("not-a-colour", "white"),  # unparseable -> safe white default
+        ],
+    )
+    def test_contrast_choice(self, box, expected):
+        """Pick black on a light panel, white on a dark panel or no panel."""
+        assert _swatch_text_default(box) == expected, f"box={box!r}"
+
+
+class TestColorbarLocationOrientation:
+    """A colorbar `location` tolerates a conflicting user `orientation`."""
+
+    def test_location_with_conflicting_orientation_does_not_raise(self):
+        """ColorBar(location=...) + cbar_kwargs orientation drops the orientation.
+
+        Test scenario:
+            location and orientation are mutually exclusive in fig.colorbar;
+            a location plus a contradictory orientation must not raise -- the
+            location wins and the orientation is dropped.
+        """
+        g = ArrayGlyph(np.arange(200).reshape(10, 20).astype(float), extent=[0, 0, 20, 10])
+        g.plot(
+            vmin=0,
+            vmax=200,
+            colorbar=ColorBar(location="right"),
+            cbar_kwargs={"orientation": "horizontal"},
+        )
+        assert g.cbar is not None, "a colorbar should still be drawn"
         plt.close("all")
