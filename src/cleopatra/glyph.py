@@ -1415,6 +1415,12 @@ class Glyph:
                 merged_kw["orientation"] = orientation
             merged_kw.update(cbar_kw)
             merged_kw.update(user_kwargs)
+            if "location" in merged_kw:
+                # matplotlib rejects `location` and `orientation` together
+                # (mutually exclusive); `location` already implies the
+                # orientation, so drop a redundant/conflicting user-supplied
+                # `orientation` rather than letting fig.colorbar raise.
+                merged_kw.pop("orientation", None)
             cbar = fig.colorbar(im, ax=ax, **merged_kw)
 
         tick_color = self.default_options.get("cbar_tick_color")
