@@ -24,6 +24,7 @@ Example:
 """
 from __future__ import annotations
 
+import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
@@ -164,6 +165,9 @@ class Palette:
             neutral centre lands exactly on the midpoint and the arms are
             lightness-balanced. A three-colour diverging palette uses its middle
             colour as the neutral centre; otherwise a near-white default is used.
+            A palette with more than three colours has its interior colours
+            ignored (only the first/last shape the ramp) and a warning is
+            emitted.
         - `sequential` / `cyclic`: the colours interpolated perceptually (CIELAB).
 
         Args:
@@ -176,6 +180,14 @@ class Palette:
         if self.kind is PaletteKind.QUALITATIVE:
             return ListedColormap(list(self.colors), name=self.name)
         if self.kind is PaletteKind.DIVERGING:
+            if len(self.colors) > 3:
+                warnings.warn(
+                    f"diverging palette {self.name!r} has {len(self.colors)} "
+                    f"colours; to_colormap builds the ramp from only the first "
+                    f"and last (a 3-colour palette also uses its middle as the "
+                    f"centre), so the interior colours are ignored.",
+                    stacklevel=2,
+                )
             center = self.colors[1] if len(self.colors) == 3 else "#f4f4f4"
             return make_diverging(
                 self.colors[0], self.colors[-1], n, center=center, name=self.name

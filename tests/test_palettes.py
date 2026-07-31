@@ -73,6 +73,14 @@ class TestPalette:
         """Source defaults to 'cleopatra'."""
         assert Palette("p", "cyclic", ("#000", "#fff")).source == "cleopatra"
 
+    def test_diverging_warns_on_extra_interior_colours(self):
+        """A diverging palette with >3 colours warns that its interior colours are dropped."""
+        pal = Palette(
+            "d", "diverging", ("#000080", "#8080ff", "#ffffff", "#ff8080", "#800000")
+        )
+        with pytest.warns(UserWarning, match=r"interior colours are ignored"):
+            pal.to_colormap()
+
 
 class TestDefaultNorm:
     """Palette.default_norm -- the kind-driven norm."""
