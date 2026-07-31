@@ -528,6 +528,10 @@ class FrameLabel:
             case.
         color: Label text colour, by default `"black"`. Any valid
             matplotlib colour string.
+        size: Label font size in points, by default `None`. When `None`,
+            the label inherits the colorbar label size
+            (`cbar_label_size`, `12` by default); pass a number to size
+            the frame label independently of the colorbar.
 
     Examples:
         - Build a frame label and pass it to `animate`:
@@ -545,7 +549,11 @@ class FrameLabel:
     """
 
     def __init__(
-        self, *, location: list[float] | None = None, color: str = "black"
+        self,
+        *,
+        location: list[float] | None = None,
+        color: str = "black",
+        size: float | None = None,
     ) -> None:
         """Initialise a `FrameLabel`.
 
@@ -553,9 +561,12 @@ class FrameLabel:
             location: `[x, y]` label position, by default `None` (auto
                 top-left anchor -- see the class docstring).
             color: Label text colour, by default `"black"`.
+            size: Label font size in points, by default `None` (inherit
+                the colorbar label size -- see the class docstring).
         """
         self.location = location
         self.color = color
+        self.size = size
 
 
 #: Deprecated `plot`/`animate` kwargs that `_resolve_point_overlay` folds
@@ -4705,7 +4716,11 @@ class ArrayGlyph(GeoMixin, Glyph):
             label_location[0],
             label_location[1],
             " ",
-            fontsize=self.default_options["cbar_label_size"],
+            fontsize=(
+                frame_label.size
+                if frame_label.size is not None
+                else self.default_options["cbar_label_size"]
+            ),
             color=frame_label.color,
             transform=ax.transAxes if label_location_is_default else ax.transData,
             va="top" if label_location_is_default else "baseline",

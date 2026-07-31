@@ -883,7 +883,7 @@ class TestFrameLabel:
     """
 
     def test_defaults(self):
-        """No arguments given: `location` is `None` and `color` is `'black'`."""
+        """No arguments given: `location`/`size` are `None`, `color` is `'black'`."""
         label = FrameLabel()
         assert label.location is None, (
             f"Expected default location None, got {label.location!r}"
@@ -891,12 +891,16 @@ class TestFrameLabel:
         assert label.color == "black", (
             f"Expected default color 'black', got {label.color!r}"
         )
+        assert label.size is None, (
+            f"Expected default size None, got {label.size!r}"
+        )
 
     def test_explicit_values_stored_verbatim(self):
-        """Both keywords, when given, are stored unchanged."""
-        label = FrameLabel(location=[0.3, 0.4], color="yellow")
+        """All keywords, when given, are stored unchanged."""
+        label = FrameLabel(location=[0.3, 0.4], color="yellow", size=18)
         assert label.location == [0.3, 0.4], f"Got {label.location!r}"
         assert label.color == "yellow", f"Got {label.color!r}"
+        assert label.size == 18, f"Got {label.size!r}"
 
 
 @pytest.mark.plot
@@ -2245,6 +2249,36 @@ class TestAnimateEdgeCases:
         )
         assert old_day_text not in glyph.ax.texts, (
             "The first call's label must be removed"
+        )
+
+    def test_frame_label_size_sets_fontsize(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """`FrameLabel(size=...)` sizes the date label directly.
+
+        Test scenario:
+            Passing ``FrameLabel(size=21)`` makes the rendered frame-label
+            text 21 pt, independent of ``cbar_label_size``.
+        """
+        glyph = ArrayGlyph(coello_data)
+        glyph.animate(animate_time_list, frame_label=FrameLabel(size=21))
+        assert glyph._day_text.get_fontsize() == 21, (
+            f"Expected frame-label fontsize 21, got {glyph._day_text.get_fontsize()}"
+        )
+
+    def test_frame_label_size_none_inherits_cbar_label_size(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """`size=None` inherits `cbar_label_size` (the pre-`size` behaviour).
+
+        Test scenario:
+            With ``FrameLabel()`` (size unset) and ``cbar_label_size=17``, the
+            label falls back to the colorbar label size, 17 pt.
+        """
+        glyph = ArrayGlyph(coello_data)
+        glyph.animate(animate_time_list, frame_label=FrameLabel(), cbar_label_size=17)
+        assert glyph._day_text.get_fontsize() == 17, (
+            f"Expected inherited fontsize 17, got {glyph._day_text.get_fontsize()}"
         )
 
     def test_two_glyphs_sharing_one_axes_do_not_stack_image_artists(
