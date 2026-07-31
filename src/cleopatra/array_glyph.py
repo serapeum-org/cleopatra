@@ -2932,7 +2932,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                 colorbar or title has no room, so pair it with
                 `add_colorbar=False` and omit the title (an outside colorbar is
                 otherwise left floating over the filled axes); a scale swatch
-                (from `style`) still fits inside.
+                (from `style`) still fits inside. It resizes the whole figure and
+                gives its axes the entire canvas, so use a dedicated figure --
+                passing `ax=` one subplot of several lets `full_bleed` take over
+                the figure and hide the siblings.
             basemap: A reference backdrop drawn via the glyph's own
                 `add_relief` / `add_features`, composed by `zorder` (relief
                 under the data, coastline/borders over it), by default None (no
