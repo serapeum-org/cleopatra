@@ -283,7 +283,9 @@ def make_categorical(
         list[str]: `n` hex colour strings.
 
     Raises:
-        ValueError: If `n < 1`.
+        ValueError: If `n < 1`, or if fewer than `n` candidate colours satisfy
+            `l_range` and `c_min` (the filtered gamut cannot supply `n` distinct
+            colours) -- widen `l_range`, lower `c_min`, or reduce `n`.
 
     Examples:
         ```python
@@ -304,10 +306,20 @@ def make_categorical(
     chroma = np.hypot(lab[:, 1], lab[:, 2])
     keep = (lab[:, 0] >= l_range[0]) & (lab[:, 0] <= l_range[1]) & (chroma >= c_min)
     cand, lab = cand[keep], lab[keep]
+    # Guard before the argmax below (which raises on an empty array) and before
+    # the greedy loop: an over-tight l_range/c_min can shrink -- even empty --
+    # the candidate gamut, and the loop would otherwise silently return fewer
+    # than `n` colours, breaking the "returns n colours" contract.
+    if len(cand) < n:
+        raise ValueError(
+            f"make_categorical cannot produce {n} distinct colours: only "
+            f"{len(cand)} candidate(s) satisfy l_range={l_range} and "
+            f"c_min={c_min}. Widen l_range, lower c_min, or reduce n."
+        )
     start = int(np.argmax(np.hypot(lab[:, 1], lab[:, 2])))
     chosen = [start]
     dmin = np.sqrt(((lab - lab[start]) ** 2).sum(axis=1))
-    for _ in range(min(n, len(cand)) - 1):
+    for _ in range(n - 1):
         k = int(np.argmax(dmin))
         chosen.append(k)
         dmin = np.minimum(dmin, np.sqrt(((lab - lab[k]) ** 2).sum(axis=1)))
