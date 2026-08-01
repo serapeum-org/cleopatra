@@ -1931,6 +1931,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0270-2026-08-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.27.0 (2026-08-01)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0261-2026-07-18" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2631,6 +2642,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0270-2026-08-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.27.0 (2026-08-01)
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#0261-2026-07-18" class="md-nav__link">
@@ -3334,6 +3356,104 @@
 
 
 <h1 id="changelog"><a class="toclink" href="#changelog">Changelog</a><a class="headerlink" href="#changelog" title="Permanent link">#</a></h1>
+<h2 id="0270-2026-08-01"><a class="toclink" href="#0270-2026-08-01">0.27.0 (2026-08-01)</a><a class="headerlink" href="#0270-2026-08-01" title="Permanent link">#</a></h2>
+<ul>
+<li>ci: pin workflow action versions and tighten CI concurrency (#231)</li>
+<li>Harden the GitHub Actions workflows by resolving every action
+reference to an explicit, verified version instead of a moving
+target, and stop wasted CI time on superseded pull request pushes.</li>
+<li>
+<ul>
+<li>Bump actions/checkout (v5 -&gt; v7.0.1) and codecov/codecov-action
+  (v5 -&gt; v7.0.0), both two majors behind</li>
+</ul>
+</li>
+<li>Pin every serapeum-org/github-actions composite action to a
+  specific released version instead of the floating v1 major tag</li>
+<li>Replace every tag reference with the full commit SHA it resolves
+  to, keeping the version as a trailing comment</li>
+<li>Fix mkdocs-deploy using an unpinned @main ref in two of its three
+  jobs while the third used a pinned tag</li>
+<li>Pin the uv version installed in tests.yml and github-release.yml
+  to 0.12.1 to match the local dev environment</li>
+<li>Group tests.yml by PR number with cancel-in-progress so a new
+  push cancels its own stale run, while push events to main are
+  grouped by commit SHA so they always run to completion</li>
+<li>feat!: add a perceptual palette system and richer plotting controls (#220)</li>
+<li>
+<ul>
+<li>perceptual: a numpy-only sRGB&lt;-&gt;CIELAB toolkit -- interp_perceptual /
+  perceptual_colormap (exact endpoints preserved), make_diverging
+  (two lightness-balanced Lab arms), make_categorical (the glasbey
+  max-min method) and a perceptual_uniformity diagnostic</li>
+</ul>
+</li>
+<li>palettes: one Palette record + PaletteKind registry with a
+  kind-driven default_norm and preview_palettes(); the haze / CAMS-AOD
+  / flame families now build in CIELAB and register at import</li>
+<li>colors: ECMWF/cmocean ocean &amp; weather data-style presets, continuous
+  ramps re-interpolated in CIELAB, and a defaults &lt; preset &lt; explicit
+  style precedence</li>
+<li>array_glyph/glyph: a ColorBar spec (location / inside / box /
+  label_color / tick_color) replacing the separate cbar_* kwargs, a
+  FrameLabel with its own size, and a full_bleed chrome-free layout</li>
+<li>geo: a basemap= parameter with typed Basemap / Feature specs,
+  CRS-aware relief warping, and an opt-in mis-georeference check</li>
+<li>animation: one shared GIF palette across frames with pure black and
+  white reserved, so date labels and colorbar ticks stay crisp</li>
+<li>tooling: a ruff / mypy / bandit lint stack, http(s)-only urlopen and
+  a path-traversal guard in the asset builders, and NumPy-only example
+  notebooks</li>
+<li>Closes #218, #219, #225, #226, #227, #228, #229, #230
+Refs #216
+BREAKING CHANGE: the weather/ocean data-style preset keys were renamed
+from GRIB shortNames to descriptive names; update any code that looks
+up presets by the old keys.</li>
+<li>refactor(data)!: restructure the ECMWF weather/ocean preset system and rename its keys (#217)</li>
+<li>
+<ul>
+<li>Merge the Magics and earthkit-plots preset libraries into one
+  weather_presets.json with a single loader, and rename every weather
+  preset key from a raw GRIB shortName to a descriptive slug (e.g.
+  2t -&gt; temperature_2m).</li>
+</ul>
+</li>
+<li>Drop dead per-vendor metadata (_meta, source_style,
+  continuous_colormap) never read by any loader, and fix a silent bug
+  where colors.py pointed at the pre-rename ocean presets file.</li>
+<li>Migrate lint/type tooling to Ruff, add a mypy hook, and fix the 194
+  pre-existing type errors it surfaced.</li>
+<li>Close bandit and SonarCloud security findings (restrict urlopen to
+  http(s), guard build-script output paths against path traversal,
+  parse URL schemes properly) without suppressing any of them.</li>
+<li>Serialize the mkdocs deploy-pr/deploy-main jobs to stop them racing
+  gh-pages pushes.</li>
+<li>BREAKING CHANGE: DATA_STYLES weather presets are keyed by descriptive
+names now, not GRIB shortNames (e.g. "temperature_2m" instead of "2t").
+Closes #221, #222, #223, #224</li>
+<li>feat(reference): make add_relief honor the axis CRS (#214)</li>
+<li>add_relief now respects the CRS of the data on the axis, so the relief
+lines up under the plot instead of being stretched or misprojected.</li>
+<li>
+<ul>
+<li>Crop a lon/lat extent that lies within the global bounds out of the
+  relief array and draw it at that box, instead of stretching the whole
+  globe into it (the issue #177 footgun). extent=None and out-of-bounds
+  extents keep the previous whole-image placement.</li>
+</ul>
+</li>
+<li>Add a keyword-only crs= parameter. A None or EPSG:4326 axis runs the
+  lon/lat path unchanged, with no pyproj import; any other CRS warps the
+  global relief into the axis CRS -- an output grid over the axis view is
+  inverse-transformed to lon/lat via pyproj, sampled per pixel, and cells
+  outside the CRS domain are left transparent.</li>
+<li>GeoMixin.add_relief defaults crs to self.crs (via _basemap_kwargs),
+  matching add_features and add_tiles; an explicit crs= still wins and an
+  unset self.crs preserves the prior behaviour.</li>
+<li>No new dependencies (pyproj already ships in the [tiles] extra) and no
+  GDAL.</li>
+<li>Closes #177</li>
+</ul>
 <h2 id="0261-2026-07-18"><a class="toclink" href="#0261-2026-07-18">0.26.1 (2026-07-18)</a><a class="headerlink" href="#0261-2026-07-18" title="Permanent link">#</a></h2>
 <ul>
 <li>fix(glyphs): remove orphaned render artists on repeated plot()/animate() calls (#211)</li>
