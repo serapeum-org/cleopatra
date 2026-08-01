@@ -64,6 +64,7 @@ jobs:
           prerelease-type: ${{ github.event.inputs.prerelease_type }}
           draft: ${{ github.event.inputs.draft }}
           package-manager: uv
+          package-manager-version: '0.12.1'
           python-version: "3.12"
           install-groups: "groups: dev docs"
 

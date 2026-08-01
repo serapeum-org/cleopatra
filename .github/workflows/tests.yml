@@ -28,6 +28,7 @@ jobs:
       - name: Set up Python
         uses: serapeum-org/github-actions/actions/python-setup/uv@38c111084f99d5ff5f4a1e63bedce48fe33a10c0 # uv/v1.2.1
         with:
+          version: '0.12.1'
           python-version: ${{ matrix.python-version }}
           install-groups: "groups: dev"
           verify-lock: true
