@@ -31,11 +31,11 @@ jobs:
         group: mkdocs-deploy-pr-main
         cancel-in-progress: false
       steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: serapeum-org/github-actions/actions/mkdocs-deploy@mkdocs/v1
+      - uses: serapeum-org/github-actions/actions/mkdocs-deploy@mkdocs/v1.3.1
         with:
           trigger: 'pull_request'
           package-manager: 'uv'
@@ -52,10 +52,10 @@ jobs:
       group: mkdocs-deploy-pr-main
       cancel-in-progress: false
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 0
-    - uses: serapeum-org/github-actions/actions/mkdocs-deploy@main
+    - uses: serapeum-org/github-actions/actions/mkdocs-deploy@mkdocs/v1.3.1
       with:
         trigger: 'main'
         package-manager: 'uv'
@@ -69,10 +69,10 @@ jobs:
     if: github.event_name == 'release' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 0
-    - uses: serapeum-org/github-actions/actions/mkdocs-deploy@main
+    - uses: serapeum-org/github-actions/actions/mkdocs-deploy@mkdocs/v1.3.1
       with:
         trigger: 'release'
         package-manager: 'uv'
