@@ -1367,8 +1367,6 @@ class Glyph:
 
                 ```
         """
-        fig = ax.figure
-        is_subplot = len(fig.axes) > 1
         location = self.default_options.get("cbar_location")
         if location is not None and location not in ("left", "right", "top", "bottom"):
             raise ValueError(
@@ -1376,25 +1374,11 @@ class Glyph:
                 f"'bottom', or None, got {location!r}."
             )
         inside = bool(self.default_options.get("cbar_inside", False))
-        # `cbar_location` drives the orientation (left/right -> vertical,
-        # top/bottom -> horizontal); otherwise fall back to `cbar_orientation`.
-        if location in ("left", "right"):
-            orientation = "vertical"
-        elif location in ("top", "bottom"):
-            orientation = "horizontal"
-        else:
-            orientation = self.default_options["cbar_orientation"]
-        # Pull the user-supplied `label` (if any) out of cbar_kwargs
-        # before forwarding to `fig.colorbar` so we can apply it via
-        # `cbar.set_label` and preserve label-size/location styling.
-        user_kwargs = self.default_options.get("cbar_kwargs") or {}
-        if not isinstance(user_kwargs, dict):
-            raise TypeError(
-                "cbar_kwargs must be a dict of colorbar keyword "
-                f"arguments, got {type(user_kwargs).__name__}."
-            )
-        user_kwargs = dict(user_kwargs)
-        user_label = user_kwargs.pop("label", None)
+        orientation = self._resolve_cbar_orientation(location)
+        # Pull the user-supplied `label` (if any) out of cbar_kwargs before
+        # forwarding to `fig.colorbar`, so it is applied via `cbar.set_label`
+        # (preserving label-size/location styling).
+        user_kwargs, user_label = self._cbar_user_kwargs()
 
         box_info = None
         if inside:
@@ -1404,25 +1388,69 @@ class Glyph:
                 ax, im, cbar_kw, location or "right", orientation, user_kwargs
             )
         else:
-            merged_kw = {
-                "shrink": self.default_options["cbar_length"],
-                "use_gridspec": not is_subplot,
-            }
-            if location is not None:
-                # matplotlib places the bar on that side and sets orientation.
-                merged_kw["location"] = location
-            else:
-                merged_kw["orientation"] = orientation
-            merged_kw.update(cbar_kw)
-            merged_kw.update(user_kwargs)
-            if "location" in merged_kw:
-                # matplotlib rejects `location` and `orientation` together
-                # (mutually exclusive); `location` already implies the
-                # orientation, so drop a redundant/conflicting user-supplied
-                # `orientation` rather than letting fig.colorbar raise.
-                merged_kw.pop("orientation", None)
-            cbar = fig.colorbar(im, ax=ax, **merged_kw)
+            cbar = self._outside_colorbar(
+                ax, im, cbar_kw, location, orientation, user_kwargs
+            )
 
+        self._apply_cbar_styling(cbar, user_label)
+        # Draw the backing box last -- once the labels exist -- so it encloses
+        # them (an inside colorbar overlays the data, so it needs the panel).
+        box = self.default_options.get("cbar_box")
+        if inside and box and box_info is not None:
+            self._draw_cbar_box(ax, box_info, box)
+        return cbar
+
+    def _resolve_cbar_orientation(self, location: str | None) -> str:
+        """Orientation implied by `cbar_location` (else `cbar_orientation`)."""
+        if location in ("left", "right"):
+            return "vertical"
+        if location in ("top", "bottom"):
+            return "horizontal"
+        return self.default_options["cbar_orientation"]
+
+    def _cbar_user_kwargs(self) -> tuple[dict, Any]:
+        """A validated copy of `cbar_kwargs` with `label` split out for set_label."""
+        user_kwargs = self.default_options.get("cbar_kwargs") or {}
+        if not isinstance(user_kwargs, dict):
+            raise TypeError(
+                "cbar_kwargs must be a dict of colorbar keyword "
+                f"arguments, got {type(user_kwargs).__name__}."
+            )
+        user_kwargs = dict(user_kwargs)
+        return user_kwargs, user_kwargs.pop("label", None)
+
+    def _outside_colorbar(
+        self,
+        ax: Axes,
+        im: Any,
+        cbar_kw: dict,
+        location: str | None,
+        orientation: str,
+        user_kwargs: dict,
+    ) -> Colorbar:
+        """Draw a normal (outside-gutter) colorbar via `fig.colorbar`."""
+        fig = ax.figure
+        merged_kw = {
+            "shrink": self.default_options["cbar_length"],
+            "use_gridspec": len(fig.axes) <= 1,
+        }
+        if location is not None:
+            # matplotlib places the bar on that side and sets orientation.
+            merged_kw["location"] = location
+        else:
+            merged_kw["orientation"] = orientation
+        merged_kw.update(cbar_kw)
+        merged_kw.update(user_kwargs)
+        if "location" in merged_kw:
+            # matplotlib rejects `location` and `orientation` together (mutually
+            # exclusive); `location` already implies the orientation, so drop a
+            # redundant/conflicting user-supplied `orientation` rather than
+            # letting fig.colorbar raise.
+            merged_kw.pop("orientation", None)
+        return fig.colorbar(im, ax=ax, **merged_kw)
+
+    def _apply_cbar_styling(self, cbar: Colorbar, user_label: Any) -> None:
+        """Apply tick/label colours, size, location, and text to `cbar`."""
         tick_color = self.default_options.get("cbar_tick_color")
         label_color = self.default_options.get("cbar_label_color")
         cbar.ax.tick_params(
@@ -1437,12 +1465,6 @@ class Glyph:
             loc=self.default_options["cbar_label_location"],
             **({"color": label_color} if label_color else {}),
         )
-        # Draw the backing box last -- once the labels exist -- so it encloses
-        # them (an inside colorbar overlays the data, so it needs the panel).
-        box = self.default_options.get("cbar_box")
-        if inside and box and box_info is not None:
-            self._draw_cbar_box(ax, box_info, box)
-        return cbar
 
     def _inside_colorbar_axes(
         self,
