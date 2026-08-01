@@ -33,6 +33,7 @@ from cleopatra.colors import (
     alpha_scaled_mesh,
     apply_data_style,
 )
+from cleopatra.perceptual import perceptual_uniformity
 
 
 class TestHazeColormaps:
@@ -74,9 +75,8 @@ class TestHazeColormaps:
         """The organic_matter colormap saturates to a deep purple at value 1.0."""
         r, g, b, a = HAZE_COLORMAPS["organic_matter"](1.0)
         assert a == 1.0, "alpha should be opaque"
-        assert r > g and b > g, (
-            f"organic_matter top stop should be purple-toned, got rgb=({r}, {g}, {b})"
-        )
+        assert r > g, f'organic_matter top stop should be purple-toned, got rgb=({r}, {g}, {b})'
+        assert b > g, f'organic_matter top stop should be purple-toned, got rgb=({r}, {g}, {b})'
 
 
 class TestCamsAodColormaps:
@@ -120,9 +120,8 @@ class TestCamsAodColormaps:
     def test_red_high_end(self, name):
         """The red-topped AOD scales saturate red-dominant at value 1.0."""
         r, g, b, _ = CAMS_AOD_COLORMAPS[name](1.0)
-        assert r > g and r > b, (
-            f"{name}(1.0) should be red-toned, got rgb=({r}, {g}, {b})"
-        )
+        assert r > g, f'{name}(1.0) should be red-toned, got rgb=({r}, {g}, {b})'
+        assert r > b, f'{name}(1.0) should be red-toned, got rgb=({r}, {g}, {b})'
 
     def test_oranges_low_end_is_near_white(self):
         """The `oranges` scale starts near white (its Magics form fades in via alpha)."""
@@ -375,9 +374,8 @@ class TestApplyDataStyle:
     def test_cams_aod_declares_no_decoupled_alpha(self):
         """Unlike 'haze', 'cams_aod' sets no alpha_vmin/alpha_vmax (opacity tracks colour)."""
         cfg = DATA_STYLES["cams_aod"]["aod"]
-        assert "alpha_vmin" not in cfg and "alpha_vmax" not in cfg, (
-            f"cams_aod should not decouple alpha, got {cfg}"
-        )
+        assert 'alpha_vmin' not in cfg, f'cams_aod should not decouple alpha, got {cfg}'
+        assert 'alpha_vmax' not in cfg, f'cams_aod should not decouple alpha, got {cfg}'
 
     def test_cams_aod_alpha_tracks_value_linearly(self, ax):
         """'cams_aod' opacity fades in with AOD: transparent at ~0, opaque at the top.
@@ -676,7 +674,8 @@ class TestEarthkitPresets:
         layer = DATA_STYLES["temperature_2m"]["temperature_2m"]
         assert layer["cmap"] == "Spectral_r"
         assert layer["extend"] == "both"
-        assert layer["levels"][0] == -40 and layer["levels"][-1] == 40
+        assert layer['levels'][0] == -40
+        assert layer['levels'][-1] == 40
         assert "bands" not in layer  # not the Magics discrete-band path
 
     def test_cmap_name_style_stays_a_name(self):
@@ -692,7 +691,8 @@ class TestEarthkitPresets:
             layer["cmap"].N == 9
         )  # the 9 exact ECMWF colours, not a 256-entry resample
         assert layer["extend"] == "max"
-        assert layer["levels"][0] == 0.1 and layer["levels"][-1] == 1.0
+        assert layer['levels'][0] == 0.1
+        assert layer['levels'][-1] == 1.0
 
     def test_colour_list_without_levels_stays_continuous(self):
         """A colour-list earthkit preset with no levels (total_precipitation gradient) is a continuous ramp."""
@@ -706,7 +706,8 @@ class TestEarthkitPresets:
         norm, _, _ = _resolve_style_norm(
             np.linspace(0.0, 5000.0, 400).reshape(20, 20), layer
         )
-        assert isinstance(norm, BoundaryNorm) and norm.extend == "max"
+        assert isinstance(norm, BoundaryNorm)
+        assert norm.extend == 'max'
 
     def test_one_colour_per_band_preset_drops_extend(self):
         """aerosol_optical_depth_550nm (9 colours, 9 bands) drops extend -- no spare colour for the over slot -- and clamps."""
@@ -714,7 +715,8 @@ class TestEarthkitPresets:
         norm, _, _ = _resolve_style_norm(
             np.linspace(0.0, 1.5, 400).reshape(20, 20), layer
         )
-        assert isinstance(norm, BoundaryNorm) and norm.extend == "neither"
+        assert isinstance(norm, BoundaryNorm)
+        assert norm.extend == 'neither'
 
     def test_colour_list_preset_renders_exact_discrete_colours(self, ax):
         """A ListedColormap earthkit preset paints each band with its exact palette colour."""
@@ -762,7 +764,8 @@ class TestContourLevelsStyle:
         layer = DATA_STYLES["temperature_2m"]["temperature_2m"]
         assert layer["cmap"] == "Spectral_r"
         assert layer["extend"] == "both"
-        assert layer["levels"][0] == -40 and layer["levels"][-1] == 40
+        assert layer['levels'][0] == -40
+        assert layer['levels'][-1] == 40
         assert layer["levels"][1] - layer["levels"][0] == 2  # 2 degC interval
 
     def test_temperature_is_a_generic_auto_ranging_ramp(self):
@@ -770,7 +773,8 @@ class TestContourLevelsStyle:
         auto-ranges to the data (the fixed ECMWF scale lives under `temperature_2m`)."""
         layer = DATA_STYLES["temperature"]["temperature"]
         assert layer["cmap"] == "Spectral_r"
-        assert "levels" not in layer and "extend" not in layer
+        assert 'levels' not in layer
+        assert 'extend' not in layer
         norm, vmin, vmax = _resolve_style_norm(np.array([[5.0, 25.0]]), layer)
         assert not isinstance(norm, BoundaryNorm)
         assert (vmin, vmax) == (5.0, 25.0)  # fit to the data, not a fixed -40..40
@@ -850,9 +854,8 @@ class TestContourLevelsStyle:
         assert "≥100" in swatch_texts, (
             f"high endpoint should be the instance vmax (100), got {swatch_texts}"
         )
-        assert "-40" not in swatch_texts and "≤-40" not in swatch_texts, (
-            f"must not label with the preset's fixed level endpoints, got {swatch_texts}"
-        )
+        assert '-40' not in swatch_texts, f"must not label with the preset's fixed level endpoints, got {swatch_texts}"
+        assert '≤-40' not in swatch_texts, f"must not label with the preset's fixed level endpoints, got {swatch_texts}"
 
     def test_data_outside_fixed_levels_warns(self, ax):
         """Data entirely outside a levels preset's scale warns (Celsius levels, Kelvin data footgun)."""
@@ -995,7 +998,8 @@ class TestMagicsPresets:
         assert set(entry) == {"min_temperature_2m"}, f"unexpected layers: {set(entry)}"
         layer = entry["min_temperature_2m"]
         assert isinstance(layer["cmap"], Colormap), f"cmap is {type(layer['cmap'])}"
-        assert isinstance(layer["label"], str) and layer["label"]
+        assert isinstance(layer['label'], str)
+        assert layer['label']
 
     def test_opaque_preset_carries_constant_alpha(self):
         """An opaque Magics field (min 2m temperature) sets alpha=1.0 -- a full opaque field."""
@@ -1031,7 +1035,8 @@ class TestMagicsPresets:
     def test_preset_carries_decoded_fixed_range(self):
         """A Magics preset whose style name encodes a range ships that vmin/vmax."""
         layer = DATA_STYLES["min_temperature_2m"]["min_temperature_2m"]
-        assert layer["vmin"] == -48.0 and layer["vmax"] == 56.0
+        assert layer['vmin'] == -48.0
+        assert layer['vmax'] == 56.0
 
     def test_magics_preset_is_discrete_banded(self):
         """A Magics preset renders as flat discrete bands (ListedColormap + band count)."""
@@ -1066,6 +1071,12 @@ class TestMagicsPresets:
         layer = DATA_STYLES["bathymetry"]["bathymetry"]
         assert isinstance(layer["cmap"], LinearSegmentedColormap)
         assert "bands" not in layer
+
+    @pytest.mark.parametrize("style", ["bathymetry", "salinity", "total_precipitation"])
+    def test_continuous_presets_are_perceptually_even(self, style):
+        """Continuous ocean/weather ramps are interpolated in CIELAB, so their per-step
+        colour change is even (a plain RGB `from_list` of the same palette scores far higher)."""
+        assert perceptual_uniformity(DATA_STYLES[style][style]["cmap"]) < 0.05
 
     def test_temperature_preset_keeps_full_colour_ramp(self):
         """The vendored min_temperature_2m palette keeps its full blue->green->yellow->red->magenta ramp.
@@ -1150,7 +1161,8 @@ class TestCategoricalPresets:
     def test_flood_status_declares_categories(self):
         """The 'flood_status' preset carries a 5-class category list, not a cmap."""
         cfg = DATA_STYLES["flood_status"]["flood_status"]
-        assert "categories" in cfg and "cmap" not in cfg
+        assert 'categories' in cfg
+        assert 'cmap' not in cfg
         assert [c[2] for c in cfg["categories"]] == [
             "Normal",
             "Action",
@@ -1364,7 +1376,8 @@ class TestStyleNormKinds:
         norm, vmin, _ = _resolve_style_norm(
             np.array([0.0, 5.0, 100.0]), {"norm": "log"}
         )
-        assert vmin > 0 and vmin == norm.vmin
+        assert vmin > 0
+        assert vmin == norm.vmin
 
     def test_log_on_all_negative_data_raises_clearly(self):
         """`norm='log'` on all-negative data raises a clear cleopatra error.

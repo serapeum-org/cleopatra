@@ -34,6 +34,8 @@ import cleopatra.tiles as tilesmod  # noqa: E402
 from cleopatra.array_glyph import ArrayGlyph  # noqa: E402
 from cleopatra.flow_glyph import FlowGlyph  # noqa: E402
 from cleopatra.geo import (  # noqa: E402
+    Basemap,
+    Feature,
     GeoMixin,
     _lat_formatter,
     _lon_formatter,
@@ -105,7 +107,9 @@ def test_add_relief_delegates(monkeypatch):
     )
     fig, ax = plt.subplots()
     _Dummy(ax).add_relief("low", alpha=0.5)
-    assert seen["ax"] is ax and seen["a"] == ("low",) and seen["k"] == {"alpha": 0.5}
+    assert seen['ax'] is ax
+    assert seen['a'] == ('low',)
+    assert seen['k'] == {'alpha': 0.5}
     plt.close(fig)
 
 
@@ -166,7 +170,8 @@ class TestAddPointLabels:
         """An empty mapping draws no artists and still returns `ax`."""
         result = add_point_labels(ax, {})
         assert result is ax, "should return ax even with no points"
-        assert len(ax.lines) == 0 and len(ax.texts) == 0
+        assert len(ax.lines) == 0
+        assert len(ax.texts) == 0
 
     def test_returns_the_same_axes(self, ax):
         """The function returns `ax` itself, enabling call chaining."""
@@ -195,7 +200,8 @@ def test_add_tiles_delegates(monkeypatch):
     )
     fig, ax = plt.subplots()
     _Dummy(ax).add_tiles(crs=3857)
-    assert seen["ax"] is ax and seen["k"] == {"crs": 3857}
+    assert seen['ax'] is ax
+    assert seen['k'] == {'crs': 3857}
     plt.close(fig)
 
 
@@ -456,7 +462,8 @@ def test_glyph_crs_drives_relief_warp(tmp_path: Path, monkeypatch):
     east = placed[:, -(w // 4) :].reshape(-1, 4)
     west = west[west[:, 3] > 0]
     east = east[east[:, 3] > 0]
-    assert west.size and east.size, "expected opaque cells on both strips"
+    assert west.size, 'expected opaque cells on both strips'
+    assert east.size, 'expected opaque cells on both strips'
     assert (west[:, 2] > west[:, 0]).all(), "west should stay blue after the warp"
     assert (east[:, 0] > east[:, 2]).all(), "east should stay red after the warp"
     plt.close(fig)
@@ -696,8 +703,224 @@ def test_add_reference_map_integration(tmp_path: Path, monkeypatch):
     assert all(c.get_zorder() == 5 for c in lcs)
     assert ax.xaxis.get_major_formatter()(-75) == "75°W"
     # the reference layers must not perturb the data extent
-    assert ax.get_xlim() == xlim0 and ax.get_ylim() == ylim0
+    assert ax.get_xlim() == xlim0
+    assert ax.get_ylim() == ylim0
     # the preset styling reaches the real axes (frame + visible graticule)
     assert ax.spines["bottom"].get_edgecolor() == (0.6, 0.6, 0.6, 1.0)
     assert ax.xaxis.get_gridlines()[0].get_visible(), "graticule not drawn"
     plt.close(fig)
+
+
+class TestBasemapAlignmentCheck:
+    """`_check_basemap_alignment`: the opt-in mis-georeferencing warning."""
+
+    @staticmethod
+    def _relief(ref_land: np.ndarray) -> np.ndarray:
+        """RGB where ocean is blue-dominant and land is green."""
+        rgb = np.zeros((*ref_land.shape, 3), dtype=np.uint8)
+        rgb[..., 2] = 255  # blue everywhere == ocean by default
+        rgb[ref_land] = (0, 255, 0)  # land: green (not blue-dominant)
+        return rgb
+
+    def test_no_extent_skips_before_fetching_relief(self, monkeypatch):
+        fetched = []
+        monkeypatch.setattr(
+            refmod,
+            "relief",
+            lambda res="low": fetched.append(1) or np.zeros((4, 4, 3), np.uint8),
+        )
+        glyph = ArrayGlyph(np.arange(3 * 10 * 10, dtype=float).reshape(3, 10, 10))
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            glyph._check_basemap_alignment()
+        assert caught == []
+        assert fetched == []
+
+    def test_no_land_sea_boundary_skips(self, monkeypatch):
+        monkeypatch.setattr(
+            refmod, "relief", lambda res="low": np.zeros((4, 4, 3), np.uint8)
+        )
+        glyph = ArrayGlyph(np.ones((3, 10, 10)), extent=[0, 0, 10, 10])  # all finite
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            glyph._check_basemap_alignment()
+        assert caught == []
+
+    def test_relief_unavailable_never_fails(self, monkeypatch):
+        def offline(res="low"):
+            raise ConnectionError("no network")
+
+        monkeypatch.setattr(refmod, "relief", offline)
+        arr = np.ones((3, 10, 20))
+        arr[:, :, 10:] = np.nan  # half land, half sea
+        glyph = ArrayGlyph(arr, extent=[-20, -10, 20, 10])
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            glyph._check_basemap_alignment()
+        assert caught == []
+
+    def test_opt_in_wiring(self, monkeypatch):
+        seen = []
+        monkeypatch.setattr(
+            ArrayGlyph, "_check_basemap_alignment", lambda self, *a, **k: seen.append(1)
+        )
+        glyph = ArrayGlyph(np.ones((3, 10, 10)), extent=[0, 0, 10, 10])
+        glyph._draw_basemap({"relief": False, "features": [], "check_alignment": True})
+        assert seen == [1]
+        glyph._draw_basemap({"relief": False, "features": []})  # opt-in absent
+        assert seen == [1]  # not called again
+
+    def test_warns_on_misregistration_but_not_when_aligned(self, monkeypatch):
+        rows, cols = np.mgrid[0:180, 0:360]
+        ref_land = (rows + cols) % 2 == 0  # global 1-cell checkerboard
+        monkeypatch.setattr(refmod, "relief", lambda res="low": self._relief(ref_land))
+
+        def sample(extent, n=20):
+            xmin, ymin, xmax, ymax = extent
+            lons = np.linspace(xmin, xmax, n)
+            lats = np.linspace(ymax, ymin, n)  # origin="upper"
+            ci = np.clip(((lons + 180) / 360 * 360).astype(int), 0, 359)
+            ri = np.clip(((90 - lats) / 180 * 180).astype(int), 0, 179)
+            return ref_land[np.ix_(ri, ci)]
+
+        e0 = [0.0, 0.0, 20.0, 20.0]
+        land = sample(e0)
+        data = np.broadcast_to(np.where(land, 1.0, np.nan), (3, 20, 20)).copy()
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            ArrayGlyph(data, extent=e0)._check_basemap_alignment()
+        assert not any("alignment" in str(x.message) for x in caught)
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            ArrayGlyph(data, extent=[1.0, 0.0, 21.0, 20.0])._check_basemap_alignment()
+        assert any("alignment" in str(x.message) for x in caught)
+
+
+class TestFeature:
+    """`Feature`: a typed Natural Earth layer for a `Basemap`."""
+
+    def test_layer_and_style_stored(self):
+        """The layer name and style keywords are captured verbatim."""
+        f = Feature("coastline", colors="0.55", linewidths=0.5)
+        assert f.layer == "coastline", f"Got layer {f.layer!r}"
+        assert f.style == {"colors": "0.55", "linewidths": 0.5}, f"Got style {f.style!r}"
+
+    def test_no_style_is_empty_dict(self):
+        """With no style keywords the style is an empty dict."""
+        assert Feature("borders").style == {}, "Expected empty style"
+
+    @pytest.mark.parametrize(
+        "layer", ["coastline", "land", "ocean", "rivers", "lakes", "borders"]
+    )
+    def test_all_known_layers_accepted(self, layer):
+        """Every layer `reference.available_layers()` reports is accepted."""
+        assert Feature(layer).layer == layer, f"{layer!r} should be accepted"
+
+    def test_unknown_layer_raises(self):
+        """An unknown layer is rejected at construction with a helpful message."""
+        with pytest.raises(ValueError, match=r"Unknown basemap feature layer 'countries'"):
+            Feature("countries")
+
+
+class TestBasemap:
+    """`Basemap`: the typed, validated form of the `basemap=` dict."""
+
+    def test_defaults(self):
+        """Defaults mirror `basemap=True`: relief on, default features, 50m."""
+        bm = Basemap()
+        assert bm.relief is True, f"Got relief {bm.relief!r}"
+        assert bm.features is None, f"Got features {bm.features!r}"
+        assert bm.resolution == "50m", f"Got resolution {bm.resolution!r}"
+        assert bm.check_alignment is False, f"Got check_alignment {bm.check_alignment!r}"
+
+    def test_explicit_values_stored(self):
+        """All keywords are stored; `features` is materialised into a list copy."""
+        feats = (Feature("coastline"), Feature("borders"))
+        bm = Basemap(relief="medium", features=feats, resolution="10m", check_alignment=True)
+        assert bm.relief == "medium", f"Got relief {bm.relief!r}"
+        assert bm.features == list(feats), "features should be a list copy of the iterable"
+        assert bm.resolution == "10m", f"Got resolution {bm.resolution!r}"
+        assert bm.check_alignment is True, f"Got check_alignment {bm.check_alignment!r}"
+
+    def test_unknown_relief_resolution_raises(self):
+        """A string `relief` that is not a known resolution is rejected."""
+        with pytest.raises(ValueError, match=r"Unknown relief resolution 'ultra'"):
+            Basemap(relief="ultra")
+
+    def test_bool_and_dict_relief_pass_through(self):
+        """`relief` as a bool or dict is stored without a resolution check."""
+        assert Basemap(relief=False).relief is False, "False relief must pass through"
+        cfg = {"resolution": "low", "alpha": 0.3}
+        assert Basemap(relief=cfg).relief == cfg, "dict relief must pass through"
+
+    def test_as_config_omits_features_when_unset(self):
+        """`_as_config` drops `features` when None so the default still applies."""
+        cfg = Basemap()._as_config()
+        assert "features" not in cfg, f"features should be omitted, got {cfg}"
+        assert cfg == {"relief": True, "resolution": "50m", "check_alignment": False}, cfg
+
+    def test_as_config_includes_features_when_set(self):
+        """`_as_config` includes the features list when provided."""
+        feats = [Feature("ocean")]
+        assert Basemap(relief=False, features=feats)._as_config()["features"] == feats
+
+    def test_reexported_from_array_glyph(self):
+        """`Basemap`/`Feature` are the same objects re-exported from array_glyph."""
+        from cleopatra.array_glyph import Basemap as B2
+        from cleopatra.array_glyph import Feature as F2
+
+        assert B2 is Basemap, 're-exports must be the same classes'
+        assert F2 is Feature, 're-exports must be the same classes'
+
+
+class TestDrawBasemapRouting:
+    """`_draw_basemap` treats a `Basemap`/`Feature` like the equivalent dict."""
+
+    @staticmethod
+    def _record(monkeypatch):
+        """Patch add_relief/add_features to record calls; return the two logs."""
+        relief_calls: list = []
+        feature_calls: list = []
+        monkeypatch.setattr(
+            ArrayGlyph, "add_relief", lambda self, *a, **k: relief_calls.append((a, k))
+        )
+        monkeypatch.setattr(
+            ArrayGlyph, "add_features", lambda self, *a, **k: feature_calls.append((a, k))
+        )
+        return relief_calls, feature_calls
+
+    def test_basemap_matches_equivalent_dict(self, monkeypatch):
+        """A `Basemap` yields the same add_relief/add_features calls as its dict."""
+        glyph = ArrayGlyph(np.ones((3, 5, 5)), extent=[0, 0, 5, 5])
+        r1, f1 = self._record(monkeypatch)
+        glyph._draw_basemap(
+            Basemap(
+                relief=False,
+                features=[
+                    Feature("coastline", colors="0.55"),
+                    Feature("borders", colors="0.45"),
+                ],
+            )
+        )
+        r2, f2 = self._record(monkeypatch)
+        glyph._draw_basemap(
+            {
+                "relief": False,
+                "features": [
+                    ("coastline", {"colors": "0.55"}),
+                    ("borders", {"colors": "0.45"}),
+                ],
+            }
+        )
+        assert (r1, f1) == (r2, f2), "Basemap should route identically to the dict form"
+
+    def test_feature_zorder_overrides_default(self, monkeypatch):
+        """A `Feature`'s own `zorder` overrides the default feature zorder (3)."""
+        glyph = ArrayGlyph(np.ones((3, 5, 5)), extent=[0, 0, 5, 5])
+        _, feats = self._record(monkeypatch)
+        glyph._draw_basemap(Basemap(relief=False, features=[Feature("ocean", zorder=-2)]))
+        (args, kwargs), = feats
+        assert args[0] == "ocean", f"Got layer {args[0]!r}"
+        assert kwargs["zorder"] == -2, f"Feature zorder should win, got {kwargs.get('zorder')}"

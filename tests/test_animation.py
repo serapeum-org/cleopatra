@@ -14,6 +14,7 @@ from unittest.mock import MagicMock
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import numpy as np
 import pytest
 from matplotlib.animation import FuncAnimation
 from PIL import Image
@@ -286,7 +287,8 @@ class TestToBytes:
         """A ``fmt="webp"`` render returns RIFF/WEBP bytes."""
         data = to_bytes(tiny_anim, fmt="webp", fps=2)
 
-        assert data[:4] == b"RIFF" and data[8:12] == b"WEBP", "not WebP bytes"
+        assert data[:4] == b'RIFF', 'not WebP bytes'
+        assert data[8:12] == b'WEBP', 'not WebP bytes'
 
     def test_leading_dot_and_case_tolerated(self, tiny_anim):
         """``fmt`` accepts a leading dot and mixed case (e.g. ``".GIF"``)."""
@@ -467,9 +469,8 @@ class TestOddDimensionAutoPad:
         (line,) = ax.plot([0, 1], [0, 0])
         width = int(round(fig.get_figwidth() * fig.dpi))
         height = int(round(fig.get_figheight() * fig.dpi))
-        assert width % 2 == 1 and height % 2 == 1, (
-            f"fixture must be odd-sized to exercise the pad, got {width}x{height}"
-        )
+        assert width % 2 == 1, f'fixture must be odd-sized to exercise the pad, got {width}x{height}'
+        assert height % 2 == 1, f'fixture must be odd-sized to exercise the pad, got {width}x{height}'
         anim = FuncAnimation(fig, lambda i: (line,), frames=2)
         out = tmp_path / "odd.mp4"
 
@@ -496,7 +497,8 @@ class TestWebP:
 
         assert returned == str(out), "should return the written path"
         raw = out.read_bytes()
-        assert raw[:4] == b"RIFF" and raw[8:12] == b"WEBP", "not a WebP file"
+        assert raw[:4] == b'RIFF', 'not a WebP file'
+        assert raw[8:12] == b'WEBP', 'not a WebP file'
         assert getattr(Image.open(out), "n_frames", 1) > 1, "WebP is not animated"
 
     def test_webp_routes_to_pillow_writer(self, monkeypatch):
@@ -699,6 +701,82 @@ class TestOptimizedPillowWriter:
 
         assert captured.get("optimize") is False, (
             f"optimize flag not forwarded to Pillow: {captured}"
+        )
+
+    def test_gif_shared_palette_keeps_constant_region_stable(self, tmp_path):
+        """A region that never changes stays byte-identical across GIF frames.
+
+        Test scenario:
+            An animation whose top half is constant white and bottom half is
+            random. A per-frame GIF palette would re-quantise/re-dither the
+            white top and make it shimmer; the writer's shared palette keeps it
+            byte-stable frame-to-frame.
+        """
+        rng = np.random.default_rng(0)
+        fig, ax = plt.subplots()
+        ax.set_position([0, 0, 1, 1])
+        ax.set_axis_off()
+        im = ax.imshow(np.zeros((40, 40, 3)))
+
+        def update(_):
+            frame = rng.random((40, 40, 3))
+            frame[:20] = 1.0  # constant white top half
+            im.set_data(frame)
+            return (im,)
+
+        anim = FuncAnimation(fig, update, frames=6, blit=False)
+        out = tmp_path / "const.gif"
+        save_animation(anim, str(out), fps=4)
+
+        gif = Image.open(out)
+        gif.seek(0)
+        first = np.asarray(gif.convert("RGB")).copy()
+        gif.seek(5)
+        last = np.asarray(gif.convert("RGB")).copy()
+        top = slice(0, first.shape[0] // 3)  # safely inside the constant white top
+        changed = (np.abs(first[top].astype(int) - last[top].astype(int)).sum(2) > 8).mean()
+        plt.close("all")
+
+        assert changed == 0.0, f"shared palette should keep a constant region byte-stable, got {changed}"
+
+    def test_gif_reserves_black_for_crisp_overlays(self, tmp_path):
+        """A pure-black overlay on a colourful field stays black in the GIF.
+
+        Test scenario:
+            A colourful (random-RGB) animated field with a constant pure-black
+            block in the corner -- standing in for the date label / colourbar
+            ticks drawn on the frame. With every palette slot spent on the
+            photographic colours the block would quantise to a muddy dark grey
+            and read as faded; the writer pins pure black into the palette so
+            the block stays black.
+        """
+        rng = np.random.default_rng(1)
+        fig, ax = plt.subplots()
+        ax.set_position([0, 0, 1, 1])
+        ax.set_axis_off()
+        im = ax.imshow(np.zeros((60, 60, 3)), interpolation="nearest")
+
+        def update(_):
+            frame = rng.random((60, 60, 3))  # colourful -- fills the palette
+            frame[:20, :30] = 0.0  # constant pure-black block (the "overlay")
+            im.set_data(frame)
+            return (im,)
+
+        anim = FuncAnimation(fig, update, frames=6, blit=False)
+        out = tmp_path / "black.gif"
+        save_animation(anim, str(out), fps=4)
+
+        gif = Image.open(out)
+        gif.seek(3)
+        arr = np.asarray(gif.convert("RGB")).copy()
+        h, w, _ = arr.shape
+        block = arr[: h // 6, : w // 4]  # safely inside the black block
+        darkest = int(block.sum(2).min())
+        plt.close("all")
+
+        assert darkest <= 12, (
+            "reserved-black palette should keep a pure-black overlay black, "
+            f"got darkest pixel sum {darkest} (0 = pure black)"
         )
 
 

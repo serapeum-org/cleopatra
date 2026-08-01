@@ -35,9 +35,11 @@ import numpy.ma as ma
 from hpc.indexing import get_indices2
 from matplotlib.animation import FuncAnimation
 from matplotlib.axes import Axes
+from matplotlib.cm import ScalarMappable
 from matplotlib.colorbar import Colorbar
-from matplotlib.colors import BoundaryNorm, Colormap, ListedColormap, Normalize
+from matplotlib.colors import BoundaryNorm, Colormap, ListedColormap, Normalize, to_rgb
 from matplotlib.figure import Figure
+from matplotlib.ticker import MaxNLocator
 from PIL import Image
 
 from cleopatra.colors import (
@@ -48,6 +50,8 @@ from cleopatra.colors import (
     resolve_single_layer_style,
     resolve_style_norm,
 )
+from cleopatra.geo import Basemap as Basemap
+from cleopatra.geo import Feature as Feature
 from cleopatra.geo import GeoMixin
 from cleopatra.glyph import (
     Glyph,
@@ -80,6 +84,11 @@ ARRAY_DEFAULT_OPTIONS: dict[str, Any] = {
     "extend": None,
     "cbar_kwargs": None,
     "add_colorbar": True,
+    "cbar_location": None,
+    "cbar_inside": False,
+    "cbar_box": None,
+    "cbar_label_color": None,
+    "cbar_tick_color": None,
     "labels": False,
     "label_kw": None,
     "hillshade": False,
@@ -288,6 +297,11 @@ class ColorbarOptions(TypedDict, total=False):
         ticks_spacing: Spacing between colorbar ticks, by default `2`.
         cbar_label_size: Font size of the colorbar label, by default `12`.
         cbar_label: Label text for the colorbar, by default `'Value'`.
+
+    Note:
+        Colorbar *placement* (edge, inside/outside, backing box) is set
+        through the `colorbar=` parameter of `plot` / `animate` with a
+        `ColorBar`, not through this dict.
     """
 
     add_colorbar: bool
@@ -516,6 +530,10 @@ class FrameLabel:
             case.
         color: Label text colour, by default `"black"`. Any valid
             matplotlib colour string.
+        size: Label font size in points, by default `None`. When `None`,
+            the label inherits the colorbar label size
+            (`cbar_label_size`, `12` by default); pass a number to size
+            the frame label independently of the colorbar.
 
     Examples:
         - Build a frame label and pass it to `animate`:
@@ -533,7 +551,11 @@ class FrameLabel:
     """
 
     def __init__(
-        self, *, location: list[float] | None = None, color: str = "black"
+        self,
+        *,
+        location: list[float] | None = None,
+        color: str = "black",
+        size: float | None = None,
     ) -> None:
         """Initialise a `FrameLabel`.
 
@@ -541,9 +563,12 @@ class FrameLabel:
             location: `[x, y]` label position, by default `None` (auto
                 top-left anchor -- see the class docstring).
             color: Label text colour, by default `"black"`.
+            size: Label font size in points, by default `None` (inherit
+                the colorbar label size -- see the class docstring).
         """
         self.location = location
         self.color = color
+        self.size = size
 
 
 #: Deprecated `plot`/`animate` kwargs that `_resolve_point_overlay` folds
@@ -671,6 +696,185 @@ def _resolve_point_overlay(
         )
     return PointOverlay(
         points, color=color, size=size, label_color=label_color, label_size=label_size
+    )
+
+
+class ColorBar:
+    """Placement (and backing box) for the colorbar `plot` / `animate` draws.
+
+    Bundles the colorbar-layout choices -- which edge it sits on, whether it
+    is inset *inside* the frame, and its backing box -- into one value passed
+    as `plot(colorbar=...)` / `animate(colorbar=...)`, mirroring `FrameLabel`.
+    Pass `colorbar=True` / `False` / `None` for the simple cases and a
+    `ColorBar` for placement control.
+
+    Attributes:
+        location: Edge the colorbar sits on -- `"left"`, `"right"`, `"top"`,
+            or `"bottom"`. `None` (default) keeps matplotlib's placement
+            (right of a vertical bar). Left/right force a vertical bar,
+            top/bottom a horizontal one.
+        inside: When `True`, the colorbar is inset *inside* the frame at
+            `location` (overlaying the data) rather than in an outside gutter,
+            by default `False`. An inset is a child of the data axes, so it
+            tracks the axes through `full_bleed`.
+        box: Backing panel behind the scale, so the data does not show through
+            its labels. `False` draws none; `True` an opaque white panel; a
+            colour string a panel of that colour; a dict of
+            `matplotlib.patches.Rectangle` kwargs for full control. Defaults to
+            `None`, which becomes `True` when `inside` is set (an inset over
+            moving data almost always wants a panel) and stays off otherwise.
+            For a real colorbar the panel backs an *inside* colorbar only (it is
+            ignored when `inside=False`, which sits in its own gutter); for a
+            `style` preset's swatch legend it backs the swatch regardless of
+            placement, and the swatch title/values then default to a colour that
+            contrasts with the panel (an explicit `label_color`/`tick_color`
+            still wins).
+        label_color: Colour of the scale's title text -- the colorbar's axis
+            label and, for a `style` preset, the swatch legend's title (the
+            endpoint values take `tick_color`, not this). `None` (default) keeps
+            the default: matplotlib's for a colorbar label; for the swatch, a
+            colour that contrasts with `box`, else white.
+        tick_color: Colour of the tick labels (the numbers) of a real colorbar
+            and, for a `style` preset, the swatch legend's endpoint values.
+            `None` (default) keeps matplotlib's default for a colorbar; for the
+            swatch it defaults to a colour that contrasts with `box`, else white.
+
+    Examples:
+        - An inside colorbar on the right -- its box defaults on:
+            ```python
+            >>> from cleopatra.array_glyph import ColorBar
+            >>> spec = ColorBar(location="right", inside=True)
+            >>> spec.inside, spec.box
+            (True, True)
+
+            ```
+        - Black title + tick numbers, outside on the bottom (no box):
+            ```python
+            >>> from cleopatra.array_glyph import ColorBar
+            >>> spec = ColorBar(location="bottom", label_color="black", tick_color="black")
+            >>> (spec.box, spec.label_color, spec.tick_color)
+            (None, 'black', 'black')
+
+            ```
+    """
+
+    def __init__(
+        self,
+        *,
+        location: Literal["left", "right", "top", "bottom"] | None = None,
+        inside: bool = False,
+        box: bool | str | dict | None = None,
+        label_color: str | None = None,
+        tick_color: str | None = None,
+    ) -> None:
+        """Initialise a `ColorBar`.
+
+        Args:
+            location: Edge to sit on (`"left"`/`"right"`/`"top"`/`"bottom"`),
+                or `None` for matplotlib's default placement.
+            inside: Inset the colorbar inside the frame, by default `False`.
+            box: Backing panel for an inside colorbar (`True` / colour / dict),
+                or `None` to default it on when `inside` is set.
+            label_color: Colour of the scale title / colorbar label (and the
+                swatch title for a `style` preset); `None` keeps the default.
+            tick_color: Colour of the colorbar's tick numbers; `None` keeps
+                matplotlib's default.
+        """
+        self.location = location
+        self.inside = inside
+        # An inset over moving data almost always wants a panel: default the
+        # box on when `inside` is set and the caller did not decide explicitly.
+        self.box = True if (inside and box is None) else box
+        self.label_color = label_color
+        self.tick_color = tick_color
+
+
+def _swatch_text_default(box: bool | str | dict | None) -> str:
+    """Default swatch title/value colour that stays legible over `box`.
+
+    With no backing panel the swatch sits directly on the map, where white
+    reads on the usual dark relief/data backgrounds (the historical default).
+    With a panel, choose black or white by the panel's luminance so the title
+    and endpoint values never render invisibly (e.g. white-on-white when the
+    default `box=True` draws a white panel).
+
+    Args:
+        box: The resolved `cbar_box` -- `None`/`False` (no panel), `True` (a
+            white panel), a colour string, or a dict of `Rectangle` kwargs
+            (its `facecolor` decides).
+
+    Returns:
+        str: `"white"` when there is no panel or the panel is dark, `"black"`
+            when the panel is light.
+    """
+    if not box:
+        return "white"
+    if box is True:
+        facecolor: Any = "white"
+    elif isinstance(box, dict):
+        facecolor = box.get("facecolor", "white")
+    else:
+        facecolor = box
+    try:
+        r, g, b = to_rgb(facecolor)
+    except (ValueError, TypeError):
+        return "white"
+    # Rec. 709 relative luminance: dark text on a light panel and vice versa.
+    return "black" if (0.2126 * r + 0.7152 * g + 0.0722 * b) > 0.5 else "white"
+
+
+def _resolve_colorbar(colorbar: bool | ColorBar | None) -> dict:
+    """Translate a `colorbar=` argument into `default_options` updates.
+
+    Args:
+        colorbar: `None` (default) leaves the colorbar options untouched --
+            matplotlib's placement, honouring the legacy `add_colorbar`;
+            `False` suppresses the colorbar; `True` draws a default one; a
+            `ColorBar` sets its placement and backing box.
+
+    Returns:
+        dict: Updates to merge into `default_options` (empty for `None`).
+
+    Raises:
+        TypeError: If `colorbar` is not a bool, `ColorBar`, or `None`.
+
+    Examples:
+        - `False` suppresses the colorbar; a `ColorBar` maps onto the
+            internal `cbar_*` keys `create_color_bar` reads:
+            ```python
+            >>> from cleopatra.array_glyph import _resolve_colorbar, ColorBar
+            >>> _resolve_colorbar(False)
+            {'add_colorbar': False}
+            >>> _resolve_colorbar(ColorBar(location="left", inside=True))["cbar_location"]
+            'left'
+
+            ```
+    """
+    if colorbar is None:
+        return {}
+    if colorbar is False:
+        return {"add_colorbar": False}
+    if colorbar is True:
+        return {
+            "add_colorbar": True,
+            "cbar_location": None,
+            "cbar_inside": False,
+            "cbar_box": None,
+            "cbar_label_color": None,
+            "cbar_tick_color": None,
+        }
+    if isinstance(colorbar, ColorBar):
+        return {
+            "add_colorbar": True,
+            "cbar_location": colorbar.location,
+            "cbar_inside": colorbar.inside,
+            "cbar_box": colorbar.box,
+            "cbar_label_color": colorbar.label_color,
+            "cbar_tick_color": colorbar.tick_color,
+        }
+    raise TypeError(
+        "colorbar must be a bool, ColorBar, or None, got "
+        f"{type(colorbar).__name__}."
     )
 
 
@@ -1203,9 +1407,12 @@ class ArrayGlyph(GeoMixin, Glyph):
         # contributes nothing (only caller-supplied, non-None values are kept).
         self._style_color_overrides: dict[str, Any] = {
             key: kwargs[key]
-            for key in ("vmin", "vmax", "center")
+            for key in ("vmin", "vmax", "center", "cmap")
             if key in explicit_keys and kwargs[key] is not None
         }
+        #: Whether the latest plot()/animate() call explicitly requested a real
+        #: colorbar (a truthy `colorbar=`), which overrides a preset's swatch.
+        self._style_wants_colorbar: bool = False
         self._vmin, self._vmax = self._resolve_color_limits(
             array,
             vmin_kw=kwargs.get("vmin"),
@@ -2294,6 +2501,29 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         return resolve_single_layer_style(style)[0]
 
+    def _style_cbar_kw(self, norm: Normalize) -> dict:
+        """Colorbar tick kwargs for a real colorbar drawn over a `style` preset.
+
+        A preset's norm is often a banded `BoundaryNorm` whose many raw
+        boundaries would over-crowd the axis, so derive a clean, readable set of
+        ~8 ticks across `norm`'s range for `create_color_bar` instead. Falls
+        back to matplotlib's auto-ticking when the norm has no finite range.
+
+        Args:
+            norm: The preset's colour norm (carries the data-range vmin/vmax).
+
+        Returns:
+            dict: `{"ticks": [...]}`, or `{}` to let matplotlib auto-tick.
+        """
+        lo = getattr(norm, "vmin", None)
+        hi = getattr(norm, "vmax", None)
+        if lo is None or hi is None or lo == hi:
+            return {}
+        ticks = [
+            float(t) for t in MaxNLocator(nbins=8).tick_values(lo, hi) if lo <= t <= hi
+        ]
+        return {"ticks": ticks} if ticks else {}
+
     def _plot_with_style(self, style: str) -> tuple[Figure, Axes]:
         """Render the array with a named `DATA_STYLES` preset.
 
@@ -2310,7 +2540,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         Returns:
             tuple[Figure, Axes]: The figure and axes drawn on.
         """
-        layer = self._resolve_style_layer(style)
+        layer, style_cfg = resolve_single_layer_style(style)
         # See `_clear_prior_render_artists`: cleared only once the style
         # name is known valid, so a prior *valid* render survives a bad
         # `style` on this call instead of being torn down for a call that
@@ -2325,67 +2555,28 @@ class ArrayGlyph(GeoMixin, Glyph):
             ma.filled(ma.asarray(self.arr).astype(float), np.nan), dtype=float
         )
         legend = bool(self.default_options.get("add_colorbar", True))
-        coords = self._coords
-        # Forward an explicit caller vmin/vmax/center so it overrides the
-        # preset's own fixed range (e.g. a Magics preset's decoded ECMWF scale).
-        # Read from `_style_color_overrides`, which holds ONLY user-supplied
-        # limits -- not `default_options`, whose vmin/vmax the plain imshow path
-        # overwrites with the data's auto-resolved range, which would otherwise
-        # leak in here and clobber the preset (and break a diverging `center`).
-        override = dict(self._style_color_overrides)
-        if coords is not None:
-            # apply_data_style's curvilinear path defaults to shading="flat"
-            # (needs cell EDGES) via setdefault; ArrayGlyph stores cell CENTRES,
-            # so pass shading="nearest", which trusts the centres.
-            images = apply_data_style(
-                self.ax,
-                {layer: data},
-                style=style,
-                x=coords[0],
-                y=coords[1],
-                legend=legend,
-                shading="nearest",
-                **override,
-            )
-        else:
-            render_kwargs: dict[str, Any] = (
-                {"extent": self.extent} if self.extent is not None else {}
-            )
-            images = apply_data_style(
-                self.ax,
-                {layer: data},
-                style=style,
-                legend=legend,
-                **render_kwargs,
-                **override,
-            )
-        self.im = images[layer]
+        # An explicit `colorbar=` overrides a CONTINUOUS preset's swatch with a
+        # real colorbar (drawn after the image below); categorical presets keep
+        # their discrete legend (a colorbar is meaningless for class codes).
+        override_colorbar = (
+            self._style_wants_colorbar and style_cfg.get("categories") is None
+        )
+        draw_swatch = legend and not override_colorbar
+        self.im = self._render_styled_layer(layer, data, style, draw_swatch)
 
-        # Relief shading composes with a CONTINUOUS preset: blend the terrain
-        # hillshade into the drawn colours (regular-grid `imshow` only). It is
-        # NOT applied to a categorical preset -- shading nominal class colours
-        # is meaningless (a darkened "N" can read as another class), matching
-        # MeshGlyph -- nor to a curvilinear `QuadMesh` (no 2D RGBA grid to light).
-        hillshade = resolve_hillshade(self.default_options.get("hillshade"))
-        if hillshade is not None:
-            categorical = (
-                resolve_single_layer_style(style)[1].get("categories") is not None
-            )
-            if categorical or coords is not None:
-                kind = "categorical" if categorical else "curvilinear"
-                warnings.warn(
-                    f"hillshade is not composed with a {kind} data-style preset; "
-                    "the preset is applied and hillshade ignored.",
-                    stacklevel=2,
-                )
-            else:
-                self.im.set_data(shade_rgb(self.im.get_array(), data, **hillshade))
-        # Presets present their scale via a swatch / categorical legend, not a
-        # matplotlib colorbar.
-        self.cbar = None
+        self._compose_style_hillshade(style, data)
+        # Presets present their scale via a swatch / categorical legend -- unless
+        # the caller explicitly asked for a real colorbar (`colorbar=`), which
+        # overrides it with a matplotlib colorbar built from the preset's
+        # colormap + norm (`create_color_bar` honours the `ColorBar` placement).
+        self.cbar = (
+            self._style_override_colorbar(data, style_cfg)
+            if override_colorbar
+            else None
+        )
         # Match the imshow path: with no extent (and no curvilinear coords) hide
         # the pixel-index tick labels.
-        if self.extent is None and coords is None:
+        if self.extent is None and self._coords is None:
             self.ax.set_xticklabels([])
             self.ax.set_yticklabels([])
             self.ax.set_xticks([])
@@ -2398,6 +2589,82 @@ class ArrayGlyph(GeoMixin, Glyph):
         # `self.ax` before calling it.
         assert self.fig is not None
         return self.fig, self.ax
+
+    def _render_styled_layer(
+        self, layer: str, data: np.ndarray, style: str, draw_swatch: bool
+    ) -> Any:
+        """Draw the styled layer via `apply_data_style`; return its image artist.
+
+        Forwards an explicit caller vmin/vmax/center (from `_style_color_overrides`,
+        which holds ONLY user-supplied limits) so it overrides the preset's own
+        fixed range, and colours the swatch legend to contrast with its box.
+        """
+        box = self.default_options.get("cbar_box")
+        swatch_kw = {
+            "legend": draw_swatch,
+            "swatch_text_color": self.default_options.get("cbar_label_color")
+            or _swatch_text_default(box),
+            "swatch_value_color": self.default_options.get("cbar_tick_color")
+            or _swatch_text_default(box),
+            "swatch_box": box,
+        }
+        override = dict(self._style_color_overrides)
+        coords = self._coords
+        if coords is not None:
+            # apply_data_style's curvilinear path defaults to shading="flat"
+            # (needs cell EDGES); ArrayGlyph stores cell CENTRES, so pass
+            # shading="nearest", which trusts the centres.
+            images = apply_data_style(
+                self.ax, {layer: data}, style=style, x=coords[0], y=coords[1],
+                shading="nearest", **swatch_kw, **override,
+            )
+        else:
+            render_kwargs: dict[str, Any] = (
+                {"extent": self.extent} if self.extent is not None else {}
+            )
+            images = apply_data_style(
+                self.ax, {layer: data}, style=style, **swatch_kw,
+                **render_kwargs, **override,
+            )
+        return images[layer]
+
+    def _compose_style_hillshade(self, style: str, data: np.ndarray) -> None:
+        """Blend terrain hillshade into a continuous-preset image (regular grid only).
+
+        NOT applied to a categorical preset (shading nominal class colours is
+        meaningless) nor to a curvilinear `QuadMesh` (no 2D RGBA grid to light);
+        both cases warn and leave the preset as drawn.
+        """
+        hillshade = resolve_hillshade(self.default_options.get("hillshade"))
+        if hillshade is None:
+            return
+        categorical = (
+            resolve_single_layer_style(style)[1].get("categories") is not None
+        )
+        if categorical or self._coords is not None:
+            kind = "categorical" if categorical else "curvilinear"
+            warnings.warn(
+                f"hillshade is not composed with a {kind} data-style preset; "
+                "the preset is applied and hillshade ignored.",
+                stacklevel=2,
+            )
+            return
+        self.im.set_data(shade_rgb(self.im.get_array(), data, **hillshade))
+
+    def _style_override_colorbar(self, data: np.ndarray, style_cfg: dict) -> Colorbar:
+        """Build a real colorbar from the preset's cmap + norm (overriding the swatch).
+
+        The drawn image bakes RGBA, so it cannot itself drive a colorbar; hand a
+        `ScalarMappable` carrying the preset's colormap + norm to
+        `create_color_bar`, which honours the `ColorBar` placement.
+        """
+        cbar_cfg = {**style_cfg, **self._style_color_overrides}
+        cbar_norm, _lo, _hi = resolve_style_norm(data, cbar_cfg)
+        mappable = ScalarMappable(norm=cbar_norm, cmap=cbar_cfg["cmap"])
+        mappable.set_array([])
+        return self.create_color_bar(
+            self.ax, mappable, self._style_cbar_kw(cbar_norm)
+        )
 
     def apply_colormap(self, cmap: Colormap | str) -> np.ndarray:
         """Apply a matplotlib colormap to an array.
@@ -2606,6 +2873,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         kind: str = "auto",
         ax: Axes | None = None,
         title: str | None = None,
+        full_bleed: bool | str = False,
+        basemap: bool | dict | Basemap | Callable[[Any], None] | None = None,
+        colorbar: bool | ColorBar | None = None,
         **kwargs: Unpack[PlotKwargs],
     ) -> tuple[Figure, Axes]:
         """Plot the array with customizable visualization options.
@@ -2657,6 +2927,44 @@ class ArrayGlyph(GeoMixin, Glyph):
             title: Plot title, by default None. A convenience shortcut
                 equivalent to the `title` option; when given it
                 overrides the `title` set at construction.
+            full_bleed: Fill the whole figure edge-to-edge with no surrounding
+                margin, by default False. `True` hides ticks and spines and
+                resizes the figure to the data box's aspect so the fill has no
+                distortion, leaving the canvas colour untouched (masked / no-data
+                cells keep the default background). Pass a colour string instead
+                (e.g. `"black"`) to also paint the canvas that colour -- e.g. so
+                a semi-transparent relief reads dark. Same flag as
+                `animate(full_bleed=...)`. Intended for chrome-free maps -- a
+                colorbar or title has no room, so pair it with
+                `add_colorbar=False` and omit the title (an outside colorbar is
+                otherwise left floating over the filled axes); a scale swatch
+                (from `style`) still fits inside. It resizes the whole figure and
+                gives its axes the entire canvas, so use a dedicated figure --
+                passing `ax=` one subplot of several lets `full_bleed` take over
+                the figure and hide the siblings.
+            basemap: A reference backdrop drawn via the glyph's own
+                `add_relief` / `add_features`, composed by `zorder` (relief
+                under the data, coastline/borders over it), by default None (no
+                basemap). Accepts ``True`` for a sensible default (a `"low"`
+                relief plus grey `"50m"` coastline and borders), a `Basemap`
+                (the typed, validated form -- `relief` / `features` /
+                `resolution` / `check_alignment`, with `features` taking
+                `Feature` objects), a **dict** with the same keys (see
+                `GeoMixin._draw_basemap`), or a **callable** ``f(glyph)`` for
+                full control. Same flag as `animate(basemap=...)`. On a
+                projected axis, set `self.crs` first so the relief is warped to
+                match the data. Drawing the relief needs the `[tiles]` extra
+                (Pillow, and pyproj for a non-4326 `crs`).
+            colorbar: Colorbar presence and placement. `None` (default) keeps
+                matplotlib's placement (honouring the legacy `add_colorbar`);
+                `False` draws no colorbar; `True` a default one. Pass a
+                `ColorBar` for control -- an edge (`location`), an `inside`
+                inset that tracks `full_bleed`, a backing `box` (defaulted on
+                for an inset), and text colours (`label_color` for the title,
+                `tick_color` for the tick numbers). Same flag as `animate(colorbar=)`.
+                On a `style=` preset, a placement `ColorBar` (or `True`) overrides
+                the swatch with a real colorbar; a colours-only `ColorBar` styles
+                the swatch in place (defaults < preset < explicit).
             **kwargs: Additional keyword arguments for customizing the plot.
 
                 Plot appearance:
@@ -3185,15 +3493,27 @@ class ArrayGlyph(GeoMixin, Glyph):
             else:
                 self.default_options[key] = val
 
+        # `colorbar=` (a ColorBar / bool) resolves last, so it wins over
+        # the default `add_colorbar` and any internal cbar_* key.
+        self.default_options.update(_resolve_colorbar(colorbar))
+
         # Record colour limits supplied to THIS plot() call so a preset render
         # honours them (see `_style_color_overrides`). Sticky, and only for
         # keys actually passed -- an auto-ranged plain plot adds nothing.
         # `kwargs` is a real, mutable dict at runtime -- mypy's TypedDict model
         # just does not support indexing it with a non-literal (loop) key.
         kwargs_dict = cast(dict, kwargs)
-        for key in ("vmin", "vmax", "center"):
+        for key in ("vmin", "vmax", "center", "cmap"):
             if key in kwargs_dict and kwargs_dict[key] is not None:
                 self._style_color_overrides[key] = kwargs_dict[key]
+        # A `colorbar=` that requests PLACEMENT (a `ColorBar` with `location`/
+        # `inside`, or `colorbar=True`) overrides a preset's swatch with a real
+        # colorbar. A `ColorBar` carrying only colours/box styles the swatch in
+        # place instead, so the ECMWF swatch is kept.
+        self._style_wants_colorbar = colorbar is True or (
+            isinstance(colorbar, ColorBar)
+            and (colorbar.location is not None or colorbar.inside)
+        )
 
         self._validate_extend(self.default_options.get("extend"))
 
@@ -3252,7 +3572,12 @@ class ArrayGlyph(GeoMixin, Glyph):
                         "'points' and 'display_cell_value' are ignored with 'style'.",
                         stacklevel=2,
                     )
-                return self._plot_with_style(style)
+                self._plot_with_style(style)
+                if basemap is not None:
+                    self._draw_basemap(basemap)
+                if full_bleed:
+                    self._apply_full_bleed(facecolor=full_bleed if isinstance(full_bleed, str) else None)
+                return self.fig, self.ax
 
         if self.rgb:
             # See `_clear_prior_render_artists`: cleared only once nothing
@@ -3389,6 +3714,10 @@ class ArrayGlyph(GeoMixin, Glyph):
             *(optional_display.get("points_id") or []),
             *(optional_display.get("cell_text_value") or []),
         )
+        if basemap is not None:
+            self._draw_basemap(basemap)
+        if full_bleed:
+            self._apply_full_bleed(facecolor=full_bleed if isinstance(full_bleed, str) else None)
         return fig, ax
 
     def facet(
@@ -3683,6 +4012,42 @@ class ArrayGlyph(GeoMixin, Glyph):
         result = FacetGrid(fig=fig, axes=axes, cbar=cbar, name_dicts=name_dicts)
         return result
 
+    def _apply_full_bleed(self, facecolor: str | None = None) -> None:
+        """Give the axes the whole figure, chrome-free (for `full_bleed=...`).
+
+        Hides ticks and spines, resizes the figure so its aspect matches the
+        georeferenced data box (from `extent`) so the map fills the frame
+        without distortion, then hands the axes the entire figure area
+        (`set_position([0, 0, 1, 1])`, `aspect="auto"`). Without an `extent` the
+        aspect is unknown, so the axes still fills but may stretch. The caller
+        skips its `tight_layout` when this runs.
+
+        The canvas colour is left untouched unless `facecolor` is given -- so
+        masked / no-data cells keep the default background, not black. Pass a
+        `facecolor` (e.g. `"black"`) only when the backdrop should be painted,
+        e.g. so a semi-transparent relief reads dark.
+
+        Args:
+            facecolor: Optional axes + figure background colour. `None`
+                (default) leaves the canvas unchanged.
+        """
+        ax, fig = self.ax, self.fig
+        if self.extent is not None:
+            xmin, xmax, ymin, ymax = self.extent
+            width, height = abs(xmax - xmin), abs(ymax - ymin)
+            if width > 0 and height > 0:
+                fig_width = fig.get_size_inches()[0]
+                fig.set_size_inches(fig_width, fig_width * height / width, forward=True)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+        if facecolor is not None:
+            ax.set_facecolor(facecolor)
+            fig.patch.set_facecolor(facecolor)
+        ax.set_aspect("auto")
+        ax.set_position([0, 0, 1, 1])
+
     def animate(
         self,
         time: list[Any],
@@ -3692,6 +4057,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         frame_label: FrameLabel | None = None,
         *,
         data_getter: Callable[[int], np.ndarray] | None = None,
+        full_bleed: bool | str = False,
+        basemap: bool | dict | Basemap | Callable[[Any], None] | None = None,
+        colorbar: bool | ColorBar | None = None,
         **kwargs: Unpack[AnimateKwargs],
     ) -> FuncAnimation:
         """Create an animation from a single-band or true-colour stack.
@@ -3758,6 +4126,42 @@ class ArrayGlyph(GeoMixin, Glyph):
                 axes) must match `self.arr.shape[-2:]`. When None
                 (default) the existing behaviour is preserved and
                 `self.arr[i]` supplies frame `i`.
+            full_bleed: Fill the whole figure edge-to-edge with no chrome, by
+                default False. `True` hides ticks and spines, resizes the figure
+                so its aspect matches the georeferenced data box (from `extent`,
+                so the fill introduces no distortion), and gives the axes the
+                entire figure area (`set_position([0, 0, 1, 1])`,
+                `aspect="auto"`); the internal `tight_layout` is skipped. The
+                canvas colour is left untouched, so masked / no-data cells keep
+                the default background rather than turning black. Pass a colour
+                string instead (e.g. `"black"`) to also paint the canvas that
+                colour -- e.g. so a semi-transparent relief backdrop reads dark.
+                Intended for chrome-free maps -- a colorbar or title has no room,
+                so pair it with `add_colorbar=False` (and no `title`). Without an
+                `extent` the axes still fills the figure but may stretch.
+            basemap: A reference backdrop drawn via the glyph's own
+                `add_relief` / `add_features` and composed with the frames by
+                `zorder` (relief under the data, coastline/borders over it), by
+                default None (no basemap). Accepts ``True`` for a sensible
+                default (a `"low"` relief plus grey `"50m"` coastline and
+                borders), a `Basemap` (the typed, validated form -- `relief` /
+                `features` / `resolution` / `check_alignment`, with `features`
+                taking `Feature` objects), a **dict** with the same keys (see
+                `GeoMixin._draw_basemap`), or a **callable** ``f(glyph)`` for
+                full control. On a value-linked-opacity `style` (e.g.
+                `temperature_flame`) the cool areas reveal the terrain while the
+                data glows on top. Drawing the relief needs the `[tiles]` extra
+                (Pillow).
+            colorbar: Colorbar presence and placement. `None` (default) keeps
+                matplotlib's placement (honouring the legacy `add_colorbar`);
+                `False` draws no colorbar; `True` a default one. Pass a
+                `ColorBar` for control -- an edge (`location`), an `inside`
+                inset that tracks `full_bleed`, a backing `box` (defaulted on
+                for an inset), and text colours (`label_color` for the title,
+                `tick_color` for the tick numbers). Same flag as `plot(colorbar=)`.
+                On a `style=` preset, a placement `ColorBar` (or `True`) overrides
+                the swatch with a real colorbar; a colours-only `ColorBar` styles
+                the swatch in place (defaults < preset < explicit).
             **kwargs: Additional keyword arguments for customizing the animation.
 
                 Plot appearance:
@@ -3984,6 +4388,36 @@ class ArrayGlyph(GeoMixin, Glyph):
         True
 
         ```
+        Full-bleed layout: no chrome (ticks/spines) and the axes taking the whole
+        figure. `full_bleed=True` leaves the canvas colour alone; pass a colour
+        (`full_bleed="black"`) to also paint it, so masked cells read dark:
+        ```python
+        >>> import numpy as np
+        >>> from cleopatra.array_glyph import ArrayGlyph
+        >>> stack = np.arange(3 * 6 * 8, dtype=float).reshape(3, 6, 8)
+        >>> glyph = ArrayGlyph(stack, extent=[0, 0, 8, 6])
+        >>> anim_obj = glyph.animate(
+        ...     ["t0", "t1", "t2"], full_bleed="black", add_colorbar=False
+        ... )
+        >>> tuple(round(float(v), 3) for v in glyph.ax.get_position().bounds)
+        (0.0, 0.0, 1.0, 1.0)
+        >>> glyph.ax.get_facecolor()
+        (0.0, 0.0, 0.0, 1.0)
+
+        ```
+        Compose a reference basemap under the frames (`basemap=True`) -- relief
+        below, coastline and borders over. The `animate` call is `+SKIP`ped in
+        doctest because it downloads the `[tiles]` assets on first use:
+        ```python
+        >>> import numpy as np
+        >>> from cleopatra.array_glyph import ArrayGlyph
+        >>> stack = np.arange(3 * 20 * 30, dtype=float).reshape(3, 20, 30)
+        >>> glyph = ArrayGlyph(stack, extent=[-12, 34, 32, 64])
+        >>> anim_obj = glyph.animate(  # doctest: +SKIP
+        ...     ["t0", "t1", "t2"], basemap=True, full_bleed=True, add_colorbar=False
+        ... )
+
+        ```
         """
         # Resolve deprecated kwarg aliases before the strict `kwargs`
         # validation below, which would otherwise reject them outright.
@@ -4030,6 +4464,10 @@ class ArrayGlyph(GeoMixin, Glyph):
             else:
                 self.default_options[key] = val
 
+        # `colorbar=` (a ColorBar / bool) resolves last, so it wins over
+        # the default `add_colorbar` and any internal cbar_* key.
+        self.default_options.update(_resolve_colorbar(colorbar))
+
         # Record colour limits supplied to THIS animate() call so a styled
         # animation honours an explicit caller override of the preset's fixed
         # range (see `_style_color_overrides`); an auto-ranged plain animation
@@ -4037,9 +4475,17 @@ class ArrayGlyph(GeoMixin, Glyph):
         # `kwargs` is a real, mutable dict at runtime -- mypy's TypedDict model
         # just does not support indexing it with a non-literal (loop) key.
         kwargs_dict = cast(dict, kwargs)
-        for key in ("vmin", "vmax", "center"):
+        for key in ("vmin", "vmax", "center", "cmap"):
             if key in kwargs_dict and kwargs_dict[key] is not None:
                 self._style_color_overrides[key] = kwargs_dict[key]
+        # A `colorbar=` that requests PLACEMENT (a `ColorBar` with `location`/
+        # `inside`, or `colorbar=True`) overrides a preset's swatch with a real
+        # colorbar. A `ColorBar` carrying only colours/box styles the swatch in
+        # place instead, so the ECMWF swatch is kept.
+        self._style_wants_colorbar = colorbar is True or (
+            isinstance(colorbar, ColorBar)
+            and (colorbar.location is not None or colorbar.inside)
+        )
 
         # if user did not input ticks spacing use the calculated one.
         if "ticks_spacing" in kwargs.keys():
@@ -4231,10 +4677,28 @@ class ArrayGlyph(GeoMixin, Glyph):
                     if self.cbar is not None:
                         self.cbar.remove()
                         self.cbar = None
-                    if self.default_options["add_colorbar"]:
+                    if self._style_wants_colorbar:
+                        # Explicit `colorbar=` overrides the preset's swatch with
+                        # a real colorbar built from the preset's colormap + norm
+                        # (a fixed-scale mappable -- the frames update the image,
+                        # not the scale).
+                        # snapshot first: .remove() mutates ax.child_axes, so
+                        # iterating it directly would skip entries.
+                        insets = list(ax.child_axes)
+                        for _inset in insets:
+                            _inset.remove()
+                        mappable = ScalarMappable(norm=style_norm, cmap=cfg["cmap"])
+                        mappable.set_array([])
+                        self.cbar = self.create_color_bar(
+                            ax, mappable, self._style_cbar_kw(style_norm)
+                        )
+                    elif self.default_options["add_colorbar"]:
                         # Remove a swatch inset from a previous render so
                         # repeated animate() calls don't stack legends.
-                        for _inset in list(ax.child_axes):
+                        # snapshot first: .remove() mutates ax.child_axes, so
+                        # iterating it directly would skip entries.
+                        insets = list(ax.child_axes)
+                        for _inset in insets:
                             _inset.remove()
                         # Same bounds AND endpoint caps as apply_data_style's
                         # swatch (plot path), so a plot and its animation align
@@ -4251,6 +4715,11 @@ class ArrayGlyph(GeoMixin, Glyph):
                             vmin_prefix=vmin_prefix,
                             vmax_prefix=vmax_prefix,
                             bounds=(0.02, 0.92, 0.32, 0.06),
+                            text_color=self.default_options.get("cbar_label_color")
+                            or _swatch_text_default(self.default_options.get("cbar_box")),
+                            value_color=self.default_options.get("cbar_tick_color")
+                            or _swatch_text_default(self.default_options.get("cbar_box")),
+                            box=self.default_options.get("cbar_box"),
                         )
                     alpha_vmin = cfg.get("alpha_vmin")
                     alpha_vmax = cfg.get("alpha_vmax")
@@ -4312,7 +4781,11 @@ class ArrayGlyph(GeoMixin, Glyph):
             label_location[0],
             label_location[1],
             " ",
-            fontsize=self.default_options["cbar_label_size"],
+            fontsize=(
+                frame_label.size
+                if frame_label.size is not None
+                else self.default_options["cbar_label_size"]
+            ),
             color=frame_label.color,
             transform=ax.transAxes if label_location_is_default else ax.transData,
             va="top" if label_location_is_default else "baseline",
@@ -4464,7 +4937,16 @@ class ArrayGlyph(GeoMixin, Glyph):
 
             return output
 
-        plt.tight_layout()
+        # Reference backdrop (relief under the frames, coastline/borders over
+        # them) drawn via the glyph's own GeoMixin methods; layered by zorder.
+        if basemap is not None:
+            self._draw_basemap(basemap)
+        # `full_bleed` fills the figure and skips `tight_layout` (which cannot
+        # position a full-figure axes and would warn); otherwise tidy as before.
+        if full_bleed:
+            self._apply_full_bleed(facecolor=full_bleed if isinstance(full_bleed, str) else None)
+        else:
+            plt.tight_layout()
         anim = FuncAnimation(
             fig,
             animate_a,

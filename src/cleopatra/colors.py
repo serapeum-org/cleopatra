@@ -13,158 +13,13 @@ from matplotlib.colors import Colormap, LinearSegmentedColormap
 from matplotlib.image import AxesImage
 from PIL import Image, UnidentifiedImageError
 
+from cleopatra.palettes import CAMS_AOD_COLORMAPS, FLAME_COLORMAPS, HAZE_COLORMAPS
+from cleopatra.perceptual import perceptual_colormap
 from cleopatra.styles import disjoint_legend, swatch_extend_prefixes, swatch_legend
 
-#: Sequential colormaps for the "haze" data style (white at 0.0, saturating
-#: toward the named hue at 1.0) -- the value-modulated-alpha, glowing-rim look
-#: used by ECMWF/CAMS aerosol-optical-depth animations. Each value is a ready
-#: `matplotlib.colors.Colormap` -- pass it directly as a `cmap` argument
-#: anywhere cleopatra or matplotlib accepts one (e.g. `alpha_scaled_image`,
-#: `swatch_legend`, `plt.imshow(..., cmap=HAZE_COLORMAPS["dust"])`). Plain
-#: constants, not registered into matplotlib's global colormap namespace, so
-#: importing this module has no global side effect. See `alpha_scaled_image`
-#: and `swatch_legend` for runnable examples using these colormaps.
-HAZE_COLORMAPS: dict[str, Colormap] = {
-    "organic_matter": LinearSegmentedColormap.from_list(
-        "haze_organic_matter",
-        ["#ffffff", "#ffd9f2", "#ff5fc9", "#c400a0", "#5c0050", "#200018"],
-    ),
-    "dust": LinearSegmentedColormap.from_list(
-        "haze_dust",
-        ["#ffffff", "#fff2b3", "#ffcc33", "#ff6a00", "#7a1500", "#2a0800"],
-    ),
-}
-
-#: The official ECMWF/CAMS aerosol-optical-depth (AOD at 550 nm) colour scales,
-#: as opposed to the stylised `HAZE_COLORMAPS` inspired by them. Colour stops are
-#: transcribed verbatim from the open-source Magics rendering engine
-#: (`ecmwf/magics`, Apache-2.0 -- `share/magics/styles/default/palettes.json`,
-#: the palettes tagged `cams` / "Aerosol optical depth at 550 nm"); only the
-#: engine's colour data is vendored, none of its code. Each value is a ready
-#: `matplotlib.colors.Colormap`, usable anywhere cleopatra or matplotlib accepts
-#: a `cmap` argument (e.g. `plt.imshow(..., cmap=CAMS_AOD_COLORMAPS["blue_yellow_red"])`).
-#: Keys describe the ramp; the originating Magics style name is given per entry.
-#:
-#: These are pure-colour maps (fully opaque), consistent with `HAZE_COLORMAPS`.
-#: Magics' `sh_Oranges_aod` additionally ramps *opacity* linearly with value
-#: (alpha 0.05 -> 1.0); that alpha is intentionally not baked in here -- reproduce
-#: it with cleopatra's separate opacity axis via `alpha_scaled_image(...,
-#: alpha_norm=Normalize(vmin, vmax))` or a `DATA_STYLES` entry carrying
-#: `alpha_vmin`/`alpha_vmax`, keeping colour and opacity independent.
-CAMS_AOD_COLORMAPS: dict[str, Colormap] = {
-    # Magics `sh_BuYlRd_aod` -- the canonical CAMS AOD scale.
-    "blue_yellow_red": LinearSegmentedColormap.from_list(
-        "cams_aod_blue_yellow_red",
-        [
-            "#d3d7eb",
-            "#a8afd7",
-            "#8892bf",
-            "#a3a891",
-            "#bebd65",
-            "#d8d239",
-            "#f3e70b",
-            "#f4c60a",
-            "#f6a508",
-            "#f88406",
-            "#f96205",
-            "#fb4103",
-            "#fd2001",
-            "#ff0000",
-        ],
-    ),
-    # Magics `sh_BuYlRdBr_aod` -- like blue_yellow_red but fading to dark maroon.
-    "blue_yellow_red_brown": LinearSegmentedColormap.from_list(
-        "cams_aod_blue_yellow_red_brown",
-        [
-            "#d2d2ff",
-            "#a1a1ff",
-            "#7070ff",
-            "#8787c7",
-            "#b8b876",
-            "#e9e926",
-            "#ffda00",
-            "#ff8a00",
-            "#ff3900",
-            "#f40000",
-            "#c40000",
-            "#930000",
-            "#640000",
-        ],
-    ),
-    # Magics `sh_all_aod` / `sh_all_aod550` -- the blue->cyan->green->yellow->red scale.
-    "blue_red": LinearSegmentedColormap.from_list(
-        "cams_aod_blue_red",
-        [
-            "#0000f1",
-            "#004cff",
-            "#00b1ff",
-            "#29ffce",
-            "#7dff7a",
-            "#ceff29",
-            "#ffc400",
-            "#ff6800",
-            "#f10800",
-            "#800000",
-        ],
-    ),
-    # Magics `sh_Oranges_aod` -- white->dark-orange (natively alpha-ramped; see above).
-    "oranges": LinearSegmentedColormap.from_list(
-        "cams_aod_oranges",
-        [
-            "#ffefe0",
-            "#fee9d4",
-            "#fee2c6",
-            "#fdd9b4",
-            "#fdd0a2",
-            "#fdc38d",
-            "#fdb576",
-            "#fda762",
-            "#fd9a4e",
-            "#fd8c3b",
-            "#f87f2c",
-            "#f3701b",
-            "#ec620f",
-            "#e25508",
-            "#d84801",
-            "#c54102",
-            "#b03903",
-            "#9e3303",
-            "#8e2d04",
-            "#7f2704",
-        ],
-    ),
-}
-
-#: Flame / heat colormaps for rendering a scalar field (typically temperature) as
-#: a glowing plume -- the CAMS aerosol `alpha_scaled_image` technique recoloured
-#: for heat. Pair with **value-linked opacity** (`alpha_scaled_image`, or a
-#: `DATA_STYLES` entry carrying `alpha_vmin`/`alpha_vmax`) over a dark hillshaded
-#: basemap so cool areas fade into the terrain and hot areas glow like fire. Two
-#: flavours: `"white_hot"` blows the hottest values out to yellow-white (the most
-#: fire-like), `"amber"` keeps a warmer gold/orange that is less blown-out. Each
-#: value is a ready `matplotlib.colors.Colormap`; see the `"temperature_flame"` /
-#: `"temperature_flame_amber"` presets in `DATA_STYLES` for the packaged form.
-FLAME_COLORMAPS: dict[str, Colormap] = {
-    # A stand-alone copy of matplotlib's `afmhot` (black -> red -> yellow -> white)
-    # so importing this never depends on it being registered under that name.
-    "white_hot": LinearSegmentedColormap.from_list(
-        "flame_white_hot",
-        [
-            "#000000",
-            "#4d0000",
-            "#990000",
-            "#e02a00",
-            "#ff7a00",
-            "#ffbf1a",
-            "#fff29a",
-            "#ffffff",
-        ],
-    ),
-    "amber": LinearSegmentedColormap.from_list(
-        "flame_amber",
-        ["#240000", "#7a0000", "#c81800", "#ff5a00", "#ff9a00", "#ffd21e", "#fff2a8"],
-    ),
-}
+#: The haze / CAMS-AOD / flame colour families now live in `cleopatra.palettes`
+#: (built there via perceptual CIELAB interpolation and registered in the unified
+#: palette registry). They are re-exported above and used by `DATA_STYLES` below.
 
 
 def alpha_scaled_image(
@@ -637,7 +492,7 @@ def _load_preset_asset(
     for key, rec in records:
         try:
             palette = rec["palette"]
-            cmap: Colormap = LinearSegmentedColormap.from_list(
+            cmap: Colormap = perceptual_colormap(
                 f"{cmap_prefix}_{key}", palette
             )
             layer: dict[str, Any] = {"cmap": cmap, "label": rec["label"]}
@@ -676,7 +531,7 @@ def _weather_cmap(key: str, colors: Any, levels: Any, bands: Any) -> Any:
         return mcolors.ListedColormap(colors, name=f"weather_{key}")
     if isinstance(colors, str):
         return colors
-    return LinearSegmentedColormap.from_list(f"weather_{key}", colors)
+    return perceptual_colormap(f"weather_{key}", colors)
 
 
 def _load_weather_presets() -> dict[str, dict[str, dict[str, Any]]]:
@@ -992,6 +847,9 @@ def apply_data_style(
     y: np.ndarray | None = None,
     legend: bool = True,
     legend_bounds: list[tuple[float, float, float, float]] | None = None,
+    swatch_text_color: str = "white",
+    swatch_value_color: str | None = None,
+    swatch_box: bool | str | dict | None = None,
     **render_kwargs: Any,
 ) -> dict[str, Any]:
     """Draw one or more named data layers with a registered `DATA_STYLES` preset.
@@ -1031,6 +889,12 @@ def apply_data_style(
         legend_bounds: Explicit `(x0, y0, width, height)` per layer legend,
             in the same order as `layers`, overriding the auto-stacked
             default.
+        swatch_text_color: Colour of each swatch legend's title, by default
+            `"white"`.
+        swatch_value_color: Optional colour for the swatch endpoint values, by
+            default `None` (reuse `swatch_text_color`).
+        swatch_box: Optional opaque backing panel behind each swatch legend
+            (`True` / colour / dict), by default `None` (none).
         **render_kwargs: Forwarded to every `alpha_scaled_image` (or
             `alpha_scaled_mesh`, when `x`/`y` are given) call. A `vmin`/`vmax`/
             `center` here overrides the preset's own colour scale (e.g. a fixed
@@ -1138,12 +1002,14 @@ def apply_data_style(
         # for a globe's extreme local distortion, so shading="flat" (which
         # trusts the given edges exactly) is the correct default here.
         render_kwargs.setdefault("shading", "flat")
-    # A caller-supplied `vmin`/`vmax`/`center` overrides the preset's own colour
-    # scale (e.g. a Magics preset's decoded fixed range). These are colour-scale
-    # keys, not `imshow` kwargs, so pull them out of `render_kwargs` and merge
-    # them over each layer's config below.
+    # A caller-supplied `vmin`/`vmax`/`center`/`cmap` overrides the preset's own
+    # colour scale / colormap (e.g. a Magics preset's decoded fixed range).
+    # These override cfg, not `imshow` kwargs, so pull them out of `render_kwargs`
+    # and merge them over each layer's config below (`cmap` becomes cfg["cmap"],
+    # which the render reads positionally -- leaving it in render_kwargs would
+    # collide with that positional argument).
     style_override: dict[str, Any] = {}
-    for key in ("vmin", "vmax", "center"):
+    for key in ("vmin", "vmax", "center", "cmap"):
         if key in render_kwargs:
             value = render_kwargs.pop(key)
             # Pop it (so it never reaches imshow), but only override the preset when
@@ -1309,6 +1175,9 @@ def apply_data_style(
                 vmax_prefix=vmax_prefix,
                 bounds=bounds,
                 norm=norm,
+                text_color=swatch_text_color,
+                value_color=swatch_value_color,
+                box=swatch_box,
             )
     return images
 

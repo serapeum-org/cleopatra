@@ -22,6 +22,7 @@ from matplotlib.axes import Axes
 from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure, SubFigure
 from matplotlib.legend import Legend
+from matplotlib.patches import Rectangle
 from matplotlib.ticker import LogFormatter
 
 # `SUPPORTED_VIDEO_FORMAT` is re-imported (not redefined) so the constant has
@@ -1284,6 +1285,15 @@ class Glyph:
         so that label-size and label-location styling from
         `default_options` are still applied.
 
+        Placement is controlled by `cbar_location`
+        (`'left'`/`'right'`/`'top'`/`'bottom'`, which also fixes the
+        orientation) and `cbar_inside`: when `True`, the colorbar is inset
+        *inside* `ax` at that edge (a child of `ax`, so it tracks
+        `full_bleed` instead of floating), with its tick labels facing into
+        the frame and an optional `cbar_box` backing panel drawn behind it so
+        the data does not show through. When `cbar_location` is `None` and
+        `cbar_inside` is `False`, placement is matplotlib's default.
+
         Args:
             ax: Matplotlib axes.
             im: The mappable (image or contour) to attach the
@@ -1357,17 +1367,49 @@ class Glyph:
 
                 ```
         """
-        fig = ax.figure
-        is_subplot = len(fig.axes) > 1
-        merged_kw = {
-            "shrink": self.default_options["cbar_length"],
-            "orientation": self.default_options["cbar_orientation"],
-            "use_gridspec": not is_subplot,
-        }
-        merged_kw.update(cbar_kw)
-        # Pull the user-supplied `label` (if any) out of cbar_kwargs
-        # before forwarding to `fig.colorbar` so we can apply it via
-        # `cbar.set_label` and preserve label-size/location styling.
+        location = self.default_options.get("cbar_location")
+        if location is not None and location not in ("left", "right", "top", "bottom"):
+            raise ValueError(
+                "cbar_location must be one of 'left', 'right', 'top', "
+                f"'bottom', or None, got {location!r}."
+            )
+        inside = bool(self.default_options.get("cbar_inside", False))
+        orientation = self._resolve_cbar_orientation(location)
+        # Pull the user-supplied `label` (if any) out of cbar_kwargs before
+        # forwarding to `fig.colorbar`, so it is applied via `cbar.set_label`
+        # (preserving label-size/location styling).
+        user_kwargs, user_label = self._cbar_user_kwargs()
+
+        box_info = None
+        if inside:
+            # An inset colorbar is a child of `ax`, so it tracks the axes
+            # through `full_bleed` (never floats) and can sit on a backing box.
+            cbar, box_info = self._inside_colorbar_axes(
+                ax, im, cbar_kw, location or "right", orientation, user_kwargs
+            )
+        else:
+            cbar = self._outside_colorbar(
+                ax, im, cbar_kw, location, orientation, user_kwargs
+            )
+
+        self._apply_cbar_styling(cbar, user_label)
+        # Draw the backing box last -- once the labels exist -- so it encloses
+        # them (an inside colorbar overlays the data, so it needs the panel).
+        box = self.default_options.get("cbar_box")
+        if inside and box and box_info is not None:
+            self._draw_cbar_box(ax, box_info, box)
+        return cbar
+
+    def _resolve_cbar_orientation(self, location: str | None) -> str:
+        """Orientation implied by `cbar_location` (else `cbar_orientation`)."""
+        if location in ("left", "right"):
+            return "vertical"
+        if location in ("top", "bottom"):
+            return "horizontal"
+        return self.default_options["cbar_orientation"]
+
+    def _cbar_user_kwargs(self) -> tuple[dict, Any]:
+        """A validated copy of `cbar_kwargs` with `label` split out for set_label."""
         user_kwargs = self.default_options.get("cbar_kwargs") or {}
         if not isinstance(user_kwargs, dict):
             raise TypeError(
@@ -1375,10 +1417,45 @@ class Glyph:
                 f"arguments, got {type(user_kwargs).__name__}."
             )
         user_kwargs = dict(user_kwargs)
-        user_label = user_kwargs.pop("label", None)
+        return user_kwargs, user_kwargs.pop("label", None)
+
+    def _outside_colorbar(
+        self,
+        ax: Axes,
+        im: Any,
+        cbar_kw: dict,
+        location: str | None,
+        orientation: str,
+        user_kwargs: dict,
+    ) -> Colorbar:
+        """Draw a normal (outside-gutter) colorbar via `fig.colorbar`."""
+        fig = ax.figure
+        merged_kw = {
+            "shrink": self.default_options["cbar_length"],
+            "use_gridspec": len(fig.axes) <= 1,
+        }
+        if location is not None:
+            # matplotlib places the bar on that side and sets orientation.
+            merged_kw["location"] = location
+        else:
+            merged_kw["orientation"] = orientation
+        merged_kw.update(cbar_kw)
         merged_kw.update(user_kwargs)
-        cbar = fig.colorbar(im, ax=ax, **merged_kw)
-        cbar.ax.tick_params(labelsize=10)
+        if "location" in merged_kw:
+            # matplotlib rejects `location` and `orientation` together (mutually
+            # exclusive); `location` already implies the orientation, so drop a
+            # redundant/conflicting user-supplied `orientation` rather than
+            # letting fig.colorbar raise.
+            merged_kw.pop("orientation", None)
+        return fig.colorbar(im, ax=ax, **merged_kw)
+
+    def _apply_cbar_styling(self, cbar: Colorbar, user_label: Any) -> None:
+        """Apply tick/label colours, size, location, and text to `cbar`."""
+        tick_color = self.default_options.get("cbar_tick_color")
+        label_color = self.default_options.get("cbar_label_color")
+        cbar.ax.tick_params(
+            labelsize=10, **({"colors": tick_color} if tick_color else {})
+        )
         label_text = (
             user_label if user_label is not None else self.default_options["cbar_label"]
         )
@@ -1386,8 +1463,114 @@ class Glyph:
             label_text,
             fontsize=self.default_options["cbar_label_size"],
             loc=self.default_options["cbar_label_location"],
+            **({"color": label_color} if label_color else {}),
         )
-        return cbar
+
+    def _inside_colorbar_axes(
+        self,
+        ax: Axes,
+        im: Any,
+        cbar_kw: dict,
+        location: str,
+        orientation: str,
+        user_kwargs: dict,
+    ) -> tuple[Colorbar, tuple]:
+        """Draw the colorbar as an inset *inside* `ax` at `location`.
+
+        The colorbar is placed in an inset axes (a child of `ax`), so it
+        tracks the data axes through `full_bleed` instead of floating. Its
+        tick labels are turned to face into the frame, so a backing box can
+        enclose them.
+
+        Args:
+            ax: The data axes to inset the colorbar into.
+            im: The mappable to attach the colorbar to.
+            cbar_kw: Colorbar keyword arguments from `_create_norm_and_cbar_kw`.
+            location: Edge to sit on -- `'left'`, `'right'`, `'top'`, `'bottom'`.
+            orientation: `'vertical'` or `'horizontal'`.
+            user_kwargs: Extra `fig.colorbar` kwargs (user `cbar_kwargs`).
+
+        Returns:
+            tuple: `(cbar, box_info)` where `box_info` is
+                `(cax, inset_bounds, label_side)` for `_draw_cbar_box`.
+        """
+        fig = ax.figure
+        bounds, label_side = {
+            "right": ((0.905, 0.14, 0.022, 0.72), "left"),
+            "left": ((0.073, 0.14, 0.022, 0.72), "right"),
+            "top": ((0.14, 0.905, 0.72, 0.022), "bottom"),
+            "bottom": ((0.14, 0.073, 0.72, 0.022), "top"),
+        }[location]
+        cax = ax.inset_axes(bounds)
+        cax.set_zorder(6)
+        # `ticklocation` turns the tick labels to face into the frame, so they
+        # stay clear of the edge and the backing box can enclose them.
+        merged_kw = {"orientation": orientation, "ticklocation": label_side}
+        merged_kw.update(cbar_kw)
+        merged_kw.update(user_kwargs)
+        cbar = fig.colorbar(im, cax=cax, **merged_kw)
+        return cbar, (cax, bounds, label_side)
+
+    def _draw_cbar_box(self, ax: Axes, box_info: tuple, box: bool | str | dict) -> None:
+        """Draw a backing panel behind an inset colorbar (its bar + tick labels).
+
+        Sized to the colorbar's tight bounding box (labels included) with an
+        analytic fallback on the label side, and drawn above the data but
+        below the bar so the animating field can't show through the labels.
+
+        Args:
+            ax: The data axes the colorbar is inset into.
+            box_info: `(cax, inset_bounds, label_side)` from
+                `_inside_colorbar_axes`.
+            box: `True` for a translucent white panel, a colour string for a
+                panel of that colour, or a dict of `Rectangle` kwargs.
+        """
+        cax, bounds, label_side = box_info
+        # Opaque by default so the colorbar reads identically on every frame
+        # (a translucent panel would let the animating field bleed through);
+        # pass `{"alpha": ...}` in a dict to soften it.
+        kw: dict = {
+            "facecolor": "white",
+            "edgecolor": "0.6",
+            "linewidth": 0.6,
+        }
+        if isinstance(box, str):
+            kw["facecolor"] = box
+        elif isinstance(box, dict):
+            kw = {**kw, **box}
+        fig = ax.figure
+        try:
+            # Tight bbox (in display coords) captures the bar *and* its tick
+            # labels precisely; convert to `ax` fractions for the panel.
+            fig.canvas.draw()
+            bb = cax.get_tightbbox(fig.canvas.get_renderer())
+            inv = ax.transAxes.inverted()
+            x0, y0 = inv.transform((bb.x0, bb.y0))
+            x1, y1 = inv.transform((bb.x1, bb.y1))
+        except Exception:  # pragma: no cover - renderer unavailable on some backends
+            # Fallback: the inset bounds, grown on the side the labels face.
+            bx0, by0, bw, bh = bounds
+            x0, y0, x1, y1 = bx0, by0, bx0 + bw, by0 + bh
+            allow = 0.11 if bw < bh else 0.06
+            if label_side == "left":
+                x0 -= allow
+            elif label_side == "right":
+                x1 += allow
+            elif label_side == "bottom":
+                y0 -= allow
+            else:
+                y1 += allow
+        pad = 0.014
+        rect = Rectangle(
+            (x0 - pad, y0 - pad),
+            (x1 - x0) + 2 * pad,
+            (y1 - y0) + 2 * pad,
+            transform=ax.transAxes,
+            zorder=5,
+            clip_on=False,
+            **kw,
+        )
+        ax.add_patch(rect)
 
     def adjust_ticks(
         self,
