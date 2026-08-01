@@ -2600,14 +2600,14 @@ class ArrayGlyph(GeoMixin, Glyph):
         fixed range, and colours the swatch legend to contrast with its box.
         """
         box = self.default_options.get("cbar_box")
-        swatch_kw = dict(
-            legend=draw_swatch,
-            swatch_text_color=self.default_options.get("cbar_label_color")
+        swatch_kw = {
+            "legend": draw_swatch,
+            "swatch_text_color": self.default_options.get("cbar_label_color")
             or _swatch_text_default(box),
-            swatch_value_color=self.default_options.get("cbar_tick_color")
+            "swatch_value_color": self.default_options.get("cbar_tick_color")
             or _swatch_text_default(box),
-            swatch_box=box,
-        )
+            "swatch_box": box,
+        }
         override = dict(self._style_color_overrides)
         coords = self._coords
         if coords is not None:
