@@ -1,5 +1,88 @@
 # Changelog
 
+## 0.27.0 (2026-08-01)
+
+
+- ci: pin workflow action versions and tighten CI concurrency (#231)
+- Harden the GitHub Actions workflows by resolving every action
+reference to an explicit, verified version instead of a moving
+target, and stop wasted CI time on superseded pull request pushes.
+- - Bump actions/checkout (v5 -> v7.0.1) and codecov/codecov-action
+  (v5 -> v7.0.0), both two majors behind
+- Pin every serapeum-org/github-actions composite action to a
+  specific released version instead of the floating v1 major tag
+- Replace every tag reference with the full commit SHA it resolves
+  to, keeping the version as a trailing comment
+- Fix mkdocs-deploy using an unpinned @main ref in two of its three
+  jobs while the third used a pinned tag
+- Pin the uv version installed in tests.yml and github-release.yml
+  to 0.12.1 to match the local dev environment
+- Group tests.yml by PR number with cancel-in-progress so a new
+  push cancels its own stale run, while push events to main are
+  grouped by commit SHA so they always run to completion
+- feat!: add a perceptual palette system and richer plotting controls (#220)
+- - perceptual: a numpy-only sRGB<->CIELAB toolkit -- interp_perceptual /
+  perceptual_colormap (exact endpoints preserved), make_diverging
+  (two lightness-balanced Lab arms), make_categorical (the glasbey
+  max-min method) and a perceptual_uniformity diagnostic
+- palettes: one Palette record + PaletteKind registry with a
+  kind-driven default_norm and preview_palettes(); the haze / CAMS-AOD
+  / flame families now build in CIELAB and register at import
+- colors: ECMWF/cmocean ocean & weather data-style presets, continuous
+  ramps re-interpolated in CIELAB, and a defaults < preset < explicit
+  style precedence
+- array_glyph/glyph: a ColorBar spec (location / inside / box /
+  label_color / tick_color) replacing the separate cbar_* kwargs, a
+  FrameLabel with its own size, and a full_bleed chrome-free layout
+- geo: a basemap= parameter with typed Basemap / Feature specs,
+  CRS-aware relief warping, and an opt-in mis-georeference check
+- animation: one shared GIF palette across frames with pure black and
+  white reserved, so date labels and colorbar ticks stay crisp
+- tooling: a ruff / mypy / bandit lint stack, http(s)-only urlopen and
+  a path-traversal guard in the asset builders, and NumPy-only example
+  notebooks
+- Closes #218, #219, #225, #226, #227, #228, #229, #230
+Refs #216
+BREAKING CHANGE: the weather/ocean data-style preset keys were renamed
+from GRIB shortNames to descriptive names; update any code that looks
+up presets by the old keys.
+- refactor(data)!: restructure the ECMWF weather/ocean preset system and rename its keys (#217)
+- - Merge the Magics and earthkit-plots preset libraries into one
+  weather_presets.json with a single loader, and rename every weather
+  preset key from a raw GRIB shortName to a descriptive slug (e.g.
+  2t -> temperature_2m).
+- Drop dead per-vendor metadata (_meta, source_style,
+  continuous_colormap) never read by any loader, and fix a silent bug
+  where colors.py pointed at the pre-rename ocean presets file.
+- Migrate lint/type tooling to Ruff, add a mypy hook, and fix the 194
+  pre-existing type errors it surfaced.
+- Close bandit and SonarCloud security findings (restrict urlopen to
+  http(s), guard build-script output paths against path traversal,
+  parse URL schemes properly) without suppressing any of them.
+- Serialize the mkdocs deploy-pr/deploy-main jobs to stop them racing
+  gh-pages pushes.
+- BREAKING CHANGE: DATA_STYLES weather presets are keyed by descriptive
+names now, not GRIB shortNames (e.g. "temperature_2m" instead of "2t").
+Closes #221, #222, #223, #224
+- feat(reference): make add_relief honor the axis CRS (#214)
+- add_relief now respects the CRS of the data on the axis, so the relief
+lines up under the plot instead of being stretched or misprojected.
+- - Crop a lon/lat extent that lies within the global bounds out of the
+  relief array and draw it at that box, instead of stretching the whole
+  globe into it (the issue #177 footgun). extent=None and out-of-bounds
+  extents keep the previous whole-image placement.
+- Add a keyword-only crs= parameter. A None or EPSG:4326 axis runs the
+  lon/lat path unchanged, with no pyproj import; any other CRS warps the
+  global relief into the axis CRS -- an output grid over the axis view is
+  inverse-transformed to lon/lat via pyproj, sampled per pixel, and cells
+  outside the CRS domain are left transparent.
+- GeoMixin.add_relief defaults crs to self.crs (via _basemap_kwargs),
+  matching add_features and add_tiles; an explicit crs= still wins and an
+  unset self.crs preserves the prior behaviour.
+- No new dependencies (pyproj already ships in the [tiles] extra) and no
+  GDAL.
+- Closes #177
+
 ## 0.26.1 (2026-07-18)
 
 
