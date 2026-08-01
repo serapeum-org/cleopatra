@@ -2562,91 +2562,21 @@ class ArrayGlyph(GeoMixin, Glyph):
             self._style_wants_colorbar and style_cfg.get("categories") is None
         )
         draw_swatch = legend and not override_colorbar
-        coords = self._coords
-        # Forward an explicit caller vmin/vmax/center so it overrides the
-        # preset's own fixed range (e.g. a Magics preset's decoded ECMWF scale).
-        # Read from `_style_color_overrides`, which holds ONLY user-supplied
-        # limits -- not `default_options`, whose vmin/vmax the plain imshow path
-        # overwrites with the data's auto-resolved range, which would otherwise
-        # leak in here and clobber the preset (and break a diverging `center`).
-        override = dict(self._style_color_overrides)
-        if coords is not None:
-            # apply_data_style's curvilinear path defaults to shading="flat"
-            # (needs cell EDGES) via setdefault; ArrayGlyph stores cell CENTRES,
-            # so pass shading="nearest", which trusts the centres.
-            images = apply_data_style(
-                self.ax,
-                {layer: data},
-                style=style,
-                x=coords[0],
-                y=coords[1],
-                legend=draw_swatch,
-                shading="nearest",
-                swatch_text_color=self.default_options.get("cbar_label_color")
-                or _swatch_text_default(self.default_options.get("cbar_box")),
-                swatch_value_color=self.default_options.get("cbar_tick_color")
-                or _swatch_text_default(self.default_options.get("cbar_box")),
-                swatch_box=self.default_options.get("cbar_box"),
-                **override,
-            )
-        else:
-            render_kwargs: dict[str, Any] = (
-                {"extent": self.extent} if self.extent is not None else {}
-            )
-            images = apply_data_style(
-                self.ax,
-                {layer: data},
-                style=style,
-                legend=draw_swatch,
-                swatch_text_color=self.default_options.get("cbar_label_color")
-                or _swatch_text_default(self.default_options.get("cbar_box")),
-                swatch_value_color=self.default_options.get("cbar_tick_color")
-                or _swatch_text_default(self.default_options.get("cbar_box")),
-                swatch_box=self.default_options.get("cbar_box"),
-                **render_kwargs,
-                **override,
-            )
-        self.im = images[layer]
+        self.im = self._render_styled_layer(layer, data, style, draw_swatch)
 
-        # Relief shading composes with a CONTINUOUS preset: blend the terrain
-        # hillshade into the drawn colours (regular-grid `imshow` only). It is
-        # NOT applied to a categorical preset -- shading nominal class colours
-        # is meaningless (a darkened "N" can read as another class), matching
-        # MeshGlyph -- nor to a curvilinear `QuadMesh` (no 2D RGBA grid to light).
-        hillshade = resolve_hillshade(self.default_options.get("hillshade"))
-        if hillshade is not None:
-            categorical = (
-                resolve_single_layer_style(style)[1].get("categories") is not None
-            )
-            if categorical or coords is not None:
-                kind = "categorical" if categorical else "curvilinear"
-                warnings.warn(
-                    f"hillshade is not composed with a {kind} data-style preset; "
-                    "the preset is applied and hillshade ignored.",
-                    stacklevel=2,
-                )
-            else:
-                self.im.set_data(shade_rgb(self.im.get_array(), data, **hillshade))
+        self._compose_style_hillshade(style, data)
         # Presets present their scale via a swatch / categorical legend -- unless
         # the caller explicitly asked for a real colorbar (`colorbar=`), which
-        # overrides that with a matplotlib colorbar built from the preset's
+        # overrides it with a matplotlib colorbar built from the preset's
         # colormap + norm (`create_color_bar` honours the `ColorBar` placement).
-        if override_colorbar:
-            # The drawn image bakes RGBA, so it cannot itself drive a colorbar;
-            # build a mappable carrying the preset's colormap + norm and hand it
-            # to `create_color_bar`, which honours the `ColorBar` placement.
-            cbar_cfg = {**style_cfg, **override}
-            cbar_norm, _lo, _hi = resolve_style_norm(data, cbar_cfg)
-            mappable = ScalarMappable(norm=cbar_norm, cmap=cbar_cfg["cmap"])
-            mappable.set_array([])
-            self.cbar = self.create_color_bar(
-                self.ax, mappable, self._style_cbar_kw(cbar_norm)
-            )
-        else:
-            self.cbar = None
+        self.cbar = (
+            self._style_override_colorbar(data, style_cfg)
+            if override_colorbar
+            else None
+        )
         # Match the imshow path: with no extent (and no curvilinear coords) hide
         # the pixel-index tick labels.
-        if self.extent is None and coords is None:
+        if self.extent is None and self._coords is None:
             self.ax.set_xticklabels([])
             self.ax.set_yticklabels([])
             self.ax.set_xticks([])
@@ -2659,6 +2589,82 @@ class ArrayGlyph(GeoMixin, Glyph):
         # `self.ax` before calling it.
         assert self.fig is not None
         return self.fig, self.ax
+
+    def _render_styled_layer(
+        self, layer: str, data: np.ndarray, style: str, draw_swatch: bool
+    ) -> Any:
+        """Draw the styled layer via `apply_data_style`; return its image artist.
+
+        Forwards an explicit caller vmin/vmax/center (from `_style_color_overrides`,
+        which holds ONLY user-supplied limits) so it overrides the preset's own
+        fixed range, and colours the swatch legend to contrast with its box.
+        """
+        box = self.default_options.get("cbar_box")
+        swatch_kw = dict(
+            legend=draw_swatch,
+            swatch_text_color=self.default_options.get("cbar_label_color")
+            or _swatch_text_default(box),
+            swatch_value_color=self.default_options.get("cbar_tick_color")
+            or _swatch_text_default(box),
+            swatch_box=box,
+        )
+        override = dict(self._style_color_overrides)
+        coords = self._coords
+        if coords is not None:
+            # apply_data_style's curvilinear path defaults to shading="flat"
+            # (needs cell EDGES); ArrayGlyph stores cell CENTRES, so pass
+            # shading="nearest", which trusts the centres.
+            images = apply_data_style(
+                self.ax, {layer: data}, style=style, x=coords[0], y=coords[1],
+                shading="nearest", **swatch_kw, **override,
+            )
+        else:
+            render_kwargs: dict[str, Any] = (
+                {"extent": self.extent} if self.extent is not None else {}
+            )
+            images = apply_data_style(
+                self.ax, {layer: data}, style=style, **swatch_kw,
+                **render_kwargs, **override,
+            )
+        return images[layer]
+
+    def _compose_style_hillshade(self, style: str, data: np.ndarray) -> None:
+        """Blend terrain hillshade into a continuous-preset image (regular grid only).
+
+        NOT applied to a categorical preset (shading nominal class colours is
+        meaningless) nor to a curvilinear `QuadMesh` (no 2D RGBA grid to light);
+        both cases warn and leave the preset as drawn.
+        """
+        hillshade = resolve_hillshade(self.default_options.get("hillshade"))
+        if hillshade is None:
+            return
+        categorical = (
+            resolve_single_layer_style(style)[1].get("categories") is not None
+        )
+        if categorical or self._coords is not None:
+            kind = "categorical" if categorical else "curvilinear"
+            warnings.warn(
+                f"hillshade is not composed with a {kind} data-style preset; "
+                "the preset is applied and hillshade ignored.",
+                stacklevel=2,
+            )
+            return
+        self.im.set_data(shade_rgb(self.im.get_array(), data, **hillshade))
+
+    def _style_override_colorbar(self, data: np.ndarray, style_cfg: dict) -> Colorbar:
+        """Build a real colorbar from the preset's cmap + norm (overriding the swatch).
+
+        The drawn image bakes RGBA, so it cannot itself drive a colorbar; hand a
+        `ScalarMappable` carrying the preset's colormap + norm to
+        `create_color_bar`, which honours the `ColorBar` placement.
+        """
+        cbar_cfg = {**style_cfg, **self._style_color_overrides}
+        cbar_norm, _lo, _hi = resolve_style_norm(data, cbar_cfg)
+        mappable = ScalarMappable(norm=cbar_norm, cmap=cbar_cfg["cmap"])
+        mappable.set_array([])
+        return self.create_color_bar(
+            self.ax, mappable, self._style_cbar_kw(cbar_norm)
+        )
 
     def apply_colormap(self, cmap: Colormap | str) -> np.ndarray:
         """Apply a matplotlib colormap to an array.
@@ -4676,7 +4682,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                         # a real colorbar built from the preset's colormap + norm
                         # (a fixed-scale mappable -- the frames update the image,
                         # not the scale).
-                        for _inset in list(ax.child_axes):
+                        # snapshot first: .remove() mutates ax.child_axes, so
+                        # iterating it directly would skip entries.
+                        insets = list(ax.child_axes)
+                        for _inset in insets:
                             _inset.remove()
                         mappable = ScalarMappable(norm=style_norm, cmap=cfg["cmap"])
                         mappable.set_array([])
@@ -4686,7 +4695,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                     elif self.default_options["add_colorbar"]:
                         # Remove a swatch inset from a previous render so
                         # repeated animate() calls don't stack legends.
-                        for _inset in list(ax.child_axes):
+                        # snapshot first: .remove() mutates ax.child_axes, so
+                        # iterating it directly would skip entries.
+                        insets = list(ax.child_axes)
+                        for _inset in insets:
                             _inset.remove()
                         # Same bounds AND endpoint caps as apply_data_style's
                         # swatch (plot path), so a plot and its animation align
