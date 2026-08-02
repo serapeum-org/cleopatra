@@ -831,12 +831,19 @@ class ColorBar:
             ticks_spacing: Spacing between the colorbar's ticks; `None` keeps
                 the default.
         """
+        if orientation is not None and orientation not in ("vertical", "horizontal"):
+            raise ValueError(
+                "ColorBar orientation must be 'vertical' or 'horizontal', got "
+                f"{orientation!r}."
+            )
         self.location = location
         self.orientation = orientation
         # `location` fixes the orientation (left/right -> vertical, top/bottom
         # -> horizontal). If an explicit `orientation` disagrees it is ignored
         # downstream, so warn here rather than dropping it silently (issue #235).
-        if location is not None and orientation is not None:
+        # Only a valid edge implies an orientation; an invalid `location` is left
+        # for `create_color_bar` to reject with a clearer message.
+        if location in ("left", "right", "top", "bottom") and orientation is not None:
             implied = "vertical" if location in ("left", "right") else "horizontal"
             if orientation != implied:
                 warnings.warn(

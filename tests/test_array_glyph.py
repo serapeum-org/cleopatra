@@ -6596,6 +6596,27 @@ class TestColorBar:
             warnings.simplefilter("error", UserWarning)
             ColorBar(location="bottom", orientation="horizontal")
 
+    def test_orientation_invalid_raises(self):
+        """A non-{vertical,horizontal} `orientation` raises a clear ValueError (#235).
+
+        Test scenario:
+            cleopatra validates the value up front rather than letting a typo
+            surface as an opaque matplotlib error at render.
+        """
+        with pytest.raises(ValueError, match="orientation must be 'vertical' or 'horizontal'"):
+            ColorBar(orientation="horizontl")
+
+    def test_invalid_location_skips_conflict_warning(self):
+        """An invalid `location` does not raise the orientation-conflict warning (#235).
+
+        Test scenario:
+            Only a valid edge implies an orientation; a bad location is left for
+            the render to reject, so no misleading conflict warning fires first.
+        """
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", UserWarning)
+            ColorBar(location="middle", orientation="vertical")  # type: ignore[arg-type]
+
 
 class TestResolveColorbar:
     """Tests for the `_resolve_colorbar` front-door parser."""
