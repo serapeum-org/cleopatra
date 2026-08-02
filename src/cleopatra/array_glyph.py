@@ -291,7 +291,8 @@ class ColorbarOptions(TypedDict, total=False):
         cbar_label_rotation: Rotation angle (degrees) of the colorbar label.
             `None` (the default) leaves matplotlib's own default orientation.
         cbar_label_location: Location of the colorbar label, by default
-            `'bottom'`.
+            `'center'`. Valid values depend on the bar orientation -- vertical:
+            `'top'`/`'center'`/`'bottom'`; horizontal: `'left'`/`'center'`/`'right'`.
         cbar_length: Ratio controlling the colorbar's height/width, by
             default `0.75`.
         ticks_spacing: Spacing between colorbar ticks, by default `2`.
@@ -307,9 +308,7 @@ class ColorbarOptions(TypedDict, total=False):
     add_colorbar: bool
     cbar_orientation: Literal["vertical", "horizontal"]
     cbar_label_rotation: float | None
-    cbar_label_location: Literal[
-        "top", "bottom", "center", "baseline", "center_baseline"
-    ]
+    cbar_label_location: Literal["left", "right", "top", "bottom", "center"]
     cbar_length: float
     ticks_spacing: float
     cbar_label_size: int
@@ -856,6 +855,32 @@ class ColorBar:
                     UserWarning,
                     stacklevel=2,
                 )
+        # Cross-field check: valid `label_location` values depend on the bar
+        # orientation, so an incompatible pair would crash deep in matplotlib.
+        # Reject it up front -- but only when this spec pins the orientation
+        # (via `location` or an explicit `orientation`); with neither set the
+        # rendered orientation comes from the glyph's (sticky) default, which a
+        # ColorBar cannot know, so we skip rather than risk a false rejection
+        # (issue #241).
+        effective_orientation = None
+        if location in ("left", "right", "top", "bottom"):
+            effective_orientation = (
+                "vertical" if location in ("left", "right") else "horizontal"
+            )
+        elif orientation is not None:
+            effective_orientation = orientation
+        if effective_orientation is not None and label_location is not None:
+            valid_locations = (
+                ("bottom", "center", "top")
+                if effective_orientation == "vertical"
+                else ("left", "center", "right")
+            )
+            if label_location not in valid_locations:
+                raise ValueError(
+                    f"label_location={label_location!r} is not valid for a "
+                    f"{effective_orientation} colorbar; use one of "
+                    f"{list(valid_locations)}."
+                )
         self.inside = inside
         # An inset over moving data almost always wants a panel: default the
         # box on when `inside` is set and the caller did not decide explicitly.
@@ -953,10 +978,17 @@ def _resolve_colorbar(colorbar: bool | ColorBar | None) -> dict:
             "cbar_box": None,
             "cbar_label_color": None,
             "cbar_tick_color": None,
-            # Reset the placement family to defaults so a bare `True` really
-            # draws a default bar; orientation is placement, so a prior sticky
-            # `cbar_orientation` must not leak into it.
-            "cbar_orientation": "vertical",
+            # A bare `True` means "default colorbar": reset the whole resettable
+            # cbar_* family to its defaults so nothing sticky from a prior call
+            # on a reused glyph leaks in (issue #242). `ticks_spacing` is omitted
+            # on purpose -- it is auto-computed per data range when not set, and
+            # seeding it here would defeat that (see plot/animate).
+            "cbar_orientation": STYLE_DEFAULTS["cbar_orientation"],
+            "cbar_label": STYLE_DEFAULTS["cbar_label"],
+            "cbar_length": STYLE_DEFAULTS["cbar_length"],
+            "cbar_label_size": STYLE_DEFAULTS["cbar_label_size"],
+            "cbar_label_rotation": STYLE_DEFAULTS["cbar_label_rotation"],
+            "cbar_label_location": STYLE_DEFAULTS["cbar_label_location"],
         }
     if isinstance(colorbar, ColorBar):
         updates = {
@@ -3197,9 +3229,8 @@ class ArrayGlyph(GeoMixin, Glyph):
                     cbar_label_location : str, optional
                         Deprecated; use `colorbar=ColorBar(label_location=...)`.
                         Location of the color bar label, by default 'center'.
-                        Options: 'top', 'bottom', 'center', 'baseline',
-                        'center_baseline'; the valid set depends on the bar
-                        orientation (vertical: top/center/bottom).
+                        Valid values depend on the bar orientation -- vertical:
+                        'top'/'center'/'bottom'; horizontal: 'left'/'center'/'right'.
                     cbar_length : float, optional
                         Deprecated; use `colorbar=ColorBar(length=...)`. Ratio to
                         control the height/width of the color bar, by default 0.75.
@@ -4371,9 +4402,8 @@ class ArrayGlyph(GeoMixin, Glyph):
                     cbar_label_location : str, optional
                         Deprecated; use `colorbar=ColorBar(label_location=...)`.
                         Location of the color bar label, by default 'center'.
-                        Options: 'top', 'bottom', 'center', 'baseline',
-                        'center_baseline'; the valid set depends on the bar
-                        orientation (vertical: top/center/bottom).
+                        Valid values depend on the bar orientation -- vertical:
+                        'top'/'center'/'bottom'; horizontal: 'left'/'center'/'right'.
                     cbar_length : float, optional
                         Deprecated; use `colorbar=ColorBar(length=...)`. Ratio to
                         control the height/width of the color bar, by default 0.75.
