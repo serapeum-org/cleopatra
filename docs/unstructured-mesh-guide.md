@@ -267,7 +267,7 @@ mg.plot(
     color_scale="midpoint",
     midpoint=0.0,
     cmap="RdBu_r",
-    cbar_label="Change [m]",
+    colorbar=ColorBar(label="Change [m]"),
 )
 ```
 

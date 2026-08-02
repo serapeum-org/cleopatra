@@ -19,6 +19,7 @@ wireframe rendering, all 5 color scale types, and time-series animation.
 ```python
 import numpy as np
 import matplotlib.tri as mtri
+from cleopatra.colorbar import ColorBar
 from cleopatra.mesh_glyph import MeshGlyph
 
 # Create a triangular mesh from random points
@@ -110,10 +111,12 @@ fig, ax = mg.plot(data, color_scale="midpoint", midpoint=3.0, cmap="RdBu_r")
 mg = MeshGlyph(node_x, node_y, faces, fill_value=-1)
 fig, ax = mg.plot(
     data,
-    cbar_label="Water Depth [m]",
-    cbar_orientation="horizontal",
-    cbar_length=0.6,
-    cbar_label_size=14,
+    colorbar=ColorBar(
+        label="Water Depth [m]",
+        orientation="horizontal",
+        length=0.6,
+        label_size=14,
+    ),
 )
 ```
 
