@@ -628,6 +628,31 @@ class TestDensifyAndReprojectEdgeCases:
         )
 
 
+class TestTile:
+    """Tests for `cleopatra.tiles.Tile`."""
+
+    def test_fields_are_positional_and_named(self):
+        """`Tile(x, y, z)` stores each field, accessible both by name and by index."""
+        tile = Tile(1, 2, 3)
+        assert (tile.x, tile.y, tile.z) == (1, 2, 3), f"unexpected fields: {tile}"
+        assert (tile[0], tile[1], tile[2]) == (1, 2, 3), f"unexpected indexing: {tile}"
+
+    def test_equality_is_by_value(self):
+        """Two `Tile`s with the same `(x, y, z)` compare equal."""
+        assert Tile(1, 2, 3) == Tile(1, 2, 3)
+        assert Tile(1, 2, 3) != Tile(1, 2, 4)
+
+    def test_hashable_as_dict_key(self):
+        """`Tile` is hashable, so it can key a `{tile: data}` mapping (as `fetch_tiles` does)."""
+        mapping = {Tile(0, 0, 0): b"a", Tile(1, 0, 1): b"b"}
+        assert mapping[Tile(0, 0, 0)] == b"a"
+        assert mapping[Tile(1, 0, 1)] == b"b"
+
+    def test_repr_is_readable(self):
+        """`repr(Tile(...))` names the fields, matching the module's own doctest."""
+        assert repr(Tile(0, 0, 0)) == "Tile(x=0, y=0, z=0)"
+
+
 class TestLonLatToTileXY:
     """Tests for `cleopatra.tiles._lonlat_to_tile_xy`.
 
@@ -713,6 +738,18 @@ class TestTilesForBbox:
         """A zero-area (single-point) bbox still resolves to the one tile containing it."""
         tiles = _tiles_for_bbox(13.4, 52.5, 13.4, 52.5, zoom=10)
         assert tiles == [Tile(550, 335, 10)]
+
+    def test_zero_width_bbox_resolves_to_a_single_column(self):
+        """A `west == east` bbox (zero width, non-zero height) still resolves sanely.
+
+        Test scenario:
+            A degenerate box that collapses only one axis (unlike the
+            single-point case above, which collapses both) should still
+            return every tile row the non-degenerate `south`/`north` span
+            covers, all in the same column.
+        """
+        tiles = sorted(_tiles_for_bbox(13.4, 52.4, 13.4, 52.6, zoom=10))
+        assert tiles == [Tile(550, 335, 10), Tile(550, 336, 10)]
 
     def test_high_zoom_small_bbox(self):
         """A small bbox at zoom 18 resolves to the mercantile-verified 8x13 tile grid."""
