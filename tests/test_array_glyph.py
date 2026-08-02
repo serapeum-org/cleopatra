@@ -2154,6 +2154,25 @@ class TestAnimateEdgeCases:
         assert anim is not None
         assert glyph.default_options["ticks_spacing"] == 50.0
 
+    def test_animate_ticks_spacing_via_spec(
+        self,
+        coello_data: np.ndarray,
+        animate_time_list: list,
+        no_data_value: float,
+    ):
+        """`animate(colorbar=ColorBar(ticks_spacing=...))` honors the spec spacing (#234).
+
+        Test scenario:
+            The typed spec must survive to the render in animate too, not be
+            overwritten by the auto-computed spacing (the plot-path bug's twin).
+        """
+        glyph = ArrayGlyph(coello_data, exclude_value=[no_data_value])
+        anim = glyph.animate(animate_time_list, colorbar=ColorBar(ticks_spacing=50.0))
+        assert anim is not None
+        assert glyph.default_options["ticks_spacing"] == 50.0, (
+            f"spec ticks_spacing not honored in animate, got {glyph.default_options['ticks_spacing']}"
+        )
+
     def test_data_getter_is_keyword_only(
         self,
         coello_data: np.ndarray,
@@ -6298,6 +6317,35 @@ class TestColorbarPlacement:
         y_label = g.cbar.ax.yaxis.get_label()
         label_obj = y_label if y_label.get_text() == "Depth" else g.cbar.ax.xaxis.get_label()
         assert label_obj.get_rotation() != 0.0, "unset label_rotation should keep matplotlib's default"
+        plt.close("all")
+
+    def test_label_size_via_spec_takes_effect(self):
+        """`ColorBar(label_size=...)` sets the caption font size (#234).
+
+        Test scenario:
+            A spec-provided font size reaches the drawn colorbar label.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g.plot(cmap="viridis", colorbar=ColorBar(location="right", label="Depth", label_size=20))
+        y_label = g.cbar.ax.yaxis.get_label()
+        label_obj = y_label if y_label.get_text() == "Depth" else g.cbar.ax.xaxis.get_label()
+        assert label_obj.get_fontsize() == 20, f"label_size not applied, got {label_obj.get_fontsize()}"
+        plt.close("all")
+
+    def test_length_via_spec_changes_bar_extent(self):
+        """`ColorBar(length=...)` scales the drawn colorbar's long axis (#234).
+
+        Test scenario:
+            A larger `length` yields a taller vertical colorbar, so the field
+            reaches `fig.colorbar(shrink=...)` rather than being ignored.
+        """
+        short = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        short.plot(cmap="viridis", colorbar=ColorBar(location="right", length=0.3))
+        tall = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        tall.plot(cmap="viridis", colorbar=ColorBar(location="right", length=0.9))
+        short_h = short.cbar.ax.get_position().height
+        tall_h = tall.cbar.ax.get_position().height
+        assert tall_h > short_h, f"length=0.9 bar ({tall_h}) should exceed length=0.3 ({short_h})"
         plt.close("all")
 
 
