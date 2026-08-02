@@ -638,8 +638,8 @@ class TestTile:
         assert (tile[0], tile[1], tile[2]) == (1, 2, 3), f"unexpected indexing: {tile}"
 
     def test_equality_is_by_value(self):
-        """Two `Tile`s with the same `(x, y, z)` compare equal."""
-        assert Tile(1, 2, 3) == Tile(1, 2, 3)
+        """Two independently-constructed `Tile`s with the same fields compare equal."""
+        assert Tile(1, 2, 3) == Tile(x=1, y=2, z=3)
         assert Tile(1, 2, 3) != Tile(1, 2, 4)
 
     def test_hashable_as_dict_key(self):
