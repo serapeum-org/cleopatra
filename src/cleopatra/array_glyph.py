@@ -3597,7 +3597,8 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         # `colorbar=` (a ColorBar / bool) resolves last, so it wins over
         # the default `add_colorbar` and any internal cbar_* key.
-        self.default_options.update(_resolve_colorbar(colorbar))
+        resolved_colorbar = _resolve_colorbar(colorbar)
+        self.default_options.update(resolved_colorbar)
 
         # Record colour limits supplied to THIS plot() call so a preset render
         # honours them (see `_style_color_overrides`). Sticky, and only for
@@ -3691,11 +3692,16 @@ class ArrayGlyph(GeoMixin, Glyph):
             self.im = ax.imshow(arr, extent=extent)
             self.cbar = None
         else:
-            # if user did not input ticks spacing use the calculated one.
-            if "ticks_spacing" in kwargs.keys():
-                self.default_options["ticks_spacing"] = kwargs["ticks_spacing"]
-            else:
-                self.default_options["ticks_spacing"] = self.ticks_spacing
+            # Tick-spacing precedence: a `colorbar=ColorBar(ticks_spacing=...)`
+            # spec wins (already merged above), then a loose `ticks_spacing=`
+            # kwarg, then the auto-computed value. Guarding on the resolved
+            # spec keeps the merged value from being clobbered here, since a
+            # ColorBar value arrives via `colorbar=`, never through `kwargs`.
+            if "ticks_spacing" not in resolved_colorbar:
+                if "ticks_spacing" in kwargs.keys():
+                    self.default_options["ticks_spacing"] = kwargs["ticks_spacing"]
+                else:
+                    self.default_options["ticks_spacing"] = self.ticks_spacing
 
             # Recompute (vmin, vmax) for this plot call if any of the
             # xarray-aligned colour kwargs (`robust`, `center`) or the
@@ -3715,10 +3721,11 @@ class ArrayGlyph(GeoMixin, Glyph):
                 )
                 self._vmin = vmin_final
                 self._vmax = vmax_final
-                # Keep ticks_spacing in sync with the new colour range
-                # unless the caller pinned it explicitly (fall back to 1.0
-                # for a degenerate range so the tick math stays safe).
-                if "ticks_spacing" not in kwargs:
+                # Keep ticks_spacing in sync with the new colour range unless
+                # the caller pinned it explicitly -- via a loose `ticks_spacing=`
+                # kwarg or a `colorbar=ColorBar(ticks_spacing=...)` spec (fall
+                # back to 1.0 for a degenerate range so the tick math stays safe).
+                if "ticks_spacing" not in kwargs and "ticks_spacing" not in resolved_colorbar:
                     self.ticks_spacing = (vmax_final - vmin_final) / 10 or 1.0
                     self.default_options["ticks_spacing"] = self.ticks_spacing
 
@@ -4569,7 +4576,8 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         # `colorbar=` (a ColorBar / bool) resolves last, so it wins over
         # the default `add_colorbar` and any internal cbar_* key.
-        self.default_options.update(_resolve_colorbar(colorbar))
+        resolved_colorbar = _resolve_colorbar(colorbar)
+        self.default_options.update(resolved_colorbar)
 
         # Record colour limits supplied to THIS animate() call so a styled
         # animation honours an explicit caller override of the preset's fixed
@@ -4590,11 +4598,16 @@ class ArrayGlyph(GeoMixin, Glyph):
             and (colorbar.location is not None or colorbar.inside)
         )
 
-        # if user did not input ticks spacing use the calculated one.
-        if "ticks_spacing" in kwargs.keys():
-            self.default_options["ticks_spacing"] = kwargs["ticks_spacing"]
-        else:
-            self.default_options["ticks_spacing"] = self.ticks_spacing
+        # Tick-spacing precedence: a `colorbar=ColorBar(ticks_spacing=...)` spec
+        # wins (already merged above), then a loose `ticks_spacing=` kwarg, then
+        # the auto-computed value. Guarding on the resolved spec keeps the merged
+        # value from being clobbered here, since a ColorBar value arrives via
+        # `colorbar=`, never through `kwargs`.
+        if "ticks_spacing" not in resolved_colorbar:
+            if "ticks_spacing" in kwargs.keys():
+                self.default_options["ticks_spacing"] = kwargs["ticks_spacing"]
+            else:
+                self.default_options["ticks_spacing"] = self.ticks_spacing
 
         if "vmin" in kwargs.keys():
             self.default_options["vmin"] = kwargs["vmin"]

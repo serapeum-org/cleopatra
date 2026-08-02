@@ -6229,9 +6229,45 @@ class TestColorbarPlacement:
             `ColorBar` that sets no caption must not overwrite a loose `cbar_label`.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(cmap="viridis", colorbar=ColorBar(location="right"), cbar_label="Legacy caption")
+        with pytest.warns(DeprecationWarning, match="cbar_label"):
+            g.plot(cmap="viridis", colorbar=ColorBar(location="right"), cbar_label="Legacy caption")
         caption = g.cbar.ax.get_xlabel() or g.cbar.ax.get_ylabel()
         assert caption == "Legacy caption", f"loose cbar_label was clobbered, got {caption!r}"
+        plt.close("all")
+
+    def test_ticks_spacing_via_spec_takes_effect(self):
+        """`ColorBar(ticks_spacing=...)` drives the drawn tick spacing (#234).
+
+        Test scenario:
+            A spec-provided tick spacing must survive to the render rather than
+            being overwritten by the auto-computed `(vmax - vmin) / 10`.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g.plot(cmap="viridis", vmin=0.0, vmax=20.0, colorbar=ColorBar(location="right", ticks_spacing=5.0))
+        resolved = g.default_options["ticks_spacing"]
+        assert resolved == 5.0, f"spec ticks_spacing was clobbered, got {resolved}"
+        spacings = np.diff(g.cbar.get_ticks())
+        assert np.allclose(spacings, 5.0), f"drawn ticks not spaced by 5.0, got {g.cbar.get_ticks()}"
+        plt.close("all")
+
+    def test_ticks_spacing_spec_wins_over_loose_kwarg(self):
+        """A `ColorBar(ticks_spacing=...)` spec wins over a loose `ticks_spacing=`.
+
+        Test scenario:
+            When both are supplied, `colorbar=` resolves last and takes
+            precedence, consistent with every other mapped `cbar_*` field.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        with pytest.warns(DeprecationWarning, match="ticks_spacing"):
+            g.plot(
+                cmap="viridis",
+                vmin=0.0,
+                vmax=20.0,
+                ticks_spacing=2.0,
+                colorbar=ColorBar(location="right", ticks_spacing=5.0),
+            )
+        resolved = g.default_options["ticks_spacing"]
+        assert resolved == 5.0, f"loose ticks_spacing should lose to the spec, got {resolved}"
         plt.close("all")
 
 
