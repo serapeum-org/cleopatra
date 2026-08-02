@@ -748,8 +748,10 @@ class ColorBar:
             leaves matplotlib's own label orientation; pass a value to rotate
             the caption (e.g. `0` for a horizontal caption).
         label_location: Where the caption sits along the bar (e.g. `"center"`).
-            Distinct from `location`, which is the bar's *edge*. `None`
-            (default) keeps the default.
+            Distinct from `location`, which is the bar's *edge*. Valid values
+            depend on orientation (vertical bar: `"top"`/`"center"`/`"bottom"`;
+            horizontal bar: `"left"`/`"center"`/`"right"`). `None` (default)
+            keeps the default.
         ticks_spacing: Spacing between the colorbar's ticks. `None` (default)
             keeps the default.
 
@@ -814,7 +816,9 @@ class ColorBar:
             label_rotation: Caption rotation in degrees; `None` leaves
                 matplotlib's own label orientation.
             label_location: Caption placement along the bar (distinct from
-                `location`, the bar's edge); `None` keeps the default.
+                `location`, the bar's edge); valid values depend on orientation
+                (vertical: top/center/bottom, horizontal: left/center/right);
+                `None` keeps the default.
             ticks_spacing: Spacing between the colorbar's ticks; `None` keeps
                 the default.
         """
@@ -3097,18 +3101,27 @@ class ArrayGlyph(GeoMixin, Glyph):
                         Orientation of the color bar, by default 'vertical'.
                         Can be 'horizontal' or 'vertical'.
                     cbar_label_rotation : float, optional
-                        Rotation angle of the color bar label, by default -90.
+                        Deprecated; use `colorbar=ColorBar(label_rotation=...)`.
+                        Rotation angle (degrees) of the color bar label, by
+                        default None (matplotlib's own label orientation).
                     cbar_label_location : str, optional
-                        Location of the color bar label, by default 'bottom'.
-                        Options: 'top', 'bottom', 'center', 'baseline', 'center_baseline'.
+                        Deprecated; use `colorbar=ColorBar(label_location=...)`.
+                        Location of the color bar label, by default 'center'.
+                        Options: 'top', 'bottom', 'center', 'baseline',
+                        'center_baseline'; the valid set depends on the bar
+                        orientation (vertical: top/center/bottom).
                     cbar_length : float, optional
-                        Ratio to control the height/width of the color bar, by default 0.75.
+                        Deprecated; use `colorbar=ColorBar(length=...)`. Ratio to
+                        control the height/width of the color bar, by default 0.75.
                     ticks_spacing : int, optional
-                        Spacing between ticks on the color bar, by default 2.
+                        Deprecated; use `colorbar=ColorBar(ticks_spacing=...)`.
+                        Spacing between ticks on the color bar, by default 5.
                     cbar_label_size : int, optional
-                        Font size of the color bar label, by default 12.
+                        Deprecated; use `colorbar=ColorBar(label_size=...)`. Font
+                        size of the color bar label, by default 12.
                     cbar_label : str, optional
-                        Label text for the color bar, by default 'Value'.
+                        Deprecated; use `colorbar=ColorBar(label=...)`. Label text
+                        for the color bar, by default None.
 
                 Color scale options:
                     color_scale : ColorScale or str, optional
@@ -4291,18 +4304,27 @@ class ArrayGlyph(GeoMixin, Glyph):
                         Orientation of the color bar, by default 'vertical'.
                         Can be 'horizontal' or 'vertical'.
                     cbar_label_rotation : float, optional
-                        Rotation angle of the color bar label, by default -90.
+                        Deprecated; use `colorbar=ColorBar(label_rotation=...)`.
+                        Rotation angle (degrees) of the color bar label, by
+                        default None (matplotlib's own label orientation).
                     cbar_label_location : str, optional
-                        Location of the color bar label, by default 'bottom'.
-                        Options: 'top', 'bottom', 'center', 'baseline', 'center_baseline'.
+                        Deprecated; use `colorbar=ColorBar(label_location=...)`.
+                        Location of the color bar label, by default 'center'.
+                        Options: 'top', 'bottom', 'center', 'baseline',
+                        'center_baseline'; the valid set depends on the bar
+                        orientation (vertical: top/center/bottom).
                     cbar_length : float, optional
-                        Ratio to control the height/width of the color bar, by default 0.75.
+                        Deprecated; use `colorbar=ColorBar(length=...)`. Ratio to
+                        control the height/width of the color bar, by default 0.75.
                     ticks_spacing : int, optional
-                        Spacing between ticks on the color bar, by default 2.
+                        Deprecated; use `colorbar=ColorBar(ticks_spacing=...)`.
+                        Spacing between ticks on the color bar, by default 5.
                     cbar_label_size : int, optional
-                        Font size of the color bar label, by default 12.
+                        Deprecated; use `colorbar=ColorBar(label_size=...)`. Font
+                        size of the color bar label, by default 12.
                     cbar_label : str, optional
-                        Label text for the color bar, by default 'Value'.
+                        Deprecated; use `colorbar=ColorBar(label=...)`. Label text
+                        for the color bar, by default None.
 
                 Color scale options:
                     color_scale : ColorScale or str, optional
