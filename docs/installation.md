@@ -19,7 +19,7 @@
 
 ### Optional dependencies — the `tiles` extra
 
-The geospatial basemap features need four extra packages: the web-tile basemap helper
+The geospatial basemap features need three extra packages: the web-tile basemap helper
 (`cleopatra.tiles.add_tiles`), the reference-data layers (`cleopatra.reference.add_relief`
 for relief PNG decoding, and `cleopatra.reference.add_features(..., crs=...)` for
 reprojection), the orthographic globe presets in `cleopatra.projection`, and CRS
@@ -27,7 +27,6 @@ reprojection on the geographic glyphs (`GeoMixin.add_tiles` / `add_features` / `
 / `add_reference_map`). They are bundled in the `cleopatra[tiles]` extra (pip) / the
 `cleopatra-tiles` package (conda) and are otherwise not installed:
 
-- [mercantile](https://github.com/mapbox/mercantile) (1.2.1 or later)
 - [pillow](https://python-pillow.org/) (12.1.1 or later)
 - [pyproj](https://pyproj4.github.io/pyproj/) (3.7.2 or later)
 - [xyzservices](https://xyzservices.readthedocs.io/) (2026.3.0 or later)

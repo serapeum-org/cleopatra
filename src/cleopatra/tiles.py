@@ -45,7 +45,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any
+from typing import Any, NamedTuple
 
 import numpy as np
 
@@ -70,8 +70,10 @@ _TILES_EXTRA_HINT = (
 )
 
 #: Import names of the packages the `[tiles]` extra provides ("PIL" is
-#: Pillow's import name).
-_TILES_EXTRA_MODULES = ("mercantile", "xyzservices", "PIL", "pyproj")
+#: Pillow's import name). The XYZ tile-grid math itself (`Tile`,
+#: `_tiles_for_bbox`, `_tile_xy_bounds` below) is implemented directly in
+#: this module rather than via a `mercantile` dependency.
+_TILES_EXTRA_MODULES = ("xyzservices", "PIL", "pyproj")
 
 #: True when every `[tiles]`-extra dependency is importable. Probed with
 #: `importlib.util.find_spec` so importing this module does not pull
@@ -89,11 +91,217 @@ def _require_tiles_extra() -> None:
         None
 
     Raises:
-        ImportError: If any of mercantile, xyzservices, Pillow, or
-            pyproj is missing from the active environment.
+        ImportError: If any of xyzservices, Pillow, or pyproj is missing
+            from the active environment.
     """
     if not _TILES_AVAILABLE:
         raise ImportError(_TILES_EXTRA_HINT)
+
+
+class Tile(NamedTuple):
+    """An XYZ web-map tile: column `x`, row `y`, at zoom level `z`.
+
+    The standard "slippy map" tile-coordinate triple used by every XYZ tile
+    provider (OpenStreetMap, CartoDB, Esri, ...): at zoom `z` the world is
+    divided into a `2**z` by `2**z` grid, `x` counted west to east and `y`
+    north to south. Hashable and immutable, so it doubles as a dict key
+    (see `fetch_tiles`'s `tile -> PNG bytes` mapping).
+
+    Attributes:
+        x: Column index, `0` (west edge) to `2**z - 1` (east edge).
+        y: Row index, `0` (north edge) to `2**z - 1` (south edge).
+        z: Zoom level; the grid is `2**z` tiles wide and tall.
+
+    Examples:
+        - The single tile covering the whole world at zoom 0:
+            ```python
+            >>> from cleopatra.tiles import Tile
+            >>> Tile(0, 0, 0)
+            Tile(x=0, y=0, z=0)
+
+            ```
+        - Two tiles compare equal by value, so one can look the other up
+            in a `{tile: data}` mapping (as `fetch_tiles`'s return value does):
+            ```python
+            >>> from cleopatra.tiles import Tile
+            >>> tile_data = {Tile(548, 335, 10): b"...png bytes..."}
+            >>> tile_data[Tile(x=548, y=335, z=10)]
+            b'...png bytes...'
+
+            ```
+        - Fields are accessible by name or by position:
+            ```python
+            >>> from cleopatra.tiles import Tile
+            >>> tile = Tile(548, 335, 10)
+            >>> tile.z
+            10
+            >>> tile[:2]
+            (548, 335)
+
+            ```
+    """
+
+    x: int
+    y: int
+    z: int
+
+
+#: WGS84 semi-major axis (metres) -- the sphere radius spherical Web Mercator
+#: (EPSG:3857) projects onto.
+_EARTH_RADIUS = 6378137.0
+
+#: Circumference of the Web Mercator sphere (metres): the width and height,
+#: in projected metres, of the whole world at any zoom level.
+_CIRCUMFERENCE = 2 * math.pi * _EARTH_RADIUS
+
+#: The maximum (and, negated, minimum) latitude Web Mercator can represent --
+#: beyond this the projection's `y` coordinate diverges to infinity. XYZ tile
+#: grids clip to this band and simply do not cover the poles.
+_MAX_LATITUDE = 85.051129
+
+#: Nudges a coordinate sitting exactly on a tile edge into the tile that edge
+#: belongs to, rather than the next one over (floating-point rounding right
+#: at a boundary would otherwise go either way).
+_EDGE_EPSILON = 1e-14
+
+#: Nudges a bounding box's east/south edge inward before locating its
+#: lower-right tile, so a box that exactly matches one tile's bounds resolves
+#: to that single tile instead of spilling into the next row/column.
+_BBOX_EDGE_EPSILON = 1e-11
+
+#: Keeps `sin(radians(lat))` strictly inside `(-1, 1)`. Within about 6e-7
+#: degrees of either pole it rounds to exactly +/-1.0 in float64, which
+#: divides by zero in the Mercator `y` formula below; nudging it back from
+#: the boundary keeps that a (very large but finite, correctly clamped)
+#: number instead of a crash, matching this function's own documented
+#: contract to clamp rather than raise.
+_POLE_EPSILON = 1e-15
+
+
+def _lonlat_to_tile_xy(lon: float, lat: float, zoom: int) -> tuple[int, int]:
+    """The `(x, y)` grid indices of the tile containing `(lon, lat)` at `zoom`.
+
+    Standard Web Mercator "slippy map" tile math (see e.g.
+    https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames): projects the
+    point to fractional `(x, y)` in `[0, 1]` (0,0 at the northwest corner of
+    the world, 1,1 at the southeast), then scales by the `2**zoom` grid and
+    floors. A point outside Web Mercator's representable range (past
+    `_MAX_LATITUDE`, or a longitude outside +/-180) clamps to the nearest
+    edge tile rather than raising.
+
+    Args:
+        lon: Longitude in decimal degrees.
+        lat: Latitude in decimal degrees.
+        zoom: Web Mercator zoom level.
+
+    Returns:
+        tuple[int, int]: The `(x, y)` tile indices, each in `[0, 2**zoom - 1]`.
+    """
+    n = 2**zoom
+    frac_x = lon / 360.0 + 0.5
+    sin_lat = math.sin(math.radians(lat))
+    sin_lat = max(-1.0 + _POLE_EPSILON, min(1.0 - _POLE_EPSILON, sin_lat))
+    frac_y = 0.5 - 0.25 * math.log((1.0 + sin_lat) / (1.0 - sin_lat)) / math.pi
+
+    if frac_x <= 0:
+        x = 0
+    elif frac_x >= 1:
+        x = n - 1
+    else:
+        x = int(math.floor((frac_x + _EDGE_EPSILON) * n))
+
+    if frac_y <= 0:
+        y = 0
+    elif frac_y >= 1:
+        y = n - 1
+    else:
+        y = int(math.floor((frac_y + _EDGE_EPSILON) * n))
+
+    return x, y
+
+
+def _tiles_for_one_bbox(
+    west: float, south: float, east: float, north: float, zoom: int
+) -> list[Tile]:
+    """The `Tile`s covering one non-antimeridian-crossing WGS84 bbox at `zoom`.
+
+    Args:
+        west: Western bound, decimal degrees. Must be `<= east`.
+        south: Southern bound, decimal degrees.
+        east: Eastern bound, decimal degrees.
+        north: Northern bound, decimal degrees.
+        zoom: Web Mercator zoom level.
+
+    Returns:
+        list[Tile]: Every tile whose area intersects the bbox, ordered by
+        column then row.
+    """
+    w = max(-180.0, west)
+    s = max(-_MAX_LATITUDE, min(_MAX_LATITUDE, south))
+    e = min(180.0, east)
+    n_clamped = max(-_MAX_LATITUDE, min(_MAX_LATITUDE, north))
+
+    x0, y0 = _lonlat_to_tile_xy(w, n_clamped, zoom)
+    x1, y1 = _lonlat_to_tile_xy(e - _BBOX_EDGE_EPSILON, s + _BBOX_EDGE_EPSILON, zoom)
+
+    return [Tile(i, j, zoom) for i in range(x0, x1 + 1) for j in range(y0, y1 + 1)]
+
+
+def _tiles_for_bbox(
+    west: float, south: float, east: float, north: float, zoom: int
+) -> list[Tile]:
+    """The `Tile`s covering a WGS84 bounding box at `zoom`.
+
+    `west`/`south`/`east`/`north` are clipped to the valid longitude
+    (+/-180) and Web Mercator latitude (+/-`_MAX_LATITUDE`) ranges first. A
+    `west > east` bbox is antimeridian-crossing (its west edge is
+    numerically east of its east edge, e.g. 170 to -170): rather than an
+    edge case to special-case away, this is a real, reachable input --
+    `add_tiles` normalises its bbox with `min`/`max` in its own *native*
+    CRS, but a near-global Web Mercator extent can still reproject to a
+    `west > east` pair in EPSG:4326, since the inverse transform wraps
+    longitude at the +/-180 seam. Handled the same way
+    `mercantile.tiles()` handles it: split into the two sub-boxes either
+    side of the seam (`[-180, east]` and `[west, 180]`) and concatenate
+    their tiles.
+
+    Args:
+        west: Western bound, decimal degrees.
+        south: Southern bound, decimal degrees.
+        east: Eastern bound, decimal degrees.
+        north: Northern bound, decimal degrees.
+        zoom: Web Mercator zoom level.
+
+    Returns:
+        list[Tile]: Every tile whose area intersects the bbox, ordered by
+        column then row (in `(x, y)` grid order, matching the iteration
+        order `stitch_tiles`/tests expect). For an antimeridian-crossing
+        bbox, the western sub-box's tiles come first, then the eastern
+        sub-box's.
+    """
+    if west > east:
+        return _tiles_for_one_bbox(-180.0, south, east, north, zoom) + (
+            _tiles_for_one_bbox(west, south, 180.0, north, zoom)
+        )
+    return _tiles_for_one_bbox(west, south, east, north, zoom)
+
+
+def _tile_xy_bounds(tile: Tile) -> tuple[float, float, float, float]:
+    """The Web Mercator (EPSG:3857) bounds of `tile`.
+
+    Args:
+        tile: The tile to bound.
+
+    Returns:
+        tuple[float, float, float, float]: `(left, bottom, right, top)` in
+        EPSG:3857 metres.
+    """
+    tile_size = _CIRCUMFERENCE / 2**tile.z
+    left = tile.x * tile_size - _CIRCUMFERENCE / 2
+    right = left + tile_size
+    top = _CIRCUMFERENCE / 2 - tile.y * tile_size
+    bottom = top - tile_size
+    return left, bottom, right, top
 
 
 def get_provider(name: str | None = None) -> Any:
@@ -423,9 +631,8 @@ def fetch_single_tile(
         - Fetch a single OpenStreetMap tile (network-dependent, hence
             skipped under doctest):
             ```python
-            >>> import mercantile
-            >>> from cleopatra.tiles import fetch_single_tile, get_provider
-            >>> tile = mercantile.Tile(0, 0, 0)
+            >>> from cleopatra.tiles import Tile, fetch_single_tile, get_provider
+            >>> tile = Tile(0, 0, 0)
             >>> provider = get_provider("OpenStreetMap.Mapnik")
             >>> tile_obj, data = fetch_single_tile(  # doctest: +SKIP
             ...     tile, provider, timeout=10, retries=2
@@ -438,8 +645,7 @@ def fetch_single_tile(
         - Tile failures raise `ConnectionError` after retries
             are exhausted:
             ```python
-            >>> import mercantile
-            >>> from cleopatra.tiles import fetch_single_tile
+            >>> from cleopatra.tiles import Tile, fetch_single_tile
             >>> from xyzservices import TileProvider
             >>> bad = TileProvider(
             ...     name="bad",
@@ -447,7 +653,7 @@ def fetch_single_tile(
             ...     attribution="",
             ... )
             >>> fetch_single_tile(  # doctest: +SKIP
-            ...     mercantile.Tile(0, 0, 0), bad, timeout=1, retries=0
+            ...     Tile(0, 0, 0), bad, timeout=1, retries=0
             ... )
             Traceback (most recent call last):
                 ...
@@ -530,9 +736,8 @@ def fetch_tiles(
         - Fetch a small tile grid in parallel (network-dependent, hence
             skipped under doctest):
             ```python
-            >>> import mercantile
-            >>> from cleopatra.tiles import fetch_tiles, get_provider
-            >>> tiles = list(mercantile.tiles(13.0, 52.4, 13.6, 52.6, zooms=10))
+            >>> from cleopatra.tiles import _tiles_for_bbox, fetch_tiles, get_provider
+            >>> tiles = _tiles_for_bbox(13.0, 52.4, 13.6, 52.6, 10)
             >>> provider = get_provider("OpenStreetMap.Mapnik")
             >>> data = fetch_tiles(tiles, provider, max_workers=4)  # doctest: +SKIP
             >>> len(data) == len(tiles)  # doctest: +SKIP
@@ -582,7 +787,7 @@ def stitch_tiles(
     Arranges tiles in a grid based on their `x`, `y` positions. The
     tile size is read from the first decoded image (typically 256 or
     512 px). Computes the geographic extent of the stitched image in
-    EPSG:3857 using `mercantile.xy_bounds` on the corner tiles.
+    EPSG:3857 using `_tile_xy_bounds` on the corner tiles.
 
     Args:
         tile_data: Mapping of Tile to PNG bytes (from
@@ -603,12 +808,11 @@ def stitch_tiles(
         - Stitch a single synthetic tile into a 256x256 RGBA image:
             ```python
             >>> import io
-            >>> import mercantile
             >>> from PIL import Image
-            >>> from cleopatra.tiles import stitch_tiles
+            >>> from cleopatra.tiles import Tile, stitch_tiles
             >>> buf = io.BytesIO()
             >>> Image.new("RGBA", (256, 256), (255, 0, 0, 255)).save(buf, "PNG")
-            >>> tile = mercantile.Tile(0, 0, 0)
+            >>> tile = Tile(0, 0, 0)
             >>> image, extent = stitch_tiles({tile: buf.getvalue()}, [tile], 0)
             >>> image.shape
             (256, 256, 4)
@@ -617,15 +821,14 @@ def stitch_tiles(
 
             ```
         - The returned EPSG:3857 extent comes from
-            `mercantile.xy_bounds` on the corner tiles:
+            `_tile_xy_bounds` on the corner tiles:
             ```python
             >>> import io
-            >>> import mercantile
             >>> from PIL import Image
-            >>> from cleopatra.tiles import stitch_tiles
+            >>> from cleopatra.tiles import Tile, stitch_tiles
             >>> buf = io.BytesIO()
             >>> Image.new("RGBA", (256, 256), (0, 255, 0, 255)).save(buf, "PNG")
-            >>> tile = mercantile.Tile(0, 0, 0)
+            >>> tile = Tile(0, 0, 0)
             >>> _, (w, s, e, n) = stitch_tiles({tile: buf.getvalue()}, [tile], 0)
             >>> w < e and s < n
             True
@@ -633,9 +836,8 @@ def stitch_tiles(
             ```
         - Invalid tile bytes raise `ValueError`:
             ```python
-            >>> import mercantile
-            >>> from cleopatra.tiles import stitch_tiles
-            >>> tile = mercantile.Tile(0, 0, 0)
+            >>> from cleopatra.tiles import Tile, stitch_tiles
+            >>> tile = Tile(0, 0, 0)
             >>> try:
             ...     stitch_tiles({tile: b"not an image"}, [tile], 0)
             ... except ValueError as exc:
@@ -645,7 +847,6 @@ def stitch_tiles(
             ```
     """
     _require_tiles_extra()
-    import mercantile
     from PIL import Image
 
     try:
@@ -676,9 +877,13 @@ def stitch_tiles(
 
     image = np.array(merged)
 
-    tl = mercantile.xy_bounds(mercantile.Tile(x_indices[0], y_indices[0], zoom))
-    br = mercantile.xy_bounds(mercantile.Tile(x_indices[-1], y_indices[-1], zoom))
-    extent_3857 = (tl.left, br.bottom, br.right, tl.top)
+    tl_left, _tl_bottom, _tl_right, tl_top = _tile_xy_bounds(
+        Tile(x_indices[0], y_indices[0], zoom)
+    )
+    _br_left, br_bottom, br_right, _br_top = _tile_xy_bounds(
+        Tile(x_indices[-1], y_indices[-1], zoom)
+    )
+    extent_3857 = (tl_left, br_bottom, br_right, tl_top)
 
     return image, extent_3857
 
@@ -768,7 +973,6 @@ def add_tiles(
         >>> _ = add_tiles(ax, crs=3857)  # doctest: +SKIP
     """
     _require_tiles_extra()
-    import mercantile
     from pyproj import Transformer
 
     if not hasattr(ax, "get_xlim") or not hasattr(ax, "get_ylim"):
@@ -854,11 +1058,11 @@ def add_tiles(
             raise ValueError(f"zoom must be 0-19, got {tile_zoom}")
 
     original_zoom = tile_zoom
-    tiles = list(mercantile.tiles(w4326, s4326, e4326, n4326, zooms=tile_zoom))
+    tiles = _tiles_for_bbox(w4326, s4326, e4326, n4326, zoom=tile_zoom)
 
     while len(tiles) > max_tiles and tile_zoom > 0:
         tile_zoom -= 1
-        tiles = list(mercantile.tiles(w4326, s4326, e4326, n4326, zooms=tile_zoom))
+        tiles = _tiles_for_bbox(w4326, s4326, e4326, n4326, zoom=tile_zoom)
 
     if tile_zoom != original_zoom:
         logger.warning(

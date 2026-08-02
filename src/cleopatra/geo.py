@@ -20,9 +20,9 @@ it.
 
 Importing this module (and the `cleopatra.tiles` / `cleopatra.reference`
 modules it calls) does not require the optional `cleopatra[tiles]` extra:
-those modules gate their `[tiles]` dependencies (`mercantile`, `pyproj`,
-`Pillow`, ...) behind their own internal lazy imports, so the extra is
-only needed when a basemap is actually drawn.
+those modules gate their `[tiles]` dependencies (`pyproj`, `Pillow`, ...)
+behind their own internal lazy imports, so the extra is only needed when
+a basemap is actually drawn.
 """
 
 from __future__ import annotations

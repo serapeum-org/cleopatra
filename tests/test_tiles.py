@@ -9,7 +9,6 @@ that pyramids uses for its basemap tests.
 from __future__ import annotations
 
 import io
-from collections import namedtuple
 from unittest.mock import MagicMock, PropertyMock, patch
 
 import numpy as np
@@ -18,7 +17,6 @@ import pytest
 pytestmark = pytest.mark.plot
 
 pytest.importorskip("PIL", reason="Pillow not installed (tiles extra)")
-pytest.importorskip("mercantile", reason="mercantile not installed (tiles extra)")
 pytest.importorskip("xyzservices", reason="xyzservices not installed (tiles extra)")
 pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
 
@@ -32,9 +30,13 @@ from PIL import Image  # noqa: E402
 from cleopatra import tiles as tiles_mod  # noqa: E402
 from cleopatra.tiles import (  # noqa: E402
     MAX_TILES,
+    Tile,
     _densify_and_reproject_bounds,
+    _lonlat_to_tile_xy,
     _looks_like_image,
     _require_tiles_extra,
+    _tile_xy_bounds,
+    _tiles_for_bbox,
     add_tiles,
     auto_zoom,
     fetch_single_tile,
@@ -42,8 +44,6 @@ from cleopatra.tiles import (  # noqa: E402
     get_provider,
     stitch_tiles,
 )
-
-Tile = namedtuple("Tile", ["x", "y", "z"])
 
 
 def _make_tile_png(size: int = 256) -> bytes:
@@ -442,8 +442,6 @@ class TestAddTilesIntegration:
 
     def test_max_tiles_reduces_zoom(self, mock_ax):
         """Zoom is decreased when the requested level needs > MAX_TILES tiles."""
-        import mercantile as merc_mod
-
         fake_image = np.zeros((256, 256, 4), dtype=np.uint8)
         many_tiles = [Tile(x=i, y=j, z=10) for i in range(20) for j in range(20)]
         few_tiles = [Tile(x=i, y=j, z=9) for i in range(10) for j in range(10)]
@@ -464,8 +462,8 @@ class TestAddTilesIntegration:
                 ),
             ),
             patch.object(
-                merc_mod,
-                "tiles",
+                tiles_mod,
+                "_tiles_for_bbox",
                 side_effect=[many_tiles, few_tiles],
             ) as mock_tiles,
         ):
@@ -473,13 +471,11 @@ class TestAddTilesIntegration:
 
         calls = mock_tiles.call_args_list
         assert len(calls) == 2
-        assert calls[0][1]["zooms"] == 10
-        assert calls[1][1]["zooms"] == 9
+        assert calls[0][1]["zoom"] == 10
+        assert calls[1][1]["zoom"] == 9
 
     def test_custom_max_tiles_relaxes_reduction(self, mock_ax):
         """A higher `max_tiles=` avoids the zoom reduction (N2)."""
-        import mercantile as merc_mod
-
         fake_image = np.zeros((256, 256, 4), dtype=np.uint8)
         # 400 tiles at the requested zoom — over the default 256, under 500.
         many_tiles = [Tile(x=i, y=j, z=10) for i in range(20) for j in range(20)]
@@ -496,13 +492,15 @@ class TestAddTilesIntegration:
                 "stitch_tiles",
                 return_value=(fake_image, (1e6, 6e6, 1.2e6, 6.2e6)),
             ),
-            patch.object(merc_mod, "tiles", side_effect=[many_tiles]) as mock_tiles,
+            patch.object(
+                tiles_mod, "_tiles_for_bbox", side_effect=[many_tiles]
+            ) as mock_tiles,
         ):
             add_tiles(mock_ax, crs=3857, max_tiles=500)
 
         # Only one call: 400 <= max_tiles=500, so no reduction.
         assert len(mock_tiles.call_args_list) == 1
-        assert mock_tiles.call_args_list[0][1]["zooms"] == 10
+        assert mock_tiles.call_args_list[0][1]["zoom"] == 10
 
     @pytest.mark.parametrize("bad", [0, -1, 2.5, True, "8"])
     def test_invalid_max_tiles_raises(self, mock_ax, bad):
@@ -628,6 +626,225 @@ class TestDensifyAndReprojectEdgeCases:
         assert all(np.isfinite([west, south, east, north])), (
             f"Bounds should all be finite, got ({west}, {south}, {east}, {north})"
         )
+
+
+class TestTile:
+    """Tests for `cleopatra.tiles.Tile`."""
+
+    def test_fields_are_positional_and_named(self):
+        """`Tile(x, y, z)` stores each field, accessible both by name and by index."""
+        tile = Tile(1, 2, 3)
+        assert (tile.x, tile.y, tile.z) == (1, 2, 3), f"unexpected fields: {tile}"
+        assert (tile[0], tile[1], tile[2]) == (1, 2, 3), f"unexpected indexing: {tile}"
+
+    def test_equality_is_by_value(self):
+        """Two independently-constructed `Tile`s with the same fields compare equal."""
+        assert Tile(1, 2, 3) == Tile(x=1, y=2, z=3)
+        assert Tile(1, 2, 3) != Tile(1, 2, 4)
+
+    def test_hashable_as_dict_key(self):
+        """`Tile` is hashable, so it can key a `{tile: data}` mapping (as `fetch_tiles` does)."""
+        mapping = {Tile(0, 0, 0): b"a", Tile(1, 0, 1): b"b"}
+        assert mapping[Tile(0, 0, 0)] == b"a"
+        assert mapping[Tile(1, 0, 1)] == b"b"
+
+    def test_repr_is_readable(self):
+        """`repr(Tile(...))` names the fields, matching the module's own doctest."""
+        assert repr(Tile(0, 0, 0)) == "Tile(x=0, y=0, z=0)"
+
+
+class TestLonLatToTileXY:
+    """Tests for `cleopatra.tiles._lonlat_to_tile_xy`.
+
+    Expected `(x, y)` pairs are cross-checked against the real `mercantile`
+    package's `mercantile.tile()` (see the removal PR's commit messages for
+    the full equivalence-fuzzing methodology); the literal values here just
+    lock those results in as a regression test that doesn't need
+    `mercantile` installed to run.
+    """
+
+    @pytest.mark.parametrize(
+        "lon, lat, zoom, expected",
+        [
+            (0.0, 0.0, 0, (0, 0)),
+            (13.4, 52.5, 10, (550, 335)),
+            (-179.9, 89.9, 3, (0, 0)),
+            (179.9, -89.9, 3, (7, 7)),
+            (0.0, 0.0, 1, (1, 1)),
+        ],
+        ids=["world-origin-z0", "berlin-z10", "nw-corner", "se-corner", "equator-z1"],
+    )
+    def test_known_points(self, lon, lat, zoom, expected):
+        """Known (lon, lat, zoom) triples resolve to their mercantile-verified tile index."""
+        assert _lonlat_to_tile_xy(lon, lat, zoom) == expected
+
+    @pytest.mark.parametrize(
+        "lon, expected_x",
+        [(200.0, 31), (-200.0, 0), (180.0, 31), (-180.0, 0)],
+        ids=["past-east-edge", "past-west-edge", "east-edge", "west-edge"],
+    )
+    def test_out_of_range_longitude_clamps_to_edge_column(self, lon, expected_x):
+        """A longitude outside +/-180 (or exactly on it) clamps to the edge column, not raise."""
+        x, _y = _lonlat_to_tile_xy(lon, 0.0, zoom=5)
+        assert x == expected_x
+
+    @pytest.mark.parametrize(
+        "lat, expected_y",
+        [(90.0, 0), (-90.0, 31), (89.99999999, 0), (-89.99999999, 31)],
+        ids=["exact-north-pole", "exact-south-pole", "near-north-pole", "near-south-pole"],
+    )
+    def test_pole_latitude_clamps_instead_of_crashing(self, lat, expected_y):
+        """A latitude at (or within float precision of) +/-90 clamps to the edge row.
+
+        Regression test for a `ZeroDivisionError`/`ValueError: math domain
+        error` that used to be raised here: `sin(radians(lat))` rounds to
+        exactly +/-1.0 within ~6e-7 degrees of either pole, dividing by zero
+        in the Mercator `y` formula.
+        """
+        _x, y = _lonlat_to_tile_xy(0.0, lat, zoom=5)
+        assert y == expected_y
+
+
+class TestTilesForBbox:
+    """Tests for `cleopatra.tiles._tiles_for_bbox`.
+
+    Expected tile lists are cross-checked against `mercantile.tiles()` (see
+    the removal PR's commit messages); the literal values here lock those
+    results in without needing `mercantile` installed to run.
+    """
+
+    def test_whole_world_at_zoom_0_is_one_tile(self):
+        """The whole world at zoom 0 is exactly the single root tile."""
+        assert _tiles_for_bbox(-180.0, -85.0, 180.0, 85.0, zoom=0) == [Tile(0, 0, 0)]
+
+    def test_known_city_bbox(self):
+        """A real-world (Berlin) bbox resolves to its mercantile-verified 2x3 tile grid."""
+        tiles = sorted(_tiles_for_bbox(13.0, 52.4, 13.6, 52.6, zoom=10))
+        expected = sorted(
+            Tile(x, y, 10)
+            for x in (548, 549, 550)
+            for y in (335, 336)
+        )
+        assert tiles == expected
+
+    def test_bbox_exactly_matching_one_tile_resolves_to_that_tile(self):
+        """A bbox exactly on one tile's own lon/lat bounds resolves to just that tile."""
+        tiles = _tiles_for_bbox(
+            13.359375, 52.48278022207821, 13.7109375, 52.69636107827448, zoom=10
+        )
+        assert tiles == [Tile(550, 335, 10)]
+
+    def test_degenerate_point_bbox_resolves_to_one_tile(self):
+        """A zero-area (single-point) bbox still resolves to the one tile containing it."""
+        tiles = _tiles_for_bbox(13.4, 52.5, 13.4, 52.5, zoom=10)
+        assert tiles == [Tile(550, 335, 10)]
+
+    def test_zero_width_bbox_resolves_to_a_single_column(self):
+        """A `west == east` bbox (zero width, non-zero height) still resolves sanely.
+
+        Test scenario:
+            A degenerate box that collapses only one axis (unlike the
+            single-point case above, which collapses both) should still
+            return every tile row the non-degenerate `south`/`north` span
+            covers, all in the same column.
+        """
+        tiles = sorted(_tiles_for_bbox(13.4, 52.4, 13.4, 52.6, zoom=10))
+        assert tiles == [Tile(550, 335, 10), Tile(550, 336, 10)]
+
+    def test_high_zoom_small_bbox(self):
+        """A small bbox at zoom 18 resolves to the mercantile-verified 8x13 tile grid."""
+        tiles = _tiles_for_bbox(13.4, 52.5, 13.41, 52.51, zoom=18)
+        xs = sorted({t.x for t in tiles})
+        ys = sorted({t.y for t in tiles})
+        assert len(tiles) == 104
+        assert (xs[0], xs[-1]) == (140829, 140836)
+        assert (ys[0], ys[-1]) == (85983, 85995)
+
+    def test_bbox_touching_north_pole_clamps_instead_of_crashing(self):
+        """A bbox whose `north` is exactly 90 clamps to the top row rather than crashing."""
+        tiles = sorted(_tiles_for_bbox(-1.0, 89.0, 1.0, 90.0, zoom=5))
+        assert tiles == [Tile(15, 0, 5), Tile(16, 0, 5)]
+
+    def test_bbox_touching_south_pole_clamps_instead_of_crashing(self):
+        """A bbox whose `south` is exactly -90 clamps to the bottom row rather than crashing."""
+        tiles = sorted(_tiles_for_bbox(-1.0, -90.0, 1.0, -89.0, zoom=5))
+        assert tiles == [Tile(15, 31, 5), Tile(16, 31, 5)]
+
+    def test_antimeridian_crossing_bbox_splits_like_mercantile(self):
+        """A `west > east` bbox (antimeridian-crossing) splits into both dateline halves.
+
+        Regression test for a `ValueError` this used to raise instead: a
+        `west > east` bbox is not just a hand-crafted edge case, it is a
+        real, reachable input through `add_tiles` -- reprojecting a
+        near-global Web Mercator extent to EPSG:4326 wraps longitude at
+        the +/-180 seam, producing exactly this shape (see
+        `TestAddTilesNearGlobalExtent`). `mercantile.tiles()` handles it by
+        splitting into `[-180, east]` and `[west, 180]`; this must match.
+        """
+        tiles = sorted(_tiles_for_bbox(170.0, -10.0, -170.0, 10.0, zoom=4))
+        expected = sorted([Tile(0, 7, 4), Tile(0, 8, 4), Tile(15, 7, 4), Tile(15, 8, 4)])
+        assert tiles == expected
+
+    def test_antimeridian_crossing_bbox_also_touching_a_pole(self):
+        """An antimeridian-crossing bbox that also clips the north pole splits and clamps.
+
+        Both the west>east split and the latitude clamp apply at once;
+        verified to match `mercantile.tiles()` exactly for this combination.
+        """
+        tiles = sorted(_tiles_for_bbox(170.0, 80.0, -170.0, 85.0, zoom=4))
+        expected = sorted([Tile(0, 0, 4), Tile(0, 1, 4), Tile(15, 0, 4), Tile(15, 1, 4)])
+        assert tiles == expected
+
+    def test_antimeridian_crossing_bbox_at_zoom_0(self):
+        """An antimeridian-crossing bbox at zoom 0 matches mercantile's own duplicate-tile quirk.
+
+        At zoom 0 there is only one tile in the whole world, so both
+        dateline-side sub-boxes resolve to it; `mercantile.tiles()` does
+        not deduplicate across the split and returns it twice, and this
+        implementation matches that exactly rather than silently
+        "improving" on it.
+        """
+        tiles = _tiles_for_bbox(170.0, -10.0, -170.0, 10.0, zoom=0)
+        assert tiles == [Tile(0, 0, 0), Tile(0, 0, 0)]
+
+    def test_antimeridian_crossing_bbox_with_east_exactly_on_seam(self):
+        """An antimeridian-crossing bbox whose `east` sits exactly on `-180` still splits correctly."""
+        tiles = sorted(_tiles_for_bbox(170.0, -10.0, -180.0, 10.0, zoom=4))
+        expected = sorted([Tile(0, 7, 4), Tile(0, 8, 4), Tile(15, 7, 4), Tile(15, 8, 4)])
+        assert tiles == expected
+
+
+class TestTileXYBounds:
+    """Tests for `cleopatra.tiles._tile_xy_bounds`.
+
+    Expected bounds are cross-checked against `mercantile.xy_bounds()` (see
+    the removal PR's commit messages); the literal values here lock those
+    results in without needing `mercantile` installed to run.
+    """
+
+    def test_whole_world_tile(self):
+        """The root tile's bounds span the full EPSG:3857 world extent."""
+        left, bottom, right, top = _tile_xy_bounds(Tile(0, 0, 0))
+        assert left == pytest.approx(-20037508.342789244)
+        assert bottom == pytest.approx(-20037508.342789244)
+        assert right == pytest.approx(20037508.342789244)
+        assert top == pytest.approx(20037508.342789244)
+
+    def test_quadrant_tile(self):
+        """Tile (1, 1, 1) is the southeast quadrant of the world."""
+        left, bottom, right, top = _tile_xy_bounds(Tile(1, 1, 1))
+        assert left == pytest.approx(0.0)
+        assert bottom == pytest.approx(-20037508.342789244)
+        assert right == pytest.approx(20037508.342789244)
+        assert top == pytest.approx(0.0)
+
+    def test_known_tile(self):
+        """A real-world tile's bounds match mercantile's `xy_bounds` exactly."""
+        left, bottom, right, top = _tile_xy_bounds(Tile(550, 335, 10))
+        assert left == pytest.approx(1487158.8223163895)
+        assert bottom == pytest.approx(6887893.492833803)
+        assert right == pytest.approx(1526294.5807983999)
+        assert top == pytest.approx(6927029.2513158135)
 
 
 class TestFetchSingleTile:
@@ -1086,15 +1303,86 @@ class TestAddTilesCRSReprojectionFailure:
 
 
 class TestAddTilesEmptyTiles:
-    """Cover the branch where mercantile returns no tiles."""
+    """Cover the branch where the bbox has no covering tiles."""
 
     def test_empty_tiles_raises_value_error(self, mock_ax):
         """An empty tile list at the resolved zoom raises `ValueError`."""
-        import mercantile as merc_mod
-
         with (
             patch.object(tiles_mod, "auto_zoom", return_value=10),
-            patch.object(merc_mod, "tiles", return_value=[]),
+            patch.object(tiles_mod, "_tiles_for_bbox", return_value=[]),
         ):
             with pytest.raises(ValueError, match="No tiles found"):
                 add_tiles(mock_ax, crs=3857)
+
+
+class TestAddTilesNearGlobalExtent:
+    """End-to-end regression test for a near-global Web Mercator extent.
+
+    Drives `add_tiles` through its real reprojection and `_tiles_for_bbox`
+    call (only `fetch_tiles`/`stitch_tiles` are mocked, unlike the other
+    `add_tiles` tests, which mock `_tiles_for_bbox` itself). This is
+    deliberate: reprojecting a near-global EPSG:3857 extent to EPSG:4326
+    wraps longitude at the +/-180 seam (`pyproj`'s inverse Web Mercator
+    transform), producing a `west > east` bbox -- exactly the
+    antimeridian-crossing shape `_tiles_for_bbox` must split rather than
+    crash or silently drop tiles on. A test that mocks `_tiles_for_bbox`
+    itself (as the other `add_tiles` tests do) cannot exercise this path.
+    """
+
+    @pytest.fixture
+    def near_global_ax(self):
+        """A mock axes whose Web Mercator x-limits extend past the world bounds by 5%."""
+        extended = 20037508.342789244 * 1.05
+        ax = MagicMock()
+        ax.get_xlim.return_value = (-extended, extended)
+        ax.get_ylim.return_value = (-8_000_000.0, 8_000_000.0)
+        ax.get_aspect.return_value = "auto"
+
+        mock_transform = MagicMock()
+        mock_transform.inverted.return_value = mock_transform
+        mock_fig = MagicMock()
+        mock_fig.dpi = 100.0
+        type(mock_fig).dpi_scale_trans = PropertyMock(return_value=mock_transform)
+
+        mock_bbox = MagicMock()
+        mock_bbox.width = 6.0
+        mock_bbox.height = 4.0
+        mock_bbox.transformed.return_value = mock_bbox
+
+        ax.get_figure.return_value = mock_fig
+        ax.get_window_extent.return_value = mock_bbox
+        return ax
+
+    def test_near_global_extent_does_not_raise(self, near_global_ax):
+        """`add_tiles` succeeds on a near-global extent instead of raising.
+
+        Test scenario:
+            A 5%-margin whole-world Web Mercator extent (matplotlib's own
+            default autoscale margin on full-world data would produce
+            exactly this) reprojects to a `west > east` EPSG:4326 bbox.
+            Before this fix, that raised `ValueError` from `_tiles_for_bbox`
+            (or, before the round-1 fix, silently produced no tiles); now it
+            must resolve successfully via the antimeridian split.
+        """
+        fake_image = np.zeros((256, 256, 4), dtype=np.uint8)
+        with (
+            patch.object(
+                tiles_mod,
+                "fetch_tiles",
+                return_value={Tile(0, 0, 3): _make_tile_png()},
+            ),
+            patch.object(
+                tiles_mod,
+                "stitch_tiles",
+                return_value=(fake_image, (-20037508.34, -8000000.0, 20037508.34, 8000000.0)),
+            ) as mock_stitch,
+        ):
+            add_tiles(near_global_ax, crs=3857, zoom=3)
+
+        tiles_passed = mock_stitch.call_args[0][1]
+        xs = {t.x for t in tiles_passed}
+        assert len(tiles_passed) > 0, "the antimeridian split should still produce tiles"
+        assert 0 in xs, "should include tiles from the western half of the split (x near 0)"
+        assert max(xs) >= 2**3 - 1, (
+            "should include tiles from the eastern half of the split (x near the grid edge)"
+        )
