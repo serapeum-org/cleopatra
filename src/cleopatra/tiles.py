@@ -107,12 +107,36 @@ class Tile(NamedTuple):
     north to south. Hashable and immutable, so it doubles as a dict key
     (see `fetch_tiles`'s `tile -> PNG bytes` mapping).
 
+    Attributes:
+        x: Column index, `0` (west edge) to `2**z - 1` (east edge).
+        y: Row index, `0` (north edge) to `2**z - 1` (south edge).
+        z: Zoom level; the grid is `2**z` tiles wide and tall.
+
     Examples:
         - The single tile covering the whole world at zoom 0:
             ```python
             >>> from cleopatra.tiles import Tile
             >>> Tile(0, 0, 0)
             Tile(x=0, y=0, z=0)
+
+            ```
+        - Two tiles compare equal by value, so one can look the other up
+            in a `{tile: data}` mapping (as `fetch_tiles`'s return value does):
+            ```python
+            >>> from cleopatra.tiles import Tile
+            >>> tile_data = {Tile(548, 335, 10): b"...png bytes..."}
+            >>> tile_data[Tile(x=548, y=335, z=10)]
+            b'...png bytes...'
+
+            ```
+        - Fields are accessible by name or by position:
+            ```python
+            >>> from cleopatra.tiles import Tile
+            >>> tile = Tile(548, 335, 10)
+            >>> tile.z
+            10
+            >>> tile[:2]
+            (548, 335)
 
             ```
     """
