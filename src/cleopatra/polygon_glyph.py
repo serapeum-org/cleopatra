@@ -44,6 +44,7 @@ from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure
 from matplotlib.legend import Legend
 
+from cleopatra.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
 from cleopatra.geo import GeoMixin
 from cleopatra.glyph import Glyph, _root_figure
 from cleopatra.styles import CLASSIFY_OPTIONS
@@ -133,6 +134,7 @@ class PolygonGlyph(GeoMixin, Glyph):
         fig: Figure | None = None,
         **kwargs,
     ):
+        _warn_deprecated_cbar_kwargs(kwargs)
         super().__init__(
             default_options=POLYGON_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs
         )
@@ -160,6 +162,7 @@ class PolygonGlyph(GeoMixin, Glyph):
         ax: Axes | None = None,
         title: str | None = None,
         add_colorbar: bool | None = None,
+        colorbar: bool | ColorBar | None = None,
     ) -> tuple[Figure, Axes, PolyCollection]:
         """Draw the polygons, filling by value when present.
 
@@ -188,6 +191,10 @@ class PolygonGlyph(GeoMixin, Glyph):
                 — True draws the colorbar, False suppresses it (for
                 shared-axes composition). Defaults to None, which keeps the
                 value set at construction.
+            colorbar: Typed `ColorBar` spec (or `True`/`False`/`None`) for the
+                colorbar's placement, caption, and sizing; resolved into the
+                `cbar_*` options for this call. An explicit `add_colorbar` still
+                overrides the on/off decision.
 
         Returns:
             tuple[Figure, Axes, PolyCollection]: The figure, the axes,
@@ -232,6 +239,7 @@ class PolygonGlyph(GeoMixin, Glyph):
             opts["title"] = title
         # Resolve the colorbar choice for this call only (a plot-time
         # override does not persist into the glyph's options).
+        opts.update(_resolve_colorbar(colorbar))
         draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
         # Reset both artifacts unconditionally so a re-plot (e.g. switching
         # `scheme` between calls) never leaves a stale reference from the

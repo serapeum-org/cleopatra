@@ -39,6 +39,7 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.colorbar import Colorbar
 from matplotlib.colors import BoundaryNorm, ListedColormap
 
+from cleopatra.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
 from cleopatra.colors import (
     category_boundaries,
     resolve_single_layer_style,
@@ -782,7 +783,7 @@ class MeshGlyph(GeoMixin, Glyph):
         location: str = "face",
         ax: Any = None,
         edgecolor: str = "none",
-        colorbar: bool = True,
+        colorbar: bool | ColorBar | None = True,
         title: str | None = None,
         filled: bool = True,
         **kwargs: Any,
@@ -807,7 +808,9 @@ class MeshGlyph(GeoMixin, Glyph):
                 new.
             edgecolor: Edge color for face rendering. Default is
                 `"none"`.
-            colorbar: Whether to add a colorbar. Default is True.
+            colorbar: Draw a colorbar, by default `True`. Accepts a typed
+                `ColorBar` spec (placement / caption / sizing) or `True`/`None`
+                to draw a default one; `False` suppresses it.
             title: Plot title. Overrides `default_options["title"]`.
             filled: For node data, draw filled contours (`tricontourf`,
                 the default) or line contours (`tricontour`) when
@@ -964,6 +967,15 @@ class MeshGlyph(GeoMixin, Glyph):
             else:
                 render_kwargs[key] = val
         self._merge_kwargs(option_kwargs)
+        _warn_deprecated_cbar_kwargs(kwargs)
+        # A typed `colorbar=` spec configures the bar and then behaves like
+        # `colorbar=True` for the draw/categorical logic below; `None` also
+        # draws (the historical default), only `False` suppresses (issue #239).
+        if isinstance(colorbar, ColorBar):
+            self.default_options.update(_resolve_colorbar(colorbar))
+            colorbar = True
+        elif colorbar is None:
+            colorbar = True
 
         # The reset above drops `hillshade`/`style`; restore each unless this
         # `plot()` overrides it. `hillshade` reverts to its construction value;
@@ -1150,6 +1162,7 @@ class MeshGlyph(GeoMixin, Glyph):
         edgecolor: str = "none",
         interval: int = 200,
         text_loc: list | None = None,
+        colorbar: bool | ColorBar | None = None,
         **kwargs: Any,
     ) -> FuncAnimation:
         """Create an animation from time-varying mesh data.
@@ -1169,6 +1182,9 @@ class MeshGlyph(GeoMixin, Glyph):
             interval: Milliseconds between frames. Default is 200.
             text_loc: `[x, y]` position for the time label text.
                 Default is `[0.1, 0.2]`.
+            colorbar: Typed `ColorBar` spec (placement / caption / sizing) for
+                the animation's colorbar, or `True`/`None` to draw a default one;
+                `False` suppresses it. Default `None` (draw).
             **kwargs: Override any key in `default_options` (cmap,
                 vmin, vmax, color_scale, gamma, midpoint,
                 ticks_spacing, cbar_label, cbar_orientation, figsize,
@@ -1227,6 +1243,10 @@ class MeshGlyph(GeoMixin, Glyph):
         # Reset default_options to a fresh copy.
         self._default_options = MESH_DEFAULT_OPTIONS.copy()
         self._merge_kwargs(kwargs)
+        _warn_deprecated_cbar_kwargs(kwargs)
+        # A typed `colorbar=` spec configures the bar (issue #239).
+        if isinstance(colorbar, ColorBar):
+            self.default_options.update(_resolve_colorbar(colorbar))
 
         # Compute global vmin/vmax across all frames unless user set them.
         if "vmin" not in kwargs:
@@ -1275,7 +1295,10 @@ class MeshGlyph(GeoMixin, Glyph):
             norm=norm,
         )
         self.im = tpc
-        self._cbar = self.create_color_bar(ax, tpc, cbar_kw)
+        # `colorbar=False` suppresses the bar; `None` (default), `True`, or a
+        # `ColorBar` spec all draw it (issue #239).
+        if colorbar is not False:
+            self._cbar = self.create_color_bar(ax, tpc, cbar_kw)
 
         if self.default_options["title"]:
             ax.set_title(
