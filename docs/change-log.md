@@ -1,5 +1,100 @@
 # Changelog
 
+## 0.28.0 (2026-08-02)
+
+
+- feat(array_glyph): add ColorBar.orientation and deprecate the loose cbar_orientation kwarg (#240)
+- Give ColorBar a typed orientation field so the colorbar orientation can be
+set through colorbar=ColorBar(...) instead of the loose cbar_orientation
+kwarg, and resolve the silent-override footgun behind #235.
+- - Map ColorBar.orientation onto cbar_orientation only when set; deprecate
+  the loose cbar_orientation kwarg (it still works but warns).
+- Warn at construction when an explicit orientation disagrees with a set
+  location (location wins at render); validate orientation up front and at
+  render so a typo raises an actionable error, not an opaque matplotlib one.
+- Fix a crash: a horizontal inset colorbar with no location now derives its
+  inset edge from the resolved orientation instead of the vertical layout.
+- Reset a sticky orientation on colorbar=True, and draw a real colorbar for
+  an orientation-only spec over a style preset instead of dropping it.
+- Migrate the docstrings, numpydoc blocks, a plot example, and the tutorial
+  notebook to the typed form, and extract the shared plot/animate
+  kwargs+colorbar setup to remove duplication.
+- Closes #235
+- feat(array_glyph): complete the ColorBar spec with caption and sizing fields (#237)
+- Add six caption/sizing fields to ColorBar (label, length, label_size,
+label_rotation, label_location, ticks_spacing) and map them through
+_resolve_colorbar onto the internal cbar_* keys, but only when set, so a
+loose cbar_* value survives during the transition.
+- - Wire cbar_label_rotation into the colorbar label and honour
+  ColorBar.length for inside (inset) colorbars; both were silent no-ops.
+- Stop the auto-computed tick spacing from clobbering a
+  ColorBar(ticks_spacing=...) value in plot() and animate().
+- Deprecate the loose cbar_* and ticks_spacing kwargs in favour of
+  colorbar=ColorBar(...) via a DeprecationWarning; they still take
+  effect during the deprecation window.
+- Migrate the plot/animate docstrings, the ArrayGlyph tutorial
+  notebooks, and the tests to the typed spec; add render-level tests.
+- Use numpy.random.Generator in the migrated notebook example
+  (SonarCloud S6711).
+- Closes #234
+- refactor(tiles): replace the mercantile dependency with built-in tile math (#236)
+- - Add a Tile NamedTuple plus _tiles_for_bbox()/_tile_xy_bounds()/                                                    
+    _lonlat_to_tile_xy(), a direct port of mercantile's tile(),                                                        
+    tiles(), and xy_bounds() (the only three things cleopatra.tiles                                                    
+    used from it), verified formula-for-formula against mercantile's                                                   
+    own installed source.                                                                                              
+  - Drop mercantile from the [tiles] extra, uv.lock, and docs/README;                                                  
+    update tests/test_tiles.py to mock the new internal function                                                       
+    instead of patching the mercantile module.                                                                         
+  - Clamp both latitude bounds symmetrically (north was capped but                                                     
+    south only floored, and vice versa) and nudge sin(lat) away from                                                   
+    the exact +/-90 singularity, closing a crash on any bbox whose                                                     
+    north or south sits within ~1e-7 degrees of a pole.                                                                
+  - Split an antimeridian-crossing bbox (west > east) into its two                                                     
+    dateline-side sub-boxes instead of raising, matching                                                               
+    mercantile.tiles()'s own behavior -- needed because reprojecting a                                                 
+    near-global Web Mercator extent to EPSG:4326 wraps longitude at                                                    
+    the +/-180 seam, so this is a real, reachable input through                                                        
+    add_tiles(), not just a hand-crafted edge case.                                                                    
+  - Add 30+ direct unit tests for the tile-math functions and Tile's                                                   
+    NamedTuple behavior, with expected values cross-checked against                                                    
+    the real mercantile package, plus an end-to-end add_tiles() test                                                   
+    exercising the reprojection-driven antimeridian wraparound.                                                        
+  - Fix a tautological-looking test assertion (same expression on                                                      
+    both sides of ==) flagged by SonarCloud.                                                                           
+                                                                                                                       
+  No public API changes; add_tiles/fetch_tiles/stitch_tiles/get_provider                                               
+  keep their existing signatures and behavior.                                                                         
+  Closes #238
+- ci(docs): resolve release tag for workflow_run-triggered mkdocs deploys (#233)
+- deploy-release hardcoded trigger: 'release' but never supplied a
+release-tag, so mkdocs-deploy could only resolve the version from
+github.event.release.tag_name -- populated only on a real release
+event. This job normally runs via workflow_run instead, so that
+payload is absent and the deploy fails outright, as it did for the
+0.27.0 release.
+- - Check out the branch the release actually ran on
+  (workflow_run.head_branch) instead of the default trigger ref
+- Extract the version from the just-bumped pyproject.toml as a
+  fallback source for the release tag
+- Pass release-tag with a fallback: release event payload first,
+  extracted version otherwise
+- Guard the workflow_run branch of the job condition against forks
+- Mirrors the existing working implementation in pyramids.
+- ci(docs): resolve the release tag for workflow_run-triggered deploys
+- deploy-release hardcoded trigger: 'release' but never supplied a
+release-tag, so mkdocs-deploy could only resolve the version from
+github.event.release.tag_name -- which is only populated on a real
+release event. Since this job is normally reached via workflow_run
+(github-release completing), that payload is absent and the job
+fails outright, as it did for the 0.27.0 release.
+- Mirror the fix already used in pyramids: check out the branch the
+release actually ran on instead of defaulting to the trigger ref,
+extract the version straight from the just-bumped pyproject.toml,
+and fall back to it whenever the release event payload isn't
+available. Also guard the workflow_run branch of the job condition
+against forks, matching pyramids.
+
 ## 0.27.0 (2026-08-01)
 
 
