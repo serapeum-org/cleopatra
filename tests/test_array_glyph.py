@@ -6406,6 +6406,35 @@ class TestColorbarPlacement:
         assert g.cbar.orientation == "horizontal", f"location should win, got {g.cbar.orientation}"
         plt.close("all")
 
+    @pytest.mark.parametrize("orientation", ["vertical", "horizontal"])
+    def test_orientation_inside_does_not_crash(self, orientation):
+        """`ColorBar(orientation=..., inside=True)` renders without a crash (#235).
+
+        Args:
+            orientation: The spec orientation for an inset colorbar.
+
+        Test scenario:
+            With no `location`, an inset bar must derive its edge from the
+            orientation so a horizontal inset does not hit matplotlib's
+            tick-position mismatch (regression guard for the H1 crash).
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g.plot(cmap="viridis", colorbar=ColorBar(orientation=orientation, inside=True))
+        assert g.cbar.orientation == orientation, f"inset orientation not applied, got {g.cbar.orientation}"
+        plt.close("all")
+
+    def test_inside_location_bottom_is_horizontal(self):
+        """`ColorBar(inside=True, location="bottom")` renders a horizontal inset (#235).
+
+        Test scenario:
+            The explicit-location inset path stays consistent with the
+            orientation-derived one.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g.plot(cmap="viridis", colorbar=ColorBar(inside=True, location="bottom"))
+        assert g.cbar.orientation == "horizontal", f"inside bottom should be horizontal, got {g.cbar.orientation}"
+        plt.close("all")
+
 
 class TestColorBar:
     """Tests for the `ColorBar` placement/box config object."""

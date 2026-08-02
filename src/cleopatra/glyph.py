@@ -1384,8 +1384,15 @@ class Glyph:
         if inside:
             # An inset colorbar is a child of `ax`, so it tracks the axes
             # through `full_bleed` (never floats) and can sit on a backing box.
+            # With no explicit `location`, pick the inset edge from the resolved
+            # orientation so the geometry and the bar's orientation agree --
+            # otherwise a horizontal bar would inherit the vertical "right"
+            # layout and matplotlib rejects the mismatched tick position.
+            inset_location = location or (
+                "bottom" if orientation == "horizontal" else "right"
+            )
             cbar, box_info = self._inside_colorbar_axes(
-                ax, im, cbar_kw, location or "right", orientation, user_kwargs
+                ax, im, cbar_kw, inset_location, orientation, user_kwargs
             )
         else:
             cbar = self._outside_colorbar(
