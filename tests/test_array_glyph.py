@@ -19,6 +19,7 @@ from cleopatra.array_glyph import (
     _UNSET,
     _resolve_colorbar,
     _swatch_text_default,
+    _warn_deprecated_cbar_kwargs,
     AnimateKwargs,
     ArrayGlyph,
     ColorBar,
@@ -6429,6 +6430,65 @@ class TestResolveColorbar:
         """
         with pytest.raises(TypeError, match="colorbar must be"):
             _resolve_colorbar(bad)
+
+
+class TestDeprecatedCbarKwargs:
+    """Deprecation of the loose `cbar_*` kwargs superseded by `ColorBar` (#234)."""
+
+    @staticmethod
+    def _field() -> np.ndarray:
+        """Return a small 2-D field for a single static plot."""
+        return np.arange(20 * 30, dtype=float).reshape(20, 30)
+
+    def test_helper_warns_for_a_deprecated_key(self):
+        """`_warn_deprecated_cbar_kwargs` warns and names the `ColorBar` field.
+
+        Test scenario:
+            A loose `cbar_label` triggers a DeprecationWarning pointing at
+            `colorbar=ColorBar(label=...)`.
+        """
+        with pytest.warns(DeprecationWarning, match=r"cbar_label.*ColorBar\(label="):
+            _warn_deprecated_cbar_kwargs({"cbar_label": "Depth"})
+
+    def test_helper_silent_without_deprecated_keys(self):
+        """No warning is emitted when no deprecated key is present.
+
+        Test scenario:
+            A kwargs dict free of loose cbar_* keys warns nothing.
+        """
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            _warn_deprecated_cbar_kwargs({"cmap": "viridis", "vmin": 0})
+
+    def test_plot_loose_cbar_label_warns_but_still_works(self):
+        """A loose `cbar_label` on `plot` warns yet still renders the caption.
+
+        Test scenario:
+            During the deprecation window the kwarg keeps working (caption
+            rendered) while steering the caller toward `ColorBar`.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 30.0, 20.0])
+        with pytest.warns(DeprecationWarning, match="cbar_label"):
+            g.plot(cmap="viridis", cbar_label="Rainfall mm/day")
+        caption = g.cbar.ax.get_xlabel() or g.cbar.ax.get_ylabel()
+        assert caption == "Rainfall mm/day", f"deprecated kwarg should still work, got {caption!r}"
+        plt.close("all")
+
+    def test_typed_colorbar_does_not_warn(self):
+        """Configuring the caption through `ColorBar` emits no cbar deprecation.
+
+        Test scenario:
+            The typed `colorbar=ColorBar(label=...)` path is the recommended
+            replacement and must not raise the loose-kwarg deprecation.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 30.0, 20.0])
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            g.plot(cmap="viridis", colorbar=ColorBar(label="Rainfall mm/day"))
+        assert not any(
+            "deprecated" in str(x.message) and "cbar" in str(x.message) for x in caught
+        ), "typed ColorBar should not trigger the loose-kwarg deprecation"
+        plt.close("all")
 
 
 class TestStylePrecedence:

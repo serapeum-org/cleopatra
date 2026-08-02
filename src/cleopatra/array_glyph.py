@@ -945,6 +945,40 @@ def _resolve_colorbar(colorbar: bool | ColorBar | None) -> dict:
     )
 
 
+#: Loose colorbar kwargs now superseded by `ColorBar` fields (issue #234).
+#: Passing any of these to `plot` / `animate` is deprecated -- use the mapped
+#: `ColorBar` field instead. They still take effect (folded into
+#: `default_options`) so nothing breaks during the deprecation window.
+_DEPRECATED_CBAR_KWARGS = {
+    "cbar_label": "label",
+    "cbar_length": "length",
+    "cbar_label_size": "label_size",
+    "cbar_label_rotation": "label_rotation",
+    "cbar_label_location": "label_location",
+    "ticks_spacing": "ticks_spacing",
+}
+
+
+def _warn_deprecated_cbar_kwargs(kwargs: dict) -> None:
+    """Warn for any loose `cbar_*` kwarg that a `ColorBar` field now replaces.
+
+    The kwargs still take effect (the caller folds them into `default_options`);
+    this only steers callers toward the typed `colorbar=ColorBar(...)` spec.
+
+    Args:
+        kwargs: The `plot` / `animate` keyword arguments to inspect for the
+            deprecated loose colorbar keys.
+    """
+    for key, field in _DEPRECATED_CBAR_KWARGS.items():
+        if key in kwargs:
+            warnings.warn(
+                f"The '{key}' keyword is deprecated; pass "
+                f"colorbar=ColorBar({field}=...) instead.",
+                DeprecationWarning,
+                stacklevel=3,
+            )
+
+
 #: Deprecated `animate` kwargs that `_resolve_frame_label` folds into a
 #: `FrameLabel` instead of the (now-removed) individual keywords.
 #: `text_loc` is the oldest generation (pre-dating `label_location`) and is
@@ -3550,6 +3584,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         # model just does not have a variance-safe way to type "a dict this
         # helper is allowed to pop deprecated keys from".
         points = _resolve_point_overlay(points, kwargs)  # type: ignore[arg-type]
+        _warn_deprecated_cbar_kwargs(kwargs)
 
         for key, val in kwargs.items():
             if key not in self.default_options.keys():
@@ -4506,6 +4541,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         )
         frame_label = _resolve_frame_label(frame_label, kwargs)  # type: ignore[arg-type]
         points = _resolve_point_overlay(points, kwargs)  # type: ignore[arg-type]
+        _warn_deprecated_cbar_kwargs(kwargs)
 
         # Resolved into a local rather than written back onto `frame_label`,
         # so a `FrameLabel` instance the caller passed in (and might reuse
