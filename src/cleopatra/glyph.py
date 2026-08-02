@@ -1373,6 +1373,15 @@ class Glyph:
                 "cbar_location must be one of 'left', 'right', 'top', "
                 f"'bottom', or None, got {location!r}."
             )
+        orientation_opt = self.default_options.get("cbar_orientation")
+        if orientation_opt is not None and orientation_opt not in ("vertical", "horizontal"):
+            # Validate at render too, so a bad value reaching this path -- via the
+            # deprecated loose `cbar_orientation` kwarg or a low-level Glyph -- gets
+            # an actionable error instead of an opaque matplotlib one.
+            raise ValueError(
+                "cbar_orientation must be 'vertical' or 'horizontal', got "
+                f"{orientation_opt!r}."
+            )
         inside = bool(self.default_options.get("cbar_inside", False))
         orientation = self._resolve_cbar_orientation(location)
         # Pull the user-supplied `label` (if any) out of cbar_kwargs before
@@ -1384,8 +1393,15 @@ class Glyph:
         if inside:
             # An inset colorbar is a child of `ax`, so it tracks the axes
             # through `full_bleed` (never floats) and can sit on a backing box.
+            # With no explicit `location`, pick the inset edge from the resolved
+            # orientation so the geometry and the bar's orientation agree --
+            # otherwise a horizontal bar would inherit the vertical "right"
+            # layout and matplotlib rejects the mismatched tick position.
+            inset_location = location or (
+                "bottom" if orientation == "horizontal" else "right"
+            )
             cbar, box_info = self._inside_colorbar_axes(
-                ax, im, cbar_kw, location or "right", orientation, user_kwargs
+                ax, im, cbar_kw, inset_location, orientation, user_kwargs
             )
         else:
             cbar = self._outside_colorbar(
