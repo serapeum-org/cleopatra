@@ -714,10 +714,12 @@ class ColorBar:
             (right of a vertical bar). Left/right force a vertical bar,
             top/bottom a horizontal one.
         orientation: Bar orientation -- `"vertical"` or `"horizontal"`. `None`
-            (default) lets `location` decide (or matplotlib's default when
-            `location` is `None`). Because a set `location` fixes the
+            (default) lets `location` decide, and yields a vertical bar when
+            `location` is `None` too. Because a set `location` fixes the
             orientation, an `orientation` that disagrees with it is ignored
-            (with a `UserWarning`) -- set only one.
+            (with a `UserWarning`) -- set only one. The resolved orientation is
+            sticky on a reused glyph: a later `ColorBar()` with `orientation`
+            unset does not reset a previously applied one.
         inside: When `True`, the colorbar is inset *inside* the frame at
             `location` (overlaying the data) rather than in an outside gutter,
             by default `False`. An inset is a child of the data axes, so it
@@ -809,8 +811,9 @@ class ColorBar:
             location: Edge to sit on (`"left"`/`"right"`/`"top"`/`"bottom"`),
                 or `None` for matplotlib's default placement.
             orientation: Bar orientation (`"vertical"`/`"horizontal"`), or
-                `None` to let `location` decide. Ignored (with a `UserWarning`)
-                when it disagrees with the orientation `location` implies.
+                `None` to let `location` decide (a vertical bar when neither is
+                set). Ignored (with a `UserWarning`) when it disagrees with the
+                orientation `location` implies.
             inside: Inset the colorbar inside the frame, by default `False`.
             box: Backing panel for an inside colorbar (`True` / colour / dict),
                 or `None` to default it on when `inside` is set.
