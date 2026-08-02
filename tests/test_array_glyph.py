@@ -6380,6 +6380,32 @@ class TestColorbarPlacement:
         assert top_y > bottom_y, f"label_location not applied: top_y={top_y}, bottom_y={bottom_y}"
         plt.close("all")
 
+    def test_orientation_via_spec_takes_effect(self):
+        """`ColorBar(orientation=...)` sets the drawn bar orientation (#235).
+
+        Test scenario:
+            With no `location`, a spec orientation reaches the rendered colorbar
+            instead of requiring the loose `cbar_orientation` kwarg.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g.plot(cmap="viridis", colorbar=ColorBar(orientation="horizontal"))
+        assert g.cbar.orientation == "horizontal", f"orientation not applied, got {g.cbar.orientation}"
+        plt.close("all")
+
+    def test_location_wins_over_conflicting_orientation(self):
+        """A set `location` fixes orientation; a conflicting `orientation` loses (#235).
+
+        Test scenario:
+            `ColorBar(location="bottom", orientation="vertical")` renders a
+            horizontal bar (location wins) after warning at construction.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        with pytest.warns(UserWarning, match="orientation"):
+            spec = ColorBar(location="bottom", orientation="vertical")
+        g.plot(cmap="viridis", colorbar=spec)
+        assert g.cbar.orientation == "horizontal", f"location should win, got {g.cbar.orientation}"
+        plt.close("all")
+
 
 class TestColorBar:
     """Tests for the `ColorBar` placement/box config object."""
@@ -6475,6 +6501,35 @@ class TestColorBar:
         assert spec.label_location == "center", f"label_location not stored: {spec.label_location}"
         assert spec.ticks_spacing == 5.0, f"ticks_spacing not stored: {spec.ticks_spacing}"
 
+    def test_orientation_defaults_none_and_stores(self):
+        """`orientation` defaults to `None` and stores verbatim (#235).
+
+        Test scenario:
+            The field is an optional holder, `None` when unset.
+        """
+        assert ColorBar().orientation is None, "orientation should default to None"
+        assert ColorBar(orientation="horizontal").orientation == "horizontal", "orientation not stored"
+
+    def test_orientation_conflicting_with_location_warns(self):
+        """A `location`/`orientation` disagreement warns at construction (#235).
+
+        Test scenario:
+            `location="bottom"` implies horizontal, so `orientation="vertical"`
+            is ignored -- with a UserWarning naming both -- rather than silently.
+        """
+        with pytest.warns(UserWarning, match=r"orientation='vertical'.*location='bottom'"):
+            ColorBar(location="bottom", orientation="vertical")
+
+    def test_orientation_agreeing_with_location_is_silent(self):
+        """An `orientation` matching the one `location` implies is warning-free (#235).
+
+        Test scenario:
+            `location="bottom"` + `orientation="horizontal"` agree, so no warning.
+        """
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", UserWarning)
+            ColorBar(location="bottom", orientation="horizontal")
+
 
 class TestResolveColorbar:
     """Tests for the `_resolve_colorbar` front-door parser."""
@@ -6561,8 +6616,20 @@ class TestResolveColorbar:
         """
         out = _resolve_colorbar(ColorBar(location="right"))
         for key in ("cbar_label", "cbar_length", "cbar_label_size",
-                    "cbar_label_rotation", "cbar_label_location", "ticks_spacing"):
+                    "cbar_label_rotation", "cbar_label_location", "cbar_orientation", "ticks_spacing"):
             assert key not in out, f"{key} should not be emitted when unset, got {out}"
+
+    def test_orientation_maps_only_when_set(self):
+        """`orientation` maps to `cbar_orientation` only when set (#235).
+
+        Test scenario:
+            A set orientation lands on `cbar_orientation`; an unset one is
+            omitted so a loose `cbar_orientation` is not clobbered.
+        """
+        out = _resolve_colorbar(ColorBar(orientation="horizontal"))
+        assert out["cbar_orientation"] == "horizontal", f"orientation not mapped: {out}"
+        unset = _resolve_colorbar(ColorBar(location="right"))
+        assert "cbar_orientation" not in unset, f"unset orientation should not be emitted: {unset}"
 
     @pytest.mark.parametrize("bad", ["right", 1, 1.5, ["right"], {"location": "right"}])
     def test_invalid_type_raises(self, bad):
@@ -6634,6 +6701,19 @@ class TestDeprecatedCbarKwargs:
         assert not any(
             "deprecated" in str(x.message) and "cbar" in str(x.message) for x in caught
         ), "typed ColorBar should not trigger the loose-kwarg deprecation"
+        plt.close("all")
+
+    def test_cbar_orientation_is_deprecated(self):
+        """A loose `cbar_orientation` warns, steering to `ColorBar(orientation=...)` (#235).
+
+        Test scenario:
+            The last colorbar kwarg folded into the spec now emits the
+            deprecation like the rest, while still taking effect.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 30.0, 20.0])
+        with pytest.warns(DeprecationWarning, match=r"cbar_orientation.*ColorBar\(orientation="):
+            g.plot(cmap="viridis", cbar_orientation="horizontal")
+        assert g.cbar.orientation == "horizontal", f"deprecated kwarg should still work, got {g.cbar.orientation}"
         plt.close("all")
 
 

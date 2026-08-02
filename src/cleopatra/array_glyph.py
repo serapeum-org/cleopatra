@@ -713,6 +713,11 @@ class ColorBar:
             or `"bottom"`. `None` (default) keeps matplotlib's placement
             (right of a vertical bar). Left/right force a vertical bar,
             top/bottom a horizontal one.
+        orientation: Bar orientation -- `"vertical"` or `"horizontal"`. `None`
+            (default) lets `location` decide (or matplotlib's default when
+            `location` is `None`). Because a set `location` fixes the
+            orientation, an `orientation` that disagrees with it is ignored
+            (with a `UserWarning`) -- set only one.
         inside: When `True`, the colorbar is inset *inside* the frame at
             `location` (overlaying the data) rather than in an outside gutter,
             by default `False`. An inset is a child of the data axes, so it
@@ -786,6 +791,7 @@ class ColorBar:
         self,
         *,
         location: Literal["left", "right", "top", "bottom"] | None = None,
+        orientation: Literal["vertical", "horizontal"] | None = None,
         inside: bool = False,
         box: bool | str | dict | None = None,
         label_color: str | None = None,
@@ -802,6 +808,9 @@ class ColorBar:
         Args:
             location: Edge to sit on (`"left"`/`"right"`/`"top"`/`"bottom"`),
                 or `None` for matplotlib's default placement.
+            orientation: Bar orientation (`"vertical"`/`"horizontal"`), or
+                `None` to let `location` decide. Ignored (with a `UserWarning`)
+                when it disagrees with the orientation `location` implies.
             inside: Inset the colorbar inside the frame, by default `False`.
             box: Backing panel for an inside colorbar (`True` / colour / dict),
                 or `None` to default it on when `inside` is set.
@@ -823,6 +832,20 @@ class ColorBar:
                 the default.
         """
         self.location = location
+        self.orientation = orientation
+        # `location` fixes the orientation (left/right -> vertical, top/bottom
+        # -> horizontal). If an explicit `orientation` disagrees it is ignored
+        # downstream, so warn here rather than dropping it silently (issue #235).
+        if location is not None and orientation is not None:
+            implied = "vertical" if location in ("left", "right") else "horizontal"
+            if orientation != implied:
+                warnings.warn(
+                    f"ColorBar(orientation={orientation!r}) is ignored because "
+                    f"location={location!r} already fixes the orientation to "
+                    f"{implied!r}; set only one.",
+                    UserWarning,
+                    stacklevel=2,
+                )
         self.inside = inside
         # An inset over moving data almost always wants a panel: default the
         # box on when `inside` is set and the caller did not decide explicitly.
@@ -940,6 +963,7 @@ def _resolve_colorbar(colorbar: bool | ColorBar | None) -> dict:
             "cbar_label_size": colorbar.label_size,
             "cbar_label_rotation": colorbar.label_rotation,
             "cbar_label_location": colorbar.label_location,
+            "cbar_orientation": colorbar.orientation,
             "ticks_spacing": colorbar.ticks_spacing,
         }
         updates.update({k: v for k, v in optional.items() if v is not None})
@@ -962,6 +986,7 @@ _DEPRECATED_CBAR_KWARGS = {
     "cbar_label_size": "label_size",
     "cbar_label_rotation": "label_rotation",
     "cbar_label_location": "label_location",
+    "cbar_orientation": "orientation",
     "ticks_spacing": "ticks_spacing",
 }
 
@@ -3100,6 +3125,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                         color bar is skipped (with a warning) even when
                         `add_colorbar` is True, and `self.cbar` stays None.
                     cbar_orientation : str, optional
+                        Deprecated; use `colorbar=ColorBar(orientation=...)`.
                         Orientation of the color bar, by default 'vertical'.
                         Can be 'horizontal' or 'vertical'.
                     cbar_label_rotation : float, optional
@@ -3312,13 +3338,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                 ```python
                 >>> array = ArrayGlyph(arr, figsize=(6, 6), title="Customized color bar", title_size=18)
                 >>> fig, ax = array.plot(
-                ...     cbar_orientation="horizontal",
                 ...     colorbar=ColorBar(
                 ...         label="Discharge m3/s",
                 ...         label_location="center",
                 ...         length=0.7,
                 ...         label_size=12,
                 ...         ticks_spacing=5,
+                ...         orientation="horizontal",
                 ...     ),
                 ...     color_scale="linear",
                 ...     cmap="coolwarm_r",
@@ -4303,6 +4329,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                         None and no axes space is taken by a color bar.
                         The mappable is still reachable via `self.im`.
                     cbar_orientation : str, optional
+                        Deprecated; use `colorbar=ColorBar(orientation=...)`.
                         Orientation of the color bar, by default 'vertical'.
                         Can be 'horizontal' or 'vertical'.
                     cbar_label_rotation : float, optional
