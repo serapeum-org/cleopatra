@@ -9,7 +9,6 @@ that pyramids uses for its basemap tests.
 from __future__ import annotations
 
 import io
-from collections import namedtuple
 from unittest.mock import MagicMock, PropertyMock, patch
 
 import numpy as np
@@ -18,7 +17,6 @@ import pytest
 pytestmark = pytest.mark.plot
 
 pytest.importorskip("PIL", reason="Pillow not installed (tiles extra)")
-pytest.importorskip("mercantile", reason="mercantile not installed (tiles extra)")
 pytest.importorskip("xyzservices", reason="xyzservices not installed (tiles extra)")
 pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
 
@@ -32,6 +30,7 @@ from PIL import Image  # noqa: E402
 from cleopatra import tiles as tiles_mod  # noqa: E402
 from cleopatra.tiles import (  # noqa: E402
     MAX_TILES,
+    Tile,
     _densify_and_reproject_bounds,
     _looks_like_image,
     _require_tiles_extra,
@@ -42,8 +41,6 @@ from cleopatra.tiles import (  # noqa: E402
     get_provider,
     stitch_tiles,
 )
-
-Tile = namedtuple("Tile", ["x", "y", "z"])
 
 
 def _make_tile_png(size: int = 256) -> bytes:
@@ -442,8 +439,6 @@ class TestAddTilesIntegration:
 
     def test_max_tiles_reduces_zoom(self, mock_ax):
         """Zoom is decreased when the requested level needs > MAX_TILES tiles."""
-        import mercantile as merc_mod
-
         fake_image = np.zeros((256, 256, 4), dtype=np.uint8)
         many_tiles = [Tile(x=i, y=j, z=10) for i in range(20) for j in range(20)]
         few_tiles = [Tile(x=i, y=j, z=9) for i in range(10) for j in range(10)]
@@ -464,8 +459,8 @@ class TestAddTilesIntegration:
                 ),
             ),
             patch.object(
-                merc_mod,
-                "tiles",
+                tiles_mod,
+                "_tiles_for_bbox",
                 side_effect=[many_tiles, few_tiles],
             ) as mock_tiles,
         ):
@@ -473,13 +468,11 @@ class TestAddTilesIntegration:
 
         calls = mock_tiles.call_args_list
         assert len(calls) == 2
-        assert calls[0][1]["zooms"] == 10
-        assert calls[1][1]["zooms"] == 9
+        assert calls[0][1]["zoom"] == 10
+        assert calls[1][1]["zoom"] == 9
 
     def test_custom_max_tiles_relaxes_reduction(self, mock_ax):
         """A higher `max_tiles=` avoids the zoom reduction (N2)."""
-        import mercantile as merc_mod
-
         fake_image = np.zeros((256, 256, 4), dtype=np.uint8)
         # 400 tiles at the requested zoom — over the default 256, under 500.
         many_tiles = [Tile(x=i, y=j, z=10) for i in range(20) for j in range(20)]
@@ -496,13 +489,15 @@ class TestAddTilesIntegration:
                 "stitch_tiles",
                 return_value=(fake_image, (1e6, 6e6, 1.2e6, 6.2e6)),
             ),
-            patch.object(merc_mod, "tiles", side_effect=[many_tiles]) as mock_tiles,
+            patch.object(
+                tiles_mod, "_tiles_for_bbox", side_effect=[many_tiles]
+            ) as mock_tiles,
         ):
             add_tiles(mock_ax, crs=3857, max_tiles=500)
 
         # Only one call: 400 <= max_tiles=500, so no reduction.
         assert len(mock_tiles.call_args_list) == 1
-        assert mock_tiles.call_args_list[0][1]["zooms"] == 10
+        assert mock_tiles.call_args_list[0][1]["zoom"] == 10
 
     @pytest.mark.parametrize("bad", [0, -1, 2.5, True, "8"])
     def test_invalid_max_tiles_raises(self, mock_ax, bad):
@@ -1086,15 +1081,13 @@ class TestAddTilesCRSReprojectionFailure:
 
 
 class TestAddTilesEmptyTiles:
-    """Cover the branch where mercantile returns no tiles."""
+    """Cover the branch where the bbox has no covering tiles."""
 
     def test_empty_tiles_raises_value_error(self, mock_ax):
         """An empty tile list at the resolved zoom raises `ValueError`."""
-        import mercantile as merc_mod
-
         with (
             patch.object(tiles_mod, "auto_zoom", return_value=10),
-            patch.object(merc_mod, "tiles", return_value=[]),
+            patch.object(tiles_mod, "_tiles_for_bbox", return_value=[]),
         ):
             with pytest.raises(ValueError, match="No tiles found"):
                 add_tiles(mock_ax, crs=3857)

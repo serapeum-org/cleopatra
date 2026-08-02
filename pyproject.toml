@@ -32,7 +32,6 @@ dependencies = [
 
 [project.optional-dependencies]
 tiles = [
-    "mercantile>=1.2.1",
     "pillow>=12.1.1",
     "pyproj>=3.7.2",
     "xyzservices>=2026.3.0",

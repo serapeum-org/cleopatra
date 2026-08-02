@@ -4,8 +4,8 @@ The `cleopatra.tiles` module adds an optional, pure-Python web-tile basemap help
 `add_tiles` fetches XYZ map tiles covering an axes' current extent, stitches them with
 Pillow, and renders the composite underneath your data. No GDAL is required.
 
-It is gated behind the `cleopatra[tiles]` optional extra (`mercantile`, `pillow`,
-`pyproj`, `xyzservices`):
+It is gated behind the `cleopatra[tiles]` optional extra (`pillow`, `pyproj`,
+`xyzservices`):
 
 === "pip"
 

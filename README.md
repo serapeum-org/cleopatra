@@ -220,8 +220,7 @@ conda install -c conda-forge cleopatra-tiles
 
 The conda packages are built from the
 [cleopatra-feedstock](https://github.com/conda-forge/cleopatra-feedstock)
-(the `cleopatra-tiles` output bundles `mercantile`, `pillow`, `pyproj`, and
-`xyzservices`).
+(the `cleopatra-tiles` output bundles `pillow`, `pyproj`, and `xyzservices`).
 
 ### From source (latest development version)
 
