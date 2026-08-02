@@ -738,6 +738,19 @@ class ColorBar:
             and, for a `style` preset, the swatch legend's endpoint values.
             `None` (default) keeps matplotlib's default for a colorbar; for the
             swatch it defaults to a colour that contrasts with `box`, else white.
+        label: Caption text for the scale (the colorbar's title). `None`
+            (default) keeps the current default caption.
+        length: Bar length as a fraction of the axis (e.g. `0.8`). `None`
+            (default) keeps the default length.
+        label_size: Font size of the caption. `None` (default) keeps the
+            default.
+        label_rotation: Rotation of the caption in degrees. `None` (default)
+            keeps the default.
+        label_location: Where the caption sits along the bar (e.g. `"center"`).
+            Distinct from `location`, which is the bar's *edge*. `None`
+            (default) keeps the default.
+        ticks_spacing: Spacing between the colorbar's ticks. `None` (default)
+            keeps the default.
 
     Examples:
         - An inside colorbar on the right -- its box defaults on:
@@ -756,6 +769,14 @@ class ColorBar:
             (None, 'black', 'black')
 
             ```
+        - A captioned bar, fully specified through the spec (no loose kwargs):
+            ```python
+            >>> from cleopatra.array_glyph import ColorBar
+            >>> spec = ColorBar(location="bottom", label="Rainfall mm/day", length=0.8)
+            >>> (spec.label, spec.length)
+            ('Rainfall mm/day', 0.8)
+
+            ```
     """
 
     def __init__(
@@ -766,6 +787,12 @@ class ColorBar:
         box: bool | str | dict | None = None,
         label_color: str | None = None,
         tick_color: str | None = None,
+        label: str | None = None,
+        length: float | None = None,
+        label_size: float | None = None,
+        label_rotation: float | None = None,
+        label_location: str | None = None,
+        ticks_spacing: float | None = None,
     ) -> None:
         """Initialise a `ColorBar`.
 
@@ -779,6 +806,16 @@ class ColorBar:
                 swatch title for a `style` preset); `None` keeps the default.
             tick_color: Colour of the colorbar's tick numbers; `None` keeps
                 matplotlib's default.
+            label: Caption text (scale title); `None` keeps the default.
+            length: Bar length as a fraction of the axis; `None` keeps the
+                default.
+            label_size: Caption font size; `None` keeps the default.
+            label_rotation: Caption rotation in degrees; `None` keeps the
+                default.
+            label_location: Caption placement along the bar (distinct from
+                `location`, the bar's edge); `None` keeps the default.
+            ticks_spacing: Spacing between the colorbar's ticks; `None` keeps
+                the default.
         """
         self.location = location
         self.inside = inside
@@ -787,6 +824,12 @@ class ColorBar:
         self.box = True if (inside and box is None) else box
         self.label_color = label_color
         self.tick_color = tick_color
+        self.label = label
+        self.length = length
+        self.label_size = label_size
+        self.label_rotation = label_rotation
+        self.label_location = label_location
+        self.ticks_spacing = ticks_spacing
 
 
 def _swatch_text_default(box: bool | str | dict | None) -> str:
@@ -864,7 +907,7 @@ def _resolve_colorbar(colorbar: bool | ColorBar | None) -> dict:
             "cbar_tick_color": None,
         }
     if isinstance(colorbar, ColorBar):
-        return {
+        updates = {
             "add_colorbar": True,
             "cbar_location": colorbar.location,
             "cbar_inside": colorbar.inside,
@@ -872,6 +915,20 @@ def _resolve_colorbar(colorbar: bool | ColorBar | None) -> dict:
             "cbar_label_color": colorbar.label_color,
             "cbar_tick_color": colorbar.tick_color,
         }
+        # Caption / size / spacing fields override the loose cbar_* keys only
+        # when set, so an unset field leaves the existing default in place (and
+        # a caller still mixing in a loose cbar_label during the transition is
+        # not clobbered). Phase 2 deprecates those loose kwargs.
+        optional = {
+            "cbar_label": colorbar.label,
+            "cbar_length": colorbar.length,
+            "cbar_label_size": colorbar.label_size,
+            "cbar_label_rotation": colorbar.label_rotation,
+            "cbar_label_location": colorbar.label_location,
+            "ticks_spacing": colorbar.ticks_spacing,
+        }
+        updates.update({k: v for k, v in optional.items() if v is not None})
+        return updates
     raise TypeError(
         "colorbar must be a bool, ColorBar, or None, got "
         f"{type(colorbar).__name__}."
