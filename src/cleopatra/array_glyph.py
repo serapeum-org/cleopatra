@@ -953,6 +953,10 @@ def _resolve_colorbar(colorbar: bool | ColorBar | None) -> dict:
             "cbar_box": None,
             "cbar_label_color": None,
             "cbar_tick_color": None,
+            # Reset the placement family to defaults so a bare `True` really
+            # draws a default bar; orientation is placement, so a prior sticky
+            # `cbar_orientation` must not leak into it.
+            "cbar_orientation": "vertical",
         }
     if isinstance(colorbar, ColorBar):
         updates = {
@@ -3660,7 +3664,11 @@ class ArrayGlyph(GeoMixin, Glyph):
         # place instead, so the ECMWF swatch is kept.
         self._style_wants_colorbar = colorbar is True or (
             isinstance(colorbar, ColorBar)
-            and (colorbar.location is not None or colorbar.inside)
+            and (
+                colorbar.location is not None
+                or colorbar.inside
+                or colorbar.orientation is not None
+            )
         )
 
         self._validate_extend(self.default_options.get("extend"))
@@ -4650,7 +4658,11 @@ class ArrayGlyph(GeoMixin, Glyph):
         # place instead, so the ECMWF swatch is kept.
         self._style_wants_colorbar = colorbar is True or (
             isinstance(colorbar, ColorBar)
-            and (colorbar.location is not None or colorbar.inside)
+            and (
+                colorbar.location is not None
+                or colorbar.inside
+                or colorbar.orientation is not None
+            )
         )
 
         # Tick-spacing precedence: a `colorbar=ColorBar(ticks_spacing=...)` spec

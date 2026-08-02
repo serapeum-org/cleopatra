@@ -1373,6 +1373,15 @@ class Glyph:
                 "cbar_location must be one of 'left', 'right', 'top', "
                 f"'bottom', or None, got {location!r}."
             )
+        orientation_opt = self.default_options.get("cbar_orientation")
+        if orientation_opt is not None and orientation_opt not in ("vertical", "horizontal"):
+            # Validate at render too, so a bad value reaching this path -- via the
+            # deprecated loose `cbar_orientation` kwarg or a low-level Glyph -- gets
+            # an actionable error instead of an opaque matplotlib one.
+            raise ValueError(
+                "cbar_orientation must be 'vertical' or 'horizontal', got "
+                f"{orientation_opt!r}."
+            )
         inside = bool(self.default_options.get("cbar_inside", False))
         orientation = self._resolve_cbar_orientation(location)
         # Pull the user-supplied `label` (if any) out of cbar_kwargs before

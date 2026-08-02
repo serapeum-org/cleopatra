@@ -6472,6 +6472,19 @@ class TestColorbarPlacement:
         assert g.cbar.orientation == "horizontal", f"inside bottom should be horizontal, got {g.cbar.orientation}"
         plt.close("all")
 
+    def test_colorbar_true_resets_sticky_orientation(self):
+        """`colorbar=True` resets a previously sticky orientation to vertical (#235).
+
+        Test scenario:
+            After a horizontal spec on a reused glyph, a bare `colorbar=True`
+            draws the default vertical bar rather than inheriting horizontal.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g.plot(cmap="viridis", colorbar=ColorBar(orientation="horizontal"))
+        g.plot(cmap="viridis", colorbar=True)
+        assert g.cbar.orientation == "vertical", f"colorbar=True should reset to vertical, got {g.cbar.orientation}"
+        plt.close("all")
+
 
 class TestColorBar:
     """Tests for the `ColorBar` placement/box config object."""
@@ -6651,6 +6664,7 @@ class TestResolveColorbar:
             "cbar_box": None,
             "cbar_label_color": None,
             "cbar_tick_color": None,
+            "cbar_orientation": "vertical",
         }
         assert out == expected, f"True should reset to default placement, got {out}"
 
@@ -6803,6 +6817,19 @@ class TestDeprecatedCbarKwargs:
         assert g.cbar.orientation == "horizontal", f"deprecated kwarg should still work, got {g.cbar.orientation}"
         plt.close("all")
 
+    def test_invalid_loose_cbar_orientation_raises(self):
+        """A loose `cbar_orientation` typo raises a clear error at render (#235).
+
+        Test scenario:
+            The deprecated path is validated in `create_color_bar` too, so a bad
+            value surfaces as an actionable cleopatra error, not a matplotlib one.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 30.0, 20.0])
+        with pytest.warns(DeprecationWarning, match="cbar_orientation"):
+            with pytest.raises(ValueError, match="cbar_orientation must be 'vertical' or 'horizontal'"):
+                g.plot(cmap="viridis", cbar_orientation="horizontl")
+        plt.close("all")
+
 
 class TestStylePrecedence:
     """Explicit args override a `style=` preset (defaults < preset < explicit)."""
@@ -6841,6 +6868,21 @@ class TestStylePrecedence:
         g.plot(style="temperature_2m", vmin=-15, vmax=42,
                colorbar=ColorBar(location="right", inside=True))
         assert g.cbar is not None, "placement ColorBar should draw a real colorbar on a style"
+        plt.close("all")
+
+    def test_orientation_only_spec_draws_real_colorbar_on_style(self):
+        """An orientation-only `ColorBar` draws a real bar over a preset swatch (#235).
+
+        Test scenario:
+            Orientation is placement-like, so `colorbar=ColorBar(orientation=...)`
+            on a style forces a real (horizontal) colorbar instead of silently
+            keeping the swatch.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g.plot(style="temperature_2m", vmin=-15, vmax=42,
+               colorbar=ColorBar(orientation="horizontal"))
+        assert g.cbar is not None, "orientation-only ColorBar should draw a real colorbar on a style"
+        assert g.cbar.orientation == "horizontal", f"expected horizontal, got {g.cbar.orientation}"
         plt.close("all")
 
     def test_styled_colorbar_ticks_span_the_data_range(self):
