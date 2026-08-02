@@ -103,7 +103,7 @@ DEFAULT_OPTIONS: dict[str, Any] = {
     "cmap": "coolwarm_r",
     "cbar_label_size": 12,
     "cbar_label": None,
-    "cbar_label_rotation": -90,
+    "cbar_label_rotation": None,
     "cbar_label_location": "center",
     "ticks_spacing": 5,
     "color_scale": "linear",

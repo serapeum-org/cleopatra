@@ -288,8 +288,8 @@ class ColorbarOptions(TypedDict, total=False):
         add_colorbar: Whether to draw the glyph's own colorbar, by
             default `True`.
         cbar_orientation: Colorbar orientation, by default `'vertical'`.
-        cbar_label_rotation: Rotation angle of the colorbar label, by
-            default `-90`.
+        cbar_label_rotation: Rotation angle (degrees) of the colorbar label.
+            `None` (the default) leaves matplotlib's own default orientation.
         cbar_label_location: Location of the colorbar label, by default
             `'bottom'`.
         cbar_length: Ratio controlling the colorbar's height/width, by
@@ -306,7 +306,7 @@ class ColorbarOptions(TypedDict, total=False):
 
     add_colorbar: bool
     cbar_orientation: Literal["vertical", "horizontal"]
-    cbar_label_rotation: float
+    cbar_label_rotation: float | None
     cbar_label_location: Literal[
         "top", "bottom", "center", "baseline", "center_baseline"
     ]

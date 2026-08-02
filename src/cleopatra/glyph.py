@@ -1459,11 +1459,13 @@ class Glyph:
         label_text = (
             user_label if user_label is not None else self.default_options["cbar_label"]
         )
+        label_rotation = self.default_options.get("cbar_label_rotation")
         cbar.set_label(
             label_text,
             fontsize=self.default_options["cbar_label_size"],
             loc=self.default_options["cbar_label_location"],
             **({"color": label_color} if label_color else {}),
+            **({"rotation": label_rotation} if label_rotation is not None else {}),
         )
 
     def _inside_colorbar_axes(
