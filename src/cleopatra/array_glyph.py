@@ -892,6 +892,16 @@ def _resolve_colorbar(colorbar: bool | ColorBar | None) -> dict:
             'left'
 
             ```
+        - Caption / sizing fields map onto their `cbar_*` keys only when set,
+            so an unset field is omitted (leaving the existing default):
+            ```python
+            >>> from cleopatra.array_glyph import _resolve_colorbar, ColorBar
+            >>> _resolve_colorbar(ColorBar(label="Depth [m]", length=0.8))["cbar_label"]
+            'Depth [m]'
+            >>> "cbar_label" in _resolve_colorbar(ColorBar(location="right"))
+            False
+
+            ```
     """
     if colorbar is None:
         return {}
