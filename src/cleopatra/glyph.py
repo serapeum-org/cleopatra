@@ -1459,11 +1459,13 @@ class Glyph:
         label_text = (
             user_label if user_label is not None else self.default_options["cbar_label"]
         )
+        label_rotation = self.default_options.get("cbar_label_rotation")
         cbar.set_label(
             label_text,
             fontsize=self.default_options["cbar_label_size"],
             loc=self.default_options["cbar_label_location"],
             **({"color": label_color} if label_color else {}),
+            **({"rotation": label_rotation} if label_rotation is not None else {}),
         )
 
     def _inside_colorbar_axes(
@@ -1495,11 +1497,19 @@ class Glyph:
                 `(cax, inset_bounds, label_side)` for `_draw_cbar_box`.
         """
         fig = ax.figure
+        # The inset's long axis scales with `cbar_length` relative to its
+        # default and re-centres, so `ColorBar(length=...)` shortens/lengthens
+        # an inset bar the way `shrink=` does an outside one. The default length
+        # reproduces the historical 0.72 span centred at 0.5 exactly.
+        default_length = STYLE_DEFAULTS["cbar_length"]
+        length = self.default_options.get("cbar_length") or default_length
+        long_frac = 0.72 * (length / default_length)
+        long_start = 0.5 - long_frac / 2
         bounds, label_side = {
-            "right": ((0.905, 0.14, 0.022, 0.72), "left"),
-            "left": ((0.073, 0.14, 0.022, 0.72), "right"),
-            "top": ((0.14, 0.905, 0.72, 0.022), "bottom"),
-            "bottom": ((0.14, 0.073, 0.72, 0.022), "top"),
+            "right": ((0.905, long_start, 0.022, long_frac), "left"),
+            "left": ((0.073, long_start, 0.022, long_frac), "right"),
+            "top": ((long_start, 0.905, long_frac, 0.022), "bottom"),
+            "bottom": ((long_start, 0.073, long_frac, 0.022), "top"),
         }[location]
         cax = ax.inset_axes(bounds)
         cax.set_zorder(6)

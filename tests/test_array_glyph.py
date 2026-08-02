@@ -19,6 +19,7 @@ from cleopatra.array_glyph import (
     _UNSET,
     _resolve_colorbar,
     _swatch_text_default,
+    _warn_deprecated_cbar_kwargs,
     AnimateKwargs,
     ArrayGlyph,
     ColorBar,
@@ -118,7 +119,7 @@ class TestPlotArray:
     ):
         array = ArrayGlyph(arr, exclude_value=[no_data_value])
         fig, ax = array.plot(
-            color_scale=color_scale[0], cmap=cmap, ticks_spacing=ticks_spacing
+            color_scale=color_scale[0], cmap=cmap, colorbar=ColorBar(ticks_spacing=ticks_spacing)
         )
         assert isinstance(fig, Figure)
 
@@ -136,7 +137,7 @@ class TestPlotArray:
             color_scale=color_scale[1],
             cmap=cmap,
             gamma=color_scale_2_gamma,
-            ticks_spacing=ticks_spacing,
+            colorbar=ColorBar(ticks_spacing=ticks_spacing),
         )
         assert isinstance(fig, Figure)
 
@@ -156,7 +157,7 @@ class TestPlotArray:
             line_scale=color_scale_3_linscale,
             line_threshold=color_scale_3_linthresh,
             cmap=cmap,
-            ticks_spacing=ticks_spacing,
+            colorbar=ColorBar(ticks_spacing=ticks_spacing),
         )
 
         assert isinstance(fig, Figure)
@@ -170,7 +171,7 @@ class TestPlotArray:
         ticks_spacing: int,
     ):
         array = ArrayGlyph(arr, exclude_value=[no_data_value])
-        fig, ax = array.plot(color_scale=color_scale[3], cmap=cmap, ticks_spacing=5)
+        fig, ax = array.plot(color_scale=color_scale[3], cmap=cmap, colorbar=ColorBar(ticks_spacing=5))
 
         assert isinstance(fig, Figure)
 
@@ -187,7 +188,7 @@ class TestPlotArray:
         fig, ax = array.plot(
             color_scale=color_scale[3],
             cmap=cmap,
-            ticks_spacing=ticks_spacing,
+            colorbar=ColorBar(ticks_spacing=ticks_spacing),
             bounds=bounds,
         )
 
@@ -207,7 +208,7 @@ class TestPlotArray:
             color_scale=color_scale[4],
             midpoint=midpoint,
             cmap=cmap,
-            ticks_spacing=ticks_spacing,
+            colorbar=ColorBar(ticks_spacing=ticks_spacing),
         )
 
         assert isinstance(fig, Figure)
@@ -226,7 +227,7 @@ class TestPlotArray:
             display_cell_value=display_cell_value,
             num_size=num_size,
             background_color_threshold=background_color_threshold,
-            ticks_spacing=ticks_spacing,
+            colorbar=ColorBar(ticks_spacing=ticks_spacing),
         )
 
         assert isinstance(fig, Figure)
@@ -253,7 +254,7 @@ class TestPlotArray:
             display_cell_value=display_cell_value,
             num_size=num_size,
             background_color_threshold=background_color_threshold,
-            ticks_spacing=ticks_spacing,
+            colorbar=ColorBar(ticks_spacing=ticks_spacing),
         )
 
         assert isinstance(fig, Figure)
@@ -1768,12 +1769,13 @@ class TestPlotRecomputeBranch:
             glyph.plot(banana_count=12)
 
     def test_recompute_with_explicit_ticks_spacing(self):
-        """`plot(robust=True, ticks_spacing=...)` keeps the user's spacing."""
+        """A loose `ticks_spacing=` (deprecated) still wins over the recompute path."""
         rng = np.random.default_rng(1337)
         body = rng.random(98)
         arr = np.concatenate([body, [-1000.0, 1000.0]]).reshape(10, 10)
         glyph = ArrayGlyph(arr)
-        glyph.plot(robust=True, ticks_spacing=0.1)
+        with pytest.warns(DeprecationWarning, match="ticks_spacing"):
+            glyph.plot(robust=True, ticks_spacing=0.1)
         assert glyph.default_options["ticks_spacing"] == 0.1, (
             "Explicit ticks_spacing must win over the recompute path"
         )
@@ -2145,11 +2147,31 @@ class TestAnimateEdgeCases:
         animate_time_list: list,
         no_data_value: float,
     ):
-        """`animate(ticks_spacing=...)` overrides the auto-computed spacing."""
+        """A loose `animate(ticks_spacing=...)` (deprecated) overrides the auto spacing."""
         glyph = ArrayGlyph(coello_data, exclude_value=[no_data_value])
-        anim = glyph.animate(animate_time_list, ticks_spacing=50.0)
+        with pytest.warns(DeprecationWarning, match="ticks_spacing"):
+            anim = glyph.animate(animate_time_list, ticks_spacing=50.0)
         assert anim is not None
         assert glyph.default_options["ticks_spacing"] == 50.0
+
+    def test_animate_ticks_spacing_via_spec(
+        self,
+        coello_data: np.ndarray,
+        animate_time_list: list,
+        no_data_value: float,
+    ):
+        """`animate(colorbar=ColorBar(ticks_spacing=...))` honors the spec spacing (#234).
+
+        Test scenario:
+            The typed spec must survive to the render in animate too, not be
+            overwritten by the auto-computed spacing (the plot-path bug's twin).
+        """
+        glyph = ArrayGlyph(coello_data, exclude_value=[no_data_value])
+        anim = glyph.animate(animate_time_list, colorbar=ColorBar(ticks_spacing=50.0))
+        assert anim is not None
+        assert glyph.default_options["ticks_spacing"] == 50.0, (
+            f"spec ticks_spacing not honored in animate, got {glyph.default_options['ticks_spacing']}"
+        )
 
     def test_data_getter_is_keyword_only(
         self,
@@ -2272,11 +2294,11 @@ class TestAnimateEdgeCases:
         """`size=None` inherits `cbar_label_size` (the pre-`size` behaviour).
 
         Test scenario:
-            With ``FrameLabel()`` (size unset) and ``cbar_label_size=17``, the
-            label falls back to the colorbar label size, 17 pt.
+            With ``FrameLabel()`` (size unset) and ``ColorBar(label_size=17)``,
+            the label falls back to the colorbar label size, 17 pt.
         """
         glyph = ArrayGlyph(coello_data)
-        glyph.animate(animate_time_list, frame_label=FrameLabel(), cbar_label_size=17)
+        glyph.animate(animate_time_list, frame_label=FrameLabel(), colorbar=ColorBar(label_size=17))
         assert glyph._day_text.get_fontsize() == 17, (
             f"Expected inherited fontsize 17, got {glyph._day_text.get_fontsize()}"
         )
@@ -6207,6 +6229,157 @@ class TestColorbarPlacement:
         assert len(g_box.ax.patches) == len(g_no.ax.patches) + 1, "box=True should add one swatch backing panel"
         plt.close("all")
 
+    def test_caption_via_spec_alone(self):
+        """A caption/length set through `ColorBar` render with no loose kwargs.
+
+        Test scenario:
+            #234 -- `ColorBar(label=..., length=...)` fully configures the bar,
+            so the caption renders without falling back to a loose `cbar_label=`.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g.plot(cmap="viridis", colorbar=ColorBar(location="bottom", label="Rainfall mm/day", length=0.8))
+        caption = g.cbar.ax.get_xlabel() or g.cbar.ax.get_ylabel()
+        assert caption == "Rainfall mm/day", f"caption not set via ColorBar, got {caption!r}"
+        plt.close("all")
+
+    def test_spec_does_not_clobber_loose_caption(self):
+        """An unset ColorBar caption leaves a loose `cbar_label` intact.
+
+        Test scenario:
+            During the transition (before the loose kwargs are deprecated), a
+            `ColorBar` that sets no caption must not overwrite a loose `cbar_label`.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        with pytest.warns(DeprecationWarning, match="cbar_label"):
+            g.plot(cmap="viridis", colorbar=ColorBar(location="right"), cbar_label="Legacy caption")
+        caption = g.cbar.ax.get_xlabel() or g.cbar.ax.get_ylabel()
+        assert caption == "Legacy caption", f"loose cbar_label was clobbered, got {caption!r}"
+        plt.close("all")
+
+    def test_ticks_spacing_via_spec_takes_effect(self):
+        """`ColorBar(ticks_spacing=...)` drives the drawn tick spacing (#234).
+
+        Test scenario:
+            A spec-provided tick spacing must survive to the render rather than
+            being overwritten by the auto-computed `(vmax - vmin) / 10`.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g.plot(cmap="viridis", vmin=0.0, vmax=20.0, colorbar=ColorBar(location="right", ticks_spacing=5.0))
+        resolved = g.default_options["ticks_spacing"]
+        assert resolved == 5.0, f"spec ticks_spacing was clobbered, got {resolved}"
+        spacings = np.diff(g.cbar.get_ticks())
+        assert np.allclose(spacings, 5.0), f"drawn ticks not spaced by 5.0, got {g.cbar.get_ticks()}"
+        plt.close("all")
+
+    def test_ticks_spacing_spec_wins_over_loose_kwarg(self):
+        """A `ColorBar(ticks_spacing=...)` spec wins over a loose `ticks_spacing=`.
+
+        Test scenario:
+            When both are supplied, `colorbar=` resolves last and takes
+            precedence, consistent with every other mapped `cbar_*` field.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        with pytest.warns(DeprecationWarning, match="ticks_spacing"):
+            g.plot(
+                cmap="viridis",
+                vmin=0.0,
+                vmax=20.0,
+                ticks_spacing=2.0,
+                colorbar=ColorBar(location="right", ticks_spacing=5.0),
+            )
+        resolved = g.default_options["ticks_spacing"]
+        assert resolved == 5.0, f"loose ticks_spacing should lose to the spec, got {resolved}"
+        plt.close("all")
+
+    def test_label_rotation_via_spec_takes_effect(self):
+        """`ColorBar(label_rotation=...)` rotates the drawn caption (#234).
+
+        Test scenario:
+            A spec-provided rotation reaches the colorbar label instead of being
+            dropped (matplotlib's default vertical-label rotation is not 0).
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g.plot(cmap="viridis", colorbar=ColorBar(location="right", label="Depth", label_rotation=0.0))
+        y_label = g.cbar.ax.yaxis.get_label()
+        label_obj = y_label if y_label.get_text() == "Depth" else g.cbar.ax.xaxis.get_label()
+        assert label_obj.get_rotation() == 0.0, f"label_rotation not applied, got {label_obj.get_rotation()}"
+        plt.close("all")
+
+    def test_label_rotation_unset_leaves_matplotlib_default(self):
+        """An unset `label_rotation` leaves matplotlib's default orientation.
+
+        Test scenario:
+            Phase 1 is additive -- a caption with no `label_rotation` keeps the
+            pre-existing (non-zero) vertical rotation, so nothing regresses.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g.plot(cmap="viridis", colorbar=ColorBar(location="right", label="Depth"))
+        y_label = g.cbar.ax.yaxis.get_label()
+        label_obj = y_label if y_label.get_text() == "Depth" else g.cbar.ax.xaxis.get_label()
+        assert label_obj.get_rotation() != 0.0, "unset label_rotation should keep matplotlib's default"
+        plt.close("all")
+
+    def test_label_size_via_spec_takes_effect(self):
+        """`ColorBar(label_size=...)` sets the caption font size (#234).
+
+        Test scenario:
+            A spec-provided font size reaches the drawn colorbar label.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g.plot(cmap="viridis", colorbar=ColorBar(location="right", label="Depth", label_size=20))
+        y_label = g.cbar.ax.yaxis.get_label()
+        label_obj = y_label if y_label.get_text() == "Depth" else g.cbar.ax.xaxis.get_label()
+        assert label_obj.get_fontsize() == 20, f"label_size not applied, got {label_obj.get_fontsize()}"
+        plt.close("all")
+
+    def test_length_via_spec_changes_bar_extent(self):
+        """`ColorBar(length=...)` scales the drawn colorbar's long axis (#234).
+
+        Test scenario:
+            A larger `length` yields a taller vertical colorbar, so the field
+            reaches `fig.colorbar(shrink=...)` rather than being ignored.
+        """
+        short = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        short.plot(cmap="viridis", colorbar=ColorBar(location="right", length=0.3))
+        tall = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        tall.plot(cmap="viridis", colorbar=ColorBar(location="right", length=0.9))
+        short_h = short.cbar.ax.get_position().height
+        tall_h = tall.cbar.ax.get_position().height
+        assert tall_h > short_h, f"length=0.9 bar ({tall_h}) should exceed length=0.3 ({short_h})"
+        plt.close("all")
+
+    def test_length_inside_changes_bar_extent(self):
+        """`ColorBar(inside=True, length=...)` scales an inset bar too (#234).
+
+        Test scenario:
+            The inset path must honor `length` -- a shorter spec yields a shorter
+            inset bar rather than the field silently no-opping.
+        """
+        short = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        short.plot(cmap="viridis", colorbar=ColorBar(location="right", inside=True, length=0.3))
+        tall = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        tall.plot(cmap="viridis", colorbar=ColorBar(location="right", inside=True, length=0.9))
+        short_h = short.cbar.ax.get_position().height
+        tall_h = tall.cbar.ax.get_position().height
+        assert tall_h > short_h, f"inside length=0.9 bar ({tall_h}) should exceed length=0.3 ({short_h})"
+        plt.close("all")
+
+    def test_label_location_via_spec_reaches_render(self):
+        """`ColorBar(label_location=...)` positions the caption along the bar (#234).
+
+        Test scenario:
+            A "top" caption sits higher along a vertical bar than a "bottom" one,
+            confirming label_location reaches `set_label(loc=...)` at render.
+        """
+        top = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        top.plot(cmap="viridis", colorbar=ColorBar(location="right", label="Depth", label_location="top"))
+        bottom = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        bottom.plot(cmap="viridis", colorbar=ColorBar(location="right", label="Depth", label_location="bottom"))
+        top_y = top.cbar.ax.yaxis.get_label().get_position()[1]
+        bottom_y = bottom.cbar.ax.yaxis.get_label().get_position()[1]
+        assert top_y > bottom_y, f"label_location not applied: top_y={top_y}, bottom_y={bottom_y}"
+        plt.close("all")
+
 
 class TestColorBar:
     """Tests for the `ColorBar` placement/box config object."""
@@ -6280,6 +6453,28 @@ class TestColorBar:
         spec = ColorBar(label_color="black", tick_color="red")
         assert (spec.label_color, spec.tick_color) == ("black", "red"), "colour fields should store verbatim"
 
+    def test_caption_sizing_fields_default_none_and_store(self):
+        """The caption/sizing fields default to `None` and store verbatim.
+
+        Test scenario:
+            label / length / label_size / label_rotation / label_location /
+            ticks_spacing are optional holders, `None` when unset.
+        """
+        bare = ColorBar()
+        for f in ("label", "length", "label_size", "label_rotation",
+                  "label_location", "ticks_spacing"):
+            assert getattr(bare, f) is None, f"{f} should default to None"
+        spec = ColorBar(
+            label="Rainfall mm/day", length=0.8, label_size=9.0,
+            label_rotation=90.0, label_location="center", ticks_spacing=5.0,
+        )
+        assert spec.label == "Rainfall mm/day", f"label not stored: {spec.label}"
+        assert spec.length == 0.8, f"length not stored: {spec.length}"
+        assert spec.label_size == 9.0, f"label_size not stored: {spec.label_size}"
+        assert spec.label_rotation == 90.0, f"label_rotation not stored: {spec.label_rotation}"
+        assert spec.label_location == "center", f"label_location not stored: {spec.label_location}"
+        assert spec.ticks_spacing == 5.0, f"ticks_spacing not stored: {spec.ticks_spacing}"
+
 
 class TestResolveColorbar:
     """Tests for the `_resolve_colorbar` front-door parser."""
@@ -6336,6 +6531,39 @@ class TestResolveColorbar:
         }
         assert out == expected, f"spec fields not mapped, got {out}"
 
+    def test_spec_maps_caption_and_sizing_fields(self):
+        """A `ColorBar` maps its caption/sizing fields onto the `cbar_*` keys.
+
+        Test scenario:
+            label -> cbar_label, length -> cbar_length, label_size ->
+            cbar_label_size, label_rotation -> cbar_label_rotation,
+            label_location -> cbar_label_location, ticks_spacing -> ticks_spacing.
+        """
+        out = _resolve_colorbar(
+            ColorBar(
+                label="Rainfall mm/day", length=0.8, label_size=9.0,
+                label_rotation=90.0, label_location="center", ticks_spacing=5.0,
+            )
+        )
+        assert out["cbar_label"] == "Rainfall mm/day", f"cbar_label not mapped: {out}"
+        assert out["cbar_length"] == 0.8, f"cbar_length not mapped: {out}"
+        assert out["cbar_label_size"] == 9.0, f"cbar_label_size not mapped: {out}"
+        assert out["cbar_label_rotation"] == 90.0, f"cbar_label_rotation not mapped: {out}"
+        assert out["cbar_label_location"] == "center", f"cbar_label_location not mapped: {out}"
+        assert out["ticks_spacing"] == 5.0, f"ticks_spacing not mapped: {out}"
+
+    def test_unset_caption_fields_are_not_emitted(self):
+        """Unset caption/sizing fields are omitted, so loose defaults survive.
+
+        Test scenario:
+            A `ColorBar` that sets no caption/sizing field must not emit those
+            `cbar_*` keys (otherwise it would clobber a loose `cbar_label`).
+        """
+        out = _resolve_colorbar(ColorBar(location="right"))
+        for key in ("cbar_label", "cbar_length", "cbar_label_size",
+                    "cbar_label_rotation", "cbar_label_location", "ticks_spacing"):
+            assert key not in out, f"{key} should not be emitted when unset, got {out}"
+
     @pytest.mark.parametrize("bad", ["right", 1, 1.5, ["right"], {"location": "right"}])
     def test_invalid_type_raises(self, bad):
         """A non-bool / non-`ColorBar` / non-`None` value raises `TypeError`.
@@ -6348,6 +6576,65 @@ class TestResolveColorbar:
         """
         with pytest.raises(TypeError, match="colorbar must be"):
             _resolve_colorbar(bad)
+
+
+class TestDeprecatedCbarKwargs:
+    """Deprecation of the loose `cbar_*` kwargs superseded by `ColorBar` (#234)."""
+
+    @staticmethod
+    def _field() -> np.ndarray:
+        """Return a small 2-D field for a single static plot."""
+        return np.arange(20 * 30, dtype=float).reshape(20, 30)
+
+    def test_helper_warns_for_a_deprecated_key(self):
+        """`_warn_deprecated_cbar_kwargs` warns and names the `ColorBar` field.
+
+        Test scenario:
+            A loose `cbar_label` triggers a DeprecationWarning pointing at
+            `colorbar=ColorBar(label=...)`.
+        """
+        with pytest.warns(DeprecationWarning, match=r"cbar_label.*ColorBar\(label="):
+            _warn_deprecated_cbar_kwargs({"cbar_label": "Depth"})
+
+    def test_helper_silent_without_deprecated_keys(self):
+        """No warning is emitted when no deprecated key is present.
+
+        Test scenario:
+            A kwargs dict free of loose cbar_* keys warns nothing.
+        """
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            _warn_deprecated_cbar_kwargs({"cmap": "viridis", "vmin": 0})
+
+    def test_plot_loose_cbar_label_warns_but_still_works(self):
+        """A loose `cbar_label` on `plot` warns yet still renders the caption.
+
+        Test scenario:
+            During the deprecation window the kwarg keeps working (caption
+            rendered) while steering the caller toward `ColorBar`.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 30.0, 20.0])
+        with pytest.warns(DeprecationWarning, match="cbar_label"):
+            g.plot(cmap="viridis", cbar_label="Rainfall mm/day")
+        caption = g.cbar.ax.get_xlabel() or g.cbar.ax.get_ylabel()
+        assert caption == "Rainfall mm/day", f"deprecated kwarg should still work, got {caption!r}"
+        plt.close("all")
+
+    def test_typed_colorbar_does_not_warn(self):
+        """Configuring the caption through `ColorBar` emits no cbar deprecation.
+
+        Test scenario:
+            The typed `colorbar=ColorBar(label=...)` path is the recommended
+            replacement and must not raise the loose-kwarg deprecation.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 30.0, 20.0])
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            g.plot(cmap="viridis", colorbar=ColorBar(label="Rainfall mm/day"))
+        assert not any(
+            "deprecated" in str(x.message) and "cbar" in str(x.message) for x in caught
+        ), "typed ColorBar should not trigger the loose-kwarg deprecation"
+        plt.close("all")
 
 
 class TestStylePrecedence:

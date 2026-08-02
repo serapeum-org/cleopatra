@@ -288,8 +288,8 @@ class ColorbarOptions(TypedDict, total=False):
         add_colorbar: Whether to draw the glyph's own colorbar, by
             default `True`.
         cbar_orientation: Colorbar orientation, by default `'vertical'`.
-        cbar_label_rotation: Rotation angle of the colorbar label, by
-            default `-90`.
+        cbar_label_rotation: Rotation angle (degrees) of the colorbar label.
+            `None` (the default) leaves matplotlib's own default orientation.
         cbar_label_location: Location of the colorbar label, by default
             `'bottom'`.
         cbar_length: Ratio controlling the colorbar's height/width, by
@@ -306,7 +306,7 @@ class ColorbarOptions(TypedDict, total=False):
 
     add_colorbar: bool
     cbar_orientation: Literal["vertical", "horizontal"]
-    cbar_label_rotation: float
+    cbar_label_rotation: float | None
     cbar_label_location: Literal[
         "top", "bottom", "center", "baseline", "center_baseline"
     ]
@@ -738,6 +738,22 @@ class ColorBar:
             and, for a `style` preset, the swatch legend's endpoint values.
             `None` (default) keeps matplotlib's default for a colorbar; for the
             swatch it defaults to a colour that contrasts with `box`, else white.
+        label: Caption text for the scale (the colorbar's title). `None`
+            (default) keeps the current default caption.
+        length: Bar length as a fraction of the axis (e.g. `0.8`). `None`
+            (default) keeps the default length.
+        label_size: Font size of the caption. `None` (default) keeps the
+            default.
+        label_rotation: Rotation of the caption in degrees. `None` (default)
+            leaves matplotlib's own label orientation; pass a value to rotate
+            the caption (e.g. `0` for a horizontal caption).
+        label_location: Where the caption sits along the bar (e.g. `"center"`).
+            Distinct from `location`, which is the bar's *edge*. Valid values
+            depend on orientation (vertical bar: `"top"`/`"center"`/`"bottom"`;
+            horizontal bar: `"left"`/`"center"`/`"right"`). `None` (default)
+            keeps the default.
+        ticks_spacing: Spacing between the colorbar's ticks. `None` (default)
+            keeps the default.
 
     Examples:
         - An inside colorbar on the right -- its box defaults on:
@@ -756,6 +772,14 @@ class ColorBar:
             (None, 'black', 'black')
 
             ```
+        - A captioned bar, fully specified through the spec (no loose kwargs):
+            ```python
+            >>> from cleopatra.array_glyph import ColorBar
+            >>> spec = ColorBar(location="bottom", label="Rainfall mm/day", length=0.8)
+            >>> (spec.label, spec.length)
+            ('Rainfall mm/day', 0.8)
+
+            ```
     """
 
     def __init__(
@@ -766,6 +790,12 @@ class ColorBar:
         box: bool | str | dict | None = None,
         label_color: str | None = None,
         tick_color: str | None = None,
+        label: str | None = None,
+        length: float | None = None,
+        label_size: float | None = None,
+        label_rotation: float | None = None,
+        label_location: str | None = None,
+        ticks_spacing: float | None = None,
     ) -> None:
         """Initialise a `ColorBar`.
 
@@ -779,6 +809,18 @@ class ColorBar:
                 swatch title for a `style` preset); `None` keeps the default.
             tick_color: Colour of the colorbar's tick numbers; `None` keeps
                 matplotlib's default.
+            label: Caption text (scale title); `None` keeps the default.
+            length: Bar length as a fraction of the axis; `None` keeps the
+                default.
+            label_size: Caption font size; `None` keeps the default.
+            label_rotation: Caption rotation in degrees; `None` leaves
+                matplotlib's own label orientation.
+            label_location: Caption placement along the bar (distinct from
+                `location`, the bar's edge); valid values depend on orientation
+                (vertical: top/center/bottom, horizontal: left/center/right);
+                `None` keeps the default.
+            ticks_spacing: Spacing between the colorbar's ticks; `None` keeps
+                the default.
         """
         self.location = location
         self.inside = inside
@@ -787,6 +829,12 @@ class ColorBar:
         self.box = True if (inside and box is None) else box
         self.label_color = label_color
         self.tick_color = tick_color
+        self.label = label
+        self.length = length
+        self.label_size = label_size
+        self.label_rotation = label_rotation
+        self.label_location = label_location
+        self.ticks_spacing = ticks_spacing
 
 
 def _swatch_text_default(box: bool | str | dict | None) -> str:
@@ -849,6 +897,16 @@ def _resolve_colorbar(colorbar: bool | ColorBar | None) -> dict:
             'left'
 
             ```
+        - Caption / sizing fields map onto their `cbar_*` keys only when set,
+            so an unset field is omitted (leaving the existing default):
+            ```python
+            >>> from cleopatra.array_glyph import _resolve_colorbar, ColorBar
+            >>> _resolve_colorbar(ColorBar(label="Depth [m]", length=0.8))["cbar_label"]
+            'Depth [m]'
+            >>> "cbar_label" in _resolve_colorbar(ColorBar(location="right"))
+            False
+
+            ```
     """
     if colorbar is None:
         return {}
@@ -864,7 +922,7 @@ def _resolve_colorbar(colorbar: bool | ColorBar | None) -> dict:
             "cbar_tick_color": None,
         }
     if isinstance(colorbar, ColorBar):
-        return {
+        updates = {
             "add_colorbar": True,
             "cbar_location": colorbar.location,
             "cbar_inside": colorbar.inside,
@@ -872,10 +930,60 @@ def _resolve_colorbar(colorbar: bool | ColorBar | None) -> dict:
             "cbar_label_color": colorbar.label_color,
             "cbar_tick_color": colorbar.tick_color,
         }
+        # Caption / size / spacing fields override the loose cbar_* keys only
+        # when set, so an unset field leaves the existing default in place (and
+        # a caller still mixing in a loose cbar_label during the transition is
+        # not clobbered). Phase 2 deprecates those loose kwargs.
+        optional = {
+            "cbar_label": colorbar.label,
+            "cbar_length": colorbar.length,
+            "cbar_label_size": colorbar.label_size,
+            "cbar_label_rotation": colorbar.label_rotation,
+            "cbar_label_location": colorbar.label_location,
+            "ticks_spacing": colorbar.ticks_spacing,
+        }
+        updates.update({k: v for k, v in optional.items() if v is not None})
+        return updates
     raise TypeError(
         "colorbar must be a bool, ColorBar, or None, got "
         f"{type(colorbar).__name__}."
     )
+
+
+#: Loose colorbar kwargs now superseded by `ColorBar` fields (issue #234).
+#: Passing any of these to `plot` / `animate` is deprecated -- use the mapped
+#: `ColorBar` field instead. This set includes the non-`cbar_`-prefixed
+#: `ticks_spacing`, deprecated in favour of `ColorBar(ticks_spacing=...)`, not
+#: only the `cbar_*` keys. They still take effect (folded into
+#: `default_options`) so nothing breaks during the deprecation window.
+_DEPRECATED_CBAR_KWARGS = {
+    "cbar_label": "label",
+    "cbar_length": "length",
+    "cbar_label_size": "label_size",
+    "cbar_label_rotation": "label_rotation",
+    "cbar_label_location": "label_location",
+    "ticks_spacing": "ticks_spacing",
+}
+
+
+def _warn_deprecated_cbar_kwargs(kwargs: dict) -> None:
+    """Warn for any loose `cbar_*` kwarg that a `ColorBar` field now replaces.
+
+    The kwargs still take effect (the caller folds them into `default_options`);
+    this only steers callers toward the typed `colorbar=ColorBar(...)` spec.
+
+    Args:
+        kwargs: The `plot` / `animate` keyword arguments to inspect for the
+            deprecated loose colorbar keys.
+    """
+    for key, field in _DEPRECATED_CBAR_KWARGS.items():
+        if key in kwargs:
+            warnings.warn(
+                f"The '{key}' keyword is deprecated; pass "
+                f"colorbar=ColorBar({field}=...) instead.",
+                DeprecationWarning,
+                stacklevel=3,
+            )
 
 
 #: Deprecated `animate` kwargs that `_resolve_frame_label` folds into a
@@ -2995,18 +3103,27 @@ class ArrayGlyph(GeoMixin, Glyph):
                         Orientation of the color bar, by default 'vertical'.
                         Can be 'horizontal' or 'vertical'.
                     cbar_label_rotation : float, optional
-                        Rotation angle of the color bar label, by default -90.
+                        Deprecated; use `colorbar=ColorBar(label_rotation=...)`.
+                        Rotation angle (degrees) of the color bar label, by
+                        default None (matplotlib's own label orientation).
                     cbar_label_location : str, optional
-                        Location of the color bar label, by default 'bottom'.
-                        Options: 'top', 'bottom', 'center', 'baseline', 'center_baseline'.
+                        Deprecated; use `colorbar=ColorBar(label_location=...)`.
+                        Location of the color bar label, by default 'center'.
+                        Options: 'top', 'bottom', 'center', 'baseline',
+                        'center_baseline'; the valid set depends on the bar
+                        orientation (vertical: top/center/bottom).
                     cbar_length : float, optional
-                        Ratio to control the height/width of the color bar, by default 0.75.
+                        Deprecated; use `colorbar=ColorBar(length=...)`. Ratio to
+                        control the height/width of the color bar, by default 0.75.
                     ticks_spacing : int, optional
-                        Spacing between ticks on the color bar, by default 2.
+                        Deprecated; use `colorbar=ColorBar(ticks_spacing=...)`.
+                        Spacing between ticks on the color bar, by default 5.
                     cbar_label_size : int, optional
-                        Font size of the color bar label, by default 12.
+                        Deprecated; use `colorbar=ColorBar(label_size=...)`. Font
+                        size of the color bar label, by default 12.
                     cbar_label : str, optional
-                        Label text for the color bar, by default 'Value'.
+                        Deprecated; use `colorbar=ColorBar(label=...)`. Label text
+                        for the color bar, by default None.
 
                 Color scale options:
                     color_scale : ColorScale or str, optional
@@ -3196,12 +3313,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                 >>> array = ArrayGlyph(arr, figsize=(6, 6), title="Customized color bar", title_size=18)
                 >>> fig, ax = array.plot(
                 ...     cbar_orientation="horizontal",
-                ...     cbar_label_rotation=-90,
-                ...     cbar_label_location="center",
-                ...     cbar_length=0.7,
-                ...     cbar_label_size=12,
-                ...     cbar_label="Discharge m3/s",
-                ...     ticks_spacing=5,
+                ...     colorbar=ColorBar(
+                ...         label="Discharge m3/s",
+                ...         label_location="center",
+                ...         length=0.7,
+                ...         label_size=12,
+                ...         ticks_spacing=5,
+                ...     ),
                 ...     color_scale="linear",
                 ...     cmap="coolwarm_r",
                 ... )
@@ -3257,10 +3375,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                     ```python
                     >>> array = ArrayGlyph(arr, figsize=(6, 6), title="Power scale", title_size=18)
                     >>> fig, ax = array.plot(
-                    ...     cbar_label="Discharge m3/s",
+                    ...     colorbar=ColorBar(label="Discharge m3/s"),
                     ...     color_scale="power",
                     ...     cmap="coolwarm_r",
-                    ...     cbar_label_rotation=-90,
                     ... )
 
                     ```
@@ -3274,8 +3391,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     ...     color_scale="power",
                     ...     gamma=0.8,
                     ...     cmap="coolwarm_r",
-                    ...     cbar_label_rotation=-90,
-                    ...     cbar_label="Discharge m3/s",
+                    ...     colorbar=ColorBar(label="Discharge m3/s"),
                     ... )
 
                     ```
@@ -3289,8 +3405,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     ...     color_scale="power",
                     ...     gamma=0.1,
                     ...     cmap="coolwarm_r",
-                    ...     cbar_label_rotation=-90,
-                    ...     cbar_label="Discharge m3/s",
+                    ...     colorbar=ColorBar(label="Discharge m3/s"),
                     ... )
 
                     ```
@@ -3303,10 +3418,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                     ```python
                     >>> array = ArrayGlyph(arr, figsize=(6, 6), title="Logarithmic scale", title_size=18)
                     >>> fig, ax = array.plot(
-                    ...     cbar_label="Discharge m3/s",
+                    ...     colorbar=ColorBar(label="Discharge m3/s"),
                     ...     color_scale="sym-lognorm",
                     ...     cmap="coolwarm_r",
-                    ...     cbar_label_rotation=-90,
                     ... )
 
                     ```
@@ -3318,8 +3432,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     ...     arr, figsize=(6, 6), title="Logarithmic scale: Customized Parameter", title_size=12
                     ... )
                     >>> fig, ax = array.plot(
-                    ...     cbar_label_rotation=-90,
-                    ...     cbar_label="Discharge m3/s",
+                    ...     colorbar=ColorBar(label="Discharge m3/s"),
                     ...     color_scale="sym-lognorm",
                     ...     cmap="coolwarm_r",
                     ...     line_threshold=0.015,
@@ -3333,8 +3446,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 ```python
                 >>> array = ArrayGlyph(arr, figsize=(6, 6), title="Defined boundary scale", title_size=18)
                 >>> fig, ax = array.plot(
-                ...     cbar_label_rotation=-90,
-                ...     cbar_label="Discharge m3/s",
+                ...     colorbar=ColorBar(label="Discharge m3/s"),
                 ...     color_scale="boundary-norm",
                 ...     cmap="coolwarm_r",
                 ... )
@@ -3349,8 +3461,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     ... )
                     >>> bounds = [0, 5, 10]
                     >>> fig, ax = array.plot(
-                    ...     cbar_label_rotation=-90,
-                    ...     cbar_label="Discharge m3/s",
+                    ...     colorbar=ColorBar(label="Discharge m3/s"),
                     ...     color_scale="boundary-norm",
                     ...     bounds=bounds,
                     ...     cmap="coolwarm_r",
@@ -3365,8 +3476,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 ```python
                 >>> array = ArrayGlyph(arr, figsize=(6, 6), title="Midpoint scale", title_size=18)
                 >>> fig, ax = array.plot(
-                ...     cbar_label_rotation=-90,
-                ...     cbar_label="Discharge m3/s",
+                ...     colorbar=ColorBar(label="Discharge m3/s"),
                 ...     color_scale="midpoint",
                 ...     cmap="coolwarm_r",
                 ...     midpoint=2,
@@ -3483,6 +3593,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         # model just does not have a variance-safe way to type "a dict this
         # helper is allowed to pop deprecated keys from".
         points = _resolve_point_overlay(points, kwargs)  # type: ignore[arg-type]
+        _warn_deprecated_cbar_kwargs(kwargs)
 
         for key, val in kwargs.items():
             if key not in self.default_options.keys():
@@ -3495,7 +3606,8 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         # `colorbar=` (a ColorBar / bool) resolves last, so it wins over
         # the default `add_colorbar` and any internal cbar_* key.
-        self.default_options.update(_resolve_colorbar(colorbar))
+        resolved_colorbar = _resolve_colorbar(colorbar)
+        self.default_options.update(resolved_colorbar)
 
         # Record colour limits supplied to THIS plot() call so a preset render
         # honours them (see `_style_color_overrides`). Sticky, and only for
@@ -3589,11 +3701,16 @@ class ArrayGlyph(GeoMixin, Glyph):
             self.im = ax.imshow(arr, extent=extent)
             self.cbar = None
         else:
-            # if user did not input ticks spacing use the calculated one.
-            if "ticks_spacing" in kwargs.keys():
-                self.default_options["ticks_spacing"] = kwargs["ticks_spacing"]
-            else:
-                self.default_options["ticks_spacing"] = self.ticks_spacing
+            # Tick-spacing precedence: a `colorbar=ColorBar(ticks_spacing=...)`
+            # spec wins (already merged above), then a loose `ticks_spacing=`
+            # kwarg, then the auto-computed value. Guarding on the resolved
+            # spec keeps the merged value from being clobbered here, since a
+            # ColorBar value arrives via `colorbar=`, never through `kwargs`.
+            if "ticks_spacing" not in resolved_colorbar:
+                if "ticks_spacing" in kwargs.keys():
+                    self.default_options["ticks_spacing"] = kwargs["ticks_spacing"]
+                else:
+                    self.default_options["ticks_spacing"] = self.ticks_spacing
 
             # Recompute (vmin, vmax) for this plot call if any of the
             # xarray-aligned colour kwargs (`robust`, `center`) or the
@@ -3613,10 +3730,11 @@ class ArrayGlyph(GeoMixin, Glyph):
                 )
                 self._vmin = vmin_final
                 self._vmax = vmax_final
-                # Keep ticks_spacing in sync with the new colour range
-                # unless the caller pinned it explicitly (fall back to 1.0
-                # for a degenerate range so the tick math stays safe).
-                if "ticks_spacing" not in kwargs:
+                # Keep ticks_spacing in sync with the new colour range unless
+                # the caller pinned it explicitly -- via a loose `ticks_spacing=`
+                # kwarg or a `colorbar=ColorBar(ticks_spacing=...)` spec (fall
+                # back to 1.0 for a degenerate range so the tick math stays safe).
+                if "ticks_spacing" not in kwargs and "ticks_spacing" not in resolved_colorbar:
                     self.ticks_spacing = (vmax_final - vmin_final) / 10 or 1.0
                     self.default_options["ticks_spacing"] = self.ticks_spacing
 
@@ -4188,18 +4306,27 @@ class ArrayGlyph(GeoMixin, Glyph):
                         Orientation of the color bar, by default 'vertical'.
                         Can be 'horizontal' or 'vertical'.
                     cbar_label_rotation : float, optional
-                        Rotation angle of the color bar label, by default -90.
+                        Deprecated; use `colorbar=ColorBar(label_rotation=...)`.
+                        Rotation angle (degrees) of the color bar label, by
+                        default None (matplotlib's own label orientation).
                     cbar_label_location : str, optional
-                        Location of the color bar label, by default 'bottom'.
-                        Options: 'top', 'bottom', 'center', 'baseline', 'center_baseline'.
+                        Deprecated; use `colorbar=ColorBar(label_location=...)`.
+                        Location of the color bar label, by default 'center'.
+                        Options: 'top', 'bottom', 'center', 'baseline',
+                        'center_baseline'; the valid set depends on the bar
+                        orientation (vertical: top/center/bottom).
                     cbar_length : float, optional
-                        Ratio to control the height/width of the color bar, by default 0.75.
+                        Deprecated; use `colorbar=ColorBar(length=...)`. Ratio to
+                        control the height/width of the color bar, by default 0.75.
                     ticks_spacing : int, optional
-                        Spacing between ticks on the color bar, by default 2.
+                        Deprecated; use `colorbar=ColorBar(ticks_spacing=...)`.
+                        Spacing between ticks on the color bar, by default 5.
                     cbar_label_size : int, optional
-                        Font size of the color bar label, by default 12.
+                        Deprecated; use `colorbar=ColorBar(label_size=...)`. Font
+                        size of the color bar label, by default 12.
                     cbar_label : str, optional
-                        Label text for the color bar, by default 'Value'.
+                        Deprecated; use `colorbar=ColorBar(label=...)`. Label text
+                        for the color bar, by default None.
 
                 Color scale options:
                     color_scale : ColorScale or str, optional
@@ -4439,6 +4566,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         )
         frame_label = _resolve_frame_label(frame_label, kwargs)  # type: ignore[arg-type]
         points = _resolve_point_overlay(points, kwargs)  # type: ignore[arg-type]
+        _warn_deprecated_cbar_kwargs(kwargs)
 
         # Resolved into a local rather than written back onto `frame_label`,
         # so a `FrameLabel` instance the caller passed in (and might reuse
@@ -4466,7 +4594,8 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         # `colorbar=` (a ColorBar / bool) resolves last, so it wins over
         # the default `add_colorbar` and any internal cbar_* key.
-        self.default_options.update(_resolve_colorbar(colorbar))
+        resolved_colorbar = _resolve_colorbar(colorbar)
+        self.default_options.update(resolved_colorbar)
 
         # Record colour limits supplied to THIS animate() call so a styled
         # animation honours an explicit caller override of the preset's fixed
@@ -4487,11 +4616,16 @@ class ArrayGlyph(GeoMixin, Glyph):
             and (colorbar.location is not None or colorbar.inside)
         )
 
-        # if user did not input ticks spacing use the calculated one.
-        if "ticks_spacing" in kwargs.keys():
-            self.default_options["ticks_spacing"] = kwargs["ticks_spacing"]
-        else:
-            self.default_options["ticks_spacing"] = self.ticks_spacing
+        # Tick-spacing precedence: a `colorbar=ColorBar(ticks_spacing=...)` spec
+        # wins (already merged above), then a loose `ticks_spacing=` kwarg, then
+        # the auto-computed value. Guarding on the resolved spec keeps the merged
+        # value from being clobbered here, since a ColorBar value arrives via
+        # `colorbar=`, never through `kwargs`.
+        if "ticks_spacing" not in resolved_colorbar:
+            if "ticks_spacing" in kwargs.keys():
+                self.default_options["ticks_spacing"] = kwargs["ticks_spacing"]
+            else:
+                self.default_options["ticks_spacing"] = self.ticks_spacing
 
         if "vmin" in kwargs.keys():
             self.default_options["vmin"] = kwargs["vmin"]
