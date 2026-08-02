@@ -208,7 +208,8 @@ class TestPolygonGlyphPlot:
             With a spacing that divides the range, the clim equals the
             value range.
         """
-        glyph = PolygonGlyph(polygons, values=np.array([0.0, 40.0]), ticks_spacing=10.0)
+        with pytest.warns(DeprecationWarning, match="ticks_spacing"):
+            glyph = PolygonGlyph(polygons, values=np.array([0.0, 40.0]), ticks_spacing=10.0)
         _, _, pc = glyph.plot()
         assert pc.get_clim() == (
             0.0,

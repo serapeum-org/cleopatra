@@ -16,6 +16,7 @@ import pytest
 from matplotlib.colors import to_rgba
 from matplotlib.text import Text
 
+from cleopatra.colorbar import ColorBar
 from cleopatra.mesh_glyph import MeshGlyph
 
 
@@ -1121,9 +1122,7 @@ class TestColorScales:
         """Test colorbar label, orientation, and size."""
         fig, ax = _make_tri_mg().plot(
             np.array([1.0, 2.0]),
-            cbar_label="Depth [m]",
-            cbar_orientation="horizontal",
-            cbar_length=0.5,
+            colorbar=ColorBar(label="Depth [m]", orientation="horizontal", length=0.5),
         )
         assert fig is not None, "Should return a Figure"
 
@@ -1194,7 +1193,8 @@ class TestPlotReuse:
             data range) rather than `(vmax - vmin) / 10`.
         """
         mg = _make_tri_mg()
-        fig, ax = mg.plot(np.array([0.0, 10.0]), ticks_spacing=2.5)
+        with pytest.warns(DeprecationWarning, match="ticks_spacing"):
+            fig, ax = mg.plot(np.array([0.0, 10.0]), ticks_spacing=2.5)
         assert mg.ticks_spacing == 2.5, (
             f"Expected explicit ticks_spacing=2.5, got {mg.ticks_spacing}"
         )
@@ -1517,15 +1517,16 @@ class TestAnimate:
         """
         mg = _make_tri_mg()
         frames = np.array([[1.0, 2.0], [3.0, 4.0]])
-        anim = mg.animate(
-            frames,
-            time=["t0", "t1"],
-            text_loc=[0.5, 0.5],
-            vmin=0.0,
-            vmax=10.0,
-            ticks_spacing=2.0,
-            title="My Animation",
-        )
+        with pytest.warns(DeprecationWarning, match="ticks_spacing"):
+            anim = mg.animate(
+                frames,
+                time=["t0", "t1"],
+                text_loc=[0.5, 0.5],
+                vmin=0.0,
+                vmax=10.0,
+                ticks_spacing=2.0,
+                title="My Animation",
+            )
         assert anim is not None, "Should return a FuncAnimation"
         assert mg.vmin == 0.0, f"Expected explicit vmin=0.0, got {mg.vmin}"
         assert mg.vmax == 10.0, f"Expected explicit vmax=10.0, got {mg.vmax}"

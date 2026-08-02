@@ -172,9 +172,10 @@ class TestScatterGlyphPlot:
             contract shared with ArrayGlyph); an evenly-dividing spacing
             keeps the top tick at exactly vmax.
         """
-        glyph = ScatterGlyph(
-            *xy, values=values, vmin=0.0, vmax=40.0, ticks_spacing=10.0
-        )
+        with pytest.warns(DeprecationWarning, match="ticks_spacing"):
+            glyph = ScatterGlyph(
+                *xy, values=values, vmin=0.0, vmax=40.0, ticks_spacing=10.0
+            )
         _, _, paths = glyph.plot()
         assert paths.get_clim() == (
             0.0,
