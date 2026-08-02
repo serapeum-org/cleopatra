@@ -145,6 +145,14 @@ _EDGE_EPSILON = 1e-14
 #: to that single tile instead of spilling into the next row/column.
 _BBOX_EDGE_EPSILON = 1e-11
 
+#: Keeps `sin(radians(lat))` strictly inside `(-1, 1)`. Within about 6e-7
+#: degrees of either pole it rounds to exactly +/-1.0 in float64, which
+#: divides by zero in the Mercator `y` formula below; nudging it back from
+#: the boundary keeps that a (very large but finite, correctly clamped)
+#: number instead of a crash, matching this function's own documented
+#: contract to clamp rather than raise.
+_POLE_EPSILON = 1e-15
+
 
 def _lonlat_to_tile_xy(lon: float, lat: float, zoom: int) -> tuple[int, int]:
     """The `(x, y)` grid indices of the tile containing `(lon, lat)` at `zoom`.
@@ -168,6 +176,7 @@ def _lonlat_to_tile_xy(lon: float, lat: float, zoom: int) -> tuple[int, int]:
     n = 2**zoom
     frac_x = lon / 360.0 + 0.5
     sin_lat = math.sin(math.radians(lat))
+    sin_lat = max(-1.0 + _POLE_EPSILON, min(1.0 - _POLE_EPSILON, sin_lat))
     frac_y = 0.5 - 0.25 * math.log((1.0 + sin_lat) / (1.0 - sin_lat)) / math.pi
 
     if frac_x <= 0:
