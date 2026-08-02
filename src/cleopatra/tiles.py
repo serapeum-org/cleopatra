@@ -220,18 +220,10 @@ def _lonlat_to_tile_xy(lon: float, lat: float, zoom: int) -> tuple[int, int]:
     return x, y
 
 
-def _tiles_for_bbox(
+def _tiles_for_one_bbox(
     west: float, south: float, east: float, north: float, zoom: int
 ) -> list[Tile]:
-    """The `Tile`s covering a WGS84 bounding box at `zoom`.
-
-    `west`/`south`/`east`/`north` are clipped to the valid longitude
-    (+/-180) and Web Mercator latitude (+/-`_MAX_LATITUDE`) ranges first.
-    Requires `west <= east`: `add_tiles` always normalises its bbox with
-    `min`/`max` before calling this, so an antimeridian-crossing box (where
-    the "west" edge is numerically east of the "east" edge) never occurs
-    there -- this is checked explicitly rather than silently mishandled, in
-    case a future caller of this private helper doesn't uphold it.
+    """The `Tile`s covering one non-antimeridian-crossing WGS84 bbox at `zoom`.
 
     Args:
         west: Western bound, decimal degrees. Must be `<= east`.
@@ -242,31 +234,56 @@ def _tiles_for_bbox(
 
     Returns:
         list[Tile]: Every tile whose area intersects the bbox, ordered by
-        column then row (in `(x, y)` grid order, matching the iteration
-        order `stitch_tiles`/tests expect).
-
-    Raises:
-        ValueError: If `west > east` (an antimeridian-crossing box, not
-            supported -- splitting it into two sub-boxes the way
-            `mercantile.tiles` does is not implemented since no current
-            caller produces one).
+        column then row.
     """
-    if west > east:
-        raise ValueError(
-            f"_tiles_for_bbox does not support an antimeridian-crossing "
-            f"bbox (west={west!r} > east={east!r})"
-        )
     w = max(-180.0, west)
     s = max(-_MAX_LATITUDE, min(_MAX_LATITUDE, south))
     e = min(180.0, east)
-    n = max(-_MAX_LATITUDE, min(_MAX_LATITUDE, north))
+    n_clamped = max(-_MAX_LATITUDE, min(_MAX_LATITUDE, north))
 
-    x0, y0 = _lonlat_to_tile_xy(w, n, zoom)
+    x0, y0 = _lonlat_to_tile_xy(w, n_clamped, zoom)
     x1, y1 = _lonlat_to_tile_xy(e - _BBOX_EDGE_EPSILON, s + _BBOX_EDGE_EPSILON, zoom)
 
-    return [
-        Tile(i, j, zoom) for i in range(x0, x1 + 1) for j in range(y0, y1 + 1)
-    ]
+    return [Tile(i, j, zoom) for i in range(x0, x1 + 1) for j in range(y0, y1 + 1)]
+
+
+def _tiles_for_bbox(
+    west: float, south: float, east: float, north: float, zoom: int
+) -> list[Tile]:
+    """The `Tile`s covering a WGS84 bounding box at `zoom`.
+
+    `west`/`south`/`east`/`north` are clipped to the valid longitude
+    (+/-180) and Web Mercator latitude (+/-`_MAX_LATITUDE`) ranges first. A
+    `west > east` bbox is antimeridian-crossing (its west edge is
+    numerically east of its east edge, e.g. 170 to -170): rather than an
+    edge case to special-case away, this is a real, reachable input --
+    `add_tiles` normalises its bbox with `min`/`max` in its own *native*
+    CRS, but a near-global Web Mercator extent can still reproject to a
+    `west > east` pair in EPSG:4326, since the inverse transform wraps
+    longitude at the +/-180 seam. Handled the same way
+    `mercantile.tiles()` handles it: split into the two sub-boxes either
+    side of the seam (`[-180, east]` and `[west, 180]`) and concatenate
+    their tiles.
+
+    Args:
+        west: Western bound, decimal degrees.
+        south: Southern bound, decimal degrees.
+        east: Eastern bound, decimal degrees.
+        north: Northern bound, decimal degrees.
+        zoom: Web Mercator zoom level.
+
+    Returns:
+        list[Tile]: Every tile whose area intersects the bbox, ordered by
+        column then row (in `(x, y)` grid order, matching the iteration
+        order `stitch_tiles`/tests expect). For an antimeridian-crossing
+        bbox, the western sub-box's tiles come first, then the eastern
+        sub-box's.
+    """
+    if west > east:
+        return _tiles_for_one_bbox(-180.0, south, east, north, zoom) + (
+            _tiles_for_one_bbox(west, south, 180.0, north, zoom)
+        )
+    return _tiles_for_one_bbox(west, south, east, north, zoom)
 
 
 def _tile_xy_bounds(tile: Tile) -> tuple[float, float, float, float]:

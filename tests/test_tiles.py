@@ -770,10 +770,20 @@ class TestTilesForBbox:
         tiles = sorted(_tiles_for_bbox(-1.0, -90.0, 1.0, -89.0, zoom=5))
         assert tiles == [Tile(15, 31, 5), Tile(16, 31, 5)]
 
-    def test_antimeridian_crossing_bbox_raises(self):
-        """A `west > east` bbox (antimeridian-crossing) raises instead of returning `[]`."""
-        with pytest.raises(ValueError, match="antimeridian"):
-            _tiles_for_bbox(170.0, -10.0, -170.0, 10.0, zoom=4)
+    def test_antimeridian_crossing_bbox_splits_like_mercantile(self):
+        """A `west > east` bbox (antimeridian-crossing) splits into both dateline halves.
+
+        Regression test for a `ValueError` this used to raise instead: a
+        `west > east` bbox is not just a hand-crafted edge case, it is a
+        real, reachable input through `add_tiles` -- reprojecting a
+        near-global Web Mercator extent to EPSG:4326 wraps longitude at
+        the +/-180 seam, producing exactly this shape (see
+        `TestAddTilesNearGlobalExtent`). `mercantile.tiles()` handles it by
+        splitting into `[-180, east]` and `[west, 180]`; this must match.
+        """
+        tiles = sorted(_tiles_for_bbox(170.0, -10.0, -170.0, 10.0, zoom=4))
+        expected = sorted([Tile(0, 7, 4), Tile(0, 8, 4), Tile(15, 7, 4), Tile(15, 8, 4)])
+        assert tiles == expected
 
 
 class TestTileXYBounds:
@@ -1275,3 +1285,76 @@ class TestAddTilesEmptyTiles:
         ):
             with pytest.raises(ValueError, match="No tiles found"):
                 add_tiles(mock_ax, crs=3857)
+
+
+class TestAddTilesNearGlobalExtent:
+    """End-to-end regression test for a near-global Web Mercator extent.
+
+    Drives `add_tiles` through its real reprojection and `_tiles_for_bbox`
+    call (only `fetch_tiles`/`stitch_tiles` are mocked, unlike the other
+    `add_tiles` tests, which mock `_tiles_for_bbox` itself). This is
+    deliberate: reprojecting a near-global EPSG:3857 extent to EPSG:4326
+    wraps longitude at the +/-180 seam (`pyproj`'s inverse Web Mercator
+    transform), producing a `west > east` bbox -- exactly the
+    antimeridian-crossing shape `_tiles_for_bbox` must split rather than
+    crash or silently drop tiles on. A test that mocks `_tiles_for_bbox`
+    itself (as the other `add_tiles` tests do) cannot exercise this path.
+    """
+
+    @pytest.fixture
+    def near_global_ax(self):
+        """A mock axes whose Web Mercator x-limits extend past the world bounds by 5%."""
+        extended = 20037508.342789244 * 1.05
+        ax = MagicMock()
+        ax.get_xlim.return_value = (-extended, extended)
+        ax.get_ylim.return_value = (-8_000_000.0, 8_000_000.0)
+        ax.get_aspect.return_value = "auto"
+
+        mock_transform = MagicMock()
+        mock_transform.inverted.return_value = mock_transform
+        mock_fig = MagicMock()
+        mock_fig.dpi = 100.0
+        type(mock_fig).dpi_scale_trans = PropertyMock(return_value=mock_transform)
+
+        mock_bbox = MagicMock()
+        mock_bbox.width = 6.0
+        mock_bbox.height = 4.0
+        mock_bbox.transformed.return_value = mock_bbox
+
+        ax.get_figure.return_value = mock_fig
+        ax.get_window_extent.return_value = mock_bbox
+        return ax
+
+    def test_near_global_extent_does_not_raise(self, near_global_ax):
+        """`add_tiles` succeeds on a near-global extent instead of raising.
+
+        Test scenario:
+            A 5%-margin whole-world Web Mercator extent (matplotlib's own
+            default autoscale margin on full-world data would produce
+            exactly this) reprojects to a `west > east` EPSG:4326 bbox.
+            Before this fix, that raised `ValueError` from `_tiles_for_bbox`
+            (or, before the round-1 fix, silently produced no tiles); now it
+            must resolve successfully via the antimeridian split.
+        """
+        fake_image = np.zeros((256, 256, 4), dtype=np.uint8)
+        with (
+            patch.object(
+                tiles_mod,
+                "fetch_tiles",
+                return_value={Tile(0, 0, 3): _make_tile_png()},
+            ),
+            patch.object(
+                tiles_mod,
+                "stitch_tiles",
+                return_value=(fake_image, (-20037508.34, -8000000.0, 20037508.34, 8000000.0)),
+            ) as mock_stitch,
+        ):
+            add_tiles(near_global_ax, crs=3857, zoom=3)
+
+        tiles_passed = mock_stitch.call_args[0][1]
+        xs = {t.x for t in tiles_passed}
+        assert len(tiles_passed) > 0, "the antimeridian split should still produce tiles"
+        assert 0 in xs, "should include tiles from the western half of the split (x near 0)"
+        assert max(xs) >= 2**3 - 1, (
+            "should include tiles from the eastern half of the split (x near the grid edge)"
+        )
