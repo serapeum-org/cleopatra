@@ -785,6 +785,34 @@ class TestTilesForBbox:
         expected = sorted([Tile(0, 7, 4), Tile(0, 8, 4), Tile(15, 7, 4), Tile(15, 8, 4)])
         assert tiles == expected
 
+    def test_antimeridian_crossing_bbox_also_touching_a_pole(self):
+        """An antimeridian-crossing bbox that also clips the north pole splits and clamps.
+
+        Both the west>east split and the latitude clamp apply at once;
+        verified to match `mercantile.tiles()` exactly for this combination.
+        """
+        tiles = sorted(_tiles_for_bbox(170.0, 80.0, -170.0, 85.0, zoom=4))
+        expected = sorted([Tile(0, 0, 4), Tile(0, 1, 4), Tile(15, 0, 4), Tile(15, 1, 4)])
+        assert tiles == expected
+
+    def test_antimeridian_crossing_bbox_at_zoom_0(self):
+        """An antimeridian-crossing bbox at zoom 0 matches mercantile's own duplicate-tile quirk.
+
+        At zoom 0 there is only one tile in the whole world, so both
+        dateline-side sub-boxes resolve to it; `mercantile.tiles()` does
+        not deduplicate across the split and returns it twice, and this
+        implementation matches that exactly rather than silently
+        "improving" on it.
+        """
+        tiles = _tiles_for_bbox(170.0, -10.0, -170.0, 10.0, zoom=0)
+        assert tiles == [Tile(0, 0, 0), Tile(0, 0, 0)]
+
+    def test_antimeridian_crossing_bbox_with_east_exactly_on_seam(self):
+        """An antimeridian-crossing bbox whose `east` sits exactly on `-180` still splits correctly."""
+        tiles = sorted(_tiles_for_bbox(170.0, -10.0, -180.0, 10.0, zoom=4))
+        expected = sorted([Tile(0, 7, 4), Tile(0, 8, 4), Tile(15, 7, 4), Tile(15, 8, 4)])
+        assert tiles == expected
+
 
 class TestTileXYBounds:
     """Tests for `cleopatra.tiles._tile_xy_bounds`.
