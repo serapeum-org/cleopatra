@@ -212,9 +212,9 @@ def _tiles_for_bbox(
         order `stitch_tiles`/tests expect).
     """
     w = max(-180.0, west)
-    s = max(-_MAX_LATITUDE, south)
+    s = max(-_MAX_LATITUDE, min(_MAX_LATITUDE, south))
     e = min(180.0, east)
-    n = min(_MAX_LATITUDE, north)
+    n = max(-_MAX_LATITUDE, min(_MAX_LATITUDE, north))
 
     x0, y0 = _lonlat_to_tile_xy(w, n, zoom)
     x1, y1 = _lonlat_to_tile_xy(e - _BBOX_EDGE_EPSILON, s + _BBOX_EDGE_EPSILON, zoom)
