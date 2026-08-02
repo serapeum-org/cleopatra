@@ -745,7 +745,8 @@ class ColorBar:
         label_size: Font size of the caption. `None` (default) keeps the
             default.
         label_rotation: Rotation of the caption in degrees. `None` (default)
-            keeps the default.
+            leaves matplotlib's own label orientation; pass a value to rotate
+            the caption (e.g. `0` for a horizontal caption).
         label_location: Where the caption sits along the bar (e.g. `"center"`).
             Distinct from `location`, which is the bar's *edge*. `None`
             (default) keeps the default.
@@ -810,8 +811,8 @@ class ColorBar:
             length: Bar length as a fraction of the axis; `None` keeps the
                 default.
             label_size: Caption font size; `None` keeps the default.
-            label_rotation: Caption rotation in degrees; `None` keeps the
-                default.
+            label_rotation: Caption rotation in degrees; `None` leaves
+                matplotlib's own label orientation.
             label_location: Caption placement along the bar (distinct from
                 `location`, the bar's edge); `None` keeps the default.
             ticks_spacing: Spacing between the colorbar's ticks; `None` keeps
