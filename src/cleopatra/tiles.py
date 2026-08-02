@@ -194,13 +194,14 @@ def _tiles_for_bbox(
 
     `west`/`south`/`east`/`north` are clipped to the valid longitude
     (+/-180) and Web Mercator latitude (+/-`_MAX_LATITUDE`) ranges first.
-    Assumes `west <= east`: `add_tiles` always normalises its bbox with
+    Requires `west <= east`: `add_tiles` always normalises its bbox with
     `min`/`max` before calling this, so an antimeridian-crossing box (where
     the "west" edge is numerically east of the "east" edge) never occurs
-    here.
+    there -- this is checked explicitly rather than silently mishandled, in
+    case a future caller of this private helper doesn't uphold it.
 
     Args:
-        west: Western bound, decimal degrees.
+        west: Western bound, decimal degrees. Must be `<= east`.
         south: Southern bound, decimal degrees.
         east: Eastern bound, decimal degrees.
         north: Northern bound, decimal degrees.
@@ -208,9 +209,20 @@ def _tiles_for_bbox(
 
     Returns:
         list[Tile]: Every tile whose area intersects the bbox, ordered by
-        row then column (in `(x, y)` grid order, matching the iteration
+        column then row (in `(x, y)` grid order, matching the iteration
         order `stitch_tiles`/tests expect).
+
+    Raises:
+        ValueError: If `west > east` (an antimeridian-crossing box, not
+            supported -- splitting it into two sub-boxes the way
+            `mercantile.tiles` does is not implemented since no current
+            caller produces one).
     """
+    if west > east:
+        raise ValueError(
+            f"_tiles_for_bbox does not support an antimeridian-crossing "
+            f"bbox (west={west!r} > east={east!r})"
+        )
     w = max(-180.0, west)
     s = max(-_MAX_LATITUDE, min(_MAX_LATITUDE, south))
     e = min(180.0, east)
