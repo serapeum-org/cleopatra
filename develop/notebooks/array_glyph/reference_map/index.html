@@ -2887,7 +2887,7 @@ coordinates it is given.</p>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span><span class="p">,</span> <span class="n">ColorBar</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.geo</span><span class="w"> </span><span class="kn">import</span> <span class="n">available_map_styles</span>
 
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">)</span>  <span class="c1"># keep the embedded outputs lean</span>
@@ -2899,7 +2899,7 @@ import warnings
 import matplotlib.pyplot as plt
 import numpy as np
 
-from cleopatra.array_glyph import ArrayGlyph
+from cleopatra.array_glyph import ArrayGlyph, ColorBar
 from cleopatra.geo import available_map_styles
 
 warnings.filterwarnings("ignore")  # keep the embedded outputs lean
@@ -2961,7 +2961,7 @@ available_map_styles()</div>
 <span class="n">field</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(((</span><span class="n">lon2d</span> <span class="o">+</span> <span class="mi">72</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="mf">120.0</span> <span class="o">+</span> <span class="p">((</span><span class="n">lat2d</span> <span class="o">-</span> <span class="mi">34</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="mf">60.0</span><span class="p">))</span>
 
 <span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="p">[</span><span class="n">west</span><span class="p">,</span> <span class="n">south</span><span class="p">,</span> <span class="n">east</span><span class="p">,</span> <span class="n">north</span><span class="p">],</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
-<span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">cmap</span><span class="o">=</span><span class="s2">"turbo"</span><span class="p">,</span> <span class="n">cbar_label</span><span class="o">=</span><span class="s2">"anomaly"</span><span class="p">)</span>
+<span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">cmap</span><span class="o">=</span><span class="s2">"turbo"</span><span class="p">,</span> <span class="n">colorbar</span><span class="o">=</span><span class="n">ColorBar</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">"anomaly"</span><span class="p">))</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-2">west, south, east, north = -100.0, 15.0, -40.0, 55.0
@@ -2973,7 +2973,7 @@ lon2d, lat2d = np.meshgrid(lon, lat)
 field = np.exp(-(((lon2d + 72) ** 2) / 120.0 + ((lat2d - 34) ** 2) / 60.0))
 
 glyph = ArrayGlyph(field, extent=[west, south, east, north], figsize=(7, 5))
-glyph.plot(cmap="turbo", cbar_label="anomaly")
+glyph.plot(cmap="turbo", colorbar=ColorBar(label="anomaly"))
 plt.show()</div>
 </div>
 </div>
@@ -3024,12 +3024,12 @@ subtle frame. It returns the axes for chaining.</p>
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="p">[</span><span class="n">west</span><span class="p">,</span> <span class="n">south</span><span class="p">,</span> <span class="n">east</span><span class="p">,</span> <span class="n">north</span><span class="p">],</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
-<span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">cmap</span><span class="o">=</span><span class="s2">"turbo"</span><span class="p">,</span> <span class="n">cbar_label</span><span class="o">=</span><span class="s2">"anomaly"</span><span class="p">)</span>
+<span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">cmap</span><span class="o">=</span><span class="s2">"turbo"</span><span class="p">,</span> <span class="n">colorbar</span><span class="o">=</span><span class="n">ColorBar</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">"anomaly"</span><span class="p">))</span>
 <span class="n">glyph</span><span class="o">.</span><span class="n">add_reference_map</span><span class="p">(</span><span class="s2">"ecmwf"</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-3">glyph = ArrayGlyph(field, extent=[west, south, east, north], figsize=(7, 5))
-glyph.plot(cmap="turbo", cbar_label="anomaly")
+glyph.plot(cmap="turbo", colorbar=ColorBar(label="anomaly"))
 glyph.add_reference_map("ecmwf")
 plt.show()</div>
 </div>
@@ -3176,12 +3176,12 @@ axes.</p>
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="p">[</span><span class="n">west</span><span class="p">,</span> <span class="n">south</span><span class="p">,</span> <span class="n">east</span><span class="p">,</span> <span class="n">north</span><span class="p">],</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
-<span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">cmap</span><span class="o">=</span><span class="s2">"turbo"</span><span class="p">,</span> <span class="n">cbar_label</span><span class="o">=</span><span class="s2">"anomaly"</span><span class="p">)</span>
+<span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">cmap</span><span class="o">=</span><span class="s2">"turbo"</span><span class="p">,</span> <span class="n">colorbar</span><span class="o">=</span><span class="n">ColorBar</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">"anomaly"</span><span class="p">))</span>
 <span class="n">glyph</span><span class="o">.</span><span class="n">add_reference_map</span><span class="p">(</span><span class="s2">"ecmwf"</span><span class="p">,</span> <span class="n">graticule_step</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="s2">"110m"</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-5">glyph = ArrayGlyph(field, extent=[west, south, east, north], figsize=(7, 5))
-glyph.plot(cmap="turbo", cbar_label="anomaly")
+glyph.plot(cmap="turbo", colorbar=ColorBar(label="anomaly"))
 glyph.add_reference_map("ecmwf", graticule_step=20, resolution="110m")
 plt.show()</div>
 </div>

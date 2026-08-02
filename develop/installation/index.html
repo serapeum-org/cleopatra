@@ -2206,7 +2206,7 @@ on your <code>PATH</code> is used in preference when present. GIF and WebP expor
 Pillow and need no FFmpeg.</p>
 </div>
 <h3 id="optional-dependencies-the-tiles-extra"><a class="toclink" href="#optional-dependencies-the-tiles-extra">Optional dependencies — the <code>tiles</code> extra</a><a class="headerlink" href="#optional-dependencies-the-tiles-extra" title="Permanent link">#</a></h3>
-<p>The geospatial basemap features need three extra packages: the web-tile basemap helper
+<p>The geospatial basemap features need four extra packages: the web-tile basemap helper
 (<code>cleopatra.tiles.add_tiles</code>), the reference-data layers (<code>cleopatra.reference.add_relief</code>
 for relief PNG decoding, and <code>cleopatra.reference.add_features(..., crs=...)</code> for
 reprojection), the orthographic globe presets in <code>cleopatra.projection</code>, and CRS
@@ -2214,6 +2214,7 @@ reprojection on the geographic glyphs (<code>GeoMixin.add_tiles</code> / <code>a
 / <code>add_reference_map</code>). They are bundled in the <code>cleopatra[tiles]</code> extra (pip) / the
 <code>cleopatra-tiles</code> package (conda) and are otherwise not installed:</p>
 <ul>
+<li><a href="https://github.com/mapbox/mercantile">mercantile</a> (1.2.1 or later)</li>
 <li><a href="https://python-pillow.org/">pillow</a> (12.1.1 or later)</li>
 <li><a href="https://pyproj4.github.io/pyproj/">pyproj</a> (3.7.2 or later)</li>
 <li><a href="https://xyzservices.readthedocs.io/">xyzservices</a> (2026.3.0 or later)</li>
