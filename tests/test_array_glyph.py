@@ -6348,6 +6348,22 @@ class TestColorbarPlacement:
         assert tall_h > short_h, f"length=0.9 bar ({tall_h}) should exceed length=0.3 ({short_h})"
         plt.close("all")
 
+    def test_length_inside_changes_bar_extent(self):
+        """`ColorBar(inside=True, length=...)` scales an inset bar too (#234).
+
+        Test scenario:
+            The inset path must honor `length` -- a shorter spec yields a shorter
+            inset bar rather than the field silently no-opping.
+        """
+        short = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        short.plot(cmap="viridis", colorbar=ColorBar(location="right", inside=True, length=0.3))
+        tall = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        tall.plot(cmap="viridis", colorbar=ColorBar(location="right", inside=True, length=0.9))
+        short_h = short.cbar.ax.get_position().height
+        tall_h = tall.cbar.ax.get_position().height
+        assert tall_h > short_h, f"inside length=0.9 bar ({tall_h}) should exceed length=0.3 ({short_h})"
+        plt.close("all")
+
 
 class TestColorBar:
     """Tests for the `ColorBar` placement/box config object."""
