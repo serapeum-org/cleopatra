@@ -2173,6 +2173,43 @@ class TestAnimateEdgeCases:
             f"spec ticks_spacing not honored in animate, got {glyph.default_options['ticks_spacing']}"
         )
 
+    def test_animate_orientation_via_spec(
+        self,
+        coello_data: np.ndarray,
+        animate_time_list: list,
+        no_data_value: float,
+    ):
+        """`animate(colorbar=ColorBar(orientation=...))` reaches the render (#235).
+
+        Test scenario:
+            The orientation field must apply on the animate path, not just plot.
+        """
+        glyph = ArrayGlyph(coello_data, exclude_value=[no_data_value])
+        anim = glyph.animate(animate_time_list, colorbar=ColorBar(orientation="horizontal"))
+        assert anim is not None
+        assert glyph.cbar.orientation == "horizontal", (
+            f"orientation not honored in animate, got {glyph.cbar.orientation}"
+        )
+
+    def test_animate_cbar_orientation_is_deprecated(
+        self,
+        coello_data: np.ndarray,
+        animate_time_list: list,
+        no_data_value: float,
+    ):
+        """A loose `animate(cbar_orientation=...)` warns yet still applies (#235).
+
+        Test scenario:
+            The deprecation fires on the animate path too, steering to
+            `ColorBar(orientation=...)`, while the kwarg keeps working.
+        """
+        glyph = ArrayGlyph(coello_data, exclude_value=[no_data_value])
+        with pytest.warns(DeprecationWarning, match="cbar_orientation"):
+            glyph.animate(animate_time_list, cbar_orientation="horizontal")
+        assert glyph.cbar.orientation == "horizontal", (
+            f"deprecated kwarg should still work in animate, got {glyph.cbar.orientation}"
+        )
+
     def test_data_getter_is_keyword_only(
         self,
         coello_data: np.ndarray,
