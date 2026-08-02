@@ -6364,6 +6364,22 @@ class TestColorbarPlacement:
         assert tall_h > short_h, f"inside length=0.9 bar ({tall_h}) should exceed length=0.3 ({short_h})"
         plt.close("all")
 
+    def test_label_location_via_spec_reaches_render(self):
+        """`ColorBar(label_location=...)` positions the caption along the bar (#234).
+
+        Test scenario:
+            A "top" caption sits higher along a vertical bar than a "bottom" one,
+            confirming label_location reaches `set_label(loc=...)` at render.
+        """
+        top = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        top.plot(cmap="viridis", colorbar=ColorBar(location="right", label="Depth", label_location="top"))
+        bottom = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        bottom.plot(cmap="viridis", colorbar=ColorBar(location="right", label="Depth", label_location="bottom"))
+        top_y = top.cbar.ax.yaxis.get_label().get_position()[1]
+        bottom_y = bottom.cbar.ax.yaxis.get_label().get_position()[1]
+        assert top_y > bottom_y, f"label_location not applied: top_y={top_y}, bottom_y={bottom_y}"
+        plt.close("all")
+
 
 class TestColorBar:
     """Tests for the `ColorBar` placement/box config object."""
