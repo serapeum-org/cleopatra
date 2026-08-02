@@ -119,7 +119,7 @@ class TestPlotArray:
     ):
         array = ArrayGlyph(arr, exclude_value=[no_data_value])
         fig, ax = array.plot(
-            color_scale=color_scale[0], cmap=cmap, ticks_spacing=ticks_spacing
+            color_scale=color_scale[0], cmap=cmap, colorbar=ColorBar(ticks_spacing=ticks_spacing)
         )
         assert isinstance(fig, Figure)
 
@@ -137,7 +137,7 @@ class TestPlotArray:
             color_scale=color_scale[1],
             cmap=cmap,
             gamma=color_scale_2_gamma,
-            ticks_spacing=ticks_spacing,
+            colorbar=ColorBar(ticks_spacing=ticks_spacing),
         )
         assert isinstance(fig, Figure)
 
@@ -157,7 +157,7 @@ class TestPlotArray:
             line_scale=color_scale_3_linscale,
             line_threshold=color_scale_3_linthresh,
             cmap=cmap,
-            ticks_spacing=ticks_spacing,
+            colorbar=ColorBar(ticks_spacing=ticks_spacing),
         )
 
         assert isinstance(fig, Figure)
@@ -171,7 +171,7 @@ class TestPlotArray:
         ticks_spacing: int,
     ):
         array = ArrayGlyph(arr, exclude_value=[no_data_value])
-        fig, ax = array.plot(color_scale=color_scale[3], cmap=cmap, ticks_spacing=5)
+        fig, ax = array.plot(color_scale=color_scale[3], cmap=cmap, colorbar=ColorBar(ticks_spacing=5))
 
         assert isinstance(fig, Figure)
 
@@ -188,7 +188,7 @@ class TestPlotArray:
         fig, ax = array.plot(
             color_scale=color_scale[3],
             cmap=cmap,
-            ticks_spacing=ticks_spacing,
+            colorbar=ColorBar(ticks_spacing=ticks_spacing),
             bounds=bounds,
         )
 
@@ -208,7 +208,7 @@ class TestPlotArray:
             color_scale=color_scale[4],
             midpoint=midpoint,
             cmap=cmap,
-            ticks_spacing=ticks_spacing,
+            colorbar=ColorBar(ticks_spacing=ticks_spacing),
         )
 
         assert isinstance(fig, Figure)
@@ -227,7 +227,7 @@ class TestPlotArray:
             display_cell_value=display_cell_value,
             num_size=num_size,
             background_color_threshold=background_color_threshold,
-            ticks_spacing=ticks_spacing,
+            colorbar=ColorBar(ticks_spacing=ticks_spacing),
         )
 
         assert isinstance(fig, Figure)
@@ -254,7 +254,7 @@ class TestPlotArray:
             display_cell_value=display_cell_value,
             num_size=num_size,
             background_color_threshold=background_color_threshold,
-            ticks_spacing=ticks_spacing,
+            colorbar=ColorBar(ticks_spacing=ticks_spacing),
         )
 
         assert isinstance(fig, Figure)
@@ -1769,12 +1769,13 @@ class TestPlotRecomputeBranch:
             glyph.plot(banana_count=12)
 
     def test_recompute_with_explicit_ticks_spacing(self):
-        """`plot(robust=True, ticks_spacing=...)` keeps the user's spacing."""
+        """A loose `ticks_spacing=` (deprecated) still wins over the recompute path."""
         rng = np.random.default_rng(1337)
         body = rng.random(98)
         arr = np.concatenate([body, [-1000.0, 1000.0]]).reshape(10, 10)
         glyph = ArrayGlyph(arr)
-        glyph.plot(robust=True, ticks_spacing=0.1)
+        with pytest.warns(DeprecationWarning, match="ticks_spacing"):
+            glyph.plot(robust=True, ticks_spacing=0.1)
         assert glyph.default_options["ticks_spacing"] == 0.1, (
             "Explicit ticks_spacing must win over the recompute path"
         )
@@ -2146,9 +2147,10 @@ class TestAnimateEdgeCases:
         animate_time_list: list,
         no_data_value: float,
     ):
-        """`animate(ticks_spacing=...)` overrides the auto-computed spacing."""
+        """A loose `animate(ticks_spacing=...)` (deprecated) overrides the auto spacing."""
         glyph = ArrayGlyph(coello_data, exclude_value=[no_data_value])
-        anim = glyph.animate(animate_time_list, ticks_spacing=50.0)
+        with pytest.warns(DeprecationWarning, match="ticks_spacing"):
+            anim = glyph.animate(animate_time_list, ticks_spacing=50.0)
         assert anim is not None
         assert glyph.default_options["ticks_spacing"] == 50.0
 
@@ -2273,11 +2275,11 @@ class TestAnimateEdgeCases:
         """`size=None` inherits `cbar_label_size` (the pre-`size` behaviour).
 
         Test scenario:
-            With ``FrameLabel()`` (size unset) and ``cbar_label_size=17``, the
-            label falls back to the colorbar label size, 17 pt.
+            With ``FrameLabel()`` (size unset) and ``ColorBar(label_size=17)``,
+            the label falls back to the colorbar label size, 17 pt.
         """
         glyph = ArrayGlyph(coello_data)
-        glyph.animate(animate_time_list, frame_label=FrameLabel(), cbar_label_size=17)
+        glyph.animate(animate_time_list, frame_label=FrameLabel(), colorbar=ColorBar(label_size=17))
         assert glyph._day_text.get_fontsize() == 17, (
             f"Expected inherited fontsize 17, got {glyph._day_text.get_fontsize()}"
         )
@@ -6268,6 +6270,34 @@ class TestColorbarPlacement:
             )
         resolved = g.default_options["ticks_spacing"]
         assert resolved == 5.0, f"loose ticks_spacing should lose to the spec, got {resolved}"
+        plt.close("all")
+
+    def test_label_rotation_via_spec_takes_effect(self):
+        """`ColorBar(label_rotation=...)` rotates the drawn caption (#234).
+
+        Test scenario:
+            A spec-provided rotation reaches the colorbar label instead of being
+            dropped (matplotlib's default vertical-label rotation is not 0).
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g.plot(cmap="viridis", colorbar=ColorBar(location="right", label="Depth", label_rotation=0.0))
+        y_label = g.cbar.ax.yaxis.get_label()
+        label_obj = y_label if y_label.get_text() == "Depth" else g.cbar.ax.xaxis.get_label()
+        assert label_obj.get_rotation() == 0.0, f"label_rotation not applied, got {label_obj.get_rotation()}"
+        plt.close("all")
+
+    def test_label_rotation_unset_leaves_matplotlib_default(self):
+        """An unset `label_rotation` leaves matplotlib's default orientation.
+
+        Test scenario:
+            Phase 1 is additive -- a caption with no `label_rotation` keeps the
+            pre-existing (non-zero) vertical rotation, so nothing regresses.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g.plot(cmap="viridis", colorbar=ColorBar(location="right", label="Depth"))
+        y_label = g.cbar.ax.yaxis.get_label()
+        label_obj = y_label if y_label.get_text() == "Depth" else g.cbar.ax.xaxis.get_label()
+        assert label_obj.get_rotation() != 0.0, "unset label_rotation should keep matplotlib's default"
         plt.close("all")
 
 
