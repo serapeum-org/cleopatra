@@ -952,7 +952,9 @@ def _resolve_colorbar(colorbar: bool | ColorBar | None) -> dict:
 
 #: Loose colorbar kwargs now superseded by `ColorBar` fields (issue #234).
 #: Passing any of these to `plot` / `animate` is deprecated -- use the mapped
-#: `ColorBar` field instead. They still take effect (folded into
+#: `ColorBar` field instead. This set includes the non-`cbar_`-prefixed
+#: `ticks_spacing`, deprecated in favour of `ColorBar(ticks_spacing=...)`, not
+#: only the `cbar_*` keys. They still take effect (folded into
 #: `default_options`) so nothing breaks during the deprecation window.
 _DEPRECATED_CBAR_KWARGS = {
     "cbar_label": "label",
