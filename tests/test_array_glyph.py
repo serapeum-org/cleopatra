@@ -6207,6 +6207,32 @@ class TestColorbarPlacement:
         assert len(g_box.ax.patches) == len(g_no.ax.patches) + 1, "box=True should add one swatch backing panel"
         plt.close("all")
 
+    def test_caption_via_spec_alone(self):
+        """A caption/length set through `ColorBar` render with no loose kwargs.
+
+        Test scenario:
+            #234 -- `ColorBar(label=..., length=...)` fully configures the bar,
+            so the caption renders without falling back to a loose `cbar_label=`.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g.plot(cmap="viridis", colorbar=ColorBar(location="bottom", label="Rainfall mm/day", length=0.8))
+        caption = g.cbar.ax.get_xlabel() or g.cbar.ax.get_ylabel()
+        assert caption == "Rainfall mm/day", f"caption not set via ColorBar, got {caption!r}"
+        plt.close("all")
+
+    def test_spec_does_not_clobber_loose_caption(self):
+        """An unset ColorBar caption leaves a loose `cbar_label` intact.
+
+        Test scenario:
+            During the transition (before the loose kwargs are deprecated), a
+            `ColorBar` that sets no caption must not overwrite a loose `cbar_label`.
+        """
+        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
+        g.plot(cmap="viridis", colorbar=ColorBar(location="right"), cbar_label="Legacy caption")
+        caption = g.cbar.ax.get_xlabel() or g.cbar.ax.get_ylabel()
+        assert caption == "Legacy caption", f"loose cbar_label was clobbered, got {caption!r}"
+        plt.close("all")
+
 
 class TestColorBar:
     """Tests for the `ColorBar` placement/box config object."""
@@ -6280,6 +6306,28 @@ class TestColorBar:
         spec = ColorBar(label_color="black", tick_color="red")
         assert (spec.label_color, spec.tick_color) == ("black", "red"), "colour fields should store verbatim"
 
+    def test_caption_sizing_fields_default_none_and_store(self):
+        """The caption/sizing fields default to `None` and store verbatim.
+
+        Test scenario:
+            label / length / label_size / label_rotation / label_location /
+            ticks_spacing are optional holders, `None` when unset.
+        """
+        bare = ColorBar()
+        for f in ("label", "length", "label_size", "label_rotation",
+                  "label_location", "ticks_spacing"):
+            assert getattr(bare, f) is None, f"{f} should default to None"
+        spec = ColorBar(
+            label="Rainfall mm/day", length=0.8, label_size=9.0,
+            label_rotation=90.0, label_location="center", ticks_spacing=5.0,
+        )
+        assert spec.label == "Rainfall mm/day", f"label not stored: {spec.label}"
+        assert spec.length == 0.8, f"length not stored: {spec.length}"
+        assert spec.label_size == 9.0, f"label_size not stored: {spec.label_size}"
+        assert spec.label_rotation == 90.0, f"label_rotation not stored: {spec.label_rotation}"
+        assert spec.label_location == "center", f"label_location not stored: {spec.label_location}"
+        assert spec.ticks_spacing == 5.0, f"ticks_spacing not stored: {spec.ticks_spacing}"
+
 
 class TestResolveColorbar:
     """Tests for the `_resolve_colorbar` front-door parser."""
@@ -6335,6 +6383,39 @@ class TestResolveColorbar:
             "cbar_tick_color": "red",
         }
         assert out == expected, f"spec fields not mapped, got {out}"
+
+    def test_spec_maps_caption_and_sizing_fields(self):
+        """A `ColorBar` maps its caption/sizing fields onto the `cbar_*` keys.
+
+        Test scenario:
+            label -> cbar_label, length -> cbar_length, label_size ->
+            cbar_label_size, label_rotation -> cbar_label_rotation,
+            label_location -> cbar_label_location, ticks_spacing -> ticks_spacing.
+        """
+        out = _resolve_colorbar(
+            ColorBar(
+                label="Rainfall mm/day", length=0.8, label_size=9.0,
+                label_rotation=90.0, label_location="center", ticks_spacing=5.0,
+            )
+        )
+        assert out["cbar_label"] == "Rainfall mm/day", f"cbar_label not mapped: {out}"
+        assert out["cbar_length"] == 0.8, f"cbar_length not mapped: {out}"
+        assert out["cbar_label_size"] == 9.0, f"cbar_label_size not mapped: {out}"
+        assert out["cbar_label_rotation"] == 90.0, f"cbar_label_rotation not mapped: {out}"
+        assert out["cbar_label_location"] == "center", f"cbar_label_location not mapped: {out}"
+        assert out["ticks_spacing"] == 5.0, f"ticks_spacing not mapped: {out}"
+
+    def test_unset_caption_fields_are_not_emitted(self):
+        """Unset caption/sizing fields are omitted, so loose defaults survive.
+
+        Test scenario:
+            A `ColorBar` that sets no caption/sizing field must not emit those
+            `cbar_*` keys (otherwise it would clobber a loose `cbar_label`).
+        """
+        out = _resolve_colorbar(ColorBar(location="right"))
+        for key in ("cbar_label", "cbar_length", "cbar_label_size",
+                    "cbar_label_rotation", "cbar_label_location", "ticks_spacing"):
+            assert key not in out, f"{key} should not be emitted when unset, got {out}"
 
     @pytest.mark.parametrize("bad", ["right", 1, 1.5, ["right"], {"location": "right"}])
     def test_invalid_type_raises(self, bad):
