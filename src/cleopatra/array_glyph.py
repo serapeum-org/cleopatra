@@ -3014,6 +3014,54 @@ class ArrayGlyph(GeoMixin, Glyph):
         )
         return list(map(add_text, indices))
 
+    def _apply_kwargs_and_colorbar(
+        self, colorbar: bool | ColorBar | None, kwargs: dict
+    ) -> dict:
+        """Fold loose kwargs and `colorbar=` into `default_options`; set style flags.
+
+        Shared by `plot` and `animate`: validates and applies each loose keyword
+        into `default_options`, merges the resolved `colorbar=` spec last (so it
+        wins over a same-named loose key), records this call's colour-limit
+        overrides for a preset render, and sets `_style_wants_colorbar` -- a
+        placement-bearing `colorbar=` (`location`, `inside`, `orientation`, or
+        `True`) draws a real colorbar over a preset's swatch, while a spec
+        carrying only colours/box styles the swatch in place.
+
+        Args:
+            colorbar: The `colorbar=` argument (`bool`, `ColorBar`, or `None`).
+            kwargs: The remaining `plot` / `animate` keyword arguments.
+
+        Returns:
+            The resolved `colorbar` option dict, so the caller can honour a
+            spec-provided `ticks_spacing` before auto-computing it.
+        """
+        for key, val in kwargs.items():
+            if key not in self.default_options.keys():
+                raise ValueError(
+                    f"The given keyword argument:{key} is not correct, possible parameters are,"
+                    f" {DEFAULT_OPTIONS}"
+                )
+            else:
+                self.default_options[key] = val
+        # `colorbar=` (a ColorBar / bool) resolves last, so it wins over the
+        # default `add_colorbar` and any internal cbar_* key.
+        resolved_colorbar = _resolve_colorbar(colorbar)
+        self.default_options.update(resolved_colorbar)
+        # Record colour limits supplied to THIS call so a preset render honours
+        # them (see `_style_color_overrides`); sticky, only for keys passed.
+        for key in ("vmin", "vmax", "center", "cmap"):
+            if key in kwargs and kwargs[key] is not None:
+                self._style_color_overrides[key] = kwargs[key]
+        self._style_wants_colorbar = colorbar is True or (
+            isinstance(colorbar, ColorBar)
+            and (
+                colorbar.location is not None
+                or colorbar.inside
+                or colorbar.orientation is not None
+            )
+        )
+        return resolved_colorbar
+
     def plot(
         self,
         points: np.ndarray | PointOverlay | None = None,
@@ -3635,41 +3683,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         points = _resolve_point_overlay(points, kwargs)  # type: ignore[arg-type]
         _warn_deprecated_cbar_kwargs(kwargs)
 
-        for key, val in kwargs.items():
-            if key not in self.default_options.keys():
-                raise ValueError(
-                    f"The given keyword argument:{key} is not correct, possible parameters are,"
-                    f" {DEFAULT_OPTIONS}"
-                )
-            else:
-                self.default_options[key] = val
-
-        # `colorbar=` (a ColorBar / bool) resolves last, so it wins over
-        # the default `add_colorbar` and any internal cbar_* key.
-        resolved_colorbar = _resolve_colorbar(colorbar)
-        self.default_options.update(resolved_colorbar)
-
-        # Record colour limits supplied to THIS plot() call so a preset render
-        # honours them (see `_style_color_overrides`). Sticky, and only for
-        # keys actually passed -- an auto-ranged plain plot adds nothing.
-        # `kwargs` is a real, mutable dict at runtime -- mypy's TypedDict model
-        # just does not support indexing it with a non-literal (loop) key.
-        kwargs_dict = cast(dict, kwargs)
-        for key in ("vmin", "vmax", "center", "cmap"):
-            if key in kwargs_dict and kwargs_dict[key] is not None:
-                self._style_color_overrides[key] = kwargs_dict[key]
-        # A `colorbar=` that requests PLACEMENT (a `ColorBar` with `location`/
-        # `inside`, or `colorbar=True`) overrides a preset's swatch with a real
-        # colorbar. A `ColorBar` carrying only colours/box styles the swatch in
-        # place instead, so the ECMWF swatch is kept.
-        self._style_wants_colorbar = colorbar is True or (
-            isinstance(colorbar, ColorBar)
-            and (
-                colorbar.location is not None
-                or colorbar.inside
-                or colorbar.orientation is not None
-            )
-        )
+        resolved_colorbar = self._apply_kwargs_and_colorbar(colorbar, kwargs)  # type: ignore[arg-type]
 
         self._validate_extend(self.default_options.get("extend"))
 
@@ -4628,42 +4642,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             assert frame_location is not None
             label_location = frame_location
 
-        for key, val in kwargs.items():
-            if key not in self.default_options.keys():
-                raise ValueError(
-                    f"The given keyword argument:{key} is not correct, possible parameters are,"
-                    f" {DEFAULT_OPTIONS}"
-                )
-            else:
-                self.default_options[key] = val
-
-        # `colorbar=` (a ColorBar / bool) resolves last, so it wins over
-        # the default `add_colorbar` and any internal cbar_* key.
-        resolved_colorbar = _resolve_colorbar(colorbar)
-        self.default_options.update(resolved_colorbar)
-
-        # Record colour limits supplied to THIS animate() call so a styled
-        # animation honours an explicit caller override of the preset's fixed
-        # range (see `_style_color_overrides`); an auto-ranged plain animation
-        # adds nothing.
-        # `kwargs` is a real, mutable dict at runtime -- mypy's TypedDict model
-        # just does not support indexing it with a non-literal (loop) key.
-        kwargs_dict = cast(dict, kwargs)
-        for key in ("vmin", "vmax", "center", "cmap"):
-            if key in kwargs_dict and kwargs_dict[key] is not None:
-                self._style_color_overrides[key] = kwargs_dict[key]
-        # A `colorbar=` that requests PLACEMENT (a `ColorBar` with `location`/
-        # `inside`, or `colorbar=True`) overrides a preset's swatch with a real
-        # colorbar. A `ColorBar` carrying only colours/box styles the swatch in
-        # place instead, so the ECMWF swatch is kept.
-        self._style_wants_colorbar = colorbar is True or (
-            isinstance(colorbar, ColorBar)
-            and (
-                colorbar.location is not None
-                or colorbar.inside
-                or colorbar.orientation is not None
-            )
-        )
+        resolved_colorbar = self._apply_kwargs_and_colorbar(colorbar, kwargs)  # type: ignore[arg-type]
 
         # Tick-spacing precedence: a `colorbar=ColorBar(ticks_spacing=...)` spec
         # wins (already merged above), then a loose `ticks_spacing=` kwarg, then
