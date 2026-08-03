@@ -885,6 +885,39 @@ def _weather_cmap(key: str, colors: Any, levels: Any, bands: Any) -> Any:
     return perceptual_colormap(f"weather_{key}", colors)
 
 
+def _weather_layer(key: str, rec: dict[str, Any]) -> dict[str, Any]:
+    """Build one weather-preset layer dict from a raw record.
+
+    Extracted from `_load_weather_presets` so that loader stays simple. Raises
+    (`KeyError` / `TypeError` / `ValueError`) on a structurally-broken record,
+    which the caller catches to skip it.
+    """
+    colors = rec["colors"]
+    levels = rec.get("levels")
+    bands = rec.get("bands")
+    cmap = _weather_cmap(key, colors, levels, bands)
+    # Bake a declared unit into the legend/colorbar label, and keep it on the
+    # layer so a caller can convert data into it (convert_units). NOTE: the label
+    # ASSERTS this unit but nothing here auto-converts -- a caller plotting data
+    # in another unit (e.g. Kelvin on a Celsius `levels` scale) must convert
+    # first, or the label misdescribes it.
+    units = rec.get("units")
+    label = f"{rec['label']} [{units}]" if units else rec["label"]
+    layer: dict[str, Any] = {"cmap": cmap, "label": label}
+    if units:
+        layer["units"] = units
+    if rec.get("opacity") == "opaque":
+        layer["alpha"] = 1.0
+    if levels:
+        layer["levels"] = levels
+        layer["extend"] = rec.get("extend", "neither")
+    elif bands:
+        layer["bands"] = bands
+        if "vmin" in rec:
+            layer["vmin"], layer["vmax"] = rec["vmin"], rec["vmax"]
+    return layer
+
+
 def _load_weather_presets() -> dict[str, dict[str, dict[str, Any]]]:
     """Load the merged ECMWF weather preset library (Apache-2.0), keyed by a descriptive name.
 
@@ -924,30 +957,7 @@ def _load_weather_presets() -> dict[str, dict[str, dict[str, Any]]]:
     presets: dict[str, dict[str, dict[str, Any]]] = {}
     for key, rec in records.items():
         try:
-            colors = rec["colors"]
-            levels = rec.get("levels")
-            bands = rec.get("bands")
-            cmap = _weather_cmap(key, colors, levels, bands)
-            # Bake a declared unit into the legend/colorbar label, and keep it on
-            # the layer so a caller can convert data into it (convert_units).
-            # NOTE: the label ASSERTS this unit but nothing here auto-converts --
-            # a caller plotting data in another unit (e.g. Kelvin on a Celsius
-            # `levels` scale) must convert first, or the label misdescribes it.
-            units = rec.get("units")
-            label = f"{rec['label']} [{units}]" if units else rec["label"]
-            layer: dict[str, Any] = {"cmap": cmap, "label": label}
-            if units:
-                layer["units"] = units
-            if rec.get("opacity") == "opaque":
-                layer["alpha"] = 1.0
-            if levels:
-                layer["levels"] = levels
-                layer["extend"] = rec.get("extend", "neither")
-            elif bands:
-                layer["bands"] = bands
-                if "vmin" in rec:
-                    layer["vmin"], layer["vmax"] = rec["vmin"], rec["vmax"]
-            presets[key] = {key: layer}
+            presets[key] = {key: _weather_layer(key, rec)}
         except (KeyError, TypeError, ValueError, AttributeError):
             continue
     return presets
