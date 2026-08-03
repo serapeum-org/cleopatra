@@ -953,6 +953,85 @@ DATA_STYLES.update(_load_preset_asset("ocean_presets.json", "ocean"))
 DATA_STYLES.update(_load_weather_presets())
 
 
+#: GRIB shortName -> descriptive `DATA_STYLES` preset name. Mirrors the
+#: build-time `SHORTNAME_TO_NAME` map in `tools/build_weather_presets.py`, exposed
+#: at runtime so a caller that knows a field's shortName (e.g. pyramids reading
+#: GRIB/NetCDF metadata) can select the matching vendored style without
+#: re-implementing the mapping. "how to plot" stays here; "what to plot" (reading
+#: the shortName) stays with the data package (see the E1 decision in
+#: planning/styles/remaining-style-work-plan.md).
+_SHORTNAME_TO_STYLE: dict[str, str] = {
+    "10fg": "wind_gust_10m", "10fgi": "wind_gust_10m_index", "10si": "wind_speed_10m",
+    "10u": "wind_u_10m", "10v": "wind_v_10m", "10wsi": "wind_speed_10m_index",
+    "2d": "dewpoint_temperature_2m", "2t": "temperature_2m", "2ti": "temperature_2m_index",
+    "2tp": "temperature_2m_probability", "aod550": "aerosol_optical_depth_550nm",
+    "cape": "convective_available_potential_energy",
+    "capei": "convective_available_potential_energy_index",
+    "capes": "convective_available_potential_energy_shear",
+    "capesi": "convective_available_potential_energy_shear_index",
+    "cin": "convective_inhibition", "clbt": "cloudy_brightness_temperature",
+    "co": "carbon_monoxide", "cp": "convective_precipitation", "crfrate": "convective_rainfall_rate",
+    "d": "divergence", "duaod550": "dust_aerosol_optical_depth_550nm",
+    "frpfire": "wildfire_radiative_power", "go3": "ozone", "gtco3": "total_column_ozone",
+    "hcc": "high_cloud_cover", "kx": "k_index", "lcc": "low_cloud_cover",
+    "lsp": "large_scale_precipitation", "lsrrate": "large_scale_rainfall_rate",
+    "maxswh": "max_significant_wave_height", "maxswhi": "max_significant_wave_height_index",
+    "mcc": "medium_cloud_cover", "mean10ws": "mean_wind_speed_10m", "mean2t": "mean_temperature_2m",
+    "mn2t": "min_temperature_2m", "mn2ti": "min_temperature_2m_index",
+    "mpts": "mean_period_total_swell", "mpww": "mean_period_wind_waves",
+    "mslpp": "mean_sea_level_pressure_probability", "mwp": "mean_wave_period",
+    "mx2t": "max_temperature_2m", "mx2ti": "max_temperature_2m_index", "no2": "nitrogen_dioxide",
+    "ph": "hurricane_probability", "prate": "precipitation_rate", "pt": "potential_temperature",
+    "ptd": "tropical_depression_probability", "pts": "tropical_storm_probability",
+    "q": "specific_humidity", "sf": "snowfall", "sfi": "snowfall_index",
+    "sh10": "significant_wave_height_over_10s_period", "shts": "significant_height_total_swell",
+    "shww": "significant_height_wind_waves", "srweq": "snowfall_rate_water_equivalent",
+    "stl1p": "soil_temperature_level1_probability", "suaod550": "sulphate_aerosol_optical_depth_550nm",
+    "swh": "significant_wave_height_combined", "t": "air_temperature",
+    "tcch4": "ch4_column_mean_molar_fraction", "tcco": "total_column_carbon_monoxide",
+    "tcco2": "co2_column_mean_molar_fraction", "tcso2": "total_column_sulphur_dioxide",
+    "totalx": "total_totals_index", "tp": "total_precipitation", "tpi": "total_precipitation_index",
+    "tpp": "total_precipitation_probability", "uvbed": "uv_biologically_effective_dose",
+    "uvbedcs": "uv_biologically_effective_dose_clear_sky", "vo": "relative_vorticity",
+    "w": "vertical_velocity", "ws": "total_wind_speed",
+}
+
+
+def style_for_parameter(short_name: str) -> str | None:
+    """Return the `DATA_STYLES` preset name for a GRIB shortName, or ``None``.
+
+    Maps a GRIB shortName (e.g. ``"2t"``) to the vendored preset that styles it
+    (``"temperature_2m"``), so a caller holding a field's shortName can pick the
+    matching ECMWF-style preset. A descriptive preset name passed straight
+    through is also accepted. Returns ``None`` when nothing matches, so callers
+    can fall back to a default.
+
+    Args:
+        short_name: A GRIB shortName or a descriptive `DATA_STYLES` preset name.
+            Matching is case-insensitive.
+
+    Returns:
+        str or None: The matching registered preset name, or ``None``.
+
+    Examples:
+        ```python
+        >>> from cleopatra.colors import style_for_parameter
+        >>> style_for_parameter("2t")
+        'temperature_2m'
+        >>> style_for_parameter("temperature_2m")
+        'temperature_2m'
+        >>> style_for_parameter("not-a-parameter") is None
+        True
+
+        ```
+    """
+    if not short_name:
+        return None
+    key = str(short_name).strip().lower()
+    name = _SHORTNAME_TO_STYLE.get(key, str(short_name).strip())
+    return name if name in DATA_STYLES else None
+
+
 def category_boundaries(values: list[float]) -> list[float]:
     """Bin edges for a `BoundaryNorm` over discrete category values.
 
