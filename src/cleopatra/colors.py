@@ -764,6 +764,29 @@ DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
             "norm": "symlog",
         },
     },
+    # NWS/NEXRAD radar reflectivity: the canonical stepped dBZ scale (light blue
+    # -> green -> yellow -> orange -> red -> magenta for intense returns/hail),
+    # rendered as discrete contour bands via `levels` with an arrow-capped
+    # colorbar (`extend="max"`) for the strongest echoes above 75 dBZ. A graded
+    # scale, so it uses the levels/extend path (not the categorical `categories`
+    # path, which would draw a disjoint legend).
+    "radar_reflectivity": {
+        "radar_reflectivity": {
+            "cmap": mcolors.ListedColormap(
+                [
+                    "#66ccff", "#3399ff", "#0066ff",
+                    "#00ff00", "#00cc00", "#009900",
+                    "#ffff00", "#ffcc00", "#ff9900",
+                    "#ff0000", "#cc0000", "#990000",
+                    "#ff00ff", "#9900cc",
+                ],
+                name="nexrad_reflectivity",
+            ),
+            "label": "Reflectivity [dBZ]",
+            "levels": [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75],
+            "extend": "max",
+        },
+    },
 }
 
 
