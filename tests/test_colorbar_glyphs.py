@@ -170,7 +170,8 @@ def test_mesh_animate_colorbar_spec_and_suppression():
     frames = [_MESH_DATA, _MESH_DATA * 2]
     g = MeshGlyph(_MESH_NX, _MESH_NY, _MESH_FACES)
     g.animate(frames, time=[0, 1], colorbar=ColorBar(orientation="horizontal", ticks_spacing=2.5))
-    assert g._cbar is not None and g._cbar.orientation == "horizontal", "animate spec orientation not applied"
+    assert g._cbar is not None, "animate spec should draw a colorbar"
+    assert g._cbar.orientation == "horizontal", "animate spec orientation not applied"
     assert g.default_options["ticks_spacing"] == 2.5, "animate spec ticks_spacing not honored"
     g2 = MeshGlyph(_MESH_NX, _MESH_NY, _MESH_FACES)
     g2.animate(frames, time=[0, 1], colorbar=False)
@@ -186,8 +187,9 @@ def test_unvalidated_label_location_errors_clearly_at_render():
         raises a clear cleopatra error rather than a raw matplotlib one.
     """
     glyph = _scatter()
+    spec = ColorBar(label_location="left")  # constructs OK (pins no orientation)
     with pytest.raises(ValueError, match="not valid for a vertical colorbar"):
-        glyph.plot(colorbar=ColorBar(label_location="left"))
+        glyph.plot(colorbar=spec)
 
 
 def test_colorbar_spec_is_sticky_like_arrayglyph():
