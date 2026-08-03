@@ -20,9 +20,9 @@
 ### Optional dependencies — the `tiles` extra
 
 The geospatial basemap features need three extra packages: the web-tile basemap helper
-(`cleopatra.tiles.add_tiles`), the reference-data layers (`cleopatra.reference.add_relief`
-for relief PNG decoding, and `cleopatra.reference.add_features(..., crs=...)` for
-reprojection), the orthographic globe presets in `cleopatra.projection`, and CRS
+(`cleopatra.basemap.tiles.add_tiles`), the reference-data layers (`cleopatra.basemap.reference.add_relief`
+for relief PNG decoding, and `cleopatra.basemap.reference.add_features(..., crs=...)` for
+reprojection), the orthographic globe presets in `cleopatra.basemap.projection`, and CRS
 reprojection on the geographic glyphs (`GeoMixin.add_tiles` / `add_features` / `add_relief`
 / `add_reference_map`). They are bundled in the `cleopatra[tiles]` extra (pip) / the
 `cleopatra-tiles` package (conda) and are otherwise not installed:
@@ -55,7 +55,7 @@ dependencies.
 ```bash
 pip install cleopatra
 
-# with the optional web-tile basemap support (cleopatra.tiles.add_tiles)
+# with the optional web-tile basemap support (cleopatra.basemap.tiles.add_tiles)
 pip install "cleopatra[tiles]"
 ```
 

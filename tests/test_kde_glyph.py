@@ -1,4 +1,4 @@
-"""Tests for cleopatra.kde_glyph.KDEGlyph — issue #156.
+"""Tests for cleopatra.glyphs.kde_glyph.KDEGlyph — issue #156.
 
 Covers construction/validation, the bandwidth rule, grid evaluation (including
 the memory-chunking path), level resolution, contour clipping, and the
@@ -20,8 +20,8 @@ from matplotlib.contour import QuadContourSet
 from matplotlib.patches import Circle
 from matplotlib.path import Path as MplPath
 
-import cleopatra.kde_glyph as kde_mod
-from cleopatra.kde_glyph import KDE_DEFAULT_OPTIONS, KDEGlyph
+import cleopatra.glyphs.kde_glyph as kde_mod
+from cleopatra.glyphs.kde_glyph import KDE_DEFAULT_OPTIONS, KDEGlyph
 
 
 @pytest.fixture(autouse=True)

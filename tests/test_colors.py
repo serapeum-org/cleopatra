@@ -19,7 +19,7 @@ from matplotlib.colors import (
 )
 from matplotlib.image import AxesImage
 
-from cleopatra.colors import (
+from cleopatra.styling.colors import (
     CAMS_AOD_COLORMAPS,
     DATA_STYLES,
     FLAME_COLORMAPS,
@@ -33,7 +33,7 @@ from cleopatra.colors import (
     alpha_scaled_mesh,
     apply_data_style,
 )
-from cleopatra.perceptual import perceptual_uniformity
+from cleopatra.styling.perceptual import perceptual_uniformity
 
 
 class TestHazeColormaps:
@@ -495,7 +495,7 @@ class TestApplyDataStyle:
         self, ax, monkeypatch
     ):
         """A preset combining a constant 'alpha' with alpha_vmin/vmax raises ValueError."""
-        import cleopatra.colors as colors_mod
+        import cleopatra.styling.colors as colors_mod
 
         bad = {
             "bad": {
@@ -520,7 +520,7 @@ class TestApplyDataStyle:
             cmap/label/vmin/vmax (no alpha_vmin/alpha_vmax) must behave exactly
             as before -- alpha tracks the same norm as colour.
         """
-        import cleopatra.colors as colors_mod
+        import cleopatra.styling.colors as colors_mod
 
         custom_styles = {
             "plain": {
@@ -741,7 +741,7 @@ class TestEarthkitPresets:
 
     def test_loader_degrades_without_asset(self, monkeypatch):
         """A missing weather asset degrades to no presets rather than raising."""
-        import cleopatra.colors as colors_mod
+        import cleopatra.styling.colors as colors_mod
 
         def boom(_pkg):
             raise FileNotFoundError("no data package")
@@ -1022,7 +1022,7 @@ class TestMagicsPresets:
 
     def test_loader_degrades_gracefully_without_asset(self, monkeypatch):
         """If the vendored asset is unreadable, the loader returns {} instead of raising."""
-        import cleopatra.colors as colors_mod
+        import cleopatra.styling.colors as colors_mod
 
         def boom(_pkg):
             raise FileNotFoundError("no data package")
@@ -1091,7 +1091,7 @@ class TestMagicsPresets:
         family and keeps the same long named-colour ramp.)
         """
         rec = json.loads(
-            importlib.resources.files("cleopatra.data")
+            importlib.resources.files("cleopatra.styling.data")
             .joinpath("weather_presets.json")
             .read_text()
         )["min_temperature_2m"]
@@ -1234,7 +1234,7 @@ class TestCategoricalPresets:
 
     def test_categorical_legend_honours_bounds_and_stacks(self, ax, monkeypatch):
         """Two categorical layers keep both legends, anchored by `legend_bounds`."""
-        import cleopatra.colors as colors_mod
+        import cleopatra.styling.colors as colors_mod
 
         styles = dict(
             colors_mod.DATA_STYLES,
@@ -1473,7 +1473,7 @@ class TestCmoceanPresets:
     @staticmethod
     def _patch_asset_text(monkeypatch, text):
         """Make the loader read `text` as the asset content."""
-        import cleopatra.colors as colors_mod
+        import cleopatra.styling.colors as colors_mod
 
         class _File:
             def read_text(self, encoding=None):

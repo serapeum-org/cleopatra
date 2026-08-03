@@ -1,6 +1,6 @@
 """Tests for the line-glow primitive and the glyph ``glow`` options.
 
-Covers ``cleopatra.colors.add_line_glow`` and ``resolve_glow_options`` plus the
+Covers ``cleopatra.styling.colors.add_line_glow`` and ``resolve_glow_options`` plus the
 opt-in ``glow`` option on ``LineGlyph`` and ``FlowGlyph``.
 """
 
@@ -15,9 +15,9 @@ import numpy as np
 import pytest
 from matplotlib.collections import LineCollection
 
-from cleopatra.colors import GLOW_OPTION_KEYS, add_line_glow, resolve_glow_options
-from cleopatra.flow_glyph import FlowGlyph
-from cleopatra.line_glyph import LineGlyph
+from cleopatra.styling.colors import GLOW_OPTION_KEYS, add_line_glow, resolve_glow_options
+from cleopatra.glyphs.flow_glyph import FlowGlyph
+from cleopatra.glyphs.line_glyph import LineGlyph
 
 
 @pytest.fixture(scope="function")
@@ -35,7 +35,7 @@ def line_axes():
 
 
 class TestAddLineGlow:
-    """Tests for ``cleopatra.colors.add_line_glow``."""
+    """Tests for ``cleopatra.styling.colors.add_line_glow``."""
 
     def test_adds_n_glow_copies_per_line(self, line_axes):
         """``add_line_glow`` adds exactly ``n_glow`` copies per source line.
@@ -101,7 +101,7 @@ class TestAddLineGlow:
 
 
 class TestResolveGlowOptions:
-    """Tests for ``cleopatra.colors.resolve_glow_options``."""
+    """Tests for ``cleopatra.styling.colors.resolve_glow_options``."""
 
     def test_true_maps_to_defaults(self):
         """``True`` resolves to an empty kwargs dict (use all defaults).

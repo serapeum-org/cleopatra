@@ -1,4 +1,4 @@
-"""Tests for cleopatra.glyph.Glyph base class.
+"""Tests for cleopatra.glyphs.glyph.Glyph base class.
 
 Covers initialization, properties, kwargs merging, figure/axes creation,
 tick computation, color scale normalization, colorbar creation,
@@ -17,16 +17,16 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure
 
-import cleopatra.glyph as glyph_mod
-from cleopatra.glyph import (
+import cleopatra.glyphs.glyph as glyph_mod
+from cleopatra.glyphs.glyph import (
     MAX_DISCRETE_LEVELS,
     SUPPORTED_VIDEO_FORMAT,
     Glyph,
     _clear_prior_render_artists,
     _mark_render_artists,
 )
-from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
-from cleopatra.styles import ColorScale, MidpointNormalize
+from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
+from cleopatra.styling.styles import ColorScale, MidpointNormalize
 
 
 def _make_options(**overrides) -> dict:
@@ -647,7 +647,7 @@ class TestSaveAnimation:
 
         Test scenario:
             ``crf``/``preset``/``dpi`` passed to the wrapper must reach
-            ``cleopatra.animation.save_animation`` unchanged so callers get the
+            ``cleopatra.glyphs.animation.save_animation`` unchanged so callers get the
             full quality-control surface through the glyph.
         """
         g = Glyph(default_options=_make_options())
@@ -1083,7 +1083,7 @@ class TestArrayGlyphUnchangedByHelper:
             equal those ArrayGlyph computes for its non-robust/non-center
             path, confirming the contract is identical.
         """
-        from cleopatra.array_glyph import ArrayGlyph
+        from cleopatra.glyphs.array_glyph import ArrayGlyph
 
         data = np.array([[0.0, 2.0, 4.0], [6.0, 8.0, 10.0]])
         ag = ArrayGlyph(data)
@@ -1123,12 +1123,12 @@ class TestOptionKeysAndFilterKwargs:
     @pytest.mark.parametrize(
         "import_path, class_name, const_name",
         [
-            ("cleopatra.array_glyph", "ArrayGlyph", "DEFAULT_OPTIONS"),
-            ("cleopatra.scatter_glyph", "ScatterGlyph", "SCATTER_DEFAULT_OPTIONS"),
-            ("cleopatra.polygon_glyph", "PolygonGlyph", "POLYGON_DEFAULT_OPTIONS"),
-            ("cleopatra.vector_glyph", "VectorGlyph", "VECTOR_DEFAULT_OPTIONS"),
-            ("cleopatra.line_glyph", "LineGlyph", "LINE_DEFAULT_OPTIONS"),
-            ("cleopatra.mesh_glyph", "MeshGlyph", "MESH_DEFAULT_OPTIONS"),
+            ("cleopatra.glyphs.array_glyph", "ArrayGlyph", "DEFAULT_OPTIONS"),
+            ("cleopatra.glyphs.scatter_glyph", "ScatterGlyph", "SCATTER_DEFAULT_OPTIONS"),
+            ("cleopatra.glyphs.polygon_glyph", "PolygonGlyph", "POLYGON_DEFAULT_OPTIONS"),
+            ("cleopatra.glyphs.vector_glyph", "VectorGlyph", "VECTOR_DEFAULT_OPTIONS"),
+            ("cleopatra.glyphs.line_glyph", "LineGlyph", "LINE_DEFAULT_OPTIONS"),
+            ("cleopatra.glyphs.mesh_glyph", "MeshGlyph", "MESH_DEFAULT_OPTIONS"),
         ],
     )
     def test_subclass_keys_match_their_option_dict(
@@ -1161,8 +1161,8 @@ class TestOptionKeysAndFilterKwargs:
             A polygon-specific key (`edgecolor`) is accepted by PolygonGlyph
             but not by ScatterGlyph, proving the keys are resolved per class.
         """
-        from cleopatra.polygon_glyph import PolygonGlyph
-        from cleopatra.scatter_glyph import ScatterGlyph
+        from cleopatra.glyphs.polygon_glyph import PolygonGlyph
+        from cleopatra.glyphs.scatter_glyph import ScatterGlyph
 
         assert "edgecolor" in PolygonGlyph.option_keys(), "polygon accepts edgecolor"
         assert "edgecolor" not in ScatterGlyph.option_keys(), "scatter does not"
@@ -1174,7 +1174,7 @@ class TestOptionKeysAndFilterKwargs:
             A mixed bag of known and unknown keys is filtered to just the
             known ones, with their values intact.
         """
-        from cleopatra.polygon_glyph import PolygonGlyph
+        from cleopatra.glyphs.polygon_glyph import PolygonGlyph
 
         raw = {"cmap": "viridis", "edgecolor": "black", "bogus": 1}
         safe = PolygonGlyph.filter_kwargs(raw)
@@ -1187,7 +1187,7 @@ class TestOptionKeysAndFilterKwargs:
         Test scenario:
             Boundary case — no keys in, no keys out.
         """
-        from cleopatra.scatter_glyph import ScatterGlyph
+        from cleopatra.glyphs.scatter_glyph import ScatterGlyph
 
         assert ScatterGlyph.filter_kwargs({}) == {}, "empty in -> empty out"
 
@@ -1201,7 +1201,7 @@ class TestOptionKeysAndFilterKwargs:
         """
         import numpy as np
 
-        from cleopatra.array_glyph import ArrayGlyph
+        from cleopatra.glyphs.array_glyph import ArrayGlyph
 
         raw = {"cmap": "viridis", "totally_unknown": 1}
         with pytest.raises(ValueError, match="totally_unknown"):
@@ -1232,7 +1232,7 @@ class TestOptionKeysAndFilterKwargs:
         """
         import numpy as np
 
-        from cleopatra.array_glyph import ArrayGlyph
+        from cleopatra.glyphs.array_glyph import ArrayGlyph
 
         glyph = ArrayGlyph(np.arange(9.0).reshape(3, 3))
         assert ArrayGlyph.option_keys() == set(glyph.default_options), (
@@ -1246,7 +1246,7 @@ class TestOptionKeysAndFilterKwargs:
             Filtering is pure — the input mapping keeps all its original keys,
             and the returned dict is a distinct object.
         """
-        from cleopatra.scatter_glyph import ScatterGlyph
+        from cleopatra.glyphs.scatter_glyph import ScatterGlyph
 
         raw = {"cmap": "viridis", "bogus": 1}
         safe = ScatterGlyph.filter_kwargs(raw)
@@ -1260,7 +1260,7 @@ class TestOptionKeysAndFilterKwargs:
             Two accepted keys given in a specific order come back in that same
             order (rejected keys are dropped without reordering the rest).
         """
-        from cleopatra.array_glyph import ArrayGlyph
+        from cleopatra.glyphs.array_glyph import ArrayGlyph
 
         raw = {"vmax": 5, "bogus": 1, "vmin": 0}
         safe = ArrayGlyph.filter_kwargs(raw)
@@ -1272,7 +1272,7 @@ class TestOptionKeysAndFilterKwargs:
         Test scenario:
             Boundary case — when no key is accepted, the result is empty.
         """
-        from cleopatra.scatter_glyph import ScatterGlyph
+        from cleopatra.glyphs.scatter_glyph import ScatterGlyph
 
         assert ScatterGlyph.filter_kwargs({"nope": 1, "nah": 2}) == {}, (
             "all-unknown input should yield an empty dict"
@@ -1289,7 +1289,7 @@ class TestRootFigure:
             For an axes created by `plt.subplots`, the helper resolves to that
             same figure object.
         """
-        from cleopatra.glyph import _root_figure
+        from cleopatra.glyphs.glyph import _root_figure
 
         fig, ax = plt.subplots()
         try:
@@ -1305,7 +1305,7 @@ class TestRootFigure:
             Figure; the helper must use that path. Simulated with a fake axes
             whose `get_figure` accepts `root`.
         """
-        from cleopatra.glyph import _root_figure
+        from cleopatra.glyphs.glyph import _root_figure
 
         root_fig = object()
 
@@ -1322,7 +1322,7 @@ class TestRootFigure:
             When `get_figure(root=True)` raises TypeError (no `root` kwarg, as
             on the 3.8.4 floor), the helper retries without it.
         """
-        from cleopatra.glyph import _root_figure
+        from cleopatra.glyphs.glyph import _root_figure
 
         sentinel = object()
 
@@ -1344,7 +1344,7 @@ class TestDefaultOptionsAlias:
             constant (same object), and the class attribute / `option_keys`
             agree with it.
         """
-        import cleopatra.array_glyph as ag
+        import cleopatra.glyphs.array_glyph as ag
 
         assert ag.DEFAULT_OPTIONS is ag.ARRAY_DEFAULT_OPTIONS, (
             "alias must be the same object"
@@ -1364,7 +1364,7 @@ class TestDefaultOptionsAlias:
             constant (same object), and the class attribute / `option_keys`
             agree with it.
         """
-        import cleopatra.statistical_glyph as sg
+        import cleopatra.glyphs.statistical_glyph as sg
 
         assert sg.DEFAULT_OPTIONS is sg.STATISTICAL_DEFAULT_OPTIONS, (
             "alias must be the same object"
@@ -1392,7 +1392,7 @@ class TestSubFigureFigureResolution:
             An axes created on a SubFigure resolves up to the owning top-level
             Figure (so a host-owned colorbar/figure handle is the real one).
         """
-        from cleopatra.glyph import _root_figure
+        from cleopatra.glyphs.glyph import _root_figure
 
         fig = plt.figure()
         sub = fig.subfigures(1, 1)
@@ -1475,7 +1475,7 @@ class TestFigureResolutionInternals:
             A non-callable (whose signature inspection raises) must yield False
             rather than propagating the error.
         """
-        from cleopatra.glyph import _get_figure_supports_root
+        from cleopatra.glyphs.glyph import _get_figure_supports_root
 
         assert _get_figure_supports_root(object()) is False, "uninspectable -> False"
 
@@ -1488,7 +1488,7 @@ class TestFigureResolutionInternals:
         """
         import warnings as _warnings
 
-        from cleopatra.glyph import _root_figure
+        from cleopatra.glyphs.glyph import _root_figure
 
         fig = plt.figure()
         sub = fig.subfigures(1, 1)
@@ -1513,7 +1513,7 @@ class TestFigureResolutionInternals:
             A fake axes whose `get_figure` has no `root` kwarg returns its
             figure directly.
         """
-        from cleopatra.glyph import _immediate_figure
+        from cleopatra.glyphs.glyph import _immediate_figure
 
         sentinel = object()
 

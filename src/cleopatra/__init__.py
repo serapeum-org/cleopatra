@@ -2,13 +2,13 @@
 
 The package root deliberately re-exports nothing: import the public
 classes/functions from their submodules, e.g.
-`from cleopatra.array_glyph import ArrayGlyph`,
-`from cleopatra.tiles import add_tiles`,
+`from cleopatra.glyphs.array_glyph import ArrayGlyph`,
+`from cleopatra.basemap.tiles import add_tiles`,
 `from cleopatra.config import Config`.
 
-Submodules: `array_glyph`, `glyph`, `geo`, `mesh_glyph`,
-`statistical_glyph`, `colors`, `styles`, `tiles`, `reference`,
-`projection`, `templates`, `animation`, `config`.
+Subpackages: `glyphs` (the chart-type building blocks), `styling` (colour/
+legend/presentation layer), `basemap` (networked basemap/CRS helpers).
+Top-level modules: `config`, `templates`.
 
 Importing cleopatra does not change the active matplotlib backend. If you
 want the old convenience behaviour (`%matplotlib inline` in a notebook,

@@ -4,7 +4,7 @@ Config.set_matplotlib_backend()
 
 import numpy as np
 
-from cleopatra.array_glyph import ArrayGlyph
+from cleopatra.glyphs.array_glyph import ArrayGlyph
 
 sentinel_2 = np.load("tests/data/s2a.npy")
 extent = [34.626902783650785, 34.654007151597256, 31.82337186561403, 31.8504762335605]

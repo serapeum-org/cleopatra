@@ -70,21 +70,21 @@ def _as_xy(array: Any, name: str) -> np.ndarray:
     Examples:
         - Coerce a nested list of integer pairs to a float array:
             ```python
-            >>> from cleopatra.projection import _as_xy
+            >>> from cleopatra.basemap.projection import _as_xy
             >>> _as_xy([[1, 0], [0, 1], [-1, 0]], "boundary_xy").tolist()
             [[1.0, 0.0], [0.0, 1.0], [-1.0, 0.0]]
 
             ```
         - A single vertex is a valid ``(1, 2)`` array:
             ```python
-            >>> from cleopatra.projection import _as_xy
+            >>> from cleopatra.basemap.projection import _as_xy
             >>> _as_xy([[0.5, 0.5]], "graticule_lines[0]").shape
             (1, 2)
 
             ```
         - A 1-D input raises ``ValueError`` naming the argument:
             ```python
-            >>> from cleopatra.projection import _as_xy
+            >>> from cleopatra.basemap.projection import _as_xy
             >>> _as_xy([1, 2, 3], "boundary_xy")
             Traceback (most recent call last):
                 ...
@@ -162,7 +162,7 @@ def apply_projection_frame(
             >>> matplotlib.use("Agg")
             >>> import numpy as np
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.projection import apply_projection_frame
+            >>> from cleopatra.basemap.projection import apply_projection_frame
             >>> theta = np.linspace(0, 2 * np.pi, 200)
             >>> boundary = np.column_stack([np.cos(theta), np.sin(theta)])
             >>> fig, ax = plt.subplots()
@@ -182,7 +182,7 @@ def apply_projection_frame(
             >>> matplotlib.use("Agg")
             >>> import numpy as np
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.projection import apply_projection_frame
+            >>> from cleopatra.basemap.projection import apply_projection_frame
             >>> boundary = [[1, 0], [0, 1], [-1, 0], [0, -1]]
             >>> meridian = [[0, -1], [0, 1]]
             >>> fig, ax = plt.subplots()
@@ -202,7 +202,7 @@ def apply_projection_frame(
             ```
         - Passing a non-Axes object raises ``TypeError``:
             ```python
-            >>> from cleopatra.projection import apply_projection_frame
+            >>> from cleopatra.basemap.projection import apply_projection_frame
             >>> apply_projection_frame(
             ...     object(), boundary_xy=[[0, 0], [1, 1]], xlim=(-1, 1), ylim=(-1, 1)
             ... )
@@ -341,7 +341,7 @@ def orthographic_grid(
     hemisphere -- the orthographic projection formula is defined everywhere
     but is only meaningful for the visible half, so points beyond it are set
     to NaN in the returned data rather than silently folded onto the visible
-    disk. Pair the result with `alpha_scaled_mesh` (`cleopatra.colors`),
+    disk. Pair the result with `alpha_scaled_mesh` (`cleopatra.styling.colors`),
     which -- unlike `alpha_scaled_image` -- can render this kind of
     curvilinear (non-rectangular) grid.
 
@@ -374,7 +374,7 @@ def orthographic_grid(
           latitude -90 (South Pole) is masked out as not visible:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.projection import orthographic_grid
+            >>> from cleopatra.basemap.projection import orthographic_grid
             >>> lon = np.array([0.0, 90.0])
             >>> lat = np.array([90.0, -90.0])
             >>> data = np.array([[1.0, 2.0], [3.0, 4.0]])
@@ -389,7 +389,7 @@ def orthographic_grid(
     See Also:
         orthographic_boundary: The matching globe outline for this centre.
         orthographic_graticule: Matching meridian/parallel lines.
-        cleopatra.colors.alpha_scaled_mesh: Renders the returned grid.
+        cleopatra.styling.colors.alpha_scaled_mesh: Renders the returned grid.
     """
     _require_pyproj("Orthographic ('globe') projection")
     from pyproj import Transformer
@@ -495,7 +495,7 @@ def orthographic_grid_edges(
         - Edge arrays are one larger per axis than the centre vectors:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.projection import orthographic_grid_edges
+            >>> from cleopatra.basemap.projection import orthographic_grid_edges
             >>> lon = np.linspace(-180, 180, 8)
             >>> lat = np.linspace(-90, 90, 4)
             >>> x_edges, y_edges = orthographic_grid_edges(lon, lat)
@@ -506,7 +506,7 @@ def orthographic_grid_edges(
 
     See Also:
         orthographic_grid: The matching cell-centre reprojection for `data`.
-        cleopatra.colors.alpha_scaled_mesh: Renders with `shading="flat"`.
+        cleopatra.styling.colors.alpha_scaled_mesh: Renders with `shading="flat"`.
     """
     lon_edges_1d = _bin_edges(np.asarray(lon, dtype=float))
     lat_edges_1d = _bin_edges(np.asarray(lat, dtype=float))
@@ -527,7 +527,7 @@ def orthographic_points(
     """Reproject scattered lon/lat points onto an orthographic ('globe') view.
 
     The point counterpart to `orthographic_grid`: use this for discrete
-    locations -- e.g. city markers for `cleopatra.geo.add_point_labels` --
+    locations -- e.g. city markers for `cleopatra.basemap.geo.add_point_labels` --
     rather than a raster grid. A globe's axes are scaled in projected
     metres (`ORTHOGRAPHIC_RADIUS_M`), not degrees, so plotting raw lon/lat
     values directly on a globe axes collapses every point toward the origin;
@@ -555,7 +555,7 @@ def orthographic_points(
           point on the far side comes back `NaN`:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.projection import orthographic_points
+            >>> from cleopatra.basemap.projection import orthographic_points
             >>> lon = np.array([-21.9, 0.0])
             >>> lat = np.array([64.1, -80.0])
             >>> x, y = orthographic_points(lon, lat, center_lat=90.0, center_lon=0.0)
@@ -567,7 +567,7 @@ def orthographic_points(
             ```
         - A single scalar point round-trips as a 1-element array:
             ```python
-            >>> from cleopatra.projection import orthographic_points
+            >>> from cleopatra.basemap.projection import orthographic_points
             >>> x, y = orthographic_points(0.0, 90.0)
             >>> round(float(x[0]), 6), round(float(y[0]), 6)
             (0.0, -0.0)
@@ -576,7 +576,7 @@ def orthographic_points(
 
     See Also:
         orthographic_grid: The raster-grid counterpart.
-        cleopatra.geo.add_point_labels: Renders the reprojected points.
+        cleopatra.basemap.geo.add_point_labels: Renders the reprojected points.
     """
     _require_pyproj("Orthographic ('globe') point reprojection")
     from pyproj import Transformer
@@ -618,7 +618,7 @@ def orthographic_boundary(
         - The boundary is a circle of the given radius, centred at the origin:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.projection import orthographic_boundary
+            >>> from cleopatra.basemap.projection import orthographic_boundary
             >>> boundary = orthographic_boundary(n=100, radius=1.0)
             >>> boundary.shape
             (100, 2)
@@ -672,7 +672,7 @@ def orthographic_graticule(
         - A 90-degree step gives a small set of meridians/parallels, each a
           `(densify, 2)` or shorter (edge-clipped) segment:
             ```python
-            >>> from cleopatra.projection import orthographic_graticule
+            >>> from cleopatra.basemap.projection import orthographic_graticule
             >>> lines = orthographic_graticule(step=90.0, densify=50)
             >>> len(lines) > 0
             True
@@ -682,7 +682,7 @@ def orthographic_graticule(
             ```
         - A non-positive step raises `ValueError`:
             ```python
-            >>> from cleopatra.projection import orthographic_graticule
+            >>> from cleopatra.basemap.projection import orthographic_graticule
             >>> orthographic_graticule(step=0)
             Traceback (most recent call last):
                 ...
@@ -724,7 +724,7 @@ def orthographic_graticule(
 #: Named "projection style" presets for `apply_projection_style` -- the
 #: coordinate-frame half of the "haze" look (the glowing, ECMWF/CAMS-style
 #: aerosol-animation aesthetic), independent of the
-#: `cleopatra.colors.DATA_STYLES` colour/legend half. `"globe"` reprojects
+#: `cleopatra.styling.colors.DATA_STYLES` colour/legend half. `"globe"` reprojects
 #: onto an orthographic view and frames it with a boundary + graticule;
 #: `"flat"` leaves the data in plain lon/lat and touches nothing on `ax`.
 PROJECTION_STYLES: dict[str, dict[str, Any]] = {
@@ -751,7 +751,7 @@ def apply_projection_style(
     the data is meant to be plotted directly in lon/lat coordinates.
 
     This is the projection half of composing the haze look; the colour half
-    is `cleopatra.colors.apply_data_style`, called with the `(x, y, data)`
+    is `cleopatra.styling.colors.apply_data_style`, called with the `(x, y, data)`
     this function returns as its `x`/`y`/layer arguments. Both styles return
     cell-**edge** coordinates (one larger per axis than `data`) for use with
     `shading="flat"`: the orthographic projection's extreme distortion near
@@ -821,7 +821,7 @@ def apply_projection_style(
             ```python
             >>> import numpy as np
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.projection import apply_projection_style
+            >>> from cleopatra.basemap.projection import apply_projection_style
             >>> fig, ax = plt.subplots()
             >>> lon = np.array([0.0, 90.0])
             >>> lat = np.array([90.0, -90.0])
@@ -841,7 +841,7 @@ def apply_projection_style(
             ```python
             >>> import numpy as np
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.projection import apply_projection_style
+            >>> from cleopatra.basemap.projection import apply_projection_style
             >>> fig, ax = plt.subplots()
             >>> lon = np.array([0.0, 90.0])
             >>> lat = np.array([90.0, -90.0])
@@ -861,7 +861,7 @@ def apply_projection_style(
             ```python
             >>> import numpy as np
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.projection import apply_projection_style
+            >>> from cleopatra.basemap.projection import apply_projection_style
             >>> fig, ax = plt.subplots()
             >>> lon = np.array([0.0, 90.0])
             >>> lat = np.array([90.0, -90.0])
@@ -878,7 +878,7 @@ def apply_projection_style(
             ```python
             >>> import numpy as np
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.projection import apply_projection_style
+            >>> from cleopatra.basemap.projection import apply_projection_style
             >>> fig, ax = plt.subplots()
             >>> apply_projection_style(
             ...     ax, np.array([0.0]), np.array([0.0]), np.array([[1.0]]),
@@ -895,7 +895,7 @@ def apply_projection_style(
         orthographic_grid: The `"globe"` cell-centre reprojection primitive.
         orthographic_grid_edges: The `"globe"` cell-edge reprojection primitive.
         apply_projection_frame: Draws the boundary/graticule this composes.
-        cleopatra.colors.apply_data_style: The companion data-style axis.
+        cleopatra.styling.colors.apply_data_style: The companion data-style axis.
     """
     if style not in PROJECTION_STYLES:
         raise KeyError(

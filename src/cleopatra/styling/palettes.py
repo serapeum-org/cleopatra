@@ -1,7 +1,7 @@
 """One unified palette record and registry.
 
 Every colour ramp cleopatra knows about -- its own `HAZE`/`CAMS`/`FLAME`
-families, and anything you generate with `cleopatra.perceptual` -- is described
+families, and anything you generate with `cleopatra.styling.perceptual` -- is described
 by a single `Palette` record: a name, a `kind` (what it is *for*), the colours,
 and a `source` (provenance only). One schema, one registry, one lookup API, so
 adding a family is data, not a new code path.
@@ -10,12 +10,12 @@ adding a family is data, not a new code path.
 turned into a colormap and, downstream, its natural norm/legend:
 
 - `sequential` / `diverging` / `cyclic`: continuous -- the colours are anchors
-    interpolated perceptually (in CIELAB, via `cleopatra.perceptual`).
+    interpolated perceptually (in CIELAB, via `cleopatra.styling.perceptual`).
 - `qualitative`: discrete -- the colours are the exact class swatches, kept as a
     `ListedColormap` with no interpolation.
 
 Example:
-    >>> from cleopatra.palettes import Palette, PaletteKind, register, get_palette
+    >>> from cleopatra.styling.palettes import Palette, PaletteKind, register, get_palette
     >>> p = register(Palette("demo", PaletteKind.SEQUENTIAL, ("#ffffff", "#004cff")))
     >>> get_palette("demo").kind
     <PaletteKind.SEQUENTIAL: 'sequential'>
@@ -40,7 +40,7 @@ from matplotlib.colors import (
 )
 from matplotlib.figure import Figure
 
-from cleopatra.perceptual import make_diverging, perceptual_colormap
+from cleopatra.styling.perceptual import make_diverging, perceptual_colormap
 
 __all__ = [
     "PaletteKind",
@@ -65,7 +65,7 @@ class PaletteKind(StrEnum):
 
     Examples:
         ```python
-        >>> from cleopatra.palettes import PaletteKind
+        >>> from cleopatra.styling.palettes import PaletteKind
         >>> PaletteKind.DIVERGING == "diverging"
         True
         >>> PaletteKind("Qualitative") is PaletteKind.QUALITATIVE
@@ -137,7 +137,7 @@ class Palette:
 
     Examples:
         ```python
-        >>> from cleopatra.palettes import Palette, PaletteKind
+        >>> from cleopatra.styling.palettes import Palette, PaletteKind
         >>> Palette("d", "diverging", ("#762a83", "#f4f4f4", "#1b7837")).kind
         <PaletteKind.DIVERGING: 'diverging'>
 
@@ -230,7 +230,7 @@ class Palette:
 
         Examples:
             ```python
-            >>> from cleopatra.palettes import Palette
+            >>> from cleopatra.styling.palettes import Palette
             >>> from matplotlib.colors import BoundaryNorm, CenteredNorm, Normalize
             >>> seq = Palette("s", "sequential", ("#ffffff", "#000000"))
             >>> type(seq.default_norm(vmin=0, vmax=10)) is Normalize
@@ -301,7 +301,7 @@ def available_palettes(kind: PaletteKind | str | None = None) -> list[str]:
 
     Examples:
         ```python
-        >>> from cleopatra.palettes import available_palettes
+        >>> from cleopatra.styling.palettes import available_palettes
         >>> isinstance(available_palettes("sequential"), list)
         True
 
@@ -355,7 +355,7 @@ def preview_palettes(
         >>> import matplotlib
         >>> matplotlib.use("Agg")
         >>> import matplotlib.pyplot as plt
-        >>> from cleopatra.palettes import preview_palettes
+        >>> from cleopatra.styling.palettes import preview_palettes
         >>> fig = preview_palettes("diverging")
         >>> len(fig.axes) > 0
         True
@@ -407,7 +407,7 @@ def preview_palettes(
 
 # --------------------------------------------------------------------------
 # Built-in colour families -- registered at import, so the registry is
-# populated whether you import `cleopatra.palettes` or `cleopatra.colors`.
+# populated whether you import `cleopatra.styling.palettes` or `cleopatra.styling.colors`.
 # --------------------------------------------------------------------------
 
 #: Sequential "haze" ramps (white at 0.0, saturating toward the named hue) -- the
@@ -468,7 +468,7 @@ del _prefix, _anchor_map, _src, _key, _anchors
 
 #: Backward-compatible `name -> Colormap` dicts, perceptually interpolated. New
 #: code should prefer the registry (`get_palette`); these remain for existing
-#: `from cleopatra.colors import HAZE_COLORMAPS` imports and `DATA_STYLES` wiring.
+#: `from cleopatra.styling.colors import HAZE_COLORMAPS` imports and `DATA_STYLES` wiring.
 HAZE_COLORMAPS: dict[str, Colormap] = {
     k: get_palette(f"haze_{k}").to_colormap() for k in _HAZE_ANCHORS
 }

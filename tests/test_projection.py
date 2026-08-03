@@ -1,4 +1,4 @@
-"""Tests for ``cleopatra.projection``.
+"""Tests for ``cleopatra.basemap.projection``.
 
 Covers the public helper ``apply_projection_frame`` (pure matplotlib, no PROJ
 dependency) and the orthographic ('globe') helpers, which reproject through
@@ -26,8 +26,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.patches import PathPatch  # noqa: E402
 
-from cleopatra import projection as projection_module  # noqa: E402
-from cleopatra.projection import (  # noqa: E402
+from cleopatra.basemap import projection as projection_module  # noqa: E402
+from cleopatra.basemap.projection import (  # noqa: E402
     DEFAULT_BOUNDARY_KW,
     DEFAULT_GRATICULE_KW,
     ORTHOGRAPHIC_RADIUS_M,
@@ -573,7 +573,7 @@ class TestVisibleHemisphere:
 
     def test_center_point_is_visible(self):
         """The centre point itself is always on the visible hemisphere."""
-        from cleopatra.projection import _visible_hemisphere
+        from cleopatra.basemap.projection import _visible_hemisphere
 
         visible = _visible_hemisphere(
             np.array([10.0]), np.array([45.0]), center_lat=45.0, center_lon=10.0
@@ -582,7 +582,7 @@ class TestVisibleHemisphere:
 
     def test_antipodal_point_is_not_visible(self):
         """The point exactly opposite the centre is not visible."""
-        from cleopatra.projection import _visible_hemisphere
+        from cleopatra.basemap.projection import _visible_hemisphere
 
         visible = _visible_hemisphere(
             np.array([190.0]), np.array([-45.0]), center_lat=45.0, center_lon=10.0
@@ -591,7 +591,7 @@ class TestVisibleHemisphere:
 
     def test_north_and_south_pole_from_arctic_center(self):
         """From an Arctic-centred view, the North Pole is visible, South is not."""
-        from cleopatra.projection import _visible_hemisphere
+        from cleopatra.basemap.projection import _visible_hemisphere
 
         visible = _visible_hemisphere(
             np.array([0.0, 0.0]),
@@ -607,7 +607,7 @@ class TestSplitVisibleRuns:
 
     def test_all_visible_returns_one_run(self):
         """An entirely-visible line returns as a single unsplit segment."""
-        from cleopatra.projection import _split_visible_runs
+        from cleopatra.basemap.projection import _split_visible_runs
 
         xy = np.column_stack([np.arange(5.0), np.arange(5.0)])
         runs = _split_visible_runs(xy, np.array([True] * 5))
@@ -616,7 +616,7 @@ class TestSplitVisibleRuns:
 
     def test_all_invisible_returns_no_runs(self):
         """An entirely-invisible line returns no segments."""
-        from cleopatra.projection import _split_visible_runs
+        from cleopatra.basemap.projection import _split_visible_runs
 
         xy = np.column_stack([np.arange(5.0), np.arange(5.0)])
         runs = _split_visible_runs(xy, np.array([False] * 5))
@@ -624,7 +624,7 @@ class TestSplitVisibleRuns:
 
     def test_gap_splits_into_two_runs(self):
         """A visible-invisible-visible pattern splits into two segments."""
-        from cleopatra.projection import _split_visible_runs
+        from cleopatra.basemap.projection import _split_visible_runs
 
         xy = np.column_stack([np.arange(6.0), np.arange(6.0)])
         visible = np.array([True, True, False, False, True, True])
@@ -635,7 +635,7 @@ class TestSplitVisibleRuns:
 
     def test_single_point_run_is_dropped(self):
         """A run of exactly one visible point is dropped (not a drawable line)."""
-        from cleopatra.projection import _split_visible_runs
+        from cleopatra.basemap.projection import _split_visible_runs
 
         xy = np.column_stack([np.arange(3.0), np.arange(3.0)])
         visible = np.array([False, True, False])
@@ -690,7 +690,7 @@ class TestOrthographicGrid:
 
     def test_missing_pyproj_raises_import_error(self, monkeypatch):
         """Without pyproj installed, a clear `ImportError` is raised."""
-        import cleopatra.projection as proj_mod
+        import cleopatra.basemap.projection as proj_mod
 
         monkeypatch.setattr(proj_mod.importlib.util, "find_spec", lambda name: None)
         with pytest.raises(ImportError, match=r"\[tiles\]"):
@@ -758,7 +758,7 @@ class TestOrthographicGridEdges:
 
     def test_missing_pyproj_raises_import_error(self, monkeypatch):
         """Without pyproj installed, a clear `ImportError` is raised."""
-        import cleopatra.projection as proj_mod
+        import cleopatra.basemap.projection as proj_mod
 
         monkeypatch.setattr(proj_mod.importlib.util, "find_spec", lambda name: None)
         with pytest.raises(ImportError, match=r"\[tiles\]"):
@@ -809,7 +809,7 @@ class TestOrthographicPoints:
 
     def test_missing_pyproj_raises_import_error(self, monkeypatch):
         """Without pyproj installed, a clear `ImportError` is raised."""
-        import cleopatra.projection as proj_mod
+        import cleopatra.basemap.projection as proj_mod
 
         monkeypatch.setattr(proj_mod.importlib.util, "find_spec", lambda name: None)
         with pytest.raises(ImportError, match=r"\[tiles\]"):
@@ -855,7 +855,7 @@ class TestOrthographicGraticule:
 
     def test_missing_pyproj_raises_import_error(self, monkeypatch):
         """Without pyproj installed, a clear `ImportError` is raised."""
-        import cleopatra.projection as proj_mod
+        import cleopatra.basemap.projection as proj_mod
 
         monkeypatch.setattr(proj_mod.importlib.util, "find_spec", lambda name: None)
         with pytest.raises(ImportError, match=r"\[tiles\]"):
@@ -987,13 +987,13 @@ class TestApplyProjectionStyle:
         Test scenario:
             This is the actual composability contract between the projection
             axis (`apply_projection_style`) and the data axis
-            (`cleopatra.colors.alpha_scaled_mesh`): the same downstream call
+            (`cleopatra.styling.colors.alpha_scaled_mesh`): the same downstream call
             must work unchanged regardless of which projection style was
             chosen (1D lon/lat vectors and 2D curvilinear grids are both
             valid `pcolormesh`/`alpha_scaled_mesh` inputs).
         """
         pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
-        from cleopatra.colors import alpha_scaled_mesh
+        from cleopatra.styling.colors import alpha_scaled_mesh
 
         lon, lat, data = grid
         for style in ("globe", "flat"):
@@ -1112,7 +1112,7 @@ class TestModuleDoctests:
     """Run the module's docstring examples inside the default test suite."""
 
     def test_doctests_pass(self):
-        """Execute every ``cleopatra.projection`` doctest in-band.
+        """Execute every ``cleopatra.basemap.projection`` doctest in-band.
 
         Test scenario:
             The default ``pytest`` run (``testpaths = ["tests"]``) does not
@@ -1125,7 +1125,7 @@ class TestModuleDoctests:
         pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
         results = doctest.testmod(projection_module, verbose=False)
         assert results.failed == 0, (
-            f"{results.failed} doctest(s) failed in cleopatra.projection "
+            f"{results.failed} doctest(s) failed in cleopatra.basemap.projection "
             f"(attempted {results.attempted})"
         )
         assert results.attempted > 0, "Expected doctest examples to be collected"

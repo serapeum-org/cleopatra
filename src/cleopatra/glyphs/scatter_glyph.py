@@ -10,7 +10,7 @@ Examples:
     - Plot an uncoloured point cloud:
         ```python
         >>> import numpy as np
-        >>> from cleopatra.scatter_glyph import ScatterGlyph
+        >>> from cleopatra.glyphs.scatter_glyph import ScatterGlyph
         >>> x = np.array([0.0, 1.0, 2.0, 3.0])
         >>> y = np.array([0.0, 1.0, 0.0, 1.0])
         >>> glyph = ScatterGlyph(x, y)
@@ -20,7 +20,7 @@ Examples:
     - Colour points by a per-point value (adds a colorbar):
         ```python
         >>> import numpy as np
-        >>> from cleopatra.scatter_glyph import ScatterGlyph
+        >>> from cleopatra.glyphs.scatter_glyph import ScatterGlyph
         >>> x = np.array([0.0, 1.0, 2.0, 3.0])
         >>> y = np.array([0.0, 1.0, 0.0, 1.0])
         >>> values = np.array([10.0, 20.0, 30.0, 40.0])
@@ -41,12 +41,12 @@ from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure
 from matplotlib.legend import Legend
 
-from cleopatra.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
-from cleopatra.colors import resolve_colormap
-from cleopatra.geo import GeoMixin
-from cleopatra.glyph import Glyph, _root_figure
-from cleopatra.styles import CLASSIFY_OPTIONS, resolve_sizes, size_legend
-from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
+from cleopatra.styling.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
+from cleopatra.styling.colors import resolve_colormap
+from cleopatra.basemap.geo import GeoMixin
+from cleopatra.glyphs.glyph import Glyph, _root_figure
+from cleopatra.styling.styles import CLASSIFY_OPTIONS, resolve_sizes, size_legend
+from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 #: Option keys for ScatterGlyph. `ticks_spacing` is `None` so the shared
 #: `_prepare_scalar_mapping` helper auto-derives it from the data range.
@@ -114,7 +114,7 @@ class ScatterGlyph(GeoMixin, Glyph):
         - Colour points by value and read back the mapped array:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.scatter_glyph import ScatterGlyph
+            >>> from cleopatra.glyphs.scatter_glyph import ScatterGlyph
             >>> glyph = ScatterGlyph(
             ...     np.array([0.0, 1.0, 2.0]),
             ...     np.array([0.0, 1.0, 0.0]),
@@ -128,7 +128,7 @@ class ScatterGlyph(GeoMixin, Glyph):
         - Size points by a magnitude; the areas span `size_limits`:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.scatter_glyph import ScatterGlyph
+            >>> from cleopatra.glyphs.scatter_glyph import ScatterGlyph
             >>> glyph = ScatterGlyph(
             ...     np.array([0.0, 1.0, 2.0]),
             ...     np.array([0.0, 1.0, 0.0]),
@@ -142,11 +142,11 @@ class ScatterGlyph(GeoMixin, Glyph):
             ```
 
     See Also:
-        cleopatra.glyph.Glyph._prepare_scalar_mapping: Shared
+        cleopatra.glyphs.glyph.Glyph._prepare_scalar_mapping: Shared
             norm/colorbar/ticks pipeline used for the coloured path.
-        cleopatra.styles.resolve_sizes: The value→size helper used for the
+        cleopatra.styling.styles.resolve_sizes: The value→size helper used for the
             `sizes` mapping (reusable by other size-encoding glyphs).
-        cleopatra.styles.size_legend: Builds the size legend drawn when
+        cleopatra.styling.styles.size_legend: Builds the size legend drawn when
             `size_legend` is truthy.
     """
 
@@ -194,7 +194,7 @@ class ScatterGlyph(GeoMixin, Glyph):
         self.sizes = sizes
         self.cbar: Colorbar | None = None
         #: The size legend created by `plot` when `size_legend` is truthy
-        #: (None otherwise); built via `cleopatra.styles.size_legend`.
+        #: (None otherwise); built via `cleopatra.styling.styles.size_legend`.
         self.size_legend_artist: Legend | None = None
         #: The disjoint legend created by `plot` when `scheme="categorical"`
         #: (`None` otherwise); built via `Glyph.create_categorical_legend`.
@@ -222,11 +222,11 @@ class ScatterGlyph(GeoMixin, Glyph):
         `Glyph._prepare_categorical_mapping`.
 
         When `sizes` was supplied, each marker's area is resolved from
-        that magnitude via `cleopatra.styles.resolve_sizes` (honouring
+        that magnitude via `cleopatra.styling.styles.resolve_sizes` (honouring
         `size_limits` / `size_scale`); otherwise the scalar `point_size`
         option is used for every point. Colour and size are independent,
         so a point can encode two quantities at once. If `size_legend` is
-        truthy, a size legend is drawn via `cleopatra.styles.size_legend`
+        truthy, a size legend is drawn via `cleopatra.styling.styles.size_legend`
         and stored on `self.size_legend_artist`.
 
         Args:
@@ -254,7 +254,7 @@ class ScatterGlyph(GeoMixin, Glyph):
             - Uncoloured points return a PathCollection with no array:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.scatter_glyph import ScatterGlyph
+                >>> from cleopatra.glyphs.scatter_glyph import ScatterGlyph
                 >>> glyph = ScatterGlyph(
                 ...     np.array([0.0, 1.0]), np.array([0.0, 1.0])
                 ... )
@@ -266,7 +266,7 @@ class ScatterGlyph(GeoMixin, Glyph):
             - A title passed to plot overrides the default:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.scatter_glyph import ScatterGlyph
+                >>> from cleopatra.glyphs.scatter_glyph import ScatterGlyph
                 >>> glyph = ScatterGlyph(
                 ...     np.array([0.0, 1.0]), np.array([0.0, 1.0])
                 ... )
@@ -278,7 +278,7 @@ class ScatterGlyph(GeoMixin, Glyph):
             - Combine colour and size, with a size legend:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.scatter_glyph import ScatterGlyph
+                >>> from cleopatra.glyphs.scatter_glyph import ScatterGlyph
                 >>> glyph = ScatterGlyph(
                 ...     np.array([0.0, 1.0, 2.0]),
                 ...     np.array([0.0, 1.0, 0.0]),
@@ -375,7 +375,7 @@ class ScatterGlyph(GeoMixin, Glyph):
         """Resolve the scatter `s` (marker area) for this glyph.
 
         Returns the per-point areas mapped from `sizes` when a `sizes`
-        array was supplied (via `cleopatra.styles.resolve_sizes`, honouring
+        array was supplied (via `cleopatra.styling.styles.resolve_sizes`, honouring
         the `size_limits` / `size_scale` options), or the scalar
         `point_size` option when no `sizes` were given.
 
@@ -400,7 +400,7 @@ class ScatterGlyph(GeoMixin, Glyph):
         median / max of `sizes` when unset), maps each to its plotted
         marker area by interpolating the already-computed `(sizes ->
         marker_area)` mapping (so the swatches match the points exactly),
-        and hands them to `cleopatra.styles.size_legend`.
+        and hands them to `cleopatra.styling.styles.size_legend`.
 
         Args:
             ax: The axes to attach the legend to.

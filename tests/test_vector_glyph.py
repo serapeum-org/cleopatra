@@ -1,4 +1,4 @@
-"""Tests for cleopatra.vector_glyph.VectorGlyph (T3.1)."""
+"""Tests for cleopatra.glyphs.vector_glyph.VectorGlyph (T3.1)."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 from matplotlib.quiver import Barbs, Quiver, QuiverKey
 
-from cleopatra.vector_glyph import VECTOR_DEFAULT_OPTIONS, VectorGlyph
+from cleopatra.glyphs.vector_glyph import VECTOR_DEFAULT_OPTIONS, VectorGlyph
 
 
 @pytest.fixture(autouse=True)

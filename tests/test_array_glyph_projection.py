@@ -18,7 +18,7 @@ import pytest
 from matplotlib.collections import QuadMesh
 from matplotlib.image import AxesImage
 
-from cleopatra.array_glyph import ArrayGlyph
+from cleopatra.glyphs.array_glyph import ArrayGlyph
 
 pytestmark = pytest.mark.plot
 

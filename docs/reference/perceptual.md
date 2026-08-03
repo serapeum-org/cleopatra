@@ -1,6 +1,6 @@
 # Perceptual colour toolkit
 
-The `cleopatra.perceptual` module builds good colormaps the way scientific palette
+The `cleopatra.styling.perceptual` module builds good colormaps the way scientific palette
 libraries do — by working in a **perceptually-uniform colour space** rather than
 RGB — using only `numpy` and `matplotlib` (no extra dependency, and nothing
 imported from or copied out of cmocean / cmcrameri / colorcet).
@@ -19,13 +19,13 @@ ramps.
 
 The pure-numpy `sRGB ↔ CIELAB` conversion that underlies everything else.
 
-::: cleopatra.perceptual.srgb_to_lab
+::: cleopatra.styling.perceptual.srgb_to_lab
     options:
       show_root_heading: true
       show_source: true
       heading_level: 3
 
-::: cleopatra.perceptual.lab_to_srgb
+::: cleopatra.styling.perceptual.lab_to_srgb
     options:
       show_root_heading: true
       show_source: true
@@ -37,13 +37,13 @@ Interpolate colour anchors in CIELAB (at uniform perceptual arc-length), so a ra
 progresses evenly to the eye. `perceptual_colormap` is a drop-in, perceptually-even
 replacement for `matplotlib.colors.LinearSegmentedColormap.from_list`.
 
-::: cleopatra.perceptual.interp_perceptual
+::: cleopatra.styling.perceptual.interp_perceptual
     options:
       show_root_heading: true
       show_source: true
       heading_level: 3
 
-::: cleopatra.perceptual.perceptual_colormap
+::: cleopatra.styling.perceptual.perceptual_colormap
     options:
       show_root_heading: true
       show_source: true
@@ -55,13 +55,13 @@ Build a perceptually-uniform **diverging** map from two endpoint colours, or a s
 of maximally-distinguishable **categorical** colours (the glasbey max-min method) —
 both from scratch, no colour data required.
 
-::: cleopatra.perceptual.make_diverging
+::: cleopatra.styling.perceptual.make_diverging
     options:
       show_root_heading: true
       show_source: true
       heading_level: 3
 
-::: cleopatra.perceptual.make_categorical
+::: cleopatra.styling.perceptual.make_categorical
     options:
       show_root_heading: true
       show_source: true
@@ -72,7 +72,7 @@ both from scratch, no colour data required.
 Score how perceptually even a colormap's steps are — useful for comparing an
 RGB-interpolated ramp against its `interp_perceptual` counterpart.
 
-::: cleopatra.perceptual.perceptual_uniformity
+::: cleopatra.styling.perceptual.perceptual_uniformity
     options:
       show_root_heading: true
       show_source: true
@@ -86,7 +86,7 @@ RGB-interpolated ramp against its `interp_perceptual` counterpart.
 import numpy as np
 import matplotlib.pyplot as plt
 
-from cleopatra.perceptual import perceptual_colormap, perceptual_uniformity
+from cleopatra.styling.perceptual import perceptual_colormap, perceptual_uniformity
 
 anchors = ["#ffffff", "#ff6a00", "#7a1500", "#2a0800"]  # a "dust" ramp
 cmap = perceptual_colormap("dust", anchors)
@@ -102,7 +102,7 @@ ax.set_axis_off()
 ### A diverging map and a categorical palette
 
 ```python
-from cleopatra.perceptual import make_diverging, make_categorical
+from cleopatra.styling.perceptual import make_diverging, make_categorical
 
 diverging = make_diverging("#762a83", "#1b7837")  # purple ↔ green, Lab-balanced
 classes = make_categorical(12)                     # 12 distinguishable class colours

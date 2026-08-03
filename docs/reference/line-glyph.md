@@ -9,7 +9,7 @@ Styling comes from the shared options (`color_1`, `line_width`, `marker`,
 
 ## Class Documentation
 
-::: cleopatra.line_glyph.LineGlyph
+::: cleopatra.glyphs.line_glyph.LineGlyph
     options:
       show_root_heading: true
       show_source: true
@@ -21,7 +21,7 @@ Styling comes from the shared options (`color_1`, `line_width`, `marker`,
 
 ```python
 import numpy as np
-from cleopatra.line_glyph import LineGlyph
+from cleopatra.glyphs.line_glyph import LineGlyph
 
 x = np.linspace(0, 2 * np.pi, 100)
 
@@ -38,7 +38,7 @@ ax.legend()
 
 ```python
 import numpy as np
-from cleopatra.line_glyph import LineGlyph
+from cleopatra.glyphs.line_glyph import LineGlyph
 
 x = np.arange(5)
 fig, ax, bars = LineGlyph(x, np.array([3.0, 5.0, 2.0, 8.0, 4.0])).bar(title="Counts")
@@ -48,7 +48,7 @@ fig, ax, bars = LineGlyph(x, np.array([3.0, 5.0, 2.0, 8.0, 4.0])).bar(title="Cou
 
 ```python
 import numpy as np
-from cleopatra.line_glyph import LineGlyph
+from cleopatra.glyphs.line_glyph import LineGlyph
 
 x = np.linspace(0, 10, 50)
 upper = np.sin(x) + 0.3

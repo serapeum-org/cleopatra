@@ -16,11 +16,11 @@ from matplotlib.image import AxesImage
 from matplotlib.lines import Line2D
 from PIL import Image, UnidentifiedImageError
 
-from cleopatra.palettes import CAMS_AOD_COLORMAPS, FLAME_COLORMAPS, HAZE_COLORMAPS
-from cleopatra.perceptual import perceptual_colormap
-from cleopatra.styles import disjoint_legend, swatch_extend_prefixes, swatch_legend
+from cleopatra.styling.palettes import CAMS_AOD_COLORMAPS, FLAME_COLORMAPS, HAZE_COLORMAPS
+from cleopatra.styling.perceptual import perceptual_colormap
+from cleopatra.styling.styles import disjoint_legend, swatch_extend_prefixes, swatch_legend
 
-#: The haze / CAMS-AOD / flame colour families now live in `cleopatra.palettes`
+#: The haze / CAMS-AOD / flame colour families now live in `cleopatra.styling.palettes`
 #: (built there via perceptual CIELAB interpolation and registered in the unified
 #: palette registry). They are re-exported above and used by `DATA_STYLES` below.
 
@@ -28,7 +28,7 @@ from cleopatra.styles import disjoint_legend, swatch_extend_prefixes, swatch_leg
 def _require_cmap(action: str) -> None:
     """Raise an actionable `ImportError` if the optional `cmap` package is absent.
 
-    Mirrors `cleopatra.projection._require_pyproj`: a pure `find_spec` check with
+    Mirrors `cleopatra.basemap.projection._require_pyproj`: a pure `find_spec` check with
     no import side effect, used to gate the `[science-colors]` extra behind a
     clear install hint rather than a bare `ModuleNotFoundError`.
 
@@ -87,7 +87,7 @@ def resolve_colormap(cmap: str | Colormap | None, *, param: str = "cmap") -> Col
     Examples:
         - A plain name resolves via matplotlib and never imports `cmap`:
             ```python
-            >>> from cleopatra.colors import resolve_colormap
+            >>> from cleopatra.styling.colors import resolve_colormap
             >>> resolve_colormap("viridis").name
             'viridis'
 
@@ -95,7 +95,7 @@ def resolve_colormap(cmap: str | Colormap | None, *, param: str = "cmap") -> Col
         - A `Colormap` object is returned unchanged (idempotent):
             ```python
             >>> import matplotlib as mpl
-            >>> from cleopatra.colors import resolve_colormap
+            >>> from cleopatra.styling.colors import resolve_colormap
             >>> cmap = mpl.colormaps["plasma"]
             >>> resolve_colormap(cmap) is cmap
             True
@@ -160,7 +160,7 @@ def add_line_glow(
             >>> import matplotlib
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.colors import add_line_glow
+            >>> from cleopatra.styling.colors import add_line_glow
             >>> fig, ax = plt.subplots()
             >>> _ = ax.plot([0, 1, 2], [0, 1, 0])
             >>> glow = add_line_glow(ax, n_glow=4)
@@ -176,7 +176,7 @@ def add_line_glow(
             >>> import matplotlib
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.colors import add_line_glow
+            >>> from cleopatra.styling.colors import add_line_glow
             >>> fig, ax = plt.subplots()
             >>> (src,) = ax.plot([0, 1], [0, 1], linewidth=2.0)
             >>> glow = add_line_glow(ax, [src], n_glow=3, linewidth_step=1.5)
@@ -235,7 +235,7 @@ def resolve_glow_options(glow: bool | dict) -> dict:
 
     Examples:
         ```python
-        >>> from cleopatra.colors import resolve_glow_options
+        >>> from cleopatra.styling.colors import resolve_glow_options
         >>> resolve_glow_options(True)
         {}
         >>> resolve_glow_options({"n_glow": 8})
@@ -317,7 +317,7 @@ def convert_units(
         - Kelvin to Celsius shifts by the freezing point:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.colors import convert_units
+            >>> from cleopatra.styling.colors import convert_units
             >>> convert_units(np.array([273.15, 373.15]), "K", "celsius")
             array([  0., 100.])
 
@@ -325,7 +325,7 @@ def convert_units(
         - A missing or matching unit is a no-op:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.colors import convert_units
+            >>> from cleopatra.styling.colors import convert_units
             >>> convert_units(np.array([1.0, 2.0]), None, "celsius").tolist()
             [1.0, 2.0]
 
@@ -403,7 +403,7 @@ def alpha_scaled_image(
             >>> matplotlib.use("Agg")
             >>> import numpy as np
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.colors import alpha_scaled_image, HAZE_COLORMAPS
+            >>> from cleopatra.styling.colors import alpha_scaled_image, HAZE_COLORMAPS
             >>> fig, ax = plt.subplots()
             >>> data = np.array([[0.0, 1.0], [0.5, 1.0]])
             >>> img = alpha_scaled_image(ax, data, HAZE_COLORMAPS["dust"])
@@ -421,7 +421,7 @@ def alpha_scaled_image(
             >>> matplotlib.use("Agg")
             >>> import numpy as np
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.colors import alpha_scaled_image
+            >>> from cleopatra.styling.colors import alpha_scaled_image
             >>> fig, ax = plt.subplots()
             >>> data = np.array([[np.nan, 1.0]])
             >>> img = alpha_scaled_image(ax, data, "viridis")
@@ -502,7 +502,7 @@ def alpha_scaled_mesh(
     The `pcolormesh` counterpart to `alpha_scaled_image`. Use this instead of
     `alpha_scaled_image` whenever the grid is not a plain rectangle in axes
     coordinates -- e.g. data reprojected onto an orthographic globe by
-    `cleopatra.projection.orthographic_grid`, or any other curvilinear
+    `cleopatra.basemap.projection.orthographic_grid`, or any other curvilinear
     `(x, y)` grid. Builds the same value-modulated-alpha RGBA colouring as
     `alpha_scaled_image`, then paints it onto the mesh via `set_facecolor`:
     `pcolormesh`'s own `cmap`/`norm`/`alpha` machinery is bypassed because its
@@ -539,7 +539,7 @@ def alpha_scaled_mesh(
             >>> matplotlib.use("Agg")
             >>> import numpy as np
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.colors import alpha_scaled_mesh
+            >>> from cleopatra.styling.colors import alpha_scaled_mesh
             >>> fig, ax = plt.subplots()
             >>> x, y = np.meshgrid(np.arange(3), np.arange(3))
             >>> data = np.array([[0.0, 1.0], [0.5, 1.0]])
@@ -555,7 +555,7 @@ def alpha_scaled_mesh(
 
     See Also:
         alpha_scaled_image: The regular-grid counterpart (uses `imshow`).
-        cleopatra.projection.orthographic_grid: Produces the `(x, y, data)`
+        cleopatra.basemap.projection.orthographic_grid: Produces the `(x, y, data)`
             triple this function is designed to render.
     """
     data = np.asarray(data, dtype=float)
@@ -600,7 +600,7 @@ def alpha_scaled_mesh(
 #:   ignored when ``categories`` is set; only ``label`` (the legend title) is used.
 #:
 #: This is the colour/legend half of the ECMWF/CAMS look; pair it with a
-#: `cleopatra.projection` projection-style preset (globe or flat) -- the two
+#: `cleopatra.basemap.projection` projection-style preset (globe or flat) -- the two
 #: are independent and neither requires the other.
 #:
 #: `"haze"`'s layers also set `alpha_vmin`/`alpha_vmax`, decoupling opacity
@@ -663,7 +663,7 @@ DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
     # Temperature (or any heat field) rendered as a glowing flame/plume: the CAMS
     # aerosol technique (value-linked opacity -- cool fades to transparent so the
     # terrain shows, hot glows opaque) recoloured for heat. Compose over a dark
-    # hillshaded backdrop (`apply_blank_canvas` + a `cleopatra.reference` relief),
+    # hillshaded backdrop (`apply_blank_canvas` + a `cleopatra.basemap.reference` relief),
     # the way the "haze" style is composed. Colour spans 0..40, opacity ramps in
     # over 6..32 -- sensible for surface air temperature in degC; override
     # `vmin`/`vmax` for other ranges. Two flavours: `white_hot` (blows out to
@@ -810,7 +810,7 @@ def _load_preset_asset(
     `vmin`/`vmax`, so it auto-ranges.
 
     Args:
-        resource: The asset filename inside the `cleopatra.data` package.
+        resource: The asset filename inside the `cleopatra.styling.data` package.
         cmap_prefix: A prefix for the generated colormap names (e.g. `"cmocean"`).
 
     Returns:
@@ -823,7 +823,7 @@ def _load_preset_asset(
     # breaking `import cleopatra`.
     try:
         source = (
-            importlib.resources.files("cleopatra.data")
+            importlib.resources.files("cleopatra.styling.data")
             .joinpath(resource)
             .read_text(encoding="utf-8")
         )
@@ -941,7 +941,7 @@ def _load_weather_presets() -> dict[str, dict[str, dict[str, Any]]]:
     """
     try:
         raw = (
-            importlib.resources.files("cleopatra.data")
+            importlib.resources.files("cleopatra.styling.data")
             .joinpath("weather_presets.json")
             .read_text(encoding="utf-8")
         )
@@ -1034,7 +1034,7 @@ def style_for_parameter(short_name: str) -> str | None:
 
     Examples:
         ```python
-        >>> from cleopatra.colors import style_for_parameter
+        >>> from cleopatra.styling.colors import style_for_parameter
         >>> style_for_parameter("2t")
         'temperature_2m'
         >>> style_for_parameter("temperature_2m")
@@ -1307,9 +1307,9 @@ def apply_data_style(
     aerosol look in one call -- but it is only a thin orchestration over
     `alpha_scaled_image` + `swatch_legend`, so nothing about it requires the
     orthographic globe: it works on a plain flat axes, an existing
-    `"ecmwf"`/`"ecmwf-dark"` reference map (`cleopatra.geo`), or any other
+    `"ecmwf"`/`"ecmwf-dark"` reference map (`cleopatra.basemap.geo`), or any other
     projection just as well. Pass `x`/`y` (e.g. from
-    `cleopatra.projection.orthographic_grid`) to render on a curvilinear grid
+    `cleopatra.basemap.projection.orthographic_grid`) to render on a curvilinear grid
     via `alpha_scaled_mesh` instead of the default `imshow`-based
     `alpha_scaled_image`.
 
@@ -1365,7 +1365,7 @@ def apply_data_style(
             >>> matplotlib.use("Agg")
             >>> import numpy as np
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.colors import apply_data_style
+            >>> from cleopatra.styling.colors import apply_data_style
             >>> fig, ax = plt.subplots()
             >>> layers = {
             ...     "dust": np.array([[0.0, 1.0]]),
@@ -1386,7 +1386,7 @@ def apply_data_style(
             >>> import numpy as np
             >>> import matplotlib.pyplot as plt
             >>> from matplotlib.collections import QuadMesh
-            >>> from cleopatra.colors import apply_data_style
+            >>> from cleopatra.styling.colors import apply_data_style
             >>> fig, ax = plt.subplots()
             >>> x, y = np.meshgrid(np.arange(3), np.arange(3))
             >>> images = apply_data_style(
@@ -1404,7 +1404,7 @@ def apply_data_style(
             >>> matplotlib.use("Agg")
             >>> import numpy as np
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.colors import apply_data_style
+            >>> from cleopatra.styling.colors import apply_data_style
             >>> fig, ax = plt.subplots()
             >>> apply_data_style(ax, {"smoke": np.array([[0.0, 1.0]])})
             Traceback (most recent call last):
@@ -1419,7 +1419,7 @@ def apply_data_style(
         alpha_scaled_mesh: The curvilinear-grid rendering primitive this
             composes when `x`/`y` are given.
         swatch_legend: The per-layer legend primitive this composes.
-        cleopatra.projection.apply_projection_style: The companion
+        cleopatra.basemap.projection.apply_projection_style: The companion
             projection-style axis (globe vs flat).
     """
     if style not in DATA_STYLES:
@@ -1442,7 +1442,7 @@ def apply_data_style(
 
     curvilinear = x is not None and y is not None
     if curvilinear:
-        # cleopatra.projection.apply_projection_style always returns cell
+        # cleopatra.basemap.projection.apply_projection_style always returns cell
         # EDGE coordinates (one larger per axis than data): matplotlib's
         # automatic centre-to-edge inference ("auto"/"nearest") is unreliable
         # for a globe's extreme local distortion, so shading="flat" (which
@@ -1657,7 +1657,7 @@ class Colors:
     Examples:
     Create a Colors object with a hex color:
     ```python
-    >>> from cleopatra.colors import Colors
+    >>> from cleopatra.styling.colors import Colors
     >>> hex_color = Colors("#ff0000")
     >>> hex_color.color_value
     ['#ff0000']
@@ -1721,7 +1721,7 @@ class Colors:
         - Initialize with a hex color:
 
             ```python
-            >>> from cleopatra.colors import Colors
+            >>> from cleopatra.styling.colors import Colors
             >>> # With hash symbol
             >>> color1 = Colors("#ff0000")
             >>> color1.color_value
@@ -1848,7 +1848,7 @@ class Colors:
         - Determine the type of a hex color:
 
             ```python
-            >>> from cleopatra.colors import Colors
+            >>> from cleopatra.styling.colors import Colors
             >>> hex_color = Colors("#23a9dd")
             >>> hex_color.get_type()
             ['hex']
@@ -1911,7 +1911,7 @@ class Colors:
         Examples:
         Get color values from a Colors object with hex colors:
         ```python
-        >>> from cleopatra.colors import Colors
+        >>> from cleopatra.styling.colors import Colors
         >>> hex_colors = Colors(["#ff0000", "#00ff00", "#0000ff"])
         >>> hex_colors.color_value
         ['#ff0000', '#00ff00', '#0000ff']
@@ -1954,7 +1954,7 @@ class Colors:
         Examples:
         Convert RGB colors to hex:
         ```python
-        >>> from cleopatra.colors import Colors
+        >>> from cleopatra.styling.colors import Colors
         >>> # RGB colors (0-255 range)
         >>> rgb_255 = Colors([(255, 0, 0), (0, 255, 0), (0, 0, 255)])
         >>> rgb_255.to_hex()
@@ -2015,7 +2015,7 @@ class Colors:
         Examples:
         Check if hex colors are valid:
         ```python
-        >>> from cleopatra.colors import Colors
+        >>> from cleopatra.styling.colors import Colors
         >>> hex_colors = Colors(["#ff0000", "#00ff00", "#0000ff"])
         >>> hex_colors.is_valid_hex()
         [True, True, True]
@@ -2060,7 +2060,7 @@ class Colors:
         Examples:
         Check valid hex colors:
         ```python
-        >>> from cleopatra.colors import Colors
+        >>> from cleopatra.styling.colors import Colors
         >>> Colors._is_valid_hex_i("#ff0000")
         True
         >>> Colors._is_valid_hex_i("00ff00")
@@ -2105,7 +2105,7 @@ class Colors:
         Examples:
         Check if RGB colors are valid:
         ```python
-        >>> from cleopatra.colors import Colors
+        >>> from cleopatra.styling.colors import Colors
         >>> # RGB colors (0-255 range)
         >>> rgb_255 = Colors([(255, 0, 0), (0, 255, 0), (0, 0, 255)])
         >>> rgb_255.is_valid_rgb()
@@ -2155,7 +2155,7 @@ class Colors:
         Examples:
         Check valid RGB tuples (0-255 range):
         ```python
-        >>> from cleopatra.colors import Colors
+        >>> from cleopatra.styling.colors import Colors
         >>> Colors._is_valid_rgb_255((255, 0, 0))
         True
         >>> Colors._is_valid_rgb_255((128, 64, 32))
@@ -2200,7 +2200,7 @@ class Colors:
         Examples:
         Check valid normalized RGB tuples:
         ```python
-        >>> from cleopatra.colors import Colors
+        >>> from cleopatra.styling.colors import Colors
         >>> Colors._is_valid_rgb_norm((1.0, 0.0, 0.0))
         True
         >>> Colors._is_valid_rgb_norm((0.5, 0.5, 0.5))
@@ -2251,7 +2251,7 @@ class Colors:
         Examples:
         - Convert hex colors to normalized RGB (0-1 range):
             ```python
-            >>> from cleopatra.colors import Colors
+            >>> from cleopatra.styling.colors import Colors
             >>> hex_colors = Colors(["#ff0000", "#00ff00", "#0000ff"])
             >>> hex_colors.to_rgb(normalized=True)
             [(1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)]

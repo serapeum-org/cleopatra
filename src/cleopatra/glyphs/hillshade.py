@@ -24,7 +24,7 @@ import matplotlib as mpl
 import numpy as np
 from matplotlib.colors import Colormap, LightSource, Normalize
 
-from cleopatra.colors import resolve_colormap
+from cleopatra.styling.colors import resolve_colormap
 
 #: Default hillshade settings. Override any subset via a glyph's `hillshade`
 #: option (``hillshade=True`` uses all defaults; ``hillshade={...}`` overrides).

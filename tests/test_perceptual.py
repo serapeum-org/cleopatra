@@ -1,11 +1,11 @@
-"""Tests for `cleopatra.perceptual` -- the numpy-only perceptual colour toolkit."""
+"""Tests for `cleopatra.styling.perceptual` -- the numpy-only perceptual colour toolkit."""
 import warnings
 
 import numpy as np
 import pytest
 from matplotlib.colors import Colormap, LinearSegmentedColormap
 
-from cleopatra.perceptual import (
+from cleopatra.styling.perceptual import (
     interp_perceptual,
     lab_to_srgb,
     make_categorical,

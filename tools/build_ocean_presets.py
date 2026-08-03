@@ -2,7 +2,7 @@
 
 This script is **not** part of the shipped package and is **not** run at
 import or install time. It is the one-off, maintainer-machine tool that
-derives ``src/cleopatra/data/ocean_presets.json`` from the ``cmocean``
+derives ``src/cleopatra/styling/data/ocean_presets.json`` from the ``cmocean``
 oceanography colormap collection.
 
 Each curated cmocean colormap is sampled to hex control points and paired with
@@ -17,7 +17,7 @@ cleopatra; it is not a runtime dependency).
 
 Re-run (from the repo root)::
 
-    python tools/build_ocean_presets.py src/cleopatra/data/ocean_presets.json
+    python tools/build_ocean_presets.py src/cleopatra/styling/data/ocean_presets.json
 """
 
 import json

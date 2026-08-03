@@ -3,7 +3,7 @@
 Two axes-level helpers that draw public cartographic reference data
 *underneath* your own plotted data -- the `cartopy`
 `GeoAxes.stock_img()` / `ax.coastlines()` niche, and the vector/raster
-sibling of `cleopatra.tiles.add_tiles`:
+sibling of `cleopatra.basemap.tiles.add_tiles`:
 
 * `add_relief` -- a global hypsometric relief image (the
     `stock_img()` analogue).
@@ -36,7 +36,7 @@ Examples:
     >>> import matplotlib
     >>> matplotlib.use("Agg")
     >>> import matplotlib.pyplot as plt
-    >>> from cleopatra.reference import add_relief, add_features
+    >>> from cleopatra.basemap.reference import add_relief, add_features
     >>> fig, ax = plt.subplots()
     >>> ax.set_xlim(-20, 40); ax.set_ylim(0, 60)  # doctest: +SKIP
     >>> _ = add_relief(ax, resolution="low")            # doctest: +SKIP
@@ -63,7 +63,7 @@ from matplotlib.collections import LineCollection, PathCollection
 from matplotlib.path import Path as MplPath
 
 from cleopatra import __version__
-from cleopatra._net import urlopen_http
+from cleopatra.basemap._net import urlopen_http
 
 logger = logging.getLogger(__name__)
 
@@ -205,7 +205,7 @@ def available_relief_resolutions() -> list[str]:
 
     Examples:
         ```python
-        >>> from cleopatra.reference import available_relief_resolutions
+        >>> from cleopatra.basemap.reference import available_relief_resolutions
         >>> available_relief_resolutions()
         ['low', 'medium']
 
@@ -235,7 +235,7 @@ def relief(resolution: str = "low") -> np.ndarray:
     Examples:
         - Unknown resolutions raise `ValueError` before any download:
             ```python
-            >>> from cleopatra.reference import relief
+            >>> from cleopatra.basemap.reference import relief
             >>> relief("ultra")
             Traceback (most recent call last):
                 ...
@@ -343,7 +343,7 @@ def add_relief(
             >>> import matplotlib
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.reference import add_relief
+            >>> from cleopatra.basemap.reference import add_relief
             >>> fig, ax = plt.subplots()
             >>> ax.set_xlim(-180, 180); ax.set_ylim(-90, 90)  # doctest: +SKIP
             >>> ax = add_relief(ax, "low")  # doctest: +SKIP
@@ -356,7 +356,7 @@ def add_relief(
             >>> import matplotlib
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.reference import add_relief
+            >>> from cleopatra.basemap.reference import add_relief
             >>> fig, ax = plt.subplots()
             >>> add_relief(ax, "high")
             Traceback (most recent call last):
@@ -533,7 +533,7 @@ def available_layers() -> list[str]:
 
     Examples:
         ```python
-        >>> from cleopatra.reference import available_layers
+        >>> from cleopatra.basemap.reference import available_layers
         >>> available_layers()
         ['coastline', 'land', 'ocean', 'rivers', 'lakes', 'borders']
 
@@ -550,7 +550,7 @@ def available_resolutions() -> list[str]:
 
     Examples:
         ```python
-        >>> from cleopatra.reference import available_resolutions
+        >>> from cleopatra.basemap.reference import available_resolutions
         >>> available_resolutions()
         ['110m', '50m', '10m']
 
@@ -581,7 +581,7 @@ def _paths(geometry: dict) -> list[np.ndarray]:
     Examples:
         - A polygon yields its exterior ring; holes are ignored:
             ```python
-            >>> from cleopatra.reference import _paths
+            >>> from cleopatra.basemap.reference import _paths
             >>> geom = {
             ...     "type": "Polygon",
             ...     "coordinates": [
@@ -595,7 +595,7 @@ def _paths(geometry: dict) -> list[np.ndarray]:
             ```
         - A MultiLineString expands to one array per line:
             ```python
-            >>> from cleopatra.reference import _paths
+            >>> from cleopatra.basemap.reference import _paths
             >>> geom = {
             ...     "type": "MultiLineString",
             ...     "coordinates": [[[0, 0], [1, 1]], [[2, 2], [3, 3], [4, 4]]],
@@ -635,7 +635,7 @@ def _polygons(geometry: dict) -> list[list[np.ndarray]]:
     Examples:
         - A polygon with one hole keeps both rings:
             ```python
-            >>> from cleopatra.reference import _polygons
+            >>> from cleopatra.basemap.reference import _polygons
             >>> geom = {
             ...     "type": "Polygon",
             ...     "coordinates": [
@@ -779,7 +779,7 @@ def natural_earth(
         - Fetch coastlines and inspect the parts (downloads on first use,
             then reads from the cache):
             ```python
-            >>> from cleopatra.reference import natural_earth
+            >>> from cleopatra.basemap.reference import natural_earth
             >>> parts = natural_earth("coastline", "110m")  # doctest: +SKIP
             >>> parts[0].shape[1]  # each part is an (N, 2) lon/lat array  # doctest: +SKIP
             2
@@ -787,7 +787,7 @@ def natural_earth(
             ```
         - Unknown layers are rejected before any download:
             ```python
-            >>> from cleopatra.reference import natural_earth
+            >>> from cleopatra.basemap.reference import natural_earth
             >>> natural_earth("countries")
             Traceback (most recent call last):
                 ...
@@ -959,7 +959,7 @@ def add_features(
             >>> import matplotlib
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.reference import add_features
+            >>> from cleopatra.basemap.reference import add_features
             >>> fig, ax = plt.subplots()
             >>> ax.set_xlim(-20, 40); ax.set_ylim(0, 60)  # doctest: +SKIP
             >>> ax = add_features(ax, "coastline", "50m", colors="navy")  # doctest: +SKIP
@@ -971,7 +971,7 @@ def add_features(
             >>> import matplotlib
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.reference import add_features
+            >>> from cleopatra.basemap.reference import add_features
             >>> fig, ax = plt.subplots()
             >>> add_features(ax, "countries")
             Traceback (most recent call last):

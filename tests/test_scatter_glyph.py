@@ -1,4 +1,4 @@
-"""Tests for cleopatra.scatter_glyph.ScatterGlyph (T2.1)."""
+"""Tests for cleopatra.glyphs.scatter_glyph.ScatterGlyph (T2.1)."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 from matplotlib.collections import PathCollection
 
-from cleopatra.scatter_glyph import SCATTER_DEFAULT_OPTIONS, ScatterGlyph
+from cleopatra.glyphs.scatter_glyph import SCATTER_DEFAULT_OPTIONS, ScatterGlyph
 
 
 @pytest.fixture(autouse=True)

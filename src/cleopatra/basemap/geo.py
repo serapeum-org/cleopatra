@@ -11,14 +11,14 @@ helpers and without repeating the axes:
 
 Each method is a thin wrapper that draws on the glyph's own axes
 (`self.ax`) and delegates to the single implementation in
-`cleopatra.tiles` / `cleopatra.reference`. The standalone functions remain
+`cleopatra.basemap.tiles` / `cleopatra.basemap.reference`. The standalone functions remain
 the source of truth; this mixin only removes the import + explicit-axes
 boilerplate for the geographic glyphs (`ArrayGlyph`, `MeshGlyph`,
 `VectorGlyph`, `FlowGlyph`, `PolygonGlyph`, `ScatterGlyph`). Non-geographic
 glyphs (line/bar charts, statistical plots) deliberately do not inherit
 it.
 
-Importing this module (and the `cleopatra.tiles` / `cleopatra.reference`
+Importing this module (and the `cleopatra.basemap.tiles` / `cleopatra.basemap.reference`
 modules it calls) does not require the optional `cleopatra[tiles]` extra:
 those modules gate their `[tiles]` dependencies (`pyproj`, `Pillow`, ...)
 behind their own internal lazy imports, so the extra is only needed when
@@ -36,7 +36,7 @@ from typing import Any
 import numpy as np
 from matplotlib.ticker import FuncFormatter, MultipleLocator
 
-from cleopatra import reference, tiles
+from cleopatra.basemap import reference, tiles
 
 #: Built-in reference-map style presets for `GeoMixin.add_reference_map`.
 #: `"ecmwf"` is tuned for light backgrounds; `"ecmwf-dark"` uses lighter
@@ -74,7 +74,7 @@ def available_map_styles() -> list[str]:
 
     Examples:
         ```python
-        >>> from cleopatra.geo import available_map_styles
+        >>> from cleopatra.basemap.geo import available_map_styles
         >>> available_map_styles()
         ['ecmwf', 'ecmwf-dark']
 
@@ -97,7 +97,7 @@ def _nice_step(span: float, target_divisions: int = 6) -> float:
 
     Examples:
         ```python
-        >>> from cleopatra.geo import _nice_step
+        >>> from cleopatra.basemap.geo import _nice_step
         >>> _nice_step(30)
         5.0
         >>> _nice_step(4)
@@ -121,7 +121,7 @@ def _lon_formatter(value: float, _pos: Any = None) -> str:
 
     Examples:
         ```python
-        >>> from cleopatra.geo import _lon_formatter
+        >>> from cleopatra.basemap.geo import _lon_formatter
         >>> _lon_formatter(-75), _lon_formatter(10), _lon_formatter(0)
         ('75°W', '10°E', '0°')
         >>> _lon_formatter(180), _lon_formatter(-180)
@@ -144,7 +144,7 @@ def _lat_formatter(value: float, _pos: Any = None) -> str:
 
     Examples:
         ```python
-        >>> from cleopatra.geo import _lat_formatter
+        >>> from cleopatra.basemap.geo import _lat_formatter
         >>> _lat_formatter(-20), _lat_formatter(45), _lat_formatter(0)
         ('20°S', '45°N', '0°')
 
@@ -189,7 +189,7 @@ def _validate_crs(crs: int | str | None) -> int | str | None:
         - `None` and well-formed values pass through; a bare numeric string
             is normalised to an int:
             ```python
-            >>> from cleopatra.geo import _validate_crs
+            >>> from cleopatra.basemap.geo import _validate_crs
             >>> _validate_crs(None) is None
             True
             >>> _validate_crs(4326)
@@ -200,7 +200,7 @@ def _validate_crs(crs: int | str | None) -> int | str | None:
             ```
         - Wrong types are rejected immediately:
             ```python
-            >>> from cleopatra.geo import _validate_crs
+            >>> from cleopatra.basemap.geo import _validate_crs
             >>> _validate_crs([4326])
             Traceback (most recent call last):
                 ...
@@ -251,7 +251,7 @@ def add_point_labels(
     ECMWF/CAMS maps use for city labels. `points` are plotted at whatever
     coordinates `ax` is already using (plain lon/lat on a flat axes, or
     projected x/y on an orthographic globe -- reproject the points yourself,
-    e.g. with the same transformer `cleopatra.projection.orthographic_grid`
+    e.g. with the same transformer `cleopatra.basemap.projection.orthographic_grid`
     builds, before calling this on a globe view), so this composes with any
     projection or colour styling; it makes no assumption about either.
 
@@ -273,7 +273,7 @@ def add_point_labels(
         - Label two points and read back the drawn markers/labels:
             ```python
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.geo import add_point_labels
+            >>> from cleopatra.basemap.geo import add_point_labels
             >>> fig, ax = plt.subplots()
             >>> _ = add_point_labels(ax, {"London": (-0.1, 51.5), "Moscow": (37.6, 55.8)})
             >>> len(ax.lines)  # one marker per point
@@ -286,7 +286,7 @@ def add_point_labels(
         - An empty mapping draws nothing but still returns `ax`, for chaining:
             ```python
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.geo import add_point_labels
+            >>> from cleopatra.basemap.geo import add_point_labels
             >>> fig, ax = plt.subplots()
             >>> add_point_labels(ax, {}) is ax
             True
@@ -330,14 +330,14 @@ class Feature:
 
     Attributes:
         layer: The Natural Earth layer to draw -- one of
-            `cleopatra.reference.available_layers()` (`"coastline"`,
+            `cleopatra.basemap.reference.available_layers()` (`"coastline"`,
             `"borders"`, `"land"`, `"ocean"`, `"rivers"`, `"lakes"`).
         style: The style keywords forwarded to `add_features`.
 
     Examples:
         - A thin grey coastline:
             ```python
-            >>> from cleopatra.geo import Feature
+            >>> from cleopatra.basemap.geo import Feature
             >>> f = Feature("coastline", colors="0.55", linewidths=0.5)
             >>> f.layer, f.style
             ('coastline', {'colors': '0.55', 'linewidths': 0.5})
@@ -357,7 +357,7 @@ class Feature:
 
         Args:
             layer: Natural Earth layer name (see
-                `cleopatra.reference.available_layers`).
+                `cleopatra.basemap.reference.available_layers`).
             **style: Style keywords forwarded to `add_features`
                 (`colors`, `linewidths`, `facecolor`, `alpha`, `zorder`, ...).
 
@@ -387,7 +387,7 @@ class Basemap:
         relief: The hypsometric relief drawn under the data (`zorder=-2`).
             `True` (default) draws the default low-resolution relief;
             `False` skips it; a resolution string (`"low"` / `"medium"`, see
-            `cleopatra.reference.available_relief_resolutions`) picks the
+            `cleopatra.basemap.reference.available_relief_resolutions`) picks the
             product; a dict of `add_relief` keyword arguments overrides
             resolution / alpha / zorder in full.
         features: The Natural Earth layers drawn over the relief
@@ -402,7 +402,7 @@ class Basemap:
     Examples:
         - The default backdrop, spelled out:
             ```python
-            >>> from cleopatra.geo import Basemap
+            >>> from cleopatra.basemap.geo import Basemap
             >>> bm = Basemap()
             >>> bm.relief, bm.features, bm.resolution
             (True, None, '50m')
@@ -410,7 +410,7 @@ class Basemap:
             ```
         - A "dark ocean" basemap -- no relief, a thin coastline + borders:
             ```python
-            >>> from cleopatra.geo import Basemap, Feature
+            >>> from cleopatra.basemap.geo import Basemap, Feature
             >>> bm = Basemap(relief=False,
             ...              features=[Feature("coastline", colors="0.55"),
             ...                        Feature("borders", colors="0.45")])
@@ -481,7 +481,7 @@ class GeoMixin:
     """Mixin giving geographic glyphs `add_tiles` / `add_features` / `add_relief`.
 
     The host class is expected to expose the plotted axes as `self.ax`
-    (every `cleopatra.glyph.Glyph` subclass does). Call these after
+    (every `cleopatra.glyphs.glyph.Glyph` subclass does). Call these after
     plotting, or pass `ax=` explicitly.
 
     Set `self.crs` to the CRS of the data plotted on the axes (an EPSG code
@@ -493,7 +493,7 @@ class GeoMixin:
     axis CRS (a 4326 axis places it in lon/lat, unchanged).
     """
 
-    #: Set by `cleopatra.glyph.Glyph`; the axes the basemap is drawn on.
+    #: Set by `cleopatra.glyphs.glyph.Glyph`; the axes the basemap is drawn on.
     ax: Any
 
     #: Backing store for the validated `crs` property; `None` means unset.
@@ -505,7 +505,7 @@ class GeoMixin:
 
         When set, `add_features` / `add_tiles` / `add_relief` default `crs=`
         to it; `None` keeps each helper's own default. The value is **validated on
-        assignment** (see `cleopatra.geo._validate_crs`) so mistakes surface
+        assignment** (see `cleopatra.basemap.geo._validate_crs`) so mistakes surface
         at `glyph.crs = ...` rather than later, when a basemap is drawn.
 
         Raises:
@@ -563,16 +563,16 @@ class GeoMixin:
     def add_tiles(self, *args: Any, ax: Any = None, **kwargs: Any) -> Any:
         """Overlay a web-tile basemap on the glyph's axes.
 
-        Thin wrapper over `cleopatra.tiles.add_tiles`; positional and
+        Thin wrapper over `cleopatra.basemap.tiles.add_tiles`; positional and
         keyword arguments are forwarded unchanged (e.g. `source`, `crs`,
         `zoom`, `alpha`). When `crs` is omitted it defaults to `self.crs`.
         Requires the `cleopatra[tiles]` extra.
 
         Args:
-            *args: Positional arguments for `cleopatra.tiles.add_tiles`
+            *args: Positional arguments for `cleopatra.basemap.tiles.add_tiles`
                 (after the axes).
             ax: Axes to draw on. Defaults to the glyph's `self.ax`.
-            **kwargs: Keyword arguments for `cleopatra.tiles.add_tiles`. A
+            **kwargs: Keyword arguments for `cleopatra.basemap.tiles.add_tiles`. A
                 `crs` keyword is defaulted to `self.crs` when omitted; an
                 explicit `crs=` overrides it.
 
@@ -583,7 +583,7 @@ class GeoMixin:
             RuntimeError: If the glyph has no axes yet and `ax` is not given.
 
         See Also:
-            cleopatra.tiles.add_tiles: The underlying implementation and its
+            cleopatra.basemap.tiles.add_tiles: The underlying implementation and its
                 full parameter list.
         """
         return tiles.add_tiles(
@@ -593,17 +593,17 @@ class GeoMixin:
     def add_features(self, *args: Any, ax: Any = None, **kwargs: Any) -> Any:
         """Draw a Natural Earth reference layer on the glyph's axes.
 
-        Thin wrapper over `cleopatra.reference.add_features`; arguments are
+        Thin wrapper over `cleopatra.basemap.reference.add_features`; arguments are
         forwarded unchanged (e.g. `layer`, `resolution`, `crs`, and style
         keywords). When `crs` is omitted it defaults to `self.crs`.
 
         Args:
             *args: Positional arguments for
-                `cleopatra.reference.add_features` (after the axes), such as
+                `cleopatra.basemap.reference.add_features` (after the axes), such as
                 `layer` and `resolution`.
             ax: Axes to draw on. Defaults to the glyph's `self.ax`.
             **kwargs: Keyword arguments for
-                `cleopatra.reference.add_features`. A `crs` keyword is
+                `cleopatra.basemap.reference.add_features`. A `crs` keyword is
                 defaulted to `self.crs` when omitted; an explicit `crs=`
                 overrides it.
 
@@ -614,7 +614,7 @@ class GeoMixin:
             RuntimeError: If the glyph has no axes yet and `ax` is not given.
 
         See Also:
-            cleopatra.reference.add_features: The underlying implementation
+            cleopatra.basemap.reference.add_features: The underlying implementation
                 and its full parameter list.
         """
         return reference.add_features(
@@ -624,7 +624,7 @@ class GeoMixin:
     def add_relief(self, *args: Any, ax: Any = None, **kwargs: Any) -> Any:
         """Draw a hypsometric relief backdrop under the glyph's data.
 
-        Thin wrapper over `cleopatra.reference.add_relief`; arguments are
+        Thin wrapper over `cleopatra.basemap.reference.add_relief`; arguments are
         forwarded unchanged (e.g. `resolution`, `extent`, `alpha`). When
         `crs` is omitted it defaults to `self.crs`, so on a non-EPSG:4326
         axis the relief is warped to match the data (an explicit `crs=` still
@@ -633,11 +633,11 @@ class GeoMixin:
 
         Args:
             *args: Positional arguments for
-                `cleopatra.reference.add_relief` (after the axes), such as
+                `cleopatra.basemap.reference.add_relief` (after the axes), such as
                 `resolution`.
             ax: Axes to draw on. Defaults to the glyph's `self.ax`.
             **kwargs: Keyword arguments for
-                `cleopatra.reference.add_relief`. A `crs` keyword is
+                `cleopatra.basemap.reference.add_relief`. A `crs` keyword is
                 defaulted to `self.crs` when omitted; an explicit `crs=`
                 overrides it.
 
@@ -648,7 +648,7 @@ class GeoMixin:
             RuntimeError: If the glyph has no axes yet and `ax` is not given.
 
         See Also:
-            cleopatra.reference.add_relief: The underlying implementation and
+            cleopatra.basemap.reference.add_relief: The underlying implementation and
                 its full parameter list.
         """
         return reference.add_relief(
@@ -660,7 +660,7 @@ class GeoMixin:
     ) -> Any:
         """Annotate named points on the glyph's axes with a dot + label.
 
-        Thin wrapper over `cleopatra.geo.add_point_labels`; draws a plain
+        Thin wrapper over `cleopatra.basemap.geo.add_point_labels`; draws a plain
         dot marker and text label per point, matching the minimalist
         city-label look ECMWF/CAMS maps use. Points are plotted at whatever
         coordinates the axes is already using -- plain lon/lat for a flat
@@ -671,7 +671,7 @@ class GeoMixin:
                 same coordinate space as whatever is already plotted on the
                 axes.
             ax: Axes to draw on. Defaults to the glyph's `self.ax`.
-            **kwargs: Forwarded to `cleopatra.geo.add_point_labels` (e.g.
+            **kwargs: Forwarded to `cleopatra.basemap.geo.add_point_labels` (e.g.
                 `color`, `marker_size`, `fontsize`, `offset`, `zorder`).
 
         Returns:
@@ -684,7 +684,7 @@ class GeoMixin:
             - Label a city on a plotted glyph:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
                 >>> data = np.random.rand(20, 30)
                 >>> glyph = ArrayGlyph(data, extent=[-100, 15, -40, 55])
                 >>> fig, ax = glyph.plot()  # doctest: +SKIP
@@ -693,7 +693,7 @@ class GeoMixin:
                 ```
 
         See Also:
-            cleopatra.geo.add_point_labels: The underlying implementation.
+            cleopatra.basemap.geo.add_point_labels: The underlying implementation.
             add_reference_map: The full basemap-chrome preset this pairs with.
         """
         return add_point_labels(self._basemap_axes(ax), points, **kwargs)
@@ -947,7 +947,7 @@ class GeoMixin:
             - Dress a georeferenced field in the ECMWF look:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
                 >>> data = np.random.rand(20, 30)
                 >>> glyph = ArrayGlyph(data, extent=[-100, 15, -40, 55])
                 >>> fig, ax = glyph.plot()  # doctest: +SKIP

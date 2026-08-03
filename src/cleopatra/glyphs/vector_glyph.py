@@ -11,7 +11,7 @@ Examples:
     - Quiver plot coloured by magnitude:
         ```python
         >>> import numpy as np
-        >>> from cleopatra.vector_glyph import VectorGlyph
+        >>> from cleopatra.glyphs.vector_glyph import VectorGlyph
         >>> x, y = np.meshgrid(np.arange(3), np.arange(3))
         >>> u = np.ones_like(x, dtype=float)
         >>> v = np.zeros_like(y, dtype=float)
@@ -36,17 +36,17 @@ from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure
 from matplotlib.quiver import QuiverKey
 
-from cleopatra.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
-from cleopatra.colors import resolve_colormap
-from cleopatra.geo import GeoMixin
-from cleopatra.glyph import (
+from cleopatra.styling.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
+from cleopatra.styling.colors import resolve_colormap
+from cleopatra.basemap.geo import GeoMixin
+from cleopatra.glyphs.glyph import (
     Glyph,
     _clear_prior_render_artists,
     _mark_render_artists,
     _root_figure,
 )
-from cleopatra.styles import CLASSIFY_OPTIONS
-from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
+from cleopatra.styling.styles import CLASSIFY_OPTIONS
+from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 #: Vector kinds dispatched by `VectorGlyph.plot`.
 VECTOR_KINDS = ("quiver", "barbs", "streamplot")
@@ -90,7 +90,7 @@ class VectorGlyph(GeoMixin, Glyph):
         - Build a field and inspect the stored magnitude:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.vector_glyph import VectorGlyph
+            >>> from cleopatra.glyphs.vector_glyph import VectorGlyph
             >>> x, y = np.meshgrid(np.arange(2), np.arange(2))
             >>> u = np.array([[3.0, 0.0], [0.0, 3.0]])
             >>> v = np.array([[4.0, 0.0], [0.0, 4.0]])
@@ -101,7 +101,7 @@ class VectorGlyph(GeoMixin, Glyph):
             ```
 
     See Also:
-        cleopatra.glyph.Glyph._prepare_scalar_mapping: Shared
+        cleopatra.glyphs.glyph.Glyph._prepare_scalar_mapping: Shared
             norm/colorbar/ticks pipeline used to colour by magnitude.
     """
 
@@ -187,7 +187,7 @@ class VectorGlyph(GeoMixin, Glyph):
                 array:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.vector_glyph import VectorGlyph
+                >>> from cleopatra.glyphs.vector_glyph import VectorGlyph
                 >>> x, y = np.meshgrid(np.arange(3), np.arange(3))
                 >>> u = np.full_like(x, 2.0, dtype=float)
                 >>> v = np.zeros_like(y, dtype=float)
@@ -200,7 +200,7 @@ class VectorGlyph(GeoMixin, Glyph):
             - An unknown kind raises ValueError:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.vector_glyph import VectorGlyph
+                >>> from cleopatra.glyphs.vector_glyph import VectorGlyph
                 >>> x, y = np.meshgrid(np.arange(2), np.arange(2))
                 >>> glyph = VectorGlyph(x, y, np.ones_like(x), np.ones_like(y))
                 >>> glyph.plot(kind="spirograph")
@@ -352,7 +352,7 @@ class VectorGlyph(GeoMixin, Glyph):
             - Add a 5 m/s reference key to a quiver:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.vector_glyph import VectorGlyph
+                >>> from cleopatra.glyphs.vector_glyph import VectorGlyph
                 >>> x, y = np.meshgrid(np.arange(3), np.arange(3))
                 >>> u = np.ones_like(x, dtype=float)
                 >>> v = np.ones_like(y, dtype=float)

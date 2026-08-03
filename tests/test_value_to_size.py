@@ -2,9 +2,9 @@
 
 Covers:
 
-* `cleopatra.styles.resolve_sizes` (each `size_scale`, monotonicity, range
+* `cleopatra.styling.styles.resolve_sizes` (each `size_scale`, monotonicity, range
   spanning, degenerate input, and error paths) and the `SIZE_SCALES` constant.
-* `cleopatra.styles.size_legend` (area→markersize mapping, label round-trip,
+* `cleopatra.styling.styles.size_legend` (area→markersize mapping, label round-trip,
   and the length-mismatch guard).
 * `ScatterGlyph`'s `sizes` parameter and `size_*` options, including the
   `_resolve_marker_area` / `_draw_size_legend` helpers and the `sizes=None`
@@ -22,8 +22,8 @@ import pytest
 from matplotlib.collections import PathCollection
 from matplotlib.legend import Legend
 
-from cleopatra.scatter_glyph import ScatterGlyph
-from cleopatra.styles import SIZE_SCALES, resolve_sizes, size_legend
+from cleopatra.glyphs.scatter_glyph import ScatterGlyph
+from cleopatra.styling.styles import SIZE_SCALES, resolve_sizes, size_legend
 
 
 @pytest.fixture(autouse=True)

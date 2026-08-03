@@ -11,7 +11,7 @@ Examples:
     - Plot a single line series:
         ```python
         >>> import numpy as np
-        >>> from cleopatra.line_glyph import LineGlyph
+        >>> from cleopatra.glyphs.line_glyph import LineGlyph
         >>> x = np.array([0.0, 1.0, 2.0, 3.0])
         >>> y = np.array([0.0, 1.0, 4.0, 9.0])
         >>> glyph = LineGlyph(x, y)
@@ -33,9 +33,9 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
-from cleopatra.colors import add_line_glow, resolve_glow_options
-from cleopatra.glyph import Glyph, _root_figure
-from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
+from cleopatra.styling.colors import add_line_glow, resolve_glow_options
+from cleopatra.glyphs.glyph import Glyph, _root_figure
+from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 #: Option keys for LineGlyph (no scalar-mapping keys; this glyph does
 #: not colour by value).
@@ -65,7 +65,7 @@ class LineGlyph(Glyph):
         ax: Pre-existing axes to draw on. Default is None.
         fig: Pre-existing figure. Default is None.
         glow: Add a soft neon halo beneath the plotted line(s). `True` uses the
-            defaults; a dict overrides `cleopatra.colors.add_line_glow`'s
+            defaults; a dict overrides `cleopatra.styling.colors.add_line_glow`'s
             `n_glow` / `alpha` / `linewidth_step`. Default is False.
         **kwargs: Override any key in `LINE_DEFAULT_OPTIONS`
             (e.g. `marker`, `linestyle`, `alpha`, `color_1`,
@@ -79,7 +79,7 @@ class LineGlyph(Glyph):
         - Read back the y-data of the drawn line:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.line_glyph import LineGlyph
+            >>> from cleopatra.glyphs.line_glyph import LineGlyph
             >>> glyph = LineGlyph(np.array([0.0, 1.0, 2.0]), np.array([1.0, 3.0, 2.0]))
             >>> fig, ax, lines = glyph.line()
             >>> [float(v) for v in lines[0].get_ydata()]
@@ -162,7 +162,7 @@ class LineGlyph(Glyph):
             - Two series produce two lines:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.line_glyph import LineGlyph
+                >>> from cleopatra.glyphs.line_glyph import LineGlyph
                 >>> x = np.array([0.0, 1.0, 2.0])
                 >>> y = np.array([[0.0, 1.0], [1.0, 2.0], [2.0, 3.0]])
                 >>> glyph = LineGlyph(x, y)
@@ -224,7 +224,7 @@ class LineGlyph(Glyph):
             - One bar per x value:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.line_glyph import LineGlyph
+                >>> from cleopatra.glyphs.line_glyph import LineGlyph
                 >>> glyph = LineGlyph(np.array([0.0, 1.0, 2.0]), np.array([3.0, 1.0, 2.0]))
                 >>> fig, ax, bars = glyph.bar()
                 >>> len(bars)
@@ -280,7 +280,7 @@ class LineGlyph(Glyph):
             - Band between an upper curve and a scalar baseline:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.line_glyph import LineGlyph
+                >>> from cleopatra.glyphs.line_glyph import LineGlyph
                 >>> glyph = LineGlyph(np.array([0.0, 1.0, 2.0]), np.array([1.0, 3.0, 2.0]))
                 >>> fig, ax, band = glyph.fill_between(y2=0.0)
                 >>> band.get_paths() is not None

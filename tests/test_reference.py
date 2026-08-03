@@ -1,4 +1,4 @@
-"""Tests for cleopatra.reference.
+"""Tests for cleopatra.basemap.reference.
 
 Covers `add_relief` / `add_features` and their helpers. No test hits the
 network: assets are pre-written into a temporary cache directory
@@ -27,8 +27,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.collections import LineCollection, PathCollection  # noqa: E402
 
-from cleopatra import reference  # noqa: E402
-from cleopatra.reference import (  # noqa: E402
+from cleopatra.basemap import reference  # noqa: E402
+from cleopatra.basemap.reference import (  # noqa: E402
     _is_4326,
     _paths,
     add_features,

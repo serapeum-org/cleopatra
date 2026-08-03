@@ -50,7 +50,7 @@ from typing import Any, NamedTuple
 import numpy as np
 
 from cleopatra import __version__
-from cleopatra._net import urlopen_http
+from cleopatra.basemap._net import urlopen_http
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +115,7 @@ class Tile(NamedTuple):
     Examples:
         - The single tile covering the whole world at zoom 0:
             ```python
-            >>> from cleopatra.tiles import Tile
+            >>> from cleopatra.basemap.tiles import Tile
             >>> Tile(0, 0, 0)
             Tile(x=0, y=0, z=0)
 
@@ -123,7 +123,7 @@ class Tile(NamedTuple):
         - Two tiles compare equal by value, so one can look the other up
             in a `{tile: data}` mapping (as `fetch_tiles`'s return value does):
             ```python
-            >>> from cleopatra.tiles import Tile
+            >>> from cleopatra.basemap.tiles import Tile
             >>> tile_data = {Tile(548, 335, 10): b"...png bytes..."}
             >>> tile_data[Tile(x=548, y=335, z=10)]
             b'...png bytes...'
@@ -131,7 +131,7 @@ class Tile(NamedTuple):
             ```
         - Fields are accessible by name or by position:
             ```python
-            >>> from cleopatra.tiles import Tile
+            >>> from cleopatra.basemap.tiles import Tile
             >>> tile = Tile(548, 335, 10)
             >>> tile.z
             10
@@ -324,7 +324,7 @@ def get_provider(name: str | None = None) -> Any:
         - Resolve the default OpenStreetMap provider and inspect its
             URL template:
             ```python
-            >>> from cleopatra.tiles import get_provider
+            >>> from cleopatra.basemap.tiles import get_provider
             >>> provider = get_provider()
             >>> provider.name
             'OpenStreetMap.Mapnik'
@@ -334,7 +334,7 @@ def get_provider(name: str | None = None) -> Any:
             ```
         - Resolve a named provider via dot-path syntax:
             ```python
-            >>> from cleopatra.tiles import get_provider
+            >>> from cleopatra.basemap.tiles import get_provider
             >>> provider = get_provider("CartoDB.Positron")
             >>> provider.name
             'CartoDB.Positron'
@@ -342,7 +342,7 @@ def get_provider(name: str | None = None) -> Any:
             ```
         - Invalid provider names raise `ValueError`:
             ```python
-            >>> from cleopatra.tiles import get_provider
+            >>> from cleopatra.basemap.tiles import get_provider
             >>> get_provider("NonExistent.Provider")
             Traceback (most recent call last):
                 ...
@@ -409,14 +409,14 @@ def auto_zoom(
     Examples:
         - Worldwide extent maps to zoom 1 (two tiles across the globe):
             ```python
-            >>> from cleopatra.tiles import auto_zoom
+            >>> from cleopatra.basemap.tiles import auto_zoom
             >>> auto_zoom((-180, -85, 180, 85))
             1
 
             ```
         - A 0.6 by 0.2 degree window over Berlin yields zoom 11:
             ```python
-            >>> from cleopatra.tiles import auto_zoom
+            >>> from cleopatra.basemap.tiles import auto_zoom
             >>> auto_zoom((13.0, 52.4, 13.6, 52.6))
             11
 
@@ -424,14 +424,14 @@ def auto_zoom(
         - `min_tiles_across=1` restores the older, coarser one-tile
             heuristic (worldwide -> zoom 0):
             ```python
-            >>> from cleopatra.tiles import auto_zoom
+            >>> from cleopatra.basemap.tiles import auto_zoom
             >>> auto_zoom((-180, -85, 180, 85), min_tiles_across=1)
             0
 
             ```
         - Tiny extents are clamped to the maximum zoom (19):
             ```python
-            >>> from cleopatra.tiles import auto_zoom
+            >>> from cleopatra.basemap.tiles import auto_zoom
             >>> auto_zoom((0.0, 0.0, 1e-9, 1e-9))
             19
 
@@ -485,7 +485,7 @@ def _densify_and_reproject_bounds(
         - Reproject a small bounding box from EPSG:4326 to EPSG:3857
             (Web Mercator) and verify the bounds are sane:
             ```python
-            >>> from cleopatra.tiles import _densify_and_reproject_bounds
+            >>> from cleopatra.basemap.tiles import _densify_and_reproject_bounds
             >>> bounds = _densify_and_reproject_bounds(
             ...     13.0, 52.4, 13.6, 52.6, "EPSG:4326", "EPSG:3857"
             ... )
@@ -499,7 +499,7 @@ def _densify_and_reproject_bounds(
         - The same box round-tripped back to EPSG:4326 recovers the
             input bounds:
             ```python
-            >>> from cleopatra.tiles import _densify_and_reproject_bounds
+            >>> from cleopatra.basemap.tiles import _densify_and_reproject_bounds
             >>> w, s, e, n = _densify_and_reproject_bounds(
             ...     13.0, 52.4, 13.6, 52.6, "EPSG:4326", "EPSG:3857"
             ... )
@@ -571,7 +571,7 @@ def _looks_like_image(data: bytes) -> bool:
     Examples:
         - A PNG header passes; an HTML error page does not:
             ```python
-            >>> from cleopatra.tiles import _looks_like_image
+            >>> from cleopatra.basemap.tiles import _looks_like_image
             >>> _looks_like_image(b"\\x89PNG\\r\\n\\x1a\\n" + b"\\x00" * 8)
             True
             >>> _looks_like_image(b"<html>error</html>")
@@ -583,7 +583,7 @@ def _looks_like_image(data: bytes) -> bool:
         - JPEGs with any APPn marker (`\\xe0`..`\\xef`) or a bare SOI
             followed by a DQT/SOFn byte pass:
             ```python
-            >>> from cleopatra.tiles import _looks_like_image
+            >>> from cleopatra.basemap.tiles import _looks_like_image
             >>> all(
             ...     _looks_like_image(b"\\xff\\xd8\\xff" + bytes([m]) + b"\\x00" * 8)
             ...     for m in (0xE0, 0xE1, 0xE2, 0xE8, 0xEF, 0xDB, 0xC0)
@@ -631,13 +631,13 @@ def fetch_single_tile(
         - Fetch a single OpenStreetMap tile (network-dependent, hence
             skipped under doctest):
             ```python
-            >>> from cleopatra.tiles import Tile, fetch_single_tile, get_provider
+            >>> from cleopatra.basemap.tiles import Tile, fetch_single_tile, get_provider
             >>> tile = Tile(0, 0, 0)
             >>> provider = get_provider("OpenStreetMap.Mapnik")
             >>> tile_obj, data = fetch_single_tile(  # doctest: +SKIP
             ...     tile, provider, timeout=10, retries=2
             ... )
-            >>> from cleopatra.tiles import _looks_like_image
+            >>> from cleopatra.basemap.tiles import _looks_like_image
             >>> _looks_like_image(data)  # doctest: +SKIP
             True
 
@@ -645,7 +645,7 @@ def fetch_single_tile(
         - Tile failures raise `ConnectionError` after retries
             are exhausted:
             ```python
-            >>> from cleopatra.tiles import Tile, fetch_single_tile
+            >>> from cleopatra.basemap.tiles import Tile, fetch_single_tile
             >>> from xyzservices import TileProvider
             >>> bad = TileProvider(
             ...     name="bad",
@@ -736,7 +736,7 @@ def fetch_tiles(
         - Fetch a small tile grid in parallel (network-dependent, hence
             skipped under doctest):
             ```python
-            >>> from cleopatra.tiles import _tiles_for_bbox, fetch_tiles, get_provider
+            >>> from cleopatra.basemap.tiles import _tiles_for_bbox, fetch_tiles, get_provider
             >>> tiles = _tiles_for_bbox(13.0, 52.4, 13.6, 52.6, 10)
             >>> provider = get_provider("OpenStreetMap.Mapnik")
             >>> data = fetch_tiles(tiles, provider, max_workers=4)  # doctest: +SKIP
@@ -746,7 +746,7 @@ def fetch_tiles(
             ```
         - Pass an empty list to short-circuit and get an empty dict:
             ```python
-            >>> from cleopatra.tiles import fetch_tiles, get_provider
+            >>> from cleopatra.basemap.tiles import fetch_tiles, get_provider
             >>> provider = get_provider("OpenStreetMap.Mapnik")
             >>> fetch_tiles([], provider)
             {}
@@ -809,7 +809,7 @@ def stitch_tiles(
             ```python
             >>> import io
             >>> from PIL import Image
-            >>> from cleopatra.tiles import Tile, stitch_tiles
+            >>> from cleopatra.basemap.tiles import Tile, stitch_tiles
             >>> buf = io.BytesIO()
             >>> Image.new("RGBA", (256, 256), (255, 0, 0, 255)).save(buf, "PNG")
             >>> tile = Tile(0, 0, 0)
@@ -825,7 +825,7 @@ def stitch_tiles(
             ```python
             >>> import io
             >>> from PIL import Image
-            >>> from cleopatra.tiles import Tile, stitch_tiles
+            >>> from cleopatra.basemap.tiles import Tile, stitch_tiles
             >>> buf = io.BytesIO()
             >>> Image.new("RGBA", (256, 256), (0, 255, 0, 255)).save(buf, "PNG")
             >>> tile = Tile(0, 0, 0)
@@ -836,7 +836,7 @@ def stitch_tiles(
             ```
         - Invalid tile bytes raise `ValueError`:
             ```python
-            >>> from cleopatra.tiles import Tile, stitch_tiles
+            >>> from cleopatra.basemap.tiles import Tile, stitch_tiles
             >>> tile = Tile(0, 0, 0)
             >>> try:
             ...     stitch_tiles({tile: b"not an image"}, [tile], 0)

@@ -30,7 +30,7 @@ import numpy as np
 import matplotlib
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
-from cleopatra.statistical_glyph import StatisticalGlyph
+from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
 
 # Create some random 1D data
 np.random.seed(1)
@@ -66,13 +66,13 @@ from matplotlib.colors import Normalize
 from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 
-from cleopatra.colors import resolve_colormap
-from cleopatra.glyph import (
+from cleopatra.styling.colors import resolve_colormap
+from cleopatra.glyphs.glyph import (
     _clear_prior_render_artists,
     _mark_render_artists,
     _root_figure,
 )
-from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
+from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 STATISTICAL_DEFAULT_OPTIONS = {
     "figsize": (5, 5),
@@ -96,7 +96,7 @@ class StatisticalGlyph:
     The accepted option keys are exposed via the `DEFAULT_OPTIONS` class
     attribute and can be inspected or filtered before constructing an
     instance with the `option_keys` and `filter_kwargs` classmethods
-    (mirroring `cleopatra.glyph.Glyph`, though this is a standalone class).
+    (mirroring `cleopatra.glyphs.glyph.Glyph`, though this is a standalone class).
 
     Attributes:
         values: The numerical values to be plotted as histograms.
@@ -122,7 +122,7 @@ class StatisticalGlyph:
         Create a histogram from 1D data:
         ```python
         >>> import numpy as np
-        >>> from cleopatra.statistical_glyph import StatisticalGlyph
+        >>> from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
         >>> np.random.seed(1)
         >>> x = 4 + np.random.normal(0, 1.5, 200)
         >>> stat_plot = StatisticalGlyph(x)
@@ -209,7 +209,7 @@ class StatisticalGlyph:
             Initialize with default options:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.statistical_glyph import StatisticalGlyph
+            >>> from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
             >>> np.random.seed(1)
             >>> x = np.random.normal(0, 1, 100)
             >>> stat = StatisticalGlyph(x)
@@ -270,7 +270,7 @@ class StatisticalGlyph:
 
         Examples:
             >>> import numpy as np
-            >>> from cleopatra.statistical_glyph import StatisticalGlyph
+            >>> from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
             >>> np.random.seed(1)
             >>> x = np.random.normal(0, 1, 100)
             >>> stat = StatisticalGlyph(x)
@@ -292,7 +292,7 @@ class StatisticalGlyph:
         Examples:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.statistical_glyph import StatisticalGlyph
+            >>> from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
             >>> np.random.seed(1)
             >>> x1 = np.random.normal(0, 1, 100)
             >>> stat = StatisticalGlyph(x1)
@@ -327,7 +327,7 @@ class StatisticalGlyph:
         Examples:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.statistical_glyph import StatisticalGlyph
+            >>> from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
             >>> np.random.seed(1)
             >>> x = np.random.normal(0, 1, 100)
             >>> stat = StatisticalGlyph(x)
@@ -347,7 +347,7 @@ class StatisticalGlyph:
 
         Resolves from the class-level ``DEFAULT_OPTIONS`` so the accepted
         keys can be inspected without constructing an instance. Mirrors
-        ``cleopatra.glyph.Glyph.option_keys`` (``StatisticalGlyph`` is a
+        ``cleopatra.glyphs.glyph.Glyph.option_keys`` (``StatisticalGlyph`` is a
         standalone class, not a ``Glyph`` subclass).
 
         Returns:
@@ -356,7 +356,7 @@ class StatisticalGlyph:
         Examples:
             - Inspect the accepted keys before building one:
                 ```python
-                >>> from cleopatra.statistical_glyph import StatisticalGlyph
+                >>> from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
                 >>> keys = StatisticalGlyph.option_keys()
                 >>> "bins" in keys
                 True
@@ -383,7 +383,7 @@ class StatisticalGlyph:
         Examples:
             - Keep only the accepted keys:
                 ```python
-                >>> from cleopatra.statistical_glyph import StatisticalGlyph
+                >>> from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
                 >>> raw = {"bins": 20, "alpha": 0.5, "bogus": 1}
                 >>> safe = StatisticalGlyph.filter_kwargs(raw)
                 >>> sorted(safe)
@@ -461,7 +461,7 @@ class StatisticalGlyph:
 
                     ```python
                     >>> import numpy as np
-                    >>> from cleopatra.statistical_glyph import StatisticalGlyph
+                    >>> from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
                     >>> np.random.seed(1)
                     >>> x = 4 + np.random.normal(0, 1.5, 200)
                     >>> stat_plot = StatisticalGlyph(x)
@@ -713,7 +713,7 @@ class StatisticalGlyph:
             - One box per column for 2D data:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.statistical_glyph import StatisticalGlyph
+                >>> from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
                 >>> np.random.seed(1)
                 >>> data = np.random.normal(0, 1, (50, 3))
                 >>> stat = StatisticalGlyph(data, color=["r", "g", "b"])
@@ -801,7 +801,7 @@ class StatisticalGlyph:
             - Place three boxes at custom positions:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.statistical_glyph import StatisticalGlyph
+                >>> from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
                 >>> np.random.seed(1)
                 >>> data = np.random.normal(0, 1, (40, 3))
                 >>> stat = StatisticalGlyph(data, color=["r", "g", "b"])
@@ -895,7 +895,7 @@ class StatisticalGlyph:
             - One stripe per yearly value:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.statistical_glyph import StatisticalGlyph
+                >>> from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
                 >>> series = np.array([0.1, 0.3, 0.2, 0.6, 0.9, 0.7])
                 >>> stat = StatisticalGlyph(series)
                 >>> fig, ax, bars = stat.stripes(cmap="coolwarm")

@@ -1,4 +1,4 @@
-"""Tests for cleopatra.polygon_glyph.PolygonGlyph (T7.2c)."""
+"""Tests for cleopatra.glyphs.polygon_glyph.PolygonGlyph (T7.2c)."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 from matplotlib.collections import PolyCollection
 
-from cleopatra.polygon_glyph import (
+from cleopatra.glyphs.polygon_glyph import (
     OUTLINE_EDGECOLOR,
     POLYGON_DEFAULT_OPTIONS,
     PolygonGlyph,

@@ -6,7 +6,7 @@ animations exported to GIF / MP4 / MOV / AVI.
 
 ## Class Documentation
 
-::: cleopatra.array_glyph.ArrayGlyph
+::: cleopatra.glyphs.array_glyph.ArrayGlyph
     options:
       show_root_heading: true
       show_source: true
@@ -18,7 +18,7 @@ animations exported to GIF / MP4 / MOV / AVI.
 `FacetGrid`): a shared `fig`, a 2-D `ndarray` of `axes`, the shared `cbar`, and
 `name_dicts` (one `{dim: value}` per panel).
 
-::: cleopatra.array_glyph.FacetGrid
+::: cleopatra.glyphs.array_glyph.FacetGrid
     options:
       show_root_heading: true
       show_source: true
@@ -41,8 +41,8 @@ animations exported to GIF / MP4 / MOV / AVI.
   with one shared colour scale and colorbar.
 - **`animate(..., data_getter=callable)`** — supply each frame lazily (e.g. a NetCDF time
   slab) instead of holding the whole stack in memory.
-- `color_scale` is validated against `cleopatra.styles.ColorScale` (also re-exported as
-  `cleopatra.array_glyph.ColorScale`); a bad value raises `ValueError`.
+- `color_scale` is validated against `cleopatra.styling.styles.ColorScale` (also re-exported as
+  `cleopatra.glyphs.array_glyph.ColorScale`); a bad value raises `ValueError`.
 
 !!! note "Changes from earlier versions"
     - `ArrayGlyph.plot()` returns `(fig, ax)`.
@@ -57,7 +57,7 @@ animations exported to GIF / MP4 / MOV / AVI.
 
 ```python
 import numpy as np
-from cleopatra.array_glyph import ArrayGlyph
+from cleopatra.glyphs.array_glyph import ArrayGlyph
 
 array = np.random.default_rng(0).random((10, 10))
 glyph = ArrayGlyph(array)
@@ -88,7 +88,7 @@ fig, ax = glyph.plot(points=points)
 
 ```python
 import numpy as np
-from cleopatra.array_glyph import ArrayGlyph
+from cleopatra.glyphs.array_glyph import ArrayGlyph
 
 data = np.linspace(-3.0, 8.0, 25).reshape(5, 5)
 
@@ -103,7 +103,7 @@ fig, ax = ArrayGlyph(data).plot(center=0.0, robust=True)
 
 ```python
 import numpy as np
-from cleopatra.array_glyph import ArrayGlyph
+from cleopatra.glyphs.array_glyph import ArrayGlyph
 
 arr = np.arange(12, dtype=float).reshape(3, 4)
 x = np.linspace(0.0, 10.0, 4)   # 1-D cell centres (cols)
@@ -115,7 +115,7 @@ fig, ax = ArrayGlyph(arr, coords=(x, y)).plot(kind="auto")  # -> pcolormesh
 
 ```python
 import numpy as np
-from cleopatra.array_glyph import ArrayGlyph
+from cleopatra.glyphs.array_glyph import ArrayGlyph
 
 stack = np.random.default_rng(0).random((6, 20, 20))
 g = ArrayGlyph(stack).facet(col="time", col_wrap=3, robust=True)
@@ -126,7 +126,7 @@ g.fig.savefig("facet.png")     # g.axes is a (2, 3) ndarray of Axes; g.cbar is s
 
 ```python
 import numpy as np
-from cleopatra.array_glyph import ArrayGlyph
+from cleopatra.glyphs.array_glyph import ArrayGlyph
 
 time_series = np.stack([np.random.default_rng(i).random((10, 10)) for i in range(5)])
 time_labels = ["t1", "t2", "t3", "t4", "t5"]

@@ -1,6 +1,6 @@
 # Colors Module
 
-The `cleopatra.colors` module provides the `Colors` class for working with colors
+The `cleopatra.styling.colors` module provides the `Colors` class for working with colors
 — converting between formats (hex, RGB), validating color values, and getting the
 type of color — plus the composable **"haze" data-style** helpers: ready-made
 colormaps, value-tied alpha rendering, and a one-call multi-layer preset.
@@ -10,7 +10,7 @@ colormaps, value-tied alpha rendering, and a one-call multi-layer preset.
 The `Colors` class converts between different color formats (hex, RGB), validates
 color values, extracts colour ramps from images, and builds matplotlib colormaps.
 
-::: cleopatra.colors.Colors
+::: cleopatra.styling.colors.Colors
     options:
       show_root_heading: true
       show_source: true
@@ -40,7 +40,7 @@ matplotlib.use("Agg")  # any backend
 import matplotlib.pyplot as plt
 import numpy as np
 
-from cleopatra.colors import apply_data_style
+from cleopatra.styling.colors import apply_data_style
 
 # two synthetic aerosol layers on a lon/lat grid
 yy, xx = np.mgrid[0:90, 0:180]
@@ -57,19 +57,19 @@ artists = apply_data_style(
 )
 ```
 
-::: cleopatra.colors.apply_data_style
+::: cleopatra.styling.colors.apply_data_style
     options:
       show_root_heading: true
       show_source: true
       heading_level: 3
 
-::: cleopatra.colors.alpha_scaled_image
+::: cleopatra.styling.colors.alpha_scaled_image
     options:
       show_root_heading: true
       show_source: true
       heading_level: 3
 
-::: cleopatra.colors.alpha_scaled_mesh
+::: cleopatra.styling.colors.alpha_scaled_mesh
     options:
       show_root_heading: true
       show_source: true
@@ -80,7 +80,7 @@ artists = apply_data_style(
 ### Creating Color Objects
 
 ```python
-from cleopatra.colors import Colors
+from cleopatra.styling.colors import Colors
 
 # Create a Colors object with a hex color
 hex_color = Colors("#FF5733")

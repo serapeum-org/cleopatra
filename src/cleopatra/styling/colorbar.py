@@ -7,7 +7,7 @@ maps it onto the internal `cbar_*` / `ticks_spacing` options that the base
 callers off the loose `cbar_*` kwargs it supersedes.
 
 Kept in its own module (rather than in any single glyph) so every glyph type can
-import it without depending on `array_glyph`. `cleopatra.array_glyph` re-exports
+import it without depending on `array_glyph`. `cleopatra.glyphs.array_glyph` re-exports
 `ColorBar` for backwards compatibility.
 """
 
@@ -16,7 +16,7 @@ from typing import Any, Literal
 
 from matplotlib.colors import to_rgb
 
-from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
+from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 
 def _implied_orientation(location: str | None) -> str | None:
@@ -149,7 +149,7 @@ class ColorBar:
     Examples:
         - An inside colorbar on the right -- its box defaults on:
             ```python
-            >>> from cleopatra.colorbar import ColorBar
+            >>> from cleopatra.styling.colorbar import ColorBar
             >>> spec = ColorBar(location="right", inside=True)
             >>> spec.inside, spec.box
             (True, True)
@@ -157,7 +157,7 @@ class ColorBar:
             ```
         - Black title + tick numbers, outside on the bottom (no box):
             ```python
-            >>> from cleopatra.colorbar import ColorBar
+            >>> from cleopatra.styling.colorbar import ColorBar
             >>> spec = ColorBar(location="bottom", label_color="black", tick_color="black")
             >>> (spec.box, spec.label_color, spec.tick_color)
             (None, 'black', 'black')
@@ -165,7 +165,7 @@ class ColorBar:
             ```
         - A captioned bar, fully specified through the spec (no loose kwargs):
             ```python
-            >>> from cleopatra.colorbar import ColorBar
+            >>> from cleopatra.styling.colorbar import ColorBar
             >>> spec = ColorBar(location="bottom", label="Rainfall mm/day", length=0.8)
             >>> (spec.label, spec.length)
             ('Rainfall mm/day', 0.8)
@@ -292,7 +292,7 @@ def _resolve_colorbar(colorbar: bool | ColorBar | None) -> dict:
         - `False` suppresses the colorbar; a `ColorBar` maps onto the
             internal `cbar_*` keys `create_color_bar` reads:
             ```python
-            >>> from cleopatra.colorbar import _resolve_colorbar, ColorBar
+            >>> from cleopatra.styling.colorbar import _resolve_colorbar, ColorBar
             >>> _resolve_colorbar(False)
             {'add_colorbar': False}
             >>> _resolve_colorbar(ColorBar(location="left", inside=True))["cbar_location"]
@@ -302,7 +302,7 @@ def _resolve_colorbar(colorbar: bool | ColorBar | None) -> dict:
         - Caption / sizing fields map onto their `cbar_*` keys only when set,
             so an unset field is omitted (leaving the existing default):
             ```python
-            >>> from cleopatra.colorbar import _resolve_colorbar, ColorBar
+            >>> from cleopatra.styling.colorbar import _resolve_colorbar, ColorBar
             >>> _resolve_colorbar(ColorBar(label="Depth [m]", length=0.8))["cbar_label"]
             'Depth [m]'
             >>> "cbar_label" in _resolve_colorbar(ColorBar(location="right"))

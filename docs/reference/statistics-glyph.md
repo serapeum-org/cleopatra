@@ -7,7 +7,7 @@ statistical plots — **histograms**, **boxplots**, **multi-boxplots**, and
 
 ## Class Documentation
 
-::: cleopatra.statistical_glyph.StatisticalGlyph
+::: cleopatra.glyphs.statistical_glyph.StatisticalGlyph
     options:
       show_root_heading: true
       show_source: true
@@ -20,7 +20,7 @@ statistical plots — **histograms**, **boxplots**, **multi-boxplots**, and
 ```python
 import numpy as np
 import matplotlib.pyplot as plt
-from cleopatra.statistical_glyph import StatisticalGlyph
+from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
 
 # Create some random 1D data
 np.random.seed(1)
@@ -54,7 +54,7 @@ fig_2d, ax_2d, hist_2d = stat_plot_2d.histogram()
 
 ```python
 import numpy as np
-from cleopatra.statistical_glyph import StatisticalGlyph
+from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
 
 # one box per column for 2D data
 data = np.random.default_rng(0).normal(0, 1, (200, 3))

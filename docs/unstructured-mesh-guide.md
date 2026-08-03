@@ -262,7 +262,7 @@ mg.save_animation("simulation.gif", fps=5)
 
 ```python
 # Example: midpoint scale for a difference plot
-from cleopatra.colorbar import ColorBar
+from cleopatra.styling.colorbar import ColorBar
 
 mg.plot(
     difference_data,

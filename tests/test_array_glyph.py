@@ -12,9 +12,9 @@ from matplotlib.figure import Figure
 from matplotlib.text import Text
 from PIL import Image
 
-import cleopatra.reference as refmod
-from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
-from cleopatra.array_glyph import (
+import cleopatra.basemap.reference as refmod
+from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
+from cleopatra.glyphs.array_glyph import (
     _COORD_DTYPE_MISMATCH,
     _COORD_SHAPE_MISMATCH,
     _UNSET,
@@ -760,7 +760,7 @@ class TestUnsetSentinel:
             The class docstring's whole reason for existing over a plain
             `object()` sentinel is a readable `help()`/IDE tooltip; a
             regression here (e.g. deleting `__repr__`) would silently
-            fall back to `<cleopatra.array_glyph._Unset object at 0x...>`.
+            fall back to `<cleopatra.glyphs.array_glyph._Unset object at 0x...>`.
         """
         assert repr(_UNSET) == "<unset>", f"Unexpected repr: {repr(_UNSET)!r}"
 
@@ -773,7 +773,7 @@ class TestUnsetSentinel:
             override makes two instances equal either), confirming the
             sentinel can only be obtained by importing `_UNSET` itself.
         """
-        from cleopatra.array_glyph import _Unset
+        from cleopatra.glyphs.array_glyph import _Unset
 
         other = _Unset()
         assert other is not _UNSET, "A fresh _Unset() must not be the _UNSET singleton"
@@ -1302,7 +1302,7 @@ class TestPlotKindDispatch:
 
     def test_color_scale_enum_member_accepted(self):
         """`plot(color_scale=ColorScale.POWER)` works (enum member, not str)."""
-        from cleopatra.styles import ColorScale
+        from cleopatra.styling.styles import ColorScale
 
         glyph = ArrayGlyph(self._sample_arr())
         fig, ax = glyph.plot(color_scale=ColorScale.POWER)

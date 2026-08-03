@@ -12,7 +12,7 @@ from matplotlib.container import BarContainer
 from matplotlib.legend import Legend
 from matplotlib.patches import Patch
 
-from cleopatra.styles import (
+from cleopatra.styling.styles import (
     ColorScale,
     Styles,
     apply_blank_canvas,
@@ -29,7 +29,7 @@ def test_create_instance():
 
 
 class TestColorScale:
-    """Tests for the `cleopatra.styles.ColorScale` `StrEnum`."""
+    """Tests for the `cleopatra.styling.styles.ColorScale` `StrEnum`."""
 
     def test_members_are_strings(self):
         """Each member equals (and stringifies to) its lowercase value."""
@@ -80,7 +80,7 @@ class TestColorScale:
 
 
 class TestDisjointLegend:
-    """Tests for cleopatra.styles.disjoint_legend (T0.4)."""
+    """Tests for cleopatra.styling.styles.disjoint_legend (T0.4)."""
 
     @pytest.fixture()
     def ax(self):
@@ -197,7 +197,7 @@ class TestDiscreteContourfAcceptance:
             colorbar whose ticks are exactly those edges, confirming the
             already-implemented discrete-levels path still holds.
         """
-        from cleopatra.array_glyph import ArrayGlyph
+        from cleopatra.glyphs.array_glyph import ArrayGlyph
 
         data = np.linspace(0, 10, 36).reshape(6, 6)
         edges = [0, 2, 4, 6, 8, 10]
@@ -211,7 +211,7 @@ class TestDiscreteContourfAcceptance:
 
 
 class TestColorbarLegend:
-    """Tests for cleopatra.styles.colorbar_legend (T5.3c)."""
+    """Tests for cleopatra.styling.styles.colorbar_legend (T5.3c)."""
 
     @pytest.fixture()
     def scatter(self):
@@ -272,7 +272,7 @@ class TestColorbarLegend:
 
 
 class TestHistogramLegend:
-    """Tests for cleopatra.styles.histogram_legend (T5.3c)."""
+    """Tests for cleopatra.styling.styles.histogram_legend (T5.3c)."""
 
     @pytest.fixture()
     def ax(self):

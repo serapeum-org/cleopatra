@@ -16,28 +16,29 @@ import types
 
 import pytest
 
-#: Submodules the package is expected to ship.
+#: Submodules the package is expected to ship, as dotted paths relative to
+#: `cleopatra` (subpackage-nested ones included).
 _SUBMODULES = [
-    "animation",
-    "array_glyph",
-    "colors",
     "config",
-    "data",
-    "flow_glyph",
-    "geo",
-    "glyph",
-    "hillshade",
-    "kde_glyph",
-    "line_glyph",
-    "mesh_glyph",
-    "polygon_glyph",
-    "projection",
-    "reference",
-    "scatter_glyph",
-    "statistical_glyph",
-    "styles",
-    "tiles",
-    "vector_glyph",
+    "glyphs.animation",
+    "glyphs.array_glyph",
+    "glyphs.flow_glyph",
+    "glyphs.glyph",
+    "glyphs.hillshade",
+    "glyphs.kde_glyph",
+    "glyphs.line_glyph",
+    "glyphs.mesh_glyph",
+    "glyphs.polygon_glyph",
+    "glyphs.scatter_glyph",
+    "glyphs.statistical_glyph",
+    "glyphs.vector_glyph",
+    "styling.colors",
+    "styling.data",
+    "styling.styles",
+    "basemap.geo",
+    "basemap.projection",
+    "basemap.reference",
+    "basemap.tiles",
 ]
 
 

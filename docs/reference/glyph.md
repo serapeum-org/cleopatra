@@ -11,7 +11,7 @@ its colour-mapping / colorbar pipeline. `StatisticalGlyph` stands alone.
 
 ## Class Documentation
 
-::: cleopatra.glyph.Glyph
+::: cleopatra.glyphs.glyph.Glyph
     options:
       show_root_heading: true
       show_source: true

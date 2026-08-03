@@ -10,8 +10,8 @@ from matplotlib.axes import Axes
 from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 
-import cleopatra.statistical_glyph as statistical_glyph_module
-from cleopatra.statistical_glyph import StatisticalGlyph
+import cleopatra.glyphs.statistical_glyph as statistical_glyph_module
+from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
 
 
 @pytest.fixture(autouse=True)
@@ -26,7 +26,7 @@ def test_module_doctests_execute():
 
     Pytest is not configured with ``--doctest-modules``, so docstring examples in
     ``src/`` would otherwise never run. This test executes them for
-    ``cleopatra.statistical_glyph`` (including the fig/ax composition example) and
+    ``cleopatra.glyphs.statistical_glyph`` (including the fig/ax composition example) and
     fails if any example's output no longer matches.
     """
     try:
@@ -712,7 +712,7 @@ class TestOptionKeysAndFilterKwargs:
             The class attribute is the single source of truth; the accepted
             keys match `DEFAULT_OPTIONS` and exclude unknown names.
         """
-        from cleopatra.statistical_glyph import DEFAULT_OPTIONS
+        from cleopatra.glyphs.statistical_glyph import DEFAULT_OPTIONS
 
         keys = StatisticalGlyph.option_keys()
         assert keys == set(DEFAULT_OPTIONS), "keys must match DEFAULT_OPTIONS"

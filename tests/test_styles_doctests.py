@@ -1,4 +1,4 @@
-"""Doctest runner for `cleopatra.styles`.
+"""Doctest runner for `cleopatra.styling.styles`.
 
 Pytest is not configured with ``--doctest-modules``, so the docstring examples
 in ``src/cleopatra/styles.py`` (ColorScale, Scale, MidpointNormalize, classify,
@@ -15,7 +15,7 @@ matplotlib.use("agg")
 import matplotlib.pyplot as plt
 import pytest
 
-import cleopatra.styles as styles_module
+import cleopatra.styling.styles as styles_module
 
 
 @pytest.fixture(autouse=True)
@@ -26,7 +26,7 @@ def _close_figures():
 
 
 def test_module_doctests_execute():
-    """Run every `cleopatra.styles` docstring example in-band.
+    """Run every `cleopatra.styling.styles` docstring example in-band.
 
     Test scenario:
         All collected doctest examples in the module execute with zero

@@ -1,4 +1,4 @@
-"""Tests for cleopatra.line_glyph.LineGlyph (T7.3c)."""
+"""Tests for cleopatra.glyphs.line_glyph.LineGlyph (T7.3c)."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from matplotlib.collections import PolyCollection
 from matplotlib.container import BarContainer
 from matplotlib.lines import Line2D
 
-from cleopatra.line_glyph import LINE_DEFAULT_OPTIONS, LineGlyph
+from cleopatra.glyphs.line_glyph import LINE_DEFAULT_OPTIONS, LineGlyph
 
 
 @pytest.fixture(autouse=True)

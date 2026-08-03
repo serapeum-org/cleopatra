@@ -1,4 +1,4 @@
-"""Tests for cleopatra.animation glyph-independent save/embed helpers.
+"""Tests for cleopatra.glyphs.animation glyph-independent save/embed helpers.
 
 Covers `save_animation`, `to_gif`, and `embed_gif` operating on a plain
 `matplotlib.animation.FuncAnimation` (no `Glyph` involved). A tiny 2-3 frame
@@ -19,8 +19,8 @@ import pytest
 from matplotlib.animation import FuncAnimation
 from PIL import Image
 
-import cleopatra.animation as anim_mod
-from cleopatra.animation import (
+import cleopatra.glyphs.animation as anim_mod
+from cleopatra.glyphs.animation import (
     SUPPORTED_VIDEO_FORMAT,
     embed_gif,
     save_animation,
@@ -444,7 +444,7 @@ class TestEmbedGif:
 
         Test scenario:
             The lazy import inside ``embed_gif`` means importing
-            ``cleopatra.animation`` must not expose an ``Image`` attribute,
+            ``cleopatra.glyphs.animation`` must not expose an ``Image`` attribute,
             so the package never hard-depends on IPython at load time.
         """
 
@@ -1006,8 +1006,8 @@ class TestSupportedVideoFormat:
         assert set(SUPPORTED_VIDEO_FORMAT) == {"gif", "mov", "avi", "mp4", "webp"}
 
     def test_is_single_source_of_truth(self):
-        """`cleopatra.glyph` re-exports the same object, not a copy."""
-        from cleopatra.glyph import SUPPORTED_VIDEO_FORMAT as glyph_constant
+        """`cleopatra.glyphs.glyph` re-exports the same object, not a copy."""
+        from cleopatra.glyphs.glyph import SUPPORTED_VIDEO_FORMAT as glyph_constant
 
         assert glyph_constant is SUPPORTED_VIDEO_FORMAT, (
             "glyph should re-import the constant, not redefine it"
@@ -1019,7 +1019,7 @@ def test_module_doctests_execute():
 
     Pytest is not configured with ``--doctest-modules``, so docstring examples in
     ``src/`` would otherwise never run. This test executes them for
-    ``cleopatra.animation`` (including the ``to_bytes``/``to_mp4`` magic-byte checks
+    ``cleopatra.glyphs.animation`` (including the ``to_bytes``/``to_mp4`` magic-byte checks
     and the ``_build_ffmpeg_extra_args`` flag-merge examples) and fails if any
     example's output no longer matches.
     """

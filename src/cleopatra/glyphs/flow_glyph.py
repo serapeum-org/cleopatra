@@ -6,7 +6,7 @@ different) per-path magnitude — the rendering primitive behind a spatial
 Sankey / flow map. It mirrors `VectorGlyph` (which colours an artist by a
 per-item magnitude through the shared scalar-mapping pipeline) but draws a
 `matplotlib.collections.LineCollection` and adds value→width scaling via
-`cleopatra.styles.resolve_sizes` (shared with `ScatterGlyph`).
+`cleopatra.styling.styles.resolve_sizes` (shared with `ScatterGlyph`).
 
 The glyph is geometry-agnostic: it takes plain vertex arrays, so any
 great-circle interpolation or projection is the caller's job.
@@ -15,7 +15,7 @@ Examples:
     - Two flows coloured by value and scaled by width:
         ```python
         >>> import numpy as np
-        >>> from cleopatra.flow_glyph import FlowGlyph
+        >>> from cleopatra.glyphs.flow_glyph import FlowGlyph
         >>> paths = [
         ...     np.array([[0.0, 0.0], [1.0, 1.0]]),
         ...     np.array([[0.0, 1.0], [1.0, 0.0]]),
@@ -40,12 +40,12 @@ from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure
 from matplotlib.legend import Legend
 
-from cleopatra.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
-from cleopatra.colors import resolve_colormap, resolve_glow_options
-from cleopatra.geo import GeoMixin
-from cleopatra.glyph import Glyph, _root_figure
-from cleopatra.styles import CLASSIFY_OPTIONS, resolve_sizes, width_legend
-from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
+from cleopatra.styling.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
+from cleopatra.styling.colors import resolve_colormap, resolve_glow_options
+from cleopatra.basemap.geo import GeoMixin
+from cleopatra.glyphs.glyph import Glyph, _root_figure
+from cleopatra.styling.styles import CLASSIFY_OPTIONS, resolve_sizes, width_legend
+from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 #: Option keys for FlowGlyph. `ticks_spacing` is `None` so the shared
 #: `_prepare_scalar_mapping` helper auto-derives it from the values. The
@@ -75,7 +75,7 @@ class FlowGlyph(GeoMixin, Glyph):
     `values` array the lines are colour-mapped through the shared
     scalar-mapping pipeline and a colorbar is attached (like `VectorGlyph`);
     with a per-path `widths` array each line's width is scaled via
-    `cleopatra.styles.resolve_sizes` (like `ScatterGlyph`'s `sizes`). Colour
+    `cleopatra.styling.styles.resolve_sizes` (like `ScatterGlyph`'s `sizes`). Colour
     and width are independent, so a flow can encode two quantities at once.
 
     Args:
@@ -91,7 +91,7 @@ class FlowGlyph(GeoMixin, Glyph):
         fig: Pre-existing figure. Default is None.
         glow: Add a soft neon halo beneath the flow polylines (tracking their
             width scaling). `True` uses the defaults; a dict overrides
-            `cleopatra.colors.add_line_glow`'s `n_glow` / `alpha` /
+            `cleopatra.styling.colors.add_line_glow`'s `n_glow` / `alpha` /
             `linewidth_step`. Default is False.
         **kwargs: Override any key in `FLOW_DEFAULT_OPTIONS`: `width_limits`
             (min/max line width in points, default `(1, 5)`), `width_scale`
@@ -113,7 +113,7 @@ class FlowGlyph(GeoMixin, Glyph):
         - Build flows and read back the width ordering:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.flow_glyph import FlowGlyph
+            >>> from cleopatra.glyphs.flow_glyph import FlowGlyph
             >>> paths = [
             ...     np.array([[0.0, 0.0], [1.0, 0.0]]),
             ...     np.array([[0.0, 1.0], [1.0, 1.0]]),
@@ -133,11 +133,11 @@ class FlowGlyph(GeoMixin, Glyph):
             ```
 
     See Also:
-        cleopatra.glyph.Glyph._prepare_scalar_mapping: Shared
+        cleopatra.glyphs.glyph.Glyph._prepare_scalar_mapping: Shared
             norm/colorbar/ticks pipeline used to colour by `values`.
-        cleopatra.styles.resolve_sizes: The value→size helper used for line
+        cleopatra.styling.styles.resolve_sizes: The value→size helper used for line
             width (shared with `ScatterGlyph`).
-        cleopatra.vector_glyph.VectorGlyph: Magnitude-coloured vector fields.
+        cleopatra.glyphs.vector_glyph.VectorGlyph: Magnitude-coloured vector fields.
     """
 
     #: Option keys this glyph accepts (see `Glyph.option_keys`/`filter_kwargs`).
@@ -175,14 +175,14 @@ class FlowGlyph(GeoMixin, Glyph):
         self.widths = widths
         self.cbar: Colorbar | None = None
         #: The width legend created by `plot` when `size_legend` is truthy
-        #: (None otherwise); built via `cleopatra.styles.width_legend`.
+        #: (None otherwise); built via `cleopatra.styling.styles.width_legend`.
         self.size_legend_artist: Legend | None = None
 
     def _resolve_linewidths(self) -> float | np.ndarray:
         """Resolve the per-path line widths for the collection.
 
         Returns the per-path widths mapped from `widths` when a `widths`
-        array was supplied (via `cleopatra.styles.resolve_sizes`, honouring
+        array was supplied (via `cleopatra.styling.styles.resolve_sizes`, honouring
         the `width_limits` / `width_scale` options), or the scalar
         `line_width` option when no `widths` were given.
 
@@ -207,7 +207,7 @@ class FlowGlyph(GeoMixin, Glyph):
         Picks representative magnitudes (`size_legend_values`, or the min /
         median / max of `widths` when unset), maps each to its plotted line
         width by interpolating the already-computed `(widths -> linewidth)`
-        mapping, and hands them to `cleopatra.styles.width_legend`.
+        mapping, and hands them to `cleopatra.styling.styles.width_legend`.
 
         Args:
             ax: The axes to attach the legend to.
@@ -243,7 +243,7 @@ class FlowGlyph(GeoMixin, Glyph):
         the colour scale, norm, ticks, and colorbar are resolved through
         `_prepare_scalar_mapping`; otherwise a single-colour collection is
         drawn with no colorbar. Line widths come from `widths` via
-        `cleopatra.styles.resolve_sizes`, falling back to the scalar
+        `cleopatra.styling.styles.resolve_sizes`, falling back to the scalar
         `line_width` option. If `size_legend` is truthy and `widths` were
         given, a width legend is drawn and stored on
         `self.size_legend_artist`.
@@ -277,7 +277,7 @@ class FlowGlyph(GeoMixin, Glyph):
             - Uncoloured flows draw no colorbar:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.flow_glyph import FlowGlyph
+                >>> from cleopatra.glyphs.flow_glyph import FlowGlyph
                 >>> paths = [np.array([[0.0, 0.0], [1.0, 1.0]])]
                 >>> glyph = FlowGlyph(paths)
                 >>> fig, ax, lc = glyph.plot()
@@ -288,7 +288,7 @@ class FlowGlyph(GeoMixin, Glyph):
             - Coloured flows expose the per-path values on the collection:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.flow_glyph import FlowGlyph
+                >>> from cleopatra.glyphs.flow_glyph import FlowGlyph
                 >>> paths = [
                 ...     np.array([[0.0, 0.0], [1.0, 1.0]]),
                 ...     np.array([[0.0, 1.0], [1.0, 0.0]]),
@@ -303,7 +303,7 @@ class FlowGlyph(GeoMixin, Glyph):
                 high stream-order channels sit over their tributaries:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.flow_glyph import FlowGlyph
+                >>> from cleopatra.glyphs.flow_glyph import FlowGlyph
                 >>> paths = [
                 ...     np.array([[0.0, 0.0], [1.0, 0.0]]),
                 ...     np.array([[0.0, 1.0], [1.0, 1.0]]),

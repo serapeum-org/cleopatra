@@ -6,13 +6,13 @@ shared scalar-mapping pipeline and a colorbar is attached. With no values (or
 `outline_only=True`) only the polygon outlines are drawn.
 
 The `edgecolor` option defaults to `"none"` so a value-filled choropleth renders
-borderless. Outline mode substitutes `cleopatra.polygon_glyph.OUTLINE_EDGECOLOR`
+borderless. Outline mode substitutes `cleopatra.glyphs.polygon_glyph.OUTLINE_EDGECOLOR`
 (black) for that default, since an unfilled polygon with a transparent edge would
 be invisible; pass an explicit `edgecolor` to override it.
 
 ## Class Documentation
 
-::: cleopatra.polygon_glyph.PolygonGlyph
+::: cleopatra.glyphs.polygon_glyph.PolygonGlyph
     options:
       show_root_heading: true
       show_source: true
@@ -24,7 +24,7 @@ be invisible; pass an explicit `edgecolor` to override it.
 
 ```python
 import numpy as np
-from cleopatra.polygon_glyph import PolygonGlyph
+from cleopatra.glyphs.polygon_glyph import PolygonGlyph
 
 polygons = [
     np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]]),

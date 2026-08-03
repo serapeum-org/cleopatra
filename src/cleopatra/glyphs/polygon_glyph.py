@@ -13,7 +13,7 @@ Examples:
     - Colour two triangles by value:
         ```python
         >>> import numpy as np
-        >>> from cleopatra.polygon_glyph import PolygonGlyph
+        >>> from cleopatra.glyphs.polygon_glyph import PolygonGlyph
         >>> polys = [
         ...     np.array([[0.0, 0.0], [1.0, 0.0], [0.5, 1.0]]),
         ...     np.array([[1.0, 0.0], [2.0, 0.0], [1.5, 1.0]]),
@@ -44,12 +44,12 @@ from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure
 from matplotlib.legend import Legend
 
-from cleopatra.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
-from cleopatra.colors import resolve_colormap
-from cleopatra.geo import GeoMixin
-from cleopatra.glyph import Glyph, _root_figure
-from cleopatra.styles import CLASSIFY_OPTIONS
-from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
+from cleopatra.styling.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
+from cleopatra.styling.colors import resolve_colormap
+from cleopatra.basemap.geo import GeoMixin
+from cleopatra.glyphs.glyph import Glyph, _root_figure
+from cleopatra.styling.styles import CLASSIFY_OPTIONS
+from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 #: Option keys for PolygonGlyph. `ticks_spacing` is `None` so the shared
 #: `_prepare_scalar_mapping` helper auto-derives it from the data.
@@ -103,7 +103,7 @@ class PolygonGlyph(GeoMixin, Glyph):
         - Inspect the value array carried by the collection:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.polygon_glyph import PolygonGlyph
+            >>> from cleopatra.glyphs.polygon_glyph import PolygonGlyph
             >>> polys = [
             ...     np.array([[0.0, 0.0], [1.0, 0.0], [0.5, 1.0]]),
             ...     np.array([[1.0, 0.0], [2.0, 0.0], [1.5, 1.0]]),
@@ -116,7 +116,7 @@ class PolygonGlyph(GeoMixin, Glyph):
             ```
 
     See Also:
-        cleopatra.glyph.Glyph._prepare_scalar_mapping: Shared
+        cleopatra.glyphs.glyph.Glyph._prepare_scalar_mapping: Shared
             norm/colorbar/ticks pipeline used for the filled path.
     """
 
@@ -208,7 +208,7 @@ class PolygonGlyph(GeoMixin, Glyph):
                 and its edges are opaque so the outlines are visible:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.polygon_glyph import PolygonGlyph
+                >>> from cleopatra.glyphs.polygon_glyph import PolygonGlyph
                 >>> polys = [np.array([[0.0, 0.0], [1.0, 0.0], [0.5, 1.0]])]
                 >>> glyph = PolygonGlyph(polys, values=np.array([5.0]))
                 >>> fig, ax, pc = glyph.plot(outline_only=True)

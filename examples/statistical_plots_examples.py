@@ -3,7 +3,7 @@ import matplotlib
 matplotlib.use("TkAgg")
 import numpy as np
 
-from cleopatra.statistical_glyph import StatisticalGlyph
+from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
 
 # %%
 np.random.seed(1)

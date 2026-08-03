@@ -2,7 +2,7 @@
 
 Covers:
 
-* `cleopatra.styles.classify` and its helpers `_scheme_edges` /
+* `cleopatra.styling.styles.classify` and its helpers `_scheme_edges` /
   `_fisher_jenks_edges` (the numpy-only schemes incl. native Fisher-Jenks,
   explicit edges, the `BoundaryNorm` output, and the error paths).
 * `Glyph._prepare_classified_mapping` and the `scheme` / `k` short-circuit
@@ -21,15 +21,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-import cleopatra.styles as styles_mod
-from cleopatra.array_glyph import ArrayGlyph
-from cleopatra.flow_glyph import FlowGlyph
-from cleopatra.glyph import Glyph
-from cleopatra.kde_glyph import KDEGlyph
-from cleopatra.mesh_glyph import MeshGlyph
-from cleopatra.polygon_glyph import PolygonGlyph
-from cleopatra.scatter_glyph import ScatterGlyph
-from cleopatra.styles import (
+import cleopatra.styling.styles as styles_mod
+from cleopatra.glyphs.array_glyph import ArrayGlyph
+from cleopatra.glyphs.flow_glyph import FlowGlyph
+from cleopatra.glyphs.glyph import Glyph
+from cleopatra.glyphs.kde_glyph import KDEGlyph
+from cleopatra.glyphs.mesh_glyph import MeshGlyph
+from cleopatra.glyphs.polygon_glyph import PolygonGlyph
+from cleopatra.glyphs.scatter_glyph import ScatterGlyph
+from cleopatra.styling.styles import (
     CLASSIFY_OPTIONS,
     JENKS_SCHEMES,
     NUMPY_SCHEMES,
@@ -37,8 +37,8 @@ from cleopatra.styles import (
     _scheme_edges,
     classify,
 )
-from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
-from cleopatra.vector_glyph import VectorGlyph
+from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
+from cleopatra.glyphs.vector_glyph import VectorGlyph
 
 
 @pytest.fixture(autouse=True)
@@ -120,7 +120,7 @@ class TestModuleConstants:
 
 
 class TestClassify:
-    """Tests for the public ``cleopatra.styles.classify`` function."""
+    """Tests for the public ``cleopatra.styling.styles.classify`` function."""
 
     @pytest.mark.parametrize(
         "scheme, expected",

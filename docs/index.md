@@ -166,7 +166,7 @@ See the [KDEGlyph reference](reference/kde-glyph.md).
 See the [Geo basemap methods reference](reference/geo.md), [Tiles reference](reference/tiles.md), and
 [Reference data reference](reference/reference-data.md).
 
-### `cleopatra.tiles` / `cleopatra.reference` — basemaps (optional)
+### `cleopatra.basemap.tiles` / `cleopatra.basemap.reference` — basemaps (optional)
 
 - `add_tiles(ax, ...)` overlays an XYZ web-tile basemap (OpenStreetMap, CartoDB, Esri, …) underneath your data —
   pure Python, no GDAL.

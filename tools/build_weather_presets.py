@@ -3,7 +3,7 @@
 
 This script is **not** part of the shipped package and is **not** run at import
 or install time. It is the one-off, maintainer-machine tool that derives
-``src/cleopatra/data/weather_presets.json`` from two open ECMWF sources, keyed
+``src/cleopatra/styling/data/weather_presets.json`` from two open ECMWF sources, keyed
 by GRIB shortName:
 
 - **ecmwf/magics** (Apache-2.0): the full operational parameter library, each
@@ -31,7 +31,7 @@ PyYAML in the maintainer environment before re-running.
 
 Re-run (from the repo root)::
 
-    python tools/build_weather_presets.py src/cleopatra/data/weather_presets.json [<magics_ref>] [<earthkit_ref>]
+    python tools/build_weather_presets.py src/cleopatra/styling/data/weather_presets.json [<magics_ref>] [<earthkit_ref>]
 
 ``<magics_ref>`` defaults to ``develop``, ``<earthkit_ref>`` defaults to ``main``.
 """

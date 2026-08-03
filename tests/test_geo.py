@@ -1,7 +1,7 @@
-"""Tests for cleopatra.geo.GeoMixin.
+"""Tests for cleopatra.basemap.geo.GeoMixin.
 
 Covers which glyphs inherit the basemap convenience methods, that the
-methods delegate to the standalone `cleopatra.tiles` / `cleopatra.reference`
+methods delegate to the standalone `cleopatra.basemap.tiles` / `cleopatra.basemap.reference`
 functions with the glyph's axes, the `ax=` override, and the
 no-axes-yet error. Delegation is checked with spies so no test needs the
 network or the `[tiles]` extra; one integration test exercises a real
@@ -29,11 +29,11 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.collections import LineCollection  # noqa: E402
 
-import cleopatra.reference as refmod  # noqa: E402
-import cleopatra.tiles as tilesmod  # noqa: E402
-from cleopatra.array_glyph import ArrayGlyph  # noqa: E402
-from cleopatra.flow_glyph import FlowGlyph  # noqa: E402
-from cleopatra.geo import (  # noqa: E402
+import cleopatra.basemap.reference as refmod  # noqa: E402
+import cleopatra.basemap.tiles as tilesmod  # noqa: E402
+from cleopatra.glyphs.array_glyph import ArrayGlyph  # noqa: E402
+from cleopatra.glyphs.flow_glyph import FlowGlyph  # noqa: E402
+from cleopatra.basemap.geo import (  # noqa: E402
     Basemap,
     Feature,
     GeoMixin,
@@ -43,13 +43,13 @@ from cleopatra.geo import (  # noqa: E402
     add_point_labels,
     available_map_styles,
 )
-from cleopatra.kde_glyph import KDEGlyph  # noqa: E402
-from cleopatra.line_glyph import LineGlyph  # noqa: E402
-from cleopatra.mesh_glyph import MeshGlyph  # noqa: E402
-from cleopatra.polygon_glyph import PolygonGlyph  # noqa: E402
-from cleopatra.scatter_glyph import ScatterGlyph  # noqa: E402
-from cleopatra.statistical_glyph import StatisticalGlyph  # noqa: E402
-from cleopatra.vector_glyph import VectorGlyph  # noqa: E402
+from cleopatra.glyphs.kde_glyph import KDEGlyph  # noqa: E402
+from cleopatra.glyphs.line_glyph import LineGlyph  # noqa: E402
+from cleopatra.glyphs.mesh_glyph import MeshGlyph  # noqa: E402
+from cleopatra.glyphs.polygon_glyph import PolygonGlyph  # noqa: E402
+from cleopatra.glyphs.scatter_glyph import ScatterGlyph  # noqa: E402
+from cleopatra.glyphs.statistical_glyph import StatisticalGlyph  # noqa: E402
+from cleopatra.glyphs.vector_glyph import VectorGlyph  # noqa: E402
 
 GEO_GLYPHS = [ArrayGlyph, MeshGlyph, VectorGlyph, FlowGlyph, PolygonGlyph, ScatterGlyph]
 NON_GEO_GLYPHS = [LineGlyph, StatisticalGlyph, KDEGlyph]
@@ -115,7 +115,7 @@ def test_add_relief_delegates(monkeypatch):
 
 def test_add_labels_delegates(monkeypatch):
     """add_labels forwards self.ax, points, and kwargs to geo.add_point_labels."""
-    import cleopatra.geo as geomod
+    import cleopatra.basemap.geo as geomod
 
     seen = {}
     monkeypatch.setattr(
@@ -139,7 +139,7 @@ def test_add_labels_no_axes_raises():
 
 
 class TestAddPointLabels:
-    """Tests for the standalone `cleopatra.geo.add_point_labels` function."""
+    """Tests for the standalone `cleopatra.basemap.geo.add_point_labels` function."""
 
     @pytest.fixture
     def ax(self):
@@ -868,8 +868,8 @@ class TestBasemap:
 
     def test_reexported_from_array_glyph(self):
         """`Basemap`/`Feature` are the same objects re-exported from array_glyph."""
-        from cleopatra.array_glyph import Basemap as B2
-        from cleopatra.array_glyph import Feature as F2
+        from cleopatra.glyphs.array_glyph import Basemap as B2
+        from cleopatra.glyphs.array_glyph import Feature as F2
 
         assert B2 is Basemap, 're-exports must be the same classes'
         assert F2 is Feature, 're-exports must be the same classes'

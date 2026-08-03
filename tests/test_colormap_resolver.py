@@ -1,6 +1,6 @@
 """Tests for the namespaced scientific-colormap resolver.
 
-Covers ``cleopatra.colors.resolve_colormap`` and its ``_require_cmap`` guard
+Covers ``cleopatra.styling.colors.resolve_colormap`` and its ``_require_cmap`` guard
 (the optional ``[science-colors]`` extra), plus the load-bearing invariant that
 resolving the default colormap preserves its name so the categorical-default
 fallback in ``Glyph._prepare_categorical_mapping`` keeps working.
@@ -18,8 +18,8 @@ import matplotlib as mpl
 import pytest
 from matplotlib.colors import Colormap
 
-from cleopatra.colors import _require_cmap, resolve_colormap
-from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
+from cleopatra.styling.colors import _require_cmap, resolve_colormap
+from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 
 @pytest.fixture(scope="function")
@@ -45,7 +45,7 @@ def without_cmap(monkeypatch):
 
 
 class TestResolveColormap:
-    """Tests for ``cleopatra.colors.resolve_colormap``."""
+    """Tests for ``cleopatra.styling.colors.resolve_colormap``."""
 
     def test_plain_name_resolves_via_matplotlib(self):
         """A plain matplotlib name resolves to the matching ``Colormap``.
@@ -79,7 +79,7 @@ class TestResolveColormap:
         def _boom(action):
             raise AssertionError(f"_require_cmap should not be called for a plain name; got {action!r}")
 
-        monkeypatch.setattr("cleopatra.colors._require_cmap", _boom)
+        monkeypatch.setattr("cleopatra.styling.colors._require_cmap", _boom)
         result = resolve_colormap("coolwarm_r")
         assert result.name == "coolwarm_r", f"expected 'coolwarm_r', got {result.name!r}"
 

@@ -23,7 +23,7 @@ earns its keep on diverging, categorical, and smoothing bespoke domain ramps.
 
 Examples:
     >>> import numpy as np
-    >>> from cleopatra.perceptual import srgb_to_lab, make_categorical
+    >>> from cleopatra.styling.perceptual import srgb_to_lab, make_categorical
     >>> bool(np.allclose(srgb_to_lab(np.array([1.0, 1.0, 1.0])), [100, 0, 0], atol=1e-3))
     True
     >>> len(make_categorical(8))
@@ -84,7 +84,7 @@ def srgb_to_lab(rgb: np.ndarray) -> np.ndarray:
     Examples:
         ```python
         >>> import numpy as np
-        >>> from cleopatra.perceptual import srgb_to_lab
+        >>> from cleopatra.styling.perceptual import srgb_to_lab
         >>> bool(np.allclose(srgb_to_lab(np.array([0.0, 0.0, 0.0])), [0, 0, 0], atol=1e-6))
         True
         >>> float(round(srgb_to_lab(np.array([1.0, 1.0, 1.0]))[0], 2))
@@ -115,7 +115,7 @@ def lab_to_srgb(lab: np.ndarray) -> np.ndarray:
     Examples:
         ```python
         >>> import numpy as np
-        >>> from cleopatra.perceptual import srgb_to_lab, lab_to_srgb
+        >>> from cleopatra.styling.perceptual import srgb_to_lab, lab_to_srgb
         >>> rgb = np.array([0.2, 0.6, 0.9])
         >>> bool(np.allclose(lab_to_srgb(srgb_to_lab(rgb)), rgb, atol=1e-6))
         True
@@ -156,7 +156,7 @@ def interp_perceptual(anchors: Sequence, n: int = 256) -> np.ndarray:
     Examples:
         ```python
         >>> import numpy as np
-        >>> from cleopatra.perceptual import interp_perceptual
+        >>> from cleopatra.styling.perceptual import interp_perceptual
         >>> lut = interp_perceptual(["#ffffff", "#ff6a00", "#2a0800"], n=16)
         >>> lut.shape
         (16, 3)
@@ -200,7 +200,7 @@ def perceptual_colormap(name: str, anchors: Sequence, n: int = 256) -> LinearSeg
 
     Examples:
         ```python
-        >>> from cleopatra.perceptual import perceptual_colormap
+        >>> from cleopatra.styling.perceptual import perceptual_colormap
         >>> cmap = perceptual_colormap("dust", ["#ffffff", "#ff6a00", "#2a0800"])
         >>> cmap.name
         'dust'
@@ -246,7 +246,7 @@ def make_diverging(
 
     Examples:
         ```python
-        >>> from cleopatra.perceptual import make_diverging, srgb_to_lab
+        >>> from cleopatra.styling.perceptual import make_diverging, srgb_to_lab
         >>> cmap = make_diverging("#762a83", "#1b7837")
         >>> cmap.N
         256
@@ -299,7 +299,7 @@ def make_categorical(
 
     Examples:
         ```python
-        >>> from cleopatra.perceptual import make_categorical
+        >>> from cleopatra.styling.perceptual import make_categorical
         >>> cols = make_categorical(5)
         >>> len(cols) == len(set(cols)) == 5  # all distinct
         True
@@ -353,7 +353,7 @@ def perceptual_uniformity(cmap: Colormap | np.ndarray, n: int = 256) -> float:
 
     Examples:
         ```python
-        >>> from cleopatra.perceptual import perceptual_colormap, perceptual_uniformity
+        >>> from cleopatra.styling.perceptual import perceptual_colormap, perceptual_uniformity
         >>> from matplotlib.colors import LinearSegmentedColormap
         >>> anchors = ["#ffffff", "#ff5fc9", "#200018"]
         >>> lab = perceptual_uniformity(perceptual_colormap("p", anchors))

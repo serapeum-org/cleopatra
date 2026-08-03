@@ -7,11 +7,11 @@ import warnings
 import numpy as np
 import pytest
 
-from cleopatra.colors import DATA_STYLES, convert_units
+from cleopatra.styling.colors import DATA_STYLES, convert_units
 
 
 class TestConvertUnits:
-    """Tests for ``cleopatra.colors.convert_units``."""
+    """Tests for ``cleopatra.styling.colors.convert_units``."""
 
     @pytest.mark.parametrize(
         "value, src, dst, expected",

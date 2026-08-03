@@ -32,7 +32,7 @@ class ColorScale(StrEnum):
     Examples:
         - The members behave like their string values:
             ```python
-            >>> from cleopatra.styles import ColorScale
+            >>> from cleopatra.styling.styles import ColorScale
             >>> ColorScale.LINEAR == "linear"
             True
             >>> str(ColorScale.POWER)
@@ -41,7 +41,7 @@ class ColorScale(StrEnum):
             ```
         - Construction is case-insensitive; bad values raise `ValueError`:
             ```python
-            >>> from cleopatra.styles import ColorScale
+            >>> from cleopatra.styling.styles import ColorScale
             >>> ColorScale("Boundary-Norm") is ColorScale.BOUNDARY_NORM
             True
             >>> ColorScale("nope")
@@ -156,7 +156,7 @@ class Styles:
 
     Examples:
     ```python
-    >>> from cleopatra.styles import Styles
+    >>> from cleopatra.styling.styles import Styles
     >>> # Get a line style by name
     >>> solid_line = Styles.get_line_style("solid")
     >>> # Get a line style by index
@@ -244,7 +244,7 @@ class Styles:
         Examples:
         Get a line style by name:
         ```python
-        >>> from cleopatra.styles import Styles
+        >>> from cleopatra.styling.styles import Styles
         >>> solid = Styles.get_line_style("solid")
         >>> solid
         (0, ())
@@ -307,7 +307,7 @@ class Styles:
         Examples:
         Get a marker style by index:
         ```python
-        >>> from cleopatra.styles import Styles
+        >>> from cleopatra.styling.styles import Styles
         >>> # Get the first marker style
         >>> style0 = Styles.get_marker_style(0)
         >>> style0
@@ -367,7 +367,7 @@ class Scale:
     Examples:
         Apply logarithmic scaling:
     ```python
-    >>> from cleopatra.styles import Scale
+    >>> from cleopatra.styling.styles import Scale
     >>> Scale.log_scale(100)
     np.float64(2.0)
     >>> Scale.log_scale(1000)
@@ -416,7 +416,7 @@ class Scale:
         Examples:
         Scale a single value:
         ```python
-        >>> from cleopatra.styles import Scale
+        >>> from cleopatra.styling.styles import Scale
         >>> Scale.log_scale(100)
         np.float64(2.0)
         >>> Scale.log_scale(1000)
@@ -461,7 +461,7 @@ class Scale:
         Examples:
         Create a power scaling function and apply it to values:
         ```python
-        >>> from cleopatra.styles import Scale
+        >>> from cleopatra.styling.styles import Scale
         >>> # Create a scaling function with minimum value -10
         >>> scale_func = Scale.power_scale(-10)
         >>> # Apply to a single value
@@ -517,7 +517,7 @@ class Scale:
         Examples:
         Create and use the constant scaling function:
         ```python
-        >>> from cleopatra.styles import Scale
+        >>> from cleopatra.styling.styles import Scale
         >>> scale_func = Scale.identity_scale(0, 100)  # min_val and max_val are ignored
         >>> scale_func(5)  # Returns 2 regardless of input
         2
@@ -579,7 +579,7 @@ class Scale:
         Examples:
         Rescale a value from [0, 10] to [0, 100]:
         ```python
-        >>> from cleopatra.styles import Scale
+        >>> from cleopatra.styling.styles import Scale
         >>> Scale.rescale(5, 0, 10, 0, 100)  # 5 is 50% of [0,10], so 50% of [0,100] is 50
         50.0
 
@@ -665,7 +665,7 @@ def resolve_sizes(
         - Linear mapping spans the output range, smallest→`out_min`:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.styles import resolve_sizes
+            >>> from cleopatra.styling.styles import resolve_sizes
             >>> sizes = resolve_sizes(np.array([0.0, 5.0, 10.0]), 10.0, 200.0)
             >>> [float(s) for s in sizes]
             [10.0, 105.0, 200.0]
@@ -674,7 +674,7 @@ def resolve_sizes(
         - The mapping is monotonic, so ranking is preserved:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.styles import resolve_sizes
+            >>> from cleopatra.styling.styles import resolve_sizes
             >>> sizes = resolve_sizes(np.array([3.0, 1.0, 2.0]), 0.0, 1.0)
             >>> bool(sizes[1] < sizes[2] < sizes[0])
             True
@@ -683,7 +683,7 @@ def resolve_sizes(
         - All-equal magnitudes map to the output midpoint:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.styles import resolve_sizes
+            >>> from cleopatra.styling.styles import resolve_sizes
             >>> [float(s) for s in resolve_sizes(np.full(3, 4.0), 10.0, 50.0)]
             [30.0, 30.0, 30.0]
 
@@ -763,7 +763,7 @@ class MidpointNormalize(colors.Normalize):
     ```python
     >>> import numpy as np
     >>> import matplotlib.pyplot as plt
-    >>> from cleopatra.styles import MidpointNormalize
+    >>> from cleopatra.styling.styles import MidpointNormalize
     >>> # Create some data with positive and negative values
     >>> data = np.linspace(-10, 10, 100)
     >>> # Create a normalization with midpoint at 0
@@ -844,7 +844,7 @@ class MidpointNormalize(colors.Normalize):
         Examples:
         Create a normalization with default parameters:
         ```python
-        >>> from cleopatra.styles import MidpointNormalize
+        >>> from cleopatra.styling.styles import MidpointNormalize
         >>> norm = MidpointNormalize()  # vmin, vmax, midpoint will be determined from data
 
         ```
@@ -896,7 +896,7 @@ class MidpointNormalize(colors.Normalize):
         Examples:
         - Normalize values with a zero midpoint:
         ```python
-        >>> from cleopatra.styles import MidpointNormalize
+        >>> from cleopatra.styling.styles import MidpointNormalize
         >>> norm = MidpointNormalize(vmin=-10, vmax=10, midpoint=0)
         >>> # Values below midpoint are mapped to [0, 0.5]
         >>> norm(-10)  # vmin maps to 0
@@ -990,7 +990,7 @@ def disjoint_legend(
         - Build a three-class legend and read back its labels:
             ```python
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.styles import disjoint_legend
+            >>> from cleopatra.styling.styles import disjoint_legend
             >>> fig, ax = plt.subplots()
             >>> legend = disjoint_legend(
             ...     ax,
@@ -1004,7 +1004,7 @@ def disjoint_legend(
         - Forward `Axes.legend` kwargs such as a title and column count:
             ```python
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.styles import disjoint_legend
+            >>> from cleopatra.styling.styles import disjoint_legend
             >>> fig, ax = plt.subplots()
             >>> legend = disjoint_legend(
             ...     ax, ["red", "blue"], ["hot", "cold"], title="Class", ncol=2
@@ -1016,7 +1016,7 @@ def disjoint_legend(
         - Mismatched lengths raise `ValueError`:
             ```python
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.styles import disjoint_legend
+            >>> from cleopatra.styling.styles import disjoint_legend
             >>> fig, ax = plt.subplots()
             >>> disjoint_legend(ax, ["red", "blue"], ["only-one"])
             Traceback (most recent call last):
@@ -1083,7 +1083,7 @@ def size_legend(
         - Build a three-entry size legend and read back its labels:
             ```python
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.styles import size_legend
+            >>> from cleopatra.styling.styles import size_legend
             >>> fig, ax = plt.subplots()
             >>> legend = size_legend(ax, [20.0, 100.0, 200.0], ["low", "mid", "high"])
             >>> [t.get_text() for t in legend.get_texts()]
@@ -1093,7 +1093,7 @@ def size_legend(
         - Larger areas produce larger proxy markers (diameters in points):
             ```python
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.styles import size_legend
+            >>> from cleopatra.styling.styles import size_legend
             >>> fig, ax = plt.subplots()
             >>> legend = size_legend(ax, [16.0, 64.0], ["small", "big"])
             >>> handles = legend.legend_handles
@@ -1161,7 +1161,7 @@ def width_legend(
         - Build a width legend and read back its labels:
             ```python
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.styles import width_legend
+            >>> from cleopatra.styling.styles import width_legend
             >>> fig, ax = plt.subplots()
             >>> legend = width_legend(ax, [1.0, 3.0, 5.0], ["low", "mid", "high"])
             >>> [t.get_text() for t in legend.get_texts()]
@@ -1171,7 +1171,7 @@ def width_legend(
         - Larger magnitudes give thicker proxy lines:
             ```python
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.styles import width_legend
+            >>> from cleopatra.styling.styles import width_legend
             >>> fig, ax = plt.subplots()
             >>> legend = width_legend(ax, [1.0, 4.0], ["thin", "thick"])
             >>> handles = legend.legend_handles
@@ -1227,7 +1227,7 @@ def colorbar_legend(
         - Build a colorbar for a coloured scatter and read its label:
             ```python
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.styles import colorbar_legend
+            >>> from cleopatra.styling.styles import colorbar_legend
             >>> fig, ax = plt.subplots()
             >>> sc = ax.scatter([0, 1, 2], [0, 1, 0], c=[10, 20, 30])
             >>> cbar = colorbar_legend(sc, ax, label="depth")
@@ -1298,7 +1298,7 @@ def histogram_legend(
         - Histogram legend from explicit values and a colormap:
             ```python
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.styles import histogram_legend
+            >>> from cleopatra.styling.styles import histogram_legend
             >>> fig, ax = plt.subplots()
             >>> bars = histogram_legend(
             ...     ax, [0.0, 1.0, 1.0, 2.0, 2.0, 2.0], cmap="viridis", bins=3
@@ -1310,7 +1310,7 @@ def histogram_legend(
         - Inherit cmap/norm/data straight from a mappable:
             ```python
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.styles import histogram_legend
+            >>> from cleopatra.styling.styles import histogram_legend
             >>> fig, (ax, legend_ax) = plt.subplots(1, 2)
             >>> sc = ax.scatter([0, 1, 2, 3], [0, 1, 0, 1], c=[1, 2, 3, 4], cmap="plasma")
             >>> bars = histogram_legend(legend_ax, mappable=sc, bins=4)
@@ -1384,7 +1384,7 @@ def swatch_extend_prefixes(norm: colors.Normalize | None) -> tuple[str, str]:
         - A two-sided contour scale caps both ends; a continuous norm keeps `≥`:
             ```python
             >>> import matplotlib.colors as mc
-            >>> from cleopatra.styles import swatch_extend_prefixes
+            >>> from cleopatra.styling.styles import swatch_extend_prefixes
             >>> swatch_extend_prefixes(mc.BoundaryNorm([0, 1, 2], 256, extend="both"))
             ('≤', '≥')
             >>> swatch_extend_prefixes(mc.BoundaryNorm([0, 1, 2], 2))
@@ -1434,7 +1434,7 @@ def swatch_legend(
     Args:
         ax: The axes to attach the swatch to (an inset axes is created on it).
         cmap: Colormap name or object for the gradient, e.g.
-            `HAZE_COLORMAPS["dust"]` (`cleopatra.colors`).
+            `HAZE_COLORMAPS["dust"]` (`cleopatra.styling.colors`).
         label: Text drawn centred on the gradient bar.
         vmin: Value at the left end of the bar. Defaults to `0.0`.
         vmax: Value at the right end of the bar. Defaults to `1.0`.
@@ -1472,7 +1472,7 @@ def swatch_legend(
         - Draw a swatch and read back its label and endpoint text:
             ```python
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.styles import swatch_legend
+            >>> from cleopatra.styling.styles import swatch_legend
             >>> fig, ax = plt.subplots()
             >>> swatch = swatch_legend(ax, "viridis", "Dust", vmax=1.0)
             >>> [t.get_text() for t in swatch.texts]
@@ -1483,7 +1483,7 @@ def swatch_legend(
           and composes naturally with anything else drawn on `ax`:
             ```python
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.styles import swatch_legend
+            >>> from cleopatra.styling.styles import swatch_legend
             >>> fig, ax = plt.subplots()
             >>> swatch = swatch_legend(ax, "plasma", "Organic Matter")
             >>> swatch in ax.child_axes
@@ -1492,7 +1492,7 @@ def swatch_legend(
             ```
 
     See Also:
-        alpha_scaled_image: `cleopatra.colors` primitive this swatch is
+        alpha_scaled_image: `cleopatra.styling.colors` primitive this swatch is
             designed to label.
         colorbar_legend: A full colorbar with tick marks, for a single layer.
     """
@@ -1631,7 +1631,7 @@ def apply_blank_canvas(ax: Axes, facecolor: str = "black") -> Axes:
         - Ticks and spines are removed, and the background is set:
             ```python
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.styles import apply_blank_canvas
+            >>> from cleopatra.styling.styles import apply_blank_canvas
             >>> fig, ax = plt.subplots()
             >>> _ = apply_blank_canvas(ax)
             >>> ax.get_xticks().size
@@ -1645,7 +1645,7 @@ def apply_blank_canvas(ax: Axes, facecolor: str = "black") -> Axes:
         - A custom `facecolor` is applied to both the axes and the figure:
             ```python
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.styles import apply_blank_canvas
+            >>> from cleopatra.styling.styles import apply_blank_canvas
             >>> fig, ax = plt.subplots()
             >>> _ = apply_blank_canvas(ax, facecolor="navy")
             >>> ax.get_facecolor()
@@ -1654,7 +1654,7 @@ def apply_blank_canvas(ax: Axes, facecolor: str = "black") -> Axes:
             ```
 
     See Also:
-        cleopatra.geo.REFERENCE_MAP_STYLES: A less minimal chrome preset
+        cleopatra.basemap.geo.REFERENCE_MAP_STYLES: A less minimal chrome preset
             (visible coastlines, ticks, and a frame) for a flat map.
     """
     ax.set_xticks([])
@@ -1749,7 +1749,7 @@ def classify(
         - Equal-interval edges on a 0–10 ramp:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.styles import classify
+            >>> from cleopatra.styling.styles import classify
             >>> edges, norm = classify(np.arange(11.0), "equal_interval", k=5)
             >>> [float(e) for e in edges]
             [0.0, 2.0, 4.0, 6.0, 8.0, 10.0]
@@ -1760,7 +1760,7 @@ def classify(
         - Quantile edges put equal counts in each class:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.styles import classify
+            >>> from cleopatra.styling.styles import classify
             >>> edges, _ = classify(np.arange(100.0), "quantiles", k=4)
             >>> [float(e) for e in edges]
             [0.0, 24.75, 49.5, 74.25, 99.0]
@@ -1769,7 +1769,7 @@ def classify(
         - An explicit edge sequence is used verbatim (sorted):
             ```python
             >>> import numpy as np
-            >>> from cleopatra.styles import classify
+            >>> from cleopatra.styling.styles import classify
             >>> edges, _ = classify(np.arange(11.0), [10.0, 0.0, 5.0])
             >>> [float(e) for e in edges]
             [0.0, 5.0, 10.0]
@@ -1777,7 +1777,7 @@ def classify(
             ```
         - An unknown scheme name is rejected:
             ```python
-            >>> from cleopatra.styles import classify
+            >>> from cleopatra.styling.styles import classify
             >>> classify([1.0, 2.0, 3.0], "rainbow")
             Traceback (most recent call last):
                 ...
@@ -1856,7 +1856,7 @@ def categorize(
     Examples:
         - Distinct integer codes get one colour each, sorted ascending:
             ```python
-            >>> from cleopatra.styles import categorize
+            >>> from cleopatra.styling.styles import categorize
             >>> categories, palette = categorize([3, 1, 2, 1])
             >>> list(categories)
             [1, 2, 3]
@@ -1867,7 +1867,7 @@ def categorize(
         - String labels are sorted alphabetically; `None`/`NaN` are dropped:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.styles import categorize
+            >>> from cleopatra.styling.styles import categorize
             >>> categories, palette = categorize(
             ...     ["urban", "water", None, "forest", np.nan]
             ... )
@@ -1877,7 +1877,7 @@ def categorize(
             ```
         - More categories than the cmap's colours cycles back to the start:
             ```python
-            >>> from cleopatra.styles import categorize
+            >>> from cleopatra.styling.styles import categorize
             >>> categories, palette = categorize(range(12), cmap="tab10")
             >>> palette[0] == palette[10]
             True
@@ -1885,7 +1885,7 @@ def categorize(
             ```
         - An all-null input has no category to assign, so it is rejected:
             ```python
-            >>> from cleopatra.styles import categorize
+            >>> from cleopatra.styling.styles import categorize
             >>> categorize([None, None])
             Traceback (most recent call last):
                 ...
@@ -1895,7 +1895,7 @@ def categorize(
         - A ragged (non-rectangular) sequence of non-hashable entries raises
             `TypeError`, since numpy cannot flatten it into scalar elements:
             ```python
-            >>> from cleopatra.styles import categorize
+            >>> from cleopatra.styling.styles import categorize
             >>> categorize([[1, 2], [3, 4, 5], [1, 2]])
             Traceback (most recent call last):
                 ...
@@ -1906,7 +1906,7 @@ def categorize(
     See Also:
         classify: The continuous-range counterpart (bins a numeric range
             instead of mapping distinct values).
-        cleopatra.glyph.Glyph._prepare_categorical_mapping: Turns this
+        cleopatra.glyphs.glyph.Glyph._prepare_categorical_mapping: Turns this
             function's categories/palette into per-element integer codes
             plus a matching `ListedColormap` + `BoundaryNorm`.
         disjoint_legend: The legend primitive that pairs with a categorical

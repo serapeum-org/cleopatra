@@ -198,21 +198,21 @@ def _build_ffmpeg_extra_args(
     Examples:
         - Defaults produce just the pad filter and pixel format:
             ```python
-            >>> from cleopatra.animation import _build_ffmpeg_extra_args
+            >>> from cleopatra.glyphs.animation import _build_ffmpeg_extra_args
             >>> _build_ffmpeg_extra_args("yuv420p", None, None, None)
             ['-vf', 'pad=ceil(iw/2)*2:ceil(ih/2)*2', '-pix_fmt', 'yuv420p']
 
             ```
         - A CRF and preset are appended after the pixel format:
             ```python
-            >>> from cleopatra.animation import _build_ffmpeg_extra_args
+            >>> from cleopatra.glyphs.animation import _build_ffmpeg_extra_args
             >>> _build_ffmpeg_extra_args("yuv420p", 26, "slow", None)[4:]
             ['-crf', '26', '-preset', 'slow']
 
             ```
         - A caller ``-vf`` is merged into one chain with the pad applied last:
             ```python
-            >>> from cleopatra.animation import _build_ffmpeg_extra_args
+            >>> from cleopatra.glyphs.animation import _build_ffmpeg_extra_args
             >>> _build_ffmpeg_extra_args("yuv420p", None, None, ["-vf", "scale=320:-1"])[:2]
             ['-vf', 'scale=320:-1,pad=ceil(iw/2)*2:ceil(ih/2)*2']
 
@@ -337,7 +337,7 @@ def save_animation(
             >>> import matplotlib.pyplot as plt
             >>> from pathlib import Path
             >>> from matplotlib.animation import FuncAnimation
-            >>> from cleopatra.animation import save_animation
+            >>> from cleopatra.glyphs.animation import save_animation
             >>> tmp = tempfile.mkdtemp()
             >>> fig, ax = plt.subplots()
             >>> (line,) = ax.plot([0, 1], [0, 0])
@@ -357,7 +357,7 @@ def save_animation(
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
             >>> from matplotlib.animation import FuncAnimation
-            >>> from cleopatra.animation import save_animation
+            >>> from cleopatra.glyphs.animation import save_animation
             >>> tmp = tempfile.mkdtemp()
             >>> fig, ax = plt.subplots()
             >>> (line,) = ax.plot([0, 1], [0, 0])
@@ -375,7 +375,7 @@ def save_animation(
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
             >>> from matplotlib.animation import FuncAnimation
-            >>> from cleopatra.animation import save_animation
+            >>> from cleopatra.glyphs.animation import save_animation
             >>> tmp = tempfile.mkdtemp()
             >>> fig, ax = plt.subplots()
             >>> (line,) = ax.plot([0, 1], [0, 0])
@@ -480,7 +480,7 @@ def to_bytes(anim: FuncAnimation, fmt: str = "gif", fps: int = 2, **kwargs) -> b
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
             >>> from matplotlib.animation import FuncAnimation
-            >>> from cleopatra.animation import to_bytes
+            >>> from cleopatra.glyphs.animation import to_bytes
             >>> fig, ax = plt.subplots()
             >>> (line,) = ax.plot([0, 1], [0, 0])
             >>> anim = FuncAnimation(fig, lambda i: (line,), frames=2)
@@ -496,7 +496,7 @@ def to_bytes(anim: FuncAnimation, fmt: str = "gif", fps: int = 2, **kwargs) -> b
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
             >>> from matplotlib.animation import FuncAnimation
-            >>> from cleopatra.animation import to_bytes
+            >>> from cleopatra.glyphs.animation import to_bytes
             >>> fig, ax = plt.subplots()
             >>> (line,) = ax.plot([0, 1], [0, 0])
             >>> anim = FuncAnimation(fig, lambda i: (line,), frames=2)
@@ -510,7 +510,7 @@ def to_bytes(anim: FuncAnimation, fmt: str = "gif", fps: int = 2, **kwargs) -> b
             ```python
             >>> from unittest.mock import MagicMock
             >>> from matplotlib.animation import FuncAnimation
-            >>> from cleopatra.animation import to_bytes
+            >>> from cleopatra.glyphs.animation import to_bytes
             >>> to_bytes(MagicMock(spec=FuncAnimation), fmt="webm")  # doctest: +ELLIPSIS
             Traceback (most recent call last):
                 ...
@@ -564,7 +564,7 @@ def to_gif(anim: FuncAnimation, fps: int = 2, **kwargs) -> bytes:
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
             >>> from matplotlib.animation import FuncAnimation
-            >>> from cleopatra.animation import to_gif
+            >>> from cleopatra.glyphs.animation import to_gif
             >>> fig, ax = plt.subplots()
             >>> (line,) = ax.plot([0, 1], [0, 0])
             >>> anim = FuncAnimation(fig, lambda i: (line,), frames=2)
@@ -583,7 +583,7 @@ def to_gif(anim: FuncAnimation, fps: int = 2, **kwargs) -> bytes:
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
             >>> from matplotlib.animation import FuncAnimation
-            >>> from cleopatra.animation import to_gif
+            >>> from cleopatra.glyphs.animation import to_gif
             >>> fig, ax = plt.subplots()
             >>> (line,) = ax.plot([0, 1], [0, 0])
             >>> anim = FuncAnimation(fig, lambda i: (line,), frames=3)
@@ -630,7 +630,7 @@ def to_mp4(anim: FuncAnimation, fps: int = 2, **kwargs) -> bytes:
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
             >>> from matplotlib.animation import FuncAnimation
-            >>> from cleopatra.animation import to_mp4
+            >>> from cleopatra.glyphs.animation import to_mp4
             >>> fig, ax = plt.subplots()
             >>> (line,) = ax.plot([0, 1], [0, 0])
             >>> anim = FuncAnimation(fig, lambda i: (line,), frames=2)
@@ -646,7 +646,7 @@ def to_mp4(anim: FuncAnimation, fps: int = 2, **kwargs) -> bytes:
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
             >>> from matplotlib.animation import FuncAnimation
-            >>> from cleopatra.animation import to_mp4
+            >>> from cleopatra.glyphs.animation import to_mp4
             >>> fig, ax = plt.subplots()
             >>> (line,) = ax.plot([0, 1], [0, 0])
             >>> anim = FuncAnimation(fig, lambda i: (line,), frames=2)
@@ -692,7 +692,7 @@ def embed_gif(anim: FuncAnimation, fps: int = 2) -> Image:
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
             >>> from matplotlib.animation import FuncAnimation
-            >>> from cleopatra.animation import embed_gif
+            >>> from cleopatra.glyphs.animation import embed_gif
             >>> fig, ax = plt.subplots()
             >>> (line,) = ax.plot([0, 1], [0, 0])
             >>> anim = FuncAnimation(fig, lambda i: (line,), frames=2)
@@ -711,7 +711,7 @@ def embed_gif(anim: FuncAnimation, fps: int = 2) -> Image:
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
             >>> from matplotlib.animation import FuncAnimation
-            >>> from cleopatra.animation import embed_gif
+            >>> from cleopatra.glyphs.animation import embed_gif
             >>> fig, ax = plt.subplots()
             >>> (line,) = ax.plot([0, 1], [0, 0])
             >>> anim = FuncAnimation(fig, lambda i: (line,), frames=2)
