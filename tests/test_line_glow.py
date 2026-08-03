@@ -191,8 +191,9 @@ class TestLineGlyphGlow:
             ``TypeError``.
         """
         x = np.linspace(0, 1, 10)
+        glyph = LineGlyph(x, np.sin(x), glow={"bad": 1})
         with pytest.raises(ValueError, match=r"unknown glow option"):
-            LineGlyph(x, np.sin(x), glow={"bad": 1}).line()
+            glyph.line()
         plt.close("all")
 
 

@@ -75,8 +75,9 @@ class TestArrayGlyphProjection:
             ``projection='globe'`` is rejected before any drawing.
         """
         data, _lon, _lat = field
+        glyph = ArrayGlyph(data, projection="globe")
         with pytest.raises(ValueError, match=r"1-D lon/lat"):
-            ArrayGlyph(data, projection="globe").plot()
+            glyph.plot()
         plt.close("all")
 
     def test_two_dimensional_coords_projection_raises(self, field):
@@ -88,8 +89,9 @@ class TestArrayGlyphProjection:
         """
         data, lon, lat = field
         lon2d, lat2d = np.meshgrid(lon, lat)
+        glyph = ArrayGlyph(data, coords=(lon2d, lat2d), projection="globe")
         with pytest.raises(ValueError, match=r"1-D lon/lat"):
-            ArrayGlyph(data, coords=(lon2d, lat2d), projection="globe").plot()
+            glyph.plot()
         plt.close("all")
 
     def test_no_projection_is_unchanged(self, field):
