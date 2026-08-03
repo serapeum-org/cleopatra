@@ -1011,8 +1011,14 @@ class ArrayGlyph(GeoMixin, Glyph):
                         Title of the plot, by default 'Array Plot'.
                     title_size : int, optional
                         Title font size, by default 15.
-                    cmap : str, optional
-                        Colormap name, by default 'coolwarm_r'.
+                    cmap : str or matplotlib.colors.Colormap, optional
+                        Colormap, by default 'coolwarm_r'. A plain matplotlib
+                        name (e.g. 'viridis') or a `Colormap` object is used
+                        as-is; a **namespaced** name such as 'cmocean:thermal'
+                        or 'crameri:batlow' is resolved via the optional `cmap`
+                        aggregator — install the `[science-colors]` extra
+                        (`pip install cleopatra[science-colors]`). The `_r`
+                        reverse suffix works on both forms.
                     kind : str, optional
                         Render kind. One of `"auto"`, `"imshow"`,
                         `"pcolormesh"`, `"contour"`, `"contourf"`.
@@ -2850,8 +2856,14 @@ class ArrayGlyph(GeoMixin, Glyph):
                         Title of the plot, by default 'Array Plot'.
                     title_size : int, optional
                         Title font size, by default 15.
-                    cmap : str, optional
-                        Colormap name, by default 'coolwarm_r'.
+                    cmap : str or matplotlib.colors.Colormap, optional
+                        Colormap, by default 'coolwarm_r'. A plain matplotlib
+                        name (e.g. 'viridis') or a `Colormap` object is used
+                        as-is; a **namespaced** name such as 'cmocean:thermal'
+                        or 'crameri:batlow' is resolved via the optional `cmap`
+                        aggregator — install the `[science-colors]` extra
+                        (`pip install cleopatra[science-colors]`). The `_r`
+                        reverse suffix works on both forms.
                     vmin : float, optional
                         Minimum value for color scaling, by default min(array).
                     vmax : float, optional
@@ -4027,8 +4039,14 @@ class ArrayGlyph(GeoMixin, Glyph):
                         Title of the plot, by default 'Array Plot'.
                     title_size : int, optional
                         Title font size, by default 15.
-                    cmap : str, optional
-                        Colormap name, by default 'coolwarm_r'.
+                    cmap : str or matplotlib.colors.Colormap, optional
+                        Colormap, by default 'coolwarm_r'. A plain matplotlib
+                        name (e.g. 'viridis') or a `Colormap` object is used
+                        as-is; a **namespaced** name such as 'cmocean:thermal'
+                        or 'crameri:batlow' is resolved via the optional `cmap`
+                        aggregator — install the `[science-colors]` extra
+                        (`pip install cleopatra[science-colors]`). The `_r`
+                        reverse suffix works on both forms.
                     vmin : float, optional
                         Minimum value for color scaling, by default min(array).
                     vmax : float, optional
