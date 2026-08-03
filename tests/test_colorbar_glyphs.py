@@ -139,3 +139,39 @@ def test_loose_cbar_kwarg_is_deprecated(name):
     _, _, _, loose = GLYPHS[name]
     with pytest.warns(DeprecationWarning, match=r"cbar_label.*ColorBar\(label="):
         loose()
+
+
+@pytest.mark.parametrize("name", list(GLYPHS))
+def test_colorbar_spec_ticks_spacing_reaches_render(name):
+    """`colorbar=ColorBar(ticks_spacing=...)` is honored on every glyph (#239).
+
+    Args:
+        name: The glyph type under test.
+
+    Test scenario:
+        A spec-provided tick spacing survives to the resolved options rather
+        than being overwritten by a glyph's auto-computed value -- the MeshGlyph
+        regression (H1) this guards against.
+    """
+    make, draw, _, _ = GLYPHS[name]
+    glyph = make()
+    draw(glyph, ColorBar(ticks_spacing=2.5))
+    got = glyph.default_options["ticks_spacing"]
+    assert got == 2.5, f"{name}: spec ticks_spacing not honored, got {got}"
+
+
+def test_mesh_animate_colorbar_spec_and_suppression():
+    """`MeshGlyph.animate(colorbar=...)` honors the spec and suppresses on False (#239).
+
+    Test scenario:
+        The animate path -- covered only for plot elsewhere -- must apply a
+        ColorBar spec (orientation + ticks_spacing) and drop the bar on False.
+    """
+    frames = [_MESH_DATA, _MESH_DATA * 2]
+    g = MeshGlyph(_MESH_NX, _MESH_NY, _MESH_FACES)
+    g.animate(frames, time=[0, 1], colorbar=ColorBar(orientation="horizontal", ticks_spacing=2.5))
+    assert g._cbar is not None and g._cbar.orientation == "horizontal", "animate spec orientation not applied"
+    assert g.default_options["ticks_spacing"] == 2.5, "animate spec ticks_spacing not honored"
+    g2 = MeshGlyph(_MESH_NX, _MESH_NY, _MESH_FACES)
+    g2.animate(frames, time=[0, 1], colorbar=False)
+    assert getattr(g2, "_cbar", None) is None, "animate colorbar=False should suppress the bar"

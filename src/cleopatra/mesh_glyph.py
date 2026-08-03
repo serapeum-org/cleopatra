@@ -971,10 +971,9 @@ class MeshGlyph(GeoMixin, Glyph):
         # A typed `colorbar=` spec configures the bar and then behaves like
         # `colorbar=True` for the draw/categorical logic below; `None` also
         # draws (the historical default), only `False` suppresses (issue #239).
-        if isinstance(colorbar, ColorBar):
-            self.default_options.update(_resolve_colorbar(colorbar))
-            colorbar = True
-        elif colorbar is None:
+        resolved_colorbar = _resolve_colorbar(colorbar) if isinstance(colorbar, ColorBar) else {}
+        self.default_options.update(resolved_colorbar)
+        if colorbar is not False:
             colorbar = True
 
         # The reset above drops `hillshade`/`style`; restore each unless this
@@ -1016,7 +1015,9 @@ class MeshGlyph(GeoMixin, Glyph):
         self._vmax = self.default_options["vmax"]
 
         # Compute ticks_spacing and write it to default_options for get_ticks().
-        if "ticks_spacing" not in option_kwargs:
+        # A ColorBar(ticks_spacing=...) spec arrives via the merge above (not
+        # option_kwargs), so honour it too rather than overwriting it (H1/#239).
+        if "ticks_spacing" not in option_kwargs and "ticks_spacing" not in resolved_colorbar:
             spacing = (self._vmax - self._vmin) / 10
             self.default_options["ticks_spacing"] = max(spacing, 1e-10)
         self.ticks_spacing = self.default_options["ticks_spacing"]
@@ -1245,8 +1246,8 @@ class MeshGlyph(GeoMixin, Glyph):
         self._merge_kwargs(kwargs)
         _warn_deprecated_cbar_kwargs(kwargs)
         # A typed `colorbar=` spec configures the bar (issue #239).
-        if isinstance(colorbar, ColorBar):
-            self.default_options.update(_resolve_colorbar(colorbar))
+        resolved_colorbar = _resolve_colorbar(colorbar) if isinstance(colorbar, ColorBar) else {}
+        self.default_options.update(resolved_colorbar)
 
         # Compute global vmin/vmax across all frames unless user set them.
         if "vmin" not in kwargs:
@@ -1259,7 +1260,9 @@ class MeshGlyph(GeoMixin, Glyph):
         self._vmax = self.default_options["vmax"]
 
         # Compute ticks_spacing and write it to default_options for get_ticks().
-        if "ticks_spacing" not in kwargs:
+        # A ColorBar(ticks_spacing=...) spec arrives via the merge above (not
+        # kwargs), so honour it too rather than overwriting it (H1/#239).
+        if "ticks_spacing" not in kwargs and "ticks_spacing" not in resolved_colorbar:
             spacing = (self._vmax - self._vmin) / 10
             self.default_options["ticks_spacing"] = max(spacing, 1e-10)
         self.ticks_spacing = self.default_options["ticks_spacing"]
