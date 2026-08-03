@@ -43,7 +43,7 @@ def _require_cmap(action: str) -> None:
         )
 
 
-def resolve_colormap(cmap: str | Colormap, *, param: str = "cmap") -> Colormap:
+def resolve_colormap(cmap: str | Colormap | None, *, param: str = "cmap") -> Colormap | None:
     """Resolve a colormap name or object to a matplotlib `Colormap`.
 
     The single seam cleopatra uses to turn a ``cmap`` value into a concrete
@@ -102,7 +102,10 @@ def resolve_colormap(cmap: str | Colormap, *, param: str = "cmap") -> Colormap:
 
             ```
     """
-    if isinstance(cmap, Colormap):
+    if cmap is None or isinstance(cmap, Colormap):
+        # None passes through unchanged so matplotlib falls back to its default
+        # colormap, matching the pre-resolver `... if isinstance(cmap, str) else cmap`
+        # behaviour at the routed seams.
         return cmap
     if isinstance(cmap, str) and ":" in cmap:
         _require_cmap(f"A namespaced colormap ({param}={cmap!r})")
@@ -328,9 +331,13 @@ def convert_units(
 
             ```
     """
+    if from_units is None or to_units is None:
+        return data
+    if str(from_units).strip().lower() == str(to_units).strip().lower():
+        return data
     src = _normalise_unit(from_units)
     dst = _normalise_unit(to_units)
-    if from_units is None or to_units is None or src == dst:
+    if src is not None and dst is not None and src == dst:
         return data
     if src is None or dst is None or (src, dst) not in _UNIT_CONVERSIONS:
         warnings.warn(
@@ -778,7 +785,7 @@ DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
                     "#00ff00", "#00cc00", "#009900",
                     "#ffff00", "#ffcc00", "#ff9900",
                     "#ff0000", "#cc0000", "#990000",
-                    "#ff00ff", "#9900cc",
+                    "#ff00ff", "#9900cc", "#ffffff",
                 ],
                 name="nexrad_reflectivity",
             ),
@@ -958,8 +965,7 @@ DATA_STYLES.update(_load_weather_presets())
 #: at runtime so a caller that knows a field's shortName (e.g. pyramids reading
 #: GRIB/NetCDF metadata) can select the matching vendored style without
 #: re-implementing the mapping. "how to plot" stays here; "what to plot" (reading
-#: the shortName) stays with the data package (see the E1 decision in
-#: planning/styles/remaining-style-work-plan.md).
+#: the shortName) stays with the data package (pyramids), not here.
 _SHORTNAME_TO_STYLE: dict[str, str] = {
     "10fg": "wind_gust_10m", "10fgi": "wind_gust_10m_index", "10si": "wind_speed_10m",
     "10u": "wind_u_10m", "10v": "wind_v_10m", "10wsi": "wind_speed_10m_index",
@@ -1028,7 +1034,7 @@ def style_for_parameter(short_name: str) -> str | None:
     if not short_name:
         return None
     key = str(short_name).strip().lower()
-    name = _SHORTNAME_TO_STYLE.get(key, str(short_name).strip())
+    name = _SHORTNAME_TO_STYLE.get(key, key)
     return name if name in DATA_STYLES else None
 
 
@@ -1594,7 +1600,7 @@ def apply_data_style(
             vmin_prefix, vmax_prefix = swatch_extend_prefixes(norm)
             swatch_legend(
                 ax,
-                cfg["cmap"],
+                resolve_colormap(cfg["cmap"]),
                 cfg["label"],
                 vmin=resolved_vmin,
                 vmax=resolved_vmax,
