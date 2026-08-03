@@ -30,6 +30,7 @@ from matplotlib.ticker import LogFormatter
 # `from cleopatra.glyph import SUPPORTED_VIDEO_FORMAT` path keeps working.
 from cleopatra.animation import SUPPORTED_VIDEO_FORMAT  # noqa: F401  (re-export)
 from cleopatra.animation import save_animation as _save_animation
+from cleopatra.colors import resolve_colormap
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import (
     ColorScale,
@@ -1136,7 +1137,7 @@ class Glyph:
                 "labels)."
             )
         self._warn_scheme_overrides_continuous_options()
-        cmap = self.default_options["cmap"]
+        cmap = resolve_colormap(self.default_options["cmap"])
         # Compare by resolved name, not raw `==`: `Colormap` does not
         # implement equality, so a `Colormap` *instance* equivalent to the
         # default (e.g. `mpl.colormaps["coolwarm_r"]`, a legitimate way to

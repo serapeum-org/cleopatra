@@ -41,6 +41,7 @@ from matplotlib.figure import Figure
 from matplotlib.legend import Legend
 
 from cleopatra.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
+from cleopatra.colors import resolve_colormap
 from cleopatra.geo import GeoMixin
 from cleopatra.glyph import Glyph, _root_figure
 from cleopatra.styles import CLASSIFY_OPTIONS, resolve_sizes, width_legend
@@ -362,7 +363,7 @@ class FlowGlyph(GeoMixin, Glyph):
             lc = LineCollection(
                 draw_paths,
                 array=np.asarray(draw_values),
-                cmap=opts["cmap"],
+                cmap=resolve_colormap(opts["cmap"]),
                 norm=norm,
                 linewidths=draw_widths,
             )

@@ -42,6 +42,7 @@ from matplotlib.colors import BoundaryNorm, ListedColormap
 from cleopatra.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
 from cleopatra.colors import (
     category_boundaries,
+    resolve_colormap,
     resolve_single_layer_style,
     resolve_style_norm,
 )
@@ -631,7 +632,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 result.
         """
         tri = self.triangulation
-        cmap = self.default_options["cmap"]
+        cmap = resolve_colormap(self.default_options["cmap"])
         vmin = self.default_options["vmin"]
         vmax = self.default_options["vmax"]
 
@@ -700,7 +701,7 @@ class MeshGlyph(GeoMixin, Glyph):
         tri_z = z_nodes[tri_faces].mean(axis=1)  # per-triangle base value
 
         kw: dict[str, Any] = {
-            "cmap": self.default_options["cmap"],
+            "cmap": resolve_colormap(self.default_options["cmap"]),
             "edgecolors": edgecolor,
         }
         if norm is not None:

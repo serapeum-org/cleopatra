@@ -56,6 +56,7 @@ from cleopatra.colors import (
     alpha_rgba,
     apply_data_style,
     category_boundaries,
+    resolve_colormap,
     resolve_single_layer_style,
     resolve_style_norm,
 )
@@ -2142,7 +2143,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 one of the recognised values in `VALID_PLOT_KINDS`.
         """
         norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
-        cmap = self.default_options["cmap"]
+        cmap = resolve_colormap(self.default_options["cmap"])
         vmin = ticks[0]
         vmax = ticks[-1]
 
@@ -2489,7 +2490,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         cbar_cfg = {**style_cfg, **self._style_color_overrides}
         cbar_norm, _lo, _hi = resolve_style_norm(data, cbar_cfg)
-        mappable = ScalarMappable(norm=cbar_norm, cmap=cbar_cfg["cmap"])
+        mappable = ScalarMappable(norm=cbar_norm, cmap=resolve_colormap(cbar_cfg["cmap"]))
         mappable.set_array([])
         return self.create_color_bar(
             self.ax, mappable, self._style_cbar_kw(cbar_norm)
@@ -2529,7 +2530,7 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         ```
         """
-        colormap = plt.get_cmap(cmap) if isinstance(cmap, str) else cmap
+        colormap = resolve_colormap(cmap)
         normed_data = (self.arr - self.arr.min()) / (self.arr.max() - self.arr.min())
         colored = colormap(normed_data)
         return np.asarray((colored[:, :, :3] * 255).astype("uint8"))
@@ -4513,8 +4514,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                         ),
                         cfg,
                     )
+                    style_cmap = resolve_colormap(cfg["cmap"])
                     im.set_data(frame_0_scalar)
-                    im.set_cmap(cfg["cmap"])
+                    im.set_cmap(style_cmap)
                     im.set_norm(style_norm)
                     if self.cbar is not None:
                         self.cbar.remove()
@@ -4529,7 +4531,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                         insets = list(ax.child_axes)
                         for _inset in insets:
                             _inset.remove()
-                        mappable = ScalarMappable(norm=style_norm, cmap=cfg["cmap"])
+                        mappable = ScalarMappable(norm=style_norm, cmap=style_cmap)
                         mappable.set_array([])
                         self.cbar = self.create_color_bar(
                             ax, mappable, self._style_cbar_kw(style_norm)
@@ -4549,7 +4551,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                         vmin_prefix, vmax_prefix = swatch_extend_prefixes(style_norm)
                         swatch_legend(
                             ax,
-                            cfg["cmap"],
+                            style_cmap,
                             cfg["label"],
                             vmin=style_vmin,
                             vmax=style_vmax,
@@ -4572,7 +4574,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     )
                     style_render = (
                         "continuous",
-                        cfg["cmap"],
+                        style_cmap,
                         style_norm,
                         style_alpha_norm,
                         cfg.get("alpha"),

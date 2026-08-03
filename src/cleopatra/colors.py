@@ -232,7 +232,7 @@ def alpha_rgba(
         np.ndarray: An `(*, *, 4)` RGBA array; non-finite `data` cells are
         fully transparent.
     """
-    cmap_obj = mpl.colormaps[cmap] if isinstance(cmap, str) else cmap
+    cmap_obj = resolve_colormap(cmap)
     if norm is None:
         finite = data[np.isfinite(data)]
         vmin = float(finite.min()) if finite.size else 0.0
@@ -790,9 +790,7 @@ def resolve_style_norm(
         # -- the look of a professional weather-service map.
         edges = [float(v) for v in levels]
         _warn_if_outside_fixed_range(data, edges[0], edges[-1])
-        cmap_obj = cfg["cmap"]
-        if not isinstance(cmap_obj, Colormap):
-            cmap_obj = mpl.colormaps[cmap_obj]
+        cmap_obj = resolve_colormap(cfg["cmap"])
         # Honour `extend` unless the colormap lacks a spare colour for each
         # reserved under/over slot. A continuous colormap (256 entries) always
         # has room; a one-colour-per-band ListedColormap (aod550=9, 10si=6) does

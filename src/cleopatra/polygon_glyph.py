@@ -45,6 +45,7 @@ from matplotlib.figure import Figure
 from matplotlib.legend import Legend
 
 from cleopatra.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
+from cleopatra.colors import resolve_colormap
 from cleopatra.geo import GeoMixin
 from cleopatra.glyph import Glyph, _root_figure
 from cleopatra.styles import CLASSIFY_OPTIONS
@@ -271,7 +272,7 @@ class PolygonGlyph(GeoMixin, Glyph):
             if categorical is not None:
                 color_array, cmap = categorical["codes"], categorical["cmap"]
             else:
-                color_array, cmap = np.asarray(self.values), opts["cmap"]
+                color_array, cmap = np.asarray(self.values), resolve_colormap(opts["cmap"])
             pc = PolyCollection(
                 self.polygons,
                 array=color_array,
