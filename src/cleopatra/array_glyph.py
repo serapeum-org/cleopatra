@@ -1718,6 +1718,71 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         self._exclude_value = value
 
+    def _auto_figsize(self) -> tuple[float, float]:
+        """A figure size whose aspect matches the data, for a filled map.
+
+        `ArrayGlyph` draws with equal aspect (undistorted geography), so a wide
+        or tall field in the default square figure collapses to a thin strip with
+        an oversized-looking colorbar. When the caller did not pass an explicit
+        `figsize`, this derives one from the data's own aspect ratio -- from
+        `extent` (matplotlib order `[xmin, xmax, ymin, ymax]`), else the `coords`
+        ranges, else the array's pixel shape -- so the map fills the figure. Any
+        degenerate input falls back to the configured default `figsize`.
+
+        Returns:
+            tuple[float, float]: `(width, height)` in inches.
+        """
+        default = tuple(self.default_options["figsize"])
+        if self.default_options.get("projection") == "globe":
+            return (7.5, 6.5)  # the orthographic disc is ~square, not the lon/lat aspect
+        try:
+            if self.extent is not None:
+                xmin, xmax, ymin, ymax = (float(v) for v in self.extent)
+                width, height = abs(xmax - xmin), abs(ymax - ymin)
+            elif self._coords is not None:
+                xs, ys = self._coords
+                width = abs(float(np.nanmax(xs)) - float(np.nanmin(xs)))
+                height = abs(float(np.nanmax(ys)) - float(np.nanmin(ys)))
+            else:
+                arr = np.asarray(self.arr)
+                if arr.ndim == 2 or (arr.ndim == 3 and arr.shape[-1] in (3, 4)):
+                    height, width = float(arr.shape[0]), float(arr.shape[1])
+                else:
+                    return default
+        except (TypeError, ValueError, IndexError, AttributeError):
+            return default
+        if not (width > 0 and height > 0):
+            return default
+        aspect = width / height
+        plot_height = 6.0        # target plot height (inches)
+        cbar_pad = 1.8           # room for the colorbar + its labels
+        max_width = 14.0
+        fig_w = plot_height * aspect + cbar_pad
+        fig_h = plot_height
+        if fig_w > max_width:    # very wide field: cap width, shrink height to keep the aspect
+            fig_w = max_width
+            fig_h = max(3.5, (max_width - cbar_pad) / aspect)
+        fig_w = max(5.0, fig_w)
+        return (round(fig_w, 1), round(fig_h, 1))
+
+    def create_figure_axes(self) -> tuple[Figure, Axes]:
+        """Create the figure/axes, sizing the figure to the data when needed.
+
+        Overrides `Glyph.create_figure_axes` to use `_auto_figsize` whenever the
+        caller left `figsize` at its default (did not pass it explicitly), so an
+        equal-aspect map fills the figure instead of collapsing into a strip. An
+        explicit `figsize=` is always honoured unchanged.
+
+        Returns:
+            tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: The new figure
+            and axes.
+        """
+        figsize = self.default_options["figsize"]
+        if "figsize" not in getattr(self, "_explicit_options", set()):
+            figsize = self._auto_figsize()
+        fig, ax = plt.subplots(figsize=figsize)
+        return fig, ax
+
     @staticmethod
     def _validate_coords(
         coords: tuple[np.ndarray, np.ndarray] | list[np.ndarray] | None,

@@ -458,6 +458,10 @@ class Glyph:
 
     def _merge_kwargs(self, kwargs: dict) -> None:
         """Validate and merge keyword arguments into default_options."""
+        #: Option keys the caller passed explicitly, so a subclass can tell an
+        #: overridden option from one left at its default (e.g. `ArrayGlyph` only
+        #: auto-sizes the figure when `figsize` was not passed).
+        self._explicit_options: set[str] = set(kwargs)
         for key, val in kwargs.items():
             if key not in self._default_options:
                 raise ValueError(
