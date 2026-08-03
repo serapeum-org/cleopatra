@@ -254,6 +254,95 @@ def resolve_glow_options(glow: bool | dict) -> dict:
     )
 
 
+#: Canonical spellings for the (few) units cleopatra's presets use, keyed by a
+#: lower-cased alias. Extend as more unit-carrying presets are vendored.
+_UNIT_ALIASES: dict[str, str] = {
+    "k": "kelvin",
+    "kelvin": "kelvin",
+    "c": "celsius",
+    "degc": "celsius",
+    "celsius": "celsius",
+    "°c": "celsius",
+    "f": "fahrenheit",
+    "degf": "fahrenheit",
+    "fahrenheit": "fahrenheit",
+    "°f": "fahrenheit",
+}
+
+#: Affine conversions ``out = scale * in + offset`` between canonical units.
+#: Temperature is affine (scale AND offset), which is exactly why a tiny table
+#: beats pulling in a heavy units library (pint/cf-units) -- SCOPE: no heavy dep.
+_UNIT_CONVERSIONS: dict[tuple[str, str], tuple[float, float]] = {
+    ("kelvin", "celsius"): (1.0, -273.15),
+    ("celsius", "kelvin"): (1.0, 273.15),
+    ("celsius", "fahrenheit"): (9.0 / 5.0, 32.0),
+    ("fahrenheit", "celsius"): (5.0 / 9.0, -32.0 * 5.0 / 9.0),
+    ("kelvin", "fahrenheit"): (9.0 / 5.0, -273.15 * 9.0 / 5.0 + 32.0),
+    ("fahrenheit", "kelvin"): (5.0 / 9.0, 273.15 - 32.0 * 5.0 / 9.0),
+}
+
+
+def _normalise_unit(unit: str | None) -> str | None:
+    """Map a unit string to its canonical spelling, or ``None`` if unknown."""
+    if unit is None:
+        return None
+    return _UNIT_ALIASES.get(str(unit).strip().lower())
+
+
+def convert_units(
+    data: np.ndarray, from_units: str | None, to_units: str | None
+) -> np.ndarray:
+    """Convert `data` from one unit to another via a small affine table.
+
+    A dependency-free converter for the handful of units cleopatra's presets use
+    (temperature K/°C/°F). Following earthkit's contract, the conversion is a
+    no-op when either unit is missing or the two are the same, and an unknown
+    pair leaves the data unchanged with a warning rather than raising -- styling
+    should never crash on an unrecognised unit.
+
+    Args:
+        data: The values to convert.
+        from_units: The unit `data` is currently in (any alias in
+            :data:`_UNIT_ALIASES`), or ``None``.
+        to_units: The target unit, or ``None``.
+
+    Returns:
+        np.ndarray: The converted values (a new array), or `data` unchanged when
+        no conversion applies.
+
+    Examples:
+        - Kelvin to Celsius shifts by the freezing point:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.colors import convert_units
+            >>> convert_units(np.array([273.15, 373.15]), "K", "celsius")
+            array([  0., 100.])
+
+            ```
+        - A missing or matching unit is a no-op:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.colors import convert_units
+            >>> convert_units(np.array([1.0, 2.0]), None, "celsius").tolist()
+            [1.0, 2.0]
+
+            ```
+    """
+    src = _normalise_unit(from_units)
+    dst = _normalise_unit(to_units)
+    if from_units is None or to_units is None or src == dst:
+        return data
+    if src is None or dst is None or (src, dst) not in _UNIT_CONVERSIONS:
+        warnings.warn(
+            f"no known unit conversion from {from_units!r} to {to_units!r}; "
+            "leaving the data unchanged.",
+            stacklevel=2,
+        )
+        return data
+    scale, offset = _UNIT_CONVERSIONS[(src, dst)]
+    return np.asarray(data, dtype=float) * scale + offset
+
+
 def alpha_scaled_image(
     ax: Axes,
     data: np.ndarray,
