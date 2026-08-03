@@ -41,6 +41,7 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Patch
 from matplotlib.path import Path as MplPath
 
+from cleopatra.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
 from cleopatra.colors import resolve_single_layer_style, resolve_style_norm
 from cleopatra.glyph import Glyph, _root_figure
 from cleopatra.hillshade import resolve_hillshade, shade_grid
@@ -154,6 +155,7 @@ class KDEGlyph(Glyph):
         fig: Figure | None = None,
         **kwargs,
     ):
+        _warn_deprecated_cbar_kwargs(kwargs)
         super().__init__(default_options=KDE_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs)
         self.x = np.asarray(x, dtype=float)
         self.y = np.asarray(y, dtype=float)
@@ -381,6 +383,7 @@ class KDEGlyph(Glyph):
         ax: Axes | None = None,
         title: str | None = None,
         add_colorbar: bool | None = None,
+        colorbar: bool | ColorBar | None = None,
         hillshade: bool | dict | None = None,
         style: str | None | _Unset = _UNSET,
     ):
@@ -399,6 +402,12 @@ class KDEGlyph(Glyph):
             add_colorbar: Override the `add_colorbar` option for this call
                 — True draws the colorbar, False suppresses it. Defaults to
                 None, which keeps the value set at construction.
+            colorbar: Typed `ColorBar` spec (or `True`/`False`/`None`) for the
+                colorbar's placement, caption, and sizing; resolved into the
+                `cbar_*` options. A `ColorBar`/`True` also enables the bar and is
+                **sticky** -- it persists into later plots, overriding a
+                construction-time `add_colorbar=False`; an explicit
+                `add_colorbar=` argument still wins the on/off decision.
             hillshade: Relief-shade the density surface for this call (`True`
                 or an options dict; see `cleopatra.hillshade`). Defaults to
                 None, which keeps the value set at construction. Accepting it
@@ -462,6 +471,7 @@ class KDEGlyph(Glyph):
 
         if title is not None:
             opts["title"] = title
+        opts.update(_resolve_colorbar(colorbar))
         draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
 
         gx, gy, density = self.evaluate()

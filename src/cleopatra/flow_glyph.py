@@ -40,6 +40,7 @@ from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure
 from matplotlib.legend import Legend
 
+from cleopatra.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
 from cleopatra.geo import GeoMixin
 from cleopatra.glyph import Glyph, _root_figure
 from cleopatra.styles import CLASSIFY_OPTIONS, resolve_sizes, width_legend
@@ -146,6 +147,7 @@ class FlowGlyph(GeoMixin, Glyph):
         fig: Figure | None = None,
         **kwargs,
     ):
+        _warn_deprecated_cbar_kwargs(kwargs)
         super().__init__(default_options=FLOW_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs)
         self.paths = [np.asarray(p, dtype=float) for p in paths]
         n_paths = len(self.paths)
@@ -227,6 +229,7 @@ class FlowGlyph(GeoMixin, Glyph):
         ax: Axes | None = None,
         title: str | None = None,
         add_colorbar: bool | None = None,
+        colorbar: bool | ColorBar | None = None,
     ) -> tuple[Figure, Axes, LineCollection]:
         """Draw the flow paths, colouring by value and scaling by width.
 
@@ -247,6 +250,13 @@ class FlowGlyph(GeoMixin, Glyph):
             add_colorbar: Override the `add_colorbar` option for this call
                 — True draws the colorbar, False suppresses it. Defaults to
                 None, which keeps the value set at construction.
+            colorbar: Typed `ColorBar` spec (or `True`/`False`/`None`) for the
+                colorbar's placement, caption, and sizing. Resolved into the
+                `cbar_*` options for this call; a `ColorBar`/`True` also enables
+                the colorbar and `False` suppresses it. The spec is **sticky**,
+                so a `ColorBar`/`True` persists into later plots, overriding a
+                construction-time `add_colorbar=False`; an explicit
+                `add_colorbar=` argument still wins the on/off decision.
 
         Returns:
             tuple[Figure, Axes, LineCollection]: The figure, the axes, and
@@ -314,6 +324,9 @@ class FlowGlyph(GeoMixin, Glyph):
         ax = self.ax
         assert self.fig is not None
         opts = self.default_options
+        # Merge a typed `colorbar=` spec (placement/caption/sizing) into the
+        # options before deciding whether/how to draw the bar (issue #239).
+        opts.update(_resolve_colorbar(colorbar))
 
         if title is not None:
             opts["title"] = title

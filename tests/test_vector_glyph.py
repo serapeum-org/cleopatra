@@ -155,7 +155,8 @@ class TestVectorGlyphPlot:
         y, x = np.mgrid[0:5, 0:5].astype(float)
         u = np.full_like(x, 3.0)
         v = np.full_like(y, 4.0)
-        glyph = VectorGlyph(x, y, u, v, vmin=0.0, vmax=10.0, ticks_spacing=2.0)
+        with pytest.warns(DeprecationWarning, match="ticks_spacing"):
+            glyph = VectorGlyph(x, y, u, v, vmin=0.0, vmax=10.0, ticks_spacing=2.0)
         _, _, im = glyph.plot(kind="streamplot")
         ticks = glyph.get_ticks()
         assert im.get_clim() == (
@@ -173,7 +174,8 @@ class TestVectorGlyphPlot:
         x, y = np.meshgrid(np.arange(3.0), np.arange(3.0))
         u = np.full_like(x, 3.0)
         v = np.full_like(y, 4.0)
-        glyph = VectorGlyph(x, y, u, v, vmin=0.0, vmax=10.0, ticks_spacing=2.0)
+        with pytest.warns(DeprecationWarning, match="ticks_spacing"):
+            glyph = VectorGlyph(x, y, u, v, vmin=0.0, vmax=10.0, ticks_spacing=2.0)
         _, _, im = glyph.plot(kind="quiver")
         ticks = glyph.get_ticks()
         assert im.get_clim() == (

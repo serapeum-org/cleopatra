@@ -41,6 +41,7 @@ from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure
 from matplotlib.legend import Legend
 
+from cleopatra.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
 from cleopatra.geo import GeoMixin
 from cleopatra.glyph import Glyph, _root_figure
 from cleopatra.styles import CLASSIFY_OPTIONS, resolve_sizes, size_legend
@@ -165,6 +166,7 @@ class ScatterGlyph(GeoMixin, Glyph):
         fig: Figure | None = None,
         **kwargs,
     ):
+        _warn_deprecated_cbar_kwargs(kwargs)
         super().__init__(
             default_options=SCATTER_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs
         )
@@ -202,6 +204,7 @@ class ScatterGlyph(GeoMixin, Glyph):
         ax: Axes | None = None,
         title: str | None = None,
         add_colorbar: bool | None = None,
+        colorbar: bool | ColorBar | None = None,
     ) -> tuple[Figure, Axes, PathCollection]:
         """Draw the point cloud, colour- and/or size-mapping per point.
 
@@ -234,6 +237,12 @@ class ScatterGlyph(GeoMixin, Glyph):
                 — True draws the colorbar, False suppresses it (for
                 shared-axes composition). Defaults to None, which keeps the
                 value set at construction.
+            colorbar: Typed `ColorBar` spec (or `True`/`False`/`None`) for the
+                colorbar's placement, caption, and sizing; resolved into the
+                `cbar_*` options. A `ColorBar`/`True` also enables the bar and is
+                **sticky** -- it persists into later plots, overriding a
+                construction-time `add_colorbar=False`; an explicit
+                `add_colorbar=` argument still wins the on/off decision.
 
         Returns:
             tuple[Figure, Axes, PathCollection]: The figure, the axes,
@@ -295,8 +304,11 @@ class ScatterGlyph(GeoMixin, Glyph):
 
         if title is not None:
             opts["title"] = title
-        # Resolve the colorbar choice for this call only (a plot-time
-        # override does not persist into the glyph's options).
+        # Merge a typed `colorbar=` spec (placement / caption / sizing) into the
+        # glyph's sticky options, like `ArrayGlyph`: it persists into later
+        # `plot()` calls until a `colorbar=True`/`False` or a new spec changes
+        # it. Only the on/off `add_colorbar` override below stays per-call.
+        opts.update(_resolve_colorbar(colorbar))
         draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
         # Reset both artifacts unconditionally so a re-plot (e.g. switching
         # `scheme` between calls) never leaves a stale reference from the

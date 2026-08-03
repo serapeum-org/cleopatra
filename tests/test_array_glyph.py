@@ -13,6 +13,7 @@ from matplotlib.text import Text
 from PIL import Image
 
 import cleopatra.reference as refmod
+from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.array_glyph import (
     _COORD_DTYPE_MISMATCH,
     _COORD_SHAPE_MISMATCH,
@@ -6630,6 +6631,63 @@ class TestColorBar:
             warnings.simplefilter("error", UserWarning)
             ColorBar(location="middle", orientation="vertical")  # type: ignore[arg-type]
 
+    @pytest.mark.parametrize(
+        "orientation, label_location",
+        [("horizontal", "top"), ("horizontal", "bottom"), ("vertical", "left"), ("vertical", "right")],
+    )
+    def test_incompatible_label_location_orientation_raises(self, orientation, label_location):
+        """An orientation-incompatible `label_location` raises up front (#241).
+
+        Args:
+            orientation: The bar orientation under test.
+            label_location: A `label_location` invalid for that orientation.
+
+        Test scenario:
+            The pairing is rejected at construction with a clear error instead
+            of crashing deep in matplotlib at render.
+        """
+        with pytest.raises(ValueError, match=r"label_location=.*not valid for a " + orientation):
+            ColorBar(orientation=orientation, label_location=label_location)
+
+    def test_incompatible_label_location_via_implied_orientation_raises(self):
+        """A `label_location` incompatible with the `location`-implied orientation raises (#241).
+
+        Test scenario:
+            `location="bottom"` implies horizontal, so `label_location="top"`
+            (vertical-only) is rejected even though `orientation` is unset.
+        """
+        with pytest.raises(ValueError, match="not valid for a horizontal"):
+            ColorBar(location="bottom", label_location="top")
+
+    def test_label_location_skipped_when_orientation_unpinned(self):
+        """`label_location` is not validated when the spec pins no orientation (#241).
+
+        Test scenario:
+            With neither `orientation` nor `location`, the rendered orientation
+            comes from the glyph's sticky default, so validating here would risk
+            a false rejection -- the check is skipped.
+        """
+        spec = ColorBar(label_location="left")  # no raise
+        assert spec.label_location == "left", "label_location should store even when unvalidated"
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {"orientation": "horizontal", "label_location": "left"},
+            {"orientation": "vertical", "label_location": "top"},
+            {"location": "right", "label_location": "center"},
+            {"location": "bottom", "label_location": "left"},
+        ],
+    )
+    def test_compatible_label_location_orientation_ok(self, kwargs):
+        """A compatible `label_location`/orientation pair constructs cleanly (#241).
+
+        Args:
+            kwargs: A valid orientation/location + label_location combination.
+        """
+        spec = ColorBar(**kwargs)
+        assert spec.label_location == kwargs["label_location"], "compatible pair should store"
+
 
 class TestResolveColorbar:
     """Tests for the `_resolve_colorbar` front-door parser."""
@@ -6651,10 +6709,12 @@ class TestResolveColorbar:
         assert _resolve_colorbar(False) == {"add_colorbar": False}, "False should suppress the colorbar"
 
     def test_true_resets_placement(self):
-        """`True` enables a default colorbar and clears any placement/box.
+        """`True` enables a default colorbar and resets the whole cbar_* family.
 
         Test scenario:
-            A bare `True` means "default outside colorbar".
+            A bare `True` means "default colorbar" -- placement, colours, and the
+            caption/sizing family all reset to defaults (#242); `ticks_spacing`
+            is intentionally omitted so it stays auto-computed.
         """
         out = _resolve_colorbar(True)
         expected = {
@@ -6664,9 +6724,29 @@ class TestResolveColorbar:
             "cbar_box": None,
             "cbar_label_color": None,
             "cbar_tick_color": None,
-            "cbar_orientation": "vertical",
+            "cbar_orientation": STYLE_DEFAULTS["cbar_orientation"],
+            "cbar_label": STYLE_DEFAULTS["cbar_label"],
+            "cbar_length": STYLE_DEFAULTS["cbar_length"],
+            "cbar_label_size": STYLE_DEFAULTS["cbar_label_size"],
+            "cbar_label_rotation": STYLE_DEFAULTS["cbar_label_rotation"],
+            "cbar_label_location": STYLE_DEFAULTS["cbar_label_location"],
         }
-        assert out == expected, f"True should reset to default placement, got {out}"
+        assert out == expected, f"True should reset the full cbar_* family, got {out}"
+        assert "ticks_spacing" not in out, "ticks_spacing must stay auto-computed, not reset"
+
+    def test_true_resets_sticky_caption_on_reused_glyph(self):
+        """`colorbar=True` clears a caption/length left sticky by a prior call (#242).
+
+        Test scenario:
+            After `ColorBar(label=..., length=...)` on a reused glyph, a bare
+            `colorbar=True` returns those to their defaults.
+        """
+        g = ArrayGlyph(np.arange(36.0).reshape(6, 6), extent=[0.0, 0.0, 6.0, 6.0])
+        g.plot(cmap="viridis", colorbar=ColorBar(label="Sticky", length=0.3))
+        g.plot(cmap="viridis", colorbar=True)
+        assert g.default_options["cbar_label"] == STYLE_DEFAULTS["cbar_label"], "cbar_label should reset"
+        assert g.default_options["cbar_length"] == STYLE_DEFAULTS["cbar_length"], "cbar_length should reset"
+        plt.close("all")
 
     def test_spec_maps_fields(self):
         """A `ColorBar` maps its fields onto the internal `cbar_*` keys.
