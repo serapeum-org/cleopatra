@@ -3072,6 +3072,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                         `vert_exag`, `azimuth`, `altitude`, `blend_mode`, or
                         `multidirectional`. Applied only to `kind="imshow"`
                         (warns otherwise). By default False.
+                    projection : str, optional
+                        Draw the field on a projection preset: `"globe"`
+                        (orthographic) or `"flat"`. Requires 1-D lon/lat
+                        `coords=(lon, lat)`; the field is reprojected and, for
+                        `"globe"`, the boundary + graticule are drawn. `"globe"`
+                        needs `pyproj` (the `[tiles]` extra). By default None
+                        (unprojected raster).
 
         Returns:
             tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: A tuple containing:
