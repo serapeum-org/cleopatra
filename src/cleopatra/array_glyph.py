@@ -70,6 +70,7 @@ from cleopatra.glyph import (
     _root_figure,
 )
 from cleopatra.hillshade import resolve_hillshade, shade_grid, shade_rgb
+from cleopatra.projection import apply_projection_style
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import (
     ColorScale,  # re-exported for convenience  # noqa: F401
@@ -103,6 +104,7 @@ ARRAY_DEFAULT_OPTIONS: dict[str, Any] = {
     "label_kw": None,
     "hillshade": False,
     "style": None,
+    "projection": None,
 }
 ARRAY_DEFAULT_OPTIONS = STYLE_DEFAULTS | ARRAY_DEFAULT_OPTIONS
 #: Backwards-compatible alias for the array glyph's default options
@@ -2751,6 +2753,50 @@ class ArrayGlyph(GeoMixin, Glyph):
         )
         return resolved_colorbar
 
+    def _plot_projected(
+        self, ax: Axes, arr: np.ndarray, ticks: np.ndarray
+    ) -> tuple[Any, dict[str, str]]:
+        """Render the array through a projection preset (`"globe"` / `"flat"`).
+
+        Reprojects the 1-D lon/lat field with
+        `cleopatra.projection.apply_projection_style` (which also draws the globe
+        boundary + graticule and masks the far hemisphere), then colours the
+        reprojected cells with `pcolormesh(..., shading="flat")` at the projected
+        cell **edges**. The colour norm/cmap come from the same resolution path
+        as the flat render, so `color_scale` / `vmin` / `vmax` / `cmap` behave
+        identically. The globe path needs `pyproj` (the `[tiles]` extra).
+
+        Args:
+            ax: Axes to draw on.
+            arr: The (masked) 2-D data array.
+            ticks: Colorbar ticks; drive `vmin`/`vmax` when the norm is linear.
+
+        Returns:
+            tuple: `(QuadMesh, cbar_kw)` -- the mappable and its colorbar kwargs.
+        """
+        projection = self.default_options["projection"]
+        lon, lat = self._coords
+        norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
+        cmap = resolve_colormap(self.default_options["cmap"])
+        plot_arr = (
+            ma.filled(arr, np.nan)
+            if isinstance(arr, ma.MaskedArray)
+            else np.asarray(arr, dtype=float)
+        )
+        x_edges, y_edges, masked = apply_projection_style(
+            ax, lon, lat, plot_arr, style=projection
+        )
+        if norm is None:
+            im = ax.pcolormesh(
+                x_edges, y_edges, masked, cmap=cmap,
+                vmin=ticks[0], vmax=ticks[-1], shading="flat",
+            )
+        else:
+            im = ax.pcolormesh(
+                x_edges, y_edges, masked, cmap=cmap, norm=norm, shading="flat"
+            )
+        return im, cbar_kw
+
     def plot(
         self,
         points: np.ndarray | PointOverlay | None = None,
@@ -3515,8 +3561,24 @@ class ArrayGlyph(GeoMixin, Glyph):
             # a validation failure instead of being torn down for a call
             # that never completes.
             self._create_norm_and_cbar_kw(ticks)
+            projection = self.default_options.get("projection")
+            if projection and (
+                self._coords is None
+                or self._coords[0].ndim != 1
+                or self._coords[1].ndim != 1
+            ):
+                raise ValueError(
+                    "projection= requires 1-D lon/lat coordinate vectors (build "
+                    "the glyph with coords=(lon, lat)); an extent-only or "
+                    "2-D-coordinate array cannot be reprojected."
+                )
             _clear_prior_render_artists(ax)
-            im, cbar_kw = self._plot_im_get_cbar_kw(ax, arr, ticks, kind=effective_kind)
+            if projection:
+                im, cbar_kw = self._plot_projected(ax, arr, ticks)
+            else:
+                im, cbar_kw = self._plot_im_get_cbar_kw(
+                    ax, arr, ticks, kind=effective_kind
+                )
             self.im = im
 
             # Create colorbar, unless the caller opted out (e.g. shared-axes
