@@ -404,6 +404,8 @@ class FlowGlyph(GeoMixin, Glyph):
                         alpha=glow_alpha,
                         zorder=under,
                     )
+                    if norm is None:
+                        glow_lc.set_clim(ticks[0], ticks[-1])
                 ax.add_collection(glow_lc)
 
         ax.autoscale_view()
