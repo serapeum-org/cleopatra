@@ -2779,7 +2779,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
         cmap = resolve_colormap(self.default_options["cmap"])
         plot_arr = (
-            ma.filled(arr, np.nan)
+            ma.filled(ma.asarray(arr).astype(float), np.nan)
             if isinstance(arr, ma.MaskedArray)
             else np.asarray(arr, dtype=float)
         )
@@ -3593,6 +3593,14 @@ class ArrayGlyph(GeoMixin, Glyph):
                         "'projection' draws point / cell-value overlays at raw grid "
                         "indices, not reprojected coordinates, so they are misplaced "
                         "under a projection; omit them when using 'projection'.",
+                        stacklevel=2,
+                    )
+                if kind not in ("auto", "pcolormesh") or self.default_options.get(
+                    "hillshade"
+                ):
+                    warnings.warn(
+                        "'projection' always renders via pcolormesh and ignores "
+                        "'kind' and 'hillshade'.",
                         stacklevel=2,
                     )
                 im, cbar_kw = self._plot_projected(ax, arr, ticks)
