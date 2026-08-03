@@ -253,8 +253,10 @@ class FlowGlyph(GeoMixin, Glyph):
             colorbar: Typed `ColorBar` spec (or `True`/`False`/`None`) for the
                 colorbar's placement, caption, and sizing. Resolved into the
                 `cbar_*` options for this call; a `ColorBar`/`True` also enables
-                the colorbar and `False` suppresses it. An explicit
-                `add_colorbar` still overrides the on/off decision.
+                the colorbar and `False` suppresses it. The spec is **sticky**,
+                so a `ColorBar`/`True` persists into later plots, overriding a
+                construction-time `add_colorbar=False`; an explicit
+                `add_colorbar=` argument still wins the on/off decision.
 
         Returns:
             tuple[Figure, Axes, LineCollection]: The figure, the axes, and

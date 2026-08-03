@@ -404,8 +404,10 @@ class KDEGlyph(Glyph):
                 None, which keeps the value set at construction.
             colorbar: Typed `ColorBar` spec (or `True`/`False`/`None`) for the
                 colorbar's placement, caption, and sizing; resolved into the
-                `cbar_*` options for this call. An explicit `add_colorbar` still
-                overrides the on/off decision.
+                `cbar_*` options. A `ColorBar`/`True` also enables the bar and is
+                **sticky** -- it persists into later plots, overriding a
+                construction-time `add_colorbar=False`; an explicit
+                `add_colorbar=` argument still wins the on/off decision.
             hillshade: Relief-shade the density surface for this call (`True`
                 or an options dict; see `cleopatra.hillshade`). Defaults to
                 None, which keeps the value set at construction. Accepting it
