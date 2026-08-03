@@ -566,13 +566,17 @@ class Glyph:
         if not ticks_spacing or vmax <= vmin:
             return np.array([vmin])
         ticks = np.arange(vmin, vmax + ticks_spacing, ticks_spacing)
-        # If vmax is not evenly divisible by spacing, append one more tick.
-        remainder = np.round(math.remainder(vmax, ticks_spacing), 3)
-        if remainder != 0:
-            ticks = np.append(
-                ticks,
-                [int(vmax / ticks_spacing) * ticks_spacing + ticks_spacing],
-            )
+        # `np.arange` can overshoot `vmax` by up to one step; never keep a tick
+        # above `vmax` -- it would sit past the top of the colorbar and its label
+        # would overprint the `vmax` label (the old `math.remainder` check
+        # appended such a tick for almost any non-integer `vmax`).
+        ticks = ticks[ticks <= vmax + 1e-9]
+        # Label the very top when the spacing did not land on `vmax`, but only
+        # when `vmax` is far enough from the last tick -- measured as a fraction
+        # of the whole range, which is what maps to distance on the bar -- that
+        # the two labels will not overprint.
+        if ticks.size == 0 or (vmax - ticks[-1]) > 0.04 * (vmax - vmin):
+            ticks = np.append(ticks, vmax)
         return ticks
 
     def _create_norm_and_cbar_kw(

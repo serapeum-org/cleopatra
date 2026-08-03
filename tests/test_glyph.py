@@ -272,6 +272,29 @@ class TestGetTicks:
         assert len(ticks) >= 2, f"Should have at least 2 ticks, got {len(ticks)}"
         assert ticks[0] == 0.0, f"First tick should be 0.0, got {ticks[0]}"
 
+    def test_no_tick_above_vmax(self):
+        """No tick sits above vmax (the old logic appended one just past it)."""
+        g = Glyph(default_options=_make_options())
+        g._default_options["vmin"] = 2.82
+        g._default_options["vmax"] = 31.295
+        g._default_options["ticks_spacing"] = (31.295 - 2.82) / 10
+        ticks = g.get_ticks()
+        assert float(ticks[-1]) <= 31.295 + 1e-6, f"top tick {ticks[-1]} overshoots vmax 31.295"
+
+    def test_no_near_duplicate_top_tick(self):
+        """The two topmost ticks are not near-coincident (labels would overprint).
+
+        With the default `ticks_spacing = (vmax - vmin) / 10`, `arange` lands
+        exactly on vmax, so no extra top tick should be added right next to it.
+        """
+        g = Glyph(default_options=_make_options())
+        g._default_options["vmin"] = 2.82
+        g._default_options["vmax"] = 31.295
+        g._default_options["ticks_spacing"] = (31.295 - 2.82) / 10
+        ticks = g.get_ticks()
+        gap = float(ticks[-1]) - float(ticks[-2])
+        assert gap > 0.04 * (31.295 - 2.82), f"top two ticks too close ({gap:.4f}); labels overprint"
+
 
 class TestCreateNormAndCbarKw:
     """Tests for Glyph._create_norm_and_cbar_kw."""
