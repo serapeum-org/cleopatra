@@ -113,7 +113,7 @@ def resolve_colormap(cmap: str | Colormap | None, *, param: str = "cmap") -> Col
 
         try:
             return _CmapColormap(cmap).to_mpl()
-        except Exception as exc:  # cmap raises `ValueError: Colormap '...' not found.`
+        except (ValueError, KeyError) as exc:  # cmap raises ValueError for an unknown name
             raise ValueError(
                 f"{param}={cmap!r} is not a known namespaced colormap: {exc}"
             ) from exc
@@ -930,6 +930,9 @@ def _load_weather_presets() -> dict[str, dict[str, dict[str, Any]]]:
             cmap = _weather_cmap(key, colors, levels, bands)
             # Bake a declared unit into the legend/colorbar label, and keep it on
             # the layer so a caller can convert data into it (convert_units).
+            # NOTE: the label ASSERTS this unit but nothing here auto-converts --
+            # a caller plotting data in another unit (e.g. Kelvin on a Celsius
+            # `levels` scale) must convert first, or the label misdescribes it.
             units = rec.get("units")
             label = f"{rec['label']} [{units}]" if units else rec["label"]
             layer: dict[str, Any] = {"cmap": cmap, "label": label}
