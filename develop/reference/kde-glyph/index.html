@@ -2921,7 +2921,9 @@ cleopatra.mesh_glyph.MeshGlyph: Contour rendering for unstructured
 <span class="normal"><a href="#__codelineno-0-560">560</a></span>
 <span class="normal"><a href="#__codelineno-0-561">561</a></span>
 <span class="normal"><a href="#__codelineno-0-562">562</a></span>
-<span class="normal"><a href="#__codelineno-0-563">563</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-90" name="__codelineno-0-90"></a><span class="k">class</span><span class="w"> </span><span class="nc">KDEGlyph</span><span class="p">(</span><span class="n">Glyph</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-563">563</a></span>
+<span class="normal"><a href="#__codelineno-0-564">564</a></span>
+<span class="normal"><a href="#__codelineno-0-565">565</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-90" name="__codelineno-0-90"></a><span class="k">class</span><span class="w"> </span><span class="nc">KDEGlyph</span><span class="p">(</span><span class="n">Glyph</span><span class="p">):</span>
 <a id="__codelineno-0-91" name="__codelineno-0-91"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Visualization class for 2-D kernel-density estimates.</span>
 <a id="__codelineno-0-92" name="__codelineno-0-92"></a>
 <a id="__codelineno-0-93" name="__codelineno-0-93"></a><span class="sd">    Evaluates an isotropic Gaussian KDE of a `(x, y)` point cloud on a</span>
@@ -3238,163 +3240,165 @@ cleopatra.mesh_glyph.MeshGlyph: Contour rendering for unstructured
 <a id="__codelineno-0-404" name="__codelineno-0-404"></a><span class="sd">                None, which keeps the value set at construction.</span>
 <a id="__codelineno-0-405" name="__codelineno-0-405"></a><span class="sd">            colorbar: Typed `ColorBar` spec (or `True`/`False`/`None`) for the</span>
 <a id="__codelineno-0-406" name="__codelineno-0-406"></a><span class="sd">                colorbar&#39;s placement, caption, and sizing; resolved into the</span>
-<a id="__codelineno-0-407" name="__codelineno-0-407"></a><span class="sd">                `cbar_*` options for this call. An explicit `add_colorbar` still</span>
-<a id="__codelineno-0-408" name="__codelineno-0-408"></a><span class="sd">                overrides the on/off decision.</span>
-<a id="__codelineno-0-409" name="__codelineno-0-409"></a><span class="sd">            hillshade: Relief-shade the density surface for this call (`True`</span>
-<a id="__codelineno-0-410" name="__codelineno-0-410"></a><span class="sd">                or an options dict; see `cleopatra.hillshade`). Defaults to</span>
-<a id="__codelineno-0-411" name="__codelineno-0-411"></a><span class="sd">                None, which keeps the value set at construction. Accepting it</span>
-<a id="__codelineno-0-412" name="__codelineno-0-412"></a><span class="sd">                here mirrors `ArrayGlyph.plot`/`MeshGlyph.plot`, so `hillshade`</span>
-<a id="__codelineno-0-413" name="__codelineno-0-413"></a><span class="sd">                works the same way across all three glyphs.</span>
-<a id="__codelineno-0-414" name="__codelineno-0-414"></a><span class="sd">            style: Name of a continuous `cleopatra.colors.DATA_STYLES` preset</span>
-<a id="__codelineno-0-415" name="__codelineno-0-415"></a><span class="sd">                to colour the density with (its cmap + norm; composes with</span>
-<a id="__codelineno-0-416" name="__codelineno-0-416"></a><span class="sd">                `hillshade`). The preset name is **sticky** -- once set it</span>
-<a id="__codelineno-0-417" name="__codelineno-0-417"></a><span class="sd">                persists into `default_options` and survives later plain</span>
-<a id="__codelineno-0-418" name="__codelineno-0-418"></a><span class="sd">                `plot()` calls (like `ArrayGlyph`), and `self.style` reads it</span>
-<a id="__codelineno-0-419" name="__codelineno-0-419"></a><span class="sd">                back; the resolved cmap is not persisted, so it never leaks.</span>
-<a id="__codelineno-0-420" name="__codelineno-0-420"></a><span class="sd">                Not passing `style` keeps the current preset; passing</span>
-<a id="__codelineno-0-421" name="__codelineno-0-421"></a><span class="sd">                `style=None` clears it back to the plain density colouring</span>
-<a id="__codelineno-0-422" name="__codelineno-0-422"></a><span class="sd">                (unlike `hillshade`, which reverts to its construction value).</span>
-<a id="__codelineno-0-423" name="__codelineno-0-423"></a><span class="sd">                A categorical preset has no meaning for a continuous density</span>
-<a id="__codelineno-0-424" name="__codelineno-0-424"></a><span class="sd">                and raises `ValueError`. Valid names:</span>
-<a id="__codelineno-0-425" name="__codelineno-0-425"></a><span class="sd">                `sorted(cleopatra.colors.DATA_STYLES)`.</span>
-<a id="__codelineno-0-426" name="__codelineno-0-426"></a>
-<a id="__codelineno-0-427" name="__codelineno-0-427"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-428" name="__codelineno-0-428"></a><span class="sd">            tuple[Figure, Axes, QuadContourSet]: The figure, the axes, and</span>
-<a id="__codelineno-0-429" name="__codelineno-0-429"></a><span class="sd">                the contour set (the mappable the colorbar attaches to).</span>
-<a id="__codelineno-0-430" name="__codelineno-0-430"></a>
-<a id="__codelineno-0-431" name="__codelineno-0-431"></a><span class="sd">        Raises:</span>
-<a id="__codelineno-0-432" name="__codelineno-0-432"></a><span class="sd">            ValueError: If a coordinate has zero spread (via `evaluate`).</span>
-<a id="__codelineno-0-433" name="__codelineno-0-433"></a><span class="sd">            TypeError: If `clip_path` is an unsupported type (via the clip</span>
-<a id="__codelineno-0-434" name="__codelineno-0-434"></a><span class="sd">                step).</span>
-<a id="__codelineno-0-435" name="__codelineno-0-435"></a>
-<a id="__codelineno-0-436" name="__codelineno-0-436"></a><span class="sd">        Examples:</span>
-<a id="__codelineno-0-437" name="__codelineno-0-437"></a><span class="sd">            - Filled contours add a colorbar by default:</span>
-<a id="__codelineno-0-438" name="__codelineno-0-438"></a><span class="sd">                ```python</span>
-<a id="__codelineno-0-439" name="__codelineno-0-439"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-440" name="__codelineno-0-440"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.kde_glyph import KDEGlyph</span>
-<a id="__codelineno-0-441" name="__codelineno-0-441"></a><span class="sd">                &gt;&gt;&gt; rng = np.random.default_rng(3)</span>
-<a id="__codelineno-0-442" name="__codelineno-0-442"></a><span class="sd">                &gt;&gt;&gt; x, y = rng.normal(size=300), rng.normal(size=300)</span>
-<a id="__codelineno-0-443" name="__codelineno-0-443"></a><span class="sd">                &gt;&gt;&gt; glyph = KDEGlyph(x, y, gridsize=40)</span>
-<a id="__codelineno-0-444" name="__codelineno-0-444"></a><span class="sd">                &gt;&gt;&gt; fig, ax, cs = glyph.plot()</span>
-<a id="__codelineno-0-445" name="__codelineno-0-445"></a><span class="sd">                &gt;&gt;&gt; glyph.cbar is not None</span>
-<a id="__codelineno-0-446" name="__codelineno-0-446"></a><span class="sd">                True</span>
-<a id="__codelineno-0-447" name="__codelineno-0-447"></a>
-<a id="__codelineno-0-448" name="__codelineno-0-448"></a><span class="sd">                ```</span>
-<a id="__codelineno-0-449" name="__codelineno-0-449"></a><span class="sd">            - Line contours (`shade=False`) and no colorbar:</span>
-<a id="__codelineno-0-450" name="__codelineno-0-450"></a><span class="sd">                ```python</span>
-<a id="__codelineno-0-451" name="__codelineno-0-451"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-452" name="__codelineno-0-452"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.kde_glyph import KDEGlyph</span>
-<a id="__codelineno-0-453" name="__codelineno-0-453"></a><span class="sd">                &gt;&gt;&gt; rng = np.random.default_rng(4)</span>
-<a id="__codelineno-0-454" name="__codelineno-0-454"></a><span class="sd">                &gt;&gt;&gt; x, y = rng.normal(size=300), rng.normal(size=300)</span>
-<a id="__codelineno-0-455" name="__codelineno-0-455"></a><span class="sd">                &gt;&gt;&gt; glyph = KDEGlyph(x, y, gridsize=40, shade=False)</span>
-<a id="__codelineno-0-456" name="__codelineno-0-456"></a><span class="sd">                &gt;&gt;&gt; fig, ax, cs = glyph.plot(add_colorbar=False)</span>
-<a id="__codelineno-0-457" name="__codelineno-0-457"></a><span class="sd">                &gt;&gt;&gt; glyph.cbar is None</span>
-<a id="__codelineno-0-458" name="__codelineno-0-458"></a><span class="sd">                True</span>
-<a id="__codelineno-0-459" name="__codelineno-0-459"></a>
-<a id="__codelineno-0-460" name="__codelineno-0-460"></a><span class="sd">                ```</span>
-<a id="__codelineno-0-461" name="__codelineno-0-461"></a><span class="sd">        &quot;&quot;&quot;</span>
-<a id="__codelineno-0-462" name="__codelineno-0-462"></a>        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-463" name="__codelineno-0-463"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span>
-<a id="__codelineno-0-464" name="__codelineno-0-464"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="o">=</span> <span class="n">_root_figure</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
-<a id="__codelineno-0-465" name="__codelineno-0-465"></a>        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-466" name="__codelineno-0-466"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_figure_axes</span><span class="p">()</span>
-<a id="__codelineno-0-467" name="__codelineno-0-467"></a>        <span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span>
-<a id="__codelineno-0-468" name="__codelineno-0-468"></a>        <span class="n">opts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span>
-<a id="__codelineno-0-469" name="__codelineno-0-469"></a>
-<a id="__codelineno-0-470" name="__codelineno-0-470"></a>        <span class="k">if</span> <span class="n">title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-471" name="__codelineno-0-471"></a>            <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">title</span>
-<a id="__codelineno-0-472" name="__codelineno-0-472"></a>        <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_resolve_colorbar</span><span class="p">(</span><span class="n">colorbar</span><span class="p">))</span>
-<a id="__codelineno-0-473" name="__codelineno-0-473"></a>        <span class="n">draw_colorbar</span> <span class="o">=</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;add_colorbar&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">add_colorbar</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">add_colorbar</span>
-<a id="__codelineno-0-474" name="__codelineno-0-474"></a>
-<a id="__codelineno-0-475" name="__codelineno-0-475"></a>        <span class="n">gx</span><span class="p">,</span> <span class="n">gy</span><span class="p">,</span> <span class="n">density</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
-<a id="__codelineno-0-476" name="__codelineno-0-476"></a>        <span class="n">level_edges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_levels</span><span class="p">(</span><span class="n">density</span><span class="p">)</span>
-<a id="__codelineno-0-477" name="__codelineno-0-477"></a>        <span class="n">norm</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_scalar_mapping</span><span class="p">(</span><span class="n">density</span><span class="p">)</span>
-<a id="__codelineno-0-478" name="__codelineno-0-478"></a>        <span class="n">cmap</span> <span class="o">=</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;cmap&quot;</span><span class="p">]</span>
-<a id="__codelineno-0-479" name="__codelineno-0-479"></a>
-<a id="__codelineno-0-480" name="__codelineno-0-480"></a>        <span class="c1"># Named data-style preset: a continuous preset overrides the density&#39;s</span>
-<a id="__codelineno-0-481" name="__codelineno-0-481"></a>        <span class="c1"># cmap + norm (and composes with hillshade below). A categorical preset</span>
-<a id="__codelineno-0-482" name="__codelineno-0-482"></a>        <span class="c1"># has no meaning for a continuous density surface, so reject it. The</span>
-<a id="__codelineno-0-483" name="__codelineno-0-483"></a>        <span class="c1"># cmap is resolved into a LOCAL (not `opts`), so a per-call `style` does</span>
-<a id="__codelineno-0-484" name="__codelineno-0-484"></a>        <span class="c1"># not leak its colormap into a later `plot()` on the same instance.</span>
-<a id="__codelineno-0-485" name="__codelineno-0-485"></a>        <span class="c1"># Persist a plot-time `style` into the options so `self.style` reads it</span>
-<a id="__codelineno-0-486" name="__codelineno-0-486"></a>        <span class="c1"># back and it stays sticky across later plain `plot()` calls (matching</span>
-<a id="__codelineno-0-487" name="__codelineno-0-487"></a>        <span class="c1"># ArrayGlyph). Only the name is stored -- the resolved cmap stays a</span>
-<a id="__codelineno-0-488" name="__codelineno-0-488"></a>        <span class="c1"># local (no leak). A passed `style=None` clears it; not passing `style`</span>
-<a id="__codelineno-0-489" name="__codelineno-0-489"></a>        <span class="c1"># (the `_UNSET` sentinel) keeps the current sticky value.</span>
-<a id="__codelineno-0-490" name="__codelineno-0-490"></a>        <span class="n">prev_style</span> <span class="o">=</span> <span class="n">opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;style&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-491" name="__codelineno-0-491"></a>        <span class="k">if</span> <span class="n">style</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">_UNSET</span><span class="p">:</span>
-<a id="__codelineno-0-492" name="__codelineno-0-492"></a>            <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;style&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">style</span>
-<a id="__codelineno-0-493" name="__codelineno-0-493"></a>        <span class="n">style</span> <span class="o">=</span> <span class="n">opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;style&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-494" name="__codelineno-0-494"></a>        <span class="k">if</span> <span class="n">style</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-495" name="__codelineno-0-495"></a>            <span class="c1"># Validate before rendering, and roll back to the prior good style</span>
-<a id="__codelineno-0-496" name="__codelineno-0-496"></a>            <span class="c1"># on a bad/categorical name so the sticky style isn&#39;t poisoned</span>
-<a id="__codelineno-0-497" name="__codelineno-0-497"></a>            <span class="c1"># (a poisoned name would re-raise on every later plot()).</span>
-<a id="__codelineno-0-498" name="__codelineno-0-498"></a>            <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-499" name="__codelineno-0-499"></a>                <span class="n">_</span><span class="p">,</span> <span class="n">cfg</span> <span class="o">=</span> <span class="n">resolve_single_layer_style</span><span class="p">(</span><span class="n">style</span><span class="p">)</span>
-<a id="__codelineno-0-500" name="__codelineno-0-500"></a>                <span class="k">if</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;categories&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-501" name="__codelineno-0-501"></a>                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-502" name="__codelineno-0-502"></a>                        <span class="sa">f</span><span class="s2">&quot;data style </span><span class="si">{</span><span class="n">style</span><span class="si">!r}</span><span class="s2"> is categorical; KDEGlyph colours &quot;</span>
-<a id="__codelineno-0-503" name="__codelineno-0-503"></a>                        <span class="s2">&quot;a continuous density, so only continuous presets apply&quot;</span>
-<a id="__codelineno-0-504" name="__codelineno-0-504"></a>                    <span class="p">)</span>
-<a id="__codelineno-0-505" name="__codelineno-0-505"></a>            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-<a id="__codelineno-0-506" name="__codelineno-0-506"></a>                <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;style&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">prev_style</span>
-<a id="__codelineno-0-507" name="__codelineno-0-507"></a>                <span class="k">raise</span>
-<a id="__codelineno-0-508" name="__codelineno-0-508"></a>            <span class="c1"># A caller vmin/vmax pins the preset&#39;s colour scale: a preset that</span>
-<a id="__codelineno-0-509" name="__codelineno-0-509"></a>            <span class="c1"># auto-ranges by default (e.g. &quot;temperature&quot;) then stretches between</span>
-<a id="__codelineno-0-510" name="__codelineno-0-510"></a>            <span class="c1"># the given bounds, exactly as apply_data_style / ArrayGlyph do; None</span>
-<a id="__codelineno-0-511" name="__codelineno-0-511"></a>            <span class="c1"># leaves the preset&#39;s own scale (auto-range, or its fixed levels).</span>
-<a id="__codelineno-0-512" name="__codelineno-0-512"></a>            <span class="n">cfg</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-513" name="__codelineno-0-513"></a>                <span class="o">**</span><span class="n">cfg</span><span class="p">,</span>
-<a id="__codelineno-0-514" name="__codelineno-0-514"></a>                <span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">opts</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;vmin&quot;</span><span class="p">,</span> <span class="s2">&quot;vmax&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">},</span>
-<a id="__codelineno-0-515" name="__codelineno-0-515"></a>            <span class="p">}</span>
-<a id="__codelineno-0-516" name="__codelineno-0-516"></a>            <span class="n">cmap</span> <span class="o">=</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;cmap&quot;</span><span class="p">]</span>
-<a id="__codelineno-0-517" name="__codelineno-0-517"></a>            <span class="n">norm</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">resolve_style_norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">density</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span> <span class="n">cfg</span><span class="p">)</span>
-<a id="__codelineno-0-518" name="__codelineno-0-518"></a>            <span class="c1"># Drop the linear ticks so the colorbar matches the preset norm.</span>
-<a id="__codelineno-0-519" name="__codelineno-0-519"></a>            <span class="n">cbar_kw</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;ticks&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-<a id="__codelineno-0-520" name="__codelineno-0-520"></a>
-<a id="__codelineno-0-521" name="__codelineno-0-521"></a>        <span class="n">hillshade</span> <span class="o">=</span> <span class="n">resolve_hillshade</span><span class="p">(</span>
-<a id="__codelineno-0-522" name="__codelineno-0-522"></a>            <span class="n">hillshade</span> <span class="k">if</span> <span class="n">hillshade</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;hillshade&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-523" name="__codelineno-0-523"></a>        <span class="p">)</span>
-<a id="__codelineno-0-524" name="__codelineno-0-524"></a>        <span class="k">if</span> <span class="n">hillshade</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-525" name="__codelineno-0-525"></a>            <span class="c1"># Treat the density as a surface and relief-shade it, so the</span>
-<a id="__codelineno-0-526" name="__codelineno-0-526"></a>            <span class="c1"># &quot;density terrain&quot; (peaks and ridges) reads by form. The shaded</span>
-<a id="__codelineno-0-527" name="__codelineno-0-527"></a>            <span class="c1"># RGBA image carries no scalar array, so the colorbar attaches to a</span>
-<a id="__codelineno-0-528" name="__codelineno-0-528"></a>            <span class="c1"># ScalarMappable proxy carrying the same cmap/norm.</span>
-<a id="__codelineno-0-529" name="__codelineno-0-529"></a>            <span class="n">hs_norm</span> <span class="o">=</span> <span class="p">(</span>
-<a id="__codelineno-0-530" name="__codelineno-0-530"></a>                <span class="n">norm</span>
-<a id="__codelineno-0-531" name="__codelineno-0-531"></a>                <span class="k">if</span> <span class="n">norm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-<a id="__codelineno-0-532" name="__codelineno-0-532"></a>                <span class="k">else</span> <span class="n">Normalize</span><span class="p">(</span><span class="n">vmin</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">density</span><span class="o">.</span><span class="n">min</span><span class="p">()),</span> <span class="n">vmax</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">density</span><span class="o">.</span><span class="n">max</span><span class="p">()))</span>
-<a id="__codelineno-0-533" name="__codelineno-0-533"></a>            <span class="p">)</span>
-<a id="__codelineno-0-534" name="__codelineno-0-534"></a>            <span class="n">rgba</span> <span class="o">=</span> <span class="n">shade_grid</span><span class="p">(</span><span class="n">density</span><span class="p">,</span> <span class="n">cmap</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="n">hs_norm</span><span class="p">,</span> <span class="o">**</span><span class="n">hillshade</span><span class="p">)</span>
-<a id="__codelineno-0-535" name="__codelineno-0-535"></a>            <span class="n">extent</span> <span class="o">=</span> <span class="p">(</span>
-<a id="__codelineno-0-536" name="__codelineno-0-536"></a>                <span class="nb">float</span><span class="p">(</span><span class="n">gx</span><span class="o">.</span><span class="n">min</span><span class="p">()),</span>
-<a id="__codelineno-0-537" name="__codelineno-0-537"></a>                <span class="nb">float</span><span class="p">(</span><span class="n">gx</span><span class="o">.</span><span class="n">max</span><span class="p">()),</span>
-<a id="__codelineno-0-538" name="__codelineno-0-538"></a>                <span class="nb">float</span><span class="p">(</span><span class="n">gy</span><span class="o">.</span><span class="n">min</span><span class="p">()),</span>
-<a id="__codelineno-0-539" name="__codelineno-0-539"></a>                <span class="nb">float</span><span class="p">(</span><span class="n">gy</span><span class="o">.</span><span class="n">max</span><span class="p">()),</span>
-<a id="__codelineno-0-540" name="__codelineno-0-540"></a>            <span class="p">)</span>
-<a id="__codelineno-0-541" name="__codelineno-0-541"></a>            <span class="n">mappable</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">rgba</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">extent</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s2">&quot;lower&quot;</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-542" name="__codelineno-0-542"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_apply_clip</span><span class="p">(</span><span class="n">mappable</span><span class="p">)</span>
-<a id="__codelineno-0-543" name="__codelineno-0-543"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="n">mappable</span>
-<a id="__codelineno-0-544" name="__codelineno-0-544"></a>            <span class="k">if</span> <span class="n">draw_colorbar</span><span class="p">:</span>
-<a id="__codelineno-0-545" name="__codelineno-0-545"></a>                <span class="n">proxy</span> <span class="o">=</span> <span class="n">ScalarMappable</span><span class="p">(</span><span class="n">norm</span><span class="o">=</span><span class="n">hs_norm</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">)</span>
-<a id="__codelineno-0-546" name="__codelineno-0-546"></a>                <span class="n">proxy</span><span class="o">.</span><span class="n">set_array</span><span class="p">(</span><span class="n">density</span><span class="p">)</span>
-<a id="__codelineno-0-547" name="__codelineno-0-547"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_color_bar</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">proxy</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">)</span>
-<a id="__codelineno-0-548" name="__codelineno-0-548"></a>            <span class="k">if</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]:</span>
-<a id="__codelineno-0-549" name="__codelineno-0-549"></a>                <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title_size&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-550" name="__codelineno-0-550"></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">mappable</span>
-<a id="__codelineno-0-551" name="__codelineno-0-551"></a>
-<a id="__codelineno-0-552" name="__codelineno-0-552"></a>        <span class="n">render</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">contourf</span> <span class="k">if</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;shade&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">ax</span><span class="o">.</span><span class="n">contour</span>
-<a id="__codelineno-0-553" name="__codelineno-0-553"></a>        <span class="n">contour_set</span> <span class="o">=</span> <span class="n">render</span><span class="p">(</span><span class="n">gx</span><span class="p">,</span> <span class="n">gy</span><span class="p">,</span> <span class="n">density</span><span class="p">,</span> <span class="n">levels</span><span class="o">=</span><span class="n">level_edges</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">)</span>
-<a id="__codelineno-0-554" name="__codelineno-0-554"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_apply_clip</span><span class="p">(</span><span class="n">contour_set</span><span class="p">)</span>
-<a id="__codelineno-0-555" name="__codelineno-0-555"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="n">contour_set</span>
-<a id="__codelineno-0-556" name="__codelineno-0-556"></a>
-<a id="__codelineno-0-557" name="__codelineno-0-557"></a>        <span class="k">if</span> <span class="n">draw_colorbar</span><span class="p">:</span>
-<a id="__codelineno-0-558" name="__codelineno-0-558"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_color_bar</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">contour_set</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">)</span>
-<a id="__codelineno-0-559" name="__codelineno-0-559"></a>
-<a id="__codelineno-0-560" name="__codelineno-0-560"></a>        <span class="k">if</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]:</span>
-<a id="__codelineno-0-561" name="__codelineno-0-561"></a>            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title_size&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-562" name="__codelineno-0-562"></a>
-<a id="__codelineno-0-563" name="__codelineno-0-563"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">contour_set</span>
+<a id="__codelineno-0-407" name="__codelineno-0-407"></a><span class="sd">                `cbar_*` options. A `ColorBar`/`True` also enables the bar and is</span>
+<a id="__codelineno-0-408" name="__codelineno-0-408"></a><span class="sd">                **sticky** -- it persists into later plots, overriding a</span>
+<a id="__codelineno-0-409" name="__codelineno-0-409"></a><span class="sd">                construction-time `add_colorbar=False`; an explicit</span>
+<a id="__codelineno-0-410" name="__codelineno-0-410"></a><span class="sd">                `add_colorbar=` argument still wins the on/off decision.</span>
+<a id="__codelineno-0-411" name="__codelineno-0-411"></a><span class="sd">            hillshade: Relief-shade the density surface for this call (`True`</span>
+<a id="__codelineno-0-412" name="__codelineno-0-412"></a><span class="sd">                or an options dict; see `cleopatra.hillshade`). Defaults to</span>
+<a id="__codelineno-0-413" name="__codelineno-0-413"></a><span class="sd">                None, which keeps the value set at construction. Accepting it</span>
+<a id="__codelineno-0-414" name="__codelineno-0-414"></a><span class="sd">                here mirrors `ArrayGlyph.plot`/`MeshGlyph.plot`, so `hillshade`</span>
+<a id="__codelineno-0-415" name="__codelineno-0-415"></a><span class="sd">                works the same way across all three glyphs.</span>
+<a id="__codelineno-0-416" name="__codelineno-0-416"></a><span class="sd">            style: Name of a continuous `cleopatra.colors.DATA_STYLES` preset</span>
+<a id="__codelineno-0-417" name="__codelineno-0-417"></a><span class="sd">                to colour the density with (its cmap + norm; composes with</span>
+<a id="__codelineno-0-418" name="__codelineno-0-418"></a><span class="sd">                `hillshade`). The preset name is **sticky** -- once set it</span>
+<a id="__codelineno-0-419" name="__codelineno-0-419"></a><span class="sd">                persists into `default_options` and survives later plain</span>
+<a id="__codelineno-0-420" name="__codelineno-0-420"></a><span class="sd">                `plot()` calls (like `ArrayGlyph`), and `self.style` reads it</span>
+<a id="__codelineno-0-421" name="__codelineno-0-421"></a><span class="sd">                back; the resolved cmap is not persisted, so it never leaks.</span>
+<a id="__codelineno-0-422" name="__codelineno-0-422"></a><span class="sd">                Not passing `style` keeps the current preset; passing</span>
+<a id="__codelineno-0-423" name="__codelineno-0-423"></a><span class="sd">                `style=None` clears it back to the plain density colouring</span>
+<a id="__codelineno-0-424" name="__codelineno-0-424"></a><span class="sd">                (unlike `hillshade`, which reverts to its construction value).</span>
+<a id="__codelineno-0-425" name="__codelineno-0-425"></a><span class="sd">                A categorical preset has no meaning for a continuous density</span>
+<a id="__codelineno-0-426" name="__codelineno-0-426"></a><span class="sd">                and raises `ValueError`. Valid names:</span>
+<a id="__codelineno-0-427" name="__codelineno-0-427"></a><span class="sd">                `sorted(cleopatra.colors.DATA_STYLES)`.</span>
+<a id="__codelineno-0-428" name="__codelineno-0-428"></a>
+<a id="__codelineno-0-429" name="__codelineno-0-429"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-0-430" name="__codelineno-0-430"></a><span class="sd">            tuple[Figure, Axes, QuadContourSet]: The figure, the axes, and</span>
+<a id="__codelineno-0-431" name="__codelineno-0-431"></a><span class="sd">                the contour set (the mappable the colorbar attaches to).</span>
+<a id="__codelineno-0-432" name="__codelineno-0-432"></a>
+<a id="__codelineno-0-433" name="__codelineno-0-433"></a><span class="sd">        Raises:</span>
+<a id="__codelineno-0-434" name="__codelineno-0-434"></a><span class="sd">            ValueError: If a coordinate has zero spread (via `evaluate`).</span>
+<a id="__codelineno-0-435" name="__codelineno-0-435"></a><span class="sd">            TypeError: If `clip_path` is an unsupported type (via the clip</span>
+<a id="__codelineno-0-436" name="__codelineno-0-436"></a><span class="sd">                step).</span>
+<a id="__codelineno-0-437" name="__codelineno-0-437"></a>
+<a id="__codelineno-0-438" name="__codelineno-0-438"></a><span class="sd">        Examples:</span>
+<a id="__codelineno-0-439" name="__codelineno-0-439"></a><span class="sd">            - Filled contours add a colorbar by default:</span>
+<a id="__codelineno-0-440" name="__codelineno-0-440"></a><span class="sd">                ```python</span>
+<a id="__codelineno-0-441" name="__codelineno-0-441"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-442" name="__codelineno-0-442"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.kde_glyph import KDEGlyph</span>
+<a id="__codelineno-0-443" name="__codelineno-0-443"></a><span class="sd">                &gt;&gt;&gt; rng = np.random.default_rng(3)</span>
+<a id="__codelineno-0-444" name="__codelineno-0-444"></a><span class="sd">                &gt;&gt;&gt; x, y = rng.normal(size=300), rng.normal(size=300)</span>
+<a id="__codelineno-0-445" name="__codelineno-0-445"></a><span class="sd">                &gt;&gt;&gt; glyph = KDEGlyph(x, y, gridsize=40)</span>
+<a id="__codelineno-0-446" name="__codelineno-0-446"></a><span class="sd">                &gt;&gt;&gt; fig, ax, cs = glyph.plot()</span>
+<a id="__codelineno-0-447" name="__codelineno-0-447"></a><span class="sd">                &gt;&gt;&gt; glyph.cbar is not None</span>
+<a id="__codelineno-0-448" name="__codelineno-0-448"></a><span class="sd">                True</span>
+<a id="__codelineno-0-449" name="__codelineno-0-449"></a>
+<a id="__codelineno-0-450" name="__codelineno-0-450"></a><span class="sd">                ```</span>
+<a id="__codelineno-0-451" name="__codelineno-0-451"></a><span class="sd">            - Line contours (`shade=False`) and no colorbar:</span>
+<a id="__codelineno-0-452" name="__codelineno-0-452"></a><span class="sd">                ```python</span>
+<a id="__codelineno-0-453" name="__codelineno-0-453"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-454" name="__codelineno-0-454"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.kde_glyph import KDEGlyph</span>
+<a id="__codelineno-0-455" name="__codelineno-0-455"></a><span class="sd">                &gt;&gt;&gt; rng = np.random.default_rng(4)</span>
+<a id="__codelineno-0-456" name="__codelineno-0-456"></a><span class="sd">                &gt;&gt;&gt; x, y = rng.normal(size=300), rng.normal(size=300)</span>
+<a id="__codelineno-0-457" name="__codelineno-0-457"></a><span class="sd">                &gt;&gt;&gt; glyph = KDEGlyph(x, y, gridsize=40, shade=False)</span>
+<a id="__codelineno-0-458" name="__codelineno-0-458"></a><span class="sd">                &gt;&gt;&gt; fig, ax, cs = glyph.plot(add_colorbar=False)</span>
+<a id="__codelineno-0-459" name="__codelineno-0-459"></a><span class="sd">                &gt;&gt;&gt; glyph.cbar is None</span>
+<a id="__codelineno-0-460" name="__codelineno-0-460"></a><span class="sd">                True</span>
+<a id="__codelineno-0-461" name="__codelineno-0-461"></a>
+<a id="__codelineno-0-462" name="__codelineno-0-462"></a><span class="sd">                ```</span>
+<a id="__codelineno-0-463" name="__codelineno-0-463"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-464" name="__codelineno-0-464"></a>        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-465" name="__codelineno-0-465"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span>
+<a id="__codelineno-0-466" name="__codelineno-0-466"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="o">=</span> <span class="n">_root_figure</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+<a id="__codelineno-0-467" name="__codelineno-0-467"></a>        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-468" name="__codelineno-0-468"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_figure_axes</span><span class="p">()</span>
+<a id="__codelineno-0-469" name="__codelineno-0-469"></a>        <span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span>
+<a id="__codelineno-0-470" name="__codelineno-0-470"></a>        <span class="n">opts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span>
+<a id="__codelineno-0-471" name="__codelineno-0-471"></a>
+<a id="__codelineno-0-472" name="__codelineno-0-472"></a>        <span class="k">if</span> <span class="n">title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-473" name="__codelineno-0-473"></a>            <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">title</span>
+<a id="__codelineno-0-474" name="__codelineno-0-474"></a>        <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_resolve_colorbar</span><span class="p">(</span><span class="n">colorbar</span><span class="p">))</span>
+<a id="__codelineno-0-475" name="__codelineno-0-475"></a>        <span class="n">draw_colorbar</span> <span class="o">=</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;add_colorbar&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">add_colorbar</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">add_colorbar</span>
+<a id="__codelineno-0-476" name="__codelineno-0-476"></a>
+<a id="__codelineno-0-477" name="__codelineno-0-477"></a>        <span class="n">gx</span><span class="p">,</span> <span class="n">gy</span><span class="p">,</span> <span class="n">density</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
+<a id="__codelineno-0-478" name="__codelineno-0-478"></a>        <span class="n">level_edges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_levels</span><span class="p">(</span><span class="n">density</span><span class="p">)</span>
+<a id="__codelineno-0-479" name="__codelineno-0-479"></a>        <span class="n">norm</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_scalar_mapping</span><span class="p">(</span><span class="n">density</span><span class="p">)</span>
+<a id="__codelineno-0-480" name="__codelineno-0-480"></a>        <span class="n">cmap</span> <span class="o">=</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;cmap&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-481" name="__codelineno-0-481"></a>
+<a id="__codelineno-0-482" name="__codelineno-0-482"></a>        <span class="c1"># Named data-style preset: a continuous preset overrides the density&#39;s</span>
+<a id="__codelineno-0-483" name="__codelineno-0-483"></a>        <span class="c1"># cmap + norm (and composes with hillshade below). A categorical preset</span>
+<a id="__codelineno-0-484" name="__codelineno-0-484"></a>        <span class="c1"># has no meaning for a continuous density surface, so reject it. The</span>
+<a id="__codelineno-0-485" name="__codelineno-0-485"></a>        <span class="c1"># cmap is resolved into a LOCAL (not `opts`), so a per-call `style` does</span>
+<a id="__codelineno-0-486" name="__codelineno-0-486"></a>        <span class="c1"># not leak its colormap into a later `plot()` on the same instance.</span>
+<a id="__codelineno-0-487" name="__codelineno-0-487"></a>        <span class="c1"># Persist a plot-time `style` into the options so `self.style` reads it</span>
+<a id="__codelineno-0-488" name="__codelineno-0-488"></a>        <span class="c1"># back and it stays sticky across later plain `plot()` calls (matching</span>
+<a id="__codelineno-0-489" name="__codelineno-0-489"></a>        <span class="c1"># ArrayGlyph). Only the name is stored -- the resolved cmap stays a</span>
+<a id="__codelineno-0-490" name="__codelineno-0-490"></a>        <span class="c1"># local (no leak). A passed `style=None` clears it; not passing `style`</span>
+<a id="__codelineno-0-491" name="__codelineno-0-491"></a>        <span class="c1"># (the `_UNSET` sentinel) keeps the current sticky value.</span>
+<a id="__codelineno-0-492" name="__codelineno-0-492"></a>        <span class="n">prev_style</span> <span class="o">=</span> <span class="n">opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;style&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-493" name="__codelineno-0-493"></a>        <span class="k">if</span> <span class="n">style</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">_UNSET</span><span class="p">:</span>
+<a id="__codelineno-0-494" name="__codelineno-0-494"></a>            <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;style&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">style</span>
+<a id="__codelineno-0-495" name="__codelineno-0-495"></a>        <span class="n">style</span> <span class="o">=</span> <span class="n">opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;style&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-496" name="__codelineno-0-496"></a>        <span class="k">if</span> <span class="n">style</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-497" name="__codelineno-0-497"></a>            <span class="c1"># Validate before rendering, and roll back to the prior good style</span>
+<a id="__codelineno-0-498" name="__codelineno-0-498"></a>            <span class="c1"># on a bad/categorical name so the sticky style isn&#39;t poisoned</span>
+<a id="__codelineno-0-499" name="__codelineno-0-499"></a>            <span class="c1"># (a poisoned name would re-raise on every later plot()).</span>
+<a id="__codelineno-0-500" name="__codelineno-0-500"></a>            <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-501" name="__codelineno-0-501"></a>                <span class="n">_</span><span class="p">,</span> <span class="n">cfg</span> <span class="o">=</span> <span class="n">resolve_single_layer_style</span><span class="p">(</span><span class="n">style</span><span class="p">)</span>
+<a id="__codelineno-0-502" name="__codelineno-0-502"></a>                <span class="k">if</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;categories&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-503" name="__codelineno-0-503"></a>                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-504" name="__codelineno-0-504"></a>                        <span class="sa">f</span><span class="s2">&quot;data style </span><span class="si">{</span><span class="n">style</span><span class="si">!r}</span><span class="s2"> is categorical; KDEGlyph colours &quot;</span>
+<a id="__codelineno-0-505" name="__codelineno-0-505"></a>                        <span class="s2">&quot;a continuous density, so only continuous presets apply&quot;</span>
+<a id="__codelineno-0-506" name="__codelineno-0-506"></a>                    <span class="p">)</span>
+<a id="__codelineno-0-507" name="__codelineno-0-507"></a>            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+<a id="__codelineno-0-508" name="__codelineno-0-508"></a>                <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;style&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">prev_style</span>
+<a id="__codelineno-0-509" name="__codelineno-0-509"></a>                <span class="k">raise</span>
+<a id="__codelineno-0-510" name="__codelineno-0-510"></a>            <span class="c1"># A caller vmin/vmax pins the preset&#39;s colour scale: a preset that</span>
+<a id="__codelineno-0-511" name="__codelineno-0-511"></a>            <span class="c1"># auto-ranges by default (e.g. &quot;temperature&quot;) then stretches between</span>
+<a id="__codelineno-0-512" name="__codelineno-0-512"></a>            <span class="c1"># the given bounds, exactly as apply_data_style / ArrayGlyph do; None</span>
+<a id="__codelineno-0-513" name="__codelineno-0-513"></a>            <span class="c1"># leaves the preset&#39;s own scale (auto-range, or its fixed levels).</span>
+<a id="__codelineno-0-514" name="__codelineno-0-514"></a>            <span class="n">cfg</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-515" name="__codelineno-0-515"></a>                <span class="o">**</span><span class="n">cfg</span><span class="p">,</span>
+<a id="__codelineno-0-516" name="__codelineno-0-516"></a>                <span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">opts</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;vmin&quot;</span><span class="p">,</span> <span class="s2">&quot;vmax&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">},</span>
+<a id="__codelineno-0-517" name="__codelineno-0-517"></a>            <span class="p">}</span>
+<a id="__codelineno-0-518" name="__codelineno-0-518"></a>            <span class="n">cmap</span> <span class="o">=</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;cmap&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-519" name="__codelineno-0-519"></a>            <span class="n">norm</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">resolve_style_norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">density</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span> <span class="n">cfg</span><span class="p">)</span>
+<a id="__codelineno-0-520" name="__codelineno-0-520"></a>            <span class="c1"># Drop the linear ticks so the colorbar matches the preset norm.</span>
+<a id="__codelineno-0-521" name="__codelineno-0-521"></a>            <span class="n">cbar_kw</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;ticks&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<a id="__codelineno-0-522" name="__codelineno-0-522"></a>
+<a id="__codelineno-0-523" name="__codelineno-0-523"></a>        <span class="n">hillshade</span> <span class="o">=</span> <span class="n">resolve_hillshade</span><span class="p">(</span>
+<a id="__codelineno-0-524" name="__codelineno-0-524"></a>            <span class="n">hillshade</span> <span class="k">if</span> <span class="n">hillshade</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;hillshade&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-525" name="__codelineno-0-525"></a>        <span class="p">)</span>
+<a id="__codelineno-0-526" name="__codelineno-0-526"></a>        <span class="k">if</span> <span class="n">hillshade</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-527" name="__codelineno-0-527"></a>            <span class="c1"># Treat the density as a surface and relief-shade it, so the</span>
+<a id="__codelineno-0-528" name="__codelineno-0-528"></a>            <span class="c1"># &quot;density terrain&quot; (peaks and ridges) reads by form. The shaded</span>
+<a id="__codelineno-0-529" name="__codelineno-0-529"></a>            <span class="c1"># RGBA image carries no scalar array, so the colorbar attaches to a</span>
+<a id="__codelineno-0-530" name="__codelineno-0-530"></a>            <span class="c1"># ScalarMappable proxy carrying the same cmap/norm.</span>
+<a id="__codelineno-0-531" name="__codelineno-0-531"></a>            <span class="n">hs_norm</span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-0-532" name="__codelineno-0-532"></a>                <span class="n">norm</span>
+<a id="__codelineno-0-533" name="__codelineno-0-533"></a>                <span class="k">if</span> <span class="n">norm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-0-534" name="__codelineno-0-534"></a>                <span class="k">else</span> <span class="n">Normalize</span><span class="p">(</span><span class="n">vmin</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">density</span><span class="o">.</span><span class="n">min</span><span class="p">()),</span> <span class="n">vmax</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">density</span><span class="o">.</span><span class="n">max</span><span class="p">()))</span>
+<a id="__codelineno-0-535" name="__codelineno-0-535"></a>            <span class="p">)</span>
+<a id="__codelineno-0-536" name="__codelineno-0-536"></a>            <span class="n">rgba</span> <span class="o">=</span> <span class="n">shade_grid</span><span class="p">(</span><span class="n">density</span><span class="p">,</span> <span class="n">cmap</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="n">hs_norm</span><span class="p">,</span> <span class="o">**</span><span class="n">hillshade</span><span class="p">)</span>
+<a id="__codelineno-0-537" name="__codelineno-0-537"></a>            <span class="n">extent</span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-0-538" name="__codelineno-0-538"></a>                <span class="nb">float</span><span class="p">(</span><span class="n">gx</span><span class="o">.</span><span class="n">min</span><span class="p">()),</span>
+<a id="__codelineno-0-539" name="__codelineno-0-539"></a>                <span class="nb">float</span><span class="p">(</span><span class="n">gx</span><span class="o">.</span><span class="n">max</span><span class="p">()),</span>
+<a id="__codelineno-0-540" name="__codelineno-0-540"></a>                <span class="nb">float</span><span class="p">(</span><span class="n">gy</span><span class="o">.</span><span class="n">min</span><span class="p">()),</span>
+<a id="__codelineno-0-541" name="__codelineno-0-541"></a>                <span class="nb">float</span><span class="p">(</span><span class="n">gy</span><span class="o">.</span><span class="n">max</span><span class="p">()),</span>
+<a id="__codelineno-0-542" name="__codelineno-0-542"></a>            <span class="p">)</span>
+<a id="__codelineno-0-543" name="__codelineno-0-543"></a>            <span class="n">mappable</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">rgba</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">extent</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s2">&quot;lower&quot;</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-544" name="__codelineno-0-544"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_apply_clip</span><span class="p">(</span><span class="n">mappable</span><span class="p">)</span>
+<a id="__codelineno-0-545" name="__codelineno-0-545"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="n">mappable</span>
+<a id="__codelineno-0-546" name="__codelineno-0-546"></a>            <span class="k">if</span> <span class="n">draw_colorbar</span><span class="p">:</span>
+<a id="__codelineno-0-547" name="__codelineno-0-547"></a>                <span class="n">proxy</span> <span class="o">=</span> <span class="n">ScalarMappable</span><span class="p">(</span><span class="n">norm</span><span class="o">=</span><span class="n">hs_norm</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">)</span>
+<a id="__codelineno-0-548" name="__codelineno-0-548"></a>                <span class="n">proxy</span><span class="o">.</span><span class="n">set_array</span><span class="p">(</span><span class="n">density</span><span class="p">)</span>
+<a id="__codelineno-0-549" name="__codelineno-0-549"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_color_bar</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">proxy</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">)</span>
+<a id="__codelineno-0-550" name="__codelineno-0-550"></a>            <span class="k">if</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]:</span>
+<a id="__codelineno-0-551" name="__codelineno-0-551"></a>                <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title_size&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-552" name="__codelineno-0-552"></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">mappable</span>
+<a id="__codelineno-0-553" name="__codelineno-0-553"></a>
+<a id="__codelineno-0-554" name="__codelineno-0-554"></a>        <span class="n">render</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">contourf</span> <span class="k">if</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;shade&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">ax</span><span class="o">.</span><span class="n">contour</span>
+<a id="__codelineno-0-555" name="__codelineno-0-555"></a>        <span class="n">contour_set</span> <span class="o">=</span> <span class="n">render</span><span class="p">(</span><span class="n">gx</span><span class="p">,</span> <span class="n">gy</span><span class="p">,</span> <span class="n">density</span><span class="p">,</span> <span class="n">levels</span><span class="o">=</span><span class="n">level_edges</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">)</span>
+<a id="__codelineno-0-556" name="__codelineno-0-556"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_apply_clip</span><span class="p">(</span><span class="n">contour_set</span><span class="p">)</span>
+<a id="__codelineno-0-557" name="__codelineno-0-557"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="n">contour_set</span>
+<a id="__codelineno-0-558" name="__codelineno-0-558"></a>
+<a id="__codelineno-0-559" name="__codelineno-0-559"></a>        <span class="k">if</span> <span class="n">draw_colorbar</span><span class="p">:</span>
+<a id="__codelineno-0-560" name="__codelineno-0-560"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_color_bar</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">contour_set</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">)</span>
+<a id="__codelineno-0-561" name="__codelineno-0-561"></a>
+<a id="__codelineno-0-562" name="__codelineno-0-562"></a>        <span class="k">if</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]:</span>
+<a id="__codelineno-0-563" name="__codelineno-0-563"></a>            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title_size&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-564" name="__codelineno-0-564"></a>
+<a id="__codelineno-0-565" name="__codelineno-0-565"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">contour_set</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -3995,8 +3999,10 @@ None, which keeps the value set at construction.</p>
               <div class="doc-md-description">
                 <p>Typed <code>ColorBar</code> spec (or <code>True</code>/<code>False</code>/<code>None</code>) for the
 colorbar's placement, caption, and sizing; resolved into the
-<code>cbar_*</code> options for this call. An explicit <code>add_colorbar</code> still
-overrides the on/off decision.</p>
+<code>cbar_*</code> options. A <code>ColorBar</code>/<code>True</code> also enables the bar and is
+<strong>sticky</strong> -- it persists into later plots, overriding a
+construction-time <code>add_colorbar=False</code>; an explicit
+<code>add_colorbar=</code> argument still wins the on/off decision.</p>
               </div>
             </td>
             <td>
@@ -4320,7 +4326,9 @@ step).</p>
 <span class="normal"><a href="#__codelineno-0-560">560</a></span>
 <span class="normal"><a href="#__codelineno-0-561">561</a></span>
 <span class="normal"><a href="#__codelineno-0-562">562</a></span>
-<span class="normal"><a href="#__codelineno-0-563">563</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-381" name="__codelineno-0-381"></a><span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-563">563</a></span>
+<span class="normal"><a href="#__codelineno-0-564">564</a></span>
+<span class="normal"><a href="#__codelineno-0-565">565</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-381" name="__codelineno-0-381"></a><span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span>
 <a id="__codelineno-0-382" name="__codelineno-0-382"></a>    <span class="bp">self</span><span class="p">,</span>
 <a id="__codelineno-0-383" name="__codelineno-0-383"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-384" name="__codelineno-0-384"></a>    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4346,163 +4354,165 @@ step).</p>
 <a id="__codelineno-0-404" name="__codelineno-0-404"></a><span class="sd">            None, which keeps the value set at construction.</span>
 <a id="__codelineno-0-405" name="__codelineno-0-405"></a><span class="sd">        colorbar: Typed `ColorBar` spec (or `True`/`False`/`None`) for the</span>
 <a id="__codelineno-0-406" name="__codelineno-0-406"></a><span class="sd">            colorbar&#39;s placement, caption, and sizing; resolved into the</span>
-<a id="__codelineno-0-407" name="__codelineno-0-407"></a><span class="sd">            `cbar_*` options for this call. An explicit `add_colorbar` still</span>
-<a id="__codelineno-0-408" name="__codelineno-0-408"></a><span class="sd">            overrides the on/off decision.</span>
-<a id="__codelineno-0-409" name="__codelineno-0-409"></a><span class="sd">        hillshade: Relief-shade the density surface for this call (`True`</span>
-<a id="__codelineno-0-410" name="__codelineno-0-410"></a><span class="sd">            or an options dict; see `cleopatra.hillshade`). Defaults to</span>
-<a id="__codelineno-0-411" name="__codelineno-0-411"></a><span class="sd">            None, which keeps the value set at construction. Accepting it</span>
-<a id="__codelineno-0-412" name="__codelineno-0-412"></a><span class="sd">            here mirrors `ArrayGlyph.plot`/`MeshGlyph.plot`, so `hillshade`</span>
-<a id="__codelineno-0-413" name="__codelineno-0-413"></a><span class="sd">            works the same way across all three glyphs.</span>
-<a id="__codelineno-0-414" name="__codelineno-0-414"></a><span class="sd">        style: Name of a continuous `cleopatra.colors.DATA_STYLES` preset</span>
-<a id="__codelineno-0-415" name="__codelineno-0-415"></a><span class="sd">            to colour the density with (its cmap + norm; composes with</span>
-<a id="__codelineno-0-416" name="__codelineno-0-416"></a><span class="sd">            `hillshade`). The preset name is **sticky** -- once set it</span>
-<a id="__codelineno-0-417" name="__codelineno-0-417"></a><span class="sd">            persists into `default_options` and survives later plain</span>
-<a id="__codelineno-0-418" name="__codelineno-0-418"></a><span class="sd">            `plot()` calls (like `ArrayGlyph`), and `self.style` reads it</span>
-<a id="__codelineno-0-419" name="__codelineno-0-419"></a><span class="sd">            back; the resolved cmap is not persisted, so it never leaks.</span>
-<a id="__codelineno-0-420" name="__codelineno-0-420"></a><span class="sd">            Not passing `style` keeps the current preset; passing</span>
-<a id="__codelineno-0-421" name="__codelineno-0-421"></a><span class="sd">            `style=None` clears it back to the plain density colouring</span>
-<a id="__codelineno-0-422" name="__codelineno-0-422"></a><span class="sd">            (unlike `hillshade`, which reverts to its construction value).</span>
-<a id="__codelineno-0-423" name="__codelineno-0-423"></a><span class="sd">            A categorical preset has no meaning for a continuous density</span>
-<a id="__codelineno-0-424" name="__codelineno-0-424"></a><span class="sd">            and raises `ValueError`. Valid names:</span>
-<a id="__codelineno-0-425" name="__codelineno-0-425"></a><span class="sd">            `sorted(cleopatra.colors.DATA_STYLES)`.</span>
-<a id="__codelineno-0-426" name="__codelineno-0-426"></a>
-<a id="__codelineno-0-427" name="__codelineno-0-427"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-428" name="__codelineno-0-428"></a><span class="sd">        tuple[Figure, Axes, QuadContourSet]: The figure, the axes, and</span>
-<a id="__codelineno-0-429" name="__codelineno-0-429"></a><span class="sd">            the contour set (the mappable the colorbar attaches to).</span>
-<a id="__codelineno-0-430" name="__codelineno-0-430"></a>
-<a id="__codelineno-0-431" name="__codelineno-0-431"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-432" name="__codelineno-0-432"></a><span class="sd">        ValueError: If a coordinate has zero spread (via `evaluate`).</span>
-<a id="__codelineno-0-433" name="__codelineno-0-433"></a><span class="sd">        TypeError: If `clip_path` is an unsupported type (via the clip</span>
-<a id="__codelineno-0-434" name="__codelineno-0-434"></a><span class="sd">            step).</span>
-<a id="__codelineno-0-435" name="__codelineno-0-435"></a>
-<a id="__codelineno-0-436" name="__codelineno-0-436"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-437" name="__codelineno-0-437"></a><span class="sd">        - Filled contours add a colorbar by default:</span>
-<a id="__codelineno-0-438" name="__codelineno-0-438"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-439" name="__codelineno-0-439"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-440" name="__codelineno-0-440"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.kde_glyph import KDEGlyph</span>
-<a id="__codelineno-0-441" name="__codelineno-0-441"></a><span class="sd">            &gt;&gt;&gt; rng = np.random.default_rng(3)</span>
-<a id="__codelineno-0-442" name="__codelineno-0-442"></a><span class="sd">            &gt;&gt;&gt; x, y = rng.normal(size=300), rng.normal(size=300)</span>
-<a id="__codelineno-0-443" name="__codelineno-0-443"></a><span class="sd">            &gt;&gt;&gt; glyph = KDEGlyph(x, y, gridsize=40)</span>
-<a id="__codelineno-0-444" name="__codelineno-0-444"></a><span class="sd">            &gt;&gt;&gt; fig, ax, cs = glyph.plot()</span>
-<a id="__codelineno-0-445" name="__codelineno-0-445"></a><span class="sd">            &gt;&gt;&gt; glyph.cbar is not None</span>
-<a id="__codelineno-0-446" name="__codelineno-0-446"></a><span class="sd">            True</span>
-<a id="__codelineno-0-447" name="__codelineno-0-447"></a>
-<a id="__codelineno-0-448" name="__codelineno-0-448"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-449" name="__codelineno-0-449"></a><span class="sd">        - Line contours (`shade=False`) and no colorbar:</span>
-<a id="__codelineno-0-450" name="__codelineno-0-450"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-451" name="__codelineno-0-451"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-452" name="__codelineno-0-452"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.kde_glyph import KDEGlyph</span>
-<a id="__codelineno-0-453" name="__codelineno-0-453"></a><span class="sd">            &gt;&gt;&gt; rng = np.random.default_rng(4)</span>
-<a id="__codelineno-0-454" name="__codelineno-0-454"></a><span class="sd">            &gt;&gt;&gt; x, y = rng.normal(size=300), rng.normal(size=300)</span>
-<a id="__codelineno-0-455" name="__codelineno-0-455"></a><span class="sd">            &gt;&gt;&gt; glyph = KDEGlyph(x, y, gridsize=40, shade=False)</span>
-<a id="__codelineno-0-456" name="__codelineno-0-456"></a><span class="sd">            &gt;&gt;&gt; fig, ax, cs = glyph.plot(add_colorbar=False)</span>
-<a id="__codelineno-0-457" name="__codelineno-0-457"></a><span class="sd">            &gt;&gt;&gt; glyph.cbar is None</span>
-<a id="__codelineno-0-458" name="__codelineno-0-458"></a><span class="sd">            True</span>
-<a id="__codelineno-0-459" name="__codelineno-0-459"></a>
-<a id="__codelineno-0-460" name="__codelineno-0-460"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-461" name="__codelineno-0-461"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-462" name="__codelineno-0-462"></a>    <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-463" name="__codelineno-0-463"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span>
-<a id="__codelineno-0-464" name="__codelineno-0-464"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="o">=</span> <span class="n">_root_figure</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
-<a id="__codelineno-0-465" name="__codelineno-0-465"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-466" name="__codelineno-0-466"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_figure_axes</span><span class="p">()</span>
-<a id="__codelineno-0-467" name="__codelineno-0-467"></a>    <span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span>
-<a id="__codelineno-0-468" name="__codelineno-0-468"></a>    <span class="n">opts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span>
-<a id="__codelineno-0-469" name="__codelineno-0-469"></a>
-<a id="__codelineno-0-470" name="__codelineno-0-470"></a>    <span class="k">if</span> <span class="n">title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-471" name="__codelineno-0-471"></a>        <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">title</span>
-<a id="__codelineno-0-472" name="__codelineno-0-472"></a>    <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_resolve_colorbar</span><span class="p">(</span><span class="n">colorbar</span><span class="p">))</span>
-<a id="__codelineno-0-473" name="__codelineno-0-473"></a>    <span class="n">draw_colorbar</span> <span class="o">=</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;add_colorbar&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">add_colorbar</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">add_colorbar</span>
-<a id="__codelineno-0-474" name="__codelineno-0-474"></a>
-<a id="__codelineno-0-475" name="__codelineno-0-475"></a>    <span class="n">gx</span><span class="p">,</span> <span class="n">gy</span><span class="p">,</span> <span class="n">density</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
-<a id="__codelineno-0-476" name="__codelineno-0-476"></a>    <span class="n">level_edges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_levels</span><span class="p">(</span><span class="n">density</span><span class="p">)</span>
-<a id="__codelineno-0-477" name="__codelineno-0-477"></a>    <span class="n">norm</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_scalar_mapping</span><span class="p">(</span><span class="n">density</span><span class="p">)</span>
-<a id="__codelineno-0-478" name="__codelineno-0-478"></a>    <span class="n">cmap</span> <span class="o">=</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;cmap&quot;</span><span class="p">]</span>
-<a id="__codelineno-0-479" name="__codelineno-0-479"></a>
-<a id="__codelineno-0-480" name="__codelineno-0-480"></a>    <span class="c1"># Named data-style preset: a continuous preset overrides the density&#39;s</span>
-<a id="__codelineno-0-481" name="__codelineno-0-481"></a>    <span class="c1"># cmap + norm (and composes with hillshade below). A categorical preset</span>
-<a id="__codelineno-0-482" name="__codelineno-0-482"></a>    <span class="c1"># has no meaning for a continuous density surface, so reject it. The</span>
-<a id="__codelineno-0-483" name="__codelineno-0-483"></a>    <span class="c1"># cmap is resolved into a LOCAL (not `opts`), so a per-call `style` does</span>
-<a id="__codelineno-0-484" name="__codelineno-0-484"></a>    <span class="c1"># not leak its colormap into a later `plot()` on the same instance.</span>
-<a id="__codelineno-0-485" name="__codelineno-0-485"></a>    <span class="c1"># Persist a plot-time `style` into the options so `self.style` reads it</span>
-<a id="__codelineno-0-486" name="__codelineno-0-486"></a>    <span class="c1"># back and it stays sticky across later plain `plot()` calls (matching</span>
-<a id="__codelineno-0-487" name="__codelineno-0-487"></a>    <span class="c1"># ArrayGlyph). Only the name is stored -- the resolved cmap stays a</span>
-<a id="__codelineno-0-488" name="__codelineno-0-488"></a>    <span class="c1"># local (no leak). A passed `style=None` clears it; not passing `style`</span>
-<a id="__codelineno-0-489" name="__codelineno-0-489"></a>    <span class="c1"># (the `_UNSET` sentinel) keeps the current sticky value.</span>
-<a id="__codelineno-0-490" name="__codelineno-0-490"></a>    <span class="n">prev_style</span> <span class="o">=</span> <span class="n">opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;style&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-491" name="__codelineno-0-491"></a>    <span class="k">if</span> <span class="n">style</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">_UNSET</span><span class="p">:</span>
-<a id="__codelineno-0-492" name="__codelineno-0-492"></a>        <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;style&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">style</span>
-<a id="__codelineno-0-493" name="__codelineno-0-493"></a>    <span class="n">style</span> <span class="o">=</span> <span class="n">opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;style&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-494" name="__codelineno-0-494"></a>    <span class="k">if</span> <span class="n">style</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-495" name="__codelineno-0-495"></a>        <span class="c1"># Validate before rendering, and roll back to the prior good style</span>
-<a id="__codelineno-0-496" name="__codelineno-0-496"></a>        <span class="c1"># on a bad/categorical name so the sticky style isn&#39;t poisoned</span>
-<a id="__codelineno-0-497" name="__codelineno-0-497"></a>        <span class="c1"># (a poisoned name would re-raise on every later plot()).</span>
-<a id="__codelineno-0-498" name="__codelineno-0-498"></a>        <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-499" name="__codelineno-0-499"></a>            <span class="n">_</span><span class="p">,</span> <span class="n">cfg</span> <span class="o">=</span> <span class="n">resolve_single_layer_style</span><span class="p">(</span><span class="n">style</span><span class="p">)</span>
-<a id="__codelineno-0-500" name="__codelineno-0-500"></a>            <span class="k">if</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;categories&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-501" name="__codelineno-0-501"></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-502" name="__codelineno-0-502"></a>                    <span class="sa">f</span><span class="s2">&quot;data style </span><span class="si">{</span><span class="n">style</span><span class="si">!r}</span><span class="s2"> is categorical; KDEGlyph colours &quot;</span>
-<a id="__codelineno-0-503" name="__codelineno-0-503"></a>                    <span class="s2">&quot;a continuous density, so only continuous presets apply&quot;</span>
-<a id="__codelineno-0-504" name="__codelineno-0-504"></a>                <span class="p">)</span>
-<a id="__codelineno-0-505" name="__codelineno-0-505"></a>        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-<a id="__codelineno-0-506" name="__codelineno-0-506"></a>            <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;style&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">prev_style</span>
-<a id="__codelineno-0-507" name="__codelineno-0-507"></a>            <span class="k">raise</span>
-<a id="__codelineno-0-508" name="__codelineno-0-508"></a>        <span class="c1"># A caller vmin/vmax pins the preset&#39;s colour scale: a preset that</span>
-<a id="__codelineno-0-509" name="__codelineno-0-509"></a>        <span class="c1"># auto-ranges by default (e.g. &quot;temperature&quot;) then stretches between</span>
-<a id="__codelineno-0-510" name="__codelineno-0-510"></a>        <span class="c1"># the given bounds, exactly as apply_data_style / ArrayGlyph do; None</span>
-<a id="__codelineno-0-511" name="__codelineno-0-511"></a>        <span class="c1"># leaves the preset&#39;s own scale (auto-range, or its fixed levels).</span>
-<a id="__codelineno-0-512" name="__codelineno-0-512"></a>        <span class="n">cfg</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-513" name="__codelineno-0-513"></a>            <span class="o">**</span><span class="n">cfg</span><span class="p">,</span>
-<a id="__codelineno-0-514" name="__codelineno-0-514"></a>            <span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">opts</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;vmin&quot;</span><span class="p">,</span> <span class="s2">&quot;vmax&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">},</span>
-<a id="__codelineno-0-515" name="__codelineno-0-515"></a>        <span class="p">}</span>
-<a id="__codelineno-0-516" name="__codelineno-0-516"></a>        <span class="n">cmap</span> <span class="o">=</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;cmap&quot;</span><span class="p">]</span>
-<a id="__codelineno-0-517" name="__codelineno-0-517"></a>        <span class="n">norm</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">resolve_style_norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">density</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span> <span class="n">cfg</span><span class="p">)</span>
-<a id="__codelineno-0-518" name="__codelineno-0-518"></a>        <span class="c1"># Drop the linear ticks so the colorbar matches the preset norm.</span>
-<a id="__codelineno-0-519" name="__codelineno-0-519"></a>        <span class="n">cbar_kw</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;ticks&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-<a id="__codelineno-0-520" name="__codelineno-0-520"></a>
-<a id="__codelineno-0-521" name="__codelineno-0-521"></a>    <span class="n">hillshade</span> <span class="o">=</span> <span class="n">resolve_hillshade</span><span class="p">(</span>
-<a id="__codelineno-0-522" name="__codelineno-0-522"></a>        <span class="n">hillshade</span> <span class="k">if</span> <span class="n">hillshade</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;hillshade&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-523" name="__codelineno-0-523"></a>    <span class="p">)</span>
-<a id="__codelineno-0-524" name="__codelineno-0-524"></a>    <span class="k">if</span> <span class="n">hillshade</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-525" name="__codelineno-0-525"></a>        <span class="c1"># Treat the density as a surface and relief-shade it, so the</span>
-<a id="__codelineno-0-526" name="__codelineno-0-526"></a>        <span class="c1"># &quot;density terrain&quot; (peaks and ridges) reads by form. The shaded</span>
-<a id="__codelineno-0-527" name="__codelineno-0-527"></a>        <span class="c1"># RGBA image carries no scalar array, so the colorbar attaches to a</span>
-<a id="__codelineno-0-528" name="__codelineno-0-528"></a>        <span class="c1"># ScalarMappable proxy carrying the same cmap/norm.</span>
-<a id="__codelineno-0-529" name="__codelineno-0-529"></a>        <span class="n">hs_norm</span> <span class="o">=</span> <span class="p">(</span>
-<a id="__codelineno-0-530" name="__codelineno-0-530"></a>            <span class="n">norm</span>
-<a id="__codelineno-0-531" name="__codelineno-0-531"></a>            <span class="k">if</span> <span class="n">norm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-<a id="__codelineno-0-532" name="__codelineno-0-532"></a>            <span class="k">else</span> <span class="n">Normalize</span><span class="p">(</span><span class="n">vmin</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">density</span><span class="o">.</span><span class="n">min</span><span class="p">()),</span> <span class="n">vmax</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">density</span><span class="o">.</span><span class="n">max</span><span class="p">()))</span>
-<a id="__codelineno-0-533" name="__codelineno-0-533"></a>        <span class="p">)</span>
-<a id="__codelineno-0-534" name="__codelineno-0-534"></a>        <span class="n">rgba</span> <span class="o">=</span> <span class="n">shade_grid</span><span class="p">(</span><span class="n">density</span><span class="p">,</span> <span class="n">cmap</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="n">hs_norm</span><span class="p">,</span> <span class="o">**</span><span class="n">hillshade</span><span class="p">)</span>
-<a id="__codelineno-0-535" name="__codelineno-0-535"></a>        <span class="n">extent</span> <span class="o">=</span> <span class="p">(</span>
-<a id="__codelineno-0-536" name="__codelineno-0-536"></a>            <span class="nb">float</span><span class="p">(</span><span class="n">gx</span><span class="o">.</span><span class="n">min</span><span class="p">()),</span>
-<a id="__codelineno-0-537" name="__codelineno-0-537"></a>            <span class="nb">float</span><span class="p">(</span><span class="n">gx</span><span class="o">.</span><span class="n">max</span><span class="p">()),</span>
-<a id="__codelineno-0-538" name="__codelineno-0-538"></a>            <span class="nb">float</span><span class="p">(</span><span class="n">gy</span><span class="o">.</span><span class="n">min</span><span class="p">()),</span>
-<a id="__codelineno-0-539" name="__codelineno-0-539"></a>            <span class="nb">float</span><span class="p">(</span><span class="n">gy</span><span class="o">.</span><span class="n">max</span><span class="p">()),</span>
-<a id="__codelineno-0-540" name="__codelineno-0-540"></a>        <span class="p">)</span>
-<a id="__codelineno-0-541" name="__codelineno-0-541"></a>        <span class="n">mappable</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">rgba</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">extent</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s2">&quot;lower&quot;</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-542" name="__codelineno-0-542"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_apply_clip</span><span class="p">(</span><span class="n">mappable</span><span class="p">)</span>
-<a id="__codelineno-0-543" name="__codelineno-0-543"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="n">mappable</span>
-<a id="__codelineno-0-544" name="__codelineno-0-544"></a>        <span class="k">if</span> <span class="n">draw_colorbar</span><span class="p">:</span>
-<a id="__codelineno-0-545" name="__codelineno-0-545"></a>            <span class="n">proxy</span> <span class="o">=</span> <span class="n">ScalarMappable</span><span class="p">(</span><span class="n">norm</span><span class="o">=</span><span class="n">hs_norm</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">)</span>
-<a id="__codelineno-0-546" name="__codelineno-0-546"></a>            <span class="n">proxy</span><span class="o">.</span><span class="n">set_array</span><span class="p">(</span><span class="n">density</span><span class="p">)</span>
-<a id="__codelineno-0-547" name="__codelineno-0-547"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_color_bar</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">proxy</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">)</span>
-<a id="__codelineno-0-548" name="__codelineno-0-548"></a>        <span class="k">if</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]:</span>
-<a id="__codelineno-0-549" name="__codelineno-0-549"></a>            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title_size&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-550" name="__codelineno-0-550"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">mappable</span>
-<a id="__codelineno-0-551" name="__codelineno-0-551"></a>
-<a id="__codelineno-0-552" name="__codelineno-0-552"></a>    <span class="n">render</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">contourf</span> <span class="k">if</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;shade&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">ax</span><span class="o">.</span><span class="n">contour</span>
-<a id="__codelineno-0-553" name="__codelineno-0-553"></a>    <span class="n">contour_set</span> <span class="o">=</span> <span class="n">render</span><span class="p">(</span><span class="n">gx</span><span class="p">,</span> <span class="n">gy</span><span class="p">,</span> <span class="n">density</span><span class="p">,</span> <span class="n">levels</span><span class="o">=</span><span class="n">level_edges</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">)</span>
-<a id="__codelineno-0-554" name="__codelineno-0-554"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_apply_clip</span><span class="p">(</span><span class="n">contour_set</span><span class="p">)</span>
-<a id="__codelineno-0-555" name="__codelineno-0-555"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="n">contour_set</span>
-<a id="__codelineno-0-556" name="__codelineno-0-556"></a>
-<a id="__codelineno-0-557" name="__codelineno-0-557"></a>    <span class="k">if</span> <span class="n">draw_colorbar</span><span class="p">:</span>
-<a id="__codelineno-0-558" name="__codelineno-0-558"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_color_bar</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">contour_set</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">)</span>
-<a id="__codelineno-0-559" name="__codelineno-0-559"></a>
-<a id="__codelineno-0-560" name="__codelineno-0-560"></a>    <span class="k">if</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]:</span>
-<a id="__codelineno-0-561" name="__codelineno-0-561"></a>        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title_size&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-562" name="__codelineno-0-562"></a>
-<a id="__codelineno-0-563" name="__codelineno-0-563"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">contour_set</span>
+<a id="__codelineno-0-407" name="__codelineno-0-407"></a><span class="sd">            `cbar_*` options. A `ColorBar`/`True` also enables the bar and is</span>
+<a id="__codelineno-0-408" name="__codelineno-0-408"></a><span class="sd">            **sticky** -- it persists into later plots, overriding a</span>
+<a id="__codelineno-0-409" name="__codelineno-0-409"></a><span class="sd">            construction-time `add_colorbar=False`; an explicit</span>
+<a id="__codelineno-0-410" name="__codelineno-0-410"></a><span class="sd">            `add_colorbar=` argument still wins the on/off decision.</span>
+<a id="__codelineno-0-411" name="__codelineno-0-411"></a><span class="sd">        hillshade: Relief-shade the density surface for this call (`True`</span>
+<a id="__codelineno-0-412" name="__codelineno-0-412"></a><span class="sd">            or an options dict; see `cleopatra.hillshade`). Defaults to</span>
+<a id="__codelineno-0-413" name="__codelineno-0-413"></a><span class="sd">            None, which keeps the value set at construction. Accepting it</span>
+<a id="__codelineno-0-414" name="__codelineno-0-414"></a><span class="sd">            here mirrors `ArrayGlyph.plot`/`MeshGlyph.plot`, so `hillshade`</span>
+<a id="__codelineno-0-415" name="__codelineno-0-415"></a><span class="sd">            works the same way across all three glyphs.</span>
+<a id="__codelineno-0-416" name="__codelineno-0-416"></a><span class="sd">        style: Name of a continuous `cleopatra.colors.DATA_STYLES` preset</span>
+<a id="__codelineno-0-417" name="__codelineno-0-417"></a><span class="sd">            to colour the density with (its cmap + norm; composes with</span>
+<a id="__codelineno-0-418" name="__codelineno-0-418"></a><span class="sd">            `hillshade`). The preset name is **sticky** -- once set it</span>
+<a id="__codelineno-0-419" name="__codelineno-0-419"></a><span class="sd">            persists into `default_options` and survives later plain</span>
+<a id="__codelineno-0-420" name="__codelineno-0-420"></a><span class="sd">            `plot()` calls (like `ArrayGlyph`), and `self.style` reads it</span>
+<a id="__codelineno-0-421" name="__codelineno-0-421"></a><span class="sd">            back; the resolved cmap is not persisted, so it never leaks.</span>
+<a id="__codelineno-0-422" name="__codelineno-0-422"></a><span class="sd">            Not passing `style` keeps the current preset; passing</span>
+<a id="__codelineno-0-423" name="__codelineno-0-423"></a><span class="sd">            `style=None` clears it back to the plain density colouring</span>
+<a id="__codelineno-0-424" name="__codelineno-0-424"></a><span class="sd">            (unlike `hillshade`, which reverts to its construction value).</span>
+<a id="__codelineno-0-425" name="__codelineno-0-425"></a><span class="sd">            A categorical preset has no meaning for a continuous density</span>
+<a id="__codelineno-0-426" name="__codelineno-0-426"></a><span class="sd">            and raises `ValueError`. Valid names:</span>
+<a id="__codelineno-0-427" name="__codelineno-0-427"></a><span class="sd">            `sorted(cleopatra.colors.DATA_STYLES)`.</span>
+<a id="__codelineno-0-428" name="__codelineno-0-428"></a>
+<a id="__codelineno-0-429" name="__codelineno-0-429"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-430" name="__codelineno-0-430"></a><span class="sd">        tuple[Figure, Axes, QuadContourSet]: The figure, the axes, and</span>
+<a id="__codelineno-0-431" name="__codelineno-0-431"></a><span class="sd">            the contour set (the mappable the colorbar attaches to).</span>
+<a id="__codelineno-0-432" name="__codelineno-0-432"></a>
+<a id="__codelineno-0-433" name="__codelineno-0-433"></a><span class="sd">    Raises:</span>
+<a id="__codelineno-0-434" name="__codelineno-0-434"></a><span class="sd">        ValueError: If a coordinate has zero spread (via `evaluate`).</span>
+<a id="__codelineno-0-435" name="__codelineno-0-435"></a><span class="sd">        TypeError: If `clip_path` is an unsupported type (via the clip</span>
+<a id="__codelineno-0-436" name="__codelineno-0-436"></a><span class="sd">            step).</span>
+<a id="__codelineno-0-437" name="__codelineno-0-437"></a>
+<a id="__codelineno-0-438" name="__codelineno-0-438"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-439" name="__codelineno-0-439"></a><span class="sd">        - Filled contours add a colorbar by default:</span>
+<a id="__codelineno-0-440" name="__codelineno-0-440"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-441" name="__codelineno-0-441"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-442" name="__codelineno-0-442"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.kde_glyph import KDEGlyph</span>
+<a id="__codelineno-0-443" name="__codelineno-0-443"></a><span class="sd">            &gt;&gt;&gt; rng = np.random.default_rng(3)</span>
+<a id="__codelineno-0-444" name="__codelineno-0-444"></a><span class="sd">            &gt;&gt;&gt; x, y = rng.normal(size=300), rng.normal(size=300)</span>
+<a id="__codelineno-0-445" name="__codelineno-0-445"></a><span class="sd">            &gt;&gt;&gt; glyph = KDEGlyph(x, y, gridsize=40)</span>
+<a id="__codelineno-0-446" name="__codelineno-0-446"></a><span class="sd">            &gt;&gt;&gt; fig, ax, cs = glyph.plot()</span>
+<a id="__codelineno-0-447" name="__codelineno-0-447"></a><span class="sd">            &gt;&gt;&gt; glyph.cbar is not None</span>
+<a id="__codelineno-0-448" name="__codelineno-0-448"></a><span class="sd">            True</span>
+<a id="__codelineno-0-449" name="__codelineno-0-449"></a>
+<a id="__codelineno-0-450" name="__codelineno-0-450"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-451" name="__codelineno-0-451"></a><span class="sd">        - Line contours (`shade=False`) and no colorbar:</span>
+<a id="__codelineno-0-452" name="__codelineno-0-452"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-453" name="__codelineno-0-453"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-454" name="__codelineno-0-454"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.kde_glyph import KDEGlyph</span>
+<a id="__codelineno-0-455" name="__codelineno-0-455"></a><span class="sd">            &gt;&gt;&gt; rng = np.random.default_rng(4)</span>
+<a id="__codelineno-0-456" name="__codelineno-0-456"></a><span class="sd">            &gt;&gt;&gt; x, y = rng.normal(size=300), rng.normal(size=300)</span>
+<a id="__codelineno-0-457" name="__codelineno-0-457"></a><span class="sd">            &gt;&gt;&gt; glyph = KDEGlyph(x, y, gridsize=40, shade=False)</span>
+<a id="__codelineno-0-458" name="__codelineno-0-458"></a><span class="sd">            &gt;&gt;&gt; fig, ax, cs = glyph.plot(add_colorbar=False)</span>
+<a id="__codelineno-0-459" name="__codelineno-0-459"></a><span class="sd">            &gt;&gt;&gt; glyph.cbar is None</span>
+<a id="__codelineno-0-460" name="__codelineno-0-460"></a><span class="sd">            True</span>
+<a id="__codelineno-0-461" name="__codelineno-0-461"></a>
+<a id="__codelineno-0-462" name="__codelineno-0-462"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-463" name="__codelineno-0-463"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-464" name="__codelineno-0-464"></a>    <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-465" name="__codelineno-0-465"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span>
+<a id="__codelineno-0-466" name="__codelineno-0-466"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="o">=</span> <span class="n">_root_figure</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+<a id="__codelineno-0-467" name="__codelineno-0-467"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-468" name="__codelineno-0-468"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_figure_axes</span><span class="p">()</span>
+<a id="__codelineno-0-469" name="__codelineno-0-469"></a>    <span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span>
+<a id="__codelineno-0-470" name="__codelineno-0-470"></a>    <span class="n">opts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span>
+<a id="__codelineno-0-471" name="__codelineno-0-471"></a>
+<a id="__codelineno-0-472" name="__codelineno-0-472"></a>    <span class="k">if</span> <span class="n">title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-473" name="__codelineno-0-473"></a>        <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">title</span>
+<a id="__codelineno-0-474" name="__codelineno-0-474"></a>    <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_resolve_colorbar</span><span class="p">(</span><span class="n">colorbar</span><span class="p">))</span>
+<a id="__codelineno-0-475" name="__codelineno-0-475"></a>    <span class="n">draw_colorbar</span> <span class="o">=</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;add_colorbar&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">add_colorbar</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">add_colorbar</span>
+<a id="__codelineno-0-476" name="__codelineno-0-476"></a>
+<a id="__codelineno-0-477" name="__codelineno-0-477"></a>    <span class="n">gx</span><span class="p">,</span> <span class="n">gy</span><span class="p">,</span> <span class="n">density</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
+<a id="__codelineno-0-478" name="__codelineno-0-478"></a>    <span class="n">level_edges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_levels</span><span class="p">(</span><span class="n">density</span><span class="p">)</span>
+<a id="__codelineno-0-479" name="__codelineno-0-479"></a>    <span class="n">norm</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_scalar_mapping</span><span class="p">(</span><span class="n">density</span><span class="p">)</span>
+<a id="__codelineno-0-480" name="__codelineno-0-480"></a>    <span class="n">cmap</span> <span class="o">=</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;cmap&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-481" name="__codelineno-0-481"></a>
+<a id="__codelineno-0-482" name="__codelineno-0-482"></a>    <span class="c1"># Named data-style preset: a continuous preset overrides the density&#39;s</span>
+<a id="__codelineno-0-483" name="__codelineno-0-483"></a>    <span class="c1"># cmap + norm (and composes with hillshade below). A categorical preset</span>
+<a id="__codelineno-0-484" name="__codelineno-0-484"></a>    <span class="c1"># has no meaning for a continuous density surface, so reject it. The</span>
+<a id="__codelineno-0-485" name="__codelineno-0-485"></a>    <span class="c1"># cmap is resolved into a LOCAL (not `opts`), so a per-call `style` does</span>
+<a id="__codelineno-0-486" name="__codelineno-0-486"></a>    <span class="c1"># not leak its colormap into a later `plot()` on the same instance.</span>
+<a id="__codelineno-0-487" name="__codelineno-0-487"></a>    <span class="c1"># Persist a plot-time `style` into the options so `self.style` reads it</span>
+<a id="__codelineno-0-488" name="__codelineno-0-488"></a>    <span class="c1"># back and it stays sticky across later plain `plot()` calls (matching</span>
+<a id="__codelineno-0-489" name="__codelineno-0-489"></a>    <span class="c1"># ArrayGlyph). Only the name is stored -- the resolved cmap stays a</span>
+<a id="__codelineno-0-490" name="__codelineno-0-490"></a>    <span class="c1"># local (no leak). A passed `style=None` clears it; not passing `style`</span>
+<a id="__codelineno-0-491" name="__codelineno-0-491"></a>    <span class="c1"># (the `_UNSET` sentinel) keeps the current sticky value.</span>
+<a id="__codelineno-0-492" name="__codelineno-0-492"></a>    <span class="n">prev_style</span> <span class="o">=</span> <span class="n">opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;style&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-493" name="__codelineno-0-493"></a>    <span class="k">if</span> <span class="n">style</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">_UNSET</span><span class="p">:</span>
+<a id="__codelineno-0-494" name="__codelineno-0-494"></a>        <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;style&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">style</span>
+<a id="__codelineno-0-495" name="__codelineno-0-495"></a>    <span class="n">style</span> <span class="o">=</span> <span class="n">opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;style&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-496" name="__codelineno-0-496"></a>    <span class="k">if</span> <span class="n">style</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-497" name="__codelineno-0-497"></a>        <span class="c1"># Validate before rendering, and roll back to the prior good style</span>
+<a id="__codelineno-0-498" name="__codelineno-0-498"></a>        <span class="c1"># on a bad/categorical name so the sticky style isn&#39;t poisoned</span>
+<a id="__codelineno-0-499" name="__codelineno-0-499"></a>        <span class="c1"># (a poisoned name would re-raise on every later plot()).</span>
+<a id="__codelineno-0-500" name="__codelineno-0-500"></a>        <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-501" name="__codelineno-0-501"></a>            <span class="n">_</span><span class="p">,</span> <span class="n">cfg</span> <span class="o">=</span> <span class="n">resolve_single_layer_style</span><span class="p">(</span><span class="n">style</span><span class="p">)</span>
+<a id="__codelineno-0-502" name="__codelineno-0-502"></a>            <span class="k">if</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;categories&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-503" name="__codelineno-0-503"></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-504" name="__codelineno-0-504"></a>                    <span class="sa">f</span><span class="s2">&quot;data style </span><span class="si">{</span><span class="n">style</span><span class="si">!r}</span><span class="s2"> is categorical; KDEGlyph colours &quot;</span>
+<a id="__codelineno-0-505" name="__codelineno-0-505"></a>                    <span class="s2">&quot;a continuous density, so only continuous presets apply&quot;</span>
+<a id="__codelineno-0-506" name="__codelineno-0-506"></a>                <span class="p">)</span>
+<a id="__codelineno-0-507" name="__codelineno-0-507"></a>        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+<a id="__codelineno-0-508" name="__codelineno-0-508"></a>            <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;style&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">prev_style</span>
+<a id="__codelineno-0-509" name="__codelineno-0-509"></a>            <span class="k">raise</span>
+<a id="__codelineno-0-510" name="__codelineno-0-510"></a>        <span class="c1"># A caller vmin/vmax pins the preset&#39;s colour scale: a preset that</span>
+<a id="__codelineno-0-511" name="__codelineno-0-511"></a>        <span class="c1"># auto-ranges by default (e.g. &quot;temperature&quot;) then stretches between</span>
+<a id="__codelineno-0-512" name="__codelineno-0-512"></a>        <span class="c1"># the given bounds, exactly as apply_data_style / ArrayGlyph do; None</span>
+<a id="__codelineno-0-513" name="__codelineno-0-513"></a>        <span class="c1"># leaves the preset&#39;s own scale (auto-range, or its fixed levels).</span>
+<a id="__codelineno-0-514" name="__codelineno-0-514"></a>        <span class="n">cfg</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-515" name="__codelineno-0-515"></a>            <span class="o">**</span><span class="n">cfg</span><span class="p">,</span>
+<a id="__codelineno-0-516" name="__codelineno-0-516"></a>            <span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">opts</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;vmin&quot;</span><span class="p">,</span> <span class="s2">&quot;vmax&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">},</span>
+<a id="__codelineno-0-517" name="__codelineno-0-517"></a>        <span class="p">}</span>
+<a id="__codelineno-0-518" name="__codelineno-0-518"></a>        <span class="n">cmap</span> <span class="o">=</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;cmap&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-519" name="__codelineno-0-519"></a>        <span class="n">norm</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">resolve_style_norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">density</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span> <span class="n">cfg</span><span class="p">)</span>
+<a id="__codelineno-0-520" name="__codelineno-0-520"></a>        <span class="c1"># Drop the linear ticks so the colorbar matches the preset norm.</span>
+<a id="__codelineno-0-521" name="__codelineno-0-521"></a>        <span class="n">cbar_kw</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;ticks&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<a id="__codelineno-0-522" name="__codelineno-0-522"></a>
+<a id="__codelineno-0-523" name="__codelineno-0-523"></a>    <span class="n">hillshade</span> <span class="o">=</span> <span class="n">resolve_hillshade</span><span class="p">(</span>
+<a id="__codelineno-0-524" name="__codelineno-0-524"></a>        <span class="n">hillshade</span> <span class="k">if</span> <span class="n">hillshade</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;hillshade&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-525" name="__codelineno-0-525"></a>    <span class="p">)</span>
+<a id="__codelineno-0-526" name="__codelineno-0-526"></a>    <span class="k">if</span> <span class="n">hillshade</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-527" name="__codelineno-0-527"></a>        <span class="c1"># Treat the density as a surface and relief-shade it, so the</span>
+<a id="__codelineno-0-528" name="__codelineno-0-528"></a>        <span class="c1"># &quot;density terrain&quot; (peaks and ridges) reads by form. The shaded</span>
+<a id="__codelineno-0-529" name="__codelineno-0-529"></a>        <span class="c1"># RGBA image carries no scalar array, so the colorbar attaches to a</span>
+<a id="__codelineno-0-530" name="__codelineno-0-530"></a>        <span class="c1"># ScalarMappable proxy carrying the same cmap/norm.</span>
+<a id="__codelineno-0-531" name="__codelineno-0-531"></a>        <span class="n">hs_norm</span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-0-532" name="__codelineno-0-532"></a>            <span class="n">norm</span>
+<a id="__codelineno-0-533" name="__codelineno-0-533"></a>            <span class="k">if</span> <span class="n">norm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-0-534" name="__codelineno-0-534"></a>            <span class="k">else</span> <span class="n">Normalize</span><span class="p">(</span><span class="n">vmin</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">density</span><span class="o">.</span><span class="n">min</span><span class="p">()),</span> <span class="n">vmax</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">density</span><span class="o">.</span><span class="n">max</span><span class="p">()))</span>
+<a id="__codelineno-0-535" name="__codelineno-0-535"></a>        <span class="p">)</span>
+<a id="__codelineno-0-536" name="__codelineno-0-536"></a>        <span class="n">rgba</span> <span class="o">=</span> <span class="n">shade_grid</span><span class="p">(</span><span class="n">density</span><span class="p">,</span> <span class="n">cmap</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="n">hs_norm</span><span class="p">,</span> <span class="o">**</span><span class="n">hillshade</span><span class="p">)</span>
+<a id="__codelineno-0-537" name="__codelineno-0-537"></a>        <span class="n">extent</span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-0-538" name="__codelineno-0-538"></a>            <span class="nb">float</span><span class="p">(</span><span class="n">gx</span><span class="o">.</span><span class="n">min</span><span class="p">()),</span>
+<a id="__codelineno-0-539" name="__codelineno-0-539"></a>            <span class="nb">float</span><span class="p">(</span><span class="n">gx</span><span class="o">.</span><span class="n">max</span><span class="p">()),</span>
+<a id="__codelineno-0-540" name="__codelineno-0-540"></a>            <span class="nb">float</span><span class="p">(</span><span class="n">gy</span><span class="o">.</span><span class="n">min</span><span class="p">()),</span>
+<a id="__codelineno-0-541" name="__codelineno-0-541"></a>            <span class="nb">float</span><span class="p">(</span><span class="n">gy</span><span class="o">.</span><span class="n">max</span><span class="p">()),</span>
+<a id="__codelineno-0-542" name="__codelineno-0-542"></a>        <span class="p">)</span>
+<a id="__codelineno-0-543" name="__codelineno-0-543"></a>        <span class="n">mappable</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">rgba</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">extent</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s2">&quot;lower&quot;</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-544" name="__codelineno-0-544"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_apply_clip</span><span class="p">(</span><span class="n">mappable</span><span class="p">)</span>
+<a id="__codelineno-0-545" name="__codelineno-0-545"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="n">mappable</span>
+<a id="__codelineno-0-546" name="__codelineno-0-546"></a>        <span class="k">if</span> <span class="n">draw_colorbar</span><span class="p">:</span>
+<a id="__codelineno-0-547" name="__codelineno-0-547"></a>            <span class="n">proxy</span> <span class="o">=</span> <span class="n">ScalarMappable</span><span class="p">(</span><span class="n">norm</span><span class="o">=</span><span class="n">hs_norm</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">)</span>
+<a id="__codelineno-0-548" name="__codelineno-0-548"></a>            <span class="n">proxy</span><span class="o">.</span><span class="n">set_array</span><span class="p">(</span><span class="n">density</span><span class="p">)</span>
+<a id="__codelineno-0-549" name="__codelineno-0-549"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_color_bar</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">proxy</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">)</span>
+<a id="__codelineno-0-550" name="__codelineno-0-550"></a>        <span class="k">if</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]:</span>
+<a id="__codelineno-0-551" name="__codelineno-0-551"></a>            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title_size&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-552" name="__codelineno-0-552"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">mappable</span>
+<a id="__codelineno-0-553" name="__codelineno-0-553"></a>
+<a id="__codelineno-0-554" name="__codelineno-0-554"></a>    <span class="n">render</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">contourf</span> <span class="k">if</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;shade&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">ax</span><span class="o">.</span><span class="n">contour</span>
+<a id="__codelineno-0-555" name="__codelineno-0-555"></a>    <span class="n">contour_set</span> <span class="o">=</span> <span class="n">render</span><span class="p">(</span><span class="n">gx</span><span class="p">,</span> <span class="n">gy</span><span class="p">,</span> <span class="n">density</span><span class="p">,</span> <span class="n">levels</span><span class="o">=</span><span class="n">level_edges</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">)</span>
+<a id="__codelineno-0-556" name="__codelineno-0-556"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_apply_clip</span><span class="p">(</span><span class="n">contour_set</span><span class="p">)</span>
+<a id="__codelineno-0-557" name="__codelineno-0-557"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="n">contour_set</span>
+<a id="__codelineno-0-558" name="__codelineno-0-558"></a>
+<a id="__codelineno-0-559" name="__codelineno-0-559"></a>    <span class="k">if</span> <span class="n">draw_colorbar</span><span class="p">:</span>
+<a id="__codelineno-0-560" name="__codelineno-0-560"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_color_bar</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">contour_set</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">)</span>
+<a id="__codelineno-0-561" name="__codelineno-0-561"></a>
+<a id="__codelineno-0-562" name="__codelineno-0-562"></a>    <span class="k">if</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]:</span>
+<a id="__codelineno-0-563" name="__codelineno-0-563"></a>        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title_size&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-564" name="__codelineno-0-564"></a>
+<a id="__codelineno-0-565" name="__codelineno-0-565"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">contour_set</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
