@@ -42,6 +42,15 @@ from matplotlib.figure import Figure
 from matplotlib.ticker import MaxNLocator
 from PIL import Image
 
+from cleopatra.colorbar import (
+    _DEPRECATED_CBAR_KWARGS as _DEPRECATED_CBAR_KWARGS,
+)
+from cleopatra.colorbar import (
+    ColorBar,
+    _resolve_colorbar,
+    _swatch_text_default,
+    _warn_deprecated_cbar_kwargs,
+)
 from cleopatra.colors import (
     DATA_STYLES,
     alpha_rgba,
@@ -52,13 +61,6 @@ from cleopatra.colors import (
 )
 from cleopatra.geo import Basemap as Basemap
 from cleopatra.geo import Feature as Feature
-from cleopatra.colorbar import (
-    ColorBar,
-    _DEPRECATED_CBAR_KWARGS as _DEPRECATED_CBAR_KWARGS,
-    _resolve_colorbar,
-    _swatch_text_default,
-    _warn_deprecated_cbar_kwargs,
-)
 from cleopatra.geo import GeoMixin
 from cleopatra.glyph import (
     Glyph,

@@ -338,8 +338,7 @@ def _resolve_colorbar(colorbar: bool | ColorBar | None) -> dict:
         updates.update({k: v for k, v in optional.items() if v is not None})
         return updates
     raise TypeError(
-        "colorbar must be a bool, ColorBar, or None, got "
-        f"{type(colorbar).__name__}."
+        f"colorbar must be a bool, ColorBar, or None, got {type(colorbar).__name__}."
     )
 
 
