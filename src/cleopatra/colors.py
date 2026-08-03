@@ -207,6 +207,53 @@ def add_line_glow(
     return glow
 
 
+#: Valid keys for a glyph ``glow`` option dict (forwarded to `add_line_glow`).
+GLOW_OPTION_KEYS = ("n_glow", "alpha", "linewidth_step")
+
+
+def resolve_glow_options(glow: bool | dict) -> dict:
+    """Normalise a glyph ``glow`` option to `add_line_glow` keyword arguments.
+
+    Glyphs expose ``glow`` as ``bool | dict``: ``True`` means "glow with the
+    defaults", and a dict overrides individual `add_line_glow` parameters. This
+    validates the dict keys up front so a typo raises a clear error at plot time
+    rather than an opaque `TypeError` inside `add_line_glow`.
+
+    Args:
+        glow: ``True`` (defaults) or a dict with any of
+            :data:`GLOW_OPTION_KEYS` (``n_glow``, ``alpha``, ``linewidth_step``).
+
+    Returns:
+        dict: Keyword arguments to splat into `add_line_glow`.
+
+    Raises:
+        ValueError: If a dict carries an unknown key.
+        TypeError: If ``glow`` is neither ``True`` nor a dict.
+
+    Examples:
+        ```python
+        >>> from cleopatra.colors import resolve_glow_options
+        >>> resolve_glow_options(True)
+        {}
+        >>> resolve_glow_options({"n_glow": 8})
+        {'n_glow': 8}
+
+        ```
+    """
+    if glow is True:
+        return {}
+    if isinstance(glow, dict):
+        unknown = set(glow) - set(GLOW_OPTION_KEYS)
+        if unknown:
+            raise ValueError(
+                f"unknown glow option(s) {sorted(unknown)}; valid keys: {list(GLOW_OPTION_KEYS)}."
+            )
+        return dict(glow)
+    raise TypeError(
+        f"glow must be True or a dict of {list(GLOW_OPTION_KEYS)}, got {type(glow).__name__}."
+    )
+
+
 def alpha_scaled_image(
     ax: Axes,
     data: np.ndarray,

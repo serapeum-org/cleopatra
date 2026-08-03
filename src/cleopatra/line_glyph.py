@@ -33,6 +33,7 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
+from cleopatra.colors import add_line_glow, resolve_glow_options
 from cleopatra.glyph import Glyph, _root_figure
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
@@ -42,6 +43,7 @@ LINE_DEFAULT_OPTIONS = {
     "marker": None,
     "linestyle": "-",
     "alpha": 1.0,
+    "glow": False,
 }
 LINE_DEFAULT_OPTIONS = STYLE_DEFAULTS | LINE_DEFAULT_OPTIONS
 
@@ -186,6 +188,8 @@ class LineGlyph(Glyph):
                 **kwargs,
             )
             lines.extend(drawn)
+        if opts["glow"]:
+            add_line_glow(ax, lines, **resolve_glow_options(opts["glow"]))
         self._apply_title(ax, title)
         return self.fig, ax, lines
 
