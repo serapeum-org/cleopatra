@@ -19,6 +19,70 @@ from matplotlib.colors import to_rgb
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 
+def _implied_orientation(location: str | None) -> str | None:
+    """Orientation a valid `location` edge fixes, else `None`.
+
+    Left/right imply `"vertical"`, top/bottom `"horizontal"`; `None` or an
+    invalid location implies nothing.
+    """
+    if location in ("left", "right"):
+        return "vertical"
+    if location in ("top", "bottom"):
+        return "horizontal"
+    return None
+
+
+def _validate_orientation(orientation: str | None) -> None:
+    """Reject an `orientation` that is not `'vertical'` / `'horizontal'`."""
+    if orientation is not None and orientation not in ("vertical", "horizontal"):
+        raise ValueError(
+            "ColorBar orientation must be 'vertical' or 'horizontal', got "
+            f"{orientation!r}."
+        )
+
+
+def _warn_orientation_conflict(location: str | None, orientation: str | None) -> None:
+    """Warn when an explicit `orientation` disagrees with what `location` fixes.
+
+    Only a valid edge implies an orientation; an invalid `location` is left for
+    `create_color_bar` to reject with a clearer message (issue #235).
+    """
+    implied = _implied_orientation(location)
+    if implied is not None and orientation is not None and orientation != implied:
+        warnings.warn(
+            f"ColorBar(orientation={orientation!r}) is ignored because "
+            f"location={location!r} already fixes the orientation to "
+            f"{implied!r}; set only one.",
+            UserWarning,
+            stacklevel=3,
+        )
+
+
+def _validate_label_location(
+    location: str | None, orientation: str | None, label_location: str | None
+) -> None:
+    """Reject a `label_location` incompatible with the spec's pinned orientation.
+
+    Validate only when the spec pins the orientation (via `location` or an
+    explicit `orientation`); with neither set the rendered orientation comes from
+    the glyph's (sticky) default, which a `ColorBar` cannot know, so skip rather
+    than risk a false rejection (issue #241).
+    """
+    effective = _implied_orientation(location) or orientation
+    if effective is None or label_location is None:
+        return
+    valid = (
+        ("bottom", "center", "top")
+        if effective == "vertical"
+        else ("left", "center", "right")
+    )
+    if label_location not in valid:
+        raise ValueError(
+            f"label_location={label_location!r} is not valid for a "
+            f"{effective} colorbar; use one of {list(valid)}."
+        )
+
+
 class ColorBar:
     """Placement (and backing box) for the colorbar `plot` / `animate` draws.
 
@@ -154,54 +218,11 @@ class ColorBar:
             ticks_spacing: Spacing between the colorbar's ticks; `None` keeps
                 the default.
         """
-        if orientation is not None and orientation not in ("vertical", "horizontal"):
-            raise ValueError(
-                "ColorBar orientation must be 'vertical' or 'horizontal', got "
-                f"{orientation!r}."
-            )
+        _validate_orientation(orientation)
+        _warn_orientation_conflict(location, orientation)
+        _validate_label_location(location, orientation, label_location)
         self.location = location
         self.orientation = orientation
-        # `location` fixes the orientation (left/right -> vertical, top/bottom
-        # -> horizontal). If an explicit `orientation` disagrees it is ignored
-        # downstream, so warn here rather than dropping it silently (issue #235).
-        # Only a valid edge implies an orientation; an invalid `location` is left
-        # for `create_color_bar` to reject with a clearer message.
-        if location in ("left", "right", "top", "bottom") and orientation is not None:
-            implied = "vertical" if location in ("left", "right") else "horizontal"
-            if orientation != implied:
-                warnings.warn(
-                    f"ColorBar(orientation={orientation!r}) is ignored because "
-                    f"location={location!r} already fixes the orientation to "
-                    f"{implied!r}; set only one.",
-                    UserWarning,
-                    stacklevel=2,
-                )
-        # Cross-field check: valid `label_location` values depend on the bar
-        # orientation, so an incompatible pair would crash deep in matplotlib.
-        # Reject it up front -- but only when this spec pins the orientation
-        # (via `location` or an explicit `orientation`); with neither set the
-        # rendered orientation comes from the glyph's (sticky) default, which a
-        # ColorBar cannot know, so we skip rather than risk a false rejection
-        # (issue #241).
-        effective_orientation = None
-        if location in ("left", "right", "top", "bottom"):
-            effective_orientation = (
-                "vertical" if location in ("left", "right") else "horizontal"
-            )
-        elif orientation is not None:
-            effective_orientation = orientation
-        if effective_orientation is not None and label_location is not None:
-            valid_locations = (
-                ("bottom", "center", "top")
-                if effective_orientation == "vertical"
-                else ("left", "center", "right")
-            )
-            if label_location not in valid_locations:
-                raise ValueError(
-                    f"label_location={label_location!r} is not valid for a "
-                    f"{effective_orientation} colorbar; use one of "
-                    f"{list(valid_locations)}."
-                )
         self.inside = inside
         # An inset over moving data almost always wants a panel: default the
         # box on when `inside` is set and the caller did not decide explicitly.
