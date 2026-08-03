@@ -43,6 +43,7 @@ from typing import Any
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.patches import PathPatch
+from matplotlib.tri import Triangulation
 from matplotlib.path import Path
 
 #: Default style for the projection boundary patch. Merged with (and
@@ -731,6 +732,79 @@ PROJECTION_STYLES: dict[str, dict[str, Any]] = {
     "globe": {"center_lat": 90.0, "center_lon": 0.0, "graticule_step": 30.0},
     "flat": {},
 }
+
+
+def apply_projection_style_mesh(
+    ax: Axes,
+    node_x: Any,
+    node_y: Any,
+    triangles: Any,
+    *,
+    style: str = "globe",
+    draw_frame: bool = True,
+    **overrides: Any,
+) -> Triangulation:
+    """Reproject an unstructured-mesh triangulation onto a projection preset.
+
+    The mesh counterpart to `apply_projection_style`: reproject the node lon/lat
+    to the projected plane, build a `matplotlib.tri.Triangulation` on the
+    projected coordinates with the same connectivity, mask any triangle that has
+    a node on the far hemisphere, and -- for `"globe"` -- draw the boundary +
+    graticule frame on `ax`. Returns the (masked) triangulation, ready for
+    `tripcolor` / `tricontourf`.
+
+    Args:
+        ax: Axes to frame (used by the `"globe"` style).
+        node_x: 1-D node longitudes (degrees).
+        node_y: 1-D node latitudes (degrees).
+        triangles: `(n_tri, 3)` node-index connectivity.
+        style: A `PROJECTION_STYLES` key (`"globe"` / `"flat"`).
+        draw_frame: Draw the globe boundary + graticule (globe only).
+        **overrides: Override the style's `center_lat` / `center_lon` /
+            `graticule_step`.
+
+    Returns:
+        matplotlib.tri.Triangulation: The reprojected, far-hemisphere-masked
+            triangulation. `"flat"` returns the unprojected triangulation.
+
+    Raises:
+        KeyError: If `style` is not a known projection style.
+        ImportError: If the globe path is used without `pyproj` (the `[tiles]`
+            extra).
+    """
+    if style not in PROJECTION_STYLES:
+        raise KeyError(
+            f"unknown projection style {style!r}; choose from {sorted(PROJECTION_STYLES)}."
+        )
+    params = {**PROJECTION_STYLES[style], **overrides}
+    node_x = np.asarray(node_x, dtype=float)
+    node_y = np.asarray(node_y, dtype=float)
+    triangles = np.asarray(triangles)
+    if style == "flat":
+        return Triangulation(node_x, node_y, triangles)
+    _require_pyproj("Orthographic ('globe') mesh projection")
+    center_lat = params.get("center_lat", 90.0)
+    center_lon = params.get("center_lon", 0.0)
+    x_proj, y_proj = orthographic_points(node_x, node_y, center_lat, center_lon)
+    tri = Triangulation(x_proj, y_proj, triangles)
+    visible = _visible_hemisphere(node_x, node_y, center_lat, center_lon)
+    if triangles.size:
+        # Mask a triangle when any of its nodes is on the far hemisphere, so it
+        # is not drawn stretched across the disc.
+        tri.set_mask(~visible[triangles].all(axis=1))
+    if draw_frame:
+        radius = ORTHOGRAPHIC_RADIUS_M
+        apply_projection_frame(
+            ax,
+            boundary_xy=orthographic_boundary(radius=radius),
+            xlim=(-radius, radius),
+            ylim=(-radius, radius),
+            graticule_lines=orthographic_graticule(
+                center_lat, center_lon, params.get("graticule_step", 30.0)
+            ),
+            clip_artists=False,
+        )
+    return tri
 
 
 def apply_projection_style(

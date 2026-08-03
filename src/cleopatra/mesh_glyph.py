@@ -49,6 +49,7 @@ from cleopatra.colors import (
 from cleopatra.geo import GeoMixin
 from cleopatra.glyph import Glyph, _clear_prior_render_artists, _mark_render_artists
 from cleopatra.hillshade import resolve_hillshade, shade_faces
+from cleopatra.projection import apply_projection_style_mesh
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import disjoint_legend
 
@@ -59,6 +60,7 @@ MESH_DEFAULT_OPTIONS = {
     "label_kw": None,
     "hillshade": False,
     "style": None,
+    "projection": None,
 }
 MESH_DEFAULT_OPTIONS = STYLE_DEFAULTS | MESH_DEFAULT_OPTIONS
 
@@ -191,6 +193,10 @@ class MeshGlyph(GeoMixin, Glyph):
         #: restored after the reset -- so a style survives a later plain
         #: `plot(data)` (sticky + clearable, like `ArrayGlyph`).
         self._style_state = self.default_options.get("style")
+        #: Sticky `projection` preset (like `_style_state`): restored after the
+        #: `plot()` options reset so a constructor-time `projection=` survives a
+        #: later plain `plot(data)`.
+        self._projection_state = self.default_options.get("projection")
         #: Last `(data, location)` rendered, so `apply_style` can restyle in
         #: place without the caller re-supplying the mesh data.
         self._last_data: np.ndarray | None = None
@@ -602,6 +608,22 @@ class MeshGlyph(GeoMixin, Glyph):
                 f"data length ({len(data)}) does not match n_{location}s ({expected})."
             )
 
+    def _apply_projection(self) -> None:
+        """Reproject the mesh onto the `projection` preset and frame the axes.
+
+        A no-op unless `projection` is set. Replaces the cached triangulation
+        with one on the reprojected (e.g. orthographic-globe) node coordinates --
+        far-hemisphere triangles masked -- and draws the globe boundary +
+        graticule. Must run after the axes is cleared and before the mesh is
+        drawn, so the render uses the reprojected triangulation.
+        """
+        projection = self.default_options.get("projection")
+        if not projection:
+            return
+        self._cached_triangulation = apply_projection_style_mesh(
+            self.ax, self._node_x, self._node_y, self._fan_triangles(), style=projection
+        )
+
     def _render_mesh(
         self,
         ax,
@@ -1000,6 +1022,12 @@ class MeshGlyph(GeoMixin, Glyph):
             self._style_state = new_style
         else:
             self.default_options["style"] = self._style_state
+        # `projection` is sticky the same way, so it survives the reset whether
+        # it was set on the constructor or a previous plot().
+        if "projection" in option_kwargs:
+            self._projection_state = self.default_options["projection"]
+        else:
+            self.default_options["projection"] = self._projection_state
 
         # Remember what was rendered so `apply_style` can restyle in place.
         # Copy the array so a caller mutating its buffer after plot() (a common
@@ -1101,6 +1129,7 @@ class MeshGlyph(GeoMixin, Glyph):
             _clear_prior_render_artists(self.ax)
             self.im = None
             self._cbar = None
+            self._apply_projection()
             tpc = self._render_shaded_relief(
                 self.ax, data, edgecolor, norm, hillshade, **render_kwargs
             )
@@ -1108,6 +1137,7 @@ class MeshGlyph(GeoMixin, Glyph):
             _clear_prior_render_artists(self.ax)
             self.im = None
             self._cbar = None
+            self._apply_projection()
             tpc = self._render_mesh(
                 self.ax,
                 data,
