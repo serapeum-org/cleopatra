@@ -12,6 +12,7 @@ from typing import Any
 
 import numpy as np
 from matplotlib.axes import Axes
+from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
 
 from cleopatra.array_glyph import ArrayGlyph
@@ -26,7 +27,7 @@ def publication_map(
     coords: tuple[np.ndarray, np.ndarray] | None = None,
     extent: tuple[float, float, float, float] | None = None,
     style: str | None = None,
-    cmap: str | Any | None = None,
+    cmap: str | Colormap | None = None,
     projection: str | None = None,
     title: str | None = None,
     relief: bool = False,
