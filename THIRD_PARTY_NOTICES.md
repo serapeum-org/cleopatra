@@ -32,5 +32,4 @@ Derived from — see `tools/build_ocean_presets.py` for the exact derivation.
 
 License texts: Apache-2.0 <https://www.apache.org/licenses/LICENSE-2.0> · MIT <https://opensource.org/licenses/MIT>
 
-_When a new colour source is vendored (see the terrain / NCL / NEXRAD follow-ups in
-`planning/styles/remaining-style-work-plan.md`), add its source, URL, and license here in the same form._
+_When a new colour source is vendored, add its source, URL, and license here in the same form._
