@@ -3489,6 +3489,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                         "'points' and 'display_cell_value' are ignored with 'style'.",
                         stacklevel=2,
                     )
+                if self.default_options.get("projection"):
+                    warnings.warn(
+                        "'projection' is ignored when 'style' is set; a styled "
+                        "projection (e.g. a styled globe) is not yet composed. Use "
+                        "'style' without 'projection', or 'projection' without 'style'.",
+                        stacklevel=2,
+                    )
                 self._plot_with_style(style)
                 if basemap is not None:
                     self._draw_basemap(basemap)
@@ -3581,6 +3588,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                 )
             _clear_prior_render_artists(ax)
             if projection:
+                if points is not None or self.default_options.get("display_cell_value"):
+                    warnings.warn(
+                        "'projection' draws point / cell-value overlays at raw grid "
+                        "indices, not reprojected coordinates, so they are misplaced "
+                        "under a projection; omit them when using 'projection'.",
+                        stacklevel=2,
+                    )
                 im, cbar_kw = self._plot_projected(ax, arr, ticks)
             else:
                 im, cbar_kw = self._plot_im_get_cbar_kw(
