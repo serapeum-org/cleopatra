@@ -3,6 +3,7 @@ import importlib.util
 import json
 import os
 import warnings
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, cast
 
@@ -12,6 +13,7 @@ from matplotlib import colors as mcolors
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap, LinearSegmentedColormap
 from matplotlib.image import AxesImage
+from matplotlib.lines import Line2D
 from PIL import Image, UnidentifiedImageError
 
 from cleopatra.palettes import CAMS_AOD_COLORMAPS, FLAME_COLORMAPS, HAZE_COLORMAPS
@@ -113,6 +115,96 @@ def resolve_colormap(cmap: str | Colormap, *, param: str = "cmap") -> Colormap:
                 f"{param}={cmap!r} is not a known namespaced colormap: {exc}"
             ) from exc
     return mpl.colormaps[cmap]
+
+
+def add_line_glow(
+    ax: Axes,
+    lines: Sequence[Line2D] | None = None,
+    *,
+    n_glow: int = 6,
+    alpha: float = 0.05,
+    linewidth_step: float = 1.0,
+) -> list[Line2D]:
+    """Add a soft neon glow beneath existing line artists.
+
+    Redraws each line `n_glow` times at a growing linewidth and a low, constant
+    per-copy opacity; the overlapping semi-transparent copies blur into a halo
+    under the original line -- the mplcyberpunk / neon-glow technique,
+    implemented natively (pure matplotlib, no new dependency). Each glow copy is
+    excluded from the legend (`label="_nolegend_"`) and drawn just below its
+    source line, so the crisp original stays on top.
+
+    Args:
+        ax: The axes whose lines get a glow.
+        lines: The `Line2D` artists to halo. Defaults to every line already on
+            `ax` (`ax.get_lines()`); pass an explicit list to halo only some.
+        n_glow: Number of glow copies per line. More copies give a smoother,
+            denser halo. Defaults to 6.
+        alpha: Opacity of **each** glow copy (per-copy, not a shared budget), so
+            the total added opacity is roughly `alpha * n_glow`. Keep it low
+            (the default 0.05 suits a handful of copies).
+        linewidth_step: Linewidth increment per successive copy, in points; copy
+            `i` (1-based) is drawn at `base_linewidth + linewidth_step * i`.
+            Defaults to 1.0.
+
+    Returns:
+        list[matplotlib.lines.Line2D]: The glow artists added to `ax` (`n_glow`
+        per input line), in draw order (narrowest first).
+
+    Examples:
+        - Each source line gains `n_glow` halo copies at the given low alpha:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.colors import add_line_glow
+            >>> fig, ax = plt.subplots()
+            >>> _ = ax.plot([0, 1, 2], [0, 1, 0])
+            >>> glow = add_line_glow(ax, n_glow=4)
+            >>> len(glow)
+            4
+            >>> round(float(glow[0].get_alpha()), 3)
+            0.05
+            >>> plt.close(fig)
+
+            ```
+        - Copies grow in width and sit beneath the source line:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.colors import add_line_glow
+            >>> fig, ax = plt.subplots()
+            >>> (src,) = ax.plot([0, 1], [0, 1], linewidth=2.0)
+            >>> glow = add_line_glow(ax, [src], n_glow=3, linewidth_step=1.5)
+            >>> [g.get_linewidth() for g in glow]
+            [3.5, 5.0, 6.5]
+            >>> all(g.get_zorder() < src.get_zorder() for g in glow)
+            True
+            >>> plt.close(fig)
+
+            ```
+    """
+    line_list = list(ax.get_lines() if lines is None else lines)
+    glow: list[Line2D] = []
+    for line in line_list:
+        base_lw = line.get_linewidth()
+        color = line.get_color()
+        under = line.get_zorder() - 1
+        xdata, ydata = line.get_xdata(), line.get_ydata()
+        for i in range(1, n_glow + 1):
+            (glow_line,) = ax.plot(
+                xdata,
+                ydata,
+                color=color,
+                linewidth=base_lw + linewidth_step * i,
+                alpha=alpha,
+                solid_capstyle="round",
+                zorder=under,
+                label="_nolegend_",
+            )
+            glow.append(glow_line)
+    return glow
 
 
 def alpha_scaled_image(
