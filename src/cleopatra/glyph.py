@@ -566,17 +566,23 @@ class Glyph:
         if not ticks_spacing or vmax <= vmin:
             return np.array([vmin])
         ticks = np.arange(vmin, vmax + ticks_spacing, ticks_spacing)
-        # `np.arange` can overshoot `vmax` by up to one step; never keep a tick
-        # above `vmax` -- it would sit past the top of the colorbar and its label
-        # would overprint the `vmax` label (the old `math.remainder` check
-        # appended such a tick for almost any non-integer `vmax`).
+        # `np.arange` can overshoot `vmax` by up to one step; drop any tick above
+        # it -- such a tick sits past the top of the colorbar and its label would
+        # overprint the `vmax` label (the old `math.remainder` check appended one
+        # for almost any non-integer `vmax`).
         ticks = ticks[ticks <= vmax + 1e-9]
-        # Label the very top when the spacing did not land on `vmax`, but only
-        # when `vmax` is far enough from the last tick -- measured as a fraction
-        # of the whole range, which is what maps to distance on the bar -- that
-        # the two labels will not overprint.
-        if ticks.size == 0 or (vmax - ticks[-1]) > 0.04 * (vmax - vmin):
+        if ticks.size == 0:
+            return np.array([vmin, vmax])
+        # The colour range spans the last tick, so the top tick must reach `vmax`
+        # or the largest values get clipped. When the last tick is already at --
+        # or a hair below, from float rounding -- `vmax`, snap it there exactly;
+        # when there is a real gap (measured as a fraction of the range, which is
+        # what maps to distance on the bar), add `vmax` as a new top tick. Either
+        # way, no near-duplicate label is left at the top.
+        if (vmax - ticks[-1]) > 0.04 * (vmax - vmin):
             ticks = np.append(ticks, vmax)
+        else:
+            ticks[-1] = vmax
         return ticks
 
     def _create_norm_and_cbar_kw(
