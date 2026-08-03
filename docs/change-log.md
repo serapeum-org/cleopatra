@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.29.0 (2026-08-03)
+
+
+- feat(glyphs): accept colorbar=ColorBar on every glyph, plus label_location validation and colorbar=True reset (#244)
+- Follow-ups to the ColorBar spec (#234/#235) that make it work package-wide                                         
+  and harden two edges.                                                                                              
+                                                                                                                     
+  - Move ColorBar, _resolve_colorbar, _swatch_text_default,                                                          
+    _warn_deprecated_cbar_kwargs, and _DEPRECATED_CBAR_KWARGS into a lean,                                           
+    glyph-independent cleopatra.colorbar module, re-exported from array_glyph                                        
+    for back-compat.                                                                                                 
+  - Wire a colorbar: bool | ColorBar | None parameter into MeshGlyph (plot and                                       
+    animate), FlowGlyph, KDEGlyph, ScatterGlyph, PolygonGlyph, and VectorGlyph;                                      
+    each merges the resolved spec into its options and deprecates the loose                                          
+    cbar_* kwargs. Non-breaking: existing add_colorbar params and MeshGlyph's                                        
+    colorbar bool toggle keep working, and the merged spec is sticky like                                            
+    ArrayGlyph (colorbar=True resets, False suppresses).                                                             
+  - Reject an orientation-incompatible label_location up front (and at render,                                       
+    against the resolved orientation, for the unpinned case) instead of crashing                                     
+    in matplotlib; drop the invalid baseline/center_baseline label positions.                                        
+  - Make colorbar=True reset the whole caption/sizing cbar_* family to defaults                                      
+    on a reused glyph, and honour a ColorBar(ticks_spacing=...) spec on                                              
+    MeshGlyph rather than auto-overwriting it.                                                                       
+                                                                                                                     
+  Closes #239, #241, #242
+
 ## 0.28.0 (2026-08-02)
 
 
