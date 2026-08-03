@@ -1,4 +1,5 @@
 import importlib.resources
+import importlib.util
 import json
 import os
 import warnings
@@ -20,6 +21,98 @@ from cleopatra.styles import disjoint_legend, swatch_extend_prefixes, swatch_leg
 #: The haze / CAMS-AOD / flame colour families now live in `cleopatra.palettes`
 #: (built there via perceptual CIELAB interpolation and registered in the unified
 #: palette registry). They are re-exported above and used by `DATA_STYLES` below.
+
+
+def _require_cmap(action: str) -> None:
+    """Raise an actionable `ImportError` if the optional `cmap` package is absent.
+
+    Mirrors `cleopatra.projection._require_pyproj`: a pure `find_spec` check with
+    no import side effect, used to gate the `[science-colors]` extra behind a
+    clear install hint rather than a bare `ModuleNotFoundError`.
+
+    Args:
+        action: Short description of what needed `cmap`, woven into the message
+            (e.g. ``"A namespaced colormap (cmap='cmocean:thermal')"``).
+    """
+    if importlib.util.find_spec("cmap") is None:
+        raise ImportError(
+            f"{action} requires the 'cmap' package, provided by the "
+            "[science-colors] extra. Install with `pip install cleopatra[science-colors]`."
+        )
+
+
+def resolve_colormap(cmap: str | Colormap, *, param: str = "cmap") -> Colormap:
+    """Resolve a colormap name or object to a matplotlib `Colormap`.
+
+    The single seam cleopatra uses to turn a ``cmap`` value into a concrete
+    `Colormap`. Dispatch is decided solely by the presence of a **colon** in the
+    name:
+
+    - A `Colormap` object is returned unchanged (idempotent -- `DATA_STYLES` and
+      the glyph options store both objects and names, so the resolver must accept
+      either).
+    - A **namespaced** name containing ``":"`` (e.g. ``"cmocean:thermal"``,
+      ``"crameri:batlow_r"``) is resolved through the optional `cmap` package (the
+      ``[science-colors]`` extra), which aggregates cmocean, cmasher, Crameri,
+      ColorBrewer, colorcet and more into one numpy-only library. The ``_r``
+      reverse suffix works on namespaced names too.
+    - A **plain** name (``"viridis"``, ``"coolwarm_r"``) goes straight to
+      matplotlib, exactly as before -- it never imports the optional package.
+
+    The colon test is the whole dispatch rule. The `cmap` package renames even
+    built-ins into its own namespace (``Colormap("viridis").to_mpl().name`` is
+    ``"bids:viridis"``), so routing a plain name through it would both require the
+    extra for a built-in colormap and silently rename it -- and cleopatra compares
+    colormap names elsewhere (e.g. the categorical-default fallback), so a renamed
+    built-in would break those comparisons. Keeping plain names on the matplotlib
+    path avoids all of that.
+
+    Args:
+        cmap: A `Colormap`, a matplotlib colormap name, or a namespaced
+            ``"collection:name"`` string.
+        param: Name of the calling keyword (e.g. ``"cmap"``), woven into error
+            messages so a bad value names the offending argument.
+
+    Returns:
+        matplotlib.colors.Colormap: The resolved colormap.
+
+    Raises:
+        ImportError: If a namespaced name is used but the `cmap` package (the
+            ``[science-colors]`` extra) is not installed.
+        ValueError: If a namespaced name is not found by the `cmap` package.
+        KeyError: If a plain name is not a known matplotlib colormap.
+
+    Examples:
+        - A plain name resolves via matplotlib and never imports `cmap`:
+            ```python
+            >>> from cleopatra.colors import resolve_colormap
+            >>> resolve_colormap("viridis").name
+            'viridis'
+
+            ```
+        - A `Colormap` object is returned unchanged (idempotent):
+            ```python
+            >>> import matplotlib as mpl
+            >>> from cleopatra.colors import resolve_colormap
+            >>> cmap = mpl.colormaps["plasma"]
+            >>> resolve_colormap(cmap) is cmap
+            True
+
+            ```
+    """
+    if isinstance(cmap, Colormap):
+        return cmap
+    if isinstance(cmap, str) and ":" in cmap:
+        _require_cmap(f"A namespaced colormap ({param}={cmap!r})")
+        from cmap import Colormap as _CmapColormap
+
+        try:
+            return _CmapColormap(cmap).to_mpl()
+        except Exception as exc:  # cmap raises `ValueError: Colormap '...' not found.`
+            raise ValueError(
+                f"{param}={cmap!r} is not a known namespaced colormap: {exc}"
+            ) from exc
+    return mpl.colormaps[cmap]
 
 
 def alpha_scaled_image(
