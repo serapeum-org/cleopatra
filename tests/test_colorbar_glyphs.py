@@ -205,3 +205,49 @@ def test_colorbar_spec_is_sticky_like_arrayglyph():
     assert glyph.cbar.orientation == "horizontal", "spec should persist across plain plot() calls"
     glyph.plot(colorbar=True)
     assert glyph.cbar.orientation == "vertical", "colorbar=True should reset to the default bar"
+
+
+def test_colorbar_placement_renders_on_non_array_glyph():
+    """A ColorBar's location/inside/box reach the render on a non-array glyph (#239).
+
+    Test scenario:
+        Placement keys absent from the glyph's own DEFAULT_OPTIONS still flow
+        through `_resolve_colorbar` into the shared `create_color_bar` -- an
+        inset bottom bar draws horizontally.
+    """
+    glyph = _scatter()
+    glyph.plot(colorbar=ColorBar(location="bottom", inside=True, box=True))
+    assert glyph.cbar is not None, "placement spec should draw a colorbar"
+    assert glyph.cbar.orientation == "horizontal", "location='bottom' should force horizontal"
+
+
+@pytest.mark.parametrize("name", list(GLYPHS))
+def test_colorbar_none_draws_default(name):
+    """Explicit `colorbar=None` draws the glyph's default bar (#239).
+
+    Args:
+        name: The glyph type under test.
+
+    Test scenario:
+        `None` is the draw-default path (distinct from `False`); every glyph
+        still renders a colorbar.
+    """
+    make, draw, read_cbar, _ = GLYPHS[name]
+    glyph = make()
+    draw(glyph, None)
+    assert read_cbar(glyph) is not None, f"{name}: colorbar=None should draw the default bar"
+
+
+def test_colorbar_false_suppresses_under_categorical_scheme():
+    """`colorbar=False` suppresses the bar even under a categorical scheme (#239).
+
+    Test scenario:
+        A categorical ScatterGlyph draws a disjoint legend instead of a colorbar;
+        `colorbar=False` must still leave `cbar` unset.
+    """
+    glyph = ScatterGlyph(
+        list(_RNG.random(9)), list(_RNG.random(9)),
+        values=np.array([0, 1, 2, 0, 1, 2, 0, 1, 2]), scheme="categorical",
+    )
+    glyph.plot(colorbar=False)
+    assert glyph.cbar is None, "colorbar=False should suppress the bar under a categorical scheme"
