@@ -2800,12 +2800,14 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.colorbar</span><span class="w"> </span><span class="kn">import</span> <span class="n">ColorBar</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.flow_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowGlyph</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-1">%matplotlib inline
 import matplotlib.pyplot as plt
 import numpy as np
 
+from cleopatra.colorbar import ColorBar
 from cleopatra.flow_glyph import FlowGlyph</div>
 </div>
 </div>
@@ -3006,9 +3008,12 @@ len(paths), sorted(set(order.astype(int)))</div>
     <span class="n">cmap</span><span class="o">=</span><span class="s1">'YlGnBu'</span><span class="p">,</span>
     <span class="n">size_legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">size_legend_values</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span>
-    <span class="n">cbar_label</span><span class="o">=</span><span class="s1">'Stream order'</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="n">fg</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">'River network by stream order'</span><span class="p">)</span>
+<span class="n">fg</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
+    <span class="n">title</span><span class="o">=</span><span class="s1">'River network by stream order'</span><span class="p">,</span>
+    <span class="n">colorbar</span><span class="o">=</span><span class="n">ColorBar</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">'Stream order'</span><span class="p">),</span>
+<span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s1">'equal'</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
@@ -3024,9 +3029,12 @@ fg = FlowGlyph(
     cmap='YlGnBu',
     size_legend=True,
     size_legend_values=[1, 2, 3, 4],
-    cbar_label='Stream order',
 )
-fg.plot(ax=ax, title='River network by stream order')
+fg.plot(
+    ax=ax,
+    title='River network by stream order',
+    colorbar=ColorBar(label='Stream order'),
+)
 ax.set_aspect('equal')
 ax.set_xticks([])
 ax.set_yticks([])
