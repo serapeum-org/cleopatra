@@ -54,6 +54,7 @@ from cleopatra.geo import Basemap as Basemap
 from cleopatra.geo import Feature as Feature
 from cleopatra.colorbar import (
     ColorBar,
+    _DEPRECATED_CBAR_KWARGS as _DEPRECATED_CBAR_KWARGS,
     _resolve_colorbar,
     _swatch_text_default,
     _warn_deprecated_cbar_kwargs,
