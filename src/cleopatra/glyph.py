@@ -1463,6 +1463,11 @@ class Glyph:
         fig = ax.figure
         merged_kw = {
             "shrink": self.default_options["cbar_length"],
+            # matplotlib's default pad (0.05 of the axes width) leaves a wide
+            # gap for wide (equal-aspect) maps, whose axes is wide; a smaller
+            # default keeps the colorbar close to the frame. Overridable via
+            # `cbar_kwargs={"pad": ...}`.
+            "pad": 0.02,
             "use_gridspec": len(fig.axes) <= 1,
         }
         if location is not None:
