@@ -898,7 +898,13 @@ def _load_weather_presets() -> dict[str, dict[str, dict[str, Any]]]:
             levels = rec.get("levels")
             bands = rec.get("bands")
             cmap = _weather_cmap(key, colors, levels, bands)
-            layer: dict[str, Any] = {"cmap": cmap, "label": rec["label"]}
+            # Bake a declared unit into the legend/colorbar label, and keep it on
+            # the layer so a caller can convert data into it (convert_units).
+            units = rec.get("units")
+            label = f"{rec['label']} [{units}]" if units else rec["label"]
+            layer: dict[str, Any] = {"cmap": cmap, "label": label}
+            if units:
+                layer["units"] = units
             if rec.get("opacity") == "opaque":
                 layer["alpha"] = 1.0
             if levels:
