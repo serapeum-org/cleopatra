@@ -89,6 +89,10 @@ class FlowGlyph(GeoMixin, Glyph):
             option is used for every line. Default is None.
         ax: Pre-existing axes to draw on. Default is None.
         fig: Pre-existing figure. Default is None.
+        glow: Add a soft neon halo beneath the flow polylines (tracking their
+            width scaling). `True` uses the defaults; a dict overrides
+            `cleopatra.colors.add_line_glow`'s `n_glow` / `alpha` /
+            `linewidth_step`. Default is False.
         **kwargs: Override any key in `FLOW_DEFAULT_OPTIONS`: `width_limits`
             (min/max line width in points, default `(1, 5)`), `width_scale`
             (`"linear"` / `"log"` / `"sqrt"`, default `"linear"`),

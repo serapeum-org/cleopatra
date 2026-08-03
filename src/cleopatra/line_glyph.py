@@ -64,6 +64,9 @@ class LineGlyph(Glyph):
             n_series)` for multiple series.
         ax: Pre-existing axes to draw on. Default is None.
         fig: Pre-existing figure. Default is None.
+        glow: Add a soft neon halo beneath the plotted line(s). `True` uses the
+            defaults; a dict overrides `cleopatra.colors.add_line_glow`'s
+            `n_glow` / `alpha` / `linewidth_step`. Default is False.
         **kwargs: Override any key in `LINE_DEFAULT_OPTIONS`
             (e.g. `marker`, `linestyle`, `alpha`, `color_1`,
             `line_width`, `figsize`, `title`).
