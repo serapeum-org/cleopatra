@@ -302,8 +302,10 @@ class ScatterGlyph(GeoMixin, Glyph):
 
         if title is not None:
             opts["title"] = title
-        # Resolve the colorbar choice for this call only (a plot-time
-        # override does not persist into the glyph's options).
+        # Merge a typed `colorbar=` spec (placement / caption / sizing) into the
+        # glyph's sticky options, like `ArrayGlyph`: it persists into later
+        # `plot()` calls until a `colorbar=True`/`False` or a new spec changes
+        # it. Only the on/off `add_colorbar` override below stays per-call.
         opts.update(_resolve_colorbar(colorbar))
         draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
         # Reset both artifacts unconditionally so a re-plot (e.g. switching

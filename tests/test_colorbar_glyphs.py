@@ -188,3 +188,20 @@ def test_unvalidated_label_location_errors_clearly_at_render():
     glyph = _scatter()
     with pytest.raises(ValueError, match="not valid for a vertical colorbar"):
         glyph.plot(colorbar=ColorBar(label_location="left"))
+
+
+def test_colorbar_spec_is_sticky_like_arrayglyph():
+    """The `colorbar=` spec is sticky on the add_colorbar glyphs, like ArrayGlyph (#239).
+
+    Test scenario:
+        A spec applied once persists into a later plain `plot()` (options are
+        sticky by design), and `colorbar=True` resets it to a default bar --
+        matching ArrayGlyph's contract, not per-call behaviour.
+    """
+    glyph = _scatter()
+    glyph.plot(colorbar=ColorBar(orientation="horizontal"))
+    assert glyph.cbar.orientation == "horizontal", "spec should apply"
+    glyph.plot()
+    assert glyph.cbar.orientation == "horizontal", "spec should persist across plain plot() calls"
+    glyph.plot(colorbar=True)
+    assert glyph.cbar.orientation == "vertical", "colorbar=True should reset to the default bar"
