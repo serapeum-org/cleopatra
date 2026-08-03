@@ -1476,10 +1476,26 @@ class Glyph:
             user_label if user_label is not None else self.default_options["cbar_label"]
         )
         label_rotation = self.default_options.get("cbar_label_rotation")
+        # Valid label positions depend on the resolved orientation, so validate
+        # here (where it is known) rather than letting matplotlib raise a raw
+        # error -- this also covers a `label_location` that a ColorBar left
+        # unvalidated because it pinned no orientation (issue #241).
+        label_location = self.default_options["cbar_label_location"]
+        if label_location is not None:
+            valid = (
+                ("bottom", "center", "top")
+                if cbar.orientation == "vertical"
+                else ("left", "center", "right")
+            )
+            if label_location not in valid:
+                raise ValueError(
+                    f"cbar_label_location={label_location!r} is not valid for a "
+                    f"{cbar.orientation} colorbar; use one of {list(valid)}."
+                )
         cbar.set_label(
             label_text,
             fontsize=self.default_options["cbar_label_size"],
-            loc=self.default_options["cbar_label_location"],
+            loc=label_location,
             **({"color": label_color} if label_color else {}),
             **({"rotation": label_rotation} if label_rotation is not None else {}),
         )

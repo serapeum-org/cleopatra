@@ -175,3 +175,16 @@ def test_mesh_animate_colorbar_spec_and_suppression():
     g2 = MeshGlyph(_MESH_NX, _MESH_NY, _MESH_FACES)
     g2.animate(frames, time=[0, 1], colorbar=False)
     assert getattr(g2, "_cbar", None) is None, "animate colorbar=False should suppress the bar"
+
+
+def test_unvalidated_label_location_errors_clearly_at_render():
+    """A `label_location` invalid for the default vertical bar errors clearly (#241/L1).
+
+    Test scenario:
+        `ColorBar(label_location="left")` pins no orientation (so construction
+        validation is skipped), but the default bar is vertical -- the render
+        raises a clear cleopatra error rather than a raw matplotlib one.
+    """
+    glyph = _scatter()
+    with pytest.raises(ValueError, match="not valid for a vertical colorbar"):
+        glyph.plot(colorbar=ColorBar(label_location="left"))
