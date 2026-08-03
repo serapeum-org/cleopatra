@@ -817,9 +817,10 @@ class MeshGlyph(GeoMixin, Glyph):
                 `False`. Ignored for face data. Default is True.
             **kwargs: Override any key in `default_options` (cmap,
                 vmin, vmax, color_scale, gamma, midpoint, bounds,
-                ticks_spacing, cbar_orientation, cbar_label, figsize,
-                etc.) or pass extra rendering kwargs (levels for
-                tricontourf / tricontour). Two label options are
+                figsize, etc.) or pass extra rendering kwargs (levels for
+                tricontourf / tricontour). The loose `ticks_spacing` /
+                `cbar_*` keys still work but are deprecated -- pass
+                `colorbar=ColorBar(...)` instead. Two label options are
                 honoured **only** for line tricontours
                 (`location="node"`, `filled=False`):
 
@@ -1187,9 +1188,10 @@ class MeshGlyph(GeoMixin, Glyph):
                 the animation's colorbar, or `True`/`None` to draw a default one;
                 `False` suppresses it. Default `None` (draw).
             **kwargs: Override any key in `default_options` (cmap,
-                vmin, vmax, color_scale, gamma, midpoint,
-                ticks_spacing, cbar_label, cbar_orientation, figsize,
-                title, etc.).
+                vmin, vmax, color_scale, gamma, midpoint, figsize,
+                title, etc.). The loose `ticks_spacing` / `cbar_*` keys
+                still work but are deprecated -- pass
+                `colorbar=ColorBar(...)` instead.
 
         Returns:
             FuncAnimation: The animation object. Use

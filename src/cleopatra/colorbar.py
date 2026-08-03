@@ -256,8 +256,10 @@ def _resolve_colorbar(colorbar: bool | ColorBar | None) -> dict:
     Args:
         colorbar: `None` (default) leaves the colorbar options untouched --
             matplotlib's placement, honouring the legacy `add_colorbar`;
-            `False` suppresses the colorbar; `True` draws a default one; a
-            `ColorBar` sets its placement and backing box.
+            `False` suppresses the colorbar; `True` draws a default one,
+            resetting the resettable `cbar_*` family to defaults so it does not
+            inherit a prior sticky spec (unlike `None`, which leaves them); a
+            `ColorBar` sets its placement, caption, and sizing.
 
     Returns:
         dict: Updates to merge into `default_options` (empty for `None`).
