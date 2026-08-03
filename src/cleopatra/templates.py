@@ -8,6 +8,7 @@ single call, so a caller does not have to wire them together by hand.
 
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 import numpy as np
@@ -94,9 +95,17 @@ def publication_map(
     fig, ax = glyph.plot(**plot_kwargs)
 
     if relief:
-        # No `extent` on purpose: add_relief places the whole global image and
-        # the axes limits (set by the field) crop it to the region -- passing an
-        # extent for a regional lon/lat view mis-places the image.
-        add_relief(ax, resolution=relief_resolution, zorder=-1)
+        if projection == "globe":
+            warnings.warn(
+                "relief basemaps compose only with the flat / unprojected view; "
+                "'relief' is skipped under projection='globe' (the axes are in "
+                "projected metres, not lon/lat).",
+                stacklevel=2,
+            )
+        else:
+            # No `extent` on purpose: add_relief places the whole global image and
+            # the axes limits (set by the field) crop it to the region -- passing an
+            # extent for a regional lon/lat view mis-places the image.
+            add_relief(ax, resolution=relief_resolution, zorder=-1)
 
     return fig, ax
