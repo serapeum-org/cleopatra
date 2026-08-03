@@ -2513,7 +2513,25 @@ class ArrayGlyph(GeoMixin, Glyph):
         }
         override = dict(self._style_color_overrides)
         coords = self._coords
-        if coords is not None:
+        projection = self.default_options.get("projection")
+        if projection:
+            # Styled projection (e.g. a styled globe): reproject the field, then
+            # colour it at the reprojected cell EDGES with shading="flat".
+            # `apply_projection_style` masks the far hemisphere and draws the
+            # boundary + graticule; needs 1-D lon/lat coords.
+            if coords is None or coords[0].ndim != 1 or coords[1].ndim != 1:
+                raise ValueError(
+                    "projection= with a style requires 1-D lon/lat coordinate "
+                    "vectors (build the glyph with coords=(lon, lat))."
+                )
+            x_edges, y_edges, masked = apply_projection_style(
+                self.ax, coords[0], coords[1], data, style=projection
+            )
+            images = apply_data_style(
+                self.ax, {layer: masked}, style=style, x=x_edges, y=y_edges,
+                shading="flat", **swatch_kw, **override,
+            )
+        elif coords is not None:
             # apply_data_style's curvilinear path defaults to shading="flat"
             # (needs cell EDGES); ArrayGlyph stores cell CENTRES, so pass
             # shading="nearest", which trusts the centres.
@@ -3552,13 +3570,6 @@ class ArrayGlyph(GeoMixin, Glyph):
                     warnings.warn(
                         "data-style presets bypass point and cell-value overlays; "
                         "'points' and 'display_cell_value' are ignored with 'style'.",
-                        stacklevel=2,
-                    )
-                if self.default_options.get("projection"):
-                    warnings.warn(
-                        "'projection' is ignored when 'style' is set; a styled "
-                        "projection (e.g. a styled globe) is not yet composed. Use "
-                        "'style' without 'projection', or 'projection' without 'style'.",
                         stacklevel=2,
                     )
                 self._plot_with_style(style)
