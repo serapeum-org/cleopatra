@@ -87,3 +87,20 @@ class TestAutoFigsize:
         width, height = fig.get_size_inches()
         assert width > height, f"publication_map should inherit a landscape figure, got {(width, height)}"
         plt.close(fig)
+
+    def test_titled_map_fills_the_axes_width(self):
+        """A titled equal-aspect map fills the axes width (no letterboxing).
+
+        Test scenario:
+            The auto height reserves a title/label band, so `tight_layout` does
+            not shrink the map to fit the title -- the equal-aspect image then
+            spans the full axes width instead of sitting letterboxed with
+            horizontal slack on both sides.
+        """
+        glyph = ArrayGlyph(np.random.default_rng(0).random((40, 60)), extent=[-30.0, 30.0, 40.0, 65.0])
+        glyph.plot(title="A wide titled map")
+        glyph.fig.canvas.draw()
+        img_w = glyph.ax.images[0].get_window_extent().width
+        ax_w = glyph.ax.get_window_extent().width
+        assert abs(img_w - ax_w) < 3.0, f"map should fill the axes width, slack={ax_w - img_w:.1f}px"
+        plt.close("all")

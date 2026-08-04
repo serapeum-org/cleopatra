@@ -1757,14 +1757,19 @@ class ArrayGlyph(GeoMixin, Glyph):
         if not (width > 0 and height > 0):
             return default
         aspect = width / height
-        plot_height = 6.0        # target plot height (inches)
+        plot_height = 6.0        # target height of the MAP itself (inches)
         cbar_pad = 1.8           # room for the colorbar + its labels
+        title_pad = 0.7          # room for the title / axis labels above+below the map
         max_width = 14.0
-        fig_w = plot_height * aspect + cbar_pad
-        fig_h = plot_height
+        map_height = plot_height
+        fig_w = map_height * aspect + cbar_pad
         if fig_w > max_width:    # very wide field: cap width, shrink height to keep the aspect
             fig_w = max_width
-            fig_h = max(3.5, (max_width - cbar_pad) / aspect)
+            map_height = max(3.5, (max_width - cbar_pad) / aspect)
+        # Height carries the map PLUS the title/label band, so `tight_layout` does
+        # not steal it from the map -- an equal-aspect map then fills the width
+        # instead of being letterboxed by the horizontal slack that leaves.
+        fig_h = map_height + title_pad
         fig_w = max(5.0, fig_w)
         return (round(fig_w, 1), round(fig_h, 1))
 
