@@ -3067,7 +3067,6 @@ labelled with the contour levels, over the real ERA5-Land data (1 Jun – 15 Jul
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">cleopatra.reference</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ref</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.animation</span><span class="w"> </span><span class="kn">import</span> <span class="n">embed_gif</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span>
 
@@ -3088,7 +3087,6 @@ from pathlib import Path
 
 import numpy as np
 
-import cleopatra.reference as ref
 from cleopatra.animation import embed_gif
 from cleopatra.array_glyph import ArrayGlyph
 
@@ -3128,7 +3126,7 @@ print("stack:", celsius.shape, "| frames:", labels[0], "-&gt;", labels[-1])</div
 <h2 id="the-animation">The animation<a class="anchor-link" href="#the-animation">¶</a></h2><p>Everything below comes from <strong>one</strong> thing: <code>style="temperature_2m"</code>. <code>ArrayGlyph</code> reads the preset for the
 <code>Spectral_r</code> ramp, the 2 °C contour bands, <code>extend="both"</code>, and the arrow-capped colorbar, and <code>.animate()</code>
 runs the per-frame loop for us — no manual <code>ScalarMappable</code>, <code>BoundaryNorm</code>, <code>imshow</code>, or <code>FuncAnimation</code>. The
-<code>basemap</code> callable draws the static coastlines/borders on top of every frame.</p>
+<code>basemap</code> callable draws the static coastlines/borders with the glyph's own <code>add_features</code> on top of every frame.</p>
 </div>
 </div>
 </div>
@@ -3152,9 +3150,13 @@ runs the per-frame loop for us — no manual <code>ScalarMappable</code>, <code>
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">add_reference</span><span class="p">(</span><span class="n">glyph</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Draw grey coastlines + borders over every frame (a `basemap` callable)."""</span>
-    <span class="n">ref</span><span class="o">.</span><span class="n">add_features</span><span class="p">(</span><span class="n">glyph</span><span class="o">.</span><span class="n">ax</span><span class="p">,</span> <span class="s2">"coastline"</span><span class="p">,</span> <span class="s2">"50m"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"0.35"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
-    <span class="n">ref</span><span class="o">.</span><span class="n">add_features</span><span class="p">(</span><span class="n">glyph</span><span class="o">.</span><span class="n">ax</span><span class="p">,</span> <span class="s2">"borders"</span><span class="p">,</span> <span class="s2">"50m"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"0.55"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""Draw grey coastlines + borders on top of every frame (a `basemap` callable).</span>
+
+<span class="sd">    Uses the glyph's own `add_features` (a `GeoMixin` method that draws Natural</span>
+<span class="sd">    Earth layers on `glyph.ax` with the glyph's CRS) -- no standalone helpers.</span>
+<span class="sd">    """</span>
+    <span class="n">glyph</span><span class="o">.</span><span class="n">add_features</span><span class="p">(</span><span class="s2">"coastline"</span><span class="p">,</span> <span class="s2">"50m"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"0.35"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+    <span class="n">glyph</span><span class="o">.</span><span class="n">add_features</span><span class="p">(</span><span class="s2">"borders"</span><span class="p">,</span> <span class="s2">"50m"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"0.55"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 
 
 <span class="c1"># The preset carries the cmap + 2 °C levels + extend + colorbar; ArrayGlyph applies</span>
@@ -3170,9 +3172,13 @@ runs the per-frame loop for us — no manual <code>ScalarMappable</code>, <code>
 <span class="n">embed_gif</span><span class="p">(</span><span class="n">anim</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-2">def add_reference(glyph):
-    """Draw grey coastlines + borders over every frame (a `basemap` callable)."""
-    ref.add_features(glyph.ax, "coastline", "50m", color="0.35", linewidth=0.6, zorder=5)
-    ref.add_features(glyph.ax, "borders", "50m", color="0.55", linewidth=0.4, zorder=5)
+    """Draw grey coastlines + borders on top of every frame (a `basemap` callable).
+
+    Uses the glyph's own `add_features` (a `GeoMixin` method that draws Natural
+    Earth layers on `glyph.ax` with the glyph's CRS) -- no standalone helpers.
+    """
+    glyph.add_features("coastline", "50m", color="0.35", linewidth=0.6, zorder=5)
+    glyph.add_features("borders", "50m", color="0.55", linewidth=0.4, zorder=5)
 
 
 # The preset carries the cmap + 2 °C levels + extend + colorbar; ArrayGlyph applies
