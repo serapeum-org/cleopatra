@@ -45,19 +45,11 @@
          <lastmod>2026-08-04</lastmod>
     </url>
     <url>
-         <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/data_style_presets/data_style_presets_examples/</loc>
-         <lastmod>2026-08-04</lastmod>
-    </url>
-    <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/flow_glyph/flow_glyph_examples/</loc>
          <lastmod>2026-08-04</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/glow/glow_examples/</loc>
-         <lastmod>2026-08-04</lastmod>
-    </url>
-    <url>
-         <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/haze_preset/haze_preset_examples/</loc>
          <lastmod>2026-08-04</lastmod>
     </url>
     <url>
@@ -77,27 +69,35 @@
          <lastmod>2026-08-04</lastmod>
     </url>
     <url>
-         <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/preset_gallery/ecmwf_temperature_animation/</loc>
+         <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/data_style_presets_examples/</loc>
          <lastmod>2026-08-04</lastmod>
     </url>
     <url>
-         <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/preset_gallery/magics_2t_flame_plume/</loc>
+         <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/ecmwf_temperature_animation/</loc>
          <lastmod>2026-08-04</lastmod>
     </url>
     <url>
-         <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/preset_gallery/ocean_styles_gallery/</loc>
+         <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/haze_preset_examples/</loc>
          <lastmod>2026-08-04</lastmod>
     </url>
     <url>
-         <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/preset_gallery/precipitation_animation/</loc>
+         <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/magics_2t_flame_plume/</loc>
          <lastmod>2026-08-04</lastmod>
     </url>
     <url>
-         <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/preset_gallery/temperature_animation/</loc>
+         <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/ocean_styles_gallery/</loc>
          <lastmod>2026-08-04</lastmod>
     </url>
     <url>
-         <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/preset_gallery/weather_styles_gallery/</loc>
+         <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/precipitation_animation/</loc>
+         <lastmod>2026-08-04</lastmod>
+    </url>
+    <url>
+         <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/temperature_animation/</loc>
+         <lastmod>2026-08-04</lastmod>
+    </url>
+    <url>
+         <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/weather_styles_gallery/</loc>
          <lastmod>2026-08-04</lastmod>
     </url>
     <url>
