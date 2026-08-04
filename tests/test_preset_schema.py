@@ -102,13 +102,14 @@ class TestPresetSchema:
             `oneOf` contract -- the guarantee the whole restructure is built on.
         """
         jsonschema = pytest.importorskip("jsonschema")
+        schema = _read("preset.schema.json")
         mixed = {"version": 1, "presets": {"x": {"layers": {"x": {
             "label": "mixed",
             "colors": ["#000000", "#ffffff"], "colormap": "listed",
             "categories": [{"value": 1, "color": "#000000", "label": "a"}],
         }}}}}
         with pytest.raises(jsonschema.ValidationError):
-            jsonschema.validate(mixed, _read("preset.schema.json"))
+            jsonschema.validate(mixed, schema)
 
     def test_schema_couples_string_colors_to_named(self):
         """A string `colors` is only valid with `colormap="named"`.
@@ -124,8 +125,9 @@ class TestPresetSchema:
         def wrap(layer):
             return {"version": 1, "presets": {"x": {"layers": {"x": layer}}}}
 
+        mangled = wrap({"label": "L", "colors": "viridis", "colormap": "listed"})
         with pytest.raises(jsonschema.ValidationError):
-            jsonschema.validate(wrap({"label": "L", "colors": "viridis", "colormap": "listed"}), schema)
+            jsonschema.validate(mangled, schema)
         # the correct named form validates
         jsonschema.validate(wrap({"label": "L", "colors": "Spectral_r", "colormap": "named"}), schema)
 
