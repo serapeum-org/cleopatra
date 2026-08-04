@@ -169,6 +169,10 @@ class MeshGlyph(GeoMixin, Glyph):
         self._cached_triangulation: mtri.Triangulation | None = None
         self._cached_tri_array: np.ndarray | None = None
         self._cached_nodes_per_face: np.ndarray | None = None
+        #: Boundary patch + graticule lines drawn by the last `_apply_projection`
+        #: on this glyph's axes, so the next render can remove them (they are not
+        #: tracked by `_mark_render_artists`) rather than stack a duplicate frame.
+        self._projection_frame_artists: list[Any] = []
         self._cbar: Colorbar | None = None
         #: Colour-mapped artist from the most recent `plot` call (the
         #: `tripcolor`/`tricontour(f)` mappable); `None` before first render.
@@ -611,18 +615,37 @@ class MeshGlyph(GeoMixin, Glyph):
     def _apply_projection(self) -> None:
         """Reproject the mesh onto the `projection` preset and frame the axes.
 
-        A no-op unless `projection` is set. Replaces the cached triangulation
-        with one on the reprojected (e.g. orthographic-globe) node coordinates --
-        far-hemisphere triangles masked -- and draws the globe boundary +
-        graticule. Must run after the axes is cleared and before the mesh is
-        drawn, so the render uses the reprojected triangulation.
+        Replaces the cached triangulation with one on the reprojected (e.g.
+        orthographic-globe) node coordinates -- far-hemisphere triangles masked
+        -- and draws the globe boundary + graticule. Must run after the axes is
+        cleared and before the mesh is drawn, so the render uses the reprojected
+        triangulation.
+
+        Owns the projection frame's lifecycle: every call first removes the
+        boundary/graticule this glyph drew on a previous render (they are not
+        `_mark_render_artists`-tracked, so a replot would otherwise stack a
+        duplicate frame). When `projection` is cleared to a falsy value, it also
+        drops the reprojected triangulation cache so the `triangulation` property
+        rebuilds the flat mesh -- otherwise a `plot(projection=None)` after a
+        globe would silently keep rendering on the stale reprojected coordinates.
         """
+        for artist in self._projection_frame_artists:
+            try:
+                artist.remove()
+            except (NotImplementedError, ValueError, AttributeError):
+                pass
+        self._projection_frame_artists = []
         projection = self.default_options.get("projection")
         if not projection:
+            self._cached_triangulation = None  # rebuild flat coords on next access
             return
+        before = set(map(id, self.ax.patches)) | set(map(id, self.ax.lines))
         self._cached_triangulation = apply_projection_style_mesh(
             self.ax, self._node_x, self._node_y, self._fan_triangles(), style=projection
         )
+        self._projection_frame_artists = [
+            a for a in (*self.ax.patches, *self.ax.lines) if id(a) not in before
+        ]
 
     def _render_mesh(
         self,
@@ -704,6 +727,13 @@ class MeshGlyph(GeoMixin, Glyph):
         colours may not appear on the surface — the bar reflects the input
         data range, not the drawn per-face means. Requires node-centered
         `data` (the surface's per-node elevation).
+
+        Note:
+            Hillshade is intended for native (flat) coordinates. Under
+            `projection="globe"` the triangulation is in orthographic **metres**
+            (~1e6) while elevations stay in metres (~1e3), so the surface reads
+            as nearly flat in the xy frame and the relief washes out. Combine
+            hillshade with the plain (flat) mesh, not the globe.
 
         Args:
             ax: Axes to draw on.
