@@ -1,0 +1,140 @@
+{
+ "hot_cold": {
+  "label": "Hot / cold (diverging)",
+  "palette": [
+   "#181870",
+   "#104e8b",
+   "#1774cd",
+   "#4876ff",
+   "#5baced",
+   "#add7e6",
+   "#d1eded",
+   "#e5eff9",
+   "#f2ffff",
+   "#ffffff",
+   "#fdf5e6",
+   "#ffe4b4",
+   "#f3a460",
+   "#ed7600",
+   "#cd661d",
+   "#e0310f",
+   "#ed0000",
+   "#cd0000",
+   "#8b0000"
+  ],
+  "opacity": "opaque",
+  "interp": "listed",
+  "center": 0.0
+ },
+ "precipitation_anomaly": {
+  "label": "Precipitation anomaly",
+  "palette": [
+   "#b66a28",
+   "#cd853f",
+   "#e1a564",
+   "#f5cd84",
+   "#f5e09e",
+   "#fff5ba",
+   "#ffffff",
+   "#cdffcd",
+   "#99f0b2",
+   "#53bd9f",
+   "#6eaac8",
+   "#0570b0",
+   "#023858"
+  ],
+  "opacity": "opaque",
+  "interp": "listed",
+  "center": 0.0
+ },
+ "precipitation_steps": {
+  "label": "Precipitation (MeteoSwiss)",
+  "palette": [
+   "#ffffff",
+   "#edfac2",
+   "#cdffcd",
+   "#99f0b2",
+   "#53bd9f",
+   "#32a696",
+   "#3296b4",
+   "#0570b0",
+   "#05508c",
+   "#0a1f96",
+   "#2c0246",
+   "#6a2c5a"
+  ],
+  "opacity": "opaque",
+  "interp": "listed"
+ },
+ "sunshine_hours": {
+  "label": "Sunshine",
+  "palette": [
+   "#ffffff",
+   "#fff5cc",
+   "#ffe670",
+   "#ffcc33",
+   "#ffaf33",
+   "#ff9933",
+   "#ff6f33",
+   "#ff5500",
+   "#e6281e",
+   "#c81e14"
+  ],
+  "opacity": "opaque",
+  "interp": "listed"
+ },
+ "temperature_anomaly": {
+  "label": "Temperature anomaly",
+  "palette": [
+   "#071e46",
+   "#072f6b",
+   "#08579c",
+   "#2171b5",
+   "#4292c7",
+   "#5aa0cd",
+   "#78bfd6",
+   "#aadce6",
+   "#dbf5ff",
+   "#ffffff",
+   "#ffe0e0",
+   "#fcbbaa",
+   "#fc9272",
+   "#fb6a4a",
+   "#f03c2b",
+   "#cc181e",
+   "#a60f14",
+   "#780a0f",
+   "#5f0000"
+  ],
+  "opacity": "opaque",
+  "interp": "listed",
+  "center": 0.0
+ },
+ "temperature_steps": {
+  "label": "Temperature (MeteoSwiss)",
+  "palette": [
+   "#071e46",
+   "#072f6b",
+   "#08529c",
+   "#2171b5",
+   "#4292c7",
+   "#5aa0cd",
+   "#78bfd6",
+   "#aadce6",
+   "#dbf5ff",
+   "#f0fcff",
+   "#fff0f5",
+   "#ffe0e0",
+   "#fcbbaa",
+   "#fc9272",
+   "#fb6a4a",
+   "#f03c2b",
+   "#cc181e",
+   "#a60f14",
+   "#780a0f",
+   "#5f0000"
+  ],
+  "opacity": "opaque",
+  "interp": "listed"
+ }
+}

@@ -28,6 +28,25 @@ Derived from — see `tools/build_ocean_presets.py` for the exact derivation.
   Perceptually-uniform oceanography colormaps, sampled to hex control points and paired with ocean / hydrology / DEM
   variable labels and an opacity policy.
 
+## `src/cleopatra/data/terrain_presets.json`
+
+Derived from — see `tools/build_terrain_presets.py` for the exact derivation.
+
+- **Scientific Colour Maps (Fabio Crameri)** — MIT License — Copyright (c) 2023 Fabio Crameri —
+  <https://www.fabiocrameri.ch/colourmaps/> (mirror: <https://github.com/callumrollo/cmcrameri>)
+  The hypsometric hinge maps `oleron`, `bukavu`, and `fes`, sampled to hex control points and paired with elevation
+  labels. Each has a land/sea break at the colour-bar midpoint, so the presets carry `center=0` and are loaded with a
+  hinge-faithful linear interpolation.
+
+## `src/cleopatra/data/ncl_presets.json`
+
+Derived from — see `tools/build_ncl_presets.py` for the exact derivation.
+
+- **NCL / MeteoSwiss colour tables** — public-domain colour specifications (NCAR Command Language) —
+  <https://www.ncl.ucar.edu/Document/Graphics/ColorTables/> The MeteoSwiss operational stepped tables
+  (`precip_11lev`, `precip_diff_12lev`, `temp_19lev`, `temp_diff_18lev`, `sunshine_9lev`, `hotcold_18lev`), parsed to
+  hex control points and rendered as discrete `ListedColormap` bands.
+
 ---
 
 License texts: Apache-2.0 <https://www.apache.org/licenses/LICENSE-2.0> · MIT <https://opensource.org/licenses/MIT>
