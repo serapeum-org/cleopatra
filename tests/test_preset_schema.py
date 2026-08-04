@@ -94,6 +94,22 @@ class TestPresetSchema:
                     for cat in layer["categories"]:
                         assert set(cat) == {"value", "color", "label"}, f"{where}: bad category {cat}"
 
+    def test_schema_rejects_mixed_categorical_continuous(self):
+        """The schema rejects a layer carrying both `categories` and `colors`.
+
+        Test scenario:
+            A self-contradictory layer (categorical AND continuous) must fail the
+            `oneOf` contract -- the guarantee the whole restructure is built on.
+        """
+        jsonschema = pytest.importorskip("jsonschema")
+        mixed = {"version": 1, "presets": {"x": {"layers": {"x": {
+            "label": "mixed",
+            "colors": ["#000000", "#ffffff"], "colormap": "listed",
+            "categories": [{"value": 1, "color": "#000000", "label": "a"}],
+        }}}}}
+        with pytest.raises(jsonschema.ValidationError):
+            jsonschema.validate(mixed, _read("preset.schema.json"))
+
     @pytest.mark.parametrize("asset", ASSETS)
     def test_loader_reads_asset(self, asset):
         """`_load_presets` builds at least one preset from each asset.
