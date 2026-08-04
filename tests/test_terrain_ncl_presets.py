@@ -1,8 +1,8 @@
 """Tests for the Crameri terrain presets, NCL/MeteoSwiss tables, and the
-hinge-faithful `_asset_cmap` loader (F1/F1b/F2).
+hinge-faithful `_preset_cmap` loader (F1/F1b/F2).
 
-Covers the three interpolation modes of `cleopatra.colors._asset_cmap`
-(`"linear"`, `"listed"`, perceptual default), the registered terrain and NCL
+Covers the palette colormap modes of `cleopatra.colors._preset_cmap`
+(`"linear"`, `"listed"`, `"perceptual"`), the registered terrain and NCL
 presets, and the fixed `topography` hinge registration.
 """
 
@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 
-from cleopatra.colors import DATA_STYLES, _asset_cmap, apply_data_style
+from cleopatra.colors import DATA_STYLES, _preset_cmap, apply_data_style
 
 #: A three-colour palette whose middle control point (pure green) sits at index
 #: 0.5, used to probe where each interpolation mode places the hinge.
@@ -41,56 +41,65 @@ def _fraction_of(cmap, target_rgb, samples=1024):
 
 
 class TestAssetCmap:
-    """Tests for the `_asset_cmap` interpolation dispatch."""
+    """Tests for the `_preset_cmap` colormap-mode dispatch."""
 
     def test_linear_preserves_hinge_at_half(self):
-        """`interp="linear"` keeps the middle control point at fraction 0.5.
+        """`colormap="linear"` keeps the middle control point at fraction 0.5.
 
         Test scenario:
             A `from_list` ramp spaces control points evenly by index, so the
             green midpoint of a 3-colour palette stays at 0.5 -- the property
             hinge maps rely on.
         """
-        cmap = _asset_cmap("t", PALETTE, "linear")
+        cmap = _preset_cmap("t", PALETTE, "linear")
         assert isinstance(cmap, LinearSegmentedColormap), "linear must be a segmented map"
         assert abs(_fraction_of(cmap, (0.0, 1.0, 0.0)) - 0.5) < 0.02, "hinge should stay at 0.5"
 
     def test_perceptual_default_drifts_hinge(self):
-        """The perceptual default reparameterises, moving the midpoint off 0.5.
+        """`colormap="perceptual"` reparameterises, moving the midpoint off 0.5.
 
         Test scenario:
             CIELAB arc-length spacing is uneven for this palette, so the green
             midpoint lands away from 0.5 -- demonstrating why hinge maps need
             `"linear"` instead.
         """
-        cmap = _asset_cmap("t", PALETTE, None)
-        assert isinstance(cmap, LinearSegmentedColormap), "default returns a segmented map"
+        cmap = _preset_cmap("t", PALETTE, "perceptual")
+        assert isinstance(cmap, LinearSegmentedColormap), "perceptual returns a segmented map"
         assert abs(_fraction_of(cmap, (0.0, 1.0, 0.0)) - 0.5) > 0.02, "perceptual should drift the midpoint"
 
     def test_listed_is_discrete_with_one_band_per_colour(self):
-        """`interp="listed"` yields a `ListedColormap` with `N == len(palette)`.
+        """`colormap="listed"` yields a `ListedColormap` with `N == len(palette)`.
 
         Test scenario:
             A stepped colour table must stay discrete (one flat band per stored
             colour), not interpolate to a smooth ramp.
         """
-        cmap = _asset_cmap("t", PALETTE, "listed")
+        cmap = _preset_cmap("t", PALETTE, "listed")
         assert isinstance(cmap, ListedColormap), "listed must be a discrete map"
         assert cmap.N == len(PALETTE), f"expected {len(PALETTE)} bands, got {cmap.N}"
 
-    @pytest.mark.parametrize("interp", ["linear", "listed", None])
-    def test_single_colour_palette_raises(self, interp):
-        """A <2-colour palette raises under every interp mode.
-
-        Args:
-            interp: The interpolation mode.
+    def test_named_passes_the_name_through(self):
+        """`colormap="named"` returns the name string unchanged (resolved at draw).
 
         Test scenario:
-            The uniform guard lets `_load_preset_asset` skip a degenerate record
-            the same way for all modes, not just the perceptual default.
+            A named colormap is not built up front; the loader keeps the string so
+            the render path resolves it (matplotlib or namespaced).
+        """
+        assert _preset_cmap("t", "Spectral_r", "named") == "Spectral_r"
+
+    @pytest.mark.parametrize("colormap", ["linear", "listed", "perceptual"])
+    def test_single_colour_palette_raises(self, colormap):
+        """A <2-colour palette raises under every palette colormap mode.
+
+        Args:
+            colormap: The palette colormap mode.
+
+        Test scenario:
+            The uniform guard lets `_load_presets` skip a degenerate record the
+            same way for all palette modes.
         """
         with pytest.raises(ValueError, match="at least two colours"):
-            _asset_cmap("t", ["#000000"], interp)
+            _preset_cmap("t", ["#000000"], colormap)
 
 
 class TestTopographyHingeFix:

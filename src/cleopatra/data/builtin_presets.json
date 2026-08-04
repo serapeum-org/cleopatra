@@ -1,0 +1,318 @@
+{
+ "version": 1,
+ "source": "cleopatra",
+ "license": "cleopatra",
+ "presets": {
+  "haze": {
+   "layers": {
+    "organic_matter": {
+     "label": "Organic Matter",
+     "colors": [
+      "#ffffff",
+      "#ffd9f2",
+      "#ff5fc9",
+      "#c400a0",
+      "#5c0050",
+      "#200018"
+     ],
+     "colormap": "perceptual",
+     "vmin": 0.0,
+     "vmax": 1.0,
+     "alpha_range": [
+      0.1,
+      0.5
+     ]
+    },
+    "dust": {
+     "label": "Dust",
+     "colors": [
+      "#ffffff",
+      "#fff2b3",
+      "#ffcc33",
+      "#ff6a00",
+      "#7a1500",
+      "#2a0800"
+     ],
+     "colormap": "perceptual",
+     "vmin": 0.0,
+     "vmax": 1.0,
+     "alpha_range": [
+      0.1,
+      0.5
+     ]
+    }
+   }
+  },
+  "cams_aod": {
+   "source": "magics",
+   "license": "Apache-2.0",
+   "layers": {
+    "aod": {
+     "label": "Aerosol Optical Depth",
+     "colors": [
+      "#d3d7eb",
+      "#a8afd7",
+      "#8892bf",
+      "#a3a891",
+      "#bebd65",
+      "#d8d239",
+      "#f3e70b",
+      "#f4c60a",
+      "#f6a508",
+      "#f88406",
+      "#f96205",
+      "#fb4103",
+      "#fd2001",
+      "#ff0000"
+     ],
+     "colormap": "perceptual",
+     "vmin": 0.0,
+     "vmax": 1.0
+    }
+   }
+  },
+  "temperature": {
+   "layers": {
+    "temperature": {
+     "label": "Temperature",
+     "colors": "Spectral_r",
+     "colormap": "named",
+     "alpha": 1.0
+    }
+   }
+  },
+  "temperature_flame": {
+   "layers": {
+    "temperature_flame": {
+     "label": "Temperature",
+     "colors": [
+      "#000000",
+      "#4d0000",
+      "#990000",
+      "#e02a00",
+      "#ff7a00",
+      "#ffbf1a",
+      "#fff29a",
+      "#ffffff"
+     ],
+     "colormap": "perceptual",
+     "vmin": 0.0,
+     "vmax": 40.0,
+     "alpha_range": [
+      6.0,
+      32.0
+     ]
+    }
+   }
+  },
+  "temperature_flame_amber": {
+   "layers": {
+    "temperature_flame_amber": {
+     "label": "Temperature",
+     "colors": [
+      "#240000",
+      "#7a0000",
+      "#c81800",
+      "#ff5a00",
+      "#ff9a00",
+      "#ffd21e",
+      "#fff2a8"
+     ],
+     "colormap": "perceptual",
+     "vmin": 0.0,
+     "vmax": 40.0,
+     "alpha_range": [
+      6.0,
+      32.0
+     ]
+    }
+   }
+  },
+  "elevation": {
+   "layers": {
+    "elevation": {
+     "label": "Elevation",
+     "colors": "terrain",
+     "colormap": "named",
+     "alpha": 1.0
+    }
+   }
+  },
+  "vegetation": {
+   "layers": {
+    "vegetation": {
+     "label": "Vegetation (NDVI)",
+     "colors": "YlGn",
+     "colormap": "named",
+     "alpha": 1.0
+    }
+   }
+  },
+  "wind_speed": {
+   "layers": {
+    "wind_speed": {
+     "label": "Wind speed",
+     "colors": "viridis",
+     "colormap": "named",
+     "alpha": 1.0
+    }
+   }
+  },
+  "anomaly": {
+   "layers": {
+    "anomaly": {
+     "label": "Anomaly",
+     "colors": "RdBu_r",
+     "colormap": "named",
+     "center": 0.0,
+     "alpha": 1.0
+    }
+   }
+  },
+  "precipitation": {
+   "layers": {
+    "precipitation": {
+     "label": "Precipitation",
+     "colors": "YlGnBu",
+     "colormap": "named"
+    }
+   }
+  },
+  "flood_status": {
+   "layers": {
+    "flood_status": {
+     "label": "Flood status",
+     "categories": [
+      {
+       "value": 0,
+       "color": "#2c7fb8",
+       "label": "Normal"
+      },
+      {
+       "value": 1,
+       "color": "#31a354",
+       "label": "Action"
+      },
+      {
+       "value": 2,
+       "color": "#ffeb3b",
+       "label": "Minor"
+      },
+      {
+       "value": 3,
+       "color": "#ff7f00",
+       "label": "Moderate"
+      },
+      {
+       "value": 4,
+       "color": "#e31a1c",
+       "label": "Major"
+      }
+     ]
+    }
+   }
+  },
+  "flow_direction_d8": {
+   "layers": {
+    "flow_direction_d8": {
+     "label": "Flow direction (D8)",
+     "categories": [
+      {
+       "value": 1,
+       "color": "#e2d9e2",
+       "label": "E"
+      },
+      {
+       "value": 2,
+       "color": "#95b5c7",
+       "label": "SE"
+      },
+      {
+       "value": 4,
+       "color": "#6276ba",
+       "label": "S"
+      },
+      {
+       "value": 8,
+       "color": "#592a8f",
+       "label": "SW"
+      },
+      {
+       "value": 16,
+       "color": "#2f1436",
+       "label": "W"
+      },
+      {
+       "value": 32,
+       "color": "#741e4f",
+       "label": "NW"
+      },
+      {
+       "value": 64,
+       "color": "#b25652",
+       "label": "N"
+      },
+      {
+       "value": 128,
+       "color": "#cca389",
+       "label": "NE"
+      }
+     ]
+    }
+   }
+  },
+  "flow_accumulation": {
+   "layers": {
+    "flow_accumulation": {
+     "label": "Flow accumulation",
+     "colors": "Blues",
+     "colormap": "named",
+     "norm": "symlog"
+    }
+   }
+  },
+  "radar_reflectivity": {
+   "layers": {
+    "radar_reflectivity": {
+     "label": "Reflectivity [dBZ]",
+     "colors": [
+      "#66ccff",
+      "#3399ff",
+      "#0066ff",
+      "#00ff00",
+      "#00cc00",
+      "#009900",
+      "#ffff00",
+      "#ffcc00",
+      "#ff9900",
+      "#ff0000",
+      "#cc0000",
+      "#990000",
+      "#ff00ff",
+      "#9900cc",
+      "#ffffff"
+     ],
+     "colormap": "listed",
+     "levels": [
+      5,
+      10,
+      15,
+      20,
+      25,
+      30,
+      35,
+      40,
+      45,
+      50,
+      55,
+      60,
+      65,
+      70,
+      75
+     ],
+     "extend": "max"
+    }
+   }
+  }
+ }
+}
