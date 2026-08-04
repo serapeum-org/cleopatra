@@ -55,7 +55,7 @@ def _parse_rgb(text: str) -> list[str]:
     Returns:
         list: The table's colours as ``#rrggbb`` strings, in file order.
     """
-    colours: list[str] = []
+    triples: list[tuple[float, float, float]] = []
     for raw_line in text.splitlines():
         line = raw_line.split("#", 1)[0].strip()  # drop comments / inline labels
         if not line or line.lower().startswith("ncolors"):
@@ -67,10 +67,15 @@ def _parse_rgb(text: str) -> list[str]:
             r, g, b = (float(p) for p in parts)
         except ValueError:
             continue
-        scale = 255.0 if max(r, g, b) > 1.0 else 1.0
-        rgb = tuple(int(round(v / scale * 255)) for v in (r, g, b))
-        colours.append("#{:02x}{:02x}{:02x}".format(*rgb))
-    return colours
+        triples.append((r, g, b))
+    # Detect the scale ONCE over the whole table, not per row: a 0-255 table can
+    # contain a legitimately near-black row (e.g. `1 1 1`) whose own max is <= 1,
+    # which a per-row test would misread as 0-1 floats and blow up to white.
+    scale = 255.0 if any(v > 1.0 for t in triples for v in t) else 1.0
+    return [
+        "#{:02x}{:02x}{:02x}".format(*(int(round(v / scale * 255)) for v in t))
+        for t in triples
+    ]
 
 
 def _fetch_table(name: str) -> list[str]:
