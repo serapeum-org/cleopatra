@@ -38,6 +38,12 @@
     {"required": ["colors", "colormap"]},
     {"required": ["categories"]}
    ],
+   "allOf": [
+    {"if": {"required": ["colors"], "properties": {"colors": {"type": "string"}}},
+     "then": {"properties": {"colormap": {"const": "named"}}}},
+    {"if": {"required": ["colormap"], "properties": {"colormap": {"const": "named"}}},
+     "then": {"properties": {"colors": {"type": "string"}}}}
+   ],
    "properties": {
     "label": {"type": "string"},
     "colors": {

@@ -110,6 +110,25 @@ class TestPresetSchema:
         with pytest.raises(jsonschema.ValidationError):
             jsonschema.validate(mixed, _read("preset.schema.json"))
 
+    def test_schema_couples_string_colors_to_named(self):
+        """A string `colors` is only valid with `colormap="named"`.
+
+        Test scenario:
+            `{"colors": "viridis", "colormap": "listed"}` would drive the loader
+            to build a colormap over the *characters* of the name, so the schema
+            must reject it; the `named` form must still validate.
+        """
+        jsonschema = pytest.importorskip("jsonschema")
+        schema = _read("preset.schema.json")
+
+        def wrap(layer):
+            return {"version": 1, "presets": {"x": {"layers": {"x": layer}}}}
+
+        with pytest.raises(jsonschema.ValidationError):
+            jsonschema.validate(wrap({"label": "L", "colors": "viridis", "colormap": "listed"}), schema)
+        # the correct named form validates
+        jsonschema.validate(wrap({"label": "L", "colors": "Spectral_r", "colormap": "named"}), schema)
+
     @pytest.mark.parametrize("asset", ASSETS)
     def test_loader_reads_asset(self, asset):
         """`_load_presets` builds at least one preset from each asset.
