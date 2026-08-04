@@ -129,8 +129,15 @@ nav:
     - ArrayGlyph RGB animation: notebooks/array_glyph/rgb_animation.ipynb
     - ArrayGlyph reference map: notebooks/array_glyph/reference_map.ipynb
     - Saving animations: notebooks/animation/animation_examples.ipynb
-    - Haze-style presets: notebooks/haze_preset/haze_preset_examples.ipynb
-    - Data-style presets: notebooks/data_style_presets/data_style_presets_examples.ipynb
+    - Presets:
+      - Data-style presets: notebooks/presets/data_style_presets_examples.ipynb
+      - Haze-style presets: notebooks/presets/haze_preset_examples.ipynb
+      - Ocean styles gallery: notebooks/presets/ocean_styles_gallery.ipynb
+      - Weather styles gallery: notebooks/presets/weather_styles_gallery.ipynb
+      - Temperature animation: notebooks/presets/temperature_animation.ipynb
+      - Precipitation animation: notebooks/presets/precipitation_animation.ipynb
+      - ECMWF temperature animation: notebooks/presets/ecmwf_temperature_animation.ipynb
+      - Magics 2t flame plume: notebooks/presets/magics_2t_flame_plume.ipynb
     - MeshGlyph: notebooks/mesh_glyph/mesh_glyph_examples.ipynb
     - ScatterGlyph: notebooks/scatter_glyph/scatter_glyph_examples.ipynb
     - VectorGlyph: notebooks/vector_glyph/vector_glyph_examples.ipynb
