@@ -6,6 +6,10 @@ only colour values and the parameter/label metadata needed to render them. Each 
 that source's license are listed below. The maintainer-side derivation scripts live in `tools/` (they are not shipped
 and are not run at install time).
 
+Every preset asset is also **self-describing**: each carries a machine-readable `source` and `license` (at the asset
+level, overridable per preset) alongside its `presets`, and validates against `src/cleopatra/data/preset.schema.json`.
+This file is the human-readable summary; the assets themselves are the authoritative per-record provenance.
+
 ## `src/cleopatra/data/weather_presets.json`
 
 Derived from two open ECMWF projects — colour data plus GRIB shortName / parameter-label / contour-level associations
@@ -46,6 +50,16 @@ Derived from — see `tools/build_ncl_presets.py` for the exact derivation.
   <https://www.ncl.ucar.edu/Document/Graphics/ColorTables/> The MeteoSwiss operational stepped tables
   (`precip_11lev`, `precip_diff_12lev`, `temp_19lev`, `temp_diff_18lev`, `sunshine_9lev`, `hotcold_18lev`), parsed to
   hex control points and rendered as discrete `ListedColormap` bands.
+
+## `src/cleopatra/data/builtin_presets.json`
+
+cleopatra's own hand-authored presets (haze, flame, `temperature`/`anomaly`/`elevation`/…, the categorical hydrology
+presets, and the NEXRAD `radar_reflectivity` scale). These are original cleopatra colour work or reference matplotlib's
+built-in colormaps by name — with one vendored exception:
+
+- **ECMWF Magics** — Apache License 2.0 — <https://github.com/ecmwf/magics>
+  The `cams_aod` preset's colour scale is the Magics `sh_BuYlRd_aod` CAMS aerosol-optical-depth palette (colour values
+  only). This record declares `source: "magics"` in the asset.
 
 ---
 
