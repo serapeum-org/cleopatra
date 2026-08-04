@@ -78,6 +78,20 @@ class TestAssetCmap:
         assert isinstance(cmap, ListedColormap), "listed must be a discrete map"
         assert cmap.N == len(PALETTE), f"expected {len(PALETTE)} bands, got {cmap.N}"
 
+    @pytest.mark.parametrize("interp", ["linear", "listed", None])
+    def test_single_colour_palette_raises(self, interp):
+        """A <2-colour palette raises under every interp mode.
+
+        Args:
+            interp: The interpolation mode.
+
+        Test scenario:
+            The uniform guard lets `_load_preset_asset` skip a degenerate record
+            the same way for all modes, not just the perceptual default.
+        """
+        with pytest.raises(ValueError, match="at least two colours"):
+            _asset_cmap("t", ["#000000"], interp)
+
 
 class TestTopographyHingeFix:
     """Tests for the fixed `topography` preset registration (F1b)."""

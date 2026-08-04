@@ -83,6 +83,42 @@ class TestMeshGlyphProjection:
         assert len(glyph.ax.patches) >= 1, "sticky projection should persist across replot"
         plt.close("all")
 
+    def test_replot_does_not_stack_globe_frame(self, mesh):
+        """A sticky-globe replot reuses the frame instead of stacking a duplicate.
+
+        Test scenario:
+            The boundary patch and graticule lines are removed and redrawn each
+            render, so the exact patch/line counts are identical across two
+            plots (they used to double: 1->2 patches, 15->30 lines).
+        """
+        pytest.importorskip("pyproj", reason="globe needs the [tiles] extra")
+        node_x, node_y, faces, values = mesh
+        glyph = MeshGlyph(node_x, node_y, faces, projection="globe")
+        glyph.plot(values, location="node")
+        patches1, lines1 = len(glyph.ax.patches), len(glyph.ax.lines)
+        glyph.plot(values, location="node")
+        assert len(glyph.ax.patches) == patches1, "globe boundary must not stack on replot"
+        assert len(glyph.ax.lines) == lines1, "graticule must not stack on replot"
+        plt.close("all")
+
+    def test_clear_projection_restores_flat_coords(self, mesh):
+        """`plot(projection=None)` after a globe restores flat node coordinates.
+
+        Test scenario:
+            Clearing the projection drops the reprojected triangulation cache and
+            removes the globe frame, so the mesh renders on native lon/lat again
+            (x back in degrees, not orthographic metres) with no stale boundary.
+        """
+        pytest.importorskip("pyproj", reason="globe needs the [tiles] extra")
+        node_x, node_y, faces, values = mesh
+        glyph = MeshGlyph(node_x, node_y, faces, projection="globe")
+        glyph.plot(values, location="node")
+        assert glyph.triangulation.x.max() > 1e6, "globe should reproject to metres"
+        glyph.plot(values, location="node", projection=None)
+        assert glyph.triangulation.x.max() <= 360.0, "clearing projection should restore lon/lat"
+        assert len(glyph.ax.patches) == 0, "clearing projection should remove the globe frame"
+        plt.close("all")
+
     @pytest.mark.parametrize("projection", ["flat", None])
     def test_no_globe_frame_for_flat_or_none(self, mesh, projection):
         """`"flat"` and no projection draw no globe boundary.
