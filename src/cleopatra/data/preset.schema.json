@@ -34,7 +34,7 @@
    "type": "object",
    "required": ["label"],
    "additionalProperties": false,
-   "anyOf": [
+   "oneOf": [
     {"required": ["colors", "colormap"]},
     {"required": ["categories"]}
    ],
