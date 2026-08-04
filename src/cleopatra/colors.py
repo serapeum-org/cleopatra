@@ -821,11 +821,21 @@ def _asset_cmap(name: str, palette: Sequence, interp: str | None) -> Colormap:
 
     Returns:
         matplotlib.colors.Colormap: The colormap built under the chosen mode.
+
+    Raises:
+        ValueError: If `palette` has fewer than two colours (a colormap needs at
+            least two). Raising keeps `_load_preset_asset`'s inner guard able to
+            skip a degenerate record uniformly across all interp modes -- the
+            `"listed"` and `"linear"` builders would otherwise accept a
+            single-colour palette that the perceptual default rejects.
     """
+    palette = list(palette)
+    if len(palette) < 2:
+        raise ValueError(f"{name!r}: a preset palette needs at least two colours, got {len(palette)}")
     if interp == "linear":
-        return LinearSegmentedColormap.from_list(name, list(palette), N=256)
+        return LinearSegmentedColormap.from_list(name, palette, N=256)
     if interp == "listed":
-        return mcolors.ListedColormap(list(palette), name=name)
+        return mcolors.ListedColormap(palette, name=name)
     return perceptual_colormap(name, palette)
 
 
