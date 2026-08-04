@@ -764,12 +764,17 @@ def _load_presets(resource: str) -> dict[str, dict[str, dict[str, Any]]]:
 #: maps, the NCL/MeteoSwiss tables, the merged ECMWF weather parameters, and the
 #: hand-authored built-in presets (haze, flame, categorical hydrology, radar).
 #: List them all with `sorted(DATA_STYLES)`.
+#: Load order matters on a key collision (a later asset's preset wins via
+#: `dict.update`). The built-in asset is loaded FIRST so a vendored preset would
+#: override a hand-authored one of the same name -- matching the pre-unification
+#: order (the hand-authored literal was defined first, then the vendored assets
+#: were `.update`-d over it). There are no colliding keys today.
 _PRESET_ASSETS = (
+    "builtin_presets.json",
     "ocean_presets.json",
     "terrain_presets.json",
     "ncl_presets.json",
     "weather_presets.json",
-    "builtin_presets.json",
 )
 for _asset in _PRESET_ASSETS:
     DATA_STYLES.update(_load_presets(_asset))

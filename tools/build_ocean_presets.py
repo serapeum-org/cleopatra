@@ -55,7 +55,7 @@ CURATED = [
 #: be loaded with ``interp="linear"`` (a plain ``from_list``) so the hinge stays
 #: at 0.5 and lines up with ``center=0``; the perceptual default reparameterises
 #: by CIELAB arc-length and drifts the sea-level break off 0.5. See
-#: ``cleopatra.colors._asset_cmap``.
+#: ``cleopatra.colors._preset_cmap``.
 HINGE_KEYS = {"topography"}
 
 
