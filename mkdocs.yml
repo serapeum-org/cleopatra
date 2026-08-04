@@ -132,6 +132,7 @@ nav:
     - Presets:
       - Data-style presets: notebooks/presets/data_style_presets_examples.ipynb
       - Haze-style presets: notebooks/presets/haze_preset_examples.ipynb
+      - Scientific colormaps: notebooks/presets/scientific_colormaps_examples.ipynb
       - Ocean styles gallery: notebooks/presets/ocean_styles_gallery.ipynb
       - Weather styles gallery: notebooks/presets/weather_styles_gallery.ipynb
       - Temperature animation: notebooks/presets/temperature_animation.ipynb
