@@ -83,18 +83,22 @@ def main(out_path):
     for cm_name, key, label, center in CURATED:
         cmap = getattr(cmocean.cm, cm_name)
         palette = [to_hex(cmap(float(x))) for x in xs]
-        rec = {
+        layer = {
             "label": label,
-            "palette": palette,
-            "opacity": "opaque",
+            "colors": palette,
+            "colormap": "linear" if key in HINGE_KEYS else "perceptual",
         }
         if center is not None:
-            rec["center"] = center
-        if key in HINGE_KEYS:
-            rec["interp"] = "linear"
-        presets[key] = rec
+            layer["center"] = center
+        layer["alpha"] = 1.0  # opaque full field
+        presets[key] = {"layers": {key: layer}}
 
-    asset = dict(sorted(presets.items()))
+    asset = {
+        "version": 1,
+        "source": "cmocean",
+        "license": "MIT",
+        "presets": dict(sorted(presets.items())),
+    }
     with open(_safe_out_path(out_path), "w", encoding="utf-8") as f:
         json.dump(asset, f, indent=1, ensure_ascii=False)
     print(f"wrote {len(presets)} cmocean presets to {out_path}")

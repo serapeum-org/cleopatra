@@ -479,6 +479,47 @@ def _safe_out_path(out_path):
     return resolved
 
 
+def _to_canonical(records):
+    """Wrap the merged old-format records into the canonical v2 preset asset.
+
+    Maps each record onto the unified preset schema (`colors` + `colormap`,
+    optional `bands`/`levels`/`extend`/`vmin`/`vmax`/`units`, constant `alpha`
+    for an opaque field). Records carrying explicit `levels` are earthkit-sourced
+    and tagged so; the rest default to the asset-level Magics provenance.
+
+    Args:
+        records: The merged shortName -> old-format record mapping.
+
+    Returns:
+        dict: A `{version, source, license, presets}` v2 asset.
+    """
+    presets = {}
+    for name, rec in sorted(records.items()):
+        colors = rec["colors"]
+        banded = rec.get("bands") is not None or rec.get("levels") is not None
+        colormap = "named" if isinstance(colors, str) else ("listed" if banded else "perceptual")
+        layer = {"label": rec["label"], "colors": colors, "colormap": colormap}
+        if rec.get("units") is not None:
+            layer["units"] = rec["units"]
+        if rec.get("bands") is not None:
+            layer["bands"] = rec["bands"]
+        if rec.get("levels") is not None:
+            layer["levels"] = rec["levels"]
+            if rec.get("extend") is not None:
+                layer["extend"] = rec["extend"]
+        if rec.get("vmin") is not None:
+            layer["vmin"] = rec["vmin"]
+        if rec.get("vmax") is not None:
+            layer["vmax"] = rec["vmax"]
+        if rec.get("opacity") == "opaque":
+            layer["alpha"] = 1.0
+        preset = {"layers": {name: layer}}
+        if rec.get("levels") is not None:  # earthkit records carry explicit levels
+            preset = {"source": "earthkit", **preset}
+        presets[name] = preset
+    return {"version": 1, "source": "magics", "license": "Apache-2.0", "presets": presets}
+
+
 def main(out_path, magics_ref="develop", earthkit_ref="main"):
     magics_presets, magics_skipped, unresolved = build_magics(magics_ref)
     earthkit_presets, earthkit_skipped = build_earthkit(earthkit_ref)
@@ -487,7 +528,7 @@ def main(out_path, magics_ref="develop", earthkit_ref="main"):
         **transform_earthkit(earthkit_presets),
     }
     renamed, unmapped = rename_to_descriptive_keys(merged)
-    asset = dict(sorted(renamed.items()))
+    asset = _to_canonical(renamed)
     with open(_safe_out_path(out_path), "w", encoding="utf-8") as f:
         json.dump(asset, f, indent=1, ensure_ascii=False)
     if unmapped:

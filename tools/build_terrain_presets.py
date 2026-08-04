@@ -9,10 +9,10 @@ fetches at import or draw time -- it reads the shipped JSON.
 These are **hinge maps**: each has a hard land/sea break at the colour-bar
 midpoint (0.5), ocean tones below and land tones above. Every record therefore
 carries ``center=0`` (so ``apply_data_style`` renders it symmetric about sea
-level with a ``TwoSlopeNorm``) and ``interp="linear"`` (so the loader builds it
+level with a ``TwoSlopeNorm``) and ``colormap="linear"`` (so the loader builds it
 with a plain ``from_list`` that keeps the hinge at 0.5 -- the perceptual default
 reparameterises by CIELAB arc-length and would drift the sea-level break; see
-``cleopatra.colors._asset_cmap``).
+``cleopatra.colors._preset_cmap``).
 
 Usage::
 
@@ -72,7 +72,7 @@ def _sample_palette(rows: list[tuple[float, float, float]]) -> list[str]:
     """Sample `N_POINTS` evenly-spaced hex control points from `rows`.
 
     Even index spacing keeps the native hinge at its own fraction (0.5 for these
-    symmetric maps), which the ``interp="linear"`` loader then preserves.
+    symmetric maps), which the ``colormap="linear"`` loader then preserves.
 
     Args:
         rows: The full-resolution ``(r, g, b)`` rows (0-1).
@@ -152,16 +152,21 @@ def main(out_path: str) -> None:
                 f"center=0 would misregister sea level",
                 file=sys.stderr,
             )
-        presets[key] = {
+        presets[key] = {"layers": {key: {
             "label": label,
-            "palette": palette,
-            "opacity": "opaque",
+            "colors": palette,
+            "colormap": "linear",
             "center": 0.0,
-            "interp": "linear",
-        }
+            "alpha": 1.0,
+        }}}
         print(f"{name}: {len(palette)} colours, hinge ~{hinge:.3f}")
 
-    asset = dict(sorted(presets.items()))
+    asset = {
+        "version": 1,
+        "source": "crameri",
+        "license": "MIT",
+        "presets": dict(sorted(presets.items())),
+    }
     with open(_safe_out_path(out_path), "w", encoding="utf-8") as f:
         json.dump(asset, f, indent=1, ensure_ascii=False)
     print(f"wrote {len(presets)} Crameri terrain presets to {out_path}")

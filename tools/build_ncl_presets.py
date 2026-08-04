@@ -9,7 +9,7 @@ fetches at import or draw time -- it reads the shipped JSON.
 The NCL ``.rgb`` files are plain text: ``#`` comment lines, an ``ncolors = N``
 header, then ``R G B`` integer triples in 0-255 (each optionally followed by an
 inline ``# label``). These are **stepped** tables -- a small number of flat
-bands -- so every record carries ``interp="listed"``: the loader builds a
+bands -- so every record carries ``colormap="listed"``: the loader builds a
 discrete ``ListedColormap`` (one band per colour) rather than a smooth ramp,
 preserving the operational banded look. Anomaly tables additionally carry
 ``center=0`` so they render symmetric about zero.
@@ -129,18 +129,23 @@ def main(out_path: str) -> None:
         if len(palette) < 2:
             print(f"WARNING: {name} yielded {len(palette)} colours, skipping", file=sys.stderr)
             continue
-        rec: dict = {
+        layer: dict = {
             "label": label,
-            "palette": palette,
-            "opacity": "opaque",
-            "interp": "listed",
+            "colors": palette,
+            "colormap": "listed",
         }
         if center is not None:
-            rec["center"] = center
-        presets[key] = rec
+            layer["center"] = center
+        layer["alpha"] = 1.0
+        presets[key] = {"layers": {key: layer}}
         print(f"{name}: {len(palette)} colours -> {key}")
 
-    asset = dict(sorted(presets.items()))
+    asset = {
+        "version": 1,
+        "source": "ncl",
+        "license": "public-domain",
+        "presets": dict(sorted(presets.items())),
+    }
     with open(_safe_out_path(out_path), "w", encoding="utf-8") as f:
         json.dump(asset, f, indent=1, ensure_ascii=False)
     print(f"wrote {len(presets)} NCL/MeteoSwiss presets to {out_path}")
