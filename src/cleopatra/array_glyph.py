@@ -66,11 +66,14 @@ from cleopatra.geo import GeoMixin
 from cleopatra.glyph import (
     Glyph,
     _clear_prior_render_artists,
+    _clear_projection_frame,
     _mark_render_artists,
+    _restore_flat_axes,
     _root_figure,
+    _stash_projection_frame,
 )
 from cleopatra.hillshade import resolve_hillshade, shade_grid, shade_rgb
-from cleopatra.projection import apply_projection_style
+from cleopatra.projection import apply_projection_style, projection_draws_frame
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import (
     ColorScale,  # re-exported for convenience  # noqa: F401
@@ -2449,6 +2452,13 @@ class ArrayGlyph(GeoMixin, Glyph):
         # `style` on this call instead of being torn down for a call that
         # never completes.
         _clear_prior_render_artists(self.ax)
+        # A prior globe render on this (reused) axes froze the view + hid the
+        # axis; strip that frame and restore the flat view when this styled
+        # render does not itself draw a globe frame, so the flat map is not an
+        # invisible speck (a new globe render stashes its own frame below).
+        self._sync_projection_frame(
+            projection_draws_frame(self.default_options.get("projection"))
+        )
         # Cast to float BEFORE filling: `ma.filled(int_array, np.nan)` raises
         # `TypeError: Cannot convert fill_value nan to dtype int64` for an
         # integer masked array -- exactly the integer-coded categorical raster
@@ -2493,6 +2503,44 @@ class ArrayGlyph(GeoMixin, Glyph):
         assert self.fig is not None
         return self.fig, self.ax
 
+    def _flat_axis_bounds(self) -> tuple[float, float, float, float]:
+        """Return the `(x_min, x_max, y_min, y_max)` data bounds for a flat view.
+
+        Used to reframe the axes when reverting from a projection (see
+        `_sync_projection_frame`): from the lon/lat coords if present, else the
+        `extent`, else the array's pixel-index bounds.
+
+        Returns:
+            tuple[float, float, float, float]: The flat-render data bounds.
+        """
+        if self._coords is not None:
+            x, y = self._coords
+            return float(np.min(x)), float(np.max(x)), float(np.min(y)), float(np.max(y))
+        if self.extent is not None:
+            x0, x1, y0, y1 = self.extent
+            return float(x0), float(x1), float(y0), float(y1)
+        n_rows, n_cols = np.asarray(self.arr).shape[:2]
+        return 0.0, float(n_cols), 0.0, float(n_rows)
+
+    def _sync_projection_frame(self, projecting: bool) -> None:
+        """Strip a prior globe frame and, when reverting to flat, restore the view.
+
+        `ArrayGlyph` reuses its own axes across `plot()` calls, and a globe render
+        freezes the view / hides the axis (`apply_projection_frame`). So before a
+        non-projection render on the same axes, the stale frame must be removed and
+        the flat view restored, or the flat layer is drawn into a frozen, axis-off
+        view as an invisible speck. A new globe render stashes its own frame in the
+        projection render path, so here we only clear the prior frame; the view is
+        restored only when this render is flat.
+
+        Args:
+            projecting: Whether this render is itself a projection (globe) render.
+        """
+        had_frame = _clear_projection_frame(self.ax)
+        if had_frame and not projecting:
+            x_min, x_max, y_min, y_max = self._flat_axis_bounds()
+            _restore_flat_axes(self.ax, x_min, x_max, y_min, y_max, aspect="auto")
+
     def _render_styled_layer(
         self, layer: str, data: np.ndarray, style: str, draw_swatch: bool
     ) -> Any:
@@ -2524,8 +2572,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                     "projection= with a style requires 1-D lon/lat coordinate "
                     "vectors (build the glyph with coords=(lon, lat))."
                 )
+            before = set(map(id, self.ax.patches)) | set(map(id, self.ax.lines))
             x_edges, y_edges, masked = apply_projection_style(
                 self.ax, coords[0], coords[1], data, style=projection
+            )
+            _stash_projection_frame(
+                self.ax,
+                [a for a in (*self.ax.patches, *self.ax.lines) if id(a) not in before],
             )
             images = apply_data_style(
                 self.ax, {layer: masked}, style=style, x=x_edges, y=y_edges,
@@ -2866,8 +2919,12 @@ class ArrayGlyph(GeoMixin, Glyph):
             if isinstance(arr, ma.MaskedArray)
             else np.asarray(arr, dtype=float)
         )
+        before = set(map(id, ax.patches)) | set(map(id, ax.lines))
         x_edges, y_edges, masked = apply_projection_style(
             ax, lon, lat, plot_arr, style=projection
+        )
+        _stash_projection_frame(
+            ax, [a for a in (*ax.patches, *ax.lines) if id(a) not in before]
         )
         if norm is None:
             im = ax.pcolormesh(
@@ -3663,6 +3720,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                     "2-D-coordinate array cannot be reprojected."
                 )
             _clear_prior_render_artists(ax)
+            # Strip any prior globe frame and restore the flat view when this
+            # render does not draw a globe frame (the axes may be reused from a
+            # globe plot); a globe render stashes its own frame in `_plot_projected`.
+            self._sync_projection_frame(projection_draws_frame(projection))
             if projection:
                 if points is not None or self.default_options.get("display_cell_value"):
                     warnings.warn(

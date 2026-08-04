@@ -733,6 +733,28 @@ PROJECTION_STYLES: dict[str, dict[str, Any]] = {
     "flat": {},
 }
 
+#: Projection styles that draw a static frame and freeze the axes view (limits to
+#: the orthographic radius + `axis("off")`). Reverting a glyph from one of these
+#: to a flat render must restore the flat axes view (see `glyph._restore_flat_axes`).
+_FRAMED_PROJECTION_STYLES = frozenset({"globe"})
+
+
+def projection_draws_frame(style: Any) -> bool:
+    """Whether a projection `style` draws a frozen boundary/graticule frame.
+
+    `"globe"` draws the frame and freezes the axes limits/aspect and hides the
+    axis; `"flat"` (identity) and no projection do not touch the axes. Glyphs use
+    this to decide whether the current render installs a frame (so a later flat
+    render must undo it), treating `"flat"` and `None` alike as flat views.
+
+    Args:
+        style: A projection style name, or a falsy value for no projection.
+
+    Returns:
+        bool: `True` only for a framed style (currently `"globe"`).
+    """
+    return style in _FRAMED_PROJECTION_STYLES
+
 
 def apply_projection_style_mesh(
     ax: Axes,
@@ -774,7 +796,7 @@ def apply_projection_style_mesh(
     """
     if style not in PROJECTION_STYLES:
         raise KeyError(
-            f"unknown projection style {style!r}; choose from {sorted(PROJECTION_STYLES)}."
+            f"Unknown projection style {style!r}; available: {sorted(PROJECTION_STYLES)}"
         )
     params = {**PROJECTION_STYLES[style], **overrides}
     node_x = np.asarray(node_x, dtype=float)
@@ -790,7 +812,11 @@ def apply_projection_style_mesh(
     visible = _visible_hemisphere(node_x, node_y, center_lat, center_lon)
     if triangles.size:
         # Mask a triangle when any of its nodes is on the far hemisphere, so it
-        # is not drawn stretched across the disc.
+        # is not drawn stretched across the disc. This masking -- NOT a clip path
+        # -- is what keeps the mesh inside the limb: the frame is drawn without a
+        # clip (clip_artists=False below) and never clips the data, so a straight
+        # edge between three near-hemisphere nodes stays within the convex disc on
+        # its own. A future change to the visibility mask must preserve that.
         tri.set_mask(~visible[triangles].all(axis=1))
     if draw_frame:
         radius = ORTHOGRAPHIC_RADIUS_M

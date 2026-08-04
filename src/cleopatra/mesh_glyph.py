@@ -47,9 +47,16 @@ from cleopatra.colors import (
     resolve_style_norm,
 )
 from cleopatra.geo import GeoMixin
-from cleopatra.glyph import Glyph, _clear_prior_render_artists, _mark_render_artists
+from cleopatra.glyph import (
+    Glyph,
+    _clear_prior_render_artists,
+    _clear_projection_frame,
+    _mark_render_artists,
+    _restore_flat_axes,
+    _stash_projection_frame,
+)
 from cleopatra.hillshade import resolve_hillshade, shade_faces
-from cleopatra.projection import apply_projection_style_mesh
+from cleopatra.projection import apply_projection_style_mesh, projection_draws_frame
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import disjoint_legend
 
@@ -169,10 +176,6 @@ class MeshGlyph(GeoMixin, Glyph):
         self._cached_triangulation: mtri.Triangulation | None = None
         self._cached_tri_array: np.ndarray | None = None
         self._cached_nodes_per_face: np.ndarray | None = None
-        #: Boundary patch + graticule lines drawn by the last `_apply_projection`
-        #: on this glyph's axes, so the next render can remove them (they are not
-        #: tracked by `_mark_render_artists`) rather than stack a duplicate frame.
-        self._projection_frame_artists: list[Any] = []
         self._cbar: Colorbar | None = None
         #: Colour-mapped artist from the most recent `plot` call (the
         #: `tripcolor`/`tricontour(f)` mappable); `None` before first render.
@@ -622,30 +625,39 @@ class MeshGlyph(GeoMixin, Glyph):
         triangulation.
 
         Owns the projection frame's lifecycle: every call first removes the
-        boundary/graticule this glyph drew on a previous render (they are not
+        boundary/graticule drawn on a previous render (they are not
         `_mark_render_artists`-tracked, so a replot would otherwise stack a
-        duplicate frame). When `projection` is cleared to a falsy value, it also
-        drops the reprojected triangulation cache so the `triangulation` property
-        rebuilds the flat mesh -- otherwise a `plot(projection=None)` after a
-        globe would silently keep rendering on the stale reprojected coordinates.
+        duplicate frame). When `projection` is cleared to a falsy value, it drops
+        the reprojected triangulation cache so the `triangulation` property
+        rebuilds the flat mesh, and -- if a globe frame was present -- restores
+        the flat axes view (the globe froze the limits/axis-off), otherwise a
+        `plot(projection=None)` after a globe would silently render the flat mesh
+        into a frozen, axis-off view as an invisible speck.
         """
-        for artist in self._projection_frame_artists:
-            try:
-                artist.remove()
-            except (NotImplementedError, ValueError, AttributeError):
-                pass
-        self._projection_frame_artists = []
+        had_frame = _clear_projection_frame(self.ax)
         projection = self.default_options.get("projection")
-        if not projection:
+        # "flat" and no projection both render the native lon/lat mesh; only a
+        # framed style ("globe") reprojects and freezes the axes view.
+        if not projection_draws_frame(projection):
             self._cached_triangulation = None  # rebuild flat coords on next access
+            if had_frame:
+                _restore_flat_axes(
+                    self.ax,
+                    float(self._node_x.min()),
+                    float(self._node_x.max()),
+                    float(self._node_y.min()),
+                    float(self._node_y.max()),
+                    aspect="equal",
+                )
             return
         before = set(map(id, self.ax.patches)) | set(map(id, self.ax.lines))
         self._cached_triangulation = apply_projection_style_mesh(
             self.ax, self._node_x, self._node_y, self._fan_triangles(), style=projection
         )
-        self._projection_frame_artists = [
-            a for a in (*self.ax.patches, *self.ax.lines) if id(a) not in before
-        ]
+        _stash_projection_frame(
+            self.ax,
+            [a for a in (*self.ax.patches, *self.ax.lines) if id(a) not in before],
+        )
 
     def _render_mesh(
         self,
