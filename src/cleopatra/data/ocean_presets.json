@@ -839,7 +839,8 @@
    "#f9fde4"
   ],
   "opacity": "opaque",
-  "center": 0.0
+  "center": 0.0,
+  "interp": "linear"
  },
  "turbidity": {
   "label": "Turbidity / sediment",

@@ -797,17 +797,52 @@ DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
 }
 
 
+def _asset_cmap(name: str, palette: Sequence, interp: str | None) -> Colormap:
+    """Build a preset colormap from `palette` under the requested interpolation.
+
+    The `interp` field on a preset record selects how the stored control points
+    become a colormap -- the choice matters for maps with a semantic breakpoint:
+
+    - `"linear"`: a plain `LinearSegmentedColormap.from_list`, which keeps each
+      control point at its own even index fraction. Use for **hinge maps**
+      (hypsometric land/sea palettes) where a sharp transition sits at a fixed
+      fraction (sea level at 0.5): `perceptual_colormap` reparameterises by
+      CIELAB arc-length and would drift that hinge off 0.5, so it is wrong here.
+    - `"listed"`: a discrete `ListedColormap`, one band per control point. Use
+      for **stepped colour tables** (NCL/MeteoSwiss `*_Nlev` tables) meant to
+      read as `N` flat bands, not a smooth ramp.
+    - `None` (default): `perceptual_colormap`, a CIELAB-interpolated smooth ramp.
+      Correct for continuous sequential fields with no privileged breakpoint.
+
+    Args:
+        name: Name for the resulting colormap.
+        palette: Hex control points (two or more).
+        interp: `"linear"`, `"listed"`, or `None` for the perceptual default.
+
+    Returns:
+        matplotlib.colors.Colormap: The colormap built under the chosen mode.
+    """
+    if interp == "linear":
+        return LinearSegmentedColormap.from_list(name, list(palette), N=256)
+    if interp == "listed":
+        return mcolors.ListedColormap(list(palette), name=name)
+    return perceptual_colormap(name, palette)
+
+
 def _load_preset_asset(
     resource: str, cmap_prefix: str
 ) -> dict[str, dict[str, dict[str, Any]]]:
     """Build `DATA_STYLES` entries from a vendored continuous-colormap preset asset.
 
-    Used for the cmocean ocean/hydrology/DEM preset library. Each asset maps a
-    preset key to a `palette` (hex control points sampled from a continuous
-    colormap), a `label`, an `opacity` policy (`"opaque"` -> a plain field via
-    constant alpha; otherwise a value-linked overlay), and an optional diverging
-    `center`. Every preset is a single layer keyed by its own name and carries no
-    `vmin`/`vmax`, so it auto-ranges.
+    Used for the cmocean ocean/hydrology/DEM library, the Crameri terrain
+    palettes, and the NCL/MeteoSwiss colour tables. Each asset maps a preset key
+    to a `palette` (hex control points), a `label`, an `opacity` policy
+    (`"opaque"` -> a plain field via constant alpha; otherwise a value-linked
+    overlay), an optional diverging `center`, and an optional `interp` mode
+    selecting how the palette becomes a colormap (`"linear"` for hinge-faithful
+    hypsometric maps, `"listed"` for stepped colour tables, or the perceptual
+    default -- see `_asset_cmap`). Every preset is a single layer keyed by its
+    own name and carries no `vmin`/`vmax`, so it auto-ranges.
 
     Args:
         resource: The asset filename inside the `cleopatra.data` package.
@@ -843,8 +878,8 @@ def _load_preset_asset(
     for key, rec in records:
         try:
             palette = rec["palette"]
-            cmap: Colormap = perceptual_colormap(
-                f"{cmap_prefix}_{key}", palette
+            cmap: Colormap = _asset_cmap(
+                f"{cmap_prefix}_{key}", palette, rec.get("interp")
             )
             layer: dict[str, Any] = {"cmap": cmap, "label": rec["label"]}
             if rec.get("opacity") == "opaque":
@@ -970,6 +1005,8 @@ def _load_weather_presets() -> dict[str, dict[str, dict[str, Any]]]:
 #: ocean/hydrology/DEM set (keyed by variable, e.g. `"salinity"`,
 #: `"bathymetry"`). List them all with `sorted(DATA_STYLES)`.
 DATA_STYLES.update(_load_preset_asset("ocean_presets.json", "ocean"))
+DATA_STYLES.update(_load_preset_asset("terrain_presets.json", "crameri"))
+DATA_STYLES.update(_load_preset_asset("ncl_presets.json", "ncl"))
 DATA_STYLES.update(_load_weather_presets())
 
 

@@ -51,6 +51,13 @@ CURATED = [
     ("curl", "vorticity", "Vorticity", 0.0),
 ]
 
+#: Hypsometric maps with a hard land/sea discontinuity at cmap 0.5. These must
+#: be loaded with ``interp="linear"`` (a plain ``from_list``) so the hinge stays
+#: at 0.5 and lines up with ``center=0``; the perceptual default reparameterises
+#: by CIELAB arc-length and drifts the sea-level break off 0.5. See
+#: ``cleopatra.colors._asset_cmap``.
+HINGE_KEYS = {"topography"}
+
 
 def _safe_out_path(out_path):
     """Resolve `out_path` and confine it to the current working directory tree.
@@ -83,6 +90,8 @@ def main(out_path):
         }
         if center is not None:
             rec["center"] = center
+        if key in HINGE_KEYS:
+            rec["interp"] = "linear"
         presets[key] = rec
 
     asset = dict(sorted(presets.items()))
