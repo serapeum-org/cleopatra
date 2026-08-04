@@ -383,6 +383,27 @@ def test_no_axes_raises():
         _Dummy(None).add_features("coastline")
 
 
+def test_real_glyph_basemap_axes_lazily_creates_and_seeds_bounds():
+    """A real glyph creates its axes on demand for a basemap layer added before
+    plotting, seeded with the data bounds so the later draw keeps the view.
+
+    Test scenario:
+        `ArrayGlyph` has no axes until it draws; `_basemap_axes` (the resolver
+        every add_* method uses) now creates one when the glyph can
+        (`create_figure_axes`) and seeds it with the glyph's `_flat_axis_bounds`,
+        so the builder flow `glyph.add_features(...)` then `glyph.plot()`/
+        `.animate()` works (the latter reuse the same axes).
+    """
+    glyph = ArrayGlyph(np.zeros((6, 8)), extent=[-12.0, 32.0, 34.0, 64.0])
+    assert glyph.ax is None, "a fresh ArrayGlyph has no axes yet"
+    ax = glyph._basemap_axes()
+    assert ax is glyph.ax and glyph.ax is not None, "should create and store the axes"
+    x_min, x_max, y_min, y_max = glyph._flat_axis_bounds()
+    assert tuple(round(v) for v in ax.get_xlim()) == (round(x_min), round(x_max)), "x seeded to data bounds"
+    assert tuple(round(v) for v in ax.get_ylim()) == (round(y_min), round(y_max)), "y seeded to data bounds"
+    plt.close("all")
+
+
 def test_real_glyph_integration(tmp_path: Path, monkeypatch):
     """A real glyph draws a cached layer on its own axes via the mixin method."""
     monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))
