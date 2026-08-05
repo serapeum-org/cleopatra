@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from unittest.mock import MagicMock
+
 import matplotlib
 
 matplotlib.use("Agg")
@@ -129,3 +131,20 @@ class TestAutoFigsize:
         ArrayGlyph(np.random.default_rng(0).random((40, 60)), extent=[-30.0, 30.0, 40.0, 65.0]).plot(ax=ax)
         assert tuple(round(v, 3) for v in fig.get_size_inches()) == (6.0, 6.0)
         plt.close(fig)
+
+    def test_tighten_figure_survives_a_backend_draw_error(self):
+        """A backend draw/renderer error leaves the auto figsize intact, not a crash.
+
+        Test scenario:
+            Tightening is cosmetic and fully optional; if `canvas.draw()` raises a
+            backend-specific error (not just the handled renderer `AttributeError`),
+            `_tighten_figure` must swallow it and return, leaving the figure at its
+            auto size rather than breaking an otherwise-valid render.
+        """
+        glyph = ArrayGlyph(np.random.default_rng(0).random((20, 30)), extent=[-10.0, 10.0, 40.0, 60.0])
+        glyph.fig, glyph.ax = glyph.create_figure_axes()
+        before = tuple(glyph.fig.get_size_inches())
+        glyph.fig.canvas.draw = MagicMock(side_effect=RuntimeError("backend boom"))
+        glyph._tighten_figure()
+        assert tuple(glyph.fig.get_size_inches()) == before, "figure left at its auto size"
+        plt.close(glyph.fig)

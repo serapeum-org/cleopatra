@@ -1824,8 +1824,11 @@ class ArrayGlyph(GeoMixin, Glyph):
         try:
             fig.canvas.draw()
             content = fig.get_tightbbox(fig.canvas.get_renderer())
-        except (AttributeError, ValueError):
-            return  # a backend without a queryable renderer: leave the figure as-is
+        except Exception:  # noqa: BLE001 -- tightening is cosmetic and fully optional
+            # A backend without a queryable renderer (AttributeError) or any other
+            # draw/renderer quirk must never turn a successful render into a hard
+            # failure: leave the figure at its auto size.
+            return
         if content is None:
             return
         fig_w, fig_h = (float(v) for v in fig.get_size_inches())
