@@ -3157,7 +3157,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="setup-imports">Setup — imports<a class="anchor-link" href="#setup-imports">¶</a></h2><p><code>%matplotlib inline</code> draws figures in the notebook; <code>ArrayGlyph</code> is cleopatra's array-plotting glyph. The
+<h2 id="setup-imports">Setup — imports<a class="anchor-link" href="#setup-imports">¶</a></h2><p><code>ArrayGlyph</code> is cleopatra's array-plotting glyph. The
 data is bundled as NumPy <code>.npz</code>, so nothing here reads GIS files — only <code>numpy</code> + <code>cleopatra</code>.</p>
 </div>
 </div>
@@ -3181,16 +3181,14 @@ data is bundled as NumPy <code>.npz</code>, so nothing here reads GIS files — 
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">cleopatra</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"cleopatra"</span><span class="p">,</span> <span class="n">cleopatra</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-1">%matplotlib inline
-import numpy as np
+<div class="clipboard-copy-txt" id="cell-1">import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 import cleopatra

@@ -3331,7 +3331,7 @@ for the stylised, multi-layer aerosol look.</p>
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="setup">Setup<a class="anchor-link" href="#setup">¶</a></h2><p><code>%matplotlib inline</code> renders figures into the notebook. We import <code>apply_data_style</code> (the one
+<h2 id="setup">Setup<a class="anchor-link" href="#setup">¶</a></h2><p>We import <code>apply_data_style</code> (the one
 call that applies a preset), the <code>DATA_STYLES</code> registry (to list what is available), and
 <code>CAMS_AOD_COLORMAPS</code> (the official aerosol colormaps).</p>
 </div>
@@ -3356,16 +3356,14 @@ call that applies a preset), the <code>DATA_STYLES</code> registry (to list what
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.colors</span><span class="w"> </span><span class="kn">import</span> <span class="n">CAMS_AOD_COLORMAPS</span><span class="p">,</span> <span class="n">DATA_STYLES</span><span class="p">,</span> <span class="n">apply_data_style</span>
 
 <span class="nb">sorted</span><span class="p">(</span><span class="n">DATA_STYLES</span><span class="p">)</span>  <span class="c1"># the presets available by name</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-1">%matplotlib inline
-import matplotlib.pyplot as plt
+<div class="clipboard-copy-txt" id="cell-1">import matplotlib.pyplot as plt
 import numpy as np
 
 from cleopatra.colors import CAMS_AOD_COLORMAPS, DATA_STYLES, apply_data_style
