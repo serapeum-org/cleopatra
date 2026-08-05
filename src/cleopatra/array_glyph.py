@@ -1757,19 +1757,18 @@ class ArrayGlyph(GeoMixin, Glyph):
         if not (width > 0 and height > 0):
             return default
         aspect = width / height
-        plot_height = 6.0        # target height of the MAP itself (inches)
+        # A rough starting size only: the aspect makes the equal-aspect map fill
+        # the frame, and `_tighten_figure` crops the exact margin afterwards, so
+        # these pads need not be precise (they just leave room to render the
+        # colorbar/title without clipping before the crop measures them).
+        plot_height = 6.0        # target plot height (inches)
         cbar_pad = 1.8           # room for the colorbar + its labels
-        title_pad = 0.7          # room for the title / axis labels above+below the map
         max_width = 14.0
-        map_height = plot_height
-        fig_w = map_height * aspect + cbar_pad
+        fig_w = plot_height * aspect + cbar_pad
+        fig_h = plot_height
         if fig_w > max_width:    # very wide field: cap width, shrink height to keep the aspect
             fig_w = max_width
-            map_height = max(3.5, (max_width - cbar_pad) / aspect)
-        # Height carries the map PLUS the title/label band, so `tight_layout` does
-        # not steal it from the map -- an equal-aspect map then fills the width
-        # instead of being letterboxed by the horizontal slack that leaves.
-        fig_h = map_height + title_pad
+            fig_h = max(3.5, (max_width - cbar_pad) / aspect)
         fig_w = max(5.0, fig_w)
         return (round(fig_w, 1), round(fig_h, 1))
 
@@ -1786,10 +1785,65 @@ class ArrayGlyph(GeoMixin, Glyph):
             and axes.
         """
         figsize = self.default_options["figsize"]
-        if "figsize" not in getattr(self, "_explicit_options", set()):
+        auto = "figsize" not in getattr(self, "_explicit_options", set())
+        if auto:
             figsize = self._auto_figsize()
         fig, ax = plt.subplots(figsize=figsize)
+        # Only an auto-sized, glyph-owned figure may be tightened afterwards: an
+        # explicit `figsize=` is honoured verbatim, and an external axes (a
+        # subplot the caller manages) must never be resized under them.
+        self._auto_figure = auto
         return fig, ax
+
+    def _tighten_figure(self, pad_inches: float = 0.02) -> None:
+        """Shrink the figure to its drawn content, in place.
+
+        `ArrayGlyph` draws with equal aspect, so the figure holding it is almost
+        always larger than the map + colorbar + title, leaving a margin. Jupyter's
+        inline backend hides that margin because it saves with
+        `bbox_inches="tight"`, but a plain `savefig` -- or an animation writer,
+        which does not crop -- keeps it, so a saved figure or GIF looks loose
+        while the inline preview looked tight.
+
+        This closes that gap at the *figure* level rather than per save call:
+        measure the rendered content once, translate every axes rigidly so the
+        content's lower-left sits at the origin, and resize the figure to match.
+        Because the figure itself becomes tight, every export path -- a bare
+        `savefig`, `embed_gif`, `to_gif`, a raw `PillowWriter` -- is tight and
+        identical. The whole axes group moves together, so the relative layout
+        (map, colorbar gap, title) is preserved; only the outer margin is
+        removed. A small uniform `pad_inches` is kept so edge ticks/labels are
+        not shaved.
+
+        Args:
+            pad_inches: Uniform margin left around the content, in inches.
+        """
+        fig = self.fig
+        if fig is None or not fig.axes:
+            return
+        try:
+            fig.canvas.draw()
+            content = fig.get_tightbbox(fig.canvas.get_renderer())
+        except (AttributeError, ValueError):
+            return  # a backend without a queryable renderer: leave the figure as-is
+        if content is None:
+            return
+        fig_w, fig_h = (float(v) for v in fig.get_size_inches())
+        new_w = (content.x1 - content.x0) + 2 * pad_inches
+        new_h = (content.y1 - content.y0) + 2 * pad_inches
+        if not (new_w > 0 and new_h > 0):
+            return
+        for axes in fig.axes:
+            pos = axes.get_position()
+            axes.set_position(
+                [
+                    (pos.x0 * fig_w - content.x0 + pad_inches) / new_w,
+                    (pos.y0 * fig_h - content.y0 + pad_inches) / new_h,
+                    (pos.width * fig_w) / new_w,
+                    (pos.height * fig_h) / new_h,
+                ]
+            )
+        fig.set_size_inches(new_w, new_h)
 
     @staticmethod
     def _validate_coords(
@@ -3595,6 +3649,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         if ax is not None:
             self.ax = ax
             self.fig = _root_figure(ax)
+            self._auto_figure = False  # a caller-managed axes must not be resized
         elif self.fig is None:
             self.fig, self.ax = self.create_figure_axes()
 
@@ -3639,6 +3694,8 @@ class ArrayGlyph(GeoMixin, Glyph):
                     self._draw_basemap(basemap)
                 if full_bleed:
                     self._apply_full_bleed(facecolor=full_bleed if isinstance(full_bleed, str) else None)
+                elif getattr(self, "_auto_figure", False):
+                    self._tighten_figure()
                 return self.fig, self.ax
 
         if self.rgb:
@@ -3821,6 +3878,8 @@ class ArrayGlyph(GeoMixin, Glyph):
             self._draw_basemap(basemap)
         if full_bleed:
             self._apply_full_bleed(facecolor=full_bleed if isinstance(full_bleed, str) else None)
+        elif getattr(self, "_auto_figure", False):
+            self._tighten_figure()
         return fig, ax
 
     def facet(
@@ -5042,6 +5101,11 @@ class ArrayGlyph(GeoMixin, Glyph):
             self._apply_full_bleed(facecolor=full_bleed if isinstance(full_bleed, str) else None)
         else:
             plt.tight_layout()
+            # Crop the figure to its content *before* `FuncAnimation` caches the
+            # background, so every writer (which, unlike Jupyter's inline
+            # backend, does not apply `bbox_inches="tight"`) emits tight frames.
+            if getattr(self, "_auto_figure", False):
+                self._tighten_figure()
         anim = FuncAnimation(
             fig,
             animate_a,

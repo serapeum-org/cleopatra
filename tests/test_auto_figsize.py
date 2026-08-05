@@ -88,19 +88,44 @@ class TestAutoFigsize:
         assert width > height, f"publication_map should inherit a landscape figure, got {(width, height)}"
         plt.close(fig)
 
-    def test_titled_map_fills_the_axes_width(self):
-        """A titled equal-aspect map fills the axes width (no letterboxing).
+    def test_auto_sized_plot_is_cropped_to_its_content(self):
+        """An auto-sized plot is tightened so the figure *is* its content.
 
         Test scenario:
-            The auto height reserves a title/label band, so `tight_layout` does
-            not shrink the map to fit the title -- the equal-aspect image then
-            spans the full axes width instead of sitting letterboxed with
-            horizontal slack on both sides.
+            After `plot`, the figure's tight bounding box fills the figure on
+            every side (to within the small crop pad), so a plain `savefig` --
+            not just Jupyter's `bbox_inches="tight"` inline preview -- has no
+            surrounding whitespace.
         """
         glyph = ArrayGlyph(np.random.default_rng(0).random((40, 60)), extent=[-30.0, 30.0, 40.0, 65.0])
-        glyph.plot(title="A wide titled map")
-        glyph.fig.canvas.draw()
-        img_w = glyph.ax.images[0].get_window_extent().width
-        ax_w = glyph.ax.get_window_extent().width
-        assert abs(img_w - ax_w) < 3.0, f"map should fill the axes width, slack={ax_w - img_w:.1f}px"
-        plt.close("all")
+        fig, _ax = glyph.plot(title="A wide titled map", colorbar=True)
+        fig.canvas.draw()
+        tb = fig.get_tightbbox(fig.canvas.get_renderer())
+        width, height = fig.get_size_inches()
+        margins = (tb.x0, tb.y0, width - tb.x1, height - tb.y1)
+        assert all(m < 0.1 for m in margins), f"figure should hug its content, margins(in)={margins}"
+        plt.close(fig)
+
+    def test_explicit_figsize_is_not_cropped(self):
+        """An explicit `figsize=` is honoured verbatim -- the crop never fires.
+
+        Test scenario:
+            The caller sized the figure deliberately, so `_tighten_figure` must
+            leave it at exactly that size rather than shrinking it to content.
+        """
+        glyph = ArrayGlyph(np.random.default_rng(0).random((40, 60)), extent=[-30.0, 30.0, 40.0, 65.0], figsize=(8, 8))
+        fig, _ax = glyph.plot(title="fixed size")
+        assert tuple(round(v, 3) for v in fig.get_size_inches()) == (8.0, 8.0)
+        plt.close(fig)
+
+    def test_external_axes_figure_is_not_resized(self):
+        """Drawing into a caller-provided axes never resizes that figure.
+
+        Test scenario:
+            A subplot the caller manages must keep its size; the crop is limited
+            to auto-sized, glyph-owned figures.
+        """
+        fig, ax = plt.subplots(figsize=(6, 6))
+        ArrayGlyph(np.random.default_rng(0).random((40, 60)), extent=[-30.0, 30.0, 40.0, 65.0]).plot(ax=ax)
+        assert tuple(round(v, 3) for v in fig.get_size_inches()) == (6.0, 6.0)
+        plt.close(fig)
