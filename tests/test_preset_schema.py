@@ -77,7 +77,7 @@ class TestPresetSchema:
         assert set(obj) <= {"version", "source", "license", "presets"}, f"{asset}: stray asset key"
         assert obj.get("version") == 1, f"{asset}: missing/unknown version"
         for pname, preset in obj["presets"].items():
-            assert set(preset) <= {"source", "license", "layers"}, f"{asset}:{pname}: stray preset key"
+            assert set(preset) <= {"source", "license", "background", "layers"}, f"{asset}:{pname}: stray preset key"
             assert preset.get("layers"), f"{asset}:{pname}: no layers"
             for lname, layer in preset["layers"].items():
                 where = f"{asset}:{pname}:{lname}"
@@ -130,6 +130,37 @@ class TestPresetSchema:
             jsonschema.validate(mangled, schema)
         # the correct named form validates
         jsonschema.validate(wrap({"label": "L", "colors": "Spectral_r", "colormap": "named"}), schema)
+
+    def test_schema_accepts_preset_background(self):
+        """A preset may declare an optional string `background` (canvas colour).
+
+        Test scenario:
+            The flame presets pin a dark canvas via a preset-level `background`;
+            the schema must accept a string there and reject a non-string.
+        """
+        jsonschema = pytest.importorskip("jsonschema")
+        schema = _read("preset.schema.json")
+        layer = {"label": "L", "colors": ["#000000", "#ffffff"], "colormap": "listed"}
+
+        def wrap(preset):
+            return {"version": 1, "presets": {"x": preset}}
+
+        jsonschema.validate(wrap({"background": "#000000", "layers": {"x": layer}}), schema)
+        with pytest.raises(jsonschema.ValidationError):
+            jsonschema.validate(wrap({"background": 0, "layers": {"x": layer}}), schema)
+
+    def test_loader_carries_preset_background_onto_layers(self):
+        """A preset-level `background` is copied onto each loaded layer config.
+
+        Test scenario:
+            `DATA_STYLES` is `{name: {layer: cfg}}` with no preset-level slot, so
+            `_load_presets` must carry the canvas colour onto the layer(s) for the
+            render path to find it.
+        """
+        from cleopatra.colors import _load_presets
+
+        flame = _load_presets("builtin_presets.json")["temperature_flame"]
+        assert flame and all(layer.get("background") == "#000000" for layer in flame.values())
 
     @pytest.mark.parametrize("asset", ASSETS)
     def test_loader_reads_asset(self, asset):

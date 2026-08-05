@@ -23,6 +23,7 @@
    "properties": {
     "source": {"type": "string"},
     "license": {"type": "string"},
+    "background": {"type": "string"},
     "layers": {
      "type": "object",
      "minProperties": 1,

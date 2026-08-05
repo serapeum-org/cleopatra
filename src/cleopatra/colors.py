@@ -749,10 +749,19 @@ def _load_presets(resource: str) -> dict[str, dict[str, dict[str, Any]]]:
     out: dict[str, dict[str, dict[str, Any]]] = {}
     for name, body in presets.items():
         try:
-            out[name] = {
+            layers = {
                 lname: _preset_layer(lname, lrec)
                 for lname, lrec in body["layers"].items()
             }
+            # A preset-level `background` is a canvas colour (a look like the
+            # flame glow only reads on a dark canvas). Carry it onto each layer
+            # config so the single-layer render path finds it without a
+            # preset-level slot in `DATA_STYLES` (which is `{name: {layer: cfg}}`).
+            background = body.get("background")
+            if background is not None:
+                for layer in layers.values():
+                    layer["background"] = background
+            out[name] = layers
         except (KeyError, TypeError, ValueError, AttributeError):
             continue
     return out

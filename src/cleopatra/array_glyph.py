@@ -2489,6 +2489,29 @@ class ArrayGlyph(GeoMixin, Glyph):
         ]
         return {"ticks": ticks} if ticks else {}
 
+    def _apply_style_background(self, cfg: dict[str, Any]) -> None:
+        """Paint the preset's canvas colour on this glyph's figure + axes.
+
+        A preset whose look depends on a tinted canvas -- e.g. the flame glow,
+        which fades to transparent at the cool end and only reads on black --
+        carries a `background` colour (see the preset schema). Apply it to the
+        axes (behind the data) and the figure patch (the crop margin, and the
+        GIF background), scoped to this glyph, so no global `rcParams` mutation
+        is needed. `savefig.facecolor='auto'` means a saved still or GIF inherits
+        it too.
+
+        Args:
+            cfg: The resolved layer config; its `background` key, when present,
+                is the canvas colour.
+        """
+        background = cfg.get("background")
+        if background is None:
+            return
+        if self.ax is not None:
+            self.ax.set_facecolor(background)
+        if self.fig is not None:
+            self.fig.patch.set_facecolor(background)
+
     def _plot_with_style(self, style: str) -> tuple[Figure, Axes]:
         """Render the array with a named `DATA_STYLES` preset.
 
@@ -2511,6 +2534,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         # `style` on this call instead of being torn down for a call that
         # never completes.
         _clear_prior_render_artists(self.ax)
+        # A preset may declare its own canvas colour (e.g. the flame glow needs
+        # black); paint it on this glyph's figure + axes, scoped, not globally.
+        self._apply_style_background(style_cfg)
         # A prior globe render on this (reused) axes froze the view + hid the
         # axis; strip that frame and restore the flat view when this styled
         # render does not itself draw a globe frame, so the flat map is not an
@@ -4771,6 +4797,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                 # (see `_style_color_overrides`); with none set the preset's own
                 # fixed range (e.g. a Magics preset's decoded ECMWF scale) stands.
                 cfg = {**DATA_STYLES[style][layer], **self._style_color_overrides}
+                # Preset-declared canvas colour (scoped to this glyph's figure +
+                # axes); `savefig.facecolor='auto'` carries it into the GIF.
+                self._apply_style_background(cfg)
                 hillshade_active = (
                     resolve_hillshade(self.default_options.get("hillshade")) is not None
                 )

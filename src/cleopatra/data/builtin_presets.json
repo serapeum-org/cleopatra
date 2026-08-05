@@ -82,6 +82,7 @@
    }
   },
   "temperature_flame": {
+   "background": "#000000",
    "layers": {
     "temperature_flame": {
      "label": "Temperature",
@@ -106,6 +107,7 @@
    }
   },
   "temperature_flame_amber": {
+   "background": "#000000",
    "layers": {
     "temperature_flame_amber": {
      "label": "Temperature",
