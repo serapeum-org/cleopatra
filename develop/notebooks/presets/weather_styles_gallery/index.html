@@ -3257,7 +3257,8 @@ print("cleopatra", cleopatra.__version__)</div>
 <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">DATA</span> <span class="o">/</span> <span class="s2">"europe_t2m.npz"</span><span class="p">,</span> <span class="n">allow_pickle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">cel</span> <span class="o">=</span> <span class="n">z</span><span class="p">[</span><span class="s2">"celsius"</span><span class="p">]</span>
 <span class="n">day</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">cel</span><span class="p">]))</span>   <span class="c1"># most dynamic day</span>
-<span class="n">t2m</span> <span class="o">=</span> <span class="n">cel</span><span class="p">[</span><span class="n">day</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">);</span> <span class="n">t2m_ext</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">z</span><span class="p">[</span><span class="s2">"extent"</span><span class="p">]]</span>
+<span class="n">t2m</span> <span class="o">=</span> <span class="n">cel</span><span class="p">[</span><span class="n">day</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+<span class="n">t2m_ext</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">z</span><span class="p">[</span><span class="s2">"extent"</span><span class="p">]]</span>
 <span class="n">precip</span><span class="p">,</span> <span class="n">precip_ext</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s2">"noah_precip_europe.npz"</span><span class="p">)</span>
 <span class="n">facc</span><span class="p">,</span> <span class="n">facc_ext</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s2">"flow_accumulation.npz"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"t2m:"</span><span class="p">,</span> <span class="n">t2m</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="s2">"degC"</span><span class="p">,</span> <span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">t2m</span><span class="p">),</span><span class="mi">1</span><span class="p">),</span> <span class="nb">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">t2m</span><span class="p">),</span><span class="mi">1</span><span class="p">)),</span>
@@ -3273,7 +3274,8 @@ def load(name):
 z = np.load(DATA / "europe_t2m.npz", allow_pickle=True)
 cel = z["celsius"]
 day = int(np.argmax([np.nanmax(f) - np.nanmin(f) for f in cel]))   # most dynamic day
-t2m = cel[day].astype(float); t2m_ext = [float(v) for v in z["extent"]]
+t2m = cel[day].astype(float)
+t2m_ext = [float(v) for v in z["extent"]]
 precip, precip_ext = load("noah_precip_europe.npz")
 facc, facc_ext = load("flow_accumulation.npz")
 print("t2m:", t2m.shape, "degC", (round(np.nanmin(t2m),1), round(np.nanmax(t2m),1)),
@@ -3344,10 +3346,13 @@ per panel:</p>
         <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">styles</span><span class="p">):</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>                          <span class="c1"># hide leftover empty panels</span>
             <span class="k">continue</span>
-        <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">gext</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">styles</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">add_colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                                                   <span class="n">title</span><span class="o">=</span><span class="n">styles</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">title_size</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([]);</span> <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
-    <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s2">"bold"</span><span class="p">);</span> <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">();</span> <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">gext</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+        <span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">styles</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">add_colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">styles</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">title_size</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s2">"bold"</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-3">def gallery(styles, field, extent, title, ncol=3):
     styles = list(styles)
@@ -3359,10 +3364,13 @@ per panel:</p>
         if i &gt;= len(styles):
             ax.set_visible(False)                          # hide leftover empty panels
             continue
-        ArrayGlyph(field, extent=gext, ax=ax).plot(style=styles[i], add_colorbar=False,
-                                                   title=styles[i], title_size=9)
-        ax.set_xticks([]); ax.set_yticks([])
-    fig.suptitle(title, fontweight="bold"); fig.tight_layout(); plt.show()</div>
+        glyph = ArrayGlyph(field, extent=gext, ax=ax)
+        glyph.plot(style=styles[i], add_colorbar=False, title=styles[i], title_size=9)
+        ax.set_xticks([])
+        ax.set_yticks([])
+    fig.suptitle(title, fontweight="bold")
+    fig.tight_layout()
+    plt.show()</div>
 </div>
 </div>
 </div>

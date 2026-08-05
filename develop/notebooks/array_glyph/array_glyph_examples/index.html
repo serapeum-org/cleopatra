@@ -4942,9 +4942,11 @@ dem.min(), dem.max()</div>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">dem</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'terrain'</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'terrain colormap only'</span><span class="p">)</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">dem</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'terrain'</span><span class="p">)</span>
+<span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'terrain colormap only'</span><span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-24">ArrayGlyph(dem, cmap='terrain').plot(title='terrain colormap only')</div>
+<div class="clipboard-copy-txt" id="cell-24">glyph = ArrayGlyph(dem, cmap='terrain')
+glyph.plot(title='terrain colormap only')</div>
 </div>
 </div>
 </div>
@@ -5000,9 +5002,11 @@ colorbar still reflects the elevation scale.</p>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">dem</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'terrain'</span><span class="p">,</span> <span class="n">hillshade</span><span class="o">=</span><span class="p">{</span><span class="s1">'vert_exag'</span><span class="p">:</span> <span class="mi">8</span><span class="p">})</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'+ hillshade'</span><span class="p">)</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">dem</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'terrain'</span><span class="p">,</span> <span class="n">hillshade</span><span class="o">=</span><span class="p">{</span><span class="s1">'vert_exag'</span><span class="p">:</span> <span class="mi">8</span><span class="p">})</span>
+<span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'+ hillshade'</span><span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-25">ArrayGlyph(dem, cmap='terrain', hillshade={'vert_exag': 8}).plot(title='+ hillshade')</div>
+<div class="clipboard-copy-txt" id="cell-25">glyph = ArrayGlyph(dem, cmap='terrain', hillshade={'vert_exag': 8})
+glyph.plot(title='+ hillshade')</div>
 </div>
 </div>
 </div>
@@ -5072,16 +5076,16 @@ surface). It composes with the <code>topography</code> data-style preset and the
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="c1"># A DEM styled by the 'topography' preset, and the same DEM relief-shaded (style + hillshade compose)</span>
-<span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">dem</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">'topography'</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"style='topography'"</span><span class="p">)</span>
-<span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">dem</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">'topography'</span><span class="p">,</span> <span class="n">hillshade</span><span class="o">=</span><span class="p">{</span><span class="s1">'vert_exag'</span><span class="p">:</span> <span class="mi">8</span><span class="p">})</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-    <span class="n">title</span><span class="o">=</span><span class="s2">"style='topography' + hillshade"</span>
-<span class="p">)</span>
+<span class="n">topo</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">dem</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">'topography'</span><span class="p">)</span>
+<span class="n">topo</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"style='topography'"</span><span class="p">)</span>
+<span class="n">topo_shaded</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">dem</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">'topography'</span><span class="p">,</span> <span class="n">hillshade</span><span class="o">=</span><span class="p">{</span><span class="s1">'vert_exag'</span><span class="p">:</span> <span class="mi">8</span><span class="p">})</span>
+<span class="n">topo_shaded</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"style='topography' + hillshade"</span><span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-26"># A DEM styled by the 'topography' preset, and the same DEM relief-shaded (style + hillshade compose)
-ArrayGlyph(dem, style='topography').plot(title="style='topography'")
-ArrayGlyph(dem, style='topography', hillshade={'vert_exag': 8}).plot(
-    title="style='topography' + hillshade"
-)</div>
+topo = ArrayGlyph(dem, style='topography')
+topo.plot(title="style='topography'")
+topo_shaded = ArrayGlyph(dem, style='topography', hillshade={'vert_exag': 8})
+topo_shaded.plot(title="style='topography' + hillshade")</div>
 </div>
 </div>
 </div>
@@ -5151,8 +5155,10 @@ ArrayGlyph(dem, style='topography', hillshade={'vert_exag': 8}).plot(
     <span class="o">.</span><span class="n">choice</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">],</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">40</span><span class="p">))</span>
     <span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
 <span class="p">)</span>
-<span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">accum</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">'flow_accumulation'</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"style='flow_accumulation'"</span><span class="p">)</span>
-<span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">d8</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">'flow_direction_d8'</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"style='flow_direction_d8'"</span><span class="p">)</span>
+<span class="n">accum_glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">accum</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">'flow_accumulation'</span><span class="p">)</span>
+<span class="n">accum_glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"style='flow_accumulation'"</span><span class="p">)</span>
+<span class="n">d8_glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">d8</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">'flow_direction_d8'</span><span class="p">)</span>
+<span class="n">d8_glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"style='flow_direction_d8'"</span><span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-27">import numpy as np
 
@@ -5163,8 +5169,10 @@ d8 = (
     .choice([1, 2, 4, 8, 16, 32, 64, 128], size=(40, 40))
     .astype(float)
 )
-ArrayGlyph(accum, style='flow_accumulation').plot(title="style='flow_accumulation'")
-ArrayGlyph(d8, style='flow_direction_d8').plot(title="style='flow_direction_d8'")</div>
+accum_glyph = ArrayGlyph(accum, style='flow_accumulation')
+accum_glyph.plot(title="style='flow_accumulation'")
+d8_glyph = ArrayGlyph(d8, style='flow_direction_d8')
+d8_glyph.plot(title="style='flow_direction_d8'")</div>
 </div>
 </div>
 </div>

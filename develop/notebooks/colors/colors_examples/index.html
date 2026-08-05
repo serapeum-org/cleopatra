@@ -4570,13 +4570,17 @@ print(f"List of colors in normalized RGB: {rgb_values}")</div>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">valid_hex</span> <span class="o">=</span> <span class="n">Colors</span><span class="p">(</span><span class="s2">"#FF5733"</span><span class="p">)</span><span class="o">.</span><span class="n">is_valid_hex</span><span class="p">()</span>
-<span class="n">invalid_hex</span> <span class="o">=</span> <span class="n">Colors</span><span class="p">(</span><span class="s2">"#XYZ"</span><span class="p">)</span><span class="o">.</span><span class="n">is_valid_hex</span><span class="p">()</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">red</span> <span class="o">=</span> <span class="n">Colors</span><span class="p">(</span><span class="s2">"#FF5733"</span><span class="p">)</span>
+<span class="n">valid_hex</span> <span class="o">=</span> <span class="n">red</span><span class="o">.</span><span class="n">is_valid_hex</span><span class="p">()</span>
+<span class="n">bad_hex</span> <span class="o">=</span> <span class="n">Colors</span><span class="p">(</span><span class="s2">"#XYZ"</span><span class="p">)</span>
+<span class="n">invalid_hex</span> <span class="o">=</span> <span class="n">bad_hex</span><span class="o">.</span><span class="n">is_valid_hex</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Is #FF5733 a valid hex color? </span><span class="si">{</span><span class="n">valid_hex</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Is #XYZ a valid hex color? </span><span class="si">{</span><span class="n">invalid_hex</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-14">valid_hex = Colors("#FF5733").is_valid_hex()
-invalid_hex = Colors("#XYZ").is_valid_hex()
+<div class="clipboard-copy-txt" id="cell-14">red = Colors("#FF5733")
+valid_hex = red.is_valid_hex()
+bad_hex = Colors("#XYZ")
+invalid_hex = bad_hex.is_valid_hex()
 print(f"Is #FF5733 a valid hex color? {valid_hex}")
 print(f"Is #XYZ a valid hex color? {invalid_hex}")</div>
 </div>
@@ -4628,13 +4632,17 @@ Is #XYZ a valid hex color? [False]
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">valid_rgb_255</span> <span class="o">=</span> <span class="n">Colors</span><span class="p">((</span><span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">is_valid_rgb</span><span class="p">()</span>
-<span class="n">invalid_rgb_255</span> <span class="o">=</span> <span class="n">Colors</span><span class="p">((</span><span class="mi">300</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">is_valid_rgb</span><span class="p">()</span>  <span class="c1"># 300 is out of range</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">red_255</span> <span class="o">=</span> <span class="n">Colors</span><span class="p">((</span><span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+<span class="n">valid_rgb_255</span> <span class="o">=</span> <span class="n">red_255</span><span class="o">.</span><span class="n">is_valid_rgb</span><span class="p">()</span>
+<span class="n">bad_255</span> <span class="o">=</span> <span class="n">Colors</span><span class="p">((</span><span class="mi">300</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>  <span class="c1"># 300 is out of range</span>
+<span class="n">invalid_rgb_255</span> <span class="o">=</span> <span class="n">bad_255</span><span class="o">.</span><span class="n">is_valid_rgb</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Is (255, 0, 0) a valid RGB color? </span><span class="si">{</span><span class="n">valid_rgb_255</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Is (300, 0, 0) a valid RGB color? </span><span class="si">{</span><span class="n">invalid_rgb_255</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-15">valid_rgb_255 = Colors((255, 0, 0)).is_valid_rgb()
-invalid_rgb_255 = Colors((300, 0, 0)).is_valid_rgb()  # 300 is out of range
+<div class="clipboard-copy-txt" id="cell-15">red_255 = Colors((255, 0, 0))
+valid_rgb_255 = red_255.is_valid_rgb()
+bad_255 = Colors((300, 0, 0))  # 300 is out of range
+invalid_rgb_255 = bad_255.is_valid_rgb()
 print(f"Is (255, 0, 0) a valid RGB color? {valid_rgb_255}")
 print(f"Is (300, 0, 0) a valid RGB color? {invalid_rgb_255}")</div>
 </div>
@@ -4686,13 +4694,17 @@ Is (300, 0, 0) a valid RGB color? [False]
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">valid_rgb_norm</span> <span class="o">=</span> <span class="n">Colors</span><span class="p">((</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">))</span><span class="o">.</span><span class="n">is_valid_rgb</span><span class="p">()</span>
-<span class="n">invalid_rgb_norm</span> <span class="o">=</span> <span class="n">Colors</span><span class="p">((</span><span class="mf">1.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">))</span><span class="o">.</span><span class="n">is_valid_rgb</span><span class="p">()</span>  <span class="c1"># 1.5 is out of range</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">grey_norm</span> <span class="o">=</span> <span class="n">Colors</span><span class="p">((</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">))</span>
+<span class="n">valid_rgb_norm</span> <span class="o">=</span> <span class="n">grey_norm</span><span class="o">.</span><span class="n">is_valid_rgb</span><span class="p">()</span>
+<span class="n">bad_norm</span> <span class="o">=</span> <span class="n">Colors</span><span class="p">((</span><span class="mf">1.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">))</span>  <span class="c1"># 1.5 is out of range</span>
+<span class="n">invalid_rgb_norm</span> <span class="o">=</span> <span class="n">bad_norm</span><span class="o">.</span><span class="n">is_valid_rgb</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Is (0.5, 0.5, 0.5) a valid normalized RGB color? </span><span class="si">{</span><span class="n">valid_rgb_norm</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Is (1.5, 0.5, 0.5) a valid normalized RGB color? </span><span class="si">{</span><span class="n">invalid_rgb_norm</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-16">valid_rgb_norm = Colors((0.5, 0.5, 0.5)).is_valid_rgb()
-invalid_rgb_norm = Colors((1.5, 0.5, 0.5)).is_valid_rgb()  # 1.5 is out of range
+<div class="clipboard-copy-txt" id="cell-16">grey_norm = Colors((0.5, 0.5, 0.5))
+valid_rgb_norm = grey_norm.is_valid_rgb()
+bad_norm = Colors((1.5, 0.5, 0.5))  # 1.5 is out of range
+invalid_rgb_norm = bad_norm.is_valid_rgb()
 print(f"Is (0.5, 0.5, 0.5) a valid normalized RGB color? {valid_rgb_norm}")
 print(f"Is (1.5, 0.5, 0.5) a valid normalized RGB color? {invalid_rgb_norm}")</div>
 </div>
