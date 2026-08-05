@@ -2509,7 +2509,11 @@ class ArrayGlyph(GeoMixin, Glyph):
             return
         if self.ax is not None:
             self.ax.set_facecolor(background)
-        if self.fig is not None:
+        # Only paint the FIGURE patch when this glyph OWNS the figure. Painting a
+        # shared figure (a subplot the caller composes -- e.g. a style gallery)
+        # would blacken every sibling panel and hide their titles, so a
+        # background preset in one panel colours only its own axes.
+        if self.fig is not None and getattr(self, "_auto_figure", False):
             self.fig.patch.set_facecolor(background)
 
     def _plot_with_style(self, style: str) -> tuple[Figure, Axes]:

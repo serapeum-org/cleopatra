@@ -4987,6 +4987,20 @@ class TestArrayGlyphDataStyle:
         assert to_rgba(g.fig.patch.get_facecolor()) == to_rgba("#000000")
         plt.close("all")
 
+    def test_background_preset_in_subplot_spares_shared_figure(self):
+        """A background preset in a subplot colours its axes, not the shared figure.
+
+        Test scenario:
+            Plotting a flame panel into one axes of a multi-panel figure must
+            blacken only that axes -- not the figure patch, which would darken
+            every sibling panel and hide their titles (a style gallery).
+        """
+        fig, (ax0, _ax1) = plt.subplots(1, 2)
+        ArrayGlyph(self._accum(), style="temperature_flame").plot(ax=ax0)
+        assert to_rgba(ax0.get_facecolor()) == to_rgba("#000000"), "the flame panel's own axes is black"
+        assert to_rgba(fig.patch.get_facecolor()) != to_rgba("#000000"), "the shared figure stays unpainted"
+        plt.close(fig)
+
     def test_unknown_style_raises(self):
         """An unknown style name raises a clear `ValueError`."""
         with pytest.raises(ValueError, match="unknown data style"):
