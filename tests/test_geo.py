@@ -404,6 +404,24 @@ def test_real_glyph_basemap_axes_lazily_creates_and_seeds_bounds():
     plt.close("all")
 
 
+def test_non_seeding_glyph_basemap_axes_raises_clearly():
+    """A glyph that cannot seed its own bounds refuses to lazily create an axes.
+
+    Test scenario:
+        Only `ArrayGlyph` exposes `_flat_axis_bounds`. A `FlowGlyph` (which has
+        no such bounds) that added a basemap layer before plotting would otherwise
+        get an unseeded `(0, 1)` axes that pins the view and silently breaks the
+        later plot, so `_basemap_axes` keeps raising the clear "plot first" error
+        rather than returning an unusable axes.
+    """
+    glyph = FlowGlyph([np.array([[0.0, 0.0], [1.0, 1.0], [2.0, 0.5]])])
+    assert glyph.ax is None, "a fresh FlowGlyph has no axes yet"
+    assert not hasattr(glyph, "_flat_axis_bounds"), "FlowGlyph cannot seed its own bounds"
+    with pytest.raises(RuntimeError, match="Plot the glyph first"):
+        glyph._basemap_axes()
+    plt.close("all")
+
+
 def test_real_glyph_integration(tmp_path: Path, monkeypatch):
     """A real glyph draws a cached layer on its own axes via the mixin method."""
     monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))

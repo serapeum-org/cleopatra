@@ -543,24 +543,27 @@ class GeoMixin:
             The resolved matplotlib axes.
 
         Raises:
-            RuntimeError: Only if there is no axes and the host cannot create one
-                (a bare `GeoMixin` with no `create_figure_axes`); pass `ax=` then.
+            RuntimeError: If there is no axes and the host cannot create *and*
+                seed one on demand. Only a glyph that exposes its own data bounds
+                (`_flat_axis_bounds`, i.e. `ArrayGlyph`) supports the pre-plot
+                builder flow; for the others, plot the glyph first (or pass `ax=`).
         """
         target = ax if ax is not None else getattr(self, "ax", None)
         if target is not None:
             return target
-        if hasattr(self, "create_figure_axes"):
+        # Create the axes on demand only when the glyph can also SEED it with its
+        # own data bounds. A reference layer pins the current view (it locks
+        # xlim/ylim and turns autoscale off, to preserve an already-drawn map), so
+        # an *unseeded* axes would lock the default (0, 1) box and the later data
+        # draw could not set the extent -- a silently broken plot. Seeding the data
+        # bounds means the layer pins the correct view; a glyph with no
+        # `_flat_axis_bounds` cannot seed, so it keeps raising the clear error below
+        # rather than returning an unusable (0, 1) axes.
+        if hasattr(self, "create_figure_axes") and hasattr(self, "_flat_axis_bounds"):
             self.fig, self.ax = self.create_figure_axes()
-            # Seed the fresh axes with the glyph's own data bounds: a reference
-            # layer pins the current view (it locks xlim/ylim and turns autoscale
-            # off, to preserve an already-drawn map), so on an otherwise-empty
-            # axes it would lock the default (0, 1) box and the later data draw
-            # could not set the extent. Seeding the data bounds means the layer
-            # pins the correct view.
-            if hasattr(self, "_flat_axis_bounds"):
-                x_min, x_max, y_min, y_max = self._flat_axis_bounds()
-                self.ax.set_xlim(x_min, x_max)
-                self.ax.set_ylim(y_min, y_max)
+            x_min, x_max, y_min, y_max = self._flat_axis_bounds()
+            self.ax.set_xlim(x_min, x_max)
+            self.ax.set_ylim(y_min, y_max)
             return self.ax
         raise RuntimeError(
             "No axes to draw on. Plot the glyph first (or pass ax=) "
@@ -607,8 +610,9 @@ class GeoMixin:
 
         Raises:
             RuntimeError: Only if there is no axes, no `ax` is given, and the
-                glyph cannot create one (a bare `GeoMixin`); a real glyph creates
-                its axes on demand, so it can be called before `plot`/`animate`.
+                glyph cannot create one (a bare `GeoMixin`); only `ArrayGlyph` creates and seeds
+                its axes on demand, so the pre-plot builder flow is ArrayGlyph-only
+                -- plot the other glyphs first (or pass `ax=`).
 
         See Also:
             cleopatra.tiles.add_tiles: The underlying implementation and its
@@ -640,8 +644,9 @@ class GeoMixin:
 
         Raises:
             RuntimeError: Only if there is no axes, no `ax` is given, and the
-                glyph cannot create one (a bare `GeoMixin`); a real glyph creates
-                its axes on demand, so it can be called before `plot`/`animate`.
+                glyph cannot create one (a bare `GeoMixin`); only `ArrayGlyph` creates and seeds
+                its axes on demand, so the pre-plot builder flow is ArrayGlyph-only
+                -- plot the other glyphs first (or pass `ax=`).
 
         See Also:
             cleopatra.reference.add_features: The underlying implementation
@@ -676,8 +681,9 @@ class GeoMixin:
 
         Raises:
             RuntimeError: Only if there is no axes, no `ax` is given, and the
-                glyph cannot create one (a bare `GeoMixin`); a real glyph creates
-                its axes on demand, so it can be called before `plot`/`animate`.
+                glyph cannot create one (a bare `GeoMixin`); only `ArrayGlyph` creates and seeds
+                its axes on demand, so the pre-plot builder flow is ArrayGlyph-only
+                -- plot the other glyphs first (or pass `ax=`).
 
         See Also:
             cleopatra.reference.add_relief: The underlying implementation and
@@ -711,8 +717,9 @@ class GeoMixin:
 
         Raises:
             RuntimeError: Only if there is no axes, no `ax` is given, and the
-                glyph cannot create one (a bare `GeoMixin`); a real glyph creates
-                its axes on demand, so it can be called before `plot`/`animate`.
+                glyph cannot create one (a bare `GeoMixin`); only `ArrayGlyph` creates and seeds
+                its axes on demand, so the pre-plot builder flow is ArrayGlyph-only
+                -- plot the other glyphs first (or pass `ax=`).
 
         Examples:
             - Label a city on a plotted glyph:
@@ -974,8 +981,9 @@ class GeoMixin:
 
         Raises:
             RuntimeError: Only if there is no axes, no `ax` is given, and the
-                glyph cannot create one (a bare `GeoMixin`); a real glyph creates
-                its axes on demand, so it can be called before `plot`/`animate`.
+                glyph cannot create one (a bare `GeoMixin`); only `ArrayGlyph` creates and seeds
+                its axes on demand, so the pre-plot builder flow is ArrayGlyph-only
+                -- plot the other glyphs first (or pass `ax=`).
             ValueError: If `style` is not a known preset or `"auto"`, or if
                 `graticule_step` is given and is not a positive number.
 
