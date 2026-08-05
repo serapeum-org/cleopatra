@@ -1887,8 +1887,7 @@
       "#6FAFD6",
       "#08326E"
      ],
-     "colormap": "perceptual",
-     "alpha": 1.0
+     "colormap": "perceptual"
     }
    }
   },

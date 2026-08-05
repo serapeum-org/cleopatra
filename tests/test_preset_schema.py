@@ -162,6 +162,20 @@ class TestPresetSchema:
         flame = _load_presets("builtin_presets.json")["temperature_flame"]
         assert flame and all(layer.get("background") == "#000000" for layer in flame.values())
 
+    def test_total_precipitation_fades_at_low_end(self):
+        """`total_precipitation` carries no constant alpha, so opacity tracks value.
+
+        Test scenario:
+            A precipitation total should read as rain over whatever is beneath it
+            (a basemap) -- dry cells transparent, wet cells opaque. It therefore
+            must not pin a constant `alpha`; with none, `alpha_scaled_image`
+            defaults opacity to the colour norm.
+        """
+        from cleopatra.colors import DATA_STYLES
+
+        layer = DATA_STYLES["total_precipitation"]["total_precipitation"]
+        assert "alpha" not in layer, "total_precipitation should fade at the low end (no constant alpha)"
+
     @pytest.mark.parametrize("asset", ASSETS)
     def test_loader_reads_asset(self, asset):
         """`_load_presets` builds at least one preset from each asset.
