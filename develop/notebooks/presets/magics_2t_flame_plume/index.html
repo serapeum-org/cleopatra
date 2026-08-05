@@ -3115,9 +3115,6 @@ fade into the relief. <code>ArrayGlyph</code> applies the preset and runs the an
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.animation</span><span class="w"> </span><span class="kn">import</span> <span class="n">embed_gif</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span><span class="p">,</span> <span class="n">FrameLabel</span>
 
-<span class="c1"># a black theme for the whole notebook (the flame glow needs a dark backdrop)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">"figure.facecolor"</span><span class="p">:</span> <span class="s2">"black"</span><span class="p">,</span> <span class="s2">"savefig.facecolor"</span><span class="p">:</span> <span class="s2">"black"</span><span class="p">})</span>
-
 <span class="c1"># --- data: an ERA5-Land 2 m-temperature stack over Europe (°C, 23 daily frames) ---</span>
 <span class="n">npz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"../../../examples/data/europe_t2m.npz"</span><span class="p">),</span> <span class="n">allow_pickle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">celsius</span> <span class="o">=</span> <span class="n">npz</span><span class="p">[</span><span class="s2">"celsius"</span><span class="p">][::</span><span class="mi">2</span><span class="p">]</span>  <span class="c1"># every other day, to keep the GIFs light</span>
@@ -3127,15 +3124,16 @@ fade into the relief. <code>ArrayGlyph</code> applies the preset and runs the an
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">add_backdrop</span><span class="p">(</span><span class="n">glyph</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Give the glyph a dark, hillshaded Earth using its OWN methods.</span>
+<span class="w">    </span><span class="sd">"""Give the glyph a hillshaded Earth using its OWN methods.</span>
 
 <span class="sd">    Call it directly on the glyph (not as a `basemap=` callback). `add_relief`</span>
 <span class="sd">    creates the axes on demand (so it can come before `animate`) and draws the</span>
 <span class="sd">    global relief at true lon/lat, cropped to the view; `add_features` overlays</span>
-<span class="sd">    faint coastlines/borders. All on `glyph.ax`, no standalone helpers.</span>
+<span class="sd">    faint coastlines/borders. All on `glyph.ax`, no standalone helpers. The dark</span>
+<span class="sd">    canvas itself comes from the `temperature_flame*` preset (its</span>
+<span class="sd">    `background`), so nothing here paints the figure.</span>
 <span class="sd">    """</span>
     <span class="n">glyph</span><span class="o">.</span><span class="n">add_relief</span><span class="p">(</span><span class="s2">"medium"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.45</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>  <span class="c1"># creates the axes if needed</span>
-    <span class="n">glyph</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="s2">"black"</span><span class="p">)</span>
     <span class="n">glyph</span><span class="o">.</span><span class="n">add_features</span><span class="p">(</span><span class="s2">"coastline"</span><span class="p">,</span> <span class="s2">"50m"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"0.5"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
     <span class="n">glyph</span><span class="o">.</span><span class="n">add_features</span><span class="p">(</span><span class="s2">"borders"</span><span class="p">,</span> <span class="s2">"50m"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"0.35"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
@@ -3150,9 +3148,6 @@ import numpy as np
 from cleopatra.animation import embed_gif
 from cleopatra.array_glyph import ArrayGlyph, FrameLabel
 
-# a black theme for the whole notebook (the flame glow needs a dark backdrop)
-plt.rcParams.update({"figure.facecolor": "black", "savefig.facecolor": "black"})
-
 # --- data: an ERA5-Land 2 m-temperature stack over Europe (°C, 23 daily frames) ---
 npz = np.load(Path("../../../examples/data/europe_t2m.npz"), allow_pickle=True)
 celsius = npz["celsius"][::2]  # every other day, to keep the GIFs light
@@ -3162,15 +3157,16 @@ extent = [west, east, south, north]
 
 
 def add_backdrop(glyph):
-    """Give the glyph a dark, hillshaded Earth using its OWN methods.
+    """Give the glyph a hillshaded Earth using its OWN methods.
 
     Call it directly on the glyph (not as a `basemap=` callback). `add_relief`
     creates the axes on demand (so it can come before `animate`) and draws the
     global relief at true lon/lat, cropped to the view; `add_features` overlays
-    faint coastlines/borders. All on `glyph.ax`, no standalone helpers.
+    faint coastlines/borders. All on `glyph.ax`, no standalone helpers. The dark
+    canvas itself comes from the `temperature_flame*` preset (its
+    `background`), so nothing here paints the figure.
     """
     glyph.add_relief("medium", alpha=0.45, zorder=-2)  # creates the axes if needed
-    glyph.ax.set_facecolor("black")
     glyph.add_features("coastline", "50m", color="0.5", linewidth=0.5, zorder=0)
     glyph.add_features("borders", "50m", color="0.35", linewidth=0.4, zorder=0)
 
