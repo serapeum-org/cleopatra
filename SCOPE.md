@@ -36,7 +36,7 @@ colorbars, ticks, classification, and animation.
 | --- | --- | --- |
 | `array_glyph` | `ArrayGlyph`, `FacetGrid` | 2D/3D NumPy raster arrays; cell-value display, point overlays, RGB, faceting, animation |
 | `mesh_glyph` | `MeshGlyph` | UGRID-style unstructured meshes via triangulation (`tripcolor`/`tricontourf`), wireframe outlines, contour labels, animation |
-| `statistical_glyph` | `StatisticalGlyph` | Histograms (1D/2D), boxplots, multiboxplots, strip plots |
+| `histogram_glyph` | `HistogramGlyph` | Histograms (1D/2D), boxplots, multiboxplots, strip plots |
 | `scatter_glyph` | `ScatterGlyph` | 2D point clouds; colour + independent size encoding, size legend |
 | `vector_glyph` | `VectorGlyph` | 2D vector fields as arrows, wind barbs, or streamlines; magnitude colouring |
 | `flow_glyph` | `FlowGlyph` | Magnitude-coloured, width-scaled flow polylines |
