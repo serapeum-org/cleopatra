@@ -397,7 +397,8 @@ def test_real_glyph_basemap_axes_lazily_creates_and_seeds_bounds():
     glyph = ArrayGlyph(np.zeros((6, 8)), extent=[-12.0, 32.0, 34.0, 64.0])
     assert glyph.ax is None, "a fresh ArrayGlyph has no axes yet"
     ax = glyph._basemap_axes()
-    assert ax is glyph.ax and glyph.ax is not None, "should create and store the axes"
+    assert glyph.ax is not None, "should create and store the axes"
+    assert ax is glyph.ax
     x_min, x_max, y_min, y_max = glyph._flat_axis_bounds()
     assert tuple(round(v) for v in ax.get_xlim()) == (round(x_min), round(x_max)), "x seeded to data bounds"
     assert tuple(round(v) for v in ax.get_ylim()) == (round(y_min), round(y_max)), "y seeded to data bounds"

@@ -146,8 +146,9 @@ class TestPresetSchema:
             return {"version": 1, "presets": {"x": preset}}
 
         jsonschema.validate(wrap({"background": "#000000", "layers": {"x": layer}}), schema)
+        bad = wrap({"background": 0, "layers": {"x": layer}})
         with pytest.raises(jsonschema.ValidationError):
-            jsonschema.validate(wrap({"background": 0, "layers": {"x": layer}}), schema)
+            jsonschema.validate(bad, schema)
 
     def test_loader_carries_preset_background_onto_layers(self):
         """A preset-level `background` is copied onto each loaded layer config.
@@ -160,7 +161,8 @@ class TestPresetSchema:
         from cleopatra.colors import _load_presets
 
         flame = _load_presets("builtin_presets.json")["temperature_flame"]
-        assert flame and all(layer.get("background") == "#000000" for layer in flame.values())
+        assert flame, "temperature_flame loaded with at least one layer"
+        assert all(layer.get("background") == "#000000" for layer in flame.values())
 
     def test_total_precipitation_fades_at_low_end(self):
         """`total_precipitation` carries no constant alpha, so opacity tracks value.
