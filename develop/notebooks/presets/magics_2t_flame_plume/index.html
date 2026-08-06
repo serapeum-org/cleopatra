@@ -761,14 +761,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/statistics-glyph/" class="md-nav__link">
+      <a href="../../../reference/histogram-glyph/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Statistical plots
+    HistogramGlyph
   
 
     
@@ -3084,7 +3084,7 @@ plumes — for <strong>2 m temperature</strong>. Two shipped data-style presets 
 (cool → transparent, so the dark terrain shows through; hot → opaque, glowing). Composed over a dark hillshaded
 backdrop — drawn with the glyph's own <code>add_relief</code> / <code>add_features</code> — the warm areas glow while the cool ones
 fade into the relief. <code>ArrayGlyph</code> applies the preset and runs the animation; no hand-rolled <code>alpha_scaled_image</code>,
-<code>FuncAnimation</code>, or standalone <code>cleopatra.reference</code> calls.</p>
+<code>FuncAnimation</code>, or standalone <code>cleopatra.basemap.reference</code> calls.</p>
 </div>
 </div>
 </div>
@@ -3112,8 +3112,8 @@ fade into the relief. <code>ArrayGlyph</code> applies the preset and runs the an
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.animation</span><span class="w"> </span><span class="kn">import</span> <span class="n">embed_gif</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span><span class="p">,</span> <span class="n">FrameLabel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.base.animation</span><span class="w"> </span><span class="kn">import</span> <span class="n">embed_gif</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span><span class="p">,</span> <span class="n">FrameLabel</span>
 
 <span class="c1"># --- data: an ERA5-Land 2 m-temperature stack over Europe (°C, 23 daily frames) ---</span>
 <span class="n">npz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"../../../examples/data/europe_t2m.npz"</span><span class="p">),</span> <span class="n">allow_pickle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -3145,8 +3145,8 @@ fade into the relief. <code>ArrayGlyph</code> applies the preset and runs the an
 import matplotlib.pyplot as plt
 import numpy as np
 
-from cleopatra.animation import embed_gif
-from cleopatra.array_glyph import ArrayGlyph, FrameLabel
+from cleopatra.glyphs.base.animation import embed_gif
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph, FrameLabel
 
 # --- data: an ERA5-Land 2 m-temperature stack over Europe (°C, 23 daily frames) ---
 npz = np.load(Path("../../../examples/data/europe_t2m.npz"), allow_pickle=True)

@@ -13,6 +13,10 @@
          <lastmod>2026-08-06</lastmod>
     </url>
     <url>
+         <loc>https://serapeum-org.github.io/cleopatra/develop/migration/</loc>
+         <lastmod>2026-08-06</lastmod>
+    </url>
+    <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/scope/</loc>
          <lastmod>2026-08-06</lastmod>
     </url>
@@ -157,6 +161,10 @@
          <lastmod>2026-08-06</lastmod>
     </url>
     <url>
+         <loc>https://serapeum-org.github.io/cleopatra/develop/reference/histogram-glyph/</loc>
+         <lastmod>2026-08-06</lastmod>
+    </url>
+    <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/reference/kde-glyph/</loc>
          <lastmod>2026-08-06</lastmod>
     </url>
@@ -190,10 +198,6 @@
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/reference/scatter-glyph/</loc>
-         <lastmod>2026-08-06</lastmod>
-    </url>
-    <url>
-         <loc>https://serapeum-org.github.io/cleopatra/develop/reference/statistics-glyph/</loc>
          <lastmod>2026-08-06</lastmod>
     </url>
     <url>

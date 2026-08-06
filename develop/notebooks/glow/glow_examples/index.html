@@ -755,14 +755,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/statistics-glyph/" class="md-nav__link">
+      <a href="../../../reference/histogram-glyph/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Statistical plots
+    HistogramGlyph
   
 
     
@@ -3073,9 +3073,9 @@ opt-in <code>glow=</code> option on <a href="../../../src/cleopatra/line_glyph.p
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.line_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">LineGlyph</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.flow_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowGlyph</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.colors</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_line_glow</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.primitives.line_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">LineGlyph</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.primitives.flow_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowGlyph</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styling.colors</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_line_glow</span>
 
 <span class="n">DATA</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"../../../examples/data"</span><span class="p">)</span>
 <span class="n">t2m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">DATA</span> <span class="o">/</span> <span class="s2">"europe_t2m.npz"</span><span class="p">)</span>
@@ -3087,9 +3087,9 @@ opt-in <code>glow=</code> option on <a href="../../../src/cleopatra/line_glyph.p
 import numpy as np
 import matplotlib.pyplot as plt
 
-from cleopatra.line_glyph import LineGlyph
-from cleopatra.flow_glyph import FlowGlyph
-from cleopatra.colors import add_line_glow
+from cleopatra.glyphs.primitives.line_glyph import LineGlyph
+from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
+from cleopatra.styling.colors import add_line_glow
 
 DATA = Path("../../../examples/data")
 t2m = np.load(DATA / "europe_t2m.npz")

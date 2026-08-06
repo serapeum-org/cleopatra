@@ -761,14 +761,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/statistics-glyph/" class="md-nav__link">
+      <a href="../../../reference/histogram-glyph/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Statistical plots
+    HistogramGlyph
   
 
     
@@ -3496,8 +3496,8 @@ The ArrayGlyph class provides functionality for visualizing arrays and creating 
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
 
 <span class="n">Config</span><span class="o">.</span><span class="n">set_matplotlib_backend</span><span class="p">()</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.animation</span><span class="w"> </span><span class="kn">import</span> <span class="n">embed_gif</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span><span class="p">,</span> <span class="n">ColorBar</span><span class="p">,</span> <span class="n">PointOverlay</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.base.animation</span><span class="w"> </span><span class="kn">import</span> <span class="n">embed_gif</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span><span class="p">,</span> <span class="n">ColorBar</span><span class="p">,</span> <span class="n">PointOverlay</span>
 
 <span class="c1"># Set the random seed for reproducibility</span>
 <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
@@ -3510,8 +3510,8 @@ import numpy as np
 from cleopatra.config import Config
 
 Config.set_matplotlib_backend()
-from cleopatra.animation import embed_gif
-from cleopatra.array_glyph import ArrayGlyph, ColorBar, PointOverlay
+from cleopatra.glyphs.base.animation import embed_gif
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph, ColorBar, PointOverlay
 
 # Set the random seed for reproducibility
 np.random.seed(42)</div>
@@ -4525,9 +4525,9 @@ embed_gif(anim, fps=5)</div>
 <div class="jp-OutputPrompt jp-OutputArea-prompt">Out[18]:</div>
 <div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
 <pre>['animation.gif',
+ 'reference_map.ipynb',
  'rgb_animation.ipynb',
- 'array_glyph_examples.ipynb',
- 'reference_map.ipynb']</pre>
+ 'array_glyph_examples.ipynb']</pre>
 </div>
 </div>
 </div>
@@ -5052,7 +5052,7 @@ surface). It composes with the <code>topography</code> data-style preset and the
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="10-data-style-presets-via-the-style-option">10. Data-style presets via the <code>style=</code> option<a class="anchor-link" href="#10-data-style-presets-via-the-style-option">¶</a></h2><p>Instead of choosing a colormap and scale by hand, pass <code>style=</code> a named preset from <code>cleopatra.colors.DATA_STYLES</code>. The preset owns the colormap, the norm (linear / log / symlog / diverging), the transparent nodata, any value-linked opacity, and — for categorical presets — a discrete legend. The same <code>style=</code> option works on <code>MeshGlyph</code> and <code>KDEGlyph</code> too, and composes with <code>hillshade</code>.</p>
+<h2 id="10-data-style-presets-via-the-style-option">10. Data-style presets via the <code>style=</code> option<a class="anchor-link" href="#10-data-style-presets-via-the-style-option">¶</a></h2><p>Instead of choosing a colormap and scale by hand, pass <code>style=</code> a named preset from <code>cleopatra.styling.colors.DATA_STYLES</code>. The preset owns the colormap, the norm (linear / log / symlog / diverging), the transparent nodata, any value-linked opacity, and — for categorical presets — a discrete legend. The same <code>style=</code> option works on <code>MeshGlyph</code> and <code>KDEGlyph</code> too, and composes with <code>hillshade</code>.</p>
 </div>
 </div>
 </div>

@@ -10,25 +10,27 @@
       
       
       
+        <link rel="canonical" href="https://serapeum-org.github.io/cleopatra/develop/migration/">
+      
       
       
       
         
       
       
-      <link rel="icon" href="/cleopatra/develop/assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
     
     
       
-        <title>Cleopatra</title>
+        <title>Migration guide — subpackage restructure - Cleopatra</title>
       
     
     
-      <link rel="stylesheet" href="/cleopatra/develop/assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="/cleopatra/develop/assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -47,9 +49,9 @@
       
     
     
-      <link rel="stylesheet" href="/cleopatra/develop/assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("/cleopatra/develop",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -73,6 +75,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#migration-guide-subpackage-restructure" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -89,7 +96,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/cleopatra/develop/." title="Cleopatra" class="md-header__button md-logo" aria-label="Cleopatra" data-md-component="logo">
+    <a href=".." title="Cleopatra" class="md-header__button md-logo" aria-label="Cleopatra" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -109,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              Migration guide — subpackage restructure
             
           </span>
         </div>
@@ -226,7 +233,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="/cleopatra/develop/." class="md-tabs__link">
+      <a href=".." class="md-tabs__link">
         
   
   
@@ -245,7 +252,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="/cleopatra/develop/installation/" class="md-tabs__link">
+      <a href="../installation/" class="md-tabs__link">
         
   
   
@@ -264,7 +271,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="/cleopatra/develop/scope/" class="md-tabs__link">
+      <a href="../scope/" class="md-tabs__link">
         
   
   
@@ -285,7 +292,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/cleopatra/develop/unstructured-mesh-guide/" class="md-tabs__link">
+        <a href="../unstructured-mesh-guide/" class="md-tabs__link">
           
   
   
@@ -307,7 +314,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/cleopatra/develop/reference/glyph/" class="md-tabs__link">
+        <a href="../reference/glyph/" class="md-tabs__link">
           
   
   
@@ -329,7 +336,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/cleopatra/develop/notebooks/array_glyph/array_glyph_examples/" class="md-tabs__link">
+        <a href="../notebooks/array_glyph/array_glyph_examples/" class="md-tabs__link">
           
   
   
@@ -349,7 +356,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="/cleopatra/develop/change-log/" class="md-tabs__link">
+      <a href="../change-log/" class="md-tabs__link">
         
   
   
@@ -390,7 +397,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/cleopatra/develop/." title="Cleopatra" class="md-nav__button md-logo" aria-label="Cleopatra" data-md-component="logo">
+    <a href=".." title="Cleopatra" class="md-nav__button md-logo" aria-label="Cleopatra" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -420,7 +427,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         
   
   
@@ -447,7 +454,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/installation/" class="md-nav__link">
+      <a href="../installation/" class="md-nav__link">
         
   
   
@@ -474,7 +481,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/scope/" class="md-nav__link">
+      <a href="../scope/" class="md-nav__link">
         
   
   
@@ -561,7 +568,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/unstructured-mesh-guide/" class="md-nav__link">
+      <a href="../unstructured-mesh-guide/" class="md-nav__link">
         
   
   
@@ -589,7 +596,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/diagrams/glyph-architecture/" class="md-nav__link">
+      <a href="../diagrams/glyph-architecture/" class="md-nav__link">
         
   
   
@@ -720,7 +727,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/reference/glyph/" class="md-nav__link">
+      <a href="../reference/glyph/" class="md-nav__link">
         
   
   
@@ -748,7 +755,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/reference/histogram-glyph/" class="md-nav__link">
+      <a href="../reference/histogram-glyph/" class="md-nav__link">
         
   
   
@@ -776,7 +783,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/reference/array-glyph/" class="md-nav__link">
+      <a href="../reference/array-glyph/" class="md-nav__link">
         
   
   
@@ -804,7 +811,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/reference/mesh-glyph/" class="md-nav__link">
+      <a href="../reference/mesh-glyph/" class="md-nav__link">
         
   
   
@@ -832,7 +839,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/reference/scatter-glyph/" class="md-nav__link">
+      <a href="../reference/scatter-glyph/" class="md-nav__link">
         
   
   
@@ -860,7 +867,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/reference/vector-glyph/" class="md-nav__link">
+      <a href="../reference/vector-glyph/" class="md-nav__link">
         
   
   
@@ -888,7 +895,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/reference/flow-glyph/" class="md-nav__link">
+      <a href="../reference/flow-glyph/" class="md-nav__link">
         
   
   
@@ -916,7 +923,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/reference/line-glyph/" class="md-nav__link">
+      <a href="../reference/line-glyph/" class="md-nav__link">
         
   
   
@@ -944,7 +951,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/reference/polygon-glyph/" class="md-nav__link">
+      <a href="../reference/polygon-glyph/" class="md-nav__link">
         
   
   
@@ -972,7 +979,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/reference/kde-glyph/" class="md-nav__link">
+      <a href="../reference/kde-glyph/" class="md-nav__link">
         
   
   
@@ -1000,7 +1007,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/reference/tiles/" class="md-nav__link">
+      <a href="../reference/tiles/" class="md-nav__link">
         
   
   
@@ -1028,7 +1035,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/reference/reference-data/" class="md-nav__link">
+      <a href="../reference/reference-data/" class="md-nav__link">
         
   
   
@@ -1056,7 +1063,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/reference/geo/" class="md-nav__link">
+      <a href="../reference/geo/" class="md-nav__link">
         
   
   
@@ -1084,7 +1091,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/reference/projection/" class="md-nav__link">
+      <a href="../reference/projection/" class="md-nav__link">
         
   
   
@@ -1112,7 +1119,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/reference/animation/" class="md-nav__link">
+      <a href="../reference/animation/" class="md-nav__link">
         
   
   
@@ -1140,7 +1147,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/reference/colors-glyph/" class="md-nav__link">
+      <a href="../reference/colors-glyph/" class="md-nav__link">
         
   
   
@@ -1168,7 +1175,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/reference/styles-glyph/" class="md-nav__link">
+      <a href="../reference/styles-glyph/" class="md-nav__link">
         
   
   
@@ -1196,7 +1203,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/reference/perceptual/" class="md-nav__link">
+      <a href="../reference/perceptual/" class="md-nav__link">
         
   
   
@@ -1224,7 +1231,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/reference/palettes/" class="md-nav__link">
+      <a href="../reference/palettes/" class="md-nav__link">
         
   
   
@@ -1252,7 +1259,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/reference/config/" class="md-nav__link">
+      <a href="../reference/config/" class="md-nav__link">
         
   
   
@@ -1375,7 +1382,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/notebooks/array_glyph/array_glyph_examples/" class="md-nav__link">
+      <a href="../notebooks/array_glyph/array_glyph_examples/" class="md-nav__link">
         
   
   
@@ -1403,7 +1410,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/notebooks/array_glyph/rgb_animation/" class="md-nav__link">
+      <a href="../notebooks/array_glyph/rgb_animation/" class="md-nav__link">
         
   
   
@@ -1431,7 +1438,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/notebooks/array_glyph/reference_map/" class="md-nav__link">
+      <a href="../notebooks/array_glyph/reference_map/" class="md-nav__link">
         
   
   
@@ -1459,7 +1466,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/notebooks/animation/animation_examples/" class="md-nav__link">
+      <a href="../notebooks/animation/animation_examples/" class="md-nav__link">
         
   
   
@@ -1561,7 +1568,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/notebooks/presets/data_style_presets_examples/" class="md-nav__link">
+      <a href="../notebooks/presets/data_style_presets_examples/" class="md-nav__link">
         
   
   
@@ -1589,7 +1596,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/notebooks/presets/haze_preset_examples/" class="md-nav__link">
+      <a href="../notebooks/presets/haze_preset_examples/" class="md-nav__link">
         
   
   
@@ -1617,7 +1624,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/notebooks/presets/scientific_colormaps_examples/" class="md-nav__link">
+      <a href="../notebooks/presets/scientific_colormaps_examples/" class="md-nav__link">
         
   
   
@@ -1645,7 +1652,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/notebooks/presets/ocean_styles_gallery/" class="md-nav__link">
+      <a href="../notebooks/presets/ocean_styles_gallery/" class="md-nav__link">
         
   
   
@@ -1673,7 +1680,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/notebooks/presets/weather_styles_gallery/" class="md-nav__link">
+      <a href="../notebooks/presets/weather_styles_gallery/" class="md-nav__link">
         
   
   
@@ -1701,7 +1708,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/notebooks/presets/temperature_animation/" class="md-nav__link">
+      <a href="../notebooks/presets/temperature_animation/" class="md-nav__link">
         
   
   
@@ -1729,7 +1736,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/notebooks/presets/precipitation_animation/" class="md-nav__link">
+      <a href="../notebooks/presets/precipitation_animation/" class="md-nav__link">
         
   
   
@@ -1757,7 +1764,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/notebooks/presets/ecmwf_temperature_animation/" class="md-nav__link">
+      <a href="../notebooks/presets/ecmwf_temperature_animation/" class="md-nav__link">
         
   
   
@@ -1785,7 +1792,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/notebooks/presets/magics_2t_flame_plume/" class="md-nav__link">
+      <a href="../notebooks/presets/magics_2t_flame_plume/" class="md-nav__link">
         
   
   
@@ -1821,7 +1828,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/notebooks/mesh_glyph/mesh_glyph_examples/" class="md-nav__link">
+      <a href="../notebooks/mesh_glyph/mesh_glyph_examples/" class="md-nav__link">
         
   
   
@@ -1849,7 +1856,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/notebooks/scatter_glyph/scatter_glyph_examples/" class="md-nav__link">
+      <a href="../notebooks/scatter_glyph/scatter_glyph_examples/" class="md-nav__link">
         
   
   
@@ -1877,7 +1884,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/notebooks/vector_glyph/vector_glyph_examples/" class="md-nav__link">
+      <a href="../notebooks/vector_glyph/vector_glyph_examples/" class="md-nav__link">
         
   
   
@@ -1905,7 +1912,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/notebooks/flow_glyph/flow_glyph_examples/" class="md-nav__link">
+      <a href="../notebooks/flow_glyph/flow_glyph_examples/" class="md-nav__link">
         
   
   
@@ -1933,7 +1940,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/notebooks/line_glyph/line_glyph_examples/" class="md-nav__link">
+      <a href="../notebooks/line_glyph/line_glyph_examples/" class="md-nav__link">
         
   
   
@@ -1961,7 +1968,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/notebooks/polygon_glyph/polygon_glyph_examples/" class="md-nav__link">
+      <a href="../notebooks/polygon_glyph/polygon_glyph_examples/" class="md-nav__link">
         
   
   
@@ -1989,7 +1996,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/notebooks/kde_glyph/kde_glyph_examples/" class="md-nav__link">
+      <a href="../notebooks/kde_glyph/kde_glyph_examples/" class="md-nav__link">
         
   
   
@@ -2017,7 +2024,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/notebooks/statistics/statistics_examples/" class="md-nav__link">
+      <a href="../notebooks/statistics/statistics_examples/" class="md-nav__link">
         
   
   
@@ -2045,7 +2052,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/notebooks/colors/colors_examples/" class="md-nav__link">
+      <a href="../notebooks/colors/colors_examples/" class="md-nav__link">
         
   
   
@@ -2073,7 +2080,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/notebooks/styles/styles_examples/" class="md-nav__link">
+      <a href="../notebooks/styles/styles_examples/" class="md-nav__link">
         
   
   
@@ -2101,7 +2108,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/notebooks/reference/reference_examples/" class="md-nav__link">
+      <a href="../notebooks/reference/reference_examples/" class="md-nav__link">
         
   
   
@@ -2136,7 +2143,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cleopatra/develop/change-log/" class="md-nav__link">
+      <a href="../change-log/" class="md-nav__link">
         
   
   
@@ -2173,6 +2180,132 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#tldr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TL;DR
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#import-path-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Import path map
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Import path map">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#glyphs-the-chart-type-building-blocks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        glyphs/ — the chart-type building blocks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#styling-colour-legends-presentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        styling/ — colour, legends, presentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#basemap-networked-basemap-crs-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        basemap/ — networked basemap / CRS helpers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unchanged-still-top-level" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unchanged (still top-level)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-one-renamed-symbol" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The one renamed symbol
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#automated-migration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automated migration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#packaging-note-no-code-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Packaging note (no code change)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-did-not-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What did not change
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -2185,8 +2318,312 @@
               
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+
+  
+    <a href="https://github.com/serapeum-org/cleopatra/edit/master/docs/migration.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+    
+      
+    
+    <a href="https://github.com/serapeum-org/cleopatra/raw/master/docs/migration.md" title="View source of this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
+    </a>
+  
+
+
+<h1 id="migration-guide-subpackage-restructure"><a class="toclink" href="#migration-guide-subpackage-restructure">Migration guide — subpackage restructure</a><a class="headerlink" href="#migration-guide-subpackage-restructure" title="Permanent link">#</a></h1>
+<p>This release reorganises cleopatra's previously flat <code>cleopatra.*</code> module layout into three subpackages
+(<code>glyphs/</code>, <code>styling/</code>, <code>basemap/</code>) and renames the histogram glyph. It is a <strong>breaking change to import paths
+only</strong>.</p>
+<p><strong>Nothing else changed:</strong> every class, function, method, argument, and return value keeps the same name and
+behaviour. You only need to update <strong>where you import from</strong> (and rename one class). The package root still
+re-exports nothing — you always import from a submodule.</p>
+<h2 id="tldr"><a class="toclink" href="#tldr">TL;DR</a><a class="headerlink" href="#tldr" title="Permanent link">#</a></h2>
+<ol>
+<li>Repoint each <code>from cleopatra.&lt;module&gt; import ...</code> to its new subpackage path (table below).</li>
+<li>Rename the one renamed symbol: <code>StatisticalGlyph</code> → <code>HistogramGlyph</code> (its module also moved).</li>
+<li><code>cleopatra.config</code> and <code>cleopatra.templates</code> are unchanged.</li>
+</ol>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># before</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.colors</span><span class="w"> </span><span class="kn">import</span> <span class="n">DATA_STYLES</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.tiles</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_tiles</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.statistical_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">StatisticalGlyph</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># after</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styling.colors</span><span class="w"> </span><span class="kn">import</span> <span class="n">DATA_STYLES</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.basemap.tiles</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_tiles</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.stats.histogram_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">HistogramGlyph</span>   <span class="c1"># note the class rename</span>
+</code></pre></div>
+<h2 id="import-path-map"><a class="toclink" href="#import-path-map">Import path map</a><a class="headerlink" href="#import-path-map" title="Permanent link">#</a></h2>
+<p>Symbol <strong>names are unchanged</strong> — only the module path moves (except the one rename called out below).</p>
+<h3 id="glyphs-the-chart-type-building-blocks"><a class="toclink" href="#glyphs-the-chart-type-building-blocks"><code>glyphs/</code> — the chart-type building blocks</a><a class="headerlink" href="#glyphs-the-chart-type-building-blocks" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Old module</th>
+<th>New module</th>
+<th>Key symbols</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cleopatra.glyph</code></td>
+<td><code>cleopatra.glyphs.base.glyph</code></td>
+<td><code>Glyph</code></td>
+</tr>
+<tr>
+<td><code>cleopatra.animation</code></td>
+<td><code>cleopatra.glyphs.base.animation</code></td>
+<td><code>save_animation</code>, <code>SUPPORTED_VIDEO_FORMAT</code></td>
+</tr>
+<tr>
+<td><code>cleopatra.hillshade</code></td>
+<td><code>cleopatra.glyphs.base.hillshade</code></td>
+<td><code>shade_grid</code>, <code>shade_rgb</code></td>
+</tr>
+<tr>
+<td><code>cleopatra.array_glyph</code></td>
+<td><code>cleopatra.glyphs.gridded.array_glyph</code></td>
+<td><code>ArrayGlyph</code>, <code>FacetGrid</code></td>
+</tr>
+<tr>
+<td><code>cleopatra.mesh_glyph</code></td>
+<td><code>cleopatra.glyphs.gridded.mesh_glyph</code></td>
+<td><code>MeshGlyph</code></td>
+</tr>
+<tr>
+<td><code>cleopatra.vector_glyph</code></td>
+<td><code>cleopatra.glyphs.gridded.vector_glyph</code></td>
+<td><code>VectorGlyph</code></td>
+</tr>
+<tr>
+<td><code>cleopatra.scatter_glyph</code></td>
+<td><code>cleopatra.glyphs.primitives.scatter_glyph</code></td>
+<td><code>ScatterGlyph</code></td>
+</tr>
+<tr>
+<td><code>cleopatra.line_glyph</code></td>
+<td><code>cleopatra.glyphs.primitives.line_glyph</code></td>
+<td><code>LineGlyph</code></td>
+</tr>
+<tr>
+<td><code>cleopatra.polygon_glyph</code></td>
+<td><code>cleopatra.glyphs.primitives.polygon_glyph</code></td>
+<td><code>PolygonGlyph</code></td>
+</tr>
+<tr>
+<td><code>cleopatra.flow_glyph</code></td>
+<td><code>cleopatra.glyphs.primitives.flow_glyph</code></td>
+<td><code>FlowGlyph</code></td>
+</tr>
+<tr>
+<td><code>cleopatra.kde_glyph</code></td>
+<td><code>cleopatra.glyphs.stats.kde_glyph</code></td>
+<td><code>KDEGlyph</code></td>
+</tr>
+<tr>
+<td><code>cleopatra.statistical_glyph</code></td>
+<td><code>cleopatra.glyphs.stats.histogram_glyph</code></td>
+<td><code>StatisticalGlyph</code> → <strong><code>HistogramGlyph</code></strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="styling-colour-legends-presentation"><a class="toclink" href="#styling-colour-legends-presentation"><code>styling/</code> — colour, legends, presentation</a><a class="headerlink" href="#styling-colour-legends-presentation" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Old module</th>
+<th>New module</th>
+<th>Key symbols</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cleopatra.styles</code></td>
+<td><code>cleopatra.styling.styles</code></td>
+<td><code>Styles</code>, <code>Scale</code>, <code>ColorScale</code>, <code>MidpointNormalize</code>, <code>classify</code></td>
+</tr>
+<tr>
+<td><code>cleopatra.colors</code></td>
+<td><code>cleopatra.styling.colors</code></td>
+<td><code>Colors</code>, <code>DATA_STYLES</code>, <code>resolve_colormap</code>, <code>convert_units</code>, <code>style_for_parameter</code></td>
+</tr>
+<tr>
+<td><code>cleopatra.colorbar</code></td>
+<td><code>cleopatra.styling.colorbar</code></td>
+<td><code>ColorBar</code></td>
+</tr>
+<tr>
+<td><code>cleopatra.palettes</code></td>
+<td><code>cleopatra.styling.palettes</code></td>
+<td><code>Palette</code>, <code>PaletteKind</code>, <code>get_palette</code></td>
+</tr>
+<tr>
+<td><code>cleopatra.perceptual</code></td>
+<td><code>cleopatra.styling.perceptual</code></td>
+<td><code>perceptual_colormap</code>, <code>make_diverging</code>, <code>make_categorical</code></td>
+</tr>
+<tr>
+<td><code>cleopatra.data</code></td>
+<td><code>cleopatra.styling.data</code></td>
+<td>bundled preset JSON assets</td>
+</tr>
+</tbody>
+</table>
+<h3 id="basemap-networked-basemap-crs-helpers"><a class="toclink" href="#basemap-networked-basemap-crs-helpers"><code>basemap/</code> — networked basemap / CRS helpers</a><a class="headerlink" href="#basemap-networked-basemap-crs-helpers" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Old module</th>
+<th>New module</th>
+<th>Key symbols</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cleopatra.geo</code></td>
+<td><code>cleopatra.basemap.geo</code></td>
+<td><code>GeoMixin</code>, <code>Feature</code>, <code>Basemap</code></td>
+</tr>
+<tr>
+<td><code>cleopatra.tiles</code></td>
+<td><code>cleopatra.basemap.tiles</code></td>
+<td><code>add_tiles</code>, <code>Tile</code></td>
+</tr>
+<tr>
+<td><code>cleopatra.reference</code></td>
+<td><code>cleopatra.basemap.reference</code></td>
+<td><code>add_relief</code>, <code>add_features</code>, <code>natural_earth</code></td>
+</tr>
+<tr>
+<td><code>cleopatra.projection</code></td>
+<td><code>cleopatra.basemap.projection</code></td>
+<td><code>apply_projection_frame</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="unchanged-still-top-level"><a class="toclink" href="#unchanged-still-top-level">Unchanged (still top-level)</a><a class="headerlink" href="#unchanged-still-top-level" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Key symbols</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cleopatra.config</code></td>
+<td><code>Config</code>, <code>is_notebook</code></td>
+</tr>
+<tr>
+<td><code>cleopatra.templates</code></td>
+<td><code>publication_map</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="the-one-renamed-symbol"><a class="toclink" href="#the-one-renamed-symbol">The one renamed symbol</a><a class="headerlink" href="#the-one-renamed-symbol" title="Permanent link">#</a></h2>
+<p><code>StatisticalGlyph</code> only ever drew histograms (plus boxplots/strip plots), so it was renamed for clarity. Both the
+<strong>module</strong> and the <strong>class</strong> changed:</p>
+<table>
+<thead>
+<tr>
+<th>Old</th>
+<th>New</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>from cleopatra.statistical_glyph import StatisticalGlyph</code></td>
+<td><code>from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph</code></td>
+</tr>
+</tbody>
+</table>
+<p>Its constructor, <code>histogram()</code> / <code>boxplot()</code> / <code>multiboxplot()</code> / <code>stripes()</code> methods, and all arguments are
+unchanged — rename the import and the class references and you are done.</p>
+<h2 id="automated-migration"><a class="toclink" href="#automated-migration">Automated migration</a><a class="headerlink" href="#automated-migration" title="Permanent link">#</a></h2>
+<p>The change is a pure find-and-replace of module paths. Because some module names are prefixes/substrings of
+others (<code>colors</code> vs <code>colorbar</code>), replace on <strong>word boundaries</strong> and apply the longest keys first. This Python
+script rewrites a downstream tree in place:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># old flat module -&gt; new dotted path (relative to `cleopatra.`)</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">MODULE_MAP</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="s2">&quot;glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.base.glyph&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="s2">&quot;animation&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.base.animation&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="s2">&quot;hillshade&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.base.hillshade&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="s2">&quot;array_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.gridded.array_glyph&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="s2">&quot;mesh_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.gridded.mesh_glyph&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="s2">&quot;vector_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.gridded.vector_glyph&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="s2">&quot;scatter_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.primitives.scatter_glyph&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    <span class="s2">&quot;line_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.primitives.line_glyph&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    <span class="s2">&quot;polygon_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.primitives.polygon_glyph&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="s2">&quot;flow_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.primitives.flow_glyph&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="s2">&quot;kde_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.stats.kde_glyph&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    <span class="s2">&quot;statistical_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.stats.histogram_glyph&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>    <span class="s2">&quot;styles&quot;</span><span class="p">:</span> <span class="s2">&quot;styling.styles&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    <span class="s2">&quot;colors&quot;</span><span class="p">:</span> <span class="s2">&quot;styling.colors&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    <span class="s2">&quot;colorbar&quot;</span><span class="p">:</span> <span class="s2">&quot;styling.colorbar&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>    <span class="s2">&quot;palettes&quot;</span><span class="p">:</span> <span class="s2">&quot;styling.palettes&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>    <span class="s2">&quot;perceptual&quot;</span><span class="p">:</span> <span class="s2">&quot;styling.perceptual&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>    <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="s2">&quot;styling.data&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>    <span class="s2">&quot;geo&quot;</span><span class="p">:</span> <span class="s2">&quot;basemap.geo&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>    <span class="s2">&quot;tiles&quot;</span><span class="p">:</span> <span class="s2">&quot;basemap.tiles&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>    <span class="s2">&quot;reference&quot;</span><span class="p">:</span> <span class="s2">&quot;basemap.reference&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>    <span class="s2">&quot;projection&quot;</span><span class="p">:</span> <span class="s2">&quot;basemap.projection&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="p">}</span>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="c1"># longest-first so no key shadows another; word-boundary anchored both ends</span>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="n">ALT</span> <span class="o">=</span> <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">,</span> <span class="n">MODULE_MAP</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="nb">len</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="n">DOTTED</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bcleopatra\.(&quot;</span> <span class="o">+</span> <span class="n">ALT</span> <span class="o">+</span> <span class="sa">r</span><span class="s2">&quot;)\b&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>
+<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;your_package&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">rglob</span><span class="p">(</span><span class="s2">&quot;*.py&quot;</span><span class="p">):</span>
+<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>    <span class="n">text</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a>    <span class="n">new</span> <span class="o">=</span> <span class="n">DOTTED</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="s2">&quot;cleopatra.&quot;</span> <span class="o">+</span> <span class="n">MODULE_MAP</span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)],</span> <span class="n">text</span><span class="p">)</span>
+<a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>    <span class="n">new</span> <span class="o">=</span> <span class="n">new</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;StatisticalGlyph&quot;</span><span class="p">,</span> <span class="s2">&quot;HistogramGlyph&quot;</span><span class="p">)</span>  <span class="c1"># the one class rename</span>
+<a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>    <span class="k">if</span> <span class="n">new</span> <span class="o">!=</span> <span class="n">text</span><span class="p">:</span>
+<a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a>        <span class="n">f</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">new</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>Notes:</p>
+<ul>
+<li>Add <code>*.ipynb</code> to the glob if your notebooks import cleopatra.</li>
+<li>The script only rewrites the dotted <code>cleopatra.&lt;module&gt;</code> form. If you used
+  <code>from cleopatra import tiles, reference</code>, rewrite those by hand to
+  <code>from cleopatra.basemap import tiles, reference</code> (<code>__version__</code> stays <code>from cleopatra import __version__</code>).</li>
+<li>After running it, search for any leftover <code>cleopatra.statistical_glyph</code> or <code>StatisticalGlyph</code>.</li>
+</ul>
+<h2 id="packaging-note-no-code-change"><a class="toclink" href="#packaging-note-no-code-change">Packaging note (no code change)</a><a class="headerlink" href="#packaging-note-no-code-change" title="Permanent link">#</a></h2>
+<p><code>pillow</code> moved from the optional <code>cleopatra[tiles]</code> extra to a core dependency (the animation writer now imports
+it at module load). It was already installed transitively via matplotlib, so nothing changes for you — but if you
+were installing <code>cleopatra[tiles]</code> <em>only</em> to get Pillow, plain <code>cleopatra</code> now suffices.</p>
+<h2 id="what-did-not-change"><a class="toclink" href="#what-did-not-change">What did <strong>not</strong> change</a><a class="headerlink" href="#what-did-not-change" title="Permanent link">#</a></h2>
+<ul>
+<li>No function/method signatures, argument names, defaults, or return types changed.</li>
+<li>No rendering/behaviour changed (the restructure was verified to preserve every module's behaviour).</li>
+<li><code>cleopatra.config</code> and <code>cleopatra.templates</code> keep their paths.</li>
+<li>The package root (<code>import cleopatra</code>) still deliberately re-exports nothing — always import from a submodule.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -2247,10 +2684,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "/cleopatra/develop", "features": ["navigation.instant", "navigation.tracking", "navigation.expand", "navigation.indexes", "navigation.footer", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "content.code.copy", "content.action.edit", "content.action.view", "content.code.annotate", "content.tooltips", "search.highlight", "search.suggest", "toc.follow", "announce.dismiss"], "search": "/cleopatra/develop/assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.expand", "navigation.indexes", "navigation.footer", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "content.code.copy", "content.action.edit", "content.action.view", "content.code.annotate", "content.tooltips", "search.highlight", "search.suggest", "toc.follow", "announce.dismiss"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="/cleopatra/develop/assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>

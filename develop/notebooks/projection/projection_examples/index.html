@@ -755,14 +755,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/statistics-glyph/" class="md-nav__link">
+      <a href="../../../reference/histogram-glyph/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Statistical plots
+    HistogramGlyph
   
 
     
@@ -3061,9 +3061,9 @@ pick a professional ECMWF-style preset by GRIB shortName. This notebook covers:<
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.templates</span><span class="w"> </span><span class="kn">import</span> <span class="n">publication_map</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.colors</span><span class="w"> </span><span class="kn">import</span> <span class="n">style_for_parameter</span><span class="p">,</span> <span class="n">convert_units</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styling.colors</span><span class="w"> </span><span class="kn">import</span> <span class="n">style_for_parameter</span><span class="p">,</span> <span class="n">convert_units</span>
 
 <span class="n">DATA</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"../../../examples/data"</span><span class="p">)</span>
 <span class="n">t2m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">DATA</span> <span class="o">/</span> <span class="s2">"europe_t2m.npz"</span><span class="p">)</span>
@@ -3077,9 +3077,9 @@ pick a professional ECMWF-style preset by GRIB shortName. This notebook covers:<
 <div class="clipboard-copy-txt" id="cell-1">from pathlib import Path
 import numpy as np
 
-from cleopatra.array_glyph import ArrayGlyph
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 from cleopatra.templates import publication_map
-from cleopatra.colors import style_for_parameter, convert_units
+from cleopatra.styling.colors import style_for_parameter, convert_units
 
 DATA = Path("../../../examples/data")
 t2m = np.load(DATA / "europe_t2m.npz")
@@ -3414,7 +3414,7 @@ print("max |round-trip error| =", float(np.max(np.abs(back_to_celsius - temperat
 <li><code>convert_units</code> converts K/°C/°F on demand — cleopatra never mutates your data silently.</li>
 <li><code>publication_map</code> bundles style + title (+ optional relief) into one call.</li>
 </ul>
-<p>See the <a href="../scientific_colormaps/scientific_colormaps_examples.ipynb">scientific-colormaps notebook</a> for the
+<p>See the <a href="../presets/scientific_colormaps_examples.ipynb">scientific-colormaps notebook</a> for the
 colour side.</p>
 </div>
 </div>

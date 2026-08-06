@@ -761,14 +761,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/statistics-glyph/" class="md-nav__link">
+      <a href="../../../reference/histogram-glyph/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Statistical plots
+    HistogramGlyph
   
 
     
@@ -3228,7 +3228,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="meshglyph-unstructured-mesh-visualization">MeshGlyph — Unstructured Mesh Visualization<a class="anchor-link" href="#meshglyph-unstructured-mesh-visualization">¶</a></h1><p>This notebook demonstrates <code>cleopatra.mesh_glyph.MeshGlyph</code>, a class for visualizing
+<h1 id="meshglyph-unstructured-mesh-visualization">MeshGlyph — Unstructured Mesh Visualization<a class="anchor-link" href="#meshglyph-unstructured-mesh-visualization">¶</a></h1><p>This notebook demonstrates <code>cleopatra.glyphs.gridded.mesh_glyph.MeshGlyph</code>, a class for visualizing
 UGRID-style unstructured mesh data using matplotlib.</p>
 <p><strong>Features covered:</strong></p>
 <ol>
@@ -3265,13 +3265,13 @@ UGRID-style unstructured mesh data using matplotlib.</p>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.tri</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mtri</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.mesh_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">MeshGlyph</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.mesh_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">MeshGlyph</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-1">import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 import numpy as np
 
-from cleopatra.mesh_glyph import MeshGlyph</div>
+from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph</div>
 </div>
 </div>
 </div>
@@ -3839,7 +3839,7 @@ plt.show()</div>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>/tmp/ipykernel_2806/3050513185.py:31: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
+<pre>/tmp/ipykernel_3032/3050513185.py:31: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
   plt.tight_layout()
 </pre>
 </div>
@@ -4057,7 +4057,7 @@ plt.show()</div>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>/tmp/ipykernel_2806/3167997537.py:30: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
+<pre>/tmp/ipykernel_3032/3167997537.py:30: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
   plt.tight_layout()
 </pre>
 </div>
@@ -4252,7 +4252,7 @@ plt.show()</div>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>/tmp/ipykernel_2806/959532724.py:21: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
+<pre>/tmp/ipykernel_3032/959532724.py:21: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
   plt.tight_layout()
 </pre>
 </div>
@@ -4365,7 +4365,7 @@ plt.show()</div>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>/tmp/ipykernel_2806/1896367310.py:27: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
+<pre>/tmp/ipykernel_3032/1896367310.py:27: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
   plt.tight_layout()
 </pre>
 </div>

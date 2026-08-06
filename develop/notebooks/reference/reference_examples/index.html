@@ -761,14 +761,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/statistics-glyph/" class="md-nav__link">
+      <a href="../../../reference/histogram-glyph/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Statistical plots
+    HistogramGlyph
   
 
     
@@ -3184,9 +3184,9 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="reference-basemaps-coastlines-borders-relief">Reference basemaps — coastlines, borders &amp; relief<a class="anchor-link" href="#reference-basemaps-coastlines-borders-relief">¶</a></h1><p><code>cleopatra.reference</code> draws fixed <strong>public</strong> cartographic reference data <em>under</em> your own
+<h1 id="reference-basemaps-coastlines-borders-relief">Reference basemaps — coastlines, borders &amp; relief<a class="anchor-link" href="#reference-basemaps-coastlines-borders-relief">¶</a></h1><p><code>cleopatra.basemap.reference</code> draws fixed <strong>public</strong> cartographic reference data <em>under</em> your own
 plot — the <code>cartopy</code> <code>ax.coastlines()</code> / <code>GeoAxes.stock_img()</code> niche, and the vector/raster
-sibling of <code>cleopatra.tiles</code>.</p>
+sibling of <code>cleopatra.basemap.tiles</code>.</p>
 <ul>
 <li><strong><code>add_features</code></strong> — a Natural Earth vector layer: <code>coastline</code>, <code>borders</code>, <code>land</code>, <code>ocean</code>,
 <code>rivers</code>, <code>lakes</code> (across <code>110m</code> / <code>50m</code> / <code>10m</code>).</li>
@@ -3232,7 +3232,7 @@ and use the optional <code>[tiles]</code> extra; their saved outputs are shown i
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.reference</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.basemap.reference</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">add_features</span><span class="p">,</span>
     <span class="n">add_relief</span><span class="p">,</span>
     <span class="n">available_layers</span><span class="p">,</span>
@@ -3248,7 +3248,7 @@ and use the optional <code>[tiles]</code> extra; their saved outputs are shown i
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-1">import matplotlib.pyplot as plt
 
-from cleopatra.reference import (
+from cleopatra.basemap.reference import (
     add_features,
     add_relief,
     available_layers,
@@ -3288,7 +3288,7 @@ relief resolutions: ['low', 'medium']
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="calling-from-a-glyph-geomixin">Calling from a glyph (<code>GeoMixin</code>)<a class="anchor-link" href="#calling-from-a-glyph-geomixin">¶</a></h2><p>Geographic glyphs inherit <code>cleopatra.geo.GeoMixin</code>, so <code>add_tiles</code>, <code>add_features</code>, and
+<h2 id="calling-from-a-glyph-geomixin">Calling from a glyph (<code>GeoMixin</code>)<a class="anchor-link" href="#calling-from-a-glyph-geomixin">¶</a></h2><p>Geographic glyphs inherit <code>cleopatra.basemap.geo.GeoMixin</code>, so <code>add_tiles</code>, <code>add_features</code>, and
 <code>add_relief</code> are available as methods — no separate import, and they draw on the glyph's own
 axes. Plot the glyph first, then add the basemap. The standalone functions used in the rest
 of this notebook are equivalent and also work on a plain axes.</p>
@@ -3323,7 +3323,7 @@ of this notebook are equivalent and also work on a plain axes.</p>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.scatter_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScatterGlyph</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.primitives.scatter_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScatterGlyph</span>
 
 <span class="c1"># A few cities as (lon, lat) points.</span>
 <span class="n">lon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">74.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">2.35</span><span class="p">,</span> <span class="mf">13.4</span><span class="p">,</span> <span class="mf">37.6</span><span class="p">,</span> <span class="mf">139.7</span><span class="p">,</span> <span class="mf">151.2</span><span class="p">])</span>
@@ -3338,7 +3338,7 @@ of this notebook are equivalent and also work on a plain axes.</p>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-2">import numpy as np
 
-from cleopatra.scatter_glyph import ScatterGlyph
+from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
 
 # A few cities as (lon, lat) points.
 lon = np.array([-74.0, -0.1, 2.35, 13.4, 37.6, 139.7, 151.2])

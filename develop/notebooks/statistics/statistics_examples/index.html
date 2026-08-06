@@ -761,14 +761,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/statistics-glyph/" class="md-nav__link">
+      <a href="../../../reference/histogram-glyph/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Statistical plots
+    HistogramGlyph
   
 
     
@@ -3569,14 +3569,14 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.statistical_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">StatisticalGlyph</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.stats.histogram_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">HistogramGlyph</span>
 
 <span class="c1"># Set the random seed for reproducibility</span>
 <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-1">import numpy as np
 
-from cleopatra.statistical_glyph import StatisticalGlyph
+from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph
 
 # Set the random seed for reproducibility
 np.random.seed(1)</div>
@@ -3667,9 +3667,9 @@ np.random.seed(1)</div>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">stat_plot_1d</span> <span class="o">=</span> <span class="n">StatisticalGlyph</span><span class="p">(</span><span class="n">data_1d</span><span class="p">)</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">stat_plot_1d</span> <span class="o">=</span> <span class="n">HistogramGlyph</span><span class="p">(</span><span class="n">data_1d</span><span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-3">stat_plot_1d = StatisticalGlyph(data_1d)</div>
+<div class="clipboard-copy-txt" id="cell-3">stat_plot_1d = HistogramGlyph(data_1d)</div>
 </div>
 </div>
 </div>
@@ -3787,9 +3787,9 @@ Bin edges: [0.34774335 0.8440597  1.34037605 1.8366924  2.33300874]... (showing 
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">stat_plot_1d_custom</span> <span class="o">=</span> <span class="n">StatisticalGlyph</span><span class="p">(</span><span class="n">data_1d</span><span class="p">)</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">stat_plot_1d_custom</span> <span class="o">=</span> <span class="n">HistogramGlyph</span><span class="p">(</span><span class="n">data_1d</span><span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-5">stat_plot_1d_custom = StatisticalGlyph(data_1d)</div>
+<div class="clipboard-copy-txt" id="cell-5">stat_plot_1d_custom = HistogramGlyph(data_1d)</div>
 </div>
 </div>
 </div>
@@ -3953,9 +3953,9 @@ data_2d[:, 2] = 7 + np.random.normal(0, 0.8, 200)  # Mean of 7, std of 0.8</div>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">stat_plot_2d</span> <span class="o">=</span> <span class="n">StatisticalGlyph</span><span class="p">(</span><span class="n">data_2d</span><span class="p">)</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">stat_plot_2d</span> <span class="o">=</span> <span class="n">HistogramGlyph</span><span class="p">(</span><span class="n">data_2d</span><span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-8">stat_plot_2d = StatisticalGlyph(data_2d)</div>
+<div class="clipboard-copy-txt" id="cell-8">stat_plot_2d = HistogramGlyph(data_2d)</div>
 </div>
 </div>
 </div>
@@ -4059,14 +4059,14 @@ data_2d[:, 2] = 7 + np.random.normal(0, 0.8, 200)  # Mean of 7, std of 0.8</div>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">stat_plot_2d_custom</span> <span class="o">=</span> <span class="n">StatisticalGlyph</span><span class="p">(</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">stat_plot_2d_custom</span> <span class="o">=</span> <span class="n">HistogramGlyph</span><span class="p">(</span>
     <span class="n">data_2d</span><span class="p">,</span>
     <span class="n">color</span><span class="o">=</span><span class="p">[</span><span class="s2">"#FF5733"</span><span class="p">,</span> <span class="s2">"#33FF57"</span><span class="p">,</span> <span class="s2">"#3357FF"</span><span class="p">],</span>  <span class="c1"># Custom colors</span>
     <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>  <span class="c1"># Set transparency</span>
     <span class="n">rwidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>  <span class="c1"># Set bin width</span>
 <span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-10">stat_plot_2d_custom = StatisticalGlyph(
+<div class="clipboard-copy-txt" id="cell-10">stat_plot_2d_custom = HistogramGlyph(
     data_2d,
     color=["#FF5733", "#33FF57", "#3357FF"],  # Custom colors
     alpha=0.5,  # Set transparency
@@ -4345,14 +4345,14 @@ data_distributions = np.zeros((n_samples, 3))</div>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">stat_plot_distributions</span> <span class="o">=</span> <span class="n">StatisticalGlyph</span><span class="p">(</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">stat_plot_distributions</span> <span class="o">=</span> <span class="n">HistogramGlyph</span><span class="p">(</span>
     <span class="n">data_distributions</span><span class="p">,</span>
     <span class="n">color</span><span class="o">=</span><span class="p">[</span><span class="s2">"#3498DB"</span><span class="p">,</span> <span class="s2">"#E74C3C"</span><span class="p">,</span> <span class="s2">"#2ECC71"</span><span class="p">],</span>  <span class="c1"># Blue, Red, Green</span>
     <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span>
     <span class="n">rwidth</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-16">stat_plot_distributions = StatisticalGlyph(
+<div class="clipboard-copy-txt" id="cell-16">stat_plot_distributions = HistogramGlyph(
     data_distributions,
     color=["#3498DB", "#E74C3C", "#2ECC71"],  # Blue, Red, Green
     alpha=0.6,
@@ -4417,7 +4417,7 @@ ax_dist.legend(["Normal", "Exponential", "Uniform"])</div>
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
 <div class="jp-OutputPrompt jp-OutputArea-prompt">Out[17]:</div>
 <div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
-<pre>&lt;matplotlib.legend.Legend at 0x7f79dd68a9c0&gt;</pre>
+<pre>&lt;matplotlib.legend.Legend at 0x7ff43862b2c0&gt;</pre>
 </div>
 </div>
 <div class="jp-OutputArea-child">
@@ -4465,7 +4465,7 @@ ax_dist.legend(["Normal", "Exponential", "Uniform"])</div>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="k">try</span><span class="p">:</span>
     <span class="c1"># Create a Statistic object with 2D data but only 2 colors for 3 columns</span>
-    <span class="n">stat_plot_error</span> <span class="o">=</span> <span class="n">StatisticalGlyph</span><span class="p">(</span><span class="n">data_2d</span><span class="p">)</span>
+    <span class="n">stat_plot_error</span> <span class="o">=</span> <span class="n">HistogramGlyph</span><span class="p">(</span><span class="n">data_2d</span><span class="p">)</span>
 
     <span class="c1"># This should raise an error because we're providing only 2 colors for 3 columns</span>
     <span class="n">fig_error</span><span class="p">,</span> <span class="n">ax_error</span><span class="p">,</span> <span class="n">hist_error</span> <span class="o">=</span> <span class="n">stat_plot_error</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="p">[</span><span class="s2">"red"</span><span class="p">,</span> <span class="s2">"green"</span><span class="p">])</span>
@@ -4474,7 +4474,7 @@ ax_dist.legend(["Normal", "Exponential", "Uniform"])</div>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-18">try:
     # Create a Statistic object with 2D data but only 2 colors for 3 columns
-    stat_plot_error = StatisticalGlyph(data_2d)
+    stat_plot_error = HistogramGlyph(data_2d)
 
     # This should raise an error because we're providing only 2 colors for 3 columns
     fig_error, ax_error, hist_error = stat_plot_error.histogram(color=["red", "green"])

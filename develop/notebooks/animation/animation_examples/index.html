@@ -761,14 +761,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/statistics-glyph/" class="md-nav__link">
+      <a href="../../../reference/histogram-glyph/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Statistical plots
+    HistogramGlyph
   
 
     
@@ -3263,7 +3263,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h1 id="saving-and-embedding-animations-with-save_animation">Saving and embedding animations with <code>save_animation</code><a class="anchor-link" href="#saving-and-embedding-animations-with-save_animation">¶</a></h1><p>Cleopatra turns any in-memory NumPy time-series into a matplotlib animation, and the helpers in
-<a href="../../reference/animation.md"><code>cleopatra.animation</code></a> write or embed that animation with real control over
+<a href="../../reference/animation.md"><code>cleopatra.glyphs.base.animation</code></a> write or embed that animation with real control over
 <strong>format, quality, and size</strong>.</p>
 <p>This notebook teaches the animation-export surface refreshed in issue #185. By the end you can:</p>
 <ul>
@@ -3286,7 +3286,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="setup">Setup<a class="anchor-link" href="#setup">¶</a></h2><p>Import the pieces we need and define a couple of tiny helpers. <code>save_animation</code> and the <code>to_*</code> helpers all
-live in <code>cleopatra.animation</code>; <code>ArrayGlyph</code> builds the animation from an array stack.</p>
+live in <code>cleopatra.glyphs.base.animation</code>; <code>ArrayGlyph</code> builds the animation from an array stack.</p>
 </div>
 </div>
 </div>
@@ -3318,7 +3318,7 @@ live in <code>cleopatra.animation</code>; <code>ArrayGlyph</code> builds the ani
 <span class="kn">from</span><span class="w"> </span><span class="nn">IPython.display</span><span class="w"> </span><span class="kn">import</span> <span class="n">HTML</span><span class="p">,</span> <span class="n">Image</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.animation</span><span class="w"> </span><span class="kn">import</span> <span class="n">FuncAnimation</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.animation</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.base.animation</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">SUPPORTED_VIDEO_FORMAT</span><span class="p">,</span>
     <span class="n">embed_gif</span><span class="p">,</span>
     <span class="n">save_animation</span><span class="p">,</span>
@@ -3326,7 +3326,7 @@ live in <code>cleopatra.animation</code>; <code>ArrayGlyph</code> builds the ani
     <span class="n">to_gif</span><span class="p">,</span>
     <span class="n">to_mp4</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-1">import base64
 import tempfile
@@ -3337,7 +3337,7 @@ import numpy as np
 from IPython.display import HTML, Image
 from matplotlib.animation import FuncAnimation
 
-from cleopatra.animation import (
+from cleopatra.glyphs.base.animation import (
     SUPPORTED_VIDEO_FORMAT,
     embed_gif,
     save_animation,
@@ -3345,7 +3345,7 @@ from cleopatra.animation import (
     to_gif,
     to_mp4,
 )
-from cleopatra.array_glyph import ArrayGlyph</div>
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph</div>
 </div>
 </div>
 </div>
@@ -3718,36 +3718,36 @@ input[type=range].anim-slider {
 }
 </style>
 <div class="animation">
-<img alt="No description has been provided for this image" id="_anim_imgf24424b813f54f0590c7508699d666cb"/>
+<img alt="No description has been provided for this image" id="_anim_img6f0e0729e8424512a7eb31963a583c86"/>
 <div class="anim-controls">
-<input class="anim-slider" id="_anim_sliderf24424b813f54f0590c7508699d666cb" max="1" min="0" name="points" oninput="animf24424b813f54f0590c7508699d666cb.set_frame(parseInt(this.value));" step="1" type="range" value="0"/>
+<input class="anim-slider" id="_anim_slider6f0e0729e8424512a7eb31963a583c86" max="1" min="0" name="points" oninput="anim6f0e0729e8424512a7eb31963a583c86.set_frame(parseInt(this.value));" step="1" type="range" value="0"/>
 <div class="anim-buttons">
-<button aria-label="Decrease speed" onclick="animf24424b813f54f0590c7508699d666cb.slower()" title="Decrease speed">
+<button aria-label="Decrease speed" onclick="anim6f0e0729e8424512a7eb31963a583c86.slower()" title="Decrease speed">
 <i class="fa fa-minus"></i></button>
-<button aria-label="First frame" onclick="animf24424b813f54f0590c7508699d666cb.first_frame()" title="First frame">
+<button aria-label="First frame" onclick="anim6f0e0729e8424512a7eb31963a583c86.first_frame()" title="First frame">
 <i class="fa fa-fast-backward"></i></button>
-<button aria-label="Previous frame" onclick="animf24424b813f54f0590c7508699d666cb.previous_frame()" title="Previous frame">
+<button aria-label="Previous frame" onclick="anim6f0e0729e8424512a7eb31963a583c86.previous_frame()" title="Previous frame">
 <i class="fa fa-step-backward"></i></button>
-<button aria-label="Play backwards" onclick="animf24424b813f54f0590c7508699d666cb.reverse_animation()" title="Play backwards">
+<button aria-label="Play backwards" onclick="anim6f0e0729e8424512a7eb31963a583c86.reverse_animation()" title="Play backwards">
 <i class="fa fa-play fa-flip-horizontal"></i></button>
-<button aria-label="Pause" onclick="animf24424b813f54f0590c7508699d666cb.pause_animation()" title="Pause">
+<button aria-label="Pause" onclick="anim6f0e0729e8424512a7eb31963a583c86.pause_animation()" title="Pause">
 <i class="fa fa-pause"></i></button>
-<button aria-label="Play" onclick="animf24424b813f54f0590c7508699d666cb.play_animation()" title="Play">
+<button aria-label="Play" onclick="anim6f0e0729e8424512a7eb31963a583c86.play_animation()" title="Play">
 <i class="fa fa-play"></i></button>
-<button aria-label="Next frame" onclick="animf24424b813f54f0590c7508699d666cb.next_frame()" title="Next frame">
+<button aria-label="Next frame" onclick="anim6f0e0729e8424512a7eb31963a583c86.next_frame()" title="Next frame">
 <i class="fa fa-step-forward"></i></button>
-<button aria-label="Last frame" onclick="animf24424b813f54f0590c7508699d666cb.last_frame()" title="Last frame">
+<button aria-label="Last frame" onclick="anim6f0e0729e8424512a7eb31963a583c86.last_frame()" title="Last frame">
 <i class="fa fa-fast-forward"></i></button>
-<button aria-label="Increase speed" onclick="animf24424b813f54f0590c7508699d666cb.faster()" title="Increase speed">
+<button aria-label="Increase speed" onclick="anim6f0e0729e8424512a7eb31963a583c86.faster()" title="Increase speed">
 <i class="fa fa-plus"></i></button>
 </div>
-<form action="#n" aria-label="Repetition mode" class="anim-state" name="_anim_loop_selectf24424b813f54f0590c7508699d666cb" title="Repetition mode">
-<input id="_anim_radio1_f24424b813f54f0590c7508699d666cb" name="state" type="radio" value="once"/>
-<label for="_anim_radio1_f24424b813f54f0590c7508699d666cb">Once</label>
-<input checked="" id="_anim_radio2_f24424b813f54f0590c7508699d666cb" name="state" type="radio" value="loop"/>
-<label for="_anim_radio2_f24424b813f54f0590c7508699d666cb">Loop</label>
-<input id="_anim_radio3_f24424b813f54f0590c7508699d666cb" name="state" type="radio" value="reflect"/>
-<label for="_anim_radio3_f24424b813f54f0590c7508699d666cb">Reflect</label>
+<form action="#n" aria-label="Repetition mode" class="anim-state" name="_anim_loop_select6f0e0729e8424512a7eb31963a583c86" title="Repetition mode">
+<input id="_anim_radio1_6f0e0729e8424512a7eb31963a583c86" name="state" type="radio" value="once"/>
+<label for="_anim_radio1_6f0e0729e8424512a7eb31963a583c86">Once</label>
+<input checked="" id="_anim_radio2_6f0e0729e8424512a7eb31963a583c86" name="state" type="radio" value="loop"/>
+<label for="_anim_radio2_6f0e0729e8424512a7eb31963a583c86">Loop</label>
+<input id="_anim_radio3_6f0e0729e8424512a7eb31963a583c86" name="state" type="radio" value="reflect"/>
+<label for="_anim_radio3_6f0e0729e8424512a7eb31963a583c86">Reflect</label>
 </form>
 </div>
 </div>
@@ -3755,9 +3755,9 @@ input[type=range].anim-slider {
   /* Instantiate the Animation class. */
   /* The IDs given should match those used in the template above. */
   (function() {
-    var img_id = "_anim_imgf24424b813f54f0590c7508699d666cb";
-    var slider_id = "_anim_sliderf24424b813f54f0590c7508699d666cb";
-    var loop_select_id = "_anim_loop_selectf24424b813f54f0590c7508699d666cb";
+    var img_id = "_anim_img6f0e0729e8424512a7eb31963a583c86";
+    var slider_id = "_anim_slider6f0e0729e8424512a7eb31963a583c86";
+    var loop_select_id = "_anim_loop_select6f0e0729e8424512a7eb31963a583c86";
     var frames = new Array(12);
     
   frames[0] = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZAAAAGQCAYAAACAvzbMAAAAOnRFWHRTb2Z0d2FyZQBNYXRwbG90\
@@ -7713,7 +7713,7 @@ bGEAISIiW/4/sulBUdFPO4kAAAAASUVORK5CYII=\
     /* set a timeout to make sure all the above elements are created before
        the object is initialized. */
     setTimeout(function() {
-        animf24424b813f54f0590c7508699d666cb = new Animation(frames, img_id, slider_id, 149.0,
+        anim6f0e0729e8424512a7eb31963a583c86 = new Animation(frames, img_id, slider_id, 149.0,
                                  loop_select_id);
     }, 0);
   })()
@@ -7777,7 +7777,7 @@ Image(gif_path)</div>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>wrote /tmp/cleopatra_anim_yh_zy5nq/blob.gif -&gt; 318.0 KiB
+<pre>wrote /tmp/cleopatra_anim_zyl42cov/blob.gif -&gt; 318.0 KiB
 </pre>
 </div>
 </div>
@@ -8460,7 +8460,7 @@ showing an animation inline in a notebook:</p>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="the-same-controls-from-a-glyph">The same controls from a glyph<a class="anchor-link" href="#the-same-controls-from-a-glyph">¶</a></h2><p><code>ArrayGlyph.save_animation</code> (inherited by every glyph) forwards these keyword arguments to
-<code>cleopatra.animation.save_animation</code>, so you get the full quality surface without reaching for the free
+<code>cleopatra.glyphs.base.animation.save_animation</code>, so you get the full quality surface without reaching for the free
 function.</p>
 </div>
 </div>
@@ -8550,7 +8550,7 @@ print('ArrayGlyph.save_animation(crf=32, preset="veryfast") -&gt;', kib(glyph_ou
 <li>WebP is a much smaller alternative to GIF for embeds; GIFs are optimised and loop-controllable.</li>
 <li><code>to_gif</code> / <code>to_mp4</code> / <code>to_bytes</code> / <code>embed_gif</code> give you the animation in memory or inline.</li>
 </ul>
-<p>See the <a href="../../reference/animation.md"><code>cleopatra.animation</code> API reference</a> for the full signature.</p>
+<p>See the <a href="../../reference/animation.md"><code>cleopatra.glyphs.base.animation</code> API reference</a> for the full signature.</p>
 </div>
 </div>
 </div>

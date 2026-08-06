@@ -888,14 +888,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/statistics-glyph/" class="md-nav__link">
+      <a href="../../reference/histogram-glyph/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Statistical plots
+    HistogramGlyph
   
 
     
@@ -2468,7 +2468,7 @@ colour / scale pipeline, including the geoplot-upstream additions
 <hr />
 <h2 id="1-class-hierarchy"><a class="toclink" href="#1-class-hierarchy">1. Class hierarchy</a><a class="headerlink" href="#1-class-hierarchy" title="Permanent link">#</a></h2>
 <p><code>ArrayGlyph</code>, <code>MeshGlyph</code>, <code>ScatterGlyph</code>, <code>PolygonGlyph</code>, <code>VectorGlyph</code>,
-<code>FlowGlyph</code>, <code>LineGlyph</code>, and <code>KDEGlyph</code> subclass <code>Glyph</code>. <code>StatisticalGlyph</code> is
+<code>FlowGlyph</code>, <code>LineGlyph</code>, and <code>KDEGlyph</code> subclass <code>Glyph</code>. <code>HistogramGlyph</code> is
 independent. The six geographic glyphs (<code>ArrayGlyph</code>, <code>MeshGlyph</code>, <code>ScatterGlyph</code>,
 <code>VectorGlyph</code>, <code>FlowGlyph</code>, <code>PolygonGlyph</code>) also mix in <code>GeoMixin</code> for basemap
 methods — omitted here to keep the colour-pipeline focus.</p>
@@ -2548,7 +2548,7 @@ methods — omitted here to keep the colour-pipeline focus.</p>
         +bar()
         +fill_between()
     }
-    class StatisticalGlyph {
+    class HistogramGlyph {
         +plot()
     }
 
@@ -2561,7 +2561,7 @@ methods — omitted here to keep the colour-pipeline focus.</p>
     Glyph &lt;|-- KDEGlyph
     Glyph &lt;|-- LineGlyph
 
-    note for StatisticalGlyph "Stands alone — 1-D/2-D histograms,\ndoes not subclass Glyph"
+    note for HistogramGlyph "Stands alone — 1-D/2-D histograms,\ndoes not subclass Glyph"
     note for LineGlyph "line/bar/band — no colour-by-value path\n(not in the scalar-mapping pipeline)"
 
     style Glyph fill:#cfe2ff,stroke:#3D59AB,color:#000
@@ -2573,7 +2573,7 @@ methods — omitted here to keep the colour-pipeline focus.</p>
     style FlowGlyph fill:#d1e7dd,stroke:#0f5132,color:#000
     style KDEGlyph fill:#d1e7dd,stroke:#0f5132,color:#000
     style LineGlyph fill:#d1e7dd,stroke:#0f5132,color:#000
-    style StatisticalGlyph fill:#e2e3e5,stroke:#41464b,color:#000</code></pre>
+    style HistogramGlyph fill:#e2e3e5,stroke:#41464b,color:#000</code></pre>
 <hr />
 <h2 id="2-shared-colour-scale-pipeline"><a class="toclink" href="#2-shared-colour-scale-pipeline">2. Shared colour / scale pipeline</a><a class="headerlink" href="#2-shared-colour-scale-pipeline" title="Permanent link">#</a></h2>
 <p>Every colour-by-value glyph that routes through <code>_prepare_scalar_mapping</code>

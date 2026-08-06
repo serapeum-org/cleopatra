@@ -761,14 +761,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/statistics-glyph/" class="md-nav__link">
+      <a href="../../../reference/histogram-glyph/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Statistical plots
+    HistogramGlyph
   
 
     
@@ -3084,8 +3084,8 @@ not stand-in data).</p>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">cleopatra</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.colors</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_single_layer_style</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styling.colors</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_single_layer_style</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"cleopatra"</span><span class="p">,</span> <span class="n">cleopatra</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
 
 <span class="n">DATA</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"../../../examples/data"</span><span class="p">)</span>
@@ -3101,8 +3101,8 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from pathlib import Path
 import cleopatra
-from cleopatra.array_glyph import ArrayGlyph
-from cleopatra.colors import resolve_single_layer_style
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+from cleopatra.styling.colors import resolve_single_layer_style
 print("cleopatra", cleopatra.__version__)
 
 DATA = Path("../../../examples/data")

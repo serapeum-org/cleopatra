@@ -764,14 +764,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../statistics-glyph/" class="md-nav__link">
+      <a href="../histogram-glyph/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Statistical plots
+    HistogramGlyph
   
 
     
@@ -948,7 +948,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#cleopatra.vector_glyph.VectorGlyph" class="md-nav__link">
+  <a href="#cleopatra.glyphs.gridded.vector_glyph.VectorGlyph" class="md-nav__link">
     <span class="md-ellipsis">
       
         VectorGlyph
@@ -960,7 +960,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#cleopatra.vector_glyph.VectorGlyph.magnitude" class="md-nav__link">
+  <a href="#cleopatra.glyphs.gridded.vector_glyph.VectorGlyph.magnitude" class="md-nav__link">
     <span class="md-ellipsis">
       
         magnitude
@@ -971,7 +971,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#cleopatra.vector_glyph.VectorGlyph.add_key" class="md-nav__link">
+  <a href="#cleopatra.glyphs.gridded.vector_glyph.VectorGlyph.add_key" class="md-nav__link">
     <span class="md-ellipsis">
       
         add_key
@@ -982,7 +982,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#cleopatra.vector_glyph.VectorGlyph.plot" class="md-nav__link">
+  <a href="#cleopatra.glyphs.gridded.vector_glyph.VectorGlyph.plot" class="md-nav__link">
     <span class="md-ellipsis">
       
         plot
@@ -2375,7 +2375,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#cleopatra.vector_glyph.VectorGlyph" class="md-nav__link">
+  <a href="#cleopatra.glyphs.gridded.vector_glyph.VectorGlyph" class="md-nav__link">
     <span class="md-ellipsis">
       
         VectorGlyph
@@ -2387,7 +2387,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#cleopatra.vector_glyph.VectorGlyph.magnitude" class="md-nav__link">
+  <a href="#cleopatra.glyphs.gridded.vector_glyph.VectorGlyph.magnitude" class="md-nav__link">
     <span class="md-ellipsis">
       
         magnitude
@@ -2398,7 +2398,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#cleopatra.vector_glyph.VectorGlyph.add_key" class="md-nav__link">
+  <a href="#cleopatra.glyphs.gridded.vector_glyph.VectorGlyph.add_key" class="md-nav__link">
     <span class="md-ellipsis">
       
         add_key
@@ -2409,7 +2409,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#cleopatra.vector_glyph.VectorGlyph.plot" class="md-nav__link">
+  <a href="#cleopatra.glyphs.gridded.vector_glyph.VectorGlyph.plot" class="md-nav__link">
     <span class="md-ellipsis">
       
         plot
@@ -2525,16 +2525,16 @@ colorbar.</p>
 
 
 
-<h3 id="cleopatra.vector_glyph.VectorGlyph" class="doc doc-heading"><a href="#cleopatra.vector_glyph.VectorGlyph" class="toclink">
-            <code>cleopatra.vector_glyph.VectorGlyph</code>
+<h3 id="cleopatra.glyphs.gridded.vector_glyph.VectorGlyph" class="doc doc-heading"><a href="#cleopatra.glyphs.gridded.vector_glyph.VectorGlyph" class="toclink">
+            <code>cleopatra.glyphs.gridded.vector_glyph.VectorGlyph</code>
 
 
-</a><a href="#cleopatra.vector_glyph.VectorGlyph" class="headerlink" title="Permanent link">#</a></h3>
+</a><a href="#cleopatra.glyphs.gridded.vector_glyph.VectorGlyph" class="headerlink" title="Permanent link">#</a></h3>
 
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-internal" title="&lt;code&gt;GeoMixin&lt;/code&gt; (&lt;code&gt;cleopatra.geo.GeoMixin&lt;/code&gt;)" href="../geo/#cleopatra.geo.GeoMixin">GeoMixin</a></code>, <code><a class="autorefs autorefs-internal" title="&lt;code&gt;cleopatra.glyph.Glyph&lt;/code&gt;" href="../glyph/#cleopatra.glyph.Glyph">Glyph</a></code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="&lt;code&gt;GeoMixin&lt;/code&gt; (&lt;code&gt;cleopatra.basemap.geo.GeoMixin&lt;/code&gt;)" href="../geo/#cleopatra.basemap.geo.GeoMixin">GeoMixin</a></code>, <code><a class="autorefs autorefs-internal" title="&lt;code&gt;cleopatra.glyphs.base.glyph.Glyph&lt;/code&gt;" href="../glyph/#cleopatra.glyphs.base.glyph.Glyph">Glyph</a></code></p>
 
 
 
@@ -2679,7 +2679,7 @@ host owns a single aggregated colorbar.</p>
     <ul>
 <li>Build a field and inspect the stored magnitude:
     <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.vector_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorGlyph</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.vector_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorGlyph</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">3.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">]])</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">4.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">]])</span>
@@ -2692,7 +2692,7 @@ host owns a single aggregated colorbar.</p>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p>cleopatra.glyph.Glyph._prepare_scalar_mapping: Shared
+  <p>cleopatra.glyphs.base.glyph.Glyph._prepare_scalar_mapping: Shared
     norm/colorbar/ticks pipeline used to colour by magnitude.</p>
 </details>
 
@@ -2703,7 +2703,7 @@ host owns a single aggregated colorbar.</p>
 
 
               <details class="mkdocstrings-source">
-                <summary>Source code in <code>src/cleopatra/vector_glyph.py</code></summary>
+                <summary>Source code in <code>src/cleopatra/glyphs/gridded/vector_glyph.py</code></summary>
                 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-68"> 68</a></span>
 <span class="normal"><a href="#__codelineno-0-69"> 69</a></span>
 <span class="normal"><a href="#__codelineno-0-70"> 70</a></span>
@@ -2983,31 +2983,7 @@ host owns a single aggregated colorbar.</p>
 <span class="normal"><a href="#__codelineno-0-344">344</a></span>
 <span class="normal"><a href="#__codelineno-0-345">345</a></span>
 <span class="normal"><a href="#__codelineno-0-346">346</a></span>
-<span class="normal"><a href="#__codelineno-0-347">347</a></span>
-<span class="normal"><a href="#__codelineno-0-348">348</a></span>
-<span class="normal"><a href="#__codelineno-0-349">349</a></span>
-<span class="normal"><a href="#__codelineno-0-350">350</a></span>
-<span class="normal"><a href="#__codelineno-0-351">351</a></span>
-<span class="normal"><a href="#__codelineno-0-352">352</a></span>
-<span class="normal"><a href="#__codelineno-0-353">353</a></span>
-<span class="normal"><a href="#__codelineno-0-354">354</a></span>
-<span class="normal"><a href="#__codelineno-0-355">355</a></span>
-<span class="normal"><a href="#__codelineno-0-356">356</a></span>
-<span class="normal"><a href="#__codelineno-0-357">357</a></span>
-<span class="normal"><a href="#__codelineno-0-358">358</a></span>
-<span class="normal"><a href="#__codelineno-0-359">359</a></span>
-<span class="normal"><a href="#__codelineno-0-360">360</a></span>
-<span class="normal"><a href="#__codelineno-0-361">361</a></span>
-<span class="normal"><a href="#__codelineno-0-362">362</a></span>
-<span class="normal"><a href="#__codelineno-0-363">363</a></span>
-<span class="normal"><a href="#__codelineno-0-364">364</a></span>
-<span class="normal"><a href="#__codelineno-0-365">365</a></span>
-<span class="normal"><a href="#__codelineno-0-366">366</a></span>
-<span class="normal"><a href="#__codelineno-0-367">367</a></span>
-<span class="normal"><a href="#__codelineno-0-368">368</a></span>
-<span class="normal"><a href="#__codelineno-0-369">369</a></span>
-<span class="normal"><a href="#__codelineno-0-370">370</a></span>
-<span class="normal"><a href="#__codelineno-0-371">371</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-68" name="__codelineno-0-68"></a><span class="k">class</span><span class="w"> </span><span class="nc">VectorGlyph</span><span class="p">(</span><span class="n">GeoMixin</span><span class="p">,</span> <span class="n">Glyph</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-347">347</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-68" name="__codelineno-0-68"></a><span class="k">class</span><span class="w"> </span><span class="nc">VectorGlyph</span><span class="p">(</span><span class="n">GeoMixin</span><span class="p">,</span> <span class="n">Glyph</span><span class="p">):</span>
 <a id="__codelineno-0-69" name="__codelineno-0-69"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Visualization class for 2D vector fields.</span>
 <a id="__codelineno-0-70" name="__codelineno-0-70"></a>
 <a id="__codelineno-0-71" name="__codelineno-0-71"></a><span class="sd">    Renders a `(u, v)` vector field over `(x, y)` positions as arrows,</span>
@@ -3032,7 +3008,7 @@ host owns a single aggregated colorbar.</p>
 <a id="__codelineno-0-90" name="__codelineno-0-90"></a><span class="sd">        - Build a field and inspect the stored magnitude:</span>
 <a id="__codelineno-0-91" name="__codelineno-0-91"></a><span class="sd">            ```python</span>
 <a id="__codelineno-0-92" name="__codelineno-0-92"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-93" name="__codelineno-0-93"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.vector_glyph import VectorGlyph</span>
+<a id="__codelineno-0-93" name="__codelineno-0-93"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph</span>
 <a id="__codelineno-0-94" name="__codelineno-0-94"></a><span class="sd">            &gt;&gt;&gt; x, y = np.meshgrid(np.arange(2), np.arange(2))</span>
 <a id="__codelineno-0-95" name="__codelineno-0-95"></a><span class="sd">            &gt;&gt;&gt; u = np.array([[3.0, 0.0], [0.0, 3.0]])</span>
 <a id="__codelineno-0-96" name="__codelineno-0-96"></a><span class="sd">            &gt;&gt;&gt; v = np.array([[4.0, 0.0], [0.0, 4.0]])</span>
@@ -3043,7 +3019,7 @@ host owns a single aggregated colorbar.</p>
 <a id="__codelineno-0-101" name="__codelineno-0-101"></a><span class="sd">            ```</span>
 <a id="__codelineno-0-102" name="__codelineno-0-102"></a>
 <a id="__codelineno-0-103" name="__codelineno-0-103"></a><span class="sd">    See Also:</span>
-<a id="__codelineno-0-104" name="__codelineno-0-104"></a><span class="sd">        cleopatra.glyph.Glyph._prepare_scalar_mapping: Shared</span>
+<a id="__codelineno-0-104" name="__codelineno-0-104"></a><span class="sd">        cleopatra.glyphs.base.glyph.Glyph._prepare_scalar_mapping: Shared</span>
 <a id="__codelineno-0-105" name="__codelineno-0-105"></a><span class="sd">            norm/colorbar/ticks pipeline used to colour by magnitude.</span>
 <a id="__codelineno-0-106" name="__codelineno-0-106"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-107" name="__codelineno-0-107"></a>
@@ -3129,7 +3105,7 @@ host owns a single aggregated colorbar.</p>
 <a id="__codelineno-0-187" name="__codelineno-0-187"></a><span class="sd">                array:</span>
 <a id="__codelineno-0-188" name="__codelineno-0-188"></a><span class="sd">                ```python</span>
 <a id="__codelineno-0-189" name="__codelineno-0-189"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-190" name="__codelineno-0-190"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.vector_glyph import VectorGlyph</span>
+<a id="__codelineno-0-190" name="__codelineno-0-190"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph</span>
 <a id="__codelineno-0-191" name="__codelineno-0-191"></a><span class="sd">                &gt;&gt;&gt; x, y = np.meshgrid(np.arange(3), np.arange(3))</span>
 <a id="__codelineno-0-192" name="__codelineno-0-192"></a><span class="sd">                &gt;&gt;&gt; u = np.full_like(x, 2.0, dtype=float)</span>
 <a id="__codelineno-0-193" name="__codelineno-0-193"></a><span class="sd">                &gt;&gt;&gt; v = np.zeros_like(y, dtype=float)</span>
@@ -3142,7 +3118,7 @@ host owns a single aggregated colorbar.</p>
 <a id="__codelineno-0-200" name="__codelineno-0-200"></a><span class="sd">            - An unknown kind raises ValueError:</span>
 <a id="__codelineno-0-201" name="__codelineno-0-201"></a><span class="sd">                ```python</span>
 <a id="__codelineno-0-202" name="__codelineno-0-202"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-203" name="__codelineno-0-203"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.vector_glyph import VectorGlyph</span>
+<a id="__codelineno-0-203" name="__codelineno-0-203"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph</span>
 <a id="__codelineno-0-204" name="__codelineno-0-204"></a><span class="sd">                &gt;&gt;&gt; x, y = np.meshgrid(np.arange(2), np.arange(2))</span>
 <a id="__codelineno-0-205" name="__codelineno-0-205"></a><span class="sd">                &gt;&gt;&gt; glyph = VectorGlyph(x, y, np.ones_like(x), np.ones_like(y))</span>
 <a id="__codelineno-0-206" name="__codelineno-0-206"></a><span class="sd">                &gt;&gt;&gt; glyph.plot(kind=&quot;spirograph&quot;)</span>
@@ -3168,149 +3144,125 @@ host owns a single aggregated colorbar.</p>
 <a id="__codelineno-0-226" name="__codelineno-0-226"></a>
 <a id="__codelineno-0-227" name="__codelineno-0-227"></a>        <span class="k">if</span> <span class="n">title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
 <a id="__codelineno-0-228" name="__codelineno-0-228"></a>            <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">title</span>
-<a id="__codelineno-0-229" name="__codelineno-0-229"></a>        <span class="c1"># Merge a typed `colorbar=` spec (placement / caption / sizing) into the</span>
-<a id="__codelineno-0-230" name="__codelineno-0-230"></a>        <span class="c1"># glyph&#39;s sticky options, like `ArrayGlyph`: it persists into later</span>
-<a id="__codelineno-0-231" name="__codelineno-0-231"></a>        <span class="c1"># `plot()` calls until a `colorbar=True`/`False` or a new spec changes</span>
-<a id="__codelineno-0-232" name="__codelineno-0-232"></a>        <span class="c1"># it. Only the on/off `add_colorbar` override below stays per-call.</span>
-<a id="__codelineno-0-233" name="__codelineno-0-233"></a>        <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_resolve_colorbar</span><span class="p">(</span><span class="n">colorbar</span><span class="p">))</span>
-<a id="__codelineno-0-234" name="__codelineno-0-234"></a>        <span class="n">draw_colorbar</span> <span class="o">=</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;add_colorbar&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">add_colorbar</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">add_colorbar</span>
-<a id="__codelineno-0-235" name="__codelineno-0-235"></a>
-<a id="__codelineno-0-236" name="__codelineno-0-236"></a>        <span class="n">mag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magnitude</span>
-<a id="__codelineno-0-237" name="__codelineno-0-237"></a>        <span class="n">norm</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">,</span> <span class="n">ticks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_scalar_mapping</span><span class="p">(</span><span class="n">mag</span><span class="p">)</span>
-<a id="__codelineno-0-238" name="__codelineno-0-238"></a>        <span class="n">cmap</span> <span class="o">=</span> <span class="n">resolve_colormap</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;cmap&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-239" name="__codelineno-0-239"></a>        <span class="n">clim</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">norm</span> <span class="k">else</span> <span class="p">{</span><span class="s2">&quot;clim&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">ticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ticks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])}</span>
+<a id="__codelineno-0-229" name="__codelineno-0-229"></a>        <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_resolve_colorbar</span><span class="p">(</span><span class="n">colorbar</span><span class="p">))</span>
+<a id="__codelineno-0-230" name="__codelineno-0-230"></a>        <span class="n">draw_colorbar</span> <span class="o">=</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;add_colorbar&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">add_colorbar</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">add_colorbar</span>
+<a id="__codelineno-0-231" name="__codelineno-0-231"></a>
+<a id="__codelineno-0-232" name="__codelineno-0-232"></a>        <span class="n">mag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magnitude</span>
+<a id="__codelineno-0-233" name="__codelineno-0-233"></a>        <span class="n">norm</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">,</span> <span class="n">ticks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_scalar_mapping</span><span class="p">(</span><span class="n">mag</span><span class="p">)</span>
+<a id="__codelineno-0-234" name="__codelineno-0-234"></a>        <span class="n">cmap</span> <span class="o">=</span> <span class="n">resolve_colormap</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;cmap&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-235" name="__codelineno-0-235"></a>        <span class="n">clim</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">norm</span> <span class="k">else</span> <span class="p">{</span><span class="s2">&quot;clim&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">ticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ticks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])}</span>
+<a id="__codelineno-0-236" name="__codelineno-0-236"></a>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a>        <span class="n">_clear_prior_render_artists</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+<a id="__codelineno-0-238" name="__codelineno-0-238"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-239" name="__codelineno-0-239"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span> <span class="o">=</span> <span class="kc">None</span>
 <a id="__codelineno-0-240" name="__codelineno-0-240"></a>
-<a id="__codelineno-0-241" name="__codelineno-0-241"></a>        <span class="c1"># See `_clear_prior_render_artists`: a prior `plot` call on this</span>
-<a id="__codelineno-0-242" name="__codelineno-0-242"></a>        <span class="c1"># Axes (this glyph&#39;s own, or a different glyph sharing it via</span>
-<a id="__codelineno-0-243" name="__codelineno-0-243"></a>        <span class="c1"># `VectorGlyph(ax=..., fig=...)`) leaves its mappable/colorbar</span>
-<a id="__codelineno-0-244" name="__codelineno-0-244"></a>        <span class="c1"># orphaned unless removed first. Deferred until here -- after</span>
-<a id="__codelineno-0-245" name="__codelineno-0-245"></a>        <span class="c1"># `_prepare_scalar_mapping` (the call&#39;s only validation that can</span>
-<a id="__codelineno-0-246" name="__codelineno-0-246"></a>        <span class="c1"># raise) succeeds -- so a failed call leaves the previous render</span>
-<a id="__codelineno-0-247" name="__codelineno-0-247"></a>        <span class="c1"># intact.</span>
-<a id="__codelineno-0-248" name="__codelineno-0-248"></a>        <span class="n">_clear_prior_render_artists</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
-<a id="__codelineno-0-249" name="__codelineno-0-249"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-250" name="__codelineno-0-250"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-251" name="__codelineno-0-251"></a>
-<a id="__codelineno-0-252" name="__codelineno-0-252"></a>        <span class="n">arrow_patches</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">()</span>
-<a id="__codelineno-0-253" name="__codelineno-0-253"></a>        <span class="c1"># `im` holds whichever mappable the selected `kind` produces</span>
-<a id="__codelineno-0-254" name="__codelineno-0-254"></a>        <span class="c1"># (Quiver / Barbs / the streamplot LineCollection).</span>
-<a id="__codelineno-0-255" name="__codelineno-0-255"></a>        <span class="n">im</span><span class="p">:</span> <span class="n">Any</span>
-<a id="__codelineno-0-256" name="__codelineno-0-256"></a>        <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;quiver&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-257" name="__codelineno-0-257"></a>            <span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">quiver</span><span class="p">(</span>
-<a id="__codelineno-0-258" name="__codelineno-0-258"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
-<a id="__codelineno-0-259" name="__codelineno-0-259"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
-<a id="__codelineno-0-260" name="__codelineno-0-260"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">,</span>
-<a id="__codelineno-0-261" name="__codelineno-0-261"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">,</span>
-<a id="__codelineno-0-262" name="__codelineno-0-262"></a>                <span class="n">mag</span><span class="p">,</span>
-<a id="__codelineno-0-263" name="__codelineno-0-263"></a>                <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span>
-<a id="__codelineno-0-264" name="__codelineno-0-264"></a>                <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
-<a id="__codelineno-0-265" name="__codelineno-0-265"></a>                <span class="n">scale</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;scale&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-266" name="__codelineno-0-266"></a>                <span class="o">**</span><span class="n">clim</span><span class="p">,</span>
-<a id="__codelineno-0-267" name="__codelineno-0-267"></a>            <span class="p">)</span>
-<a id="__codelineno-0-268" name="__codelineno-0-268"></a>        <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;barbs&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-269" name="__codelineno-0-269"></a>            <span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">barbs</span><span class="p">(</span>
-<a id="__codelineno-0-270" name="__codelineno-0-270"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
-<a id="__codelineno-0-271" name="__codelineno-0-271"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
-<a id="__codelineno-0-272" name="__codelineno-0-272"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">,</span>
-<a id="__codelineno-0-273" name="__codelineno-0-273"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">,</span>
-<a id="__codelineno-0-274" name="__codelineno-0-274"></a>                <span class="n">mag</span><span class="p">,</span>
-<a id="__codelineno-0-275" name="__codelineno-0-275"></a>                <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span>
-<a id="__codelineno-0-276" name="__codelineno-0-276"></a>                <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
-<a id="__codelineno-0-277" name="__codelineno-0-277"></a>                <span class="o">**</span><span class="n">clim</span><span class="p">,</span>
-<a id="__codelineno-0-278" name="__codelineno-0-278"></a>            <span class="p">)</span>
-<a id="__codelineno-0-279" name="__codelineno-0-279"></a>        <span class="k">else</span><span class="p">:</span>  <span class="c1"># streamplot</span>
-<a id="__codelineno-0-280" name="__codelineno-0-280"></a>            <span class="c1"># `stream.arrows` (a `PatchCollection`) is never actually</span>
-<a id="__codelineno-0-281" name="__codelineno-0-281"></a>            <span class="c1"># attached to the axes -- matplotlib adds each constituent</span>
-<a id="__codelineno-0-282" name="__codelineno-0-282"></a>            <span class="c1"># `FancyArrowPatch` directly via `ax.add_patch()` instead (its</span>
-<a id="__codelineno-0-283" name="__codelineno-0-283"></a>            <span class="c1"># own source comment: &quot;Adding the collection itself is</span>
-<a id="__codelineno-0-284" name="__codelineno-0-284"></a>            <span class="c1"># broken; see #2341&quot;), so `stream.arrows.remove()` raises</span>
-<a id="__codelineno-0-285" name="__codelineno-0-285"></a>            <span class="c1"># `NotImplementedError` and leaves the arrowheads behind.</span>
-<a id="__codelineno-0-286" name="__codelineno-0-286"></a>            <span class="c1"># Diff `ax.patches` before/after to find the actual arrow</span>
-<a id="__codelineno-0-287" name="__codelineno-0-287"></a>            <span class="c1"># artists that were added, so a later cleanup can remove them.</span>
-<a id="__codelineno-0-288" name="__codelineno-0-288"></a>            <span class="n">patches_before</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">patches</span><span class="p">)</span>
-<a id="__codelineno-0-289" name="__codelineno-0-289"></a>            <span class="n">stream</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">streamplot</span><span class="p">(</span>
-<a id="__codelineno-0-290" name="__codelineno-0-290"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
-<a id="__codelineno-0-291" name="__codelineno-0-291"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
-<a id="__codelineno-0-292" name="__codelineno-0-292"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">,</span>
-<a id="__codelineno-0-293" name="__codelineno-0-293"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">,</span>
-<a id="__codelineno-0-294" name="__codelineno-0-294"></a>                <span class="n">color</span><span class="o">=</span><span class="n">mag</span><span class="p">,</span>
-<a id="__codelineno-0-295" name="__codelineno-0-295"></a>                <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span>
-<a id="__codelineno-0-296" name="__codelineno-0-296"></a>                <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
-<a id="__codelineno-0-297" name="__codelineno-0-297"></a>                <span class="n">density</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;density&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-298" name="__codelineno-0-298"></a>            <span class="p">)</span>
-<a id="__codelineno-0-299" name="__codelineno-0-299"></a>            <span class="n">arrow_patches</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">patches</span><span class="p">)</span> <span class="o">-</span> <span class="n">patches_before</span><span class="p">)</span>
-<a id="__codelineno-0-300" name="__codelineno-0-300"></a>            <span class="n">im</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">lines</span>
-<a id="__codelineno-0-301" name="__codelineno-0-301"></a>            <span class="k">if</span> <span class="n">im</span><span class="o">.</span><span class="n">get_array</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-302" name="__codelineno-0-302"></a>                <span class="n">im</span><span class="o">.</span><span class="n">set_array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mag</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">())</span>
-<a id="__codelineno-0-303" name="__codelineno-0-303"></a>            <span class="c1"># streamplot has no clim kwarg; pin its LineCollection to the</span>
-<a id="__codelineno-0-304" name="__codelineno-0-304"></a>            <span class="c1"># same tick range quiver/barbs use so colours and colorbar</span>
-<a id="__codelineno-0-305" name="__codelineno-0-305"></a>            <span class="c1"># agree on the linear (norm is None) path.</span>
-<a id="__codelineno-0-306" name="__codelineno-0-306"></a>            <span class="k">if</span> <span class="n">norm</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-307" name="__codelineno-0-307"></a>                <span class="n">im</span><span class="o">.</span><span class="n">set_clim</span><span class="p">(</span><span class="n">ticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ticks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-<a id="__codelineno-0-308" name="__codelineno-0-308"></a>
-<a id="__codelineno-0-309" name="__codelineno-0-309"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="n">im</span>
-<a id="__codelineno-0-310" name="__codelineno-0-310"></a>        <span class="k">if</span> <span class="n">draw_colorbar</span><span class="p">:</span>
-<a id="__codelineno-0-311" name="__codelineno-0-311"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_color_bar</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">)</span>
-<a id="__codelineno-0-312" name="__codelineno-0-312"></a>
-<a id="__codelineno-0-313" name="__codelineno-0-313"></a>        <span class="k">if</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]:</span>
-<a id="__codelineno-0-314" name="__codelineno-0-314"></a>            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title_size&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-315" name="__codelineno-0-315"></a>
-<a id="__codelineno-0-316" name="__codelineno-0-316"></a>        <span class="n">_mark_render_artists</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">im</span><span class="p">,</span> <span class="o">*</span><span class="n">arrow_patches</span><span class="p">)</span>
-<a id="__codelineno-0-317" name="__codelineno-0-317"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">im</span>
-<a id="__codelineno-0-318" name="__codelineno-0-318"></a>
-<a id="__codelineno-0-319" name="__codelineno-0-319"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">add_key</span><span class="p">(</span>
-<a id="__codelineno-0-320" name="__codelineno-0-320"></a>        <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-321" name="__codelineno-0-321"></a>        <span class="n">im</span><span class="p">,</span>
-<a id="__codelineno-0-322" name="__codelineno-0-322"></a>        <span class="n">x</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.9</span><span class="p">,</span>
-<a id="__codelineno-0-323" name="__codelineno-0-323"></a>        <span class="n">y</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.02</span><span class="p">,</span>
-<a id="__codelineno-0-324" name="__codelineno-0-324"></a>        <span class="n">value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10.0</span><span class="p">,</span>
-<a id="__codelineno-0-325" name="__codelineno-0-325"></a>        <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-326" name="__codelineno-0-326"></a>        <span class="n">labelpos</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;E&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-327" name="__codelineno-0-327"></a>        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-<a id="__codelineno-0-328" name="__codelineno-0-328"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuiverKey</span><span class="p">:</span>
-<a id="__codelineno-0-329" name="__codelineno-0-329"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a reference-arrow key to a quiver plot.</span>
-<a id="__codelineno-0-330" name="__codelineno-0-330"></a>
-<a id="__codelineno-0-331" name="__codelineno-0-331"></a><span class="sd">        Wraps `Axes.quiverkey` to draw a sample arrow of known length</span>
-<a id="__codelineno-0-332" name="__codelineno-0-332"></a><span class="sd">        with a text label, the standard legend for a quiver field.</span>
-<a id="__codelineno-0-333" name="__codelineno-0-333"></a>
-<a id="__codelineno-0-334" name="__codelineno-0-334"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-335" name="__codelineno-0-335"></a><span class="sd">            im: The `Quiver` artist returned by `plot(kind=&quot;quiver&quot;)`.</span>
-<a id="__codelineno-0-336" name="__codelineno-0-336"></a><span class="sd">            x: Key x-position in axes fraction coordinates.</span>
-<a id="__codelineno-0-337" name="__codelineno-0-337"></a><span class="sd">                Default is 0.9.</span>
-<a id="__codelineno-0-338" name="__codelineno-0-338"></a><span class="sd">            y: Key y-position in axes fraction coordinates.</span>
-<a id="__codelineno-0-339" name="__codelineno-0-339"></a><span class="sd">                Default is 1.02.</span>
-<a id="__codelineno-0-340" name="__codelineno-0-340"></a><span class="sd">            value: The reference vector length the key represents.</span>
-<a id="__codelineno-0-341" name="__codelineno-0-341"></a><span class="sd">                Default is 10.0.</span>
-<a id="__codelineno-0-342" name="__codelineno-0-342"></a><span class="sd">            label: Text drawn beside the key. Default is `None`, which</span>
-<a id="__codelineno-0-343" name="__codelineno-0-343"></a><span class="sd">                renders the numeric `value` as the label.</span>
-<a id="__codelineno-0-344" name="__codelineno-0-344"></a><span class="sd">            labelpos: Side of the arrow for the label (`&quot;N&quot;`, `&quot;S&quot;`,</span>
-<a id="__codelineno-0-345" name="__codelineno-0-345"></a><span class="sd">                `&quot;E&quot;`, `&quot;W&quot;`). Default is `&quot;E&quot;`.</span>
-<a id="__codelineno-0-346" name="__codelineno-0-346"></a><span class="sd">            **kwargs: Forwarded to `Axes.quiverkey`.</span>
-<a id="__codelineno-0-347" name="__codelineno-0-347"></a>
-<a id="__codelineno-0-348" name="__codelineno-0-348"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-349" name="__codelineno-0-349"></a><span class="sd">            QuiverKey: The created key artist.</span>
-<a id="__codelineno-0-350" name="__codelineno-0-350"></a>
-<a id="__codelineno-0-351" name="__codelineno-0-351"></a><span class="sd">        Examples:</span>
-<a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="sd">            - Add a 5 m/s reference key to a quiver:</span>
-<a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="sd">                ```python</span>
-<a id="__codelineno-0-354" name="__codelineno-0-354"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.vector_glyph import VectorGlyph</span>
-<a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="sd">                &gt;&gt;&gt; x, y = np.meshgrid(np.arange(3), np.arange(3))</span>
-<a id="__codelineno-0-357" name="__codelineno-0-357"></a><span class="sd">                &gt;&gt;&gt; u = np.ones_like(x, dtype=float)</span>
-<a id="__codelineno-0-358" name="__codelineno-0-358"></a><span class="sd">                &gt;&gt;&gt; v = np.ones_like(y, dtype=float)</span>
-<a id="__codelineno-0-359" name="__codelineno-0-359"></a><span class="sd">                &gt;&gt;&gt; glyph = VectorGlyph(x, y, u, v)</span>
-<a id="__codelineno-0-360" name="__codelineno-0-360"></a><span class="sd">                &gt;&gt;&gt; fig, ax, im = glyph.plot(kind=&quot;quiver&quot;)</span>
-<a id="__codelineno-0-361" name="__codelineno-0-361"></a><span class="sd">                &gt;&gt;&gt; key = glyph.add_key(im, value=5.0, label=&quot;5 m/s&quot;)</span>
-<a id="__codelineno-0-362" name="__codelineno-0-362"></a><span class="sd">                &gt;&gt;&gt; key.text.get_text()</span>
-<a id="__codelineno-0-363" name="__codelineno-0-363"></a><span class="sd">                &#39;5 m/s&#39;</span>
-<a id="__codelineno-0-364" name="__codelineno-0-364"></a>
-<a id="__codelineno-0-365" name="__codelineno-0-365"></a><span class="sd">                ```</span>
-<a id="__codelineno-0-366" name="__codelineno-0-366"></a><span class="sd">        &quot;&quot;&quot;</span>
-<a id="__codelineno-0-367" name="__codelineno-0-367"></a>        <span class="n">text</span> <span class="o">=</span> <span class="n">label</span> <span class="k">if</span> <span class="n">label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2">&quot;</span>
-<a id="__codelineno-0-368" name="__codelineno-0-368"></a>        <span class="n">key</span><span class="p">:</span> <span class="n">QuiverKey</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">quiverkey</span><span class="p">(</span>
-<a id="__codelineno-0-369" name="__codelineno-0-369"></a>            <span class="n">im</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">labelpos</span><span class="o">=</span><span class="n">labelpos</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-<a id="__codelineno-0-370" name="__codelineno-0-370"></a>        <span class="p">)</span>
-<a id="__codelineno-0-371" name="__codelineno-0-371"></a>        <span class="k">return</span> <span class="n">key</span>
+<a id="__codelineno-0-241" name="__codelineno-0-241"></a>        <span class="n">arrow_patches</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">()</span>
+<a id="__codelineno-0-242" name="__codelineno-0-242"></a>        <span class="n">im</span><span class="p">:</span> <span class="n">Any</span>
+<a id="__codelineno-0-243" name="__codelineno-0-243"></a>        <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;quiver&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-244" name="__codelineno-0-244"></a>            <span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">quiver</span><span class="p">(</span>
+<a id="__codelineno-0-245" name="__codelineno-0-245"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
+<a id="__codelineno-0-246" name="__codelineno-0-246"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+<a id="__codelineno-0-247" name="__codelineno-0-247"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">,</span>
+<a id="__codelineno-0-248" name="__codelineno-0-248"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">,</span>
+<a id="__codelineno-0-249" name="__codelineno-0-249"></a>                <span class="n">mag</span><span class="p">,</span>
+<a id="__codelineno-0-250" name="__codelineno-0-250"></a>                <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span>
+<a id="__codelineno-0-251" name="__codelineno-0-251"></a>                <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
+<a id="__codelineno-0-252" name="__codelineno-0-252"></a>                <span class="n">scale</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;scale&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-253" name="__codelineno-0-253"></a>                <span class="o">**</span><span class="n">clim</span><span class="p">,</span>
+<a id="__codelineno-0-254" name="__codelineno-0-254"></a>            <span class="p">)</span>
+<a id="__codelineno-0-255" name="__codelineno-0-255"></a>        <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;barbs&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-256" name="__codelineno-0-256"></a>            <span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">barbs</span><span class="p">(</span>
+<a id="__codelineno-0-257" name="__codelineno-0-257"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
+<a id="__codelineno-0-258" name="__codelineno-0-258"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+<a id="__codelineno-0-259" name="__codelineno-0-259"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">,</span>
+<a id="__codelineno-0-260" name="__codelineno-0-260"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">,</span>
+<a id="__codelineno-0-261" name="__codelineno-0-261"></a>                <span class="n">mag</span><span class="p">,</span>
+<a id="__codelineno-0-262" name="__codelineno-0-262"></a>                <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span>
+<a id="__codelineno-0-263" name="__codelineno-0-263"></a>                <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
+<a id="__codelineno-0-264" name="__codelineno-0-264"></a>                <span class="o">**</span><span class="n">clim</span><span class="p">,</span>
+<a id="__codelineno-0-265" name="__codelineno-0-265"></a>            <span class="p">)</span>
+<a id="__codelineno-0-266" name="__codelineno-0-266"></a>        <span class="k">else</span><span class="p">:</span>  <span class="c1"># streamplot</span>
+<a id="__codelineno-0-267" name="__codelineno-0-267"></a>            <span class="n">patches_before</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">patches</span><span class="p">)</span>
+<a id="__codelineno-0-268" name="__codelineno-0-268"></a>            <span class="n">stream</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">streamplot</span><span class="p">(</span>
+<a id="__codelineno-0-269" name="__codelineno-0-269"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
+<a id="__codelineno-0-270" name="__codelineno-0-270"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+<a id="__codelineno-0-271" name="__codelineno-0-271"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">,</span>
+<a id="__codelineno-0-272" name="__codelineno-0-272"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">,</span>
+<a id="__codelineno-0-273" name="__codelineno-0-273"></a>                <span class="n">color</span><span class="o">=</span><span class="n">mag</span><span class="p">,</span>
+<a id="__codelineno-0-274" name="__codelineno-0-274"></a>                <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span>
+<a id="__codelineno-0-275" name="__codelineno-0-275"></a>                <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
+<a id="__codelineno-0-276" name="__codelineno-0-276"></a>                <span class="n">density</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;density&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-277" name="__codelineno-0-277"></a>            <span class="p">)</span>
+<a id="__codelineno-0-278" name="__codelineno-0-278"></a>            <span class="n">arrow_patches</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">patches</span><span class="p">)</span> <span class="o">-</span> <span class="n">patches_before</span><span class="p">)</span>
+<a id="__codelineno-0-279" name="__codelineno-0-279"></a>            <span class="n">im</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">lines</span>
+<a id="__codelineno-0-280" name="__codelineno-0-280"></a>            <span class="k">if</span> <span class="n">im</span><span class="o">.</span><span class="n">get_array</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-281" name="__codelineno-0-281"></a>                <span class="n">im</span><span class="o">.</span><span class="n">set_array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mag</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">())</span>
+<a id="__codelineno-0-282" name="__codelineno-0-282"></a>            <span class="k">if</span> <span class="n">norm</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-283" name="__codelineno-0-283"></a>                <span class="n">im</span><span class="o">.</span><span class="n">set_clim</span><span class="p">(</span><span class="n">ticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ticks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+<a id="__codelineno-0-284" name="__codelineno-0-284"></a>
+<a id="__codelineno-0-285" name="__codelineno-0-285"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="n">im</span>
+<a id="__codelineno-0-286" name="__codelineno-0-286"></a>        <span class="k">if</span> <span class="n">draw_colorbar</span><span class="p">:</span>
+<a id="__codelineno-0-287" name="__codelineno-0-287"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_color_bar</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">)</span>
+<a id="__codelineno-0-288" name="__codelineno-0-288"></a>
+<a id="__codelineno-0-289" name="__codelineno-0-289"></a>        <span class="k">if</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]:</span>
+<a id="__codelineno-0-290" name="__codelineno-0-290"></a>            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title_size&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-291" name="__codelineno-0-291"></a>
+<a id="__codelineno-0-292" name="__codelineno-0-292"></a>        <span class="n">_mark_render_artists</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">im</span><span class="p">,</span> <span class="o">*</span><span class="n">arrow_patches</span><span class="p">)</span>
+<a id="__codelineno-0-293" name="__codelineno-0-293"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">im</span>
+<a id="__codelineno-0-294" name="__codelineno-0-294"></a>
+<a id="__codelineno-0-295" name="__codelineno-0-295"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">add_key</span><span class="p">(</span>
+<a id="__codelineno-0-296" name="__codelineno-0-296"></a>        <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-297" name="__codelineno-0-297"></a>        <span class="n">im</span><span class="p">,</span>
+<a id="__codelineno-0-298" name="__codelineno-0-298"></a>        <span class="n">x</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.9</span><span class="p">,</span>
+<a id="__codelineno-0-299" name="__codelineno-0-299"></a>        <span class="n">y</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.02</span><span class="p">,</span>
+<a id="__codelineno-0-300" name="__codelineno-0-300"></a>        <span class="n">value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10.0</span><span class="p">,</span>
+<a id="__codelineno-0-301" name="__codelineno-0-301"></a>        <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-302" name="__codelineno-0-302"></a>        <span class="n">labelpos</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;E&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-303" name="__codelineno-0-303"></a>        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<a id="__codelineno-0-304" name="__codelineno-0-304"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuiverKey</span><span class="p">:</span>
+<a id="__codelineno-0-305" name="__codelineno-0-305"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a reference-arrow key to a quiver plot.</span>
+<a id="__codelineno-0-306" name="__codelineno-0-306"></a>
+<a id="__codelineno-0-307" name="__codelineno-0-307"></a><span class="sd">        Wraps `Axes.quiverkey` to draw a sample arrow of known length</span>
+<a id="__codelineno-0-308" name="__codelineno-0-308"></a><span class="sd">        with a text label, the standard legend for a quiver field.</span>
+<a id="__codelineno-0-309" name="__codelineno-0-309"></a>
+<a id="__codelineno-0-310" name="__codelineno-0-310"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-311" name="__codelineno-0-311"></a><span class="sd">            im: The `Quiver` artist returned by `plot(kind=&quot;quiver&quot;)`.</span>
+<a id="__codelineno-0-312" name="__codelineno-0-312"></a><span class="sd">            x: Key x-position in axes fraction coordinates.</span>
+<a id="__codelineno-0-313" name="__codelineno-0-313"></a><span class="sd">                Default is 0.9.</span>
+<a id="__codelineno-0-314" name="__codelineno-0-314"></a><span class="sd">            y: Key y-position in axes fraction coordinates.</span>
+<a id="__codelineno-0-315" name="__codelineno-0-315"></a><span class="sd">                Default is 1.02.</span>
+<a id="__codelineno-0-316" name="__codelineno-0-316"></a><span class="sd">            value: The reference vector length the key represents.</span>
+<a id="__codelineno-0-317" name="__codelineno-0-317"></a><span class="sd">                Default is 10.0.</span>
+<a id="__codelineno-0-318" name="__codelineno-0-318"></a><span class="sd">            label: Text drawn beside the key. Default is `None`, which</span>
+<a id="__codelineno-0-319" name="__codelineno-0-319"></a><span class="sd">                renders the numeric `value` as the label.</span>
+<a id="__codelineno-0-320" name="__codelineno-0-320"></a><span class="sd">            labelpos: Side of the arrow for the label (`&quot;N&quot;`, `&quot;S&quot;`,</span>
+<a id="__codelineno-0-321" name="__codelineno-0-321"></a><span class="sd">                `&quot;E&quot;`, `&quot;W&quot;`). Default is `&quot;E&quot;`.</span>
+<a id="__codelineno-0-322" name="__codelineno-0-322"></a><span class="sd">            **kwargs: Forwarded to `Axes.quiverkey`.</span>
+<a id="__codelineno-0-323" name="__codelineno-0-323"></a>
+<a id="__codelineno-0-324" name="__codelineno-0-324"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-0-325" name="__codelineno-0-325"></a><span class="sd">            QuiverKey: The created key artist.</span>
+<a id="__codelineno-0-326" name="__codelineno-0-326"></a>
+<a id="__codelineno-0-327" name="__codelineno-0-327"></a><span class="sd">        Examples:</span>
+<a id="__codelineno-0-328" name="__codelineno-0-328"></a><span class="sd">            - Add a 5 m/s reference key to a quiver:</span>
+<a id="__codelineno-0-329" name="__codelineno-0-329"></a><span class="sd">                ```python</span>
+<a id="__codelineno-0-330" name="__codelineno-0-330"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-331" name="__codelineno-0-331"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph</span>
+<a id="__codelineno-0-332" name="__codelineno-0-332"></a><span class="sd">                &gt;&gt;&gt; x, y = np.meshgrid(np.arange(3), np.arange(3))</span>
+<a id="__codelineno-0-333" name="__codelineno-0-333"></a><span class="sd">                &gt;&gt;&gt; u = np.ones_like(x, dtype=float)</span>
+<a id="__codelineno-0-334" name="__codelineno-0-334"></a><span class="sd">                &gt;&gt;&gt; v = np.ones_like(y, dtype=float)</span>
+<a id="__codelineno-0-335" name="__codelineno-0-335"></a><span class="sd">                &gt;&gt;&gt; glyph = VectorGlyph(x, y, u, v)</span>
+<a id="__codelineno-0-336" name="__codelineno-0-336"></a><span class="sd">                &gt;&gt;&gt; fig, ax, im = glyph.plot(kind=&quot;quiver&quot;)</span>
+<a id="__codelineno-0-337" name="__codelineno-0-337"></a><span class="sd">                &gt;&gt;&gt; key = glyph.add_key(im, value=5.0, label=&quot;5 m/s&quot;)</span>
+<a id="__codelineno-0-338" name="__codelineno-0-338"></a><span class="sd">                &gt;&gt;&gt; key.text.get_text()</span>
+<a id="__codelineno-0-339" name="__codelineno-0-339"></a><span class="sd">                &#39;5 m/s&#39;</span>
+<a id="__codelineno-0-340" name="__codelineno-0-340"></a>
+<a id="__codelineno-0-341" name="__codelineno-0-341"></a><span class="sd">                ```</span>
+<a id="__codelineno-0-342" name="__codelineno-0-342"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-343" name="__codelineno-0-343"></a>        <span class="n">text</span> <span class="o">=</span> <span class="n">label</span> <span class="k">if</span> <span class="n">label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-344" name="__codelineno-0-344"></a>        <span class="n">key</span><span class="p">:</span> <span class="n">QuiverKey</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">quiverkey</span><span class="p">(</span>
+<a id="__codelineno-0-345" name="__codelineno-0-345"></a>            <span class="n">im</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">labelpos</span><span class="o">=</span><span class="n">labelpos</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+<a id="__codelineno-0-346" name="__codelineno-0-346"></a>        <span class="p">)</span>
+<a id="__codelineno-0-347" name="__codelineno-0-347"></a>        <span class="k">return</span> <span class="n">key</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -3328,14 +3280,14 @@ host owns a single aggregated colorbar.</p>
 
 
 
-<h4 id="cleopatra.vector_glyph.VectorGlyph.magnitude" class="doc doc-heading"><a href="#cleopatra.vector_glyph.VectorGlyph.magnitude" class="toclink">
+<h4 id="cleopatra.glyphs.gridded.vector_glyph.VectorGlyph.magnitude" class="doc doc-heading"><a href="#cleopatra.glyphs.gridded.vector_glyph.VectorGlyph.magnitude" class="toclink">
             <code class="highlight language-python"><span class="n">magnitude</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-property"><code>property</code></small>
   </span>
 
-</a><a href="#cleopatra.vector_glyph.VectorGlyph.magnitude" class="headerlink" title="Permanent link">#</a></h4>
+</a><a href="#cleopatra.glyphs.gridded.vector_glyph.VectorGlyph.magnitude" class="headerlink" title="Permanent link">#</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -3352,10 +3304,10 @@ host owns a single aggregated colorbar.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="cleopatra.vector_glyph.VectorGlyph.add_key" class="doc doc-heading"><a href="#cleopatra.vector_glyph.VectorGlyph.add_key" class="toclink">
+<h4 id="cleopatra.glyphs.gridded.vector_glyph.VectorGlyph.add_key" class="doc doc-heading"><a href="#cleopatra.glyphs.gridded.vector_glyph.VectorGlyph.add_key" class="toclink">
             <code class="highlight language-python"><span class="n">add_key</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">1.02</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">labelpos</span><span class="o">=</span><span class="s1">&#39;E&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
-</a><a href="#cleopatra.vector_glyph.VectorGlyph.add_key" class="headerlink" title="Permanent link">#</a></h4>
+</a><a href="#cleopatra.glyphs.gridded.vector_glyph.VectorGlyph.add_key" class="headerlink" title="Permanent link">#</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -3522,7 +3474,7 @@ renders the numeric <code>value</code> as the label.</p>
     <ul>
 <li>Add a 5 m/s reference key to a quiver:
     <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.vector_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorGlyph</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.vector_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorGlyph</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
@@ -3536,8 +3488,32 @@ renders the numeric <code>value</code> as the label.</p>
 
 
             <details class="mkdocstrings-source">
-              <summary>Source code in <code>src/cleopatra/vector_glyph.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-319">319</a></span>
+              <summary>Source code in <code>src/cleopatra/glyphs/gridded/vector_glyph.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-295">295</a></span>
+<span class="normal"><a href="#__codelineno-0-296">296</a></span>
+<span class="normal"><a href="#__codelineno-0-297">297</a></span>
+<span class="normal"><a href="#__codelineno-0-298">298</a></span>
+<span class="normal"><a href="#__codelineno-0-299">299</a></span>
+<span class="normal"><a href="#__codelineno-0-300">300</a></span>
+<span class="normal"><a href="#__codelineno-0-301">301</a></span>
+<span class="normal"><a href="#__codelineno-0-302">302</a></span>
+<span class="normal"><a href="#__codelineno-0-303">303</a></span>
+<span class="normal"><a href="#__codelineno-0-304">304</a></span>
+<span class="normal"><a href="#__codelineno-0-305">305</a></span>
+<span class="normal"><a href="#__codelineno-0-306">306</a></span>
+<span class="normal"><a href="#__codelineno-0-307">307</a></span>
+<span class="normal"><a href="#__codelineno-0-308">308</a></span>
+<span class="normal"><a href="#__codelineno-0-309">309</a></span>
+<span class="normal"><a href="#__codelineno-0-310">310</a></span>
+<span class="normal"><a href="#__codelineno-0-311">311</a></span>
+<span class="normal"><a href="#__codelineno-0-312">312</a></span>
+<span class="normal"><a href="#__codelineno-0-313">313</a></span>
+<span class="normal"><a href="#__codelineno-0-314">314</a></span>
+<span class="normal"><a href="#__codelineno-0-315">315</a></span>
+<span class="normal"><a href="#__codelineno-0-316">316</a></span>
+<span class="normal"><a href="#__codelineno-0-317">317</a></span>
+<span class="normal"><a href="#__codelineno-0-318">318</a></span>
+<span class="normal"><a href="#__codelineno-0-319">319</a></span>
 <span class="normal"><a href="#__codelineno-0-320">320</a></span>
 <span class="normal"><a href="#__codelineno-0-321">321</a></span>
 <span class="normal"><a href="#__codelineno-0-322">322</a></span>
@@ -3565,83 +3541,59 @@ renders the numeric <code>value</code> as the label.</p>
 <span class="normal"><a href="#__codelineno-0-344">344</a></span>
 <span class="normal"><a href="#__codelineno-0-345">345</a></span>
 <span class="normal"><a href="#__codelineno-0-346">346</a></span>
-<span class="normal"><a href="#__codelineno-0-347">347</a></span>
-<span class="normal"><a href="#__codelineno-0-348">348</a></span>
-<span class="normal"><a href="#__codelineno-0-349">349</a></span>
-<span class="normal"><a href="#__codelineno-0-350">350</a></span>
-<span class="normal"><a href="#__codelineno-0-351">351</a></span>
-<span class="normal"><a href="#__codelineno-0-352">352</a></span>
-<span class="normal"><a href="#__codelineno-0-353">353</a></span>
-<span class="normal"><a href="#__codelineno-0-354">354</a></span>
-<span class="normal"><a href="#__codelineno-0-355">355</a></span>
-<span class="normal"><a href="#__codelineno-0-356">356</a></span>
-<span class="normal"><a href="#__codelineno-0-357">357</a></span>
-<span class="normal"><a href="#__codelineno-0-358">358</a></span>
-<span class="normal"><a href="#__codelineno-0-359">359</a></span>
-<span class="normal"><a href="#__codelineno-0-360">360</a></span>
-<span class="normal"><a href="#__codelineno-0-361">361</a></span>
-<span class="normal"><a href="#__codelineno-0-362">362</a></span>
-<span class="normal"><a href="#__codelineno-0-363">363</a></span>
-<span class="normal"><a href="#__codelineno-0-364">364</a></span>
-<span class="normal"><a href="#__codelineno-0-365">365</a></span>
-<span class="normal"><a href="#__codelineno-0-366">366</a></span>
-<span class="normal"><a href="#__codelineno-0-367">367</a></span>
-<span class="normal"><a href="#__codelineno-0-368">368</a></span>
-<span class="normal"><a href="#__codelineno-0-369">369</a></span>
-<span class="normal"><a href="#__codelineno-0-370">370</a></span>
-<span class="normal"><a href="#__codelineno-0-371">371</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-319" name="__codelineno-0-319"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_key</span><span class="p">(</span>
-<a id="__codelineno-0-320" name="__codelineno-0-320"></a>    <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-321" name="__codelineno-0-321"></a>    <span class="n">im</span><span class="p">,</span>
-<a id="__codelineno-0-322" name="__codelineno-0-322"></a>    <span class="n">x</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.9</span><span class="p">,</span>
-<a id="__codelineno-0-323" name="__codelineno-0-323"></a>    <span class="n">y</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.02</span><span class="p">,</span>
-<a id="__codelineno-0-324" name="__codelineno-0-324"></a>    <span class="n">value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10.0</span><span class="p">,</span>
-<a id="__codelineno-0-325" name="__codelineno-0-325"></a>    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-326" name="__codelineno-0-326"></a>    <span class="n">labelpos</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;E&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-327" name="__codelineno-0-327"></a>    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-<a id="__codelineno-0-328" name="__codelineno-0-328"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuiverKey</span><span class="p">:</span>
-<a id="__codelineno-0-329" name="__codelineno-0-329"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a reference-arrow key to a quiver plot.</span>
-<a id="__codelineno-0-330" name="__codelineno-0-330"></a>
-<a id="__codelineno-0-331" name="__codelineno-0-331"></a><span class="sd">    Wraps `Axes.quiverkey` to draw a sample arrow of known length</span>
-<a id="__codelineno-0-332" name="__codelineno-0-332"></a><span class="sd">    with a text label, the standard legend for a quiver field.</span>
-<a id="__codelineno-0-333" name="__codelineno-0-333"></a>
-<a id="__codelineno-0-334" name="__codelineno-0-334"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-335" name="__codelineno-0-335"></a><span class="sd">        im: The `Quiver` artist returned by `plot(kind=&quot;quiver&quot;)`.</span>
-<a id="__codelineno-0-336" name="__codelineno-0-336"></a><span class="sd">        x: Key x-position in axes fraction coordinates.</span>
-<a id="__codelineno-0-337" name="__codelineno-0-337"></a><span class="sd">            Default is 0.9.</span>
-<a id="__codelineno-0-338" name="__codelineno-0-338"></a><span class="sd">        y: Key y-position in axes fraction coordinates.</span>
-<a id="__codelineno-0-339" name="__codelineno-0-339"></a><span class="sd">            Default is 1.02.</span>
-<a id="__codelineno-0-340" name="__codelineno-0-340"></a><span class="sd">        value: The reference vector length the key represents.</span>
-<a id="__codelineno-0-341" name="__codelineno-0-341"></a><span class="sd">            Default is 10.0.</span>
-<a id="__codelineno-0-342" name="__codelineno-0-342"></a><span class="sd">        label: Text drawn beside the key. Default is `None`, which</span>
-<a id="__codelineno-0-343" name="__codelineno-0-343"></a><span class="sd">            renders the numeric `value` as the label.</span>
-<a id="__codelineno-0-344" name="__codelineno-0-344"></a><span class="sd">        labelpos: Side of the arrow for the label (`&quot;N&quot;`, `&quot;S&quot;`,</span>
-<a id="__codelineno-0-345" name="__codelineno-0-345"></a><span class="sd">            `&quot;E&quot;`, `&quot;W&quot;`). Default is `&quot;E&quot;`.</span>
-<a id="__codelineno-0-346" name="__codelineno-0-346"></a><span class="sd">        **kwargs: Forwarded to `Axes.quiverkey`.</span>
-<a id="__codelineno-0-347" name="__codelineno-0-347"></a>
-<a id="__codelineno-0-348" name="__codelineno-0-348"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-349" name="__codelineno-0-349"></a><span class="sd">        QuiverKey: The created key artist.</span>
-<a id="__codelineno-0-350" name="__codelineno-0-350"></a>
-<a id="__codelineno-0-351" name="__codelineno-0-351"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="sd">        - Add a 5 m/s reference key to a quiver:</span>
-<a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-354" name="__codelineno-0-354"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.vector_glyph import VectorGlyph</span>
-<a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="sd">            &gt;&gt;&gt; x, y = np.meshgrid(np.arange(3), np.arange(3))</span>
-<a id="__codelineno-0-357" name="__codelineno-0-357"></a><span class="sd">            &gt;&gt;&gt; u = np.ones_like(x, dtype=float)</span>
-<a id="__codelineno-0-358" name="__codelineno-0-358"></a><span class="sd">            &gt;&gt;&gt; v = np.ones_like(y, dtype=float)</span>
-<a id="__codelineno-0-359" name="__codelineno-0-359"></a><span class="sd">            &gt;&gt;&gt; glyph = VectorGlyph(x, y, u, v)</span>
-<a id="__codelineno-0-360" name="__codelineno-0-360"></a><span class="sd">            &gt;&gt;&gt; fig, ax, im = glyph.plot(kind=&quot;quiver&quot;)</span>
-<a id="__codelineno-0-361" name="__codelineno-0-361"></a><span class="sd">            &gt;&gt;&gt; key = glyph.add_key(im, value=5.0, label=&quot;5 m/s&quot;)</span>
-<a id="__codelineno-0-362" name="__codelineno-0-362"></a><span class="sd">            &gt;&gt;&gt; key.text.get_text()</span>
-<a id="__codelineno-0-363" name="__codelineno-0-363"></a><span class="sd">            &#39;5 m/s&#39;</span>
-<a id="__codelineno-0-364" name="__codelineno-0-364"></a>
-<a id="__codelineno-0-365" name="__codelineno-0-365"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-366" name="__codelineno-0-366"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-367" name="__codelineno-0-367"></a>    <span class="n">text</span> <span class="o">=</span> <span class="n">label</span> <span class="k">if</span> <span class="n">label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2">&quot;</span>
-<a id="__codelineno-0-368" name="__codelineno-0-368"></a>    <span class="n">key</span><span class="p">:</span> <span class="n">QuiverKey</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">quiverkey</span><span class="p">(</span>
-<a id="__codelineno-0-369" name="__codelineno-0-369"></a>        <span class="n">im</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">labelpos</span><span class="o">=</span><span class="n">labelpos</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-<a id="__codelineno-0-370" name="__codelineno-0-370"></a>    <span class="p">)</span>
-<a id="__codelineno-0-371" name="__codelineno-0-371"></a>    <span class="k">return</span> <span class="n">key</span>
+<span class="normal"><a href="#__codelineno-0-347">347</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-295" name="__codelineno-0-295"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_key</span><span class="p">(</span>
+<a id="__codelineno-0-296" name="__codelineno-0-296"></a>    <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-297" name="__codelineno-0-297"></a>    <span class="n">im</span><span class="p">,</span>
+<a id="__codelineno-0-298" name="__codelineno-0-298"></a>    <span class="n">x</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.9</span><span class="p">,</span>
+<a id="__codelineno-0-299" name="__codelineno-0-299"></a>    <span class="n">y</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.02</span><span class="p">,</span>
+<a id="__codelineno-0-300" name="__codelineno-0-300"></a>    <span class="n">value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10.0</span><span class="p">,</span>
+<a id="__codelineno-0-301" name="__codelineno-0-301"></a>    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-302" name="__codelineno-0-302"></a>    <span class="n">labelpos</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;E&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-303" name="__codelineno-0-303"></a>    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<a id="__codelineno-0-304" name="__codelineno-0-304"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuiverKey</span><span class="p">:</span>
+<a id="__codelineno-0-305" name="__codelineno-0-305"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a reference-arrow key to a quiver plot.</span>
+<a id="__codelineno-0-306" name="__codelineno-0-306"></a>
+<a id="__codelineno-0-307" name="__codelineno-0-307"></a><span class="sd">    Wraps `Axes.quiverkey` to draw a sample arrow of known length</span>
+<a id="__codelineno-0-308" name="__codelineno-0-308"></a><span class="sd">    with a text label, the standard legend for a quiver field.</span>
+<a id="__codelineno-0-309" name="__codelineno-0-309"></a>
+<a id="__codelineno-0-310" name="__codelineno-0-310"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-311" name="__codelineno-0-311"></a><span class="sd">        im: The `Quiver` artist returned by `plot(kind=&quot;quiver&quot;)`.</span>
+<a id="__codelineno-0-312" name="__codelineno-0-312"></a><span class="sd">        x: Key x-position in axes fraction coordinates.</span>
+<a id="__codelineno-0-313" name="__codelineno-0-313"></a><span class="sd">            Default is 0.9.</span>
+<a id="__codelineno-0-314" name="__codelineno-0-314"></a><span class="sd">        y: Key y-position in axes fraction coordinates.</span>
+<a id="__codelineno-0-315" name="__codelineno-0-315"></a><span class="sd">            Default is 1.02.</span>
+<a id="__codelineno-0-316" name="__codelineno-0-316"></a><span class="sd">        value: The reference vector length the key represents.</span>
+<a id="__codelineno-0-317" name="__codelineno-0-317"></a><span class="sd">            Default is 10.0.</span>
+<a id="__codelineno-0-318" name="__codelineno-0-318"></a><span class="sd">        label: Text drawn beside the key. Default is `None`, which</span>
+<a id="__codelineno-0-319" name="__codelineno-0-319"></a><span class="sd">            renders the numeric `value` as the label.</span>
+<a id="__codelineno-0-320" name="__codelineno-0-320"></a><span class="sd">        labelpos: Side of the arrow for the label (`&quot;N&quot;`, `&quot;S&quot;`,</span>
+<a id="__codelineno-0-321" name="__codelineno-0-321"></a><span class="sd">            `&quot;E&quot;`, `&quot;W&quot;`). Default is `&quot;E&quot;`.</span>
+<a id="__codelineno-0-322" name="__codelineno-0-322"></a><span class="sd">        **kwargs: Forwarded to `Axes.quiverkey`.</span>
+<a id="__codelineno-0-323" name="__codelineno-0-323"></a>
+<a id="__codelineno-0-324" name="__codelineno-0-324"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-325" name="__codelineno-0-325"></a><span class="sd">        QuiverKey: The created key artist.</span>
+<a id="__codelineno-0-326" name="__codelineno-0-326"></a>
+<a id="__codelineno-0-327" name="__codelineno-0-327"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-328" name="__codelineno-0-328"></a><span class="sd">        - Add a 5 m/s reference key to a quiver:</span>
+<a id="__codelineno-0-329" name="__codelineno-0-329"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-330" name="__codelineno-0-330"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-331" name="__codelineno-0-331"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph</span>
+<a id="__codelineno-0-332" name="__codelineno-0-332"></a><span class="sd">            &gt;&gt;&gt; x, y = np.meshgrid(np.arange(3), np.arange(3))</span>
+<a id="__codelineno-0-333" name="__codelineno-0-333"></a><span class="sd">            &gt;&gt;&gt; u = np.ones_like(x, dtype=float)</span>
+<a id="__codelineno-0-334" name="__codelineno-0-334"></a><span class="sd">            &gt;&gt;&gt; v = np.ones_like(y, dtype=float)</span>
+<a id="__codelineno-0-335" name="__codelineno-0-335"></a><span class="sd">            &gt;&gt;&gt; glyph = VectorGlyph(x, y, u, v)</span>
+<a id="__codelineno-0-336" name="__codelineno-0-336"></a><span class="sd">            &gt;&gt;&gt; fig, ax, im = glyph.plot(kind=&quot;quiver&quot;)</span>
+<a id="__codelineno-0-337" name="__codelineno-0-337"></a><span class="sd">            &gt;&gt;&gt; key = glyph.add_key(im, value=5.0, label=&quot;5 m/s&quot;)</span>
+<a id="__codelineno-0-338" name="__codelineno-0-338"></a><span class="sd">            &gt;&gt;&gt; key.text.get_text()</span>
+<a id="__codelineno-0-339" name="__codelineno-0-339"></a><span class="sd">            &#39;5 m/s&#39;</span>
+<a id="__codelineno-0-340" name="__codelineno-0-340"></a>
+<a id="__codelineno-0-341" name="__codelineno-0-341"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-342" name="__codelineno-0-342"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-343" name="__codelineno-0-343"></a>    <span class="n">text</span> <span class="o">=</span> <span class="n">label</span> <span class="k">if</span> <span class="n">label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-344" name="__codelineno-0-344"></a>    <span class="n">key</span><span class="p">:</span> <span class="n">QuiverKey</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">quiverkey</span><span class="p">(</span>
+<a id="__codelineno-0-345" name="__codelineno-0-345"></a>        <span class="n">im</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">labelpos</span><span class="o">=</span><span class="n">labelpos</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+<a id="__codelineno-0-346" name="__codelineno-0-346"></a>    <span class="p">)</span>
+<a id="__codelineno-0-347" name="__codelineno-0-347"></a>    <span class="k">return</span> <span class="n">key</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3651,10 +3603,10 @@ renders the numeric <code>value</code> as the label.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="cleopatra.vector_glyph.VectorGlyph.plot" class="doc doc-heading"><a href="#cleopatra.vector_glyph.VectorGlyph.plot" class="toclink">
+<h4 id="cleopatra.glyphs.gridded.vector_glyph.VectorGlyph.plot" class="doc doc-heading"><a href="#cleopatra.glyphs.gridded.vector_glyph.VectorGlyph.plot" class="toclink">
             <code class="highlight language-python"><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s1">&#39;quiver&#39;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">add_colorbar</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">colorbar</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
 
-</a><a href="#cleopatra.vector_glyph.VectorGlyph.plot" class="headerlink" title="Permanent link">#</a></h4>
+</a><a href="#cleopatra.glyphs.gridded.vector_glyph.VectorGlyph.plot" class="headerlink" title="Permanent link">#</a></h4>
 
 
     <div class="doc doc-contents ">
@@ -3751,7 +3703,7 @@ value set at construction.</p>
                 <code>colorbar</code>
             </td>
             <td>
-                  <code><span title="bool">bool</span> | <span title="cleopatra.colorbar.ColorBar">ColorBar</span> | None</code>
+                  <code><span title="bool">bool</span> | <span title="cleopatra.styling.colorbar.ColorBar">ColorBar</span> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3826,7 +3778,7 @@ the magnitude has no finite values (via
 <li>A barbs plot returns the Barbs mappable with the magnitude
     array:
     <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.vector_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorGlyph</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.vector_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorGlyph</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full_like</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
@@ -3837,7 +3789,7 @@ the magnitude has no finite values (via
 </code></pre></div></li>
 <li>An unknown kind raises ValueError:
     <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.vector_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorGlyph</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.vector_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorGlyph</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">glyph</span> <span class="o">=</span> <span class="n">VectorGlyph</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">&quot;spirograph&quot;</span><span class="p">)</span>
@@ -3849,7 +3801,7 @@ the magnitude has no finite values (via
 
 
             <details class="mkdocstrings-source">
-              <summary>Source code in <code>src/cleopatra/vector_glyph.py</code></summary>
+              <summary>Source code in <code>src/cleopatra/glyphs/gridded/vector_glyph.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-142">142</a></span>
 <span class="normal"><a href="#__codelineno-0-143">143</a></span>
 <span class="normal"><a href="#__codelineno-0-144">144</a></span>
@@ -4001,31 +3953,7 @@ the magnitude has no finite values (via
 <span class="normal"><a href="#__codelineno-0-290">290</a></span>
 <span class="normal"><a href="#__codelineno-0-291">291</a></span>
 <span class="normal"><a href="#__codelineno-0-292">292</a></span>
-<span class="normal"><a href="#__codelineno-0-293">293</a></span>
-<span class="normal"><a href="#__codelineno-0-294">294</a></span>
-<span class="normal"><a href="#__codelineno-0-295">295</a></span>
-<span class="normal"><a href="#__codelineno-0-296">296</a></span>
-<span class="normal"><a href="#__codelineno-0-297">297</a></span>
-<span class="normal"><a href="#__codelineno-0-298">298</a></span>
-<span class="normal"><a href="#__codelineno-0-299">299</a></span>
-<span class="normal"><a href="#__codelineno-0-300">300</a></span>
-<span class="normal"><a href="#__codelineno-0-301">301</a></span>
-<span class="normal"><a href="#__codelineno-0-302">302</a></span>
-<span class="normal"><a href="#__codelineno-0-303">303</a></span>
-<span class="normal"><a href="#__codelineno-0-304">304</a></span>
-<span class="normal"><a href="#__codelineno-0-305">305</a></span>
-<span class="normal"><a href="#__codelineno-0-306">306</a></span>
-<span class="normal"><a href="#__codelineno-0-307">307</a></span>
-<span class="normal"><a href="#__codelineno-0-308">308</a></span>
-<span class="normal"><a href="#__codelineno-0-309">309</a></span>
-<span class="normal"><a href="#__codelineno-0-310">310</a></span>
-<span class="normal"><a href="#__codelineno-0-311">311</a></span>
-<span class="normal"><a href="#__codelineno-0-312">312</a></span>
-<span class="normal"><a href="#__codelineno-0-313">313</a></span>
-<span class="normal"><a href="#__codelineno-0-314">314</a></span>
-<span class="normal"><a href="#__codelineno-0-315">315</a></span>
-<span class="normal"><a href="#__codelineno-0-316">316</a></span>
-<span class="normal"><a href="#__codelineno-0-317">317</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-142" name="__codelineno-0-142"></a><span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-293">293</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-142" name="__codelineno-0-142"></a><span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span>
 <a id="__codelineno-0-143" name="__codelineno-0-143"></a>    <span class="bp">self</span><span class="p">,</span>
 <a id="__codelineno-0-144" name="__codelineno-0-144"></a>    <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;quiver&quot;</span><span class="p">,</span>
 <a id="__codelineno-0-145" name="__codelineno-0-145"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4073,7 +4001,7 @@ the magnitude has no finite values (via
 <a id="__codelineno-0-187" name="__codelineno-0-187"></a><span class="sd">            array:</span>
 <a id="__codelineno-0-188" name="__codelineno-0-188"></a><span class="sd">            ```python</span>
 <a id="__codelineno-0-189" name="__codelineno-0-189"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-190" name="__codelineno-0-190"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.vector_glyph import VectorGlyph</span>
+<a id="__codelineno-0-190" name="__codelineno-0-190"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph</span>
 <a id="__codelineno-0-191" name="__codelineno-0-191"></a><span class="sd">            &gt;&gt;&gt; x, y = np.meshgrid(np.arange(3), np.arange(3))</span>
 <a id="__codelineno-0-192" name="__codelineno-0-192"></a><span class="sd">            &gt;&gt;&gt; u = np.full_like(x, 2.0, dtype=float)</span>
 <a id="__codelineno-0-193" name="__codelineno-0-193"></a><span class="sd">            &gt;&gt;&gt; v = np.zeros_like(y, dtype=float)</span>
@@ -4086,7 +4014,7 @@ the magnitude has no finite values (via
 <a id="__codelineno-0-200" name="__codelineno-0-200"></a><span class="sd">        - An unknown kind raises ValueError:</span>
 <a id="__codelineno-0-201" name="__codelineno-0-201"></a><span class="sd">            ```python</span>
 <a id="__codelineno-0-202" name="__codelineno-0-202"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-203" name="__codelineno-0-203"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.vector_glyph import VectorGlyph</span>
+<a id="__codelineno-0-203" name="__codelineno-0-203"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph</span>
 <a id="__codelineno-0-204" name="__codelineno-0-204"></a><span class="sd">            &gt;&gt;&gt; x, y = np.meshgrid(np.arange(2), np.arange(2))</span>
 <a id="__codelineno-0-205" name="__codelineno-0-205"></a><span class="sd">            &gt;&gt;&gt; glyph = VectorGlyph(x, y, np.ones_like(x), np.ones_like(y))</span>
 <a id="__codelineno-0-206" name="__codelineno-0-206"></a><span class="sd">            &gt;&gt;&gt; glyph.plot(kind=&quot;spirograph&quot;)</span>
@@ -4112,95 +4040,71 @@ the magnitude has no finite values (via
 <a id="__codelineno-0-226" name="__codelineno-0-226"></a>
 <a id="__codelineno-0-227" name="__codelineno-0-227"></a>    <span class="k">if</span> <span class="n">title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
 <a id="__codelineno-0-228" name="__codelineno-0-228"></a>        <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">title</span>
-<a id="__codelineno-0-229" name="__codelineno-0-229"></a>    <span class="c1"># Merge a typed `colorbar=` spec (placement / caption / sizing) into the</span>
-<a id="__codelineno-0-230" name="__codelineno-0-230"></a>    <span class="c1"># glyph&#39;s sticky options, like `ArrayGlyph`: it persists into later</span>
-<a id="__codelineno-0-231" name="__codelineno-0-231"></a>    <span class="c1"># `plot()` calls until a `colorbar=True`/`False` or a new spec changes</span>
-<a id="__codelineno-0-232" name="__codelineno-0-232"></a>    <span class="c1"># it. Only the on/off `add_colorbar` override below stays per-call.</span>
-<a id="__codelineno-0-233" name="__codelineno-0-233"></a>    <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_resolve_colorbar</span><span class="p">(</span><span class="n">colorbar</span><span class="p">))</span>
-<a id="__codelineno-0-234" name="__codelineno-0-234"></a>    <span class="n">draw_colorbar</span> <span class="o">=</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;add_colorbar&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">add_colorbar</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">add_colorbar</span>
-<a id="__codelineno-0-235" name="__codelineno-0-235"></a>
-<a id="__codelineno-0-236" name="__codelineno-0-236"></a>    <span class="n">mag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magnitude</span>
-<a id="__codelineno-0-237" name="__codelineno-0-237"></a>    <span class="n">norm</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">,</span> <span class="n">ticks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_scalar_mapping</span><span class="p">(</span><span class="n">mag</span><span class="p">)</span>
-<a id="__codelineno-0-238" name="__codelineno-0-238"></a>    <span class="n">cmap</span> <span class="o">=</span> <span class="n">resolve_colormap</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;cmap&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-239" name="__codelineno-0-239"></a>    <span class="n">clim</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">norm</span> <span class="k">else</span> <span class="p">{</span><span class="s2">&quot;clim&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">ticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ticks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])}</span>
+<a id="__codelineno-0-229" name="__codelineno-0-229"></a>    <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_resolve_colorbar</span><span class="p">(</span><span class="n">colorbar</span><span class="p">))</span>
+<a id="__codelineno-0-230" name="__codelineno-0-230"></a>    <span class="n">draw_colorbar</span> <span class="o">=</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;add_colorbar&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">add_colorbar</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">add_colorbar</span>
+<a id="__codelineno-0-231" name="__codelineno-0-231"></a>
+<a id="__codelineno-0-232" name="__codelineno-0-232"></a>    <span class="n">mag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">magnitude</span>
+<a id="__codelineno-0-233" name="__codelineno-0-233"></a>    <span class="n">norm</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">,</span> <span class="n">ticks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_scalar_mapping</span><span class="p">(</span><span class="n">mag</span><span class="p">)</span>
+<a id="__codelineno-0-234" name="__codelineno-0-234"></a>    <span class="n">cmap</span> <span class="o">=</span> <span class="n">resolve_colormap</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;cmap&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-235" name="__codelineno-0-235"></a>    <span class="n">clim</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">norm</span> <span class="k">else</span> <span class="p">{</span><span class="s2">&quot;clim&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">ticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ticks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])}</span>
+<a id="__codelineno-0-236" name="__codelineno-0-236"></a>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a>    <span class="n">_clear_prior_render_artists</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+<a id="__codelineno-0-238" name="__codelineno-0-238"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-239" name="__codelineno-0-239"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span> <span class="o">=</span> <span class="kc">None</span>
 <a id="__codelineno-0-240" name="__codelineno-0-240"></a>
-<a id="__codelineno-0-241" name="__codelineno-0-241"></a>    <span class="c1"># See `_clear_prior_render_artists`: a prior `plot` call on this</span>
-<a id="__codelineno-0-242" name="__codelineno-0-242"></a>    <span class="c1"># Axes (this glyph&#39;s own, or a different glyph sharing it via</span>
-<a id="__codelineno-0-243" name="__codelineno-0-243"></a>    <span class="c1"># `VectorGlyph(ax=..., fig=...)`) leaves its mappable/colorbar</span>
-<a id="__codelineno-0-244" name="__codelineno-0-244"></a>    <span class="c1"># orphaned unless removed first. Deferred until here -- after</span>
-<a id="__codelineno-0-245" name="__codelineno-0-245"></a>    <span class="c1"># `_prepare_scalar_mapping` (the call&#39;s only validation that can</span>
-<a id="__codelineno-0-246" name="__codelineno-0-246"></a>    <span class="c1"># raise) succeeds -- so a failed call leaves the previous render</span>
-<a id="__codelineno-0-247" name="__codelineno-0-247"></a>    <span class="c1"># intact.</span>
-<a id="__codelineno-0-248" name="__codelineno-0-248"></a>    <span class="n">_clear_prior_render_artists</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
-<a id="__codelineno-0-249" name="__codelineno-0-249"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-250" name="__codelineno-0-250"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-251" name="__codelineno-0-251"></a>
-<a id="__codelineno-0-252" name="__codelineno-0-252"></a>    <span class="n">arrow_patches</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">()</span>
-<a id="__codelineno-0-253" name="__codelineno-0-253"></a>    <span class="c1"># `im` holds whichever mappable the selected `kind` produces</span>
-<a id="__codelineno-0-254" name="__codelineno-0-254"></a>    <span class="c1"># (Quiver / Barbs / the streamplot LineCollection).</span>
-<a id="__codelineno-0-255" name="__codelineno-0-255"></a>    <span class="n">im</span><span class="p">:</span> <span class="n">Any</span>
-<a id="__codelineno-0-256" name="__codelineno-0-256"></a>    <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;quiver&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-257" name="__codelineno-0-257"></a>        <span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">quiver</span><span class="p">(</span>
-<a id="__codelineno-0-258" name="__codelineno-0-258"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
-<a id="__codelineno-0-259" name="__codelineno-0-259"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
-<a id="__codelineno-0-260" name="__codelineno-0-260"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">,</span>
-<a id="__codelineno-0-261" name="__codelineno-0-261"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">,</span>
-<a id="__codelineno-0-262" name="__codelineno-0-262"></a>            <span class="n">mag</span><span class="p">,</span>
-<a id="__codelineno-0-263" name="__codelineno-0-263"></a>            <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span>
-<a id="__codelineno-0-264" name="__codelineno-0-264"></a>            <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
-<a id="__codelineno-0-265" name="__codelineno-0-265"></a>            <span class="n">scale</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;scale&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-266" name="__codelineno-0-266"></a>            <span class="o">**</span><span class="n">clim</span><span class="p">,</span>
-<a id="__codelineno-0-267" name="__codelineno-0-267"></a>        <span class="p">)</span>
-<a id="__codelineno-0-268" name="__codelineno-0-268"></a>    <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;barbs&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-269" name="__codelineno-0-269"></a>        <span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">barbs</span><span class="p">(</span>
-<a id="__codelineno-0-270" name="__codelineno-0-270"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
-<a id="__codelineno-0-271" name="__codelineno-0-271"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
-<a id="__codelineno-0-272" name="__codelineno-0-272"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">,</span>
-<a id="__codelineno-0-273" name="__codelineno-0-273"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">,</span>
-<a id="__codelineno-0-274" name="__codelineno-0-274"></a>            <span class="n">mag</span><span class="p">,</span>
-<a id="__codelineno-0-275" name="__codelineno-0-275"></a>            <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span>
-<a id="__codelineno-0-276" name="__codelineno-0-276"></a>            <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
-<a id="__codelineno-0-277" name="__codelineno-0-277"></a>            <span class="o">**</span><span class="n">clim</span><span class="p">,</span>
-<a id="__codelineno-0-278" name="__codelineno-0-278"></a>        <span class="p">)</span>
-<a id="__codelineno-0-279" name="__codelineno-0-279"></a>    <span class="k">else</span><span class="p">:</span>  <span class="c1"># streamplot</span>
-<a id="__codelineno-0-280" name="__codelineno-0-280"></a>        <span class="c1"># `stream.arrows` (a `PatchCollection`) is never actually</span>
-<a id="__codelineno-0-281" name="__codelineno-0-281"></a>        <span class="c1"># attached to the axes -- matplotlib adds each constituent</span>
-<a id="__codelineno-0-282" name="__codelineno-0-282"></a>        <span class="c1"># `FancyArrowPatch` directly via `ax.add_patch()` instead (its</span>
-<a id="__codelineno-0-283" name="__codelineno-0-283"></a>        <span class="c1"># own source comment: &quot;Adding the collection itself is</span>
-<a id="__codelineno-0-284" name="__codelineno-0-284"></a>        <span class="c1"># broken; see #2341&quot;), so `stream.arrows.remove()` raises</span>
-<a id="__codelineno-0-285" name="__codelineno-0-285"></a>        <span class="c1"># `NotImplementedError` and leaves the arrowheads behind.</span>
-<a id="__codelineno-0-286" name="__codelineno-0-286"></a>        <span class="c1"># Diff `ax.patches` before/after to find the actual arrow</span>
-<a id="__codelineno-0-287" name="__codelineno-0-287"></a>        <span class="c1"># artists that were added, so a later cleanup can remove them.</span>
-<a id="__codelineno-0-288" name="__codelineno-0-288"></a>        <span class="n">patches_before</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">patches</span><span class="p">)</span>
-<a id="__codelineno-0-289" name="__codelineno-0-289"></a>        <span class="n">stream</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">streamplot</span><span class="p">(</span>
-<a id="__codelineno-0-290" name="__codelineno-0-290"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
-<a id="__codelineno-0-291" name="__codelineno-0-291"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
-<a id="__codelineno-0-292" name="__codelineno-0-292"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">,</span>
-<a id="__codelineno-0-293" name="__codelineno-0-293"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">,</span>
-<a id="__codelineno-0-294" name="__codelineno-0-294"></a>            <span class="n">color</span><span class="o">=</span><span class="n">mag</span><span class="p">,</span>
-<a id="__codelineno-0-295" name="__codelineno-0-295"></a>            <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span>
-<a id="__codelineno-0-296" name="__codelineno-0-296"></a>            <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
-<a id="__codelineno-0-297" name="__codelineno-0-297"></a>            <span class="n">density</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;density&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-298" name="__codelineno-0-298"></a>        <span class="p">)</span>
-<a id="__codelineno-0-299" name="__codelineno-0-299"></a>        <span class="n">arrow_patches</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">patches</span><span class="p">)</span> <span class="o">-</span> <span class="n">patches_before</span><span class="p">)</span>
-<a id="__codelineno-0-300" name="__codelineno-0-300"></a>        <span class="n">im</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">lines</span>
-<a id="__codelineno-0-301" name="__codelineno-0-301"></a>        <span class="k">if</span> <span class="n">im</span><span class="o">.</span><span class="n">get_array</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-302" name="__codelineno-0-302"></a>            <span class="n">im</span><span class="o">.</span><span class="n">set_array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mag</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">())</span>
-<a id="__codelineno-0-303" name="__codelineno-0-303"></a>        <span class="c1"># streamplot has no clim kwarg; pin its LineCollection to the</span>
-<a id="__codelineno-0-304" name="__codelineno-0-304"></a>        <span class="c1"># same tick range quiver/barbs use so colours and colorbar</span>
-<a id="__codelineno-0-305" name="__codelineno-0-305"></a>        <span class="c1"># agree on the linear (norm is None) path.</span>
-<a id="__codelineno-0-306" name="__codelineno-0-306"></a>        <span class="k">if</span> <span class="n">norm</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-307" name="__codelineno-0-307"></a>            <span class="n">im</span><span class="o">.</span><span class="n">set_clim</span><span class="p">(</span><span class="n">ticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ticks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-<a id="__codelineno-0-308" name="__codelineno-0-308"></a>
-<a id="__codelineno-0-309" name="__codelineno-0-309"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="n">im</span>
-<a id="__codelineno-0-310" name="__codelineno-0-310"></a>    <span class="k">if</span> <span class="n">draw_colorbar</span><span class="p">:</span>
-<a id="__codelineno-0-311" name="__codelineno-0-311"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_color_bar</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">)</span>
-<a id="__codelineno-0-312" name="__codelineno-0-312"></a>
-<a id="__codelineno-0-313" name="__codelineno-0-313"></a>    <span class="k">if</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]:</span>
-<a id="__codelineno-0-314" name="__codelineno-0-314"></a>        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title_size&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-315" name="__codelineno-0-315"></a>
-<a id="__codelineno-0-316" name="__codelineno-0-316"></a>    <span class="n">_mark_render_artists</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">im</span><span class="p">,</span> <span class="o">*</span><span class="n">arrow_patches</span><span class="p">)</span>
-<a id="__codelineno-0-317" name="__codelineno-0-317"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">im</span>
+<a id="__codelineno-0-241" name="__codelineno-0-241"></a>    <span class="n">arrow_patches</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">()</span>
+<a id="__codelineno-0-242" name="__codelineno-0-242"></a>    <span class="n">im</span><span class="p">:</span> <span class="n">Any</span>
+<a id="__codelineno-0-243" name="__codelineno-0-243"></a>    <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;quiver&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-244" name="__codelineno-0-244"></a>        <span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">quiver</span><span class="p">(</span>
+<a id="__codelineno-0-245" name="__codelineno-0-245"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
+<a id="__codelineno-0-246" name="__codelineno-0-246"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+<a id="__codelineno-0-247" name="__codelineno-0-247"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">,</span>
+<a id="__codelineno-0-248" name="__codelineno-0-248"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">,</span>
+<a id="__codelineno-0-249" name="__codelineno-0-249"></a>            <span class="n">mag</span><span class="p">,</span>
+<a id="__codelineno-0-250" name="__codelineno-0-250"></a>            <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span>
+<a id="__codelineno-0-251" name="__codelineno-0-251"></a>            <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
+<a id="__codelineno-0-252" name="__codelineno-0-252"></a>            <span class="n">scale</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;scale&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-253" name="__codelineno-0-253"></a>            <span class="o">**</span><span class="n">clim</span><span class="p">,</span>
+<a id="__codelineno-0-254" name="__codelineno-0-254"></a>        <span class="p">)</span>
+<a id="__codelineno-0-255" name="__codelineno-0-255"></a>    <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;barbs&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-256" name="__codelineno-0-256"></a>        <span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">barbs</span><span class="p">(</span>
+<a id="__codelineno-0-257" name="__codelineno-0-257"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
+<a id="__codelineno-0-258" name="__codelineno-0-258"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+<a id="__codelineno-0-259" name="__codelineno-0-259"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">,</span>
+<a id="__codelineno-0-260" name="__codelineno-0-260"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">,</span>
+<a id="__codelineno-0-261" name="__codelineno-0-261"></a>            <span class="n">mag</span><span class="p">,</span>
+<a id="__codelineno-0-262" name="__codelineno-0-262"></a>            <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span>
+<a id="__codelineno-0-263" name="__codelineno-0-263"></a>            <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
+<a id="__codelineno-0-264" name="__codelineno-0-264"></a>            <span class="o">**</span><span class="n">clim</span><span class="p">,</span>
+<a id="__codelineno-0-265" name="__codelineno-0-265"></a>        <span class="p">)</span>
+<a id="__codelineno-0-266" name="__codelineno-0-266"></a>    <span class="k">else</span><span class="p">:</span>  <span class="c1"># streamplot</span>
+<a id="__codelineno-0-267" name="__codelineno-0-267"></a>        <span class="n">patches_before</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">patches</span><span class="p">)</span>
+<a id="__codelineno-0-268" name="__codelineno-0-268"></a>        <span class="n">stream</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">streamplot</span><span class="p">(</span>
+<a id="__codelineno-0-269" name="__codelineno-0-269"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
+<a id="__codelineno-0-270" name="__codelineno-0-270"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+<a id="__codelineno-0-271" name="__codelineno-0-271"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">,</span>
+<a id="__codelineno-0-272" name="__codelineno-0-272"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">,</span>
+<a id="__codelineno-0-273" name="__codelineno-0-273"></a>            <span class="n">color</span><span class="o">=</span><span class="n">mag</span><span class="p">,</span>
+<a id="__codelineno-0-274" name="__codelineno-0-274"></a>            <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span>
+<a id="__codelineno-0-275" name="__codelineno-0-275"></a>            <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
+<a id="__codelineno-0-276" name="__codelineno-0-276"></a>            <span class="n">density</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;density&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-277" name="__codelineno-0-277"></a>        <span class="p">)</span>
+<a id="__codelineno-0-278" name="__codelineno-0-278"></a>        <span class="n">arrow_patches</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">patches</span><span class="p">)</span> <span class="o">-</span> <span class="n">patches_before</span><span class="p">)</span>
+<a id="__codelineno-0-279" name="__codelineno-0-279"></a>        <span class="n">im</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">lines</span>
+<a id="__codelineno-0-280" name="__codelineno-0-280"></a>        <span class="k">if</span> <span class="n">im</span><span class="o">.</span><span class="n">get_array</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-281" name="__codelineno-0-281"></a>            <span class="n">im</span><span class="o">.</span><span class="n">set_array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mag</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">())</span>
+<a id="__codelineno-0-282" name="__codelineno-0-282"></a>        <span class="k">if</span> <span class="n">norm</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-283" name="__codelineno-0-283"></a>            <span class="n">im</span><span class="o">.</span><span class="n">set_clim</span><span class="p">(</span><span class="n">ticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ticks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+<a id="__codelineno-0-284" name="__codelineno-0-284"></a>
+<a id="__codelineno-0-285" name="__codelineno-0-285"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="n">im</span>
+<a id="__codelineno-0-286" name="__codelineno-0-286"></a>    <span class="k">if</span> <span class="n">draw_colorbar</span><span class="p">:</span>
+<a id="__codelineno-0-287" name="__codelineno-0-287"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_color_bar</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">)</span>
+<a id="__codelineno-0-288" name="__codelineno-0-288"></a>
+<a id="__codelineno-0-289" name="__codelineno-0-289"></a>    <span class="k">if</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]:</span>
+<a id="__codelineno-0-290" name="__codelineno-0-290"></a>        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">&quot;title_size&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-291" name="__codelineno-0-291"></a>
+<a id="__codelineno-0-292" name="__codelineno-0-292"></a>    <span class="n">_mark_render_artists</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">im</span><span class="p">,</span> <span class="o">*</span><span class="n">arrow_patches</span><span class="p">)</span>
+<a id="__codelineno-0-293" name="__codelineno-0-293"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">im</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4216,7 +4120,7 @@ the magnitude has no finite values (via
 </div><h2 id="examples"><a class="toclink" href="#examples">Examples</a><a class="headerlink" href="#examples" title="Permanent link">#</a></h2>
 <h3 id="arrows-quiver"><a class="toclink" href="#arrows-quiver">Arrows (quiver)</a><a class="headerlink" href="#arrows-quiver" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.vector_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorGlyph</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.vector_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorGlyph</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">u</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">y</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
