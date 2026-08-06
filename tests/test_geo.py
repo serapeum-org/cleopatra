@@ -422,6 +422,22 @@ def test_non_seeding_glyph_basemap_axes_raises_clearly():
     plt.close("all")
 
 
+def test_pixel_index_basemap_axes_seeds_matshow_orientation():
+    """The pre-plot builder flow seeds a pixel-index array in matshow orientation.
+
+    Test scenario:
+        A non-georeferenced pixel array plots via `matshow(origin="upper")` (row 0
+        at the top, inverted y, half-pixel edges). `_basemap_axes` must seed that
+        same view, or a reference/label layer added before `plot()` locks a
+        non-inverted box (autoscale off) and the raster renders upside-down.
+    """
+    glyph = ArrayGlyph(np.arange(24, dtype=float).reshape(4, 6))  # 4 rows x 6 cols, no extent/coords
+    ax = glyph._basemap_axes()
+    assert ax.get_ylim() == (3.5, -0.5), "y inverted (row 0 at top), matching matshow"
+    assert ax.get_xlim() == (-0.5, 5.5), "x half-pixel edges, matching matshow"
+    plt.close("all")
+
+
 def test_real_glyph_integration(tmp_path: Path, monkeypatch):
     """A real glyph draws a cached layer on its own axes via the mixin method."""
     monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))

@@ -2601,14 +2601,19 @@ class ArrayGlyph(GeoMixin, Glyph):
         return self.fig, self.ax
 
     def _flat_axis_bounds(self) -> tuple[float, float, float, float]:
-        """Return the `(x_min, x_max, y_min, y_max)` data bounds for a flat view.
+        """Return the `(x_min, x_max, y_min, y_max)` axis limits of the flat view.
 
-        Used to reframe the axes when reverting from a projection (see
-        `_sync_projection_frame`): from the lon/lat coords if present, else the
-        `extent`, else the array's pixel-index bounds.
+        Used both to reframe the axes when reverting from a projection (see
+        `_sync_projection_frame`, which *sorts* the values) and to seed a fresh
+        axes for the pre-plot basemap builder flow (see `GeoMixin._basemap_axes`,
+        which applies them verbatim). From the lon/lat coords if present, else the
+        `extent`, else the pixel grid -- and the pixel branch returns the *render*
+        limits of `matshow(origin="upper")` (row 0 at the top, half-pixel cell
+        edges), so its y is inverted (`y_min > y_max`); a raw `set_ylim` then
+        matches the plain plot instead of flipping the raster upside-down.
 
         Returns:
-            tuple[float, float, float, float]: The flat-render data bounds.
+            tuple[float, float, float, float]: The flat-render axis limits.
         """
         if self._coords is not None:
             x, y = self._coords
@@ -2616,8 +2621,11 @@ class ArrayGlyph(GeoMixin, Glyph):
         if self.extent is not None:
             x0, x1, y0, y1 = self.extent
             return float(x0), float(x1), float(y0), float(y1)
+        # No extent/coords: the flat render is matshow(origin="upper") -- row 0 at
+        # the top, half-pixel cell edges -- so return its (y-inverted) limits so a
+        # pre-plot basemap layer seeds the same orientation the plain plot uses.
         n_rows, n_cols = np.asarray(self.arr).shape[:2]
-        return 0.0, float(n_cols), 0.0, float(n_rows)
+        return -0.5, float(n_cols) - 0.5, float(n_rows) - 0.5, -0.5
 
     def _sync_projection_frame(self, projecting: bool) -> None:
         """Strip a prior globe frame and, when reverting to flat, restore the view.
