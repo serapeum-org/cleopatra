@@ -56,9 +56,10 @@ def _get_figure_supports_root(get_figure) -> bool:
     unrelated `TypeError` from `get_figure` itself is never swallowed.
     """
     try:
-        return "root" in inspect.signature(get_figure).parameters
+        supports = "root" in inspect.signature(get_figure).parameters
     except (TypeError, ValueError):
-        return False
+        supports = False
+    return supports
 
 
 def _root_figure(ax: Axes) -> Figure:
@@ -81,14 +82,16 @@ def _root_figure(ax: Axes) -> Figure:
         root_fig = get_figure(root=True)
         # `ax` is a live, attached axes, so its root figure always resolves.
         assert root_fig is not None
-        return root_fig
-    fig: Figure | SubFigure | None = get_figure()
-    seen: set[int] = set()
-    while isinstance(fig, SubFigure) and id(fig) not in seen:
-        seen.add(id(fig))
-        fig = fig.figure
-    assert fig is not None
-    return cast(Figure, fig)
+        result: Figure = root_fig
+    else:
+        fig: Figure | SubFigure | None = get_figure()
+        seen: set[int] = set()
+        while isinstance(fig, SubFigure) and id(fig) not in seen:
+            seen.add(id(fig))
+            fig = fig.figure
+        assert fig is not None
+        result = cast(Figure, fig)
+    return result
 
 
 def _figure_is_open(fig: Figure | None) -> bool:
@@ -207,14 +210,14 @@ def _clear_projection_frame(ax: Axes) -> bool:
     """
     frame = getattr(ax, "_cleo_projection_frame", None)
     ax._cleo_projection_frame = None  # type: ignore[attr-defined]
-    if not frame:
-        return False
-    for artist in frame:
-        try:
-            artist.remove()
-        except (KeyError, NotImplementedError, ValueError, AttributeError):
-            pass
-    return True
+    existed = bool(frame)
+    if frame:
+        for artist in frame:
+            try:
+                artist.remove()
+            except (KeyError, NotImplementedError, ValueError, AttributeError):
+                pass
+    return existed
 
 
 def _restore_flat_axes(
@@ -594,16 +597,19 @@ class Glyph:
         vmax = self.default_options["vmax"]
         vmin = self.default_options["vmin"]
         if not ticks_spacing or vmax <= vmin:
-            return np.array([vmin])
-        ticks = np.arange(vmin, vmax + ticks_spacing, ticks_spacing)
-        ticks = ticks[ticks <= vmax + 1e-9]
-        if ticks.size == 0:
-            return np.array([vmin, vmax])
-        if (vmax - ticks[-1]) > 0.04 * (vmax - vmin):
-            ticks = np.append(ticks, vmax)
+            result = np.array([vmin])
         else:
-            ticks[-1] = vmax
-        return ticks
+            ticks = np.arange(vmin, vmax + ticks_spacing, ticks_spacing)
+            ticks = ticks[ticks <= vmax + 1e-9]
+            if ticks.size == 0:
+                result = np.array([vmin, vmax])
+            else:
+                if (vmax - ticks[-1]) > 0.04 * (vmax - vmin):
+                    ticks = np.append(ticks, vmax)
+                else:
+                    ticks[-1] = vmax
+                result = ticks
+        return result
 
     def _create_norm_and_cbar_kw(
         self, ticks: np.ndarray
@@ -988,19 +994,22 @@ class Glyph:
         """
         self._categorical = None
         if self.default_options.get("scheme") == "categorical":
-            return self._prepare_categorical_mapping(values)
-        self._vmin, self._vmax = self._resolve_limits(np.asarray(values))
-        if self.default_options.get("ticks_spacing") is None:
-            self.ticks_spacing = (self._vmax - self._vmin) / 10 or 1.0
-            self.default_options["ticks_spacing"] = self.ticks_spacing
-        self.default_options["vmin"] = self._vmin
-        self.default_options["vmax"] = self._vmax
-        scheme = self.default_options.get("scheme")
-        if scheme is not None:
-            return self._prepare_classified_mapping(values, scheme)
-        ticks = self.get_ticks()
-        norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
-        return norm, cbar_kw, ticks
+            result = self._prepare_categorical_mapping(values)
+        else:
+            self._vmin, self._vmax = self._resolve_limits(np.asarray(values))
+            if self.default_options.get("ticks_spacing") is None:
+                self.ticks_spacing = (self._vmax - self._vmin) / 10 or 1.0
+                self.default_options["ticks_spacing"] = self.ticks_spacing
+            self.default_options["vmin"] = self._vmin
+            self.default_options["vmax"] = self._vmax
+            scheme = self.default_options.get("scheme")
+            if scheme is not None:
+                result = self._prepare_classified_mapping(values, scheme)
+            else:
+                ticks = self.get_ticks()
+                norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
+                result = (norm, cbar_kw, ticks)
+        return result
 
     def _warn_scheme_overrides_continuous_options(self) -> None:
         """Warn when a `scheme` is set alongside continuous-only options.
@@ -1415,10 +1424,12 @@ class Glyph:
     def _resolve_cbar_orientation(self, location: str | None) -> str:
         """Orientation implied by `cbar_location` (else `cbar_orientation`)."""
         if location in ("left", "right"):
-            return "vertical"
-        if location in ("top", "bottom"):
-            return "horizontal"
-        return self.default_options["cbar_orientation"]
+            orientation = "vertical"
+        elif location in ("top", "bottom"):
+            orientation = "horizontal"
+        else:
+            orientation = self.default_options["cbar_orientation"]
+        return orientation
 
     def _cbar_user_kwargs(self) -> tuple[dict, Any]:
         """A validated copy of `cbar_kwargs` with `label` split out for set_label."""
@@ -1678,13 +1689,13 @@ class Glyph:
                 Supported: gif, mov, avi, mp4, webp.
             fps: Frames per second. Default is 2.
             **kwargs: Additional keyword arguments forwarded to
-                `cleopatra.glyphs.base.animation.save_animation`, e.g. ``crf``, ``bitrate``,
-                ``codec``, ``preset``, ``pix_fmt``, ``dpi`` (ffmpeg formats) or
-                ``optimize`` and ``loop`` (GIF).
+                `cleopatra.glyphs.base.animation.save_animation`, e.g. `crf`, `bitrate`,
+                `codec`, `preset`, `pix_fmt`, `dpi` (ffmpeg formats) or
+                `optimize` and `loop` (GIF).
 
         Raises:
             ValueError: If `animate()` has not been called yet, if the file
-                format is not supported, or if both ``crf`` and ``bitrate``
+                format is not supported, or if both `crf` and `bitrate`
                 are given.
             FileNotFoundError: If a video format is requested but neither a
                 system FFmpeg nor imageio-ffmpeg's bundled binary is found.

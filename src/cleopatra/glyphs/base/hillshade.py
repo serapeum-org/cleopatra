@@ -27,7 +27,7 @@ from matplotlib.colors import Colormap, LightSource, Normalize
 from cleopatra.styling.colors import resolve_colormap
 
 #: Default hillshade settings. Override any subset via a glyph's `hillshade`
-#: option (``hillshade=True`` uses all defaults; ``hillshade={...}`` overrides).
+#: option (`hillshade=True` uses all defaults; `hillshade={...}` overrides).
 DEFAULT_HILLSHADE: dict[str, Any] = {
     "azimuth": 315.0,  #: light compass direction in degrees (315 = NW, cartographic default)
     "altitude": 45.0,  #: light height above the horizon in degrees
@@ -56,40 +56,43 @@ def resolve_hillshade(hillshade: bool | dict | None) -> dict[str, Any] | None:
         ValueError: For unknown option keys or an invalid `blend_mode`.
     """
     if not hillshade:
-        return None
-    opts = dict(DEFAULT_HILLSHADE)
-    if isinstance(hillshade, dict):
-        unknown = set(hillshade) - set(DEFAULT_HILLSHADE)
-        if unknown:
+        opts = None
+    else:
+        opts = dict(DEFAULT_HILLSHADE)
+        if isinstance(hillshade, dict):
+            unknown = set(hillshade) - set(DEFAULT_HILLSHADE)
+            if unknown:
+                raise ValueError(
+                    f"unknown hillshade options {sorted(unknown)}; "
+                    f"allowed: {sorted(DEFAULT_HILLSHADE)}"
+                )
+            opts.update(hillshade)
+        if opts["blend_mode"] not in _BLEND_MODES:
             raise ValueError(
-                f"unknown hillshade options {sorted(unknown)}; "
-                f"allowed: {sorted(DEFAULT_HILLSHADE)}"
+                f"hillshade blend_mode must be one of {_BLEND_MODES}, got {opts['blend_mode']!r}"
             )
-        opts.update(hillshade)
-    if opts["blend_mode"] not in _BLEND_MODES:
-        raise ValueError(
-            f"hillshade blend_mode must be one of {_BLEND_MODES}, got {opts['blend_mode']!r}"
-        )
-    md = opts["multidirectional"]
-    if md is True or (
-        not isinstance(md, int) and md is not False and not _is_sequence(md)
-    ):
-        raise ValueError(
-            "hillshade 'multidirectional' must be False, an int (number of "
-            f"azimuths), or a sequence of azimuths; got {md!r}."
-        )
+        md = opts["multidirectional"]
+        if md is True or (
+            not isinstance(md, int) and md is not False and not _is_sequence(md)
+        ):
+            raise ValueError(
+                "hillshade 'multidirectional' must be False, an int (number of "
+                f"azimuths), or a sequence of azimuths; got {md!r}."
+            )
     return opts
 
 
 def _is_sequence(value: Any) -> bool:
     """True for a non-string iterable (a sequence of azimuths)."""
     if isinstance(value, str):
-        return False
-    try:
-        iter(value)
-        return True
-    except TypeError:
-        return False
+        result = False
+    else:
+        try:
+            iter(value)
+            result = True
+        except TypeError:
+            result = False
+    return result
 
 
 def _blend_fn(ls: LightSource, blend_mode: str):
@@ -104,11 +107,13 @@ def _blend_fn(ls: LightSource, blend_mode: str):
 def _azimuths(multidirectional: Any, azimuth: float) -> list[float]:
     """Resolve the azimuth list for (optionally multidirectional) illumination."""
     if not multidirectional:
-        return [azimuth]
-    if isinstance(multidirectional, int) and not isinstance(multidirectional, bool):
+        result = [azimuth]
+    elif isinstance(multidirectional, int) and not isinstance(multidirectional, bool):
         n = max(int(multidirectional), 1)
-        return list(np.linspace(0.0, 360.0, n, endpoint=False))
-    return [float(a) for a in multidirectional]
+        result = list(np.linspace(0.0, 360.0, n, endpoint=False))
+    else:
+        result = [float(a) for a in multidirectional]
+    return result
 
 
 def _illumination(
@@ -251,8 +256,10 @@ def shade_rgb(
         )
     )
     if rgb.shape[-1] == 4:
-        return np.concatenate([shaded, rgb[..., 3:4]], axis=-1)
-    return shaded
+        result = np.concatenate([shaded, rgb[..., 3:4]], axis=-1)
+    else:
+        result = shaded
+    return result
 
 
 def shade_faces(
