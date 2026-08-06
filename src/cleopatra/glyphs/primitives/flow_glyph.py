@@ -15,7 +15,7 @@ Examples:
     - Two flows coloured by value and scaled by width:
         ```python
         >>> import numpy as np
-        >>> from cleopatra.glyphs.flow_glyph import FlowGlyph
+        >>> from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
         >>> paths = [
         ...     np.array([[0.0, 0.0], [1.0, 1.0]]),
         ...     np.array([[0.0, 1.0], [1.0, 0.0]]),
@@ -43,7 +43,7 @@ from matplotlib.legend import Legend
 from cleopatra.styling.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
 from cleopatra.styling.colors import resolve_colormap, resolve_glow_options
 from cleopatra.basemap.geo import GeoMixin
-from cleopatra.glyphs.glyph import Glyph, _root_figure
+from cleopatra.glyphs.base.glyph import Glyph, _root_figure
 from cleopatra.styling.styles import CLASSIFY_OPTIONS, resolve_sizes, width_legend
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
@@ -113,7 +113,7 @@ class FlowGlyph(GeoMixin, Glyph):
         - Build flows and read back the width ordering:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.glyphs.flow_glyph import FlowGlyph
+            >>> from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
             >>> paths = [
             ...     np.array([[0.0, 0.0], [1.0, 0.0]]),
             ...     np.array([[0.0, 1.0], [1.0, 1.0]]),
@@ -133,11 +133,11 @@ class FlowGlyph(GeoMixin, Glyph):
             ```
 
     See Also:
-        cleopatra.glyphs.glyph.Glyph._prepare_scalar_mapping: Shared
+        cleopatra.glyphs.base.glyph.Glyph._prepare_scalar_mapping: Shared
             norm/colorbar/ticks pipeline used to colour by `values`.
         cleopatra.styling.styles.resolve_sizes: The value→size helper used for line
             width (shared with `ScatterGlyph`).
-        cleopatra.glyphs.vector_glyph.VectorGlyph: Magnitude-coloured vector fields.
+        cleopatra.glyphs.gridded.vector_glyph.VectorGlyph: Magnitude-coloured vector fields.
     """
 
     #: Option keys this glyph accepts (see `Glyph.option_keys`/`filter_kwargs`).
@@ -277,7 +277,7 @@ class FlowGlyph(GeoMixin, Glyph):
             - Uncoloured flows draw no colorbar:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.flow_glyph import FlowGlyph
+                >>> from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
                 >>> paths = [np.array([[0.0, 0.0], [1.0, 1.0]])]
                 >>> glyph = FlowGlyph(paths)
                 >>> fig, ax, lc = glyph.plot()
@@ -288,7 +288,7 @@ class FlowGlyph(GeoMixin, Glyph):
             - Coloured flows expose the per-path values on the collection:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.flow_glyph import FlowGlyph
+                >>> from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
                 >>> paths = [
                 ...     np.array([[0.0, 0.0], [1.0, 1.0]]),
                 ...     np.array([[0.0, 1.0], [1.0, 0.0]]),
@@ -303,7 +303,7 @@ class FlowGlyph(GeoMixin, Glyph):
                 high stream-order channels sit over their tributaries:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.flow_glyph import FlowGlyph
+                >>> from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
                 >>> paths = [
                 ...     np.array([[0.0, 0.0], [1.0, 0.0]]),
                 ...     np.array([[0.0, 1.0], [1.0, 1.0]]),

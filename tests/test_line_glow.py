@@ -16,8 +16,8 @@ import pytest
 from matplotlib.collections import LineCollection
 
 from cleopatra.styling.colors import GLOW_OPTION_KEYS, add_line_glow, resolve_glow_options
-from cleopatra.glyphs.flow_glyph import FlowGlyph
-from cleopatra.glyphs.line_glyph import LineGlyph
+from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
+from cleopatra.glyphs.primitives.line_glyph import LineGlyph
 
 
 @pytest.fixture(scope="function")

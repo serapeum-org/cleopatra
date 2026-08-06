@@ -21,7 +21,7 @@ importing the standalone helpers:
 Each basemap method is a thin wrapper: it draws on `self.ax` (the axes produced
 when you plot the glyph) and forwards its arguments to the matching standalone
 function, which remains the single source of truth. Chart and statistical glyphs
-(`LineGlyph`, `StatisticalGlyph`, `KDEGlyph`) deliberately do **not** inherit
+(`LineGlyph`, `HistogramGlyph`, `KDEGlyph`) deliberately do **not** inherit
 these geo-only methods.
 
 The module also exposes the standalone `add_point_labels` and `available_map_styles`
@@ -35,7 +35,7 @@ import matplotlib
 matplotlib.use("Agg")  # any backend
 import numpy as np
 
-from cleopatra.glyphs.scatter_glyph import ScatterGlyph
+from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
 
 # A few cities as (lon, lat) points.
 lon = np.array([-74.0, -0.1, 2.35, 13.4, 37.6, 139.7, 151.2])

@@ -1,4 +1,4 @@
-"""Tests for cleopatra.glyphs.flow_glyph.FlowGlyph and styles.width_legend — issue #157.
+"""Tests for cleopatra.glyphs.primitives.flow_glyph.FlowGlyph and styles.width_legend — issue #157.
 
 Covers the width legend helper, FlowGlyph construction/validation, the
 value→width resolution, the width-legend drawing helper, and the `plot`
@@ -16,7 +16,7 @@ import pytest
 from matplotlib.collections import LineCollection
 from matplotlib.legend import Legend
 
-from cleopatra.glyphs.flow_glyph import FLOW_DEFAULT_OPTIONS, FlowGlyph
+from cleopatra.glyphs.primitives.flow_glyph import FLOW_DEFAULT_OPTIONS, FlowGlyph
 from cleopatra.styling.styles import width_legend
 
 

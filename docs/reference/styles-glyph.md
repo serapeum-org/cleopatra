@@ -25,7 +25,7 @@ The `styles` module provides classes and functions for styling plots, including 
 `ColorScale.LINEAR == "linear"`) and lookup is case-insensitive. `ArrayGlyph` /
 `MeshGlyph` coerce `color_scale` through it, so an unrecognised value (or a non-string
 such as an int) raises a clear `ValueError` instead of an obscure `AttributeError`. It is
-also re-exported from `cleopatra.glyphs.array_glyph`.
+also re-exported from `cleopatra.glyphs.gridded.array_glyph`.
 
 ::: cleopatra.styling.styles.ColorScale
     options:

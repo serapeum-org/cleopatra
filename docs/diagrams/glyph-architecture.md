@@ -21,7 +21,7 @@ All diagrams use [Mermaid](https://mermaid.js.org/) (rendered by the
 ## 1. Class hierarchy
 
 `ArrayGlyph`, `MeshGlyph`, `ScatterGlyph`, `PolygonGlyph`, `VectorGlyph`,
-`FlowGlyph`, `LineGlyph`, and `KDEGlyph` subclass `Glyph`. `StatisticalGlyph` is
+`FlowGlyph`, `LineGlyph`, and `KDEGlyph` subclass `Glyph`. `HistogramGlyph` is
 independent. The six geographic glyphs (`ArrayGlyph`, `MeshGlyph`, `ScatterGlyph`,
 `VectorGlyph`, `FlowGlyph`, `PolygonGlyph`) also mix in `GeoMixin` for basemap
 methods — omitted here to keep the colour-pipeline focus.
@@ -103,7 +103,7 @@ classDiagram
         +bar()
         +fill_between()
     }
-    class StatisticalGlyph {
+    class HistogramGlyph {
         +plot()
     }
 
@@ -116,7 +116,7 @@ classDiagram
     Glyph <|-- KDEGlyph
     Glyph <|-- LineGlyph
 
-    note for StatisticalGlyph "Stands alone — 1-D/2-D histograms,\ndoes not subclass Glyph"
+    note for HistogramGlyph "Stands alone — 1-D/2-D histograms,\ndoes not subclass Glyph"
     note for LineGlyph "line/bar/band — no colour-by-value path\n(not in the scalar-mapping pipeline)"
 
     style Glyph fill:#cfe2ff,stroke:#3D59AB,color:#000
@@ -128,7 +128,7 @@ classDiagram
     style FlowGlyph fill:#d1e7dd,stroke:#0f5132,color:#000
     style KDEGlyph fill:#d1e7dd,stroke:#0f5132,color:#000
     style LineGlyph fill:#d1e7dd,stroke:#0f5132,color:#000
-    style StatisticalGlyph fill:#e2e3e5,stroke:#41464b,color:#000
+    style HistogramGlyph fill:#e2e3e5,stroke:#41464b,color:#000
 ```
 
 ---

@@ -1,10 +1,10 @@
 """Doctest runner for `cleopatra.styling.styles`.
 
 Pytest is not configured with ``--doctest-modules``, so the docstring examples
-in ``src/cleopatra/styles.py`` (ColorScale, Scale, MidpointNormalize, classify,
-resolve_sizes, the legend helpers, ...) would otherwise never run. This module
-executes them in-band so example drift fails CI — mirroring the existing
-``test_projection`` / ``test_statistical_glyph`` doctest runners.
+in ``src/cleopatra/styling/styles.py`` (ColorScale, Scale, MidpointNormalize,
+classify, resolve_sizes, the legend helpers, ...) would otherwise never run.
+This module executes them in-band so example drift fails CI — mirroring the
+existing ``test_projection`` / ``test_histogram_glyph`` doctest runners.
 """
 
 import doctest

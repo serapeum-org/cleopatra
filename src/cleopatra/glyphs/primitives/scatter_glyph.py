@@ -10,7 +10,7 @@ Examples:
     - Plot an uncoloured point cloud:
         ```python
         >>> import numpy as np
-        >>> from cleopatra.glyphs.scatter_glyph import ScatterGlyph
+        >>> from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
         >>> x = np.array([0.0, 1.0, 2.0, 3.0])
         >>> y = np.array([0.0, 1.0, 0.0, 1.0])
         >>> glyph = ScatterGlyph(x, y)
@@ -20,7 +20,7 @@ Examples:
     - Colour points by a per-point value (adds a colorbar):
         ```python
         >>> import numpy as np
-        >>> from cleopatra.glyphs.scatter_glyph import ScatterGlyph
+        >>> from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
         >>> x = np.array([0.0, 1.0, 2.0, 3.0])
         >>> y = np.array([0.0, 1.0, 0.0, 1.0])
         >>> values = np.array([10.0, 20.0, 30.0, 40.0])
@@ -44,7 +44,7 @@ from matplotlib.legend import Legend
 from cleopatra.styling.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
 from cleopatra.styling.colors import resolve_colormap
 from cleopatra.basemap.geo import GeoMixin
-from cleopatra.glyphs.glyph import Glyph, _root_figure
+from cleopatra.glyphs.base.glyph import Glyph, _root_figure
 from cleopatra.styling.styles import CLASSIFY_OPTIONS, resolve_sizes, size_legend
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
@@ -114,7 +114,7 @@ class ScatterGlyph(GeoMixin, Glyph):
         - Colour points by value and read back the mapped array:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.glyphs.scatter_glyph import ScatterGlyph
+            >>> from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
             >>> glyph = ScatterGlyph(
             ...     np.array([0.0, 1.0, 2.0]),
             ...     np.array([0.0, 1.0, 0.0]),
@@ -128,7 +128,7 @@ class ScatterGlyph(GeoMixin, Glyph):
         - Size points by a magnitude; the areas span `size_limits`:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.glyphs.scatter_glyph import ScatterGlyph
+            >>> from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
             >>> glyph = ScatterGlyph(
             ...     np.array([0.0, 1.0, 2.0]),
             ...     np.array([0.0, 1.0, 0.0]),
@@ -142,7 +142,7 @@ class ScatterGlyph(GeoMixin, Glyph):
             ```
 
     See Also:
-        cleopatra.glyphs.glyph.Glyph._prepare_scalar_mapping: Shared
+        cleopatra.glyphs.base.glyph.Glyph._prepare_scalar_mapping: Shared
             norm/colorbar/ticks pipeline used for the coloured path.
         cleopatra.styling.styles.resolve_sizes: The value→size helper used for the
             `sizes` mapping (reusable by other size-encoding glyphs).
@@ -254,7 +254,7 @@ class ScatterGlyph(GeoMixin, Glyph):
             - Uncoloured points return a PathCollection with no array:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.scatter_glyph import ScatterGlyph
+                >>> from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
                 >>> glyph = ScatterGlyph(
                 ...     np.array([0.0, 1.0]), np.array([0.0, 1.0])
                 ... )
@@ -266,7 +266,7 @@ class ScatterGlyph(GeoMixin, Glyph):
             - A title passed to plot overrides the default:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.scatter_glyph import ScatterGlyph
+                >>> from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
                 >>> glyph = ScatterGlyph(
                 ...     np.array([0.0, 1.0]), np.array([0.0, 1.0])
                 ... )
@@ -278,7 +278,7 @@ class ScatterGlyph(GeoMixin, Glyph):
             - Combine colour and size, with a size legend:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.scatter_glyph import ScatterGlyph
+                >>> from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
                 >>> glyph = ScatterGlyph(
                 ...     np.array([0.0, 1.0, 2.0]),
                 ...     np.array([0.0, 1.0, 0.0]),

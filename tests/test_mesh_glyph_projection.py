@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from cleopatra.glyphs.mesh_glyph import MeshGlyph
+from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
 
 pytestmark = pytest.mark.plot
 

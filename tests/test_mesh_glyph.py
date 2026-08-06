@@ -1,4 +1,4 @@
-"""Tests for cleopatra.glyphs.mesh_glyph.MeshGlyph.
+"""Tests for cleopatra.glyphs.gridded.mesh_glyph.MeshGlyph.
 
 Covers mesh data plotting (tripcolor, tricontourf), wireframe rendering,
 fan triangulation, face-to-triangle value mapping, and edge cases.
@@ -17,7 +17,7 @@ from matplotlib.colors import to_rgba
 from matplotlib.text import Text
 
 from cleopatra.styling.colorbar import ColorBar
-from cleopatra.glyphs.mesh_glyph import MeshGlyph
+from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
 
 
 @pytest.fixture(scope="module")

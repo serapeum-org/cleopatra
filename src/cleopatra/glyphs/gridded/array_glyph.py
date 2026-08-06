@@ -63,7 +63,7 @@ from cleopatra.styling.colors import (
 from cleopatra.basemap.geo import Basemap as Basemap
 from cleopatra.basemap.geo import Feature as Feature
 from cleopatra.basemap.geo import GeoMixin
-from cleopatra.glyphs.glyph import (
+from cleopatra.glyphs.base.glyph import (
     Glyph,
     _clear_prior_render_artists,
     _clear_projection_frame,
@@ -72,7 +72,7 @@ from cleopatra.glyphs.glyph import (
     _root_figure,
     _stash_projection_frame,
 )
-from cleopatra.glyphs.hillshade import resolve_hillshade, shade_grid, shade_rgb
+from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_grid, shade_rgb
 from cleopatra.basemap.projection import apply_projection_style, projection_draws_frame
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import (
@@ -487,7 +487,7 @@ class PointOverlay:
         - Build an overlay and pass it to `plot`:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.glyphs.array_glyph import ArrayGlyph, PointOverlay
+            >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph, PointOverlay
             >>> arr = np.arange(9, dtype=float).reshape(3, 3)
             >>> overlay = PointOverlay(np.array([[5.0, 1, 1]]), color="black")
             >>> fig, ax = ArrayGlyph(arr).plot(points=overlay)
@@ -553,7 +553,7 @@ class FrameLabel:
         - Build a frame label and pass it to `animate`:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.glyphs.array_glyph import ArrayGlyph, FrameLabel
+            >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph, FrameLabel
             >>> stack = np.arange(3 * 9, dtype=float).reshape(3, 3, 3)
             >>> label = FrameLabel(location=[0.1, 0.1], color="white")
             >>> glyph = ArrayGlyph(stack)
@@ -687,7 +687,7 @@ def _resolve_point_overlay(
         if used:
             warnings.warn(
                 f"{used} have no effect without `points`; pass a "
-                "`cleopatra.glyphs.array_glyph.PointOverlay` as `points` instead.",
+                "`cleopatra.glyphs.gridded.array_glyph.PointOverlay` as `points` instead.",
                 DeprecationWarning,
                 stacklevel=3,
             )
@@ -704,7 +704,7 @@ def _resolve_point_overlay(
     if used:
         warnings.warn(
             f"Passing `points` as a plain array together with {used} is "
-            "deprecated; pass a `cleopatra.glyphs.array_glyph.PointOverlay` instead.",
+            "deprecated; pass a `cleopatra.glyphs.gridded.array_glyph.PointOverlay` instead.",
             DeprecationWarning,
             stacklevel=3,
         )
@@ -785,7 +785,7 @@ def _resolve_frame_label(frame_label: Any, kwargs: dict) -> FrameLabel:
     if used:
         warnings.warn(
             f"Passing {used} directly is deprecated; pass a "
-            "`cleopatra.glyphs.array_glyph.FrameLabel` as `frame_label` instead.",
+            "`cleopatra.glyphs.gridded.array_glyph.FrameLabel` as `frame_label` instead.",
             DeprecationWarning,
             stacklevel=3,
         )
@@ -817,7 +817,7 @@ class FacetGrid:
         - Inspect the grid shape returned by `ArrayGlyph.facet`:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+            >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
             >>> stack = np.arange(4 * 5 * 5, dtype=float).reshape(4, 5, 5)
             >>> g = ArrayGlyph(stack).facet(col="t")
             >>> g.axes.shape
@@ -861,7 +861,7 @@ class FacetGrid:
                 used to construct it:
                 ```python
                 >>> import matplotlib.pyplot as plt
-                >>> from cleopatra.glyphs.array_glyph import FacetGrid
+                >>> from cleopatra.glyphs.gridded.array_glyph import FacetGrid
                 >>> fig, axes = plt.subplots(1, 2, squeeze=False)
                 >>> grid = FacetGrid(
                 ...     fig=fig,
@@ -928,7 +928,7 @@ class ArrayGlyph(GeoMixin, Glyph):
     - Create a simple array plot:
         ```python
         >>> import numpy as np
-        >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+        >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
         >>> arr = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
         >>> array_glyph = ArrayGlyph(arr)
         >>> fig, ax = array_glyph.plot()
@@ -1070,7 +1070,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         Basic initialization with a 2D array:
         ```python
         >>> import numpy as np
-        >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+        >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
         >>> arr = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
         >>> array_glyph = ArrayGlyph(arr)
         >>> fig, ax = array_glyph.plot()
@@ -1100,7 +1100,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         scale):
         ```python
         >>> import numpy as np
-        >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+        >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
         >>> data = np.arange(100, dtype=float).reshape(10, 10)
         >>> data[0, 0] = 1e6  # outlier
         >>> glyph = ArrayGlyph(data, robust=True)
@@ -1112,7 +1112,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         to `"RdBu_r"` when no `cmap` is passed):
         ```python
         >>> import numpy as np
-        >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+        >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
         >>> anomaly = np.linspace(-3.0, 8.0, 25).reshape(5, 5)
         >>> glyph = ArrayGlyph(anomaly, center=0.0)
         >>> glyph.vmin, glyph.vmax
@@ -1125,7 +1125,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         to `matplotlib.colorbar.Colorbar`):
         ```python
         >>> import numpy as np
-        >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+        >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
         >>> arr = np.arange(25, dtype=float).reshape(5, 5)
         >>> glyph = ArrayGlyph(
         ...     arr,
@@ -1144,7 +1144,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         Invalid `extend` is rejected at construction time:
         ```python
         >>> import numpy as np
-        >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+        >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
         >>> ArrayGlyph(np.array([[0.0, 1.0]]), extend="up")
         Traceback (most recent call last):
             ...
@@ -1155,7 +1155,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         `pcolormesh`:
         ```python
         >>> import numpy as np
-        >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+        >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
         >>> arr = np.arange(12, dtype=float).reshape(3, 4)
         >>> x = np.linspace(0.0, 10.0, 4)
         >>> y = np.linspace(0.0, 5.0, 3)
@@ -1167,7 +1167,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         `extent` and `coords` are mutually exclusive:
         ```python
         >>> import numpy as np
-        >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+        >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
         >>> arr = np.zeros((3, 4))
         >>> x = np.linspace(0.0, 10.0, 4)
         >>> y = np.linspace(0.0, 5.0, 3)
@@ -1319,7 +1319,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             - Read the array back and inspect its shape and a value:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> glyph = ArrayGlyph(np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]))
                 >>> glyph.arr.shape
                 (2, 3)
@@ -1355,7 +1355,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 ```python
                 >>> import warnings
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> glyph = ArrayGlyph(np.array([[1.0, 2.0], [3.0, 4.0]]))
                 >>> with warnings.catch_warnings():
                 ...     warnings.simplefilter("ignore")
@@ -1422,7 +1422,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         Prepare an array using percentile-based scaling:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+            >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
             >>> # Create a 3-band array (e.g., satellite image)
             >>> bands = np.random.randint(0, 10000, size=(3, 100, 100))
             >>> glyph = ArrayGlyph(np.zeros((1, 1)))  # Dummy initialization
@@ -1560,7 +1560,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         Prepare Sentinel-2 data with default surface reflectance:
         ```python
         >>> import numpy as np
-        >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+        >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
         >>> # Create a simulated Sentinel-2 RGB array
         >>> rgb_data = np.random.randint(0, 10000, size=(100, 100, 3))
         >>> glyph = ArrayGlyph(np.zeros((1, 1)))  # Dummy initialization
@@ -1622,7 +1622,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         Scale a single-band array:
         ```python
         >>> import numpy as np
-        >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+        >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
         >>> # Create a test array with values between 0 and 10000
         >>> test_array = np.random.randint(0, 10000, size=(100, 100, 1))
         >>> scaled = ArrayGlyph.scale_percentile(test_array, percentile=2)
@@ -1690,7 +1690,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 ```python
                 >>> import math
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> glyph = ArrayGlyph(np.array([[1.0, 2.0], [3.0, 4.0]]))
                 >>> math.isnan(glyph.exclude_value)
                 True
@@ -1699,7 +1699,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             - Excluding a sentinel masks the matching cells:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> arr = np.array([[1.0, 2.0], [3.0, -9.0]])
                 >>> glyph = ArrayGlyph(arr, exclude_value=[-9.0])
                 >>> glyph.exclude_value
@@ -1882,7 +1882,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             - `None` short-circuits to `None`:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> ArrayGlyph._validate_coords(None, np.zeros((3, 4))) is None
                 True
 
@@ -1891,7 +1891,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 `array.shape[-2]` (y) are accepted:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> arr = np.zeros((3, 4))
                 >>> x = np.array([0.0, 1.0, 2.0, 3.0])
                 >>> y = np.array([0.0, 1.0, 2.0])
@@ -1903,7 +1903,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             - A non-tuple raises `TypeError`:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> ArrayGlyph._validate_coords("oops", np.zeros((3, 4)))
                 Traceback (most recent call last):
                     ...
@@ -1969,7 +1969,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             - A glyph built without `coords` reports `None`:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> glyph = ArrayGlyph(np.zeros((3, 4)))
                 >>> glyph.coords is None
                 True
@@ -1979,7 +1979,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 arrays back through the property:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> arr = np.zeros((3, 4))
                 >>> x = np.linspace(0.0, 3.0, 4)
                 >>> y = np.linspace(0.0, 2.0, 3)
@@ -2010,7 +2010,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         Examples:
             - Accepted values return `None` silently:
                 ```python
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> ArrayGlyph._validate_extend("both") is None
                 True
                 >>> ArrayGlyph._validate_extend(None) is None
@@ -2019,7 +2019,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 ```
             - Unsupported values raise `ValueError`:
                 ```python
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> ArrayGlyph._validate_extend("up")
                 Traceback (most recent call last):
                     ...
@@ -2057,7 +2057,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             - Outliers are clipped to the 2nd/98th percentile:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> arr = np.arange(100, dtype=float)
                 >>> arr[0] = -1e6  # extreme low outlier
                 >>> arr[-1] = 1e6  # extreme high outlier
@@ -2071,7 +2071,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 ```python
                 >>> import numpy as np
                 >>> import numpy.ma as ma
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> raw = np.array([np.nan, 0.0, 1.0, 2.0, 3.0, 4.0])
                 >>> arr = ma.array(raw, mask=[True, False, False, False, False, False])
                 >>> vmin, vmax = ArrayGlyph._robust_limits(arr)
@@ -2114,7 +2114,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             - Centring around zero expands the smaller side to match
                 the larger one:
                 ```python
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> ArrayGlyph._center_limits(-3.0, 8.0, 0.0)
                 (-8.0, 8.0)
 
@@ -2122,7 +2122,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             - Centring around a non-zero value (e.g. an anomaly base
                 of 5.0):
                 ```python
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> low, high = ArrayGlyph._center_limits(2.0, 12.0, 5.0)
                 >>> low, high
                 (-2.0, 12.0)
@@ -2181,7 +2181,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 centring:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> data = np.arange(25, dtype=float).reshape(5, 5)
                 >>> glyph = ArrayGlyph(data)
                 >>> glyph._resolve_color_limits(
@@ -2200,7 +2200,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 and `center` then symmetrises around the centre:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> data = np.arange(25, dtype=float).reshape(5, 5)
                 >>> glyph = ArrayGlyph(data)
                 >>> glyph._resolve_color_limits(
@@ -2380,7 +2380,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         # Relief shading: blend a hillshade of the raster into the drawn image
         # so wide-range DEMs read by form, not colour alone. Applies to the
         # regular-grid `imshow` path; the mappable keeps its cmap/norm so the
-        # colorbar is unaffected. See `cleopatra.glyphs.hillshade.shade_grid`.
+        # colorbar is unaffected. See `cleopatra.glyphs.base.hillshade.shade_grid`.
         hillshade = resolve_hillshade(self.default_options.get("hillshade"))
         if hillshade is not None:
             if kind == "imshow":
@@ -2438,7 +2438,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 >>> import matplotlib
                 >>> matplotlib.use("Agg")
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> glyph = ArrayGlyph(np.arange(60.0).reshape(6, 10))
                 >>> _ = glyph.plot()
                 >>> _ = glyph.apply_style("topography")
@@ -3352,7 +3352,7 @@ class ArrayGlyph(GeoMixin, Glyph):
 
             ```python
             >>> import numpy as np
-            >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+            >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
             >>> arr = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
             >>> array = ArrayGlyph(arr, figsize=(6, 6), title="Customized Plot", title_size=18)
             >>> fig, ax = array.plot()
@@ -3431,7 +3431,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 `label_size` customize the appearance of each point's value label.
 
                 ```python
-                >>> from cleopatra.glyphs.array_glyph import PointOverlay
+                >>> from cleopatra.glyphs.gridded.array_glyph import PointOverlay
                 >>> array = ArrayGlyph(arr, figsize=(6, 6), title="Display Points", title_size=14)
                 >>> points = np.array([[1, 0, 0], [2, 1, 1], [3, 2, 2]])
                 >>> overlay = PointOverlay(
@@ -3572,7 +3572,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 axes are drawn in array index space.
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> arr = np.arange(25, dtype=float).reshape(5, 5)
                 >>> glyph = ArrayGlyph(arr)
                 >>> fig, ax = glyph.plot(kind="pcolormesh")  # doctest: +SKIP
@@ -3582,7 +3582,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 the level edges line up with the colorbar boundaries.
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> arr = np.arange(25, dtype=float).reshape(5, 5)
                 >>> glyph = ArrayGlyph(arr, levels=5)
                 >>> fig, ax = glyph.plot(kind="contourf")  # doctest: +SKIP
@@ -3591,7 +3591,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             - Invalid kinds are rejected with a clear error:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> arr = np.arange(9, dtype=float).reshape(3, 3)
                 >>> ArrayGlyph(arr).plot(kind="heatmap")
                 Traceback (most recent call last):
@@ -3607,7 +3607,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 dominates the colour scale:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> data = np.arange(100, dtype=float).reshape(10, 10)
                 >>> data[0, 0] = 1e6  # outlier
                 >>> glyph = ArrayGlyph(data, robust=True)
@@ -3621,7 +3621,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 diverging default):
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> anomaly = np.linspace(-3.0, 8.0, 25).reshape(5, 5)
                 >>> glyph = ArrayGlyph(anomaly, center=0.0)
                 >>> fig, ax = glyph.plot(center=0.0)  # doctest: +SKIP
@@ -3635,7 +3635,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 controls the colorbar arrows:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> arr = np.arange(25, dtype=float).reshape(5, 5)
                 >>> glyph = ArrayGlyph(arr, levels=6, extend="both")
                 >>> fig, ax = glyph.plot()  # doctest: +SKIP
@@ -3648,7 +3648,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 user keys win on collision:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> arr = np.arange(9, dtype=float).reshape(3, 3)
                 >>> glyph = ArrayGlyph(arr, cbar_kwargs={"shrink": 0.5})
                 >>> fig, ax = glyph.plot()  # doctest: +SKIP
@@ -4015,7 +4015,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             - Facet a 3-D stack into a 1xN row of subplots:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> stack = np.arange(4 * 5 * 5, dtype=float).reshape(4, 5, 5)
                 >>> g = ArrayGlyph(stack).facet(col="t")
                 >>> g.axes.shape
@@ -4027,7 +4027,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             - Wrap N=6 panels into a 2x3 grid with `col_wrap=3`:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> stack = np.arange(6 * 5 * 5, dtype=float).reshape(6, 5, 5)
                 >>> g = ArrayGlyph(stack).facet(col="t", col_wrap=3)
                 >>> g.axes.shape
@@ -4038,7 +4038,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 windows (one `[xmin, ymin, xmax, ymax]` per subplot):
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> stack = np.arange(2 * 4 * 4, dtype=float).reshape(2, 4, 4)
                 >>> g = ArrayGlyph(stack).facet(
                 ...     col="region",
@@ -4525,7 +4525,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         Basic animation from a 3D array:
         ```python
         >>> import numpy as np
-        >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+        >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
         >>> # Create a 3D array with 5 frames, each 10x10
         >>> arr = np.random.randint(1, 10, size=(5, 10, 10))
         >>> # Create labels for each frame
@@ -4549,7 +4549,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         Animation with points:
         ```python
         >>> # Create a styled point overlay to display on the animation
-        >>> from cleopatra.glyphs.array_glyph import PointOverlay
+        >>> from cleopatra.glyphs.gridded.array_glyph import PointOverlay
         >>> overlay = PointOverlay(
         ...     np.array([[1, 2, 3], [2, 5, 5], [3, 8, 8]]),
         ...     color="black",
@@ -4590,7 +4590,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         are read.
         ```python
         >>> import numpy as np
-        >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+        >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
         >>> template = np.arange(36, dtype=float).reshape(1, 6, 6)
         >>> glyph = ArrayGlyph(template, figsize=(4, 4), title="Lazy")
         >>> labels = ["t0", "t1", "t2"]
@@ -4606,7 +4606,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         (`glyph.cbar` stays `None`):
         ```python
         >>> import numpy as np
-        >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+        >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
         >>> rgb_stack = np.linspace(0.0, 1.0, 3 * 6 * 6 * 3).reshape(3, 6, 6, 3)
         >>> glyph = ArrayGlyph(rgb_stack, figsize=(4, 4), title="RGB")
         >>> anim_obj = glyph.animate(["t0", "t1", "t2"])
@@ -4619,7 +4619,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         (`full_bleed="black"`) to also paint it, so masked cells read dark:
         ```python
         >>> import numpy as np
-        >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+        >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
         >>> stack = np.arange(3 * 6 * 8, dtype=float).reshape(3, 6, 8)
         >>> glyph = ArrayGlyph(stack, extent=[0, 0, 8, 6])
         >>> anim_obj = glyph.animate(
@@ -4636,7 +4636,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         doctest because it downloads the `[tiles]` assets on first use:
         ```python
         >>> import numpy as np
-        >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+        >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
         >>> stack = np.arange(3 * 20 * 30, dtype=float).reshape(3, 20, 30)
         >>> glyph = ArrayGlyph(stack, extent=[-12, 34, 32, 64])
         >>> anim_obj = glyph.animate(  # doctest: +SKIP

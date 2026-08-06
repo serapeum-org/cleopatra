@@ -6,7 +6,7 @@ wireframe rendering, all 5 color scale types, and time-series animation.
 
 ## Class Documentation
 
-::: cleopatra.glyphs.mesh_glyph.MeshGlyph
+::: cleopatra.glyphs.gridded.mesh_glyph.MeshGlyph
     options:
       show_root_heading: true
       show_source: true
@@ -20,7 +20,7 @@ wireframe rendering, all 5 color scale types, and time-series animation.
 import numpy as np
 import matplotlib.tri as mtri
 from cleopatra.styling.colorbar import ColorBar
-from cleopatra.glyphs.mesh_glyph import MeshGlyph
+from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
 
 # Create a triangular mesh from random points
 rng = np.random.default_rng(42)

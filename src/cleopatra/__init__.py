@@ -2,7 +2,7 @@
 
 The package root deliberately re-exports nothing: import the public
 classes/functions from their submodules, e.g.
-`from cleopatra.glyphs.array_glyph import ArrayGlyph`,
+`from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph`,
 `from cleopatra.basemap.tiles import add_tiles`,
 `from cleopatra.config import Config`.
 

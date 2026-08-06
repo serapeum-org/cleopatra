@@ -11,7 +11,7 @@ Examples:
     - Plot a single line series:
         ```python
         >>> import numpy as np
-        >>> from cleopatra.glyphs.line_glyph import LineGlyph
+        >>> from cleopatra.glyphs.primitives.line_glyph import LineGlyph
         >>> x = np.array([0.0, 1.0, 2.0, 3.0])
         >>> y = np.array([0.0, 1.0, 4.0, 9.0])
         >>> glyph = LineGlyph(x, y)
@@ -34,7 +34,7 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
 from cleopatra.styling.colors import add_line_glow, resolve_glow_options
-from cleopatra.glyphs.glyph import Glyph, _root_figure
+from cleopatra.glyphs.base.glyph import Glyph, _root_figure
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 #: Option keys for LineGlyph (no scalar-mapping keys; this glyph does
@@ -79,7 +79,7 @@ class LineGlyph(Glyph):
         - Read back the y-data of the drawn line:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.glyphs.line_glyph import LineGlyph
+            >>> from cleopatra.glyphs.primitives.line_glyph import LineGlyph
             >>> glyph = LineGlyph(np.array([0.0, 1.0, 2.0]), np.array([1.0, 3.0, 2.0]))
             >>> fig, ax, lines = glyph.line()
             >>> [float(v) for v in lines[0].get_ydata()]
@@ -162,7 +162,7 @@ class LineGlyph(Glyph):
             - Two series produce two lines:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.line_glyph import LineGlyph
+                >>> from cleopatra.glyphs.primitives.line_glyph import LineGlyph
                 >>> x = np.array([0.0, 1.0, 2.0])
                 >>> y = np.array([[0.0, 1.0], [1.0, 2.0], [2.0, 3.0]])
                 >>> glyph = LineGlyph(x, y)
@@ -224,7 +224,7 @@ class LineGlyph(Glyph):
             - One bar per x value:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.line_glyph import LineGlyph
+                >>> from cleopatra.glyphs.primitives.line_glyph import LineGlyph
                 >>> glyph = LineGlyph(np.array([0.0, 1.0, 2.0]), np.array([3.0, 1.0, 2.0]))
                 >>> fig, ax, bars = glyph.bar()
                 >>> len(bars)
@@ -280,7 +280,7 @@ class LineGlyph(Glyph):
             - Band between an upper curve and a scalar baseline:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.line_glyph import LineGlyph
+                >>> from cleopatra.glyphs.primitives.line_glyph import LineGlyph
                 >>> glyph = LineGlyph(np.array([0.0, 1.0, 2.0]), np.array([1.0, 3.0, 2.0]))
                 >>> fig, ax, band = glyph.fill_between(y2=0.0)
                 >>> band.get_paths() is not None

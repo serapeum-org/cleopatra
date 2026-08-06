@@ -1935,7 +1935,7 @@ def categorize(
     See Also:
         classify: The continuous-range counterpart (bins a numeric range
             instead of mapping distinct values).
-        cleopatra.glyphs.glyph.Glyph._prepare_categorical_mapping: Turns this
+        cleopatra.glyphs.base.glyph.Glyph._prepare_categorical_mapping: Turns this
             function's categories/palette into per-element integer codes
             plus a matching `ListedColormap` + `BoundaryNorm`.
         disjoint_legend: The legend primitive that pairs with a categorical

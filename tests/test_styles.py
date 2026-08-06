@@ -197,7 +197,7 @@ class TestDiscreteContourfAcceptance:
             colorbar whose ticks are exactly those edges, confirming the
             already-implemented discrete-levels path still holds.
         """
-        from cleopatra.glyphs.array_glyph import ArrayGlyph
+        from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 
         data = np.linspace(0, 10, 36).reshape(6, 6)
         edges = [0, 2, 4, 6, 8, 10]

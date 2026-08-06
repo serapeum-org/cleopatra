@@ -16,7 +16,7 @@ from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
 
-from cleopatra.glyphs.array_glyph import ArrayGlyph
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 from cleopatra.basemap.reference import add_relief
 
 __all__ = ["publication_map"]

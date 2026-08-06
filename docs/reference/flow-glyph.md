@@ -8,7 +8,7 @@ flow / flux paths such as river reaches or transport links.
 
 ## Class Documentation
 
-::: cleopatra.glyphs.flow_glyph.FlowGlyph
+::: cleopatra.glyphs.primitives.flow_glyph.FlowGlyph
     options:
       show_root_heading: true
       show_source: true
@@ -20,7 +20,7 @@ flow / flux paths such as river reaches or transport links.
 
 ```python
 import numpy as np
-from cleopatra.glyphs.flow_glyph import FlowGlyph
+from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
 
 paths = [
     np.array([[0.0, 0.0], [1.0, 0.5], [2.0, 0.0]]),

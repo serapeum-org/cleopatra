@@ -22,7 +22,7 @@ import pytest
 from matplotlib.collections import PathCollection
 from matplotlib.legend import Legend
 
-from cleopatra.glyphs.scatter_glyph import ScatterGlyph
+from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
 from cleopatra.styling.styles import SIZE_SCALES, resolve_sizes, size_legend
 
 

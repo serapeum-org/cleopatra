@@ -9,7 +9,7 @@ encode two different quantities at once.
 
 ## Class Documentation
 
-::: cleopatra.glyphs.scatter_glyph.ScatterGlyph
+::: cleopatra.glyphs.primitives.scatter_glyph.ScatterGlyph
     options:
       show_root_heading: true
       show_source: true
@@ -21,7 +21,7 @@ encode two different quantities at once.
 
 ```python
 import numpy as np
-from cleopatra.glyphs.scatter_glyph import ScatterGlyph
+from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
 
 rng = np.random.default_rng(0)
 x, y = rng.random(100), rng.random(100)
@@ -35,7 +35,7 @@ fig, ax, paths = sg.plot(title="Coloured points")
 
 ```python
 import numpy as np
-from cleopatra.glyphs.scatter_glyph import ScatterGlyph
+from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
 
 rng = np.random.default_rng(0)
 x, y = rng.random(50), rng.random(50)

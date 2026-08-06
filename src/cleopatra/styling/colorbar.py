@@ -7,7 +7,7 @@ maps it onto the internal `cbar_*` / `ticks_spacing` options that the base
 callers off the loose `cbar_*` kwargs it supersedes.
 
 Kept in its own module (rather than in any single glyph) so every glyph type can
-import it without depending on `array_glyph`. `cleopatra.glyphs.array_glyph` re-exports
+import it without depending on `array_glyph`. `cleopatra.glyphs.gridded.array_glyph` re-exports
 `ColorBar` for backwards compatibility.
 """
 

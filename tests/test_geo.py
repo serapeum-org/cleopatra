@@ -31,8 +31,8 @@ from matplotlib.collections import LineCollection  # noqa: E402
 
 import cleopatra.basemap.reference as refmod  # noqa: E402
 import cleopatra.basemap.tiles as tilesmod  # noqa: E402
-from cleopatra.glyphs.array_glyph import ArrayGlyph  # noqa: E402
-from cleopatra.glyphs.flow_glyph import FlowGlyph  # noqa: E402
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph  # noqa: E402
+from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph  # noqa: E402
 from cleopatra.basemap.geo import (  # noqa: E402
     Basemap,
     Feature,
@@ -43,16 +43,16 @@ from cleopatra.basemap.geo import (  # noqa: E402
     add_point_labels,
     available_map_styles,
 )
-from cleopatra.glyphs.kde_glyph import KDEGlyph  # noqa: E402
-from cleopatra.glyphs.line_glyph import LineGlyph  # noqa: E402
-from cleopatra.glyphs.mesh_glyph import MeshGlyph  # noqa: E402
-from cleopatra.glyphs.polygon_glyph import PolygonGlyph  # noqa: E402
-from cleopatra.glyphs.scatter_glyph import ScatterGlyph  # noqa: E402
-from cleopatra.glyphs.statistical_glyph import StatisticalGlyph  # noqa: E402
-from cleopatra.glyphs.vector_glyph import VectorGlyph  # noqa: E402
+from cleopatra.glyphs.stats.kde_glyph import KDEGlyph  # noqa: E402
+from cleopatra.glyphs.primitives.line_glyph import LineGlyph  # noqa: E402
+from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph  # noqa: E402
+from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph  # noqa: E402
+from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph  # noqa: E402
+from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph  # noqa: E402
+from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph  # noqa: E402
 
 GEO_GLYPHS = [ArrayGlyph, MeshGlyph, VectorGlyph, FlowGlyph, PolygonGlyph, ScatterGlyph]
-NON_GEO_GLYPHS = [LineGlyph, StatisticalGlyph, KDEGlyph]
+NON_GEO_GLYPHS = [LineGlyph, HistogramGlyph, KDEGlyph]
 METHODS = ("add_tiles", "add_features", "add_relief", "add_reference_map", "add_labels")
 
 
@@ -924,8 +924,8 @@ class TestBasemap:
 
     def test_reexported_from_array_glyph(self):
         """`Basemap`/`Feature` are the same objects re-exported from array_glyph."""
-        from cleopatra.glyphs.array_glyph import Basemap as B2
-        from cleopatra.glyphs.array_glyph import Feature as F2
+        from cleopatra.glyphs.gridded.array_glyph import Basemap as B2
+        from cleopatra.glyphs.gridded.array_glyph import Feature as F2
 
         assert B2 is Basemap, 're-exports must be the same classes'
         assert F2 is Feature, 're-exports must be the same classes'

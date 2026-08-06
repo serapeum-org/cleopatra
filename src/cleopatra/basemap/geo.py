@@ -481,7 +481,7 @@ class GeoMixin:
     """Mixin giving geographic glyphs `add_tiles` / `add_features` / `add_relief`.
 
     The host class is expected to expose the plotted axes as `self.ax`
-    (every `cleopatra.glyphs.glyph.Glyph` subclass does). Call these after
+    (every `cleopatra.glyphs.base.glyph.Glyph` subclass does). Call these after
     plotting, or pass `ax=` explicitly.
 
     Set `self.crs` to the CRS of the data plotted on the axes (an EPSG code
@@ -493,7 +493,7 @@ class GeoMixin:
     axis CRS (a 4326 axis places it in lon/lat, unchanged).
     """
 
-    #: Set by `cleopatra.glyphs.glyph.Glyph`; the axes the basemap is drawn on.
+    #: Set by `cleopatra.glyphs.base.glyph.Glyph`; the axes the basemap is drawn on.
     ax: Any
 
     #: Backing store for the validated `crs` property; `None` means unset.
@@ -725,7 +725,7 @@ class GeoMixin:
             - Label a city on a plotted glyph:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> data = np.random.rand(20, 30)
                 >>> glyph = ArrayGlyph(data, extent=[-100, 15, -40, 55])
                 >>> fig, ax = glyph.plot()  # doctest: +SKIP
@@ -991,7 +991,7 @@ class GeoMixin:
             - Dress a georeferenced field in the ECMWF look:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> data = np.random.rand(20, 30)
                 >>> glyph = ArrayGlyph(data, extent=[-100, 15, -40, 55])
                 >>> fig, ax = glyph.plot()  # doctest: +SKIP

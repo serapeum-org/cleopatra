@@ -22,13 +22,13 @@ import numpy as np
 import pytest
 
 import cleopatra.styling.styles as styles_mod
-from cleopatra.glyphs.array_glyph import ArrayGlyph
-from cleopatra.glyphs.flow_glyph import FlowGlyph
-from cleopatra.glyphs.glyph import Glyph
-from cleopatra.glyphs.kde_glyph import KDEGlyph
-from cleopatra.glyphs.mesh_glyph import MeshGlyph
-from cleopatra.glyphs.polygon_glyph import PolygonGlyph
-from cleopatra.glyphs.scatter_glyph import ScatterGlyph
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
+from cleopatra.glyphs.base.glyph import Glyph
+from cleopatra.glyphs.stats.kde_glyph import KDEGlyph
+from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
+from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
+from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
 from cleopatra.styling.styles import (
     CLASSIFY_OPTIONS,
     JENKS_SCHEMES,
@@ -38,7 +38,7 @@ from cleopatra.styling.styles import (
     classify,
 )
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
-from cleopatra.glyphs.vector_glyph import VectorGlyph
+from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
 
 
 @pytest.fixture(autouse=True)

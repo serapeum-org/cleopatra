@@ -1,6 +1,6 @@
 """
-The `statistical_glyph` module provides a class for creating statistical plots, specifically histograms. The class,
-`StatisticalGlyph`, is designed to handle both 1D (single-dimensional) and 2D (multi-dimensional) data.
+The `histogram_glyph` module provides a class for creating statistical plots, specifically histograms. The class,
+`HistogramGlyph`, is designed to handle both 1D (single-dimensional) and 2D (multi-dimensional) data.
 
 The class has the following key features:
 
@@ -23,21 +23,21 @@ The class has the following key features:
     The class includes examples demonstrating how to use the histogram method with 1D and 2D data. The examples also
     include doctests to verify the correctness of the code.
 
-Here's an example of how to use the `StatisticalGlyph` class:
+Here's an example of how to use the `HistogramGlyph` class:
 
 ```python
 import numpy as np
 import matplotlib
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
-from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
+from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph
 
 # Create some random 1D data
 np.random.seed(1)
 data_1d = 4 + np.random.normal(0, 1.5, 200)
 
-# Create a StatisticalGlyph object with the 1D data
-stat_plot_1d = StatisticalGlyph(data_1d)
+# Create a HistogramGlyph object with the 1D data
+stat_plot_1d = HistogramGlyph(data_1d)
 
 # Generate a histogram plot for the 1D data
 fig_1d, ax_1d, hist_1d = stat_plot_1d.histogram()
@@ -45,8 +45,8 @@ fig_1d, ax_1d, hist_1d = stat_plot_1d.histogram()
 # Create some random 2D data
 data_2d = 4 + np.random.normal(0, 1.5, (200, 3))
 
-# Create a StatisticalGlyph object with the 2D data
-stat_plot_2d = StatisticalGlyph(data_2d, color=["red", "green", "blue"], alpha=0.4, rwidth=0.8)
+# Create a HistogramGlyph object with the 2D data
+stat_plot_2d = HistogramGlyph(data_2d, color=["red", "green", "blue"], alpha=0.4, rwidth=0.8)
 
 # Generate a histogram plot for the 2D data
 fig_2d, ax_2d, hist_2d = stat_plot_2d.histogram()
@@ -67,7 +67,7 @@ from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 
 from cleopatra.styling.colors import resolve_colormap
-from cleopatra.glyphs.glyph import (
+from cleopatra.glyphs.base.glyph import (
     _clear_prior_render_artists,
     _mark_render_artists,
     _root_figure,
@@ -87,7 +87,7 @@ STATISTICAL_DEFAULT_OPTIONS = STYLE_DEFAULTS | STATISTICAL_DEFAULT_OPTIONS
 DEFAULT_OPTIONS = STATISTICAL_DEFAULT_OPTIONS
 
 
-class StatisticalGlyph:
+class HistogramGlyph:
     """A class for creating statistical plots, specifically histograms.
 
     This class provides methods for initializing the class with numerical values and optional keyword arguments,
@@ -96,7 +96,7 @@ class StatisticalGlyph:
     The accepted option keys are exposed via the `DEFAULT_OPTIONS` class
     attribute and can be inspected or filtered before constructing an
     instance with the `option_keys` and `filter_kwargs` classmethods
-    (mirroring `cleopatra.glyphs.glyph.Glyph`, though this is a standalone class).
+    (mirroring `cleopatra.glyphs.base.glyph.Glyph`, though this is a standalone class).
 
     Attributes:
         values: The numerical values to be plotted as histograms.
@@ -122,10 +122,10 @@ class StatisticalGlyph:
         Create a histogram from 1D data:
         ```python
         >>> import numpy as np
-        >>> from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
+        >>> from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph
         >>> np.random.seed(1)
         >>> x = 4 + np.random.normal(0, 1.5, 200)
-        >>> stat_plot = StatisticalGlyph(x)
+        >>> stat_plot = HistogramGlyph(x)
         >>> fig, ax, hist = stat_plot.histogram()
 
         ```
@@ -133,7 +133,7 @@ class StatisticalGlyph:
         ```python
         >>> np.random.seed(1)
         >>> x = 4 + np.random.normal(0, 1.5, (200, 3))
-        >>> stat_plot = StatisticalGlyph(x, color=["red", "green", "blue"], alpha=0.4, rwidth=0.8)
+        >>> stat_plot = HistogramGlyph(x, color=["red", "green", "blue"], alpha=0.4, rwidth=0.8)
         >>> fig, ax, hist = stat_plot.histogram()
 
         ```
@@ -142,7 +142,7 @@ class StatisticalGlyph:
         ```python
         >>> np.random.seed(1)
         >>> x = 4 + np.random.normal(0, 1.5, 200)
-        >>> stat_plot = StatisticalGlyph(x)
+        >>> stat_plot = HistogramGlyph(x)
         >>> fig, ax, hist = stat_plot.histogram()
         >>> print(hist) # doctest: +SKIP
         {'n': [array([ 2.,  4.,  3., 10., 11., 20., 30., 27., 31., 25., 17.,  8.,  5.,
@@ -152,7 +152,7 @@ class StatisticalGlyph:
                            7.79248856])], 'patches': [<BarContainer object of 15 artists>]}
 
         ```
-        ![one-histogram](./../images/statistical_glyph/one-histogram.png)
+        ![one-histogram](./../images/histogram_glyph/one-histogram.png)
     """
 
     #: Option keys this glyph accepts, exposed as a class attribute so they
@@ -167,7 +167,7 @@ class StatisticalGlyph:
         ax: Axes | None = None,
         **kwargs,
     ):
-        """Initialize the StatisticalGlyph object with values and optional customization parameters.
+        """Initialize the HistogramGlyph object with values and optional customization parameters.
 
         Args:
             values: The numerical values to be plotted as histograms. Can be:
@@ -209,15 +209,15 @@ class StatisticalGlyph:
             Initialize with default options:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
+            >>> from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph
             >>> np.random.seed(1)
             >>> x = np.random.normal(0, 1, 100)
-            >>> stat = StatisticalGlyph(x)
+            >>> stat = HistogramGlyph(x)
 
             ```
             Initialize with custom options:
             ```python
-            >>> stat_custom = StatisticalGlyph(
+            >>> stat_custom = HistogramGlyph(
             ...     x,
             ...     figsize=(8, 6),
             ...     bins=20,
@@ -234,7 +234,7 @@ class StatisticalGlyph:
             Initialize with 2D data:
             ```python
             >>> data_2d = np.random.normal(0, 1, (100, 3))
-            >>> stat_2d = StatisticalGlyph(
+            >>> stat_2d = HistogramGlyph(
             ...     data_2d,
             ...     color=["red", "green", "blue"],
             ...     alpha=0.4
@@ -245,7 +245,7 @@ class StatisticalGlyph:
             ```python
             >>> import matplotlib.pyplot as plt
             >>> fig, ax = plt.subplots()
-            >>> stat = StatisticalGlyph(x, fig=fig, ax=ax)
+            >>> stat = HistogramGlyph(x, fig=fig, ax=ax)
             >>> fig2, ax2, hist = stat.histogram()
             >>> ax2 is ax
             True
@@ -270,10 +270,10 @@ class StatisticalGlyph:
 
         Examples:
             >>> import numpy as np
-            >>> from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
+            >>> from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph
             >>> np.random.seed(1)
             >>> x = np.random.normal(0, 1, 100)
-            >>> stat = StatisticalGlyph(x)
+            >>> stat = HistogramGlyph(x)
             >>> values = stat.values
             >>> values.shape
             (100,)
@@ -292,10 +292,10 @@ class StatisticalGlyph:
         Examples:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
+            >>> from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph
             >>> np.random.seed(1)
             >>> x1 = np.random.normal(0, 1, 100)
-            >>> stat = StatisticalGlyph(x1)
+            >>> stat = HistogramGlyph(x1)
             >>> # Update with new values
             >>> x2 = np.random.normal(5, 2, 100)
             >>> stat.values = x2
@@ -327,10 +327,10 @@ class StatisticalGlyph:
         Examples:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
+            >>> from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph
             >>> np.random.seed(1)
             >>> x = np.random.normal(0, 1, 100)
-            >>> stat = StatisticalGlyph(x)
+            >>> stat = HistogramGlyph(x)
             >>> options = stat.default_options
             >>> print(options['bins'])
             15
@@ -347,7 +347,7 @@ class StatisticalGlyph:
 
         Resolves from the class-level ``DEFAULT_OPTIONS`` so the accepted
         keys can be inspected without constructing an instance. Mirrors
-        ``cleopatra.glyphs.glyph.Glyph.option_keys`` (``StatisticalGlyph`` is a
+        ``cleopatra.glyphs.base.glyph.Glyph.option_keys`` (``HistogramGlyph`` is a
         standalone class, not a ``Glyph`` subclass).
 
         Returns:
@@ -356,8 +356,8 @@ class StatisticalGlyph:
         Examples:
             - Inspect the accepted keys before building one:
                 ```python
-                >>> from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
-                >>> keys = StatisticalGlyph.option_keys()
+                >>> from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph
+                >>> keys = HistogramGlyph.option_keys()
                 >>> "bins" in keys
                 True
                 >>> "totally_unknown" in keys
@@ -383,9 +383,9 @@ class StatisticalGlyph:
         Examples:
             - Keep only the accepted keys:
                 ```python
-                >>> from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
+                >>> from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph
                 >>> raw = {"bins": 20, "alpha": 0.5, "bogus": 1}
-                >>> safe = StatisticalGlyph.filter_kwargs(raw)
+                >>> safe = HistogramGlyph.filter_kwargs(raw)
                 >>> sorted(safe)
                 ['alpha', 'bins']
                 >>> safe["bins"]
@@ -461,10 +461,10 @@ class StatisticalGlyph:
 
                     ```python
                     >>> import numpy as np
-                    >>> from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
+                    >>> from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph
                     >>> np.random.seed(1)
                     >>> x = 4 + np.random.normal(0, 1.5, 200)
-                    >>> stat_plot = StatisticalGlyph(x)
+                    >>> stat_plot = HistogramGlyph(x)
                     >>> fig, ax, hist = stat_plot.histogram()
                     >>> print(hist) # doctest: +SKIP
                     {'n': [array([ 2.,  4.,  3., 10., 11., 20., 30., 27., 31., 25., 17.,  8.,  5.,
@@ -473,7 +473,7 @@ class StatisticalGlyph:
                            5.31090682, 5.80722317, 6.30353952, 6.79985587, 7.29617221,
                            7.79248856])], 'patches': [<BarContainer object of 15 artists>]}
                     ```
-                    ![one-histogram](./../images/statistical_glyph/one-histogram.png)
+                    ![one-histogram](./../images/histogram_glyph/one-histogram.png)
 
                 - Create a histogram with custom bin count and labels:
 
@@ -494,7 +494,7 @@ class StatisticalGlyph:
                     ```python
                     >>> np.random.seed(1)
                     >>> x = 4 + np.random.normal(0, 1.5, (200, 3))
-                    >>> stat_plot = StatisticalGlyph(x, color=["red", "green", "blue"], alpha=0.4, rwidth=0.8)
+                    >>> stat_plot = HistogramGlyph(x, color=["red", "green", "blue"], alpha=0.4, rwidth=0.8)
                     >>> fig, ax, hist = stat_plot.histogram()
                     >>> print(hist) # doctest: +SKIP
                     {'n': [array([ 1.,  2.,  4., 10., 13., 19., 20., 32., 27., 23., 24., 11.,  5.,
@@ -512,7 +512,7 @@ class StatisticalGlyph:
                            8.54628567])], 'patches': [<BarContainer object of 15 artists>,
                            <BarContainer object of 15 artists>, <BarContainer object of 15 artists>]}
                     ```
-                    ![three-histogram](./../images/statistical_glyph/three-histogram.png)
+                    ![three-histogram](./../images/histogram_glyph/three-histogram.png)
 
                 Access the histogram data:
 
@@ -566,7 +566,7 @@ class StatisticalGlyph:
 
         # See `_clear_prior_render_artists`: a prior `histogram`/`boxplot`/
         # `multiboxplot`/`stripes` call on this Axes (this glyph's own, or
-        # a different glyph sharing it via `StatisticalGlyph(ax=..., ...)`)
+        # a different glyph sharing it via `HistogramGlyph(ax=..., ...)`)
         # leaves its bars/boxes orphaned unless removed first. Deferred
         # until here -- after the `color`/`num_samples` check above, this
         # call's only validation that can raise -- so a failed call leaves
@@ -624,7 +624,7 @@ class StatisticalGlyph:
             raise TypeError(
                 "`fig` is not a parameter of boxplot/multiboxplot/stripes; "
                 "bind the figure at construction instead: "
-                "StatisticalGlyph(values, fig=...)."
+                "HistogramGlyph(values, fig=...)."
             )
 
     def _resolve_fig_ax(self, ax: Axes | None) -> tuple[Figure, Axes]:
@@ -633,7 +633,7 @@ class StatisticalGlyph:
         These renderers compose into a caller-supplied axes when provided
         (and never call `plt.show()`), so they can be laid out into a
         larger figure. The figure is always derived from the axes —
-        `fig` is a construction-time binding (`StatisticalGlyph(..., fig=)`),
+        `fig` is a construction-time binding (`HistogramGlyph(..., fig=)`),
         not a per-call parameter.
 
         Resolution priority: the method's `ax` argument, then the axes
@@ -692,7 +692,7 @@ class StatisticalGlyph:
 
         Args:
             ax: Axes to draw on. Falls back to the axes/figure bound at
-                construction (`StatisticalGlyph(..., ax=/fig=)`), and a
+                construction (`HistogramGlyph(..., ax=/fig=)`), and a
                 brand-new figure/axes is created when none is available.
                 `fig` is a construction-time binding, not a parameter
                 here.
@@ -713,10 +713,10 @@ class StatisticalGlyph:
             - One box per column for 2D data:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
+                >>> from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph
                 >>> np.random.seed(1)
                 >>> data = np.random.normal(0, 1, (50, 3))
-                >>> stat = StatisticalGlyph(data, color=["r", "g", "b"])
+                >>> stat = HistogramGlyph(data, color=["r", "g", "b"])
                 >>> fig, ax, bp = stat.boxplot()
                 >>> len(bp["boxes"])
                 3
@@ -801,10 +801,10 @@ class StatisticalGlyph:
             - Place three boxes at custom positions:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
+                >>> from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph
                 >>> np.random.seed(1)
                 >>> data = np.random.normal(0, 1, (40, 3))
-                >>> stat = StatisticalGlyph(data, color=["r", "g", "b"])
+                >>> stat = HistogramGlyph(data, color=["r", "g", "b"])
                 >>> fig, ax, bp = stat.multiboxplot(positions=[1, 2, 4])
                 >>> [int(line.get_xdata().mean()) for line in bp["medians"]]
                 [1, 2, 4]
@@ -895,9 +895,9 @@ class StatisticalGlyph:
             - One stripe per yearly value:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
+                >>> from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph
                 >>> series = np.array([0.1, 0.3, 0.2, 0.6, 0.9, 0.7])
-                >>> stat = StatisticalGlyph(series)
+                >>> stat = HistogramGlyph(series)
                 >>> fig, ax, bars = stat.stripes(cmap="coolwarm")
                 >>> len(bars)
                 6

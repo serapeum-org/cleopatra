@@ -7,11 +7,11 @@ control, point overlays, and animation saving.
 
 `ArrayGlyph`, `MeshGlyph`, `ScatterGlyph`, `VectorGlyph`, `FlowGlyph`,
 `LineGlyph`, `PolygonGlyph`, and `KDEGlyph` all inherit from `Glyph` and share
-its colour-mapping / colorbar pipeline. `StatisticalGlyph` stands alone.
+its colour-mapping / colorbar pipeline. `HistogramGlyph` stands alone.
 
 ## Class Documentation
 
-::: cleopatra.glyphs.glyph.Glyph
+::: cleopatra.glyphs.base.glyph.Glyph
     options:
       show_root_heading: true
       show_source: true

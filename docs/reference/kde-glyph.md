@@ -8,7 +8,7 @@ drawn contours.
 
 ## Class Documentation
 
-::: cleopatra.glyphs.kde_glyph.KDEGlyph
+::: cleopatra.glyphs.stats.kde_glyph.KDEGlyph
     options:
       show_root_heading: true
       show_source: true
@@ -20,7 +20,7 @@ drawn contours.
 
 ```python
 import numpy as np
-from cleopatra.glyphs.kde_glyph import KDEGlyph
+from cleopatra.glyphs.stats.kde_glyph import KDEGlyph
 
 rng = np.random.default_rng(0)
 x = rng.normal(0, 1, 500)

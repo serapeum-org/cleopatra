@@ -10,8 +10,8 @@ from matplotlib.axes import Axes
 from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 
-import cleopatra.glyphs.statistical_glyph as statistical_glyph_module
-from cleopatra.glyphs.statistical_glyph import StatisticalGlyph
+import cleopatra.glyphs.stats.histogram_glyph as statistical_glyph_module
+from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph
 
 
 @pytest.fixture(autouse=True)
@@ -26,7 +26,7 @@ def test_module_doctests_execute():
 
     Pytest is not configured with ``--doctest-modules``, so docstring examples in
     ``src/`` would otherwise never run. This test executes them for
-    ``cleopatra.glyphs.statistical_glyph`` (including the fig/ax composition example) and
+    ``cleopatra.glyphs.stats.histogram_glyph`` (including the fig/ax composition example) and
     fails if any example's output no longer matches.
     """
     try:
@@ -34,16 +34,16 @@ def test_module_doctests_execute():
     finally:
         plt.close("all")
     assert results.failed == 0, (
-        f"{results.failed} doctest example(s) failed in statistical_glyph"
+        f"{results.failed} doctest example(s) failed in histogram_glyph"
     )
     assert results.attempted > 0, (
-        "no doctest examples were collected from statistical_glyph; the module's docstring "
+        "no doctest examples were collected from histogram_glyph; the module's docstring "
         "examples may have been moved or removed, silently dropping this coverage"
     )
 
 
 def test_histogram_does_not_call_plt_show(monkeypatch):
-    """Test that `StatisticalGlyph.histogram()` does not force an interactive display.
+    """Test that `HistogramGlyph.histogram()` does not force an interactive display.
 
     Args:
         monkeypatch: Pytest fixture used to replace ``matplotlib.pyplot.show``.
@@ -57,7 +57,7 @@ def test_histogram_does_not_call_plt_show(monkeypatch):
     monkeypatch.setattr(plt, "show", lambda *a, **k: calls.append(1))
     np.random.seed(1)
     x = 4 + np.random.normal(0, 1.5, 200)
-    fig, ax, hist = StatisticalGlyph(x).histogram()
+    fig, ax, hist = HistogramGlyph(x).histogram()
     assert calls == [], (
         f"histogram() should not call plt.show(); was called {len(calls)} time(s)"
     )
@@ -73,7 +73,7 @@ def test_histogram_one_sample():
     # make data
     np.random.seed(1)
     x = 4 + np.random.normal(0, 1.5, 200)
-    stat_plot = StatisticalGlyph(x)
+    stat_plot = HistogramGlyph(x)
     fig, ax, hist = stat_plot.histogram()
     assert isinstance(fig, Figure)
     assert isinstance(ax, Axes)
@@ -82,7 +82,7 @@ def test_histogram_one_sample():
 
 
 class TestHistogramFigAxInjection:
-    """Tests for the ``fig``/``ax`` composition parameters of ``StatisticalGlyph``."""
+    """Tests for the ``fig``/``ax`` composition parameters of ``HistogramGlyph``."""
 
     @staticmethod
     def _data():
@@ -106,7 +106,7 @@ class TestHistogramFigAxInjection:
             return the axes' parent figure (no new figure), and draw the bars on it.
         """
         fig0, ax0 = plt.subplots()
-        stat = StatisticalGlyph(self._data(), ax=ax0)
+        stat = HistogramGlyph(self._data(), ax=ax0)
         fig, ax, hist = stat.histogram()
         assert ax is ax0, "histogram() should draw into the supplied axes"
         assert fig is fig0, f"figure should be inferred from the axes, got {fig}"
@@ -120,7 +120,7 @@ class TestHistogramFigAxInjection:
             exact objects rather than creating new ones.
         """
         fig0, ax0 = plt.subplots()
-        stat = StatisticalGlyph(self._data(), fig=fig0, ax=ax0)
+        stat = HistogramGlyph(self._data(), fig=fig0, ax=ax0)
         fig, ax, _ = stat.histogram()
         assert fig is fig0, "supplied figure should be returned unchanged"
         assert ax is ax0, "supplied axes should be returned unchanged"
@@ -134,7 +134,7 @@ class TestHistogramFigAxInjection:
         """
         fig0 = plt.figure()
         assert fig0.axes == [], "precondition: the supplied figure starts with no axes"
-        stat = StatisticalGlyph(self._data(), fig=fig0)
+        stat = HistogramGlyph(self._data(), fig=fig0)
         fig, ax, _ = stat.histogram()
         assert fig is fig0, "histogram() should reuse the supplied figure"
         assert ax in fig0.axes, "the created axes should belong to the supplied figure"
@@ -149,7 +149,7 @@ class TestHistogramFigAxInjection:
             explicitly, rather than overlaying a full-figure axes on the existing panels.
         """
         fig0, _ = plt.subplots(1, 2)
-        stat = StatisticalGlyph(self._data(), fig=fig0)
+        stat = HistogramGlyph(self._data(), fig=fig0)
         with pytest.raises(ValueError, match=r"already contains axes") as exc:
             stat.histogram()
         assert "ax=" in str(exc.value), (
@@ -164,7 +164,7 @@ class TestHistogramFigAxInjection:
             Figure/Axes pair that is unrelated to any pre-existing figure.
         """
         other_fig, other_ax = plt.subplots()
-        stat = StatisticalGlyph(self._data())
+        stat = HistogramGlyph(self._data())
         fig, ax, _ = stat.histogram()
         assert isinstance(fig, Figure), (
             f"histogram() should return a Figure, got {type(fig)}"
@@ -185,7 +185,7 @@ class TestHistogramFigAxInjection:
         """
         fig0, ax0 = plt.subplots()
         plt.figure()  # make a different figure the pyplot "current" one
-        stat = StatisticalGlyph(
+        stat = HistogramGlyph(
             self._data(), ax=ax0, xlabel="X values", ylabel="Counts"
         )
         _, ax, _ = stat.histogram()
@@ -212,7 +212,7 @@ class TestStatisticalGlyphValidationAndState:
             ``values`` setter, and confirm the property returns the new array.
         """
         np.random.seed(1)
-        stat = StatisticalGlyph(np.random.normal(0, 1, 100))
+        stat = HistogramGlyph(np.random.normal(0, 1, 100))
         new_values = np.random.normal(5, 2, 50)
         stat.values = new_values
         assert stat.values is new_values, (
@@ -230,7 +230,7 @@ class TestStatisticalGlyphValidationAndState:
             ``ValueError`` naming the offending argument.
         """
         np.random.seed(1)
-        stat = StatisticalGlyph(np.random.normal(0, 1, 100))
+        stat = HistogramGlyph(np.random.normal(0, 1, 100))
         with pytest.raises(ValueError, match=r"not correct") as exc:
             stat.histogram(not_a_real_option=123)
         assert "not_a_real_option" in str(exc.value), (
@@ -247,7 +247,7 @@ class TestStatisticalGlyphValidationAndState:
         """
         np.random.seed(1)
         data_2d = np.random.normal(0, 1, (100, 3))
-        stat = StatisticalGlyph(data_2d)
+        stat = HistogramGlyph(data_2d)
         with pytest.raises(ValueError, match=r"number of colors") as exc:
             stat.histogram()
         assert "samples:3" in str(exc.value), (
@@ -260,7 +260,7 @@ def test_histogram_multiple_sample():
     np.random.seed(1)
     x = 4 + np.random.normal(0, 1.5, (200, 3))
     colors = ["red", "green", "blue"]
-    stat_plot = StatisticalGlyph(x, color=colors)
+    stat_plot = HistogramGlyph(x, color=colors)
     fig, ax, hist = stat_plot.histogram()
     assert isinstance(fig, Figure)
     assert isinstance(ax, Axes)
@@ -269,7 +269,7 @@ def test_histogram_multiple_sample():
 
 
 class TestBoxplot:
-    """Tests for StatisticalGlyph.boxplot (T7.3c)."""
+    """Tests for HistogramGlyph.boxplot (T7.3c)."""
 
     def test_single_series_one_box(self):
         """1D values draw a single box.
@@ -278,7 +278,7 @@ class TestBoxplot:
             One box is produced for a 1D sample.
         """
         np.random.seed(1)
-        stat = StatisticalGlyph(np.random.normal(0, 1, 100))
+        stat = HistogramGlyph(np.random.normal(0, 1, 100))
         fig, ax, bp = stat.boxplot()
         assert isinstance(fig, Figure) and isinstance(ax, Axes)
         assert len(bp["boxes"]) == 1, f"Expected 1 box, got {len(bp['boxes'])}"
@@ -290,7 +290,7 @@ class TestBoxplot:
             A (50, 3) sample yields three boxes.
         """
         np.random.seed(1)
-        stat = StatisticalGlyph(np.random.normal(0, 1, (50, 3)), color=["r", "g", "b"])
+        stat = HistogramGlyph(np.random.normal(0, 1, (50, 3)), color=["r", "g", "b"])
         _, _, bp = stat.boxplot()
         assert len(bp["boxes"]) == 3, f"Expected 3 boxes, got {len(bp['boxes'])}"
 
@@ -302,7 +302,7 @@ class TestBoxplot:
         """
         np.random.seed(1)
         fig, ax = plt.subplots()
-        stat = StatisticalGlyph(np.random.normal(0, 1, 50))
+        stat = HistogramGlyph(np.random.normal(0, 1, 50))
         out_fig, out_ax, _ = stat.boxplot(ax=ax)
         assert out_ax is ax and out_fig is fig, "Should reuse supplied axes/figure"
 
@@ -313,7 +313,7 @@ class TestBoxplot:
             Labels passed through are set on the x ticks.
         """
         np.random.seed(1)
-        stat = StatisticalGlyph(np.random.normal(0, 1, (30, 2)), color=["r", "g"])
+        stat = HistogramGlyph(np.random.normal(0, 1, (30, 2)), color=["r", "g"])
         _, ax, _ = stat.boxplot(labels=["A", "B"])
         assert [t.get_text() for t in ax.get_xticklabels()] == ["A", "B"]
 
@@ -327,7 +327,7 @@ class TestBoxplot:
             at [1, 2, 3].
         """
         np.random.seed(1)
-        stat = StatisticalGlyph(np.random.normal(0, 1, (30, 3)), color=["r", "g", "b"])
+        stat = HistogramGlyph(np.random.normal(0, 1, (30, 3)), color=["r", "g", "b"])
         _, ax, bp = stat.boxplot()
         assert [t.get_text() for t in ax.get_xticklabels()] == [
             "1",
@@ -348,7 +348,7 @@ class TestBoxplot:
             One series -> one box labelled "1".
         """
         np.random.seed(1)
-        stat = StatisticalGlyph(np.random.normal(0, 1, 40))
+        stat = HistogramGlyph(np.random.normal(0, 1, 40))
         _, ax, _ = stat.boxplot()
         assert [t.get_text() for t in ax.get_xticklabels()] == ["1"], (
             "Single series should be labelled '1'"
@@ -363,7 +363,7 @@ class TestBoxplot:
             staying at the default 1..n), so labels stay under the boxes.
         """
         np.random.seed(1)
-        stat = StatisticalGlyph(np.random.normal(0, 1, (20, 3)), color=["r", "g", "b"])
+        stat = HistogramGlyph(np.random.normal(0, 1, (20, 3)), color=["r", "g", "b"])
         _, ax, bp = stat.boxplot(positions=[10, 20, 30])
         box_x = [round(float(line.get_xdata().mean())) for line in bp["medians"]]
         assert box_x == [10, 20, 30], f"Boxes should sit at positions, got {box_x}"
@@ -380,7 +380,7 @@ class TestBoxplot:
 
 
 class TestMultiboxplot:
-    """Tests for StatisticalGlyph.multiboxplot (T7.3c)."""
+    """Tests for HistogramGlyph.multiboxplot (T7.3c)."""
 
     def test_boxes_at_custom_positions(self):
         """Boxes are placed at the requested x positions.
@@ -389,7 +389,7 @@ class TestMultiboxplot:
             Median lines sit at the requested positions.
         """
         np.random.seed(1)
-        stat = StatisticalGlyph(np.random.normal(0, 1, (40, 3)), color=["r", "g", "b"])
+        stat = HistogramGlyph(np.random.normal(0, 1, (40, 3)), color=["r", "g", "b"])
         _, _, bp = stat.multiboxplot(positions=[1, 2, 4])
         medians = [round(float(line.get_xdata().mean())) for line in bp["medians"]]
         assert medians == [1, 2, 4], f"Medians should sit at positions, got {medians}"
@@ -400,7 +400,7 @@ class TestMultiboxplot:
         Test scenario:
             multiboxplot needs one column per box.
         """
-        stat = StatisticalGlyph(np.array([1.0, 2.0, 3.0]))
+        stat = HistogramGlyph(np.array([1.0, 2.0, 3.0]))
         with pytest.raises(ValueError, match="requires 2D"):
             stat.multiboxplot()
 
@@ -411,7 +411,7 @@ class TestMultiboxplot:
             3 columns but 2 positions is rejected.
         """
         np.random.seed(1)
-        stat = StatisticalGlyph(np.random.normal(0, 1, (20, 3)), color=["r", "g", "b"])
+        stat = HistogramGlyph(np.random.normal(0, 1, (20, 3)), color=["r", "g", "b"])
         with pytest.raises(ValueError, match="positions length"):
             stat.multiboxplot(positions=[1, 2])
 
@@ -422,13 +422,13 @@ class TestMultiboxplot:
             3 columns but 2 labels is rejected.
         """
         np.random.seed(1)
-        stat = StatisticalGlyph(np.random.normal(0, 1, (20, 3)), color=["r", "g", "b"])
+        stat = HistogramGlyph(np.random.normal(0, 1, (20, 3)), color=["r", "g", "b"])
         with pytest.raises(ValueError, match="labels length"):
             stat.multiboxplot(labels=["A", "B"])
 
 
 class TestStripes:
-    """Tests for StatisticalGlyph.stripes (T7.3c)."""
+    """Tests for HistogramGlyph.stripes (T7.3c)."""
 
     def test_one_bar_per_value(self):
         """Each value becomes one full-height stripe.
@@ -437,7 +437,7 @@ class TestStripes:
             Six values -> six bars; y-axis ticks are removed.
         """
         series = np.array([0.1, 0.3, 0.2, 0.6, 0.9, 0.7])
-        stat = StatisticalGlyph(series)
+        stat = HistogramGlyph(series)
         fig, ax, bars = stat.stripes(cmap="coolwarm")
         assert isinstance(bars, BarContainer), (
             f"Expected BarContainer, got {type(bars)}"
@@ -452,7 +452,7 @@ class TestStripes:
             The min-value and max-value stripes differ in colour.
         """
         series = np.array([0.0, 1.0, 2.0, 3.0, 4.0])
-        stat = StatisticalGlyph(series)
+        stat = HistogramGlyph(series)
         _, _, bars = stat.stripes(cmap="coolwarm")
         assert bars.patches[0].get_facecolor() != bars.patches[-1].get_facecolor(), (
             "First and last stripe should differ in colour"
@@ -465,7 +465,7 @@ class TestStripes:
             Passing vmin/vmax renders the stripes.
         """
         series = np.array([0.0, 5.0, 10.0])
-        stat = StatisticalGlyph(series)
+        stat = HistogramGlyph(series)
         _, _, bars = stat.stripes(cmap="viridis", vmin=-5.0, vmax=15.0)
         assert len(bars) == 3, "Should render all stripes with explicit limits"
 
@@ -475,7 +475,7 @@ class TestStripes:
         Test scenario:
             stripes needs a single 1D series.
         """
-        stat = StatisticalGlyph(np.ones((4, 2)))
+        stat = HistogramGlyph(np.ones((4, 2)))
         with pytest.raises(ValueError, match="requires 1D"):
             stat.stripes()
 
@@ -489,7 +489,7 @@ class TestStripes:
         """
         import typing
 
-        hints = typing.get_type_hints(StatisticalGlyph.stripes)
+        hints = typing.get_type_hints(HistogramGlyph.stripes)
         assert typing.get_args(hints["return"]) == (
             Figure,
             Axes,
@@ -501,19 +501,19 @@ class TestSharedAxesArtistCleanup:
     """`histogram`/`boxplot`/`multiboxplot`/`stripes` must not stack artists on a shared `Axes`.
 
     Regression coverage for issue #210, generalised beyond `ArrayGlyph`:
-    the same orphaned-artist defect existed in `StatisticalGlyph`,
-    reachable through the documented `StatisticalGlyph(ax=...)`
+    the same orphaned-artist defect existed in `HistogramGlyph`,
+    reachable through the documented `HistogramGlyph(ax=...)`
     construction-time binding that pyramids' `Analysis.plot_histogram`/
     `plot_vector_field` `ax=` passthrough exposes.
     """
 
     def test_histogram_two_glyphs_sharing_axes_does_not_stack(self):
         """A second, different glyph's `histogram()` onto a shared axes replaces the bars."""
-        sg1 = StatisticalGlyph(np.random.default_rng(0).normal(size=100))
+        sg1 = HistogramGlyph(np.random.default_rng(0).normal(size=100))
         fig1, ax1, _ = sg1.histogram()
         bars_after_first = len(ax1.patches)
 
-        sg2 = StatisticalGlyph(np.random.default_rng(1).normal(size=100), ax=ax1)
+        sg2 = HistogramGlyph(np.random.default_rng(1).normal(size=100), ax=ax1)
         sg2.histogram()
 
         assert len(ax1.patches) == bars_after_first, (
@@ -523,7 +523,7 @@ class TestSharedAxesArtistCleanup:
 
     def test_boxplot_repeated_on_same_instance_does_not_stack(self):
         """A second `boxplot()` call on the same instance replaces, not stacks, the boxes."""
-        sg = StatisticalGlyph(
+        sg = HistogramGlyph(
             np.random.default_rng(0).normal(size=(50, 3)), color=["r", "g", "b"]
         )
         fig, ax, _ = sg.boxplot()
@@ -536,13 +536,13 @@ class TestSharedAxesArtistCleanup:
 
     def test_multiboxplot_two_glyphs_sharing_axes_does_not_stack(self):
         """A second, different glyph's `multiboxplot()` onto a shared axes replaces the boxes."""
-        sg1 = StatisticalGlyph(
+        sg1 = HistogramGlyph(
             np.random.default_rng(0).normal(size=(40, 3)), color=["r", "g", "b"]
         )
         fig, ax, _ = sg1.multiboxplot(positions=[1, 2, 4])
         boxes_after_first = len(ax.patches)
 
-        sg2 = StatisticalGlyph(
+        sg2 = HistogramGlyph(
             np.random.default_rng(1).normal(size=(40, 3)), color=["r", "g", "b"]
         )
         sg2.multiboxplot(positions=[1, 2, 4], ax=ax)
@@ -560,10 +560,10 @@ class TestSharedAxesArtistCleanup:
             if the first call's stripes were left orphaned, the axes
             would end up with 9 bars instead of 3.
         """
-        sg1 = StatisticalGlyph(np.array([0.1, 0.3, 0.2, 0.6, 0.9, 0.7]))
+        sg1 = HistogramGlyph(np.array([0.1, 0.3, 0.2, 0.6, 0.9, 0.7]))
         fig, ax, _ = sg1.stripes(cmap="coolwarm")
 
-        sg2 = StatisticalGlyph(np.array([0.2, 0.4, 0.1]))
+        sg2 = HistogramGlyph(np.array([0.2, 0.4, 0.1]))
         fig, ax, bars2 = sg2.stripes(cmap="coolwarm", ax=ax)
 
         assert len(ax.patches) == 3, f"Expected 3 bars, got {len(ax.patches)}"
@@ -580,7 +580,7 @@ class TestSharedAxesArtistCleanup:
             `color` list destroyed the last-good histogram along with
             propagating the `ValueError`.
         """
-        sg = StatisticalGlyph(
+        sg = HistogramGlyph(
             np.random.default_rng(0).normal(size=(50, 2)), color=["r", "g"]
         )
         fig, ax, hist = sg.histogram()
@@ -615,7 +615,7 @@ class TestFigParameterRemovedFromRenderers:
             `fig=` is now an unexpected keyword argument.
         """
         fig, ax = plt.subplots()
-        stat = StatisticalGlyph(np.arange(12, dtype=float).reshape(4, 3))
+        stat = HistogramGlyph(np.arange(12, dtype=float).reshape(4, 3))
         with pytest.raises(TypeError, match="fig"):
             getattr(stat, method)(fig=fig)
 
@@ -627,7 +627,7 @@ class TestFigParameterRemovedFromRenderers:
             argument is omitted, composing onto the constructor's axes.
         """
         fig, ax = plt.subplots()
-        stat = StatisticalGlyph(np.arange(9, dtype=float), ax=ax)
+        stat = HistogramGlyph(np.arange(9, dtype=float), ax=ax)
         out_fig, out_ax, _ = stat.boxplot()
         assert out_ax is ax, "boxplot should reuse the constructor axes"
         assert out_fig is ax.get_figure(), "figure must come from that axes"
@@ -640,7 +640,7 @@ class TestFigParameterRemovedFromRenderers:
             a subplot to that figure rather than creating a new one.
         """
         fig = plt.figure()
-        stat = StatisticalGlyph(np.arange(9, dtype=float), fig=fig)
+        stat = HistogramGlyph(np.arange(9, dtype=float), fig=fig)
         out_fig, out_ax, _ = stat.boxplot()
         assert out_fig is fig, "boxplot should add an axes to the constructor figure"
         assert out_ax in fig.axes, "the new axes must belong to that figure"
@@ -654,7 +654,7 @@ class TestFigParameterRemovedFromRenderers:
         """
         ctor_fig, ctor_ax = plt.subplots()
         call_fig, call_ax = plt.subplots()
-        stat = StatisticalGlyph(np.arange(9, dtype=float), ax=ctor_ax)
+        stat = HistogramGlyph(np.arange(9, dtype=float), ax=ctor_ax)
         _, out_ax, _ = stat.boxplot(ax=call_ax)
         assert out_ax is call_ax, "method ax should win over constructor ax"
 
@@ -666,7 +666,7 @@ class TestFigParameterRemovedFromRenderers:
             renderer.
         """
         fig, ax = plt.subplots()
-        stat = StatisticalGlyph(np.array([0.1, 0.5, 0.9]), ax=ax)
+        stat = HistogramGlyph(np.array([0.1, 0.5, 0.9]), ax=ax)
         _, out_ax, _ = stat.stripes(cmap="coolwarm")
         assert out_ax is ax, "stripes should reuse the constructor axes"
 
@@ -678,7 +678,7 @@ class TestFigParameterRemovedFromRenderers:
             grouped `multiboxplot` renderer (requires 2D values).
         """
         fig, ax = plt.subplots()
-        stat = StatisticalGlyph(np.arange(12, dtype=float).reshape(4, 3), ax=ax)
+        stat = HistogramGlyph(np.arange(12, dtype=float).reshape(4, 3), ax=ax)
         _, out_ax, _ = stat.multiboxplot(positions=[1, 2, 3])
         assert out_ax is ax, "multiboxplot should reuse the constructor axes"
 
@@ -690,7 +690,7 @@ class TestFigParameterRemovedFromRenderers:
             a subplot to that figure rather than creating a new one.
         """
         fig = plt.figure()
-        stat = StatisticalGlyph(np.arange(12, dtype=float).reshape(4, 3), fig=fig)
+        stat = HistogramGlyph(np.arange(12, dtype=float).reshape(4, 3), fig=fig)
         out_fig, out_ax, _ = stat.multiboxplot(positions=[1, 2, 3])
         assert out_fig is fig, (
             "multiboxplot should add an axes to the constructor figure"
@@ -699,9 +699,9 @@ class TestFigParameterRemovedFromRenderers:
 
 
 class TestOptionKeysAndFilterKwargs:
-    """Tests for `StatisticalGlyph.option_keys` / `filter_kwargs` (issue #131).
+    """Tests for `HistogramGlyph.option_keys` / `filter_kwargs` (issue #131).
 
-    StatisticalGlyph is a standalone class (not a Glyph subclass) but exposes
+    HistogramGlyph is a standalone class (not a Glyph subclass) but exposes
     the same pre-construction introspection helpers for parity.
     """
 
@@ -712,9 +712,9 @@ class TestOptionKeysAndFilterKwargs:
             The class attribute is the single source of truth; the accepted
             keys match `DEFAULT_OPTIONS` and exclude unknown names.
         """
-        from cleopatra.glyphs.statistical_glyph import DEFAULT_OPTIONS
+        from cleopatra.glyphs.stats.histogram_glyph import DEFAULT_OPTIONS
 
-        keys = StatisticalGlyph.option_keys()
+        keys = HistogramGlyph.option_keys()
         assert keys == set(DEFAULT_OPTIONS), "keys must match DEFAULT_OPTIONS"
         assert "bins" in keys, "a known histogram key should be present"
         assert "totally_unknown" not in keys, "unknown keys must be absent"
@@ -726,7 +726,7 @@ class TestOptionKeysAndFilterKwargs:
             A mixed bag is filtered to just the accepted keys; values intact.
         """
         raw = {"bins": 20, "alpha": 0.5, "bogus": 1}
-        safe = StatisticalGlyph.filter_kwargs(raw)
+        safe = HistogramGlyph.filter_kwargs(raw)
         assert sorted(safe) == ["alpha", "bins"], f"unexpected keys: {sorted(safe)}"
         assert safe["bins"] == 20, "values must be preserved"
 
@@ -738,10 +738,10 @@ class TestOptionKeysAndFilterKwargs:
             out first avoids the ValueError while keeping accepted styling.
         """
         raw = {"bins": 10, "totally_unknown": 1}
-        stat = StatisticalGlyph(np.arange(20, dtype=float))
+        stat = HistogramGlyph(np.arange(20, dtype=float))
         with pytest.raises(ValueError, match="totally_unknown"):
             stat.histogram(**raw)
-        safe = StatisticalGlyph.filter_kwargs(raw)
+        safe = HistogramGlyph.filter_kwargs(raw)
         fig, ax, hist = stat.histogram(**safe)
         assert len(hist["n"]) == 1, "histogram should produce one series"
 
@@ -752,9 +752,9 @@ class TestOptionKeysAndFilterKwargs:
             Mutating the returned set must not corrupt the keys seen by a
             later call.
         """
-        first = StatisticalGlyph.option_keys()
+        first = HistogramGlyph.option_keys()
         first.add("totally_unknown")
-        assert "totally_unknown" not in StatisticalGlyph.option_keys(), (
+        assert "totally_unknown" not in HistogramGlyph.option_keys(), (
             "returned set must be independent"
         )
 
@@ -765,8 +765,8 @@ class TestOptionKeysAndFilterKwargs:
             The class attribute is the source of truth: with no extra kwargs,
             an instance's `default_options` keys equal `option_keys()`.
         """
-        stat = StatisticalGlyph(np.arange(10, dtype=float))
-        assert StatisticalGlyph.option_keys() == set(stat.default_options), (
+        stat = HistogramGlyph(np.arange(10, dtype=float))
+        assert HistogramGlyph.option_keys() == set(stat.default_options), (
             "class option_keys must match the instance's accepted keys"
         )
 
@@ -778,7 +778,7 @@ class TestOptionKeysAndFilterKwargs:
             returned.
         """
         raw = {"bins": 20, "bogus": 1}
-        safe = StatisticalGlyph.filter_kwargs(raw)
+        safe = HistogramGlyph.filter_kwargs(raw)
         assert raw == {"bins": 20, "bogus": 1}, "input must not be mutated"
         assert safe is not raw, "a new dict should be returned"
 
@@ -790,5 +790,5 @@ class TestOptionKeysAndFilterKwargs:
             key dropped in between.
         """
         raw = {"bins": 20, "bogus": 1, "alpha": 0.5}
-        safe = StatisticalGlyph.filter_kwargs(raw)
+        safe = HistogramGlyph.filter_kwargs(raw)
         assert list(safe) == ["bins", "alpha"], f"order not preserved: {list(safe)}"

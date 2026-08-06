@@ -18,7 +18,7 @@ Examples:
     - Filled density of a small cluster:
         ```python
         >>> import numpy as np
-        >>> from cleopatra.glyphs.kde_glyph import KDEGlyph
+        >>> from cleopatra.glyphs.stats.kde_glyph import KDEGlyph
         >>> rng = np.random.default_rng(0)
         >>> x = rng.normal(size=200)
         >>> y = rng.normal(size=200)
@@ -47,8 +47,8 @@ from cleopatra.styling.colors import (
     resolve_single_layer_style,
     resolve_style_norm,
 )
-from cleopatra.glyphs.glyph import Glyph, _root_figure
-from cleopatra.glyphs.hillshade import resolve_hillshade, shade_grid
+from cleopatra.glyphs.base.glyph import Glyph, _root_figure
+from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_grid
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 #: Upper bound on the number of (grid-cell × data-point) products evaluated in
@@ -126,7 +126,7 @@ class KDEGlyph(Glyph):
         - Evaluate the density grid directly (no rendering):
             ```python
             >>> import numpy as np
-            >>> from cleopatra.glyphs.kde_glyph import KDEGlyph
+            >>> from cleopatra.glyphs.stats.kde_glyph import KDEGlyph
             >>> rng = np.random.default_rng(1)
             >>> x = rng.normal(size=500)
             >>> y = rng.normal(size=500)
@@ -140,9 +140,9 @@ class KDEGlyph(Glyph):
             ```
 
     See Also:
-        cleopatra.glyphs.glyph.Glyph._prepare_scalar_mapping: Shared
+        cleopatra.glyphs.base.glyph.Glyph._prepare_scalar_mapping: Shared
             norm/colorbar/ticks pipeline used to colour the density.
-        cleopatra.glyphs.mesh_glyph.MeshGlyph: Contour rendering for unstructured
+        cleopatra.glyphs.gridded.mesh_glyph.MeshGlyph: Contour rendering for unstructured
             meshes.
     """
 
@@ -218,7 +218,7 @@ class KDEGlyph(Glyph):
             - The density peaks near a tight synthetic cluster:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.kde_glyph import KDEGlyph
+                >>> from cleopatra.glyphs.stats.kde_glyph import KDEGlyph
                 >>> rng = np.random.default_rng(2)
                 >>> pts = rng.normal(scale=0.1, size=300)
                 >>> x = np.concatenate([pts, pts + 5.0])
@@ -413,7 +413,7 @@ class KDEGlyph(Glyph):
                 construction-time `add_colorbar=False`; an explicit
                 `add_colorbar=` argument still wins the on/off decision.
             hillshade: Relief-shade the density surface for this call (`True`
-                or an options dict; see `cleopatra.glyphs.hillshade`). Defaults to
+                or an options dict; see `cleopatra.glyphs.base.hillshade`). Defaults to
                 None, which keeps the value set at construction. Accepting it
                 here mirrors `ArrayGlyph.plot`/`MeshGlyph.plot`, so `hillshade`
                 works the same way across all three glyphs.
@@ -443,7 +443,7 @@ class KDEGlyph(Glyph):
             - Filled contours add a colorbar by default:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.kde_glyph import KDEGlyph
+                >>> from cleopatra.glyphs.stats.kde_glyph import KDEGlyph
                 >>> rng = np.random.default_rng(3)
                 >>> x, y = rng.normal(size=300), rng.normal(size=300)
                 >>> glyph = KDEGlyph(x, y, gridsize=40)
@@ -455,7 +455,7 @@ class KDEGlyph(Glyph):
             - Line contours (`shade=False`) and no colorbar:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.kde_glyph import KDEGlyph
+                >>> from cleopatra.glyphs.stats.kde_glyph import KDEGlyph
                 >>> rng = np.random.default_rng(4)
                 >>> x, y = rng.normal(size=300), rng.normal(size=300)
                 >>> glyph = KDEGlyph(x, y, gridsize=40, shade=False)

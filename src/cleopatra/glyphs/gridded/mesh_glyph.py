@@ -10,7 +10,7 @@ Examples:
     - Plot face-centered data on a triangular mesh:
         ```python
         >>> import numpy as np
-        >>> from cleopatra.glyphs.mesh_glyph import MeshGlyph
+        >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
         >>> node_x = np.array([0.0, 1.0, 0.5, 1.5])
         >>> node_y = np.array([0.0, 0.0, 1.0, 1.0])
         >>> face_nodes = np.array([[0, 1, 2], [1, 3, 2]])
@@ -47,7 +47,7 @@ from cleopatra.styling.colors import (
     resolve_style_norm,
 )
 from cleopatra.basemap.geo import GeoMixin
-from cleopatra.glyphs.glyph import (
+from cleopatra.glyphs.base.glyph import (
     Glyph,
     _clear_prior_render_artists,
     _clear_projection_frame,
@@ -55,7 +55,7 @@ from cleopatra.glyphs.glyph import (
     _restore_flat_axes,
     _stash_projection_frame,
 )
-from cleopatra.glyphs.hillshade import resolve_hillshade, shade_faces
+from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_faces
 from cleopatra.basemap.projection import apply_projection_style_mesh, projection_draws_frame
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import disjoint_legend
@@ -109,7 +109,7 @@ class MeshGlyph(GeoMixin, Glyph):
         - Create a MeshGlyph and inspect its topology:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.glyphs.mesh_glyph import MeshGlyph
+            >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
             >>> node_x = np.array([0.0, 1.0, 0.5])
             >>> node_y = np.array([0.0, 0.0, 1.0])
             >>> faces = np.array([[0, 1, 2]])
@@ -221,7 +221,7 @@ class MeshGlyph(GeoMixin, Glyph):
             - Read back the x-coordinates and pick out a single node:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.mesh_glyph import MeshGlyph
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
                 >>> mg = MeshGlyph(
                 ...     np.array([0.0, 1.0, 0.5]),
                 ...     np.array([0.0, 0.0, 1.0]),
@@ -248,7 +248,7 @@ class MeshGlyph(GeoMixin, Glyph):
             - Read back the y-coordinates and take their maximum:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.mesh_glyph import MeshGlyph
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
                 >>> mg = MeshGlyph(
                 ...     np.array([0.0, 1.0, 0.5]),
                 ...     np.array([0.0, 0.0, 1.0]),
@@ -275,7 +275,7 @@ class MeshGlyph(GeoMixin, Glyph):
             - A two-face mesh reports two faces, one row per face:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.mesh_glyph import MeshGlyph
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
                 >>> mg = MeshGlyph(
                 ...     np.array([0.0, 1.0, 0.5, 1.5]),
                 ...     np.array([0.0, 0.0, 1.0, 1.0]),
@@ -300,7 +300,7 @@ class MeshGlyph(GeoMixin, Glyph):
             - The node count matches the coordinate array length:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.mesh_glyph import MeshGlyph
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
                 >>> mg = MeshGlyph(
                 ...     np.array([0.0, 1.0, 0.5, 1.5]),
                 ...     np.array([0.0, 0.0, 1.0, 1.0]),
@@ -330,7 +330,7 @@ class MeshGlyph(GeoMixin, Glyph):
             - Without explicit edges the count is 0:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.mesh_glyph import MeshGlyph
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
                 >>> mg = MeshGlyph(
                 ...     np.array([0.0, 1.0, 0.5]),
                 ...     np.array([0.0, 0.0, 1.0]),
@@ -344,7 +344,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 the number of edge rows:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.mesh_glyph import MeshGlyph
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
                 >>> mg = MeshGlyph(
                 ...     np.array([0.0, 1.0, 1.0, 0.0]),
                 ...     np.array([0.0, 0.0, 1.0, 1.0]),
@@ -371,7 +371,7 @@ class MeshGlyph(GeoMixin, Glyph):
             - Pure triangular mesh returns all 3s:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.mesh_glyph import MeshGlyph
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
                 >>> mg = MeshGlyph(
                 ...     np.array([0.0, 1.0, 0.5, 1.5]),
                 ...     np.array([0.0, 0.0, 1.0, 1.0]),
@@ -384,7 +384,7 @@ class MeshGlyph(GeoMixin, Glyph):
             - Mixed mesh with quads and triangles:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.mesh_glyph import MeshGlyph
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
                 >>> mg = MeshGlyph(
                 ...     np.array([0.0, 1.0, 2.0, 0.0, 1.0, 2.0]),
                 ...     np.array([0.0, 0.0, 0.0, 1.0, 1.0, 1.0]),
@@ -421,7 +421,7 @@ class MeshGlyph(GeoMixin, Glyph):
             - Build a triangulation and check its shape:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.mesh_glyph import MeshGlyph
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
                 >>> mg = MeshGlyph(
                 ...     np.array([0.0, 1.0, 0.5]),
                 ...     np.array([0.0, 0.0, 1.0]),
@@ -457,7 +457,7 @@ class MeshGlyph(GeoMixin, Glyph):
             - A single quad fans into two triangles from its first vertex:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.mesh_glyph import MeshGlyph
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
                 >>> mg = MeshGlyph(
                 ...     np.array([0.0, 1.0, 1.0, 0.0]),
                 ...     np.array([0.0, 0.0, 1.0, 1.0]),
@@ -472,7 +472,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 quad's two triangles come first, then the triangle:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.mesh_glyph import MeshGlyph
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
                 >>> mg = MeshGlyph(
                 ...     np.array([0.0, 1.0, 2.0, 0.0, 1.0]),
                 ...     np.array([0.0, 0.0, 0.0, 1.0, 1.0]),
@@ -543,7 +543,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 concatenated in order:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.mesh_glyph import MeshGlyph
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
                 >>> MeshGlyph._grouped_arange(np.array([2, 3, 1]))
                 array([0, 1, 0, 1, 2, 0])
 
@@ -552,7 +552,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 counter of later groups:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.mesh_glyph import MeshGlyph
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
                 >>> MeshGlyph._grouped_arange(np.array([2, 0, 3]))
                 array([0, 1, 0, 1, 2])
 
@@ -587,7 +587,7 @@ class MeshGlyph(GeoMixin, Glyph):
             - Quad face produces 2 triangles with the same value:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.mesh_glyph import MeshGlyph
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
                 >>> mg = MeshGlyph(
                 ...     np.array([0.0, 1.0, 1.0, 0.0]),
                 ...     np.array([0.0, 0.0, 1.0, 1.0]),
@@ -730,7 +730,7 @@ class MeshGlyph(GeoMixin, Glyph):
 
         Colours each triangle by its mean node elevation, then blends the
         triangle-normal hillshade into those colours via
-        `cleopatra.glyphs.hillshade.shade_faces`, so a wide-range terrain mesh reads
+        `cleopatra.glyphs.base.hillshade.shade_faces`, so a wide-range terrain mesh reads
         by form. The returned `tripcolor` mappable keeps its cmap/norm, so the
         colorbar spans the **node** elevation range (`vmin`/`vmax` from the
         per-node `data`). Note that faces are coloured by each triangle's
@@ -939,7 +939,7 @@ class MeshGlyph(GeoMixin, Glyph):
             - Plot face-centered data:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.mesh_glyph import MeshGlyph
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
                 >>> node_x = np.array([0.0, 1.0, 0.5, 1.5])
                 >>> node_y = np.array([0.0, 0.0, 1.0, 1.0])
                 >>> faces = np.array([[0, 1, 2], [1, 3, 2]])
@@ -950,7 +950,7 @@ class MeshGlyph(GeoMixin, Glyph):
             - Plot node-centered data:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.mesh_glyph import MeshGlyph
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
                 >>> node_x = np.array([0.0, 1.0, 0.5, 1.5])
                 >>> node_y = np.array([0.0, 0.0, 1.0, 1.0])
                 >>> faces = np.array([[0, 1, 2], [1, 3, 2]])
@@ -965,7 +965,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 (`tricontour`) instead of filled:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.mesh_glyph import MeshGlyph
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
                 >>> node_x = np.array([0.0, 1.0, 0.5, 1.5])
                 >>> node_y = np.array([0.0, 0.0, 1.0, 1.0])
                 >>> faces = np.array([[0, 1, 2], [1, 3, 2]])
@@ -981,7 +981,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 `Text` artists are exposed on `glyph.contour_labels`:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.mesh_glyph import MeshGlyph
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
                 >>> node_x = np.array([0.0, 1.0, 0.5, 1.5])
                 >>> node_y = np.array([0.0, 0.0, 1.0, 1.0])
                 >>> faces = np.array([[0, 1, 2], [1, 3, 2]])
@@ -1000,7 +1000,7 @@ class MeshGlyph(GeoMixin, Glyph):
             - Plot with power color scale:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.mesh_glyph import MeshGlyph
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
                 >>> node_x = np.array([0.0, 1.0, 0.5, 1.5])
                 >>> node_y = np.array([0.0, 0.0, 1.0, 1.0])
                 >>> faces = np.array([[0, 1, 2], [1, 3, 2]])
@@ -1289,7 +1289,7 @@ class MeshGlyph(GeoMixin, Glyph):
             - Animate face data over 3 time steps:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.mesh_glyph import MeshGlyph
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
                 >>> node_x = np.array([0.0, 1.0, 0.5, 1.5])
                 >>> node_y = np.array([0.0, 0.0, 1.0, 1.0])
                 >>> faces = np.array([[0, 1, 2], [1, 3, 2]])
@@ -1478,7 +1478,7 @@ class MeshGlyph(GeoMixin, Glyph):
             - Render a triangular mesh wireframe:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.mesh_glyph import MeshGlyph
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
                 >>> mg = MeshGlyph(
                 ...     np.array([0.0, 1.0, 0.5]),
                 ...     np.array([0.0, 0.0, 1.0]),
@@ -1539,7 +1539,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 first segment connects the two lowest-indexed nodes:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.mesh_glyph import MeshGlyph
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
                 >>> mg = MeshGlyph(
                 ...     np.array([0.0, 1.0, 0.5]),
                 ...     np.array([0.0, 0.0, 1.0]),
@@ -1557,7 +1557,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 triangles sharing one edge produce five segments, not six:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.mesh_glyph import MeshGlyph
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
                 >>> mg = MeshGlyph(
                 ...     np.array([0.0, 1.0, 0.5, 1.5]),
                 ...     np.array([0.0, 0.0, 1.0, 1.0]),

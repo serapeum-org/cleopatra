@@ -26,10 +26,10 @@ from matplotlib.patches import Rectangle
 from matplotlib.ticker import LogFormatter
 
 # `SUPPORTED_VIDEO_FORMAT` is re-imported (not redefined) so the constant has
-# a single source of truth in `cleopatra.glyphs.animation`, while the historical
-# `from cleopatra.glyphs.glyph import SUPPORTED_VIDEO_FORMAT` path keeps working.
-from cleopatra.glyphs.animation import SUPPORTED_VIDEO_FORMAT  # noqa: F401  (re-export)
-from cleopatra.glyphs.animation import save_animation as _save_animation
+# a single source of truth in `cleopatra.glyphs.base.animation`, while the historical
+# `from cleopatra.glyphs.base.glyph import SUPPORTED_VIDEO_FORMAT` path keeps working.
+from cleopatra.glyphs.base.animation import SUPPORTED_VIDEO_FORMAT  # noqa: F401  (re-export)
+from cleopatra.glyphs.base.animation import save_animation as _save_animation
 from cleopatra.styling.colors import resolve_colormap
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import (
@@ -312,7 +312,7 @@ class Glyph:
     Examples:
         - Create a Glyph and override the colormap:
             ```python
-            >>> from cleopatra.glyphs.glyph import Glyph
+            >>> from cleopatra.glyphs.base.glyph import Glyph
             >>> from cleopatra.styling.styles import DEFAULT_OPTIONS
             >>> opts = DEFAULT_OPTIONS.copy()
             >>> opts["vmin"] = None
@@ -325,7 +325,7 @@ class Glyph:
         - Provide a pre-existing figure and axes:
             ```python
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.glyphs.glyph import Glyph
+            >>> from cleopatra.glyphs.base.glyph import Glyph
             >>> from cleopatra.styling.styles import DEFAULT_OPTIONS
             >>> opts = DEFAULT_OPTIONS.copy()
             >>> opts["vmin"] = None
@@ -341,7 +341,7 @@ class Glyph:
         - Provide only an axes; the figure is derived from it:
             ```python
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.glyphs.glyph import Glyph
+            >>> from cleopatra.glyphs.base.glyph import Glyph
             >>> from cleopatra.styling.styles import DEFAULT_OPTIONS
             >>> opts = DEFAULT_OPTIONS.copy()
             >>> opts["vmin"] = None
@@ -356,9 +356,9 @@ class Glyph:
             ```
 
     See Also:
-        cleopatra.glyphs.array_glyph.ArrayGlyph: Glyph subclass for
+        cleopatra.glyphs.gridded.array_glyph.ArrayGlyph: Glyph subclass for
             2D/3D arrays.
-        cleopatra.glyphs.mesh_glyph.MeshGlyph: Glyph subclass for
+        cleopatra.glyphs.gridded.mesh_glyph.MeshGlyph: Glyph subclass for
             unstructured meshes.
     """
 
@@ -461,7 +461,7 @@ class Glyph:
         Examples:
             - Inspect the keys a glyph accepts before building one:
                 ```python
-                >>> from cleopatra.glyphs.scatter_glyph import ScatterGlyph
+                >>> from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
                 >>> keys = ScatterGlyph.option_keys()
                 >>> "cmap" in keys
                 True
@@ -471,7 +471,7 @@ class Glyph:
                 ```
             - Different glyphs expose different keys:
                 ```python
-                >>> from cleopatra.glyphs.polygon_glyph import PolygonGlyph
+                >>> from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
                 >>> "edgecolor" in PolygonGlyph.option_keys()
                 True
 
@@ -500,7 +500,7 @@ class Glyph:
         Examples:
             - Keep only the accepted keys, then construct safely:
                 ```python
-                >>> from cleopatra.glyphs.polygon_glyph import PolygonGlyph
+                >>> from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
                 >>> raw = {"cmap": "viridis", "edgecolor": "black", "bogus": 1}
                 >>> safe = PolygonGlyph.filter_kwargs(raw)
                 >>> sorted(safe)
@@ -511,7 +511,7 @@ class Glyph:
                 ```
             - An empty mapping yields an empty mapping:
                 ```python
-                >>> from cleopatra.glyphs.scatter_glyph import ScatterGlyph
+                >>> from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
                 >>> ScatterGlyph.filter_kwargs({})
                 {}
 
@@ -559,7 +559,7 @@ class Glyph:
         Examples:
             - Create a figure with custom size:
                 ```python
-                >>> from cleopatra.glyphs.glyph import Glyph
+                >>> from cleopatra.glyphs.base.glyph import Glyph
                 >>> from cleopatra.styling.styles import DEFAULT_OPTIONS
                 >>> opts = DEFAULT_OPTIONS.copy()
                 >>> opts.update({"vmin": None, "vmax": None})
@@ -622,7 +622,7 @@ class Glyph:
         Examples:
             - Compute ticks for a 0-10 range with spacing of 2:
                 ```python
-                >>> from cleopatra.glyphs.glyph import Glyph
+                >>> from cleopatra.glyphs.base.glyph import Glyph
                 >>> from cleopatra.styling.styles import DEFAULT_OPTIONS
                 >>> opts = DEFAULT_OPTIONS.copy()
                 >>> opts.update({"vmin": 0.0, "vmax": 10.0, "ticks_spacing": 2.0})
@@ -709,7 +709,7 @@ class Glyph:
                 and ticks forwarded straight through:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.glyph import Glyph
+                >>> from cleopatra.glyphs.base.glyph import Glyph
                 >>> from cleopatra.styling.styles import DEFAULT_OPTIONS
                 >>> opts = DEFAULT_OPTIONS.copy()
                 >>> opts.update({"vmin": 0.0, "vmax": 10.0})
@@ -728,7 +728,7 @@ class Glyph:
                 `"both"`:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.glyph import Glyph
+                >>> from cleopatra.glyphs.base.glyph import Glyph
                 >>> from cleopatra.styling.styles import DEFAULT_OPTIONS
                 >>> opts = DEFAULT_OPTIONS.copy()
                 >>> opts.update({"vmin": 0.0, "vmax": 10.0, "levels": 5})
@@ -848,7 +848,7 @@ class Glyph:
             - Integer `levels` becomes a `linspace` between
                 `vmin` and `vmax`:
                 ```python
-                >>> from cleopatra.glyphs.glyph import Glyph
+                >>> from cleopatra.glyphs.base.glyph import Glyph
                 >>> bounds = Glyph._levels_to_bounds(5, 0.0, 10.0)
                 >>> [float(b) for b in bounds]
                 [0.0, 2.5, 5.0, 7.5, 10.0]
@@ -857,7 +857,7 @@ class Glyph:
             - A sequence is sorted ascending and returned as a float
                 `ndarray`; `None` short-circuits to `None`:
                 ```python
-                >>> from cleopatra.glyphs.glyph import Glyph
+                >>> from cleopatra.glyphs.base.glyph import Glyph
                 >>> bounds = Glyph._levels_to_bounds([10.0, 0.0, 5.0], 0.0, 10.0)
                 >>> [float(b) for b in bounds]
                 [0.0, 5.0, 10.0]
@@ -908,7 +908,7 @@ class Glyph:
             - Auto-resolve both limits from the data:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.glyph import Glyph
+                >>> from cleopatra.glyphs.base.glyph import Glyph
                 >>> from cleopatra.styling.styles import DEFAULT_OPTIONS
                 >>> opts = DEFAULT_OPTIONS.copy()
                 >>> opts.update({"vmin": None, "vmax": None})
@@ -921,7 +921,7 @@ class Glyph:
                 taken from the data:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.glyph import Glyph
+                >>> from cleopatra.glyphs.base.glyph import Glyph
                 >>> from cleopatra.styling.styles import DEFAULT_OPTIONS
                 >>> opts = DEFAULT_OPTIONS.copy()
                 >>> opts.update({"vmin": 0.0, "vmax": None})
@@ -933,7 +933,7 @@ class Glyph:
             - An all-NaN array with unpinned limits raises `ValueError`:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.glyph import Glyph
+                >>> from cleopatra.glyphs.base.glyph import Glyph
                 >>> from cleopatra.styling.styles import DEFAULT_OPTIONS
                 >>> opts = DEFAULT_OPTIONS.copy()
                 >>> opts.update({"vmin": None, "vmax": None})
@@ -1015,7 +1015,7 @@ class Glyph:
                 `ticks_spacing` plus continuous-scale ticks:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.glyph import Glyph
+                >>> from cleopatra.glyphs.base.glyph import Glyph
                 >>> from cleopatra.styling.styles import DEFAULT_OPTIONS
                 >>> opts = DEFAULT_OPTIONS.copy()
                 >>> opts.update({"vmin": None, "vmax": None, "ticks_spacing": None})
@@ -1034,7 +1034,7 @@ class Glyph:
             - Flat data does not produce a zero spacing:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.glyph import Glyph
+                >>> from cleopatra.glyphs.base.glyph import Glyph
                 >>> from cleopatra.styling.styles import DEFAULT_OPTIONS
                 >>> opts = DEFAULT_OPTIONS.copy()
                 >>> opts.update({"vmin": None, "vmax": None, "ticks_spacing": None})
@@ -1124,7 +1124,7 @@ class Glyph:
             - A quantile scheme yields a `BoundaryNorm` and boundary ticks:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.glyph import Glyph
+                >>> from cleopatra.glyphs.base.glyph import Glyph
                 >>> from cleopatra.styling.styles import DEFAULT_OPTIONS
                 >>> opts = DEFAULT_OPTIONS.copy()
                 >>> opts.update(
@@ -1207,7 +1207,7 @@ class Glyph:
             - Three distinct values map to three integer codes and colours:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.polygon_glyph import PolygonGlyph
+                >>> from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
                 >>> polys = [np.zeros((3, 2))] * 3
                 >>> g = PolygonGlyph(polys, values=np.array(["a", "b", "a"]))
                 >>> norm, cbar_kw, edges = g._prepare_categorical_mapping(
@@ -1294,7 +1294,7 @@ class Glyph:
                 ```python
                 >>> import numpy as np
                 >>> import matplotlib.pyplot as plt
-                >>> from cleopatra.glyphs.polygon_glyph import PolygonGlyph
+                >>> from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
                 >>> polys = [np.zeros((3, 2))] * 3
                 >>> g = PolygonGlyph(polys, values=np.array(["a", "b", "a"]))
                 >>> _ = g._prepare_categorical_mapping(np.array(["a", "b", "a"]))
@@ -1309,7 +1309,7 @@ class Glyph:
                 ```python
                 >>> import numpy as np
                 >>> import matplotlib.pyplot as plt
-                >>> from cleopatra.glyphs.polygon_glyph import PolygonGlyph
+                >>> from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
                 >>> g = PolygonGlyph([np.zeros((3, 2))] * 2, values=np.array(["a", "b"]))
                 >>> fig, ax = plt.subplots()
                 >>> g.create_categorical_legend(ax)
@@ -1324,7 +1324,7 @@ class Glyph:
                 ```python
                 >>> import numpy as np
                 >>> import matplotlib.pyplot as plt
-                >>> from cleopatra.glyphs.polygon_glyph import PolygonGlyph
+                >>> from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
                 >>> polys = [np.zeros((3, 2))] * 2
                 >>> g = PolygonGlyph(
                 ...     polys, values=np.array(["a", "b"]),
@@ -1405,7 +1405,7 @@ class Glyph:
                 ```python
                 >>> import numpy as np
                 >>> import matplotlib.pyplot as plt
-                >>> from cleopatra.glyphs.glyph import Glyph
+                >>> from cleopatra.glyphs.base.glyph import Glyph
                 >>> from cleopatra.styling.styles import DEFAULT_OPTIONS
                 >>> opts = DEFAULT_OPTIONS.copy()
                 >>> opts.update({"vmin": None, "vmax": None})
@@ -1422,7 +1422,7 @@ class Glyph:
                 ```python
                 >>> import numpy as np
                 >>> import matplotlib.pyplot as plt
-                >>> from cleopatra.glyphs.glyph import Glyph
+                >>> from cleopatra.glyphs.base.glyph import Glyph
                 >>> from cleopatra.styling.styles import DEFAULT_OPTIONS
                 >>> opts = DEFAULT_OPTIONS.copy()
                 >>> opts.update({
@@ -1444,7 +1444,7 @@ class Glyph:
                 ```python
                 >>> import numpy as np
                 >>> import matplotlib.pyplot as plt
-                >>> from cleopatra.glyphs.glyph import Glyph
+                >>> from cleopatra.glyphs.base.glyph import Glyph
                 >>> from cleopatra.styling.styles import DEFAULT_OPTIONS
                 >>> opts = DEFAULT_OPTIONS.copy()
                 >>> opts.update({"vmin": None, "vmax": None, "cbar_kwargs": "oops"})
@@ -1736,7 +1736,7 @@ class Glyph:
             - Scale x-axis ticks by 100 and offset by 5:
                 ```python
                 >>> import matplotlib.pyplot as plt
-                >>> from cleopatra.glyphs.glyph import Glyph
+                >>> from cleopatra.glyphs.base.glyph import Glyph
                 >>> from cleopatra.styling.styles import DEFAULT_OPTIONS
                 >>> opts = DEFAULT_OPTIONS.copy()
                 >>> opts.update({"vmin": None, "vmax": None})
@@ -1787,7 +1787,7 @@ class Glyph:
     def save_animation(self, path: str | os.PathLike, fps: int = 2, **kwargs) -> None:
         """Save this glyph's animation (`self.anim`) to a file.
 
-        Thin wrapper around `cleopatra.glyphs.animation.save_animation`; the output
+        Thin wrapper around `cleopatra.glyphs.base.animation.save_animation`; the output
         format is determined by the file extension. GIF and WebP use an
         optimising Pillow writer; mov/avi/mp4 use FFmpeg (a system binary if
         present, otherwise the one bundled with imageio-ffmpeg).
@@ -1798,7 +1798,7 @@ class Glyph:
                 Supported: gif, mov, avi, mp4, webp.
             fps: Frames per second. Default is 2.
             **kwargs: Additional keyword arguments forwarded to
-                `cleopatra.glyphs.animation.save_animation`, e.g. ``crf``, ``bitrate``,
+                `cleopatra.glyphs.base.animation.save_animation`, e.g. ``crf``, ``bitrate``,
                 ``codec``, ``preset``, ``pix_fmt``, ``dpi`` (ffmpeg formats) or
                 ``optimize`` and ``loop`` (GIF).
 
@@ -1812,7 +1812,7 @@ class Glyph:
         Examples:
             - Check the supported video formats:
                 ```python
-                >>> from cleopatra.glyphs.glyph import SUPPORTED_VIDEO_FORMAT
+                >>> from cleopatra.glyphs.base.glyph import SUPPORTED_VIDEO_FORMAT
                 >>> sorted(SUPPORTED_VIDEO_FORMAT)
                 ['avi', 'gif', 'mov', 'mp4', 'webp']
 
