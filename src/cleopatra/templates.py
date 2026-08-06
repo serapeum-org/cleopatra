@@ -106,6 +106,7 @@ def publication_map(
                 stacklevel=2,
             )
         else:
+            # no extent: add_relief places the global image; the field's axes limits crop it
             add_relief(ax, resolution=relief_resolution, zorder=-1)
 
     return fig, ax
