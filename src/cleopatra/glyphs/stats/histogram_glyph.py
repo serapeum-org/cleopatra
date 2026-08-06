@@ -524,29 +524,8 @@ class HistogramGlyph:
 
                     ```
         """
-        for key, val in kwargs.items():
-            if key not in self.default_options.keys():
-                raise ValueError(
-                    f"The given keyword argument:{key} is not correct, possible parameters are,"
-                    f" {self.default_options}"
-                )
-            else:
-                self.default_options[key] = val
-
-        if self._ax is not None:
-            ax = self._ax
-            fig = self._fig if self._fig is not None else _root_figure(ax)
-        elif self._fig is not None:
-            fig = self._fig
-            if fig.axes:
-                raise ValueError(
-                    "The supplied `fig` already contains axes; pass the target axes via "
-                    "`ax=` so the histogram is drawn on a specific axes instead of being "
-                    "overlaid on the existing ones."
-                )
-            ax = fig.add_subplot(111)
-        else:
-            fig, ax = plt.subplots(figsize=self.default_options["figsize"])
+        self._apply_options(kwargs)
+        fig, ax = self._histogram_fig_ax()
 
         n = []
         bins = []
@@ -597,6 +576,49 @@ class HistogramGlyph:
         hist = {"n": n, "bins": bins, "patches": patches}
         _mark_render_artists(ax, *patches)
         return fig, ax, hist
+
+    def _apply_options(self, kwargs: dict) -> None:
+        """Validate per-call keyword options and apply them onto `default_options`.
+
+        Args:
+            kwargs: Keyword options overriding the defaults.
+
+        Raises:
+            ValueError: If a key is not a recognised option.
+        """
+        for key, val in kwargs.items():
+            if key not in self.default_options:
+                raise ValueError(
+                    f"The given keyword argument:{key} is not correct, possible parameters are,"
+                    f" {self.default_options}"
+                )
+            self.default_options[key] = val
+
+    def _histogram_fig_ax(self) -> tuple[Figure, Axes]:
+        """Resolve the `(fig, ax)` for `histogram`, creating them when needed.
+
+        Returns:
+            tuple[Figure, Axes]: The figure and axes to draw the histogram on.
+
+        Raises:
+            ValueError: If a `fig` was bound without an `ax` and it already
+                contains axes.
+        """
+        if self._ax is not None:
+            ax = self._ax
+            fig = self._fig if self._fig is not None else _root_figure(ax)
+        elif self._fig is not None:
+            fig = self._fig
+            if fig.axes:
+                raise ValueError(
+                    "The supplied `fig` already contains axes; pass the target axes via "
+                    "`ax=` so the histogram is drawn on a specific axes instead of being "
+                    "overlaid on the existing ones."
+                )
+            ax = fig.add_subplot(111)
+        else:
+            fig, ax = plt.subplots(figsize=self.default_options["figsize"])
+        return fig, ax
 
     @staticmethod
     def _reject_fig_kwarg(kwargs: dict) -> None:
