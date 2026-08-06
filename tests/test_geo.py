@@ -383,6 +383,62 @@ def test_no_axes_raises():
         _Dummy(None).add_features("coastline")
 
 
+def test_real_glyph_basemap_axes_lazily_creates_and_seeds_bounds():
+    """A real glyph creates its axes on demand for a basemap layer added before
+    plotting, seeded with the data bounds so the later draw keeps the view.
+
+    Test scenario:
+        `ArrayGlyph` has no axes until it draws; `_basemap_axes` (the resolver
+        every add_* method uses) now creates one when the glyph can
+        (`create_figure_axes`) and seeds it with the glyph's `_flat_axis_bounds`,
+        so the builder flow `glyph.add_features(...)` then `glyph.plot()`/
+        `.animate()` works (the latter reuse the same axes).
+    """
+    glyph = ArrayGlyph(np.zeros((6, 8)), extent=[-12.0, 32.0, 34.0, 64.0])
+    assert glyph.ax is None, "a fresh ArrayGlyph has no axes yet"
+    ax = glyph._basemap_axes()
+    assert glyph.ax is not None, "should create and store the axes"
+    assert ax is glyph.ax
+    x_min, x_max, y_min, y_max = glyph._flat_axis_bounds()
+    assert tuple(round(v) for v in ax.get_xlim()) == (round(x_min), round(x_max)), "x seeded to data bounds"
+    assert tuple(round(v) for v in ax.get_ylim()) == (round(y_min), round(y_max)), "y seeded to data bounds"
+    plt.close("all")
+
+
+def test_non_seeding_glyph_basemap_axes_raises_clearly():
+    """A glyph that cannot seed its own bounds refuses to lazily create an axes.
+
+    Test scenario:
+        Only `ArrayGlyph` exposes `_flat_axis_bounds`. A `FlowGlyph` (which has
+        no such bounds) that added a basemap layer before plotting would otherwise
+        get an unseeded `(0, 1)` axes that pins the view and silently breaks the
+        later plot, so `_basemap_axes` keeps raising the clear "plot first" error
+        rather than returning an unusable axes.
+    """
+    glyph = FlowGlyph([np.array([[0.0, 0.0], [1.0, 1.0], [2.0, 0.5]])])
+    assert glyph.ax is None, "a fresh FlowGlyph has no axes yet"
+    assert not hasattr(glyph, "_flat_axis_bounds"), "FlowGlyph cannot seed its own bounds"
+    with pytest.raises(RuntimeError, match="Plot the glyph first"):
+        glyph._basemap_axes()
+    plt.close("all")
+
+
+def test_pixel_index_basemap_axes_seeds_matshow_orientation():
+    """The pre-plot builder flow seeds a pixel-index array in matshow orientation.
+
+    Test scenario:
+        A non-georeferenced pixel array plots via `matshow(origin="upper")` (row 0
+        at the top, inverted y, half-pixel edges). `_basemap_axes` must seed that
+        same view, or a reference/label layer added before `plot()` locks a
+        non-inverted box (autoscale off) and the raster renders upside-down.
+    """
+    glyph = ArrayGlyph(np.arange(24, dtype=float).reshape(4, 6))  # 4 rows x 6 cols, no extent/coords
+    ax = glyph._basemap_axes()
+    assert ax.get_ylim() == (3.5, -0.5), "y inverted (row 0 at top), matching matshow"
+    assert ax.get_xlim() == (-0.5, 5.5), "x half-pixel edges, matching matshow"
+    plt.close("all")
+
+
 def test_real_glyph_integration(tmp_path: Path, monkeypatch):
     """A real glyph draws a cached layer on its own axes via the mixin method."""
     monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))

@@ -37,6 +37,7 @@ from matplotlib.figure import Figure
 from matplotlib.quiver import QuiverKey
 
 from cleopatra.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
+from cleopatra.colors import resolve_colormap
 from cleopatra.geo import GeoMixin
 from cleopatra.glyph import (
     Glyph,
@@ -234,7 +235,7 @@ class VectorGlyph(GeoMixin, Glyph):
 
         mag = self.magnitude
         norm, cbar_kw, ticks = self._prepare_scalar_mapping(mag)
-        cmap = opts["cmap"]
+        cmap = resolve_colormap(opts["cmap"])
         clim = {} if norm else {"clim": (ticks[0], ticks[-1])}
 
         # See `_clear_prior_render_artists`: a prior `plot` call on this

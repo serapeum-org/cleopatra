@@ -42,7 +42,11 @@ from matplotlib.patches import Patch
 from matplotlib.path import Path as MplPath
 
 from cleopatra.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
-from cleopatra.colors import resolve_single_layer_style, resolve_style_norm
+from cleopatra.colors import (
+    resolve_colormap,
+    resolve_single_layer_style,
+    resolve_style_norm,
+)
 from cleopatra.glyph import Glyph, _root_figure
 from cleopatra.hillshade import resolve_hillshade, shade_grid
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
@@ -477,7 +481,7 @@ class KDEGlyph(Glyph):
         gx, gy, density = self.evaluate()
         level_edges = self._resolve_levels(density)
         norm, cbar_kw, _ = self._prepare_scalar_mapping(density)
-        cmap = opts["cmap"]
+        cmap = resolve_colormap(opts["cmap"])
 
         # Named data-style preset: a continuous preset overrides the density's
         # cmap + norm (and composes with hillshade below). A categorical preset
@@ -515,7 +519,7 @@ class KDEGlyph(Glyph):
                 **cfg,
                 **{k: opts[k] for k in ("vmin", "vmax") if opts.get(k) is not None},
             }
-            cmap = cfg["cmap"]
+            cmap = resolve_colormap(cfg["cmap"])
             norm, _, _ = resolve_style_norm(np.asarray(density, dtype=float), cfg)
             # Drop the linear ticks so the colorbar matches the preset norm.
             cbar_kw.pop("ticks", None)

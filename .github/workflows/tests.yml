@@ -39,7 +39,7 @@ jobs:
 
       - name: Run Tests
         run: |
-          uv run pytest -vvv --cov=src/cleopatra --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+          uv run --extra tiles --extra science-colors pytest -vvv --cov=src/cleopatra --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
       - name: Upload coverage reports to Codecov with GitHub Action
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0

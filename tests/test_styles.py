@@ -467,6 +467,19 @@ class TestSwatchLegend:
         assert swatch.images, "gradient image should be drawn on the swatch"
         assert swatch.images[0].get_cmap() is cmap, "custom cmap should be used as-is"
 
+    def test_label_and_endpoints_get_a_legibility_outline(self, ax):
+        """Every swatch text carries a `path_effects` halo so a white label stays
+        readable over the pale middle of a colormap (not just white-on-white)."""
+        swatch = swatch_legend(ax, "Spectral_r", "Temperature")
+        for text in swatch.texts:
+            assert text.get_path_effects(), f"{text.get_text()!r} should have a legibility outline"
+
+    def test_dark_label_gets_a_light_outline(self, ax):
+        """A dark `text_color` is haloed in light (contrast flips with luminance)."""
+        swatch = swatch_legend(ax, "viridis", "T", text_color="black")
+        effects = swatch.texts[0].get_path_effects()
+        assert effects, "a dark label should still get an outline"
+
     def test_boundary_norm_swatch_matches_the_norm_not_a_raw_ramp(self, ax):
         """A BoundaryNorm swatch paints exactly cmap(norm(midpoints)), honouring extend (not a 0..1 ramp)."""
         from matplotlib.colors import BoundaryNorm

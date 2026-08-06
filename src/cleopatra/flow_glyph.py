@@ -41,6 +41,7 @@ from matplotlib.figure import Figure
 from matplotlib.legend import Legend
 
 from cleopatra.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
+from cleopatra.colors import resolve_colormap, resolve_glow_options
 from cleopatra.geo import GeoMixin
 from cleopatra.glyph import Glyph, _root_figure
 from cleopatra.styles import CLASSIFY_OPTIONS, resolve_sizes, width_legend
@@ -62,6 +63,7 @@ FLOW_DEFAULT_OPTIONS = {
     "levels": None,
     "ticks_spacing": None,
     "add_colorbar": True,
+    "glow": False,
 }
 FLOW_DEFAULT_OPTIONS = STYLE_DEFAULTS | CLASSIFY_OPTIONS | FLOW_DEFAULT_OPTIONS
 
@@ -87,6 +89,10 @@ class FlowGlyph(GeoMixin, Glyph):
             option is used for every line. Default is None.
         ax: Pre-existing axes to draw on. Default is None.
         fig: Pre-existing figure. Default is None.
+        glow: Add a soft neon halo beneath the flow polylines (tracking their
+            width scaling). `True` uses the defaults; a dict overrides
+            `cleopatra.colors.add_line_glow`'s `n_glow` / `alpha` /
+            `linewidth_step`. Default is False.
         **kwargs: Override any key in `FLOW_DEFAULT_OPTIONS`: `width_limits`
             (min/max line width in points, default `(1, 5)`), `width_scale`
             (`"linear"` / `"log"` / `"sqrt"`, default `"linear"`),
@@ -362,7 +368,7 @@ class FlowGlyph(GeoMixin, Glyph):
             lc = LineCollection(
                 draw_paths,
                 array=np.asarray(draw_values),
-                cmap=opts["cmap"],
+                cmap=resolve_colormap(opts["cmap"]),
                 norm=norm,
                 linewidths=draw_widths,
             )
@@ -371,6 +377,36 @@ class FlowGlyph(GeoMixin, Glyph):
             ax.add_collection(lc)
             if draw_colorbar:
                 self.cbar = self.create_color_bar(ax, lc, cbar_kw)
+
+        if opts["glow"]:
+            glow_opts = resolve_glow_options(opts["glow"])
+            n_glow = glow_opts.get("n_glow", 6)
+            glow_alpha = glow_opts.get("alpha", 0.05)
+            lw_step = glow_opts.get("linewidth_step", 1.0)
+            under = lc.get_zorder() - 1
+            for i in range(1, n_glow + 1):
+                glow_widths = draw_widths + lw_step * i
+                if self.values is None:
+                    glow_lc = LineCollection(
+                        draw_paths,
+                        colors=opts["color_1"],
+                        linewidths=glow_widths,
+                        alpha=glow_alpha,
+                        zorder=under,
+                    )
+                else:
+                    glow_lc = LineCollection(
+                        draw_paths,
+                        array=np.asarray(draw_values),
+                        cmap=resolve_colormap(opts["cmap"]),
+                        norm=norm,
+                        linewidths=glow_widths,
+                        alpha=glow_alpha,
+                        zorder=under,
+                    )
+                    if norm is None:
+                        glow_lc.set_clim(ticks[0], ticks[-1])
+                ax.add_collection(glow_lc)
 
         ax.autoscale_view()
 

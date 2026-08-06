@@ -33,6 +33,7 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
+from cleopatra.colors import add_line_glow, resolve_glow_options
 from cleopatra.glyph import Glyph, _root_figure
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
@@ -42,6 +43,7 @@ LINE_DEFAULT_OPTIONS = {
     "marker": None,
     "linestyle": "-",
     "alpha": 1.0,
+    "glow": False,
 }
 LINE_DEFAULT_OPTIONS = STYLE_DEFAULTS | LINE_DEFAULT_OPTIONS
 
@@ -62,6 +64,9 @@ class LineGlyph(Glyph):
             n_series)` for multiple series.
         ax: Pre-existing axes to draw on. Default is None.
         fig: Pre-existing figure. Default is None.
+        glow: Add a soft neon halo beneath the plotted line(s). `True` uses the
+            defaults; a dict overrides `cleopatra.colors.add_line_glow`'s
+            `n_glow` / `alpha` / `linewidth_step`. Default is False.
         **kwargs: Override any key in `LINE_DEFAULT_OPTIONS`
             (e.g. `marker`, `linestyle`, `alpha`, `color_1`,
             `line_width`, `figsize`, `title`).
@@ -186,6 +191,8 @@ class LineGlyph(Glyph):
                 **kwargs,
             )
             lines.extend(drawn)
+        if opts["glow"]:
+            add_line_glow(ax, lines, **resolve_glow_options(opts["glow"]))
         self._apply_title(ax, title)
         return self.fig, ax, lines
 

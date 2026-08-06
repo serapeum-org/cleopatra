@@ -30,6 +30,7 @@ from matplotlib.ticker import LogFormatter
 # `from cleopatra.glyph import SUPPORTED_VIDEO_FORMAT` path keeps working.
 from cleopatra.animation import SUPPORTED_VIDEO_FORMAT  # noqa: F401  (re-export)
 from cleopatra.animation import save_animation as _save_animation
+from cleopatra.colors import resolve_colormap
 from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styles import (
     ColorScale,
@@ -202,6 +203,82 @@ def _mark_render_artists(ax: Axes, *artists: Any) -> None:
     ax._cleo_render_artists = [  # type: ignore[attr-defined]
         a for a in artists if a is not None
     ]
+
+
+def _stash_projection_frame(ax: Axes, new_artists: Any) -> None:
+    """Record a projection frame's artists (boundary + graticule) on `ax`.
+
+    Tracked separately from `_cleo_render_artists` because a projection frame --
+    and the frozen view / `axis("off")` state `apply_projection_frame` installs
+    alongside it -- must persist across data re-renders and be undone only when a
+    later render is *not* itself a projection render (see `_clear_projection_frame`
+    / `_restore_flat_axes`). Stamped on the `Axes` itself so it survives across
+    glyph instances that share the axes.
+
+    Args:
+        ax: The axes a projection frame was just drawn on.
+        new_artists: The frame artists (boundary patch + graticule lines).
+    """
+    ax._cleo_projection_frame = list(new_artists)  # type: ignore[attr-defined]
+
+
+def _clear_projection_frame(ax: Axes) -> bool:
+    """Remove any projection frame recorded on `ax`; report whether one existed.
+
+    Args:
+        ax: The axes to strip a prior projection frame from.
+
+    Returns:
+        bool: `True` if a frame was present (so the caller knows to restore the
+            flat view with `_restore_flat_axes`), else `False`.
+    """
+    frame = getattr(ax, "_cleo_projection_frame", None)
+    ax._cleo_projection_frame = None  # type: ignore[attr-defined]
+    if not frame:
+        return False
+    for artist in frame:
+        try:
+            artist.remove()
+        except (KeyError, NotImplementedError, ValueError, AttributeError):
+            pass
+    return True
+
+
+def _restore_flat_axes(
+    ax: Axes,
+    x_min: float,
+    x_max: float,
+    y_min: float,
+    y_max: float,
+    *,
+    aspect: str,
+) -> None:
+    """Undo the view state a projection frame installed, framing `ax` flat.
+
+    `apply_projection_frame` freezes `xlim`/`ylim` to the orthographic radius
+    (which also disables autoscaling) and calls `set_axis_off()`. A later flat
+    render on the same axes would otherwise draw its (much smaller, degree-scale)
+    data into that frozen view with the axis hidden -- an invisible speck. This
+    re-enables the axis, restores the glyph's default `aspect`, and frames the
+    axes over the data bounds (with a 5% margin) so the flat layer is visible.
+
+    Args:
+        ax: The axes to un-freeze.
+        x_min: Minimum x data bound.
+        x_max: Maximum x data bound.
+        y_min: Minimum y data bound.
+        y_max: Maximum y data bound.
+        aspect: The glyph's flat-render aspect (`"equal"` for lon/lat meshes,
+            `"auto"` for the array raster path).
+    """
+    ax.set_axis_on()
+    ax.set_aspect(aspect)
+    lo_x, hi_x = sorted((x_min, x_max))
+    lo_y, hi_y = sorted((y_min, y_max))
+    px = 0.05 * ((hi_x - lo_x) or 1.0)
+    py = 0.05 * ((hi_y - lo_y) or 1.0)
+    ax.set_xlim(lo_x - px, hi_x + px)
+    ax.set_ylim(lo_y - py, hi_y + py)
 
 
 class Glyph:
@@ -457,6 +534,10 @@ class Glyph:
 
     def _merge_kwargs(self, kwargs: dict) -> None:
         """Validate and merge keyword arguments into default_options."""
+        #: Option keys the caller passed explicitly, so a subclass can tell an
+        #: overridden option from one left at its default (e.g. `ArrayGlyph` only
+        #: auto-sizes the figure when `figsize` was not passed).
+        self._explicit_options: set[str] = set(kwargs)
         for key, val in kwargs.items():
             if key not in self._default_options:
                 raise ValueError(
@@ -561,13 +642,23 @@ class Glyph:
         if not ticks_spacing or vmax <= vmin:
             return np.array([vmin])
         ticks = np.arange(vmin, vmax + ticks_spacing, ticks_spacing)
-        # If vmax is not evenly divisible by spacing, append one more tick.
-        remainder = np.round(math.remainder(vmax, ticks_spacing), 3)
-        if remainder != 0:
-            ticks = np.append(
-                ticks,
-                [int(vmax / ticks_spacing) * ticks_spacing + ticks_spacing],
-            )
+        # `np.arange` can overshoot `vmax` by up to one step; drop any tick above
+        # it -- such a tick sits past the top of the colorbar and its label would
+        # overprint the `vmax` label (the old `math.remainder` check appended one
+        # for almost any non-integer `vmax`).
+        ticks = ticks[ticks <= vmax + 1e-9]
+        if ticks.size == 0:
+            return np.array([vmin, vmax])
+        # The colour range spans the last tick, so the top tick must reach `vmax`
+        # or the largest values get clipped. When the last tick is already at --
+        # or a hair below, from float rounding -- `vmax`, snap it there exactly;
+        # when there is a real gap (measured as a fraction of the range, which is
+        # what maps to distance on the bar), add `vmax` as a new top tick. Either
+        # way, no near-duplicate label is left at the top.
+        if (vmax - ticks[-1]) > 0.04 * (vmax - vmin):
+            ticks = np.append(ticks, vmax)
+        else:
+            ticks[-1] = vmax
         return ticks
 
     def _create_norm_and_cbar_kw(
@@ -1136,7 +1227,7 @@ class Glyph:
                 "labels)."
             )
         self._warn_scheme_overrides_continuous_options()
-        cmap = self.default_options["cmap"]
+        cmap = resolve_colormap(self.default_options["cmap"])
         # Compare by resolved name, not raw `==`: `Colormap` does not
         # implement equality, so a `Colormap` *instance* equivalent to the
         # default (e.g. `mpl.colormaps["coolwarm_r"]`, a legitimate way to
@@ -1448,6 +1539,11 @@ class Glyph:
         fig = ax.figure
         merged_kw = {
             "shrink": self.default_options["cbar_length"],
+            # matplotlib's default pad (0.05 of the axes width) leaves a wide
+            # gap for wide (equal-aspect) maps, whose axes is wide; a smaller
+            # default keeps the colorbar close to the frame. Overridable via
+            # `cbar_kwargs={"pad": ...}`.
+            "pad": 0.02,
             "use_gridspec": len(fig.axes) <= 1,
         }
         if location is not None:

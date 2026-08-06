@@ -24,6 +24,8 @@ import matplotlib as mpl
 import numpy as np
 from matplotlib.colors import Colormap, LightSource, Normalize
 
+from cleopatra.colors import resolve_colormap
+
 #: Default hillshade settings. Override any subset via a glyph's `hillshade`
 #: option (``hillshade=True`` uses all defaults; ``hillshade={...}`` overrides).
 DEFAULT_HILLSHADE: dict[str, Any] = {
@@ -174,7 +176,7 @@ def shade_grid(
         np.ndarray: An `(*, *, 4)` RGBA image; non-finite `elevation` cells are
         fully transparent.
     """
-    cmap_obj = mpl.colormaps[cmap] if isinstance(cmap, str) else cmap
+    cmap_obj = resolve_colormap(cmap)
     elevation = np.asarray(elevation, dtype=float)
     finite = np.isfinite(elevation)
     if norm is None:

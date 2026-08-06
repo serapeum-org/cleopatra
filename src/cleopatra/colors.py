@@ -1,7 +1,9 @@
 import importlib.resources
+import importlib.util
 import json
 import os
 import warnings
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, cast
 
@@ -11,6 +13,7 @@ from matplotlib import colors as mcolors
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap, LinearSegmentedColormap
 from matplotlib.image import AxesImage
+from matplotlib.lines import Line2D
 from PIL import Image, UnidentifiedImageError
 
 from cleopatra.palettes import CAMS_AOD_COLORMAPS, FLAME_COLORMAPS, HAZE_COLORMAPS
@@ -20,6 +23,331 @@ from cleopatra.styles import disjoint_legend, swatch_extend_prefixes, swatch_leg
 #: The haze / CAMS-AOD / flame colour families now live in `cleopatra.palettes`
 #: (built there via perceptual CIELAB interpolation and registered in the unified
 #: palette registry). They are re-exported above and used by `DATA_STYLES` below.
+
+
+def _require_cmap(action: str) -> None:
+    """Raise an actionable `ImportError` if the optional `cmap` package is absent.
+
+    Mirrors `cleopatra.projection._require_pyproj`: a pure `find_spec` check with
+    no import side effect, used to gate the `[science-colors]` extra behind a
+    clear install hint rather than a bare `ModuleNotFoundError`.
+
+    Args:
+        action: Short description of what needed `cmap`, woven into the message
+            (e.g. ``"A namespaced colormap (cmap='cmocean:thermal')"``).
+    """
+    if importlib.util.find_spec("cmap") is None:
+        raise ImportError(
+            f"{action} requires the 'cmap' package, provided by the "
+            "[science-colors] extra. Install with `pip install cleopatra[science-colors]`."
+        )
+
+
+def resolve_colormap(cmap: str | Colormap | None, *, param: str = "cmap") -> Colormap | None:
+    """Resolve a colormap name or object to a matplotlib `Colormap`.
+
+    The single seam cleopatra uses to turn a ``cmap`` value into a concrete
+    `Colormap`. Dispatch is decided solely by the presence of a **colon** in the
+    name:
+
+    - A `Colormap` object is returned unchanged (idempotent -- `DATA_STYLES` and
+      the glyph options store both objects and names, so the resolver must accept
+      either).
+    - A **namespaced** name containing ``":"`` (e.g. ``"cmocean:thermal"``,
+      ``"crameri:batlow_r"``) is resolved through the optional `cmap` package (the
+      ``[science-colors]`` extra), which aggregates cmocean, cmasher, Crameri,
+      ColorBrewer, colorcet and more into one numpy-only library. The ``_r``
+      reverse suffix works on namespaced names too.
+    - A **plain** name (``"viridis"``, ``"coolwarm_r"``) goes straight to
+      matplotlib, exactly as before -- it never imports the optional package.
+
+    The colon test is the whole dispatch rule. The `cmap` package renames even
+    built-ins into its own namespace (``Colormap("viridis").to_mpl().name`` is
+    ``"bids:viridis"``), so routing a plain name through it would both require the
+    extra for a built-in colormap and silently rename it -- and cleopatra compares
+    colormap names elsewhere (e.g. the categorical-default fallback), so a renamed
+    built-in would break those comparisons. Keeping plain names on the matplotlib
+    path avoids all of that.
+
+    Args:
+        cmap: A `Colormap`, a matplotlib colormap name, or a namespaced
+            ``"collection:name"`` string.
+        param: Name of the calling keyword (e.g. ``"cmap"``), woven into error
+            messages so a bad value names the offending argument.
+
+    Returns:
+        matplotlib.colors.Colormap: The resolved colormap.
+
+    Raises:
+        ImportError: If a namespaced name is used but the `cmap` package (the
+            ``[science-colors]`` extra) is not installed.
+        ValueError: If a namespaced name is not found by the `cmap` package.
+        KeyError: If a plain name is not a known matplotlib colormap.
+
+    Examples:
+        - A plain name resolves via matplotlib and never imports `cmap`:
+            ```python
+            >>> from cleopatra.colors import resolve_colormap
+            >>> resolve_colormap("viridis").name
+            'viridis'
+
+            ```
+        - A `Colormap` object is returned unchanged (idempotent):
+            ```python
+            >>> import matplotlib as mpl
+            >>> from cleopatra.colors import resolve_colormap
+            >>> cmap = mpl.colormaps["plasma"]
+            >>> resolve_colormap(cmap) is cmap
+            True
+
+            ```
+    """
+    if cmap is None or isinstance(cmap, Colormap):
+        # None passes through unchanged so matplotlib falls back to its default
+        # colormap, matching the pre-resolver `... if isinstance(cmap, str) else cmap`
+        # behaviour at the routed seams.
+        return cmap
+    if isinstance(cmap, str) and ":" in cmap:
+        _require_cmap(f"A namespaced colormap ({param}={cmap!r})")
+        from cmap import Colormap as _CmapColormap
+
+        try:
+            return _CmapColormap(cmap).to_mpl()
+        except (ValueError, KeyError) as exc:  # cmap raises ValueError for an unknown name
+            raise ValueError(
+                f"{param}={cmap!r} is not a known namespaced colormap: {exc}"
+            ) from exc
+    return mpl.colormaps[cmap]
+
+
+def add_line_glow(
+    ax: Axes,
+    lines: Sequence[Line2D] | None = None,
+    *,
+    n_glow: int = 6,
+    alpha: float = 0.05,
+    linewidth_step: float = 1.0,
+) -> list[Line2D]:
+    """Add a soft neon glow beneath existing line artists.
+
+    Redraws each line `n_glow` times at a growing linewidth and a low, constant
+    per-copy opacity; the overlapping semi-transparent copies blur into a halo
+    under the original line -- the mplcyberpunk / neon-glow technique,
+    implemented natively (pure matplotlib, no new dependency). Each glow copy is
+    excluded from the legend (`label="_nolegend_"`) and drawn just below its
+    source line, so the crisp original stays on top.
+
+    Args:
+        ax: The axes whose lines get a glow.
+        lines: The `Line2D` artists to halo. Defaults to every line already on
+            `ax` (`ax.get_lines()`); pass an explicit list to halo only some.
+        n_glow: Number of glow copies per line. More copies give a smoother,
+            denser halo. Defaults to 6.
+        alpha: Opacity of **each** glow copy (per-copy, not a shared budget), so
+            the total added opacity is roughly `alpha * n_glow`. Keep it low
+            (the default 0.05 suits a handful of copies).
+        linewidth_step: Linewidth increment per successive copy, in points; copy
+            `i` (1-based) is drawn at `base_linewidth + linewidth_step * i`.
+            Defaults to 1.0.
+
+    Returns:
+        list[matplotlib.lines.Line2D]: The glow artists added to `ax` (`n_glow`
+        per input line), in draw order (narrowest first).
+
+    Examples:
+        - Each source line gains `n_glow` halo copies at the given low alpha:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.colors import add_line_glow
+            >>> fig, ax = plt.subplots()
+            >>> _ = ax.plot([0, 1, 2], [0, 1, 0])
+            >>> glow = add_line_glow(ax, n_glow=4)
+            >>> len(glow)
+            4
+            >>> round(float(glow[0].get_alpha()), 3)
+            0.05
+            >>> plt.close(fig)
+
+            ```
+        - Copies grow in width and sit beneath the source line:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.colors import add_line_glow
+            >>> fig, ax = plt.subplots()
+            >>> (src,) = ax.plot([0, 1], [0, 1], linewidth=2.0)
+            >>> glow = add_line_glow(ax, [src], n_glow=3, linewidth_step=1.5)
+            >>> [g.get_linewidth() for g in glow]
+            [3.5, 5.0, 6.5]
+            >>> all(g.get_zorder() < src.get_zorder() for g in glow)
+            True
+            >>> plt.close(fig)
+
+            ```
+    """
+    line_list = list(ax.get_lines() if lines is None else lines)
+    glow: list[Line2D] = []
+    for line in line_list:
+        base_lw = line.get_linewidth()
+        color = line.get_color()
+        under = line.get_zorder() - 1
+        xdata, ydata = line.get_xdata(), line.get_ydata()
+        for i in range(1, n_glow + 1):
+            (glow_line,) = ax.plot(
+                xdata,
+                ydata,
+                color=color,
+                linewidth=base_lw + linewidth_step * i,
+                alpha=alpha,
+                solid_capstyle="round",
+                zorder=under,
+                label="_nolegend_",
+            )
+            glow.append(glow_line)
+    return glow
+
+
+#: Valid keys for a glyph ``glow`` option dict (forwarded to `add_line_glow`).
+GLOW_OPTION_KEYS = ("n_glow", "alpha", "linewidth_step")
+
+
+def resolve_glow_options(glow: bool | dict) -> dict:
+    """Normalise a glyph ``glow`` option to `add_line_glow` keyword arguments.
+
+    Glyphs expose ``glow`` as ``bool | dict``: ``True`` means "glow with the
+    defaults", and a dict overrides individual `add_line_glow` parameters. This
+    validates the dict keys up front so a typo raises a clear error at plot time
+    rather than an opaque `TypeError` inside `add_line_glow`.
+
+    Args:
+        glow: ``True`` (defaults) or a dict with any of
+            :data:`GLOW_OPTION_KEYS` (``n_glow``, ``alpha``, ``linewidth_step``).
+
+    Returns:
+        dict: Keyword arguments to splat into `add_line_glow`.
+
+    Raises:
+        ValueError: If a dict carries an unknown key.
+        TypeError: If ``glow`` is neither ``True`` nor a dict.
+
+    Examples:
+        ```python
+        >>> from cleopatra.colors import resolve_glow_options
+        >>> resolve_glow_options(True)
+        {}
+        >>> resolve_glow_options({"n_glow": 8})
+        {'n_glow': 8}
+
+        ```
+    """
+    if glow is True:
+        return {}
+    if isinstance(glow, dict):
+        unknown = set(glow) - set(GLOW_OPTION_KEYS)
+        if unknown:
+            raise ValueError(
+                f"unknown glow option(s) {sorted(unknown)}; valid keys: {list(GLOW_OPTION_KEYS)}."
+            )
+        return dict(glow)
+    raise TypeError(
+        f"glow must be True or a dict of {list(GLOW_OPTION_KEYS)}, got {type(glow).__name__}."
+    )
+
+
+#: Canonical spellings for the (few) units cleopatra's presets use, keyed by a
+#: lower-cased alias. Extend as more unit-carrying presets are vendored.
+_UNIT_ALIASES: dict[str, str] = {
+    "k": "kelvin",
+    "kelvin": "kelvin",
+    "c": "celsius",
+    "degc": "celsius",
+    "celsius": "celsius",
+    "°c": "celsius",
+    "f": "fahrenheit",
+    "degf": "fahrenheit",
+    "fahrenheit": "fahrenheit",
+    "°f": "fahrenheit",
+}
+
+#: Affine conversions ``out = scale * in + offset`` between canonical units.
+#: Temperature is affine (scale AND offset), which is exactly why a tiny table
+#: beats pulling in a heavy units library (pint/cf-units) -- SCOPE: no heavy dep.
+_UNIT_CONVERSIONS: dict[tuple[str, str], tuple[float, float]] = {
+    ("kelvin", "celsius"): (1.0, -273.15),
+    ("celsius", "kelvin"): (1.0, 273.15),
+    ("celsius", "fahrenheit"): (9.0 / 5.0, 32.0),
+    ("fahrenheit", "celsius"): (5.0 / 9.0, -32.0 * 5.0 / 9.0),
+    ("kelvin", "fahrenheit"): (9.0 / 5.0, -273.15 * 9.0 / 5.0 + 32.0),
+    ("fahrenheit", "kelvin"): (5.0 / 9.0, 273.15 - 32.0 * 5.0 / 9.0),
+}
+
+
+def _normalise_unit(unit: str | None) -> str | None:
+    """Map a unit string to its canonical spelling, or ``None`` if unknown."""
+    if unit is None:
+        return None
+    return _UNIT_ALIASES.get(str(unit).strip().lower())
+
+
+def convert_units(
+    data: np.ndarray, from_units: str | None, to_units: str | None
+) -> np.ndarray:
+    """Convert `data` from one unit to another via a small affine table.
+
+    A dependency-free converter for the handful of units cleopatra's presets use
+    (temperature K/°C/°F). Following earthkit's contract, the conversion is a
+    no-op when either unit is missing or the two are the same, and an unknown
+    pair leaves the data unchanged with a warning rather than raising -- styling
+    should never crash on an unrecognised unit.
+
+    Args:
+        data: The values to convert.
+        from_units: The unit `data` is currently in (any alias in
+            :data:`_UNIT_ALIASES`), or ``None``.
+        to_units: The target unit, or ``None``.
+
+    Returns:
+        np.ndarray: The converted values (a new array), or `data` unchanged when
+        no conversion applies.
+
+    Examples:
+        - Kelvin to Celsius shifts by the freezing point:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.colors import convert_units
+            >>> convert_units(np.array([273.15, 373.15]), "K", "celsius")
+            array([  0., 100.])
+
+            ```
+        - A missing or matching unit is a no-op:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.colors import convert_units
+            >>> convert_units(np.array([1.0, 2.0]), None, "celsius").tolist()
+            [1.0, 2.0]
+
+            ```
+    """
+    if from_units is None or to_units is None:
+        return data
+    if str(from_units).strip().lower() == str(to_units).strip().lower():
+        return data
+    src = _normalise_unit(from_units)
+    dst = _normalise_unit(to_units)
+    if src is not None and dst is not None and src == dst:
+        return data
+    if src is None or dst is None or (src, dst) not in _UNIT_CONVERSIONS:
+        warnings.warn(
+            f"no known unit conversion from {from_units!r} to {to_units!r}; "
+            "leaving the data unchanged.",
+            stacklevel=2,
+        )
+        return data
+    scale, offset = _UNIT_CONVERSIONS[(src, dst)]
+    return np.asarray(data, dtype=float) * scale + offset
 
 
 def alpha_scaled_image(
@@ -139,7 +467,7 @@ def alpha_rgba(
         np.ndarray: An `(*, *, 4)` RGBA array; non-finite `data` cells are
         fully transparent.
     """
-    cmap_obj = mpl.colormaps[cmap] if isinstance(cmap, str) else cmap
+    cmap_obj = resolve_colormap(cmap)
     if norm is None:
         finite = data[np.isfinite(data)]
         vmin = float(finite.min()) if finite.size else 0.0
@@ -244,9 +572,13 @@ def alpha_scaled_mesh(
     return mesh
 
 
-#: Named "data style" presets for `apply_data_style` -- each entry maps a
-#: layer name to the config used to draw it with `alpha_scaled_image` /
-#: `alpha_scaled_mesh` and label it with `swatch_legend`. Per-layer keys:
+#: Named "data style" presets for `apply_data_style`. Populated at import by
+#: `_load_presets` from the vendored + built-in JSON assets (`cleopatra.data/
+#: *_presets.json`), which share one canonical on-disk schema (`colors` +
+#: `colormap`, `categories`, `center`, `levels`/`bands`, `alpha_range`, ...).
+#: Each entry maps a layer name to the in-memory config used to draw it with
+#: `alpha_scaled_image` / `alpha_scaled_mesh` and label it with `swatch_legend`.
+#: Per-layer keys (what `_load_presets` builds from a record):
 #:
 #: - ``cmap`` (required): a `Colormap` object or a matplotlib colormap name.
 #: - ``label`` (required): the legend caption.
@@ -289,318 +621,251 @@ def alpha_scaled_mesh(
 #: linearly -- transparent where AOD is ~0, opaque red where it is high --
 #: the natural behaviour for overlaying a single aerosol-optical-depth field
 #: on a basemap (the common `pyramids` raster/NetCDF case).
-DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {
-    "haze": {
-        "organic_matter": {
-            "cmap": HAZE_COLORMAPS["organic_matter"],
-            "label": "Organic Matter",
-            "vmin": 0.0,
-            "vmax": 1.0,
-            "alpha_vmin": 0.1,
-            "alpha_vmax": 0.5,
-        },
-        "dust": {
-            "cmap": HAZE_COLORMAPS["dust"],
-            "label": "Dust",
-            "vmin": 0.0,
-            "vmax": 1.0,
-            "alpha_vmin": 0.1,
-            "alpha_vmax": 0.5,
-        },
-    },
-    "cams_aod": {
-        "aod": {
-            "cmap": CAMS_AOD_COLORMAPS["blue_yellow_red"],
-            "label": "Aerosol Optical Depth",
-            "vmin": 0.0,
-            "vmax": 1.0,
-        },
-    },
-    # --- Ready-to-use presets for common pyramids GIS/NetCDF-climate fields. ---
-    # Opaque full fields (auto-ranged from the data): the whole field is drawn.
-    # A general-purpose temperature ramp: the muted `Spectral_r` colours (blue
-    # cold -> red hot), auto-ranged from the data so it fits ANY continuous field
-    # (a Celsius raster, a KDE density, a normalized index). Pass `vmin`/`vmax`
-    # to pin the scale to a chosen range (e.g. `vmin=-40, vmax=40` for the ECMWF
-    # window); for the fixed, discretely-banded ECMWF 2 m-temperature look in one
-    # word, use the `"temperature_2m"` preset instead (fixed -40..40 degC,
-    # `extend="both"`).
-    "temperature": {
-        "temperature": {
-            "cmap": "Spectral_r",  # muted spectral, blue (cold) -> red (hot)
-            "label": "Temperature",
-            "alpha": 1.0,  # opaque full field (like elevation/wind_speed), not a glow
-        },
-    },
-    # Temperature (or any heat field) rendered as a glowing flame/plume: the CAMS
-    # aerosol technique (value-linked opacity -- cool fades to transparent so the
-    # terrain shows, hot glows opaque) recoloured for heat. Compose over a dark
-    # hillshaded backdrop (`apply_blank_canvas` + a `cleopatra.reference` relief),
-    # the way the "haze" style is composed. Colour spans 0..40, opacity ramps in
-    # over 6..32 -- sensible for surface air temperature in degC; override
-    # `vmin`/`vmax` for other ranges. Two flavours: `white_hot` (blows out to
-    # yellow-white) and `amber` (warmer gold/orange, less blown-out).
-    "temperature_flame": {
-        "temperature_flame": {
-            "cmap": FLAME_COLORMAPS["white_hot"],
-            "label": "Temperature",
-            "vmin": 0.0,
-            "vmax": 40.0,
-            "alpha_vmin": 6.0,
-            "alpha_vmax": 32.0,
-        },
-    },
-    "temperature_flame_amber": {
-        "temperature_flame_amber": {
-            "cmap": FLAME_COLORMAPS["amber"],
-            "label": "Temperature",
-            "vmin": 0.0,
-            "vmax": 40.0,
-            "alpha_vmin": 6.0,
-            "alpha_vmax": 32.0,
-        },
-    },
-    "elevation": {
-        "elevation": {
-            "cmap": "terrain",
-            "label": "Elevation",
-            "alpha": 1.0,
-        },
-    },
-    "vegetation": {
-        "vegetation": {
-            "cmap": "YlGn",  # sparse (pale) -> dense (green)
-            "label": "Vegetation (NDVI)",
-            "alpha": 1.0,
-        },
-    },
-    "wind_speed": {
-        "wind_speed": {
-            "cmap": "viridis",  # perceptually uniform
-            "label": "Wind speed",
-            "alpha": 1.0,
-        },
-    },
-    # Diverging anomaly field, symmetric around zero (0 -> white).
-    "anomaly": {
-        "anomaly": {
-            "cmap": "RdBu_r",  # negative (blue) -> 0 (white) -> positive (red)
-            "label": "Anomaly",
-            "center": 0.0,
-            "alpha": 1.0,
-        },
-    },
-    # Overlay field: value-linked opacity, so it is transparent where dry and
-    # opaque where it rains -- ideal for compositing over a basemap.
-    "precipitation": {
-        "precipitation": {
-            "cmap": "YlGnBu",  # light (light rain) -> dark blue (heavy)
-            "label": "Precipitation",
-        },
-    },
-    # Categorical preset: discrete integer class codes -> fixed colours + a
-    # discrete (disjoint) legend, instead of a continuous colormap. The
-    # near-universal NWS/USGS 5-class river-flood status scale (0..4).
-    "flood_status": {
-        "flood_status": {
-            "categories": [
-                (0, "#2c7fb8", "Normal"),
-                (1, "#31a354", "Action"),
-                (2, "#ffeb3b", "Minor"),
-                (3, "#ff7f00", "Moderate"),
-                (4, "#e31a1c", "Major"),
-            ],
-            "label": "Flood status",
-        },
-    },
-    # Hydrology rasters derived from a DEM.
-    # D8 flow direction: the 8 ESRI direction codes (powers of two) are discrete
-    # classes, coloured cyclically (twilight) so adjacent compass directions are
-    # similar and opposites distinct. (D-infinity flow *angle* is continuous and
-    # cyclic -- use the "phase" preset for that.)
-    "flow_direction_d8": {
-        "flow_direction_d8": {
-            "categories": [
-                (1, "#e2d9e2", "E"),
-                (2, "#95b5c7", "SE"),
-                (4, "#6276ba", "S"),
-                (8, "#592a8f", "SW"),
-                (16, "#2f1436", "W"),
-                (32, "#741e4f", "NW"),
-                (64, "#b25652", "N"),
-                (128, "#cca389", "NE"),
-            ],
-            "label": "Flow direction (D8)",
-        },
-    },
-    # Flow accumulation is extremely skewed (most cells ~0, channels huge), so a
-    # symmetric-log norm is used; opacity tracks it, so low cells fade and the
-    # channel network stands out. Composes over a hillshaded DEM.
-    "flow_accumulation": {
-        "flow_accumulation": {
-            "cmap": "Blues",
-            "label": "Flow accumulation",
-            "norm": "symlog",
-        },
-    },
-}
+DATA_STYLES: dict[str, dict[str, dict[str, Any]]] = {}
 
 
-def _load_preset_asset(
-    resource: str, cmap_prefix: str
-) -> dict[str, dict[str, dict[str, Any]]]:
-    """Build `DATA_STYLES` entries from a vendored continuous-colormap preset asset.
+def _preset_cmap(name: str, colors: Any, colormap: str | None) -> Any:
+    """Build a preset layer's colormap from `colors` under `colormap`.
 
-    Used for the cmocean ocean/hydrology/DEM preset library. Each asset maps a
-    preset key to a `palette` (hex control points sampled from a continuous
-    colormap), a `label`, an `opacity` policy (`"opaque"` -> a plain field via
-    constant alpha; otherwise a value-linked overlay), and an optional diverging
-    `center`. Every preset is a single layer keyed by its own name and carries no
-    `vmin`/`vmax`, so it auto-ranges.
+    `colormap` selects how the layer's colours are realised:
+
+    - `"named"`: `colors` is a colormap NAME (matplotlib, or a namespaced
+      `cmocean:thermal` via the `[science-colors]` extra); it is returned
+      unchanged and resolved at draw time (`resolve_colormap`).
+    - `"linear"`: `LinearSegmentedColormap.from_list` from a hex list -- keeps
+      each control point at its own even index fraction (hinge-faithful; for
+      hypsometric land/sea maps whose sea-level break sits at cmap 0.5).
+    - `"listed"`: a discrete `ListedColormap`, one band per colour (stepped
+      tables, Magics equal-width bands).
+    - `"perceptual"` (the default): a CIELAB-interpolated smooth ramp
+      (`perceptual_colormap`) for a continuous sequential field.
+
+    Args:
+        name: Name for the built colormap (ignored for `"named"`).
+        colors: A hex-colour list, or (for `"named"`) a colormap name string.
+        colormap: The build mode above.
+
+    Returns:
+        A `Colormap` for the palette modes, or the name string for `"named"`.
+
+    Raises:
+        ValueError: If a palette mode is given fewer than two colours.
+    """
+    if colormap == "named":
+        return colors
+    palette = list(colors)
+    if len(palette) < 2:
+        raise ValueError(
+            f"{name!r}: a preset palette needs at least two colours, got {len(palette)}"
+        )
+    if colormap == "linear":
+        return LinearSegmentedColormap.from_list(name, palette, N=256)
+    if colormap == "listed":
+        return mcolors.ListedColormap(palette, name=name)
+    return perceptual_colormap(name, palette)
+
+
+def _preset_layer(name: str, rec: dict[str, Any]) -> dict[str, Any]:
+    """Turn one canonical preset layer record into a `DATA_STYLES` layer dict.
+
+    Maps the on-disk schema (`cleopatra.data/*_presets.json`) onto the in-memory
+    layer shape the render path consumes. A record with `categories` is a
+    categorical layer (integer class code -> colour + label); otherwise it is a
+    continuous layer built from `colors` + `colormap`, carrying whichever of
+    `center` / `norm` / `vmin` / `vmax` / `levels` / `bands` / `extend` / `units`
+    it declares. Opacity is value-linked when `alpha_range` is set (a glow
+    overlay -> `alpha_vmin`/`alpha_vmax`), a constant `alpha` when that is given,
+    and the value-linked overlay default otherwise.
+
+    Args:
+        name: The layer's name (its key within the preset).
+        rec: The canonical layer record.
+
+    Returns:
+        dict: The `DATA_STYLES` layer dict.
+
+    Raises:
+        KeyError, TypeError, ValueError: On a structurally-broken record, so the
+            caller can skip it.
+    """
+    if rec.get("categories") is not None:
+        cats = [(c["value"], c["color"], c["label"]) for c in rec["categories"]]
+        return {"categories": cats, "label": rec["label"]}
+    layer: dict[str, Any] = {
+        "cmap": _preset_cmap(name, rec.get("colors"), rec.get("colormap"))
+    }
+    units = rec.get("units")
+    layer["label"] = f"{rec['label']} [{units}]" if units else rec["label"]
+    if units is not None:
+        layer["units"] = units
+    if rec.get("center") is not None:
+        layer["center"] = rec["center"]
+    norm = rec.get("norm")
+    if norm not in (None, "linear"):
+        layer["norm"] = norm
+    for key in ("vmin", "vmax", "bands", "levels", "extend"):
+        if rec.get(key) is not None:
+            layer[key] = rec[key]
+    alpha_range = rec.get("alpha_range")
+    if alpha_range is not None:
+        layer["alpha_vmin"], layer["alpha_vmax"] = alpha_range[0], alpha_range[1]
+    elif rec.get("alpha") is not None:
+        layer["alpha"] = rec["alpha"]
+    return layer
+
+
+def _load_presets(resource: str) -> dict[str, dict[str, dict[str, Any]]]:
+    """Load one canonical preset asset into `DATA_STYLES`-shaped presets.
+
+    Reads a `{version, source, license, presets}` asset (the unified preset
+    schema) and builds each preset's layers via `_preset_layer`. Never raises: a
+    missing, unreadable, or malformed asset degrades to `{}`, and a single broken
+    record is skipped -- so a partial install still imports.
 
     Args:
         resource: The asset filename inside the `cleopatra.data` package.
-        cmap_prefix: A prefix for the generated colormap names (e.g. `"cmocean"`).
 
     Returns:
-        dict: `DATA_STYLES`-shaped presets, or an empty mapping if the asset is
-        unavailable. Never raises, so a partial install degrades to the
-        hand-authored presets rather than breaking `import cleopatra`.
-    """
-    # Outer guard: a missing, unreadable, or malformed-JSON asset (or a
-    # non-mapping structure) degrades to the hand-authored presets rather than
-    # breaking `import cleopatra`.
-    try:
-        source = (
-            importlib.resources.files("cleopatra.data")
-            .joinpath(resource)
-            .read_text(encoding="utf-8")
-        )
-        records = json.loads(source).items()
-    except (
-        ModuleNotFoundError,
-        OSError,
-        json.JSONDecodeError,
-        AttributeError,
-    ):
-        return {}
-
-    # Inner guard: a single structurally-broken record (missing palette/label,
-    # an unparseable colour, a <2-colour palette) is skipped, keeping every
-    # other well-formed preset in the asset.
-    presets: dict[str, dict[str, dict[str, Any]]] = {}
-    for key, rec in records:
-        try:
-            palette = rec["palette"]
-            cmap: Colormap = perceptual_colormap(
-                f"{cmap_prefix}_{key}", palette
-            )
-            layer: dict[str, Any] = {"cmap": cmap, "label": rec["label"]}
-            if rec.get("opacity") == "opaque":
-                layer["alpha"] = (
-                    1.0  # value-linked opacity (overlay) is the default otherwise
-                )
-            if rec.get("center") is not None:
-                layer["center"] = rec["center"]
-            presets[key] = {key: layer}
-        except (KeyError, TypeError, ValueError, AttributeError):
-            continue
-    return presets
-
-
-def _weather_cmap(key: str, colors: Any, levels: Any, bands: Any) -> Any:
-    """Resolve one weather preset's `colors` field to a cmap (name or object).
-
-    A colour LIST with explicit `levels` or a `bands` count is a discrete
-    palette: keep it as a `ListedColormap` rather than a smooth ramp -- a
-    continuous interpolation of these saturated colours reads as a glossy,
-    over-exposed sheen (Magics presets), or would blur the exact ECMWF
-    colours the `levels` are meant to band (earthkit-plots presets). A
-    matplotlib colormap NAME (str) is returned as-is, resolved at draw time.
-    A colour list with neither `levels` nor `bands` (e.g.
-    `total_precipitation`'s white->blue gradient) is a genuine continuous
-    ramp.
-    """
-    if levels:
-        return (
-            mcolors.ListedColormap(colors, name=f"weather_{key}")
-            if isinstance(colors, list)
-            else colors
-        )
-    if bands:
-        return mcolors.ListedColormap(colors, name=f"weather_{key}")
-    if isinstance(colors, str):
-        return colors
-    return perceptual_colormap(f"weather_{key}", colors)
-
-
-def _load_weather_presets() -> dict[str, dict[str, dict[str, Any]]]:
-    """Load the merged ECMWF weather preset library (Apache-2.0), keyed by a descriptive name.
-
-    Merged from two sources at build time (see `tools/build_weather_presets.py`)
-    into one record per GRIB shortName, then renamed to its descriptive key --
-    each record is one of three shapes:
-
-    - **Equal-width banded** (vendored from Magics): a discrete `colors` list
-      plus a `bands` count (`len(colors)`), rendered as a `ListedColormap` with
-      `bands` equal-width intervals. A `vmin`/`vmax` is also present when the
-      parameter's original Magics style name encoded a fixed range; otherwise
-      the bands auto-range to the data.
-    - **Explicit contour levels** (vendored from earthkit-plots' curated ECMWF
-      defaults, which supersede the Magics record for the same shortName): a
-      `colors` list or matplotlib colormap name, plus explicit `levels` and an
-      `extend` cap, rendered as a `BoundaryNorm` at those exact boundaries.
-    - **Continuous** (colour list with neither `bands` nor `levels`, e.g.
-      `total_precipitation`'s rain gradient): a genuine `LinearSegmentedColormap`.
-
-    Never raises: a missing/malformed asset degrades to `{}`.
+        dict: `DATA_STYLES`-shaped presets, possibly empty.
     """
     try:
         raw = (
             importlib.resources.files("cleopatra.data")
-            .joinpath("weather_presets.json")
+            .joinpath(resource)
             .read_text(encoding="utf-8")
         )
-    except (ModuleNotFoundError, OSError):
+        presets = json.loads(raw)["presets"]
+    except (
+        ModuleNotFoundError,
+        OSError,
+        json.JSONDecodeError,
+        KeyError,
+        TypeError,
+        AttributeError,
+    ):
         return {}
-    try:
-        records = json.loads(raw)
-    except ValueError:
+    if not isinstance(presets, dict):
         return {}
-    if not isinstance(records, dict):
-        return {}
-
-    presets: dict[str, dict[str, dict[str, Any]]] = {}
-    for key, rec in records.items():
+    out: dict[str, dict[str, dict[str, Any]]] = {}
+    for name, body in presets.items():
         try:
-            colors = rec["colors"]
-            levels = rec.get("levels")
-            bands = rec.get("bands")
-            cmap = _weather_cmap(key, colors, levels, bands)
-            layer: dict[str, Any] = {"cmap": cmap, "label": rec["label"]}
-            if rec.get("opacity") == "opaque":
-                layer["alpha"] = 1.0
-            if levels:
-                layer["levels"] = levels
-                layer["extend"] = rec.get("extend", "neither")
-            elif bands:
-                layer["bands"] = bands
-                if "vmin" in rec:
-                    layer["vmin"], layer["vmax"] = rec["vmin"], rec["vmax"]
-            presets[key] = {key: layer}
+            layers = {
+                lname: _preset_layer(lname, lrec)
+                for lname, lrec in body["layers"].items()
+            }
+            # A preset-level `background` is a canvas colour (a look like the
+            # flame glow only reads on a dark canvas). Carry it onto each layer
+            # config so the single-layer render path finds it without a
+            # preset-level slot in `DATA_STYLES` (which is `{name: {layer: cfg}}`).
+            background = body.get("background")
+            if background is not None:
+                for layer in layers.values():
+                    layer["background"] = background
+            out[name] = layers
         except (KeyError, TypeError, ValueError, AttributeError):
             continue
-    return presets
+    return out
 
 
-#: Register the vendored preset libraries into `DATA_STYLES` at import, alongside
-#: the hand-authored presets above: the merged ECMWF weather parameter set
-#: (keyed by a descriptive parameter name, e.g. `"temperature_2m"`,
-#: `"total_precipitation"`, `"aerosol_optical_depth_550nm"`) and the cmocean
-#: ocean/hydrology/DEM set (keyed by variable, e.g. `"salinity"`,
-#: `"bathymetry"`). List them all with `sorted(DATA_STYLES)`.
-DATA_STYLES.update(_load_preset_asset("ocean_presets.json", "ocean"))
-DATA_STYLES.update(_load_weather_presets())
+#: The preset asset library, loaded into `DATA_STYLES` at import in order (a
+#: later asset wins a key collision). One canonical schema backs them all
+#: (`_load_presets`): the cmocean ocean/hydrology/DEM set, the Crameri terrain
+#: maps, the NCL/MeteoSwiss tables, the merged ECMWF weather parameters, and the
+#: hand-authored built-in presets (haze, flame, categorical hydrology, radar).
+#: List them all with `sorted(DATA_STYLES)`.
+#: Load order matters on a key collision (a later asset's preset wins via
+#: `dict.update`). The built-in asset is loaded FIRST so a vendored preset would
+#: override a hand-authored one of the same name -- matching the pre-unification
+#: order (the hand-authored literal was defined first, then the vendored assets
+#: were `.update`-d over it). There are no colliding keys today.
+_PRESET_ASSETS = (
+    "builtin_presets.json",
+    "ocean_presets.json",
+    "terrain_presets.json",
+    "ncl_presets.json",
+    "weather_presets.json",
+)
+for _asset in _PRESET_ASSETS:
+    DATA_STYLES.update(_load_presets(_asset))
+del _asset
+
+
+#: GRIB shortName -> descriptive `DATA_STYLES` preset name. Mirrors the
+#: build-time `SHORTNAME_TO_NAME` map in `tools/build_weather_presets.py`, exposed
+#: at runtime so a caller that knows a field's shortName (e.g. pyramids reading
+#: GRIB/NetCDF metadata) can select the matching vendored style without
+#: re-implementing the mapping. "how to plot" stays here; "what to plot" (reading
+#: the shortName) stays with the data package (pyramids), not here.
+_SHORTNAME_TO_STYLE: dict[str, str] = {
+    "10fg": "wind_gust_10m", "10fgi": "wind_gust_10m_index", "10si": "wind_speed_10m",
+    "10u": "wind_u_10m", "10v": "wind_v_10m", "10wsi": "wind_speed_10m_index",
+    "2d": "dewpoint_temperature_2m", "2t": "temperature_2m", "2ti": "temperature_2m_index",
+    "2tp": "temperature_2m_probability", "aod550": "aerosol_optical_depth_550nm",
+    "cape": "convective_available_potential_energy",
+    "capei": "convective_available_potential_energy_index",
+    "capes": "convective_available_potential_energy_shear",
+    "capesi": "convective_available_potential_energy_shear_index",
+    "cin": "convective_inhibition", "clbt": "cloudy_brightness_temperature",
+    "co": "carbon_monoxide", "cp": "convective_precipitation", "crfrate": "convective_rainfall_rate",
+    "d": "divergence", "duaod550": "dust_aerosol_optical_depth_550nm",
+    "frpfire": "wildfire_radiative_power", "go3": "ozone", "gtco3": "total_column_ozone",
+    "hcc": "high_cloud_cover", "kx": "k_index", "lcc": "low_cloud_cover",
+    "lsp": "large_scale_precipitation", "lsrrate": "large_scale_rainfall_rate",
+    "maxswh": "max_significant_wave_height", "maxswhi": "max_significant_wave_height_index",
+    "mcc": "medium_cloud_cover", "mean10ws": "mean_wind_speed_10m", "mean2t": "mean_temperature_2m",
+    "mn2t": "min_temperature_2m", "mn2ti": "min_temperature_2m_index",
+    "mpts": "mean_period_total_swell", "mpww": "mean_period_wind_waves",
+    "mslpp": "mean_sea_level_pressure_probability", "mwp": "mean_wave_period",
+    "mx2t": "max_temperature_2m", "mx2ti": "max_temperature_2m_index", "no2": "nitrogen_dioxide",
+    "ph": "hurricane_probability", "prate": "precipitation_rate", "pt": "potential_temperature",
+    "ptd": "tropical_depression_probability", "pts": "tropical_storm_probability",
+    "q": "specific_humidity", "sf": "snowfall", "sfi": "snowfall_index",
+    "sh10": "significant_wave_height_over_10s_period", "shts": "significant_height_total_swell",
+    "shww": "significant_height_wind_waves", "srweq": "snowfall_rate_water_equivalent",
+    "stl1p": "soil_temperature_level1_probability", "suaod550": "sulphate_aerosol_optical_depth_550nm",
+    "swh": "significant_wave_height_combined", "t": "air_temperature",
+    "tcch4": "ch4_column_mean_molar_fraction", "tcco": "total_column_carbon_monoxide",
+    "tcco2": "co2_column_mean_molar_fraction", "tcso2": "total_column_sulphur_dioxide",
+    "totalx": "total_totals_index", "tp": "total_precipitation", "tpi": "total_precipitation_index",
+    "tpp": "total_precipitation_probability", "uvbed": "uv_biologically_effective_dose",
+    "uvbedcs": "uv_biologically_effective_dose_clear_sky", "vo": "relative_vorticity",
+    "w": "vertical_velocity", "ws": "total_wind_speed",
+}
+
+
+def style_for_parameter(short_name: str) -> str | None:
+    """Return the `DATA_STYLES` preset name for a GRIB shortName, or ``None``.
+
+    Maps a GRIB shortName (e.g. ``"2t"``) to the vendored preset that styles it
+    (``"temperature_2m"``), so a caller holding a field's shortName can pick the
+    matching ECMWF-style preset. A descriptive preset name passed straight
+    through is also accepted. Returns ``None`` when nothing matches, so callers
+    can fall back to a default.
+
+    Args:
+        short_name: A GRIB shortName or a descriptive `DATA_STYLES` preset name.
+            Matching is case-insensitive.
+
+    Returns:
+        str or None: The matching registered preset name, or ``None``.
+
+    Examples:
+        ```python
+        >>> from cleopatra.colors import style_for_parameter
+        >>> style_for_parameter("2t")
+        'temperature_2m'
+        >>> style_for_parameter("temperature_2m")
+        'temperature_2m'
+        >>> style_for_parameter("not-a-parameter") is None
+        True
+
+        ```
+    """
+    if not short_name:
+        return None
+    key = str(short_name).strip().lower()
+    name = _SHORTNAME_TO_STYLE.get(key, key)
+    return name if name in DATA_STYLES else None
 
 
 def category_boundaries(values: list[float]) -> list[float]:
@@ -697,9 +962,7 @@ def resolve_style_norm(
         # -- the look of a professional weather-service map.
         edges = [float(v) for v in levels]
         _warn_if_outside_fixed_range(data, edges[0], edges[-1])
-        cmap_obj = cfg["cmap"]
-        if not isinstance(cmap_obj, Colormap):
-            cmap_obj = mpl.colormaps[cmap_obj]
+        cmap_obj = resolve_colormap(cfg["cmap"])
         # Honour `extend` unless the colormap lacks a spare colour for each
         # reserved under/over slot. A continuous colormap (256 entries) always
         # has room; a one-colour-per-band ListedColormap (aod550=9, 10si=6) does
@@ -1167,7 +1430,7 @@ def apply_data_style(
             vmin_prefix, vmax_prefix = swatch_extend_prefixes(norm)
             swatch_legend(
                 ax,
-                cfg["cmap"],
+                resolve_colormap(cfg["cmap"]),
                 cfg["label"],
                 vmin=resolved_vmin,
                 vmax=resolved_vmax,

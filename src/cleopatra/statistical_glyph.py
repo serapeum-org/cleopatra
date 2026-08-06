@@ -66,6 +66,7 @@ from matplotlib.colors import Normalize
 from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 
+from cleopatra.colors import resolve_colormap
 from cleopatra.glyph import (
     _clear_prior_render_artists,
     _mark_render_artists,
@@ -914,7 +915,7 @@ class StatisticalGlyph:
         # unless removed first.
         _clear_prior_render_artists(ax)
         cmap = cmap if cmap is not None else self.default_options["cmap"]
-        cmap_obj = mpl.colormaps[cmap] if isinstance(cmap, str) else cmap
+        cmap_obj = resolve_colormap(cmap)
         lo = float(np.nanmin(values)) if vmin is None else vmin
         hi = float(np.nanmax(values)) if vmax is None else vmax
         norm = Normalize(vmin=lo, vmax=hi)

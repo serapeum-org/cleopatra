@@ -1,0 +1,85 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "https://github.com/serapeum-org/cleopatra/preset.schema.json",
+ "title": "cleopatra data-style preset asset",
+ "description": "The single canonical schema every cleopatra preset asset conforms to. An asset is provenance defaults plus a map of presets; a preset is optional provenance overrides plus a map of layers; a layer is either continuous (colors + colormap) or categorical (categories).",
+ "type": "object",
+ "required": ["version", "presets"],
+ "additionalProperties": false,
+ "properties": {
+  "version": {"type": "integer", "minimum": 1},
+  "source": {"type": "string"},
+  "license": {"type": "string"},
+  "presets": {
+   "type": "object",
+   "additionalProperties": {"$ref": "#/$defs/preset"}
+  }
+ },
+ "$defs": {
+  "preset": {
+   "type": "object",
+   "required": ["layers"],
+   "additionalProperties": false,
+   "properties": {
+    "source": {"type": "string"},
+    "license": {"type": "string"},
+    "background": {"type": "string"},
+    "layers": {
+     "type": "object",
+     "minProperties": 1,
+     "additionalProperties": {"$ref": "#/$defs/layer"}
+    }
+   }
+  },
+  "layer": {
+   "type": "object",
+   "required": ["label"],
+   "additionalProperties": false,
+   "oneOf": [
+    {"required": ["colors", "colormap"]},
+    {"required": ["categories"]}
+   ],
+   "allOf": [
+    {"if": {"required": ["colors"], "properties": {"colors": {"type": "string"}}},
+     "then": {"properties": {"colormap": {"const": "named"}}}},
+    {"if": {"required": ["colormap"], "properties": {"colormap": {"const": "named"}}},
+     "then": {"properties": {"colors": {"type": "string"}}}}
+   ],
+   "properties": {
+    "label": {"type": "string"},
+    "colors": {
+     "oneOf": [
+      {"type": "array", "items": {"type": "string"}, "minItems": 2},
+      {"type": "string"}
+     ]
+    },
+    "colormap": {"enum": ["perceptual", "linear", "listed", "named"]},
+    "categories": {
+     "type": "array",
+     "minItems": 1,
+     "items": {"$ref": "#/$defs/category"}
+    },
+    "norm": {"enum": ["linear", "log", "symlog"]},
+    "center": {"type": ["number", "null"]},
+    "vmin": {"type": ["number", "null"]},
+    "vmax": {"type": ["number", "null"]},
+    "levels": {"type": "array", "items": {"type": "number"}, "minItems": 2},
+    "bands": {"type": "integer", "minimum": 1},
+    "extend": {"enum": ["neither", "min", "max", "both"]},
+    "alpha": {"type": "number", "minimum": 0, "maximum": 1},
+    "alpha_range": {"type": "array", "items": {"type": "number"}, "minItems": 2, "maxItems": 2},
+    "units": {"type": ["string", "null"]}
+   }
+  },
+  "category": {
+   "type": "object",
+   "required": ["value", "color", "label"],
+   "additionalProperties": false,
+   "properties": {
+    "value": {"type": "integer"},
+    "color": {"type": "string"},
+    "label": {"type": "string"}
+   }
+  }
+ }
+}
