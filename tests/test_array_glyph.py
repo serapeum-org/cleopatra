@@ -5001,6 +5001,21 @@ class TestArrayGlyphDataStyle:
         assert to_rgba(fig.patch.get_facecolor()) != to_rgba("#000000"), "the shared figure stays unpainted"
         plt.close(fig)
 
+    def test_background_preset_paints_figure_under_explicit_figsize(self):
+        """An explicit `figsize=` still gets the preset canvas on the figure patch.
+
+        Test scenario:
+            The glyph owns the figure it created whether auto-sized or given an
+            explicit `figsize=`, so a flame `background` paints both the axes and
+            the figure patch in both cases -- ownership, not auto-sizing, gates the
+            figure paint. Otherwise an explicit-figsize flame is a black map framed
+            by a white border (and a white GIF/PNG surround).
+        """
+        fig, ax = ArrayGlyph(self._accum(), style="temperature_flame", figsize=(8, 8)).plot()
+        assert to_rgba(ax.get_facecolor()) == to_rgba("#000000"), "the axes is black"
+        assert to_rgba(fig.patch.get_facecolor()) == to_rgba("#000000"), "an explicit figsize still paints the figure"
+        plt.close(fig)
+
     def test_unknown_style_raises(self):
         """An unknown style name raises a clear `ValueError`."""
         with pytest.raises(ValueError, match="unknown data style"):

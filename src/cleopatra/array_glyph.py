@@ -1789,9 +1789,13 @@ class ArrayGlyph(GeoMixin, Glyph):
         if auto:
             figsize = self._auto_figsize()
         fig, ax = plt.subplots(figsize=figsize)
-        # Only an auto-sized, glyph-owned figure may be tightened afterwards: an
-        # explicit `figsize=` is honoured verbatim, and an external axes (a
-        # subplot the caller manages) must never be resized under them.
+        # Two distinct facts about this figure, tracked separately:
+        #   _owns_figure -- the glyph created it (True for both auto and explicit
+        #     figsize); a preset `background` may paint its patch, but never a
+        #     caller-managed subplot figure.
+        #   _auto_figure -- it was auto-sized; only then may `_tighten_figure`
+        #     resize it (an explicit `figsize=` is honoured verbatim).
+        self._owns_figure = True
         self._auto_figure = auto
         return fig, ax
 
@@ -2512,11 +2516,12 @@ class ArrayGlyph(GeoMixin, Glyph):
             return
         if self.ax is not None:
             self.ax.set_facecolor(background)
-        # Only paint the FIGURE patch when this glyph OWNS the figure. Painting a
-        # shared figure (a subplot the caller composes -- e.g. a style gallery)
-        # would blacken every sibling panel and hide their titles, so a
-        # background preset in one panel colours only its own axes.
-        if self.fig is not None and getattr(self, "_auto_figure", False):
+        # Only paint the FIGURE patch when this glyph OWNS the figure (created it,
+        # whether auto-sized or an explicit `figsize=`). Painting a shared figure
+        # (a subplot the caller composes -- e.g. a style gallery) would blacken
+        # every sibling panel and hide their titles, so a background preset in one
+        # panel colours only its own axes.
+        if self.fig is not None and getattr(self, "_owns_figure", False):
             self.fig.patch.set_facecolor(background)
 
     def _plot_with_style(self, style: str) -> tuple[Figure, Axes]:
@@ -3682,7 +3687,10 @@ class ArrayGlyph(GeoMixin, Glyph):
         if ax is not None:
             self.ax = ax
             self.fig = _root_figure(ax)
-            self._auto_figure = False  # a caller-managed axes must not be resized
+            # A caller-managed axes: never resize the figure, and never paint the
+            # shared figure patch (a background preset colours only this axes).
+            self._auto_figure = False
+            self._owns_figure = False
         elif self.fig is None:
             self.fig, self.ax = self.create_figure_axes()
 
