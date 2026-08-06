@@ -34,13 +34,13 @@ def _read(name: str) -> dict:
     """Read and parse a data-package JSON resource.
 
     Args:
-        name: The resource filename inside `cleopatra.data`.
+        name: The resource filename inside `cleopatra.styling.data`.
 
     Returns:
         dict: The parsed JSON.
     """
     return json.loads(
-        importlib.resources.files("cleopatra.data").joinpath(name).read_text(encoding="utf-8")
+        importlib.resources.files("cleopatra.styling.data").joinpath(name).read_text(encoding="utf-8")
     )
 
 
@@ -158,7 +158,7 @@ class TestPresetSchema:
             `_load_presets` must carry the canvas colour onto the layer(s) for the
             render path to find it.
         """
-        from cleopatra.colors import _load_presets
+        from cleopatra.styling.colors import _load_presets
 
         flame = _load_presets("builtin_presets.json")["temperature_flame"]
         assert flame, "temperature_flame loaded with at least one layer"
@@ -173,7 +173,7 @@ class TestPresetSchema:
             must not pin a constant `alpha`; with none, `alpha_scaled_image`
             defaults opacity to the colour norm.
         """
-        from cleopatra.colors import DATA_STYLES
+        from cleopatra.styling.colors import DATA_STYLES
 
         layer = DATA_STYLES["total_precipitation"]["total_precipitation"]
         assert "alpha" not in layer, "total_precipitation should fade at the low end (no constant alpha)"
@@ -188,7 +188,7 @@ class TestPresetSchema:
         Test scenario:
             The shipped asset loads (degrade-to-empty would signal a broken file).
         """
-        from cleopatra.colors import _load_presets
+        from cleopatra.styling.colors import _load_presets
 
         loaded = _load_presets(asset)
         assert loaded, f"{asset}: loader produced no presets"

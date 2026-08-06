@@ -1,7 +1,7 @@
 """Tests for the Crameri terrain presets, NCL/MeteoSwiss tables, and the
 hinge-faithful `_preset_cmap` loader (F1/F1b/F2).
 
-Covers the palette colormap modes of `cleopatra.colors._preset_cmap`
+Covers the palette colormap modes of `cleopatra.styling.colors._preset_cmap`
 (`"linear"`, `"listed"`, `"perceptual"`), the registered terrain and NCL
 presets, and the fixed `topography` hinge registration.
 """
@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 
-from cleopatra.colors import DATA_STYLES, _preset_cmap, apply_data_style
+from cleopatra.styling.colors import DATA_STYLES, _preset_cmap, apply_data_style
 
 #: A three-colour palette whose middle control point (pure green) sits at index
 #: 0.5, used to probe where each interpolation mode places the hinge.

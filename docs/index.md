@@ -41,7 +41,7 @@ graph TD
     end
 
     subgraph standalone["Standalone"]
-        statistical_glyph["<b>statistical_glyph</b><br/>StatisticalGlyph<br/>histogram · boxplot · multiboxplot · stripes"]
+        histogram_glyph["<b>histogram_glyph</b><br/>HistogramGlyph<br/>histogram · boxplot · multiboxplot · stripes"]
     end
 
     subgraph support["Supporting utilities"]
@@ -70,10 +70,10 @@ graph TD
 - The user-facing visualizers all subclass `Glyph` and share its colour-mapping / colorbar pipeline —
   `array_glyph` (`ArrayGlyph`, `FacetGrid`), `mesh_glyph` (`MeshGlyph`), `scatter_glyph` (`ScatterGlyph`),
   `vector_glyph` (`VectorGlyph`), `flow_glyph` (`FlowGlyph`), `line_glyph` (`LineGlyph`), `polygon_glyph`
-  (`PolygonGlyph`), and `kde_glyph` (`KDEGlyph`). `statistical_glyph` (`StatisticalGlyph`) stands alone.
+  (`PolygonGlyph`), and `kde_glyph` (`KDEGlyph`). `histogram_glyph` (`HistogramGlyph`) stands alone.
 - `geo` provides `GeoMixin`, mixed into the six geographic visualizers (`array_glyph`, `mesh_glyph`,
   `scatter_glyph`, `vector_glyph`, `flow_glyph`, `polygon_glyph` — not `line_glyph`, `kde_glyph`, or
-  `statistical_glyph`), adding a settable `crs` and one-call basemap helpers on the glyph's own axes:
+  `histogram_glyph`), adding a settable `crs` and one-call basemap helpers on the glyph's own axes:
   `add_tiles`, `add_features`, `add_relief`, `add_reference_map`, and `add_labels`.
 - `tiles` and `reference` are the optional (`cleopatra[tiles]`) basemap data sources `geo` wraps — `tiles`
   fetches/stitches XYZ web-tile mosaics; `reference` draws fixed public Natural Earth vector layers and a
@@ -110,12 +110,12 @@ See the [ArrayGlyph reference](reference/array-glyph.md).
 
 See the [MeshGlyph reference](reference/mesh-glyph.md).
 
-### `StatisticalGlyph` — distribution plots
+### `HistogramGlyph` — distribution plots
 
 - 1-D and 2-D histograms with customizable bins, colours, and transparency.
 - Boxplots, grouped multi-boxplots, and warming-stripe bands.
 
-See the [Statistical plots reference](reference/statistics-glyph.md).
+See the [HistogramGlyph reference](reference/histogram-glyph.md).
 
 ### `ScatterGlyph` — point clouds
 
@@ -166,7 +166,7 @@ See the [KDEGlyph reference](reference/kde-glyph.md).
 See the [Geo basemap methods reference](reference/geo.md), [Tiles reference](reference/tiles.md), and
 [Reference data reference](reference/reference-data.md).
 
-### `cleopatra.tiles` / `cleopatra.reference` — basemaps (optional)
+### `cleopatra.basemap.tiles` / `cleopatra.basemap.reference` — basemaps (optional)
 
 - `add_tiles(ax, ...)` overlays an XYZ web-tile basemap (OpenStreetMap, CartoDB, Esri, …) underneath your data —
   pure Python, no GDAL.

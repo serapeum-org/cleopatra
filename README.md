@@ -41,7 +41,7 @@ graph TD
     end
 
     subgraph standalone["Standalone"]
-        statistical_glyph["<b>statistical_glyph</b><br/>StatisticalGlyph<br/>histogram · boxplot · multiboxplot · stripes"]
+        histogram_glyph["<b>histogram_glyph</b><br/>HistogramGlyph<br/>histogram · boxplot · multiboxplot · stripes"]
     end
 
     subgraph support["Supporting utilities"]
@@ -70,9 +70,9 @@ graph TD
 - The user-facing visualizers all subclass `Glyph` and share its colour-mapping/colorbar pipeline — `array_glyph`
   (`ArrayGlyph`, `FacetGrid`), `mesh_glyph` (`MeshGlyph`), `scatter_glyph` (`ScatterGlyph`), `vector_glyph`
   (`VectorGlyph`), `flow_glyph` (`FlowGlyph`), `line_glyph` (`LineGlyph`), `polygon_glyph` (`PolygonGlyph`), and
-  `kde_glyph` (`KDEGlyph`). `statistical_glyph` (`StatisticalGlyph`) stands alone.
+  `kde_glyph` (`KDEGlyph`). `histogram_glyph` (`HistogramGlyph`) stands alone.
 - `geo` provides `GeoMixin`, mixed into the six geographic visualizers — `array_glyph`, `mesh_glyph`, `scatter_glyph`,
-  `vector_glyph`, `flow_glyph`, and `polygon_glyph` (not `line_glyph`, `kde_glyph`, or `statistical_glyph`) — adding a
+  `vector_glyph`, `flow_glyph`, and `polygon_glyph` (not `line_glyph`, `kde_glyph`, or `histogram_glyph`) — adding a
   settable `crs` plus one-call basemap helpers on the glyph's own axes: `add_tiles`, `add_features`, `add_relief`,
   `add_reference_map`, and `add_labels`.
 - `tiles` and `reference` are the optional (`cleopatra[tiles]`) basemap data sources `geo` wraps — `tiles`
@@ -111,13 +111,13 @@ graph TD
   <img src="docs/images/mesh_glyph/mesh-wireframe.png" width="45%" alt="Mesh wireframe" />
 </p>
 
-### StatisticalGlyph -- Distribution Plots
+### HistogramGlyph -- Distribution Plots
 - Create histograms for 1D and 2D datasets with customizable bins, colors, and transparency.
 - Draw boxplots, multi-boxplots, and strip plots.
 
 <p align="center">
-  <img src="docs/images/statistical_glyph/one-histogram.png" width="45%" alt="Histogram" />
-  <img src="docs/images/statistical_glyph/three-histogram.png" width="45%" alt="Multi-Histogram" />
+  <img src="docs/images/histogram_glyph/one-histogram.png" width="45%" alt="Histogram" />
+  <img src="docs/images/histogram_glyph/three-histogram.png" width="45%" alt="Multi-Histogram" />
 </p>
 
 ### ScatterGlyph -- Point Clouds
@@ -205,7 +205,7 @@ graph TD
 ```bash
 pip install cleopatra
 
-# with the optional web-tile basemap support (cleopatra.tiles.add_tiles)
+# with the optional web-tile basemap support (cleopatra.basemap.tiles.add_tiles)
 pip install "cleopatra[tiles]"
 ```
 
@@ -234,7 +234,7 @@ pip install git+https://github.com/serapeum-org/cleopatra
 
 ```python
 import numpy as np
-from cleopatra.array_glyph import ArrayGlyph
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 
 arr = np.random.rand(10, 10)
 glyph = ArrayGlyph(arr)
@@ -245,10 +245,10 @@ fig, ax = glyph.plot(title="Random Array")
 
 ```python
 import numpy as np
-from cleopatra.statistical_glyph import StatisticalGlyph
+from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph
 
 data = np.random.normal(0, 1, 1000)
-stat = StatisticalGlyph(data)
+stat = HistogramGlyph(data)
 fig, ax = stat.histogram(bins=30)
 ```
 
@@ -256,7 +256,7 @@ fig, ax = stat.histogram(bins=30)
 
 ```python
 import numpy as np
-from cleopatra.mesh_glyph import MeshGlyph
+from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
 
 node_x = np.array([0.0, 1.0, 0.5, 1.5])
 node_y = np.array([0.0, 0.0, 1.0, 1.0])
@@ -271,7 +271,7 @@ fig, ax = mg.plot(face_data, location="face", title="Mesh Data")
 
 ```python
 import numpy as np
-from cleopatra.scatter_glyph import ScatterGlyph
+from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
 
 x = np.random.rand(100)
 y = np.random.rand(100)
@@ -284,7 +284,7 @@ fig, ax, sc = sg.plot(title="Scatter")
 
 ```python
 import numpy as np
-from cleopatra.vector_glyph import VectorGlyph
+from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
 
 x, y = np.meshgrid(np.linspace(0, 1, 8), np.linspace(0, 1, 8))
 u, v = np.cos(x), np.sin(y)
@@ -296,7 +296,7 @@ fig, ax, artist = vg.plot(kind="quiver", title="Vector Field")
 
 ```python
 import numpy as np
-from cleopatra.array_glyph import ArrayGlyph
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 
 field = np.random.rand(80, 120)
 glyph = ArrayGlyph(field, extent=[-100, 15, -40, 55])  # west, south, east, north
@@ -311,8 +311,8 @@ glyph.add_reference_map("ecmwf")  # coastlines, borders, and a lon/lat graticule
 - matplotlib >= 3.9
 
 Ships with a bundled ffmpeg binary (via `imageio-ffmpeg`), so `save_animation` can export MP4/MOV/AVI without a
-separate system install. Geospatial basemaps and globe-projection presets (`GeoMixin`, `cleopatra.tiles`,
-`cleopatra.reference`, and the orthographic helpers in `cleopatra.projection`) need the `cleopatra[tiles]` extra.
+separate system install. Geospatial basemaps and globe-projection presets (`GeoMixin`, `cleopatra.basemap.tiles`,
+`cleopatra.basemap.reference`, and the orthographic helpers in `cleopatra.basemap.projection`) need the `cleopatra[tiles]` extra.
 
 ## Documentation
 

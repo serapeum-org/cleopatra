@@ -2,7 +2,7 @@
 
 Composes cleopatra's existing pieces -- a `DATA_STYLES` style (or a colormap), an
 optional `projection` preset, a title block, an optional shaded-relief basemap
-(`cleopatra.reference`), and the style's units-aware legend/colorbar -- into a
+(`cleopatra.basemap.reference`), and the style's units-aware legend/colorbar -- into a
 single call, so a caller does not have to wire them together by hand.
 """
 
@@ -16,8 +16,8 @@ from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
 
-from cleopatra.array_glyph import ArrayGlyph
-from cleopatra.reference import add_relief
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+from cleopatra.basemap.reference import add_relief
 
 __all__ = ["publication_map"]
 
@@ -41,7 +41,7 @@ def publication_map(
     A thin convenience over `ArrayGlyph`: it builds the glyph with a
     `DATA_STYLES` `style` (or a `cmap`), an optional `projection` preset and a
     `title`, draws it, and -- when `relief=True` -- lays a shaded-relief basemap
-    underneath (`cleopatra.reference.add_relief`, which needs the `[tiles]`
+    underneath (`cleopatra.basemap.reference.add_relief`, which needs the `[tiles]`
     extra). Relief only shows through a translucent overlay style (e.g. `"haze"`
     or a value-linked-opacity preset); under an opaque field it is hidden.
 
@@ -50,7 +50,7 @@ def publication_map(
         coords: Optional `(lon, lat)` 1-D vectors (required for `projection`).
         extent: Optional `[xmin, xmax, ymin, ymax]` for an extent-based render
             (mutually exclusive with `coords`).
-        style: A `cleopatra.colors.DATA_STYLES` preset name (e.g.
+        style: A `cleopatra.styling.colors.DATA_STYLES` preset name (e.g.
             `"temperature_2m"`). Takes precedence over `cmap`.
         cmap: A colormap name/object when no `style` is given (namespaced names
             like `"cmocean:thermal"` work with the `[science-colors]` extra).
@@ -106,9 +106,7 @@ def publication_map(
                 stacklevel=2,
             )
         else:
-            # No `extent` on purpose: add_relief places the whole global image and
-            # the axes limits (set by the field) crop it to the region -- passing an
-            # extent for a regional lon/lat view mis-places the image.
+            # no extent: add_relief places the global image; the field's axes limits crop it
             add_relief(ax, resolution=relief_resolution, zorder=-1)
 
     return fig, ax

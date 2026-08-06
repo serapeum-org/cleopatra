@@ -6,7 +6,7 @@ from cleopatra.config import Config
 Config.set_matplotlib_backend()
 import matplotlib.pyplot as plt
 
-from cleopatra.array_glyph import ArrayGlyph
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 
 # from matplotlib.transforms import blended_transform_factory
 # %% create the glyph from a masked array

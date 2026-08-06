@@ -12,9 +12,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from cleopatra.array_glyph import ArrayGlyph
-from cleopatra.colors import DATA_STYLES, convert_units, resolve_colormap, resolve_style_norm
-from cleopatra.scatter_glyph import ScatterGlyph
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+from cleopatra.styling.colors import DATA_STYLES, convert_units, resolve_colormap, resolve_style_norm
+from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
 from cleopatra.templates import publication_map
 
 

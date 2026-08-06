@@ -4,7 +4,7 @@ The `styles` module provides classes and functions for styling plots, including 
 
 ## Styles Class
 
-::: cleopatra.styles.Styles
+::: cleopatra.styling.styles.Styles
     options:
       show_root_heading: true
       show_source: true
@@ -12,7 +12,7 @@ The `styles` module provides classes and functions for styling plots, including 
 
 ## Scale Class
 
-::: cleopatra.styles.Scale
+::: cleopatra.styling.styles.Scale
     options:
       show_root_heading: true
       show_source: true
@@ -25,9 +25,9 @@ The `styles` module provides classes and functions for styling plots, including 
 `ColorScale.LINEAR == "linear"`) and lookup is case-insensitive. `ArrayGlyph` /
 `MeshGlyph` coerce `color_scale` through it, so an unrecognised value (or a non-string
 such as an int) raises a clear `ValueError` instead of an obscure `AttributeError`. It is
-also re-exported from `cleopatra.array_glyph`.
+also re-exported from `cleopatra.glyphs.gridded.array_glyph`.
 
-::: cleopatra.styles.ColorScale
+::: cleopatra.styling.styles.ColorScale
     options:
       show_root_heading: true
       show_source: true
@@ -35,7 +35,7 @@ also re-exported from `cleopatra.array_glyph`.
 
 ## MidpointNormalize Class
 
-::: cleopatra.styles.MidpointNormalize
+::: cleopatra.styling.styles.MidpointNormalize
     options:
       show_root_heading: true
       show_source: true
@@ -50,7 +50,7 @@ dependency): `"quantiles"`, `"equal_interval"`, `"percentiles"`, `"std_mean"`,
 and the Jenks-family `"fisher_jenks"` / `"natural_breaks"`. A non-string `scheme`
 is treated as explicit, already-chosen bin edges.
 
-::: cleopatra.styles.classify
+::: cleopatra.styling.styles.classify
     options:
       show_root_heading: true
       show_source: true
@@ -62,7 +62,7 @@ is treated as explicit, already-chosen bin edges.
 value→size primitive shared by the size-encoding glyphs (`ScatterGlyph` marker
 areas, `FlowGlyph` line widths).
 
-::: cleopatra.styles.resolve_sizes
+::: cleopatra.styling.styles.resolve_sizes
     options:
       show_root_heading: true
       show_source: true
@@ -80,37 +80,37 @@ Reusable, glyph-independent legend helpers that attach a legend to any `Axes`:
 - `colorbar_legend` — attach a colorbar for a `ScalarMappable`.
 - `histogram_legend` — a colour-mapped histogram drawn as a compact legend.
 
-::: cleopatra.styles.disjoint_legend
+::: cleopatra.styling.styles.disjoint_legend
     options:
       show_root_heading: true
       show_source: true
       heading_level: 3
 
-::: cleopatra.styles.swatch_legend
+::: cleopatra.styling.styles.swatch_legend
     options:
       show_root_heading: true
       show_source: true
       heading_level: 3
 
-::: cleopatra.styles.size_legend
+::: cleopatra.styling.styles.size_legend
     options:
       show_root_heading: true
       show_source: true
       heading_level: 3
 
-::: cleopatra.styles.width_legend
+::: cleopatra.styling.styles.width_legend
     options:
       show_root_heading: true
       show_source: true
       heading_level: 3
 
-::: cleopatra.styles.colorbar_legend
+::: cleopatra.styling.styles.colorbar_legend
     options:
       show_root_heading: true
       show_source: true
       heading_level: 3
 
-::: cleopatra.styles.histogram_legend
+::: cleopatra.styling.styles.histogram_legend
     options:
       show_root_heading: true
       show_source: true
@@ -124,7 +124,7 @@ the ECMWF/CAMS-style globe animations use (plotted field on black), and composes
 with a flat axes, an orthographic globe (`projection.apply_projection_frame`), or
 any other cleopatra styling.
 
-::: cleopatra.styles.apply_blank_canvas
+::: cleopatra.styling.styles.apply_blank_canvas
     options:
       show_root_heading: true
       show_source: true
@@ -137,7 +137,7 @@ any other cleopatra styling.
 ```python
 import numpy as np
 import matplotlib.pyplot as plt
-from cleopatra.styles import Scale
+from cleopatra.styling.styles import Scale
 
 # Create some data with a wide range of values
 data = np.array([0.1, 1, 10, 100, 1000])
@@ -179,7 +179,7 @@ plt.tight_layout()
 ```python
 import numpy as np
 import matplotlib.pyplot as plt
-from cleopatra.styles import MidpointNormalize
+from cleopatra.styling.styles import MidpointNormalize
 import matplotlib.colors as colors
 
 # Create some data with positive and negative values

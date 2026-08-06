@@ -1,6 +1,6 @@
 # Projection Module — Projected ("Globe") Map Frames & Presets
 
-The `cleopatra.projection` module has two layers:
+The `cleopatra.basemap.projection` module has two layers:
 
 1. **`apply_projection_frame`** — the low-level, stateless renderer. It turns a plain
    matplotlib `Axes` into a static projected ("globe") frame: it sets the projected limits
@@ -32,7 +32,7 @@ matplotlib.use("Agg")  # any backend; Agg shown for headless rendering
 import numpy as np
 import matplotlib.pyplot as plt
 
-from cleopatra.projection import apply_projection_frame
+from cleopatra.basemap.projection import apply_projection_frame
 
 # Geometry comes in as plain arrays (here a unit-circle globe outline and a
 # meridian); upstream produces the real projected boundary/graticule.
@@ -68,7 +68,7 @@ fig.savefig("globe.png")
 
 ## Module Documentation
 
-::: cleopatra.projection
+::: cleopatra.basemap.projection
     options:
       show_root_heading: true
       show_source: true

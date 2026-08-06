@@ -14,13 +14,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from cleopatra.colorbar import ColorBar
-from cleopatra.flow_glyph import FlowGlyph
-from cleopatra.kde_glyph import KDEGlyph
-from cleopatra.mesh_glyph import MeshGlyph
-from cleopatra.polygon_glyph import PolygonGlyph
-from cleopatra.scatter_glyph import ScatterGlyph
-from cleopatra.vector_glyph import VectorGlyph
+from cleopatra.styling.colorbar import ColorBar
+from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
+from cleopatra.glyphs.stats.kde_glyph import KDEGlyph
+from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
+from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
+from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
+from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
 
 _RNG = np.random.default_rng(1337)
 _FLOW_PATHS = [np.array([[0.0, 0.0], [1.0, 1.0]]), np.array([[0.0, 1.0], [1.0, 0.0]])]

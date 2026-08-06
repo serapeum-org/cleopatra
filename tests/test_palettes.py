@@ -1,4 +1,4 @@
-"""Tests for `cleopatra.palettes` -- the unified Palette record and registry."""
+"""Tests for `cleopatra.styling.palettes` -- the unified Palette record and registry."""
 import matplotlib
 import numpy as np
 import pytest
@@ -15,9 +15,9 @@ from matplotlib.colors import (
 )
 from matplotlib.figure import Figure
 
-from cleopatra.perceptual import srgb_to_lab
+from cleopatra.styling.perceptual import srgb_to_lab
 
-from cleopatra.palettes import (
+from cleopatra.styling.palettes import (
     PALETTES,
     Palette,
     PaletteKind,

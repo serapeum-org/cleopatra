@@ -2,26 +2,26 @@
 
 The glyphs that plot geographic data — `ArrayGlyph`, `MeshGlyph`, `VectorGlyph`,
 `FlowGlyph`, `PolygonGlyph`, and `ScatterGlyph` — inherit
-`cleopatra.geo.GeoMixin`, which adds a settable `crs` property plus five
+`cleopatra.basemap.geo.GeoMixin`, which adds a settable `crs` property plus five
 convenience methods that drop a basemap onto the glyph's **own axes** without
 importing the standalone helpers:
 
 - `crs` — a validated coordinate-reference-system property (int EPSG code, CRS
   string, or `None`); it defaults the `crs=` of `add_tiles` / `add_features` when
   you omit it, and is validated on assignment.
-- `add_tiles` → [`cleopatra.tiles.add_tiles`](tiles.md)
-- `add_features` → [`cleopatra.reference.add_features`](reference-data.md)
-- `add_relief` → [`cleopatra.reference.add_relief`](reference-data.md)
+- `add_tiles` → [`cleopatra.basemap.tiles.add_tiles`](tiles.md)
+- `add_features` → [`cleopatra.basemap.reference.add_features`](reference-data.md)
+- `add_relief` → [`cleopatra.basemap.reference.add_relief`](reference-data.md)
 - `add_reference_map` — a one-call ECMWF/CAMS-style reference-map preset
   (`"ecmwf"`, `"ecmwf-dark"`, or `"auto"`): grey coastlines + borders, a dashed
   lon/lat graticule, °W/°N labels, and a subtle frame.
-- `add_labels` → `cleopatra.geo.add_point_labels` (dot + text markers for named
+- `add_labels` → `cleopatra.basemap.geo.add_point_labels` (dot + text markers for named
   points, e.g. cities).
 
 Each basemap method is a thin wrapper: it draws on `self.ax` (the axes produced
 when you plot the glyph) and forwards its arguments to the matching standalone
 function, which remains the single source of truth. Chart and statistical glyphs
-(`LineGlyph`, `StatisticalGlyph`, `KDEGlyph`) deliberately do **not** inherit
+(`LineGlyph`, `HistogramGlyph`, `KDEGlyph`) deliberately do **not** inherit
 these geo-only methods.
 
 The module also exposes the standalone `add_point_labels` and `available_map_styles`
@@ -35,7 +35,7 @@ import matplotlib
 matplotlib.use("Agg")  # any backend
 import numpy as np
 
-from cleopatra.scatter_glyph import ScatterGlyph
+from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
 
 # A few cities as (lon, lat) points.
 lon = np.array([-74.0, -0.1, 2.35, 13.4, 37.6, 139.7, 151.2])
@@ -57,7 +57,7 @@ glyphs:
 ```python
 import matplotlib.pyplot as plt
 
-from cleopatra.reference import add_features
+from cleopatra.basemap.reference import add_features
 
 fig, ax = plt.subplots()        # any matplotlib Axes
 ax.set_xlim(-180, 180)
@@ -73,7 +73,7 @@ add_features(ax, "coastline", "110m")
 
 ## Module Documentation
 
-::: cleopatra.geo
+::: cleopatra.basemap.geo
     options:
       show_root_heading: true
       show_source: true

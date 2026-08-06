@@ -2,7 +2,7 @@
 
 Fetches a curated set of NCAR Command Language (NCL) colour tables -- the
 MeteoSwiss operational weather tables re-hosted by NCL -- from
-``ncl.ucar.edu`` and writes them to ``src/cleopatra/data/ncl_presets.json``.
+``ncl.ucar.edu`` and writes them to ``src/cleopatra/styling/data/ncl_presets.json``.
 Run once on a maintainer machine with a network connection; the package never
 fetches at import or draw time -- it reads the shipped JSON.
 
@@ -16,10 +16,9 @@ preserving the operational banded look. Anomaly tables additionally carry
 
 Usage::
 
-    python tools/build_ncl_presets.py src/cleopatra/data/ncl_presets.json
+    python tools/build_ncl_presets.py src/cleopatra/styling/data/ncl_presets.json
 
-These tables are public-domain colour specifications (NCAR/NCL); provenance is
-recorded in ``THIRD_PARTY_NOTICES.md``.
+These tables are public-domain colour specifications (NCAR/NCL).
 """
 
 from __future__ import annotations

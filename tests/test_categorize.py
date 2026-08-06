@@ -2,7 +2,7 @@
 
 Covers:
 
-* `cleopatra.styles.categorize` (distinct-value -> colour mapping: sorted
+* `cleopatra.styling.styles.categorize` (distinct-value -> colour mapping: sorted
   numeric/string categories, mixed-type fallback, null dropping, cmap
   cycling vs. continuous-cmap sampling, the all-null error path).
 * `Glyph._prepare_categorical_mapping` / `Glyph.create_categorical_legend`
@@ -26,13 +26,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from cleopatra.flow_glyph import FlowGlyph
-from cleopatra.glyph import CATEGORICAL_DEFAULT_CMAP, Glyph
-from cleopatra.polygon_glyph import PolygonGlyph
-from cleopatra.scatter_glyph import ScatterGlyph
-from cleopatra.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
-from cleopatra.styles import categorize
-from cleopatra.vector_glyph import VectorGlyph
+from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
+from cleopatra.glyphs.base.glyph import CATEGORICAL_DEFAULT_CMAP, Glyph
+from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
+from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
+from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
+from cleopatra.styling.styles import categorize
+from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
 
 
 @pytest.fixture(autouse=True)
@@ -60,7 +60,7 @@ def _make_options(**overrides) -> dict:
 
 
 class TestCategorize:
-    """Tests for the public ``cleopatra.styles.categorize`` function."""
+    """Tests for the public ``cleopatra.styling.styles.categorize`` function."""
 
     def test_distinct_integer_codes_sorted(self):
         """Integer class codes become sorted, deduplicated categories.

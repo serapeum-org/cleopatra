@@ -1,6 +1,6 @@
 # Tiles Module — Web-tile Basemaps
 
-The `cleopatra.tiles` module adds an optional, pure-Python web-tile basemap helper:
+The `cleopatra.basemap.tiles` module adds an optional, pure-Python web-tile basemap helper:
 `add_tiles` fetches XYZ map tiles covering an axes' current extent, stitches them with
 Pillow, and renders the composite underneath your data. No GDAL is required.
 
@@ -29,7 +29,7 @@ import matplotlib
 matplotlib.use("Agg")  # any backend; Agg shown for headless rendering
 import matplotlib.pyplot as plt
 
-from cleopatra.tiles import add_tiles
+from cleopatra.basemap.tiles import add_tiles
 
 fig, ax = plt.subplots()
 # plot something in Web Mercator (EPSG:3857) coordinates ...
@@ -68,7 +68,7 @@ fig.savefig("map.png")
 
 ## Module Documentation
 
-::: cleopatra.tiles
+::: cleopatra.basemap.tiles
     options:
       show_root_heading: true
       show_source: true

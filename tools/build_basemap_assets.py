@@ -4,7 +4,7 @@
 This script is **not** part of the shipped package and is **not** run at
 import or install time. It is the one-off, maintainer-machine tool that
 converts upstream public datasets into the lightweight, dependency-free
-artifacts that ``cleopatra.reference`` downloads and reads at runtime:
+artifacts that ``cleopatra.basemap.reference`` downloads and reads at runtime:
 
 * **Natural Earth vectors** -> gzipped GeoJSON
   (``ne_<res>_<stem>.geojson.gz``), read at runtime with stdlib ``json``.
@@ -13,7 +13,7 @@ artifacts that ``cleopatra.reference`` downloads and reads at runtime:
 * **Hypsometric relief** -> plain RGB PNG
   (``ne_hypso_rgb_<W>x<H>.png``), read at runtime with Pillow only. The
   geotransform is intentionally dropped: every product is a global
-  EPSG:4326 raster, so ``cleopatra.reference`` hardcodes the extent.
+  EPSG:4326 raster, so ``cleopatra.basemap.reference`` hardcodes the extent.
 
 Outputs land in ``--out-dir`` with exactly the filenames the runtime
 helpers expect, ready to attach to a cleopatra release

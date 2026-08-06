@@ -2,7 +2,7 @@
 
 This script is **not** part of the shipped package and is **not** run at
 import or install time. It is the one-off, maintainer-machine tool that
-derives ``src/cleopatra/data/ocean_presets.json`` from the ``cmocean``
+derives ``src/cleopatra/styling/data/ocean_presets.json`` from the ``cmocean``
 oceanography colormap collection.
 
 Each curated cmocean colormap is sampled to hex control points and paired with
@@ -17,7 +17,7 @@ cleopatra; it is not a runtime dependency).
 
 Re-run (from the repo root)::
 
-    python tools/build_ocean_presets.py src/cleopatra/data/ocean_presets.json
+    python tools/build_ocean_presets.py src/cleopatra/styling/data/ocean_presets.json
 """
 
 import json
@@ -55,7 +55,7 @@ CURATED = [
 #: be loaded with ``interp="linear"`` (a plain ``from_list``) so the hinge stays
 #: at 0.5 and lines up with ``center=0``; the perceptual default reparameterises
 #: by CIELAB arc-length and drifts the sea-level break off 0.5. See
-#: ``cleopatra.colors._preset_cmap``.
+#: ``cleopatra.styling.colors._preset_cmap``.
 HINGE_KEYS = {"topography"}
 
 

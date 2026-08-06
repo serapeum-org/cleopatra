@@ -1,4 +1,4 @@
-"""Tests for `cleopatra.hillshade` (relief-shading primitives).
+"""Tests for `cleopatra.glyphs.base.hillshade` (relief-shading primitives).
 
 Covers the option resolver and the two geometry-specific shaders -- `shade_grid`
 (regular raster) and `shade_faces` (triangulated mesh) -- with deterministic
@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 from matplotlib.colors import Normalize
 
-from cleopatra.hillshade import (
+from cleopatra.glyphs.base.hillshade import (
     DEFAULT_HILLSHADE,
     resolve_hillshade,
     shade_faces,

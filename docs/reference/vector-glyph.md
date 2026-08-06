@@ -8,7 +8,7 @@ colorbar.
 
 ## Class Documentation
 
-::: cleopatra.vector_glyph.VectorGlyph
+::: cleopatra.glyphs.gridded.vector_glyph.VectorGlyph
     options:
       show_root_heading: true
       show_source: true
@@ -20,7 +20,7 @@ colorbar.
 
 ```python
 import numpy as np
-from cleopatra.vector_glyph import VectorGlyph
+from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
 
 x, y = np.meshgrid(np.linspace(0, 1, 8), np.linspace(0, 1, 8))
 u, v = np.cos(x * np.pi), np.sin(y * np.pi)

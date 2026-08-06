@@ -2,7 +2,7 @@
 
 Fetches a curated set of Fabio Crameri's *Scientific Colour Maps*
 (https://www.fabiocrameri.ch/colourmaps/, MIT-licensed) from the ``cmcrameri``
-mirror and writes them to ``src/cleopatra/data/terrain_presets.json``. Run once
+mirror and writes them to ``src/cleopatra/styling/data/terrain_presets.json``. Run once
 on a maintainer machine with a network connection; the package itself never
 fetches at import or draw time -- it reads the shipped JSON.
 
@@ -12,13 +12,11 @@ carries ``center=0`` (so ``apply_data_style`` renders it symmetric about sea
 level with a ``TwoSlopeNorm``) and ``colormap="linear"`` (so the loader builds it
 with a plain ``from_list`` that keeps the hinge at 0.5 -- the perceptual default
 reparameterises by CIELAB arc-length and would drift the sea-level break; see
-``cleopatra.colors._preset_cmap``).
+``cleopatra.styling.colors._preset_cmap``).
 
 Usage::
 
-    python tools/build_terrain_presets.py src/cleopatra/data/terrain_presets.json
-
-Provenance/attribution lives in ``THIRD_PARTY_NOTICES.md``.
+    python tools/build_terrain_presets.py src/cleopatra/styling/data/terrain_presets.json
 """
 
 from __future__ import annotations

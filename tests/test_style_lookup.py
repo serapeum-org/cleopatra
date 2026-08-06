@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import pytest
 
-from cleopatra.colors import DATA_STYLES, _SHORTNAME_TO_STYLE, style_for_parameter
+from cleopatra.styling.colors import DATA_STYLES, _SHORTNAME_TO_STYLE, style_for_parameter
 
 
 class TestStyleForParameter:
-    """Tests for ``cleopatra.colors.style_for_parameter``."""
+    """Tests for ``cleopatra.styling.colors.style_for_parameter``."""
 
     @pytest.mark.parametrize(
         "short_name, expected",

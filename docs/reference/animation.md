@@ -1,6 +1,6 @@
 # Animation Module — Save / Embed Helpers for Any `FuncAnimation`
 
-The `cleopatra.animation` module exposes cleopatra's animation **save / inline-embed**
+The `cleopatra.glyphs.base.animation` module exposes cleopatra's animation **save / inline-embed**
 machinery as **glyph-independent** helpers. They operate on *any*
 `matplotlib.animation.FuncAnimation` — a sine wave, stock prices, or a map — not only on a
 `Glyph`'s internal `self.anim`:
@@ -32,7 +32,7 @@ matplotlib.use("Agg")  # any backend; Agg shown for headless rendering
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-from cleopatra.animation import embed_gif, save_animation, to_gif
+from cleopatra.glyphs.base.animation import embed_gif, save_animation, to_gif
 
 # Build any FuncAnimation — no Glyph required.
 fig, ax = plt.subplots()
@@ -65,7 +65,7 @@ embed_gif(anim, fps=3)                     # inline in a notebook cell
 
 ## Module Documentation
 
-::: cleopatra.animation
+::: cleopatra.glyphs.base.animation
     options:
       show_root_heading: true
       show_source: true

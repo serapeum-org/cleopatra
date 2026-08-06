@@ -51,9 +51,6 @@ class Config:
             plt.switch_backend(backend)
             logger.info("Matplotlib backend set to %s", backend)
         elif is_notebook():
-            # IPython is a soft dependency (ships with Jupyter); is_notebook()
-            # returning True already proves it is importable and a shell is
-            # active.
             from IPython import get_ipython
 
             magic = "notebook" if interactive else "inline"
@@ -67,8 +64,6 @@ class Config:
 
 def is_notebook() -> bool:
     """Return True if the code is running in a Jupyter notebook / qtconsole."""
-    # IPython is a soft dependency (not declared/required): it ships with
-    # Jupyter, but importing cleopatra.config must not require it.
     try:
         from IPython import get_ipython
     except ModuleNotFoundError:

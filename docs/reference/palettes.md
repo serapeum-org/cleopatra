@@ -1,14 +1,14 @@
 # Palettes (registry)
 
-The `cleopatra.palettes` module is the single home for every colour ramp cleopatra
+The `cleopatra.styling.palettes` module is the single home for every colour ramp cleopatra
 knows about. One `Palette` record — a name, a `kind`, the colours, and a `source`
 (provenance) — describes each palette; one registry looks them up. Adding a colour
 family is therefore *data*, not a new code path.
 
-A palette's [`PaletteKind`][cleopatra.palettes.PaletteKind] decides how it becomes a
+A palette's [`PaletteKind`][cleopatra.styling.palettes.PaletteKind] decides how it becomes a
 colormap (and, downstream, its natural norm and legend): continuous kinds
 (`sequential`/`diverging`/`cyclic`) interpolate their colours perceptually in CIELAB
-(via [`cleopatra.perceptual`](perceptual.md)); a `qualitative` palette keeps its
+(via [`cleopatra.styling.perceptual`](perceptual.md)); a `qualitative` palette keeps its
 exact class swatches as a `ListedColormap`.
 
 The kind is also what drives `Palette.default_norm` — pair it with `to_colormap` to
@@ -17,9 +17,9 @@ get both the colours and the matching matplotlib norm in one step: a symmetric
 `qualitative`, and a linear `Normalize` otherwise.
 
 The built-in **haze / CAMS-AOD / flame** families live here and register at import,
-so the registry is populated whether you import `cleopatra.palettes` or
-`cleopatra.colors`. Their `name → Colormap` dicts (`HAZE_COLORMAPS`,
-`CAMS_AOD_COLORMAPS`, `FLAME_COLORMAPS`) are still importable from `cleopatra.colors`
+so the registry is populated whether you import `cleopatra.styling.palettes` or
+`cleopatra.styling.colors`. Their `name → Colormap` dicts (`HAZE_COLORMAPS`,
+`CAMS_AOD_COLORMAPS`, `FLAME_COLORMAPS`) are still importable from `cleopatra.styling.colors`
 for backward compatibility.
 
 ## Curated palettes
@@ -42,7 +42,7 @@ exactly on the midpoint); the categorical swatches were generated once with
 any of them like the built-ins:
 
 ```python
-from cleopatra.palettes import get_palette, available_palettes
+from cleopatra.styling.palettes import get_palette, available_palettes
 
 available_palettes("diverging")     # ['diverging_blue_red', 'diverging_brown_teal', ...]
 cmap = get_palette("category12").to_colormap()   # a 12-colour ListedColormap
@@ -50,7 +50,7 @@ cmap = get_palette("category12").to_colormap()   # a 12-colour ListedColormap
 
 ## PaletteKind
 
-::: cleopatra.palettes.PaletteKind
+::: cleopatra.styling.palettes.PaletteKind
     options:
       show_root_heading: true
       show_source: true
@@ -58,7 +58,7 @@ cmap = get_palette("category12").to_colormap()   # a 12-colour ListedColormap
 
 ## Palette
 
-::: cleopatra.palettes.Palette
+::: cleopatra.styling.palettes.Palette
     options:
       show_root_heading: true
       show_source: true
@@ -69,19 +69,19 @@ cmap = get_palette("category12").to_colormap()   # a 12-colour ListedColormap
 Register a palette, look one up, or list what's available (optionally filtered by
 kind). `PALETTES` is the underlying `name → Palette` mapping.
 
-::: cleopatra.palettes.register
+::: cleopatra.styling.palettes.register
     options:
       show_root_heading: true
       show_source: true
       heading_level: 3
 
-::: cleopatra.palettes.get_palette
+::: cleopatra.styling.palettes.get_palette
     options:
       show_root_heading: true
       show_source: true
       heading_level: 3
 
-::: cleopatra.palettes.available_palettes
+::: cleopatra.styling.palettes.available_palettes
     options:
       show_root_heading: true
       show_source: true
@@ -95,14 +95,14 @@ just one kind, or an explicit list) at a glance. Returns the matplotlib `Figure`
 ![The registered cleopatra palettes, grouped by kind](../images/palettes/palette_grid.png)
 
 ```python
-from cleopatra.palettes import preview_palettes
+from cleopatra.styling.palettes import preview_palettes
 
 fig = preview_palettes()                 # all registered palettes, grouped by kind
 fig = preview_palettes("diverging")      # just the diverging maps
 fig.savefig("palettes.png", dpi=130, bbox_inches="tight")
 ```
 
-::: cleopatra.palettes.preview_palettes
+::: cleopatra.styling.palettes.preview_palettes
     options:
       show_root_heading: true
       show_source: true
@@ -113,7 +113,7 @@ fig.savefig("palettes.png", dpi=130, bbox_inches="tight")
 ### Register and use a palette
 
 ```python
-from cleopatra.palettes import Palette, PaletteKind, register, get_palette, available_palettes
+from cleopatra.styling.palettes import Palette, PaletteKind, register, get_palette, available_palettes
 
 # register a diverging palette (interpolated perceptually when built)
 register(Palette("temp_anomaly", PaletteKind.DIVERGING, ("#762a83", "#f4f4f4", "#1b7837")))
@@ -128,7 +128,7 @@ print(available_palettes("diverging"))  # ['temp_anomaly', ...]
 ### Discover the built-in families
 
 ```python
-from cleopatra.palettes import available_palettes, get_palette
+from cleopatra.styling.palettes import available_palettes, get_palette
 
 print(available_palettes("sequential"))            # includes 'haze_dust', 'cams_aod_blue_red', ...
 print(get_palette("cams_aod_blue_red").source)     # 'ecmwf-magics'

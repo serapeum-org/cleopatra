@@ -1,6 +1,6 @@
 # Reference Data — Coastlines, Borders & Relief
 
-The `cleopatra.reference` module draws public cartographic reference data
+The `cleopatra.basemap.reference` module draws public cartographic reference data
 *underneath* your own plot — the `cartopy` `ax.coastlines()` /
 `GeoAxes.stock_img()` niche, and the vector/raster sibling of
 [`add_tiles`](tiles.md):
@@ -48,7 +48,7 @@ import matplotlib
 matplotlib.use("Agg")  # any backend; Agg shown for headless rendering
 import matplotlib.pyplot as plt
 
-from cleopatra.reference import add_relief, add_features
+from cleopatra.basemap.reference import add_relief, add_features
 
 fig, ax = plt.subplots(figsize=(8, 4))
 ax.set_xlim(-180, 180)
@@ -91,7 +91,7 @@ add_features(ax, "coastline", "50m", crs=3857)   # Web Mercator axes
 The raw data is also available without drawing:
 
 ```python
-from cleopatra.reference import natural_earth, relief
+from cleopatra.basemap.reference import natural_earth, relief
 
 parts = natural_earth("coastline", "110m")   # list of (N, 2) lon/lat arrays
 rgb = relief("low")                          # (H, W, 3) uint8 RGB array
@@ -122,12 +122,12 @@ To discover the valid arguments, call `available_layers()` and
 ## Migrating from `pyramids.basemap`
 
 This data used to live in `pyramids.basemap` (`natural_earth` / `relief`). It
-has moved to `cleopatra.reference`, which is the matplotlib map-decoration layer
+has moved to `cleopatra.basemap.reference`, which is the matplotlib map-decoration layer
 — the same boundary the web-tile basemaps already follow (`pyramids.basemap`
-forwarded to [`cleopatra.tiles`](tiles.md)). cleopatra hosts its own copy of the
+forwarded to [`cleopatra.basemap.tiles`](tiles.md)). cleopatra hosts its own copy of the
 assets and has **no dependency on pyramids**.
 
-| Old (`pyramids.basemap`) | New (`cleopatra.reference`) | Notes |
+| Old (`pyramids.basemap`) | New (`cleopatra.basemap.reference`) | Notes |
 | --- | --- | --- |
 | `natural_earth(layer, resolution)` → `FeatureCollection` | `natural_earth(layer, resolution)` → `list[np.ndarray]` | Now returns plain `(N, 2)` lon/lat arrays (exterior rings for polygons), not a GIS feature object. |
 | `relief(resolution)` → GDAL `Dataset` | `relief(resolution)` → `(H, W, 3)` uint8 array | Now a NumPy RGB array; the asset is a PNG (no GeoTIFF / GDAL). |
@@ -136,13 +136,13 @@ assets and has **no dependency on pyramids**.
 | `PYRAMIDS_CACHE_DIR`, `~/.pyramids/naturalearth` | `CLEOPATRA_CACHE_DIR`, `~/.cleopatra/naturalearth` | Cache env var and default directory renamed. |
 
 The `pyramids.basemap.natural_earth` / `relief` entry points are deprecated and
-emit a `DeprecationWarning`; update imports to `cleopatra.reference`. Resolutions
+emit a `DeprecationWarning`; update imports to `cleopatra.basemap.reference`. Resolutions
 are unchanged (`110m` / `50m` / `10m` for vectors; `low` / `medium` for relief),
 as are the six layer names.
 
 ## Module Documentation
 
-::: cleopatra.reference
+::: cleopatra.basemap.reference
     options:
       show_root_heading: true
       show_source: true

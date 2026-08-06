@@ -1,4 +1,4 @@
-"""Tests for cleopatra.tiles.
+"""Tests for cleopatra.basemap.tiles.
 
 Covers `add_tiles` and helper functions in the ported web-tile
 basemap module. HTTP fetching is mocked at the `urllib.request`
@@ -27,8 +27,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 from PIL import Image  # noqa: E402
 
-from cleopatra import tiles as tiles_mod  # noqa: E402
-from cleopatra.tiles import (  # noqa: E402
+from cleopatra.basemap import tiles as tiles_mod  # noqa: E402
+from cleopatra.basemap.tiles import (  # noqa: E402
     MAX_TILES,
     Tile,
     _densify_and_reproject_bounds,
@@ -62,7 +62,7 @@ def _make_tile_png(size: int = 256) -> bytes:
 
 
 class TestGetProvider:
-    """Tests for `cleopatra.tiles.get_provider`."""
+    """Tests for `cleopatra.basemap.tiles.get_provider`."""
 
     def test_default_provider_is_openstreetmap(self):
         """Calling `get_provider(None)` returns OpenStreetMap.Mapnik."""
@@ -90,7 +90,7 @@ class TestGetProvider:
 
 
 class TestAutoZoom:
-    """Tests for `cleopatra.tiles.auto_zoom`."""
+    """Tests for `cleopatra.basemap.tiles.auto_zoom`."""
 
     def test_global_extent_is_zoom_1(self):
         """A global extent spans two tiles across at the default floor."""
@@ -121,7 +121,7 @@ class TestAutoZoom:
 
 
 class TestDensifyAndReprojectBounds:
-    """Tests for `cleopatra.tiles._densify_and_reproject_bounds`."""
+    """Tests for `cleopatra.basemap.tiles._densify_and_reproject_bounds`."""
 
     def test_4326_to_3857_produces_meters(self):
         """4326 -> 3857 produces bounds with absolute values in meters."""
@@ -381,7 +381,7 @@ class TestAddTilesBehaviour:
 
     def test_default_user_agent_propagates_to_fetch_tiles(self, mock_ax, _patch_tiles):
         """With no `user_agent` the module default is forwarded to `fetch_tiles`."""
-        from cleopatra.tiles import USER_AGENT
+        from cleopatra.basemap.tiles import USER_AGENT
 
         _, mock_fetch, _ = _patch_tiles
         add_tiles(mock_ax, crs=3857)
@@ -524,7 +524,7 @@ class TestAddTilesIntegration:
 
 
 class TestRequireTilesExtra:
-    """Tests for `cleopatra.tiles._require_tiles_extra` guard."""
+    """Tests for `cleopatra.basemap.tiles._require_tiles_extra` guard."""
 
     def test_available_returns_silently(self):
         """When deps are present, the helper is a no-op and returns `None`."""
@@ -541,7 +541,7 @@ class TestRequireTilesExtra:
 
 
 class TestAutoZoomEdgeCases:
-    """Boundary tests for `cleopatra.tiles.auto_zoom`."""
+    """Boundary tests for `cleopatra.basemap.tiles.auto_zoom`."""
 
     def test_zero_extent_clamps_to_max(self):
         """A zero-area extent (west == east, south == north) clamps to zoom 19."""
@@ -629,7 +629,7 @@ class TestDensifyAndReprojectEdgeCases:
 
 
 class TestTile:
-    """Tests for `cleopatra.tiles.Tile`."""
+    """Tests for `cleopatra.basemap.tiles.Tile`."""
 
     def test_fields_are_positional_and_named(self):
         """`Tile(x, y, z)` stores each field, accessible both by name and by index."""
@@ -654,7 +654,7 @@ class TestTile:
 
 
 class TestLonLatToTileXY:
-    """Tests for `cleopatra.tiles._lonlat_to_tile_xy`.
+    """Tests for `cleopatra.basemap.tiles._lonlat_to_tile_xy`.
 
     Expected `(x, y)` pairs are cross-checked against the real `mercantile`
     package's `mercantile.tile()` (see the removal PR's commit messages for
@@ -706,7 +706,7 @@ class TestLonLatToTileXY:
 
 
 class TestTilesForBbox:
-    """Tests for `cleopatra.tiles._tiles_for_bbox`.
+    """Tests for `cleopatra.basemap.tiles._tiles_for_bbox`.
 
     Expected tile lists are cross-checked against `mercantile.tiles()` (see
     the removal PR's commit messages); the literal values here lock those
@@ -815,7 +815,7 @@ class TestTilesForBbox:
 
 
 class TestTileXYBounds:
-    """Tests for `cleopatra.tiles._tile_xy_bounds`.
+    """Tests for `cleopatra.basemap.tiles._tile_xy_bounds`.
 
     Expected bounds are cross-checked against `mercantile.xy_bounds()` (see
     the removal PR's commit messages); the literal values here lock those
@@ -848,7 +848,7 @@ class TestTileXYBounds:
 
 
 class TestFetchSingleTile:
-    """Tests for `cleopatra.tiles.fetch_single_tile`."""
+    """Tests for `cleopatra.basemap.tiles.fetch_single_tile`."""
 
     def _make_provider(self) -> MagicMock:
         """Build a mock provider that returns a stable tile URL."""
@@ -862,7 +862,7 @@ class TestFetchSingleTile:
         tile = Tile(0, 0, 0)
         provider = self._make_provider()
 
-        with patch("cleopatra.tiles.urlopen_http") as mock_urlopen:
+        with patch("cleopatra.basemap.tiles.urlopen_http") as mock_urlopen:
             mock_response = MagicMock()
             mock_response.read.return_value = png
             mock_urlopen.return_value = mock_response
@@ -879,7 +879,7 @@ class TestFetchSingleTile:
         tile = Tile(1, 2, 3)
         provider = self._make_provider()
 
-        with patch("cleopatra.tiles.urlopen_http") as mock_urlopen:
+        with patch("cleopatra.basemap.tiles.urlopen_http") as mock_urlopen:
             mock_response = MagicMock()
             mock_response.read.return_value = b"<html>not-an-image</html>"
             mock_urlopen.return_value = mock_response
@@ -901,7 +901,7 @@ class TestFetchSingleTile:
         successful_response = MagicMock()
         successful_response.read.return_value = png
 
-        with patch("cleopatra.tiles.urlopen_http") as mock_urlopen:
+        with patch("cleopatra.basemap.tiles.urlopen_http") as mock_urlopen:
             mock_urlopen.side_effect = [
                 urllib.error.URLError("transient"),
                 successful_response,
@@ -918,7 +918,7 @@ class TestFetchSingleTile:
         tile = Tile(5, 6, 7)
         provider = self._make_provider()
 
-        with patch("cleopatra.tiles.urlopen_http") as mock_urlopen:
+        with patch("cleopatra.basemap.tiles.urlopen_http") as mock_urlopen:
             mock_urlopen.side_effect = urllib.error.URLError("permanent")
             with pytest.raises(ConnectionError, match="z=7/x=5/y=6"):
                 fetch_single_tile(tile, provider, timeout=1, retries=2)
@@ -964,7 +964,7 @@ class TestFetchSingleTile:
         body = header + b"\x00" * 64
         tile = Tile(0, 0, 0)
         provider = self._make_provider()
-        with patch("cleopatra.tiles.urlopen_http") as mock_urlopen:
+        with patch("cleopatra.basemap.tiles.urlopen_http") as mock_urlopen:
             mock_response = MagicMock()
             mock_response.read.return_value = body
             mock_urlopen.return_value = mock_response
@@ -979,11 +979,11 @@ class TestFetchSingleTile:
 
     def test_default_user_agent_is_versioned(self):
         """The default User-Agent identifies cleopatra with a version and URL."""
-        from cleopatra.tiles import USER_AGENT
+        from cleopatra.basemap.tiles import USER_AGENT
 
         png = _make_tile_png(size=32)
         provider = self._make_provider()
-        with patch("cleopatra.tiles.urlopen_http") as mock_urlopen:
+        with patch("cleopatra.basemap.tiles.urlopen_http") as mock_urlopen:
             mock_response = MagicMock()
             mock_response.read.return_value = png
             mock_urlopen.return_value = mock_response
@@ -1001,7 +1001,7 @@ class TestFetchSingleTile:
         png = _make_tile_png(size=32)
         provider = self._make_provider()
         custom = "myapp/2.0 (+https://example.test)"
-        with patch("cleopatra.tiles.urlopen_http") as mock_urlopen:
+        with patch("cleopatra.basemap.tiles.urlopen_http") as mock_urlopen:
             mock_response = MagicMock()
             mock_response.read.return_value = png
             mock_urlopen.return_value = mock_response
@@ -1012,7 +1012,7 @@ class TestFetchSingleTile:
 
 
 class TestLooksLikeImage:
-    """Unit tests for `cleopatra.tiles._looks_like_image`."""
+    """Unit tests for `cleopatra.basemap.tiles._looks_like_image`."""
 
     @pytest.mark.parametrize(
         "data",
@@ -1067,7 +1067,7 @@ class TestLooksLikeImage:
 
 
 class TestFetchTiles:
-    """Tests for `cleopatra.tiles.fetch_tiles`."""
+    """Tests for `cleopatra.basemap.tiles.fetch_tiles`."""
 
     def test_returns_dict_keyed_by_tile(self):
         """Successful fetch produces a `{tile: bytes}` mapping."""
@@ -1116,7 +1116,7 @@ class TestFetchTiles:
 
 
 class TestStitchTiles:
-    """Tests for `cleopatra.tiles.stitch_tiles`."""
+    """Tests for `cleopatra.basemap.tiles.stitch_tiles`."""
 
     def test_single_tile_returns_correct_shape(self):
         """One 256-px tile yields a `(256, 256, 4)` uint8 array."""
@@ -1296,7 +1296,7 @@ class TestAddTilesCRSReprojectionFailure:
             return original(src, dst, always_xy=always_xy)
 
         # `add_tiles` does `from pyproj import Transformer` internally, so
-        # patch the class itself rather than a name on `cleopatra.tiles`.
+        # patch the class itself rather than a name on `cleopatra.basemap.tiles`.
         monkeypatch.setattr(pyproj.Transformer, "from_crs", staticmethod(fake_from_crs))
         with pytest.raises(ValueError, match="Web Mercator"):
             add_tiles(ax, crs=3857)

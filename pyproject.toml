@@ -26,18 +26,18 @@ classifiers = [
 dependencies = [
     "numpy>=2.0.0",
     "matplotlib>=3.9",
+    "pillow>=12.1.1",
     "imageio-ffmpeg>=0.4.9",
     "hpc-utils>=0.1.4",
 ]
 
 [project.optional-dependencies]
 tiles = [
-    "pillow>=12.1.1",
     "pyproj>=3.7.2",
     "xyzservices>=2026.3.0",
 ]
 # Namespaced scientific colormaps (cmocean:thermal, crameri:batlow, ...) resolved
-# lazily via the numpy-only `cmap` aggregator. See cleopatra.colors.resolve_colormap.
+# lazily via the numpy-only `cmap` aggregator. See cleopatra.styling.colors.resolve_colormap.
 science-colors = [
     "cmap>=0.7.2",
 ]
