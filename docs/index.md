@@ -115,7 +115,7 @@ See the [MeshGlyph reference](reference/mesh-glyph.md).
 - 1-D and 2-D histograms with customizable bins, colours, and transparency.
 - Boxplots, grouped multi-boxplots, and warming-stripe bands.
 
-See the [Statistical plots reference](reference/statistics-glyph.md).
+See the [HistogramGlyph reference](reference/histogram-glyph.md).
 
 ### `ScatterGlyph` — point clouds
 

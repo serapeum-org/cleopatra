@@ -105,7 +105,7 @@ nav:
     - Glyph architecture: diagrams/glyph-architecture.md
   - Reference:
     - Glyph (base): reference/glyph.md
-    - Statistical plots: reference/statistics-glyph.md
+    - HistogramGlyph: reference/histogram-glyph.md
     - ArrayGlyph: reference/array-glyph.md
     - MeshGlyph: reference/mesh-glyph.md
     - ScatterGlyph: reference/scatter-glyph.md
