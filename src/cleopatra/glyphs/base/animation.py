@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Any
 
 import matplotlib as mpl
 from matplotlib.animation import FFMpegWriter, FuncAnimation, PillowWriter
+from PIL import Image as PILImage
 
 if TYPE_CHECKING:  # import only for type checkers; IPython stays optional
     from IPython.display import Image
@@ -97,21 +98,19 @@ class _OptimizedPillowWriter(PillowWriter):
     def finish(self):
         frames = self._frames  # type: ignore[attr-defined]
         if str(self.outfile).lower().endswith(".gif") and len(frames) > 1:
-            from PIL import Image
-
             rgb = [f.convert("RGB") for f in frames]
             w, h = rgb[0].size
             tw, th = max(1, w // 3), max(1, h // 3)
-            montage = Image.new("RGB", (tw, th * len(rgb)))
+            montage = PILImage.new("RGB", (tw, th * len(rgb)))
             for i, frame in enumerate(rgb):
                 montage.paste(frame.resize((tw, th)), (0, i * th))
-            base = montage.quantize(colors=254, method=Image.Quantize.MEDIANCUT)
+            base = montage.quantize(colors=254, method=PILImage.Quantize.MEDIANCUT)
             pal = (list(base.getpalette() or []) + [0] * 768)[:768]
             pal[254 * 3 : 254 * 3 + 6] = [0, 0, 0, 255, 255, 255]
-            palette = Image.new("P", (1, 1))
+            palette = PILImage.new("P", (1, 1))
             palette.putpalette(pal)
             frames = [
-                f.quantize(palette=palette, dither=Image.Dither.FLOYDSTEINBERG)
+                f.quantize(palette=palette, dither=PILImage.Dither.FLOYDSTEINBERG)
                 for f in rgb
             ]
         frames[0].save(
