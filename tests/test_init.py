@@ -20,6 +20,7 @@ import pytest
 #: `cleopatra` (subpackage-nested ones included).
 _SUBMODULES = [
     "config",
+    "templates",
     "glyphs.base.glyph",
     "glyphs.base.animation",
     "glyphs.base.hillshade",
@@ -32,8 +33,11 @@ _SUBMODULES = [
     "glyphs.primitives.flow_glyph",
     "glyphs.stats.kde_glyph",
     "glyphs.stats.histogram_glyph",
+    "styling.colorbar",
     "styling.colors",
     "styling.data",
+    "styling.palettes",
+    "styling.perceptual",
     "styling.styles",
     "basemap.geo",
     "basemap.projection",
