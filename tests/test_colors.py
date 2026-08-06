@@ -26,8 +26,7 @@ from cleopatra.styling.colors import (
     HAZE_COLORMAPS,
     Colors,
     _category_boundaries,
-    _load_preset_asset,
-    _load_weather_presets,
+    _load_presets,
     _resolve_style_norm,
     alpha_scaled_image,
     alpha_scaled_mesh,
@@ -366,10 +365,11 @@ class TestApplyDataStyle:
 
     def test_cams_aod_uses_official_palette(self):
         """The 'cams_aod' layer uses the canonical CAMS_AOD_COLORMAPS scale, not a haze map."""
-        assert (
-            DATA_STYLES["cams_aod"]["aod"]["cmap"]
-            is CAMS_AOD_COLORMAPS["blue_yellow_red"]
-        ), "cams_aod should reuse the official CAMS AOD colormap object"
+        ref, xs = CAMS_AOD_COLORMAPS["blue_yellow_red"], np.linspace(0.0, 1.0, 16)
+        got = DATA_STYLES["cams_aod"]["aod"]["cmap"]
+        assert np.allclose([got(x) for x in xs], [ref(x) for x in xs]), (
+            "cams_aod should reproduce the official CAMS AOD colormap"
+        )
 
     def test_cams_aod_declares_no_decoupled_alpha(self):
         """Unlike 'haze', 'cams_aod' sets no alpha_vmin/alpha_vmax (opacity tracks colour)."""
@@ -747,7 +747,7 @@ class TestEarthkitPresets:
             raise FileNotFoundError("no data package")
 
         monkeypatch.setattr(colors_mod.importlib.resources, "files", boom)
-        assert _load_weather_presets() == {}
+        assert _load_presets("weather_presets.json") == {}
 
 
 class TestContourLevelsStyle:
@@ -936,7 +936,10 @@ class TestFlameColormapsAndPresets:
         """Each flame preset is a single layer with a colour range and a value-linked opacity ramp."""
         assert set(DATA_STYLES[style]) == {style}
         layer = DATA_STYLES[style][style]
-        assert layer["cmap"] is FLAME_COLORMAPS[cmap_name]
+        ref, xs = FLAME_COLORMAPS[cmap_name], np.linspace(0.0, 1.0, 16)
+        assert np.allclose([layer["cmap"](x) for x in xs], [ref(x) for x in xs]), (
+            "flame preset should reproduce the FLAME_COLORMAPS ramp"
+        )
         assert (layer["vmin"], layer["vmax"]) == (0.0, 40.0)
         # alpha decoupled from colour -> the glow (transparent when cool, opaque when hot)
         assert layer["alpha_vmin"] < layer["alpha_vmax"]
@@ -1028,7 +1031,7 @@ class TestMagicsPresets:
             raise FileNotFoundError("no data package")
 
         monkeypatch.setattr(colors_mod.importlib.resources, "files", boom)
-        assert _load_weather_presets() == {}, (
+        assert _load_presets("weather_presets.json") == {}, (
             "missing asset should degrade to no presets"
         )
 
@@ -1094,7 +1097,7 @@ class TestMagicsPresets:
             importlib.resources.files("cleopatra.styling.data")
             .joinpath("weather_presets.json")
             .read_text()
-        )["min_temperature_2m"]
+        )["presets"]["min_temperature_2m"]["layers"]["min_temperature_2m"]
         palette = rec["colors"]
         assert len(palette) >= 27, f"min_temperature_2m ramp truncated to {len(palette)} colours"
         assert any(g > r and g > b and g > 0.5 for r, g, b in map(to_rgb, palette)), (
@@ -1468,7 +1471,7 @@ class TestCmoceanPresets:
 
     def test_missing_asset_degrades_to_empty(self):
         """The shared asset loader returns {} for an absent resource, never raising."""
-        assert _load_preset_asset("does_not_exist.json", "x") == {}
+        assert _load_presets("does_not_exist.json") == {}
 
     @staticmethod
     def _patch_asset_text(monkeypatch, text):
@@ -1488,12 +1491,12 @@ class TestCmoceanPresets:
     def test_malformed_json_degrades_to_empty(self, monkeypatch):
         """A corrupt (invalid JSON) asset returns {} instead of crashing the import."""
         self._patch_asset_text(monkeypatch, "{not valid json")
-        assert _load_preset_asset("ocean_presets.json", "ocean") == {}
+        assert _load_presets("ocean_presets.json") == {}
 
     def test_non_mapping_json_degrades_to_empty(self, monkeypatch):
         """A structurally-wrong (non-object) asset returns {}, never raises."""
         self._patch_asset_text(monkeypatch, "[1, 2, 3]")
-        assert _load_preset_asset("ocean_presets.json", "ocean") == {}
+        assert _load_presets("ocean_presets.json") == {}
 
     def test_one_bad_record_is_skipped_others_survive(self, monkeypatch):
         """A single malformed record is skipped; the sibling well-formed presets load."""
@@ -1501,13 +1504,18 @@ class TestCmoceanPresets:
 
         asset = json.dumps(
             {
-                "good1": {"palette": ["#000000", "#ffffff"], "label": "Good 1"},
-                "bad": {"label": "no palette"},
-                "good2": {"palette": ["#ff0000", "#00ff00"], "label": "Good 2"},
+                "version": 1,
+                "presets": {
+                    "good1": {"layers": {"good1": {
+                        "label": "Good 1", "colors": ["#000000", "#ffffff"], "colormap": "perceptual"}}},
+                    "bad": {"label": "no layers"},
+                    "good2": {"layers": {"good2": {
+                        "label": "Good 2", "colors": ["#ff0000", "#00ff00"], "colormap": "perceptual"}}},
+                },
             }
         )
         self._patch_asset_text(monkeypatch, asset)
-        loaded = _load_preset_asset("ocean_presets.json", "ocean")
+        loaded = _load_presets("ocean_presets.json")
         assert set(loaded) == {
             "good1",
             "good2",

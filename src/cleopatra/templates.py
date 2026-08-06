@@ -33,7 +33,7 @@ def publication_map(
     title: str | None = None,
     relief: bool = False,
     relief_resolution: str = "low",
-    figsize: tuple[float, float] = (10, 8),
+    figsize: tuple[float, float] | None = None,
     **plot_kwargs: Any,
 ) -> tuple[Figure, Axes]:
     """Render a publication-grade map in one call.
@@ -58,7 +58,8 @@ def publication_map(
         title: Title block text.
         relief: When True, draw a shaded-relief basemap under the field.
         relief_resolution: Relief resolution passed to `add_relief`.
-        figsize: Figure size in inches.
+        figsize: Figure size in inches. `None` (default) lets `ArrayGlyph` size
+            the figure to the data's aspect ratio.
         **plot_kwargs: Forwarded to `ArrayGlyph.plot` (e.g. `colorbar`).
 
     Returns:
@@ -81,7 +82,9 @@ def publication_map(
 
             ```
     """
-    options: dict[str, Any] = {"figsize": figsize}
+    options: dict[str, Any] = {}
+    if figsize is not None:
+        options["figsize"] = figsize
     if style is not None:
         options["style"] = style
     if cmap is not None:

@@ -47,8 +47,16 @@ from cleopatra.styling.colors import (
     resolve_style_norm,
 )
 from cleopatra.basemap.geo import GeoMixin
-from cleopatra.glyphs.glyph import Glyph, _clear_prior_render_artists, _mark_render_artists
+from cleopatra.glyphs.glyph import (
+    Glyph,
+    _clear_prior_render_artists,
+    _clear_projection_frame,
+    _mark_render_artists,
+    _restore_flat_axes,
+    _stash_projection_frame,
+)
 from cleopatra.glyphs.hillshade import resolve_hillshade, shade_faces
+from cleopatra.basemap.projection import apply_projection_style_mesh, projection_draws_frame
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import disjoint_legend
 
@@ -59,6 +67,7 @@ MESH_DEFAULT_OPTIONS = {
     "label_kw": None,
     "hillshade": False,
     "style": None,
+    "projection": None,
 }
 MESH_DEFAULT_OPTIONS = STYLE_DEFAULTS | MESH_DEFAULT_OPTIONS
 
@@ -191,6 +200,10 @@ class MeshGlyph(GeoMixin, Glyph):
         #: restored after the reset -- so a style survives a later plain
         #: `plot(data)` (sticky + clearable, like `ArrayGlyph`).
         self._style_state = self.default_options.get("style")
+        #: Sticky `projection` preset (like `_style_state`): restored after the
+        #: `plot()` options reset so a constructor-time `projection=` survives a
+        #: later plain `plot(data)`.
+        self._projection_state = self.default_options.get("projection")
         #: Last `(data, location)` rendered, so `apply_style` can restyle in
         #: place without the caller re-supplying the mesh data.
         self._last_data: np.ndarray | None = None
@@ -602,6 +615,50 @@ class MeshGlyph(GeoMixin, Glyph):
                 f"data length ({len(data)}) does not match n_{location}s ({expected})."
             )
 
+    def _apply_projection(self) -> None:
+        """Reproject the mesh onto the `projection` preset and frame the axes.
+
+        Replaces the cached triangulation with one on the reprojected (e.g.
+        orthographic-globe) node coordinates -- far-hemisphere triangles masked
+        -- and draws the globe boundary + graticule. Must run after the axes is
+        cleared and before the mesh is drawn, so the render uses the reprojected
+        triangulation.
+
+        Owns the projection frame's lifecycle: every call first removes the
+        boundary/graticule drawn on a previous render (they are not
+        `_mark_render_artists`-tracked, so a replot would otherwise stack a
+        duplicate frame). When `projection` is cleared to a falsy value, it drops
+        the reprojected triangulation cache so the `triangulation` property
+        rebuilds the flat mesh, and -- if a globe frame was present -- restores
+        the flat axes view (the globe froze the limits/axis-off), otherwise a
+        `plot(projection=None)` after a globe would silently render the flat mesh
+        into a frozen, axis-off view as an invisible speck.
+        """
+        had_frame = _clear_projection_frame(self.ax)
+        projection = self.default_options.get("projection")
+        # "flat" and no projection both render the native lon/lat mesh; only a
+        # framed style ("globe") reprojects and freezes the axes view.
+        if not projection_draws_frame(projection):
+            self._cached_triangulation = None  # rebuild flat coords on next access
+            if had_frame:
+                _restore_flat_axes(
+                    self.ax,
+                    float(self._node_x.min()),
+                    float(self._node_x.max()),
+                    float(self._node_y.min()),
+                    float(self._node_y.max()),
+                    aspect="equal",
+                )
+            return
+        before = set(map(id, self.ax.patches)) | set(map(id, self.ax.lines))
+        self._cached_triangulation = apply_projection_style_mesh(
+            self.ax, self._node_x, self._node_y, self._fan_triangles(), style=projection
+        )
+        _stash_projection_frame(
+            self.ax,
+            [a for a in (*self.ax.patches, *self.ax.lines) if id(a) not in before],
+        )
+
     def _render_mesh(
         self,
         ax,
@@ -682,6 +739,13 @@ class MeshGlyph(GeoMixin, Glyph):
         colours may not appear on the surface — the bar reflects the input
         data range, not the drawn per-face means. Requires node-centered
         `data` (the surface's per-node elevation).
+
+        Note:
+            Hillshade is intended for native (flat) coordinates. Under
+            `projection="globe"` the triangulation is in orthographic **metres**
+            (~1e6) while elevations stay in metres (~1e3), so the surface reads
+            as nearly flat in the xy frame and the relief washes out. Combine
+            hillshade with the plain (flat) mesh, not the globe.
 
         Args:
             ax: Axes to draw on.
@@ -1000,6 +1064,12 @@ class MeshGlyph(GeoMixin, Glyph):
             self._style_state = new_style
         else:
             self.default_options["style"] = self._style_state
+        # `projection` is sticky the same way, so it survives the reset whether
+        # it was set on the constructor or a previous plot().
+        if "projection" in option_kwargs:
+            self._projection_state = self.default_options["projection"]
+        else:
+            self.default_options["projection"] = self._projection_state
 
         # Remember what was rendered so `apply_style` can restyle in place.
         # Copy the array so a caller mutating its buffer after plot() (a common
@@ -1101,6 +1171,7 @@ class MeshGlyph(GeoMixin, Glyph):
             _clear_prior_render_artists(self.ax)
             self.im = None
             self._cbar = None
+            self._apply_projection()
             tpc = self._render_shaded_relief(
                 self.ax, data, edgecolor, norm, hillshade, **render_kwargs
             )
@@ -1108,6 +1179,7 @@ class MeshGlyph(GeoMixin, Glyph):
             _clear_prior_render_artists(self.ax)
             self.im = None
             self._cbar = None
+            self._apply_projection()
             tpc = self._render_mesh(
                 self.ax,
                 data,

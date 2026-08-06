@@ -51,6 +51,13 @@ CURATED = [
     ("curl", "vorticity", "Vorticity", 0.0),
 ]
 
+#: Hypsometric maps with a hard land/sea discontinuity at cmap 0.5. These must
+#: be loaded with ``interp="linear"`` (a plain ``from_list``) so the hinge stays
+#: at 0.5 and lines up with ``center=0``; the perceptual default reparameterises
+#: by CIELAB arc-length and drifts the sea-level break off 0.5. See
+#: ``cleopatra.styling.colors._preset_cmap``.
+HINGE_KEYS = {"topography"}
+
 
 def _safe_out_path(out_path):
     """Resolve `out_path` and confine it to the current working directory tree.
@@ -76,16 +83,22 @@ def main(out_path):
     for cm_name, key, label, center in CURATED:
         cmap = getattr(cmocean.cm, cm_name)
         palette = [to_hex(cmap(float(x))) for x in xs]
-        rec = {
+        layer = {
             "label": label,
-            "palette": palette,
-            "opacity": "opaque",
+            "colors": palette,
+            "colormap": "linear" if key in HINGE_KEYS else "perceptual",
         }
         if center is not None:
-            rec["center"] = center
-        presets[key] = rec
+            layer["center"] = center
+        layer["alpha"] = 1.0  # opaque full field
+        presets[key] = {"layers": {key: layer}}
 
-    asset = dict(sorted(presets.items()))
+    asset = {
+        "version": 1,
+        "source": "cmocean",
+        "license": "MIT",
+        "presets": dict(sorted(presets.items())),
+    }
     with open(_safe_out_path(out_path), "w", encoding="utf-8") as f:
         json.dump(asset, f, indent=1, ensure_ascii=False)
     print(f"wrote {len(presets)} cmocean presets to {out_path}")

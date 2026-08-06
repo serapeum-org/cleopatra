@@ -21,21 +21,20 @@ from cleopatra.templates import publication_map
 class TestReviewFixes:
     """One test per fixed review finding (H1, M1, L1, L3)."""
 
-    def test_style_and_projection_warns_h1(self):
-        """H1: combining `style` and `projection` warns instead of silently dropping it.
+    def test_style_and_projection_composes_h1(self):
+        """H1: `style` and `projection` compose (styled globe), not silently dropped.
 
         Test scenario:
-            `publication_map(style=..., projection="globe")` cannot compose yet, so
-            it must emit a warning naming the ignored `projection` rather than
-            rendering a flat styled map silently.
+            `publication_map(style=..., projection="globe")` reprojects the styled
+            field and draws the globe boundary, rather than rendering a flat
+            styled map. (Originally H1 only warned; A4 makes them compose.)
         """
+        pytest.importorskip("pyproj", reason="globe needs the [tiles] extra")
         lon = np.linspace(-10.0, 10.0, 12)
-        lat = np.linspace(30.0, 50.0, 10)
+        lat = np.linspace(50.0, 30.0, 10)
         data = np.random.default_rng(0).random((10, 12)) * 30.0
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            publication_map(data, coords=(lon, lat), style="temperature_2m", projection="globe")
-        assert any("'projection' is ignored" in str(w.message) for w in caught), "style+projection must warn"
+        fig, ax = publication_map(data, coords=(lon, lat), style="temperature_2m", projection="globe")
+        assert len(ax.patches) >= 1, "styled globe should draw the boundary patch"
         plt.close("all")
 
     def test_radar_reflectivity_keeps_max_extend_m1(self):

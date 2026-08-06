@@ -521,7 +521,20 @@ class GeoMixin:
         self._crs = _validate_crs(value)
 
     def _basemap_axes(self, ax: Any = None) -> Any:
-        """Return the axes to draw a basemap on (`ax` or `self.ax`).
+        """Return the axes to draw a basemap on, creating one if needed.
+
+        Resolves the target as `ax`, else the glyph's own `self.ax`. When the
+        glyph has not drawn yet (`self.ax` is `None`) but can make its own figure
+        (`create_figure_axes` -- i.e. a real glyph), the axes is created eagerly
+        and stored on the glyph, so a reference layer can be added **before**
+        `plot`/`animate`. Those then reuse the same axes (both guard on
+        `self.fig is None`), so the builder flow
+
+            glyph = ArrayGlyph(data, ...)
+            glyph.add_features("coastline")   # creates the axes here
+            glyph.animate(...)                # reuses it
+
+        works directly, with no basemap callback.
 
         Args:
             ax: An explicit axes to use instead of the glyph's own.
@@ -530,16 +543,32 @@ class GeoMixin:
             The resolved matplotlib axes.
 
         Raises:
-            RuntimeError: If neither `ax` nor `self.ax` is available -- the
-                glyph has not been plotted yet.
+            RuntimeError: If there is no axes and the host cannot create *and*
+                seed one on demand. Only a glyph that exposes its own data bounds
+                (`_flat_axis_bounds`, i.e. `ArrayGlyph`) supports the pre-plot
+                builder flow; for the others, plot the glyph first (or pass `ax=`).
         """
         target = ax if ax is not None else getattr(self, "ax", None)
-        if target is None:
-            raise RuntimeError(
-                "No axes to draw on. Plot the glyph first (or pass ax=) "
-                "before adding a basemap layer."
-            )
-        return target
+        if target is not None:
+            return target
+        # Create the axes on demand only when the glyph can also SEED it with its
+        # own data bounds. A reference layer pins the current view (it locks
+        # xlim/ylim and turns autoscale off, to preserve an already-drawn map), so
+        # an *unseeded* axes would lock the default (0, 1) box and the later data
+        # draw could not set the extent -- a silently broken plot. Seeding the data
+        # bounds means the layer pins the correct view; a glyph with no
+        # `_flat_axis_bounds` cannot seed, so it keeps raising the clear error below
+        # rather than returning an unusable (0, 1) axes.
+        if hasattr(self, "create_figure_axes") and hasattr(self, "_flat_axis_bounds"):
+            self.fig, self.ax = self.create_figure_axes()
+            x_min, x_max, y_min, y_max = self._flat_axis_bounds()
+            self.ax.set_xlim(x_min, x_max)
+            self.ax.set_ylim(y_min, y_max)
+            return self.ax
+        raise RuntimeError(
+            "No axes to draw on. Plot the glyph first (or pass ax=) "
+            "before adding a basemap layer."
+        )
 
     def _basemap_kwargs(self, kwargs: dict) -> dict:
         """Default `crs` to `self.crs` when the caller did not set it.
@@ -580,7 +609,10 @@ class GeoMixin:
             matplotlib.axes.Axes: The axes, for chaining.
 
         Raises:
-            RuntimeError: If the glyph has no axes yet and `ax` is not given.
+            RuntimeError: Only if there is no axes, no `ax` is given, and the
+                glyph cannot create one (a bare `GeoMixin`); only `ArrayGlyph` creates and seeds
+                its axes on demand, so the pre-plot builder flow is ArrayGlyph-only
+                -- plot the other glyphs first (or pass `ax=`).
 
         See Also:
             cleopatra.basemap.tiles.add_tiles: The underlying implementation and its
@@ -611,7 +643,10 @@ class GeoMixin:
             matplotlib.axes.Axes: The axes, for chaining.
 
         Raises:
-            RuntimeError: If the glyph has no axes yet and `ax` is not given.
+            RuntimeError: Only if there is no axes, no `ax` is given, and the
+                glyph cannot create one (a bare `GeoMixin`); only `ArrayGlyph` creates and seeds
+                its axes on demand, so the pre-plot builder flow is ArrayGlyph-only
+                -- plot the other glyphs first (or pass `ax=`).
 
         See Also:
             cleopatra.basemap.reference.add_features: The underlying implementation
@@ -645,7 +680,10 @@ class GeoMixin:
             matplotlib.axes.Axes: The axes, for chaining.
 
         Raises:
-            RuntimeError: If the glyph has no axes yet and `ax` is not given.
+            RuntimeError: Only if there is no axes, no `ax` is given, and the
+                glyph cannot create one (a bare `GeoMixin`); only `ArrayGlyph` creates and seeds
+                its axes on demand, so the pre-plot builder flow is ArrayGlyph-only
+                -- plot the other glyphs first (or pass `ax=`).
 
         See Also:
             cleopatra.basemap.reference.add_relief: The underlying implementation and
@@ -678,7 +716,10 @@ class GeoMixin:
             matplotlib.axes.Axes: The axes, for chaining.
 
         Raises:
-            RuntimeError: If the glyph has no axes yet and `ax` is not given.
+            RuntimeError: Only if there is no axes, no `ax` is given, and the
+                glyph cannot create one (a bare `GeoMixin`); only `ArrayGlyph` creates and seeds
+                its axes on demand, so the pre-plot builder flow is ArrayGlyph-only
+                -- plot the other glyphs first (or pass `ax=`).
 
         Examples:
             - Label a city on a plotted glyph:
@@ -939,7 +980,10 @@ class GeoMixin:
             matplotlib.axes.Axes: The decorated axes, for chaining.
 
         Raises:
-            RuntimeError: If the glyph has no axes yet and `ax` is not given.
+            RuntimeError: Only if there is no axes, no `ax` is given, and the
+                glyph cannot create one (a bare `GeoMixin`); only `ArrayGlyph` creates and seeds
+                its axes on demand, so the pre-plot builder flow is ArrayGlyph-only
+                -- plot the other glyphs first (or pass `ax=`).
             ValueError: If `style` is not a known preset or `"auto"`, or if
                 `graticule_step` is given and is not a positive number.
 

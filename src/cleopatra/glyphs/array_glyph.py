@@ -66,11 +66,14 @@ from cleopatra.basemap.geo import GeoMixin
 from cleopatra.glyphs.glyph import (
     Glyph,
     _clear_prior_render_artists,
+    _clear_projection_frame,
     _mark_render_artists,
+    _restore_flat_axes,
     _root_figure,
+    _stash_projection_frame,
 )
 from cleopatra.glyphs.hillshade import resolve_hillshade, shade_grid, shade_rgb
-from cleopatra.basemap.projection import apply_projection_style
+from cleopatra.basemap.projection import apply_projection_style, projection_draws_frame
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import (
     ColorScale,  # re-exported for convenience  # noqa: F401
@@ -1718,6 +1721,137 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         self._exclude_value = value
 
+    def _auto_figsize(self) -> tuple[float, float]:
+        """A figure size whose aspect matches the data, for a filled map.
+
+        `ArrayGlyph` draws with equal aspect (undistorted geography), so a wide
+        or tall field in the default square figure collapses to a thin strip with
+        an oversized-looking colorbar. When the caller did not pass an explicit
+        `figsize`, this derives one from the data's own aspect ratio -- from
+        `extent` (matplotlib order `[xmin, xmax, ymin, ymax]`), else the `coords`
+        ranges, else the array's pixel shape -- so the map fills the figure. Any
+        degenerate input falls back to the configured default `figsize`.
+
+        Returns:
+            tuple[float, float]: `(width, height)` in inches.
+        """
+        default = tuple(self.default_options["figsize"])
+        if self.default_options.get("projection") == "globe":
+            return (7.5, 6.5)  # the orthographic disc is ~square, not the lon/lat aspect
+        try:
+            if self.extent is not None:
+                xmin, xmax, ymin, ymax = (float(v) for v in self.extent)
+                width, height = abs(xmax - xmin), abs(ymax - ymin)
+            elif self._coords is not None:
+                xs, ys = self._coords
+                width = abs(float(np.nanmax(xs)) - float(np.nanmin(xs)))
+                height = abs(float(np.nanmax(ys)) - float(np.nanmin(ys)))
+            else:
+                arr = np.asarray(self.arr)
+                if arr.ndim == 2 or (arr.ndim == 3 and arr.shape[-1] in (3, 4)):
+                    height, width = float(arr.shape[0]), float(arr.shape[1])
+                else:
+                    return default
+        except (TypeError, ValueError, IndexError, AttributeError):
+            return default
+        if not (width > 0 and height > 0):
+            return default
+        aspect = width / height
+        # A rough starting size only: the aspect makes the equal-aspect map fill
+        # the frame, and `_tighten_figure` crops the exact margin afterwards, so
+        # these pads need not be precise (they just leave room to render the
+        # colorbar/title without clipping before the crop measures them).
+        plot_height = 6.0        # target plot height (inches)
+        cbar_pad = 1.8           # room for the colorbar + its labels
+        max_width = 14.0
+        fig_w = plot_height * aspect + cbar_pad
+        fig_h = plot_height
+        if fig_w > max_width:    # very wide field: cap width, shrink height to keep the aspect
+            fig_w = max_width
+            fig_h = max(3.5, (max_width - cbar_pad) / aspect)
+        fig_w = max(5.0, fig_w)
+        return (round(fig_w, 1), round(fig_h, 1))
+
+    def create_figure_axes(self) -> tuple[Figure, Axes]:
+        """Create the figure/axes, sizing the figure to the data when needed.
+
+        Overrides `Glyph.create_figure_axes` to use `_auto_figsize` whenever the
+        caller left `figsize` at its default (did not pass it explicitly), so an
+        equal-aspect map fills the figure instead of collapsing into a strip. An
+        explicit `figsize=` is always honoured unchanged.
+
+        Returns:
+            tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]: The new figure
+            and axes.
+        """
+        figsize = self.default_options["figsize"]
+        auto = "figsize" not in getattr(self, "_explicit_options", set())
+        if auto:
+            figsize = self._auto_figsize()
+        fig, ax = plt.subplots(figsize=figsize)
+        # Two distinct facts about this figure, tracked separately:
+        #   _owns_figure -- the glyph created it (True for both auto and explicit
+        #     figsize); a preset `background` may paint its patch, but never a
+        #     caller-managed subplot figure.
+        #   _auto_figure -- it was auto-sized; only then may `_tighten_figure`
+        #     resize it (an explicit `figsize=` is honoured verbatim).
+        self._owns_figure = True
+        self._auto_figure = auto
+        return fig, ax
+
+    def _tighten_figure(self, pad_inches: float = 0.02) -> None:
+        """Shrink the figure to its drawn content, in place.
+
+        `ArrayGlyph` draws with equal aspect, so the figure holding it is almost
+        always larger than the map + colorbar + title, leaving a margin. Jupyter's
+        inline backend hides that margin because it saves with
+        `bbox_inches="tight"`, but a plain `savefig` -- or an animation writer,
+        which does not crop -- keeps it, so a saved figure or GIF looks loose
+        while the inline preview looked tight.
+
+        This closes that gap at the *figure* level rather than per save call:
+        measure the rendered content once, translate every axes rigidly so the
+        content's lower-left sits at the origin, and resize the figure to match.
+        Because the figure itself becomes tight, every export path -- a bare
+        `savefig`, `embed_gif`, `to_gif`, a raw `PillowWriter` -- is tight and
+        identical. The whole axes group moves together, so the relative layout
+        (map, colorbar gap, title) is preserved; only the outer margin is
+        removed. A small uniform `pad_inches` is kept so edge ticks/labels are
+        not shaved.
+
+        Args:
+            pad_inches: Uniform margin left around the content, in inches.
+        """
+        fig = self.fig
+        if fig is None or not fig.axes:
+            return
+        try:
+            fig.canvas.draw()
+            content = fig.get_tightbbox(fig.canvas.get_renderer())
+        except Exception:  # noqa: BLE001 -- tightening is cosmetic and fully optional
+            # A backend without a queryable renderer (AttributeError) or any other
+            # draw/renderer quirk must never turn a successful render into a hard
+            # failure: leave the figure at its auto size.
+            return
+        if content is None:
+            return
+        fig_w, fig_h = (float(v) for v in fig.get_size_inches())
+        new_w = (content.x1 - content.x0) + 2 * pad_inches
+        new_h = (content.y1 - content.y0) + 2 * pad_inches
+        if not (new_w > 0 and new_h > 0):
+            return
+        for axes in fig.axes:
+            pos = axes.get_position()
+            axes.set_position(
+                [
+                    (pos.x0 * fig_w - content.x0 + pad_inches) / new_w,
+                    (pos.y0 * fig_h - content.y0 + pad_inches) / new_h,
+                    (pos.width * fig_w) / new_w,
+                    (pos.height * fig_h) / new_h,
+                ]
+            )
+        fig.set_size_inches(new_w, new_h)
+
     @staticmethod
     def _validate_coords(
         coords: tuple[np.ndarray, np.ndarray] | list[np.ndarray] | None,
@@ -2362,6 +2496,34 @@ class ArrayGlyph(GeoMixin, Glyph):
         ]
         return {"ticks": ticks} if ticks else {}
 
+    def _apply_style_background(self, cfg: dict[str, Any]) -> None:
+        """Paint the preset's canvas colour on this glyph's figure + axes.
+
+        A preset whose look depends on a tinted canvas -- e.g. the flame glow,
+        which fades to transparent at the cool end and only reads on black --
+        carries a `background` colour (see the preset schema). Apply it to the
+        axes (behind the data) and the figure patch (the crop margin, and the
+        GIF background), scoped to this glyph, so no global `rcParams` mutation
+        is needed. `savefig.facecolor='auto'` means a saved still or GIF inherits
+        it too.
+
+        Args:
+            cfg: The resolved layer config; its `background` key, when present,
+                is the canvas colour.
+        """
+        background = cfg.get("background")
+        if background is None:
+            return
+        if self.ax is not None:
+            self.ax.set_facecolor(background)
+        # Only paint the FIGURE patch when this glyph OWNS the figure (created it,
+        # whether auto-sized or an explicit `figsize=`). Painting a shared figure
+        # (a subplot the caller composes -- e.g. a style gallery) would blacken
+        # every sibling panel and hide their titles, so a background preset in one
+        # panel colours only its own axes.
+        if self.fig is not None and getattr(self, "_owns_figure", False):
+            self.fig.patch.set_facecolor(background)
+
     def _plot_with_style(self, style: str) -> tuple[Figure, Axes]:
         """Render the array with a named `DATA_STYLES` preset.
 
@@ -2384,6 +2546,16 @@ class ArrayGlyph(GeoMixin, Glyph):
         # `style` on this call instead of being torn down for a call that
         # never completes.
         _clear_prior_render_artists(self.ax)
+        # A preset may declare its own canvas colour (e.g. the flame glow needs
+        # black); paint it on this glyph's figure + axes, scoped, not globally.
+        self._apply_style_background(style_cfg)
+        # A prior globe render on this (reused) axes froze the view + hid the
+        # axis; strip that frame and restore the flat view when this styled
+        # render does not itself draw a globe frame, so the flat map is not an
+        # invisible speck (a new globe render stashes its own frame below).
+        self._sync_projection_frame(
+            projection_draws_frame(self.default_options.get("projection"))
+        )
         # Cast to float BEFORE filling: `ma.filled(int_array, np.nan)` raises
         # `TypeError: Cannot convert fill_value nan to dtype int64` for an
         # integer masked array -- exactly the integer-coded categorical raster
@@ -2428,6 +2600,52 @@ class ArrayGlyph(GeoMixin, Glyph):
         assert self.fig is not None
         return self.fig, self.ax
 
+    def _flat_axis_bounds(self) -> tuple[float, float, float, float]:
+        """Return the `(x_min, x_max, y_min, y_max)` axis limits of the flat view.
+
+        Used both to reframe the axes when reverting from a projection (see
+        `_sync_projection_frame`, which *sorts* the values) and to seed a fresh
+        axes for the pre-plot basemap builder flow (see `GeoMixin._basemap_axes`,
+        which applies them verbatim). From the lon/lat coords if present, else the
+        `extent`, else the pixel grid -- and the pixel branch returns the *render*
+        limits of `matshow(origin="upper")` (row 0 at the top, half-pixel cell
+        edges), so its y is inverted (`y_min > y_max`); a raw `set_ylim` then
+        matches the plain plot instead of flipping the raster upside-down.
+
+        Returns:
+            tuple[float, float, float, float]: The flat-render axis limits.
+        """
+        if self._coords is not None:
+            x, y = self._coords
+            return float(np.min(x)), float(np.max(x)), float(np.min(y)), float(np.max(y))
+        if self.extent is not None:
+            x0, x1, y0, y1 = self.extent
+            return float(x0), float(x1), float(y0), float(y1)
+        # No extent/coords: the flat render is matshow(origin="upper") -- row 0 at
+        # the top, half-pixel cell edges -- so return its (y-inverted) limits so a
+        # pre-plot basemap layer seeds the same orientation the plain plot uses.
+        n_rows, n_cols = np.asarray(self.arr).shape[:2]
+        return -0.5, float(n_cols) - 0.5, float(n_rows) - 0.5, -0.5
+
+    def _sync_projection_frame(self, projecting: bool) -> None:
+        """Strip a prior globe frame and, when reverting to flat, restore the view.
+
+        `ArrayGlyph` reuses its own axes across `plot()` calls, and a globe render
+        freezes the view / hides the axis (`apply_projection_frame`). So before a
+        non-projection render on the same axes, the stale frame must be removed and
+        the flat view restored, or the flat layer is drawn into a frozen, axis-off
+        view as an invisible speck. A new globe render stashes its own frame in the
+        projection render path, so here we only clear the prior frame; the view is
+        restored only when this render is flat.
+
+        Args:
+            projecting: Whether this render is itself a projection (globe) render.
+        """
+        had_frame = _clear_projection_frame(self.ax)
+        if had_frame and not projecting:
+            x_min, x_max, y_min, y_max = self._flat_axis_bounds()
+            _restore_flat_axes(self.ax, x_min, x_max, y_min, y_max, aspect="auto")
+
     def _render_styled_layer(
         self, layer: str, data: np.ndarray, style: str, draw_swatch: bool
     ) -> Any:
@@ -2448,7 +2666,30 @@ class ArrayGlyph(GeoMixin, Glyph):
         }
         override = dict(self._style_color_overrides)
         coords = self._coords
-        if coords is not None:
+        projection = self.default_options.get("projection")
+        if projection:
+            # Styled projection (e.g. a styled globe): reproject the field, then
+            # colour it at the reprojected cell EDGES with shading="flat".
+            # `apply_projection_style` masks the far hemisphere and draws the
+            # boundary + graticule; needs 1-D lon/lat coords.
+            if coords is None or coords[0].ndim != 1 or coords[1].ndim != 1:
+                raise ValueError(
+                    "projection= with a style requires 1-D lon/lat coordinate "
+                    "vectors (build the glyph with coords=(lon, lat))."
+                )
+            before = set(map(id, self.ax.patches)) | set(map(id, self.ax.lines))
+            x_edges, y_edges, masked = apply_projection_style(
+                self.ax, coords[0], coords[1], data, style=projection
+            )
+            _stash_projection_frame(
+                self.ax,
+                [a for a in (*self.ax.patches, *self.ax.lines) if id(a) not in before],
+            )
+            images = apply_data_style(
+                self.ax, {layer: masked}, style=style, x=x_edges, y=y_edges,
+                shading="flat", **swatch_kw, **override,
+            )
+        elif coords is not None:
             # apply_data_style's curvilinear path defaults to shading="flat"
             # (needs cell EDGES); ArrayGlyph stores cell CENTRES, so pass
             # shading="nearest", which trusts the centres.
@@ -2783,8 +3024,12 @@ class ArrayGlyph(GeoMixin, Glyph):
             if isinstance(arr, ma.MaskedArray)
             else np.asarray(arr, dtype=float)
         )
+        before = set(map(id, ax.patches)) | set(map(id, ax.lines))
         x_edges, y_edges, masked = apply_projection_style(
             ax, lon, lat, plot_arr, style=projection
+        )
+        _stash_projection_frame(
+            ax, [a for a in (*ax.patches, *ax.lines) if id(a) not in before]
         )
         if norm is None:
             im = ax.pcolormesh(
@@ -3450,6 +3695,10 @@ class ArrayGlyph(GeoMixin, Glyph):
         if ax is not None:
             self.ax = ax
             self.fig = _root_figure(ax)
+            # A caller-managed axes: never resize the figure, and never paint the
+            # shared figure patch (a background preset colours only this axes).
+            self._auto_figure = False
+            self._owns_figure = False
         elif self.fig is None:
             self.fig, self.ax = self.create_figure_axes()
 
@@ -3489,18 +3738,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                         "'points' and 'display_cell_value' are ignored with 'style'.",
                         stacklevel=2,
                     )
-                if self.default_options.get("projection"):
-                    warnings.warn(
-                        "'projection' is ignored when 'style' is set; a styled "
-                        "projection (e.g. a styled globe) is not yet composed. Use "
-                        "'style' without 'projection', or 'projection' without 'style'.",
-                        stacklevel=2,
-                    )
                 self._plot_with_style(style)
                 if basemap is not None:
                     self._draw_basemap(basemap)
                 if full_bleed:
                     self._apply_full_bleed(facecolor=full_bleed if isinstance(full_bleed, str) else None)
+                elif getattr(self, "_auto_figure", False):
+                    self._tighten_figure()
                 return self.fig, self.ax
 
         if self.rgb:
@@ -3587,6 +3831,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                     "2-D-coordinate array cannot be reprojected."
                 )
             _clear_prior_render_artists(ax)
+            # Strip any prior globe frame and restore the flat view when this
+            # render does not draw a globe frame (the axes may be reused from a
+            # globe plot); a globe render stashes its own frame in `_plot_projected`.
+            self._sync_projection_frame(projection_draws_frame(projection))
             if projection:
                 if points is not None or self.default_options.get("display_cell_value"):
                     warnings.warn(
@@ -3679,6 +3927,8 @@ class ArrayGlyph(GeoMixin, Glyph):
             self._draw_basemap(basemap)
         if full_bleed:
             self._apply_full_bleed(facecolor=full_bleed if isinstance(full_bleed, str) else None)
+        elif getattr(self, "_auto_figure", False):
+            self._tighten_figure()
         return fig, ax
 
     def facet(
@@ -4570,6 +4820,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                 # (see `_style_color_overrides`); with none set the preset's own
                 # fixed range (e.g. a Magics preset's decoded ECMWF scale) stands.
                 cfg = {**DATA_STYLES[style][layer], **self._style_color_overrides}
+                # Preset-declared canvas colour (scoped to this glyph's figure +
+                # axes); `savefig.facecolor='auto'` carries it into the GIF.
+                self._apply_style_background(cfg)
                 hillshade_active = (
                     resolve_hillshade(self.default_options.get("hillshade")) is not None
                 )
@@ -4900,6 +5153,11 @@ class ArrayGlyph(GeoMixin, Glyph):
             self._apply_full_bleed(facecolor=full_bleed if isinstance(full_bleed, str) else None)
         else:
             plt.tight_layout()
+            # Crop the figure to its content *before* `FuncAnimation` caches the
+            # background, so every writer (which, unlike Jupyter's inline
+            # backend, does not apply `bbox_inches="tight"`) emits tight frames.
+            if getattr(self, "_auto_figure", False):
+                self._tighten_figure()
         anim = FuncAnimation(
             fig,
             animate_a,

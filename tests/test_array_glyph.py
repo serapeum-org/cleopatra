@@ -4957,6 +4957,65 @@ class TestArrayGlyphDataStyle:
         assert ax.get_legend() is None
         plt.close("all")
 
+    def test_background_preset_paints_canvas_scoped(self):
+        """A preset's `background` paints this glyph's axes + figure, not globally.
+
+        Test scenario:
+            The flame presets declare a black canvas (the glow fades to
+            transparent and only reads on black); plotting one sets the axes and
+            figure-patch facecolor to black -- scoped to the glyph -- while a
+            preset without a background leaves the figure at its default.
+        """
+        fig, ax = ArrayGlyph(self._accum(), style="temperature_flame").plot()
+        assert to_rgba(ax.get_facecolor()) == to_rgba("#000000")
+        assert to_rgba(fig.patch.get_facecolor()) == to_rgba("#000000")
+        fig2, _ = ArrayGlyph(self._accum(), style="flow_accumulation").plot()
+        assert to_rgba(fig2.patch.get_facecolor()) != to_rgba("#000000")
+        plt.close("all")
+
+    def test_background_preset_paints_animation_canvas(self):
+        """The animate path applies the preset's canvas colour too.
+
+        Test scenario:
+            A styled animation runs a separate code path from `plot`; it must
+            also paint the preset's black canvas so the GIF background is black
+            (via `savefig.facecolor='auto'`).
+        """
+        stack = np.stack([self._accum(), self._accum() * 1.1])
+        g = ArrayGlyph(stack, style="temperature_flame")
+        g.animate(time=list(range(2)), add_colorbar=False)
+        assert to_rgba(g.fig.patch.get_facecolor()) == to_rgba("#000000")
+        plt.close("all")
+
+    def test_background_preset_in_subplot_spares_shared_figure(self):
+        """A background preset in a subplot colours its axes, not the shared figure.
+
+        Test scenario:
+            Plotting a flame panel into one axes of a multi-panel figure must
+            blacken only that axes -- not the figure patch, which would darken
+            every sibling panel and hide their titles (a style gallery).
+        """
+        fig, (ax0, _ax1) = plt.subplots(1, 2)
+        ArrayGlyph(self._accum(), style="temperature_flame").plot(ax=ax0)
+        assert to_rgba(ax0.get_facecolor()) == to_rgba("#000000"), "the flame panel's own axes is black"
+        assert to_rgba(fig.patch.get_facecolor()) != to_rgba("#000000"), "the shared figure stays unpainted"
+        plt.close(fig)
+
+    def test_background_preset_paints_figure_under_explicit_figsize(self):
+        """An explicit `figsize=` still gets the preset canvas on the figure patch.
+
+        Test scenario:
+            The glyph owns the figure it created whether auto-sized or given an
+            explicit `figsize=`, so a flame `background` paints both the axes and
+            the figure patch in both cases -- ownership, not auto-sizing, gates the
+            figure paint. Otherwise an explicit-figsize flame is a black map framed
+            by a white border (and a white GIF/PNG surround).
+        """
+        fig, ax = ArrayGlyph(self._accum(), style="temperature_flame", figsize=(8, 8)).plot()
+        assert to_rgba(ax.get_facecolor()) == to_rgba("#000000"), "the axes is black"
+        assert to_rgba(fig.patch.get_facecolor()) == to_rgba("#000000"), "an explicit figsize still paints the figure"
+        plt.close(fig)
+
     def test_unknown_style_raises(self):
         """An unknown style name raises a clear `ValueError`."""
         with pytest.raises(ValueError, match="unknown data style"):

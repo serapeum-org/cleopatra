@@ -11,6 +11,7 @@ from typing import Any, cast
 
 import matplotlib as mpl
 import matplotlib.colors as colors
+import matplotlib.patheffects as mpe
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.cm import ScalarMappable
@@ -1402,6 +1403,28 @@ def swatch_extend_prefixes(norm: colors.Normalize | None) -> tuple[str, str]:
     return "", "≥"
 
 
+def _legible_outline(text_color: str, linewidth: float = 1.8) -> list:
+    """A path-effect halo that keeps `text_color` readable on any background.
+
+    The swatch label is printed on the colour bar itself and the endpoint values
+    over the map, so a plain white label vanishes wherever the colours underneath
+    are light (the pale centre of a diverging map like `Spectral_r`, snow, etc.).
+    A thin contrasting outline -- dark for a light `text_color`, light for a dark
+    one -- keeps it legible everywhere, the standard cartographic label treatment.
+
+    Args:
+        text_color: The text's own colour.
+        linewidth: Outline width in points. Defaults to `1.8`.
+
+    Returns:
+        list: A `path_effects` list to pass to `Axes.text`.
+    """
+    r, g, b = colors.to_rgb(text_color)
+    luminance = 0.299 * r + 0.587 * g + 0.114 * b
+    stroke = "black" if luminance > 0.4 else "white"
+    return [mpe.withStroke(linewidth=linewidth, foreground=stroke)]
+
+
 def swatch_legend(
     ax: Axes,
     cmap: str | colors.Colormap,
@@ -1546,10 +1569,14 @@ def swatch_legend(
         fontsize=fontsize,
         fontweight="bold",
         transform=swatch.transAxes,
+        # A contrasting halo so a light label stays readable over the pale
+        # middle of the bar (e.g. Spectral_r) instead of vanishing.
+        path_effects=_legible_outline(text_color),
     )
     # Endpoint values may take their own colour (they sit below the bar, often
     # over the map); default to the title colour when `value_color` is unset.
     endpoint_color = value_color if value_color is not None else text_color
+    endpoint_outline = _legible_outline(endpoint_color, linewidth=1.4)
     swatch.text(
         0.0,
         -0.3,
@@ -1559,6 +1586,7 @@ def swatch_legend(
         color=endpoint_color,
         fontsize=fontsize * 0.8,
         transform=swatch.transAxes,
+        path_effects=endpoint_outline,
     )
     swatch.text(
         1.0,
@@ -1569,6 +1597,7 @@ def swatch_legend(
         color=endpoint_color,
         fontsize=fontsize * 0.8,
         transform=swatch.transAxes,
+        path_effects=endpoint_outline,
     )
     if box:
         # Opaque backing panel behind the swatch + its endpoint values, so an
