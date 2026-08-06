@@ -10,7 +10,7 @@ from matplotlib.axes import Axes
 from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 
-import cleopatra.glyphs.stats.histogram_glyph as statistical_glyph_module
+import cleopatra.glyphs.stats.histogram_glyph as histogram_glyph_module
 from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph
 
 
@@ -30,7 +30,7 @@ def test_module_doctests_execute():
     fails if any example's output no longer matches.
     """
     try:
-        results = doctest.testmod(statistical_glyph_module, verbose=False)
+        results = doctest.testmod(histogram_glyph_module, verbose=False)
     finally:
         plt.close("all")
     assert results.failed == 0, (
@@ -197,7 +197,7 @@ class TestHistogramFigAxInjection:
         )
 
 
-class TestStatisticalGlyphValidationAndState:
+class TestHistogramGlyphValidationAndState:
     """Tests for the ``values`` setter and ``histogram()`` validation guards."""
 
     def teardown_method(self):
