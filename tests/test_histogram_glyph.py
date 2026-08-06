@@ -78,7 +78,7 @@ def test_histogram_one_sample():
     assert isinstance(fig, Figure)
     assert isinstance(ax, Axes)
     assert isinstance(hist, dict)
-    assert ["n", "bins", "patches"] == list(hist.keys())
+    assert list(hist.keys()) == ["n", "bins", "patches"]
 
 
 class TestHistogramFigAxInjection:
@@ -265,7 +265,7 @@ def test_histogram_multiple_sample():
     assert isinstance(fig, Figure)
     assert isinstance(ax, Axes)
     assert isinstance(hist, dict)
-    assert ["n", "bins", "patches"] == list(hist.keys())
+    assert list(hist.keys()) == ["n", "bins", "patches"]
 
 
 class TestBoxplot:
@@ -280,7 +280,8 @@ class TestBoxplot:
         np.random.seed(1)
         stat = HistogramGlyph(np.random.normal(0, 1, 100))
         fig, ax, bp = stat.boxplot()
-        assert isinstance(fig, Figure) and isinstance(ax, Axes)
+        assert isinstance(fig, Figure)
+        assert isinstance(ax, Axes)
         assert len(bp["boxes"]) == 1, f"Expected 1 box, got {len(bp['boxes'])}"
 
     def test_multi_series_one_box_per_column(self):
@@ -304,7 +305,8 @@ class TestBoxplot:
         fig, ax = plt.subplots()
         stat = HistogramGlyph(np.random.normal(0, 1, 50))
         out_fig, out_ax, _ = stat.boxplot(ax=ax)
-        assert out_ax is ax and out_fig is fig, "Should reuse supplied axes/figure"
+        assert out_ax is ax, "Should reuse the supplied axes"
+        assert out_fig is fig, "Should reuse the supplied figure"
 
     def test_custom_labels(self):
         """Custom tick labels are applied.
@@ -616,8 +618,9 @@ class TestFigParameterRemovedFromRenderers:
         """
         fig, ax = plt.subplots()
         stat = HistogramGlyph(np.arange(12, dtype=float).reshape(4, 3))
+        bound = getattr(stat, method)
         with pytest.raises(TypeError, match="fig"):
-            getattr(stat, method)(fig=fig)
+            bound(fig=fig)
 
     def test_boxplot_falls_back_to_constructor_axes(self):
         """`boxplot()` with no `ax` uses the axes bound at construction.
