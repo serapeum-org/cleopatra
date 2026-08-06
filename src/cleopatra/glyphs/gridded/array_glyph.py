@@ -671,12 +671,6 @@ def _resolve_point_overlay(
                 kwargs.pop(key)
         return points
     if points is None:
-        # Drain the deprecated point-style keys even with no `points` to
-        # style, matching their pre-PointOverlay behaviour (named
-        # parameters with defaults -- legal, if pointless, without
-        # `points`). Skipping this would leave them in `kwargs` to fail
-        # the caller's strict `default_options` validation, breaking the
-        # documented "old keywords still work as `**kwargs`" guarantee.
         _, color_key = _pop_first(kwargs, ("point_color",), None)
         _, size_key = _pop_first(kwargs, ("point_size",), None)
         _, label_color_key = _pop_first(
@@ -764,17 +758,11 @@ def _resolve_frame_label(frame_label: Any, kwargs: dict) -> FrameLabel:
                 kwargs.pop(key)
         return frame_label
     color, color_key = _pop_first(kwargs, ("label_color",), "black")
-    # Drain the location kwargs unconditionally (so they never reach the
-    # strict `kwargs` validation), but a plain positional `frame_label`
-    # value below wins over them if both are somehow given at once.
     kwarg_location, kwarg_location_key = _pop_first(
         kwargs, ("label_location", "text_loc"), None
     )
     if frame_label is not None:
         location = frame_label
-        # Report both consumed aliases in this (unusual) combined case --
-        # the keyword is still drained above even though positional wins,
-        # so it must not go unmentioned in the warning.
         location_keys = ["frame_label (positional)"]
         if kwarg_location_key:
             location_keys.append(kwarg_location_key)
@@ -1181,12 +1169,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         super().__init__(
             default_options=ARRAY_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs
         )
-        # first replace the no_data_value by nan
-        # convert the array to float32 to be able to replace the no data value with nan
         if exclude_value is not np.nan:
-            # Non-nan `exclude_value` is always a list of one or two values
-            # to mask (see the docstring/tests) — the sentinel float default
-            # is handled by the `is not np.nan` branch above.
             values = cast(list, exclude_value)
             if len(values) > 1:
                 mask = np.logical_or(
@@ -1208,13 +1191,10 @@ class ArrayGlyph(GeoMixin, Glyph):
             extent = [extent[0], extent[2], extent[1], extent[3]]
         self.extent = extent
 
-        # Validate and normalise `coords` (curvilinear / non-uniform support).
-        # Stored as `self._coords = (x, y)` or `None`.
         self._coords = self._validate_coords(coords, array)
 
         if rgb is not None:
             self.rgb = True
-            # prepare to plot rgb plot only if there are three arrays
             if array.shape[0] < 3:
                 raise ValueError(
                     f"To plot RGB plot the given array should have only 3 arrays, given array have "
@@ -1232,20 +1212,9 @@ class ArrayGlyph(GeoMixin, Glyph):
             self.rgb = False
 
         self._exclude_value = exclude_value
-        # Validate the extend kwarg once at construction time so users get
-        # a clear error before the first render call.
         self._validate_extend(self.default_options.get("extend"))
 
         explicit_keys = set(kwargs.keys())
-        # Only the colour limits the caller actually supplied, kept apart from
-        # `default_options` (whose vmin/vmax the plain imshow path overwrites
-        # with the data's auto range). A data-style preset forwards these so an
-        # explicit caller vmin/vmax/center overrides the preset's fixed range.
-        # Like `default_options`, an explicitly-set limit is STICKY: it persists
-        # across later plot()/animate() calls -- including styled ones -- until
-        # the caller sets a new value, so a limit given on a plain plot also
-        # applies to a subsequent styled render. An auto-ranged plain plot
-        # contributes nothing (only caller-supplied, non-None values are kept).
         self._style_color_overrides: dict[str, Any] = {
             key: kwargs[key]
             for key in ("vmin", "vmax", "center", "cmap")
@@ -1263,11 +1232,6 @@ class ArrayGlyph(GeoMixin, Glyph):
             vmin_explicit="vmin" in explicit_keys,
             vmax_explicit="vmax" in explicit_keys,
         )
-        # Auto-switch the colormap to a diverging default when `center` is
-        # set and the user did not pick a cmap explicitly. `cmap` always
-        # exists in `default_options` (it has a non-None default of
-        # `"coolwarm_r"`), so the explicit-vs-default check must rely on
-        # whether the user actually passed it.
         if (
             self.default_options.get("center") is not None
             and "cmap" not in explicit_keys
@@ -1275,33 +1239,13 @@ class ArrayGlyph(GeoMixin, Glyph):
             self.default_options["cmap"] = DIVERGING_DEFAULT_CMAP
 
         self._arr = array
-        # get the tick spacing that has 10 ticks only; fall back to 1.0 for a
-        # degenerate range (constant-value array, vmax == vmin) so the tick
-        # math never divides by zero (mirrors the shared scalar-mapping path).
         self.ticks_spacing = (self._vmax - self._vmin) / 10 or 1.0
         shape = array.shape
-        # Cells in the data domain (not masked, not NaN). Use the same
-        # predicate plot/animate use to place per-cell labels so the counts
-        # match; `MaskedArray.count()` would miss NaN cells.
         first_frame = array[0, :, :] if len(shape) == 3 else array
         self.num_domain_cells = len(get_indices2(first_frame, [np.nan]))
-        # Mappable (the colour-mapped artist) and colorbar handles are
-        # populated by `plot`/`animate`. Initialised here so they are always
-        # reachable as public attributes, even before the first render.
-        # `im`/`cbar` hold whichever matplotlib mappable/colorbar the most
-        # recent render produced (types vary by `kind` — see
-        # `_plot_im_get_cbar_kw`), so they're typed loosely on purpose.
         self.im: Any = None
         self.cbar: Colorbar | None = None
-        # Per-frame time-label artist from the most recent `animate()`
-        # call, if any -- initialised here (like `im`/`cbar` above) so
-        # `animate()` can always check it before creating a new one,
-        # regardless of whether this is the first call.
         self._day_text: Any = None
-        # Inline contour-label artists from the most recent
-        # `plot(kind="contour", labels=True)`, or `None` when labelling
-        # was not requested (the default, and for every non-contour
-        # kind); an empty list when the contour has no isolines.
         self.contour_labels: list[Any] | None = None
 
     @property
@@ -1513,8 +1457,6 @@ class ArrayGlyph(GeoMixin, Glyph):
 
                 ```
         """
-        # take the rgb arrays and reorder them to have the red-green-blue, if the order is not given, assume the
-        # order as sentinel data. [3, 2, 1]
         array = array[rgb].transpose(1, 2, 0)
 
         if percentile is not None:
@@ -1580,8 +1522,6 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         array = np.clip(array / surface_reflectance, 0, 1)
         if cutoff is not None:
-            # `rgb` is always supplied alongside `cutoff` by callers (see
-            # `prepare_array` and the doctests above).
             bands = cast(list, rgb)
             array[0] = np.clip(bands[0], 0, cutoff[0]) / cutoff[0]
             array[1] = np.clip(bands[1], 0, cutoff[1]) / cutoff[1]
@@ -1651,16 +1591,11 @@ class ArrayGlyph(GeoMixin, Glyph):
         ```
         """
         rows, columns, bands = arr.shape
-        # flatten image.
         arr = np.reshape(arr, [rows * columns, bands]).astype(np.float32)
-        # lower percentile values (one value for each band).
         lower_percent = np.percentile(arr, percentile, axis=0)
-        # 98 percentile values.
         upper_percent = np.percentile(arr, 100 - percentile, axis=0) - lower_percent
-        # normalize the 3 bands using the percentile values for each band.
         arr = (arr - lower_percent[None, :]) / upper_percent[None, :]
         arr = np.reshape(arr, [rows, columns, bands])
-        # discard outliers.
         arr = arr.clip(0, 1)
 
         return arr
@@ -1757,10 +1692,6 @@ class ArrayGlyph(GeoMixin, Glyph):
         if not (width > 0 and height > 0):
             return default
         aspect = width / height
-        # A rough starting size only: the aspect makes the equal-aspect map fill
-        # the frame, and `_tighten_figure` crops the exact margin afterwards, so
-        # these pads need not be precise (they just leave room to render the
-        # colorbar/title without clipping before the crop measures them).
         plot_height = 6.0        # target plot height (inches)
         cbar_pad = 1.8           # room for the colorbar + its labels
         max_width = 14.0
@@ -1789,12 +1720,6 @@ class ArrayGlyph(GeoMixin, Glyph):
         if auto:
             figsize = self._auto_figsize()
         fig, ax = plt.subplots(figsize=figsize)
-        # Two distinct facts about this figure, tracked separately:
-        #   _owns_figure -- the glyph created it (True for both auto and explicit
-        #     figsize); a preset `background` may paint its patch, but never a
-        #     caller-managed subplot figure.
-        #   _auto_figure -- it was auto-sized; only then may `_tighten_figure`
-        #     resize it (an explicit `figsize=` is honoured verbatim).
         self._owns_figure = True
         self._auto_figure = auto
         return fig, ax
@@ -1829,9 +1754,6 @@ class ArrayGlyph(GeoMixin, Glyph):
             fig.canvas.draw()
             content = fig.get_tightbbox(fig.canvas.get_renderer())
         except Exception:  # noqa: BLE001 -- tightening is cosmetic and fully optional
-            # A backend without a queryable renderer (AttributeError) or any other
-            # draw/renderer quirk must never turn a successful render into a hard
-            # failure: leave the figure at its auto size.
             return
         if content is None:
             return
@@ -2219,10 +2141,6 @@ class ArrayGlyph(GeoMixin, Glyph):
         if robust:
             vmin_base, vmax_base = self._robust_limits(arr)
         else:
-            # nanmin/nanmax on an all-NaN / fully-masked array return NaN
-            # (with a RuntimeWarning). Compute quietly and validate the
-            # resolved limits below — an unusable colour range should fail
-            # loudly here, not later inside `get_ticks()`/matplotlib.
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", RuntimeWarning)
                 vmin_base = np.nanmin(arr)
@@ -2289,28 +2207,16 @@ class ArrayGlyph(GeoMixin, Glyph):
         vmin = ticks[0]
         vmax = ticks[-1]
 
-        # Reset any inline contour labels from a previous render; the
-        # contour branch repopulates this when `labels=True`, every other
-        # kind leaves it `None`.
         self.contour_labels = None
 
-        # midpoint normalization needs unmasked NaN-filled data; the
-        # other kinds can handle a masked array directly but contour /
-        # contourf misbehave on masked arrays as well, so fill there too.
         plot_arr = arr
         if self.default_options["color_scale"].lower() == "midpoint":
-            # `ma.filled` (unlike the `.filled()` method) also accepts a
-            # plain, non-masked ndarray -- some callers (e.g. `animate`'s
-            # `data_getter` path) pass one instead of a MaskedArray.
             plot_arr = ma.filled(arr, np.nan)
 
         levels = self.default_options.get("levels")
 
         coords = self._coords
 
-        # `im` holds whichever mappable the selected `kind` produces
-        # (AxesImage for imshow, QuadMesh for pcolormesh, QuadContourSet
-        # for contour/contourf) — the return type above is already `Any`.
         im: Any
         if kind == "imshow":
             if coords is not None:
@@ -2336,8 +2242,6 @@ class ArrayGlyph(GeoMixin, Glyph):
             else:
                 im = ax.pcolormesh(*pcm_args, cmap=cmap, norm=norm, shading="auto")
         elif kind in ("contour", "contourf"):
-            # contour/contourf cannot consume masked arrays cleanly;
-            # convert to a NaN-filled view if we're holding a mask.
             if isinstance(plot_arr, ma.MaskedArray):
                 plot_arr = plot_arr.filled(np.nan)
             plot_fn = ax.contour if kind == "contour" else ax.contourf
@@ -2347,13 +2251,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 contour_kwargs["vmax"] = vmax
             else:
                 contour_kwargs["norm"] = norm
-            # Pass the resolved level edges when `levels` is set so the
-            # contour rings line up with the colorbar boundaries computed
-            # in `_create_norm_and_cbar_kw`.
             level_edges = self._levels_to_bounds(levels, vmin, vmax)
-            # When curvilinear coords are present forward them as the
-            # first two positional args (matplotlib contour signature is
-            # `contour([X, Y,] Z, [levels], **kwargs)`).
             base_args = (
                 (coords[0], coords[1], plot_arr) if coords is not None else (plot_arr,)
             )
@@ -2361,9 +2259,6 @@ class ArrayGlyph(GeoMixin, Glyph):
                 im = plot_fn(*base_args, level_edges, **contour_kwargs)
             else:
                 im = plot_fn(*base_args, **contour_kwargs)
-            # Inline numeric labels on the isolines. Only meaningful for
-            # line `contour` (filled `contourf` has no lines to label), so
-            # `labels=True` is a documented no-op for `contourf`.
             if kind == "contour" and self.default_options.get("labels"):
                 label_kw = {
                     "inline": True,
@@ -2377,10 +2272,6 @@ class ArrayGlyph(GeoMixin, Glyph):
                 f"Invalid kind={kind!r}. Valid kinds are {VALID_PLOT_KINDS}."
             )
 
-        # Relief shading: blend a hillshade of the raster into the drawn image
-        # so wide-range DEMs read by form, not colour alone. Applies to the
-        # regular-grid `imshow` path; the mappable keeps its cmap/norm so the
-        # colorbar is unaffected. See `cleopatra.glyphs.base.hillshade.shade_grid`.
         hillshade = resolve_hillshade(self.default_options.get("hillshade"))
         if hillshade is not None:
             if kind == "imshow":
@@ -2447,8 +2338,6 @@ class ArrayGlyph(GeoMixin, Glyph):
 
                 ```
         """
-        # Validate the name up front, before clearing the axes or persisting it,
-        # so a typo raises without wiping the render or poisoning the style.
         resolve_single_layer_style(style)
         self._reset_axes_for_restyle()
         return self.plot(style=style, ax=self.ax, **kwargs)
@@ -2516,11 +2405,6 @@ class ArrayGlyph(GeoMixin, Glyph):
             return
         if self.ax is not None:
             self.ax.set_facecolor(background)
-        # Only paint the FIGURE patch when this glyph OWNS the figure (created it,
-        # whether auto-sized or an explicit `figsize=`). Painting a shared figure
-        # (a subplot the caller composes -- e.g. a style gallery) would blacken
-        # every sibling panel and hide their titles, so a background preset in one
-        # panel colours only its own axes.
         if self.fig is not None and getattr(self, "_owns_figure", False):
             self.fig.patch.set_facecolor(background)
 
@@ -2541,33 +2425,15 @@ class ArrayGlyph(GeoMixin, Glyph):
             tuple[Figure, Axes]: The figure and axes drawn on.
         """
         layer, style_cfg = resolve_single_layer_style(style)
-        # See `_clear_prior_render_artists`: cleared only once the style
-        # name is known valid, so a prior *valid* render survives a bad
-        # `style` on this call instead of being torn down for a call that
-        # never completes.
         _clear_prior_render_artists(self.ax)
-        # A preset may declare its own canvas colour (e.g. the flame glow needs
-        # black); paint it on this glyph's figure + axes, scoped, not globally.
         self._apply_style_background(style_cfg)
-        # A prior globe render on this (reused) axes froze the view + hid the
-        # axis; strip that frame and restore the flat view when this styled
-        # render does not itself draw a globe frame, so the flat map is not an
-        # invisible speck (a new globe render stashes its own frame below).
         self._sync_projection_frame(
             projection_draws_frame(self.default_options.get("projection"))
         )
-        # Cast to float BEFORE filling: `ma.filled(int_array, np.nan)` raises
-        # `TypeError: Cannot convert fill_value nan to dtype int64` for an
-        # integer masked array -- exactly the integer-coded categorical raster
-        # (e.g. `flow_direction_d8` with nodata masked via `exclude_value`) these
-        # presets target.
         data = np.asarray(
             ma.filled(ma.asarray(self.arr).astype(float), np.nan), dtype=float
         )
         legend = bool(self.default_options.get("add_colorbar", True))
-        # An explicit `colorbar=` overrides a CONTINUOUS preset's swatch with a
-        # real colorbar (drawn after the image below); categorical presets keep
-        # their discrete legend (a colorbar is meaningless for class codes).
         override_colorbar = (
             self._style_wants_colorbar and style_cfg.get("categories") is None
         )
@@ -2575,17 +2441,11 @@ class ArrayGlyph(GeoMixin, Glyph):
         self.im = self._render_styled_layer(layer, data, style, draw_swatch)
 
         self._compose_style_hillshade(style, data)
-        # Presets present their scale via a swatch / categorical legend -- unless
-        # the caller explicitly asked for a real colorbar (`colorbar=`), which
-        # overrides it with a matplotlib colorbar built from the preset's
-        # colormap + norm (`create_color_bar` honours the `ColorBar` placement).
         self.cbar = (
             self._style_override_colorbar(data, style_cfg)
             if override_colorbar
             else None
         )
-        # Match the imshow path: with no extent (and no curvilinear coords) hide
-        # the pixel-index tick labels.
         if self.extent is None and self._coords is None:
             self.ax.set_xticklabels([])
             self.ax.set_yticklabels([])
@@ -2595,8 +2455,6 @@ class ArrayGlyph(GeoMixin, Glyph):
             self.default_options["title"], fontsize=self.default_options["title_size"]
         )
         _mark_render_artists(self.ax, self.cbar, self.im)
-        # `_plot_with_style`'s only caller (`plot()`) resolves `self.fig`/
-        # `self.ax` before calling it.
         assert self.fig is not None
         return self.fig, self.ax
 
@@ -2621,9 +2479,6 @@ class ArrayGlyph(GeoMixin, Glyph):
         if self.extent is not None:
             x0, x1, y0, y1 = self.extent
             return float(x0), float(x1), float(y0), float(y1)
-        # No extent/coords: the flat render is matshow(origin="upper") -- row 0 at
-        # the top, half-pixel cell edges -- so return its (y-inverted) limits so a
-        # pre-plot basemap layer seeds the same orientation the plain plot uses.
         n_rows, n_cols = np.asarray(self.arr).shape[:2]
         return -0.5, float(n_cols) - 0.5, float(n_rows) - 0.5, -0.5
 
@@ -2668,10 +2523,6 @@ class ArrayGlyph(GeoMixin, Glyph):
         coords = self._coords
         projection = self.default_options.get("projection")
         if projection:
-            # Styled projection (e.g. a styled globe): reproject the field, then
-            # colour it at the reprojected cell EDGES with shading="flat".
-            # `apply_projection_style` masks the far hemisphere and draws the
-            # boundary + graticule; needs 1-D lon/lat coords.
             if coords is None or coords[0].ndim != 1 or coords[1].ndim != 1:
                 raise ValueError(
                     "projection= with a style requires 1-D lon/lat coordinate "
@@ -2690,9 +2541,6 @@ class ArrayGlyph(GeoMixin, Glyph):
                 shading="flat", **swatch_kw, **override,
             )
         elif coords is not None:
-            # apply_data_style's curvilinear path defaults to shading="flat"
-            # (needs cell EDGES); ArrayGlyph stores cell CENTRES, so pass
-            # shading="nearest", which trusts the centres.
             images = apply_data_style(
                 self.ax, {layer: data}, style=style, x=coords[0], y=coords[1],
                 shading="nearest", **swatch_kw, **override,
@@ -2809,7 +2657,6 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         if arr is None:
             arr = self.arr
-        # This is done to scale the values between 0 and 255
         arr = arr if arr.dtype == "uint8" else self.scale_to_rgb()
         return Image.fromarray(arr).convert("RGB")
 
@@ -2897,24 +2744,15 @@ class ArrayGlyph(GeoMixin, Glyph):
             for band in range(arr.shape[-1]):
                 values = arr[..., band]
                 with warnings.catch_warnings():
-                    # An all-NaN band makes `nanpercentile` warn and return
-                    # NaN cuts; handle that below instead of propagating it.
                     warnings.simplefilter("ignore", RuntimeWarning)
                     lo, hi = np.nanpercentile(values, [lo_p, hi_p])
-                # A band with no usable range (all-NaN, or flat where the cuts
-                # coincide) has nothing to stretch — emit a flat zero band
-                # rather than dividing by zero / propagating NaN into uint8.
                 if not (np.isfinite(lo) and np.isfinite(hi)) or hi <= lo:
                     out[..., band] = 0.0
                     continue
                 out[..., band] = np.clip((values - lo) / (hi - lo), 0.0, 1.0)
-            # Map any residual NaN (e.g. NaN pixels within an otherwise-valid
-            # band) to 0 so the uint8 cast is deterministic and warning-free.
             out = np.nan_to_num(out, nan=0.0)
             return (out * 255).astype("uint8")
 
-        # Legacy global-max scaling. Guard against an all-zero array so a
-        # max of 0 does not divide by zero (returns all-zeros instead).
         denominator = arr.max() or 1
         return (arr * 255 / denominator).astype("uint8")
 
@@ -2933,8 +2771,6 @@ class ArrayGlyph(GeoMixin, Glyph):
         Returns:
             list: list of the text object.
         """
-        # https://github.com/serapeum-org/cleopatra/issues/75
-        # add text for the cell values
         add_text = lambda elem: ax.text(
             elem[1],
             elem[0],
@@ -2975,12 +2811,8 @@ class ArrayGlyph(GeoMixin, Glyph):
                 )
             else:
                 self.default_options[key] = val
-        # `colorbar=` (a ColorBar / bool) resolves last, so it wins over the
-        # default `add_colorbar` and any internal cbar_* key.
         resolved_colorbar = _resolve_colorbar(colorbar)
         self.default_options.update(resolved_colorbar)
-        # Record colour limits supplied to THIS call so a preset render honours
-        # them (see `_style_color_overrides`); sticky, only for keys passed.
         for key in ("vmin", "vmax", "center", "cmap"):
             if key in kwargs and kwargs[key] is not None:
                 self._style_color_overrides[key] = kwargs[key]
@@ -3666,12 +3498,6 @@ class ArrayGlyph(GeoMixin, Glyph):
                 f"RGB compositing requires kind='imshow'. Got kind={kind!r}."
             )
 
-        # Resolve `points` (a `PointOverlay`, or the deprecated plain-array +
-        # separate style kwargs) before the strict `kwargs` validation below,
-        # which would otherwise reject the deprecated keys outright.
-        # `kwargs` is a real, mutable dict at runtime -- mypy's TypedDict
-        # model just does not have a variance-safe way to type "a dict this
-        # helper is allowed to pop deprecated keys from".
         points = _resolve_point_overlay(points, kwargs)  # type: ignore[arg-type]
         _warn_deprecated_cbar_kwargs(kwargs)
 
@@ -3680,23 +3506,14 @@ class ArrayGlyph(GeoMixin, Glyph):
         self._validate_extend(self.default_options.get("extend"))
 
         self.default_options["kind"] = kind
-        # Resolve "auto": when curvilinear / non-uniform coords are set
-        # we route to `pcolormesh` (it honours the (x, y) arrays);
-        # otherwise we fall back to the original `imshow` path.
         if kind == "auto":
             effective_kind = "pcolormesh" if self._coords is not None else "imshow"
         else:
             effective_kind = kind
 
-        # Axes resolution priority: explicit `plot(ax=)` wins, then the
-        # axes/figure bound at construction, otherwise a fresh figure/axes.
-        # `fig` is never a plot parameter — it is derived from the axes
-        # (`ax.get_figure()`), keeping `fig` a construction-time binding.
         if ax is not None:
             self.ax = ax
             self.fig = _root_figure(ax)
-            # A caller-managed axes: never resize the figure, and never paint the
-            # shared figure patch (a background preset colours only this axes).
             self._auto_figure = False
             self._owns_figure = False
         elif self.fig is None:
@@ -3708,15 +3525,8 @@ class ArrayGlyph(GeoMixin, Glyph):
         arr = self.arr
         fig, ax = self.fig, self.ax
 
-        # Named data-style preset: resolve the preset's cmap/norm/vmin/vmax/
-        # center/categories (and alpha glow / categorical legend) by delegating
-        # to `cleopatra.styling.colors.apply_data_style`, so the full preset semantics
-        # (log/symlog norms, transparent nodata, disjoint categorical legend)
-        # are reproduced rather than lossily mapped onto `color_scale`.
         style = self.default_options.get("style")
         if style is not None:
-            # Validate before rendering; on a bad name clear the sticky style
-            # and re-raise, so a poisoned name can't brick every later plot().
             try:
                 resolve_single_layer_style(style)
             except ValueError:
@@ -3729,9 +3539,6 @@ class ArrayGlyph(GeoMixin, Glyph):
                     stacklevel=2,
                 )
             else:
-                # The preset owns the colour mapping and draws its own legend, so
-                # point / cell-value overlays are bypassed -- make that visible
-                # rather than dropping them silently.
                 if points is not None or self.default_options.get("display_cell_value"):
                     warnings.warn(
                         "data-style presets bypass point and cell-value overlays; "
@@ -3748,31 +3555,17 @@ class ArrayGlyph(GeoMixin, Glyph):
                 return self.fig, self.ax
 
         if self.rgb:
-            # See `_clear_prior_render_artists`: cleared only once nothing
-            # above this point could still raise, so a prior *valid* render
-            # survives a validation failure instead of being torn down for
-            # a call that never completes.
             _clear_prior_render_artists(ax)
             extent = tuple(self.extent) if self.extent is not None else None
             self.im = ax.imshow(arr, extent=extent)
             self.cbar = None
         else:
-            # Tick-spacing precedence: a `colorbar=ColorBar(ticks_spacing=...)`
-            # spec wins (already merged above), then a loose `ticks_spacing=`
-            # kwarg, then the auto-computed value. Guarding on the resolved
-            # spec keeps the merged value from being clobbered here, since a
-            # ColorBar value arrives via `colorbar=`, never through `kwargs`.
             if "ticks_spacing" not in resolved_colorbar:
                 if "ticks_spacing" in kwargs.keys():
                     self.default_options["ticks_spacing"] = kwargs["ticks_spacing"]
                 else:
                     self.default_options["ticks_spacing"] = self.ticks_spacing
 
-            # Recompute (vmin, vmax) for this plot call if any of the
-            # xarray-aligned colour kwargs (`robust`, `center`) or the
-            # explicit `vmin`/`vmax` were passed here. We honour the
-            # values stashed on `self` from the constructor when none of
-            # these are present in *this* call.
             recompute_keys = {"robust", "center", "vmin", "vmax"}
             if recompute_keys.intersection(kwargs.keys()):
                 vmin_final, vmax_final = self._resolve_color_limits(
@@ -3786,16 +3579,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                 )
                 self._vmin = vmin_final
                 self._vmax = vmax_final
-                # Keep ticks_spacing in sync with the new colour range unless
-                # the caller pinned it explicitly -- via a loose `ticks_spacing=`
-                # kwarg or a `colorbar=ColorBar(ticks_spacing=...)` spec (fall
-                # back to 1.0 for a degenerate range so the tick math stays safe).
                 if "ticks_spacing" not in kwargs and "ticks_spacing" not in resolved_colorbar:
                     self.ticks_spacing = (vmax_final - vmin_final) / 10 or 1.0
                     self.default_options["ticks_spacing"] = self.ticks_spacing
 
-            # Auto-switch the colormap to a diverging default when the
-            # caller passes `center` here without an explicit cmap.
             if (
                 "center" in kwargs
                 and kwargs["center"] is not None
@@ -3806,18 +3593,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             self.default_options["vmin"] = self.vmin
             self.default_options["vmax"] = self.vmax
 
-            # creating the ticks/bounds
             ticks = self.get_ticks()
-            # Pre-flight the norm/cbar-kwarg resolution (e.g. an invalid
-            # `color_scale`) before clearing -- it is the actual validation
-            # surface `_plot_im_get_cbar_kw` bundles together with drawing
-            # a few lines below, and is pure (reads `default_options` only,
-            # no `ax` mutation), so calling it here to fail fast costs
-            # nothing beyond `_plot_im_get_cbar_kw` recomputing the same
-            # result. See `_clear_prior_render_artists`: only cleared once
-            # this can no longer raise, so a prior *valid* render survives
-            # a validation failure instead of being torn down for a call
-            # that never completes.
             self._create_norm_and_cbar_kw(ticks)
             projection = self.default_options.get("projection")
             if projection and (
@@ -3831,9 +3607,6 @@ class ArrayGlyph(GeoMixin, Glyph):
                     "2-D-coordinate array cannot be reprojected."
                 )
             _clear_prior_render_artists(ax)
-            # Strip any prior globe frame and restore the flat view when this
-            # render does not draw a globe frame (the axes may be reused from a
-            # globe plot); a globe render stashes its own frame in `_plot_projected`.
             self._sync_projection_frame(projection_draws_frame(projection))
             if projection:
                 if points is not None or self.default_options.get("display_cell_value"):
@@ -3858,12 +3631,6 @@ class ArrayGlyph(GeoMixin, Glyph):
                 )
             self.im = im
 
-            # Create colorbar, unless the caller opted out (e.g. shared-axes
-            # composition where the host owns a single aggregated colorbar).
-            # A constant-value field rendered as line `contour` has no level
-            # crossings, so matplotlib cannot build a line colorbar from that
-            # degenerate contour set — skip it (nothing to show) rather than
-            # crash. (`contourf`/`imshow`/`pcolormesh` are unaffected.)
             self.cbar = None
             degenerate_contour = (
                 effective_kind == "contour" and self._vmax == self._vmin
@@ -3888,10 +3655,6 @@ class ArrayGlyph(GeoMixin, Glyph):
             ax.set_xticks([])
             ax.set_yticks([])
 
-        # Cell-value annotations and point overlays are only meaningful
-        # for raster-style renderings (imshow / pcolormesh). For contour
-        # / contourf they are skipped silently — there is no per-cell
-        # grid to annotate.
         supports_overlay = effective_kind in ("imshow", "pcolormesh")
         optional_display: dict[str, Any] = {}
         if self.default_options["display_cell_value"] and supports_overlay:
@@ -3910,11 +3673,6 @@ class ArrayGlyph(GeoMixin, Glyph):
                 ax, points.points, points.label_color, points.label_size
             )
 
-        # # Normalize the threshold to the image color range.
-        # if self.default_options["background_color_threshold"] is not None:
-        #     im.norm(self.default_options["background_color_threshold"])
-        # else:
-        #     im.norm(self.vmax) / 2.0
         _mark_render_artists(
             ax,
             self.cbar,
@@ -4123,10 +3881,6 @@ class ArrayGlyph(GeoMixin, Glyph):
                 f"`extents` has {len(extents)} entries but there are {n_panels} panels."
             )
 
-        # Guaranteed by the branches above: `row is None` requires `col`
-        # (the `col is None and row is None` check), and `row is not None`
-        # separately requires `col` too ("Faceting on `row` requires
-        # `col` as well.").
         assert col is not None
 
         if figsize is None:
@@ -4165,19 +3919,11 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         for panel_idx, (col_idx, row_idx) in enumerate(panel_indices):
             ax = flat_axes[panel_idx]
-            # Use plain slicing so `numpy.ma.MaskedArray` inputs keep
-            # their mask on each per-panel sub-array. `np.asarray`
-            # would drop the mask and render masked cells as data.
             if row is None:
                 panel_arr = arr[col_idx]
             else:
                 panel_arr = arr[col_idx, row_idx]
 
-            # Per-panel `extents` win if given (already in the
-            # user-facing `[xmin, ymin, xmax, ymax]` order the
-            # constructor wants). Otherwise reuse the parent's `extent`,
-            # which is stored in matplotlib's `[xmin, xmax, ymin, ymax]`
-            # order — convert it back before forwarding.
             if extents is not None:
                 sub_extent = list(extents[panel_idx])
             elif self.extent is None:
@@ -4202,8 +3948,6 @@ class ArrayGlyph(GeoMixin, Glyph):
             col_label = col_coords[col_idx] if col_coords is not None else col_idx
             name_dict: dict[str, Any] = {col: col_label}
             if row is not None:
-                # `panel_indices` only carries a real `row_idx` (not None)
-                # when faceting on both `col` and `row` -- exactly this branch.
                 assert row_idx is not None
                 row_label = row_coords[row_idx] if row_coords is not None else row_idx
                 name_dict[row] = row_label
@@ -4645,14 +4389,6 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         ```
         """
-        # Resolve deprecated kwarg aliases before the strict `kwargs`
-        # validation below, which would otherwise reject them outright.
-        # `kwargs` is a real, mutable dict at runtime -- mypy's TypedDict
-        # model just does not have a variance-safe way to type "a dict
-        # these helpers are allowed to pop deprecated keys from".
-        # `_resolve_renamed_kwarg` always returns a concrete tuple here (the
-        # passed value or the literal default) -- never the `_UNSET` sentinel
-        # itself -- but its return type is `Any`, so tell mypy explicitly.
         cell_value_text_colors = cast(
             "tuple[str, str]",
             _resolve_renamed_kwarg(
@@ -4667,16 +4403,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         points = _resolve_point_overlay(points, kwargs)  # type: ignore[arg-type]
         _warn_deprecated_cbar_kwargs(kwargs)
 
-        # Resolved into a local rather than written back onto `frame_label`,
-        # so a `FrameLabel` instance the caller passed in (and might reuse
-        # across calls) is never mutated.
         frame_location = frame_label.location
         label_location_is_default = frame_location is None
         if label_location_is_default:
-            # Axes-fraction anchor (not data coordinates): stays inside the
-            # frame regardless of array shape or axis orientation, unlike a
-            # fixed data-coordinate default. See `day_text` below for the
-            # matching transform/alignment.
             label_location = [0.02, 0.95]
         else:
             assert frame_location is not None
@@ -4684,11 +4413,6 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         resolved_colorbar = self._apply_kwargs_and_colorbar(colorbar, kwargs)  # type: ignore[arg-type]
 
-        # Tick-spacing precedence: a `colorbar=ColorBar(ticks_spacing=...)` spec
-        # wins (already merged above), then a loose `ticks_spacing=` kwarg, then
-        # the auto-computed value. Guarding on the resolved spec keeps the merged
-        # value from being clobbered here, since a ColorBar value arrives via
-        # `colorbar=`, never through `kwargs`.
         if "ticks_spacing" not in resolved_colorbar:
             if "ticks_spacing" in kwargs.keys():
                 self.default_options["ticks_spacing"] = kwargs["ticks_spacing"]
@@ -4705,18 +4429,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         else:
             self.default_options["vmax"] = self.vmax
 
-        # if optional_display
         precision = self.default_options["precision"]
         array = self.arr
 
-        # `data_getter` is the lazy-frame escape hatch
-        # When `None` (default) we fall back to the eager
-        # `self.arr[i]` path. The eager path requires a 3-D single-band
-        # or 4-D RGB/RGBA stack; with a callback, `self.arr` is used only
-        # for the frame shape so a 2-D template is fine.
-        # An RGB / RGBA frame carries a trailing channel axis of length 3
-        # or 4; a single-band frame is plain 2-D. Detecting this lets the
-        # render path skip the colormap / colorbar machinery for true colour.
         def _is_rgb_frame(frame: np.ndarray) -> bool:
             return frame.ndim == 3 and frame.shape[-1] in (3, 4)
 
@@ -4746,8 +4461,6 @@ class ArrayGlyph(GeoMixin, Glyph):
                     f"last two axes {expected_hw}."
                 )
 
-        # True-colour frames render without a norm/colormap/colorbar and
-        # cannot carry per-cell value annotations (those need a scalar field).
         rgb_frames = _is_rgb_frame(frame_0)
         show_cell_value = self.default_options["display_cell_value"] and not rgb_frames
 
@@ -4756,55 +4469,30 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         fig, ax = self.fig, self.ax
 
-        # Per-frame RGBA recipe for a continuous `style` (cmap, colour norm,
-        # alpha norm, constant alpha), set in the style branch below and
-        # consumed by `_display_frame`. `None` when no style is active.
-        # Typed loosely: the "categorical" and "continuous" tuples below
-        # deliberately have different shapes (discriminated by element 0).
         style_render: Any = None
-        # True when the active preset is categorical (drops hillshade, which is
-        # meaningless for class codes); a continuous preset composes hillshade.
         style_categorical = False
 
         if rgb_frames:
-            # True-colour frames go straight through imshow — no norm,
-            # colormap or colorbar (mirrors `plot`'s RGB branch). See
-            # `_clear_prior_render_artists`: cleared only once nothing
-            # above this point could still raise, so a prior *valid*
-            # render survives a validation failure instead of being torn
-            # down for a call that never completes.
             _clear_prior_render_artists(ax)
             im = ax.imshow(frame_0, extent=self.extent)
             self.im = im
             self.cbar = None
         else:
             ticks = self.get_ticks()
-            # Pre-flight the norm/cbar-kwarg resolution (e.g. an invalid
-            # `color_scale`) before clearing -- see the matching comment
-            # in `plot()`.
             self._create_norm_and_cbar_kw(ticks)
             _clear_prior_render_artists(ax)
             im, cbar_kw = self._plot_im_get_cbar_kw(ax, frame_0, ticks)
             self.im = im
 
-            # Create colorbar (stored on the instance, mirroring `plot`),
-            # unless the caller opted out via `add_colorbar=False`.
             self.cbar = None
             if self.default_options["add_colorbar"]:
                 self.cbar = self.create_color_bar(ax, im, cbar_kw)
 
-            # Named data-style preset for animation. `_display_frame` bakes each
-            # frame's RGBA from `style_render`; continuous presets reproduce the
-            # cmap/norm + value-linked opacity, categorical presets remap class
-            # codes through a ListedColormap/BoundaryNorm with a discrete legend.
             frame_0_scalar = np.asarray(
                 ma.filled(ma.asarray(frame_0).astype(float), np.nan), dtype=float
             )
             style = self.default_options.get("style")
             if style is not None:
-                # The preset owns the colour mapping and draws its own legend, so
-                # point / cell-value overlays are bypassed -- warn (mirroring
-                # plot()) rather than drawing them silently over the preset.
                 if points is not None or show_cell_value:
                     warnings.warn(
                         "data-style presets bypass point and cell-value "
@@ -4815,22 +4503,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                     points = None
                     show_cell_value = False
                 layer = self._resolve_style_layer(style)
-                # Merge an explicit caller vmin/vmax/center over the preset so a
-                # styled animation honours the override just like plot() does
-                # (see `_style_color_overrides`); with none set the preset's own
-                # fixed range (e.g. a Magics preset's decoded ECMWF scale) stands.
                 cfg = {**DATA_STYLES[style][layer], **self._style_color_overrides}
-                # Preset-declared canvas colour (scoped to this glyph's figure +
-                # axes); `savefig.facecolor='auto'` carries it into the GIF.
                 self._apply_style_background(cfg)
                 hillshade_active = (
                     resolve_hillshade(self.default_options.get("hillshade")) is not None
                 )
                 categories = cfg.get("categories")
                 if categories is not None:
-                    # Categorical: a discrete legend replaces the colorbar and is
-                    # drawn once; frames only remap the class codes. Hillshade is
-                    # meaningless for class codes, so warn and drop it.
                     style_categorical = True
                     if hillshade_active:
                         warnings.warn(
@@ -4863,11 +4542,6 @@ class ArrayGlyph(GeoMixin, Glyph):
                         )
                     style_render = ("categorical", cat_cmap, cat_norm, cat_values)
                 else:
-                    # Continuous: cmap + norm, range resolved over the eager
-                    # stack (frame 0 only under a lazy data_getter). A swatch
-                    # legend replaces the colorbar to match `plot()`'s
-                    # apply_data_style presentation, and hillshade composes into
-                    # the per-frame RGBA (see `_display_frame`).
                     stack = array if data_getter is None else frame_0
                     style_norm, style_vmin, style_vmax = resolve_style_norm(
                         np.asarray(
@@ -4884,12 +4558,6 @@ class ArrayGlyph(GeoMixin, Glyph):
                         self.cbar.remove()
                         self.cbar = None
                     if self._style_wants_colorbar:
-                        # Explicit `colorbar=` overrides the preset's swatch with
-                        # a real colorbar built from the preset's colormap + norm
-                        # (a fixed-scale mappable -- the frames update the image,
-                        # not the scale).
-                        # snapshot first: .remove() mutates ax.child_axes, so
-                        # iterating it directly would skip entries.
                         insets = list(ax.child_axes)
                         for _inset in insets:
                             _inset.remove()
@@ -4899,17 +4567,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                             ax, mappable, self._style_cbar_kw(style_norm)
                         )
                     elif self.default_options["add_colorbar"]:
-                        # Remove a swatch inset from a previous render so
-                        # repeated animate() calls don't stack legends.
-                        # snapshot first: .remove() mutates ax.child_axes, so
-                        # iterating it directly would skip entries.
                         insets = list(ax.child_axes)
                         for _inset in insets:
                             _inset.remove()
-                        # Same bounds AND endpoint caps as apply_data_style's
-                        # swatch (plot path), so a plot and its animation align
-                        # exactly -- both derive the "≤"/"≥" caps from the norm's
-                        # extend via the shared helper.
                         vmin_prefix, vmax_prefix = swatch_extend_prefixes(style_norm)
                         swatch_legend(
                             ax,
@@ -4969,10 +4629,6 @@ class ArrayGlyph(GeoMixin, Glyph):
                 ax, points.points, points.label_color, points.label_size
             )
 
-        # Normalize the threshold to the image color range. With a
-        # lazy `data_getter` we only have `frame_0` available
-        # cheaply, so fall back to its max — callers who care can
-        # set `background_color_threshold` explicitly.
         background_color_threshold = None
         if not rgb_frames:
             if self.default_options["background_color_threshold"] is not None:
@@ -5035,11 +4691,6 @@ class ArrayGlyph(GeoMixin, Glyph):
                     )
             return np.asarray(frame)
 
-        # Relief-shade each frame when `hillshade` is set: the initial render
-        # shaded `frame_0`, but `init`/`animate_a` overwrite `im` with the raw
-        # scalar frame, so shading is re-applied per frame through this wrapper.
-        # A continuous `style` composes hillshade into its RGBA (matching plot());
-        # a categorical `style` drops it (meaningless for class codes).
         hillshade_opts = resolve_hillshade(self.default_options.get("hillshade"))
         if style_categorical:
             hillshade_opts = None
@@ -5051,16 +4702,11 @@ class ArrayGlyph(GeoMixin, Glyph):
                     ma.filled(ma.asarray(frame).astype(float), np.nan), dtype=float
                 )
                 if style_render[0] == "categorical":
-                    # Remap only the declared class codes; everything else
-                    # (nodata, out-of-range) is drawn transparent.
                     _, cat_cmap, cat_norm, cat_values = style_render
                     masked = np.where(np.isin(filled, cat_values), filled, np.nan)
                     rgba = np.asarray(cat_cmap(cat_norm(masked)), dtype=float)
                     rgba[~np.isfinite(masked)] = 0.0
                     return rgba
-                # Continuous: bake the preset RGBA (colour + value-linked
-                # opacity) so animate matches plot()'s apply_data_style output,
-                # then compose hillshade into it (matching plot's shade_rgb).
                 _, cmap_, norm_, alpha_norm_, const_ = style_render
                 rgba = alpha_rgba(filled, cmap_, norm_, alpha_norm_, const_)
                 if hillshade_opts is not None:
@@ -5081,8 +4727,6 @@ class ArrayGlyph(GeoMixin, Glyph):
             output = [im, day_text]
 
             if points is not None:
-                # `points_scatter` was set alongside `points` above, in the
-                # same enclosing scope.
                 assert points_scatter is not None
                 points_scatter.set_offsets(np.c_[col, row])
                 output.append(points_scatter)
@@ -5094,9 +4738,6 @@ class ArrayGlyph(GeoMixin, Glyph):
             if show_cell_value:
                 vals = frame_0[indices[:, 0], indices[:, 1]]
                 update_cell_value = lambda x: cell_text_value[x].set_text(vals[x])
-                # Iterate over the actual artist list, not
-                # `self.num_domain_cells` — keep the loop bound tied to the
-                # thing being indexed so it can never raise `IndexError`.
                 list(map(update_cell_value, range(len(cell_text_value))))
                 output += cell_text_value
 
@@ -5110,8 +4751,6 @@ class ArrayGlyph(GeoMixin, Glyph):
             output = [im, day_text]
 
             if points is not None:
-                # `points_scatter` was set alongside `points` above, in the
-                # same enclosing scope.
                 assert points_scatter is not None
                 points_scatter.set_offsets(np.c_[col, row])
                 output.append(points_scatter)
@@ -5135,27 +4774,18 @@ class ArrayGlyph(GeoMixin, Glyph):
                     cell_text_value[x].update(kw)
                     cell_text_value[x].set_text(val)
 
-                # See `init` above: iterate the artist list, not
-                # `self.num_domain_cells`, so the bound matches the index.
                 list(map(update_cell_value, range(len(cell_text_value))))
 
                 output += cell_text_value
 
             return output
 
-        # Reference backdrop (relief under the frames, coastline/borders over
-        # them) drawn via the glyph's own GeoMixin methods; layered by zorder.
         if basemap is not None:
             self._draw_basemap(basemap)
-        # `full_bleed` fills the figure and skips `tight_layout` (which cannot
-        # position a full-figure axes and would warn); otherwise tidy as before.
         if full_bleed:
             self._apply_full_bleed(facecolor=full_bleed if isinstance(full_bleed, str) else None)
         else:
             plt.tight_layout()
-            # Crop the figure to its content *before* `FuncAnimation` caches the
-            # background, so every writer (which, unlike Jupyter's inline
-            # backend, does not apply `bbox_inches="tight"`) emits tight frames.
             if getattr(self, "_auto_figure", False):
                 self._tighten_figure()
         anim = FuncAnimation(
@@ -5167,14 +4797,6 @@ class ArrayGlyph(GeoMixin, Glyph):
             blit=True,
         )
         self._anim = anim
-        # See `_mark_render_artists`: record this call's artists on the
-        # Axes itself so a later plot()/animate() call -- from this glyph
-        # or a different one sharing this Axes -- can find and remove
-        # them. points_scatter/points_id/cell_text_value are mutated in
-        # place per frame (`.set_offsets()`/`.set_text()` inside
-        # animate_a() below), not swapped for new objects each frame
-        # (unlike MeshGlyph's mappable), so marking them once here stays
-        # valid for the whole animation.
         _mark_render_artists(
             ax,
             self.cbar,
@@ -5186,233 +4808,3 @@ class ArrayGlyph(GeoMixin, Glyph):
         )
         return anim
 
-    # @staticmethod
-    # def plot_type_1(
-    #     Y1,
-    #     Y2,
-    #     Points,
-    #     PointsY,
-    #     PointMaxSize=200,
-    #     PointMinSize=1,
-    #     X_axis_label="X Axis",
-    #     LegendNum=5,
-    #     LegendLoc=(1.3, 1),
-    #     PointLegendTitle="Output 2",
-    #     Ylim=[0, 180],
-    #     Y2lim=[-2, 14],
-    #     color1="#27408B",
-    #     color2="#DC143C",
-    #     color3="grey",
-    #     linewidth=4,
-    #     **kwargs,
-    # ):
-    #     """Plot_Type1.
-    #
-    #     !TODO Needs docs
-    #
-    #     Parameters
-    #     ----------
-    #     Y1 : TYPE
-    #         DESCRIPTION.
-    #     Y2 : TYPE
-    #         DESCRIPTION.
-    #     Points : TYPE
-    #         DESCRIPTION.
-    #     PointsY : TYPE
-    #         DESCRIPTION.
-    #     PointMaxSize : TYPE, optional
-    #         DESCRIPTION. The default is 200.
-    #     PointMinSize : TYPE, optional
-    #         DESCRIPTION. The default is 1.
-    #     X_axis_label : TYPE, optional
-    #         DESCRIPTION. The default is 'X Axis'.
-    #     LegendNum : TYPE, optional
-    #         DESCRIPTION. The default is 5.
-    #     LegendLoc : TYPE, optional
-    #         DESCRIPTION. The default is (1.3, 1).
-    #     PointLegendTitle : TYPE, optional
-    #         DESCRIPTION. The default is "Output 2".
-    #     Ylim : TYPE, optional
-    #         DESCRIPTION. The default is [0,180].
-    #     Y2lim : TYPE, optional
-    #         DESCRIPTION. The default is [-2,14].
-    #     color1 : TYPE, optional
-    #         DESCRIPTION. The default is '#27408B'.
-    #     color2 : TYPE, optional
-    #         DESCRIPTION. The default is '#DC143C'.
-    #     color3 : TYPE, optional
-    #         DESCRIPTION. The default is "grey".
-    #     linewidth : TYPE, optional
-    #         DESCRIPTION. The default is 4.
-    #     **kwargs : TYPE
-    #         DESCRIPTION.
-    #
-    #     Returns
-    #     -------
-    #     ax1 : TYPE
-    #         DESCRIPTION.
-    #     TYPE
-    #         DESCRIPTION.
-    #     fig : TYPE
-    #         DESCRIPTION.
-    #     """
-    #     fig, ax1 = plt.subplots(nrows=1, ncols=1, figsize=(10, 6))
-    #
-    #     ax2 = ax1.twinx()
-    #
-    #     ax1.plot(
-    #         Y1[:, 0],
-    #         Y1[:, 1],
-    #         zorder=1,
-    #         color=color1,
-    #         linestyle=Styles.get_line_style(0),
-    #         linewidth=linewidth,
-    #         label="Model 1 Output1",
-    #     )
-    #
-    #     if "Y1_2" in kwargs.keys():
-    #         Y1_2 = kwargs["Y1_2"]
-    #
-    #         rows_axis1, cols_axis1 = np.shape(Y1_2)
-    #
-    #         if "Y1_2_label" in kwargs.keys():
-    #             label = kwargs["Y2_2_label"]
-    #         else:
-    #             label = ["label"] * (cols_axis1 - 1)
-    #         # first column is the x axis
-    #         for i in range(1, cols_axis1):
-    #             ax1.plot(
-    #                 Y1_2[:, 0],
-    #                 Y1_2[:, i],
-    #                 zorder=1,
-    #                 color=color2,
-    #                 linestyle=Styles.get_line_style(i),
-    #                 linewidth=linewidth,
-    #                 label=label[i - 1],
-    #             )
-    #
-    #     ax2.plot(
-    #         Y2[:, 0],
-    #         Y2[:, 1],
-    #         zorder=1,
-    #         color=color3,
-    #         linestyle=Styles.get_line_style(6),
-    #         linewidth=2,
-    #         label="Output1-Diff",
-    #     )
-    #
-    #     if "Y2_2" in kwargs.keys():
-    #         Y2_2 = kwargs["Y2_2"]
-    #         rows_axis2, cols_axis2 = np.shape(Y2_2)
-    #
-    #         if "Y2_2_label" in kwargs.keys():
-    #             label = kwargs["Y2_2_label"]
-    #         else:
-    #             label = ["label"] * (cols_axis2 - 1)
-    #
-    #         for i in range(1, cols_axis2):
-    #             ax1.plot(
-    #                 Y2_2[:, 0],
-    #                 Y2_2[:, i],
-    #                 zorder=1,
-    #                 color=color2,
-    #                 linestyle=Styles.get_line_style(i),
-    #                 linewidth=linewidth,
-    #                 label=label[i - 1],
-    #             )
-    #
-    #     if "Points1" in kwargs.keys():
-    #         # first axis in the x axis
-    #         Points1 = kwargs["Points1"]
-    #
-    #         vmax = np.max(Points1[:, 1:])
-    #         vmin = np.min(Points1[:, 1:])
-    #
-    #         vmax = max(Points[:, 1].max(), vmax)
-    #         vmin = min(Points[:, 1].min(), vmin)
-    #
-    #     else:
-    #         vmax = max(Points)
-    #         vmin = min(Points)
-    #
-    #     vmaxnew = PointMaxSize
-    #     vminnew = PointMinSize
-    #
-    #     Points_scaled = [
-    #         Scale.rescale(x, vmin, vmax, vminnew, vmaxnew) for x in Points[:, 1]
-    #     ]
-    #     f1 = np.ones(shape=(len(Points))) * PointsY
-    #     scatter = ax2.scatter(
-    #         Points[:, 0],
-    #         f1,
-    #         zorder=1,
-    #         c=color1,
-    #         s=Points_scaled,
-    #         label="Model 1 Output 2",
-    #     )
-    #
-    #     if "Points1" in kwargs.keys():
-    #         row_points, col_points = np.shape(Points1)
-    #         PointsY1 = kwargs["PointsY1"]
-    #         f2 = np.ones_like(Points1[:, 1:])
-    #
-    #         for i in range(col_points - 1):
-    #             Points1_scaled = [
-    #                 Scale.rescale(x, vmin, vmax, vminnew, vmaxnew)
-    #                 for x in Points1[:, i]
-    #             ]
-    #             f2[:, i] = PointsY1[i]
-    #
-    #             ax2.scatter(
-    #                 Points1[:, 0],
-    #                 f2[:, i],
-    #                 zorder=1,
-    #                 c=color2,
-    #                 s=Points1_scaled,
-    #                 label="Model 2 Output 2",
-    #             )
-    #
-    #     # produce a legend with the unique colors from the scatter
-    #     legend1 = ax2.legend(
-    #         *scatter.legend_elements(), bbox_to_anchor=(1.1, 0.2)
-    #     )  # loc="lower right", title="RIM"
-    #
-    #     ax2.add_artist(legend1)
-    #
-    #     # produce a legend with a cross section of sizes from the scatter
-    #     handles, labels = scatter.legend_elements(
-    #         prop="sizes", alpha=0.6, num=LegendNum
-    #     )
-    #     # L = [vminnew] + [float(i[14:-2]) for i in labels] + [vmaxnew]
-    #     L = [float(i[14:-2]) for i in labels]
-    #     labels1 = [
-    #         round(Scale.rescale(x, vminnew, vmaxnew, vmin, vmax) / 1000) for x in L
-    #     ]
-    #
-    #     legend2 = ax2.legend(
-    #         handles, labels1, bbox_to_anchor=LegendLoc, title=PointLegendTitle
-    #     )
-    #     ax2.add_artist(legend2)
-    #
-    #     ax1.set_ylim(Ylim)
-    #     ax2.set_ylim(Y2lim)
-    #     #
-    #     ax1.set_ylabel("Output 1 (m)", fontsize=12)
-    #     ax2.set_ylabel("Output 1 - Diff (m)", fontsize=12)
-    #     ax1.set_xlabel(X_axis_label, fontsize=12)
-    #     ax1.xaxis.set_minor_locator(plt.MaxNLocator(10))
-    #     ax1.tick_params(which="minor", length=5)
-    #     fig.legend(
-    #         loc="lower center",
-    #         bbox_to_anchor=(1.3, 0.3),
-    #         bbox_transform=ax1.transAxes,
-    #         fontsize=10,
-    #     )
-    #     plt.rcParams.update({"ytick.major.size": 3.5})
-    #     plt.rcParams.update({"font.size": 12})
-    #     plt.title("Model Output Comparison", fontsize=15)
-    #
-    #     plt.subplots_adjust(right=0.7)
-    #     # plt.tight_layout()
-    #
-    #     return (ax1, ax2), fig

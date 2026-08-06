@@ -142,10 +142,6 @@ class PolygonGlyph(GeoMixin, Glyph):
         self.polygons = [np.asarray(p, dtype=float) for p in polygons]
         if values is not None:
             values = np.asarray(values)
-            # A full-shape check (not just `shape[0]`) rejects an accidentally
-            # un-flattened 2-D `values` array with a matching row count -- it
-            # would otherwise slip through here and only surface as a
-            # silently mis-sized colour array once `plot()` flattens it.
             if values.shape != (len(self.polygons),):
                 raise ValueError(
                     f"values shape {values.shape} must match the number of "
@@ -240,22 +236,13 @@ class PolygonGlyph(GeoMixin, Glyph):
 
         if title is not None:
             opts["title"] = title
-        # Merge a typed `colorbar=` spec (placement / caption / sizing) into the
-        # glyph's sticky options, like `ArrayGlyph`: it persists into later
-        # `plot()` calls until a `colorbar=True`/`False` or a new spec changes
-        # it. Only the on/off `add_colorbar` override below stays per-call.
         opts.update(_resolve_colorbar(colorbar))
         draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
-        # Reset both artifacts unconditionally so a re-plot (e.g. switching
-        # `scheme` between calls) never leaves a stale reference from the
-        # previous call -- only one of the two is (re)created below.
         self.cbar = None
         self.category_legend = None
 
         if outline_only or self.values is None:
             edgecolor = opts["edgecolor"]
-            # An unfilled polygon whose edge is transparent draws nothing, so
-            # the borderless-fill default cannot carry over to outline mode.
             if isinstance(edgecolor, str) and edgecolor.lower() == "none":
                 edgecolor = OUTLINE_EDGECOLOR
             pc = PolyCollection(

@@ -697,9 +697,6 @@ def resolve_sizes(
         raise ValueError(f"Invalid size_scale {scale!r}. Expected one of {valid}.")
     if values.size == 0:
         raise ValueError("Cannot resolve sizes: `values` is empty.")
-    # Reject non-finite entries up front: a NaN/inf magnitude would map to a
-    # NaN size, which renders as an invisible or broken marker rather than
-    # failing loudly. Callers should clean their data first.
     if not np.all(np.isfinite(values)):
         raise ValueError(
             "Cannot resolve sizes: `values` contains non-finite entries "
@@ -716,10 +713,6 @@ def resolve_sizes(
     else:  # linear
         transformed = values
 
-    # `values` was coerced to `np.ndarray` above, so `Scale.log_scale`/`np.sqrt`
-    # always return one here too -- but their signatures also allow a scalar
-    # `float` (for non-array callers), which is the type `transformed` would
-    # otherwise carry.
     transformed = np.asarray(transformed, dtype=float)
 
     lo, hi = float(transformed.min()), float(transformed.max())
@@ -860,10 +853,6 @@ class MidpointNormalize(colors.Normalize):
         self.midpoint = midpoint
         colors.Normalize.__init__(self, vmin, vmax, clip)
 
-    # matplotlib.colors.Normalize.__call__ is overloaded per input type
-    # (float -> float, ndarray -> MaskedArray); this override deliberately
-    # always returns a MaskedArray (see docstring/doctests below) for a
-    # consistent result regardless of scalar vs. array input.
     def __call__(  # type: ignore[override]
         self, value: float | np.ndarray, clip: bool | None = None
     ) -> np.ma.MaskedArray:
@@ -941,11 +930,6 @@ class MidpointNormalize(colors.Normalize):
 
         ```
         """
-        # I'm ignoring masked values and all kinds of edge cases to make a
-        # simple example...
-        # vmin/vmax/midpoint are resolved (non-None) by the time `__call__`
-        # actually runs -- either passed explicitly, or already resolved by
-        # matplotlib before this norm is invoked on real data.
         x = cast("list[float]", [self.vmin, self.midpoint, self.vmax])
         y = [0.0, 0.5, 1.0]
 
@@ -1342,10 +1326,6 @@ def histogram_legend(
         else (cmap if cmap is not None else mpl.colormaps[mpl.rcParams["image.cmap"]])
     )
     if norm is None and mappable is not None:
-        # Copy so that mapping bin centres below cannot mutate the
-        # caller's norm (an unscaled norm would otherwise be
-        # autoscaled in place by the norm(centers) call). copy.copy
-        # preserves the norm subtype (e.g. BoundaryNorm).
         norm = copy.copy(mappable.norm)
 
     counts, edges = np.histogram(values, bins=bins)
@@ -1522,11 +1502,6 @@ def swatch_legend(
     cmap_obj = mpl.colormaps[cmap] if isinstance(cmap, str) else cmap
     swatch = ax.inset_axes(bounds)
     if isinstance(norm, colors.BoundaryNorm):
-        # Discrete bands: paint the SAME flat band colours the map uses by
-        # sampling the colormap through the norm at each band's midpoint. This
-        # honours the under/over slots the norm reserves when it has `extend`
-        # (a raw 0..1 ramp would shift the in-range bands), so the legend matches
-        # the map exactly -- for a ListedColormap or a continuous colormap alike.
         edges = np.asarray(norm.boundaries, dtype=float)
         mids = (edges[:-1] + edges[1:]) / 2.0
         band_rgba = np.asarray(cmap_obj(norm(mids)))
@@ -1538,12 +1513,8 @@ def swatch_legend(
         )
     else:
         if norm is None:
-            # A plain linear position along the bar (0..1).
             gradient = np.linspace(0.0, 1.0, 256).reshape(1, -1)
         else:
-            # Position along the bar is linear in data (vmin..vmax); sample the
-            # colour through `norm` so a nonlinear (log/symlog) mapping shows its
-            # true, compressed progression instead of a misleading linear ramp.
             gradient = np.asarray(
                 norm(np.linspace(vmin, vmax, 256)), dtype=float
             ).reshape(1, -1)
@@ -1569,12 +1540,8 @@ def swatch_legend(
         fontsize=fontsize,
         fontweight="bold",
         transform=swatch.transAxes,
-        # A contrasting halo so a light label stays readable over the pale
-        # middle of the bar (e.g. Spectral_r) instead of vanishing.
         path_effects=_legible_outline(text_color),
     )
-    # Endpoint values may take their own colour (they sit below the bar, often
-    # over the map); default to the title colour when `value_color` is unset.
     endpoint_color = value_color if value_color is not None else text_color
     endpoint_outline = _legible_outline(endpoint_color, linewidth=1.4)
     swatch.text(
@@ -1600,10 +1567,6 @@ def swatch_legend(
         path_effects=endpoint_outline,
     )
     if box:
-        # Opaque backing panel behind the swatch + its endpoint values, so an
-        # animated field cannot show through the labels (mirrors the colorbar
-        # box). Sized to the swatch's tight bounding box, drawn above the data
-        # but below the swatch itself.
         swatch.set_zorder(6)
         kw: dict = {"facecolor": "white", "edgecolor": "0.6", "linewidth": 0.6}
         if isinstance(box, str):
@@ -1825,8 +1788,6 @@ def classify(
         # An explicit sequence of bin edges supplied by the caller.
         edges = np.sort(np.asarray(scheme, dtype=float))
 
-    # BoundaryNorm needs strictly increasing edges; quantiles on skewed or
-    # discrete data can repeat, so collapse duplicates and require spread.
     edges = np.unique(edges)
     if edges.size < 2:
         raise ValueError(
@@ -1947,11 +1908,6 @@ def categorize(
         if value is None:
             return True
         if isinstance(value, (list, tuple, dict, set, np.ndarray)):
-            # A non-hashable, non-scalar entry is never a "null" -- and
-            # `np.isnan` on a multi-element one raises `ValueError` (ambiguous
-            # truth value) rather than answering the null check. Treat it as
-            # not-null here so it reaches `dict.fromkeys` below, which raises
-            # the documented `TypeError` for the genuinely unhashable value.
             return False
         try:
             return bool(np.isnan(value))
@@ -1964,16 +1920,12 @@ def categorize(
     try:
         categories = sorted(seen)
     except TypeError:
-        # Mixed / unorderable types (e.g. int and str together): keep the
-        # order values were first encountered rather than raising.
         categories = seen
 
     mpl_cmap = mpl.colormaps[cmap] if isinstance(cmap, str) else cmap
     base_colors = getattr(mpl_cmap, "colors", None)
     n = len(categories)
     if base_colors is None:
-        # A continuous colormap has no discrete swatches to cycle through;
-        # sample it at n evenly spaced points instead.
         base_colors = [mpl_cmap(i) for i in np.linspace(0.0, 1.0, n)]
     palette = [colors.to_hex(base_colors[i % len(base_colors)]) for i in range(n)]
 
@@ -2061,9 +2013,6 @@ def _fisher_jenks_edges(finite: np.ndarray, k: int) -> np.ndarray:
         return np.concatenate([[data[0]], data])
 
     if n > MAX_JENKS_N:
-        # The exact DP is O(k·n²); on large inputs classify a quantile
-        # thumbprint of the distribution instead. The sample spans the full
-        # range (its ends are the data min/max), so the breaks remain valid.
         warnings.warn(
             f"Fisher-Jenks on {n} points is O(k·n^2); classifying a "
             f"{MAX_JENKS_N}-point quantile sample instead. Pass fewer points "
@@ -2073,12 +2022,7 @@ def _fisher_jenks_edges(finite: np.ndarray, k: int) -> np.ndarray:
         data = np.quantile(data, np.linspace(0.0, 1.0, MAX_JENKS_N))
         n = data.size
 
-    # Centre the data before forming prefix sums: the partition is
-    # shift-invariant, and centring keeps `sum(x)^2 / count` from cancelling
-    # against `sum(x^2)` when the values are large relative to their spread.
     centered = data - data.mean()
-    # Prefix sums of (centred) values and squares for O(1) segment SSE:
-    # SSE[a, b) = sum(x^2) - sum(x)^2 / count  over data[a:b].
     s1 = np.concatenate([[0.0], np.cumsum(centered)])
     s2 = np.concatenate([[0.0], np.cumsum(centered * centered)])
 

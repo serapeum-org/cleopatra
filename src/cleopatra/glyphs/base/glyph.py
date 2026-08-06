@@ -25,9 +25,6 @@ from matplotlib.legend import Legend
 from matplotlib.patches import Rectangle
 from matplotlib.ticker import LogFormatter
 
-# `SUPPORTED_VIDEO_FORMAT` is re-imported (not redefined) so the constant has
-# a single source of truth in `cleopatra.glyphs.base.animation`, while the historical
-# `from cleopatra.glyphs.base.glyph import SUPPORTED_VIDEO_FORMAT` path keeps working.
 from cleopatra.glyphs.base.animation import SUPPORTED_VIDEO_FORMAT  # noqa: F401  (re-export)
 from cleopatra.glyphs.base.animation import save_animation as _save_animation
 from cleopatra.styling.colors import resolve_colormap
@@ -91,9 +88,6 @@ def _root_figure(ax: Axes) -> Figure:
         seen.add(id(fig))
         fig = fig.figure
     assert fig is not None
-    # The `seen` guard exists only to defend against a pathological
-    # SubFigure parent cycle; it should never actually trigger, so `fig`
-    # is a real `Figure` by the time the loop above exits normally.
     return cast(Figure, fig)
 
 
@@ -157,21 +151,6 @@ def _clear_prior_render_artists(ax: Axes) -> None:
     prior = getattr(ax, "_cleo_render_artists", None)
     if prior is None:
         return
-    # Each removal is best-effort: another code path (e.g.
-    # `Glyph._reset_axes_for_restyle`, used by `apply_style`, or a
-    # caller's own `ax.clear()`) may already have removed one of these
-    # same artists -- or, for a colorbar, only the *image* it is attached
-    # to -- before this marker was consulted. Matplotlib's failure mode
-    # varies by artist kind and by how much of it is already gone:
-    # `KeyError` for a colorbar axes no longer on the figure's axes
-    # stack, `NotImplementedError` for any other artist already detached
-    # from its axes, or `AttributeError` for a colorbar whose mappable
-    # was detached out from under it (`Colorbar.remove()` reads
-    # `self.mappable.axes`, which is `None` in that case, then calls
-    # `.set_subplotspec()` on it) -- e.g. exactly the `ax.clear()` case
-    # above, since `ax.clear()` detaches the image but leaves the
-    # colorbar's own (sibling) axes untouched. None of these should stop
-    # this call's own render.
     for artist in prior:
         try:
             artist.remove()
@@ -194,12 +173,6 @@ def _mark_render_artists(ax: Axes, *artists: Any) -> None:
             create, e.g. no colorbar when `add_colorbar=False`) are
             dropped.
     """
-    # `Axes` declares no such attribute -- this is a deliberate, private
-    # marker cleopatra stamps onto the caller's Axes object itself (not a
-    # cleopatra-owned type), matching the same
-    # # type: ignore[attr-defined] trade-off as
-    # `getattr(ax, "_cleo_render_artists", None)` in
-    # `_clear_prior_render_artists` above.
     ax._cleo_render_artists = [  # type: ignore[attr-defined]
         a for a in artists if a is not None
     ]
@@ -394,18 +367,9 @@ class Glyph:
         self._categorical: dict | None = None
         #: Set by a subclass's `animate()`; exposed read-only via `anim`.
         self._anim: FuncAnimation | None = None
-        # Resolve the (fig, ax) binding. An `ax` fully determines its
-        # figure, so accept `ax` on its own and derive the figure from it
-        # rather than dropping the axes when `fig` is omitted. An explicit
-        # `fig` is honoured (and wins for the figure handle when both are
-        # given); passing neither leaves both unset until render time.
         if ax is not None:
             self.ax: Axes | None = ax
             if fig is not None:
-                # A mismatched (fig, ax) pair leaves self.fig and
-                # self.ax.figure disagreeing — almost always a caller mistake.
-                # `fig` is fine if it is either the axes' immediate parent
-                # (e.g. a SubFigure) or its top-level root figure.
                 if fig is not _immediate_figure(ax) and fig is not _root_figure(ax):
                     warnings.warn(
                         "The given `fig` is not the figure that owns `ax`; "
@@ -587,8 +551,6 @@ class Glyph:
         """
         ax = self.ax
         fig = self.fig
-        # Decide liveness by the ROOT figure's number: a SubFigure has no number
-        # of its own, so resolving the root detects a closed parent Figure too.
         root = _root_figure(ax) if ax is not None else fig
         ax_live = ax is not None and _figure_is_open(root)
         if ax_live:
@@ -602,10 +564,6 @@ class Glyph:
                 inset.remove()
             ax.clear()
         elif fig is not None and _figure_is_open(fig):
-            # A live figure with no (live) axes -- e.g. a `fig`-only construction:
-            # reuse an existing axes on it if present, else add one, rather than
-            # crashing when `plot` dereferences `self.ax` (or overlapping a
-            # caller's own axes with a fresh `111` subplot).
             self.ax = fig.axes[0] if fig.axes else fig.add_subplot(111)
         else:
             self.fig, self.ax = self.create_figure_axes()
@@ -635,26 +593,12 @@ class Glyph:
         ticks_spacing = self.default_options["ticks_spacing"]
         vmax = self.default_options["vmax"]
         vmin = self.default_options["vmin"]
-        # A degenerate colour range (e.g. a constant-value array where
-        # vmax == vmin, so ticks_spacing is 0) has no meaningful tick
-        # spacing; return a single tick at the value rather than dividing
-        # by zero in `np.arange` / `math.remainder` below.
         if not ticks_spacing or vmax <= vmin:
             return np.array([vmin])
         ticks = np.arange(vmin, vmax + ticks_spacing, ticks_spacing)
-        # `np.arange` can overshoot `vmax` by up to one step; drop any tick above
-        # it -- such a tick sits past the top of the colorbar and its label would
-        # overprint the `vmax` label (the old `math.remainder` check appended one
-        # for almost any non-integer `vmax`).
         ticks = ticks[ticks <= vmax + 1e-9]
         if ticks.size == 0:
             return np.array([vmin, vmax])
-        # The colour range spans the last tick, so the top tick must reach `vmax`
-        # or the largest values get clipped. When the last tick is already at --
-        # or a hair below, from float rounding -- `vmax`, snap it there exactly;
-        # when there is a real gap (measured as a fraction of the range, which is
-        # what maps to distance on the bar), add `vmax` as a new top tick. Either
-        # way, no near-duplicate label is left at the top.
         if (vmax - ticks[-1]) > 0.04 * (vmax - vmin):
             ticks = np.append(ticks, vmax)
         else:
@@ -948,9 +892,6 @@ class Glyph:
         vmin = self.default_options.get("vmin")
         vmax = self.default_options.get("vmax")
         if vmin is None or vmax is None:
-            # nanmin/nanmax on an all-NaN array return NaN with a
-            # RuntimeWarning; compute quietly and validate below so the
-            # failure is a clear ValueError rather than a downstream crash.
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", RuntimeWarning)
                 data_min = np.nanmin(values)
@@ -1050,17 +991,12 @@ class Glyph:
             return self._prepare_categorical_mapping(values)
         self._vmin, self._vmax = self._resolve_limits(np.asarray(values))
         if self.default_options.get("ticks_spacing") is None:
-            # `or 1.0` guards flat data (vmax == vmin -> spacing 0), which
-            # would make get_ticks()'s np.arange produce an empty array.
             self.ticks_spacing = (self._vmax - self._vmin) / 10 or 1.0
             self.default_options["ticks_spacing"] = self.ticks_spacing
         self.default_options["vmin"] = self._vmin
         self.default_options["vmax"] = self._vmax
         scheme = self.default_options.get("scheme")
         if scheme is not None:
-            # Categorical (classified) colouring short-circuits the
-            # continuous `color_scale` / `levels` machinery: the bin edges
-            # fully determine the discrete `BoundaryNorm` and its ticks.
             return self._prepare_classified_mapping(values, scheme)
         ticks = self.get_ticks()
         norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
@@ -1228,26 +1164,9 @@ class Glyph:
             )
         self._warn_scheme_overrides_continuous_options()
         cmap = resolve_colormap(self.default_options["cmap"])
-        # Compare by resolved name, not raw `==`: `Colormap` does not
-        # implement equality, so a `Colormap` *instance* equivalent to the
-        # default (e.g. `mpl.colormaps["coolwarm_r"]`, a legitimate way to
-        # pass a colormap) would otherwise never match the string default
-        # and silently bypass the fallback below.
         cmap_name = cmap if isinstance(cmap, str) else getattr(cmap, "name", None)
         if cmap_name == STYLE_DEFAULTS["cmap"]:
-            # `cmap` is still at the shared continuous/diverging default
-            # ("coolwarm_r") -- nobody chose it *for* a categorical mapping,
-            # they just never overrode it. Sampling a diverging gradient at
-            # N points defeats the point of "one distinct colour per class",
-            # so fall back to `categorize`'s own qualitative default instead.
-            # An explicit non-default `cmap` (qualitative or not) is always
-            # honoured as given.
             cmap = CATEGORICAL_DEFAULT_CMAP
-        # Flatten `values` once and reuse it for both `categorize` (which
-        # would otherwise redo the identical `np.asarray(...).ravel()` on
-        # the original, possibly nested/2-D `values`) and the codes lookup
-        # below -- passing an already-flat list back through `categorize`
-        # is a cheap no-op re-wrap, not a second real flattening pass.
         raw = np.asarray(values, dtype=object).ravel().tolist()
         categories, palette = categorize(raw, cmap=cmap)
         lookup = {category: i for i, category in enumerate(categories.tolist())}
@@ -1466,28 +1385,16 @@ class Glyph:
             )
         orientation_opt = self.default_options.get("cbar_orientation")
         if orientation_opt is not None and orientation_opt not in ("vertical", "horizontal"):
-            # Validate at render too, so a bad value reaching this path -- via the
-            # deprecated loose `cbar_orientation` kwarg or a low-level Glyph -- gets
-            # an actionable error instead of an opaque matplotlib one.
             raise ValueError(
                 "cbar_orientation must be 'vertical' or 'horizontal', got "
                 f"{orientation_opt!r}."
             )
         inside = bool(self.default_options.get("cbar_inside", False))
         orientation = self._resolve_cbar_orientation(location)
-        # Pull the user-supplied `label` (if any) out of cbar_kwargs before
-        # forwarding to `fig.colorbar`, so it is applied via `cbar.set_label`
-        # (preserving label-size/location styling).
         user_kwargs, user_label = self._cbar_user_kwargs()
 
         box_info = None
         if inside:
-            # An inset colorbar is a child of `ax`, so it tracks the axes
-            # through `full_bleed` (never floats) and can sit on a backing box.
-            # With no explicit `location`, pick the inset edge from the resolved
-            # orientation so the geometry and the bar's orientation agree --
-            # otherwise a horizontal bar would inherit the vertical "right"
-            # layout and matplotlib rejects the mismatched tick position.
             inset_location = location or (
                 "bottom" if orientation == "horizontal" else "right"
             )
@@ -1500,8 +1407,6 @@ class Glyph:
             )
 
         self._apply_cbar_styling(cbar, user_label)
-        # Draw the backing box last -- once the labels exist -- so it encloses
-        # them (an inside colorbar overlays the data, so it needs the panel).
         box = self.default_options.get("cbar_box")
         if inside and box and box_info is not None:
             self._draw_cbar_box(ax, box_info, box)
@@ -1539,10 +1444,6 @@ class Glyph:
         fig = ax.figure
         merged_kw = {
             "shrink": self.default_options["cbar_length"],
-            # matplotlib's default pad (0.05 of the axes width) leaves a wide
-            # gap for wide (equal-aspect) maps, whose axes is wide; a smaller
-            # default keeps the colorbar close to the frame. Overridable via
-            # `cbar_kwargs={"pad": ...}`.
             "pad": 0.02,
             "use_gridspec": len(fig.axes) <= 1,
         }
@@ -1554,10 +1455,6 @@ class Glyph:
         merged_kw.update(cbar_kw)
         merged_kw.update(user_kwargs)
         if "location" in merged_kw:
-            # matplotlib rejects `location` and `orientation` together (mutually
-            # exclusive); `location` already implies the orientation, so drop a
-            # redundant/conflicting user-supplied `orientation` rather than
-            # letting fig.colorbar raise.
             merged_kw.pop("orientation", None)
         return fig.colorbar(im, ax=ax, **merged_kw)
 
@@ -1572,10 +1469,6 @@ class Glyph:
             user_label if user_label is not None else self.default_options["cbar_label"]
         )
         label_rotation = self.default_options.get("cbar_label_rotation")
-        # Valid label positions depend on the resolved orientation, so validate
-        # here (where it is known) rather than letting matplotlib raise a raw
-        # error -- this also covers a `label_location` that a ColorBar left
-        # unvalidated because it pinned no orientation (issue #241).
         label_location = self.default_options["cbar_label_location"]
         if label_location is not None:
             valid = (
@@ -1625,10 +1518,6 @@ class Glyph:
                 `(cax, inset_bounds, label_side)` for `_draw_cbar_box`.
         """
         fig = ax.figure
-        # The inset's long axis scales with `cbar_length` relative to its
-        # default and re-centres, so `ColorBar(length=...)` shortens/lengthens
-        # an inset bar the way `shrink=` does an outside one. The default length
-        # reproduces the historical 0.72 span centred at 0.5 exactly.
         default_length = STYLE_DEFAULTS["cbar_length"]
         length = self.default_options.get("cbar_length") or default_length
         long_frac = 0.72 * (length / default_length)
@@ -1641,8 +1530,6 @@ class Glyph:
         }[location]
         cax = ax.inset_axes(bounds)
         cax.set_zorder(6)
-        # `ticklocation` turns the tick labels to face into the frame, so they
-        # stay clear of the edge and the backing box can enclose them.
         merged_kw = {"orientation": orientation, "ticklocation": label_side}
         merged_kw.update(cbar_kw)
         merged_kw.update(user_kwargs)
@@ -1664,9 +1551,6 @@ class Glyph:
                 panel of that colour, or a dict of `Rectangle` kwargs.
         """
         cax, bounds, label_side = box_info
-        # Opaque by default so the colorbar reads identically on every frame
-        # (a translucent panel would let the animating field bleed through);
-        # pass `{"alpha": ...}` in a dict to soften it.
         kw: dict = {
             "facecolor": "white",
             "edgecolor": "0.6",
@@ -1678,8 +1562,6 @@ class Glyph:
             kw = {**kw, **box}
         fig = ax.figure
         try:
-            # Tight bbox (in display coords) captures the bar *and* its tick
-            # labels precisely; convert to `ax` fractions for the panel.
             fig.canvas.draw()
             bb = cax.get_tightbbox(fig.canvas.get_renderer())
             inv = ax.transAxes.inverted()
@@ -1748,8 +1630,6 @@ class Glyph:
 
                 ```
         """
-        # Callers plot (or bind `ax=`) before adjusting ticks, same
-        # precondition as the rest of this class's post-render methods.
         assert self.ax is not None
         if axis == "x":
             ticks_fn = ticker.FuncFormatter(

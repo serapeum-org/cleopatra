@@ -258,10 +258,6 @@ def relief(resolution: str = "low") -> np.ndarray:
         with Image.open(path) as img:
             return np.asarray(img.convert("RGB"))
     except (UnidentifiedImageError, OSError, ValueError) as e:
-        # A complete-but-unreadable cache file (e.g. an HTML error page
-        # served with HTTP 200) would fail forever because `_download`
-        # returns the cached file unconditionally. Drop it so the next
-        # call re-fetches instead of staying poisoned.
         path.unlink(missing_ok=True)
         raise OSError(
             f"Cached relief asset {path} could not be decoded ({e}); removed "
@@ -375,11 +371,6 @@ def add_relief(
             west, south, east, north = extent
             gw, gs, ge, gn = _RELIEF_EXTENT_4326
             if gw <= west < east <= ge and gs <= south < north <= gn:
-                # A lon/lat sub-region: crop the global relief array to it and
-                # place the crop over that box, instead of stretching the whole
-                # global image onto the box (the issue #177 footgun). `extent`
-                # is None (whole globe) and non-lon/lat extents -- e.g. axes in
-                # projected metres -- keep the previous whole-image placement.
                 rows, cols = rgb.shape[:2]
                 c0 = max(0, int(np.floor((west - gw) / (ge - gw) * cols)))
                 c1 = min(
@@ -390,9 +381,6 @@ def add_relief(
                     rows, max(r0 + 1, int(np.ceil((gn - south) / (gn - gs) * rows)))
                 )
                 rgb = rgb[r0:r1, c0:c1]
-                # Place the crop at its SNAPPED pixel edges (not the raw
-                # request) so the terrain registers at true scale; the axis
-                # limits (restored below) then clip to the requested view.
                 west = gw + c0 / cols * (ge - gw)
                 east = gw + c1 / cols * (ge - gw)
                 north = gn - r0 / rows * (gn - gs)
@@ -407,9 +395,6 @@ def add_relief(
             aspect=ax.get_aspect(),
         )
     else:
-        # Non-EPSG:4326 axis: warp the global relief into the axis CRS so the
-        # terrain lines up under the data, exactly like add_features/add_tiles.
-        # The placement box defaults to the current axis view. Needs pyproj.
         if extent is None:
             west, east = xlim
             south, north = ylim
@@ -486,9 +471,6 @@ def _warp_relief(
     row = np.clip(((gn - lat_safe) / (gn - gs) * rows).astype(int), 0, rows - 1)
 
     out = np.zeros((out_h, out_w, 4), dtype=np.uint8)
-    # Zero the RGB of masked cells too (not just their alpha), so a bilinear
-    # imshow blends the domain edge toward transparent-black rather than an
-    # arbitrary sampled terrain colour.
     out[..., :3] = np.where(valid[..., None], rgb[row, col], np.uint8(0))
     fill = np.uint8(round(float(np.clip(alpha, 0.0, 1.0)) * 255))
     out[..., 3] = np.where(valid, fill, np.uint8(0))
@@ -740,10 +722,6 @@ def _load_features(layer: str, resolution: str) -> list[dict]:
             if feature.get("geometry") is not None
         ]
     except (OSError, EOFError, ValueError, KeyError, TypeError) as e:
-        # Corrupt/poisoned cache: truncated gzip, HTML error page, bad JSON,
-        # or valid JSON that is not a GeoJSON FeatureCollection (missing
-        # "features", wrong shape). Drop it so the next call re-fetches
-        # rather than failing forever on the cached bytes.
         path.unlink(missing_ok=True)
         raise OSError(
             f"Cached layer asset {path} could not be parsed ({e}); removed "
@@ -895,10 +873,6 @@ def _compound_path(rings: list[np.ndarray]) -> MplPath | None:
     verts: list[np.ndarray] = []
     codes: list[np.ndarray] = []
     for ring in rings:
-        # MOVETO, LINETO..., CLOSEPOLY. The explicit CLOSEPOLY (with a
-        # placeholder vertex) is what makes the nonzero fill rule treat the
-        # ring as a closed contour, so an oppositely-wound hole is cut out
-        # rather than filled solid.
         n = len(ring)
         ring_codes = np.full(n + 1, MplPath.LINETO, dtype=np.uint8)
         ring_codes[0] = MplPath.MOVETO
@@ -993,8 +967,6 @@ def add_features(
         collection = PathCollection(
             _polygon_paths(geoms, transformer), zorder=zorder, **opts
         )
-        # PathCollection paths default to a non-data transform (its scatter
-        # heritage); place them in data coordinates explicitly.
         collection.set_transform(ax.transData)
     else:
         collection = LineCollection(

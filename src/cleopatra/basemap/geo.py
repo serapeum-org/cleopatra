@@ -551,14 +551,6 @@ class GeoMixin:
         target = ax if ax is not None else getattr(self, "ax", None)
         if target is not None:
             return target
-        # Create the axes on demand only when the glyph can also SEED it with its
-        # own data bounds. A reference layer pins the current view (it locks
-        # xlim/ylim and turns autoscale off, to preserve an already-drawn map), so
-        # an *unseeded* axes would lock the default (0, 1) box and the later data
-        # draw could not set the extent -- a silently broken plot. Seeding the data
-        # bounds means the layer pins the correct view; a glyph with no
-        # `_flat_axis_bounds` cannot seed, so it keeps raising the clear error below
-        # rather than returning an unusable (0, 1) axes.
         if hasattr(self, "create_figure_axes") and hasattr(self, "_flat_axis_bounds"):
             self.fig, self.ax = self.create_figure_axes()
             x_min, x_max, y_min, y_max = self._flat_axis_bounds()
@@ -773,8 +765,6 @@ class GeoMixin:
             sy = max(1, arr.shape[0] // 256)
             sx = max(1, arr.shape[1] // 256)
             arr = arr[::sy, ::sx]
-        # Render through the image's norm+colormap so a colormapped field is
-        # judged by what is shown, not by its data units; RGB(A) passes through.
         rgba = np.asarray(im.to_rgba(arr), dtype=float)
         if rgba.size == 0:
             return False
@@ -1023,9 +1013,6 @@ class GeoMixin:
         preset = REFERENCE_MAP_STYLES[resolved]
 
         if extent is not None:
-            # `[xmin, ymin, xmax, ymax]` == `[west, south, east, north]`,
-            # the same order as ArrayGlyph(extent=...); matplotlib wants
-            # `(xmin, xmax, ymin, ymax)` for `set_extent`.
             if len(extent) != 4:
                 raise ValueError(
                     "extent must be [xmin, ymin, xmax, ymax] "

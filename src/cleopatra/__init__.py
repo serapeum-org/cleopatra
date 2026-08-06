@@ -26,5 +26,4 @@ try:
 except PackageNotFoundError:  # pragma: no cover
     __version__ = "unknown"
 
-# Keep the package namespace minimal — nothing is re-exported here.
 del PackageNotFoundError, version

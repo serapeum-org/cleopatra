@@ -103,9 +103,6 @@ def resolve_colormap(cmap: str | Colormap | None, *, param: str = "cmap") -> Col
             ```
     """
     if cmap is None or isinstance(cmap, Colormap):
-        # None passes through unchanged so matplotlib falls back to its default
-        # colormap, matching the pre-resolver `... if isinstance(cmap, str) else cmap`
-        # behaviour at the routed seams.
         return cmap
     if isinstance(cmap, str) and ":" in cmap:
         _require_cmap(f"A namespaced colormap ({param}={cmap!r})")
@@ -566,8 +563,6 @@ def alpha_scaled_mesh(
     rgba = alpha_rgba(data, cmap, norm, alpha_norm, constant_alpha)
     mesh = ax.pcolormesh(x, y, data, **pcolormesh_kwargs)
     mesh.set_array(None)
-    # matplotlib's Collection.set_facecolor accepts an (N, 4) RGBA array at
-    # runtime; its stub only spells out scalar/sequence-of-scalar color forms.
     mesh.set_facecolor(rgba.reshape(-1, 4))  # type: ignore[arg-type]
     return mesh
 
@@ -753,10 +748,6 @@ def _load_presets(resource: str) -> dict[str, dict[str, dict[str, Any]]]:
                 lname: _preset_layer(lname, lrec)
                 for lname, lrec in body["layers"].items()
             }
-            # A preset-level `background` is a canvas colour (a look like the
-            # flame glow only reads on a dark canvas). Carry it onto each layer
-            # config so the single-layer render path finds it without a
-            # preset-level slot in `DATA_STYLES` (which is `{name: {layer: cfg}}`).
             background = body.get("background")
             if background is not None:
                 for layer in layers.values():
@@ -945,29 +936,13 @@ def resolve_style_norm(
     """
     levels = cfg.get("levels")
     norm_kind = cfg.get("norm")
-    # A caller-supplied vmin/vmax/center -- or a non-linear norm kind
-    # ("log"/"symlog") -- merged into cfg by apply_data_style's style override
-    # takes precedence over the preset's own fixed levels: fall through to the
-    # continuous vmin/vmax path below so the override actually rescales the map
-    # rather than being silently ignored. Honouring a string norm kind here is
-    # what keeps it consistent with a Normalize *instance* override (which
-    # apply_data_style applies after this call); otherwise "log"/"symlog" would
-    # be dropped on a levels preset while an instance of the same norm is kept.
     caller_override = any(
         cfg.get(key) is not None for key in ("vmin", "vmax", "center")
     ) or (isinstance(norm_kind, str) and norm_kind in ("log", "symlog"))
     if levels is not None and not caller_override:
-        # Explicit contour LEVELS (the ECMWF / earthkit-plots model): discrete
-        # bands at fixed boundaries with `extend` capping the out-of-range ends
-        # -- the look of a professional weather-service map.
         edges = [float(v) for v in levels]
         _warn_if_outside_fixed_range(data, edges[0], edges[-1])
         cmap_obj = resolve_colormap(cfg["cmap"])
-        # Honour `extend` unless the colormap lacks a spare colour for each
-        # reserved under/over slot. A continuous colormap (256 entries) always
-        # has room; a one-colour-per-band ListedColormap (aod550=9, 10si=6) does
-        # not, so `extend` is dropped there and out-of-range values clamp to the
-        # end bands -- but a colour-rich list (cape=255 over 16 bands) keeps it.
         extend = cfg.get("extend", "neither")
         reserved = {"neither": 0, "min": 1, "max": 1, "both": 2}.get(extend, 0)
         if cmap_obj.N < (len(edges) - 1) + reserved:
@@ -1002,19 +977,11 @@ def resolve_style_norm(
 
     bands = cfg.get("bands")
     if bands and norm_kind in (None, "linear") and center is None:
-        # Discrete contour bands (Magics-style shade), each mapped to one entry
-        # of the paired ListedColormap: the flat, banded ECMWF look, not a smooth
-        # (over-exposed) interpolation of the same colours. Partition [vmin, vmax]
-        # into `bands` equal intervals so the edges stay within the declared range
-        # -- every palette colour is reachable and the legend agrees (a
-        # step-aligned partition could overshoot vmax and strand the top colours).
         if cfg.get("vmin") is not None or cfg.get("vmax") is not None:
             _warn_if_outside_fixed_range(data, vmin, vmax)
         boundaries = np.linspace(vmin, vmax, bands + 1)
         return mcolors.BoundaryNorm(boundaries, bands), vmin, vmax
     if norm_kind in (None, "linear") and center is not None:
-        # Diverging: put `center` on the colormap midpoint regardless of how
-        # the bounds were resolved (auto-symmetric or explicit vmin/vmax).
         if not (vmin < center < vmax):
             raise ValueError(
                 f"diverging 'center' ({center}) must lie strictly between "
@@ -1024,36 +991,21 @@ def resolve_style_norm(
     elif norm_kind in (None, "linear"):
         norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
     elif norm_kind == "log":
-        # LogNorm needs a strictly positive range. Derive the lower bound from
-        # an explicit positive vmin, else the smallest positive finite value;
-        # the upper bound must be positive too. Data with no positive value (or
-        # an inverted explicit range) has no valid log window -- fail clearly
-        # here instead of letting matplotlib raise an opaque "vmin must be less
-        # or equal to vmax" deep inside the draw.
         positive = finite[finite > 0] if finite.size else finite
         lo = (
             vmin
             if (vmin is not None and vmin > 0)
             else (float(positive.min()) if positive.size else None)
         )
-        # `lo >= vmax` (not just `>`) so a single-positive-value range like
-        # data [0, 5] -- where the only positive value is both the lower and
-        # upper bound -- fails clearly rather than building a degenerate
-        # LogNorm(vmin==vmax) that renders the whole layer flat at one colour.
         if lo is None or vmax is None or vmax <= 0 or lo >= vmax:
             raise ValueError(
                 "data style norm='log' needs positive data with a positive "
                 f"value range (resolved vmin={lo!r}, vmax={vmax!r}); use "
                 "norm='symlog' for data that spans zero or negative values."
             )
-        # Report the clamped positive lower bound so the legend matches the
-        # colours the LogNorm actually starts from (not a 0/negative vmin).
         vmin = lo
         norm = mcolors.LogNorm(vmin=lo, vmax=vmax)
     elif norm_kind == "symlog":
-        # Symmetric log: linear within +/- linthresh (so 0 maps cleanly) and
-        # logarithmic beyond -- the robust choice for skewed, zero-containing
-        # fields such as flow accumulation.
         norm = mcolors.SymLogNorm(
             linthresh=float(cfg.get("linthresh", 1.0)), vmin=vmin, vmax=vmax
         )
@@ -1259,30 +1211,13 @@ def apply_data_style(
 
     curvilinear = x is not None and y is not None
     if curvilinear:
-        # cleopatra.basemap.projection.apply_projection_style always returns cell
-        # EDGE coordinates (one larger per axis than data): matplotlib's
-        # automatic centre-to-edge inference ("auto"/"nearest") is unreliable
-        # for a globe's extreme local distortion, so shading="flat" (which
-        # trusts the given edges exactly) is the correct default here.
         render_kwargs.setdefault("shading", "flat")
-    # A caller-supplied `vmin`/`vmax`/`center`/`cmap` overrides the preset's own
-    # colour scale / colormap (e.g. a Magics preset's decoded fixed range).
-    # These override cfg, not `imshow` kwargs, so pull them out of `render_kwargs`
-    # and merge them over each layer's config below (`cmap` becomes cfg["cmap"],
-    # which the render reads positionally -- leaving it in render_kwargs would
-    # collide with that positional argument).
     style_override: dict[str, Any] = {}
     for key in ("vmin", "vmax", "center", "cmap"):
         if key in render_kwargs:
             value = render_kwargs.pop(key)
-            # Pop it (so it never reaches imshow), but only override the preset when
-            # it is actually set -- an explicit None must not wipe a fixed range.
             if value is not None:
                 style_override[key] = value
-    # A caller `norm=`: a string kind ("linear"/"log"/"symlog") overrides the
-    # preset's norm kind via cfg; a Normalize *instance* is used directly as the
-    # colour norm. Pop it either way so it never collides with the norm
-    # alpha_scaled_image is already given, nor is mis-read as a kind string.
     norm_override = render_kwargs.pop("norm", None)
     if isinstance(norm_override, str):
         style_override["norm"] = norm_override
@@ -1302,15 +1237,6 @@ def apply_data_style(
             cat_norm = mcolors.BoundaryNorm(
                 category_boundaries(cat_values), len(cat_colors)
             )
-            # Only cells whose value is one of the declared class codes are
-            # drawn; anything else (nodata sentinels, D8 sinks, out-of-range
-            # codes) is masked to NaN so it renders transparent instead of
-            # being clamped to an end category at full opacity. Matching is by
-            # exact float equality, so categorical presets expect integer-coded
-            # input (D8 powers of two, flood classes 0..4 -- all exactly
-            # representable); a value that is not bit-exactly a declared code
-            # (e.g. one perturbed by a lossy float transform) is treated as
-            # out-of-range and silently rendered transparent.
             cat_data = np.where(np.isin(data, cat_values), data, np.nan)
             if curvilinear:
                 assert x is not None and y is not None
@@ -1334,10 +1260,6 @@ def apply_data_style(
                     **render_kwargs,
                 )
             if legend:
-                # Honour legend_bounds' (x0, y0) as an anchor when given;
-                # otherwise default to the top-right. Re-add any earlier
-                # categorical legend so a second categorical layer stacks
-                # instead of replacing it (matplotlib keeps one legend/axes).
                 prior_legend = ax.get_legend()
                 if legend_bounds is not None:
                     x0, y0 = legend_bounds[i][0], legend_bounds[i][1]
@@ -1363,14 +1285,6 @@ def apply_data_style(
 
         norm, resolved_vmin, resolved_vmax = resolve_style_norm(data, cfg)
         if norm_override is not None:
-            # A caller-supplied Normalize instance is used directly as the norm.
-            # Label the legend with the INSTANCE's own range, not the preset's
-            # resolved bounds: otherwise a levels preset would label the swatch
-            # with its fixed level endpoints (e.g. -40..40) while the map uses the
-            # instance's scale, and the swatch gradient -- sampled through the
-            # instance across [vmin, vmax] -- would feed a LogNorm the preset's
-            # negative levels. Fall back to the data's own range for any bound the
-            # instance leaves unset (matplotlib autoscales the map the same way).
             norm = norm_override
             finite = data[np.isfinite(data)]
             data_lo = float(finite.min()) if finite.size else resolved_vmin
@@ -1422,11 +1336,6 @@ def apply_data_style(
                 if legend_bounds is not None
                 else (0.02, 0.92 - 0.12 * i, 0.32, 0.06)
             )
-            # Mark each endpoint as capped ("≤"/"≥") only where the norm reserves
-            # an out-of-range slot, so the legend states the capping the map
-            # applies -- a two-sided BoundaryNorm caps both ends, a `neither`/
-            # downgraded one caps neither, and a continuous norm keeps the
-            # open-ended "≥". Derived in one helper shared with animate().
             vmin_prefix, vmax_prefix = swatch_extend_prefixes(norm)
             swatch_legend(
                 ax,
@@ -1583,7 +1492,6 @@ class Colors:
 
             ```
         """
-        # convert the hex color to a list if it is a string
         color_list: list[_ColorEntry]
         if isinstance(color_value, str) or isinstance(color_value, tuple):
             color_list = [color_value]
@@ -1632,9 +1540,6 @@ class Colors:
         except UnidentifiedImageError:
             raise ValueError(f"The file {path} is not a valid image.")
         width, height = image.size
-        # `.convert("RGB")` above guarantees a 3-int-tuple pixel at every
-        # coordinate; `Image.getpixel`'s general stub is looser (it also
-        # covers single-band/palette modes), so tell mypy what mode this is.
         color_values = cast(
             "list[_ColorEntry]",
             [image.getpixel((x, int(height / 2))) for x in range(width)],
@@ -1803,10 +1708,8 @@ class Colors:
         color_type = self.get_type()
         for ind, color_i in enumerate(self.color_value):
             if color_type[ind] == "hex":
-                # get_type() tagged this entry "hex", so it is a str.
                 converted_color.append(cast(str, color_i))
             elif color_type[ind] == "rgb":
-                # get_type() tagged this entry "rgb", so it is a 3-tuple.
                 r, g, b = cast("tuple[float, float, float]", color_i)
                 rgb_color_normalized = (r / 255, g / 255, b / 255)
                 converted_color.append(mcolors.to_hex(rgb_color_normalized))
@@ -2112,20 +2015,16 @@ class Colors:
         rgb: list[tuple[int | float, int | float, int | float]] = []
         if normalized:
             for ind, color_i in enumerate(self.color_value):
-                # if the color is in RGB format (0-255), normalize the values to be between 0 and 1
                 if color_type[ind] == "rgb":
                     r, g, b = cast("tuple[float, float, float]", color_i)
                     rgb.append((r / 255, g / 255, b / 255))
                 else:
-                    # any other format, just convert it to RGB
                     rgb.append(mcolors.to_rgb(color_i))
         else:
             for ind, color_i in enumerate(self.color_value):
-                # if the color is in RGB format (0-255), normalize the values to be between 0 and 1
                 if color_type[ind] == "rgb":
                     rgb.append(cast("tuple[int, int, int]", color_i))
                 else:
-                    # any other format, just convert it to RGB
                     r, g, b = mcolors.to_rgb(color_i)
                     rgb.append((int(r * 255), int(g * 255), int(b * 255)))
 

@@ -224,8 +224,6 @@ class ColorBar:
         self.location = location
         self.orientation = orientation
         self.inside = inside
-        # An inset over moving data almost always wants a panel: default the
-        # box on when `inside` is set and the caller did not decide explicitly.
         self.box = True if (inside and box is None) else box
         self.label_color = label_color
         self.tick_color = tick_color
@@ -322,11 +320,6 @@ def _resolve_colorbar(colorbar: bool | ColorBar | None) -> dict:
             "cbar_box": None,
             "cbar_label_color": None,
             "cbar_tick_color": None,
-            # A bare `True` means "default colorbar": reset the whole resettable
-            # cbar_* family to its defaults so nothing sticky from a prior call
-            # on a reused glyph leaks in (issue #242). `ticks_spacing` is omitted
-            # on purpose -- it is auto-computed per data range when not set, and
-            # seeding it here would defeat that (see plot/animate).
             "cbar_orientation": STYLE_DEFAULTS["cbar_orientation"],
             "cbar_label": STYLE_DEFAULTS["cbar_label"],
             "cbar_length": STYLE_DEFAULTS["cbar_length"],
@@ -343,10 +336,6 @@ def _resolve_colorbar(colorbar: bool | ColorBar | None) -> dict:
             "cbar_label_color": colorbar.label_color,
             "cbar_tick_color": colorbar.tick_color,
         }
-        # Caption / size / spacing fields override the loose cbar_* keys only
-        # when set, so an unset field leaves the existing default in place (and
-        # a caller still mixing in a loose cbar_label during the transition is
-        # not clobbered). Phase 2 deprecates those loose kwargs.
         optional = {
             "cbar_label": colorbar.label,
             "cbar_length": colorbar.length,

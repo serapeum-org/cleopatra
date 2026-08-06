@@ -226,10 +226,6 @@ class VectorGlyph(GeoMixin, Glyph):
 
         if title is not None:
             opts["title"] = title
-        # Merge a typed `colorbar=` spec (placement / caption / sizing) into the
-        # glyph's sticky options, like `ArrayGlyph`: it persists into later
-        # `plot()` calls until a `colorbar=True`/`False` or a new spec changes
-        # it. Only the on/off `add_colorbar` override below stays per-call.
         opts.update(_resolve_colorbar(colorbar))
         draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
 
@@ -238,20 +234,11 @@ class VectorGlyph(GeoMixin, Glyph):
         cmap = resolve_colormap(opts["cmap"])
         clim = {} if norm else {"clim": (ticks[0], ticks[-1])}
 
-        # See `_clear_prior_render_artists`: a prior `plot` call on this
-        # Axes (this glyph's own, or a different glyph sharing it via
-        # `VectorGlyph(ax=..., fig=...)`) leaves its mappable/colorbar
-        # orphaned unless removed first. Deferred until here -- after
-        # `_prepare_scalar_mapping` (the call's only validation that can
-        # raise) succeeds -- so a failed call leaves the previous render
-        # intact.
         _clear_prior_render_artists(ax)
         self.im = None
         self.cbar = None
 
         arrow_patches: tuple = ()
-        # `im` holds whichever mappable the selected `kind` produces
-        # (Quiver / Barbs / the streamplot LineCollection).
         im: Any
         if kind == "quiver":
             im = ax.quiver(
@@ -277,14 +264,6 @@ class VectorGlyph(GeoMixin, Glyph):
                 **clim,
             )
         else:  # streamplot
-            # `stream.arrows` (a `PatchCollection`) is never actually
-            # attached to the axes -- matplotlib adds each constituent
-            # `FancyArrowPatch` directly via `ax.add_patch()` instead (its
-            # own source comment: "Adding the collection itself is
-            # broken; see #2341"), so `stream.arrows.remove()` raises
-            # `NotImplementedError` and leaves the arrowheads behind.
-            # Diff `ax.patches` before/after to find the actual arrow
-            # artists that were added, so a later cleanup can remove them.
             patches_before = set(ax.patches)
             stream = ax.streamplot(
                 self.x,
@@ -300,9 +279,6 @@ class VectorGlyph(GeoMixin, Glyph):
             im = stream.lines
             if im.get_array() is None:
                 im.set_array(np.asarray(mag).ravel())
-            # streamplot has no clim kwarg; pin its LineCollection to the
-            # same tick range quiver/barbs use so colours and colorbar
-            # agree on the linear (norm is None) path.
             if norm is None:
                 im.set_clim(ticks[0], ticks[-1])
 

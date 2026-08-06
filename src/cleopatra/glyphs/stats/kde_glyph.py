@@ -248,8 +248,6 @@ class KDEGlyph(Glyph):
         gx_flat = gx.ravel()[:, None]
         gy_flat = gy.ravel()[:, None]
 
-        # Sum the kernel over the points in blocks so the temporary
-        # (grid-cells × block) array never exceeds ~MAX_KDE_BLOCK floats.
         block = max(1, MAX_KDE_BLOCK // gx_flat.shape[0])
         density_flat = np.zeros(gx_flat.shape[0], dtype=float)
         for start in range(0, n, block):
@@ -364,9 +362,6 @@ class KDEGlyph(Glyph):
             ValueError: If `style` is unknown, or is categorical (a density is
                 continuous).
         """
-        # Validate the name up front, before clearing the axes or persisting it,
-        # so a bad/categorical style raises without wiping the render or
-        # poisoning the style (a categorical preset is invalid for a density).
         _, cfg = resolve_single_layer_style(style)
         if cfg.get("categories") is not None:
             raise ValueError(
@@ -483,24 +478,11 @@ class KDEGlyph(Glyph):
         norm, cbar_kw, _ = self._prepare_scalar_mapping(density)
         cmap = resolve_colormap(opts["cmap"])
 
-        # Named data-style preset: a continuous preset overrides the density's
-        # cmap + norm (and composes with hillshade below). A categorical preset
-        # has no meaning for a continuous density surface, so reject it. The
-        # cmap is resolved into a LOCAL (not `opts`), so a per-call `style` does
-        # not leak its colormap into a later `plot()` on the same instance.
-        # Persist a plot-time `style` into the options so `self.style` reads it
-        # back and it stays sticky across later plain `plot()` calls (matching
-        # ArrayGlyph). Only the name is stored -- the resolved cmap stays a
-        # local (no leak). A passed `style=None` clears it; not passing `style`
-        # (the `_UNSET` sentinel) keeps the current sticky value.
         prev_style = opts.get("style")
         if style is not _UNSET:
             opts["style"] = style
         style = opts.get("style")
         if style is not None:
-            # Validate before rendering, and roll back to the prior good style
-            # on a bad/categorical name so the sticky style isn't poisoned
-            # (a poisoned name would re-raise on every later plot()).
             try:
                 _, cfg = resolve_single_layer_style(style)
                 if cfg.get("categories") is not None:
@@ -511,10 +493,6 @@ class KDEGlyph(Glyph):
             except ValueError:
                 opts["style"] = prev_style
                 raise
-            # A caller vmin/vmax pins the preset's colour scale: a preset that
-            # auto-ranges by default (e.g. "temperature") then stretches between
-            # the given bounds, exactly as apply_data_style / ArrayGlyph do; None
-            # leaves the preset's own scale (auto-range, or its fixed levels).
             cfg = {
                 **cfg,
                 **{k: opts[k] for k in ("vmin", "vmax") if opts.get(k) is not None},
@@ -528,10 +506,6 @@ class KDEGlyph(Glyph):
             hillshade if hillshade is not None else opts.get("hillshade")
         )
         if hillshade is not None:
-            # Treat the density as a surface and relief-shade it, so the
-            # "density terrain" (peaks and ridges) reads by form. The shaded
-            # RGBA image carries no scalar array, so the colorbar attaches to a
-            # ScalarMappable proxy carrying the same cmap/norm.
             hs_norm = (
                 norm
                 if norm is not None

@@ -1091,15 +1091,6 @@ def add_tiles(
     if is_3857:
         extent = extent_3857
     else:
-        # Place the mosaic at its OWN geographic coverage, not the data
-        # bounds. The stitched tiles span `extent_3857` (Web-Mercator
-        # metres, tile-snapped and generally larger than the data), so
-        # reproject those corners into the target CRS. Using the data
-        # bounds instead stretched the mosaic onto the smaller extent and
-        # offset the basemap by up to hundreds of km at coarse zooms (see
-        # issue #176). A residual Mercator-vs-linear-axis nonlinearity
-        # remains for large extents; reproject the data to EPSG:3857 before
-        # plotting for pixel-accurate tiles.
         try:
             extent = _densify_and_reproject_bounds(
                 extent_3857[0],
@@ -1110,19 +1101,6 @@ def add_tiles(
                 crs_str,
             )
         except ValueError:
-            # `ValueError` is the complete failure surface here: `crs_str` was
-            # already validated by the forward transform above (a bad CRS would
-            # have raised there), and `_densify_and_reproject_bounds` reports an
-            # out-of-domain mosaic as `ValueError` (non-finite corners) rather
-            # than letting pyproj's `inf`/NaN through -- so no other exception
-            # type is expected from the reverse transform.
-            # A coarse tile-snapped mosaic can be far larger than the data
-            # and overflow a limited-domain target CRS (a UTM zone, national
-            # grid, ...) when reprojected, yielding non-finite corners. Fall
-            # back to the data bounds (the mosaic is then stretched onto them,
-            # slightly misaligned) so a figure is still produced rather than
-            # raising -- use a higher zoom or reproject the data to EPSG:3857
-            # for accurate placement.
             logger.warning(
                 "Tile mosaic bounds could not be reprojected from EPSG:3857 "
                 "to %s (they overflow the target CRS domain); falling back to "
@@ -1152,8 +1130,6 @@ def add_tiles(
             provider, "html_attribution", ""
         )
         if raw:
-            # Strip HTML tags, then unescape entities (`&copy;` -> `©`,
-            # `&amp;` -> `&`, ...) so the placed text reads cleanly.
             attr_text = html.unescape(re.sub(r"<[^>]+>", "", raw)).strip() or None
         else:
             attr_text = None

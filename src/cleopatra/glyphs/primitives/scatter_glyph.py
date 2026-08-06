@@ -305,15 +305,8 @@ class ScatterGlyph(GeoMixin, Glyph):
 
         if title is not None:
             opts["title"] = title
-        # Merge a typed `colorbar=` spec (placement / caption / sizing) into the
-        # glyph's sticky options, like `ArrayGlyph`: it persists into later
-        # `plot()` calls until a `colorbar=True`/`False` or a new spec changes
-        # it. Only the on/off `add_colorbar` override below stays per-call.
         opts.update(_resolve_colorbar(colorbar))
         draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
-        # Reset both artifacts unconditionally so a re-plot (e.g. switching
-        # `scheme` between calls) never leaves a stale reference from the
-        # previous call -- only one of the two is (re)created below.
         self.cbar = None
         self.category_legend = None
 
@@ -351,17 +344,8 @@ class ScatterGlyph(GeoMixin, Glyph):
                     self.cbar = self.create_color_bar(ax, paths, cbar_kw)
 
         if self.sizes is not None and opts["size_legend"]:
-            # `Axes.legend()` is single-slot per axes: `size_legend` calls it
-            # internally, which would otherwise silently evict the
-            # categorical legend just drawn above (matplotlib replaces
-            # `ax.legend_`, so the earlier Legend stops being part of
-            # `ax.get_children()` even though `self.category_legend` still
-            # references it). Re-attach it as a plain artist first, mirroring
-            # the multi-legend pattern in `colors.apply_data_style`.
             if self.category_legend is not None:
                 ax.add_artist(self.category_legend)
-            # `_resolve_marker_area` returns an ndarray whenever `self.sizes`
-            # is not None (the branch this code is already inside).
             self.size_legend_artist = self._draw_size_legend(
                 ax, cast(np.ndarray, marker_area)
             )

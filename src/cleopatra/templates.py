@@ -106,9 +106,6 @@ def publication_map(
                 stacklevel=2,
             )
         else:
-            # No `extent` on purpose: add_relief places the whole global image and
-            # the axes limits (set by the field) crop it to the region -- passing an
-            # extent for a regional lon/lat view mis-places the image.
             add_relief(ax, resolution=relief_resolution, zorder=-1)
 
     return fig, ax

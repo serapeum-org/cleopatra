@@ -494,26 +494,16 @@ class MeshGlyph(GeoMixin, Glyph):
         if not np.any(counts >= 3):
             raise ValueError("Cannot create triangulation: no faces with 3+ nodes.")
 
-        # Fast path only when the connectivity is already a clean (n, 3)
-        # array; a wider padded array where every face happens to be a
-        # triangle still needs fill values stripped below.
         if self._face_nodes.shape[1] == 3 and np.all(counts == 3):
             self._cached_tri_array = self._face_nodes.copy()
             return self._cached_tri_array
 
-        # Vectorized fan decomposition for mixed-element meshes. Valid node
-        # indices are compacted in face/row order, so face i occupies the
-        # slice flat_nodes[face_start[i] : face_start[i] + counts[i]].
-        # _face_nodes is already np.intp (set in the constructor), so boolean
-        # masking preserves the dtype without an explicit cast.
         flat_nodes = self._face_nodes[self._face_nodes != self._fill_value]
         face_start = np.cumsum(counts) - counts
 
         # A face with c valid nodes produces (c - 2) fan triangles.
         valid = counts >= 3
         base = np.repeat(face_start[valid], counts[valid] - 2)
-        # Local triangle index t in [0, c-3] for each output triangle, built
-        # as a concatenated per-face arange without a Python loop.
         t = self._grouped_arange(counts[valid] - 2)
 
         # Triangle (v0, v_{t+1}, v_{t+2}) fanning from each face's first vertex.
@@ -562,9 +552,6 @@ class MeshGlyph(GeoMixin, Glyph):
         total = int(sizes.sum())
         if total == 0:
             return np.empty(0, dtype=np.intp)
-        # Subtract each element's group-start offset from a global arange so
-        # the counter restarts at 0 within every group. np.repeat emits
-        # nothing for zero-size groups, so empty groups are handled naturally.
         group_start = np.cumsum(sizes) - sizes
         return np.asarray(
             np.arange(total, dtype=np.intp) - np.repeat(group_start, sizes)
@@ -636,10 +623,8 @@ class MeshGlyph(GeoMixin, Glyph):
         """
         had_frame = _clear_projection_frame(self.ax)
         projection = self.default_options.get("projection")
-        # "flat" and no projection both render the native lon/lat mesh; only a
-        # framed style ("globe") reprojects and freezes the axes view.
         if not projection_draws_frame(projection):
-            self._cached_triangulation = None  # rebuild flat coords on next access
+            self._cached_triangulation = None
             if had_frame:
                 _restore_flat_axes(
                     self.ax,
@@ -762,7 +747,7 @@ class MeshGlyph(GeoMixin, Glyph):
         tri = self.triangulation
         z_nodes = np.asarray(data, dtype=float)
         tri_faces = tri.triangles
-        tri_z = z_nodes[tri_faces].mean(axis=1)  # per-triangle base value
+        tri_z = z_nodes[tri_faces].mean(axis=1)
 
         kw: dict[str, Any] = {
             "cmap": resolve_colormap(self.default_options["cmap"]),
@@ -779,15 +764,9 @@ class MeshGlyph(GeoMixin, Glyph):
         node_xy = np.column_stack([tri.x, tri.y])
         base_rgba = tpc.to_rgba(tri_z)
         shaded = shade_faces(node_xy, tri_faces, z_nodes, base_rgba, **hillshade)
-        # A triangle touching a non-finite (nodata) node has an undefined
-        # colour and normal; render it transparent, matching how the raster
-        # hillshade (`shade_grid`) drops NaN cells rather than colouring them.
         nan_faces = ~np.isfinite(z_nodes[tri_faces]).all(axis=1)
         shaded[nan_faces] = 0.0
         tpc.set_array(None)
-        # tripcolor seeds the collection with a scalar alpha=1, which would
-        # overwrite the per-face RGBA alpha (clobbering the transparent nodata
-        # faces above); clear it so `set_facecolor` honours each face's alpha.
         tpc.set_alpha(None)
         tpc.set_facecolor(shaded)
         return tpc
@@ -828,8 +807,6 @@ class MeshGlyph(GeoMixin, Glyph):
             ValueError: If `style` is unknown (raised by `plot`), or no data is
                 available (never plotted and none passed).
         """
-        # Validate the name up front, before touching data/axes or persisting
-        # it, so a typo raises without wiping the render or poisoning the style.
         resolve_single_layer_style(style)
         if data is None:
             data = self._last_data
@@ -1016,15 +993,11 @@ class MeshGlyph(GeoMixin, Glyph):
         """
         self._validate_location_and_data(data, location)
 
-        # Guard against all-NaN data.
         if np.all(np.isnan(data)):
             raise ValueError("data is entirely NaN, cannot determine color range.")
 
-        # Reset default_options to a fresh copy so repeated plot() calls
-        # on the same instance don't accumulate stale overrides.
         self._default_options = MESH_DEFAULT_OPTIONS.copy()
 
-        # Separate rendering kwargs (e.g. levels) from default_options kwargs.
         render_kwargs: dict[str, Any] = {}
         option_kwargs: dict[str, Any] = {}
         for key, val in kwargs.items():
@@ -1034,9 +1007,6 @@ class MeshGlyph(GeoMixin, Glyph):
                 render_kwargs[key] = val
         self._merge_kwargs(option_kwargs)
         _warn_deprecated_cbar_kwargs(kwargs)
-        # A typed `colorbar=` spec configures the bar and then behaves like
-        # `colorbar=True` for the draw/categorical logic below; `None` also
-        # draws (the historical default), only `False` suppresses (issue #239).
         resolved_colorbar = (
             _resolve_colorbar(colorbar) if isinstance(colorbar, ColorBar) else {}
         )
@@ -1044,18 +1014,11 @@ class MeshGlyph(GeoMixin, Glyph):
         if colorbar is not False:
             colorbar = True
 
-        # The reset above drops `hillshade`/`style`; restore each unless this
-        # `plot()` overrides it. `hillshade` reverts to its construction value;
-        # `style` is sticky (tracks the last applied preset, incl. a `None`
-        # clear) so it survives a later plain `plot(data)` like on `ArrayGlyph`.
         if "hillshade" not in option_kwargs:
             self.default_options["hillshade"] = self._construct_hillshade
         if "style" in option_kwargs:
             new_style = self.default_options["style"]
             if new_style is not None:
-                # Validate before committing to the sticky state, and roll back
-                # to the prior good style on a bad name so the glyph isn't
-                # bricked (a poisoned sticky style re-raises on every plot).
                 try:
                     resolve_single_layer_style(new_style)
                 except ValueError:
@@ -1064,23 +1027,16 @@ class MeshGlyph(GeoMixin, Glyph):
             self._style_state = new_style
         else:
             self.default_options["style"] = self._style_state
-        # `projection` is sticky the same way, so it survives the reset whether
-        # it was set on the constructor or a previous plot().
         if "projection" in option_kwargs:
             self._projection_state = self.default_options["projection"]
         else:
             self.default_options["projection"] = self._projection_state
 
-        # Remember what was rendered so `apply_style` can restyle in place.
-        # Copy the array so a caller mutating its buffer after plot() (a common
-        # reuse pattern) does not change what a later `apply_style` renders;
-        # preserve a masked array's mask (a plain `np.array` copy would drop it).
         self._last_data = (
             np.ma.copy(data) if np.ma.isMaskedArray(data) else np.array(data, copy=True)
         )
         self._last_location = location
 
-        # Recompute vmin/vmax from data unless user explicitly passed them.
         if "vmin" not in option_kwargs:
             self.default_options["vmin"] = float(np.nanmin(data))
         if "vmax" not in option_kwargs:
@@ -1088,9 +1044,6 @@ class MeshGlyph(GeoMixin, Glyph):
         self._vmin = self.default_options["vmin"]
         self._vmax = self.default_options["vmax"]
 
-        # Compute ticks_spacing and write it to default_options for get_ticks().
-        # A ColorBar(ticks_spacing=...) spec arrives via the merge above (not
-        # option_kwargs), so honour it too rather than overwriting it (H1/#239).
         if (
             "ticks_spacing" not in option_kwargs
             and "ticks_spacing" not in resolved_colorbar
@@ -1111,11 +1064,6 @@ class MeshGlyph(GeoMixin, Glyph):
         ticks = self.get_ticks()
         norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
 
-        # Named data-style preset: a continuous preset overrides the cmap/norm
-        # (and composes with hillshade, which reads them); a categorical preset
-        # builds a discrete colormap, masks out-of-range codes to transparent,
-        # swaps the colorbar for a `disjoint_legend`, and disables relief
-        # (undefined for class codes).
         style = self.default_options.get("style")
         style_legend = None
         if style is not None:
@@ -1145,15 +1093,8 @@ class MeshGlyph(GeoMixin, Glyph):
             else:
                 self.default_options["cmap"] = cfg["cmap"]
                 norm, _, _ = resolve_style_norm(data_f, cfg)
-                # The preset norm may be nonlinear (log/symlog) or carry its own
-                # vmin/vmax; drop the linear ticks computed above so the colorbar
-                # picks a locator/format matching the norm instead of misplacing
-                # evenly-spaced ticks on a log axis.
                 cbar_kw.pop("ticks", None)
 
-        # Reset any inline contour labels from a previous render; the
-        # line-tricontour branch below repopulates this when `labels=True`,
-        # every other path leaves it `None`.
         self.contour_labels = None
 
         hillshade = resolve_hillshade(self.default_options.get("hillshade"))
@@ -1162,12 +1103,6 @@ class MeshGlyph(GeoMixin, Glyph):
                 raise ValueError(
                     "hillshade needs node-centered elevation; pass location='node'"
                 )
-            # See `_clear_prior_render_artists`: a prior `plot`/`animate`/
-            # `plot_outline` call on this Axes (this glyph's own, or a
-            # different glyph sharing it via `MeshGlyph(ax=..., fig=...)`)
-            # leaves its image/colorbar artists orphaned unless removed
-            # first. Deferred until here -- after every check above that can
-            # raise -- so a failed call leaves the previous render intact.
             _clear_prior_render_artists(self.ax)
             self.im = None
             self._cbar = None
@@ -1189,17 +1124,8 @@ class MeshGlyph(GeoMixin, Glyph):
                 filled=filled,
                 **render_kwargs,
             )
-        # Expose the colour-mapped artist (the `PolyCollection` from
-        # `tripcolor`, or the `TriContourSet` from `tricontour(f)`) so a
-        # caller can attach a colorbar/register the layer without scraping
-        # `ax.collections` (mirrors `ArrayGlyph.im` / the other glyphs).
         self.im = tpc
 
-        # Inline numeric labels on the isolines. Only meaningful for line
-        # tricontours (`location="node"`, `filled=False`); `labels=True` is
-        # a documented no-op for `tripcolor` (face data), `tricontourf`, and
-        # the shaded-relief surface (`hillshade`, a `PolyCollection` with no
-        # isolines -- `clabel` would raise on it).
         if (
             location == "node"
             and not filled
@@ -1217,7 +1143,6 @@ class MeshGlyph(GeoMixin, Glyph):
         if colorbar:
             self._cbar = self.create_color_bar(self.ax, tpc, cbar_kw)
 
-        # A categorical preset presents its classes via a discrete legend.
         if style_legend is not None:
             cat_colors, cat_labels, cat_title = style_legend
             disjoint_legend(
@@ -1302,7 +1227,6 @@ class MeshGlyph(GeoMixin, Glyph):
         if text_loc is None:
             text_loc = [0.1, 0.2]
 
-        # Normalize data to a list of 1D arrays.
         if isinstance(data, np.ndarray) and data.ndim == 2:
             frames = [data[i] for i in range(data.shape[0])]
         else:
@@ -1321,17 +1245,14 @@ class MeshGlyph(GeoMixin, Glyph):
                     f"match n_{location}s ({expected})."
                 )
 
-        # Reset default_options to a fresh copy.
         self._default_options = MESH_DEFAULT_OPTIONS.copy()
         self._merge_kwargs(kwargs)
         _warn_deprecated_cbar_kwargs(kwargs)
-        # A typed `colorbar=` spec configures the bar (issue #239).
         resolved_colorbar = (
             _resolve_colorbar(colorbar) if isinstance(colorbar, ColorBar) else {}
         )
         self.default_options.update(resolved_colorbar)
 
-        # Compute global vmin/vmax across all frames unless user set them.
         if "vmin" not in kwargs:
             global_min = min(float(np.nanmin(f)) for f in frames)
             self.default_options["vmin"] = global_min
@@ -1341,9 +1262,6 @@ class MeshGlyph(GeoMixin, Glyph):
         self._vmin = self.default_options["vmin"]
         self._vmax = self.default_options["vmax"]
 
-        # Compute ticks_spacing and write it to default_options for get_ticks().
-        # A ColorBar(ticks_spacing=...) spec arrives via the merge above (not
-        # kwargs), so honour it too rather than overwriting it (H1/#239).
         if "ticks_spacing" not in kwargs and "ticks_spacing" not in resolved_colorbar:
             spacing = (self._vmax - self._vmin) / 10
             self.default_options["ticks_spacing"] = max(spacing, 1e-10)
@@ -1356,22 +1274,12 @@ class MeshGlyph(GeoMixin, Glyph):
         ticks = self.get_ticks()
         norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
 
-        # An animation draws no inline contour labels, so clear any left on
-        # `self.contour_labels` by a previous `plot(labels=True)` call rather
-        # than letting stale label artists leak into the animation state.
         self.contour_labels = None
 
-        # See `_clear_prior_render_artists`: a prior `plot`/`animate`/
-        # `plot_outline` call on this Axes (this glyph's own, or a
-        # different glyph sharing it) leaves its image/colorbar/
-        # frame-label artists orphaned unless removed first. Deferred until
-        # here -- after every check above that can raise -- so a failed call
-        # leaves the previous render intact.
         _clear_prior_render_artists(ax)
         self.im = None
         self._cbar = None
 
-        # Render the first frame.
         tpc = self._render_mesh(
             ax,
             frames[0],
@@ -1380,8 +1288,6 @@ class MeshGlyph(GeoMixin, Glyph):
             norm=norm,
         )
         self.im = tpc
-        # `colorbar=False` suppresses the bar; `None` (default), `True`, or a
-        # `ColorBar` spec all draw it (issue #239).
         if colorbar is not False:
             self._cbar = self.create_color_bar(ax, tpc, cbar_kw)
 
@@ -1401,7 +1307,6 @@ class MeshGlyph(GeoMixin, Glyph):
         )
         self._day_text = day_text
 
-        # Track the current mappable so we can remove it cleanly.
         current_mappable = [tpc]
         _mark_render_artists(ax, self._cbar, self.im, self._day_text)
 
@@ -1421,12 +1326,6 @@ class MeshGlyph(GeoMixin, Glyph):
                 norm=norm,
             )
             day_text.set_text(str(time[i]))
-            # Keep the public `self.im` and the Axes-level cleanup marker
-            # pointing at the artist actually attached right now -- each
-            # frame replaces the previous mappable outright (tripcolor/
-            # tricontour can't update in place the way imshow can), so the
-            # frame-0 reference recorded further above goes stale the
-            # moment frame 1 renders.
             self.im = current_mappable[0]
             _mark_render_artists(ax, self._cbar, self.im, self._day_text)
 
@@ -1494,19 +1393,12 @@ class MeshGlyph(GeoMixin, Glyph):
         elif self.fig is None:
             self.fig, self.ax = plt.subplots(1, 1, figsize=figsize)
 
-        # See `_clear_prior_render_artists`: a prior `plot`/`animate`/
-        # `plot_outline` call on this Axes (this glyph's own, or a
-        # different glyph sharing it) leaves its image/colorbar/outline
-        # artists orphaned unless removed first.
         _clear_prior_render_artists(self.ax)
         self.im = None
         self._cbar = None
 
         segments = self._build_edge_segments()
 
-        # LineCollection's stub wants a sequence of array-likes rather than
-        # the single (N, 2, 2) ndarray `_build_edge_segments` returns (which
-        # it also accepts at runtime); a list of its rows satisfies both.
         lc = mcoll.LineCollection(
             list(segments), colors=color, linewidths=linewidth, **kwargs
         )
@@ -1514,9 +1406,6 @@ class MeshGlyph(GeoMixin, Glyph):
         self.ax.autoscale()
         self.ax.set_aspect("equal")
 
-        # An outline carries no scalar mapping, so `self.im` stays `None`
-        # (already reset above); only the outline collection is tracked
-        # for the next call's cleanup.
         _mark_render_artists(self.ax, lc)
 
         return self.fig, self.ax
@@ -1576,17 +1465,11 @@ class MeshGlyph(GeoMixin, Glyph):
             return np.stack([starts, ends], axis=1)
 
         counts = self.nodes_per_face
-        # Compacted valid node indices in face/row order; face i occupies the
-        # slice flat_nodes[face_start[i] : face_start[i] + counts[i]].
-        # _face_nodes is already np.intp (set in the constructor), so boolean
-        # masking preserves the dtype without an explicit cast.
         flat_nodes = self._face_nodes[self._face_nodes != self._fill_value]
         if flat_nodes.size == 0:
             return np.empty((0, 2, 2), dtype=np.float64)
 
         face_start = np.cumsum(counts) - counts
-        # Each valid node starts one polygon edge to the next node within the
-        # same face, wrapping from the last node back to the first.
         next_pos = np.arange(flat_nodes.size, dtype=np.intp) + 1
         nonempty = counts >= 1
         last_pos = face_start[nonempty] + counts[nonempty] - 1
@@ -1594,11 +1477,6 @@ class MeshGlyph(GeoMixin, Glyph):
 
         a = flat_nodes
         b = flat_nodes[next_pos]
-        # Undirected edges: order each endpoint pair, then drop duplicates by
-        # encoding the pair as a single key (lo * n_nodes + hi) and applying a
-        # 1-D sort + adjacent-diff dedup (cheaper than a row-wise lexsort). The
-        # key stays exact in int64 for any realistic mesh; it would only
-        # overflow when n_nodes exceeds ~3e9.
         n_nodes = np.int64(self.n_nodes)
         lo = np.minimum(a, b).astype(np.int64)
         hi = np.maximum(a, b).astype(np.int64)

@@ -150,8 +150,6 @@ class Palette:
     source: str = "cleopatra"
 
     def __post_init__(self):
-        # Coerce a string kind / list of colours to the canonical types so the
-        # record is uniform however it was constructed.
         object.__setattr__(self, "kind", PaletteKind(self.kind))
         object.__setattr__(self, "colors", tuple(self.colors))
 
@@ -405,10 +403,6 @@ def preview_palettes(
     return fig
 
 
-# --------------------------------------------------------------------------
-# Built-in colour families -- registered at import, so the registry is
-# populated whether you import `cleopatra.styling.palettes` or `cleopatra.styling.colors`.
-# --------------------------------------------------------------------------
 
 #: Sequential "haze" ramps (white at 0.0, saturating toward the named hue) -- the
 #: value-modulated-alpha glow of ECMWF/CAMS aerosol animations.
@@ -480,14 +474,6 @@ FLAME_COLORMAPS: dict[str, Colormap] = {
 }
 
 
-# --------------------------------------------------------------------------
-# Curated palettes -- net-new and generated with this module's own tools, not
-# vendored from any package. Diverging maps are built on demand from their two
-# endpoints by `to_colormap` (via `make_diverging`, which balances the arms and
-# lands the neutral centre on the midpoint). The categorical swatches were
-# generated once with `make_categorical` (greedy max-min in CIELAB) and frozen
-# here so each named palette has a stable identity.
-# --------------------------------------------------------------------------
 
 for _name, _low, _high in [
     ("diverging_blue_red", "#2166ac", "#b2182b"),

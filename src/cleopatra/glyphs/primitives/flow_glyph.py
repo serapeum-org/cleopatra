@@ -330,8 +330,6 @@ class FlowGlyph(GeoMixin, Glyph):
         ax = self.ax
         assert self.fig is not None
         opts = self.default_options
-        # Merge a typed `colorbar=` spec (placement/caption/sizing) into the
-        # options before deciding whether/how to draw the bar (issue #239).
         opts.update(_resolve_colorbar(colorbar))
 
         if title is not None:
@@ -344,11 +342,6 @@ class FlowGlyph(GeoMixin, Glyph):
 
         linewidths = self._resolve_linewidths()
 
-        # Draw-order: with draw_order="width", paint paths from thinnest to
-        # thickest so the widest (e.g. the highest stream-order main channels)
-        # render on top of narrower tributaries. Reorder only the copies fed to
-        # the LineCollection; self.widths/self.values and the width legend keep
-        # their original order.
         draw_paths, draw_values, draw_widths = self.paths, self.values, linewidths
         if opts["draw_order"] == "width" and self.widths is not None:
             order = np.argsort(np.asarray(self.widths, dtype=float), kind="stable")
@@ -411,8 +404,6 @@ class FlowGlyph(GeoMixin, Glyph):
         ax.autoscale_view()
 
         if self.widths is not None and opts["size_legend"]:
-            # `_resolve_linewidths` returns an ndarray whenever `self.widths`
-            # is not None (the branch this code is already inside).
             self.size_legend_artist = self._draw_width_legend(
                 ax, cast(np.ndarray, linewidths)
             )

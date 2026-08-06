@@ -230,10 +230,6 @@ def apply_projection_frame(
     ax.set_xlim(xlim[0], xlim[1])
     ax.set_ylim(ylim[0], ylim[1])
 
-    # The boundary is treated as a closed ring for clipping/fill regardless
-    # of whether its final vertex repeats the first: matplotlib's
-    # point-in-path test implicitly connects the last vertex back to the
-    # first, so an open ring still clips correctly.
     patch = PathPatch(
         Path(boundary),
         facecolor="none",
@@ -414,11 +410,6 @@ def orthographic_grid(
     y = np.asarray(y_raw, dtype=float)
     visible = _visible_hemisphere(lon_arr, lat_arr, center_lat, center_lon)
     masked_data = np.where(visible, data_arr, np.nan)
-    # The orthographic formula diverges (inf) exactly at the antipodal point,
-    # and pcolormesh/imshow require finite coordinates for every cell even
-    # when its data is masked out. Those cells carry no data (masked_data is
-    # NaN there), so their exact position is irrelevant -- replace any
-    # non-visible or non-finite coordinate with a finite placeholder.
     coord_ok = visible & np.isfinite(x) & np.isfinite(y)
     x = np.where(coord_ok, x, 0.0)
     y = np.where(coord_ok, y, 0.0)
@@ -811,12 +802,6 @@ def apply_projection_style_mesh(
     tri = Triangulation(x_proj, y_proj, triangles)
     visible = _visible_hemisphere(node_x, node_y, center_lat, center_lon)
     if triangles.size:
-        # Mask a triangle when any of its nodes is on the far hemisphere, so it
-        # is not drawn stretched across the disc. This masking -- NOT a clip path
-        # -- is what keeps the mesh inside the limb: the frame is drawn without a
-        # clip (clip_artists=False below) and never clips the data, so a straight
-        # edge between three near-hemisphere nodes stays within the convex disc on
-        # its own. A future change to the visibility mask must preserve that.
         tri.set_mask(~visible[triangles].all(axis=1))
     if draw_frame:
         radius = ORTHOGRAPHIC_RADIUS_M
@@ -1032,14 +1017,6 @@ def apply_projection_style(
     x_edges, y_edges = orthographic_grid_edges(
         lon_arr, lat_arr, center_lat=center_lat, center_lon=center_lon
     )
-    # A cell is only safe to draw if ALL FOUR of its corners are on the
-    # visible hemisphere, not just its centre. The orthographic projection
-    # is only defined (finite) on the near hemisphere -- an invisible corner
-    # has no real coordinate, so orthographic_grid_edges places a finite
-    # placeholder there. Without this extra check, a cell whose centre is
-    # visible (so it *would* be drawn with real data) but whose corner
-    # straddles the horizon renders as a wrongly-shaped quad reaching toward
-    # that placeholder instead of tapering correctly at the boundary.
     lon_edges_1d = _bin_edges(lon_arr)
     lat_edges_1d = _bin_edges(lat_arr)
     lon_e, lat_e = np.meshgrid(lon_edges_1d, lat_edges_1d)

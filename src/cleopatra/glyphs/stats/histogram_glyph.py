@@ -564,13 +564,6 @@ class HistogramGlyph:
         else:
             num_samples = 1
 
-        # See `_clear_prior_render_artists`: a prior `histogram`/`boxplot`/
-        # `multiboxplot`/`stripes` call on this Axes (this glyph's own, or
-        # a different glyph sharing it via `HistogramGlyph(ax=..., ...)`)
-        # leaves its bars/boxes orphaned unless removed first. Deferred
-        # until here -- after the `color`/`num_samples` check above, this
-        # call's only validation that can raise -- so a failed call leaves
-        # the previous render intact.
         _clear_prior_render_artists(ax)
 
         for i in range(num_samples):
@@ -725,10 +718,6 @@ class HistogramGlyph:
         """
         self._reject_fig_kwarg(kwargs)
         fig, ax = self._resolve_fig_ax(ax)
-        # See `_clear_prior_render_artists`: a prior `histogram`/`boxplot`/
-        # `multiboxplot`/`stripes` call on this Axes (this glyph's own, or
-        # a different glyph sharing it) leaves its bars/boxes orphaned
-        # unless removed first.
         _clear_prior_render_artists(ax)
         columns = self._columns()
         tick_labels = (
@@ -736,9 +725,6 @@ class HistogramGlyph:
             if labels is not None
             else [str(i + 1) for i in range(len(columns))]
         )
-        # Honour a caller-supplied `positions` (forwarded via **kwargs)
-        # so the tick labels below land under the boxes; default is the
-        # 1..n that matplotlib's boxplot uses.
         positions = list(kwargs.get("positions", range(1, len(columns) + 1)))
         bp = ax.boxplot(
             columns,
@@ -747,10 +733,6 @@ class HistogramGlyph:
             patch_artist=True,
             **kwargs,
         )
-        # Set tick labels after the fact rather than via boxplot's label
-        # kwarg, whose name differs across matplotlib versions (`labels`
-        # before 3.9, `tick_labels` from 3.9). This keeps the floor at
-        # matplotlib 3.8.4 (see pyproject) working.
         ax.set_xticks(positions)
         ax.set_xticklabels(tick_labels)
         palette = self.default_options["color"]
@@ -833,10 +815,6 @@ class HistogramGlyph:
             )
 
         fig, ax = self._resolve_fig_ax(ax)
-        # See `_clear_prior_render_artists`: a prior `histogram`/`boxplot`/
-        # `multiboxplot`/`stripes` call on this Axes (this glyph's own, or
-        # a different glyph sharing it) leaves its bars/boxes orphaned
-        # unless removed first.
         _clear_prior_render_artists(ax)
         bp = ax.boxplot(
             columns,
@@ -909,10 +887,6 @@ class HistogramGlyph:
         if values.ndim != 1:
             raise ValueError(f"stripes requires 1D values; got {values.ndim}D.")
         fig, ax = self._resolve_fig_ax(ax)
-        # See `_clear_prior_render_artists`: a prior `histogram`/`boxplot`/
-        # `multiboxplot`/`stripes` call on this Axes (this glyph's own, or
-        # a different glyph sharing it) leaves its bars/boxes orphaned
-        # unless removed first.
         _clear_prior_render_artists(ax)
         cmap = cmap if cmap is not None else self.default_options["cmap"]
         cmap_obj = resolve_colormap(cmap)

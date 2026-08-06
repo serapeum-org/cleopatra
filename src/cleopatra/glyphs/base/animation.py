@@ -52,7 +52,6 @@ def _ensure_ffmpeg_available() -> None:
             bundled binary can be located.
     """
     configured = mpl.rcParams["animation.ffmpeg_path"]
-    # Already usable: an absolute path that exists, or a name found on PATH.
     if os.path.isfile(configured) or shutil.which(configured):
         return
     try:
@@ -64,15 +63,7 @@ def _ensure_ffmpeg_available() -> None:
             "ffmpeg from https://ffmpeg.org/ and add it to your PATH."
         ) from e
     bundled = imageio_ffmpeg.get_ffmpeg_exe()
-    # Only the matplotlib default (``"ffmpeg"``) is overridden silently; an
-    # explicit path the user configured is theirs, so warn before replacing it.
     if configured not in ("ffmpeg", "ffmpeg.exe"):
-        # stacklevel=3 targets the common direct ``save_animation`` call
-        # (warn -> _ensure_ffmpeg_available -> save_animation -> caller). The
-        # depth differs when reached via to_bytes/to_mp4/Glyph.save_animation,
-        # so attribution is best-effort; the message is self-contained. There is
-        # no single correct stacklevel across those entry points, and
-        # ``skip_file_prefixes`` is Python 3.12+ while this package targets 3.11.
         warnings.warn(
             f"Configured ffmpeg binary {configured!r} was not found; falling "
             f"back to the imageio-ffmpeg bundled binary at {bundled!r}.",
@@ -104,40 +95,16 @@ class _OptimizedPillowWriter(PillowWriter):
         self._loop = loop
 
     def finish(self):
-        # Mirrors matplotlib's PillowWriter.finish body (it cannot be delegated
-        # because the parent hardcodes loop=0 and passes no optimize). Re-check
-        # against matplotlib.animation.PillowWriter.finish on version bumps.
-        # `_frames` is a private PillowWriter implementation attribute (not
-        # in its type stub), populated by the parent's frame-grabbing logic.
         frames = self._frames  # type: ignore[attr-defined]
         if str(self.outfile).lower().endswith(".gif") and len(frames) > 1:
-            # Pillow (already loaded by PillowWriter's frame grabbing) -- imported
-            # lazily so the non-GIF (FFmpeg) paths never require it.
             from PIL import Image
 
-            # GIF is capped at a 256-colour palette. Pillow's default per-frame
-            # quantisation gives EACH frame its own palette, so a region that is
-            # identical across frames (a legend box/bar, static chrome) is
-            # re-quantised and re-dithered differently every frame -- it visibly
-            # shimmers even though nothing there changed. Derive ONE palette that
-            # covers all frames (from a montage of down-sampled frames) and map
-            # every frame through it: with a shared palette a constant region
-            # quantises identically each frame, so it stays byte-stable, while
-            # genuinely changing regions still animate.
             rgb = [f.convert("RGB") for f in frames]
             w, h = rgb[0].size
             tw, th = max(1, w // 3), max(1, h // 3)
             montage = Image.new("RGB", (tw, th * len(rgb)))
             for i, frame in enumerate(rgb):
                 montage.paste(frame.resize((tw, th)), (0, i * th))
-            # Reserve pure black and white in the shared palette. A single-colour
-            # overlay drawn on the frame -- the date label, colourbar ticks and
-            # label -- is a tiny fraction of the montage, so MEDIANCUT spends no
-            # palette entry on it and it quantises to the nearest *photographic*
-            # colour: a black label over a colourful map lands on a muddy dark
-            # grey and reads as faded. Quantising to 254 colours and pinning
-            # black/white into the last two slots keeps such overlays crisp
-            # without meaningfully changing the photographic colours.
             base = montage.quantize(colors=254, method=Image.Quantize.MEDIANCUT)
             pal = (list(base.getpalette() or []) + [0] * 768)[:768]
             pal[254 * 3 : 254 * 3 + 6] = [0, 0, 0, 255, 255, 255]
@@ -147,9 +114,6 @@ class _OptimizedPillowWriter(PillowWriter):
                 f.quantize(palette=palette, dither=Image.Dither.FLOYDSTEINBERG)
                 for f in rgb
             ]
-            # `optimize` (frame-diff) composes with the shared palette -- an
-            # unchanged region resolves to identical palette indices every frame
-            # so it drops out of the diff, keeping it stable *and* small.
         frames[0].save(
             self.outfile,
             save_all=True,
@@ -233,8 +197,6 @@ def _build_ffmpeg_extra_args(
             if arg == "-vf":
                 vf_filters.append(user_args[i + 1])
             else:
-                # A caller-supplied pixel format replaces the default rather than
-                # duplicating the flag (ffmpeg would otherwise carry both).
                 caller_pix_fmt = user_args[i + 1]
             i += 2
         else:
@@ -394,8 +356,6 @@ def save_animation(
         to_gif: Render an animation to in-memory GIF bytes instead of a file.
         embed_gif: Wrap an animation as an ``IPython.display.Image``.
     """
-    # Accept str or os.PathLike (e.g. pathlib.Path): normalise to a string
-    # once so the extension parse and the writers both get a plain path.
     path = os.fspath(path)
     video_format = os.path.splitext(path)[1].lstrip(".").lower()
     if not video_format:
@@ -410,8 +370,6 @@ def save_animation(
             f"not supported, only {SUPPORTED_VIDEO_FORMAT} are supported"
         )
 
-    # Validate the rate-control contract uniformly, before the format branch,
-    # so crf+bitrate is rejected for every format rather than only for video.
     if crf is not None and bitrate is not None:
         raise ValueError(
             "Pass either crf or bitrate, not both: they are competing "
@@ -439,10 +397,6 @@ def save_animation(
         try:
             anim.save(path, writer=FFMpegWriter(**writer_kwargs), **save_kwargs)
         except FileNotFoundError as e:
-            # _ensure_ffmpeg_available() already resolved a binary, so this is
-            # rare (e.g. a pinned animation.ffmpeg_path was removed between the
-            # check and the encode). Keep the wording consistent with the
-            # bundled-binary story rather than pointing at a manual install.
             raise FileNotFoundError(
                 "FFmpeg could not be run. imageio-ffmpeg's bundled binary "
                 "normally makes this work out of the box; if you pinned a custom "
@@ -529,9 +483,6 @@ def to_bytes(anim: FuncAnimation, fmt: str = "gif", fps: int = 2, **kwargs) -> b
             f"The format {fmt!r} is not supported, only "
             f"{SUPPORTED_VIDEO_FORMAT} are supported"
         )
-    # Close our handle immediately so the writer can reopen the path; this
-    # makes the handle lifecycle explicit (no reliance on GC) and avoids a
-    # PermissionError when reopening on Windows.
     fd, tmp = tempfile.mkstemp(suffix=f".{fmt}")
     os.close(fd)
     try:
@@ -729,8 +680,6 @@ def embed_gif(anim: FuncAnimation, fps: int = 2) -> Image:
     try:
         from IPython.display import Image
     except ModuleNotFoundError as e:
-        # Only remap when IPython itself is missing; if a sub-dependency of
-        # IPython failed to import, surface that original error unchanged.
         if e.name and e.name.split(".")[0] != "IPython":
             raise
         raise ModuleNotFoundError(

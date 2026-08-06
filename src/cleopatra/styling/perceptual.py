@@ -316,10 +316,6 @@ def make_categorical(
     chroma = np.hypot(lab[:, 1], lab[:, 2])
     keep = (lab[:, 0] >= l_range[0]) & (lab[:, 0] <= l_range[1]) & (chroma >= c_min)
     cand, lab = cand[keep], lab[keep]
-    # Guard before the argmax below (which raises on an empty array) and before
-    # the greedy loop: an over-tight l_range/c_min can shrink -- even empty --
-    # the candidate gamut, and the loop would otherwise silently return fewer
-    # than `n` colours, breaking the "returns n colours" contract.
     if len(cand) < n:
         raise ValueError(
             f"make_categorical cannot produce {n} distinct colours: only "
@@ -370,9 +366,6 @@ def perceptual_uniformity(cmap: Colormap | np.ndarray, n: int = 256) -> float:
     lab = srgb_to_lab(lut)
     de = np.sqrt(((lab[1:] - lab[:-1]) ** 2).sum(axis=1))
     mean = de.mean()
-    # A constant (single-colour) LUT has every per-step DeltaE == 0, so the
-    # mean is 0; its steps are trivially "even", so report 0.0 rather than
-    # dividing by zero (which returns nan and warns).
     if mean == 0:
         return 0.0
     return float(de.std() / mean)
