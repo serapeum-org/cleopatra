@@ -8,6 +8,8 @@ doctest runners.
 """
 
 import doctest
+import os
+from unittest import mock
 
 import cleopatra.config as config_module
 
@@ -22,11 +24,15 @@ def test_module_doctests_execute():
 
     Note:
         ``ELLIPSIS`` is enabled to match pytest's ``--doctest-modules``
-        behavior for any examples that use ``...``.
+        behavior for any examples that use ``...``. The doctests set and
+        delete `CLEOPATRA_CACHE_DIR` on the real `os.environ`; wrapping the
+        run in `mock.patch.dict` snapshots and restores the environment so
+        those mutations cannot leak into other tests in the same process.
     """
-    results = doctest.testmod(
-        config_module, verbose=False, optionflags=doctest.ELLIPSIS
-    )
+    with mock.patch.dict(os.environ):
+        results = doctest.testmod(
+            config_module, verbose=False, optionflags=doctest.ELLIPSIS
+        )
     assert results.failed == 0, f"{results.failed} doctest example(s) failed in config"
     assert results.attempted > 0, (
         "no doctest examples were collected from config; the module's docstring "
