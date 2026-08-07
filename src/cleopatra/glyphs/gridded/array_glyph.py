@@ -3710,8 +3710,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         or 4-D `(N, M, H, W)` when both `col` and `row` are set.
         All subplots share a common colour scale (`vmin`/`vmax`
         computed over the full stack unless the user passed explicit
-        limits) and a single shared colorbar attached to the first
-        rendered subplot.
+        limits); each panel draws its own colour bar on that shared
+        scale, and `result.cbar` exposes the first panel's. Pass
+        `colorbar=` to configure that bar or suppress it (see below).
 
         Spatial extent: every panel is a slice of the *same* array, so by
         default they all share the parent glyph's `extent` (one spatial
