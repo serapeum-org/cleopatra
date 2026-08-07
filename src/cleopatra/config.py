@@ -69,10 +69,7 @@ def is_notebook() -> bool:
     except ModuleNotFoundError:
         return False  # IPython is not installed.
 
+    # Only Jupyter / qtconsole report "ZMQInteractiveShell"; a terminal IPython
+    # ("TerminalInteractiveShell") or any other environment is not a notebook.
     shell = get_ipython().__class__.__name__
-    if shell == "ZMQInteractiveShell":
-        return True  # Jupyter notebook or qtconsole
-    elif shell == "TerminalInteractiveShell":
-        return False  # Terminal running IPython
-    else:
-        return False  # Other type (probably not an IPython environment)
+    return shell == "ZMQInteractiveShell"
