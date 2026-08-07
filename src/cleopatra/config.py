@@ -80,21 +80,25 @@ class Config:
         2. the `CLEOPATRA_CACHE_DIR` environment variable, if set;
         3. the default `~/.cleopatra/naturalearth`.
 
-        A falsy `path` (`None` or an empty string) is treated as "not
-        provided" and falls through to the environment variable and the
-        default, so `get_cache_dir("")` behaves like `get_cache_dir()`. A
-        leading `~` is expanded. This function only **resolves** the path;
-        it does not create the directory (the download helpers create it
-        on first use), so it is safe to call just to discover where the
-        cache lives.
+        A `path` (or `CLEOPATRA_CACHE_DIR` value) that is `None`, empty, or
+        whitespace-only is treated as "not provided" and falls through to
+        the next source, so `get_cache_dir("")` and `get_cache_dir("   ")`
+        behave like `get_cache_dir()`. Note that `Path("")` is `Path(".")`
+        under pathlib (indistinguishable from the current directory), so a
+        `Path("")` argument resolves to `.`, not the default — pass an empty
+        *string* (or `None`), not `Path("")`, to fall through. A leading `~`
+        is expanded. This function only **resolves** the path; it does not
+        create the directory (the download helpers create it on first use),
+        so it is safe to call just to discover where the cache lives.
 
         Args:
             path: An explicit cache directory to use, overriding the
-                environment variable and the default. A falsy value
-                (`None` or `""`) is treated as not provided. A relative
-                path (from `path` or the environment variable) is kept
-                relative and resolved against the current working
-                directory when the directory is created. Default `None`.
+                environment variable and the default. A value that is
+                `None`, empty, or whitespace-only is treated as not
+                provided. A relative path (from `path` or the environment
+                variable) is kept relative and resolved against the current
+                working directory when the directory is created. Default
+                `None`.
 
         Returns:
             pathlib.Path: The resolved (not necessarily existing) cache
@@ -138,10 +142,11 @@ class Config:
                 directory (its private `_cache_dir` resolves the location
                 through this method and creates the directory on first use).
         """
-        if not path:
-            path = os.environ.get("CLEOPATRA_CACHE_DIR")
-        if path:
-            return Path(path).expanduser()
+        candidate = os.fspath(path) if path is not None else None
+        if candidate is None or not candidate.strip():
+            candidate = os.environ.get("CLEOPATRA_CACHE_DIR")
+        if candidate and candidate.strip():
+            return Path(candidate).expanduser()
         return Path.home() / ".cleopatra" / "naturalearth"
 
 
