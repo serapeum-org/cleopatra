@@ -983,8 +983,10 @@ class GeoMixin:
                 glyph cannot create one (a bare `GeoMixin`); only `ArrayGlyph` creates and seeds
                 its axes on demand, so the pre-plot builder flow is ArrayGlyph-only
                 -- plot the other glyphs first (or pass `ax=`).
-            ValueError: If `style` is not a known preset or `"auto"`, or if
-                `graticule_step` is given and is not a positive number.
+            ValueError: If `style` is not a known preset or `"auto"`, if
+                `graticule_step` is given and is not a positive number, or if
+                a custom preset's `relief` resolution is unknown (an
+                environmental relief failure degrades with a warning instead).
 
         Examples:
             - Dress a georeferenced field in the ECMWF look:
