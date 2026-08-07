@@ -50,6 +50,37 @@ class TestGetCacheDir:
         monkeypatch.delenv("CLEOPATRA_CACHE_DIR", raising=False)
         assert Config.get_cache_dir("~/foo/bar") == Path.home() / "foo" / "bar"
 
+    def test_whitespace_only_arg_falls_through(self, monkeypatch, tmp_path):
+        """A whitespace-only `path` is treated as not provided (honours the env).
+
+        Test scenario:
+            `get_cache_dir("   ")` must not create a literally-named
+            whitespace directory; it strips to empty and falls through.
+        """
+        monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path / "from_env"))
+        assert Config.get_cache_dir("   ") == tmp_path / "from_env"
+
+    def test_whitespace_only_env_falls_back_to_default(self, monkeypatch):
+        """A whitespace-only `CLEOPATRA_CACHE_DIR` falls back to the default.
+
+        Test scenario:
+            An all-spaces env value strips to empty and is treated as unset.
+        """
+        monkeypatch.setenv("CLEOPATRA_CACHE_DIR", "   ")
+        assert Config.get_cache_dir() == Path.home() / ".cleopatra" / "naturalearth"
+
+    def test_empty_path_object_is_current_directory(self, monkeypatch):
+        """`Path("")` is `Path(".")` under pathlib and resolves to the CWD.
+
+        Test scenario:
+            An empty `Path` is indistinguishable from the current directory,
+            so it is used as-is (documented contract) rather than falling
+            through — callers pass an empty string, not `Path("")`, to fall
+            through.
+        """
+        monkeypatch.setenv("CLEOPATRA_CACHE_DIR", "/ignored")
+        assert Config.get_cache_dir(Path("")) == Path(".")
+
     def test_empty_env_falls_back_to_default(self, monkeypatch):
         """An empty `CLEOPATRA_CACHE_DIR` is treated as unset."""
         monkeypatch.setenv("CLEOPATRA_CACHE_DIR", "")
