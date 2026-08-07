@@ -3700,6 +3700,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         kind: str = "auto",
         figsize: tuple[float, float] | None = None,
         extents: Sequence[Sequence[float]] | None = None,
+        colorbar: bool | ColorBar | None = None,
         **kwargs,
     ) -> FacetGrid:
         """Render a grid of subplots from a 3-D or 4-D stack.
@@ -3751,11 +3752,21 @@ class ArrayGlyph(GeoMixin, Glyph):
                 glyph's `extent` and with `coords`. `None` (default)
                 reuses the parent's `extent` on every panel (or index
                 space when the parent has none).
+            colorbar: The shared colour bar, mirroring `plot` / `animate`.
+                `None` (default) leaves the panels' colorbars untouched;
+                `False` suppresses them (`result.cbar` is then `None`);
+                `True` draws default ones; a `ColorBar` applies its
+                placement / caption / sizing to every panel (so the
+                `result.cbar` returned -- the first panel's -- carries the
+                spec). Prefer this typed form over the loose `cbar_*`
+                kwargs, which are deprecated here as they are on
+                `plot` / `animate`.
 
             **kwargs: Forwarded to each subplot. Recognised keys
                 include the same colour / colorbar / level kwargs as
                 `plot`. `vmin` / `vmax` win over the
-                stack-wide auto-computed limits.
+                stack-wide auto-computed limits. Passing the loose
+                `cbar_*` colorbar kwargs is deprecated -- use `colorbar`.
 
         Returns:
             FacetGrid: Result object exposing `fig`, `axes`,
@@ -3807,7 +3818,19 @@ class ArrayGlyph(GeoMixin, Glyph):
                 [(0, 10, 0, 10), (10, 20, 0, 10)]
 
                 ```
+            - Configure the shared colour bar with a typed `ColorBar`:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+                >>> from cleopatra.styling.colorbar import ColorBar
+                >>> stack = np.arange(3 * 5 * 5, dtype=float).reshape(3, 5, 5)
+                >>> g = ArrayGlyph(stack).facet(col="t", colorbar=ColorBar(label="mm"))
+                >>> g.cbar.ax.get_ylabel()
+                'mm'
+
+                ```
         """
+        _warn_deprecated_cbar_kwargs(kwargs)
         if col is None and row is None:
             raise ValueError("at least one of `col`/`row` must be given")
         if extents is not None:
@@ -3912,6 +3935,10 @@ class ArrayGlyph(GeoMixin, Glyph):
         per_subplot_kwargs = dict(kwargs)
         per_subplot_kwargs["vmin"] = shared_vmin
         per_subplot_kwargs["vmax"] = shared_vmax
+        # Resolve the typed `colorbar=` onto the per-panel `cbar_*` options,
+        # after (so it wins over) any loose `cbar_*` in `kwargs` -- mirroring
+        # how `plot` layers `_resolve_colorbar` over the loose kwargs.
+        per_subplot_kwargs.update(_resolve_colorbar(colorbar))
 
         name_dicts: list[dict[str, Any]] = []
         cbar: Colorbar | None = None

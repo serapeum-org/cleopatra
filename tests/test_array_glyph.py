@@ -2990,6 +2990,41 @@ class TestAnimateCbarAttribute:
 
 
 @pytest.mark.plot
+class TestFacetColorbar:
+    """`ArrayGlyph.facet(colorbar=...)` typed spec + loose-`cbar_*` deprecation (#256)."""
+
+    @staticmethod
+    def _stack_3d(n: int = 3, h: int = 6, w: int = 6) -> np.ndarray:
+        """Build a 3-D `(n, h, w)` stack for faceting."""
+        return np.random.default_rng(0).random((n, h, w)).astype("float32")
+
+    def test_facet_accepts_colorbar_spec(self):
+        """`facet(colorbar=ColorBar(...))` is accepted and configures the shared bar."""
+        result = ArrayGlyph(self._stack_3d()).facet(
+            col="time", col_coords=[0, 1, 2], colorbar=ColorBar(label="mm")
+        )
+        assert isinstance(result, FacetGrid)
+        assert result.cbar is not None
+        assert result.cbar.ax.get_ylabel() == "mm"
+
+    def test_facet_colorbar_false_suppresses(self):
+        """`facet(colorbar=False)` draws no colorbar and leaves `result.cbar` None."""
+        result = ArrayGlyph(self._stack_3d()).facet(
+            col="time", col_coords=[0, 1, 2], colorbar=False
+        )
+        colorbar_axes = [ax for ax in result.fig.axes if ax.get_label() == "<colorbar>"]
+        assert colorbar_axes == []
+        assert result.cbar is None
+
+    def test_facet_loose_cbar_kwargs_deprecated(self):
+        """Loose `cbar_*` on `facet` emit a `DeprecationWarning`, as on `plot`/`animate`."""
+        with pytest.warns(DeprecationWarning, match="cbar_label"):
+            ArrayGlyph(self._stack_3d()).facet(
+                col="time", col_coords=[0, 1, 2], cbar_label="mm"
+            )
+
+
+@pytest.mark.plot
 class TestFacetExtents:
     """Per-panel `extents=` on :py`ArrayGlyph.facet` (M4)."""
 
