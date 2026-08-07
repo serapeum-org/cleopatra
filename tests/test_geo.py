@@ -616,6 +616,16 @@ class TestAddReferenceMap:
         host.add_features.assert_called()  # coastline/borders still drawn
         plt.close(fig)
 
+    def test_relief_fetch_failure_degrades_with_warning(self):
+        """A relief fetch/decode failure (ConnectionError/OSError) is skipped with
+        a warning; the coastline/border chrome is still drawn."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        host.add_relief = MagicMock(side_effect=ConnectionError("offline"))
+        with pytest.warns(UserWarning, match="relief backdrop skipped"):
+            host.add_reference_map("ecmwf-dark")
+        host.add_features.assert_called()  # chrome unaffected by the relief failure
+        plt.close(fig)
+
     def test_no_extent_skips_relief(self):
         """With no geographic extent, the relief backdrop is skipped entirely."""
         host, fig, ax = self._host(extent=None)
