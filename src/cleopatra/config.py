@@ -7,7 +7,9 @@ discoverable place:
   Importing cleopatra does **not** change the active backend; picking one
   is the application's responsibility, not a library's.
 * `Config.get_cache_dir` — where cleopatra caches downloaded basemap
-  assets (honours the `CLEOPATRA_CACHE_DIR` environment variable).
+  assets. Resolves an explicit argument, then the `CLEOPATRA_CACHE_DIR`
+  environment variable, then the default `~/.cleopatra/naturalearth`; it
+  only resolves the path and does not create the directory.
 """
 
 import logging
@@ -89,8 +91,10 @@ class Config:
         Args:
             path: An explicit cache directory to use, overriding the
                 environment variable and the default. A falsy value
-                (`None` or `""`) is treated as not provided. Default
-                `None`.
+                (`None` or `""`) is treated as not provided. A relative
+                path (from `path` or the environment variable) is kept
+                relative and resolved against the current working
+                directory when the directory is created. Default `None`.
 
         Returns:
             pathlib.Path: The resolved (not necessarily existing) cache
