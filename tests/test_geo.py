@@ -34,6 +34,7 @@ import cleopatra.basemap.tiles as tilesmod  # noqa: E402
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph  # noqa: E402
 from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph  # noqa: E402
 from cleopatra.basemap.geo import (  # noqa: E402
+    REFERENCE_MAP_STYLES,
     Basemap,
     Feature,
     GeoMixin,
@@ -621,6 +622,21 @@ class TestAddReferenceMap:
         with pytest.warns(UserWarning, match="no geographic extent"):
             host.add_reference_map("ecmwf-dark")
         host.add_relief.assert_not_called()
+        plt.close(fig)
+
+    @pytest.mark.parametrize(
+        "relief_value,expected_resolution",
+        [("medium", "medium"), (True, "low")],
+    )
+    def test_relief_config_forms(self, monkeypatch, relief_value, expected_resolution):
+        """A preset `relief` as a resolution string or `True` selects the relief
+        resolution (a string overrides it; `True` keeps the `"low"` default)."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        monkeypatch.setitem(REFERENCE_MAP_STYLES["ecmwf-dark"], "relief", relief_value)
+        host.add_reference_map("ecmwf-dark")
+        assert host.add_relief.call_args.args[0] == expected_resolution, (
+            f"expected relief resolution {expected_resolution!r}"
+        )
         plt.close(fig)
 
     def test_auto_picks_dark_on_dark_background(self):
