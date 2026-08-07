@@ -939,8 +939,9 @@ class GeoMixin:
         One call composes the recipe that otherwise takes ~15 lines of
         matplotlib after `plot`/`animate`: grey Natural Earth `coastline`
         + `borders`, a dashed lon/lat graticule, `°W`/`°N` degree labels,
-        and a subtle frame. It layers on top of the existing data, so call
-        it after plotting.
+        and a subtle frame, plus -- for `"ecmwf-dark"` -- a dimmed relief
+        backdrop beneath the data. The chrome layers on top of the existing
+        data, so call it after plotting.
 
         The map is drawn in the axes' current geographic coordinates. Pass
         `extent` (or construct the glyph with `extent=`) so the axes are
