@@ -3756,7 +3756,9 @@ class ArrayGlyph(GeoMixin, Glyph):
             colorbar: The shared colour bar, mirroring `plot` / `animate`.
                 `None` (default) leaves the panels' colorbars untouched;
                 `False` suppresses them (`result.cbar` is then `None`);
-                `True` draws default ones; a `ColorBar` applies its
+                `True` draws default ones, resetting the resettable `cbar_*`
+                family to defaults so they do not inherit a prior sticky
+                spec; a `ColorBar` applies its
                 placement / caption / sizing to every panel (so the
                 `result.cbar` returned -- the first panel's -- carries the
                 spec). Prefer this typed form over the loose `cbar_*`
@@ -3831,9 +3833,9 @@ class ArrayGlyph(GeoMixin, Glyph):
 
                 ```
         """
-        _warn_deprecated_cbar_kwargs(kwargs)
         if col is None and row is None:
             raise ValueError("at least one of `col`/`row` must be given")
+        _warn_deprecated_cbar_kwargs(kwargs)
         if extents is not None:
             if self.extent is not None:
                 raise ValueError(
