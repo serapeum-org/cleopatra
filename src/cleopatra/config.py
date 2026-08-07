@@ -74,18 +74,23 @@ class Config:
         cache setting — the Natural Earth vectors and hypsometric relief
         downloaded by `cleopatra.basemap.reference`. Resolution order:
 
-        1. an explicit `path` argument, if given;
+        1. a non-empty explicit `path` argument;
         2. the `CLEOPATRA_CACHE_DIR` environment variable, if set;
         3. the default `~/.cleopatra/naturalearth`.
 
-        A leading `~` is expanded. This function only **resolves** the
-        path; it does not create the directory (the download helpers
-        create it on first use), so it is safe to call just to discover
-        where the cache lives.
+        A falsy `path` (`None` or an empty string) is treated as "not
+        provided" and falls through to the environment variable and the
+        default, so `get_cache_dir("")` behaves like `get_cache_dir()`. A
+        leading `~` is expanded. This function only **resolves** the path;
+        it does not create the directory (the download helpers create it
+        on first use), so it is safe to call just to discover where the
+        cache lives.
 
         Args:
             path: An explicit cache directory to use, overriding the
-                environment variable and the default. Default `None`.
+                environment variable and the default. A falsy value
+                (`None` or `""`) is treated as not provided. Default
+                `None`.
 
         Returns:
             pathlib.Path: The resolved (not necessarily existing) cache
@@ -129,7 +134,7 @@ class Config:
                 directory (its private `_cache_dir` resolves the location
                 through this method and creates the directory on first use).
         """
-        if path is None:
+        if not path:
             path = os.environ.get("CLEOPATRA_CACHE_DIR")
         if path:
             return Path(path).expanduser()

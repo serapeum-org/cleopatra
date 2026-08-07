@@ -44,6 +44,26 @@ class TestGetCacheDir:
         monkeypatch.setenv("CLEOPATRA_CACHE_DIR", "")
         assert Config.get_cache_dir() == Path.home() / ".cleopatra" / "naturalearth"
 
+    def test_empty_string_arg_falls_through_to_env(self, monkeypatch, tmp_path):
+        """A falsy explicit `path` is treated as not provided (honours the env var).
+
+        Test scenario:
+            `get_cache_dir("")` must not short-circuit to the default; an
+            empty argument falls through to `CLEOPATRA_CACHE_DIR`.
+        """
+        monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path / "from_env"))
+        assert Config.get_cache_dir("") == tmp_path / "from_env"
+
+    def test_empty_string_arg_falls_back_to_default(self, monkeypatch):
+        """A falsy explicit `path` with no env var yields the default.
+
+        Test scenario:
+            With `CLEOPATRA_CACHE_DIR` unset, `get_cache_dir("")` behaves
+            exactly like `get_cache_dir()`.
+        """
+        monkeypatch.delenv("CLEOPATRA_CACHE_DIR", raising=False)
+        assert Config.get_cache_dir("") == Path.home() / ".cleopatra" / "naturalearth"
+
     def test_does_not_create_the_directory(self, monkeypatch, tmp_path):
         """Resolving the path must not create it (the getter is side-effect free).
 
