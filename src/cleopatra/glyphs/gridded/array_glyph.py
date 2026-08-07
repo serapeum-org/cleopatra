@@ -3754,9 +3754,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                 reuses the parent's `extent` on every panel (or index
                 space when the parent has none).
             colorbar: The shared colour bar, mirroring `plot` / `animate`.
-                `None` (default) keeps each panel's default colour bar (the
-                prior behaviour); `False` suppresses them (`result.cbar` is
-                then `None`);
+                `None` (default) keeps each panel's default colour legend --
+                a colour bar, or a preset style's swatch -- (the prior
+                behaviour); `False` suppresses them (`result.cbar` is then
+                `None`);
                 `True` draws default ones, resetting the resettable `cbar_*`
                 family to defaults so they do not inherit a prior sticky
                 spec; a `ColorBar` applies its
@@ -3836,7 +3837,6 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         if col is None and row is None:
             raise ValueError("at least one of `col`/`row` must be given")
-        _warn_deprecated_cbar_kwargs(kwargs)
         if extents is not None:
             if self.extent is not None:
                 raise ValueError(
@@ -3909,6 +3909,10 @@ class ArrayGlyph(GeoMixin, Glyph):
             )
 
         assert col is not None
+
+        # Warn only after the structural validation above, so a malformed call
+        # raises its `ValueError` without a spurious colorbar DeprecationWarning.
+        _warn_deprecated_cbar_kwargs(kwargs)
 
         if figsize is None:
             figsize = (4.0 * ncols, 3.5 * nrows)
