@@ -3700,6 +3700,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         kind: str = "auto",
         figsize: tuple[float, float] | None = None,
         extents: Sequence[Sequence[float]] | None = None,
+        colorbar: bool | ColorBar | None = None,
         **kwargs,
     ) -> FacetGrid:
         """Render a grid of subplots from a 3-D or 4-D stack.
@@ -3709,8 +3710,10 @@ class ArrayGlyph(GeoMixin, Glyph):
         or 4-D `(N, M, H, W)` when both `col` and `row` are set.
         All subplots share a common colour scale (`vmin`/`vmax`
         computed over the full stack unless the user passed explicit
-        limits) and a single shared colorbar attached to the first
-        rendered subplot.
+        limits); each panel draws its own colour legend on that shared
+        scale (a colour bar, or a preset style's swatch -- see `colorbar=`
+        below), and `result.cbar` exposes the first panel's bar when one
+        is drawn.
 
         Spatial extent: every panel is a slice of the *same* array, so by
         default they all share the parent glyph's `extent` (one spatial
@@ -3751,11 +3754,25 @@ class ArrayGlyph(GeoMixin, Glyph):
                 glyph's `extent` and with `coords`. `None` (default)
                 reuses the parent's `extent` on every panel (or index
                 space when the parent has none).
+            colorbar: The shared colour bar, mirroring `plot` / `animate`.
+                `None` (default) keeps each panel's default colour legend --
+                a colour bar, or a preset style's swatch -- (the prior
+                behaviour); `False` suppresses them (`result.cbar` is then
+                `None`);
+                `True` draws default ones, resetting the resettable `cbar_*`
+                family to defaults so they do not inherit a prior sticky
+                spec; a `ColorBar` applies its
+                placement / caption / sizing to every panel (so the
+                `result.cbar` returned -- the first panel's -- carries the
+                spec). Prefer this typed form over the loose `cbar_*`
+                kwargs, which are deprecated here as they are on
+                `plot` / `animate`.
 
             **kwargs: Forwarded to each subplot. Recognised keys
                 include the same colour / colorbar / level kwargs as
                 `plot`. `vmin` / `vmax` win over the
-                stack-wide auto-computed limits.
+                stack-wide auto-computed limits. Passing the loose
+                `cbar_*` colorbar kwargs is deprecated -- use `colorbar`.
 
         Returns:
             FacetGrid: Result object exposing `fig`, `axes`,
@@ -3805,6 +3822,17 @@ class ArrayGlyph(GeoMixin, Glyph):
                 >>> [tuple(int(v) for v in im.get_extent()) for im in
                 ...  (ax.get_images()[0] for ax in g.axes.flat)]
                 [(0, 10, 0, 10), (10, 20, 0, 10)]
+
+                ```
+            - Configure the shared colour bar with a typed `ColorBar`:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+                >>> from cleopatra.styling.colorbar import ColorBar
+                >>> stack = np.arange(3 * 5 * 5, dtype=float).reshape(3, 5, 5)
+                >>> g = ArrayGlyph(stack).facet(col="t", colorbar=ColorBar(label="mm"))
+                >>> g.cbar.ax.get_ylabel()
+                'mm'
 
                 ```
         """
@@ -3883,6 +3911,10 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         assert col is not None
 
+        # Warn only after the structural validation above, so a malformed call
+        # raises its `ValueError` without a spurious colorbar DeprecationWarning.
+        _warn_deprecated_cbar_kwargs(kwargs)
+
         if figsize is None:
             figsize = (4.0 * ncols, 3.5 * nrows)
         fig, axes = plt.subplots(
@@ -3943,7 +3975,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                 ax=ax,
                 **per_subplot_kwargs,
             )
-            sub.plot(kind=kind)
+            # Route `colorbar=` through `plot` (not the constructor) so the
+            # shared `_apply_kwargs_and_colorbar` logic runs per panel -- it
+            # merges the resolved spec *over* any loose `cbar_*` already folded
+            # into the sub-glyph's options and sets `_style_wants_colorbar`, so
+            # a placement-bearing colorbar overrides a preset swatch here just
+            # as it does on `plot` / `animate`.
+            sub.plot(kind=kind, colorbar=colorbar)
 
             col_label = col_coords[col_idx] if col_coords is not None else col_idx
             name_dict: dict[str, Any] = {col: col_label}

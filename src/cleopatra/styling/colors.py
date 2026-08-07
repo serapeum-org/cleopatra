@@ -1801,10 +1801,7 @@ class Colors:
 
         ```
         """
-        if not isinstance(hex_color, str):
-            return False
-        else:
-            return True if mcolors.is_color_like(hex_color) else False
+        return isinstance(hex_color, str) and mcolors.is_color_like(hex_color)
 
     def is_valid_rgb(self) -> list[bool]:
         """Check if each color value is a valid RGB color.
@@ -1897,10 +1894,12 @@ class Colors:
 
         ```
         """
-        if isinstance(rgb_tuple, tuple) and len(rgb_tuple) == 3:
-            if all(isinstance(value, int) for value in rgb_tuple):
-                return all(0 <= value <= 255 for value in rgb_tuple)
-        return False
+        return (
+            isinstance(rgb_tuple, tuple)
+            and len(rgb_tuple) == 3
+            and all(isinstance(value, int) for value in rgb_tuple)
+            and all(0 <= value <= 255 for value in rgb_tuple)
+        )
 
     @staticmethod
     def _is_valid_rgb_norm(rgb_tuple: Any) -> bool:
@@ -1942,10 +1941,12 @@ class Colors:
 
         ```
         """
-        if isinstance(rgb_tuple, tuple) and len(rgb_tuple) == 3:
-            if all(isinstance(value, float) for value in rgb_tuple):
-                return all(0.0 <= value <= 1.0 for value in rgb_tuple)
-        return False
+        return (
+            isinstance(rgb_tuple, tuple)
+            and len(rgb_tuple) == 3
+            and all(isinstance(value, float) for value in rgb_tuple)
+            and all(0.0 <= value <= 1.0 for value in rgb_tuple)
+        )
 
     def to_rgb(
         self, normalized: bool = True
