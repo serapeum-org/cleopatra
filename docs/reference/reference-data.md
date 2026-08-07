@@ -117,7 +117,8 @@ To discover the valid arguments, call `available_layers()` and
     [`basemap-data-v1`](https://github.com/serapeum-org/cleopatra/releases/tag/basemap-data-v1)
     release and caches it under `~/.cleopatra/naturalearth`; subsequent calls
     work offline. Override the location with the `CLEOPATRA_CACHE_DIR`
-    environment variable. Downloads are restricted to `http(s)` URLs.
+    environment variable, or discover/resolve it programmatically with
+    [`Config.get_cache_dir()`](config.md). Downloads are restricted to `http(s)` URLs.
 
 ## Migrating from `pyramids.basemap`
 
