@@ -3099,6 +3099,27 @@ class TestFacetColorbar:
             result.cbar.ax.get_ylabel() == ""
         ), f"colorbar=True should reset the loose label, got {result.cbar.ax.get_ylabel()!r}"
 
+    def test_facet_colorbar_none_honors_loose_cbar_label(self):
+        """The default `colorbar=None` leaves a loose `cbar_label` in force per panel.
+
+        Test scenario:
+            Complements the `True`-resets and typed-wins tests: with `None`
+            (which resolves to an empty update), a loose `cbar_label="loose"`
+            folded in by the constructor survives on every panel's bar -- the
+            prior behaviour the docstring promises. The loose kwarg still
+            deprecates.
+        """
+        with pytest.warns(DeprecationWarning, match="cbar_label"):
+            result = ArrayGlyph(self._stack_3d()).facet(
+                col="time", col_coords=[0, 1, 2], colorbar=None, cbar_label="loose"
+            )
+        labels = [ax.get_ylabel() for ax in self._colorbar_axes(result)]
+        assert labels == [
+            "loose",
+            "loose",
+            "loose",
+        ], f"colorbar=None should keep the loose label on every panel, got {labels}"
+
     def test_facet_colorbar_spec_shares_stack_vmin_vmax(self):
         """A `colorbar=` spec does not disturb the shared stack-wide `vmin`/`vmax`.
 
