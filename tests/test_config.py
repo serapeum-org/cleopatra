@@ -39,6 +39,17 @@ class TestGetCacheDir:
         monkeypatch.setenv("CLEOPATRA_CACHE_DIR", "~/foo/bar")
         assert Config.get_cache_dir() == Path.home() / "foo" / "bar"
 
+    def test_explicit_arg_tilde_is_expanded(self, monkeypatch):
+        """A leading `~` in an explicit `path` argument is expanded too.
+
+        Test scenario:
+            The explicit-argument branch also calls `expanduser`, so
+            `get_cache_dir("~/foo")` resolves under the home directory
+            (guarding against the env branch being special-cased alone).
+        """
+        monkeypatch.delenv("CLEOPATRA_CACHE_DIR", raising=False)
+        assert Config.get_cache_dir("~/foo/bar") == Path.home() / "foo" / "bar"
+
     def test_empty_env_falls_back_to_default(self, monkeypatch):
         """An empty `CLEOPATRA_CACHE_DIR` is treated as unset."""
         monkeypatch.setenv("CLEOPATRA_CACHE_DIR", "")
