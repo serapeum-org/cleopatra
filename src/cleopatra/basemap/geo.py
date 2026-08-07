@@ -968,6 +968,8 @@ class GeoMixin:
                 used.
             resolution: Natural Earth resolution for the coastline/borders
                 (`"110m"`/`"50m"`/`"10m"`). Defaults to the style's value.
+                It does not change the `"ecmwf-dark"` relief backdrop, which
+                uses the preset's own relief resolution (`"low"`).
             graticule_step: Degree spacing for the graticule. Defaults to a
                 "nice" step giving ~6 divisions across the wider span.
             zorder: Draw order for the reference layers (drawn above the
