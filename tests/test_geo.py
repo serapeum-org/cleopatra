@@ -34,6 +34,7 @@ import cleopatra.basemap.tiles as tilesmod  # noqa: E402
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph  # noqa: E402
 from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph  # noqa: E402
 from cleopatra.basemap.geo import (  # noqa: E402
+    REFERENCE_MAP_STYLES,
     Basemap,
     Feature,
     GeoMixin,
@@ -530,13 +531,14 @@ class TestAddReferenceMap:
 
     @staticmethod
     def _host(extent=None, im=None):
-        """A GeoMixin host with a real axes and a mocked `add_features`."""
+        """A GeoMixin host with a real axes and mocked `add_features`/`add_relief`."""
         fig, ax = plt.subplots()
         host = _Dummy(ax=ax)
         host.extent = extent
         host.im = im
         host.crs = None
         host.add_features = MagicMock(return_value=ax)
+        host.add_relief = MagicMock(return_value=ax)
         return host, fig, ax
 
     def test_available_map_styles(self):
@@ -584,6 +586,81 @@ class TestAddReferenceMap:
         host, fig, ax = self._host(extent=[-100, 20, -80, 40])
         host.add_reference_map("ecmwf-dark")
         assert host.add_features.call_args_list[0].kwargs["colors"] == "0.85"
+        plt.close(fig)
+
+    def test_dark_style_draws_relief_backdrop(self):
+        """`ecmwf-dark` draws a dimmed relief backdrop under the chrome."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        host.add_reference_map("ecmwf-dark")
+        host.add_relief.assert_called_once()
+        call = host.add_relief.call_args
+        assert call.args[0] == "low", "relief resolution"
+        assert call.kwargs["alpha"] == 0.5
+        assert call.kwargs["zorder"] == -2
+        assert call.kwargs["ax"] is ax
+        plt.close(fig)
+
+    def test_light_style_draws_no_relief(self):
+        """Plain `ecmwf` stays chrome-only -- no relief backdrop."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        host.add_reference_map("ecmwf")
+        host.add_relief.assert_not_called()
+        plt.close(fig)
+
+    def test_relief_missing_pillow_degrades_with_warning(self):
+        """Without Pillow the relief is skipped with a warning; chrome still drawn."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        host.add_relief = MagicMock(side_effect=ImportError("no Pillow"))
+        with pytest.warns(UserWarning, match="relief backdrop skipped"):
+            host.add_reference_map("ecmwf-dark")
+        host.add_features.assert_called()  # coastline/borders still drawn
+        plt.close(fig)
+
+    def test_relief_fetch_failure_degrades_with_warning(self):
+        """A relief fetch/decode failure (ConnectionError/OSError) is skipped with
+        a warning; the coastline/border chrome is still drawn."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        host.add_relief = MagicMock(side_effect=ConnectionError("offline"))
+        with pytest.warns(UserWarning, match="relief backdrop skipped"):
+            host.add_reference_map("ecmwf-dark")
+        host.add_features.assert_called()  # chrome unaffected by the relief failure
+        plt.close(fig)
+
+    def test_custom_relief_bad_resolution_raises(self, monkeypatch):
+        """A custom preset's bad relief resolution raises loudly (a config error),
+        it is not swallowed by the environmental degrade path."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        host.add_relief = MagicMock(
+            side_effect=ValueError("Unknown relief resolution 'ultra'")
+        )
+        monkeypatch.setitem(
+            REFERENCE_MAP_STYLES["ecmwf-dark"], "relief", {"resolution": "ultra"}
+        )
+        with pytest.raises(ValueError, match="Unknown relief resolution"):
+            host.add_reference_map("ecmwf-dark")
+        plt.close(fig)
+
+    def test_no_extent_skips_relief(self):
+        """With no geographic extent, the relief backdrop is skipped entirely."""
+        host, fig, ax = self._host(extent=None)
+        with pytest.warns(UserWarning, match="no geographic extent"):
+            host.add_reference_map("ecmwf-dark")
+        host.add_relief.assert_not_called()
+        plt.close(fig)
+
+    @pytest.mark.parametrize(
+        "relief_value,expected_resolution",
+        [("medium", "medium"), (True, "low")],
+    )
+    def test_relief_config_forms(self, monkeypatch, relief_value, expected_resolution):
+        """A preset `relief` as a resolution string or `True` selects the relief
+        resolution (a string overrides it; `True` keeps the `"low"` default)."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        monkeypatch.setitem(REFERENCE_MAP_STYLES["ecmwf-dark"], "relief", relief_value)
+        host.add_reference_map("ecmwf-dark")
+        assert host.add_relief.call_args.args[0] == expected_resolution, (
+            f"expected relief resolution {expected_resolution!r}"
+        )
         plt.close(fig)
 
     def test_auto_picks_dark_on_dark_background(self):
@@ -727,9 +804,16 @@ class TestAddReferenceMap:
         plt.close(fig2)
 
 
-def test_add_reference_map_integration(tmp_path: Path, monkeypatch):
-    """Non-mocked: add_reference_map draws real coastline + border collections."""
+def _seed_reference_cache(tmp_path: Path, monkeypatch, *, relief: bool) -> None:
+    """Seed `CLEOPATRA_CACHE_DIR` with 110m coastline/border layers -- and, when
+    `relief` is true, a tiny relief PNG -- so the reference map runs offline."""
     monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))
+    if relief:
+        Image = pytest.importorskip(
+            "PIL.Image", reason="Pillow not installed (tiles extra)"
+        )
+        arr = (np.random.default_rng(0).random((4, 8, 3)) * 255).astype("uint8")
+        Image.fromarray(arr).save(tmp_path / "ne_hypso_rgb_720x360.png")
     line = {
         "type": "FeatureCollection",
         "features": [
@@ -749,6 +833,11 @@ def test_add_reference_map_integration(tmp_path: Path, monkeypatch):
         with gzip.open(tmp_path / fname, "wt", encoding="utf-8") as fh:
             json.dump(line, fh)
 
+
+def test_add_reference_map_integration(tmp_path: Path, monkeypatch):
+    """Non-mocked: add_reference_map draws real coastline + border collections."""
+    _seed_reference_cache(tmp_path, monkeypatch, relief=False)
+
     glyph = ArrayGlyph(np.random.rand(20, 30), extent=[-100, 15, -40, 55])
     fig, ax = glyph.plot()
     xlim0, ylim0 = ax.get_xlim(), ax.get_ylim()
@@ -764,6 +853,36 @@ def test_add_reference_map_integration(tmp_path: Path, monkeypatch):
     # the preset styling reaches the real axes (frame + visible graticule)
     assert ax.spines["bottom"].get_edgecolor() == (0.6, 0.6, 0.6, 1.0)
     assert ax.xaxis.get_gridlines()[0].get_visible(), "graticule not drawn"
+    plt.close(fig)
+
+
+def test_add_reference_map_dark_draws_real_relief(tmp_path: Path, monkeypatch):
+    """Non-mocked: `ecmwf-dark` places a real dimmed relief image beneath data."""
+    _seed_reference_cache(tmp_path, monkeypatch, relief=True)
+
+    glyph = ArrayGlyph(np.random.rand(20, 30), extent=[-100, 15, -40, 55])
+    fig, ax = glyph.plot()
+    n_before = len(ax.images)
+    glyph.add_reference_map("ecmwf-dark", resolution="110m")
+    assert len(ax.images) == n_before + 1, "ecmwf-dark should add a relief image"
+    relief_img = ax.images[-1]
+    assert relief_img.get_zorder() == -2
+    assert relief_img.get_alpha() == 0.5
+    plt.close(fig)
+
+
+def test_add_reference_map_relief_warps_non_4326(tmp_path: Path, monkeypatch):
+    """ecmwf-dark forwards self.crs to the relief, so on a non-4326 axis the
+    backdrop is warped (RGBA) rather than placed in lon/lat."""
+    pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+    _seed_reference_cache(tmp_path, monkeypatch, relief=True)
+
+    glyph = ArrayGlyph(np.random.rand(20, 30), extent=[-2e7, -1e7, 2e7, 1e7])
+    glyph.crs = 3857  # axis CRS recorded once; add_reference_map defaults to it
+    fig, ax = glyph.plot()
+    glyph.add_reference_map("ecmwf-dark", resolution="110m")
+    placed = np.asarray(ax.images[-1].get_array())
+    assert placed.shape[2] == 4, f"relief should warp to RGBA, got {placed.shape}"
     plt.close(fig)
 
 

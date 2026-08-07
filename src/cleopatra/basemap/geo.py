@@ -41,10 +41,12 @@ from cleopatra.basemap import reference, tiles
 #: Built-in reference-map style presets for `GeoMixin.add_reference_map`.
 #: `"ecmwf"` is tuned for light backgrounds; `"ecmwf-dark"` uses lighter
 #: greys so coastlines stay visible over a dark field (e.g. a satellite
-#: true-colour RGB). Each entry is a plain dict of the layer styles,
-#: graticule, tick-label, and frame (spine) parameters -- read or copy it to
-#: build a custom preset; `add_reference_map` itself exposes only the
-#: `resolution` and `graticule_step` knobs per call.
+#: true-colour RGB) and adds a dimmed hypsometric relief backdrop under the
+#: data. Each entry is a plain dict of the layer styles, graticule,
+#: tick-label, and frame (spine) parameters, plus an optional `"relief"`
+#: backdrop (a dict of `add_relief` kwargs, a resolution string, or `True`)
+#: -- read or copy it to build a custom preset; `add_reference_map` itself
+#: exposes only the `resolution` and `graticule_step` knobs per call.
 REFERENCE_MAP_STYLES: dict[str, dict[str, Any]] = {
     "ecmwf": {
         "resolution": "50m",
@@ -56,6 +58,7 @@ REFERENCE_MAP_STYLES: dict[str, dict[str, Any]] = {
     },
     "ecmwf-dark": {
         "resolution": "50m",
+        "relief": {"resolution": "low", "alpha": 0.5, "zorder": -2},
         "coastline": {"colors": "0.85", "linewidths": 0.8},
         "borders": {"colors": "0.85", "linewidths": 0.5},
         "graticule": {"color": "0.75", "linestyle": (0, (4, 4)), "linewidth": 0.5},
@@ -936,8 +939,9 @@ class GeoMixin:
         One call composes the recipe that otherwise takes ~15 lines of
         matplotlib after `plot`/`animate`: grey Natural Earth `coastline`
         + `borders`, a dashed lon/lat graticule, `°W`/`°N` degree labels,
-        and a subtle frame. It layers on top of the existing data, so call
-        it after plotting.
+        and a subtle frame, plus -- for `"ecmwf-dark"` -- a dimmed relief
+        backdrop beneath the data. The chrome layers on top of the existing
+        data, so call it after plotting.
 
         The map is drawn in the axes' current geographic coordinates. Pass
         `extent` (or construct the glyph with `extent=`) so the axes are
@@ -951,7 +955,10 @@ class GeoMixin:
                 `"ecmwf-dark"`), or `"auto"` to pick between them from the
                 background luminance (dark backgrounds get the lighter
                 `"ecmwf-dark"` greys so coastlines stay visible). Default
-                `"ecmwf"`.
+                `"ecmwf"`. `"ecmwf-dark"` also draws a dimmed relief backdrop
+                under the data (needs the `[tiles]` extra; if Pillow is
+                missing the backdrop is skipped with a warning and the
+                coastline/border chrome is still drawn).
             ax: Axes to draw on. Defaults to the glyph's `self.ax`.
             extent: Optional `[xmin, ymin, xmax, ymax]` (i.e.
                 `[west, south, east, north]`) in the axes' CRS -- the same
@@ -961,6 +968,8 @@ class GeoMixin:
                 used.
             resolution: Natural Earth resolution for the coastline/borders
                 (`"110m"`/`"50m"`/`"10m"`). Defaults to the style's value.
+                It does not change the `"ecmwf-dark"` relief backdrop, which
+                uses the preset's own relief resolution (`"low"`).
             graticule_step: Degree spacing for the graticule. Defaults to a
                 "nice" step giving ~6 divisions across the wider span.
             zorder: Draw order for the reference layers (drawn above the
@@ -974,8 +983,10 @@ class GeoMixin:
                 glyph cannot create one (a bare `GeoMixin`); only `ArrayGlyph` creates and seeds
                 its axes on demand, so the pre-plot builder flow is ArrayGlyph-only
                 -- plot the other glyphs first (or pass `ax=`).
-            ValueError: If `style` is not a known preset or `"auto"`, or if
-                `graticule_step` is given and is not a positive number.
+            ValueError: If `style` is not a known preset or `"auto"`, if
+                `graticule_step` is given and is not a positive number, or if
+                a custom preset's `relief` resolution is unknown (an
+                environmental relief failure degrades with a warning instead).
 
         Examples:
             - Dress a georeferenced field in the ECMWF look:
@@ -1032,6 +1043,34 @@ class GeoMixin:
                 "with extent=.",
                 stacklevel=2,
             )
+
+        # A preset may bundle a dimmed relief backdrop (ecmwf-dark). Draw it
+        # under the data, defaulting crs to self.crs like the other helpers.
+        # Skip it when the axes are not georeferenced (already warned above),
+        # and -- so the coastline chrome never hard-depends on Pillow --
+        # degrade with a warning when the [tiles] extra is missing.
+        relief = preset.get("relief")
+        if relief and (extent is not None or getattr(self, "extent", None) is not None):
+            relief_kwargs: dict = {"resolution": "low", "alpha": 0.5, "zorder": -2}
+            if isinstance(relief, str):
+                relief_kwargs["resolution"] = relief
+            elif isinstance(relief, dict):
+                relief_kwargs.update(relief)
+            try:
+                self.add_relief(
+                    relief_kwargs.pop("resolution"), ax=target, **relief_kwargs
+                )
+            except (ImportError, OSError) as exc:
+                # ImportError -> Pillow (the [tiles] extra) is missing; OSError
+                # (incl. ConnectionError) -> the relief asset could not be
+                # fetched or decoded. Either way, skip the backdrop but still
+                # draw the independently cached coastline/border chrome; a bad
+                # relief resolution in a custom preset (ValueError) still raises.
+                warnings.warn(
+                    "add_reference_map: relief backdrop skipped "
+                    f"({exc}); the coastline/border chrome is still drawn.",
+                    stacklevel=2,
+                )
 
         res = resolution or preset["resolution"]
         self.add_features(
