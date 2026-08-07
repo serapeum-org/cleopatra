@@ -2991,37 +2991,221 @@ class TestAnimateCbarAttribute:
 
 @pytest.mark.plot
 class TestFacetColorbar:
-    """`ArrayGlyph.facet(colorbar=...)` typed spec + loose-`cbar_*` deprecation (#256)."""
+    """`ArrayGlyph.facet(colorbar=...)` typed spec + loose-`cbar_*` deprecation (#256).
+
+    Pins the two behaviours from the issue's definition of done -- `facet`
+    accepts the same `colorbar: bool | ColorBar | None` spec as `plot` /
+    `animate` (no `ValueError`), and the loose `cbar_*` kwargs deprecate on the
+    faceted path -- plus the surrounding branches of `_resolve_colorbar`
+    (`None` / `True` / `False` / `ColorBar` / invalid) as routed through
+    `facet`.
+    """
 
     @staticmethod
     def _stack_3d(n: int = 3, h: int = 6, w: int = 6) -> np.ndarray:
-        """Build a 3-D `(n, h, w)` stack for faceting."""
+        """Build a deterministic 3-D `(n, h, w)` stack for faceting.
+
+        Returns:
+            np.ndarray: A `float32` stack seeded for reproducibility.
+        """
         return np.random.default_rng(0).random((n, h, w)).astype("float32")
 
+    @staticmethod
+    def _stack_4d(n_col: int = 2, n_row: int = 2, h: int = 6, w: int = 6) -> np.ndarray:
+        """Build a deterministic 4-D `(n_col, n_row, h, w)` stack for faceting.
+
+        Returns:
+            np.ndarray: A `float32` stack seeded for reproducibility.
+        """
+        return np.random.default_rng(1).random((n_col, n_row, h, w)).astype("float32")
+
+    @staticmethod
+    def _colorbar_axes(result: FacetGrid) -> list:
+        """Return the colorbar axes drawn on a `FacetGrid`'s figure.
+
+        Args:
+            result: The `FacetGrid` returned by `facet`.
+
+        Returns:
+            list: The axes whose matplotlib label marks them as colorbars.
+        """
+        return [ax for ax in result.fig.axes if ax.get_label() == "<colorbar>"]
+
+    @pytest.fixture(autouse=True)
+    def _close_figures(self):
+        """Close every figure after each test so leaks never warn or accumulate."""
+        yield
+        plt.close("all")
+
     def test_facet_accepts_colorbar_spec(self):
-        """`facet(colorbar=ColorBar(...))` is accepted and configures the shared bar."""
+        """`facet(colorbar=ColorBar(...))` is accepted and configures the shared bar.
+
+        Test scenario:
+            The typed spec that `plot` / `animate` already accept must not raise
+            on `facet`; the returned shared `cbar` (the first panel's) carries
+            the `ColorBar` label.
+        """
         result = ArrayGlyph(self._stack_3d()).facet(
             col="time", col_coords=[0, 1, 2], colorbar=ColorBar(label="mm")
         )
-        assert isinstance(result, FacetGrid)
-        assert result.cbar is not None
-        assert result.cbar.ax.get_ylabel() == "mm"
+        assert isinstance(result, FacetGrid), f"expected FacetGrid, got {type(result)}"
+        assert result.cbar is not None, "shared cbar should be present for a ColorBar spec"
+        assert (
+            result.cbar.ax.get_ylabel() == "mm"
+        ), f"shared cbar label should be 'mm', got {result.cbar.ax.get_ylabel()!r}"
+
+    def test_facet_colorbar_spec_applies_to_every_panel(self):
+        """A `ColorBar` spec labels the colorbar on *every* panel, not just the first.
+
+        Test scenario:
+            `facet` merges the resolved spec into each panel's options, so all
+            three panels' colorbars carry the label.
+        """
+        result = ArrayGlyph(self._stack_3d()).facet(
+            col="time", col_coords=[0, 1, 2], colorbar=ColorBar(label="mm")
+        )
+        labels = [ax.get_ylabel() for ax in self._colorbar_axes(result)]
+        assert labels == ["mm", "mm", "mm"], f"every panel cbar should read 'mm', got {labels}"
+
+    def test_facet_colorbar_true_draws_default_bars(self):
+        """`facet(colorbar=True)` draws a colorbar per panel and returns a shared `cbar`.
+
+        Test scenario:
+            `True` requests default colorbars; the faceted figure gains one
+            colorbar axis per panel and `result.cbar` is not `None`.
+        """
+        result = ArrayGlyph(self._stack_3d()).facet(
+            col="time", col_coords=[0, 1, 2], colorbar=True
+        )
+        assert result.cbar is not None, "colorbar=True should draw a shared cbar"
+        assert (
+            len(self._colorbar_axes(result)) == 3
+        ), f"expected 3 colorbar axes, got {len(self._colorbar_axes(result))}"
 
     def test_facet_colorbar_false_suppresses(self):
-        """`facet(colorbar=False)` draws no colorbar and leaves `result.cbar` None."""
+        """`facet(colorbar=False)` draws no colorbar and leaves `result.cbar` None.
+
+        Test scenario:
+            `False` maps to `add_colorbar=False` on every panel, so no colorbar
+            axes are created and the shared `cbar` is `None`.
+        """
         result = ArrayGlyph(self._stack_3d()).facet(
             col="time", col_coords=[0, 1, 2], colorbar=False
         )
-        colorbar_axes = [ax for ax in result.fig.axes if ax.get_label() == "<colorbar>"]
-        assert colorbar_axes == []
-        assert result.cbar is None
+        assert self._colorbar_axes(result) == [], "colorbar=False should draw no colorbars"
+        assert result.cbar is None, "result.cbar should be None when colorbar=False"
 
-    def test_facet_loose_cbar_kwargs_deprecated(self):
-        """Loose `cbar_*` on `facet` emit a `DeprecationWarning`, as on `plot`/`animate`."""
+    def test_facet_colorbar_none_preserves_default_behaviour(self):
+        """`facet()` with no `colorbar` keeps the prior per-panel colorbars.
+
+        Test scenario:
+            The default `colorbar=None` resolves to an empty update, so behaviour
+            is unchanged: one colorbar per panel and a non-None shared `cbar`.
+        """
+        result = ArrayGlyph(self._stack_3d()).facet(col="time", col_coords=[0, 1, 2])
+        assert (
+            len(self._colorbar_axes(result)) == 3
+        ), "default facet should keep one colorbar per panel"
+        assert result.cbar is not None, "default facet should still expose a shared cbar"
+
+    def test_facet_colorbar_orientation_applied(self):
+        """A horizontal `ColorBar` orientation reaches the drawn colorbar.
+
+        Test scenario:
+            `ColorBar(orientation="horizontal")` routes through `_resolve_colorbar`
+            into the panels, so the shared colorbar renders horizontally.
+        """
+        result = ArrayGlyph(self._stack_3d()).facet(
+            col="time",
+            col_coords=[0, 1, 2],
+            colorbar=ColorBar(label="mm", orientation="horizontal"),
+        )
+        assert (
+            result.cbar.orientation == "horizontal"
+        ), f"expected horizontal cbar, got {result.cbar.orientation!r}"
+
+    def test_facet_colorbar_spec_wins_over_loose_kwargs(self):
+        """A `ColorBar` spec overrides a conflicting loose `cbar_*`, mirroring `plot`.
+
+        Test scenario:
+            When both `colorbar=ColorBar(label="typed")` and `cbar_label="loose"`
+            are given, the typed spec is applied last and wins; the loose form
+            still emits its deprecation warning.
+        """
         with pytest.warns(DeprecationWarning, match="cbar_label"):
-            ArrayGlyph(self._stack_3d()).facet(
-                col="time", col_coords=[0, 1, 2], cbar_label="mm"
+            result = ArrayGlyph(self._stack_3d()).facet(
+                col="time",
+                col_coords=[0, 1, 2],
+                colorbar=ColorBar(label="typed"),
+                cbar_label="loose",
             )
+        assert (
+            result.cbar.ax.get_ylabel() == "typed"
+        ), f"typed ColorBar should win, got {result.cbar.ax.get_ylabel()!r}"
+
+    def test_facet_invalid_colorbar_type_raises(self):
+        """A non-bool / non-`ColorBar` / non-`None` `colorbar` raises `TypeError`.
+
+        Test scenario:
+            `_resolve_colorbar` rejects unsupported types; `facet` surfaces that
+            `TypeError` rather than silently ignoring the argument.
+        """
+        with pytest.raises(TypeError, match="colorbar must be a bool"):
+            ArrayGlyph(self._stack_3d()).facet(
+                col="time", col_coords=[0, 1, 2], colorbar=object()
+            )
+
+    def test_facet_4d_accepts_colorbar_spec(self):
+        """The `ColorBar` spec also works on a 4-D (`col` + `row`) facet.
+
+        Test scenario:
+            The colorbar path is independent of facet dimensionality, so a
+            `row`+`col` grid still honours the typed spec on its shared `cbar`.
+        """
+        result = ArrayGlyph(self._stack_4d()).facet(
+            col="t", row="level", colorbar=ColorBar(label="mm")
+        )
+        assert result.axes.shape == (2, 2), f"expected a 2x2 grid, got {result.axes.shape}"
+        assert (
+            result.cbar.ax.get_ylabel() == "mm"
+        ), f"4-D facet shared cbar should read 'mm', got {result.cbar.ax.get_ylabel()!r}"
+
+    @pytest.mark.parametrize(
+        "kwarg, value",
+        [
+            ("cbar_label", "mm"),
+            ("cbar_length", 0.5),
+            ("cbar_orientation", "horizontal"),
+            ("ticks_spacing", 5),
+        ],
+    )
+    def test_facet_loose_cbar_kwargs_deprecated(self, kwarg, value):
+        """Each loose `cbar_*` on `facet` emits a `DeprecationWarning`.
+
+        Args:
+            kwarg: The deprecated loose colorbar keyword under test.
+            value: A value to pass for that keyword.
+
+        Test scenario:
+            `facet` now calls `_warn_deprecated_cbar_kwargs`, so every loose
+            colorbar keyword deprecates on the faceted path exactly as on
+            `plot` / `animate`.
+        """
+        with pytest.warns(DeprecationWarning, match=kwarg):
+            ArrayGlyph(self._stack_3d()).facet(
+                col="time", col_coords=[0, 1, 2], **{kwarg: value}
+            )
+
+    def test_facet_without_colorbar_kwargs_does_not_warn(self):
+        """A plain `facet()` call emits no colorbar `DeprecationWarning`.
+
+        Test scenario:
+            The deprecation fires only for the loose keys, so an ordinary facet
+            (no `cbar_*`, no `colorbar`) stays quiet.
+        """
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            ArrayGlyph(self._stack_3d()).facet(col="time", col_coords=[0, 1, 2])
 
 
 @pytest.mark.plot
