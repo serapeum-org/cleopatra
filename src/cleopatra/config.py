@@ -1,13 +1,18 @@
-"""Matplotlib backend helpers for cleopatra.
+"""Configuration helpers for cleopatra.
 
-Importing cleopatra does **not** change the active matplotlib backend —
-picking a backend is the application's responsibility, not a library's.
-Use `Config.set_matplotlib_backend` if you want a one-liner that selects
-a sensible backend (`%matplotlib inline` in a Jupyter notebook, `Agg` in
-a plain script).
+`Config` gathers the package's cross-cutting, user-facing settings in one
+discoverable place:
+
+* `Config.set_matplotlib_backend` — opt-in matplotlib backend selection.
+  Importing cleopatra does **not** change the active backend; picking one
+  is the application's responsibility, not a library's.
+* `Config.get_cache_dir` — where cleopatra caches downloaded basemap
+  assets (honours the `CLEOPATRA_CACHE_DIR` environment variable).
 """
 
 import logging
+import os
+from pathlib import Path
 
 import matplotlib
 
@@ -60,6 +65,75 @@ class Config:
             plt.switch_backend("Agg")
             logger.info("Matplotlib backend set to Agg (non-interactive)")
         return matplotlib.get_backend()
+
+    @staticmethod
+    def get_cache_dir(path: str | os.PathLike | None = None) -> Path:
+        """Resolve the directory cleopatra caches downloaded basemap assets in.
+
+        This is the single, discoverable home for cleopatra's on-disk
+        cache setting — the Natural Earth vectors and hypsometric relief
+        downloaded by `cleopatra.basemap.reference`. Resolution order:
+
+        1. an explicit `path` argument, if given;
+        2. the `CLEOPATRA_CACHE_DIR` environment variable, if set;
+        3. the default `~/.cleopatra/naturalearth`.
+
+        A leading `~` is expanded. This function only **resolves** the
+        path; it does not create the directory (the download helpers
+        create it on first use), so it is safe to call just to discover
+        where the cache lives.
+
+        Args:
+            path: An explicit cache directory to use, overriding the
+                environment variable and the default. Default `None`.
+
+        Returns:
+            pathlib.Path: The resolved (not necessarily existing) cache
+            directory.
+
+        Examples:
+            - An explicit `path` is resolved as given (and overrides
+                everything else):
+                ```python
+                >>> from cleopatra.config import Config
+                >>> Config.get_cache_dir("/data/cleopatra").as_posix()
+                '/data/cleopatra'
+
+                ```
+            - With no argument, the `CLEOPATRA_CACHE_DIR` environment
+                variable is honoured:
+                ```python
+                >>> import os
+                >>> from cleopatra.config import Config
+                >>> os.environ["CLEOPATRA_CACHE_DIR"] = "/var/cache/cleopatra"
+                >>> Config.get_cache_dir().as_posix()
+                '/var/cache/cleopatra'
+                >>> del os.environ["CLEOPATRA_CACHE_DIR"]
+
+                ```
+            - An explicit argument wins over the environment variable, and
+                the returned path composes into an asset path:
+                ```python
+                >>> import os
+                >>> from cleopatra.config import Config
+                >>> os.environ["CLEOPATRA_CACHE_DIR"] = "/ignored"
+                >>> asset = Config.get_cache_dir("/data") / "ne_110m_coastline.geojson.gz"
+                >>> asset.as_posix()
+                '/data/ne_110m_coastline.geojson.gz'
+                >>> del os.environ["CLEOPATRA_CACHE_DIR"]
+
+                ```
+
+        See Also:
+            cleopatra.basemap.reference: Downloads basemap assets into this
+                directory (its private `_cache_dir` resolves the location
+                through this method and creates the directory on first use).
+        """
+        if path is None:
+            path = os.environ.get("CLEOPATRA_CACHE_DIR")
+        if path:
+            return Path(path).expanduser()
+        return Path.home() / ".cleopatra" / "naturalearth"
 
 
 def is_notebook() -> bool:

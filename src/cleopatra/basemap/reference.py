@@ -26,8 +26,9 @@ and never touch GDAL/geopandas:
     (also in the `[tiles]` extra).
 
 The cache directory defaults to `~/.cleopatra/naturalearth` and can be
-overridden with the `CLEOPATRA_CACHE_DIR` environment variable. Downloads
-are restricted to `http(s)` URLs.
+overridden with the `CLEOPATRA_CACHE_DIR` environment variable; it is
+resolved by `cleopatra.config.Config.get_cache_dir`, where the setting is
+also discoverable. Downloads are restricted to `http(s)` URLs.
 
 Examples:
     Draw a relief backdrop and a coastline over data plotted in
@@ -49,7 +50,6 @@ import gzip
 import importlib.util
 import json
 import logging
-import os
 import shutil
 import time
 import urllib.error
@@ -64,6 +64,7 @@ from matplotlib.path import Path as MplPath
 
 from cleopatra import __version__
 from cleopatra.basemap._net import urlopen_http
+from cleopatra.config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -89,14 +90,16 @@ _PILLOW_AVAILABLE = importlib.util.find_spec("PIL") is not None
 def _cache_dir() -> Path:
     """Resolve (and create) the on-disk cache directory.
 
-    Honours the `CLEOPATRA_CACHE_DIR` environment variable; defaults to
-    `~/.cleopatra/naturalearth`.
+    Resolution is delegated to `cleopatra.config.Config.get_cache_dir`
+    (honours the `CLEOPATRA_CACHE_DIR` environment variable; defaults to
+    `~/.cleopatra/naturalearth`), which is the single, user-discoverable
+    home for this setting. This helper additionally ensures the directory
+    exists, since it is called on the download path.
 
     Returns:
         pathlib.Path: The existing cache directory.
     """
-    root = os.environ.get("CLEOPATRA_CACHE_DIR")
-    base = Path(root) if root else Path.home() / ".cleopatra" / "naturalearth"
+    base = Config.get_cache_dir()
     base.mkdir(parents=True, exist_ok=True)
     return base
 

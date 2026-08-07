@@ -29,6 +29,7 @@ from matplotlib.collections import LineCollection, PathCollection  # noqa: E402
 
 from cleopatra.basemap import reference  # noqa: E402
 from cleopatra.basemap.reference import (  # noqa: E402
+    _cache_dir,
     _is_4326,
     _paths,
     add_features,
@@ -46,6 +47,24 @@ def cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Point the reference cache at a temp dir for the duration of a test."""
     monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))
     return tmp_path
+
+
+def test_cache_dir_delegates_to_config_and_creates(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`_cache_dir` resolves via `Config.get_cache_dir` and creates the dir.
+
+    The resolution is owned by `cleopatra.config.Config`; this download-path
+    helper adds only the create-on-use `mkdir`.
+    """
+    target = tmp_path / "nested" / "cache"
+    monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(target))
+    assert not target.exists(), "precondition: cache dir does not exist yet"
+
+    result = _cache_dir()
+
+    assert result == target, "should resolve to the CLEOPATRA_CACHE_DIR target"
+    assert target.is_dir(), "_cache_dir should create the directory on use"
 
 
 def _write_layer(cache: Path, stem: str, resolution: str, geometry: dict) -> None:
