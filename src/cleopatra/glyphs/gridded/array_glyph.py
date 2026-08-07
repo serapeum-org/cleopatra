@@ -3936,10 +3936,6 @@ class ArrayGlyph(GeoMixin, Glyph):
         per_subplot_kwargs = dict(kwargs)
         per_subplot_kwargs["vmin"] = shared_vmin
         per_subplot_kwargs["vmax"] = shared_vmax
-        # Resolve the typed `colorbar=` onto the per-panel `cbar_*` options,
-        # after (so it wins over) any loose `cbar_*` in `kwargs` -- mirroring
-        # how `plot` layers `_resolve_colorbar` over the loose kwargs.
-        per_subplot_kwargs.update(_resolve_colorbar(colorbar))
 
         name_dicts: list[dict[str, Any]] = []
         cbar: Colorbar | None = None
@@ -3971,7 +3967,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                 ax=ax,
                 **per_subplot_kwargs,
             )
-            sub.plot(kind=kind)
+            # Route `colorbar=` through `plot` (not the constructor) so the
+            # shared `_apply_kwargs_and_colorbar` logic runs per panel -- it
+            # merges the resolved spec *over* any loose `cbar_*` already folded
+            # into the sub-glyph's options and sets `_style_wants_colorbar`, so
+            # a placement-bearing colorbar overrides a preset swatch here just
+            # as it does on `plot` / `animate`.
+            sub.plot(kind=kind, colorbar=colorbar)
 
             col_label = col_coords[col_idx] if col_coords is not None else col_idx
             name_dict: dict[str, Any] = {col: col_label}
