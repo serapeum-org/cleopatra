@@ -3195,10 +3195,9 @@ class TestFacetColorbar:
             `_resolve_colorbar` rejects unsupported types; `facet` surfaces that
             `TypeError` rather than silently ignoring the argument.
         """
+        glyph = ArrayGlyph(self._stack_3d())
         with pytest.raises(TypeError, match="colorbar must be a bool"):
-            ArrayGlyph(self._stack_3d()).facet(
-                col="time", col_coords=[0, 1, 2], colorbar=object()
-            )
+            glyph.facet(col="time", col_coords=[0, 1, 2], colorbar=object())
 
     def test_facet_4d_accepts_colorbar_spec(self):
         """The `ColorBar` spec also works on a 4-D (`col` + `row`) facet.
