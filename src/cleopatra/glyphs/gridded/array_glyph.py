@@ -3754,8 +3754,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                 reuses the parent's `extent` on every panel (or index
                 space when the parent has none).
             colorbar: The shared colour bar, mirroring `plot` / `animate`.
-                `None` (default) leaves the panels' colorbars untouched;
-                `False` suppresses them (`result.cbar` is then `None`);
+                `None` (default) keeps each panel's default colour bar (the
+                prior behaviour); `False` suppresses them (`result.cbar` is
+                then `None`);
                 `True` draws default ones, resetting the resettable `cbar_*`
                 family to defaults so they do not inherit a prior sticky
                 spec; a `ColorBar` applies its
