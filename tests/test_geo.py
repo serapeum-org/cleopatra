@@ -530,13 +530,14 @@ class TestAddReferenceMap:
 
     @staticmethod
     def _host(extent=None, im=None):
-        """A GeoMixin host with a real axes and a mocked `add_features`."""
+        """A GeoMixin host with a real axes and mocked `add_features`/`add_relief`."""
         fig, ax = plt.subplots()
         host = _Dummy(ax=ax)
         host.extent = extent
         host.im = im
         host.crs = None
         host.add_features = MagicMock(return_value=ax)
+        host.add_relief = MagicMock(return_value=ax)
         return host, fig, ax
 
     def test_available_map_styles(self):
@@ -584,6 +585,42 @@ class TestAddReferenceMap:
         host, fig, ax = self._host(extent=[-100, 20, -80, 40])
         host.add_reference_map("ecmwf-dark")
         assert host.add_features.call_args_list[0].kwargs["colors"] == "0.85"
+        plt.close(fig)
+
+    def test_dark_style_draws_relief_backdrop(self):
+        """`ecmwf-dark` draws a dimmed relief backdrop under the chrome."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        host.add_reference_map("ecmwf-dark")
+        host.add_relief.assert_called_once()
+        call = host.add_relief.call_args
+        assert call.args[0] == "low", "relief resolution"
+        assert call.kwargs["alpha"] == 0.5
+        assert call.kwargs["zorder"] == -2
+        assert call.kwargs["ax"] is ax
+        plt.close(fig)
+
+    def test_light_style_draws_no_relief(self):
+        """Plain `ecmwf` stays chrome-only -- no relief backdrop."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        host.add_reference_map("ecmwf")
+        host.add_relief.assert_not_called()
+        plt.close(fig)
+
+    def test_relief_missing_pillow_degrades_with_warning(self):
+        """Without Pillow the relief is skipped with a warning; chrome still drawn."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        host.add_relief = MagicMock(side_effect=ImportError("no Pillow"))
+        with pytest.warns(UserWarning, match="relief backdrop skipped"):
+            host.add_reference_map("ecmwf-dark")
+        host.add_features.assert_called()  # coastline/borders still drawn
+        plt.close(fig)
+
+    def test_no_extent_skips_relief(self):
+        """With no geographic extent, the relief backdrop is skipped entirely."""
+        host, fig, ax = self._host(extent=None)
+        with pytest.warns(UserWarning, match="no geographic extent"):
+            host.add_reference_map("ecmwf-dark")
+        host.add_relief.assert_not_called()
         plt.close(fig)
 
     def test_auto_picks_dark_on_dark_background(self):
@@ -764,6 +801,44 @@ def test_add_reference_map_integration(tmp_path: Path, monkeypatch):
     # the preset styling reaches the real axes (frame + visible graticule)
     assert ax.spines["bottom"].get_edgecolor() == (0.6, 0.6, 0.6, 1.0)
     assert ax.xaxis.get_gridlines()[0].get_visible(), "graticule not drawn"
+    plt.close(fig)
+
+
+def test_add_reference_map_dark_draws_real_relief(tmp_path: Path, monkeypatch):
+    """Non-mocked: `ecmwf-dark` places a real dimmed relief image beneath data."""
+    Image = pytest.importorskip(
+        "PIL.Image", reason="Pillow not installed (tiles extra)"
+    )
+    monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))
+    arr = (np.random.default_rng(0).random((4, 8, 3)) * 255).astype("uint8")
+    Image.fromarray(arr).save(tmp_path / "ne_hypso_rgb_720x360.png")
+    line = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [[-90, 20], [-50, 50]],
+                },
+            }
+        ],
+    }
+    for fname in (
+        "ne_110m_coastline.geojson.gz",
+        "ne_110m_admin_0_boundary_lines_land.geojson.gz",
+    ):
+        with gzip.open(tmp_path / fname, "wt", encoding="utf-8") as fh:
+            json.dump(line, fh)
+
+    glyph = ArrayGlyph(np.random.rand(20, 30), extent=[-100, 15, -40, 55])
+    fig, ax = glyph.plot()
+    n_before = len(ax.images)
+    glyph.add_reference_map("ecmwf-dark", resolution="110m")
+    assert len(ax.images) == n_before + 1, "ecmwf-dark should add a relief image"
+    relief_img = ax.images[-1]
+    assert relief_img.get_zorder() == -2
+    assert relief_img.get_alpha() == 0.5
     plt.close(fig)
 
 

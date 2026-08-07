@@ -41,10 +41,12 @@ from cleopatra.basemap import reference, tiles
 #: Built-in reference-map style presets for `GeoMixin.add_reference_map`.
 #: `"ecmwf"` is tuned for light backgrounds; `"ecmwf-dark"` uses lighter
 #: greys so coastlines stay visible over a dark field (e.g. a satellite
-#: true-colour RGB). Each entry is a plain dict of the layer styles,
-#: graticule, tick-label, and frame (spine) parameters -- read or copy it to
-#: build a custom preset; `add_reference_map` itself exposes only the
-#: `resolution` and `graticule_step` knobs per call.
+#: true-colour RGB) and adds a dimmed hypsometric relief backdrop under the
+#: data. Each entry is a plain dict of the layer styles, graticule,
+#: tick-label, and frame (spine) parameters, plus an optional `"relief"`
+#: backdrop (a dict of `add_relief` kwargs, a resolution string, or `True`)
+#: -- read or copy it to build a custom preset; `add_reference_map` itself
+#: exposes only the `resolution` and `graticule_step` knobs per call.
 REFERENCE_MAP_STYLES: dict[str, dict[str, Any]] = {
     "ecmwf": {
         "resolution": "50m",
@@ -56,6 +58,7 @@ REFERENCE_MAP_STYLES: dict[str, dict[str, Any]] = {
     },
     "ecmwf-dark": {
         "resolution": "50m",
+        "relief": {"resolution": "low", "alpha": 0.5, "zorder": -2},
         "coastline": {"colors": "0.85", "linewidths": 0.8},
         "borders": {"colors": "0.85", "linewidths": 0.5},
         "graticule": {"color": "0.75", "linestyle": (0, (4, 4)), "linewidth": 0.5},
@@ -951,7 +954,10 @@ class GeoMixin:
                 `"ecmwf-dark"`), or `"auto"` to pick between them from the
                 background luminance (dark backgrounds get the lighter
                 `"ecmwf-dark"` greys so coastlines stay visible). Default
-                `"ecmwf"`.
+                `"ecmwf"`. `"ecmwf-dark"` also draws a dimmed relief backdrop
+                under the data (needs the `[tiles]` extra; if Pillow is
+                missing the backdrop is skipped with a warning and the
+                coastline/border chrome is still drawn).
             ax: Axes to draw on. Defaults to the glyph's `self.ax`.
             extent: Optional `[xmin, ymin, xmax, ymax]` (i.e.
                 `[west, south, east, north]`) in the axes' CRS -- the same
@@ -1032,6 +1038,29 @@ class GeoMixin:
                 "with extent=.",
                 stacklevel=2,
             )
+
+        # A preset may bundle a dimmed relief backdrop (ecmwf-dark). Draw it
+        # under the data, defaulting crs to self.crs like the other helpers.
+        # Skip it when the axes are not georeferenced (already warned above),
+        # and -- so the coastline chrome never hard-depends on Pillow --
+        # degrade with a warning when the [tiles] extra is missing.
+        relief = preset.get("relief")
+        if relief and (extent is not None or getattr(self, "extent", None) is not None):
+            relief_kwargs: dict = {"resolution": "low", "alpha": 0.5, "zorder": -2}
+            if isinstance(relief, str):
+                relief_kwargs["resolution"] = relief
+            elif isinstance(relief, dict):
+                relief_kwargs.update(relief)
+            try:
+                self.add_relief(
+                    relief_kwargs.pop("resolution"), ax=target, **relief_kwargs
+                )
+            except ImportError:
+                warnings.warn(
+                    "add_reference_map: relief backdrop skipped; install "
+                    "cleopatra[tiles] for the hillshade.",
+                    stacklevel=2,
+                )
 
         res = resolution or preset["resolution"]
         self.add_features(
