@@ -3252,6 +3252,60 @@ class TestFacetColorbar:
             warnings.simplefilter("error", DeprecationWarning)
             ArrayGlyph(self._stack_3d()).facet(col="time", col_coords=[0, 1, 2])
 
+    def test_facet_placement_colorbar_overrides_preset_swatch(self):
+        """A placement-bearing `colorbar=` overrides a preset swatch on the facet path.
+
+        Test scenario:
+            This pins the exact regression that routing `colorbar=` through
+            `sub.plot` restored: a continuous preset (`flow_accumulation`)
+            normally draws an inset swatch legend, but a placement-bearing
+            `ColorBar(location=...)` sets `_style_wants_colorbar`, so each panel
+            draws a real colorbar instead. A revert to the constructor-baked
+            routing would leave the swatch and no colorbars, failing here.
+        """
+        result = ArrayGlyph(self._stack_3d()).facet(
+            col="time", col_coords=[0, 1, 2], style="flow_accumulation",
+            colorbar=ColorBar(location="right"),
+        )
+        assert (
+            len(self._colorbar_axes(result)) == 3
+        ), "a placement colorbar should draw a real colorbar per panel"
+        swatches = sum(len(ax.child_axes) for ax in result.axes.ravel())
+        assert swatches == 0, f"the preset swatch should be overridden, got {swatches} swatch axes"
+
+    def test_facet_swatch_preset_without_colorbar_keeps_swatch(self):
+        """Without a placement `colorbar=`, the preset keeps its swatch (control).
+
+        Test scenario:
+            The companion to the override test: the same continuous preset with
+            no `colorbar=` draws its inset swatch on every panel and no real
+            colorbar axis, so the override test above is meaningfully guarded.
+        """
+        result = ArrayGlyph(self._stack_3d()).facet(
+            col="time", col_coords=[0, 1, 2], style="flow_accumulation"
+        )
+        assert self._colorbar_axes(result) == [], "preset alone should draw no real colorbar"
+        swatches = sum(len(ax.child_axes) for ax in result.axes.ravel())
+        assert swatches == 3, f"each panel should keep its preset swatch, got {swatches}"
+
+    def test_facet_loose_cbar_warns_exactly_once(self):
+        """A loose `cbar_*` on `facet` deprecates exactly once, not once per panel.
+
+        Test scenario:
+            The single warning comes from `facet` itself; the per-panel sub-glyph
+            constructors fold the loose kwarg silently. This locks the invariant
+            that re-routing loose kwargs through `sub.plot` (which would warn per
+            panel) is not silently introduced.
+        """
+        with pytest.warns(DeprecationWarning) as record:
+            ArrayGlyph(self._stack_3d()).facet(
+                col="time", col_coords=[0, 1, 2], cbar_label="mm"
+            )
+        cbar_warnings = [w for w in record if "cbar_label" in str(w.message)]
+        assert (
+            len(cbar_warnings) == 1
+        ), f"expected exactly one cbar_label deprecation, got {len(cbar_warnings)}"
+
 
 @pytest.mark.plot
 class TestFacetExtents:
