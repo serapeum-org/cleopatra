@@ -3082,6 +3082,43 @@ class TestFacetColorbar:
             len(self._colorbar_axes(result)) == 3
         ), f"expected 3 colorbar axes, got {len(self._colorbar_axes(result))}"
 
+    def test_facet_colorbar_true_resets_loose_cbar_kwargs(self):
+        """`colorbar=True` resets a conflicting loose `cbar_*` to its default.
+
+        Test scenario:
+            Unlike the `None` default (which leaves loose kwargs in place),
+            `True` resets the resettable `cbar_*` family, so a loose
+            `cbar_label="loose"` does not survive -- the drawn bar has the
+            default (empty) label. The loose kwarg still deprecates.
+        """
+        with pytest.warns(DeprecationWarning, match="cbar_label"):
+            result = ArrayGlyph(self._stack_3d()).facet(
+                col="time", col_coords=[0, 1, 2], colorbar=True, cbar_label="loose"
+            )
+        assert (
+            result.cbar.ax.get_ylabel() == ""
+        ), f"colorbar=True should reset the loose label, got {result.cbar.ax.get_ylabel()!r}"
+
+    def test_facet_colorbar_spec_shares_stack_vmin_vmax(self):
+        """A `colorbar=` spec does not disturb the shared stack-wide `vmin`/`vmax`.
+
+        Test scenario:
+            The colour limits stay auto-computed over the whole stack even when
+            a `ColorBar` spec is supplied, so the shared bar spans the stack's
+            finite range.
+        """
+        stack = self._stack_3d()
+        result = ArrayGlyph(stack).facet(
+            col="time", col_coords=[0, 1, 2], colorbar=ColorBar(label="mm")
+        )
+        vmin, vmax = result.cbar.mappable.get_clim()
+        assert vmin == pytest.approx(
+            float(stack.min())
+        ), f"cbar vmin should match stack min, got {vmin}"
+        assert vmax == pytest.approx(
+            float(stack.max())
+        ), f"cbar vmax should match stack max, got {vmax}"
+
     def test_facet_colorbar_false_suppresses(self):
         """`facet(colorbar=False)` draws no colorbar and leaves `result.cbar` None.
 
@@ -3109,11 +3146,13 @@ class TestFacetColorbar:
         assert result.cbar is not None, "default facet should still expose a shared cbar"
 
     def test_facet_colorbar_orientation_applied(self):
-        """A horizontal `ColorBar` orientation reaches the drawn colorbar.
+        """A horizontal `ColorBar` orientation reaches every panel's colorbar.
 
         Test scenario:
             `ColorBar(orientation="horizontal")` routes through `_resolve_colorbar`
-            into the panels, so the shared colorbar renders horizontally.
+            into every panel, so the shared colorbar renders horizontally and,
+            since a horizontal bar carries its label on the x-axis, each panel's
+            colorbar shows the label there.
         """
         result = ArrayGlyph(self._stack_3d()).facet(
             col="time",
@@ -3123,6 +3162,12 @@ class TestFacetColorbar:
         assert (
             result.cbar.orientation == "horizontal"
         ), f"expected horizontal cbar, got {result.cbar.orientation!r}"
+        xlabels = [ax.get_xlabel() for ax in self._colorbar_axes(result)]
+        assert xlabels == [
+            "mm",
+            "mm",
+            "mm",
+        ], f"every panel's horizontal cbar should label the x-axis 'mm', got {xlabels}"
 
     def test_facet_colorbar_spec_wins_over_loose_kwargs(self):
         """A `ColorBar` spec overrides a conflicting loose `cbar_*`, mirroring `plot`.
