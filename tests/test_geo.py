@@ -804,9 +804,16 @@ class TestAddReferenceMap:
         plt.close(fig2)
 
 
-def test_add_reference_map_integration(tmp_path: Path, monkeypatch):
-    """Non-mocked: add_reference_map draws real coastline + border collections."""
+def _seed_reference_cache(tmp_path: Path, monkeypatch, *, relief: bool) -> None:
+    """Seed `CLEOPATRA_CACHE_DIR` with 110m coastline/border layers -- and, when
+    `relief` is true, a tiny relief PNG -- so the reference map runs offline."""
     monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))
+    if relief:
+        Image = pytest.importorskip(
+            "PIL.Image", reason="Pillow not installed (tiles extra)"
+        )
+        arr = (np.random.default_rng(0).random((4, 8, 3)) * 255).astype("uint8")
+        Image.fromarray(arr).save(tmp_path / "ne_hypso_rgb_720x360.png")
     line = {
         "type": "FeatureCollection",
         "features": [
@@ -825,6 +832,11 @@ def test_add_reference_map_integration(tmp_path: Path, monkeypatch):
     ):
         with gzip.open(tmp_path / fname, "wt", encoding="utf-8") as fh:
             json.dump(line, fh)
+
+
+def test_add_reference_map_integration(tmp_path: Path, monkeypatch):
+    """Non-mocked: add_reference_map draws real coastline + border collections."""
+    _seed_reference_cache(tmp_path, monkeypatch, relief=False)
 
     glyph = ArrayGlyph(np.random.rand(20, 30), extent=[-100, 15, -40, 55])
     fig, ax = glyph.plot()
@@ -846,30 +858,7 @@ def test_add_reference_map_integration(tmp_path: Path, monkeypatch):
 
 def test_add_reference_map_dark_draws_real_relief(tmp_path: Path, monkeypatch):
     """Non-mocked: `ecmwf-dark` places a real dimmed relief image beneath data."""
-    Image = pytest.importorskip(
-        "PIL.Image", reason="Pillow not installed (tiles extra)"
-    )
-    monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))
-    arr = (np.random.default_rng(0).random((4, 8, 3)) * 255).astype("uint8")
-    Image.fromarray(arr).save(tmp_path / "ne_hypso_rgb_720x360.png")
-    line = {
-        "type": "FeatureCollection",
-        "features": [
-            {
-                "type": "Feature",
-                "geometry": {
-                    "type": "LineString",
-                    "coordinates": [[-90, 20], [-50, 50]],
-                },
-            }
-        ],
-    }
-    for fname in (
-        "ne_110m_coastline.geojson.gz",
-        "ne_110m_admin_0_boundary_lines_land.geojson.gz",
-    ):
-        with gzip.open(tmp_path / fname, "wt", encoding="utf-8") as fh:
-            json.dump(line, fh)
+    _seed_reference_cache(tmp_path, monkeypatch, relief=True)
 
     glyph = ArrayGlyph(np.random.rand(20, 30), extent=[-100, 15, -40, 55])
     fig, ax = glyph.plot()
@@ -886,30 +875,7 @@ def test_add_reference_map_relief_warps_non_4326(tmp_path: Path, monkeypatch):
     """ecmwf-dark forwards self.crs to the relief, so on a non-4326 axis the
     backdrop is warped (RGBA) rather than placed in lon/lat."""
     pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
-    Image = pytest.importorskip(
-        "PIL.Image", reason="Pillow not installed (tiles extra)"
-    )
-    monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))
-    arr = (np.random.default_rng(0).random((4, 8, 3)) * 255).astype("uint8")
-    Image.fromarray(arr).save(tmp_path / "ne_hypso_rgb_720x360.png")
-    line = {
-        "type": "FeatureCollection",
-        "features": [
-            {
-                "type": "Feature",
-                "geometry": {
-                    "type": "LineString",
-                    "coordinates": [[-90, 20], [-50, 50]],
-                },
-            }
-        ],
-    }
-    for fname in (
-        "ne_110m_coastline.geojson.gz",
-        "ne_110m_admin_0_boundary_lines_land.geojson.gz",
-    ):
-        with gzip.open(tmp_path / fname, "wt", encoding="utf-8") as fh:
-            json.dump(line, fh)
+    _seed_reference_cache(tmp_path, monkeypatch, relief=True)
 
     glyph = ArrayGlyph(np.random.rand(20, 30), extent=[-2e7, -1e7, 2e7, 1e7])
     glyph.crs = 3857  # axis CRS recorded once; add_reference_map defaults to it
