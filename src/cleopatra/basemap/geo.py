@@ -1056,10 +1056,15 @@ class GeoMixin:
                 self.add_relief(
                     relief_kwargs.pop("resolution"), ax=target, **relief_kwargs
                 )
-            except ImportError:
+            except (ImportError, OSError) as exc:
+                # ImportError -> Pillow (the [tiles] extra) is missing; OSError
+                # (incl. ConnectionError) -> the relief asset could not be
+                # fetched or decoded. Either way, skip the backdrop but still
+                # draw the independently cached coastline/border chrome; a bad
+                # relief resolution in a custom preset (ValueError) still raises.
                 warnings.warn(
-                    "add_reference_map: relief backdrop skipped; install "
-                    "cleopatra[tiles] for the hillshade.",
+                    "add_reference_map: relief backdrop skipped "
+                    f"({exc}); the coastline/border chrome is still drawn.",
                     stacklevel=2,
                 )
 
