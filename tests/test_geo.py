@@ -626,6 +626,20 @@ class TestAddReferenceMap:
         host.add_features.assert_called()  # chrome unaffected by the relief failure
         plt.close(fig)
 
+    def test_custom_relief_bad_resolution_raises(self, monkeypatch):
+        """A custom preset's bad relief resolution raises loudly (a config error),
+        it is not swallowed by the environmental degrade path."""
+        host, fig, ax = self._host(extent=[-100, 15, -40, 55])
+        host.add_relief = MagicMock(
+            side_effect=ValueError("Unknown relief resolution 'ultra'")
+        )
+        monkeypatch.setitem(
+            REFERENCE_MAP_STYLES["ecmwf-dark"], "relief", {"resolution": "ultra"}
+        )
+        with pytest.raises(ValueError, match="Unknown relief resolution"):
+            host.add_reference_map("ecmwf-dark")
+        plt.close(fig)
+
     def test_no_extent_skips_relief(self):
         """With no geographic extent, the relief backdrop is skipped entirely."""
         host, fig, ax = self._host(extent=None)
