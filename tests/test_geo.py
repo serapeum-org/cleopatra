@@ -858,6 +858,44 @@ def test_add_reference_map_dark_draws_real_relief(tmp_path: Path, monkeypatch):
     plt.close(fig)
 
 
+def test_add_reference_map_relief_warps_non_4326(tmp_path: Path, monkeypatch):
+    """ecmwf-dark forwards self.crs to the relief, so on a non-4326 axis the
+    backdrop is warped (RGBA) rather than placed in lon/lat."""
+    pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+    Image = pytest.importorskip(
+        "PIL.Image", reason="Pillow not installed (tiles extra)"
+    )
+    monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))
+    arr = (np.random.default_rng(0).random((4, 8, 3)) * 255).astype("uint8")
+    Image.fromarray(arr).save(tmp_path / "ne_hypso_rgb_720x360.png")
+    line = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [[-90, 20], [-50, 50]],
+                },
+            }
+        ],
+    }
+    for fname in (
+        "ne_110m_coastline.geojson.gz",
+        "ne_110m_admin_0_boundary_lines_land.geojson.gz",
+    ):
+        with gzip.open(tmp_path / fname, "wt", encoding="utf-8") as fh:
+            json.dump(line, fh)
+
+    glyph = ArrayGlyph(np.random.rand(20, 30), extent=[-2e7, -1e7, 2e7, 1e7])
+    glyph.crs = 3857  # axis CRS recorded once; add_reference_map defaults to it
+    fig, ax = glyph.plot()
+    glyph.add_reference_map("ecmwf-dark", resolution="110m")
+    placed = np.asarray(ax.images[-1].get_array())
+    assert placed.shape[2] == 4, f"relief should warp to RGBA, got {placed.shape}"
+    plt.close(fig)
+
+
 class TestBasemapAlignmentCheck:
     """`_check_basemap_alignment`: the opt-in mis-georeferencing warning."""
 
