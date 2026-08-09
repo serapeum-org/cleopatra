@@ -377,51 +377,64 @@ class ColorScaling:
         vmax = ticks[-1]
         bounds_from_levels = levels_to_bounds(levels, vmin, vmax)
 
-        norm: colors.Normalize | None
-        cbar_kw: dict[str, Any]
-        if self.kind == ColorScale.LINEAR:
-            if bounds_from_levels is not None:
-                norm = colors.BoundaryNorm(boundaries=bounds_from_levels, ncolors=256)
-                cbar_kw = {"ticks": bounds_from_levels}
-            else:
-                norm = None
-                cbar_kw = {"ticks": ticks}
-        elif self.kind == ColorScale.POWER:
-            norm = colors.PowerNorm(gamma=self.gamma, vmin=vmin, vmax=vmax)
-            cbar_kw = {"ticks": ticks}
-        elif self.kind == ColorScale.SYM_LOGNORM:
-            norm = colors.SymLogNorm(
-                linthresh=self.line_threshold,
-                linscale=self.line_scale,
-                base=np.e,
-                vmin=vmin,
-                vmax=vmax,
-            )
-            formatter = LogFormatter(10, labelOnlyBase=False)
-            cbar_kw = {"ticks": ticks, "format": formatter}
-        elif self.kind == ColorScale.BOUNDARY_NORM:
-            if self.bounds:
-                bounds = self.bounds
-                cbar_kw = {"ticks": self.bounds}
-            elif bounds_from_levels is not None:
-                bounds = bounds_from_levels
-                cbar_kw = {"ticks": bounds_from_levels}
-            else:
-                bounds = ticks
-                cbar_kw = {"ticks": ticks}
-            norm = colors.BoundaryNorm(boundaries=bounds, ncolors=256)
-        elif self.kind == ColorScale.MIDPOINT:
-            norm = MidpointNormalize(midpoint=self.center, vmin=vmin, vmax=vmax)
-            cbar_kw = {"ticks": ticks}
-        else:  # pragma: no cover - a ColorScale member without a branch
-            raise ValueError(
-                f"No norm branch implemented for color_scale={self.kind!r}."
-            )
+        builder = self._NORM_BUILDERS[self.kind]
+        norm, cbar_kw = builder(self, ticks, vmin, vmax, bounds_from_levels)
 
-        if extend is None:
-            extend_effective = "both" if levels is not None else "neither"
-        else:
-            extend_effective = extend
-        cbar_kw["extend"] = extend_effective
-
+        cbar_kw["extend"] = (
+            extend
+            if extend is not None
+            else ("both" if levels is not None else "neither")
+        )
         return norm, cbar_kw
+
+    def _linear_norm(self, ticks, vmin, vmax, bounds_from_levels):
+        """`linear` scale: a `BoundaryNorm` when levels discretise it, else none."""
+        if bounds_from_levels is not None:
+            norm = colors.BoundaryNorm(boundaries=bounds_from_levels, ncolors=256)
+            return norm, {"ticks": bounds_from_levels}
+        return None, {"ticks": ticks}
+
+    def _power_norm(self, ticks, vmin, vmax, bounds_from_levels):
+        """`power` scale: a `PowerNorm` with this object's `gamma`."""
+        return colors.PowerNorm(gamma=self.gamma, vmin=vmin, vmax=vmax), {
+            "ticks": ticks
+        }
+
+    def _sym_log_norm(self, ticks, vmin, vmax, bounds_from_levels):
+        """`sym-lognorm` scale: a `SymLogNorm` plus a log tick formatter."""
+        norm = colors.SymLogNorm(
+            linthresh=self.line_threshold,
+            linscale=self.line_scale,
+            base=np.e,
+            vmin=vmin,
+            vmax=vmax,
+        )
+        return norm, {"ticks": ticks, "format": LogFormatter(10, labelOnlyBase=False)}
+
+    def _boundary_norm(self, ticks, vmin, vmax, bounds_from_levels):
+        """`boundary-norm` scale: explicit `bounds`, else levels, else the ticks."""
+        if self.bounds:
+            bounds = self.bounds
+        elif bounds_from_levels is not None:
+            bounds = bounds_from_levels
+        else:
+            bounds = ticks
+        norm = colors.BoundaryNorm(boundaries=bounds, ncolors=256)
+        return norm, {"ticks": bounds}
+
+    def _midpoint_norm(self, ticks, vmin, vmax, bounds_from_levels):
+        """`midpoint` scale: a `MidpointNormalize` centred at `self.center`."""
+        return MidpointNormalize(midpoint=self.center, vmin=vmin, vmax=vmax), {
+            "ticks": ticks
+        }
+
+    #: Per-scale norm builders, dispatched by `build_norm` (each takes
+    #: `(self, ticks, vmin, vmax, bounds_from_levels)` and returns
+    #: `(norm, cbar_kw)`), keeping `build_norm` a flat dispatch.
+    _NORM_BUILDERS = {
+        ColorScale.LINEAR: _linear_norm,
+        ColorScale.POWER: _power_norm,
+        ColorScale.SYM_LOGNORM: _sym_log_norm,
+        ColorScale.BOUNDARY_NORM: _boundary_norm,
+        ColorScale.MIDPOINT: _midpoint_norm,
+    }
