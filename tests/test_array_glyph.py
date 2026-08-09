@@ -13,7 +13,7 @@ from matplotlib.text import Text
 from PIL import Image
 
 import cleopatra.basemap.reference as refmod
-from cleopatra.styling.params import Contour
+from cleopatra.styling.params import CellValues, Contour
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.glyphs.gridded.array_glyph import (
@@ -224,9 +224,11 @@ class TestPlotArray:
     ):
         array = ArrayGlyph(arr, exclude_value=[no_data_value])
         fig, ax = array.plot(
-            display_cell_value=display_cell_value,
-            num_size=num_size,
-            background_color_threshold=background_color_threshold,
+            cells=CellValues(
+                show=display_cell_value,
+                size=num_size,
+                background_threshold=background_color_threshold,
+            ),
             colorbar=ColorBar(ticks_spacing=ticks_spacing),
         )
 
@@ -251,9 +253,11 @@ class TestPlotArray:
             points=PointOverlay(points, color=gauge_color, size=point_size),
             id_color=id_color,
             id_size=id_size,
-            display_cell_value=display_cell_value,
-            num_size=num_size,
-            background_color_threshold=background_color_threshold,
+            cells=CellValues(
+                show=display_cell_value,
+                size=num_size,
+                background_threshold=background_color_threshold,
+            ),
             colorbar=ColorBar(ticks_spacing=ticks_spacing),
         )
 
@@ -379,7 +383,7 @@ class TestRenamedKwargAliases:
         with pytest.warns(DeprecationWarning, match="cell_value_text_colors"):
             array.animate(
                 animate_time_list,
-                display_cell_value=True,
+                cells=CellValues(show=True),
                 text_colors=("yellow", "purple"),
             )
 
@@ -413,7 +417,7 @@ class TestRenamedKwargAliases:
             warnings.simplefilter("always")
             array.animate(
                 animate_time_list,
-                display_cell_value=True,
+                cells=CellValues(show=True),
                 cell_value_text_colors=("white", "black"),
                 text_colors=("yellow", "purple"),
             )
@@ -736,7 +740,7 @@ class TestKwargsTypedDicts:
         frame = np.array([[1.23456, 2.34567], [3.45678, 4.56789]])
         stack = np.stack([frame, frame + 0.001])
         array = ArrayGlyph(stack)
-        array.animate(list(range(2)), display_cell_value=True, precision=1)
+        array.animate(list(range(2)), cells=CellValues(show=True), precision=1)
         array.anim._func(0)
         cell_texts = {
             t.get_text()
@@ -1037,7 +1041,7 @@ class TestAnimateRGB:
             `FuncAnimation` with no colorbar.
         """
         glyph = ArrayGlyph(self._rgb_stack())
-        anim = glyph.animate(self._LABELS, display_cell_value=True)
+        anim = glyph.animate(self._LABELS, cells=CellValues(show=True))
         assert isinstance(anim, FuncAnimation), (
             f"expected FuncAnimation, got {type(anim).__name__}"
         )
@@ -1330,7 +1334,7 @@ class TestPlotKindDispatch:
     def test_imshow_with_display_cell_value(self):
         """`kind="imshow", display_cell_value=True` still draws cell text."""
         glyph = ArrayGlyph(self._sample_arr())
-        fig, ax = glyph.plot(kind="imshow", display_cell_value=True)
+        fig, ax = glyph.plot(kind="imshow", cells=CellValues(show=True))
         assert isinstance(fig, Figure)
         # Each cell of the 5x5 grid yields one Text artist; allow >= 25
         # because matplotlib also creates axis label/title Text objects.
@@ -1340,7 +1344,7 @@ class TestPlotKindDispatch:
     def test_contour_skips_cell_value_silently(self):
         """`display_cell_value=True` is skipped for `kind="contour"`."""
         glyph = ArrayGlyph(self._sample_arr())
-        fig, ax = glyph.plot(kind="contour", display_cell_value=True)
+        fig, ax = glyph.plot(kind="contour", cells=CellValues(show=True))
         assert isinstance(fig, Figure)
         # No per-cell text annotations should have been emitted.
         assert len(ax.texts) == 0
@@ -1964,9 +1968,9 @@ class TestSharedAxesArtistCleanup:
         """
         arr = np.arange(100.0).reshape(10, 10)
         glyph = ArrayGlyph(arr)
-        glyph.plot(display_cell_value=True)
+        glyph.plot(cells=CellValues(show=True))
         texts_after_first = len(glyph.ax.texts)
-        glyph.plot(display_cell_value=True)
+        glyph.plot(cells=CellValues(show=True))
         assert len(glyph.ax.texts) == texts_after_first, (
             f"Expected {texts_after_first} cell-value texts after the second call, "
             f"got {len(glyph.ax.texts)}"
@@ -2003,9 +2007,9 @@ class TestSharedAxesArtistCleanup:
     ):
         """A second `animate(display_cell_value=True)` call replaces the cell-value texts."""
         glyph = ArrayGlyph(coello_data)
-        glyph.animate(animate_time_list, display_cell_value=True)
+        glyph.animate(animate_time_list, cells=CellValues(show=True))
         texts_after_first = len(glyph.ax.texts)
-        glyph.animate(animate_time_list, display_cell_value=True)
+        glyph.animate(animate_time_list, cells=CellValues(show=True))
         assert len(glyph.ax.texts) == texts_after_first, (
             f"Expected {texts_after_first} texts after the second call, "
             f"got {len(glyph.ax.texts)}"
@@ -2426,7 +2430,7 @@ class TestNanNoDataConvention:
         not `num_domain_cells`). Regression for P1."""
         arr = self._nan_raster(n=4)
         glyph = ArrayGlyph(arr)
-        anim = glyph.animate(time=list(range(4)), display_cell_value=True)
+        anim = glyph.animate(time=list(range(4)), cells=CellValues(show=True))
         assert isinstance(anim, FuncAnimation)
         plt.close(glyph.fig)
 
@@ -2435,7 +2439,7 @@ class TestNanNoDataConvention:
         `Text` artist per non-NaN cell and does not crash."""
         arr = self._nan_raster(n=1)[0]  # 2-D 5x5 frame
         glyph = ArrayGlyph(arr)
-        fig, ax = glyph.plot(display_cell_value=True)
+        fig, ax = glyph.plot(cells=CellValues(show=True))
         try:
             assert isinstance(fig, Figure)
             n_nan = int(np.isnan(arr).sum())
@@ -4401,7 +4405,7 @@ class TestAnimateDataGetterEdgeCases:
         anim = glyph.animate(
             time=list(range(3)),
             data_getter=lambda i: stack[i],
-            display_cell_value=False,
+            cells=CellValues(show=False),
         )
         try:
             assert isinstance(anim, FuncAnimation), (
@@ -4537,7 +4541,7 @@ class TestAnimateDataGetterEdgeCases:
         anim = glyph.animate(
             time=list(range(3)),
             data_getter=lambda i: stack[i],
-            background_color_threshold=0.5,
+            cells=CellValues(background_threshold=0.5),
         )
         try:
             assert isinstance(anim, FuncAnimation), (

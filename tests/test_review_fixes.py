@@ -13,6 +13,7 @@ import numpy as np
 import pytest
 
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+from cleopatra.styling.params import CellValues
 from cleopatra.styling.colors import DATA_STYLES, convert_units, resolve_colormap, resolve_style_norm
 from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
 from cleopatra.templates import publication_map
@@ -99,6 +100,8 @@ class TestReviewFixes:
         data = np.random.default_rng(0).random((6, 8))
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
-            ArrayGlyph(data, coords=(lon, lat), projection="flat").plot(display_cell_value=True)
+            ArrayGlyph(data, coords=(lon, lat), projection="flat").plot(
+                cells=CellValues(show=True)
+            )
         assert any("reprojected coordinates" in str(w.message) for w in caught), "projection+overlay must warn"
         plt.close("all")

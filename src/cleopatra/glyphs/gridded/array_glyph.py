@@ -75,7 +75,7 @@ from cleopatra.glyphs.base.glyph import (
 )
 from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_grid, shade_rgb
 from cleopatra.basemap.projection import apply_projection_style, projection_draws_frame
-from cleopatra.styling.params import Contour
+from cleopatra.styling.params import CellValues, Contour
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import (
@@ -2883,6 +2883,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         title: str | None = None,
         color: ColorScaling | None = None,
         contour: Contour | None = None,
+        cells: CellValues | None = None,
         full_bleed: bool | str = False,
         basemap: bool | dict | Basemap | Callable[[Any], None] | None = None,
         colorbar: bool | ColorBar | None = None,
@@ -3252,8 +3253,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 ```python
                 >>> array = ArrayGlyph(arr, figsize=(6, 6), title="Display array values", title_size=18)
                 >>> fig, ax = array.plot(
-                ...     display_cell_value=True,
-                ...     num_size=12
+                ...     cells=CellValues(show=True, size=12),
                 ... )
 
                 ```
@@ -3502,7 +3502,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         points = _resolve_point_overlay(points, kwargs)  # type: ignore[arg-type]
         _warn_deprecated_cbar_kwargs(kwargs)
 
-        self._merge_group_params(color, contour)
+        self._merge_group_params(color, contour, cells)
         resolved_colorbar = self._apply_kwargs_and_colorbar(colorbar, kwargs)  # type: ignore[arg-type]
 
         self._validate_extend(self.default_options.get("extend"))
@@ -4052,6 +4052,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         frame_label: FrameLabel | None = None,
         *,
         color: ColorScaling | None = None,
+        cells: CellValues | None = None,
         data_getter: Callable[[int], np.ndarray] | None = None,
         full_bleed: bool | str = False,
         basemap: bool | dict | Basemap | Callable[[Any], None] | None = None,
@@ -4351,8 +4352,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         >>> animated_array = ArrayGlyph(arr, figsize=(8, 8), title="Animated Array")
         >>> anim_obj = animated_array.animate(
         ...     frame_labels,
-        ...     display_cell_value=True,
-        ...     num_size=10,
+        ...     cells=CellValues(show=True, size=10),
         ...     cell_value_text_colors=("yellow", "blue")
         ... )
 
@@ -4452,7 +4452,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             assert frame_location is not None
             label_location = frame_location
 
-        self._merge_group_params(color)
+        self._merge_group_params(color, cells)
         resolved_colorbar = self._apply_kwargs_and_colorbar(colorbar, kwargs)  # type: ignore[arg-type]
 
         if "ticks_spacing" not in resolved_colorbar:

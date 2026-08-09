@@ -57,6 +57,9 @@ _GROUPED_KWARG_HINTS: dict[str, str] = {
     "levels": "contour=Contour(levels=...)",
     "labels": "contour=Contour(labels=True, label_kw=...)",
     "label_kw": "contour=Contour(labels=True, label_kw=...)",
+    "display_cell_value": "cells=CellValues(show=True, ...)",
+    "num_size": "cells=CellValues(size=...)",
+    "background_color_threshold": "cells=CellValues(background_threshold=...)",
 }
 
 
