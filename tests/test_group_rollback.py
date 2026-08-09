@@ -65,8 +65,9 @@ def test_failed_scheme_does_not_poison_default_options(name):
     """A rejected `classify` scheme rolls back so a later plain plot() works."""
     glyph = _FACTORIES[name]()
     before = glyph.default_options.get("scheme")
+    bad = Classify(scheme="not_a_scheme")
     with pytest.raises(ValueError):
-        glyph.plot(classify=Classify(scheme="not_a_scheme"))
+        glyph.plot(classify=bad)
     assert glyph.default_options.get("scheme") == before, (
         f"{name}: a failed classify scheme must roll back to its default"
     )
@@ -78,11 +79,10 @@ def test_failed_scheme_does_not_poison_default_options(name):
 def test_failed_plot_rolls_back_co_passed_color(name):
     """A failed styled plot must not leak a co-passed color= into later plots."""
     glyph = _FACTORIES[name]()
+    power = ColorScaling.power(gamma=0.7)
+    bad = Classify(scheme="not_a_scheme")
     with pytest.raises(ValueError):
-        glyph.plot(
-            color=ColorScaling.power(gamma=0.7),
-            classify=Classify(scheme="not_a_scheme"),
-        )
+        glyph.plot(color=power, classify=bad)
     assert glyph.default_options["color_scale"] == "linear", (
         f"{name}: a failed plot must roll back the co-passed colour scale"
     )
