@@ -74,6 +74,7 @@ from cleopatra.glyphs.base.glyph import (
 )
 from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_grid, shade_rgb
 from cleopatra.basemap.projection import apply_projection_style, projection_draws_frame
+from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import (
     ColorScale,  # re-exported for convenience  # noqa: F401
@@ -2880,6 +2881,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         kind: str = "auto",
         ax: Axes | None = None,
         title: str | None = None,
+        color: ColorScaling | None = None,
         full_bleed: bool | str = False,
         basemap: bool | dict | Basemap | Callable[[Any], None] | None = None,
         colorbar: bool | ColorBar | None = None,
@@ -3501,6 +3503,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         points = _resolve_point_overlay(points, kwargs)  # type: ignore[arg-type]
         _warn_deprecated_cbar_kwargs(kwargs)
 
+        self._merge_group_params(color)
         resolved_colorbar = self._apply_kwargs_and_colorbar(colorbar, kwargs)  # type: ignore[arg-type]
 
         self._validate_extend(self.default_options.get("extend"))
@@ -4049,6 +4052,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         interval: int = 200,
         frame_label: FrameLabel | None = None,
         *,
+        color: ColorScaling | None = None,
         data_getter: Callable[[int], np.ndarray] | None = None,
         full_bleed: bool | str = False,
         basemap: bool | dict | Basemap | Callable[[Any], None] | None = None,
@@ -4449,6 +4453,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             assert frame_location is not None
             label_location = frame_location
 
+        self._merge_group_params(color)
         resolved_colorbar = self._apply_kwargs_and_colorbar(colorbar, kwargs)  # type: ignore[arg-type]
 
         if "ticks_spacing" not in resolved_colorbar:

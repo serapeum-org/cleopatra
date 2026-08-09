@@ -41,6 +41,7 @@ from matplotlib.figure import Figure
 from matplotlib.legend import Legend
 
 from cleopatra.styling.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
+from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.colors import resolve_colormap, resolve_glow_options
 from cleopatra.basemap.geo import GeoMixin
 from cleopatra.glyphs.base.glyph import Glyph, _root_figure
@@ -236,6 +237,7 @@ class FlowGlyph(GeoMixin, Glyph):
         title: str | None = None,
         add_colorbar: bool | None = None,
         colorbar: bool | ColorBar | None = None,
+        color: ColorScaling | None = None,
     ) -> tuple[Figure, Axes, LineCollection]:
         """Draw the flow paths, colouring by value and scaling by width.
 
@@ -322,6 +324,8 @@ class FlowGlyph(GeoMixin, Glyph):
 
                 ```
         """
+        self._merge_group_params(color)
+
         if ax is not None:
             self.ax = ax
             self.fig = _root_figure(ax)

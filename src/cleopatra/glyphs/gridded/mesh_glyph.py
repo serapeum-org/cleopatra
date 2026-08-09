@@ -57,6 +57,7 @@ from cleopatra.glyphs.base.glyph import (
 )
 from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_faces
 from cleopatra.basemap.projection import apply_projection_style_mesh, projection_draws_frame
+from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import disjoint_legend
 
@@ -828,6 +829,7 @@ class MeshGlyph(GeoMixin, Glyph):
         colorbar: bool | ColorBar | None = True,
         title: str | None = None,
         filled: bool = True,
+        color: ColorScaling | None = None,
         **kwargs: Any,
     ) -> tuple[plt.Figure, plt.Axes]:
         """Plot mesh data using matplotlib triangulation.
@@ -1006,6 +1008,7 @@ class MeshGlyph(GeoMixin, Glyph):
             else:
                 render_kwargs[key] = val
         self._merge_kwargs(option_kwargs)
+        self._merge_group_params(color)
         _warn_deprecated_cbar_kwargs(kwargs)
         resolved_colorbar = (
             _resolve_colorbar(colorbar) if isinstance(colorbar, ColorBar) else {}
@@ -1168,6 +1171,7 @@ class MeshGlyph(GeoMixin, Glyph):
         interval: int = 200,
         text_loc: list | None = None,
         colorbar: bool | ColorBar | None = None,
+        color: ColorScaling | None = None,
         **kwargs: Any,
     ) -> FuncAnimation:
         """Create an animation from time-varying mesh data.
@@ -1247,6 +1251,7 @@ class MeshGlyph(GeoMixin, Glyph):
 
         self._default_options = MESH_DEFAULT_OPTIONS.copy()
         self._merge_kwargs(kwargs)
+        self._merge_group_params(color)
         _warn_deprecated_cbar_kwargs(kwargs)
         resolved_colorbar = (
             _resolve_colorbar(colorbar) if isinstance(colorbar, ColorBar) else {}

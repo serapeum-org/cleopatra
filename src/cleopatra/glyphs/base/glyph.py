@@ -508,6 +508,25 @@ class Glyph:
             else:
                 self._default_options[key] = val
 
+    def _merge_group_params(self, *groups: Any) -> None:
+        """Flatten grouped parameter objects into `default_options`.
+
+        Each glyph's `plot`/`animate` accepts grouped parameter objects
+        (e.g. `color=ColorScaling(...)`) in place of the loose keyword
+        arguments they replaced. Every such object exposes `to_options()`,
+        returning the flat `default_options` keys the rendering engine
+        reads; this helper merges each non-`None` object's keys in, so the
+        internal storage stays a single flat dict.
+
+        Args:
+            *groups: Grouped parameter objects (or `None` for an omitted
+                group). Anything `None` is skipped; each other object must
+                expose a `to_options()` returning a dict.
+        """
+        for group in groups:
+            if group is not None:
+                self.default_options.update(group.to_options())
+
     def create_figure_axes(self) -> tuple[Figure, Axes]:
         """Create a new figure and axes from default_options.
 
