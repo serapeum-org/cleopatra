@@ -6,6 +6,7 @@ import matplotlib.colors as mcolors
 import numpy as np
 import pytest
 
+from cleopatra.styling.params import CellValues, Classify, Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
 
 
@@ -79,3 +80,47 @@ class TestColorScalingBuildNorm:
         norm, _ = ColorScaling.power(gamma=0.5).build_norm(np.array([0.0, 10.0]))
         assert isinstance(norm, mcolors.PowerNorm)
         assert norm.gamma == 0.5
+
+
+class TestParamGroupsEmitOnlySetFields:
+    """`Contour`/`CellValues`/`DataStyle`/`Classify` emit only the fields set."""
+
+    def test_empty_groups_emit_nothing(self):
+        """A group with no fields set emits an empty option dict."""
+        assert Contour().to_options() == {}
+        assert CellValues().to_options() == {}
+        assert Classify().to_options() == {}
+
+    def test_classify_emits_only_set_fields(self):
+        """`Classify` emits scheme/k/category_legend_kwargs only when given."""
+        assert Classify(scheme="quantiles").to_options() == {"scheme": "quantiles"}
+        assert Classify(k=4).to_options() == {"k": 4}
+        assert Classify(category_legend_kwargs={"loc": "upper left"}).to_options() == {
+            "category_legend_kwargs": {"loc": "upper left"}
+        }
+        assert Classify(scheme="quantiles", k=4).to_options() == {
+            "scheme": "quantiles",
+            "k": 4,
+        }
+
+    def test_contour_and_cells_emit_only_set_fields(self):
+        """`Contour`/`CellValues` emit only the fields explicitly provided."""
+        assert Contour(levels=5).to_options() == {"levels": 5}
+        assert Contour(labels=True, label_kw={"fmt": "%.2f"}).to_options() == {
+            "labels": True,
+            "label_kw": {"fmt": "%.2f"},
+        }
+        assert CellValues(show=True, size=8, background_threshold=0.5).to_options() == {
+            "display_cell_value": True,
+            "num_size": 8,
+            "background_color_threshold": 0.5,
+        }
+
+    def test_datastyle_unset_omits_but_explicit_none_clears(self):
+        """`DataStyle` omits unset fields but emits an explicit `None` (clear)."""
+        assert DataStyle().to_options() == {}
+        assert DataStyle(style=None).to_options() == {"style": None}
+        assert DataStyle(style="dem", hillshade=True).to_options() == {
+            "style": "dem",
+            "hillshade": True,
+        }
