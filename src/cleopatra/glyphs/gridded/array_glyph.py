@@ -2222,21 +2222,21 @@ class ArrayGlyph(GeoMixin, Glyph):
         """Name of the `DATA_STYLES` preset currently applied, or `None`.
 
         Reads back the preset set via the `style` constructor kwarg, a
-        `plot(style=...)` call, or `apply_style`.
+        `plot(data_style=DataStyle(style=...))` call, or `apply_style`.
         """
         return self.default_options.get("style")
 
     def apply_style(self, style: str, **kwargs: Any) -> tuple[Figure, Axes]:
         """Apply a `DATA_STYLES` preset by name, re-rendering the glyph in place.
 
-        A discoverable wrapper over `plot(style=...)` for restyling an
+        A discoverable wrapper over `plot(data_style=DataStyle(style=...))` for restyling an
         already-built glyph. It redraws **in place** on the glyph's own axes
         (clearing the previous render first), so `apply_style` takes full
         ownership of that axes -- do not use it on an axes shared with unrelated
         caller content. If the glyph was never plotted (or its figure was
         closed), it renders on a fresh figure. Extra keyword arguments (e.g.
         `hillshade`, `add_colorbar`) are forwarded to `plot`. The applied style
-        is **sticky** (survives a later plain `plot()`); `plot(style=None)`
+        is **sticky** (survives a later plain `plot()`); `plot(data_style=DataStyle(style=None))`
         clears it.
 
         Args:
@@ -2855,9 +2855,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                   `ax.pcolormesh` with `shading="auto"`. Honours
                   `coords` (1-D centres or 2-D curvilinear).
                 - `"contour"` — line contours via `ax.contour`.
-                  Honours `levels` from kwargs when set.
+                  Honours `contour=Contour(levels=...)` when set.
                 - `"contourf"` — filled contours via `ax.contourf`.
-                  Honours `levels` from kwargs when set.
+                  Honours `contour=Contour(levels=...)` when set.
 
                 Cell-value display and point overlays only apply to
                 `"imshow"` and `"pcolormesh"`; they are silently

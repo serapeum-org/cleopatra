@@ -317,7 +317,7 @@ class KDEGlyph(Glyph):
         """Name of the `DATA_STYLES` preset currently applied, or `None`.
 
         Reads back the preset set via the `style` constructor kwarg, a
-        `plot(style=...)` call, or `apply_style`.
+        `plot(data_style=DataStyle(style=...))` call, or `apply_style`.
         """
         return self.default_options.get("style")
 
@@ -331,12 +331,12 @@ class KDEGlyph(Glyph):
     ):
         """Apply a continuous `DATA_STYLES` preset by name, re-rendering in place.
 
-        A discoverable wrapper over `plot(style=...)` for restyling an
+        A discoverable wrapper over `plot(data_style=DataStyle(style=...))` for restyling an
         already-built glyph. It redraws **in place** on the glyph's own axes
         (taking full ownership -- do not use on a shared axes), or on a fresh
         figure if the glyph was never plotted or its figure was closed. The
         applied style is **sticky** (survives a later plain `plot()`);
-        `plot(style=None)` clears it.
+        `plot(data_style=DataStyle(style=None))` clears it.
 
         Args:
             style: A continuous `cleopatra.styling.colors.DATA_STYLES` preset name.

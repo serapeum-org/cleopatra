@@ -783,7 +783,7 @@ class MeshGlyph(GeoMixin, Glyph):
         """Name of the `DATA_STYLES` preset currently applied, or `None`.
 
         Reads back the preset set via the `style` constructor kwarg, a
-        `plot(style=...)` call, or `apply_style`.
+        `plot(data_style=DataStyle(style=...))` call, or `apply_style`.
         """
         return self.default_options.get("style")
 
@@ -792,15 +792,16 @@ class MeshGlyph(GeoMixin, Glyph):
     ) -> tuple[plt.Figure, plt.Axes]:
         """Apply a `DATA_STYLES` preset by name, re-rendering the mesh in place.
 
-        A discoverable wrapper over `plot(style=...)` for restyling an
+        A discoverable wrapper over `plot(data_style=DataStyle(style=...))` for restyling an
         already-built glyph. It redraws **in place** on the glyph's own axes
         (taking full ownership -- do not use on a shared axes), or on a fresh
         figure if the glyph was never plotted or its figure was closed. It
         reuses the last-plotted mesh data (and location) so the caller need not
         re-supply it; pass `data=` when the glyph has not been plotted yet. The
         applied style is **sticky** (survives a later plain `plot(data)`);
-        `plot(data, style=None)` clears it. Extra keyword arguments (e.g.
-        `location`, `hillshade`, `edgecolor`) are forwarded to `plot`.
+        `plot(data, data_style=DataStyle(style=None))` clears it. Extra
+        keyword arguments (e.g. `location`, `edgecolor`) are forwarded to
+        `plot`.
 
         Args:
             style: A `cleopatra.styling.colors.DATA_STYLES` preset name.
