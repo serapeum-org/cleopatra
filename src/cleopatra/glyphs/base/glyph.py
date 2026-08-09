@@ -23,24 +23,18 @@ from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure, SubFigure
 from matplotlib.legend import Legend
 from matplotlib.patches import Rectangle
-from matplotlib.ticker import LogFormatter
 
 from cleopatra.glyphs.base.animation import SUPPORTED_VIDEO_FORMAT  # noqa: F401  (re-export)
 from cleopatra.glyphs.base.animation import save_animation as _save_animation
 from cleopatra.styling.colors import resolve_colormap
+from cleopatra.styling.scaling import MAX_DISCRETE_LEVELS  # noqa: F401  (re-export)
+from cleopatra.styling.scaling import ColorScaling, levels_to_bounds
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import (
-    ColorScale,
-    MidpointNormalize,
     categorize,
     classify,
     disjoint_legend,
 )
-
-#: Upper bound for an integer `levels` value (number of discrete colour
-#: levels / contour lines). A larger request is almost certainly a mistake
-#: and `np.linspace` with a huge count would exhaust memory.
-MAX_DISCRETE_LEVELS = 1000
 
 #: Qualitative colormap `_prepare_categorical_mapping` falls back to when the
 #: caller left `cmap` at the shared continuous/diverging default -- see the
@@ -693,76 +687,17 @@ class Glyph:
 
                 ```
         """
-        raw_scale = self.default_options["color_scale"]
-        try:
-            color_scale = ColorScale(raw_scale)
-        except ValueError as e:
-            valid = ", ".join(repr(m.value) for m in ColorScale)
-            raise ValueError(
-                f"Invalid color_scale {raw_scale!r}. Expected one of "
-                f"{valid} (or a cleopatra.styling.styles.ColorScale member)."
-            ) from e
-        vmin = ticks[0]
-        vmax = ticks[-1]
-        levels = self.default_options.get("levels")
-        bounds_from_levels = self._levels_to_bounds(levels, vmin, vmax)
-
-        norm: colors.Normalize | None
-        cbar_kw: dict[str, Any]
-        if color_scale == ColorScale.LINEAR:
-            if bounds_from_levels is not None:
-                norm = colors.BoundaryNorm(boundaries=bounds_from_levels, ncolors=256)
-                cbar_kw = {"ticks": bounds_from_levels}
-            else:
-                norm = None
-                cbar_kw = {"ticks": ticks}
-        elif color_scale == ColorScale.POWER:
-            norm = colors.PowerNorm(
-                gamma=self.default_options["gamma"], vmin=vmin, vmax=vmax
-            )
-            cbar_kw = {"ticks": ticks}
-        elif color_scale == ColorScale.SYM_LOGNORM:
-            norm = colors.SymLogNorm(
-                linthresh=self.default_options["line_threshold"],
-                linscale=self.default_options["line_scale"],
-                base=np.e,
-                vmin=vmin,
-                vmax=vmax,
-            )
-            formatter = LogFormatter(10, labelOnlyBase=False)
-            cbar_kw = {"ticks": ticks, "format": formatter}
-        elif color_scale == ColorScale.BOUNDARY_NORM:
-            explicit_bounds = self.default_options["bounds"]
-            if explicit_bounds:
-                bounds = explicit_bounds
-                cbar_kw = {"ticks": explicit_bounds}
-            elif bounds_from_levels is not None:
-                bounds = bounds_from_levels
-                cbar_kw = {"ticks": bounds_from_levels}
-            else:
-                bounds = ticks
-                cbar_kw = {"ticks": ticks}
-            norm = colors.BoundaryNorm(boundaries=bounds, ncolors=256)
-        elif color_scale == ColorScale.MIDPOINT:
-            norm = MidpointNormalize(
-                midpoint=self.default_options["midpoint"],
-                vmin=vmin,
-                vmax=vmax,
-            )
-            cbar_kw = {"ticks": ticks}
-        else:  # pragma: no cover - a ColorScale member without a branch
-            raise ValueError(
-                f"No norm branch implemented for color_scale={color_scale!r}."
-            )
-
-        extend = self.default_options.get("extend")
-        if extend is None:
-            extend_effective = "both" if levels is not None else "neither"
-        else:
-            extend_effective = extend
-        cbar_kw["extend"] = extend_effective
-
-        return norm, cbar_kw
+        # The colour-scale logic lives on `ColorScaling` (see
+        # `cleopatra.styling.scaling`); this method is the thin bridge from
+        # the flat `default_options` storage to that object. `levels` and
+        # `extend` are cross-group inputs (contour discretisation / colorbar
+        # arrow extension), passed in rather than owned by the scale.
+        scaling = ColorScaling.from_options(self.default_options)
+        return scaling.build_norm(
+            ticks,
+            levels=self.default_options.get("levels"),
+            extend=self.default_options.get("extend"),
+        )
 
     @staticmethod
     def _levels_to_bounds(
@@ -816,20 +751,9 @@ class Glyph:
 
                 ```
         """
-        bounds: np.ndarray | None
-        if levels is None:
-            bounds = None
-        elif isinstance(levels, (int, np.integer)) and not isinstance(levels, bool):
-            n = int(levels)
-            if not 2 <= n <= MAX_DISCRETE_LEVELS:
-                raise ValueError(
-                    f"`levels` as an integer must be between 2 and "
-                    f"{MAX_DISCRETE_LEVELS}, got {n}."
-                )
-            bounds = np.linspace(float(vmin), float(vmax), n)
-        else:
-            bounds = np.sort(np.asarray(levels, dtype=float))
-        return bounds
+        # Behaviour lives on `cleopatra.styling.scaling.levels_to_bounds`;
+        # kept here as a thin delegator for the existing callers/doctests.
+        return levels_to_bounds(levels, vmin, vmax)
 
     def _resolve_limits(self, values: np.ndarray) -> tuple[float, float]:
         """Resolve `(vmin, vmax)` from options, falling back to the data range.
