@@ -441,24 +441,25 @@ class DataStyleOptions(TypedDict, total=False):
 class PlotKwargs(
     PlotAppearanceOptions,
     ColorbarOptions,
-    ColorScaleOptions,
     XarrayColourOptions,
-    ContourOptions,
-    CellValueOptions,
-    DataStyleOptions,
     total=False,
 ):
-    """The full set of `**kwargs` `ArrayGlyph.plot` accepts."""
+    """The loose `**kwargs` `ArrayGlyph.plot` still accepts.
+
+    The colour-scale, contour, cell-value, and data-style options have
+    moved onto grouped parameter objects passed as the `color=` /
+    `contour=` / `cells=` / `data_style=` arguments (see
+    `cleopatra.styling.scaling.ColorScaling` and
+    `cleopatra.styling.params`); only appearance, colorbar, and the
+    xarray-aligned colour options remain loose keywords.
+    """
 
 
 class AnimateKwargs(
     TitleOption,
     PlotAppearanceOptions,
     ColorbarOptions,
-    ColorScaleOptions,
-    CellValueOptions,
     AnimateCellValueOptions,
-    DataStyleOptions,
     total=False,
 ):
     """The full set of `**kwargs` `ArrayGlyph.animate` accepts."""
@@ -2947,6 +2948,26 @@ class ArrayGlyph(GeoMixin, Glyph):
             title: Plot title, by default None. A convenience shortcut
                 equivalent to the `title` option; when given it
                 overrides the `title` set at construction.
+            color: Colour-scale group object
+                (`cleopatra.styling.scaling.ColorScaling`) selecting the
+                norm and its knobs, e.g. `ColorScaling.power(gamma=0.7)` or
+                `ColorScaling.boundary(bounds=[...])`. Replaces the former
+                loose `color_scale` / `gamma` / `line_threshold` /
+                `line_scale` / `bounds` / `midpoint` keywords.
+            contour: Contour/discretisation group object
+                (`cleopatra.styling.params.Contour`), e.g.
+                `Contour(levels=5)` or `Contour(labels=True,
+                label_kw={"fmt": "%.2f"})`. Replaces the loose `levels` /
+                `labels` / `label_kw` keywords.
+            cells: Per-cell value-text group object
+                (`cleopatra.styling.params.CellValues`), e.g.
+                `CellValues(show=True, size=8)`. Replaces the loose
+                `display_cell_value` / `num_size` /
+                `background_color_threshold` keywords.
+            data_style: Named-preset / relief-shading group object
+                (`cleopatra.styling.params.DataStyle`), e.g.
+                `DataStyle(style="dem", hillshade=True)`. Replaces the
+                loose `style` / `hillshade` keywords.
             full_bleed: Fill the whole figure edge-to-edge with no surrounding
                 margin, by default False. `True` hides ticks and spines and
                 resizes the figure to the data box's aspect so the fill has no
@@ -3043,42 +3064,14 @@ class ArrayGlyph(GeoMixin, Glyph):
                         Deprecated; use `colorbar=ColorBar(label=...)`. Label text
                         for the color bar, by default None.
 
-                Color scale options:
-                    color_scale : ColorScale or str, optional
-                        Type of color scaling to use, by default 'linear'.
-                        Accepts a `cleopatra.styling.styles.ColorScale`
-                        member or its string value (case-insensitive). An
-                        unrecognised value raises `ValueError`. Options:
-                        - 'linear': Linear scale
-                        - 'power': Power-law normalization
-                        - 'sym-lognorm': Symmetrical logarithmic scale
-                        - 'boundary-norm': Discrete intervals based on boundaries
-                        - 'midpoint': Scale split at a specified midpoint
-                    gamma : float, optional
-                        Exponent for 'power' color scale, by default 0.5.
-                        Values < 1 emphasize lower values, values > 1 emphasize higher values.
-                    line_threshold : float, optional
-                        Threshold for 'sym-lognorm' color scale, by default 0.0001.
-                    line_scale : float, optional
-                        Scale factor for 'sym-lognorm' color scale, by default 0.001.
-                    bounds : list, optional
-                        Boundaries for 'boundary-norm' color scale, by default None.
-                        Defines the discrete intervals for color mapping.
-                    midpoint : float, optional
-                        Midpoint value for 'midpoint' color scale, by default 0.
-                    levels : int or sequence, optional
-                        Discrete colour levels (xarray-aligned), by
-                        default None. An `int` selects N
-                        linearly-spaced edges between `vmin` and
-                        `vmax`; a sequence is used as explicit edges
-                        (sorted ascending). When set under the default
-                        `color_scale="linear"` the norm is switched
-                        to a `BoundaryNorm` so `imshow` /
-                        `pcolormesh` are also discretised; under
-                        `color_scale="boundary-norm"` `levels` acts
-                        as the bin edges when `bounds` is unset.
-                        Always forwarded as the level array to
-                        `contour` / `contourf`.
+                Colour scale (moved to the `color=` object):
+                    The colour-scale options (`color_scale`, `gamma`,
+                    `line_threshold`, `line_scale`, `bounds`, `midpoint`)
+                    and the discretisation `levels` are now set through the
+                    `color=` / `contour=` parameters -- see
+                    `cleopatra.styling.scaling.ColorScaling` and
+                    `cleopatra.styling.params.Contour`. Passing them as
+                    loose keywords raises with a pointer to the object.
 
                 Xarray-aligned colour kwargs:
                     robust : bool, optional
@@ -3108,60 +3101,21 @@ class ArrayGlyph(GeoMixin, Glyph):
                         `aspect`, `orientation`, `pad`,
                         `ticks`. By default None.
 
-                Contour options:
-                    labels : bool, optional
-                        Draw inline numeric labels on the isolines of a
-                        line `contour` (via `ax.clabel`), by default
-                        False. Ignored for `kind="contourf"` and every
-                        non-contour kind (filled contours have no lines
-                        to label). The label `Text` artists are stored
-                        on the instance as `self.contour_labels` (an
-                        empty list when the contour has no isolines).
-                    label_kw : dict, optional
-                        Extra keyword arguments forwarded to
-                        `ax.clabel` when `labels=True`, by default None.
-                        Merges over cleopatra's defaults (`inline=True`,
-                        `fontsize=8`, `fmt="%g"`) so user keys win on
-                        collision. Common keys: `levels` (subset of
-                        levels to label), `colors`, `fmt`, `fontsize`,
-                        `inline_spacing`.
+                Contour / cell-value / data-style (moved to group objects):
+                    Contour labels (`labels`, `label_kw`) move to
+                    `contour=Contour(...)`; per-cell value text
+                    (`display_cell_value`, `num_size`,
+                    `background_color_threshold`) moves to
+                    `cells=CellValues(...)`; the named preset and relief
+                    shading (`style`, `hillshade`) move to
+                    `data_style=DataStyle(...)`. See
+                    `cleopatra.styling.params`. Passing any of them as a
+                    loose keyword raises with a pointer to the object. A
+                    continuous `data_style` preset still composes with its
+                    `hillshade`; a categorical preset presents a discrete
+                    legend and is not shaded.
 
-                Cell value display options:
-                    display_cell_value : bool, optional
-                        Whether to display the values of cells as text, by default False.
-                    num_size : int, optional
-                        Font size of the cell value text, by default 8.
-                    background_color_threshold : float, optional
-                        Threshold for cell value text color, by default None.
-                        If cell value > threshold, text is black; otherwise, text is white.
-                        If None, uses max(array)/2 as the threshold.
-
-                Data-style preset / relief options:
-                    style : str, optional
-                        Name of a `cleopatra.styling.colors.DATA_STYLES` preset (e.g.
-                        `"flow_accumulation"`, `"flow_direction_d8"`,
-                        `"topography"`; valid names are
-                        `sorted(cleopatra.styling.colors.DATA_STYLES)`). When set, the
-                        preset's colormap, norm (linear/log/symlog/diverging
-                        `center`), transparent nodata, alpha glow, and — for
-                        categorical presets — a discrete legend are applied via
-                        `cleopatra.styling.colors.apply_data_style`. Only single-layer
-                        presets apply to a single band. The preset owns the
-                        colour mapping, so it takes precedence over `cmap` /
-                        `color_scale` / `vmin` / `vmax` / `center`, presents its
-                        scale via a legend rather than a colorbar (`self.cbar`
-                        is `None`), and bypasses `points` / `display_cell_value`
-                        overlays (which warn). Ignored for RGB arrays. A
-                        **continuous** preset composes with `hillshade` (the
-                        relief is blended into the preset colours); a
-                        **categorical** preset is not shaded (shading class
-                        codes is meaningless) and warns. By default None.
-                    hillshade : bool or dict, optional
-                        Relief-shade a regular-grid DEM so wide-range terrain
-                        reads by form. `True` uses defaults; a dict tunes
-                        `vert_exag`, `azimuth`, `altitude`, `blend_mode`, or
-                        `multidirectional`. Applied only to `kind="imshow"`
-                        (warns otherwise). By default False.
+                Other kwargs:
                     projection : str, optional
                         Draw the field on a projection preset: `"globe"`
                         (orthographic) or `"flat"`. Requires 1-D lon/lat
@@ -4133,6 +4087,21 @@ class ArrayGlyph(GeoMixin, Glyph):
                 the location — is deprecated; pass a `FrameLabel` instead —
                 the old keywords still work as `**kwargs` and emit a
                 `DeprecationWarning`.)
+            color: Colour-scale group object
+                (`cleopatra.styling.scaling.ColorScaling`), e.g.
+                `ColorScaling.power(gamma=0.7)`. Replaces the loose
+                `color_scale` / `gamma` / `line_threshold` / `line_scale` /
+                `bounds` / `midpoint` keywords.
+            cells: Per-cell value-text group object
+                (`cleopatra.styling.params.CellValues`), e.g.
+                `CellValues(show=True, size=8)`. Replaces the loose
+                `display_cell_value` / `num_size` /
+                `background_color_threshold` keywords. (`precision` and
+                `cell_value_text_colors` remain explicit parameters.)
+            data_style: Named-preset / relief-shading group object
+                (`cleopatra.styling.params.DataStyle`), e.g.
+                `DataStyle(style="dem", hillshade=True)`. Replaces the
+                loose `style` / `hillshade` keywords.
             data_getter: Optional callable `f(i) -> ndarray` that
                 returns the frame for index `i`, by default None.
                 When set, `self.arr` is no longer iterated; each
@@ -4234,62 +4203,23 @@ class ArrayGlyph(GeoMixin, Glyph):
                         Deprecated; use `colorbar=ColorBar(label=...)`. Label text
                         for the color bar, by default None.
 
-                Color scale options:
-                    color_scale : ColorScale or str, optional
-                        Type of color scaling to use, by default 'linear'.
-                        Accepts a `cleopatra.styling.styles.ColorScale`
-                        member or its string value (case-insensitive). An
-                        unrecognised value raises `ValueError`. Options:
-                        - 'linear': Linear scale
-                        - 'power': Power-law normalization
-                        - 'sym-lognorm': Symmetrical logarithmic scale
-                        - 'boundary-norm': Discrete intervals based on boundaries
-                        - 'midpoint': Scale split at a specified midpoint
-                    gamma : float, optional
-                        Exponent for 'power' color scale, by default 0.5.
-                        Values < 1 emphasize lower values, values > 1 emphasize higher values.
-                    line_threshold : float, optional
-                        Threshold for 'sym-lognorm' color scale, by default 0.0001.
-                    line_scale : float, optional
-                        Scale factor for 'sym-lognorm' color scale, by default 0.001.
-                    bounds : list, optional
-                        Boundaries for 'boundary-norm' color scale, by default None.
-                        Defines the discrete intervals for color mapping.
-                    midpoint : float, optional
-                        Midpoint value for 'midpoint' color scale, by default 0.
+                Grouped options (moved off `**kwargs`):
+                    The colour-scale options (`color_scale`, `gamma`,
+                    `line_threshold`, `line_scale`, `bounds`, `midpoint`)
+                    move to `color=ColorScaling(...)`; the per-cell value
+                    text (`display_cell_value`, `num_size`,
+                    `background_color_threshold`) moves to
+                    `cells=CellValues(...)`; the named preset and relief
+                    shading (`style`, `hillshade`) move to
+                    `data_style=DataStyle(...)`. See
+                    `cleopatra.styling.scaling.ColorScaling` and
+                    `cleopatra.styling.params`. Passing any of them as a
+                    loose keyword raises with a pointer to the object.
 
-                Cell value display options:
-                    display_cell_value : bool, optional
-                        Whether to display the values of cells as text, by default False.
-                    num_size : int, optional
-                        Font size of the cell value text, by default 8.
-                    background_color_threshold : float, optional
-                        Threshold for cell value text color, by default None.
-                        If cell value > threshold, text is black; otherwise, text is white.
-                        If None, uses max(array)/2 as the threshold.
                     precision : int, optional
                         Decimal places each frame's cell value text is
-                        rounded to, by default 2. `animate`-only; `plot`'s
-                        equivalent per-cell text always rounds to 2
-                        decimal places internally.
-
-                Data-style preset / relief options:
-                    style : str, optional
-                        Name of a `cleopatra.styling.colors.DATA_STYLES` preset applied
-                        to every frame (valid names:
-                        `sorted(cleopatra.styling.colors.DATA_STYLES)`). Continuous
-                        presets drive the frames through the preset's cmap +
-                        norm + value-linked opacity and present a swatch legend
-                        (matching `plot`); categorical presets remap the class
-                        codes through a discrete colormap and draw a legend (no
-                        colorbar). Under a lazy `data_getter` the continuous
-                        colour range is taken from frame 0. A continuous preset
-                        composes with `hillshade`; a categorical preset drops it
-                        (and warns). By default None.
-                    hillshade : bool or dict, optional
-                        Relief-shade every frame of a regular-grid DEM (same
-                        options as `plot`). Composes with a continuous `style`;
-                        dropped for a categorical `style`. By default False.
+                        rounded to, by default 2. `animate`-only, and still
+                        a loose keyword (not part of `CellValues`).
 
         Returns:
             matplotlib.animation.FuncAnimation: The animation object that can be displayed
