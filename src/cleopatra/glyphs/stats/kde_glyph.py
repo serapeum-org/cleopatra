@@ -46,7 +46,6 @@ from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_grid
 from cleopatra.styling.colorbar import (
     ColorBar,
     _resolve_colorbar,
-    _warn_deprecated_cbar_kwargs,
 )
 from cleopatra.styling.colors import (
     resolve_colormap,
@@ -158,7 +157,6 @@ class KDEGlyph(Glyph):
         fig: Figure | None = None,
         **kwargs,
     ):
-        _warn_deprecated_cbar_kwargs(kwargs)
         super().__init__(default_options=KDE_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs)
         self.x = np.asarray(x, dtype=float)
         self.y = np.asarray(y, dtype=float)

@@ -45,7 +45,6 @@ from cleopatra.glyphs.base.glyph import Glyph, _root_figure
 from cleopatra.styling.colorbar import (
     ColorBar,
     _resolve_colorbar,
-    _warn_deprecated_cbar_kwargs,
 )
 from cleopatra.styling.colors import resolve_colormap, resolve_glow_options
 from cleopatra.styling.params import Classify, Contour
@@ -164,7 +163,6 @@ class FlowGlyph(GeoMixin, Glyph):
         fig: Figure | None = None,
         **kwargs,
     ):
-        _warn_deprecated_cbar_kwargs(kwargs)
         super().__init__(default_options=FLOW_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs)
         self.paths = [np.asarray(p, dtype=float) for p in paths]
         n_paths = len(self.paths)

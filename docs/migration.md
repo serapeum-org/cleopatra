@@ -1,4 +1,102 @@
-# Migration guide — subpackage restructure
+# Migration guide
+
+This page collects cleopatra's breaking changes and how to update your code. Two migrations are covered:
+
+1. **[Grouped render-parameter objects](#grouped-render-parameter-objects)** — the loose styling keywords on
+   `plot` / `animate` / `facet` were replaced by typed *group objects*, and the temporary deprecation shims that
+   kept the old keywords working have now been **removed**. Read this section if you hit a `TypeError` about an
+   unexpected keyword argument, or an `AttributeError` from passing a bare array where an object is expected.
+2. **[Subpackage restructure](#subpackage-restructure)** — an earlier release moved the flat `cleopatra.*`
+   modules into `glyphs/` / `styling/` / `basemap/` subpackages (import paths only).
+
+---
+
+## Grouped render-parameter objects
+
+Related styling keywords that `plot` / `animate` (and the other glyphs) used to accept as long lists of loose
+arguments are now bundled into small typed objects. During one release the old keywords kept working behind a
+`DeprecationWarning`; **those shims are now gone**. Passing a removed keyword no longer warns — it raises the
+ordinary `TypeError: ... got an unexpected keyword argument`, and passing a bare `(N, 3)` array as `points`
+raises `AttributeError` instead of being auto-wrapped.
+
+There is no automated rewrite for this one: the changes are semantic (loose keywords → object fields), so update
+each call site by hand using the tables below.
+
+### Point overlays → `PointOverlay`
+
+`points` now takes a `PointOverlay` (or `None`); the marker/label styling lives on the object.
+
+```python
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph, PointOverlay
+
+# before
+glyph.plot(points=arr, point_color="red", point_size=80,
+           point_label_color="blue", point_label_size=10)
+# after
+glyph.plot(points=PointOverlay(arr, color="red", size=80,
+                               label_color="blue", label_size=10))
+```
+
+| Removed keyword | New `PointOverlay` field |
+| --- | --- |
+| `points=<array>` (bare) | `points=PointOverlay(<array>)` |
+| `point_color` | `color` |
+| `point_size` | `size` |
+| `point_label_color` (or oldest `pid_color`) | `label_color` |
+| `point_label_size` (or oldest `pid_size`) | `label_size` |
+
+### Frame labels → `FrameLabel`
+
+`animate`'s per-frame time-label styling now lives on a `FrameLabel` passed as `frame_label=` (a bare `[x, y]`
+list passed positionally is no longer accepted).
+
+```python
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph, FrameLabel
+
+# before
+glyph.animate(time, label_location=[0.1, 0.1], label_color="yellow")
+# after
+glyph.animate(time, frame_label=FrameLabel(location=[0.1, 0.1], color="yellow"))
+```
+
+| Removed keyword | New `FrameLabel` field |
+| --- | --- |
+| `label_location` (or oldest `text_loc`) | `location` |
+| `label_color` | `color` |
+
+### Renamed / restructured keywords
+
+| Old | New |
+| --- | --- |
+| `animate(text_colors=...)` | `animate(cell_value_text_colors=...)` |
+| `facet(col_coords=..., row_coords=...)` | `facet(labels=PanelLabels(col=..., row=...))` |
+| `facet(figsize=...)` | `facet(figure_size=...)` |
+| `ArrayGlyph.no_elem` | `ArrayGlyph.num_domain_cells` |
+
+`PanelLabels` is importable from `cleopatra.glyphs.gridded.array_glyph`.
+
+### Colour / scale / cell-value groups
+
+The colour-scale, discretisation, cell-value, and preset/relief keywords were already folded into typed group
+objects in a prior release; passing them as loose keywords **raises** with a pointer to the object:
+
+| Loose keywords | Group object |
+| --- | --- |
+| `color_scale`, `gamma`, `line_threshold`, `line_scale`, `bounds`, `midpoint` | `cleopatra.styling.scaling.ColorScaling` |
+| `levels`, `labels`, `label_kw` | `cleopatra.styling.params.Contour` |
+| `display_cell_value`, `num_size`, `background_color_threshold` | `cleopatra.styling.params.CellValues` |
+| `style`, `hillshade` | `cleopatra.styling.params.DataStyle` |
+
+### Colour bars — `cbar_*` still work
+
+The loose `cbar_*` / `ticks_spacing` keywords are **not** removed — they remain valid options and keep working.
+Only the `DeprecationWarning` that steered you toward `ColorBar` is gone. The typed
+`colorbar=ColorBar(...)` form (`cleopatra.styling.colorbar.ColorBar`) is still preferred and wins when both are
+given.
+
+---
+
+## Subpackage restructure
 
 This release reorganises cleopatra's previously flat `cleopatra.*` module layout into three subpackages
 (`glyphs/`, `styling/`, `basemap/`) and renames the histogram glyph. It is a **breaking change to import paths

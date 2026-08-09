@@ -56,7 +56,6 @@ from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_faces
 from cleopatra.styling.colorbar import (
     ColorBar,
     _resolve_colorbar,
-    _warn_deprecated_cbar_kwargs,
 )
 from cleopatra.styling.colors import (
     category_boundaries,
@@ -916,8 +915,8 @@ class MeshGlyph(GeoMixin, Glyph):
             **kwargs: Construction-time-style overrides for the non-grouped
                 `default_options` (`cmap`, `vmin`, `vmax`, `title_size`,
                 `figsize`, …). The loose `ticks_spacing` / `cbar_*` keys
-                still work but are deprecated -- pass `colorbar=ColorBar(...)`
-                instead. The colour-scale, discretisation/label, and
+                still work, but prefer `colorbar=ColorBar(...)`.
+                The colour-scale, discretisation/label, and
                 preset/relief options moved onto the `color=` / `contour=` /
                 `data_style=` group objects above; passing any of them as a
                 loose keyword now raises.
@@ -1050,7 +1049,6 @@ class MeshGlyph(GeoMixin, Glyph):
                 render_kwargs[key] = val
         self._merge_kwargs(option_kwargs)
         self._merge_group_params(color, contour, data_style)
-        _warn_deprecated_cbar_kwargs(kwargs)
         resolved_colorbar = (
             _resolve_colorbar(colorbar) if isinstance(colorbar, ColorBar) else {}
         )
@@ -1244,8 +1242,7 @@ class MeshGlyph(GeoMixin, Glyph):
             **kwargs: Override any key in `default_options` (cmap,
                 vmin, vmax, color_scale, gamma, midpoint, figsize,
                 title, etc.). The loose `ticks_spacing` / `cbar_*` keys
-                still work but are deprecated -- pass
-                `colorbar=ColorBar(...)` instead.
+                still work, but prefer `colorbar=ColorBar(...)`.
 
         Returns:
             FuncAnimation: The animation object. Use
@@ -1299,7 +1296,6 @@ class MeshGlyph(GeoMixin, Glyph):
         self._default_options = MESH_DEFAULT_OPTIONS.copy()
         self._merge_kwargs(kwargs)
         self._merge_group_params(color, contour, data_style)
-        _warn_deprecated_cbar_kwargs(kwargs)
         resolved_colorbar = (
             _resolve_colorbar(colorbar) if isinstance(colorbar, ColorBar) else {}
         )

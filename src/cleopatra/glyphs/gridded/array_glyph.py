@@ -36,6 +36,7 @@ from hpc.indexing import get_indices2
 from matplotlib.animation import FuncAnimation
 from matplotlib.axes import Axes
 from matplotlib.cm import ScalarMappable
+from matplotlib.collections import PathCollection
 from matplotlib.colorbar import Colorbar
 from matplotlib.colors import BoundaryNorm, Colormap, ListedColormap, Normalize
 from matplotlib.figure import Figure
@@ -58,13 +59,9 @@ from cleopatra.glyphs.base.glyph import (
 )
 from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_grid, shade_rgb
 from cleopatra.styling.colorbar import (
-    _DEPRECATED_CBAR_KWARGS as _DEPRECATED_CBAR_KWARGS,
-)
-from cleopatra.styling.colorbar import (
     ColorBar,
     _resolve_colorbar,
     _swatch_text_default,
-    _warn_deprecated_cbar_kwargs,
 )
 from cleopatra.styling.colors import (
     DATA_STYLES,
@@ -141,121 +138,18 @@ class _Unset:
 
     A plain `object()` sentinel would work too, but this gives `help()` /
     IDE signature tooltips a readable `<unset>` instead of
-    `<object object at 0x...>` for the parameter default that uses it
-    (`ArrayGlyph.animate`'s `cell_value_text_colors`).
+    `<object object at 0x...>` for the option default that uses it (the
+    `hillshade` key resolved inside `ArrayGlyph.plot`).
     """
 
     def __repr__(self) -> str:
         return "<unset>"
 
 
-#: Sentinel default for a renamed parameter whose *real* default is
-#: resolved inside `_resolve_renamed_kwarg` rather than in the method
-#: signature. Distinguishes "caller didn't pass this parameter" from
-#: "caller explicitly passed a value equal to its default" -- an ambiguity
-#: a plain equality-with-default check cannot resolve, which previously
-#: made the "both old and new given" conflict detection silently prefer
-#: the deprecated value in that case (the opposite of the documented
-#: "new wins" behaviour).
+#: Sentinel distinguishing "the `hillshade` key was not passed" from
+#: "`hillshade` was passed as `None`" when it is popped from `**kwargs`
+#: (see `ArrayGlyph.plot`), which a plain `.get`/default check cannot.
 _UNSET = _Unset()
-
-
-def _resolve_renamed_kwarg(
-    kwargs: dict, old_name: str, new_name: str, new_value: Any, default: Any
-) -> Any:
-    """Resolve a renamed keyword argument, honouring its deprecated alias.
-
-    Several `ArrayGlyph.animate` parameters were renamed for clarity
-    (e.g. `text_colors` -> `cell_value_text_colors`). Since the old name is
-    no longer an explicit parameter, a caller still using it arrives here
-    through `**kwargs` instead -- this pops it out, emits a
-    `DeprecationWarning`, and returns its value. Must be called *before*
-    `plot`/`animate` validate `kwargs` against `self.default_options` (the
-    old name is never a valid option key, so it would otherwise raise
-    there instead of being resolved).
-
-    Args:
-        kwargs: The method's `**kwargs` dict; mutated in place (the old
-            key, if present, is popped so it never reaches the strict
-            `default_options` validation).
-        old_name: The deprecated parameter name to look for in `kwargs`.
-        new_name: The current parameter name, used in the warning message.
-        new_value: The value the caller's `new_name` argument resolved to.
-            `new_name`'s own signature default must be the `_UNSET`
-            sentinel (not a concrete value) so this can tell "the caller
-            didn't pass `new_name`" apart from "the caller explicitly
-            passed `new_name` equal to its real default" -- the two cases
-            a plain equality-with-default check cannot distinguish.
-        default: `new_name`'s real default value, substituted when
-            neither name was given.
-
-    Returns:
-        Any: `new_value` when `old_name` is absent from `kwargs`, or when
-            both names were given (new wins, i.e. `new_value` is not
-            `_UNSET`); otherwise the popped `old_name` value, or `default`
-            when neither was given.
-
-    Examples:
-        - The old name is used and a `DeprecationWarning` is raised:
-            ```python
-            >>> import warnings
-            >>> kwargs = {"text_colors": ("yellow", "purple")}
-            >>> with warnings.catch_warnings(record=True) as caught:
-            ...     warnings.simplefilter("always")
-            ...     resolved = _resolve_renamed_kwarg(
-            ...         kwargs, "text_colors", "cell_value_text_colors",
-            ...         _UNSET, ("white", "black"),
-            ...     )
-            >>> resolved
-            ('yellow', 'purple')
-            >>> "text_colors" in kwargs
-            False
-            >>> issubclass(caught[0].category, DeprecationWarning)
-            True
-
-            ```
-        - Both names given: the new one wins even when it is equal to its
-            own default (the false-negative a plain equality check would
-            miss):
-            ```python
-            >>> kwargs = {"text_colors": ("yellow", "purple")}
-            >>> _resolve_renamed_kwarg(
-            ...     kwargs, "text_colors", "cell_value_text_colors",
-            ...     ("white", "black"), ("white", "black"),
-            ... )
-            ('white', 'black')
-
-            ```
-        - With no old-name alias present, the new value passes through
-            untouched and `kwargs` is unaffected:
-            ```python
-            >>> kwargs = {"cmap": "viridis"}
-            >>> _resolve_renamed_kwarg(
-            ...     kwargs, "text_colors", "cell_value_text_colors",
-            ...     ("yellow", "purple"), ("white", "black"),
-            ... )
-            ('yellow', 'purple')
-            >>> kwargs
-            {'cmap': 'viridis'}
-
-            ```
-    """
-    if old_name not in kwargs:
-        return default if new_value is _UNSET else new_value
-    old_value = kwargs.pop(old_name)
-    warnings.warn(
-        f"`{old_name}` is deprecated; use `{new_name}` instead.",
-        DeprecationWarning,
-        stacklevel=3,
-    )
-    if new_value is not _UNSET:
-        warnings.warn(
-            f"Both `{old_name}` (deprecated) and `{new_name}` were given; "
-            f"`{new_name}` wins.",
-            stacklevel=3,
-        )
-        return new_value
-    return old_value
 
 
 #: Static typing for the loose **kwargs `plot`/`animate` still accept --
@@ -516,199 +410,75 @@ class FrameLabel:
         self.size = size
 
 
-#: Deprecated `plot`/`animate` kwargs that `_resolve_point_overlay` folds
-#: into a `PointOverlay` instead of the (now-removed) individual keywords.
-#: `pid_color`/`pid_size` are the oldest generation (pre-dating even
-#: `point_label_color`/`point_label_size`) and are honoured too, so the
-#: deprecation chain from either generation still lands on `PointOverlay`.
-_DEPRECATED_POINT_STYLE_KWARGS = (
-    "point_color",
-    "point_size",
-    "point_label_color",
-    "point_label_size",
-    "pid_color",
-    "pid_size",
-)
+class PanelLabels:
+    """Per-panel title labels for the axes of an `ArrayGlyph.facet` grid.
 
+    Bundles the two coordinate-label sequences (`col`, `row`) that `facet`
+    previously accepted as separate `col_coords` / `row_coords` arguments.
+    Pass an instance as `facet(labels=...)` instead of the individual
+    keywords. Each sequence supplies one label per slice along its facet
+    axis; when given, the per-subplot title (and `FacetGrid.name_dicts`)
+    uses that label instead of the integer slice index.
 
-def _pop_first(
-    kwargs: dict, names: tuple[str, ...], default: Any
-) -> tuple[Any, str | None]:
-    """Pop every one of `names` present in `kwargs`; return the most-preferred value.
+    Attributes:
+        col: Labels for the column-facet axis, by default `None` (titles
+            use the integer index). When given, its length must match the
+            column axis size of the stack.
+        row: Labels for the row-facet axis, by default `None`. Only
+            honoured on a 4-D (row+col) facet; when given, its length must
+            match the row axis size.
 
-    All matching keys are removed (not just the winner) so none of them
-    linger to fail the caller's subsequent strict `kwargs` validation --
-    e.g. `plot(points=arr, point_label_color=..., pid_color=...)` must pop
-    both, even though only `point_label_color`'s value is used.
+    Examples:
+        - A bare instance leaves both axes unlabelled (titles fall back to
+            the integer slice index):
+            ```python
+            >>> from cleopatra.glyphs.gridded.array_glyph import PanelLabels
+            >>> labels = PanelLabels()
+            >>> (labels.col, labels.row)
+            (None, None)
 
-    Args:
-        kwargs: Dict to pop from; mutated in place.
-        names: Candidate keys, most-preferred first.
-        default: Value to return if none of `names` are present.
+            ```
+        - Label the columns of a 3-D stack and read them back off the grid:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph, PanelLabels
+            >>> stack = np.arange(3 * 5 * 5, dtype=float).reshape(3, 5, 5)
+            >>> labels = PanelLabels(col=["Jan", "Feb", "Mar"])
+            >>> g = ArrayGlyph(stack).facet(col="month", labels=labels)
+            >>> g.name_dicts[0]
+            {'month': 'Jan'}
 
-    Returns:
-        tuple[Any, str | None]: The most-preferred present value (or
-            `default`), and the key it came from (`None` if none were
-            present).
+            ```
+        - Label both axes of a 4-D stack; each panel's `name_dict` carries
+            the coordinate for both facet dimensions:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph, PanelLabels
+            >>> stack = np.arange(2 * 2 * 4 * 4, dtype=float).reshape(2, 2, 4, 4)
+            >>> labels = PanelLabels(col=["A", "B"], row=[10, 20])
+            >>> g = ArrayGlyph(stack).facet(col="t", row="lev", labels=labels)
+            >>> g.name_dicts[0]
+            {'t': 'A', 'lev': 10}
+
+            ```
     """
-    present = [name for name in names if name in kwargs]
-    values = {name: kwargs.pop(name) for name in present}
-    if not present:
-        return default, None
-    winner = present[0]
-    return values[winner], winner
 
+    def __init__(
+        self,
+        *,
+        col: Sequence[Any] | None = None,
+        row: Sequence[Any] | None = None,
+    ) -> None:
+        """Initialise a `PanelLabels`.
 
-def _resolve_point_overlay(
-    points: np.ndarray | PointOverlay | None, kwargs: dict
-) -> PointOverlay | None:
-    """Normalise `plot`/`animate`'s `points` argument into a `PointOverlay`.
-
-    Accepts the current calling convention (`points` is already a
-    `PointOverlay`, or `None`) as well as two deprecated generations
-    (`points` is a plain array, styled via separate `point_color` /
-    `point_size` / `point_label_color` / `point_label_size` keywords, or
-    the even older `pid_color` / `pid_size` for the label styling) -- any
-    of these emit a `DeprecationWarning` and are folded into a
-    `PointOverlay` here. The deprecated style keys are drained out of
-    `kwargs` even when `points` is `None` (a no-op, matching their
-    pre-`PointOverlay` behaviour as named parameters with defaults) so
-    they never reach the caller's strict `kwargs` validation. Must be
-    called *before* `plot`/`animate` validate `kwargs` against
-    `self.default_options`, which would otherwise reject the deprecated
-    keys outright.
-
-    Args:
-        points: The raw `points` argument as received by `plot`/`animate`:
-            a `PointOverlay`, a plain `(N, 3)` array, or `None`.
-        kwargs: The method's `**kwargs` dict; mutated in place (any
-            deprecated point-style keys are popped out).
-
-    Returns:
-        PointOverlay | None: `points` unchanged if it was already a
-            `PointOverlay` or `None`; otherwise a new `PointOverlay`
-            wrapping the array and the (possibly deprecated) style kwargs.
-    """
-    if isinstance(points, PointOverlay):
-        used_deprecated = [k for k in _DEPRECATED_POINT_STYLE_KWARGS if k in kwargs]
-        if used_deprecated:
-            warnings.warn(
-                f"{used_deprecated} are ignored when `points` is a "
-                "`PointOverlay` -- set them on the `PointOverlay` instance "
-                "instead.",
-                stacklevel=3,
-            )
-            for key in used_deprecated:
-                kwargs.pop(key)
-        return points
-    if points is None:
-        _, color_key = _pop_first(kwargs, ("point_color",), None)
-        _, size_key = _pop_first(kwargs, ("point_size",), None)
-        _, label_color_key = _pop_first(
-            kwargs, ("point_label_color", "pid_color"), None
-        )
-        _, label_size_key = _pop_first(kwargs, ("point_label_size", "pid_size"), None)
-        used = [k for k in (color_key, size_key, label_color_key, label_size_key) if k]
-        if used:
-            warnings.warn(
-                f"{used} have no effect without `points`; pass a "
-                "`cleopatra.glyphs.gridded.array_glyph.PointOverlay` as `points` instead.",
-                DeprecationWarning,
-                stacklevel=3,
-            )
-        return None
-    color, color_key = _pop_first(kwargs, ("point_color",), "red")
-    size, size_key = _pop_first(kwargs, ("point_size",), 100)
-    label_color, label_color_key = _pop_first(
-        kwargs, ("point_label_color", "pid_color"), "blue"
-    )
-    label_size, label_size_key = _pop_first(
-        kwargs, ("point_label_size", "pid_size"), 10
-    )
-    used = [k for k in (color_key, size_key, label_color_key, label_size_key) if k]
-    if used:
-        warnings.warn(
-            f"Passing `points` as a plain array together with {used} is "
-            "deprecated; pass a `cleopatra.glyphs.gridded.array_glyph.PointOverlay` instead.",
-            DeprecationWarning,
-            stacklevel=3,
-        )
-    return PointOverlay(
-        points, color=color, size=size, label_color=label_color, label_size=label_size
-    )
-
-
-#: Deprecated `animate` kwargs that `_resolve_frame_label` folds into a
-#: `FrameLabel` instead of the (now-removed) individual keywords.
-#: `text_loc` is the oldest generation (pre-dating `label_location`) and is
-#: honoured too.
-_DEPRECATED_FRAME_LABEL_KWARGS = ("label_location", "label_color", "text_loc")
-
-
-def _resolve_frame_label(frame_label: Any, kwargs: dict) -> FrameLabel:
-    """Normalise `animate`'s `frame_label` argument into a `FrameLabel`.
-
-    Accepts the current calling convention (`frame_label` is already a
-    `FrameLabel`, or `None` for the defaults) as well as two deprecated
-    ones: separate `label_location` / `label_color` keywords (or the even
-    older `text_loc` for the location), and a bare `[x, y]` value at the
-    `frame_label` position itself -- the pre-`FrameLabel` calling shape,
-    still reachable positionally (`animate(time, None, colors, interval,
-    [x, y])`) even though `label_location`/`text_loc` were never
-    positional-only. Any of these emit a `DeprecationWarning` and are
-    folded into a `FrameLabel` here. Unlike `_resolve_point_overlay`, this
-    never returns `None`: `animate` always draws a frame label, so
-    `frame_label=None` means "use `FrameLabel`'s own defaults", not "no
-    label". Must be called *before* `animate` validates `kwargs` against
-    `self.default_options`, which would otherwise reject the deprecated
-    keys outright.
-
-    Args:
-        frame_label: The raw `frame_label` argument as received by
-            `animate`: a `FrameLabel`, `None`, or (deprecated) a plain
-            `[x, y]` value passed positionally.
-        kwargs: The method's `**kwargs` dict; mutated in place (any
-            deprecated frame-label keys are popped out).
-
-    Returns:
-        FrameLabel: `frame_label` unchanged if it was already a
-            `FrameLabel`; otherwise a new `FrameLabel` built from the
-            positional value and/or the (possibly deprecated)
-            location/color kwargs, or the defaults.
-    """
-    if isinstance(frame_label, FrameLabel):
-        used_deprecated = [k for k in _DEPRECATED_FRAME_LABEL_KWARGS if k in kwargs]
-        if used_deprecated:
-            warnings.warn(
-                f"{used_deprecated} are ignored when `frame_label` is a "
-                "`FrameLabel` -- set them on the `FrameLabel` instance "
-                "instead.",
-                stacklevel=3,
-            )
-            for key in used_deprecated:
-                kwargs.pop(key)
-        return frame_label
-    color, color_key = _pop_first(kwargs, ("label_color",), "black")
-    kwarg_location, kwarg_location_key = _pop_first(
-        kwargs, ("label_location", "text_loc"), None
-    )
-    if frame_label is not None:
-        location = frame_label
-        location_keys = ["frame_label (positional)"]
-        if kwarg_location_key:
-            location_keys.append(kwarg_location_key)
-    else:
-        location = kwarg_location
-        location_keys = [kwarg_location_key] if kwarg_location_key else []
-    used = location_keys + ([color_key] if color_key else [])
-    if used:
-        warnings.warn(
-            f"Passing {used} directly is deprecated; pass a "
-            "`cleopatra.glyphs.gridded.array_glyph.FrameLabel` as `frame_label` instead.",
-            DeprecationWarning,
-            stacklevel=3,
-        )
-    return FrameLabel(location=location, color=color)
+        Args:
+            col: Labels for the column-facet axis, by default `None`
+                (titles fall back to the integer slice index).
+            row: Labels for the row-facet axis, by default `None`; only
+                honoured on a 4-D (row+col) facet.
+        """
+        self.col = col
+        self.row = row
 
 
 class FacetGrid:
@@ -820,7 +590,6 @@ class ArrayGlyph(GeoMixin, Glyph):
             that are neither masked (via `exclude_value`) nor NaN. For a
             3-D stack this is counted on the first frame. Equals the number
             of per-cell value labels drawn when `display_cell_value=True`.
-            (The legacy alias `no_elem` still works but is deprecated.)
         anim (matplotlib.animation.FuncAnimation): The animation object if created.
         im (matplotlib.cm.ScalarMappable): The colour-mapped artist produced by
             the most recent `plot`/`animate` call (e.g. the `AxesImage` for
@@ -1210,38 +979,6 @@ class ArrayGlyph(GeoMixin, Glyph):
             value: The new array to store (see the `arr` property).
         """
         self._arr = value
-
-    @property
-    def no_elem(self) -> int:
-        """Deprecated alias for `num_domain_cells`.
-
-        Kept for backward compatibility; emits a `DeprecationWarning`.
-        Will be removed in a future release.
-
-        Returns:
-            int: Same value as `num_domain_cells`.
-
-        Examples:
-            - The deprecated alias returns the same count as
-                `num_domain_cells`:
-                ```python
-                >>> import warnings
-                >>> import numpy as np
-                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
-                >>> glyph = ArrayGlyph(np.array([[1.0, 2.0], [3.0, 4.0]]))
-                >>> with warnings.catch_warnings():
-                ...     warnings.simplefilter("ignore")
-                ...     glyph.no_elem == glyph.num_domain_cells
-                True
-
-                ```
-        """
-        warnings.warn(
-            "`ArrayGlyph.no_elem` is deprecated; use `num_domain_cells` instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.num_domain_cells
 
     def prepare_array(
         self,
@@ -2396,8 +2133,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             self.default_options["title"], fontsize=self.default_options["title_size"]
         )
         _mark_render_artists(self.ax, self.cbar, self.im)
-        assert self.fig is not None
-        return self.fig, self.ax
+        return cast(Figure, self.fig), self.ax
 
     def _flat_axis_bounds(self) -> tuple[float, float, float, float]:
         """Return the `(x_min, x_max, y_min, y_max)` axis limits of the flat view.
@@ -2842,7 +2578,7 @@ class ArrayGlyph(GeoMixin, Glyph):
 
     def plot(
         self,
-        points: np.ndarray | PointOverlay | None = None,
+        points: PointOverlay | None = None,
         kind: str = "auto",
         ax: Axes | None = None,
         title: str | None = None,
@@ -2863,14 +2599,10 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         Args:
             points: Points to display on the array, by default None. A
-                `PointOverlay` (locations plus marker/label styling), or a
-                plain `(N, 3)` array of `[value, row, col]` per point (a
-                bare array is styled with `PointOverlay`'s own defaults).
-                (Styling `points` via separate `point_color` /
-                `point_size` / `point_label_color` / `point_label_size`
-                keywords is deprecated; pass a `PointOverlay` instead —
-                the old keywords still work as `**kwargs` and emit a
-                `DeprecationWarning`.)
+                `PointOverlay` bundling the `(N, 3)` array of
+                `[value, row, col]` per point together with the marker /
+                value-label styling (`color` / `size` / `label_color` /
+                `label_size`).
             kind: Render kind, by default `"auto"`. One of:
 
                 - `"auto"` — picks the best renderer for the data.
@@ -2995,29 +2727,29 @@ class ArrayGlyph(GeoMixin, Glyph):
                         color bar is skipped (with a warning) even when
                         `add_colorbar` is True, and `self.cbar` stays None.
                     cbar_orientation : str, optional
-                        Deprecated; use `colorbar=ColorBar(orientation=...)`.
+                        Prefer `colorbar=ColorBar(orientation=...)`.
                         Orientation of the color bar, by default 'vertical'.
                         Can be 'horizontal' or 'vertical'.
                     cbar_label_rotation : float, optional
-                        Deprecated; use `colorbar=ColorBar(label_rotation=...)`.
+                        Prefer `colorbar=ColorBar(label_rotation=...)`.
                         Rotation angle (degrees) of the color bar label, by
                         default None (matplotlib's own label orientation).
                     cbar_label_location : str, optional
-                        Deprecated; use `colorbar=ColorBar(label_location=...)`.
+                        Prefer `colorbar=ColorBar(label_location=...)`.
                         Location of the color bar label, by default 'center'.
                         Valid values depend on the bar orientation -- vertical:
                         'top'/'center'/'bottom'; horizontal: 'left'/'center'/'right'.
                     cbar_length : float, optional
-                        Deprecated; use `colorbar=ColorBar(length=...)`. Ratio to
+                        Prefer `colorbar=ColorBar(length=...)`. Ratio to
                         control the height/width of the color bar, by default 0.75.
                     ticks_spacing : int, optional
-                        Deprecated; use `colorbar=ColorBar(ticks_spacing=...)`.
+                        Prefer `colorbar=ColorBar(ticks_spacing=...)`.
                         Spacing between ticks on the color bar, by default 5.
                     cbar_label_size : int, optional
-                        Deprecated; use `colorbar=ColorBar(label_size=...)`. Font
+                        Prefer `colorbar=ColorBar(label_size=...)`. Font
                         size of the color bar label, by default 12.
                     cbar_label : str, optional
-                        Deprecated; use `colorbar=ColorBar(label=...)`. Label text
+                        Prefer `colorbar=ColorBar(label=...)`. Label text
                         for the color bar, by default None.
 
                 Colour scale (moved to the `color=` object):
@@ -3418,9 +3150,6 @@ class ArrayGlyph(GeoMixin, Glyph):
                 f"RGB compositing requires kind='imshow'. Got kind={kind!r}."
             )
 
-        points = _resolve_point_overlay(points, kwargs)  # type: ignore[arg-type]
-        _warn_deprecated_cbar_kwargs(kwargs)
-
         # Snapshot the pre-merge value of every option key these group objects
         # will touch, so an invalid `style` (validated below) can roll back the
         # WHOLE merge -- not just `style` -- and a co-passed color=/contour=/cells=
@@ -3638,10 +3367,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         col: str | None = None,
         row: str | None = None,
         col_wrap: int | None = None,
-        col_coords: Sequence[Any] | None = None,
-        row_coords: Sequence[Any] | None = None,
+        labels: PanelLabels | None = None,
         kind: str = "auto",
-        figsize: tuple[float, float] | None = None,
+        figure_size: tuple[float, float] | None = None,
         extents: Sequence[Sequence[float]] | None = None,
         colorbar: bool | ColorBar | None = None,
         color: ColorScaling | None = None,
@@ -3681,17 +3409,17 @@ class ArrayGlyph(GeoMixin, Glyph):
             col_wrap: When only `col` is given, wrap the N subplots
                 into `col_wrap` columns × `ceil(N/col_wrap)` rows.
                 Ignored when `row` is set.
-            col_coords: Optional sequence of coordinate labels for the
-                column dimension. Length must match the column axis of
-                the stack. When given, the per-subplot title contains
-                the coord value instead of the integer index.
-            row_coords: Optional sequence of coordinate labels for the
-                row dimension. Length must match the row axis of the
-                stack. Only honoured when `row` is set.
+            labels: Optional `PanelLabels` supplying per-panel title
+                labels for the facet axes (`labels.col` / `labels.row`).
+                Each sequence's length must match its axis size; when
+                given, the per-subplot title contains the label instead of
+                the integer index. `labels.row` is only honoured when
+                `row` is set. `None` (default) titles every panel with its
+                integer slice index.
             kind: Render kind, forwarded to the per-subplot dispatch.
                 One of `"auto"`, `"imshow"`, `"pcolormesh"`,
                 `"contour"`, `"contourf"`. Default `"auto"`.
-            figsize: Optional `(width, height)` for the shared figure.
+            figure_size: Optional `(width, height)` for the shared figure.
                 Defaults to `(4 * ncols, 3.5 * nrows)`.
             extents: Optional per-panel spatial extents — one
                 `[xmin, ymin, xmax, ymax]` (user-facing order) for each
@@ -3712,14 +3440,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                 placement / caption / sizing to every panel (so the
                 `result.cbar` returned -- the first panel's -- carries the
                 spec). Prefer this typed form over the loose `cbar_*`
-                kwargs, which are deprecated here as they are on
-                `plot` / `animate`.
+                kwargs, here as on `plot` / `animate`.
 
             **kwargs: Forwarded to each subplot. Recognised keys
                 include the same colour / colorbar / level kwargs as
                 `plot`. `vmin` / `vmax` win over the
-                stack-wide auto-computed limits. Passing the loose
-                `cbar_*` colorbar kwargs is deprecated -- use `colorbar`.
+                stack-wide auto-computed limits. Prefer the typed
+                `colorbar` over the loose `cbar_*` kwargs.
 
         Returns:
             FacetGrid: Result object exposing `fig`, `axes`,
@@ -3728,7 +3455,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         Raises:
             ValueError: If neither `col` nor `row` is given, if the
                 array shape does not match the requested facet
-                dimensions, if `col_coords` / `row_coords` lengths
+                dimensions, if `labels.col` / `labels.row` lengths
                 are wrong, if `extents` is combined with the parent's
                 `extent` or `coords`, or if `extents` has the wrong
                 length or a non-length-4 element.
@@ -3754,6 +3481,22 @@ class ArrayGlyph(GeoMixin, Glyph):
                 >>> g = ArrayGlyph(stack).facet(col="t", col_wrap=3)
                 >>> g.axes.shape
                 (2, 3)
+
+                ```
+            - Title each panel with a coordinate label via `PanelLabels`:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.gridded.array_glyph import (
+                ...     ArrayGlyph,
+                ...     PanelLabels,
+                ... )
+                >>> stack = np.arange(3 * 5 * 5, dtype=float).reshape(3, 5, 5)
+                >>> g = ArrayGlyph(stack).facet(
+                ...     col="month",
+                ...     labels=PanelLabels(col=["Jan", "Feb", "Mar"]),
+                ... )
+                >>> [d["month"] for d in g.name_dicts]
+                ['Jan', 'Feb', 'Mar']
 
                 ```
             - Per-panel extents for same-shape grids over different
@@ -3785,6 +3528,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         if col is None and row is None:
             raise ValueError("at least one of `col`/`row` must be given")
+        labels = labels or PanelLabels()
+        col_coords = labels.col
+        row_coords = labels.row
         if extents is not None:
             if self.extent is not None:
                 raise ValueError(
@@ -3820,7 +3566,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 nrows = 1
             if col_coords is not None and len(col_coords) != n_col:
                 raise ValueError(
-                    f"`col_coords` length {len(col_coords)} does not match "
+                    f"`labels.col` length {len(col_coords)} does not match "
                     f"the column axis size {n_col}."
                 )
             panel_indices: list[tuple[int, int | None]] = [
@@ -3840,12 +3586,12 @@ class ArrayGlyph(GeoMixin, Glyph):
             nrows = n_row
             if col_coords is not None and len(col_coords) != n_col:
                 raise ValueError(
-                    f"`col_coords` length {len(col_coords)} does not match "
+                    f"`labels.col` length {len(col_coords)} does not match "
                     f"the column axis size {n_col}."
                 )
             if row_coords is not None and len(row_coords) != n_row:
                 raise ValueError(
-                    f"`row_coords` length {len(row_coords)} does not match "
+                    f"`labels.row` length {len(row_coords)} does not match "
                     f"the row axis size {n_row}."
                 )
             panel_indices = [(i, j) for j in range(n_row) for i in range(n_col)]
@@ -3856,16 +3602,12 @@ class ArrayGlyph(GeoMixin, Glyph):
                 f"`extents` has {len(extents)} entries but there are {n_panels} panels."
             )
 
-        assert col is not None
+        col = cast(str, col)  # guaranteed non-None by the validation above
 
-        # Warn only after the structural validation above, so a malformed call
-        # raises its `ValueError` without a spurious colorbar DeprecationWarning.
-        _warn_deprecated_cbar_kwargs(kwargs)
-
-        if figsize is None:
-            figsize = (4.0 * ncols, 3.5 * nrows)
+        if figure_size is None:
+            figure_size = (4.0 * ncols, 3.5 * nrows)
         fig, axes = plt.subplots(
-            nrows=nrows, ncols=ncols, figsize=figsize, squeeze=False
+            nrows=nrows, ncols=ncols, figsize=figure_size, squeeze=False
         )
 
         vmin_user = kwargs.get("vmin")
@@ -3940,7 +3682,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             col_label = col_coords[col_idx] if col_coords is not None else col_idx
             name_dict: dict[str, Any] = {col: col_label}
             if row is not None:
-                assert row_idx is not None
+                row_idx = cast(int, row_idx)  # non-None whenever `row` is set
                 row_label = row_coords[row_idx] if row_coords is not None else row_idx
                 name_dict[row] = row_label
                 title = f"{col}={col_label}, {row}={row_label}"
@@ -3998,8 +3740,8 @@ class ArrayGlyph(GeoMixin, Glyph):
     def animate(
         self,
         time: list[Any],
-        points: np.ndarray | PointOverlay | None = None,
-        cell_value_text_colors: tuple[str, str] | _Unset = _UNSET,
+        points: PointOverlay | None = None,
+        cell_value_text_colors: tuple[str, str] = ("white", "black"),
         interval: int = 200,
         frame_label: FrameLabel | None = None,
         *,
@@ -4038,21 +3780,15 @@ class ArrayGlyph(GeoMixin, Glyph):
                 These could be timestamps, frame numbers, or any other identifiers.
                 The length of this list should match the first dimension of the array.
             points: Points to display on the array, by default None. A
-                `PointOverlay` (locations plus marker/label styling), or a
-                plain `(N, 3)` array of `[value, row, col]` per point (a
-                bare array is styled with `PointOverlay`'s own defaults).
-                (Styling `points` via separate `point_color` /
-                `point_size` / `point_label_color` / `point_label_size`
-                keywords is deprecated; pass a `PointOverlay` instead —
-                the old keywords still work as `**kwargs` and emit a
-                `DeprecationWarning`.)
+                `PointOverlay` bundling the `(N, 3)` array of
+                `[value, row, col]` per point together with the marker /
+                value-label styling (`color` / `size` / `label_color` /
+                `label_size`).
             cell_value_text_colors: Two colors to be used for cell value
                 text, by default ("white", "black"). The first color is
                 used when the cell value is below the
                 background_color_threshold, and the second color is used
-                when the cell value is above the threshold. (Renamed from
-                `text_colors`; the old name still works as a keyword and
-                emits a `DeprecationWarning`.)
+                when the cell value is above the threshold.
             interval: Delay between frames in milliseconds, by default 200.
                 Controls the speed of the animation (smaller values = faster animation).
             frame_label: Styling for the per-frame time label, by default
@@ -4061,11 +3797,6 @@ class ArrayGlyph(GeoMixin, Glyph):
                 `location`/`color` fields and the top-left anchoring
                 behaviour when `location` is left unset. `ArrayGlyph`-only;
                 `MeshGlyph.animate()` does not yet expose this option.
-                (Styling the frame label via separate `label_location` /
-                `label_color` keywords — or the even older `text_loc` for
-                the location — is deprecated; pass a `FrameLabel` instead —
-                the old keywords still work as `**kwargs` and emit a
-                `DeprecationWarning`.)
             color: Colour-scale group object
                 (`cleopatra.styling.scaling.ColorScaling`), e.g.
                 `ColorScaling.power(gamma=0.7)`. Replaces the loose
@@ -4162,29 +3893,29 @@ class ArrayGlyph(GeoMixin, Glyph):
                         None and no axes space is taken by a color bar.
                         The mappable is still reachable via `self.im`.
                     cbar_orientation : str, optional
-                        Deprecated; use `colorbar=ColorBar(orientation=...)`.
+                        Prefer `colorbar=ColorBar(orientation=...)`.
                         Orientation of the color bar, by default 'vertical'.
                         Can be 'horizontal' or 'vertical'.
                     cbar_label_rotation : float, optional
-                        Deprecated; use `colorbar=ColorBar(label_rotation=...)`.
+                        Prefer `colorbar=ColorBar(label_rotation=...)`.
                         Rotation angle (degrees) of the color bar label, by
                         default None (matplotlib's own label orientation).
                     cbar_label_location : str, optional
-                        Deprecated; use `colorbar=ColorBar(label_location=...)`.
+                        Prefer `colorbar=ColorBar(label_location=...)`.
                         Location of the color bar label, by default 'center'.
                         Valid values depend on the bar orientation -- vertical:
                         'top'/'center'/'bottom'; horizontal: 'left'/'center'/'right'.
                     cbar_length : float, optional
-                        Deprecated; use `colorbar=ColorBar(length=...)`. Ratio to
+                        Prefer `colorbar=ColorBar(length=...)`. Ratio to
                         control the height/width of the color bar, by default 0.75.
                     ticks_spacing : int, optional
-                        Deprecated; use `colorbar=ColorBar(ticks_spacing=...)`.
+                        Prefer `colorbar=ColorBar(ticks_spacing=...)`.
                         Spacing between ticks on the color bar, by default 5.
                     cbar_label_size : int, optional
-                        Deprecated; use `colorbar=ColorBar(label_size=...)`. Font
+                        Prefer `colorbar=ColorBar(label_size=...)`. Font
                         size of the color bar label, by default 12.
                     cbar_label : str, optional
-                        Deprecated; use `colorbar=ColorBar(label=...)`. Label text
+                        Prefer `colorbar=ColorBar(label=...)`. Label text
                         for the color bar, by default None.
 
                 Grouped options (moved off `**kwargs`):
@@ -4365,26 +4096,13 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         ```
         """
-        cell_value_text_colors = cast(
-            "tuple[str, str]",
-            _resolve_renamed_kwarg(
-                kwargs,  # type: ignore[arg-type]
-                "text_colors",
-                "cell_value_text_colors",
-                cell_value_text_colors,
-                ("white", "black"),
-            ),
-        )
-        frame_label = _resolve_frame_label(frame_label, kwargs)  # type: ignore[arg-type]
-        points = _resolve_point_overlay(points, kwargs)  # type: ignore[arg-type]
-        _warn_deprecated_cbar_kwargs(kwargs)
+        frame_label = frame_label or FrameLabel()
 
         frame_location = frame_label.location
         label_location_is_default = frame_location is None
-        if label_location_is_default:
+        if frame_location is None:
             label_location = [0.02, 0.95]
         else:
-            assert frame_location is not None
             label_location = frame_location
 
         self._merge_group_params(color, contour, cells, data_style)
@@ -4708,9 +4426,9 @@ class ArrayGlyph(GeoMixin, Glyph):
             output = [im, day_text]
 
             if points is not None:
-                assert points_scatter is not None
-                points_scatter.set_offsets(np.c_[col, row])
-                output.append(points_scatter)
+                scatter = cast(PathCollection, points_scatter)  # set when points given
+                scatter.set_offsets(np.c_[col, row])
+                output.append(scatter)
                 update_points = lambda x: points_id[x].set_text(points.points[x, 0])
                 list(map(update_points, range(len(col))))
 
@@ -4732,9 +4450,9 @@ class ArrayGlyph(GeoMixin, Glyph):
             output = [im, day_text]
 
             if points is not None:
-                assert points_scatter is not None
-                points_scatter.set_offsets(np.c_[col, row])
-                output.append(points_scatter)
+                scatter = cast(PathCollection, points_scatter)  # set when points given
+                scatter.set_offsets(np.c_[col, row])
+                output.append(scatter)
 
                 for x in range(len(col)):
                     points_id[x].set_text(points.points[x, 0])

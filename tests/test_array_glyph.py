@@ -17,17 +17,17 @@ from cleopatra.glyphs.gridded.array_glyph import (
     _COORD_DTYPE_MISMATCH,
     _COORD_SHAPE_MISMATCH,
     _UNSET,
+    _Unset,
     AnimateKwargs,
     ArrayGlyph,
     ColorBar,
     FacetGrid,
     FrameLabel,
+    PanelLabels,
     PlotKwargs,
     PointOverlay,
-    _pop_first,
     _resolve_colorbar,
     _swatch_text_default,
-    _warn_deprecated_cbar_kwargs,
 )
 from cleopatra.styling.params import CellValues, Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
@@ -50,13 +50,6 @@ class TestCreateArray:
         assert array.num_domain_cells == 89
         assert array.vmin == 0
         assert array.vmax == 88
-
-    def test_no_elem_is_deprecated_alias(self, arr: np.ndarray, no_data_value: float):
-        """The legacy `no_elem` attribute still works but warns."""
-        array = ArrayGlyph(arr, exclude_value=[no_data_value])
-        with pytest.warns(DeprecationWarning, match="num_domain_cells"):
-            value = array.no_elem
-        assert value == array.num_domain_cells == 89
 
 
 class TestRGB:
@@ -381,350 +374,6 @@ class TestAnimate:
         # os.remove(path)
 
 
-class TestRenamedKwargAliases:
-    """The legacy `plot`/`animate` kwarg names still work but warn.
-
-    `text_colors` was renamed to `cell_value_text_colors`. The old name is
-    still accepted as a keyword (routed through `**kwargs`), emits a
-    `DeprecationWarning` naming its replacement, and is forwarded to the
-    same effective behaviour as the new name. The point-styling kwargs
-    (`point_color`, `pid_color`, ...) have since been superseded by
-    `PointOverlay` -- see `TestPointOverlayAliases`; the frame-label
-    kwargs (`label_location`, `label_color`, `text_loc`) by `FrameLabel`
-    -- see `TestFrameLabelAliases`.
-    """
-
-    def test_animate_text_colors_alias_still_works(
-        self, coello_data: np.ndarray, animate_time_list: list
-    ):
-        """`animate(text_colors=...)` warns and is forwarded unchanged."""
-        array = ArrayGlyph(coello_data)
-        with pytest.warns(DeprecationWarning, match="cell_value_text_colors"):
-            array.animate(
-                animate_time_list,
-                cells=CellValues(show=True),
-                text_colors=("yellow", "purple"),
-            )
-
-    def test_no_warning_with_only_new_names(self, coello_data: np.ndarray):
-        """Using only the current names raises no deprecation warning."""
-        array = ArrayGlyph(coello_data)
-        with warnings.catch_warnings():
-            warnings.simplefilter("error", DeprecationWarning)
-            array.animate(
-                ["t0", "t1", "t2"],
-                cell_value_text_colors=("yellow", "purple"),
-                frame_label=FrameLabel(location=[0.1, 0.1]),
-            )
-
-    def test_both_given_new_wins_even_at_its_own_default(
-        self, coello_data: np.ndarray, animate_time_list: list
-    ):
-        """`cell_value_text_colors` wins even when equal to its own default.
-
-        Test scenario:
-            Regression for a false-negative in the "both given" conflict
-            check: passing both the deprecated `text_colors=` and the
-            current `cell_value_text_colors=` -- with the current one
-            happening to equal its own default -- must still fire the
-            conflict warning (not silently prefer the deprecated value,
-            which a plain equality-with-default check cannot tell apart
-            from "the new name was never passed").
-        """
-        array = ArrayGlyph(coello_data)
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            array.animate(
-                animate_time_list,
-                cells=CellValues(show=True),
-                cell_value_text_colors=("white", "black"),
-                text_colors=("yellow", "purple"),
-            )
-        messages = [str(w.message) for w in caught]
-        assert any("is deprecated" in m for m in messages)
-        assert any("were given" in m and "wins" in m for m in messages)
-
-
-class TestFrameLabelAliases:
-    """`FrameLabel` is the current way to style `animate`'s frame/time
-    label; the flat keywords it replaces (`label_location`/`label_color`,
-    and the older `text_loc`) still work but warn.
-    """
-
-    def test_frame_label_no_warning(
-        self, coello_data: np.ndarray, animate_time_list: list
-    ):
-        """Passing a `FrameLabel` is the current style and warns nothing."""
-        array = ArrayGlyph(coello_data)
-        with warnings.catch_warnings():
-            warnings.simplefilter("error", DeprecationWarning)
-            array.animate(
-                animate_time_list,
-                frame_label=FrameLabel(location=[0.1, 0.1], color="yellow"),
-            )
-        assert array._day_text.get_color() == "yellow"
-        assert array._day_text.get_transform() is array.ax.transData
-
-    def test_label_location_alias_still_works(
-        self, coello_data: np.ndarray, animate_time_list: list
-    ):
-        """`animate(label_location=...)` warns and positions the frame label."""
-        array = ArrayGlyph(coello_data)
-        with pytest.warns(DeprecationWarning, match="FrameLabel"):
-            array.animate(animate_time_list, label_location=[0.1, 0.1])
-        assert array._day_text.get_transform() is array.ax.transData
-
-    def test_text_loc_oldest_alias_still_works(
-        self, coello_data: np.ndarray, animate_time_list: list
-    ):
-        """`animate(text_loc=...)` (the oldest name) warns and positions the label."""
-        array = ArrayGlyph(coello_data)
-        with pytest.warns(DeprecationWarning, match="FrameLabel"):
-            array.animate(animate_time_list, text_loc=[0.1, 0.1])
-        assert array._day_text.get_transform() is array.ax.transData
-
-    def test_label_color_alias_still_works(
-        self, coello_data: np.ndarray, animate_time_list: list
-    ):
-        """`animate(label_color=...)` warns and colours the frame label."""
-        array = ArrayGlyph(coello_data)
-        with pytest.warns(DeprecationWarning, match="FrameLabel"):
-            array.animate(animate_time_list, label_color="yellow")
-        assert array._day_text.get_color() == "yellow"
-
-    def test_deprecated_kwargs_ignored_with_frame_label(
-        self, coello_data: np.ndarray, animate_time_list: list
-    ):
-        """A deprecated kwarg alongside a `FrameLabel` is ignored, with a warning."""
-        array = ArrayGlyph(coello_data)
-        with pytest.warns(UserWarning, match="ignored"):
-            array.animate(
-                animate_time_list,
-                frame_label=FrameLabel(color="yellow"),
-                label_color="orange",
-            )
-        assert array._day_text.get_color() == "yellow"
-
-    def test_positional_legacy_location_still_works(
-        self, coello_data: np.ndarray, animate_time_list: list
-    ):
-        """A plain `[x, y]` passed positionally at the old `text_loc` slot still works.
-
-        Test scenario:
-            On `main`, `animate`'s 5th positional-or-keyword parameter was
-            `text_loc` (a plain `[x, y]` list); it is now `frame_label`. A
-            stale positional call with a plain list at that position must
-            still position the label (not silently drop it) and warn.
-        """
-        array = ArrayGlyph(coello_data)
-        with pytest.warns(DeprecationWarning, match="FrameLabel"):
-            array.animate(animate_time_list, None, ("white", "black"), 200, [0.3, 0.3])
-        assert array._day_text.get_position() == (0.3, 0.3)
-        assert array._day_text.get_transform() is array.ax.transData
-
-    def test_deprecation_warning_attributes_to_caller(
-        self, coello_data: np.ndarray, animate_time_list: list
-    ):
-        """The `FrameLabel`-alias deprecation warning points at the caller's line.
-
-        Test scenario:
-            Regression for a `stacklevel` bug: the warning must name this
-            test file/line, not an internal frame (e.g. `warnings.py`).
-        """
-        array = ArrayGlyph(coello_data)
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            array.animate(animate_time_list, label_color="yellow")
-        assert len(caught) == 1
-        assert caught[0].filename == __file__
-
-    def test_positional_and_keyword_location_both_reported(
-        self, coello_data: np.ndarray, animate_time_list: list
-    ):
-        """Combining a positional legacy location with `label_location=` warns about both.
-
-        Test scenario:
-            Regression for a message-accuracy bug: when a bare `[x, y]` is
-            passed positionally at the old `text_loc` slot *and*
-            `label_location=` is also given, the keyword is drained (so it
-            can't fail the strict `kwargs` check) even though the
-            positional value wins -- but the warning previously only named
-            `frame_label (positional)`, silently omitting the also-consumed
-            `label_location`. Both must now appear in the message.
-        """
-        array = ArrayGlyph(coello_data)
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            array.animate(
-                animate_time_list,
-                None,
-                ("white", "black"),
-                200,
-                [0.3, 0.3],
-                label_location=[0.5, 0.5],
-            )
-        messages = [str(w.message) for w in caught]
-        assert any(
-            "frame_label (positional)" in m and "label_location" in m for m in messages
-        ), f"Expected both aliases named in one message, got: {messages}"
-        assert array._day_text.get_position() == (
-            0.3,
-            0.3,
-        ), "The positional value must still win over the keyword"
-
-
-class TestPointOverlayAliases:
-    """`PointOverlay` is the current way to style `points`; the flat
-    keywords it replaces (`point_color`/`point_size`/`point_label_color`/
-    `point_label_size`, and the older `pid_color`/`pid_size`) still work
-    on a plain array but warn.
-    """
-
-    def test_plain_array_uses_point_overlay_defaults(self, arr: np.ndarray):
-        """A bare array (no styling kwargs) needs no `PointOverlay` and warns nothing."""
-        points = np.array([[5, 1, 1]])
-        array = ArrayGlyph(arr)
-        with warnings.catch_warnings():
-            warnings.simplefilter("error", DeprecationWarning)
-            fig, ax = array.plot(points=points)
-        label = [t for t in ax.texts if t.get_text() == "5"][0]
-        assert to_rgba(label.get_color()) == to_rgba("blue")  # PointOverlay default
-
-    def test_plot_point_overlay_no_warning(self, arr: np.ndarray):
-        """Passing a `PointOverlay` is the current style and warns nothing."""
-        overlay = PointOverlay(np.array([[5, 1, 1]]), label_color="lime")
-        array = ArrayGlyph(arr)
-        with warnings.catch_warnings():
-            warnings.simplefilter("error", DeprecationWarning)
-            fig, ax = array.plot(points=overlay)
-        label = [t for t in ax.texts if t.get_text() == "5"][0]
-        assert to_rgba(label.get_color()) == to_rgba("lime")
-
-    def test_plot_point_color_alias_still_works(self, arr: np.ndarray):
-        """`plot(points=array, point_color=...)` warns and colours the marker."""
-        points = np.array([[5, 1, 1]])
-        array = ArrayGlyph(arr)
-        with pytest.warns(DeprecationWarning, match="PointOverlay"):
-            fig, ax = array.plot(points=points, point_color="lime")
-        assert to_rgba(ax.collections[0].get_facecolor()[0]) == to_rgba("lime")
-
-    def test_plot_point_label_color_alias_still_works(self, arr: np.ndarray):
-        """`plot(points=array, point_label_color=...)` warns and colours the label."""
-        points = np.array([[5, 1, 1]])
-        array = ArrayGlyph(arr)
-        with pytest.warns(DeprecationWarning, match="PointOverlay"):
-            fig, ax = array.plot(points=points, point_label_color="lime")
-        label = [t for t in ax.texts if t.get_text() == "5"][0]
-        assert to_rgba(label.get_color()) == to_rgba("lime")
-
-    def test_plot_pid_color_oldest_alias_still_works(self, arr: np.ndarray):
-        """The oldest `pid_color` alias still resolves to the label colour."""
-        points = np.array([[5, 1, 1]])
-        array = ArrayGlyph(arr)
-        with pytest.warns(DeprecationWarning, match="PointOverlay"):
-            fig, ax = array.plot(points=points, pid_color="lime")
-        label = [t for t in ax.texts if t.get_text() == "5"][0]
-        assert to_rgba(label.get_color()) == to_rgba("lime")
-
-    def test_plot_point_label_color_wins_over_pid_color(self, arr: np.ndarray):
-        """When both label-colour generations are given, the newer one wins."""
-        points = np.array([[5, 1, 1]])
-        array = ArrayGlyph(arr)
-        with pytest.warns(DeprecationWarning, match="PointOverlay"):
-            fig, ax = array.plot(
-                points=points, point_label_color="lime", pid_color="orange"
-            )
-        label = [t for t in ax.texts if t.get_text() == "5"][0]
-        assert to_rgba(label.get_color()) == to_rgba("lime")
-
-    def test_plot_deprecated_kwargs_ignored_with_point_overlay(self, arr: np.ndarray):
-        """A deprecated kwarg alongside a `PointOverlay` is ignored, with a warning."""
-        overlay = PointOverlay(np.array([[5, 1, 1]]), label_color="lime")
-        array = ArrayGlyph(arr)
-        with pytest.warns(UserWarning, match="ignored"):
-            fig, ax = array.plot(points=overlay, point_label_color="orange")
-        label = [t for t in ax.texts if t.get_text() == "5"][0]
-        assert to_rgba(label.get_color()) == to_rgba("lime")
-
-    def test_plot_point_color_without_points_does_not_raise(self, arr: np.ndarray):
-        """`plot(point_color=...)` with no `points` warns instead of raising.
-
-        Test scenario:
-            Regression for a bug where `_resolve_point_overlay` only
-            drained the deprecated point-style kwargs out of `kwargs`
-            when `points` was a plain array or `PointOverlay`, leaving
-            them to fail the strict `kwargs`-vs-`default_options`
-            validation when `points is None` -- contradicting the
-            documented "the old keywords still work as `**kwargs`"
-            guarantee (on `main`, these were named parameters, legal --
-            if pointless -- without `points`).
-        """
-        array = ArrayGlyph(arr)
-        with pytest.warns(DeprecationWarning, match="have no effect"):
-            fig, ax = array.plot(point_color="red")
-        assert fig is not None, "plot() must still succeed, not raise"
-
-    def test_plot_pid_size_without_points_does_not_raise(self, arr: np.ndarray):
-        """The oldest `pid_size` alias with no `points` also warns instead of raising."""
-        array = ArrayGlyph(arr)
-        with pytest.warns(DeprecationWarning, match="have no effect"):
-            fig, ax = array.plot(pid_size=42)
-        assert fig is not None, "plot() must still succeed, not raise"
-
-    def test_animate_point_label_color_without_points_does_not_raise(
-        self, coello_data: np.ndarray, animate_time_list: list
-    ):
-        """`animate(point_label_color=...)` with no `points` warns instead of raising."""
-        array = ArrayGlyph(coello_data)
-        with pytest.warns(DeprecationWarning, match="have no effect"):
-            anim = array.animate(animate_time_list, point_label_color="lime")
-        assert anim is not None, "animate() must still succeed, not raise"
-
-    def test_plot_no_deprecated_kwargs_and_no_points_warns_nothing(
-        self, arr: np.ndarray
-    ):
-        """Neither `points` nor any deprecated point-style kwarg: no warning at all."""
-        array = ArrayGlyph(arr)
-        with warnings.catch_warnings():
-            warnings.simplefilter("error", DeprecationWarning)
-            fig, ax = array.plot()
-        assert fig is not None
-
-    def test_animate_pid_size_oldest_alias_still_works(
-        self, coello_data: np.ndarray, animate_time_list: list
-    ):
-        """`animate(points=array, pid_size=...)` warns and sizes the label."""
-        points = np.array([[5, 1, 1]])
-        array = ArrayGlyph(coello_data)
-        with pytest.warns(DeprecationWarning, match="PointOverlay"):
-            array.animate(animate_time_list, points=points, pid_size=42)
-
-    def test_animate_point_overlay_no_warning(
-        self, coello_data: np.ndarray, animate_time_list: list
-    ):
-        """Passing a `PointOverlay` to `animate` is the current style and warns nothing."""
-        overlay = PointOverlay(np.array([[5, 1, 1]]), size=42)
-        array = ArrayGlyph(coello_data)
-        with warnings.catch_warnings():
-            warnings.simplefilter("error", DeprecationWarning)
-            array.animate(animate_time_list, points=overlay)
-
-    def test_deprecation_warning_attributes_to_caller(self, arr: np.ndarray):
-        """The `PointOverlay`-alias deprecation warning points at the caller's line.
-
-        Test scenario:
-            Regression for a `stacklevel` bug: the warning must name this
-            test file/line, not an internal frame (e.g. `warnings.py`).
-        """
-        points = np.array([[5, 1, 1]])
-        array = ArrayGlyph(arr)
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            array.plot(points=points, pid_color="lime")
-        assert len(caught) == 1
-        assert caught[0].filename == __file__
-
-
 class TestKwargsTypedDicts:
     """`PlotKwargs`/`AnimateKwargs` should track every kwarg each method
     actually reads and uses -- a regression test for the kind of drift
@@ -770,9 +419,9 @@ class TestKwargsTypedDicts:
 
 
 class TestUnsetSentinel:
-    """`_Unset`/`_UNSET`: the sentinel distinguishing "not passed" from
-    "passed, equal to its default" for `_resolve_renamed_kwarg`'s
-    `new_value` parameter.
+    """`_Unset`/`_UNSET`: the sentinel distinguishing "the caller did not
+    pass this" from "passed as `None`" for the `hillshade` key resolved
+    inside `ArrayGlyph.plot`.
     """
 
     def test_repr_is_readable(self):
@@ -790,83 +439,14 @@ class TestUnsetSentinel:
         """`_UNSET` is a single shared instance, compared with `is` not `==`.
 
         Test scenario:
-            `_resolve_renamed_kwarg` tests `new_value is _UNSET`; a second
-            `_Unset()` instance must NOT be `is _UNSET` (no `__eq__`
-            override makes two instances equal either), confirming the
-            sentinel can only be obtained by importing `_UNSET` itself.
+            Callers test `value is _UNSET`; a second `_Unset()` instance
+            must NOT be `is _UNSET` (no `__eq__` override makes two
+            instances equal either), confirming the sentinel can only be
+            obtained by importing `_UNSET` itself.
         """
-        from cleopatra.glyphs.gridded.array_glyph import _Unset
-
         other = _Unset()
         assert other is not _UNSET, "A fresh _Unset() must not be the _UNSET singleton"
         assert other != _UNSET, "Two distinct _Unset instances must not compare equal"
-
-
-class TestPopFirst:
-    """Direct unit tests for `_pop_first`, the helper `_resolve_point_overlay`
-    and `_resolve_frame_label` use to drain every deprecated alias out of
-    `kwargs` while keeping only the highest-priority value.
-    """
-
-    def test_no_names_present_returns_default(self):
-        """None of `names` in `kwargs`: returns `(default, None)`, `kwargs` untouched."""
-        kwargs = {"cmap": "viridis"}
-        value, key = _pop_first(kwargs, ("point_color", "pid_color"), "red")
-        assert (value, key) == (
-            "red",
-            None,
-        ), f"Expected ('red', None), got {(value, key)}"
-        assert kwargs == {"cmap": "viridis"}, (
-            f"kwargs should be untouched, got {kwargs}"
-        )
-
-    def test_single_name_present_pops_it(self):
-        """Exactly one of `names` present: it is popped and returned with its key."""
-        kwargs = {"point_color": "lime", "cmap": "viridis"}
-        value, key = _pop_first(kwargs, ("point_color",), "red")
-        assert (value, key) == ("lime", "point_color"), f"Got {(value, key)}"
-        assert "point_color" not in kwargs, "The matched key must be popped"
-        assert kwargs == {"cmap": "viridis"}, (
-            f"Unrelated keys must survive, got {kwargs}"
-        )
-
-    def test_multiple_names_present_pops_all_returns_highest_priority(self):
-        """Two aliases present: both are popped, but the first-listed one wins.
-
-        Test scenario:
-            Regression for a bug where only the winning name was popped,
-            leaving the loser in `kwargs` to fail the caller's subsequent
-            strict `kwargs`-vs-`default_options` validation.
-        """
-        kwargs = {"point_label_color": "lime", "pid_color": "orange"}
-        value, key = _pop_first(kwargs, ("point_label_color", "pid_color"), "blue")
-        assert (value, key) == ("lime", "point_label_color"), f"Got {(value, key)}"
-        assert kwargs == {}, f"Both aliases must be popped, got {kwargs}"
-
-    def test_priority_order_is_names_order_not_insertion_order(self):
-        """The winner is the first name in `names`, regardless of `kwargs` insertion order.
-
-        Test scenario:
-            `pid_color` is inserted into `kwargs` before `point_label_color`,
-            but `names=("point_label_color", "pid_color")` still prefers
-            `point_label_color` -- priority is positional in `names`, not
-            dict insertion order.
-        """
-        kwargs = {"pid_color": "orange", "point_label_color": "lime"}
-        value, key = _pop_first(kwargs, ("point_label_color", "pid_color"), "blue")
-        assert (value, key) == ("lime", "point_label_color"), f"Got {(value, key)}"
-
-    def test_empty_names_returns_default(self):
-        """An empty `names` tuple always returns `(default, None)`."""
-        kwargs = {"cmap": "viridis"}
-        value, key = _pop_first(kwargs, (), "red")
-        assert (value, key) == (
-            "red",
-            None,
-        ), f"Expected ('red', None), got {(value, key)}"
-        assert kwargs == {"cmap": "viridis"}, (
-            f"kwargs should be untouched, got {kwargs}"
-        )
 
 
 class TestPointOverlay:
@@ -924,6 +504,57 @@ class TestFrameLabel:
         assert label.location == [0.3, 0.4], f"Got {label.location!r}"
         assert label.color == "yellow", f"Got {label.color!r}"
         assert label.size == 18, f"Got {label.size!r}"
+
+
+class TestPanelLabels:
+    """Direct unit tests for `PanelLabels.__init__`'s defaults, attribute
+    assignment, and keyword-only signature, independent of `facet` rendering.
+    """
+
+    def test_defaults(self):
+        """No arguments given: both `col` and `row` default to `None`.
+
+        Test scenario:
+            A bare `PanelLabels()` leaves both facet-axis label sequences
+            unset so `facet` falls back to integer slice indices.
+        """
+        labels = PanelLabels()
+        assert labels.col is None, f"Expected default col None, got {labels.col!r}"
+        assert labels.row is None, f"Expected default row None, got {labels.row!r}"
+
+    def test_explicit_values_stored_verbatim(self):
+        """Both keywords, when given, are stored unchanged (same object).
+
+        Test scenario:
+            The sequences passed for `col`/`row` are retained by identity,
+            not copied or coerced, so callers keep full control of them.
+        """
+        col = ["Jan", "Feb", "Mar"]
+        row = [10, 20]
+        labels = PanelLabels(col=col, row=row)
+        assert labels.col is col, f"col must be stored as given, got {labels.col!r}"
+        assert labels.row is row, f"row must be stored as given, got {labels.row!r}"
+
+    def test_col_only(self):
+        """Setting only `col` leaves `row` at its `None` default.
+
+        Test scenario:
+            The common 3-D facet case supplies just `col`; `row` must stay
+            `None` rather than mirroring `col`.
+        """
+        labels = PanelLabels(col=[0, 1, 2])
+        assert labels.col == [0, 1, 2], f"Got {labels.col!r}"
+        assert labels.row is None, f"Expected row None, got {labels.row!r}"
+
+    def test_signature_is_keyword_only(self):
+        """`col`/`row` are keyword-only: positional args raise `TypeError`.
+
+        Test scenario:
+            Mirrors `PointOverlay`/`FrameLabel` -- passing the label
+            sequences positionally is rejected so call sites stay explicit.
+        """
+        with pytest.raises(TypeError):
+            PanelLabels(["Jan", "Feb"])  # type: ignore[misc]
 
 
 @pytest.mark.plot
@@ -1790,13 +1421,12 @@ class TestPlotRecomputeBranch:
             glyph.plot(banana_count=12)
 
     def test_recompute_with_explicit_ticks_spacing(self):
-        """A loose `ticks_spacing=` (deprecated) still wins over the recompute path."""
+        """A loose `ticks_spacing=` still wins over the recompute path."""
         rng = np.random.default_rng(1337)
         body = rng.random(98)
         arr = np.concatenate([body, [-1000.0, 1000.0]]).reshape(10, 10)
         glyph = ArrayGlyph(arr)
-        with pytest.warns(DeprecationWarning, match="ticks_spacing"):
-            glyph.plot(robust=True, ticks_spacing=0.1)
+        glyph.plot(robust=True, ticks_spacing=0.1)
         assert glyph.default_options["ticks_spacing"] == 0.1, (
             "Explicit ticks_spacing must win over the recompute path"
         )
@@ -2004,7 +1634,7 @@ class TestSharedAxesArtistCleanup:
             second call.
         """
         arr = np.arange(25.0).reshape(5, 5)
-        points = np.array([[5.0, 1, 1], [6.0, 2, 2]])
+        points = PointOverlay(np.array([[5.0, 1, 1], [6.0, 2, 2]]))
         glyph = ArrayGlyph(arr)
         glyph.plot(points=points)
         collections_after_first = len(glyph.ax.collections)
@@ -2036,7 +1666,7 @@ class TestSharedAxesArtistCleanup:
         self, coello_data: np.ndarray, animate_time_list: list
     ):
         """A second `animate(points=...)` call replaces the scatter/label overlay."""
-        points = np.array([[5.0, 1, 1], [6.0, 2, 2]])
+        points = PointOverlay(np.array([[5.0, 1, 1], [6.0, 2, 2]]))
         glyph = ArrayGlyph(coello_data)
         glyph.animate(animate_time_list, points=points)
         collections_after_first = len(glyph.ax.collections)
@@ -2158,7 +1788,7 @@ class TestAnimateEdgeCases:
     ):
         """`animate(points=...)` adds scatter overlays without raising."""
         glyph = ArrayGlyph(coello_data, exclude_value=[no_data_value])
-        points = np.array([[1.0, 0, 0], [2.0, 1, 1]])
+        points = PointOverlay(np.array([[1.0, 0, 0], [2.0, 1, 1]]))
         anim = glyph.animate(animate_time_list, points=points)
         assert anim is not None
 
@@ -2168,10 +1798,9 @@ class TestAnimateEdgeCases:
         animate_time_list: list,
         no_data_value: float,
     ):
-        """A loose `animate(ticks_spacing=...)` (deprecated) overrides the auto spacing."""
+        """A loose `animate(ticks_spacing=...)` overrides the auto spacing."""
         glyph = ArrayGlyph(coello_data, exclude_value=[no_data_value])
-        with pytest.warns(DeprecationWarning, match="ticks_spacing"):
-            anim = glyph.animate(animate_time_list, ticks_spacing=50.0)
+        anim = glyph.animate(animate_time_list, ticks_spacing=50.0)
         assert anim is not None
         assert glyph.default_options["ticks_spacing"] == 50.0
 
@@ -2220,17 +1849,16 @@ class TestAnimateEdgeCases:
         animate_time_list: list,
         no_data_value: float,
     ):
-        """A loose `animate(cbar_orientation=...)` warns yet still applies (#235).
+        """A loose `animate(cbar_orientation=...)` still applies (#235).
 
         Test scenario:
-            The deprecation fires on the animate path too, steering to
-            `ColorBar(orientation=...)`, while the kwarg keeps working.
+            The loose kwarg keeps working on the animate path, mapping to
+            the same effect as `ColorBar(orientation=...)`.
         """
         glyph = ArrayGlyph(coello_data, exclude_value=[no_data_value])
-        with pytest.warns(DeprecationWarning, match="cbar_orientation"):
-            glyph.animate(animate_time_list, cbar_orientation="horizontal")
+        glyph.animate(animate_time_list, cbar_orientation="horizontal")
         assert glyph.cbar.orientation == "horizontal", (
-            f"deprecated kwarg should still work in animate, got {glyph.cbar.orientation}"
+            f"loose kwarg should still work in animate, got {glyph.cbar.orientation}"
         )
 
     def test_data_getter_is_keyword_only(
@@ -2910,10 +2538,10 @@ class TestFaceting:
         assert result.cbar is not None
 
     def test_coord_aware_titles(self):
-        """`col_coords` plugs into the per-subplot title and name_dicts."""
+        """`labels.col` plugs into the per-subplot title and name_dicts."""
         stack = self._stack_3d(n=4)
         coords = [0, 6, 12, 18]
-        result = ArrayGlyph(stack).facet(col="hour", col_coords=coords)
+        result = ArrayGlyph(stack).facet(col="hour", labels=PanelLabels(col=coords))
         # Each title must reference the coord value, not the index.
         for ax, want in zip(result.axes.ravel(), coords):
             assert str(want) in ax.get_title()
@@ -3075,7 +2703,7 @@ class TestFacetColorbar:
             the `ColorBar` label.
         """
         result = ArrayGlyph(self._stack_3d()).facet(
-            col="time", col_coords=[0, 1, 2], colorbar=ColorBar(label="mm")
+            col="time", labels=PanelLabels(col=[0, 1, 2]), colorbar=ColorBar(label="mm")
         )
         assert isinstance(result, FacetGrid), f"expected FacetGrid, got {type(result)}"
         assert result.cbar is not None, (
@@ -3093,7 +2721,7 @@ class TestFacetColorbar:
             three panels' colorbars carry the label.
         """
         result = ArrayGlyph(self._stack_3d()).facet(
-            col="time", col_coords=[0, 1, 2], colorbar=ColorBar(label="mm")
+            col="time", labels=PanelLabels(col=[0, 1, 2]), colorbar=ColorBar(label="mm")
         )
         labels = [ax.get_ylabel() for ax in self._colorbar_axes(result)]
         assert labels == ["mm", "mm", "mm"], (
@@ -3108,7 +2736,7 @@ class TestFacetColorbar:
             colorbar axis per panel and `result.cbar` is not `None`.
         """
         result = ArrayGlyph(self._stack_3d()).facet(
-            col="time", col_coords=[0, 1, 2], colorbar=True
+            col="time", labels=PanelLabels(col=[0, 1, 2]), colorbar=True
         )
         assert result.cbar is not None, "colorbar=True should draw a shared cbar"
         assert len(self._colorbar_axes(result)) == 3, (
@@ -3122,12 +2750,11 @@ class TestFacetColorbar:
             Unlike the `None` default (which leaves loose kwargs in place),
             `True` resets the resettable `cbar_*` family, so a loose
             `cbar_label="loose"` does not survive -- the drawn bar has the
-            default (empty) label. The loose kwarg still deprecates.
+            default (empty) label.
         """
-        with pytest.warns(DeprecationWarning, match="cbar_label"):
-            result = ArrayGlyph(self._stack_3d()).facet(
-                col="time", col_coords=[0, 1, 2], colorbar=True, cbar_label="loose"
-            )
+        result = ArrayGlyph(self._stack_3d()).facet(
+            col="time", labels=PanelLabels(col=[0, 1, 2]), colorbar=True, cbar_label="loose"
+        )
         assert result.cbar.ax.get_ylabel() == "", (
             f"colorbar=True should reset the loose label, got {result.cbar.ax.get_ylabel()!r}"
         )
@@ -3139,13 +2766,11 @@ class TestFacetColorbar:
             Complements the `True`-resets and typed-wins tests: with `None`
             (which resolves to an empty update), a loose `cbar_label="loose"`
             folded in by the constructor survives on every panel's bar -- the
-            prior behaviour the docstring promises. The loose kwarg still
-            deprecates.
+            prior behaviour the docstring promises.
         """
-        with pytest.warns(DeprecationWarning, match="cbar_label"):
-            result = ArrayGlyph(self._stack_3d()).facet(
-                col="time", col_coords=[0, 1, 2], colorbar=None, cbar_label="loose"
-            )
+        result = ArrayGlyph(self._stack_3d()).facet(
+            col="time", labels=PanelLabels(col=[0, 1, 2]), colorbar=None, cbar_label="loose"
+        )
         labels = [ax.get_ylabel() for ax in self._colorbar_axes(result)]
         assert labels == [
             "loose",
@@ -3163,7 +2788,7 @@ class TestFacetColorbar:
         """
         stack = self._stack_3d()
         result = ArrayGlyph(stack).facet(
-            col="time", col_coords=[0, 1, 2], colorbar=ColorBar(label="mm")
+            col="time", labels=PanelLabels(col=[0, 1, 2]), colorbar=ColorBar(label="mm")
         )
         vmin, vmax = result.cbar.mappable.get_clim()
         assert vmin == pytest.approx(float(stack.min())), (
@@ -3181,7 +2806,7 @@ class TestFacetColorbar:
             axes are created and the shared `cbar` is `None`.
         """
         result = ArrayGlyph(self._stack_3d()).facet(
-            col="time", col_coords=[0, 1, 2], colorbar=False
+            col="time", labels=PanelLabels(col=[0, 1, 2]), colorbar=False
         )
         assert self._colorbar_axes(result) == [], (
             "colorbar=False should draw no colorbars"
@@ -3195,7 +2820,7 @@ class TestFacetColorbar:
             The default `colorbar=None` resolves to an empty update, so behaviour
             is unchanged: one colorbar per panel and a non-None shared `cbar`.
         """
-        result = ArrayGlyph(self._stack_3d()).facet(col="time", col_coords=[0, 1, 2])
+        result = ArrayGlyph(self._stack_3d()).facet(col="time", labels=PanelLabels(col=[0, 1, 2]))
         assert len(self._colorbar_axes(result)) == 3, (
             "default facet should keep one colorbar per panel"
         )
@@ -3214,7 +2839,7 @@ class TestFacetColorbar:
         """
         result = ArrayGlyph(self._stack_3d()).facet(
             col="time",
-            col_coords=[0, 1, 2],
+            labels=PanelLabels(col=[0, 1, 2]),
             colorbar=ColorBar(label="mm", orientation="horizontal"),
         )
         assert result.cbar.orientation == "horizontal", (
@@ -3232,16 +2857,14 @@ class TestFacetColorbar:
 
         Test scenario:
             When both `colorbar=ColorBar(label="typed")` and `cbar_label="loose"`
-            are given, the typed spec is applied last and wins; the loose form
-            still emits its deprecation warning.
+            are given, the typed spec is applied last and wins.
         """
-        with pytest.warns(DeprecationWarning, match="cbar_label"):
-            result = ArrayGlyph(self._stack_3d()).facet(
-                col="time",
-                col_coords=[0, 1, 2],
-                colorbar=ColorBar(label="typed"),
-                cbar_label="loose",
-            )
+        result = ArrayGlyph(self._stack_3d()).facet(
+            col="time",
+            labels=PanelLabels(col=[0, 1, 2]),
+            colorbar=ColorBar(label="typed"),
+            cbar_label="loose",
+        )
         assert result.cbar.ax.get_ylabel() == "typed", (
             f"typed ColorBar should win, got {result.cbar.ax.get_ylabel()!r}"
         )
@@ -3255,7 +2878,7 @@ class TestFacetColorbar:
         """
         glyph = ArrayGlyph(self._stack_3d())
         with pytest.raises(TypeError, match="colorbar must be a bool"):
-            glyph.facet(col="time", col_coords=[0, 1, 2], colorbar=object())
+            glyph.facet(col="time", labels=PanelLabels(col=[0, 1, 2]), colorbar=object())
 
     def test_facet_4d_accepts_colorbar_spec(self):
         """The `ColorBar` spec also works on a 4-D (`col` + `row`) facet.
@@ -3274,43 +2897,6 @@ class TestFacetColorbar:
             f"4-D facet shared cbar should read 'mm', got {result.cbar.ax.get_ylabel()!r}"
         )
 
-    @pytest.mark.parametrize(
-        "kwarg, value",
-        [
-            ("cbar_label", "mm"),
-            ("cbar_length", 0.5),
-            ("cbar_orientation", "horizontal"),
-            ("ticks_spacing", 5),
-        ],
-    )
-    def test_facet_loose_cbar_kwargs_deprecated(self, kwarg, value):
-        """Each loose `cbar_*` on `facet` emits a `DeprecationWarning`.
-
-        Args:
-            kwarg: The deprecated loose colorbar keyword under test.
-            value: A value to pass for that keyword.
-
-        Test scenario:
-            `facet` now calls `_warn_deprecated_cbar_kwargs`, so every loose
-            colorbar keyword deprecates on the faceted path exactly as on
-            `plot` / `animate`.
-        """
-        with pytest.warns(DeprecationWarning, match=kwarg):
-            ArrayGlyph(self._stack_3d()).facet(
-                col="time", col_coords=[0, 1, 2], **{kwarg: value}
-            )
-
-    def test_facet_without_colorbar_kwargs_does_not_warn(self):
-        """A plain `facet()` call emits no colorbar `DeprecationWarning`.
-
-        Test scenario:
-            The deprecation fires only for the loose keys, so an ordinary facet
-            (no `cbar_*`, no `colorbar`) stays quiet.
-        """
-        with warnings.catch_warnings():
-            warnings.simplefilter("error", DeprecationWarning)
-            ArrayGlyph(self._stack_3d()).facet(col="time", col_coords=[0, 1, 2])
-
     def test_facet_placement_colorbar_overrides_preset_swatch(self):
         """A placement-bearing `colorbar=` overrides a preset swatch on the facet path.
 
@@ -3324,7 +2910,7 @@ class TestFacetColorbar:
         """
         result = ArrayGlyph(self._stack_3d()).facet(
             col="time",
-            col_coords=[0, 1, 2],
+            labels=PanelLabels(col=[0, 1, 2]),
             data_style=DataStyle(style="flow_accumulation"),
             colorbar=ColorBar(location="right"),
         )
@@ -3346,7 +2932,7 @@ class TestFacetColorbar:
         """
         result = ArrayGlyph(self._stack_3d()).facet(
             col="time",
-            col_coords=[0, 1, 2],
+            labels=PanelLabels(col=[0, 1, 2]),
             data_style=DataStyle(style="flow_accumulation"),
         )
         assert self._colorbar_axes(result) == [], (
@@ -3355,24 +2941,6 @@ class TestFacetColorbar:
         swatches = sum(len(ax.child_axes) for ax in result.axes.ravel())
         assert swatches == 3, (
             f"each panel should keep its preset swatch, got {swatches}"
-        )
-
-    def test_facet_loose_cbar_warns_exactly_once(self):
-        """A loose `cbar_*` on `facet` deprecates exactly once, not once per panel.
-
-        Test scenario:
-            The single warning comes from `facet` itself; the per-panel sub-glyph
-            constructors fold the loose kwarg silently. This locks the invariant
-            that re-routing loose kwargs through `sub.plot` (which would warn per
-            panel) is not silently introduced.
-        """
-        with pytest.warns(DeprecationWarning) as record:
-            ArrayGlyph(self._stack_3d()).facet(
-                col="time", col_coords=[0, 1, 2], cbar_label="mm"
-            )
-        cbar_warnings = [w for w in record if "cbar_label" in str(w.message)]
-        assert len(cbar_warnings) == 1, (
-            f"expected exactly one cbar_label deprecation, got {len(cbar_warnings)}"
         )
 
 
@@ -3926,26 +3494,26 @@ class TestFacetingEdgeCases:
         with pytest.raises(ValueError, match="4-D array"):
             ArrayGlyph(stack).facet(col="t", row="lev")
 
-    def test_col_coords_length_mismatch_raises(self) -> None:
-        """`col_coords` whose length differs from N raises `ValueError`."""
+    def test_labels_col_length_mismatch_raises(self) -> None:
+        """`labels.col` whose length differs from N raises `ValueError`."""
         stack = self._stack(n=4)
-        with pytest.raises(ValueError, match="`col_coords` length"):
-            ArrayGlyph(stack).facet(col="t", col_coords=[0, 1, 2])
+        with pytest.raises(ValueError, match="`labels.col` length"):
+            ArrayGlyph(stack).facet(col="t", labels=PanelLabels(col=[0, 1, 2]))
 
-    def test_col_coords_length_mismatch_4d_raises(self) -> None:
-        """`col_coords` length wrong on a 4-D stack raises."""
+    def test_labels_col_length_mismatch_4d_raises(self) -> None:
+        """`labels.col` length wrong on a 4-D stack raises."""
         rng = np.random.default_rng(1337)
         stack = rng.uniform(0.0, 1.0, size=(2, 3, 4, 4))
-        with pytest.raises(ValueError, match="`col_coords` length"):
-            ArrayGlyph(stack).facet(col="t", row="lev", col_coords=[0])
+        with pytest.raises(ValueError, match="`labels.col` length"):
+            ArrayGlyph(stack).facet(col="t", row="lev", labels=PanelLabels(col=[0]))
 
-    def test_row_coords_length_mismatch_raises(self) -> None:
-        """`row_coords` whose length differs from Nrow raises."""
+    def test_labels_row_length_mismatch_raises(self) -> None:
+        """`labels.row` whose length differs from Nrow raises."""
         rng = np.random.default_rng(1337)
         stack = rng.uniform(0.0, 1.0, size=(2, 3, 4, 4))
-        with pytest.raises(ValueError, match="`row_coords` length"):
+        with pytest.raises(ValueError, match="`labels.row` length"):
             ArrayGlyph(stack).facet(
-                col="t", row="lev", col_coords=[0, 1], row_coords=[0]
+                col="t", row="lev", labels=PanelLabels(col=[0, 1], row=[0])
             )
 
     def test_shared_vmin_vmax_global_min_max(self) -> None:
@@ -3971,15 +3539,15 @@ class TestFacetingEdgeCases:
         finally:
             plt.close(result.fig)
 
-    def test_empty_col_coords_falls_back_to_index(self) -> None:
-        """`col_coords=None` titles use the integer panel index.
+    def test_empty_labels_col_falls_back_to_index(self) -> None:
+        """`labels.col=None` titles use the integer panel index.
 
         Test scenario:
             With no coord list, subplot titles encode the integer
             facet index (`t=0`, `t=1`, ...).
         """
         stack = self._stack(n=3)
-        result = ArrayGlyph(stack).facet(col="t", col_coords=None)
+        result = ArrayGlyph(stack).facet(col="t", labels=PanelLabels(col=None))
         try:
             titles = [ax.get_title() for ax in result.axes.ravel()]
             assert "t=0" in titles[0], f"expected 't=0'; got {titles[0]!r}"
@@ -3987,8 +3555,8 @@ class TestFacetingEdgeCases:
         finally:
             plt.close(result.fig)
 
-    def test_timestamp_col_coords(self) -> None:
-        """String / timestamp `col_coords` are forwarded into titles.
+    def test_timestamp_labels_col(self) -> None:
+        """String / timestamp `labels.col` are forwarded into titles.
 
         Test scenario:
             Time-axis coords often arrive as `str` (or
@@ -3997,7 +3565,7 @@ class TestFacetingEdgeCases:
         """
         stack = self._stack(n=3)
         coords = ["2024-01", "2024-02", "2024-03"]
-        result = ArrayGlyph(stack).facet(col="month", col_coords=coords)
+        result = ArrayGlyph(stack).facet(col="month", labels=PanelLabels(col=coords))
         try:
             titles = [ax.get_title() for ax in result.axes.ravel()]
             for want, title in zip(coords, titles):
@@ -4033,7 +3601,7 @@ class TestFacetingEdgeCases:
         rng = np.random.default_rng(1337)
         stack = rng.uniform(0.0, 1.0, size=(2, 2, 4, 4))
         result = ArrayGlyph(stack).facet(
-            col="t", row="lev", col_coords=["A", "B"], row_coords=[10, 20]
+            col="t", row="lev", labels=PanelLabels(col=["A", "B"], row=[10, 20])
         )
         try:
             assert len(result.name_dicts) == 4, (
@@ -4123,15 +3691,15 @@ class TestFacetingEdgeCases:
         finally:
             plt.close(result.fig)
 
-    def test_facet_explicit_figsize(self) -> None:
-        """An explicit `figsize` overrides the default panel-based sizing.
+    def test_facet_explicit_figure_size(self) -> None:
+        """An explicit `figure_size` overrides the default panel-based sizing.
 
         Test scenario:
-            `facet(figsize=(12, 4))` must produce a figure whose
+            `facet(figure_size=(12, 4))` must produce a figure whose
             dimensions reflect the caller's choice.
         """
         stack = self._stack(n=3)
-        result = ArrayGlyph(stack).facet(col="t", figsize=(12.0, 4.0))
+        result = ArrayGlyph(stack).facet(col="t", figure_size=(12.0, 4.0))
         try:
             w, h = result.fig.get_size_inches()
             assert w == pytest.approx(12.0), f"width must be 12; got {w}"
@@ -7023,16 +6591,15 @@ class TestColorbarPlacement:
         """An unset ColorBar caption leaves a loose `cbar_label` intact.
 
         Test scenario:
-            During the transition (before the loose kwargs are deprecated), a
-            `ColorBar` that sets no caption must not overwrite a loose `cbar_label`.
+            A `ColorBar` that sets no caption must not overwrite a loose
+            `cbar_label`.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        with pytest.warns(DeprecationWarning, match="cbar_label"):
-            g.plot(
-                cmap="viridis",
-                colorbar=ColorBar(location="right"),
-                cbar_label="Legacy caption",
-            )
+        g.plot(
+            cmap="viridis",
+            colorbar=ColorBar(location="right"),
+            cbar_label="Legacy caption",
+        )
         caption = g.cbar.ax.get_xlabel() or g.cbar.ax.get_ylabel()
         assert caption == "Legacy caption", (
             f"loose cbar_label was clobbered, got {caption!r}"
@@ -7069,14 +6636,13 @@ class TestColorbarPlacement:
             precedence, consistent with every other mapped `cbar_*` field.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        with pytest.warns(DeprecationWarning, match="ticks_spacing"):
-            g.plot(
-                cmap="viridis",
-                vmin=0.0,
-                vmax=20.0,
-                ticks_spacing=2.0,
-                colorbar=ColorBar(location="right", ticks_spacing=5.0),
-            )
+        g.plot(
+            cmap="viridis",
+            vmin=0.0,
+            vmax=20.0,
+            ticks_spacing=2.0,
+            colorbar=ColorBar(location="right", ticks_spacing=5.0),
+        )
         resolved = g.default_options["ticks_spacing"]
         assert resolved == 5.0, (
             f"loose ticks_spacing should lose to the spec, got {resolved}"
@@ -7696,99 +7262,6 @@ class TestResolveColorbar:
         """
         with pytest.raises(TypeError, match="colorbar must be"):
             _resolve_colorbar(bad)
-
-
-class TestDeprecatedCbarKwargs:
-    """Deprecation of the loose `cbar_*` kwargs superseded by `ColorBar` (#234)."""
-
-    @staticmethod
-    def _field() -> np.ndarray:
-        """Return a small 2-D field for a single static plot."""
-        return np.arange(20 * 30, dtype=float).reshape(20, 30)
-
-    def test_helper_warns_for_a_deprecated_key(self):
-        """`_warn_deprecated_cbar_kwargs` warns and names the `ColorBar` field.
-
-        Test scenario:
-            A loose `cbar_label` triggers a DeprecationWarning pointing at
-            `colorbar=ColorBar(label=...)`.
-        """
-        with pytest.warns(DeprecationWarning, match=r"cbar_label.*ColorBar\(label="):
-            _warn_deprecated_cbar_kwargs({"cbar_label": "Depth"})
-
-    def test_helper_silent_without_deprecated_keys(self):
-        """No warning is emitted when no deprecated key is present.
-
-        Test scenario:
-            A kwargs dict free of loose cbar_* keys warns nothing.
-        """
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            _warn_deprecated_cbar_kwargs({"cmap": "viridis", "vmin": 0})
-
-    def test_plot_loose_cbar_label_warns_but_still_works(self):
-        """A loose `cbar_label` on `plot` warns yet still renders the caption.
-
-        Test scenario:
-            During the deprecation window the kwarg keeps working (caption
-            rendered) while steering the caller toward `ColorBar`.
-        """
-        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 30.0, 20.0])
-        with pytest.warns(DeprecationWarning, match="cbar_label"):
-            g.plot(cmap="viridis", cbar_label="Rainfall mm/day")
-        caption = g.cbar.ax.get_xlabel() or g.cbar.ax.get_ylabel()
-        assert caption == "Rainfall mm/day", (
-            f"deprecated kwarg should still work, got {caption!r}"
-        )
-        plt.close("all")
-
-    def test_typed_colorbar_does_not_warn(self):
-        """Configuring the caption through `ColorBar` emits no cbar deprecation.
-
-        Test scenario:
-            The typed `colorbar=ColorBar(label=...)` path is the recommended
-            replacement and must not raise the loose-kwarg deprecation.
-        """
-        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 30.0, 20.0])
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            g.plot(cmap="viridis", colorbar=ColorBar(label="Rainfall mm/day"))
-        assert not any(
-            "deprecated" in str(x.message) and "cbar" in str(x.message) for x in caught
-        ), "typed ColorBar should not trigger the loose-kwarg deprecation"
-        plt.close("all")
-
-    def test_cbar_orientation_is_deprecated(self):
-        """A loose `cbar_orientation` warns, steering to `ColorBar(orientation=...)` (#235).
-
-        Test scenario:
-            The last colorbar kwarg folded into the spec now emits the
-            deprecation like the rest, while still taking effect.
-        """
-        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 30.0, 20.0])
-        with pytest.warns(
-            DeprecationWarning, match=r"cbar_orientation.*ColorBar\(orientation="
-        ):
-            g.plot(cmap="viridis", cbar_orientation="horizontal")
-        assert g.cbar.orientation == "horizontal", (
-            f"deprecated kwarg should still work, got {g.cbar.orientation}"
-        )
-        plt.close("all")
-
-    def test_invalid_loose_cbar_orientation_raises(self):
-        """A loose `cbar_orientation` typo raises a clear error at render (#235).
-
-        Test scenario:
-            The deprecated path is validated in `create_color_bar` too, so a bad
-            value surfaces as an actionable cleopatra error, not a matplotlib one.
-        """
-        g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 30.0, 20.0])
-        with pytest.warns(DeprecationWarning, match="cbar_orientation"):
-            with pytest.raises(
-                ValueError, match="cbar_orientation must be 'vertical' or 'horizontal'"
-            ):
-                g.plot(cmap="viridis", cbar_orientation="horizontl")
-        plt.close("all")
 
 
 class TestStylePrecedence:

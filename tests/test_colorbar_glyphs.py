@@ -166,22 +166,6 @@ def test_colorbar_false_suppresses(name):
 
 
 @pytest.mark.parametrize("name", list(GLYPHS))
-def test_loose_cbar_kwarg_is_deprecated(name):
-    """A loose `cbar_label` warns on every glyph, steering to `ColorBar` (#239).
-
-    Args:
-        name: The glyph type under test.
-
-    Test scenario:
-        The deprecation fires wherever the loose kwarg lands (construction for
-        the add_colorbar glyphs, plot for MeshGlyph).
-    """
-    _, _, _, loose = GLYPHS[name]
-    with pytest.warns(DeprecationWarning, match=r"cbar_label.*ColorBar\(label="):
-        loose()
-
-
-@pytest.mark.parametrize("name", list(GLYPHS))
 def test_colorbar_spec_ticks_spacing_reaches_render(name):
     """`colorbar=ColorBar(ticks_spacing=...)` is honored on every glyph (#239).
 

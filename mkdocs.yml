@@ -100,6 +100,7 @@ nav:
   - Home: index.md
   - Installation: installation.md
   - Scope: scope.md
+  - Migration guide: migration.md
   - User Guide:
     - Unstructured meshes: unstructured-mesh-guide.md
     - Glyph architecture: diagrams/glyph-architecture.md
