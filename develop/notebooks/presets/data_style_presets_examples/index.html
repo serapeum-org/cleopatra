@@ -293,6 +293,25 @@
   
   
   
+    <li class="md-tabs__item">
+      <a href="../../../migration/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Migration guide
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
     
     
       <li class="md-tabs__item">
@@ -513,6 +532,33 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../../migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
       
@@ -535,10 +581,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   
@@ -556,8 +602,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -694,10 +740,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
             
   
   
@@ -715,8 +761,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1352,10 +1398,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -1373,8 +1419,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1541,10 +1587,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_5" checked>
         
           
-          <label class="md-nav__link" for="__nav_6_5" id="__nav_6_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7_5" id="__nav_7_5_label" tabindex="">
             
   
   
@@ -1562,8 +1608,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_5_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_6_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3317,7 +3363,7 @@ under a name. You pick one by name and hand it a field:</p>
 (<code>CAMS_AOD_COLORMAPS</code>), and the three capabilities that let one preset work on real data:
 <strong>auto-ranging</strong>, <strong>diverging</strong> maps centred on a value, and the <strong>opacity policy</strong> (a plain
 opaque field vs a transparent-where-low overlay).</p>
-<p>The scientific-colormap packages (cmocean, CMasher) ship <em>colormaps</em>, not presets, so
+<p>The scientific-colormap packages (cmocean, CMasher, Crameri) ship <em>colormaps</em>, not presets, so
 these presets are authored in cleopatra from matplotlib's built-in colormaps -- no extra
 dependency. See the companion <a href="../haze_preset/haze_preset_examples.ipynb">haze preset notebook</a>
 for the stylised, multi-layer aerosol look.</p>
@@ -3380,27 +3426,12 @@ sorted(DATA_STYLES)  # the presets available by name</div>
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
 <div class="jp-OutputPrompt jp-OutputArea-prompt">Out[1]:</div>
 <div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
-<pre>['acton',
- 'aerosol_optical_depth_550nm',
+<pre>['aerosol_optical_depth_550nm',
  'air_temperature',
  'anomaly',
- 'bam',
- 'bamO',
- 'bamako',
  'bathymetry',
- 'batlow',
- 'batlowK',
- 'batlowW',
- 'berlin',
- 'bilbao',
- 'broc',
- 'brocO',
- 'buda',
- 'bukavu',
  'cams_aod',
  'carbon_monoxide',
- 'carbon_monoxide_500hpa',
- 'carbon_monoxide_700hpa',
  'ch4_column_mean_molar_fraction',
  'chlorophyll',
  'cloudy_brightness_temperature',
@@ -3412,11 +3443,7 @@ sorted(DATA_STYLES)  # the presets available by name</div>
  'convective_inhibition',
  'convective_precipitation',
  'convective_rainfall_rate',
- 'cork',
- 'corkO',
  'current_speed',
- 'davos',
- 'devon',
  'dewpoint_temperature_2m',
  'dissolved_oxygen',
  'divergence',
@@ -3425,27 +3452,17 @@ sorted(DATA_STYLES)  # the presets available by name</div>
  'elevation_bukavu',
  'elevation_fes',
  'elevation_oleron',
- 'fes',
  'flood_status',
  'flow_accumulation',
  'flow_direction_d8',
- 'glasgow',
- 'grayC',
- 'hawaii',
  'haze',
  'high_cloud_cover',
  'hot_cold',
  'hurricane_probability',
- 'imola',
  'k_index',
- 'lajolla',
- 'lapaz',
  'large_scale_precipitation',
  'large_scale_rainfall_rate',
- 'lipari',
- 'lisbon',
  'low_cloud_cover',
- 'managua',
  'max_significant_wave_height',
  'max_significant_wave_height_index',
  'max_temperature_2m',
@@ -3457,21 +3474,10 @@ sorted(DATA_STYLES)  # the presets available by name</div>
  'mean_wave_period',
  'mean_wind_speed_10m',
  'medium_cloud_cover',
- 'methane_300hpa',
- 'methane_500hpa',
- 'methane_50hpa',
- 'methane_850hpa',
- 'methane_surface',
  'min_temperature_2m',
  'min_temperature_2m_index',
- 'navia',
  'nitrogen_dioxide',
- 'nuuk',
- 'oleron',
- 'oslo',
  'ozone',
- 'particulate_matter_10um',
- 'particulate_matter_2p5um',
  'phase',
  'potential_temperature',
  'precipitation',
@@ -3481,8 +3487,6 @@ sorted(DATA_STYLES)  # the presets available by name</div>
  'radar_reflectivity',
  'rainfall',
  'relative_vorticity',
- 'roma',
- 'romaO',
  'salinity',
  'sea_ice',
  'sea_level_anomaly',
@@ -3507,8 +3511,6 @@ sorted(DATA_STYLES)  # the presets available by name</div>
  'temperature_flame',
  'temperature_flame_amber',
  'temperature_steps',
- 'tofino',
- 'tokyo',
  'topography',
  'total_column_carbon_monoxide',
  'total_column_ozone',
@@ -3521,16 +3523,10 @@ sorted(DATA_STYLES)  # the presets available by name</div>
  'tropical_depression_probability',
  'tropical_storm_probability',
  'turbidity',
- 'turku',
  'uv_biologically_effective_dose',
  'uv_biologically_effective_dose_clear_sky',
- 'uv_index',
- 'uv_index_clear_sky',
- 'vanimo',
  'vegetation',
  'vertical_velocity',
- 'vik',
- 'vikO',
  'vorticity',
  'water_density',
  'wildfire_radiative_power',
@@ -4213,7 +4209,7 @@ policy, a decoupled <em>glowing rim</em>, powers the multi-layer <code>haze</cod
 parameter-preset library</strong> -- dozens of official operational-forecast and climate looks, loaded
 from vendored colour data (derived from the open-source
 <a href="https://github.com/ecmwf/magics">Magics</a> and
-ECMWF reference styles, both Apache-2.0). Each is keyed
+<a href="https://github.com/ecmwf/earthkit-plots">earthkit-plots</a> engines, both Apache-2.0). Each is keyed
 by a descriptive parameter name and labelled with the parameter's real name.</p>
 </div>
 </div>
@@ -4291,12 +4287,12 @@ for key in [
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>153 ECMWF weather presets loaded, e.g.:
+<pre>103 ECMWF weather presets loaded, e.g.:
   temperature_2m               -&gt; 2 m temperature [celsius]
   total_precipitation          -&gt; Total precipitation
   aerosol_optical_depth_550nm  -&gt; Total aerosol optical depth at 550 nm
   carbon_monoxide              -&gt; Carbon monoxide
-  ozone                        -&gt; Ozone
+  ozone                        -&gt; GEMS Ozone
   high_cloud_cover             -&gt; High cloud cover
 </pre>
 </div>
@@ -4311,7 +4307,7 @@ for key in [
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<p>Because these come from open-source ECMWF colour data (which does not always publish the exact
+<p>Because these come from Magics'/earthkit-plots' open data (which does not always publish the exact
 contour levels), each preset either auto-ranges to your field or renders over a fixed scale -- and
 the opacity policy is inferred from the source palette: opaque for a plain field, or a
 transparent-where-low overlay where the source palette carries a built-in alpha ramp (as it does
@@ -4403,7 +4399,7 @@ plt.show()</div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <p>The demo fields are reused only to fill the panels -- what matters is that any raster or NetCDF
-slice you pass under the preset's key gets the authentic ECMWF colours and label
+slice you pass under the preset's key gets the authentic Magics/earthkit-plots colours and label
 for that parameter. To find the preset for a variable, scan the descriptive names in
 <code>sorted(DATA_STYLES)</code>.</p>
 </div>

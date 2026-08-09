@@ -13,6 +13,10 @@
         <link rel="canonical" href="https://serapeum-org.github.io/cleopatra/develop/migration/">
       
       
+        <link rel="prev" href="../scope/">
+      
+      
+        <link rel="next" href="../unstructured-mesh-guide/">
       
       
         
@@ -23,7 +27,7 @@
     
     
       
-        <title>Migration guide — subpackage restructure - Cleopatra</title>
+        <title>Migration guide - Cleopatra</title>
       
     
     
@@ -76,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#migration-guide-subpackage-restructure" class="md-skip">
+        <a href="#migration-guide" class="md-skip">
           Skip to content
         </a>
       
@@ -116,7 +120,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Migration guide — subpackage restructure
+              Migration guide
             
           </span>
         </div>
@@ -278,6 +282,27 @@
     
   
   Scope
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Migration guide
 
       </a>
     </li>
@@ -505,6 +530,279 @@
       
   
   
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration guide
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#grouped-render-parameter-objects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Grouped render-parameter objects
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Grouped render-parameter objects">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#point-overlays-pointoverlay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Point overlays → PointOverlay
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#frame-labels-framelabel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Frame labels → FrameLabel
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#renamed-restructured-keywords" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Renamed / restructured keywords
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#colour-scale-cell-value-groups" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Colour / scale / cell-value groups
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#colour-bars-cbar_-still-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Colour bars — cbar_* still work
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#subpackage-restructure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subpackage restructure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tldr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TL;DR
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#import-path-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Import path map
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Import path map">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#glyphs-the-chart-type-building-blocks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        glyphs/ — the chart-type building blocks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#styling-colour-legends-presentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        styling/ — colour, legends, presentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#basemap-networked-basemap-crs-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        basemap/ — networked basemap / CRS helpers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unchanged-still-top-level" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unchanged (still top-level)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-one-renamed-symbol" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The one renamed symbol
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#automated-migration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automated migration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#packaging-note-no-code-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Packaging note (no code change)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-did-not-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What did not change
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
   
   
     
@@ -529,10 +827,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   
@@ -550,8 +848,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -688,10 +986,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
             
   
   
@@ -709,8 +1007,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1343,10 +1641,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
             
   
   
@@ -1364,8 +1662,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1529,10 +1827,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7_5" >
         
           
-          <label class="md-nav__link" for="__nav_6_5" id="__nav_6_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_7_5" id="__nav_7_5_label" tabindex="0">
             
   
   
@@ -1550,8 +1848,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2190,6 +2488,89 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#grouped-render-parameter-objects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Grouped render-parameter objects
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Grouped render-parameter objects">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#point-overlays-pointoverlay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Point overlays → PointOverlay
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#frame-labels-framelabel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Frame labels → FrameLabel
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#renamed-restructured-keywords" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Renamed / restructured keywords
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#colour-scale-cell-value-groups" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Colour / scale / cell-value groups
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#colour-bars-cbar_-still-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Colour bars — cbar_* still work
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#subpackage-restructure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subpackage restructure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#tldr" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2338,7 +2719,158 @@
   
 
 
-<h1 id="migration-guide-subpackage-restructure"><a class="toclink" href="#migration-guide-subpackage-restructure">Migration guide — subpackage restructure</a><a class="headerlink" href="#migration-guide-subpackage-restructure" title="Permanent link">#</a></h1>
+<h1 id="migration-guide"><a class="toclink" href="#migration-guide">Migration guide</a><a class="headerlink" href="#migration-guide" title="Permanent link">#</a></h1>
+<p>This page collects cleopatra's breaking changes and how to update your code. Two migrations are covered:</p>
+<ol>
+<li><strong><a href="#grouped-render-parameter-objects">Grouped render-parameter objects</a></strong> — the loose styling keywords on
+   <code>plot</code> / <code>animate</code> / <code>facet</code> were replaced by typed <em>group objects</em>, and the temporary deprecation shims that
+   kept the old keywords working have now been <strong>removed</strong>. Read this section if you hit a <code>TypeError</code> about an
+   unexpected keyword argument, or an <code>AttributeError</code> from passing a bare array where an object is expected.</li>
+<li><strong><a href="#subpackage-restructure">Subpackage restructure</a></strong> — an earlier release moved the flat <code>cleopatra.*</code>
+   modules into <code>glyphs/</code> / <code>styling/</code> / <code>basemap/</code> subpackages (import paths only).</li>
+</ol>
+<hr />
+<h2 id="grouped-render-parameter-objects"><a class="toclink" href="#grouped-render-parameter-objects">Grouped render-parameter objects</a><a class="headerlink" href="#grouped-render-parameter-objects" title="Permanent link">#</a></h2>
+<p>Related styling keywords that <code>plot</code> / <code>animate</code> (and the other glyphs) used to accept as long lists of loose
+arguments are now bundled into small typed objects. During one release the old keywords kept working behind a
+<code>DeprecationWarning</code>; <strong>those shims are now gone</strong>. Passing a removed keyword no longer warns — it raises the
+ordinary <code>TypeError: ... got an unexpected keyword argument</code>, and passing a bare <code>(N, 3)</code> array as <code>points</code>
+raises <code>AttributeError</code> instead of being auto-wrapped.</p>
+<p>There is no automated rewrite for this one: the changes are semantic (loose keywords → object fields), so update
+each call site by hand using the tables below.</p>
+<h3 id="point-overlays-pointoverlay"><a class="toclink" href="#point-overlays-pointoverlay">Point overlays → <code>PointOverlay</code></a><a class="headerlink" href="#point-overlays-pointoverlay" title="Permanent link">#</a></h3>
+<p><code>points</code> now takes a <code>PointOverlay</code> (or <code>None</code>); the marker/label styling lives on the object.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span><span class="p">,</span> <span class="n">PointOverlay</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># before</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">points</span><span class="o">=</span><span class="n">arr</span><span class="p">,</span> <span class="n">point_color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="n">point_size</span><span class="o">=</span><span class="mi">80</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>           <span class="n">point_label_color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="n">point_label_size</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1"># after</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">points</span><span class="o">=</span><span class="n">PointOverlay</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">80</span><span class="p">,</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>                               <span class="n">label_color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="n">label_size</span><span class="o">=</span><span class="mi">10</span><span class="p">))</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Removed keyword</th>
+<th>New <code>PointOverlay</code> field</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>points=&lt;array&gt;</code> (bare)</td>
+<td><code>points=PointOverlay(&lt;array&gt;)</code></td>
+</tr>
+<tr>
+<td><code>point_color</code></td>
+<td><code>color</code></td>
+</tr>
+<tr>
+<td><code>point_size</code></td>
+<td><code>size</code></td>
+</tr>
+<tr>
+<td><code>point_label_color</code> (or oldest <code>pid_color</code>)</td>
+<td><code>label_color</code></td>
+</tr>
+<tr>
+<td><code>point_label_size</code> (or oldest <code>pid_size</code>)</td>
+<td><code>label_size</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="frame-labels-framelabel"><a class="toclink" href="#frame-labels-framelabel">Frame labels → <code>FrameLabel</code></a><a class="headerlink" href="#frame-labels-framelabel" title="Permanent link">#</a></h3>
+<p><code>animate</code>'s per-frame time-label styling now lives on a <code>FrameLabel</code> passed as <code>frame_label=</code> (a bare <code>[x, y]</code>
+list passed positionally is no longer accepted).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span><span class="p">,</span> <span class="n">FrameLabel</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># before</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">glyph</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">label_location</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">],</span> <span class="n">label_color</span><span class="o">=</span><span class="s2">&quot;yellow&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># after</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">glyph</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">frame_label</span><span class="o">=</span><span class="n">FrameLabel</span><span class="p">(</span><span class="n">location</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;yellow&quot;</span><span class="p">))</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Removed keyword</th>
+<th>New <code>FrameLabel</code> field</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>label_location</code> (or oldest <code>text_loc</code>)</td>
+<td><code>location</code></td>
+</tr>
+<tr>
+<td><code>label_color</code></td>
+<td><code>color</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="renamed-restructured-keywords"><a class="toclink" href="#renamed-restructured-keywords">Renamed / restructured keywords</a><a class="headerlink" href="#renamed-restructured-keywords" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>Old</th>
+<th>New</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>animate(text_colors=...)</code></td>
+<td><code>animate(cell_value_text_colors=...)</code></td>
+</tr>
+<tr>
+<td><code>facet(col_coords=..., row_coords=...)</code></td>
+<td><code>facet(labels=PanelLabels(col=..., row=...))</code></td>
+</tr>
+<tr>
+<td><code>facet(figsize=...)</code></td>
+<td><code>facet(figure_size=...)</code></td>
+</tr>
+<tr>
+<td><code>ArrayGlyph.no_elem</code></td>
+<td><code>ArrayGlyph.num_domain_cells</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>PanelLabels</code> is importable from <code>cleopatra.glyphs.gridded.array_glyph</code>.</p>
+<h3 id="colour-scale-cell-value-groups"><a class="toclink" href="#colour-scale-cell-value-groups">Colour / scale / cell-value groups</a><a class="headerlink" href="#colour-scale-cell-value-groups" title="Permanent link">#</a></h3>
+<p>The colour-scale, discretisation, cell-value, and preset/relief keywords were already folded into typed group
+objects in a prior release; passing them as loose keywords <strong>raises</strong> with a pointer to the object:</p>
+<table>
+<thead>
+<tr>
+<th>Loose keywords</th>
+<th>Group object</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>color_scale</code>, <code>gamma</code>, <code>line_threshold</code>, <code>line_scale</code>, <code>bounds</code>, <code>midpoint</code></td>
+<td><code>cleopatra.styling.scaling.ColorScaling</code></td>
+</tr>
+<tr>
+<td><code>levels</code>, <code>labels</code>, <code>label_kw</code></td>
+<td><code>cleopatra.styling.params.Contour</code></td>
+</tr>
+<tr>
+<td><code>display_cell_value</code>, <code>num_size</code>, <code>background_color_threshold</code></td>
+<td><code>cleopatra.styling.params.CellValues</code></td>
+</tr>
+<tr>
+<td><code>style</code>, <code>hillshade</code></td>
+<td><code>cleopatra.styling.params.DataStyle</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="colour-bars-cbar_-still-work"><a class="toclink" href="#colour-bars-cbar_-still-work">Colour bars — <code>cbar_*</code> still work</a><a class="headerlink" href="#colour-bars-cbar_-still-work" title="Permanent link">#</a></h3>
+<p>The loose <code>cbar_*</code> / <code>ticks_spacing</code> keywords are <strong>not</strong> removed — they remain valid options and keep working.
+Only the <code>DeprecationWarning</code> that steered you toward <code>ColorBar</code> is gone. The typed
+<code>colorbar=ColorBar(...)</code> form (<code>cleopatra.styling.colorbar.ColorBar</code>) is still preferred and wins when both are
+given.</p>
+<hr />
+<h2 id="subpackage-restructure"><a class="toclink" href="#subpackage-restructure">Subpackage restructure</a><a class="headerlink" href="#subpackage-restructure" title="Permanent link">#</a></h2>
 <p>This release reorganises cleopatra's previously flat <code>cleopatra.*</code> module layout into three subpackages
 (<code>glyphs/</code>, <code>styling/</code>, <code>basemap/</code>) and renames the histogram glyph. It is a <strong>breaking change to import paths
 only</strong>.</p>
@@ -2351,17 +2883,17 @@ re-exports nothing — you always import from a submodule.</p>
 <li>Rename the one renamed symbol: <code>StatisticalGlyph</code> → <code>HistogramGlyph</code> (its module also moved).</li>
 <li><code>cleopatra.config</code> and <code>cleopatra.templates</code> are unchanged.</li>
 </ol>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># before</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.colors</span><span class="w"> </span><span class="kn">import</span> <span class="n">DATA_STYLES</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.tiles</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_tiles</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.statistical_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">StatisticalGlyph</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># after</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styling.colors</span><span class="w"> </span><span class="kn">import</span> <span class="n">DATA_STYLES</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.basemap.tiles</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_tiles</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.stats.histogram_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">HistogramGlyph</span>   <span class="c1"># note the class rename</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># before</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.colors</span><span class="w"> </span><span class="kn">import</span> <span class="n">DATA_STYLES</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.tiles</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_tiles</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.statistical_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">StatisticalGlyph</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># after</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styling.colors</span><span class="w"> </span><span class="kn">import</span> <span class="n">DATA_STYLES</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.basemap.tiles</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_tiles</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.stats.histogram_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">HistogramGlyph</span>   <span class="c1"># note the class rename</span>
 </code></pre></div>
 <h2 id="import-path-map"><a class="toclink" href="#import-path-map">Import path map</a><a class="headerlink" href="#import-path-map" title="Permanent link">#</a></h2>
 <p>Symbol <strong>names are unchanged</strong> — only the module path moves (except the one rename called out below).</p>
@@ -2553,44 +3085,44 @@ unchanged — rename the import and the class references and you are done.</p>
 <p>The change is a pure find-and-replace of module paths. Because some module names are prefixes/substrings of
 others (<code>colors</code> vs <code>colorbar</code>), replace on <strong>word boundaries</strong> and apply the longest keys first. This Python
 script rewrites a downstream tree in place:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># old flat module -&gt; new dotted path (relative to `cleopatra.`)</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">MODULE_MAP</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="s2">&quot;glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.base.glyph&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="s2">&quot;animation&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.base.animation&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="s2">&quot;hillshade&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.base.hillshade&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="s2">&quot;array_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.gridded.array_glyph&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="s2">&quot;mesh_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.gridded.mesh_glyph&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="s2">&quot;vector_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.gridded.vector_glyph&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="s2">&quot;scatter_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.primitives.scatter_glyph&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    <span class="s2">&quot;line_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.primitives.line_glyph&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    <span class="s2">&quot;polygon_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.primitives.polygon_glyph&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="s2">&quot;flow_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.primitives.flow_glyph&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="s2">&quot;kde_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.stats.kde_glyph&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    <span class="s2">&quot;statistical_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.stats.histogram_glyph&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>    <span class="s2">&quot;styles&quot;</span><span class="p">:</span> <span class="s2">&quot;styling.styles&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    <span class="s2">&quot;colors&quot;</span><span class="p">:</span> <span class="s2">&quot;styling.colors&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    <span class="s2">&quot;colorbar&quot;</span><span class="p">:</span> <span class="s2">&quot;styling.colorbar&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>    <span class="s2">&quot;palettes&quot;</span><span class="p">:</span> <span class="s2">&quot;styling.palettes&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>    <span class="s2">&quot;perceptual&quot;</span><span class="p">:</span> <span class="s2">&quot;styling.perceptual&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>    <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="s2">&quot;styling.data&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>    <span class="s2">&quot;geo&quot;</span><span class="p">:</span> <span class="s2">&quot;basemap.geo&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>    <span class="s2">&quot;tiles&quot;</span><span class="p">:</span> <span class="s2">&quot;basemap.tiles&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>    <span class="s2">&quot;reference&quot;</span><span class="p">:</span> <span class="s2">&quot;basemap.reference&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>    <span class="s2">&quot;projection&quot;</span><span class="p">:</span> <span class="s2">&quot;basemap.projection&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="p">}</span>
-<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="c1"># longest-first so no key shadows another; word-boundary anchored both ends</span>
-<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="n">ALT</span> <span class="o">=</span> <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">,</span> <span class="n">MODULE_MAP</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="nb">len</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
-<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="n">DOTTED</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bcleopatra\.(&quot;</span> <span class="o">+</span> <span class="n">ALT</span> <span class="o">+</span> <span class="sa">r</span><span class="s2">&quot;)\b&quot;</span><span class="p">)</span>
-<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>
-<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;your_package&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">rglob</span><span class="p">(</span><span class="s2">&quot;*.py&quot;</span><span class="p">):</span>
-<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>    <span class="n">text</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
-<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a>    <span class="n">new</span> <span class="o">=</span> <span class="n">DOTTED</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="s2">&quot;cleopatra.&quot;</span> <span class="o">+</span> <span class="n">MODULE_MAP</span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)],</span> <span class="n">text</span><span class="p">)</span>
-<a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>    <span class="n">new</span> <span class="o">=</span> <span class="n">new</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;StatisticalGlyph&quot;</span><span class="p">,</span> <span class="s2">&quot;HistogramGlyph&quot;</span><span class="p">)</span>  <span class="c1"># the one class rename</span>
-<a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>    <span class="k">if</span> <span class="n">new</span> <span class="o">!=</span> <span class="n">text</span><span class="p">:</span>
-<a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a>        <span class="n">f</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">new</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># old flat module -&gt; new dotted path (relative to `cleopatra.`)</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">MODULE_MAP</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="s2">&quot;glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.base.glyph&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="s2">&quot;animation&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.base.animation&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="s2">&quot;hillshade&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.base.hillshade&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="s2">&quot;array_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.gridded.array_glyph&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    <span class="s2">&quot;mesh_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.gridded.mesh_glyph&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    <span class="s2">&quot;vector_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.gridded.vector_glyph&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    <span class="s2">&quot;scatter_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.primitives.scatter_glyph&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>    <span class="s2">&quot;line_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.primitives.line_glyph&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    <span class="s2">&quot;polygon_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.primitives.polygon_glyph&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>    <span class="s2">&quot;flow_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.primitives.flow_glyph&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>    <span class="s2">&quot;kde_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.stats.kde_glyph&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>    <span class="s2">&quot;statistical_glyph&quot;</span><span class="p">:</span> <span class="s2">&quot;glyphs.stats.histogram_glyph&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>    <span class="s2">&quot;styles&quot;</span><span class="p">:</span> <span class="s2">&quot;styling.styles&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>    <span class="s2">&quot;colors&quot;</span><span class="p">:</span> <span class="s2">&quot;styling.colors&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>    <span class="s2">&quot;colorbar&quot;</span><span class="p">:</span> <span class="s2">&quot;styling.colorbar&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>    <span class="s2">&quot;palettes&quot;</span><span class="p">:</span> <span class="s2">&quot;styling.palettes&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>    <span class="s2">&quot;perceptual&quot;</span><span class="p">:</span> <span class="s2">&quot;styling.perceptual&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a>    <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="s2">&quot;styling.data&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a>    <span class="s2">&quot;geo&quot;</span><span class="p">:</span> <span class="s2">&quot;basemap.geo&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a>    <span class="s2">&quot;tiles&quot;</span><span class="p">:</span> <span class="s2">&quot;basemap.tiles&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a>    <span class="s2">&quot;reference&quot;</span><span class="p">:</span> <span class="s2">&quot;basemap.reference&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a>    <span class="s2">&quot;projection&quot;</span><span class="p">:</span> <span class="s2">&quot;basemap.projection&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a><span class="p">}</span>
+<a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a><span class="c1"># longest-first so no key shadows another; word-boundary anchored both ends</span>
+<a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a><span class="n">ALT</span> <span class="o">=</span> <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">,</span> <span class="n">MODULE_MAP</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="nb">len</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a><span class="n">DOTTED</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bcleopatra\.(&quot;</span> <span class="o">+</span> <span class="n">ALT</span> <span class="o">+</span> <span class="sa">r</span><span class="s2">&quot;)\b&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a>
+<a id="__codelineno-3-33" name="__codelineno-3-33" href="#__codelineno-3-33"></a><span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;your_package&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">rglob</span><span class="p">(</span><span class="s2">&quot;*.py&quot;</span><span class="p">):</span>
+<a id="__codelineno-3-34" name="__codelineno-3-34" href="#__codelineno-3-34"></a>    <span class="n">text</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-35" name="__codelineno-3-35" href="#__codelineno-3-35"></a>    <span class="n">new</span> <span class="o">=</span> <span class="n">DOTTED</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="s2">&quot;cleopatra.&quot;</span> <span class="o">+</span> <span class="n">MODULE_MAP</span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)],</span> <span class="n">text</span><span class="p">)</span>
+<a id="__codelineno-3-36" name="__codelineno-3-36" href="#__codelineno-3-36"></a>    <span class="n">new</span> <span class="o">=</span> <span class="n">new</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;StatisticalGlyph&quot;</span><span class="p">,</span> <span class="s2">&quot;HistogramGlyph&quot;</span><span class="p">)</span>  <span class="c1"># the one class rename</span>
+<a id="__codelineno-3-37" name="__codelineno-3-37" href="#__codelineno-3-37"></a>    <span class="k">if</span> <span class="n">new</span> <span class="o">!=</span> <span class="n">text</span><span class="p">:</span>
+<a id="__codelineno-3-38" name="__codelineno-3-38" href="#__codelineno-3-38"></a>        <span class="n">f</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">new</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
 </code></pre></div>
 <p>Notes:</p>
 <ul>
@@ -2641,6 +3173,44 @@ were installing <code>cleopatra[tiles]</code> <em>only</em> to get Pillow, plain
       
         <footer class="md-footer">
   
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../scope/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Scope">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Scope
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../unstructured-mesh-guide/" class="md-footer__link md-footer__link--next" aria-label="Next: Unstructured meshes">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Unstructured meshes
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
     
   
   <div class="md-footer-meta md-typeset">
