@@ -26,16 +26,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
 from cleopatra.glyphs.base.glyph import CATEGORICAL_DEFAULT_CMAP, Glyph
+from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
+from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
 from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
-from cleopatra.styling.scaling import ColorScaling
 from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
+from cleopatra.styling.params import Classify, Contour
+from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import categorize
-from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
-from cleopatra.styling.params import Contour
-from cleopatra.styling.params import Classify
 
 
 @pytest.fixture(autouse=True)
@@ -367,9 +366,13 @@ class TestGlyphPrepareCategoricalMapping:
             Categorical colouring owns the norm, so a conflicting
             `color_scale` is ignored -- and a warning says so.
         """
-        glyph = ScatterGlyph(np.arange(4.0), np.zeros(4), values=np.array(["a", "b", "a", "b"]))
+        glyph = ScatterGlyph(
+            np.arange(4.0), np.zeros(4), values=np.array(["a", "b", "a", "b"])
+        )
         with pytest.warns(UserWarning, match="color_scale"):
-            glyph.plot(classify=Classify(scheme="categorical"), color=ColorScaling.midpoint())
+            glyph.plot(
+                classify=Classify(scheme="categorical"), color=ColorScaling.midpoint()
+            )
 
     def test_warns_on_conflicting_levels(self):
         """`scheme="categorical"` together with `levels` warns.
@@ -378,9 +381,13 @@ class TestGlyphPrepareCategoricalMapping:
             The categorical mapping determines the classes, so `levels` is
             ignored -- and a warning says so.
         """
-        glyph = ScatterGlyph(np.arange(4.0), np.zeros(4), values=np.array(["a", "b", "a", "b"]))
+        glyph = ScatterGlyph(
+            np.arange(4.0), np.zeros(4), values=np.array(["a", "b", "a", "b"])
+        )
         with pytest.warns(UserWarning, match="levels"):
-            glyph.plot(classify=Classify(scheme="categorical"), contour=Contour(levels=3))
+            glyph.plot(
+                classify=Classify(scheme="categorical"), contour=Contour(levels=3)
+            )
 
 
 class TestPolygonGlyphCategorical:
@@ -438,7 +445,12 @@ class TestPolygonGlyphCategorical:
         """
         polys, labels = polys_land_use
         glyph = PolygonGlyph(polys, values=labels)
-        glyph.plot(classify=Classify(scheme="categorical", category_legend_kwargs={"title": "Land use", "loc": "lower left"}))
+        glyph.plot(
+            classify=Classify(
+                scheme="categorical",
+                category_legend_kwargs={"title": "Land use", "loc": "lower left"},
+            )
+        )
         assert glyph.category_legend.get_title().get_text() == "Land use"
 
     def test_add_colorbar_false_suppresses_legend(self, polys_land_use):

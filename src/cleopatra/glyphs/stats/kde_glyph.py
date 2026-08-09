@@ -41,16 +41,20 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Patch
 from matplotlib.path import Path as MplPath
 
-from cleopatra.styling.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
-from cleopatra.styling.params import Contour, DataStyle
-from cleopatra.styling.scaling import ColorScaling
+from cleopatra.glyphs.base.glyph import Glyph, _root_figure
+from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_grid
+from cleopatra.styling.colorbar import (
+    ColorBar,
+    _resolve_colorbar,
+    _warn_deprecated_cbar_kwargs,
+)
 from cleopatra.styling.colors import (
     resolve_colormap,
     resolve_single_layer_style,
     resolve_style_norm,
 )
-from cleopatra.glyphs.base.glyph import Glyph, _root_figure
-from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_grid
+from cleopatra.styling.params import Contour, DataStyle
+from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 #: Upper bound on the number of (grid-cell × data-point) products evaluated in

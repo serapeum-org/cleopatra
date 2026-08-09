@@ -11,12 +11,12 @@ import numpy as np
 import pytest
 from matplotlib.collections import PolyCollection
 
-from cleopatra.styling.params import Contour
 from cleopatra.glyphs.primitives.polygon_glyph import (
     OUTLINE_EDGECOLOR,
     POLYGON_DEFAULT_OPTIONS,
     PolygonGlyph,
 )
+from cleopatra.styling.params import Contour
 
 
 @pytest.fixture(autouse=True)
@@ -210,7 +210,9 @@ class TestPolygonGlyphPlot:
             value range.
         """
         with pytest.warns(DeprecationWarning, match="ticks_spacing"):
-            glyph = PolygonGlyph(polygons, values=np.array([0.0, 40.0]), ticks_spacing=10.0)
+            glyph = PolygonGlyph(
+                polygons, values=np.array([0.0, 40.0]), ticks_spacing=10.0
+            )
         _, _, pc = glyph.plot()
         assert pc.get_clim() == (
             0.0,

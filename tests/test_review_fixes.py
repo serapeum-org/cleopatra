@@ -13,9 +13,14 @@ import numpy as np
 import pytest
 
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
-from cleopatra.styling.params import CellValues, DataStyle
-from cleopatra.styling.colors import DATA_STYLES, convert_units, resolve_colormap, resolve_style_norm
 from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
+from cleopatra.styling.colors import (
+    DATA_STYLES,
+    convert_units,
+    resolve_colormap,
+    resolve_style_norm,
+)
+from cleopatra.styling.params import CellValues, DataStyle
 from cleopatra.templates import publication_map
 
 
@@ -34,7 +39,9 @@ class TestReviewFixes:
         lon = np.linspace(-10.0, 10.0, 12)
         lat = np.linspace(50.0, 30.0, 10)
         data = np.random.default_rng(0).random((10, 12)) * 30.0
-        fig, ax = publication_map(data, coords=(lon, lat), style="temperature_2m", projection="globe")
+        fig, ax = publication_map(
+            data, coords=(lon, lat), style="temperature_2m", projection="globe"
+        )
         assert len(ax.patches) >= 1, "styled globe should draw the boundary patch"
         plt.close("all")
 
@@ -47,7 +54,9 @@ class TestReviewFixes:
         """
         cfg = DATA_STYLES["radar_reflectivity"]["radar_reflectivity"]
         norm, _, _ = resolve_style_norm(np.linspace(0, 80, 50).reshape(5, 10), cfg)
-        assert norm.extend == "max", f"radar extend should stay 'max', got {norm.extend!r}"
+        assert norm.extend == "max", (
+            f"radar extend should stay 'max', got {norm.extend!r}"
+        )
 
     def test_two_unknown_units_warns_l1(self):
         """L1: converting between two unrecognised units warns (contract).
@@ -59,8 +68,12 @@ class TestReviewFixes:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
             result = convert_units(np.array([1.0, 2.0]), "meters", "feet")
-        assert len(caught) == 1, f"expected one warning for two unknown units, got {len(caught)}"
-        assert result.tolist() == [1.0, 2.0], "data must be unchanged when no conversion applies"
+        assert len(caught) == 1, (
+            f"expected one warning for two unknown units, got {len(caught)}"
+        )
+        assert result.tolist() == [1.0, 2.0], (
+            "data must be unchanged when no conversion applies"
+        )
 
     def test_cmap_none_passes_through_l3(self):
         """L3: `resolve_colormap(None)` returns None (matplotlib default preserved).
@@ -103,5 +116,7 @@ class TestReviewFixes:
             ArrayGlyph(data, coords=(lon, lat), projection="flat").plot(
                 cells=CellValues(show=True)
             )
-        assert any("reprojected coordinates" in str(w.message) for w in caught), "projection+overlay must warn"
+        assert any("reprojected coordinates" in str(w.message) for w in caught), (
+            "projection+overlay must warn"
+        )
         plt.close("all")

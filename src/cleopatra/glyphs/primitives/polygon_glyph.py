@@ -44,12 +44,16 @@ from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure
 from matplotlib.legend import Legend
 
-from cleopatra.styling.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
-from cleopatra.styling.params import Classify, Contour
-from cleopatra.styling.scaling import ColorScaling
-from cleopatra.styling.colors import resolve_colormap
 from cleopatra.basemap.geo import GeoMixin
 from cleopatra.glyphs.base.glyph import Glyph, _root_figure
+from cleopatra.styling.colorbar import (
+    ColorBar,
+    _resolve_colorbar,
+    _warn_deprecated_cbar_kwargs,
+)
+from cleopatra.styling.colors import resolve_colormap
+from cleopatra.styling.params import Classify, Contour
+from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import CLASSIFY_OPTIONS
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
@@ -271,7 +275,10 @@ class PolygonGlyph(GeoMixin, Glyph):
             if categorical is not None:
                 color_array, cmap = categorical["codes"], categorical["cmap"]
             else:
-                color_array, cmap = np.asarray(self.values), resolve_colormap(opts["cmap"])
+                color_array, cmap = (
+                    np.asarray(self.values),
+                    resolve_colormap(opts["cmap"]),
+                )
             pc = PolyCollection(
                 self.polygons,
                 array=color_array,

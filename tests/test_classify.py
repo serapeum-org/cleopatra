@@ -22,14 +22,16 @@ import numpy as np
 import pytest
 
 import cleopatra.styling.styles as styles_mod
-from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
-from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
 from cleopatra.glyphs.base.glyph import Glyph
-from cleopatra.glyphs.stats.kde_glyph import KDEGlyph
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
+from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
+from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
 from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
-from cleopatra.styling.scaling import ColorScaling
 from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
+from cleopatra.glyphs.stats.kde_glyph import KDEGlyph
+from cleopatra.styling.params import Classify, Contour
+from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import (
     CLASSIFY_OPTIONS,
     JENKS_SCHEMES,
@@ -39,9 +41,6 @@ from cleopatra.styling.styles import (
     classify,
 )
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
-from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
-from cleopatra.styling.params import Contour
-from cleopatra.styling.params import Classify
 
 
 @pytest.fixture(autouse=True)
@@ -788,7 +787,9 @@ class TestSchemeConflictWarnings:
         """
         glyph = ScatterGlyph(np.arange(5.0), np.zeros(5), values=np.arange(5.0))
         with pytest.warns(UserWarning, match="color_scale"):
-            glyph.plot(classify=Classify(scheme="quantiles"), color=ColorScaling.midpoint())
+            glyph.plot(
+                classify=Classify(scheme="quantiles"), color=ColorScaling.midpoint()
+            )
 
     def test_warns_on_conflicting_levels(self):
         """Setting `scheme` together with `levels` warns.
@@ -911,7 +912,9 @@ class TestVectorGlyphScheme:
         u = x + 1.0
         v = y + 1.0
         glyph = VectorGlyph(x, y, u, v)
-        _, _, im = glyph.plot(classify=Classify(scheme="quantiles", k=4), kind="streamplot")
+        _, _, im = glyph.plot(
+            classify=Classify(scheme="quantiles", k=4), kind="streamplot"
+        )
         assert isinstance(im.norm, mcolors.BoundaryNorm), (
             "scheme should set a BoundaryNorm"
         )

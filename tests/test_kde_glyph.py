@@ -523,7 +523,9 @@ class TestKDEGlyphHillshade:
     def test_hillshade_draws_shaded_image(self):
         """`hillshade` renders the density as a shaded RGBA image, not contours."""
         x, y = self._cloud()
-        _, _, im = KDEGlyph(x, y, gridsize=40, cmap="magma").plot(data_style=DataStyle(hillshade=True))
+        _, _, im = KDEGlyph(x, y, gridsize=40, cmap="magma").plot(
+            data_style=DataStyle(hillshade=True)
+        )
         assert type(im).__name__ == "AxesImage"
         assert im.get_array().shape[-1] == 4
         plt.close("all")
@@ -546,7 +548,9 @@ class TestKDEGlyphHillshade:
     def test_hillshade_at_plot_time(self):
         """`hillshade` passed to `plot()` shades, mirroring ArrayGlyph/MeshGlyph."""
         x, y = self._cloud()
-        _, _, im = KDEGlyph(x, y, gridsize=40, cmap="magma").plot( data_style=DataStyle(hillshade={"vert_exag": 20}))
+        _, _, im = KDEGlyph(x, y, gridsize=40, cmap="magma").plot(
+            data_style=DataStyle(hillshade={"vert_exag": 20})
+        )
         assert type(im).__name__ == "AxesImage"
         assert im.get_array().shape[-1] == 4
         plt.close("all")
@@ -555,7 +559,11 @@ class TestKDEGlyphHillshade:
         """The shaded path sets a title and skips the colorbar when asked."""
         x, y = self._cloud()
         g = KDEGlyph(x, y, gridsize=40)
-        _, ax, _ = g.plot(data_style=DataStyle(hillshade=True), title="Density terrain", add_colorbar=False)
+        _, ax, _ = g.plot(
+            data_style=DataStyle(hillshade=True),
+            title="Density terrain",
+            add_colorbar=False,
+        )
         assert ax.get_title() == "Density terrain"
         assert g.cbar is None
         plt.close("all")
@@ -574,21 +582,27 @@ class TestKDEGlyphDataStyle:
     def test_continuous_preset_sets_cmap_at_construction(self):
         """A continuous preset set at construction colours the density."""
         x, y = self._cloud()
-        _, _, cs = KDEGlyph(x, y, gridsize=40).plot(data_style=DataStyle(style="temperature"))
+        _, _, cs = KDEGlyph(x, y, gridsize=40).plot(
+            data_style=DataStyle(style="temperature")
+        )
         assert cs.get_cmap().name == "Spectral_r"
         plt.close("all")
 
     def test_continuous_preset_at_plot_time(self):
         """A continuous preset passed to `plot()` colours the density."""
         x, y = self._cloud()
-        _, _, cs = KDEGlyph(x, y, gridsize=40).plot( data_style=DataStyle(style="elevation"))
+        _, _, cs = KDEGlyph(x, y, gridsize=40).plot(
+            data_style=DataStyle(style="elevation")
+        )
         assert cs.get_cmap().name == "terrain"
         plt.close("all")
 
     def test_style_composes_with_hillshade(self):
         """A continuous preset composes with the relief-shaded density image."""
         x, y = self._cloud()
-        _, _, im = KDEGlyph(x, y, gridsize=40).plot( data_style=DataStyle(style="temperature", hillshade=True))
+        _, _, im = KDEGlyph(x, y, gridsize=40).plot(
+            data_style=DataStyle(style="temperature", hillshade=True)
+        )
         assert type(im).__name__ == "AxesImage"
         plt.close("all")
 
@@ -596,14 +610,16 @@ class TestKDEGlyphDataStyle:
         """A categorical preset is meaningless for a continuous density and raises."""
         x, y = self._cloud()
         with pytest.raises(ValueError, match="is categorical"):
-            KDEGlyph(x, y, gridsize=40).plot(data_style=DataStyle(style="flow_direction_d8"))
+            KDEGlyph(x, y, gridsize=40).plot(
+                data_style=DataStyle(style="flow_direction_d8")
+            )
         plt.close("all")
 
     def test_unknown_style_raises(self):
         """An unknown style name raises a clear `ValueError`."""
         x, y = self._cloud()
         with pytest.raises(ValueError, match="unknown data style"):
-            KDEGlyph(x, y, gridsize=40).plot( data_style=DataStyle(style="not_a_style"))
+            KDEGlyph(x, y, gridsize=40).plot(data_style=DataStyle(style="not_a_style"))
         plt.close("all")
 
     def test_style_renders_preset_cmap_without_mutating_default(self):
@@ -616,7 +632,7 @@ class TestKDEGlyphDataStyle:
         x, y = self._cloud()
         g = KDEGlyph(x, y, gridsize=40)
         default_cmap = g.default_options["cmap"]
-        _, _, cs = g.plot( data_style=DataStyle(style="temperature"))
+        _, _, cs = g.plot(data_style=DataStyle(style="temperature"))
         assert cs.get_cmap().name == "Spectral_r"
         assert g.default_options["cmap"] == default_cmap
         assert g.style == "temperature"  # the name persists for read-back
@@ -626,7 +642,9 @@ class TestKDEGlyphDataStyle:
         """A continuous preset ('temperature') auto-ranges to the density, so a
         small-magnitude field still gets a full gradient (not one flat band)."""
         x, y = self._cloud()
-        _, _, cs = KDEGlyph(x, y, gridsize=50).plot(data_style=DataStyle(style="temperature"))
+        _, _, cs = KDEGlyph(x, y, gridsize=50).plot(
+            data_style=DataStyle(style="temperature")
+        )
         assert cs.norm.vmax < 1.0, (
             f"temperature must auto-range to the density, got vmax={cs.norm.vmax}"
         )
@@ -637,9 +655,9 @@ class TestKDEGlyphDataStyle:
     def test_style_vmin_vmax_pins_the_colour_scale(self):
         """A construction-time `vmin`/`vmax` pins a styled density's colour scale (default None auto-ranges)."""
         x, y = self._cloud()
-        _, _, cs = KDEGlyph(
-            x, y, gridsize=40, vmin=-40, vmax=40
-        ).plot(data_style=DataStyle(style="temperature"))
+        _, _, cs = KDEGlyph(x, y, gridsize=40, vmin=-40, vmax=40).plot(
+            data_style=DataStyle(style="temperature")
+        )
         assert (cs.norm.vmin, cs.norm.vmax) == (-40.0, 40.0)
         plt.close("all")
 
@@ -712,9 +730,9 @@ class TestKDEGlyphApplyStyle:
         """A style survives a later plain plot() and is cleared by style=None."""
         x, y = self._cloud()
         g = KDEGlyph(x, y, gridsize=40)
-        g.plot( data_style=DataStyle(style="temperature"))
+        g.plot(data_style=DataStyle(style="temperature"))
         g.plot()
         assert g.style == "temperature"
-        g.plot( data_style=DataStyle(style=None))
+        g.plot(data_style=DataStyle(style=None))
         assert g.style is None
         plt.close("all")

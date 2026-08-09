@@ -16,10 +16,10 @@ import pytest
 from matplotlib.colors import to_rgba
 from matplotlib.text import Text
 
+from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
 from cleopatra.styling.colorbar import ColorBar
 from cleopatra.styling.params import Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
-from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
 
 
 @pytest.fixture(scope="module")
@@ -634,7 +634,10 @@ class TestContourLabels:
         """`labels=True` populates `contour_labels` with `Text` artists."""
         mg = self._grid_glyph()
         fig, ax = mg.plot(
-            self._smooth_field(mg), location="node", filled=False, contour=Contour(labels=True)
+            self._smooth_field(mg),
+            location="node",
+            filled=False,
+            contour=Contour(labels=True),
         )
         assert isinstance(mg.contour_labels, list)
         assert len(mg.contour_labels) > 0
@@ -671,7 +674,10 @@ class TestContourLabels:
         """`labels=True` is ignored for `filled=True` (no isolines to label)."""
         mg = self._grid_glyph()
         fig, ax = mg.plot(
-            self._smooth_field(mg), location="node", filled=True, contour=Contour(labels=True)
+            self._smooth_field(mg),
+            location="node",
+            filled=True,
+            contour=Contour(labels=True),
         )
         assert mg.contour_labels is None
         plt.close(fig)
@@ -700,7 +706,9 @@ class TestContourLabels:
         data = self._smooth_field(mg)
         mg.plot(data, location="node", filled=False, contour=Contour(labels=True))
         assert mg.contour_labels is not None
-        fig, ax = mg.plot(data, location="node", filled=True, contour=Contour(labels=True))
+        fig, ax = mg.plot(
+            data, location="node", filled=True, contour=Contour(labels=True)
+        )
         assert mg.contour_labels is None
         plt.close(fig)
 
@@ -1638,7 +1646,12 @@ class TestMeshGlyphHillshade:
         """Node-centered `hillshade` renders a per-face shaded `tripcolor` mesh."""
         nx, ny, faces, z = self._terrain_mesh()
         mg = MeshGlyph(nx, ny, faces)
-        mg.plot(z, location="node", cmap="terrain", data_style=DataStyle(hillshade={"vert_exag": 3}))
+        mg.plot(
+            z,
+            location="node",
+            cmap="terrain",
+            data_style=DataStyle(hillshade={"vert_exag": 3}),
+        )
         facecolors = mg.im.get_facecolor()
         assert facecolors.shape[1] == 4
         assert len(np.unique(np.round(facecolors[:, 0], 3))) > 5, "faces should vary"
@@ -1650,7 +1663,10 @@ class TestMeshGlyphHillshade:
         nx, ny, faces, _ = self._terrain_mesh()
         with pytest.raises(ValueError, match="node-centered"):
             MeshGlyph(nx, ny, faces).plot(
-                np.ones(len(faces)), location="face", data_style=DataStyle(hillshade=True))
+                np.ones(len(faces)),
+                location="face",
+                data_style=DataStyle(hillshade=True),
+            )
         plt.close("all")
 
     def test_without_hillshade_uses_contours(self):
@@ -1669,7 +1685,9 @@ class TestMeshGlyphHillshade:
         """
         nx, ny, faces, z = self._terrain_mesh()
         mg = MeshGlyph(nx, ny, faces)
-        mg.plot(z, location="node", cmap="terrain", data_style=DataStyle(hillshade=True))
+        mg.plot(
+            z, location="node", cmap="terrain", data_style=DataStyle(hillshade=True)
+        )
         assert type(mg.im).__name__ == "PolyCollection", (
             "constructor hillshade should shade"
         )
@@ -1684,7 +1702,13 @@ class TestMeshGlyphHillshade:
         """
         nx, ny, faces, z = self._terrain_mesh()
         mg = MeshGlyph(nx, ny, faces)
-        mg.plot(z, location="node", filled=False, contour=Contour(labels=True), data_style=DataStyle(hillshade=True))
+        mg.plot(
+            z,
+            location="node",
+            filled=False,
+            contour=Contour(labels=True),
+            data_style=DataStyle(hillshade=True),
+        )
         assert mg.contour_labels is None, "labels are a no-op under hillshade"
         plt.close("all")
 
@@ -1700,7 +1724,9 @@ class TestMeshGlyphHillshade:
             z,
             location="node",
             cmap="terrain",
-            color=ColorScaling.power(gamma=0.4), data_style=DataStyle(hillshade=True))
+            color=ColorScaling.power(gamma=0.4),
+            data_style=DataStyle(hillshade=True),
+        )
         assert type(mg.im).__name__ == "PolyCollection"
         assert type(mg.im.norm).__name__ == "PowerNorm", (
             "the color_scale norm is applied"
@@ -1718,7 +1744,9 @@ class TestMeshGlyphHillshade:
         faces = np.array([[0, 1, 3], [1, 2, 3], [0, 1, 2]])
         z = np.array([10.0, 20.0, 30.0, np.nan])  # node 3 is nodata
         mg = MeshGlyph(nx, ny, faces)
-        mg.plot(z, location="node", cmap="terrain", data_style=DataStyle(hillshade=True))
+        mg.plot(
+            z, location="node", cmap="terrain", data_style=DataStyle(hillshade=True)
+        )
         alphas = mg.im.get_facecolor()[:, 3]
         assert np.allclose(alphas[[0, 1]], 0.0), "nodata-touching faces are transparent"
         assert alphas[2] > 0.0, "the fully-finite face stays opaque"
@@ -1760,7 +1788,9 @@ class TestMeshGlyphDataStyle:
             .astype(float)
         )
         g = MeshGlyph(nx, ny, faces)
-        _, ax = g.plot(d8, location="face", data_style=DataStyle(style="flow_direction_d8"))
+        _, ax = g.plot(
+            d8, location="face", data_style=DataStyle(style="flow_direction_d8")
+        )
         assert ax.get_legend() is not None
         assert g._cbar is None
         plt.close("all")
@@ -1770,7 +1800,10 @@ class TestMeshGlyphDataStyle:
         nx, ny, faces = self._mesh()
         with pytest.raises(ValueError, match="unknown data style"):
             MeshGlyph(nx, ny, faces).plot(
-                np.ones(len(faces)), location="face", data_style=DataStyle(style="not_a_style"))
+                np.ones(len(faces)),
+                location="face",
+                data_style=DataStyle(style="not_a_style"),
+            )
         plt.close("all")
 
     def test_continuous_style_composes_with_hillshade(self):
@@ -1778,7 +1811,9 @@ class TestMeshGlyphDataStyle:
         nx, ny, faces = self._mesh()
         z = 50 + 150 * np.exp(-(((nx - 7) / 2) ** 2 + ((ny - 5) / 3) ** 2))
         g = MeshGlyph(nx, ny, faces)
-        g.plot(z, location="node", data_style=DataStyle(style="topography", hillshade=True))
+        g.plot(
+            z, location="node", data_style=DataStyle(style="topography", hillshade=True)
+        )
         assert type(g.im).__name__ == "PolyCollection"
         plt.close("all")
 
@@ -1792,7 +1827,8 @@ class TestMeshGlyphDataStyle:
         )
         with pytest.warns(UserWarning, match="interpolates discrete class codes"):
             MeshGlyph(nx, ny, faces).plot(
-                codes, location="node", data_style=DataStyle(style="flow_direction_d8"))
+                codes, location="node", data_style=DataStyle(style="flow_direction_d8")
+            )
         plt.close("all")
 
     def test_symlog_preset_colorbar_uses_a_log_locator(self):

@@ -40,12 +40,16 @@ from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure
 from matplotlib.legend import Legend
 
-from cleopatra.styling.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
-from cleopatra.styling.params import Classify, Contour
-from cleopatra.styling.scaling import ColorScaling
-from cleopatra.styling.colors import resolve_colormap, resolve_glow_options
 from cleopatra.basemap.geo import GeoMixin
 from cleopatra.glyphs.base.glyph import Glyph, _root_figure
+from cleopatra.styling.colorbar import (
+    ColorBar,
+    _resolve_colorbar,
+    _warn_deprecated_cbar_kwargs,
+)
+from cleopatra.styling.colors import resolve_colormap, resolve_glow_options
+from cleopatra.styling.params import Classify, Contour
+from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import CLASSIFY_OPTIONS, resolve_sizes, width_legend
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 

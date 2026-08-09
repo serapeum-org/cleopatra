@@ -285,7 +285,9 @@ class TestGetTicks:
         g._default_options["vmax"] = 31.295
         g._default_options["ticks_spacing"] = (31.295 - 2.82) / 10
         ticks = g.get_ticks()
-        assert float(ticks[-1]) <= 31.295 + 1e-6, f"top tick {ticks[-1]} overshoots vmax 31.295"
+        assert float(ticks[-1]) <= 31.295 + 1e-6, (
+            f"top tick {ticks[-1]} overshoots vmax 31.295"
+        )
 
     def test_no_near_duplicate_top_tick(self):
         """The two topmost ticks are not near-coincident (labels would overprint).
@@ -299,7 +301,9 @@ class TestGetTicks:
         g._default_options["ticks_spacing"] = (31.295 - 2.82) / 10
         ticks = g.get_ticks()
         gap = float(ticks[-1]) - float(ticks[-2])
-        assert gap > 0.04 * (31.295 - 2.82), f"top two ticks too close ({gap:.4f}); labels overprint"
+        assert gap > 0.04 * (31.295 - 2.82), (
+            f"top two ticks too close ({gap:.4f}); labels overprint"
+        )
 
 
 class TestCreateNormAndCbarKw:
@@ -1153,11 +1157,31 @@ class TestOptionKeysAndFilterKwargs:
         "import_path, class_name, const_name",
         [
             ("cleopatra.glyphs.gridded.array_glyph", "ArrayGlyph", "DEFAULT_OPTIONS"),
-            ("cleopatra.glyphs.primitives.scatter_glyph", "ScatterGlyph", "SCATTER_DEFAULT_OPTIONS"),
-            ("cleopatra.glyphs.primitives.polygon_glyph", "PolygonGlyph", "POLYGON_DEFAULT_OPTIONS"),
-            ("cleopatra.glyphs.gridded.vector_glyph", "VectorGlyph", "VECTOR_DEFAULT_OPTIONS"),
-            ("cleopatra.glyphs.primitives.line_glyph", "LineGlyph", "LINE_DEFAULT_OPTIONS"),
-            ("cleopatra.glyphs.gridded.mesh_glyph", "MeshGlyph", "MESH_DEFAULT_OPTIONS"),
+            (
+                "cleopatra.glyphs.primitives.scatter_glyph",
+                "ScatterGlyph",
+                "SCATTER_DEFAULT_OPTIONS",
+            ),
+            (
+                "cleopatra.glyphs.primitives.polygon_glyph",
+                "PolygonGlyph",
+                "POLYGON_DEFAULT_OPTIONS",
+            ),
+            (
+                "cleopatra.glyphs.gridded.vector_glyph",
+                "VectorGlyph",
+                "VECTOR_DEFAULT_OPTIONS",
+            ),
+            (
+                "cleopatra.glyphs.primitives.line_glyph",
+                "LineGlyph",
+                "LINE_DEFAULT_OPTIONS",
+            ),
+            (
+                "cleopatra.glyphs.gridded.mesh_glyph",
+                "MeshGlyph",
+                "MESH_DEFAULT_OPTIONS",
+            ),
         ],
     )
     def test_subclass_keys_match_their_option_dict(
@@ -1401,9 +1425,9 @@ class TestDefaultOptionsAlias:
         assert sg.HistogramGlyph.DEFAULT_OPTIONS is sg.STATISTICAL_DEFAULT_OPTIONS, (
             "class attr mismatch"
         )
-        assert sg.HistogramGlyph.option_keys() == set(
-            sg.STATISTICAL_DEFAULT_OPTIONS
-        ), "keys mismatch"
+        assert sg.HistogramGlyph.option_keys() == set(sg.STATISTICAL_DEFAULT_OPTIONS), (
+            "keys mismatch"
+        )
 
 
 class TestSubFigureFigureResolution:

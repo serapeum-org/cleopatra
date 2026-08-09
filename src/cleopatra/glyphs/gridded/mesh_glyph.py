@@ -39,14 +39,11 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.colorbar import Colorbar
 from matplotlib.colors import BoundaryNorm, ListedColormap
 
-from cleopatra.styling.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
-from cleopatra.styling.colors import (
-    category_boundaries,
-    resolve_colormap,
-    resolve_single_layer_style,
-    resolve_style_norm,
-)
 from cleopatra.basemap.geo import GeoMixin
+from cleopatra.basemap.projection import (
+    apply_projection_style_mesh,
+    projection_draws_frame,
+)
 from cleopatra.glyphs.base.glyph import (
     Glyph,
     _clear_prior_render_artists,
@@ -56,7 +53,17 @@ from cleopatra.glyphs.base.glyph import (
     _stash_projection_frame,
 )
 from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_faces
-from cleopatra.basemap.projection import apply_projection_style_mesh, projection_draws_frame
+from cleopatra.styling.colorbar import (
+    ColorBar,
+    _resolve_colorbar,
+    _warn_deprecated_cbar_kwargs,
+)
+from cleopatra.styling.colors import (
+    category_boundaries,
+    resolve_colormap,
+    resolve_single_layer_style,
+    resolve_style_norm,
+)
 from cleopatra.styling.params import Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
