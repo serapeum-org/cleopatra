@@ -380,11 +380,12 @@ class ColorScaling:
         builder = self._NORM_BUILDERS[self.kind]
         norm, cbar_kw = builder(self, ticks, vmin, vmax, bounds_from_levels)
 
-        cbar_kw["extend"] = (
-            extend
-            if extend is not None
-            else ("both" if levels is not None else "neither")
-        )
+        if extend is not None:
+            cbar_kw["extend"] = extend
+        elif levels is not None:
+            cbar_kw["extend"] = "both"
+        else:
+            cbar_kw["extend"] = "neither"
         return norm, cbar_kw
 
     def _linear_norm(self, ticks, vmin, vmax, bounds_from_levels):
