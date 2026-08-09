@@ -894,25 +894,33 @@ class MeshGlyph(GeoMixin, Glyph):
             filled: For node data, draw filled contours (`tricontourf`,
                 the default) or line contours (`tricontour`) when
                 `False`. Ignored for face data. Default is True.
-            **kwargs: Override any key in `default_options` (cmap,
-                vmin, vmax, color_scale, gamma, midpoint, bounds,
-                figsize, etc.) or pass extra rendering kwargs (levels for
-                tricontourf / tricontour). The loose `ticks_spacing` /
-                `cbar_*` keys still work but are deprecated -- pass
-                `colorbar=ColorBar(...)` instead. Two label options are
-                honoured **only** for line tricontours
-                (`location="node"`, `filled=False`):
-
-                - `labels` (bool, default `False`): when truthy, draw
-                  inline numeric labels on the isolines via `ax.clabel`
-                  and store the resulting `Text` artists on
-                  `self.contour_labels`. A documented no-op for
-                  `tripcolor` (face data) and `tricontourf`
-                  (`filled=True`), which leave `contour_labels` as `None`.
-                - `label_kw` (dict): forwarded to `ax.clabel`, merged
-                  over cleopatra's defaults (`inline=True`, `fontsize=8`,
-                  `fmt="%g"`) so user keys (`fmt`, `fontsize`, `colors`,
-                  `inline_spacing`, …) win on collision.
+            color: Colour-scale group object
+                (`cleopatra.styling.scaling.ColorScaling`), e.g.
+                `ColorScaling.power(gamma=0.7)`. Replaces the loose
+                `color_scale` / `gamma` / `line_threshold` / `line_scale` /
+                `bounds` / `midpoint` keywords.
+            contour: Discretisation / inline-label group object
+                (`cleopatra.styling.params.Contour`). `Contour(levels=N)`
+                discretises the colour norm and sets the node line/filled
+                contour count (default 20 when unset);
+                `Contour(labels=True, label_kw=...)` draws inline numeric
+                labels via `ax.clabel` on a line tricontour
+                (`location="node"`, `filled=False`) and stores the `Text`
+                artists on `self.contour_labels` -- a no-op for `tripcolor`
+                (face data) and `tricontourf`. Replaces the loose `levels`
+                / `labels` / `label_kw` keywords.
+            data_style: Named-preset / relief-shading group object
+                (`cleopatra.styling.params.DataStyle`), e.g.
+                `DataStyle(style="dem", hillshade=True)`. Replaces the
+                loose `style` / `hillshade` keywords.
+            **kwargs: Construction-time-style overrides for the non-grouped
+                `default_options` (`cmap`, `vmin`, `vmax`, `title_size`,
+                `figsize`, …). The loose `ticks_spacing` / `cbar_*` keys
+                still work but are deprecated -- pass `colorbar=ColorBar(...)`
+                instead. The colour-scale, discretisation/label, and
+                preset/relief options moved onto the `color=` / `contour=` /
+                `data_style=` group objects above; passing any of them as a
+                loose keyword now raises.
 
                 One relief option is honoured **only** for node data
                 (`location="node"`):
