@@ -17,6 +17,7 @@ from matplotlib.colors import to_rgba
 from matplotlib.text import Text
 
 from cleopatra.styling.colorbar import ColorBar
+from cleopatra.styling.params import Contour
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
 
@@ -479,7 +480,7 @@ class TestPlot:
     def test_node_plot_custom_levels(self, triangle_glyph):
         """Test that user can override levels via kwargs without TypeError."""
         data = np.array([0.0, 1.0, 2.0, 3.0])
-        fig, ax = triangle_glyph.plot(data, location="node", levels=5)
+        fig, ax = triangle_glyph.plot(data, location="node", contour=Contour(levels=5))
         assert fig is not None
 
     def test_colorbar_false(self, triangle_glyph):
@@ -554,7 +555,7 @@ class TestPlotLineContour:
             np.array([0.0, 1.0, 2.0, 3.0]),
             location="node",
             filled=False,
-            levels=4,
+            contour=Contour(levels=4),
         )
         assert fig is not None, "Should render line contours with explicit levels"
         plt.close(fig)
@@ -633,7 +634,7 @@ class TestContourLabels:
         """`labels=True` populates `contour_labels` with `Text` artists."""
         mg = self._grid_glyph()
         fig, ax = mg.plot(
-            self._smooth_field(mg), location="node", filled=False, labels=True
+            self._smooth_field(mg), location="node", filled=False, contour=Contour(labels=True)
         )
         assert isinstance(mg.contour_labels, list)
         assert len(mg.contour_labels) > 0
@@ -657,8 +658,7 @@ class TestContourLabels:
             self._smooth_field(mg),
             location="node",
             filled=False,
-            labels=True,
-            label_kw={"fmt": "%.3f", "fontsize": 6},
+            contour=Contour(labels=True, label_kw={"fmt": "%.3f", "fontsize": 6}),
         )
         assert len(mg.contour_labels) > 0
         # The custom fontsize on every label proves label_kw was forwarded.
@@ -671,7 +671,7 @@ class TestContourLabels:
         """`labels=True` is ignored for `filled=True` (no isolines to label)."""
         mg = self._grid_glyph()
         fig, ax = mg.plot(
-            self._smooth_field(mg), location="node", filled=True, labels=True
+            self._smooth_field(mg), location="node", filled=True, contour=Contour(labels=True)
         )
         assert mg.contour_labels is None
         plt.close(fig)
@@ -679,7 +679,7 @@ class TestContourLabels:
     def test_labels_on_face_data_is_noop(self, triangle_glyph):
         """`labels=True` is ignored for face data (`tripcolor`)."""
         fig, ax = triangle_glyph.plot(
-            np.array([1.0, 2.0]), location="face", labels=True
+            np.array([1.0, 2.0]), location="face", contour=Contour(labels=True)
         )
         assert triangle_glyph.contour_labels is None
         plt.close(fig)
@@ -688,7 +688,7 @@ class TestContourLabels:
         """Re-plotting with `labels=False` clears a prior render's labels."""
         mg = self._grid_glyph()
         data = self._smooth_field(mg)
-        mg.plot(data, location="node", filled=False, labels=True)
+        mg.plot(data, location="node", filled=False, contour=Contour(labels=True))
         assert mg.contour_labels is not None
         fig, ax = mg.plot(data, location="node", filled=False)
         assert mg.contour_labels is None
@@ -698,9 +698,9 @@ class TestContourLabels:
         """A subsequent filled render clears stale label artists."""
         mg = self._grid_glyph()
         data = self._smooth_field(mg)
-        mg.plot(data, location="node", filled=False, labels=True)
+        mg.plot(data, location="node", filled=False, contour=Contour(labels=True))
         assert mg.contour_labels is not None
-        fig, ax = mg.plot(data, location="node", filled=True, labels=True)
+        fig, ax = mg.plot(data, location="node", filled=True, contour=Contour(labels=True))
         assert mg.contour_labels is None
         plt.close(fig)
 
@@ -718,7 +718,7 @@ class TestContourLabels:
                 constant,
                 location="node",
                 filled=False,
-                labels=True,
+                contour=Contour(labels=True),
                 colorbar=False,
             )
         assert mg.contour_labels == []
@@ -732,8 +732,7 @@ class TestContourLabels:
             self._smooth_field(mg),
             location="node",
             filled=False,
-            labels=True,
-            label_kw={"fontsize": 14},
+            contour=Contour(labels=True, label_kw={"fontsize": 14}),
         )
         assert len(mg.contour_labels) > 0
         assert all(t.get_fontsize() == 14 for t in mg.contour_labels)
@@ -746,8 +745,7 @@ class TestContourLabels:
             self._smooth_field(mg),
             location="node",
             filled=False,
-            labels=True,
-            label_kw={"colors": "red"},
+            contour=Contour(labels=True, label_kw={"colors": "red"}),
         )
         assert len(mg.contour_labels) > 0
         red = to_rgba("red")
@@ -767,7 +765,7 @@ class TestContourLabels:
         """`animate()` clears labels left by a prior `plot(labels=True)`."""
         mg = self._grid_glyph()
         field = self._smooth_field(mg)
-        mg.plot(field, location="node", filled=False, labels=True)
+        mg.plot(field, location="node", filled=False, contour=Contour(labels=True))
         assert mg.contour_labels is not None
         # An animation draws no inline labels; the stale list must be cleared.
         anim = mg.animate([field, field * 2.0], time=["t0", "t1"], location="node")
@@ -1687,7 +1685,7 @@ class TestMeshGlyphHillshade:
         """
         nx, ny, faces, z = self._terrain_mesh()
         mg = MeshGlyph(nx, ny, faces)
-        mg.plot(z, location="node", filled=False, labels=True, hillshade=True)
+        mg.plot(z, location="node", filled=False, contour=Contour(labels=True), hillshade=True)
         assert mg.contour_labels is None, "labels are a no-op under hillshade"
         plt.close("all")
 

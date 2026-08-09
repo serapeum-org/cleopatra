@@ -22,6 +22,7 @@ from matplotlib.path import Path as MplPath
 
 import cleopatra.glyphs.stats.kde_glyph as kde_mod
 from cleopatra.glyphs.stats.kde_glyph import KDE_DEFAULT_OPTIONS, KDEGlyph
+from cleopatra.styling.params import Contour
 
 
 @pytest.fixture(autouse=True)
@@ -263,7 +264,8 @@ class TestKDEGlyphResolveLevels:
             levels=6 yields 6 edges from density.min to density.max.
         """
         x, y = cloud
-        glyph = KDEGlyph(x, y, gridsize=30, levels=6)
+        glyph = KDEGlyph(x, y, gridsize=30)
+        glyph.default_options["levels"] = 6
         _, _, density = glyph.evaluate()
         edges = glyph._resolve_levels(density)
         assert edges.size == 6, f"Expected 6 edges, got {edges.size}"
@@ -280,7 +282,8 @@ class TestKDEGlyphResolveLevels:
             An unsorted list of edges is returned sorted.
         """
         x, y = cloud
-        glyph = KDEGlyph(x, y, gridsize=30, levels=[0.3, 0.1, 0.2])
+        glyph = KDEGlyph(x, y, gridsize=30)
+        glyph.default_options["levels"] = [0.3, 0.1, 0.2]
         edges = glyph._resolve_levels(np.zeros((3, 3)))
         assert np.allclose(edges, [0.1, 0.2, 0.3]), (
             f"Edges should be sorted, got {edges}"
@@ -453,8 +456,8 @@ class TestKDEGlyphPlot:
             levels=5 yields five contour levels on the drawn set.
         """
         x, y = cloud
-        glyph = KDEGlyph(x, y, gridsize=40, levels=5)
-        _, _, cs = glyph.plot()
+        glyph = KDEGlyph(x, y, gridsize=40)
+        _, _, cs = glyph.plot(contour=Contour(levels=5))
         assert len(cs.levels) == 5, f"Expected 5 levels, got {len(cs.levels)}"
 
     def test_exposes_im_attribute(self, cloud):

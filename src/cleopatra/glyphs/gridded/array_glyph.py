@@ -75,6 +75,7 @@ from cleopatra.glyphs.base.glyph import (
 )
 from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_grid, shade_rgb
 from cleopatra.basemap.projection import apply_projection_style, projection_draws_frame
+from cleopatra.styling.params import Contour
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import (
@@ -1119,12 +1120,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         >>> arr = np.arange(25, dtype=float).reshape(5, 5)
         >>> glyph = ArrayGlyph(
         ...     arr,
-        ...     levels=5,
         ...     extend="both",
         ...     cbar_kwargs={"shrink": 0.6},
         ... )
-        >>> glyph.default_options["levels"]
-        5
         >>> glyph.default_options["extend"]
         'both'
         >>> glyph.default_options["cbar_kwargs"]
@@ -2884,6 +2882,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         ax: Axes | None = None,
         title: str | None = None,
         color: ColorScaling | None = None,
+        contour: Contour | None = None,
         full_bleed: bool | str = False,
         basemap: bool | dict | Basemap | Callable[[Any], None] | None = None,
         colorbar: bool | ColorBar | None = None,
@@ -3205,7 +3204,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                 >>> y, x = np.mgrid[-3:3:30j, -3:3:30j]
                 >>> z = np.exp(-(x**2 + y**2))
                 >>> glyph = ArrayGlyph(z, figsize=(6, 6))
-                >>> fig, ax = glyph.plot(kind="contour", labels=True, label_kw={"fmt": "%.2f"})
+                >>> fig, ax = glyph.plot(
+                ...     kind="contour", contour=Contour(labels=True, label_kw={"fmt": "%.2f"})
+                ... )
                 >>> bool(glyph.contour_labels) and all(
                 ...     isinstance(t, Text) for t in glyph.contour_labels
                 ... )
@@ -3414,8 +3415,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                 >>> import numpy as np
                 >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> arr = np.arange(25, dtype=float).reshape(5, 5)
-                >>> glyph = ArrayGlyph(arr, levels=5)
-                >>> fig, ax = glyph.plot(kind="contourf")  # doctest: +SKIP
+                >>> glyph = ArrayGlyph(arr)
+                >>> fig, ax = glyph.plot(
+                ...     kind="contourf", contour=Contour(levels=5)
+                ... )  # doctest: +SKIP
 
                 ```
             - Invalid kinds are rejected with a clear error:
@@ -3467,10 +3470,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                 >>> import numpy as np
                 >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> arr = np.arange(25, dtype=float).reshape(5, 5)
-                >>> glyph = ArrayGlyph(arr, levels=6, extend="both")
-                >>> fig, ax = glyph.plot()  # doctest: +SKIP
-                >>> glyph.default_options["levels"], glyph.default_options["extend"]
-                (6, 'both')
+                >>> glyph = ArrayGlyph(arr, extend="both")
+                >>> fig, ax = glyph.plot(contour=Contour(levels=6))  # doctest: +SKIP
+                >>> glyph.default_options["extend"]
+                'both'
 
                 ```
             - `cbar_kwargs` forwards extra keyword arguments to the
@@ -3499,7 +3502,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         points = _resolve_point_overlay(points, kwargs)  # type: ignore[arg-type]
         _warn_deprecated_cbar_kwargs(kwargs)
 
-        self._merge_group_params(color)
+        self._merge_group_params(color, contour)
         resolved_colorbar = self._apply_kwargs_and_colorbar(colorbar, kwargs)  # type: ignore[arg-type]
 
         self._validate_extend(self.default_options.get("extend"))

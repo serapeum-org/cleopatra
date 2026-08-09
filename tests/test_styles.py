@@ -12,6 +12,7 @@ from matplotlib.container import BarContainer
 from matplotlib.legend import Legend
 from matplotlib.patches import Patch
 
+from cleopatra.styling.params import Contour
 from cleopatra.styling.styles import (
     ColorScale,
     Styles,
@@ -201,8 +202,8 @@ class TestDiscreteContourfAcceptance:
 
         data = np.linspace(0, 10, 36).reshape(6, 6)
         edges = [0, 2, 4, 6, 8, 10]
-        glyph = ArrayGlyph(data, levels=edges)
-        glyph.plot(kind="contourf", cmap="viridis")
+        glyph = ArrayGlyph(data)
+        glyph.plot(kind="contourf", cmap="viridis", contour=Contour(levels=edges))
         ticks = list(glyph.cbar.get_ticks())
         assert ticks == [float(e) for e in edges], (
             f"Colorbar ticks should equal the level edges, got {ticks}"

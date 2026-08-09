@@ -57,6 +57,7 @@ from cleopatra.glyphs.base.glyph import (
 )
 from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_faces
 from cleopatra.basemap.projection import apply_projection_style_mesh, projection_draws_frame
+from cleopatra.styling.params import Contour
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import disjoint_legend
@@ -830,6 +831,7 @@ class MeshGlyph(GeoMixin, Glyph):
         title: str | None = None,
         filled: bool = True,
         color: ColorScaling | None = None,
+        contour: Contour | None = None,
         **kwargs: Any,
     ) -> tuple[plt.Figure, plt.Axes]:
         """Plot mesh data using matplotlib triangulation.
@@ -969,8 +971,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 ...     np.array([0.0, 1.0, 2.0, 3.0]),
                 ...     location="node",
                 ...     filled=False,
-                ...     labels=True,
-                ...     label_kw={"fmt": "%.1f"},
+                ...     contour=Contour(labels=True, label_kw={"fmt": "%.1f"}),
                 ... )
                 >>> isinstance(mg.contour_labels, list)
                 True
@@ -1007,7 +1008,7 @@ class MeshGlyph(GeoMixin, Glyph):
             else:
                 render_kwargs[key] = val
         self._merge_kwargs(option_kwargs)
-        self._merge_group_params(color)
+        self._merge_group_params(color, contour)
         _warn_deprecated_cbar_kwargs(kwargs)
         resolved_colorbar = (
             _resolve_colorbar(colorbar) if isinstance(colorbar, ColorBar) else {}

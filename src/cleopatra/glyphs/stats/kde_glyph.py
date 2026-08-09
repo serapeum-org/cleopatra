@@ -42,6 +42,7 @@ from matplotlib.patches import Patch
 from matplotlib.path import Path as MplPath
 
 from cleopatra.styling.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
+from cleopatra.styling.params import Contour
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.colors import (
     resolve_colormap,
@@ -387,6 +388,7 @@ class KDEGlyph(Glyph):
         hillshade: bool | dict | None = None,
         style: str | None | _Unset = _UNSET,
         color: ColorScaling | None = None,
+        contour: Contour | None = None,
     ):
         """Render the 2-D density as filled or line contours.
 
@@ -462,7 +464,7 @@ class KDEGlyph(Glyph):
 
                 ```
         """
-        self._merge_group_params(color)
+        self._merge_group_params(color, contour)
 
         if ax is not None:
             self.ax = ax

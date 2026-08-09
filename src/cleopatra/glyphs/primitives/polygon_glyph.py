@@ -45,6 +45,7 @@ from matplotlib.figure import Figure
 from matplotlib.legend import Legend
 
 from cleopatra.styling.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
+from cleopatra.styling.params import Contour
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.colors import resolve_colormap
 from cleopatra.basemap.geo import GeoMixin
@@ -162,6 +163,7 @@ class PolygonGlyph(GeoMixin, Glyph):
         add_colorbar: bool | None = None,
         colorbar: bool | ColorBar | None = None,
         color: ColorScaling | None = None,
+        contour: Contour | None = None,
     ) -> tuple[Figure, Axes, PolyCollection]:
         """Draw the polygons, filling by value when present.
 
@@ -227,7 +229,7 @@ class PolygonGlyph(GeoMixin, Glyph):
 
                 ```
         """
-        self._merge_group_params(color)
+        self._merge_group_params(color, contour)
 
         if ax is not None:
             self.ax = ax

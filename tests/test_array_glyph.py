@@ -13,6 +13,7 @@ from matplotlib.text import Text
 from PIL import Image
 
 import cleopatra.basemap.reference as refmod
+from cleopatra.styling.params import Contour
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.glyphs.gridded.array_glyph import (
@@ -1413,7 +1414,7 @@ class TestColourKwargs:
         """`levels=N` switches the linear norm to a `BoundaryNorm`."""
         arr = np.linspace(0.0, 1.0, 100).reshape(10, 10)
         glyph = ArrayGlyph(arr)
-        fig, ax = glyph.plot(kind="imshow", levels=5)
+        fig, ax = glyph.plot(kind="imshow", contour=Contour(levels=5))
         assert isinstance(fig, Figure)
         images = ax.get_images()
         assert images, "expected at least one AxesImage from imshow"
@@ -1428,7 +1429,7 @@ class TestColourKwargs:
         arr = np.linspace(0.0, 1.0, 100).reshape(10, 10)
         glyph = ArrayGlyph(arr)
         edges = [0.0, 0.25, 0.5, 0.75, 1.0]
-        fig, ax = glyph.plot(kind="imshow", levels=edges)
+        fig, ax = glyph.plot(kind="imshow", contour=Contour(levels=edges))
         assert isinstance(fig, Figure)
         norm = ax.get_images()[0].norm
         assert isinstance(norm, BoundaryNorm)
@@ -1439,7 +1440,7 @@ class TestColourKwargs:
         arr = np.linspace(0.0, 1.0, 100).reshape(10, 10)
         glyph = ArrayGlyph(arr)
         edges = [0.0, 0.5, 1.0]
-        fig, ax = glyph.plot(kind="imshow", levels=edges)
+        fig, ax = glyph.plot(kind="imshow", contour=Contour(levels=edges))
         # The cbar is attached to the image's mappable; resolve via
         # the glyph attribute we expose at create_color_bar time.
         cbar = glyph.cbar
@@ -1450,7 +1451,7 @@ class TestColourKwargs:
         arr = np.linspace(0.0, 1.0, 100).reshape(10, 10)
         glyph = ArrayGlyph(arr)
         edges = [0.0, 0.5, 1.0]
-        fig, ax = glyph.plot(kind="imshow", levels=edges, extend="min")
+        fig, ax = glyph.plot(kind="imshow", contour=Contour(levels=edges), extend="min")
         assert glyph.cbar.extend == "min"
 
     def test_cbar_kwargs_merge_overrides_defaults(self):
@@ -2484,7 +2485,7 @@ class TestContourLevelsAndNorm:
         fig, ax = glyph.plot(
             kind="contour",
             color=ColorScaling.power(),
-            levels=4,
+            contour=Contour(levels=4),
         )
         assert isinstance(fig, Figure)
         assert len(ax.collections) >= 1
@@ -2495,7 +2496,7 @@ class TestContourLevelsAndNorm:
         glyph = ArrayGlyph(arr)
         fig, ax = glyph.plot(
             kind="contourf",
-            levels=[0.0, 0.25, 0.5, 0.75, 1.0],
+            contour=Contour(levels=[0.0, 0.25, 0.5, 0.75, 1.0]),
         )
         assert isinstance(fig, Figure)
         assert len(ax.collections) >= 1
@@ -2531,7 +2532,7 @@ class TestContourLabels:
     def test_labels_true_draws_and_exposes_text(self):
         """`labels=True` populates `contour_labels` with `Text` artists."""
         glyph = ArrayGlyph(self._smooth_arr())
-        fig, ax = glyph.plot(kind="contour", labels=True)
+        fig, ax = glyph.plot(kind="contour", contour=Contour(labels=True))
         assert isinstance(fig, Figure)
         assert isinstance(glyph.contour_labels, list)
         assert len(glyph.contour_labels) > 0
@@ -2551,8 +2552,7 @@ class TestContourLabels:
         glyph = ArrayGlyph(self._smooth_arr())
         fig, ax = glyph.plot(
             kind="contour",
-            labels=True,
-            label_kw={"fmt": "%.3f", "fontsize": 6},
+            contour=Contour(labels=True, label_kw={"fmt": "%.3f", "fontsize": 6}),
         )
         assert len(glyph.contour_labels) > 0
         # The custom fontsize on every label proves label_kw was forwarded.
@@ -2563,22 +2563,22 @@ class TestContourLabels:
     def test_labels_true_on_contourf_is_noop(self):
         """`labels=True` is ignored for `contourf` (no isolines to label)."""
         glyph = ArrayGlyph(self._smooth_arr())
-        fig, ax = glyph.plot(kind="contourf", labels=True)
+        fig, ax = glyph.plot(kind="contourf", contour=Contour(labels=True))
         assert isinstance(fig, Figure)
         assert glyph.contour_labels is None
 
     def test_replot_without_labels_resets_contour_labels(self):
         """Re-plotting with `labels=False` clears a prior render's labels."""
         glyph = ArrayGlyph(self._smooth_arr())
-        glyph.plot(kind="contour", labels=True)
+        glyph.plot(kind="contour", contour=Contour(labels=True))
         assert glyph.contour_labels is not None
-        glyph.plot(kind="contour", labels=False)
+        glyph.plot(kind="contour", contour=Contour(labels=False))
         assert glyph.contour_labels is None
 
     def test_switching_kind_resets_contour_labels(self):
         """A subsequent non-contour render clears stale label artists."""
         glyph = ArrayGlyph(self._smooth_arr())
-        glyph.plot(kind="contour", labels=True)
+        glyph.plot(kind="contour", contour=Contour(labels=True))
         assert glyph.contour_labels is not None
         glyph.plot(kind="imshow")
         assert glyph.contour_labels is None
@@ -2590,7 +2590,7 @@ class TestContourLabels:
             # A constant field has no contour lines; the colorbar-skip
             # warning is expected and unrelated to labelling.
             warnings.simplefilter("ignore")
-            fig, ax = glyph.plot(kind="contour", labels=True)
+            fig, ax = glyph.plot(kind="contour", contour=Contour(labels=True))
         assert isinstance(fig, Figure)
         assert glyph.contour_labels == []
 
@@ -2598,7 +2598,7 @@ class TestContourLabels:
         """User `label_kw` keys win over cleopatra's clabel defaults."""
         glyph = ArrayGlyph(self._smooth_arr())
         # Default fontsize is 8; the user value must take precedence.
-        fig, ax = glyph.plot(kind="contour", labels=True, label_kw={"fontsize": 14})
+        fig, ax = glyph.plot(kind="contour", contour=Contour(labels=True, label_kw={"fontsize": 14}))
         assert len(glyph.contour_labels) > 0
         assert all(t.get_fontsize() == 14 for t in glyph.contour_labels)
 
@@ -2627,7 +2627,7 @@ class TestContourLabels:
             the dedicated `contourf` no-op test.
         """
         glyph = ArrayGlyph(self._smooth_arr())
-        fig, ax = glyph.plot(kind=kind, labels=True)
+        fig, ax = glyph.plot(kind=kind, contour=Contour(labels=True))
         assert isinstance(fig, Figure)
         assert glyph.contour_labels is None, (
             f"kind={kind!r} should not draw labels, got {glyph.contour_labels!r}"
@@ -2641,7 +2641,7 @@ class TestContourLabels:
             `colors="red"` entry must colour every label red.
         """
         glyph = ArrayGlyph(self._smooth_arr())
-        fig, ax = glyph.plot(kind="contour", labels=True, label_kw={"colors": "red"})
+        fig, ax = glyph.plot(kind="contour", contour=Contour(labels=True, label_kw={"colors": "red"}))
         assert len(glyph.contour_labels) > 0
         red = to_rgba("red")
         assert all(to_rgba(t.get_color()) == red for t in glyph.contour_labels), (
@@ -2660,7 +2660,7 @@ class TestContourLabels:
         x = np.linspace(-3.0, 3.0, nx)
         y = np.linspace(-3.0, 3.0, ny)
         glyph = ArrayGlyph(arr, coords=(x, y))
-        fig, ax = glyph.plot(kind="contour", labels=True)
+        fig, ax = glyph.plot(kind="contour", contour=Contour(labels=True))
         assert len(glyph.contour_labels) > 0
         assert all(isinstance(t, Text) for t in glyph.contour_labels)
 
@@ -2672,7 +2672,7 @@ class TestContourLabels:
             branch; labels must still be drawn and exposed.
         """
         glyph = ArrayGlyph(self._smooth_arr())
-        fig, ax = glyph.plot(kind="contour", labels=True, levels=5)
+        fig, ax = glyph.plot(kind="contour", contour=Contour(labels=True, levels=5))
         assert len(glyph.contour_labels) > 0
         assert all(isinstance(t, Text) for t in glyph.contour_labels)
 
@@ -2686,7 +2686,7 @@ class TestContourLabels:
         arr = self._smooth_arr().copy()
         arr[0, 0] = -999.0
         glyph = ArrayGlyph(arr, exclude_value=[-999.0])
-        fig, ax = glyph.plot(kind="contour", labels=True)
+        fig, ax = glyph.plot(kind="contour", contour=Contour(labels=True))
         assert len(glyph.contour_labels) > 0
         assert all(isinstance(t, Text) for t in glyph.contour_labels)
 

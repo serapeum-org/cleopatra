@@ -40,6 +40,7 @@ from cleopatra.styling.styles import (
 )
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
+from cleopatra.styling.params import Contour
 
 
 @pytest.fixture(autouse=True)
@@ -805,10 +806,9 @@ class TestSchemeConflictWarnings:
             np.zeros(5),
             values=np.arange(5.0),
             scheme="quantiles",
-            levels=4,
         )
         with pytest.warns(UserWarning, match="levels"):
-            glyph.plot()
+            glyph.plot(contour=Contour(levels=4))
 
     def test_no_warning_without_conflict(self):
         """A plain `scheme` (default color_scale, no levels) does not warn.

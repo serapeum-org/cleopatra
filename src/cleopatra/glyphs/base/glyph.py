@@ -54,6 +54,9 @@ _GROUPED_KWARG_HINTS: dict[str, str] = {
     "line_scale": "color=ColorScaling.sym_log(threshold=..., scale=...)",
     "bounds": "color=ColorScaling.boundary(bounds=...)",
     "midpoint": "color=ColorScaling.midpoint(at=...)",
+    "levels": "contour=Contour(levels=...)",
+    "labels": "contour=Contour(labels=True, label_kw=...)",
+    "label_kw": "contour=Contour(labels=True, label_kw=...)",
 }
 
 
@@ -553,14 +556,26 @@ class Glyph:
         reads; this helper merges each non-`None` object's keys in, so the
         internal storage stays a single flat dict.
 
+        Only keys the glyph actually supports (already present in its
+        `default_options`) are applied, so a single group object can be
+        passed to glyphs that support different subsets of it -- e.g. a
+        `Contour` carrying `levels` + `labels` applies both on `ArrayGlyph`
+        (which draws isoline labels) but only `levels` on `ScatterGlyph`
+        (which has no labels). A group's `to_options()` emits only the
+        fields the caller explicitly set, so unset fields never clobber a
+        glyph's own defaults.
+
         Args:
             *groups: Grouped parameter objects (or `None` for an omitted
                 group). Anything `None` is skipped; each other object must
                 expose a `to_options()` returning a dict.
         """
         for group in groups:
-            if group is not None:
-                self.default_options.update(group.to_options())
+            if group is None:
+                continue
+            for key, val in group.to_options().items():
+                if key in self.default_options:
+                    self.default_options[key] = val
 
     def create_figure_axes(self) -> tuple[Figure, Axes]:
         """Create a new figure and axes from default_options.

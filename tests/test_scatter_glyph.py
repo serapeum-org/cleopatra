@@ -13,6 +13,7 @@ from matplotlib.collections import PathCollection
 
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.glyphs.primitives.scatter_glyph import SCATTER_DEFAULT_OPTIONS, ScatterGlyph
+from cleopatra.styling.params import Contour
 
 
 @pytest.fixture(autouse=True)
@@ -189,8 +190,8 @@ class TestScatterGlyphPlot:
         Test scenario:
             levels=4 -> the scatter norm is a BoundaryNorm.
         """
-        glyph = ScatterGlyph(*xy, values=values, levels=4)
-        _, _, paths = glyph.plot()
+        glyph = ScatterGlyph(*xy, values=values)
+        _, _, paths = glyph.plot(contour=Contour(levels=4))
         assert isinstance(paths.norm, mcolors.BoundaryNorm), (
             f"levels should yield a BoundaryNorm, got {type(paths.norm)}"
         )

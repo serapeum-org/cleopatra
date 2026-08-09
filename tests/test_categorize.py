@@ -34,6 +34,7 @@ from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import categorize
 from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
+from cleopatra.styling.params import Contour
 
 
 @pytest.fixture(autouse=True)
@@ -389,10 +390,9 @@ class TestGlyphPrepareCategoricalMapping:
             np.zeros(4),
             values=np.array(["a", "b", "a", "b"]),
             scheme="categorical",
-            levels=3,
         )
         with pytest.warns(UserWarning, match="levels"):
-            glyph.plot()
+            glyph.plot(contour=Contour(levels=3))
 
 
 class TestPolygonGlyphCategorical:
