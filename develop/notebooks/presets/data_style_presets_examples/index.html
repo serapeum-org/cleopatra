@@ -3317,7 +3317,7 @@ under a name. You pick one by name and hand it a field:</p>
 (<code>CAMS_AOD_COLORMAPS</code>), and the three capabilities that let one preset work on real data:
 <strong>auto-ranging</strong>, <strong>diverging</strong> maps centred on a value, and the <strong>opacity policy</strong> (a plain
 opaque field vs a transparent-where-low overlay).</p>
-<p>The scientific-colormap packages (cmocean, CMasher, Crameri) ship <em>colormaps</em>, not presets, so
+<p>The scientific-colormap packages (cmocean, CMasher) ship <em>colormaps</em>, not presets, so
 these presets are authored in cleopatra from matplotlib's built-in colormaps -- no extra
 dependency. See the companion <a href="../haze_preset/haze_preset_examples.ipynb">haze preset notebook</a>
 for the stylised, multi-layer aerosol look.</p>
@@ -3380,10 +3380,23 @@ sorted(DATA_STYLES)  # the presets available by name</div>
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
 <div class="jp-OutputPrompt jp-OutputArea-prompt">Out[1]:</div>
 <div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
-<pre>['aerosol_optical_depth_550nm',
+<pre>['acton',
+ 'aerosol_optical_depth_550nm',
  'air_temperature',
  'anomaly',
+ 'bam',
+ 'bamO',
+ 'bamako',
  'bathymetry',
+ 'batlow',
+ 'batlowK',
+ 'batlowW',
+ 'berlin',
+ 'bilbao',
+ 'broc',
+ 'brocO',
+ 'buda',
+ 'bukavu',
  'cams_aod',
  'carbon_monoxide',
  'carbon_monoxide_500hpa',
@@ -3399,7 +3412,11 @@ sorted(DATA_STYLES)  # the presets available by name</div>
  'convective_inhibition',
  'convective_precipitation',
  'convective_rainfall_rate',
+ 'cork',
+ 'corkO',
  'current_speed',
+ 'davos',
+ 'devon',
  'dewpoint_temperature_2m',
  'dissolved_oxygen',
  'divergence',
@@ -3408,17 +3425,27 @@ sorted(DATA_STYLES)  # the presets available by name</div>
  'elevation_bukavu',
  'elevation_fes',
  'elevation_oleron',
+ 'fes',
  'flood_status',
  'flow_accumulation',
  'flow_direction_d8',
+ 'glasgow',
+ 'grayC',
+ 'hawaii',
  'haze',
  'high_cloud_cover',
  'hot_cold',
  'hurricane_probability',
+ 'imola',
  'k_index',
+ 'lajolla',
+ 'lapaz',
  'large_scale_precipitation',
  'large_scale_rainfall_rate',
+ 'lipari',
+ 'lisbon',
  'low_cloud_cover',
+ 'managua',
  'max_significant_wave_height',
  'max_significant_wave_height_index',
  'max_temperature_2m',
@@ -3437,7 +3464,11 @@ sorted(DATA_STYLES)  # the presets available by name</div>
  'methane_surface',
  'min_temperature_2m',
  'min_temperature_2m_index',
+ 'navia',
  'nitrogen_dioxide',
+ 'nuuk',
+ 'oleron',
+ 'oslo',
  'ozone',
  'particulate_matter_10um',
  'particulate_matter_2p5um',
@@ -3450,6 +3481,8 @@ sorted(DATA_STYLES)  # the presets available by name</div>
  'radar_reflectivity',
  'rainfall',
  'relative_vorticity',
+ 'roma',
+ 'romaO',
  'salinity',
  'sea_ice',
  'sea_level_anomaly',
@@ -3474,6 +3507,8 @@ sorted(DATA_STYLES)  # the presets available by name</div>
  'temperature_flame',
  'temperature_flame_amber',
  'temperature_steps',
+ 'tofino',
+ 'tokyo',
  'topography',
  'total_column_carbon_monoxide',
  'total_column_ozone',
@@ -3486,12 +3521,16 @@ sorted(DATA_STYLES)  # the presets available by name</div>
  'tropical_depression_probability',
  'tropical_storm_probability',
  'turbidity',
+ 'turku',
  'uv_biologically_effective_dose',
  'uv_biologically_effective_dose_clear_sky',
  'uv_index',
  'uv_index_clear_sky',
+ 'vanimo',
  'vegetation',
  'vertical_velocity',
+ 'vik',
+ 'vikO',
  'vorticity',
  'water_density',
  'wildfire_radiative_power',
@@ -4252,7 +4291,7 @@ for key in [
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>114 ECMWF weather presets loaded, e.g.:
+<pre>153 ECMWF weather presets loaded, e.g.:
   temperature_2m               -&gt; 2 m temperature [celsius]
   total_precipitation          -&gt; Total precipitation
   aerosol_optical_depth_550nm  -&gt; Total aerosol optical depth at 550 nm

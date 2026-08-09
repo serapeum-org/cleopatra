@@ -2650,7 +2650,7 @@
 <p>The <code>cleopatra.styling.perceptual</code> module builds good colormaps the way scientific palette
 libraries do — by working in a <strong>perceptually-uniform colour space</strong> rather than
 RGB — using only <code>numpy</code> and <code>matplotlib</code> (no extra dependency, and nothing
-imported from or copied out of cmocean / cmcrameri / colorcet).</p>
+imported from or copied out of cmocean / colorcet).</p>
 <p>matplotlib interpolates colormaps in RGB, which is perceptually non-uniform: equal
 data steps map to visually uneven steps, so hand-authored ramps band and have dead
 zones. The one primitive here — a closed-form <code>sRGB ↔ CIELAB</code> transform — fixes

@@ -3099,99 +3099,50 @@ A second animation shows the matching <strong>river discharge</strong> (<code>Qt
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">cleopatra</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span><span class="p">,</span> <span class="n">Basemap</span><span class="p">,</span> <span class="n">ColorBar</span><span class="p">,</span> <span class="n">FrameLabel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.base.animation</span><span class="w"> </span><span class="kn">import</span> <span class="n">embed_gif</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">ArrayGlyph</span><span class="p">,</span>
-    <span class="n">Basemap</span><span class="p">,</span>
-    <span class="n">ColorBar</span><span class="p">,</span>
-    <span class="n">FrameLabel</span><span class="p">,</span>
-<span class="p">)</span>
-
 <span class="nb">print</span><span class="p">(</span><span class="s2">"cleopatra"</span><span class="p">,</span> <span class="n">cleopatra</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
 
-<span class="n">DATA</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"../../../examples/data"</span><span class="p">)</span>  <span class="c1"># kernel CWD is the notebook's own folder</span>
-
+<span class="n">DATA</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"../../../examples/data"</span><span class="p">)</span>   <span class="c1"># kernel CWD is the notebook's own folder</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">load_stack</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Load an .npz holding a (time, rows, cols) stack, its extent, date labels, and CRS."""</span>
     <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">DATA</span> <span class="o">/</span> <span class="n">name</span><span class="p">,</span> <span class="n">allow_pickle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">crs</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="nb">int</span><span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="s2">"crs"</span><span class="p">])</span> <span class="k">if</span> <span class="s2">"crs"</span> <span class="ow">in</span> <span class="n">z</span><span class="o">.</span><span class="n">files</span> <span class="k">else</span> <span class="kc">None</span>
-    <span class="p">)</span>  <span class="c1"># EPSG code, or None for lon/lat data</span>
-    <span class="k">return</span> <span class="p">(</span>
-        <span class="n">z</span><span class="p">[</span><span class="s2">"stack"</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span>
-        <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">z</span><span class="p">[</span><span class="s2">"extent"</span><span class="p">]],</span>
-        <span class="nb">list</span><span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">]),</span>
-        <span class="n">crs</span><span class="p">,</span>
-    <span class="p">)</span>
-
+    <span class="n">crs</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="s2">"crs"</span><span class="p">])</span> <span class="k">if</span> <span class="s2">"crs"</span> <span class="ow">in</span> <span class="n">z</span><span class="o">.</span><span class="n">files</span> <span class="k">else</span> <span class="kc">None</span>      <span class="c1"># EPSG code, or None for lon/lat data</span>
+    <span class="k">return</span> <span class="n">z</span><span class="p">[</span><span class="s2">"stack"</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">z</span><span class="p">[</span><span class="s2">"extent"</span><span class="p">]],</span> <span class="nb">list</span><span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="s2">"labels"</span><span class="p">]),</span> <span class="n">crs</span>
 
 <span class="n">precip</span><span class="p">,</span> <span class="n">p_ext</span><span class="p">,</span> <span class="n">p_labels</span><span class="p">,</span> <span class="n">p_crs</span> <span class="o">=</span> <span class="n">load_stack</span><span class="p">(</span><span class="s2">"mswep_precip.npz"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span>
-    <span class="s2">"MSWEP precip stack:"</span><span class="p">,</span>
-    <span class="n">precip</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
-    <span class="s2">"|"</span><span class="p">,</span>
-    <span class="n">p_labels</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-    <span class="s2">"-&gt;"</span><span class="p">,</span>
-    <span class="n">p_labels</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
-    <span class="s2">"| max"</span><span class="p">,</span>
-    <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">precip</span><span class="p">)),</span> <span class="mi">1</span><span class="p">),</span>
-    <span class="s2">"mm/day"</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"MSWEP precip stack:"</span><span class="p">,</span> <span class="n">precip</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="s2">"|"</span><span class="p">,</span> <span class="n">p_labels</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">"-&gt;"</span><span class="p">,</span> <span class="n">p_labels</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+      <span class="s2">"| max"</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">precip</span><span class="p">)),</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">"mm/day"</span><span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styling.params</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataStyle</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-1">from pathlib import Path
-
+<div class="clipboard-copy-txt" id="cell-1">import numpy as np
 import matplotlib.pyplot as plt
-import numpy as np
+from pathlib import Path
 
 import cleopatra
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph, Basemap, ColorBar, FrameLabel
 from cleopatra.glyphs.base.animation import embed_gif
-from cleopatra.glyphs.gridded.array_glyph import (
-    ArrayGlyph,
-    Basemap,
-    ColorBar,
-    FrameLabel,
-)
-
 print("cleopatra", cleopatra.__version__)
 
-DATA = Path("../../../examples/data")  # kernel CWD is the notebook's own folder
-
+DATA = Path("../../../examples/data")   # kernel CWD is the notebook's own folder
 
 def load_stack(name):
     """Load an .npz holding a (time, rows, cols) stack, its extent, date labels, and CRS."""
     z = np.load(DATA / name, allow_pickle=True)
-    crs = (
-        int(z["crs"]) if "crs" in z.files else None
-    )  # EPSG code, or None for lon/lat data
-    return (
-        z["stack"].astype(float),
-        [float(v) for v in z["extent"]],
-        list(z["labels"]),
-        crs,
-    )
-
+    crs = int(z["crs"]) if "crs" in z.files else None      # EPSG code, or None for lon/lat data
+    return z["stack"].astype(float), [float(v) for v in z["extent"]], list(z["labels"]), crs
 
 precip, p_ext, p_labels, p_crs = load_stack("mswep_precip.npz")
-print(
-    "MSWEP precip stack:",
-    precip.shape,
-    "|",
-    p_labels[0],
-    "-&gt;",
-    p_labels[-1],
-    "| max",
-    round(float(np.nanmax(precip)), 1),
-    "mm/day",
-)
-from cleopatra.styling.params import DataStyle</div>
+print("MSWEP precip stack:", precip.shape, "|", p_labels[0], "-&gt;", p_labels[-1],
+      "| max", round(float(np.nanmax(precip)), 1), "mm/day")
+from cleopatra.styling.params import DataStyle
+</div>
 </div>
 </div>
 </div>
@@ -3243,42 +3194,22 @@ rain, so dry cells stay transparent and the basemap shows through.</p>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">pcap</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
-    <span class="n">np</span><span class="o">.</span><span class="n">nanpercentile</span><span class="p">(</span><span class="n">precip</span><span class="p">,</span> <span class="mi">97</span><span class="p">)</span>
-<span class="p">)</span>  <span class="c1"># scale to the top of ordinary rain (not the rare peak) so cells read clearly</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">pcap</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanpercentile</span><span class="p">(</span><span class="n">precip</span><span class="p">,</span> <span class="mi">97</span><span class="p">))</span>   <span class="c1"># scale to the top of ordinary rain (not the rare peak) so cells read clearly</span>
 <span class="n">day</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanargmax</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">nansum</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">precip</span><span class="p">]))</span>
 <span class="n">pw</span><span class="p">,</span> <span class="n">pe</span><span class="p">,</span> <span class="n">ps</span><span class="p">,</span> <span class="n">pn</span> <span class="o">=</span> <span class="n">p_ext</span>
 <span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">precip</span><span class="p">[</span><span class="n">day</span><span class="p">],</span> <span class="n">extent</span><span class="o">=</span><span class="p">[</span><span class="n">pw</span><span class="p">,</span> <span class="n">ps</span><span class="p">,</span> <span class="n">pe</span><span class="p">,</span> <span class="n">pn</span><span class="p">])</span>
-<span class="n">glyph</span><span class="o">.</span><span class="n">crs</span> <span class="o">=</span> <span class="n">p_crs</span>  <span class="c1"># EPSG:4647 -&gt; add_tiles reprojects the dark basemap to match</span>
-<span class="n">glyph</span><span class="o">.</span><span class="n">add_tiles</span><span class="p">(</span>
-    <span class="n">source</span><span class="o">=</span><span class="s2">"CartoDB.DarkMatter"</span>
-<span class="p">)</span>  <span class="c1"># detailed dark web-tile basemap under the precip</span>
-<span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-    <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-    <span class="n">vmax</span><span class="o">=</span><span class="n">pcap</span><span class="p">,</span>
-    <span class="n">full_bleed</span><span class="o">=</span><span class="s2">"black"</span><span class="p">,</span>
-    <span class="n">colorbar</span><span class="o">=</span><span class="n">ColorBar</span><span class="p">(</span><span class="n">label_color</span><span class="o">=</span><span class="s2">"white"</span><span class="p">),</span>
-    <span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">"total_precipitation"</span><span class="p">),</span>
-<span class="p">)</span>
+<span class="n">glyph</span><span class="o">.</span><span class="n">crs</span> <span class="o">=</span> <span class="n">p_crs</span>                    <span class="c1"># EPSG:4647 -&gt; add_tiles reprojects the dark basemap to match</span>
+<span class="n">glyph</span><span class="o">.</span><span class="n">add_tiles</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"CartoDB.DarkMatter"</span><span class="p">)</span>             <span class="c1"># detailed dark web-tile basemap under the precip</span>
+<span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">pcap</span><span class="p">,</span> <span class="n">full_bleed</span><span class="o">=</span><span class="s2">"black"</span><span class="p">,</span> <span class="n">colorbar</span><span class="o">=</span><span class="n">ColorBar</span><span class="p">(</span><span class="n">label_color</span><span class="o">=</span><span class="s2">"white"</span><span class="p">),</span> <span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">"total_precipitation"</span><span class="p">))</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-2">pcap = float(
-    np.nanpercentile(precip, 97)
-)  # scale to the top of ordinary rain (not the rare peak) so cells read clearly
+<div class="clipboard-copy-txt" id="cell-2">pcap = float(np.nanpercentile(precip, 97))   # scale to the top of ordinary rain (not the rare peak) so cells read clearly
 day = int(np.nanargmax([np.nansum(f) for f in precip]))
 pw, pe, ps, pn = p_ext
 glyph = ArrayGlyph(precip[day], extent=[pw, ps, pe, pn])
-glyph.crs = p_crs  # EPSG:4647 -&gt; add_tiles reprojects the dark basemap to match
-glyph.add_tiles(
-    source="CartoDB.DarkMatter"
-)  # detailed dark web-tile basemap under the precip
-glyph.plot(
-    vmin=0,
-    vmax=pcap,
-    full_bleed="black",
-    colorbar=ColorBar(label_color="white"),
-    data_style=DataStyle(style="total_precipitation"),
-)
+glyph.crs = p_crs                    # EPSG:4647 -&gt; add_tiles reprojects the dark basemap to match
+glyph.add_tiles(source="CartoDB.DarkMatter")             # detailed dark web-tile basemap under the precip
+glyph.plot(vmin=0, vmax=pcap, full_bleed="black", colorbar=ColorBar(label_color="white"), data_style=DataStyle(style="total_precipitation"))
 plt.show()</div>
 </div>
 </div>
@@ -3334,43 +3265,21 @@ wet cells build up opaque colour.</p>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">pw</span><span class="p">,</span> <span class="n">pe</span><span class="p">,</span> <span class="n">ps</span><span class="p">,</span> <span class="n">pn</span> <span class="o">=</span> <span class="n">p_ext</span>
 <span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">precip</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="p">[</span><span class="n">pw</span><span class="p">,</span> <span class="n">ps</span><span class="p">,</span> <span class="n">pe</span><span class="p">,</span> <span class="n">pn</span><span class="p">])</span>
-<span class="n">glyph</span><span class="o">.</span><span class="n">crs</span> <span class="o">=</span> <span class="n">p_crs</span>  <span class="c1"># EPSG:4647 -&gt; add_tiles reprojects the dark basemap to match</span>
-<span class="n">glyph</span><span class="o">.</span><span class="n">add_tiles</span><span class="p">(</span>
-    <span class="n">source</span><span class="o">=</span><span class="s2">"CartoDB.DarkMatter"</span>
-<span class="p">)</span>  <span class="c1"># dark web-tile basemap, drawn under the frames</span>
-<span class="n">anim</span> <span class="o">=</span> <span class="n">glyph</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span>
-    <span class="n">p_labels</span><span class="p">,</span>
-    <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-    <span class="n">vmax</span><span class="o">=</span><span class="n">pcap</span><span class="p">,</span>
-    <span class="n">frame_label</span><span class="o">=</span><span class="n">FrameLabel</span><span class="p">(</span>
-        <span class="n">location</span><span class="o">=</span><span class="p">[</span><span class="n">pw</span> <span class="o">+</span> <span class="mf">0.03</span> <span class="o">*</span> <span class="p">(</span><span class="n">pe</span> <span class="o">-</span> <span class="n">pw</span><span class="p">),</span> <span class="n">ps</span> <span class="o">+</span> <span class="mf">0.05</span> <span class="o">*</span> <span class="p">(</span><span class="n">pn</span> <span class="o">-</span> <span class="n">ps</span><span class="p">)],</span> <span class="n">color</span><span class="o">=</span><span class="s2">"white"</span>
-    <span class="p">),</span>
-    <span class="n">interval</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
-    <span class="n">full_bleed</span><span class="o">=</span><span class="s2">"black"</span><span class="p">,</span>
-    <span class="n">colorbar</span><span class="o">=</span><span class="n">ColorBar</span><span class="p">(</span><span class="n">label_color</span><span class="o">=</span><span class="s2">"white"</span><span class="p">),</span>
-    <span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">"total_precipitation"</span><span class="p">),</span>
-<span class="p">)</span>
+<span class="n">glyph</span><span class="o">.</span><span class="n">crs</span> <span class="o">=</span> <span class="n">p_crs</span>                    <span class="c1"># EPSG:4647 -&gt; add_tiles reprojects the dark basemap to match</span>
+<span class="n">glyph</span><span class="o">.</span><span class="n">add_tiles</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"CartoDB.DarkMatter"</span><span class="p">)</span>             <span class="c1"># dark web-tile basemap, drawn under the frames</span>
+<span class="n">anim</span> <span class="o">=</span> <span class="n">glyph</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span><span class="n">p_labels</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">pcap</span><span class="p">,</span> <span class="n">frame_label</span><span class="o">=</span><span class="n">FrameLabel</span><span class="p">(</span><span class="n">location</span><span class="o">=</span><span class="p">[</span><span class="n">pw</span> <span class="o">+</span> <span class="mf">0.03</span> <span class="o">*</span> <span class="p">(</span><span class="n">pe</span> <span class="o">-</span> <span class="n">pw</span><span class="p">),</span>
+                                                      <span class="n">ps</span> <span class="o">+</span> <span class="mf">0.05</span> <span class="o">*</span> <span class="p">(</span><span class="n">pn</span> <span class="o">-</span> <span class="n">ps</span><span class="p">)],</span>
+                                            <span class="n">color</span><span class="o">=</span><span class="s2">"white"</span><span class="p">),</span> <span class="n">interval</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">full_bleed</span><span class="o">=</span><span class="s2">"black"</span><span class="p">,</span> <span class="n">colorbar</span><span class="o">=</span><span class="n">ColorBar</span><span class="p">(</span><span class="n">label_color</span><span class="o">=</span><span class="s2">"white"</span><span class="p">),</span> <span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">"total_precipitation"</span><span class="p">))</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">glyph</span><span class="o">.</span><span class="n">fig</span><span class="p">)</span>
 <span class="n">embed_gif</span><span class="p">(</span><span class="n">anim</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-3">pw, pe, ps, pn = p_ext
 glyph = ArrayGlyph(precip, extent=[pw, ps, pe, pn])
-glyph.crs = p_crs  # EPSG:4647 -&gt; add_tiles reprojects the dark basemap to match
-glyph.add_tiles(
-    source="CartoDB.DarkMatter"
-)  # dark web-tile basemap, drawn under the frames
-anim = glyph.animate(
-    p_labels,
-    vmin=0,
-    vmax=pcap,
-    frame_label=FrameLabel(
-        location=[pw + 0.03 * (pe - pw), ps + 0.05 * (pn - ps)], color="white"
-    ),
-    interval=500,
-    full_bleed="black",
-    colorbar=ColorBar(label_color="white"),
-    data_style=DataStyle(style="total_precipitation"),
-)
+glyph.crs = p_crs                    # EPSG:4647 -&gt; add_tiles reprojects the dark basemap to match
+glyph.add_tiles(source="CartoDB.DarkMatter")             # dark web-tile basemap, drawn under the frames
+anim = glyph.animate(p_labels, vmin=0, vmax=pcap, frame_label=FrameLabel(location=[pw + 0.03 * (pe - pw),
+                                                      ps + 0.05 * (pn - ps)],
+                                            color="white"), interval=500, full_bleed="black", colorbar=ColorBar(label_color="white"), data_style=DataStyle(style="total_precipitation"))
 plt.close(glyph.fig)
 embed_gif(anim, fps=2)</div>
 </div>
@@ -3426,20 +3335,10 @@ wet channel network stands out over the terrain.</p>
 <span class="n">qmax</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">q</span><span class="p">))</span>
 <span class="n">qw</span><span class="p">,</span> <span class="n">qe</span><span class="p">,</span> <span class="n">qs</span><span class="p">,</span> <span class="n">qn</span> <span class="o">=</span> <span class="n">q_ext</span>
 <span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="p">[</span><span class="n">qw</span><span class="p">,</span> <span class="n">qs</span><span class="p">,</span> <span class="n">qe</span><span class="p">,</span> <span class="n">qn</span><span class="p">])</span>
-<span class="n">glyph</span><span class="o">.</span><span class="n">crs</span> <span class="o">=</span> <span class="n">q_crs</span>  <span class="c1"># EPSG:4647 -&gt; warp the relief to match the projected data</span>
-<span class="n">anim2</span> <span class="o">=</span> <span class="n">glyph</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span>
-    <span class="n">q_labels</span><span class="p">,</span>
-    <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-    <span class="n">vmax</span><span class="o">=</span><span class="n">qmax</span><span class="p">,</span>
-    <span class="n">frame_label</span><span class="o">=</span><span class="n">FrameLabel</span><span class="p">(</span>
-        <span class="n">location</span><span class="o">=</span><span class="p">[</span><span class="n">qw</span> <span class="o">+</span> <span class="mf">0.03</span> <span class="o">*</span> <span class="p">(</span><span class="n">qe</span> <span class="o">-</span> <span class="n">qw</span><span class="p">),</span> <span class="n">qs</span> <span class="o">+</span> <span class="mf">0.05</span> <span class="o">*</span> <span class="p">(</span><span class="n">qn</span> <span class="o">-</span> <span class="n">qs</span><span class="p">)],</span> <span class="n">color</span><span class="o">=</span><span class="s2">"white"</span>
-    <span class="p">),</span>
-    <span class="n">interval</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span>
-    <span class="n">full_bleed</span><span class="o">=</span><span class="s2">"black"</span><span class="p">,</span>
-    <span class="n">basemap</span><span class="o">=</span><span class="n">Basemap</span><span class="p">(</span><span class="n">relief</span><span class="o">=</span><span class="s2">"medium"</span><span class="p">),</span>
-    <span class="n">colorbar</span><span class="o">=</span><span class="n">ColorBar</span><span class="p">(</span><span class="n">label_color</span><span class="o">=</span><span class="s2">"black"</span><span class="p">),</span>
-    <span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">"flow_accumulation"</span><span class="p">),</span>
-<span class="p">)</span>
+<span class="n">glyph</span><span class="o">.</span><span class="n">crs</span> <span class="o">=</span> <span class="n">q_crs</span>                    <span class="c1"># EPSG:4647 -&gt; warp the relief to match the projected data</span>
+<span class="n">anim2</span> <span class="o">=</span> <span class="n">glyph</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span><span class="n">q_labels</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">qmax</span><span class="p">,</span> <span class="n">frame_label</span><span class="o">=</span><span class="n">FrameLabel</span><span class="p">(</span><span class="n">location</span><span class="o">=</span><span class="p">[</span><span class="n">qw</span> <span class="o">+</span> <span class="mf">0.03</span> <span class="o">*</span> <span class="p">(</span><span class="n">qe</span> <span class="o">-</span> <span class="n">qw</span><span class="p">),</span>
+                                                       <span class="n">qs</span> <span class="o">+</span> <span class="mf">0.05</span> <span class="o">*</span> <span class="p">(</span><span class="n">qn</span> <span class="o">-</span> <span class="n">qs</span><span class="p">)],</span>
+                                             <span class="n">color</span><span class="o">=</span><span class="s2">"white"</span><span class="p">),</span> <span class="n">interval</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">full_bleed</span><span class="o">=</span><span class="s2">"black"</span><span class="p">,</span> <span class="n">basemap</span><span class="o">=</span><span class="n">Basemap</span><span class="p">(</span><span class="n">relief</span><span class="o">=</span><span class="s2">"medium"</span><span class="p">),</span> <span class="n">colorbar</span><span class="o">=</span><span class="n">ColorBar</span><span class="p">(</span><span class="n">label_color</span><span class="o">=</span><span class="s2">"black"</span><span class="p">),</span> <span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">"flow_accumulation"</span><span class="p">))</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">glyph</span><span class="o">.</span><span class="n">fig</span><span class="p">)</span>
 <span class="n">embed_gif</span><span class="p">(</span><span class="n">anim2</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
 </pre></div>
@@ -3447,20 +3346,10 @@ wet channel network stands out over the terrain.</p>
 qmax = float(np.nanmax(q))
 qw, qe, qs, qn = q_ext
 glyph = ArrayGlyph(q, extent=[qw, qs, qe, qn])
-glyph.crs = q_crs  # EPSG:4647 -&gt; warp the relief to match the projected data
-anim2 = glyph.animate(
-    q_labels,
-    vmin=0,
-    vmax=qmax,
-    frame_label=FrameLabel(
-        location=[qw + 0.03 * (qe - qw), qs + 0.05 * (qn - qs)], color="white"
-    ),
-    interval=400,
-    full_bleed="black",
-    basemap=Basemap(relief="medium"),
-    colorbar=ColorBar(label_color="black"),
-    data_style=DataStyle(style="flow_accumulation"),
-)
+glyph.crs = q_crs                    # EPSG:4647 -&gt; warp the relief to match the projected data
+anim2 = glyph.animate(q_labels, vmin=0, vmax=qmax, frame_label=FrameLabel(location=[qw + 0.03 * (qe - qw),
+                                                       qs + 0.05 * (qn - qs)],
+                                             color="white"), interval=400, full_bleed="black", basemap=Basemap(relief="medium"), colorbar=ColorBar(label_color="black"), data_style=DataStyle(style="flow_accumulation"))
 plt.close(glyph.fig)
 embed_gif(anim2, fps=3)</div>
 </div>
