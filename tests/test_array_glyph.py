@@ -275,6 +275,21 @@ class TestAnimate:
         anim_obj = array.animate(animate_time_list, title="Flow Accumulation")
         assert isinstance(anim_obj, FuncAnimation)
 
+    def test_animate_contour_levels_discretises_the_norm(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """`animate(contour=Contour(levels=N))` discretises the colour scale.
+
+        Test scenario:
+            Regression for the grouped-param API: animations must stay
+            discretisable now that construction-time `levels=` is rejected.
+        """
+        array = ArrayGlyph(coello_data)
+        array.animate(animate_time_list, contour=Contour(levels=5))
+        assert isinstance(array.im.norm, BoundaryNorm), (
+            f"contour levels should yield a BoundaryNorm, got {type(array.im.norm)}"
+        )
+
     def test_save_animation_accepts_pathlib_path(
         self,
         coello_data: np.ndarray,

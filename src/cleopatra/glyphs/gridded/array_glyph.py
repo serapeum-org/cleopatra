@@ -3953,6 +3953,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         frame_label: FrameLabel | None = None,
         *,
         color: ColorScaling | None = None,
+        contour: Contour | None = None,
         cells: CellValues | None = None,
         data_style: DataStyle | None = None,
         data_getter: Callable[[int], np.ndarray] | None = None,
@@ -4019,6 +4020,11 @@ class ArrayGlyph(GeoMixin, Glyph):
                 `ColorScaling.power(gamma=0.7)`. Replaces the loose
                 `color_scale` / `gamma` / `line_threshold` / `line_scale` /
                 `bounds` / `midpoint` keywords.
+            contour: Discretisation group object
+                (`cleopatra.styling.params.Contour`), e.g.
+                `Contour(levels=5)`, to bin the colour scale into a
+                `BoundaryNorm` for the animation (an animation has no
+                `contour`/`contourf` kind, so only `levels` applies here).
             cells: Per-cell value-text group object
                 (`cleopatra.styling.params.CellValues`), e.g.
                 `CellValues(show=True, size=8)`. Replaces the loose
@@ -4330,7 +4336,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             assert frame_location is not None
             label_location = frame_location
 
-        self._merge_group_params(color, cells, data_style)
+        self._merge_group_params(color, contour, cells, data_style)
         resolved_colorbar = self._apply_kwargs_and_colorbar(colorbar, kwargs)  # type: ignore[arg-type]
 
         if "ticks_spacing" not in resolved_colorbar:
