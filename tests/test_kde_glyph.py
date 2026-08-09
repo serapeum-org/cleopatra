@@ -699,8 +699,9 @@ class TestKDEGlyphApplyStyle:
         """plot(style='bad') raises and does not brick later plain plot()."""
         x, y = self._cloud()
         g = KDEGlyph(x, y, gridsize=40)
+        bad = DataStyle(style="not_a_style")
         with pytest.raises(ValueError, match="unknown data style"):
-            g.plot(data_style=DataStyle(style="not_a_style"))
+            g.plot(data_style=bad)
         assert g.style is None
         g.plot()  # not bricked
         plt.close("all")
@@ -715,11 +716,10 @@ class TestKDEGlyphApplyStyle:
         """
         x, y = self._cloud()
         g = KDEGlyph(x, y, gridsize=40)
+        power = ColorScaling.power(gamma=0.7)
+        bad = DataStyle(style="not_a_style")
         with pytest.raises(ValueError, match="unknown data style"):
-            g.plot(
-                color=ColorScaling.power(gamma=0.7),
-                data_style=DataStyle(style="not_a_style"),
-            )
+            g.plot(color=power, data_style=bad)
         assert g.default_options["color_scale"] == "linear", (
             "a failed data_style must roll back the co-passed color scale"
         )

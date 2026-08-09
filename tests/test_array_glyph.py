@@ -5901,8 +5901,9 @@ class TestArrayGlyphApplyStyle:
     def test_failed_plot_style_does_not_poison(self):
         """plot(style='bad') raises and clears the style so later plain plot() works."""
         g = ArrayGlyph(self._dem())
+        bad = DataStyle(style="not_a_style")
         with pytest.raises(ValueError, match="unknown data style"):
-            g.plot(data_style=DataStyle(style="not_a_style"))
+            g.plot(data_style=bad)
         assert g.style is None
         g.plot()  # not bricked
         plt.close("all")

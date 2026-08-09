@@ -707,8 +707,9 @@ class TestCategoricalSchemeGlyphScope:
         """
         paths = [np.array([[0.0, 0.0], [1.0, 1.0]]), np.array([[1.0, 0.0], [2.0, 1.0]])]
         glyph = FlowGlyph(paths, values=np.array([1.0, 5.0]))
+        categorical = Classify(scheme="categorical")
         with pytest.raises(ValueError, match="does not support scheme='categorical'"):
-            glyph.plot(classify=Classify(scheme="categorical"))
+            glyph.plot(classify=categorical)
 
     def test_vector_glyph_rejects_categorical(self):
         """`VectorGlyph` rejects `scheme="categorical"` with a clear error.
@@ -721,5 +722,6 @@ class TestCategoricalSchemeGlyphScope:
         u = rng.uniform(0.1, 5.0, size=x.shape)
         v = rng.uniform(0.1, 5.0, size=x.shape)
         glyph = VectorGlyph(x, y, u, v)
+        categorical = Classify(scheme="categorical")
         with pytest.raises(ValueError, match="does not support scheme='categorical'"):
-            glyph.plot(classify=Classify(scheme="categorical"), kind="quiver")
+            glyph.plot(classify=categorical, kind="quiver")
