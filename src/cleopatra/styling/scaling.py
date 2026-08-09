@@ -377,7 +377,11 @@ class ColorScaling:
         vmax = ticks[-1]
         bounds_from_levels = levels_to_bounds(levels, vmin, vmax)
 
-        builder = self._NORM_BUILDERS[self.kind]
+        builder = self._NORM_BUILDERS.get(self.kind)
+        if builder is None:  # pragma: no cover - guards a future unmapped kind
+            raise ValueError(
+                f"No norm branch implemented for color_scale={self.kind!r}"
+            )
         norm, cbar_kw = builder(self, ticks, vmin, vmax, bounds_from_levels)
 
         if extend is not None:
