@@ -3095,6 +3095,7 @@ not stand-in data).</p>
 <span class="n">extent</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">z</span><span class="p">[</span><span class="s2">"extent"</span><span class="p">]]</span>
 <span class="n">depth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">elev</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">elev</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>       <span class="c1"># ocean-only depths</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"ETOPO5:"</span><span class="p">,</span> <span class="n">elev</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="s2">"elevation"</span><span class="p">,</span> <span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">elev</span><span class="p">)),</span> <span class="nb">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">elev</span><span class="p">))),</span> <span class="s2">"m"</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styling.params</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataStyle</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-1">import numpy as np
 import matplotlib as mpl
@@ -3111,7 +3112,9 @@ elev = z["elevation"].astype(float)[::-1]      # fixture is lat-ascending -&gt; 
 # metres: &lt;0 ocean depth, &gt;0 land
 extent = [float(v) for v in z["extent"]]
 depth = np.where(elev &lt; 0, elev, np.nan)       # ocean-only depths
-print("ETOPO5:", elev.shape, "elevation", (round(np.nanmin(elev)), round(np.nanmax(elev))), "m")</div>
+print("ETOPO5:", elev.shape, "elevation", (round(np.nanmin(elev)), round(np.nanmax(elev))), "m")
+from cleopatra.styling.params import DataStyle
+</div>
 </div>
 </div>
 </div>
@@ -3165,9 +3168,9 @@ field.</p>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">13</span><span class="p">,</span> <span class="mf">5.5</span><span class="p">))</span>
 <span class="n">gext</span> <span class="o">=</span> <span class="p">[</span><span class="n">extent</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">extent</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">extent</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">extent</span><span class="p">[</span><span class="mi">3</span><span class="p">]]</span>   <span class="c1"># [xmin, ymin, xmax, ymax]</span>
 <span class="n">topo</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">elev</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">gext</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-<span class="n">topo</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">"topography"</span><span class="p">,</span> <span class="n">add_colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"topography — land &amp; sea (real ETOPO5)"</span><span class="p">)</span>
+<span class="n">topo</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">add_colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"topography — land &amp; sea (real ETOPO5)"</span><span class="p">,</span> <span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">"topography"</span><span class="p">))</span>
 <span class="n">depth_glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">depth</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">gext</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-<span class="n">depth_glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">"bathymetry"</span><span class="p">,</span> <span class="n">add_colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"bathymetry — ocean depth (real ETOPO5)"</span><span class="p">)</span>
+<span class="n">depth_glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">add_colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"bathymetry — ocean depth (real ETOPO5)"</span><span class="p">,</span> <span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">"bathymetry"</span><span class="p">))</span>
 <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">:</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
@@ -3177,9 +3180,9 @@ field.</p>
 <div class="clipboard-copy-txt" id="cell-2">fig, axes = plt.subplots(1, 2, figsize=(13, 5.5))
 gext = [extent[0], extent[2], extent[1], extent[3]]   # [xmin, ymin, xmax, ymax]
 topo = ArrayGlyph(elev, extent=gext, ax=axes[0])
-topo.plot(style="topography", add_colorbar=False, title="topography — land &amp; sea (real ETOPO5)")
+topo.plot(add_colorbar=False, title="topography — land &amp; sea (real ETOPO5)", data_style=DataStyle(style="topography"))
 depth_glyph = ArrayGlyph(depth, extent=gext, ax=axes[1])
-depth_glyph.plot(style="bathymetry", add_colorbar=False, title="bathymetry — ocean depth (real ETOPO5)")
+depth_glyph.plot(add_colorbar=False, title="bathymetry — ocean depth (real ETOPO5)", data_style=DataStyle(style="bathymetry"))
 for ax in axes:
     ax.set_xticks([])
     ax.set_yticks([])

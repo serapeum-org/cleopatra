@@ -3501,6 +3501,8 @@ The ArrayGlyph class provides functionality for visualizing arrays and creating 
 
 <span class="c1"># Set the random seed for reproducibility</span>
 <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styling.scaling</span><span class="w"> </span><span class="kn">import</span> <span class="n">ColorScaling</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styling.params</span><span class="w"> </span><span class="kn">import</span> <span class="n">CellValues</span><span class="p">,</span> <span class="n">DataStyle</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-1">import os
 
@@ -3514,7 +3516,10 @@ from cleopatra.glyphs.base.animation import embed_gif
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph, ColorBar, PointOverlay
 
 # Set the random seed for reproducibility
-np.random.seed(42)</div>
+np.random.seed(42)
+from cleopatra.styling.scaling import ColorScaling
+from cleopatra.styling.params import CellValues, DataStyle
+</div>
 </div>
 </div>
 </div>
@@ -3901,13 +3906,9 @@ fig, ax = array_glyph_custom.plot(
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">fig1</span><span class="p">,</span> <span class="n">ax1</span> <span class="o">=</span> <span class="n">array_glyph_scales</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-    <span class="n">color_scale</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"RdBu_r"</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Linear Scale"</span>
-<span class="p">)</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">fig1</span><span class="p">,</span> <span class="n">ax1</span> <span class="o">=</span> <span class="n">array_glyph_scales</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">cmap</span><span class="o">=</span><span class="s2">"RdBu_r"</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Linear Scale"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">ColorScaling</span><span class="o">.</span><span class="n">linear</span><span class="p">())</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-9">fig1, ax1 = array_glyph_scales.plot(
-    color_scale="linear", cmap="RdBu_r", title="Linear Scale"
-)</div>
+<div class="clipboard-copy-txt" id="cell-9">fig1, ax1 = array_glyph_scales.plot(cmap="RdBu_r", title="Linear Scale", color=ColorScaling.linear())</div>
 </div>
 </div>
 </div>
@@ -3956,14 +3957,10 @@ fig, ax = array_glyph_custom.plot(
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">array_glyph_scales</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">mixed_array</span><span class="p">)</span>
-<span class="n">fig2</span><span class="p">,</span> <span class="n">ax2</span> <span class="o">=</span> <span class="n">array_glyph_scales</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-    <span class="n">color_scale</span><span class="o">=</span><span class="s2">"power"</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"RdBu_r"</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Power Scale"</span>
-<span class="p">)</span>
+<span class="n">fig2</span><span class="p">,</span> <span class="n">ax2</span> <span class="o">=</span> <span class="n">array_glyph_scales</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">cmap</span><span class="o">=</span><span class="s2">"RdBu_r"</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Power Scale"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">ColorScaling</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">gamma</span><span class="o">=</span><span class="mf">0.5</span><span class="p">))</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-10">array_glyph_scales = ArrayGlyph(mixed_array)
-fig2, ax2 = array_glyph_scales.plot(
-    color_scale="power", cmap="RdBu_r", title="Power Scale"
-)</div>
+fig2, ax2 = array_glyph_scales.plot(cmap="RdBu_r", title="Power Scale", color=ColorScaling.power(gamma=0.5))</div>
 </div>
 </div>
 </div>
@@ -4015,17 +4012,13 @@ fig2, ax2 = array_glyph_scales.plot(
 <span class="n">positive_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">mixed_array</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.1</span>  <span class="c1"># Make all values positive and non-zero</span>
 <span class="n">array_glyph_positive</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">positive_array</span><span class="p">)</span>
 
-<span class="n">fig3</span><span class="p">,</span> <span class="n">ax3</span> <span class="o">=</span> <span class="n">array_glyph_positive</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-    <span class="n">color_scale</span><span class="o">=</span><span class="s2">"sym-lognorm"</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Log Scale"</span>
-<span class="p">)</span>
+<span class="n">fig3</span><span class="p">,</span> <span class="n">ax3</span> <span class="o">=</span> <span class="n">array_glyph_positive</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Log Scale"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">ColorScaling</span><span class="o">.</span><span class="n">sym_log</span><span class="p">())</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-11"># For log scale, we need positive values
 positive_array = np.abs(mixed_array) + 0.1  # Make all values positive and non-zero
 array_glyph_positive = ArrayGlyph(positive_array)
 
-fig3, ax3 = array_glyph_positive.plot(
-    color_scale="sym-lognorm", cmap="viridis", title="Log Scale"
-)</div>
+fig3, ax3 = array_glyph_positive.plot(cmap="viridis", title="Log Scale", color=ColorScaling.sym_log())</div>
 </div>
 </div>
 </div>
@@ -4074,20 +4067,12 @@ fig3, ax3 = array_glyph_positive.plot(
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">array_glyph_scales</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">mixed_array</span><span class="p">)</span>
-<span class="n">fig4</span><span class="p">,</span> <span class="n">ax4</span> <span class="o">=</span> <span class="n">array_glyph_scales</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-    <span class="n">color_scale</span><span class="o">=</span><span class="s2">"midpoint"</span><span class="p">,</span>
-    <span class="n">midpoint</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>  <span class="c1"># Set the midpoint at 0</span>
-    <span class="n">cmap</span><span class="o">=</span><span class="s2">"RdBu_r"</span><span class="p">,</span>
-    <span class="n">title</span><span class="o">=</span><span class="s2">"Midpoint Scale"</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="n">fig4</span><span class="p">,</span> <span class="n">ax4</span> <span class="o">=</span> <span class="n">array_glyph_scales</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="c1"># Set the midpoint at 0</span>
+    <span class="n">cmap</span><span class="o">=</span><span class="s2">"RdBu_r"</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Midpoint Scale"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">ColorScaling</span><span class="o">.</span><span class="n">midpoint</span><span class="p">(</span><span class="n">at</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-12">array_glyph_scales = ArrayGlyph(mixed_array)
-fig4, ax4 = array_glyph_scales.plot(
-    color_scale="midpoint",
-    midpoint=0,  # Set the midpoint at 0
-    cmap="RdBu_r",
-    title="Midpoint Scale",
-)</div>
+fig4, ax4 = array_glyph_scales.plot(# Set the midpoint at 0
+    cmap="RdBu_r", title="Midpoint Scale", color=ColorScaling.midpoint(at=0))</div>
 </div>
 </div>
 </div>
@@ -4184,24 +4169,18 @@ small_array = np.random.randint(0, 100, (5, 5))</div>
 
 <span class="c1"># Plot with cell values displayed</span>
 <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">array_glyph_values</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-    <span class="n">display_cell_value</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Display cell values</span>
-    <span class="n">num_size</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>  <span class="c1"># Set text font size</span>
-    <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span>  <span class="c1"># Use the viridis colormap</span>
-    <span class="n">title</span><span class="o">=</span><span class="s2">"Array with Cell Values"</span><span class="p">,</span>
-    <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
-<span class="p">)</span>
+    <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span> <span class="c1"># Use the viridis colormap</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">"Array with Cell Values"</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
+    <span class="n">cells</span><span class="o">=</span><span class="n">CellValues</span><span class="p">(</span><span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">12</span><span class="p">))</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-14"># Initialize the ArrayGlyph with the array
 array_glyph_values = ArrayGlyph(small_array)
 
 # Plot with cell values displayed
 fig, ax = array_glyph_values.plot(
-    display_cell_value=True,  # Display cell values
-    num_size=12,  # Set text font size
-    cmap="viridis",  # Use the viridis colormap
-    title="Array with Cell Values",
-    figsize=(8, 6),
-)</div>
+    cmap="viridis", # Use the viridis colormap
+    title="Array with Cell Values", figsize=(8, 6),
+    cells=CellValues(show=True, size=12))</div>
 </div>
 </div>
 </div>
@@ -5002,11 +4981,11 @@ colorbar still reflects the elevation scale.</p>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">dem</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'terrain'</span><span class="p">,</span> <span class="n">hillshade</span><span class="o">=</span><span class="p">{</span><span class="s1">'vert_exag'</span><span class="p">:</span> <span class="mi">8</span><span class="p">})</span>
-<span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'+ hillshade'</span><span class="p">)</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">dem</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'terrain'</span><span class="p">)</span>
+<span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">hillshade</span><span class="o">=</span><span class="p">{</span><span class="s1">'vert_exag'</span><span class="p">:</span> <span class="mi">8</span><span class="p">}),</span> <span class="n">title</span><span class="o">=</span><span class="s1">'+ hillshade'</span><span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-25">glyph = ArrayGlyph(dem, cmap='terrain', hillshade={'vert_exag': 8})
-glyph.plot(title='+ hillshade')</div>
+<div class="clipboard-copy-txt" id="cell-25">glyph = ArrayGlyph(dem, cmap='terrain')
+glyph.plot(data_style=DataStyle(hillshade={'vert_exag': 8}), title='+ hillshade')</div>
 </div>
 </div>
 </div>
@@ -5076,16 +5055,16 @@ surface). It composes with the <code>topography</code> data-style preset and the
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="c1"># A DEM styled by the 'topography' preset, and the same DEM relief-shaded (style + hillshade compose)</span>
-<span class="n">topo</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">dem</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">'topography'</span><span class="p">)</span>
-<span class="n">topo</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"style='topography'"</span><span class="p">)</span>
-<span class="n">topo_shaded</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">dem</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">'topography'</span><span class="p">,</span> <span class="n">hillshade</span><span class="o">=</span><span class="p">{</span><span class="s1">'vert_exag'</span><span class="p">:</span> <span class="mi">8</span><span class="p">})</span>
-<span class="n">topo_shaded</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"style='topography' + hillshade"</span><span class="p">)</span>
+<span class="n">topo</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">dem</span><span class="p">)</span>
+<span class="n">topo</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s1">'topography'</span><span class="p">),</span> <span class="n">title</span><span class="o">=</span><span class="s2">"style='topography'"</span><span class="p">)</span>
+<span class="n">topo_shaded</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">dem</span><span class="p">)</span>
+<span class="n">topo_shaded</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s1">'topography'</span><span class="p">,</span> <span class="n">hillshade</span><span class="o">=</span><span class="p">{</span><span class="s1">'vert_exag'</span><span class="p">:</span> <span class="mi">8</span><span class="p">}),</span> <span class="n">title</span><span class="o">=</span><span class="s2">"style='topography' + hillshade"</span><span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-26"># A DEM styled by the 'topography' preset, and the same DEM relief-shaded (style + hillshade compose)
-topo = ArrayGlyph(dem, style='topography')
-topo.plot(title="style='topography'")
-topo_shaded = ArrayGlyph(dem, style='topography', hillshade={'vert_exag': 8})
-topo_shaded.plot(title="style='topography' + hillshade")</div>
+topo = ArrayGlyph(dem)
+topo.plot(data_style=DataStyle(style='topography'), title="style='topography'")
+topo_shaded = ArrayGlyph(dem)
+topo_shaded.plot(data_style=DataStyle(style='topography', hillshade={'vert_exag': 8}), title="style='topography' + hillshade")</div>
 </div>
 </div>
 </div>
@@ -5155,10 +5134,10 @@ topo_shaded.plot(title="style='topography' + hillshade")</div>
     <span class="o">.</span><span class="n">choice</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">],</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">40</span><span class="p">))</span>
     <span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
 <span class="p">)</span>
-<span class="n">accum_glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">accum</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">'flow_accumulation'</span><span class="p">)</span>
-<span class="n">accum_glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"style='flow_accumulation'"</span><span class="p">)</span>
-<span class="n">d8_glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">d8</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">'flow_direction_d8'</span><span class="p">)</span>
-<span class="n">d8_glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"style='flow_direction_d8'"</span><span class="p">)</span>
+<span class="n">accum_glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">accum</span><span class="p">)</span>
+<span class="n">accum_glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s1">'flow_accumulation'</span><span class="p">),</span> <span class="n">title</span><span class="o">=</span><span class="s2">"style='flow_accumulation'"</span><span class="p">)</span>
+<span class="n">d8_glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">d8</span><span class="p">)</span>
+<span class="n">d8_glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s1">'flow_direction_d8'</span><span class="p">),</span> <span class="n">title</span><span class="o">=</span><span class="s2">"style='flow_direction_d8'"</span><span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-27">import numpy as np
 
@@ -5169,10 +5148,10 @@ d8 = (
     .choice([1, 2, 4, 8, 16, 32, 64, 128], size=(40, 40))
     .astype(float)
 )
-accum_glyph = ArrayGlyph(accum, style='flow_accumulation')
-accum_glyph.plot(title="style='flow_accumulation'")
-d8_glyph = ArrayGlyph(d8, style='flow_direction_d8')
-d8_glyph.plot(title="style='flow_direction_d8'")</div>
+accum_glyph = ArrayGlyph(accum)
+accum_glyph.plot(data_style=DataStyle(style='flow_accumulation'), title="style='flow_accumulation'")
+d8_glyph = ArrayGlyph(d8)
+d8_glyph.plot(data_style=DataStyle(style='flow_direction_d8'), title="style='flow_direction_d8'")</div>
 </div>
 </div>
 </div>
@@ -5241,7 +5220,7 @@ d8_glyph.plot(title="style='flow_direction_d8'")</div>
 <span class="nb">print</span><span class="p">(</span><span class="s1">'style after apply_style:'</span><span class="p">,</span> <span class="n">glyph</span><span class="o">.</span><span class="n">style</span><span class="p">)</span>
 
 <span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'still flow_accumulation (sticky)'</span><span class="p">)</span>  <span class="c1"># a plain plot keeps it</span>
-<span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">'cleared back to default'</span><span class="p">)</span>
+<span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'cleared back to default'</span><span class="p">,</span> <span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="kc">None</span><span class="p">))</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">'style after plot(style=None):'</span><span class="p">,</span> <span class="n">glyph</span><span class="o">.</span><span class="n">style</span><span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-28">glyph = ArrayGlyph(accum)
@@ -5252,7 +5231,7 @@ glyph.apply_style('flow_accumulation')  # restyle in place, by name
 print('style after apply_style:', glyph.style)
 
 glyph.plot(title='still flow_accumulation (sticky)')  # a plain plot keeps it
-glyph.plot(style=None, title='cleared back to default')
+glyph.plot(title='cleared back to default', data_style=DataStyle(style=None))
 print('style after plot(style=None):', glyph.style)</div>
 </div>
 </div>

@@ -3187,13 +3187,16 @@ data is bundled as NumPy <code>.npz</code>, so nothing here reads GIS files — 
 <span class="kn">import</span><span class="w"> </span><span class="nn">cleopatra</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"cleopatra"</span><span class="p">,</span> <span class="n">cleopatra</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styling.params</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataStyle</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-1">import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 import cleopatra
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
-print("cleopatra", cleopatra.__version__)</div>
+print("cleopatra", cleopatra.__version__)
+from cleopatra.styling.params import DataStyle
+</div>
 </div>
 </div>
 </div>
@@ -3347,7 +3350,7 @@ per panel:</p>
             <span class="n">ax</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>                          <span class="c1"># hide leftover empty panels</span>
             <span class="k">continue</span>
         <span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">gext</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
-        <span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">styles</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">add_colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">styles</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">title_size</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+        <span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">add_colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">styles</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">title_size</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span> <span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">styles</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
     <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s2">"bold"</span><span class="p">)</span>
@@ -3365,7 +3368,7 @@ per panel:</p>
             ax.set_visible(False)                          # hide leftover empty panels
             continue
         glyph = ArrayGlyph(field, extent=gext, ax=ax)
-        glyph.plot(style=styles[i], add_colorbar=False, title=styles[i], title_size=9)
+        glyph.plot(add_colorbar=False, title=styles[i], title_size=9, data_style=DataStyle(style=styles[i]))
         ax.set_xticks([])
         ax.set_yticks([])
     fig.suptitle(title, fontweight="bold")

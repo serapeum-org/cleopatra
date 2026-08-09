@@ -3190,8 +3190,8 @@ collections. cleopatra reaches all of them through one small optional dependency
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=2868d669">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=2868d669">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -3221,6 +3221,7 @@ collections. cleopatra reaches all of them through one small optional dependency
 <span class="n">temperature</span> <span class="o">=</span> <span class="n">t2m</span><span class="p">[</span><span class="s2">"celsius"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>          <span class="c1"># first day, degrees Celsius</span>
 <span class="n">temp_extent</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">t2m</span><span class="p">[</span><span class="s2">"extent"</span><span class="p">])</span>        <span class="c1"># [west, east, south, north]</span>
 <span class="n">temperature</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">temp_extent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styling.scaling</span><span class="w"> </span><span class="kn">import</span> <span class="n">ColorScaling</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-1">from pathlib import Path
 import numpy as np
@@ -3233,23 +3234,9 @@ DATA = Path("../../../examples/data")
 t2m = np.load(DATA / "europe_t2m.npz")
 temperature = t2m["celsius"][0]          # first day, degrees Celsius
 temp_extent = list(t2m["extent"])        # [west, east, south, north]
-temperature.shape, temp_extent</div>
+temperature.shape, temp_extent
+from cleopatra.styling.scaling import ColorScaling
 </div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[1]:</div>
-<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
-<pre>((111, 164),
- [np.float64(-12.037),
-  np.float64(32.006),
-  np.float64(34.07),
-  np.float64(63.73)])</pre>
 </div>
 </div>
 </div>
@@ -3516,15 +3503,19 @@ fig, ax = glyph.plot(title="Reversed — cmocean:thermal_r")</div>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">etopo</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">DATA</span> <span class="o">/</span> <span class="s2">"etopo5_natlantic.npz"</span><span class="p">)</span>
 <span class="n">elevation</span> <span class="o">=</span> <span class="n">etopo</span><span class="p">[</span><span class="s2">"elevation"</span><span class="p">]</span>
-<span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">elevation</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">etopo</span><span class="p">[</span><span class="s2">"extent"</span><span class="p">]),</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"cmocean:topo"</span><span class="p">,</span>
-                   <span class="n">color_scale</span><span class="o">=</span><span class="s2">"midpoint"</span><span class="p">,</span> <span class="n">midpoint</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"North Atlantic elevation (cmocean:topo, centred at 0)"</span><span class="p">)</span>
+<span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">elevation</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">etopo</span><span class="p">[</span><span class="s2">"extent"</span><span class="p">]),</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"cmocean:topo"</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">"North Atlantic elevation (cmocean:topo, centred at 0)"</span><span class="p">,</span>
+    <span class="n">color</span><span class="o">=</span><span class="n">ColorScaling</span><span class="o">.</span><span class="n">midpoint</span><span class="p">(</span><span class="n">at</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
+<span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-5">etopo = np.load(DATA / "etopo5_natlantic.npz")
 elevation = etopo["elevation"]
-glyph = ArrayGlyph(elevation, extent=list(etopo["extent"]), cmap="cmocean:topo",
-                   color_scale="midpoint", midpoint=0)
-fig, ax = glyph.plot(title="North Atlantic elevation (cmocean:topo, centred at 0)")</div>
+glyph = ArrayGlyph(elevation, extent=list(etopo["extent"]), cmap="cmocean:topo")
+fig, ax = glyph.plot(
+    title="North Atlantic elevation (cmocean:topo, centred at 0)",
+    color=ColorScaling.midpoint(at=0),
+)</div>
 </div>
 </div>
 </div>

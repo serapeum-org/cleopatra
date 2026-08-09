@@ -3075,6 +3075,7 @@ labelled with the contour levels, over the real ERA5-Land data (1 Jun – 15 Jul
 <span class="n">extent</span> <span class="o">=</span> <span class="p">[</span><span class="n">west</span><span class="p">,</span> <span class="n">east</span><span class="p">,</span> <span class="n">south</span><span class="p">,</span> <span class="n">north</span><span class="p">]</span>  <span class="c1"># ArrayGlyph extent order: [xmin, xmax, ymin, ymax]</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="s2">"stack:"</span><span class="p">,</span> <span class="n">celsius</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="s2">"| frames:"</span><span class="p">,</span> <span class="n">labels</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">"-&gt;"</span><span class="p">,</span> <span class="n">labels</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styling.params</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataStyle</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-1">from pathlib import Path
 
@@ -3091,7 +3092,9 @@ labels = list(npz["labels"])[::2]
 west, south, east, north = (float(v) for v in npz["extent"])
 extent = [west, east, south, north]  # ArrayGlyph extent order: [xmin, xmax, ymin, ymax]
 
-print("stack:", celsius.shape, "| frames:", labels[0], "-&gt;", labels[-1])</div>
+print("stack:", celsius.shape, "| frames:", labels[0], "-&gt;", labels[-1])
+from cleopatra.styling.params import DataStyle
+</div>
 </div>
 </div>
 </div>
@@ -3144,14 +3147,14 @@ axes, and <code>animate</code> reuses it.</p>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">celsius</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">extent</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">"temperature_2m"</span><span class="p">)</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">celsius</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">extent</span><span class="p">)</span>
 
 <span class="c1"># Add the reference layers on the glyph itself. The first call creates the axes;</span>
 <span class="c1"># `animate` below reuses it, so the coastlines/borders sit under the data frames.</span>
 <span class="n">glyph</span><span class="o">.</span><span class="n">add_features</span><span class="p">(</span><span class="s2">"coastline"</span><span class="p">,</span> <span class="s2">"50m"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"0.35"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 <span class="n">glyph</span><span class="o">.</span><span class="n">add_features</span><span class="p">(</span><span class="s2">"borders"</span><span class="p">,</span> <span class="s2">"50m"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"0.55"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 
-<span class="n">anim</span> <span class="o">=</span> <span class="n">glyph</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span>
+<span class="n">anim</span> <span class="o">=</span> <span class="n">glyph</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span><span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">"temperature_2m"</span><span class="p">),</span> 
     <span class="n">time</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
     <span class="n">colorbar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># a full arrow-capped ECMWF colorbar instead of the preset swatch</span>
     <span class="n">title</span><span class="o">=</span><span class="s2">"ERA5-Land 2 m temperature"</span><span class="p">,</span>
@@ -3159,14 +3162,14 @@ axes, and <code>animate</code> reuses it.</p>
 <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">glyph</span><span class="o">.</span><span class="n">fig</span><span class="p">)</span>  <span class="c1"># drop the figure from the inline backend so only the GIF shows</span>
 <span class="n">embed_gif</span><span class="p">(</span><span class="n">anim</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-2">glyph = ArrayGlyph(celsius, extent=extent, style="temperature_2m")
+<div class="clipboard-copy-txt" id="cell-2">glyph = ArrayGlyph(celsius, extent=extent)
 
 # Add the reference layers on the glyph itself. The first call creates the axes;
 # `animate` below reuses it, so the coastlines/borders sit under the data frames.
 glyph.add_features("coastline", "50m", color="0.35", linewidth=0.6, zorder=5)
 glyph.add_features("borders", "50m", color="0.55", linewidth=0.4, zorder=5)
 
-anim = glyph.animate(
+anim = glyph.animate(data_style=DataStyle(style="temperature_2m"), 
     time=labels,
     colorbar=True,  # a full arrow-capped ECMWF colorbar instead of the preset swatch
     title="ERA5-Land 2 m temperature",
