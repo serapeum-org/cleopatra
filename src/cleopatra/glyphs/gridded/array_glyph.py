@@ -3421,6 +3421,16 @@ class ArrayGlyph(GeoMixin, Glyph):
         points = _resolve_point_overlay(points, kwargs)  # type: ignore[arg-type]
         _warn_deprecated_cbar_kwargs(kwargs)
 
+        # Snapshot the pre-merge value of every option key these group objects
+        # will touch, so an invalid `style` (validated below) can roll back the
+        # WHOLE merge -- not just `style` -- and a co-passed color=/contour=/cells=
+        # cannot leak into a later plain plot() on this (sticky-options) glyph.
+        pre_group_opts = {}
+        for grp in (color, contour, cells, data_style):
+            if grp is not None:
+                for key in grp.to_options():
+                    if key in self.default_options and key not in pre_group_opts:
+                        pre_group_opts[key] = self.default_options[key]
         self._merge_group_params(color, contour, cells, data_style)
         resolved_colorbar = self._apply_kwargs_and_colorbar(colorbar, kwargs)  # type: ignore[arg-type]
 
@@ -3448,10 +3458,15 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         style = self.default_options.get("style")
         if style is not None:
+            # Validate the preset; an invalid name rolls back every option the
+            # group objects merged (style plus any co-passed color=/contour=/
+            # cells=) so a failed styled plot never leaks options into a later
+            # plain plot() on this glyph.
             try:
                 resolve_single_layer_style(style)
             except ValueError:
-                self.default_options["style"] = None
+                for key, value in pre_group_opts.items():
+                    self.default_options[key] = value
                 raise
             if self.rgb:
                 warnings.warn(
