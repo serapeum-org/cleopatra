@@ -41,6 +41,40 @@ from cleopatra.styling.styles import (
 #: fallback logic there.
 CATEGORICAL_DEFAULT_CMAP = "tab10"
 
+#: Loose-keyword option keys that moved onto grouped parameter objects.
+#: Passing any of these as a flat keyword (to a constructor or to
+#: `plot`/`animate`) now raises, pointing at the object to use instead.
+#: The keys still live in `default_options` -- the rendering engine reads
+#: them -- but they are populated only via a group object's `to_options()`.
+#: Extended as each group lands (color, then contour/cells/classify/style).
+_GROUPED_KWARG_HINTS: dict[str, str] = {
+    "color_scale": "color=ColorScaling.<variant>(...), e.g. ColorScaling.power(gamma=0.7)",
+    "gamma": "color=ColorScaling.power(gamma=...)",
+    "line_threshold": "color=ColorScaling.sym_log(threshold=..., scale=...)",
+    "line_scale": "color=ColorScaling.sym_log(threshold=..., scale=...)",
+    "bounds": "color=ColorScaling.boundary(bounds=...)",
+    "midpoint": "color=ColorScaling.midpoint(at=...)",
+}
+
+
+def _reject_grouped_kwargs(keys: Any) -> None:
+    """Raise if any key now belongs to a grouped parameter object.
+
+    Args:
+        keys: An iterable of keyword-argument names (e.g. `kwargs`).
+
+    Raises:
+        ValueError: On the first key found in `_GROUPED_KWARG_HINTS`, with a
+            message naming the grouped object to pass instead.
+    """
+    for key in keys:
+        hint = _GROUPED_KWARG_HINTS.get(key)
+        if hint is not None:
+            raise ValueError(
+                f"The {key!r} option moved onto a grouped parameter object; "
+                f"pass {hint} instead of a loose {key}= keyword."
+            )
+
 
 def _get_figure_supports_root(get_figure) -> bool:
     """Return True if `get_figure` accepts a `root` keyword argument.
@@ -499,6 +533,7 @@ class Glyph:
         #: overridden option from one left at its default (e.g. `ArrayGlyph` only
         #: auto-sizes the figure when `figsize` was not passed).
         self._explicit_options: set[str] = set(kwargs)
+        _reject_grouped_kwargs(kwargs)
         for key, val in kwargs.items():
             if key not in self._default_options:
                 raise ValueError(

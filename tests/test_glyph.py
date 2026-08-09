@@ -197,13 +197,19 @@ class TestMergeKwargs:
     def test_valid_kwargs_applied(self):
         """Test that valid kwargs update default_options."""
         g = Glyph(default_options=_make_options())
-        g._merge_kwargs({"gamma": 0.8, "midpoint": 5})
-        assert g.default_options["gamma"] == 0.8, (
-            f"Expected gamma=0.8, got {g.default_options['gamma']}"
+        g._merge_kwargs({"title_size": 20, "cbar_length": 0.5})
+        assert g.default_options["title_size"] == 20, (
+            f"Expected title_size=20, got {g.default_options['title_size']}"
         )
-        assert g.default_options["midpoint"] == 5, (
-            f"Expected midpoint=5, got {g.default_options['midpoint']}"
+        assert g.default_options["cbar_length"] == 0.5, (
+            f"Expected cbar_length=0.5, got {g.default_options['cbar_length']}"
         )
+
+    def test_grouped_kwarg_rejected(self):
+        """A key that moved onto a group object is rejected with a pointer."""
+        g = Glyph(default_options=_make_options())
+        with pytest.raises(ValueError, match="moved onto a grouped parameter object"):
+            g._merge_kwargs({"gamma": 0.8})
 
     def test_invalid_key_raises(self):
         """Test that invalid key raises ValueError."""

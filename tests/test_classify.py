@@ -28,6 +28,7 @@ from cleopatra.glyphs.base.glyph import Glyph
 from cleopatra.glyphs.stats.kde_glyph import KDEGlyph
 from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
 from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
+from cleopatra.styling.scaling import ColorScaling
 from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
 from cleopatra.styling.styles import (
     CLASSIFY_OPTIONS,
@@ -788,10 +789,9 @@ class TestSchemeConflictWarnings:
             np.zeros(5),
             values=np.arange(5.0),
             scheme="quantiles",
-            color_scale="midpoint",
         )
         with pytest.warns(UserWarning, match="color_scale"):
-            glyph.plot()
+            glyph.plot(color=ColorScaling.midpoint())
 
     def test_warns_on_conflicting_levels(self):
         """Setting `scheme` together with `levels` warns.

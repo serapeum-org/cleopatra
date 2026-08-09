@@ -13,6 +13,7 @@ from matplotlib.text import Text
 from PIL import Image
 
 import cleopatra.basemap.reference as refmod
+from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.glyphs.gridded.array_glyph import (
     _COORD_DTYPE_MISMATCH,
@@ -120,7 +121,7 @@ class TestPlotArray:
     ):
         array = ArrayGlyph(arr, exclude_value=[no_data_value])
         fig, ax = array.plot(
-            color_scale=color_scale[0], cmap=cmap, colorbar=ColorBar(ticks_spacing=ticks_spacing)
+            color=ColorScaling.linear(), cmap=cmap, colorbar=ColorBar(ticks_spacing=ticks_spacing)
         )
         assert isinstance(fig, Figure)
 
@@ -135,9 +136,8 @@ class TestPlotArray:
     ):
         array = ArrayGlyph(arr, exclude_value=[no_data_value])
         fig, ax = array.plot(
-            color_scale=color_scale[1],
+            color=ColorScaling.power(gamma=color_scale_2_gamma),
             cmap=cmap,
-            gamma=color_scale_2_gamma,
             colorbar=ColorBar(ticks_spacing=ticks_spacing),
         )
         assert isinstance(fig, Figure)
@@ -154,9 +154,9 @@ class TestPlotArray:
     ):
         array = ArrayGlyph(arr, exclude_value=[no_data_value])
         fig, ax = array.plot(
-            color_scale=color_scale[2],
-            line_scale=color_scale_3_linscale,
-            line_threshold=color_scale_3_linthresh,
+            color=ColorScaling.sym_log(
+                threshold=color_scale_3_linthresh, scale=color_scale_3_linscale
+            ),
             cmap=cmap,
             colorbar=ColorBar(ticks_spacing=ticks_spacing),
         )
@@ -172,7 +172,7 @@ class TestPlotArray:
         ticks_spacing: int,
     ):
         array = ArrayGlyph(arr, exclude_value=[no_data_value])
-        fig, ax = array.plot(color_scale=color_scale[3], cmap=cmap, colorbar=ColorBar(ticks_spacing=5))
+        fig, ax = array.plot(color=ColorScaling.boundary(), cmap=cmap, colorbar=ColorBar(ticks_spacing=5))
 
         assert isinstance(fig, Figure)
 
@@ -187,10 +187,9 @@ class TestPlotArray:
     ):
         array = ArrayGlyph(rhine_dem_arr, exclude_value=[rhine_no_data_val])
         fig, ax = array.plot(
-            color_scale=color_scale[3],
+            color=ColorScaling.boundary(bounds=bounds),
             cmap=cmap,
             colorbar=ColorBar(ticks_spacing=ticks_spacing),
-            bounds=bounds,
         )
 
         assert isinstance(fig, Figure)
@@ -206,8 +205,7 @@ class TestPlotArray:
     ):
         array = ArrayGlyph(arr, exclude_value=[no_data_value])
         fig, ax = array.plot(
-            color_scale=color_scale[4],
-            midpoint=midpoint,
+            color=ColorScaling.midpoint(at=midpoint),
             cmap=cmap,
             colorbar=ColorBar(ticks_spacing=ticks_spacing),
         )
@@ -1289,42 +1287,42 @@ class TestPlotKindDispatch:
             glyph.plot(kind="pcolormesh")
 
     def test_color_scale_linear_with_auto(self):
-        """Linear color_scale works under the default kind."""
+        """Linear color scale works under the default kind."""
         glyph = ArrayGlyph(self._sample_arr())
-        fig, ax = glyph.plot(color_scale="linear")
+        fig, ax = glyph.plot(color=ColorScaling.linear())
         assert isinstance(fig, Figure)
 
     def test_color_scale_power_with_auto(self):
-        """Power color_scale works under the default kind."""
+        """Power color scale works under the default kind."""
         glyph = ArrayGlyph(self._sample_arr())
-        fig, ax = glyph.plot(color_scale="power")
+        fig, ax = glyph.plot(color=ColorScaling.power())
         assert isinstance(fig, Figure)
 
     def test_color_scale_enum_member_accepted(self):
-        """`plot(color_scale=ColorScale.POWER)` works (enum member, not str)."""
+        """`ColorScaling(kind=ColorScale.POWER)` works (enum kind, not str)."""
         from cleopatra.styling.styles import ColorScale
 
         glyph = ArrayGlyph(self._sample_arr())
-        fig, ax = glyph.plot(color_scale=ColorScale.POWER)
+        fig, ax = glyph.plot(color=ColorScaling(kind=ColorScale.POWER))
         assert isinstance(fig, Figure)
 
-    def test_invalid_color_scale_int_raises_valueerror(self):
-        """`plot(color_scale=1)` raises `ValueError` (not `AttributeError`)."""
+    def test_invalid_color_scale_loose_kwarg_rejected(self):
+        """A loose `color_scale=` keyword is rejected, pointing at `color=`."""
         glyph = ArrayGlyph(self._sample_arr())
-        with pytest.raises(ValueError, match="Invalid color_scale"):
+        with pytest.raises(ValueError, match="moved onto a grouped parameter object"):
             glyph.plot(color_scale=1)
 
     def test_color_scale_linear_with_pcolormesh(self):
-        """Linear color_scale works under kind=pcolormesh."""
+        """Linear color scale works under kind=pcolormesh."""
         glyph = ArrayGlyph(self._sample_arr())
-        fig, ax = glyph.plot(kind="pcolormesh", color_scale="linear")
+        fig, ax = glyph.plot(kind="pcolormesh", color=ColorScaling.linear())
         assert isinstance(fig, Figure)
         assert len(ax.collections) >= 1
 
     def test_color_scale_power_with_pcolormesh(self):
-        """Power color_scale works under kind=pcolormesh."""
+        """Power color scale works under kind=pcolormesh."""
         glyph = ArrayGlyph(self._sample_arr())
-        fig, ax = glyph.plot(kind="pcolormesh", color_scale="power")
+        fig, ax = glyph.plot(kind="pcolormesh", color=ColorScaling.power())
         assert isinstance(fig, Figure)
         assert len(ax.collections) >= 1
 
@@ -2485,7 +2483,7 @@ class TestContourLevelsAndNorm:
         glyph = ArrayGlyph(arr)
         fig, ax = glyph.plot(
             kind="contour",
-            color_scale="power",
+            color=ColorScaling.power(),
             levels=4,
         )
         assert isinstance(fig, Figure)
@@ -2512,10 +2510,10 @@ class TestContourLevelsAndNorm:
         assert isinstance(fig, Figure)
 
     def test_contour_with_midpoint_already_filled(self):
-        """`color_scale='midpoint'` pre-fills the array; contour skips the mask branch."""
+        """A midpoint scale pre-fills the array; contour skips the mask branch."""
         arr = np.linspace(-1.0, 1.0, 100).reshape(10, 10)
         glyph = ArrayGlyph(arr)
-        fig, ax = glyph.plot(kind="contour", color_scale="midpoint", midpoint=0.0)
+        fig, ax = glyph.plot(kind="contour", color=ColorScaling.midpoint(at=0.0))
         assert isinstance(fig, Figure)
         assert len(ax.collections) >= 1
 

@@ -68,6 +68,7 @@ from cleopatra.glyphs.base.glyph import (
     _clear_prior_render_artists,
     _clear_projection_frame,
     _mark_render_artists,
+    _reject_grouped_kwargs,
     _restore_flat_axes,
     _root_figure,
     _stash_projection_frame,
@@ -2804,6 +2805,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             The resolved `colorbar` option dict, so the caller can honour a
             spec-provided `ticks_spacing` before auto-computing it.
         """
+        _reject_grouped_kwargs(kwargs)
         for key, val in kwargs.items():
             if key not in self.default_options.keys():
                 raise ValueError(
@@ -3234,7 +3236,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 ...         ticks_spacing=5,
                 ...         orientation="horizontal",
                 ...     ),
-                ...     color_scale="linear",
+                ...     color=ColorScaling.linear(),
                 ...     cmap="coolwarm_r",
                 ... )
 
@@ -3290,7 +3292,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     >>> array = ArrayGlyph(arr, figsize=(6, 6), title="Power scale", title_size=18)
                     >>> fig, ax = array.plot(
                     ...     colorbar=ColorBar(label="Discharge m3/s"),
-                    ...     color_scale="power",
+                    ...     color=ColorScaling.power(),
                     ...     cmap="coolwarm_r",
                     ... )
 
@@ -3302,8 +3304,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     ```python
                     >>> array = ArrayGlyph(arr, figsize=(6, 6), title="Power scale - gamma=0.8", title_size=18)
                     >>> fig, ax = array.plot(
-                    ...     color_scale="power",
-                    ...     gamma=0.8,
+                    ...     color=ColorScaling.power(gamma=0.8),
                     ...     cmap="coolwarm_r",
                     ...     colorbar=ColorBar(label="Discharge m3/s"),
                     ... )
@@ -3316,8 +3317,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     ```python
                     >>> array = ArrayGlyph(arr, figsize=(6, 6), title="Power scale - gamma=0.1", title_size=18)
                     >>> fig, ax = array.plot(
-                    ...     color_scale="power",
-                    ...     gamma=0.1,
+                    ...     color=ColorScaling.power(gamma=0.1),
                     ...     cmap="coolwarm_r",
                     ...     colorbar=ColorBar(label="Discharge m3/s"),
                     ... )
@@ -3333,7 +3333,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     >>> array = ArrayGlyph(arr, figsize=(6, 6), title="Logarithmic scale", title_size=18)
                     >>> fig, ax = array.plot(
                     ...     colorbar=ColorBar(label="Discharge m3/s"),
-                    ...     color_scale="sym-lognorm",
+                    ...     color=ColorScaling.sym_log(),
                     ...     cmap="coolwarm_r",
                     ... )
 
@@ -3347,10 +3347,8 @@ class ArrayGlyph(GeoMixin, Glyph):
                     ... )
                     >>> fig, ax = array.plot(
                     ...     colorbar=ColorBar(label="Discharge m3/s"),
-                    ...     color_scale="sym-lognorm",
+                    ...     color=ColorScaling.sym_log(threshold=0.015, scale=0.1),
                     ...     cmap="coolwarm_r",
-                    ...     line_threshold=0.015,
-                    ...     line_scale=0.1,
                     ... )
 
                     ```
@@ -3361,7 +3359,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 >>> array = ArrayGlyph(arr, figsize=(6, 6), title="Defined boundary scale", title_size=18)
                 >>> fig, ax = array.plot(
                 ...     colorbar=ColorBar(label="Discharge m3/s"),
-                ...     color_scale="boundary-norm",
+                ...     color=ColorScaling.boundary(),
                 ...     cmap="coolwarm_r",
                 ... )
 
@@ -3376,8 +3374,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     >>> bounds = [0, 5, 10]
                     >>> fig, ax = array.plot(
                     ...     colorbar=ColorBar(label="Discharge m3/s"),
-                    ...     color_scale="boundary-norm",
-                    ...     bounds=bounds,
+                    ...     color=ColorScaling.boundary(bounds=bounds),
                     ...     cmap="coolwarm_r",
                     ... )
 
@@ -3391,9 +3388,8 @@ class ArrayGlyph(GeoMixin, Glyph):
                 >>> array = ArrayGlyph(arr, figsize=(6, 6), title="Midpoint scale", title_size=18)
                 >>> fig, ax = array.plot(
                 ...     colorbar=ColorBar(label="Discharge m3/s"),
-                ...     color_scale="midpoint",
+                ...     color=ColorScaling.midpoint(at=2),
                 ...     cmap="coolwarm_r",
-                ...     midpoint=2,
                 ... )
 
                 ```

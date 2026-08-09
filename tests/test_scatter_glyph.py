@@ -11,6 +11,7 @@ import numpy as np
 import pytest
 from matplotlib.collections import PathCollection
 
+from cleopatra.styling.scaling import ColorScaling
 from cleopatra.glyphs.primitives.scatter_glyph import SCATTER_DEFAULT_OPTIONS, ScatterGlyph
 
 
@@ -195,15 +196,15 @@ class TestScatterGlyphPlot:
         )
 
     def test_power_color_scale_applied(self, xy, values):
-        """A non-linear color_scale is honoured for points.
+        """A non-linear color scale is honoured for points.
 
         Test scenario:
-            color_scale='power' -> the scatter norm is a PowerNorm.
+            color=ColorScaling.power() -> the scatter norm is a PowerNorm.
         """
-        glyph = ScatterGlyph(*xy, values=values, color_scale="power")
-        _, _, paths = glyph.plot()
+        glyph = ScatterGlyph(*xy, values=values)
+        _, _, paths = glyph.plot(color=ColorScaling.power())
         assert isinstance(paths.norm, mcolors.PowerNorm), (
-            f"color_scale='power' should yield a PowerNorm, got {type(paths.norm)}"
+            f"ColorScaling.power() should yield a PowerNorm, got {type(paths.norm)}"
         )
 
     def test_plot_on_supplied_axes(self, xy, values):

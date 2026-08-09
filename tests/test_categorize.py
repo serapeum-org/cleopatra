@@ -29,6 +29,7 @@ import pytest
 from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
 from cleopatra.glyphs.base.glyph import CATEGORICAL_DEFAULT_CMAP, Glyph
 from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
+from cleopatra.styling.scaling import ColorScaling
 from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import categorize
@@ -372,10 +373,9 @@ class TestGlyphPrepareCategoricalMapping:
             np.zeros(4),
             values=np.array(["a", "b", "a", "b"]),
             scheme="categorical",
-            color_scale="midpoint",
         )
         with pytest.warns(UserWarning, match="color_scale"):
-            glyph.plot()
+            glyph.plot(color=ColorScaling.midpoint())
 
     def test_warns_on_conflicting_levels(self):
         """`scheme="categorical"` together with `levels` warns.

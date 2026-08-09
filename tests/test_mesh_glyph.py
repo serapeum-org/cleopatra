@@ -17,6 +17,7 @@ from matplotlib.colors import to_rgba
 from matplotlib.text import Text
 
 from cleopatra.styling.colorbar import ColorBar
+from cleopatra.styling.scaling import ColorScaling
 from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
 
 
@@ -1069,15 +1070,14 @@ class TestColorScales:
 
     def test_linear_scale(self):
         """Test default linear color scale."""
-        fig, ax = _make_tri_mg().plot(np.array([1.0, 2.0]), color_scale="linear")
+        fig, ax = _make_tri_mg().plot(np.array([1.0, 2.0]), color=ColorScaling.linear())
         assert fig is not None, "Should return a Figure"
 
     def test_power_scale(self):
         """Test power color scale with custom gamma."""
         fig, ax = _make_tri_mg().plot(
             np.array([1.0, 2.0]),
-            color_scale="power",
-            gamma=0.3,
+            color=ColorScaling.power(gamma=0.3),
         )
         assert fig is not None, "Should return a Figure"
 
@@ -1085,7 +1085,7 @@ class TestColorScales:
         """Test symmetrical log-norm color scale."""
         fig, ax = _make_tri_mg().plot(
             np.array([1.0, 20.0]),
-            color_scale="sym-lognorm",
+            color=ColorScaling.sym_log(),
         )
         assert fig is not None, "Should return a Figure"
 
@@ -1093,8 +1093,7 @@ class TestColorScales:
         """Test boundary-norm color scale with custom bounds."""
         fig, ax = _make_tri_mg().plot(
             np.array([1.0, 5.0]),
-            color_scale="boundary-norm",
-            bounds=[0, 2, 4, 6],
+            color=ColorScaling.boundary(bounds=[0, 2, 4, 6]),
         )
         assert fig is not None, "Should return a Figure"
 
@@ -1102,8 +1101,7 @@ class TestColorScales:
         """Test midpoint color scale."""
         fig, ax = _make_tri_mg().plot(
             np.array([1.0, 5.0]),
-            color_scale="midpoint",
-            midpoint=3.0,
+            color=ColorScaling.midpoint(at=3.0),
             cmap="coolwarm",
         )
         assert fig is not None, "Should return a Figure"
@@ -1113,8 +1111,7 @@ class TestColorScales:
         fig, ax = _make_tri_mg().plot(
             np.array([0.0, 1.0, 2.0, 3.0]),
             location="node",
-            color_scale="power",
-            gamma=0.5,
+            color=ColorScaling.power(gamma=0.5),
         )
         assert fig is not None, "Should return a Figure"
 
@@ -1481,8 +1478,7 @@ class TestAnimate:
         anim = mg.animate(
             frames,
             time=["t0", "t1"],
-            color_scale="power",
-            gamma=0.5,
+            color=ColorScaling.power(gamma=0.5),
             cmap="coolwarm",
         )
         assert anim is not None, "Should return a FuncAnimation"
@@ -1707,8 +1703,7 @@ class TestMeshGlyphHillshade:
             z,
             location="node",
             cmap="terrain",
-            color_scale="power",
-            gamma=0.4,
+            color=ColorScaling.power(gamma=0.4),
             hillshade=True,
         )
         assert type(mg.im).__name__ == "PolyCollection"

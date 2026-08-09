@@ -986,8 +986,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 >>> mg = MeshGlyph(node_x, node_y, faces)
                 >>> fig, ax = mg.plot(
                 ...     np.array([1.0, 2.0]),
-                ...     color_scale="power",
-                ...     gamma=0.5,
+                ...     color=ColorScaling.power(gamma=0.5),
                 ...     cmap="coolwarm",
                 ... )
 
