@@ -16,8 +16,10 @@ import pytest
 from matplotlib.colors import to_rgba
 from matplotlib.text import Text
 
-from cleopatra.styling.colorbar import ColorBar
 from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
+from cleopatra.styling.colorbar import ColorBar
+from cleopatra.styling.params import Contour, DataStyle
+from cleopatra.styling.scaling import ColorScaling
 
 
 @pytest.fixture(scope="module")
@@ -478,7 +480,7 @@ class TestPlot:
     def test_node_plot_custom_levels(self, triangle_glyph):
         """Test that user can override levels via kwargs without TypeError."""
         data = np.array([0.0, 1.0, 2.0, 3.0])
-        fig, ax = triangle_glyph.plot(data, location="node", levels=5)
+        fig, ax = triangle_glyph.plot(data, location="node", contour=Contour(levels=5))
         assert fig is not None
 
     def test_colorbar_false(self, triangle_glyph):
@@ -553,7 +555,7 @@ class TestPlotLineContour:
             np.array([0.0, 1.0, 2.0, 3.0]),
             location="node",
             filled=False,
-            levels=4,
+            contour=Contour(levels=4),
         )
         assert fig is not None, "Should render line contours with explicit levels"
         plt.close(fig)
@@ -632,7 +634,10 @@ class TestContourLabels:
         """`labels=True` populates `contour_labels` with `Text` artists."""
         mg = self._grid_glyph()
         fig, ax = mg.plot(
-            self._smooth_field(mg), location="node", filled=False, labels=True
+            self._smooth_field(mg),
+            location="node",
+            filled=False,
+            contour=Contour(labels=True),
         )
         assert isinstance(mg.contour_labels, list)
         assert len(mg.contour_labels) > 0
@@ -656,8 +661,7 @@ class TestContourLabels:
             self._smooth_field(mg),
             location="node",
             filled=False,
-            labels=True,
-            label_kw={"fmt": "%.3f", "fontsize": 6},
+            contour=Contour(labels=True, label_kw={"fmt": "%.3f", "fontsize": 6}),
         )
         assert len(mg.contour_labels) > 0
         # The custom fontsize on every label proves label_kw was forwarded.
@@ -670,7 +674,10 @@ class TestContourLabels:
         """`labels=True` is ignored for `filled=True` (no isolines to label)."""
         mg = self._grid_glyph()
         fig, ax = mg.plot(
-            self._smooth_field(mg), location="node", filled=True, labels=True
+            self._smooth_field(mg),
+            location="node",
+            filled=True,
+            contour=Contour(labels=True),
         )
         assert mg.contour_labels is None
         plt.close(fig)
@@ -678,7 +685,7 @@ class TestContourLabels:
     def test_labels_on_face_data_is_noop(self, triangle_glyph):
         """`labels=True` is ignored for face data (`tripcolor`)."""
         fig, ax = triangle_glyph.plot(
-            np.array([1.0, 2.0]), location="face", labels=True
+            np.array([1.0, 2.0]), location="face", contour=Contour(labels=True)
         )
         assert triangle_glyph.contour_labels is None
         plt.close(fig)
@@ -687,7 +694,7 @@ class TestContourLabels:
         """Re-plotting with `labels=False` clears a prior render's labels."""
         mg = self._grid_glyph()
         data = self._smooth_field(mg)
-        mg.plot(data, location="node", filled=False, labels=True)
+        mg.plot(data, location="node", filled=False, contour=Contour(labels=True))
         assert mg.contour_labels is not None
         fig, ax = mg.plot(data, location="node", filled=False)
         assert mg.contour_labels is None
@@ -697,9 +704,11 @@ class TestContourLabels:
         """A subsequent filled render clears stale label artists."""
         mg = self._grid_glyph()
         data = self._smooth_field(mg)
-        mg.plot(data, location="node", filled=False, labels=True)
+        mg.plot(data, location="node", filled=False, contour=Contour(labels=True))
         assert mg.contour_labels is not None
-        fig, ax = mg.plot(data, location="node", filled=True, labels=True)
+        fig, ax = mg.plot(
+            data, location="node", filled=True, contour=Contour(labels=True)
+        )
         assert mg.contour_labels is None
         plt.close(fig)
 
@@ -717,7 +726,7 @@ class TestContourLabels:
                 constant,
                 location="node",
                 filled=False,
-                labels=True,
+                contour=Contour(labels=True),
                 colorbar=False,
             )
         assert mg.contour_labels == []
@@ -731,8 +740,7 @@ class TestContourLabels:
             self._smooth_field(mg),
             location="node",
             filled=False,
-            labels=True,
-            label_kw={"fontsize": 14},
+            contour=Contour(labels=True, label_kw={"fontsize": 14}),
         )
         assert len(mg.contour_labels) > 0
         assert all(t.get_fontsize() == 14 for t in mg.contour_labels)
@@ -745,8 +753,7 @@ class TestContourLabels:
             self._smooth_field(mg),
             location="node",
             filled=False,
-            labels=True,
-            label_kw={"colors": "red"},
+            contour=Contour(labels=True, label_kw={"colors": "red"}),
         )
         assert len(mg.contour_labels) > 0
         red = to_rgba("red")
@@ -766,7 +773,7 @@ class TestContourLabels:
         """`animate()` clears labels left by a prior `plot(labels=True)`."""
         mg = self._grid_glyph()
         field = self._smooth_field(mg)
-        mg.plot(field, location="node", filled=False, labels=True)
+        mg.plot(field, location="node", filled=False, contour=Contour(labels=True))
         assert mg.contour_labels is not None
         # An animation draws no inline labels; the stale list must be cleared.
         anim = mg.animate([field, field * 2.0], time=["t0", "t1"], location="node")
@@ -1064,20 +1071,60 @@ def _make_tri_mg():
     )
 
 
+class TestMeshContourLevels:
+    """`contour=Contour(levels=...)` drives the mesh node-contour count."""
+
+    def _terrain(self):
+        """A 6-node mesh with node values spanning a range."""
+        nx = np.array([0.0, 1.0, 0.5, 1.5, 2.0, 2.5])
+        ny = np.array([0.0, 0.0, 1.0, 1.0, 0.0, 1.0])
+        faces = np.array([[0, 1, 2], [1, 3, 2], [1, 4, 3], [4, 5, 3]])
+        z = np.array([0.0, 1.0, 2.0, 3.0, 4.0, 5.0])
+        return MeshGlyph(nx, ny, faces), z
+
+    def test_contour_levels_control_the_node_contour_count(self):
+        """A `Contour(levels=N)` sets the option and discretises the norm.
+
+        Test scenario:
+            Regression: MeshGlyph had no `levels` key, so `Contour(levels=)`
+            was silently dropped while a loose `levels=` still worked.
+        """
+        mg, z = self._terrain()
+        mg.plot(z, location="node", filled=False, contour=Contour(levels=7))
+        assert mg.default_options["levels"] == 7, (
+            "Contour(levels=) should set the mesh levels option"
+        )
+        assert type(mg.im.norm).__name__ == "BoundaryNorm", (
+            "levels should discretise the colour norm, like the other glyphs"
+        )
+
+    def test_default_node_contour_is_continuous(self):
+        """With no `levels`, the node contour keeps a continuous norm."""
+        mg, z = self._terrain()
+        mg.plot(z, location="node", filled=False)
+        assert mg.default_options["levels"] is None
+        assert type(mg.im.norm).__name__ == "Normalize"
+
+    def test_loose_levels_kwarg_is_rejected(self):
+        """A loose `levels=` keyword now raises, pointing at `contour=`."""
+        mg, z = self._terrain()
+        with pytest.raises(ValueError, match="moved onto a grouped parameter object"):
+            mg.plot(z, location="node", filled=False, levels=7)
+
+
 class TestColorScales:
     """Tests for color scale support in MeshGlyph.plot()."""
 
     def test_linear_scale(self):
         """Test default linear color scale."""
-        fig, ax = _make_tri_mg().plot(np.array([1.0, 2.0]), color_scale="linear")
+        fig, ax = _make_tri_mg().plot(np.array([1.0, 2.0]), color=ColorScaling.linear())
         assert fig is not None, "Should return a Figure"
 
     def test_power_scale(self):
         """Test power color scale with custom gamma."""
         fig, ax = _make_tri_mg().plot(
             np.array([1.0, 2.0]),
-            color_scale="power",
-            gamma=0.3,
+            color=ColorScaling.power(gamma=0.3),
         )
         assert fig is not None, "Should return a Figure"
 
@@ -1085,7 +1132,7 @@ class TestColorScales:
         """Test symmetrical log-norm color scale."""
         fig, ax = _make_tri_mg().plot(
             np.array([1.0, 20.0]),
-            color_scale="sym-lognorm",
+            color=ColorScaling.sym_log(),
         )
         assert fig is not None, "Should return a Figure"
 
@@ -1093,8 +1140,7 @@ class TestColorScales:
         """Test boundary-norm color scale with custom bounds."""
         fig, ax = _make_tri_mg().plot(
             np.array([1.0, 5.0]),
-            color_scale="boundary-norm",
-            bounds=[0, 2, 4, 6],
+            color=ColorScaling.boundary(bounds=[0, 2, 4, 6]),
         )
         assert fig is not None, "Should return a Figure"
 
@@ -1102,8 +1148,7 @@ class TestColorScales:
         """Test midpoint color scale."""
         fig, ax = _make_tri_mg().plot(
             np.array([1.0, 5.0]),
-            color_scale="midpoint",
-            midpoint=3.0,
+            color=ColorScaling.midpoint(at=3.0),
             cmap="coolwarm",
         )
         assert fig is not None, "Should return a Figure"
@@ -1113,8 +1158,7 @@ class TestColorScales:
         fig, ax = _make_tri_mg().plot(
             np.array([0.0, 1.0, 2.0, 3.0]),
             location="node",
-            color_scale="power",
-            gamma=0.5,
+            color=ColorScaling.power(gamma=0.5),
         )
         assert fig is not None, "Should return a Figure"
 
@@ -1481,8 +1525,7 @@ class TestAnimate:
         anim = mg.animate(
             frames,
             time=["t0", "t1"],
-            color_scale="power",
-            gamma=0.5,
+            color=ColorScaling.power(gamma=0.5),
             cmap="coolwarm",
         )
         assert anim is not None, "Should return a FuncAnimation"
@@ -1644,7 +1687,12 @@ class TestMeshGlyphHillshade:
         """Node-centered `hillshade` renders a per-face shaded `tripcolor` mesh."""
         nx, ny, faces, z = self._terrain_mesh()
         mg = MeshGlyph(nx, ny, faces)
-        mg.plot(z, location="node", cmap="terrain", hillshade={"vert_exag": 3})
+        mg.plot(
+            z,
+            location="node",
+            cmap="terrain",
+            data_style=DataStyle(hillshade={"vert_exag": 3}),
+        )
         facecolors = mg.im.get_facecolor()
         assert facecolors.shape[1] == 4
         assert len(np.unique(np.round(facecolors[:, 0], 3))) > 5, "faces should vary"
@@ -1656,7 +1704,9 @@ class TestMeshGlyphHillshade:
         nx, ny, faces, _ = self._terrain_mesh()
         with pytest.raises(ValueError, match="node-centered"):
             MeshGlyph(nx, ny, faces).plot(
-                np.ones(len(faces)), location="face", hillshade=True
+                np.ones(len(faces)),
+                location="face",
+                data_style=DataStyle(hillshade=True),
             )
         plt.close("all")
 
@@ -1675,8 +1725,10 @@ class TestMeshGlyphHillshade:
         restored from the constructor value when plot() does not override it.
         """
         nx, ny, faces, z = self._terrain_mesh()
-        mg = MeshGlyph(nx, ny, faces, hillshade=True)
-        mg.plot(z, location="node", cmap="terrain")
+        mg = MeshGlyph(nx, ny, faces)
+        mg.plot(
+            z, location="node", cmap="terrain", data_style=DataStyle(hillshade=True)
+        )
         assert type(mg.im).__name__ == "PolyCollection", (
             "constructor hillshade should shade"
         )
@@ -1691,7 +1743,13 @@ class TestMeshGlyphHillshade:
         """
         nx, ny, faces, z = self._terrain_mesh()
         mg = MeshGlyph(nx, ny, faces)
-        mg.plot(z, location="node", filled=False, labels=True, hillshade=True)
+        mg.plot(
+            z,
+            location="node",
+            filled=False,
+            contour=Contour(labels=True),
+            data_style=DataStyle(hillshade=True),
+        )
         assert mg.contour_labels is None, "labels are a no-op under hillshade"
         plt.close("all")
 
@@ -1707,9 +1765,8 @@ class TestMeshGlyphHillshade:
             z,
             location="node",
             cmap="terrain",
-            color_scale="power",
-            gamma=0.4,
-            hillshade=True,
+            color=ColorScaling.power(gamma=0.4),
+            data_style=DataStyle(hillshade=True),
         )
         assert type(mg.im).__name__ == "PolyCollection"
         assert type(mg.im.norm).__name__ == "PowerNorm", (
@@ -1728,7 +1785,9 @@ class TestMeshGlyphHillshade:
         faces = np.array([[0, 1, 3], [1, 2, 3], [0, 1, 2]])
         z = np.array([10.0, 20.0, 30.0, np.nan])  # node 3 is nodata
         mg = MeshGlyph(nx, ny, faces)
-        mg.plot(z, location="node", cmap="terrain", hillshade=True)
+        mg.plot(
+            z, location="node", cmap="terrain", data_style=DataStyle(hillshade=True)
+        )
         alphas = mg.im.get_facecolor()[:, 3]
         assert np.allclose(alphas[[0, 1]], 0.0), "nodata-touching faces are transparent"
         assert alphas[2] > 0.0, "the fully-finite face stays opaque"
@@ -1756,7 +1815,7 @@ class TestMeshGlyphDataStyle:
         nx, ny, faces = self._mesh()
         fvals = np.abs(np.random.default_rng(0).normal(size=len(faces))) * 100
         g = MeshGlyph(nx, ny, faces)
-        g.plot(fvals, location="face", style="flow_accumulation")
+        g.plot(fvals, location="face", data_style=DataStyle(style="flow_accumulation"))
         assert g.im.cmap.name == "Blues"
         assert type(g.im.norm).__name__ == "SymLogNorm"
         plt.close("all")
@@ -1770,7 +1829,9 @@ class TestMeshGlyphDataStyle:
             .astype(float)
         )
         g = MeshGlyph(nx, ny, faces)
-        _, ax = g.plot(d8, location="face", style="flow_direction_d8")
+        _, ax = g.plot(
+            d8, location="face", data_style=DataStyle(style="flow_direction_d8")
+        )
         assert ax.get_legend() is not None
         assert g._cbar is None
         plt.close("all")
@@ -1780,7 +1841,9 @@ class TestMeshGlyphDataStyle:
         nx, ny, faces = self._mesh()
         with pytest.raises(ValueError, match="unknown data style"):
             MeshGlyph(nx, ny, faces).plot(
-                np.ones(len(faces)), location="face", style="not_a_style"
+                np.ones(len(faces)),
+                location="face",
+                data_style=DataStyle(style="not_a_style"),
             )
         plt.close("all")
 
@@ -1789,7 +1852,9 @@ class TestMeshGlyphDataStyle:
         nx, ny, faces = self._mesh()
         z = 50 + 150 * np.exp(-(((nx - 7) / 2) ** 2 + ((ny - 5) / 3) ** 2))
         g = MeshGlyph(nx, ny, faces)
-        g.plot(z, location="node", style="topography", hillshade=True)
+        g.plot(
+            z, location="node", data_style=DataStyle(style="topography", hillshade=True)
+        )
         assert type(g.im).__name__ == "PolyCollection"
         plt.close("all")
 
@@ -1803,7 +1868,7 @@ class TestMeshGlyphDataStyle:
         )
         with pytest.warns(UserWarning, match="interpolates discrete class codes"):
             MeshGlyph(nx, ny, faces).plot(
-                codes, location="node", style="flow_direction_d8"
+                codes, location="node", data_style=DataStyle(style="flow_direction_d8")
             )
         plt.close("all")
 
@@ -1812,7 +1877,7 @@ class TestMeshGlyphDataStyle:
         nx, ny, faces = self._mesh()
         fvals = np.abs(np.random.default_rng(0).normal(size=len(faces))) * 100
         g = MeshGlyph(nx, ny, faces)
-        g.plot(fvals, location="face", style="flow_accumulation")
+        g.plot(fvals, location="face", data_style=DataStyle(style="flow_accumulation"))
         assert type(g._cbar.locator).__name__ == "SymmetricalLogLocator"
         plt.close("all")
 
@@ -1848,8 +1913,8 @@ class TestMeshGlyphApplyStyle:
         """A `style` set at construction survives plot()'s options reset."""
         nx, ny, faces = self._mesh()
         fvals = np.abs(np.random.default_rng(1).normal(size=len(faces))) * 100
-        g = MeshGlyph(nx, ny, faces, style="flow_accumulation")
-        g.plot(fvals, location="face")
+        g = MeshGlyph(nx, ny, faces)
+        g.plot(fvals, location="face", data_style=DataStyle(style="flow_accumulation"))
         assert g.style == "flow_accumulation" and g.im.cmap.name == "Blues"
         plt.close("all")
 
@@ -1875,10 +1940,10 @@ class TestMeshGlyphApplyStyle:
         nx, ny, faces = self._mesh()
         fvals = np.abs(np.random.default_rng(4).normal(size=len(faces))) * 100
         g = MeshGlyph(nx, ny, faces)
-        g.plot(fvals, location="face", style="flow_accumulation")
+        g.plot(fvals, location="face", data_style=DataStyle(style="flow_accumulation"))
         g.plot(fvals, location="face")
         assert g.style == "flow_accumulation"
-        g.plot(fvals, location="face", style=None)
+        g.plot(fvals, location="face", data_style=DataStyle(style=None))
         assert g.style is None
         plt.close("all")
 
@@ -1900,7 +1965,7 @@ class TestMeshGlyphApplyStyle:
         nx, ny, faces = self._mesh()
         fvals = np.abs(np.random.default_rng(8).normal(size=len(faces))) * 100
         g = MeshGlyph(nx, ny, faces)
-        g.plot(fvals, location="face", style="flow_accumulation")
+        g.plot(fvals, location="face", data_style=DataStyle(style="flow_accumulation"))
         with pytest.raises(ValueError, match="unknown data style"):
             g.apply_style("not_a_style")
         assert g.style == "flow_accumulation"

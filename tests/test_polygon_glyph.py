@@ -16,6 +16,7 @@ from cleopatra.glyphs.primitives.polygon_glyph import (
     POLYGON_DEFAULT_OPTIONS,
     PolygonGlyph,
 )
+from cleopatra.styling.params import Contour
 
 
 @pytest.fixture(autouse=True)
@@ -209,7 +210,9 @@ class TestPolygonGlyphPlot:
             value range.
         """
         with pytest.warns(DeprecationWarning, match="ticks_spacing"):
-            glyph = PolygonGlyph(polygons, values=np.array([0.0, 40.0]), ticks_spacing=10.0)
+            glyph = PolygonGlyph(
+                polygons, values=np.array([0.0, 40.0]), ticks_spacing=10.0
+            )
         _, _, pc = glyph.plot()
         assert pc.get_clim() == (
             0.0,
@@ -223,9 +226,9 @@ class TestPolygonGlyphPlot:
             levels=4 -> the collection norm is a BoundaryNorm.
         """
         glyph = PolygonGlyph(
-            polygons, values=np.array([0.0, 10.0]), levels=4, vmin=0.0, vmax=10.0
+            polygons, values=np.array([0.0, 10.0]), vmin=0.0, vmax=10.0
         )
-        _, _, pc = glyph.plot()
+        _, _, pc = glyph.plot(contour=Contour(levels=4))
         assert isinstance(pc.norm, mcolors.BoundaryNorm), (
             f"levels should yield a BoundaryNorm, got {type(pc.norm)}"
         )

@@ -12,6 +12,7 @@ from matplotlib.container import BarContainer
 from matplotlib.legend import Legend
 from matplotlib.patches import Patch
 
+from cleopatra.styling.params import Contour
 from cleopatra.styling.styles import (
     ColorScale,
     Styles,
@@ -201,8 +202,8 @@ class TestDiscreteContourfAcceptance:
 
         data = np.linspace(0, 10, 36).reshape(6, 6)
         edges = [0, 2, 4, 6, 8, 10]
-        glyph = ArrayGlyph(data, levels=edges)
-        glyph.plot(kind="contourf", cmap="viridis")
+        glyph = ArrayGlyph(data)
+        glyph.plot(kind="contourf", cmap="viridis", contour=Contour(levels=edges))
         ticks = list(glyph.cbar.get_ticks())
         assert ticks == [float(e) for e in edges], (
             f"Colorbar ticks should equal the level edges, got {ticks}"
@@ -472,7 +473,9 @@ class TestSwatchLegend:
         readable over the pale middle of a colormap (not just white-on-white)."""
         swatch = swatch_legend(ax, "Spectral_r", "Temperature")
         for text in swatch.texts:
-            assert text.get_path_effects(), f"{text.get_text()!r} should have a legibility outline"
+            assert text.get_path_effects(), (
+                f"{text.get_text()!r} should have a legibility outline"
+            )
 
     def test_dark_label_gets_a_light_outline(self, ax):
         """A dark `text_color` is haloed in light (contrast flips with luminance)."""

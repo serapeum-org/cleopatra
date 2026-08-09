@@ -12,6 +12,7 @@ import pytest
 from matplotlib.quiver import Barbs, Quiver, QuiverKey
 
 from cleopatra.glyphs.gridded.vector_glyph import VECTOR_DEFAULT_OPTIONS, VectorGlyph
+from cleopatra.styling.params import Contour
 
 
 @pytest.fixture(autouse=True)
@@ -199,8 +200,8 @@ class TestVectorGlyphPlot:
         Test scenario:
             levels=3 -> the quiver norm is a BoundaryNorm.
         """
-        glyph = VectorGlyph(*field, levels=3, vmin=0.0, vmax=6.0)
-        _, _, im = glyph.plot(kind="quiver")
+        glyph = VectorGlyph(*field, vmin=0.0, vmax=6.0)
+        _, _, im = glyph.plot(kind="quiver", contour=Contour(levels=3))
         assert isinstance(im.norm, mcolors.BoundaryNorm), (
             f"levels should yield a BoundaryNorm, got {type(im.norm)}"
         )

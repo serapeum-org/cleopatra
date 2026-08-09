@@ -8,9 +8,10 @@ colorbar creation, tick management, point overlays, and animation.
 from __future__ import annotations
 
 import inspect
-import math
 import os
 import warnings
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any, cast
 
 import matplotlib.colors as colors
@@ -23,29 +24,73 @@ from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure, SubFigure
 from matplotlib.legend import Legend
 from matplotlib.patches import Rectangle
-from matplotlib.ticker import LogFormatter
 
-from cleopatra.glyphs.base.animation import SUPPORTED_VIDEO_FORMAT  # noqa: F401  (re-export)
+from cleopatra.glyphs.base.animation import (
+    SUPPORTED_VIDEO_FORMAT,  # noqa: F401  (re-export)
+)
 from cleopatra.glyphs.base.animation import save_animation as _save_animation
 from cleopatra.styling.colors import resolve_colormap
+from cleopatra.styling.scaling import (
+    MAX_DISCRETE_LEVELS,  # noqa: F401  (re-export)
+    ColorScaling,
+    levels_to_bounds,
+)
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import (
-    ColorScale,
-    MidpointNormalize,
     categorize,
     classify,
     disjoint_legend,
 )
 
-#: Upper bound for an integer `levels` value (number of discrete colour
-#: levels / contour lines). A larger request is almost certainly a mistake
-#: and `np.linspace` with a huge count would exhaust memory.
-MAX_DISCRETE_LEVELS = 1000
-
 #: Qualitative colormap `_prepare_categorical_mapping` falls back to when the
 #: caller left `cmap` at the shared continuous/diverging default -- see the
 #: fallback logic there.
 CATEGORICAL_DEFAULT_CMAP = "tab10"
+
+#: Loose-keyword option keys that moved onto grouped parameter objects.
+#: Passing any of these as a flat keyword (to a constructor or to
+#: `plot`/`animate`) now raises, pointing at the object to use instead.
+#: The keys still live in `default_options` -- the rendering engine reads
+#: them -- but they are populated only via a group object's `to_options()`.
+#: Extended as each group lands (color, then contour/cells/classify/style).
+_GROUPED_KWARG_HINTS: dict[str, str] = {
+    "color_scale": "color=ColorScaling.<variant>(...), e.g. ColorScaling.power(gamma=0.7)",
+    "gamma": "color=ColorScaling.power(gamma=...)",
+    "line_threshold": "color=ColorScaling.sym_log(threshold=..., scale=...)",
+    "line_scale": "color=ColorScaling.sym_log(threshold=..., scale=...)",
+    "bounds": "color=ColorScaling.boundary(bounds=...)",
+    "midpoint": "color=ColorScaling.midpoint(at=...)",
+    "levels": "contour=Contour(levels=...)",
+    "labels": "contour=Contour(labels=True, label_kw=...)",
+    "label_kw": "contour=Contour(labels=True, label_kw=...)",
+    "display_cell_value": "cells=CellValues(show=True, ...)",
+    "num_size": "cells=CellValues(size=...)",
+    "background_color_threshold": "cells=CellValues(background_threshold=...)",
+    "scheme": "classify=Classify(scheme=..., k=...)",
+    "k": "classify=Classify(scheme=..., k=...)",
+    "category_legend_kwargs": "classify=Classify(scheme='categorical', category_legend_kwargs=...)",
+    "style": "data_style=DataStyle(style=...)",
+    "hillshade": "data_style=DataStyle(hillshade=...)",
+}
+
+
+def _reject_grouped_kwargs(keys: Any) -> None:
+    """Raise if any key now belongs to a grouped parameter object.
+
+    Args:
+        keys: An iterable of keyword-argument names (e.g. `kwargs`).
+
+    Raises:
+        ValueError: On the first key found in `_GROUPED_KWARG_HINTS`, with a
+            message naming the grouped object to pass instead.
+    """
+    for key in keys:
+        hint = _GROUPED_KWARG_HINTS.get(key)
+        if hint is not None:
+            raise ValueError(
+                f"The {key!r} option moved onto a grouped parameter object; "
+                f"pass {hint} instead of a loose {key}= keyword."
+            )
 
 
 def _get_figure_supports_root(get_figure) -> bool:
@@ -505,6 +550,7 @@ class Glyph:
         #: overridden option from one left at its default (e.g. `ArrayGlyph` only
         #: auto-sizes the figure when `figsize` was not passed).
         self._explicit_options: set[str] = set(kwargs)
+        _reject_grouped_kwargs(kwargs)
         for key, val in kwargs.items():
             if key not in self._default_options:
                 raise ValueError(
@@ -513,6 +559,68 @@ class Glyph:
                 )
             else:
                 self._default_options[key] = val
+
+    def _merge_group_params(self, *groups: Any) -> None:
+        """Flatten grouped parameter objects into `default_options`.
+
+        Each glyph's `plot`/`animate` accepts grouped parameter objects
+        (e.g. `color=ColorScaling(...)`) in place of the loose keyword
+        arguments they replaced. Every such object exposes `to_options()`,
+        returning the flat `default_options` keys the rendering engine
+        reads; this helper merges each non-`None` object's keys in, so the
+        internal storage stays a single flat dict.
+
+        Only keys the glyph actually supports (already present in its
+        `default_options`) are applied, so a single group object can be
+        passed to glyphs that support different subsets of it -- e.g. a
+        `Contour` carrying `levels` + `labels` applies both on `ArrayGlyph`
+        (which draws isoline labels) but only `levels` on `ScatterGlyph`
+        (which has no labels). A group's `to_options()` emits only the
+        fields the caller explicitly set, so unset fields never clobber a
+        glyph's own defaults.
+
+        Args:
+            *groups: Grouped parameter objects (or `None` for an omitted
+                group). Anything `None` is skipped; each other object must
+                expose a `to_options()` returning a dict.
+        """
+        for group in groups:
+            if group is None:
+                continue
+            for key, val in group.to_options().items():
+                if key in self.default_options:
+                    self.default_options[key] = val
+
+    @contextmanager
+    def _rollback_options_on_error(self) -> Iterator[None]:
+        """Restore `default_options` if the wrapped render body raises.
+
+        A glyph's `plot` merges grouped parameter objects (`color=`, `contour=`,
+        `classify=`, ...) into the persistent `default_options` at the top of the
+        call, then renders. Most glyphs keep those options across plots (they are
+        sticky by design), so a render that raises *after* the merge -- an
+        unsupported `scheme`, a degenerate colour scale -- would leave the
+        half-applied options behind and poison later plain `plot()` calls on the
+        same instance: the stale option re-triggers the same error, or silently
+        renders with a colour scale that was never successfully applied.
+
+        Wrap the render body (the merge included) in this context manager: it
+        snapshots `default_options` on entry and, if the body raises, restores it
+        exactly, so a failed styled render leaves the glyph's option state
+        untouched. On success the merged options stay. Unlike a wrapping
+        decorator, a `with` block adds no stack frame, so warnings emitted inside
+        the render keep their caller-attributed `stacklevel`.
+
+        Yields:
+            None: control returns to the `with` body with the snapshot taken.
+        """
+        snapshot = dict(self._default_options)
+        try:
+            yield
+        except BaseException:
+            self._default_options.clear()
+            self._default_options.update(snapshot)
+            raise
 
     def create_figure_axes(self) -> tuple[Figure, Axes]:
         """Create a new figure and axes from default_options.
@@ -693,76 +801,17 @@ class Glyph:
 
                 ```
         """
-        raw_scale = self.default_options["color_scale"]
-        try:
-            color_scale = ColorScale(raw_scale)
-        except ValueError as e:
-            valid = ", ".join(repr(m.value) for m in ColorScale)
-            raise ValueError(
-                f"Invalid color_scale {raw_scale!r}. Expected one of "
-                f"{valid} (or a cleopatra.styling.styles.ColorScale member)."
-            ) from e
-        vmin = ticks[0]
-        vmax = ticks[-1]
-        levels = self.default_options.get("levels")
-        bounds_from_levels = self._levels_to_bounds(levels, vmin, vmax)
-
-        norm: colors.Normalize | None
-        cbar_kw: dict[str, Any]
-        if color_scale == ColorScale.LINEAR:
-            if bounds_from_levels is not None:
-                norm = colors.BoundaryNorm(boundaries=bounds_from_levels, ncolors=256)
-                cbar_kw = {"ticks": bounds_from_levels}
-            else:
-                norm = None
-                cbar_kw = {"ticks": ticks}
-        elif color_scale == ColorScale.POWER:
-            norm = colors.PowerNorm(
-                gamma=self.default_options["gamma"], vmin=vmin, vmax=vmax
-            )
-            cbar_kw = {"ticks": ticks}
-        elif color_scale == ColorScale.SYM_LOGNORM:
-            norm = colors.SymLogNorm(
-                linthresh=self.default_options["line_threshold"],
-                linscale=self.default_options["line_scale"],
-                base=np.e,
-                vmin=vmin,
-                vmax=vmax,
-            )
-            formatter = LogFormatter(10, labelOnlyBase=False)
-            cbar_kw = {"ticks": ticks, "format": formatter}
-        elif color_scale == ColorScale.BOUNDARY_NORM:
-            explicit_bounds = self.default_options["bounds"]
-            if explicit_bounds:
-                bounds = explicit_bounds
-                cbar_kw = {"ticks": explicit_bounds}
-            elif bounds_from_levels is not None:
-                bounds = bounds_from_levels
-                cbar_kw = {"ticks": bounds_from_levels}
-            else:
-                bounds = ticks
-                cbar_kw = {"ticks": ticks}
-            norm = colors.BoundaryNorm(boundaries=bounds, ncolors=256)
-        elif color_scale == ColorScale.MIDPOINT:
-            norm = MidpointNormalize(
-                midpoint=self.default_options["midpoint"],
-                vmin=vmin,
-                vmax=vmax,
-            )
-            cbar_kw = {"ticks": ticks}
-        else:  # pragma: no cover - a ColorScale member without a branch
-            raise ValueError(
-                f"No norm branch implemented for color_scale={color_scale!r}."
-            )
-
-        extend = self.default_options.get("extend")
-        if extend is None:
-            extend_effective = "both" if levels is not None else "neither"
-        else:
-            extend_effective = extend
-        cbar_kw["extend"] = extend_effective
-
-        return norm, cbar_kw
+        # The colour-scale logic lives on `ColorScaling` (see
+        # `cleopatra.styling.scaling`); this method is the thin bridge from
+        # the flat `default_options` storage to that object. `levels` and
+        # `extend` are cross-group inputs (contour discretisation / colorbar
+        # arrow extension), passed in rather than owned by the scale.
+        scaling = ColorScaling.from_options(self.default_options)
+        return scaling.build_norm(
+            ticks,
+            levels=self.default_options.get("levels"),
+            extend=self.default_options.get("extend"),
+        )
 
     @staticmethod
     def _levels_to_bounds(
@@ -816,20 +865,9 @@ class Glyph:
 
                 ```
         """
-        bounds: np.ndarray | None
-        if levels is None:
-            bounds = None
-        elif isinstance(levels, (int, np.integer)) and not isinstance(levels, bool):
-            n = int(levels)
-            if not 2 <= n <= MAX_DISCRETE_LEVELS:
-                raise ValueError(
-                    f"`levels` as an integer must be between 2 and "
-                    f"{MAX_DISCRETE_LEVELS}, got {n}."
-                )
-            bounds = np.linspace(float(vmin), float(vmax), n)
-        else:
-            bounds = np.sort(np.asarray(levels, dtype=float))
-        return bounds
+        # Behaviour lives on `cleopatra.styling.scaling.levels_to_bounds`;
+        # kept here as a thin delegator for the existing callers/doctests.
+        return levels_to_bounds(levels, vmin, vmax)
 
     def _resolve_limits(self, values: np.ndarray) -> tuple[float, float]:
         """Resolve `(vmin, vmax)` from options, falling back to the data range.
@@ -1254,10 +1292,10 @@ class Glyph:
                 >>> import matplotlib.pyplot as plt
                 >>> from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
                 >>> polys = [np.zeros((3, 2))] * 2
-                >>> g = PolygonGlyph(
-                ...     polys, values=np.array(["a", "b"]),
-                ...     category_legend_kwargs={"title": "Class", "loc": "upper left"},
-                ... )
+                >>> g = PolygonGlyph(polys, values=np.array(["a", "b"]))
+                >>> g.default_options["category_legend_kwargs"] = {
+                ...     "title": "Class", "loc": "upper left"
+                ... }
                 >>> _ = g._prepare_categorical_mapping(np.array(["a", "b"]))
                 >>> fig, ax = plt.subplots()
                 >>> legend = g.create_categorical_legend(ax)
@@ -1393,7 +1431,10 @@ class Glyph:
                 f"'bottom', or None, got {location!r}."
             )
         orientation_opt = self.default_options.get("cbar_orientation")
-        if orientation_opt is not None and orientation_opt not in ("vertical", "horizontal"):
+        if orientation_opt is not None and orientation_opt not in (
+            "vertical",
+            "horizontal",
+        ):
             raise ValueError(
                 "cbar_orientation must be 'vertical' or 'horizontal', got "
                 f"{orientation_opt!r}."

@@ -44,10 +44,16 @@ from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure
 from matplotlib.legend import Legend
 
-from cleopatra.styling.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
-from cleopatra.styling.colors import resolve_colormap
 from cleopatra.basemap.geo import GeoMixin
 from cleopatra.glyphs.base.glyph import Glyph, _root_figure
+from cleopatra.styling.colorbar import (
+    ColorBar,
+    _resolve_colorbar,
+    _warn_deprecated_cbar_kwargs,
+)
+from cleopatra.styling.colors import resolve_colormap
+from cleopatra.styling.params import Classify, Contour
+from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import CLASSIFY_OPTIONS
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
@@ -88,12 +94,17 @@ class PolygonGlyph(GeoMixin, Glyph):
             given. Default is None (outline-only).
         ax: Pre-existing axes to draw on. Default is None.
         fig: Pre-existing figure. Default is None.
-        **kwargs: Override any key in `POLYGON_DEFAULT_OPTIONS`
-            (e.g. `edgecolor`, `linewidth`, `cmap`, `vmin`, `vmax`,
-            `levels`, `color_scale`, `ticks_spacing`, `cbar_label`,
+        **kwargs: Construction-time overrides for the non-grouped
+            `POLYGON_DEFAULT_OPTIONS` (e.g. `edgecolor`, `linewidth`,
+            `cmap`, `vmin`, `vmax`, `ticks_spacing`, `cbar_label`,
             `figsize`, `title`). Set `add_colorbar=False` to suppress the
             per-glyph colorbar (default True) for shared-axes composition
-            where the host owns a single aggregated colorbar.
+            where the host owns a single aggregated colorbar. The colour
+            scale, discretisation `levels`, and classification are no
+            longer construction kwargs -- pass them to `plot()` via
+            `color=ColorScaling(...)`, `contour=Contour(levels=...)`, and
+            `classify=Classify(...)` (a loose `color_scale` / `levels` /
+            `scheme` keyword now raises).
 
     Raises:
         ValueError: If `values` is given but its length does not match
@@ -160,6 +171,9 @@ class PolygonGlyph(GeoMixin, Glyph):
         title: str | None = None,
         add_colorbar: bool | None = None,
         colorbar: bool | ColorBar | None = None,
+        color: ColorScaling | None = None,
+        contour: Contour | None = None,
+        classify: Classify | None = None,
     ) -> tuple[Figure, Axes, PolyCollection]:
         """Draw the polygons, filling by value when present.
 
@@ -225,60 +239,68 @@ class PolygonGlyph(GeoMixin, Glyph):
 
                 ```
         """
-        if ax is not None:
-            self.ax = ax
-            self.fig = _root_figure(ax)
-        elif self.ax is None:
-            self.fig, self.ax = self.create_figure_axes()
-        ax = self.ax
-        assert self.fig is not None
-        opts = self.default_options
+        with self._rollback_options_on_error():
+            self._merge_group_params(color, contour, classify)
 
-        if title is not None:
-            opts["title"] = title
-        opts.update(_resolve_colorbar(colorbar))
-        draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
-        self.cbar = None
-        self.category_legend = None
+            if ax is not None:
+                self.ax = ax
+                self.fig = _root_figure(ax)
+            elif self.ax is None:
+                self.fig, self.ax = self.create_figure_axes()
+            ax = self.ax
+            assert self.fig is not None
+            opts = self.default_options
 
-        if outline_only or self.values is None:
-            edgecolor = opts["edgecolor"]
-            if isinstance(edgecolor, str) and edgecolor.lower() == "none":
-                edgecolor = OUTLINE_EDGECOLOR
-            pc = PolyCollection(
-                self.polygons,
-                facecolors="none",
-                edgecolors=edgecolor,
-                linewidths=opts["linewidth"],
+            if title is not None:
+                opts["title"] = title
+            opts.update(_resolve_colorbar(colorbar))
+            draw_colorbar = (
+                opts["add_colorbar"] if add_colorbar is None else add_colorbar
             )
-            ax.add_collection(pc)
-            ax.autoscale_view()
-        else:
-            norm, cbar_kw, ticks = self._prepare_scalar_mapping(self.values)
-            categorical = self._categorical
-            if categorical is not None:
-                color_array, cmap = categorical["codes"], categorical["cmap"]
+            self.cbar = None
+            self.category_legend = None
+
+            if outline_only or self.values is None:
+                edgecolor = opts["edgecolor"]
+                if isinstance(edgecolor, str) and edgecolor.lower() == "none":
+                    edgecolor = OUTLINE_EDGECOLOR
+                pc = PolyCollection(
+                    self.polygons,
+                    facecolors="none",
+                    edgecolors=edgecolor,
+                    linewidths=opts["linewidth"],
+                )
+                ax.add_collection(pc)
+                ax.autoscale_view()
             else:
-                color_array, cmap = np.asarray(self.values), resolve_colormap(opts["cmap"])
-            pc = PolyCollection(
-                self.polygons,
-                array=color_array,
-                cmap=cmap,
-                norm=norm,
-                edgecolors=opts["edgecolor"],
-                linewidths=opts["linewidth"],
-            )
-            if norm is None:
-                pc.set_clim(ticks[0], ticks[-1])
-            ax.add_collection(pc)
-            ax.autoscale_view()
-            if draw_colorbar:
+                norm, cbar_kw, ticks = self._prepare_scalar_mapping(self.values)
+                categorical = self._categorical
                 if categorical is not None:
-                    self.category_legend = self.create_categorical_legend(ax)
+                    color_array, cmap = categorical["codes"], categorical["cmap"]
                 else:
-                    self.cbar = self.create_color_bar(ax, pc, cbar_kw)
+                    color_array, cmap = (
+                        np.asarray(self.values),
+                        resolve_colormap(opts["cmap"]),
+                    )
+                pc = PolyCollection(
+                    self.polygons,
+                    array=color_array,
+                    cmap=cmap,
+                    norm=norm,
+                    edgecolors=opts["edgecolor"],
+                    linewidths=opts["linewidth"],
+                )
+                if norm is None:
+                    pc.set_clim(ticks[0], ticks[-1])
+                ax.add_collection(pc)
+                ax.autoscale_view()
+                if draw_colorbar:
+                    if categorical is not None:
+                        self.category_legend = self.create_categorical_legend(ax)
+                    else:
+                        self.cbar = self.create_color_bar(ax, pc, cbar_kw)
 
-        if opts["title"]:
-            ax.set_title(opts["title"], fontsize=opts["title_size"])
+            if opts["title"]:
+                ax.set_title(opts["title"], fontsize=opts["title_size"])
 
-        return self.fig, ax, pc
+            return self.fig, ax, pc

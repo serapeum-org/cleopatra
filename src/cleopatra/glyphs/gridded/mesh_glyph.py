@@ -39,14 +39,11 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.colorbar import Colorbar
 from matplotlib.colors import BoundaryNorm, ListedColormap
 
-from cleopatra.styling.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
-from cleopatra.styling.colors import (
-    category_boundaries,
-    resolve_colormap,
-    resolve_single_layer_style,
-    resolve_style_norm,
-)
 from cleopatra.basemap.geo import GeoMixin
+from cleopatra.basemap.projection import (
+    apply_projection_style_mesh,
+    projection_draws_frame,
+)
 from cleopatra.glyphs.base.glyph import (
     Glyph,
     _clear_prior_render_artists,
@@ -56,13 +53,30 @@ from cleopatra.glyphs.base.glyph import (
     _stash_projection_frame,
 )
 from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_faces
-from cleopatra.basemap.projection import apply_projection_style_mesh, projection_draws_frame
+from cleopatra.styling.colorbar import (
+    ColorBar,
+    _resolve_colorbar,
+    _warn_deprecated_cbar_kwargs,
+)
+from cleopatra.styling.colors import (
+    category_boundaries,
+    resolve_colormap,
+    resolve_single_layer_style,
+    resolve_style_norm,
+)
+from cleopatra.styling.params import Contour, DataStyle
+from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import disjoint_legend
 
 MESH_DEFAULT_OPTIONS = {
     "vmin": None,
     "vmax": None,
+    # `None` keeps the colour norm continuous by default (as before). When a
+    # caller sets it via `contour=Contour(levels=N)` it both discretises the
+    # norm (like the other glyphs) and drives the node line/filled-contour
+    # count; a plain node contour with `levels` unset falls back to 20.
+    "levels": None,
     "labels": False,
     "label_kw": None,
     "hillshade": False,
@@ -70,6 +84,11 @@ MESH_DEFAULT_OPTIONS = {
     "projection": None,
 }
 MESH_DEFAULT_OPTIONS = STYLE_DEFAULTS | MESH_DEFAULT_OPTIONS
+
+#: Sentinel distinguishing "hillshade not forwarded" from an explicit
+#: `hillshade=None` in `apply_style`, so an unset value keeps any sticky
+#: relief shading rather than clearing it.
+_UNSET_HILLSHADE = object()
 
 
 class MeshGlyph(GeoMixin, Glyph):
@@ -689,7 +708,11 @@ class MeshGlyph(GeoMixin, Glyph):
             kw.update(render_kwargs)
             return ax.tripcolor(tri, facecolors=tri_values, **kw)
 
-        contour_kw: dict[str, Any] = {"cmap": cmap, "levels": 20}
+        levels = self.default_options["levels"]
+        contour_kw: dict[str, Any] = {
+            "cmap": cmap,
+            "levels": 20 if levels is None else levels,
+        }
         if norm is not None:
             contour_kw["norm"] = norm
         else:
@@ -776,7 +799,7 @@ class MeshGlyph(GeoMixin, Glyph):
         """Name of the `DATA_STYLES` preset currently applied, or `None`.
 
         Reads back the preset set via the `style` constructor kwarg, a
-        `plot(style=...)` call, or `apply_style`.
+        `plot(data_style=DataStyle(style=...))` call, or `apply_style`.
         """
         return self.default_options.get("style")
 
@@ -785,15 +808,16 @@ class MeshGlyph(GeoMixin, Glyph):
     ) -> tuple[plt.Figure, plt.Axes]:
         """Apply a `DATA_STYLES` preset by name, re-rendering the mesh in place.
 
-        A discoverable wrapper over `plot(style=...)` for restyling an
+        A discoverable wrapper over `plot(data_style=DataStyle(style=...))` for restyling an
         already-built glyph. It redraws **in place** on the glyph's own axes
         (taking full ownership -- do not use on a shared axes), or on a fresh
         figure if the glyph was never plotted or its figure was closed. It
         reuses the last-plotted mesh data (and location) so the caller need not
         re-supply it; pass `data=` when the glyph has not been plotted yet. The
         applied style is **sticky** (survives a later plain `plot(data)`);
-        `plot(data, style=None)` clears it. Extra keyword arguments (e.g.
-        `location`, `hillshade`, `edgecolor`) are forwarded to `plot`.
+        `plot(data, data_style=DataStyle(style=None))` clears it. Extra
+        keyword arguments (e.g. `location`, `edgecolor`) are forwarded to
+        `plot`.
 
         Args:
             style: A `cleopatra.styling.colors.DATA_STYLES` preset name.
@@ -817,7 +841,17 @@ class MeshGlyph(GeoMixin, Glyph):
                 )
         location = kwargs.pop("location", self._last_location)
         self._reset_axes_for_restyle()
-        return self.plot(data, location=location, ax=self.ax, style=style, **kwargs)
+        # Fold style (and an optional forwarded hillshade) into the grouped
+        # data_style object; leaving hillshade unset keeps any sticky value.
+        hillshade = kwargs.pop("hillshade", _UNSET_HILLSHADE)
+        data_style = (
+            DataStyle(style=style)
+            if hillshade is _UNSET_HILLSHADE
+            else DataStyle(style=style, hillshade=hillshade)
+        )
+        return self.plot(
+            data, location=location, ax=self.ax, data_style=data_style, **kwargs
+        )
 
     def plot(
         self,
@@ -828,6 +862,9 @@ class MeshGlyph(GeoMixin, Glyph):
         colorbar: bool | ColorBar | None = True,
         title: str | None = None,
         filled: bool = True,
+        color: ColorScaling | None = None,
+        contour: Contour | None = None,
+        data_style: DataStyle | None = None,
         **kwargs: Any,
     ) -> tuple[plt.Figure, plt.Axes]:
         """Plot mesh data using matplotlib triangulation.
@@ -857,25 +894,33 @@ class MeshGlyph(GeoMixin, Glyph):
             filled: For node data, draw filled contours (`tricontourf`,
                 the default) or line contours (`tricontour`) when
                 `False`. Ignored for face data. Default is True.
-            **kwargs: Override any key in `default_options` (cmap,
-                vmin, vmax, color_scale, gamma, midpoint, bounds,
-                figsize, etc.) or pass extra rendering kwargs (levels for
-                tricontourf / tricontour). The loose `ticks_spacing` /
-                `cbar_*` keys still work but are deprecated -- pass
-                `colorbar=ColorBar(...)` instead. Two label options are
-                honoured **only** for line tricontours
-                (`location="node"`, `filled=False`):
-
-                - `labels` (bool, default `False`): when truthy, draw
-                  inline numeric labels on the isolines via `ax.clabel`
-                  and store the resulting `Text` artists on
-                  `self.contour_labels`. A documented no-op for
-                  `tripcolor` (face data) and `tricontourf`
-                  (`filled=True`), which leave `contour_labels` as `None`.
-                - `label_kw` (dict): forwarded to `ax.clabel`, merged
-                  over cleopatra's defaults (`inline=True`, `fontsize=8`,
-                  `fmt="%g"`) so user keys (`fmt`, `fontsize`, `colors`,
-                  `inline_spacing`, …) win on collision.
+            color: Colour-scale group object
+                (`cleopatra.styling.scaling.ColorScaling`), e.g.
+                `ColorScaling.power(gamma=0.7)`. Replaces the loose
+                `color_scale` / `gamma` / `line_threshold` / `line_scale` /
+                `bounds` / `midpoint` keywords.
+            contour: Discretisation / inline-label group object
+                (`cleopatra.styling.params.Contour`). `Contour(levels=N)`
+                discretises the colour norm and sets the node line/filled
+                contour count (default 20 when unset);
+                `Contour(labels=True, label_kw=...)` draws inline numeric
+                labels via `ax.clabel` on a line tricontour
+                (`location="node"`, `filled=False`) and stores the `Text`
+                artists on `self.contour_labels` -- a no-op for `tripcolor`
+                (face data) and `tricontourf`. Replaces the loose `levels`
+                / `labels` / `label_kw` keywords.
+            data_style: Named-preset / relief-shading group object
+                (`cleopatra.styling.params.DataStyle`), e.g.
+                `DataStyle(style="dem", hillshade=True)`. Replaces the
+                loose `style` / `hillshade` keywords.
+            **kwargs: Construction-time-style overrides for the non-grouped
+                `default_options` (`cmap`, `vmin`, `vmax`, `title_size`,
+                `figsize`, …). The loose `ticks_spacing` / `cbar_*` keys
+                still work but are deprecated -- pass `colorbar=ColorBar(...)`
+                instead. The colour-scale, discretisation/label, and
+                preset/relief options moved onto the `color=` / `contour=` /
+                `data_style=` group objects above; passing any of them as a
+                loose keyword now raises.
 
                 One relief option is honoured **only** for node data
                 (`location="node"`):
@@ -967,8 +1012,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 ...     np.array([0.0, 1.0, 2.0, 3.0]),
                 ...     location="node",
                 ...     filled=False,
-                ...     labels=True,
-                ...     label_kw={"fmt": "%.1f"},
+                ...     contour=Contour(labels=True, label_kw={"fmt": "%.1f"}),
                 ... )
                 >>> isinstance(mg.contour_labels, list)
                 True
@@ -984,8 +1028,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 >>> mg = MeshGlyph(node_x, node_y, faces)
                 >>> fig, ax = mg.plot(
                 ...     np.array([1.0, 2.0]),
-                ...     color_scale="power",
-                ...     gamma=0.5,
+                ...     color=ColorScaling.power(gamma=0.5),
                 ...     cmap="coolwarm",
                 ... )
 
@@ -1006,6 +1049,7 @@ class MeshGlyph(GeoMixin, Glyph):
             else:
                 render_kwargs[key] = val
         self._merge_kwargs(option_kwargs)
+        self._merge_group_params(color, contour, data_style)
         _warn_deprecated_cbar_kwargs(kwargs)
         resolved_colorbar = (
             _resolve_colorbar(colorbar) if isinstance(colorbar, ColorBar) else {}
@@ -1014,9 +1058,13 @@ class MeshGlyph(GeoMixin, Glyph):
         if colorbar is not False:
             colorbar = True
 
-        if "hillshade" not in option_kwargs:
+        # `style`/`hillshade` now arrive via the `data_style` group object;
+        # detect whether this call provided each so the sticky-state logic
+        # (a preset persists across later plain plots) still applies.
+        ds_opts = data_style.to_options() if data_style is not None else {}
+        if "hillshade" not in ds_opts:
             self.default_options["hillshade"] = self._construct_hillshade
-        if "style" in option_kwargs:
+        if "style" in ds_opts:
             new_style = self.default_options["style"]
             if new_style is not None:
                 try:
@@ -1168,6 +1216,9 @@ class MeshGlyph(GeoMixin, Glyph):
         interval: int = 200,
         text_loc: list | None = None,
         colorbar: bool | ColorBar | None = None,
+        color: ColorScaling | None = None,
+        contour: Contour | None = None,
+        data_style: DataStyle | None = None,
         **kwargs: Any,
     ) -> FuncAnimation:
         """Create an animation from time-varying mesh data.
@@ -1247,6 +1298,7 @@ class MeshGlyph(GeoMixin, Glyph):
 
         self._default_options = MESH_DEFAULT_OPTIONS.copy()
         self._merge_kwargs(kwargs)
+        self._merge_group_params(color, contour, data_style)
         _warn_deprecated_cbar_kwargs(kwargs)
         resolved_colorbar = (
             _resolve_colorbar(colorbar) if isinstance(colorbar, ColorBar) else {}

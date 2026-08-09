@@ -11,7 +11,12 @@ import numpy as np
 import pytest
 from matplotlib.collections import PathCollection
 
-from cleopatra.glyphs.primitives.scatter_glyph import SCATTER_DEFAULT_OPTIONS, ScatterGlyph
+from cleopatra.glyphs.primitives.scatter_glyph import (
+    SCATTER_DEFAULT_OPTIONS,
+    ScatterGlyph,
+)
+from cleopatra.styling.params import Contour
+from cleopatra.styling.scaling import ColorScaling
 
 
 @pytest.fixture(autouse=True)
@@ -188,22 +193,22 @@ class TestScatterGlyphPlot:
         Test scenario:
             levels=4 -> the scatter norm is a BoundaryNorm.
         """
-        glyph = ScatterGlyph(*xy, values=values, levels=4)
-        _, _, paths = glyph.plot()
+        glyph = ScatterGlyph(*xy, values=values)
+        _, _, paths = glyph.plot(contour=Contour(levels=4))
         assert isinstance(paths.norm, mcolors.BoundaryNorm), (
             f"levels should yield a BoundaryNorm, got {type(paths.norm)}"
         )
 
     def test_power_color_scale_applied(self, xy, values):
-        """A non-linear color_scale is honoured for points.
+        """A non-linear color scale is honoured for points.
 
         Test scenario:
-            color_scale='power' -> the scatter norm is a PowerNorm.
+            color=ColorScaling.power() -> the scatter norm is a PowerNorm.
         """
-        glyph = ScatterGlyph(*xy, values=values, color_scale="power")
-        _, _, paths = glyph.plot()
+        glyph = ScatterGlyph(*xy, values=values)
+        _, _, paths = glyph.plot(color=ColorScaling.power())
         assert isinstance(paths.norm, mcolors.PowerNorm), (
-            f"color_scale='power' should yield a PowerNorm, got {type(paths.norm)}"
+            f"ColorScaling.power() should yield a PowerNorm, got {type(paths.norm)}"
         )
 
     def test_plot_on_supplied_axes(self, xy, values):

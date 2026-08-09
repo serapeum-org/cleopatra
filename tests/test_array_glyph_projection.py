@@ -19,6 +19,7 @@ from matplotlib.collections import QuadMesh
 from matplotlib.image import AxesImage
 
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+from cleopatra.styling.params import DataStyle
 
 pytestmark = pytest.mark.plot
 
@@ -49,7 +50,9 @@ class TestArrayGlyphProjection:
         data, lon, lat = field
         glyph = ArrayGlyph(data, coords=(lon, lat), projection="flat")
         glyph.plot()
-        assert isinstance(glyph.im, QuadMesh), f"expected a QuadMesh, got {type(glyph.im).__name__}"
+        assert isinstance(glyph.im, QuadMesh), (
+            f"expected a QuadMesh, got {type(glyph.im).__name__}"
+        )
         plt.close("all")
 
     def test_globe_projection_renders_and_frames(self, field):
@@ -63,7 +66,9 @@ class TestArrayGlyphProjection:
         data, lon, lat = field
         glyph = ArrayGlyph(data, coords=(lon, lat), projection="globe")
         glyph.plot()
-        assert isinstance(glyph.im, QuadMesh), f"expected a QuadMesh, got {type(glyph.im).__name__}"
+        assert isinstance(glyph.im, QuadMesh), (
+            f"expected a QuadMesh, got {type(glyph.im).__name__}"
+        )
         assert len(glyph.ax.patches) >= 1, "globe render should add a boundary patch"
         plt.close("all")
 
@@ -103,7 +108,9 @@ class TestArrayGlyphProjection:
         data, _lon, _lat = field
         glyph = ArrayGlyph(data)
         glyph.plot()
-        assert isinstance(glyph.im, AxesImage), f"expected an AxesImage, got {type(glyph.im).__name__}"
+        assert isinstance(glyph.im, AxesImage), (
+            f"expected an AxesImage, got {type(glyph.im).__name__}"
+        )
         plt.close("all")
 
     @pytest.mark.parametrize("revert", [None, "flat"])
@@ -125,9 +132,13 @@ class TestArrayGlyphProjection:
         glyph.plot(projection="globe")
         assert glyph.ax.get_xlim()[1] > 1e6, "globe should freeze the view to metres"
         glyph.plot(projection=revert)
-        assert glyph.ax.get_xlim()[1] <= 360.0, "flat replot should restore the degree-scale view"
+        assert glyph.ax.get_xlim()[1] <= 360.0, (
+            "flat replot should restore the degree-scale view"
+        )
         assert glyph.ax.axison, "flat replot should turn the axis back on"
-        assert len(glyph.ax.patches) == 0, "flat replot should remove the globe boundary"
+        assert len(glyph.ax.patches) == 0, (
+            "flat replot should remove the globe boundary"
+        )
         plt.close("all")
 
     @pytest.mark.parametrize("revert", [None, "flat"])
@@ -145,12 +156,16 @@ class TestArrayGlyphProjection:
         data, lon, lat = field
         scaled = data * 30.0
         glyph = ArrayGlyph(scaled, coords=(lon, lat))
-        glyph.plot(style="temperature_2m", projection="globe")
+        glyph.plot(data_style=DataStyle(style="temperature_2m"), projection="globe")
         assert glyph.ax.get_xlim()[1] > 1e6, "styled globe should freeze the view"
-        glyph.plot(style="temperature_2m", projection=revert)
-        assert glyph.ax.get_xlim()[1] <= 360.0, "styled flat replot should restore the view"
+        glyph.plot(data_style=DataStyle(style="temperature_2m"), projection=revert)
+        assert glyph.ax.get_xlim()[1] <= 360.0, (
+            "styled flat replot should restore the view"
+        )
         assert glyph.ax.axison, "styled flat replot should turn the axis back on"
-        assert len(glyph.ax.patches) == 0, "styled flat replot should remove the globe boundary"
+        assert len(glyph.ax.patches) == 0, (
+            "styled flat replot should remove the globe boundary"
+        )
         plt.close("all")
 
     def test_globe_replot_does_not_stack_frame(self, field):
@@ -166,5 +181,7 @@ class TestArrayGlyphProjection:
         glyph.plot(projection="globe")
         patches1 = len(glyph.ax.patches)
         glyph.plot(projection="globe")
-        assert len(glyph.ax.patches) == patches1, "globe boundary must not stack on replot"
+        assert len(glyph.ax.patches) == patches1, (
+            "globe boundary must not stack on replot"
+        )
         plt.close("all")

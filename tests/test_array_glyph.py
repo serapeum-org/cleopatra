@@ -13,14 +13,10 @@ from matplotlib.text import Text
 from PIL import Image
 
 import cleopatra.basemap.reference as refmod
-from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.glyphs.gridded.array_glyph import (
     _COORD_DTYPE_MISMATCH,
     _COORD_SHAPE_MISMATCH,
     _UNSET,
-    _resolve_colorbar,
-    _swatch_text_default,
-    _warn_deprecated_cbar_kwargs,
     AnimateKwargs,
     ArrayGlyph,
     ColorBar,
@@ -29,7 +25,13 @@ from cleopatra.glyphs.gridded.array_glyph import (
     PlotKwargs,
     PointOverlay,
     _pop_first,
+    _resolve_colorbar,
+    _swatch_text_default,
+    _warn_deprecated_cbar_kwargs,
 )
+from cleopatra.styling.params import CellValues, Contour, DataStyle
+from cleopatra.styling.scaling import ColorScaling
+from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 
 class TestProperties:
@@ -120,7 +122,9 @@ class TestPlotArray:
     ):
         array = ArrayGlyph(arr, exclude_value=[no_data_value])
         fig, ax = array.plot(
-            color_scale=color_scale[0], cmap=cmap, colorbar=ColorBar(ticks_spacing=ticks_spacing)
+            color=ColorScaling.linear(),
+            cmap=cmap,
+            colorbar=ColorBar(ticks_spacing=ticks_spacing),
         )
         assert isinstance(fig, Figure)
 
@@ -135,9 +139,8 @@ class TestPlotArray:
     ):
         array = ArrayGlyph(arr, exclude_value=[no_data_value])
         fig, ax = array.plot(
-            color_scale=color_scale[1],
+            color=ColorScaling.power(gamma=color_scale_2_gamma),
             cmap=cmap,
-            gamma=color_scale_2_gamma,
             colorbar=ColorBar(ticks_spacing=ticks_spacing),
         )
         assert isinstance(fig, Figure)
@@ -154,9 +157,9 @@ class TestPlotArray:
     ):
         array = ArrayGlyph(arr, exclude_value=[no_data_value])
         fig, ax = array.plot(
-            color_scale=color_scale[2],
-            line_scale=color_scale_3_linscale,
-            line_threshold=color_scale_3_linthresh,
+            color=ColorScaling.sym_log(
+                threshold=color_scale_3_linthresh, scale=color_scale_3_linscale
+            ),
             cmap=cmap,
             colorbar=ColorBar(ticks_spacing=ticks_spacing),
         )
@@ -172,7 +175,9 @@ class TestPlotArray:
         ticks_spacing: int,
     ):
         array = ArrayGlyph(arr, exclude_value=[no_data_value])
-        fig, ax = array.plot(color_scale=color_scale[3], cmap=cmap, colorbar=ColorBar(ticks_spacing=5))
+        fig, ax = array.plot(
+            color=ColorScaling.boundary(), cmap=cmap, colorbar=ColorBar(ticks_spacing=5)
+        )
 
         assert isinstance(fig, Figure)
 
@@ -187,10 +192,9 @@ class TestPlotArray:
     ):
         array = ArrayGlyph(rhine_dem_arr, exclude_value=[rhine_no_data_val])
         fig, ax = array.plot(
-            color_scale=color_scale[3],
+            color=ColorScaling.boundary(bounds=bounds),
             cmap=cmap,
             colorbar=ColorBar(ticks_spacing=ticks_spacing),
-            bounds=bounds,
         )
 
         assert isinstance(fig, Figure)
@@ -206,8 +210,7 @@ class TestPlotArray:
     ):
         array = ArrayGlyph(arr, exclude_value=[no_data_value])
         fig, ax = array.plot(
-            color_scale=color_scale[4],
-            midpoint=midpoint,
+            color=ColorScaling.midpoint(at=midpoint),
             cmap=cmap,
             colorbar=ColorBar(ticks_spacing=ticks_spacing),
         )
@@ -225,9 +228,11 @@ class TestPlotArray:
     ):
         array = ArrayGlyph(arr, exclude_value=[no_data_value])
         fig, ax = array.plot(
-            display_cell_value=display_cell_value,
-            num_size=num_size,
-            background_color_threshold=background_color_threshold,
+            cells=CellValues(
+                show=display_cell_value,
+                size=num_size,
+                background_threshold=background_color_threshold,
+            ),
             colorbar=ColorBar(ticks_spacing=ticks_spacing),
         )
 
@@ -252,9 +257,11 @@ class TestPlotArray:
             points=PointOverlay(points, color=gauge_color, size=point_size),
             id_color=id_color,
             id_size=id_size,
-            display_cell_value=display_cell_value,
-            num_size=num_size,
-            background_color_threshold=background_color_threshold,
+            cells=CellValues(
+                show=display_cell_value,
+                size=num_size,
+                background_threshold=background_color_threshold,
+            ),
             colorbar=ColorBar(ticks_spacing=ticks_spacing),
         )
 
@@ -271,6 +278,21 @@ class TestAnimate:
         array = ArrayGlyph(coello_data, exclude_value=[no_data_value])
         anim_obj = array.animate(animate_time_list, title="Flow Accumulation")
         assert isinstance(anim_obj, FuncAnimation)
+
+    def test_animate_contour_levels_discretises_the_norm(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """`animate(contour=Contour(levels=N))` discretises the colour scale.
+
+        Test scenario:
+            Regression for the grouped-param API: animations must stay
+            discretisable now that construction-time `levels=` is rejected.
+        """
+        array = ArrayGlyph(coello_data)
+        array.animate(animate_time_list, contour=Contour(levels=5))
+        assert isinstance(array.im.norm, BoundaryNorm), (
+            f"contour levels should yield a BoundaryNorm, got {type(array.im.norm)}"
+        )
 
     def test_save_animation_accepts_pathlib_path(
         self,
@@ -380,7 +402,7 @@ class TestRenamedKwargAliases:
         with pytest.warns(DeprecationWarning, match="cell_value_text_colors"):
             array.animate(
                 animate_time_list,
-                display_cell_value=True,
+                cells=CellValues(show=True),
                 text_colors=("yellow", "purple"),
             )
 
@@ -414,7 +436,7 @@ class TestRenamedKwargAliases:
             warnings.simplefilter("always")
             array.animate(
                 animate_time_list,
-                display_cell_value=True,
+                cells=CellValues(show=True),
                 cell_value_text_colors=("white", "black"),
                 text_colors=("yellow", "purple"),
             )
@@ -737,7 +759,7 @@ class TestKwargsTypedDicts:
         frame = np.array([[1.23456, 2.34567], [3.45678, 4.56789]])
         stack = np.stack([frame, frame + 0.001])
         array = ArrayGlyph(stack)
-        array.animate(list(range(2)), display_cell_value=True, precision=1)
+        array.animate(list(range(2)), cells=CellValues(show=True), precision=1)
         array.anim._func(0)
         cell_texts = {
             t.get_text()
@@ -894,9 +916,7 @@ class TestFrameLabel:
         assert label.color == "black", (
             f"Expected default color 'black', got {label.color!r}"
         )
-        assert label.size is None, (
-            f"Expected default size None, got {label.size!r}"
-        )
+        assert label.size is None, f"Expected default size None, got {label.size!r}"
 
     def test_explicit_values_stored_verbatim(self):
         """All keywords, when given, are stored unchanged."""
@@ -1038,7 +1058,7 @@ class TestAnimateRGB:
             `FuncAnimation` with no colorbar.
         """
         glyph = ArrayGlyph(self._rgb_stack())
-        anim = glyph.animate(self._LABELS, display_cell_value=True)
+        anim = glyph.animate(self._LABELS, cells=CellValues(show=True))
         assert isinstance(anim, FuncAnimation), (
             f"expected FuncAnimation, got {type(anim).__name__}"
         )
@@ -1289,49 +1309,49 @@ class TestPlotKindDispatch:
             glyph.plot(kind="pcolormesh")
 
     def test_color_scale_linear_with_auto(self):
-        """Linear color_scale works under the default kind."""
+        """Linear color scale works under the default kind."""
         glyph = ArrayGlyph(self._sample_arr())
-        fig, ax = glyph.plot(color_scale="linear")
+        fig, ax = glyph.plot(color=ColorScaling.linear())
         assert isinstance(fig, Figure)
 
     def test_color_scale_power_with_auto(self):
-        """Power color_scale works under the default kind."""
+        """Power color scale works under the default kind."""
         glyph = ArrayGlyph(self._sample_arr())
-        fig, ax = glyph.plot(color_scale="power")
+        fig, ax = glyph.plot(color=ColorScaling.power())
         assert isinstance(fig, Figure)
 
     def test_color_scale_enum_member_accepted(self):
-        """`plot(color_scale=ColorScale.POWER)` works (enum member, not str)."""
+        """`ColorScaling(kind=ColorScale.POWER)` works (enum kind, not str)."""
         from cleopatra.styling.styles import ColorScale
 
         glyph = ArrayGlyph(self._sample_arr())
-        fig, ax = glyph.plot(color_scale=ColorScale.POWER)
+        fig, ax = glyph.plot(color=ColorScaling(kind=ColorScale.POWER))
         assert isinstance(fig, Figure)
 
-    def test_invalid_color_scale_int_raises_valueerror(self):
-        """`plot(color_scale=1)` raises `ValueError` (not `AttributeError`)."""
+    def test_invalid_color_scale_loose_kwarg_rejected(self):
+        """A loose `color_scale=` keyword is rejected, pointing at `color=`."""
         glyph = ArrayGlyph(self._sample_arr())
-        with pytest.raises(ValueError, match="Invalid color_scale"):
+        with pytest.raises(ValueError, match="moved onto a grouped parameter object"):
             glyph.plot(color_scale=1)
 
     def test_color_scale_linear_with_pcolormesh(self):
-        """Linear color_scale works under kind=pcolormesh."""
+        """Linear color scale works under kind=pcolormesh."""
         glyph = ArrayGlyph(self._sample_arr())
-        fig, ax = glyph.plot(kind="pcolormesh", color_scale="linear")
+        fig, ax = glyph.plot(kind="pcolormesh", color=ColorScaling.linear())
         assert isinstance(fig, Figure)
         assert len(ax.collections) >= 1
 
     def test_color_scale_power_with_pcolormesh(self):
-        """Power color_scale works under kind=pcolormesh."""
+        """Power color scale works under kind=pcolormesh."""
         glyph = ArrayGlyph(self._sample_arr())
-        fig, ax = glyph.plot(kind="pcolormesh", color_scale="power")
+        fig, ax = glyph.plot(kind="pcolormesh", color=ColorScaling.power())
         assert isinstance(fig, Figure)
         assert len(ax.collections) >= 1
 
     def test_imshow_with_display_cell_value(self):
         """`kind="imshow", display_cell_value=True` still draws cell text."""
         glyph = ArrayGlyph(self._sample_arr())
-        fig, ax = glyph.plot(kind="imshow", display_cell_value=True)
+        fig, ax = glyph.plot(kind="imshow", cells=CellValues(show=True))
         assert isinstance(fig, Figure)
         # Each cell of the 5x5 grid yields one Text artist; allow >= 25
         # because matplotlib also creates axis label/title Text objects.
@@ -1341,7 +1361,7 @@ class TestPlotKindDispatch:
     def test_contour_skips_cell_value_silently(self):
         """`display_cell_value=True` is skipped for `kind="contour"`."""
         glyph = ArrayGlyph(self._sample_arr())
-        fig, ax = glyph.plot(kind="contour", display_cell_value=True)
+        fig, ax = glyph.plot(kind="contour", cells=CellValues(show=True))
         assert isinstance(fig, Figure)
         # No per-cell text annotations should have been emitted.
         assert len(ax.texts) == 0
@@ -1415,7 +1435,7 @@ class TestColourKwargs:
         """`levels=N` switches the linear norm to a `BoundaryNorm`."""
         arr = np.linspace(0.0, 1.0, 100).reshape(10, 10)
         glyph = ArrayGlyph(arr)
-        fig, ax = glyph.plot(kind="imshow", levels=5)
+        fig, ax = glyph.plot(kind="imshow", contour=Contour(levels=5))
         assert isinstance(fig, Figure)
         images = ax.get_images()
         assert images, "expected at least one AxesImage from imshow"
@@ -1430,7 +1450,7 @@ class TestColourKwargs:
         arr = np.linspace(0.0, 1.0, 100).reshape(10, 10)
         glyph = ArrayGlyph(arr)
         edges = [0.0, 0.25, 0.5, 0.75, 1.0]
-        fig, ax = glyph.plot(kind="imshow", levels=edges)
+        fig, ax = glyph.plot(kind="imshow", contour=Contour(levels=edges))
         assert isinstance(fig, Figure)
         norm = ax.get_images()[0].norm
         assert isinstance(norm, BoundaryNorm)
@@ -1441,7 +1461,7 @@ class TestColourKwargs:
         arr = np.linspace(0.0, 1.0, 100).reshape(10, 10)
         glyph = ArrayGlyph(arr)
         edges = [0.0, 0.5, 1.0]
-        fig, ax = glyph.plot(kind="imshow", levels=edges)
+        fig, ax = glyph.plot(kind="imshow", contour=Contour(levels=edges))
         # The cbar is attached to the image's mappable; resolve via
         # the glyph attribute we expose at create_color_bar time.
         cbar = glyph.cbar
@@ -1452,7 +1472,7 @@ class TestColourKwargs:
         arr = np.linspace(0.0, 1.0, 100).reshape(10, 10)
         glyph = ArrayGlyph(arr)
         edges = [0.0, 0.5, 1.0]
-        fig, ax = glyph.plot(kind="imshow", levels=edges, extend="min")
+        fig, ax = glyph.plot(kind="imshow", contour=Contour(levels=edges), extend="min")
         assert glyph.cbar.extend == "min"
 
     def test_cbar_kwargs_merge_overrides_defaults(self):
@@ -1965,9 +1985,9 @@ class TestSharedAxesArtistCleanup:
         """
         arr = np.arange(100.0).reshape(10, 10)
         glyph = ArrayGlyph(arr)
-        glyph.plot(display_cell_value=True)
+        glyph.plot(cells=CellValues(show=True))
         texts_after_first = len(glyph.ax.texts)
-        glyph.plot(display_cell_value=True)
+        glyph.plot(cells=CellValues(show=True))
         assert len(glyph.ax.texts) == texts_after_first, (
             f"Expected {texts_after_first} cell-value texts after the second call, "
             f"got {len(glyph.ax.texts)}"
@@ -2004,9 +2024,9 @@ class TestSharedAxesArtistCleanup:
     ):
         """A second `animate(display_cell_value=True)` call replaces the cell-value texts."""
         glyph = ArrayGlyph(coello_data)
-        glyph.animate(animate_time_list, display_cell_value=True)
+        glyph.animate(animate_time_list, cells=CellValues(show=True))
         texts_after_first = len(glyph.ax.texts)
-        glyph.animate(animate_time_list, display_cell_value=True)
+        glyph.animate(animate_time_list, cells=CellValues(show=True))
         assert len(glyph.ax.texts) == texts_after_first, (
             f"Expected {texts_after_first} texts after the second call, "
             f"got {len(glyph.ax.texts)}"
@@ -2186,7 +2206,9 @@ class TestAnimateEdgeCases:
             The orientation field must apply on the animate path, not just plot.
         """
         glyph = ArrayGlyph(coello_data, exclude_value=[no_data_value])
-        anim = glyph.animate(animate_time_list, colorbar=ColorBar(orientation="horizontal"))
+        anim = glyph.animate(
+            animate_time_list, colorbar=ColorBar(orientation="horizontal")
+        )
         assert anim is not None
         assert glyph.cbar.orientation == "horizontal", (
             f"orientation not honored in animate, got {glyph.cbar.orientation}"
@@ -2336,7 +2358,11 @@ class TestAnimateEdgeCases:
             the label falls back to the colorbar label size, 17 pt.
         """
         glyph = ArrayGlyph(coello_data)
-        glyph.animate(animate_time_list, frame_label=FrameLabel(), colorbar=ColorBar(label_size=17))
+        glyph.animate(
+            animate_time_list,
+            frame_label=FrameLabel(),
+            colorbar=ColorBar(label_size=17),
+        )
         assert glyph._day_text.get_fontsize() == 17, (
             f"Expected inherited fontsize 17, got {glyph._day_text.get_fontsize()}"
         )
@@ -2427,7 +2453,7 @@ class TestNanNoDataConvention:
         not `num_domain_cells`). Regression for P1."""
         arr = self._nan_raster(n=4)
         glyph = ArrayGlyph(arr)
-        anim = glyph.animate(time=list(range(4)), display_cell_value=True)
+        anim = glyph.animate(time=list(range(4)), cells=CellValues(show=True))
         assert isinstance(anim, FuncAnimation)
         plt.close(glyph.fig)
 
@@ -2436,7 +2462,7 @@ class TestNanNoDataConvention:
         `Text` artist per non-NaN cell and does not crash."""
         arr = self._nan_raster(n=1)[0]  # 2-D 5x5 frame
         glyph = ArrayGlyph(arr)
-        fig, ax = glyph.plot(display_cell_value=True)
+        fig, ax = glyph.plot(cells=CellValues(show=True))
         try:
             assert isinstance(fig, Figure)
             n_nan = int(np.isnan(arr).sum())
@@ -2485,8 +2511,8 @@ class TestContourLevelsAndNorm:
         glyph = ArrayGlyph(arr)
         fig, ax = glyph.plot(
             kind="contour",
-            color_scale="power",
-            levels=4,
+            color=ColorScaling.power(),
+            contour=Contour(levels=4),
         )
         assert isinstance(fig, Figure)
         assert len(ax.collections) >= 1
@@ -2497,7 +2523,7 @@ class TestContourLevelsAndNorm:
         glyph = ArrayGlyph(arr)
         fig, ax = glyph.plot(
             kind="contourf",
-            levels=[0.0, 0.25, 0.5, 0.75, 1.0],
+            contour=Contour(levels=[0.0, 0.25, 0.5, 0.75, 1.0]),
         )
         assert isinstance(fig, Figure)
         assert len(ax.collections) >= 1
@@ -2512,10 +2538,10 @@ class TestContourLevelsAndNorm:
         assert isinstance(fig, Figure)
 
     def test_contour_with_midpoint_already_filled(self):
-        """`color_scale='midpoint'` pre-fills the array; contour skips the mask branch."""
+        """A midpoint scale pre-fills the array; contour skips the mask branch."""
         arr = np.linspace(-1.0, 1.0, 100).reshape(10, 10)
         glyph = ArrayGlyph(arr)
-        fig, ax = glyph.plot(kind="contour", color_scale="midpoint", midpoint=0.0)
+        fig, ax = glyph.plot(kind="contour", color=ColorScaling.midpoint(at=0.0))
         assert isinstance(fig, Figure)
         assert len(ax.collections) >= 1
 
@@ -2533,7 +2559,7 @@ class TestContourLabels:
     def test_labels_true_draws_and_exposes_text(self):
         """`labels=True` populates `contour_labels` with `Text` artists."""
         glyph = ArrayGlyph(self._smooth_arr())
-        fig, ax = glyph.plot(kind="contour", labels=True)
+        fig, ax = glyph.plot(kind="contour", contour=Contour(labels=True))
         assert isinstance(fig, Figure)
         assert isinstance(glyph.contour_labels, list)
         assert len(glyph.contour_labels) > 0
@@ -2553,8 +2579,7 @@ class TestContourLabels:
         glyph = ArrayGlyph(self._smooth_arr())
         fig, ax = glyph.plot(
             kind="contour",
-            labels=True,
-            label_kw={"fmt": "%.3f", "fontsize": 6},
+            contour=Contour(labels=True, label_kw={"fmt": "%.3f", "fontsize": 6}),
         )
         assert len(glyph.contour_labels) > 0
         # The custom fontsize on every label proves label_kw was forwarded.
@@ -2565,22 +2590,22 @@ class TestContourLabels:
     def test_labels_true_on_contourf_is_noop(self):
         """`labels=True` is ignored for `contourf` (no isolines to label)."""
         glyph = ArrayGlyph(self._smooth_arr())
-        fig, ax = glyph.plot(kind="contourf", labels=True)
+        fig, ax = glyph.plot(kind="contourf", contour=Contour(labels=True))
         assert isinstance(fig, Figure)
         assert glyph.contour_labels is None
 
     def test_replot_without_labels_resets_contour_labels(self):
         """Re-plotting with `labels=False` clears a prior render's labels."""
         glyph = ArrayGlyph(self._smooth_arr())
-        glyph.plot(kind="contour", labels=True)
+        glyph.plot(kind="contour", contour=Contour(labels=True))
         assert glyph.contour_labels is not None
-        glyph.plot(kind="contour", labels=False)
+        glyph.plot(kind="contour", contour=Contour(labels=False))
         assert glyph.contour_labels is None
 
     def test_switching_kind_resets_contour_labels(self):
         """A subsequent non-contour render clears stale label artists."""
         glyph = ArrayGlyph(self._smooth_arr())
-        glyph.plot(kind="contour", labels=True)
+        glyph.plot(kind="contour", contour=Contour(labels=True))
         assert glyph.contour_labels is not None
         glyph.plot(kind="imshow")
         assert glyph.contour_labels is None
@@ -2592,7 +2617,7 @@ class TestContourLabels:
             # A constant field has no contour lines; the colorbar-skip
             # warning is expected and unrelated to labelling.
             warnings.simplefilter("ignore")
-            fig, ax = glyph.plot(kind="contour", labels=True)
+            fig, ax = glyph.plot(kind="contour", contour=Contour(labels=True))
         assert isinstance(fig, Figure)
         assert glyph.contour_labels == []
 
@@ -2600,7 +2625,9 @@ class TestContourLabels:
         """User `label_kw` keys win over cleopatra's clabel defaults."""
         glyph = ArrayGlyph(self._smooth_arr())
         # Default fontsize is 8; the user value must take precedence.
-        fig, ax = glyph.plot(kind="contour", labels=True, label_kw={"fontsize": 14})
+        fig, ax = glyph.plot(
+            kind="contour", contour=Contour(labels=True, label_kw={"fontsize": 14})
+        )
         assert len(glyph.contour_labels) > 0
         assert all(t.get_fontsize() == 14 for t in glyph.contour_labels)
 
@@ -2629,7 +2656,7 @@ class TestContourLabels:
             the dedicated `contourf` no-op test.
         """
         glyph = ArrayGlyph(self._smooth_arr())
-        fig, ax = glyph.plot(kind=kind, labels=True)
+        fig, ax = glyph.plot(kind=kind, contour=Contour(labels=True))
         assert isinstance(fig, Figure)
         assert glyph.contour_labels is None, (
             f"kind={kind!r} should not draw labels, got {glyph.contour_labels!r}"
@@ -2643,7 +2670,9 @@ class TestContourLabels:
             `colors="red"` entry must colour every label red.
         """
         glyph = ArrayGlyph(self._smooth_arr())
-        fig, ax = glyph.plot(kind="contour", labels=True, label_kw={"colors": "red"})
+        fig, ax = glyph.plot(
+            kind="contour", contour=Contour(labels=True, label_kw={"colors": "red"})
+        )
         assert len(glyph.contour_labels) > 0
         red = to_rgba("red")
         assert all(to_rgba(t.get_color()) == red for t in glyph.contour_labels), (
@@ -2662,7 +2691,7 @@ class TestContourLabels:
         x = np.linspace(-3.0, 3.0, nx)
         y = np.linspace(-3.0, 3.0, ny)
         glyph = ArrayGlyph(arr, coords=(x, y))
-        fig, ax = glyph.plot(kind="contour", labels=True)
+        fig, ax = glyph.plot(kind="contour", contour=Contour(labels=True))
         assert len(glyph.contour_labels) > 0
         assert all(isinstance(t, Text) for t in glyph.contour_labels)
 
@@ -2674,7 +2703,7 @@ class TestContourLabels:
             branch; labels must still be drawn and exposed.
         """
         glyph = ArrayGlyph(self._smooth_arr())
-        fig, ax = glyph.plot(kind="contour", labels=True, levels=5)
+        fig, ax = glyph.plot(kind="contour", contour=Contour(labels=True, levels=5))
         assert len(glyph.contour_labels) > 0
         assert all(isinstance(t, Text) for t in glyph.contour_labels)
 
@@ -2688,7 +2717,7 @@ class TestContourLabels:
         arr = self._smooth_arr().copy()
         arr[0, 0] = -999.0
         glyph = ArrayGlyph(arr, exclude_value=[-999.0])
-        fig, ax = glyph.plot(kind="contour", labels=True)
+        fig, ax = glyph.plot(kind="contour", contour=Contour(labels=True))
         assert len(glyph.contour_labels) > 0
         assert all(isinstance(t, Text) for t in glyph.contour_labels)
 
@@ -3049,10 +3078,12 @@ class TestFacetColorbar:
             col="time", col_coords=[0, 1, 2], colorbar=ColorBar(label="mm")
         )
         assert isinstance(result, FacetGrid), f"expected FacetGrid, got {type(result)}"
-        assert result.cbar is not None, "shared cbar should be present for a ColorBar spec"
-        assert (
-            result.cbar.ax.get_ylabel() == "mm"
-        ), f"shared cbar label should be 'mm', got {result.cbar.ax.get_ylabel()!r}"
+        assert result.cbar is not None, (
+            "shared cbar should be present for a ColorBar spec"
+        )
+        assert result.cbar.ax.get_ylabel() == "mm", (
+            f"shared cbar label should be 'mm', got {result.cbar.ax.get_ylabel()!r}"
+        )
 
     def test_facet_colorbar_spec_applies_to_every_panel(self):
         """A `ColorBar` spec labels the colorbar on *every* panel, not just the first.
@@ -3065,7 +3096,9 @@ class TestFacetColorbar:
             col="time", col_coords=[0, 1, 2], colorbar=ColorBar(label="mm")
         )
         labels = [ax.get_ylabel() for ax in self._colorbar_axes(result)]
-        assert labels == ["mm", "mm", "mm"], f"every panel cbar should read 'mm', got {labels}"
+        assert labels == ["mm", "mm", "mm"], (
+            f"every panel cbar should read 'mm', got {labels}"
+        )
 
     def test_facet_colorbar_true_draws_default_bars(self):
         """`facet(colorbar=True)` draws a colorbar per panel and returns a shared `cbar`.
@@ -3078,9 +3111,9 @@ class TestFacetColorbar:
             col="time", col_coords=[0, 1, 2], colorbar=True
         )
         assert result.cbar is not None, "colorbar=True should draw a shared cbar"
-        assert (
-            len(self._colorbar_axes(result)) == 3
-        ), f"expected 3 colorbar axes, got {len(self._colorbar_axes(result))}"
+        assert len(self._colorbar_axes(result)) == 3, (
+            f"expected 3 colorbar axes, got {len(self._colorbar_axes(result))}"
+        )
 
     def test_facet_colorbar_true_resets_loose_cbar_kwargs(self):
         """`colorbar=True` resets a conflicting loose `cbar_*` to its default.
@@ -3095,9 +3128,9 @@ class TestFacetColorbar:
             result = ArrayGlyph(self._stack_3d()).facet(
                 col="time", col_coords=[0, 1, 2], colorbar=True, cbar_label="loose"
             )
-        assert (
-            result.cbar.ax.get_ylabel() == ""
-        ), f"colorbar=True should reset the loose label, got {result.cbar.ax.get_ylabel()!r}"
+        assert result.cbar.ax.get_ylabel() == "", (
+            f"colorbar=True should reset the loose label, got {result.cbar.ax.get_ylabel()!r}"
+        )
 
     def test_facet_colorbar_none_honors_loose_cbar_label(self):
         """The default `colorbar=None` leaves a loose `cbar_label` in force per panel.
@@ -3133,12 +3166,12 @@ class TestFacetColorbar:
             col="time", col_coords=[0, 1, 2], colorbar=ColorBar(label="mm")
         )
         vmin, vmax = result.cbar.mappable.get_clim()
-        assert vmin == pytest.approx(
-            float(stack.min())
-        ), f"cbar vmin should match stack min, got {vmin}"
-        assert vmax == pytest.approx(
-            float(stack.max())
-        ), f"cbar vmax should match stack max, got {vmax}"
+        assert vmin == pytest.approx(float(stack.min())), (
+            f"cbar vmin should match stack min, got {vmin}"
+        )
+        assert vmax == pytest.approx(float(stack.max())), (
+            f"cbar vmax should match stack max, got {vmax}"
+        )
 
     def test_facet_colorbar_false_suppresses(self):
         """`facet(colorbar=False)` draws no colorbar and leaves `result.cbar` None.
@@ -3150,7 +3183,9 @@ class TestFacetColorbar:
         result = ArrayGlyph(self._stack_3d()).facet(
             col="time", col_coords=[0, 1, 2], colorbar=False
         )
-        assert self._colorbar_axes(result) == [], "colorbar=False should draw no colorbars"
+        assert self._colorbar_axes(result) == [], (
+            "colorbar=False should draw no colorbars"
+        )
         assert result.cbar is None, "result.cbar should be None when colorbar=False"
 
     def test_facet_colorbar_none_preserves_default_behaviour(self):
@@ -3161,10 +3196,12 @@ class TestFacetColorbar:
             is unchanged: one colorbar per panel and a non-None shared `cbar`.
         """
         result = ArrayGlyph(self._stack_3d()).facet(col="time", col_coords=[0, 1, 2])
-        assert (
-            len(self._colorbar_axes(result)) == 3
-        ), "default facet should keep one colorbar per panel"
-        assert result.cbar is not None, "default facet should still expose a shared cbar"
+        assert len(self._colorbar_axes(result)) == 3, (
+            "default facet should keep one colorbar per panel"
+        )
+        assert result.cbar is not None, (
+            "default facet should still expose a shared cbar"
+        )
 
     def test_facet_colorbar_orientation_applied(self):
         """A horizontal `ColorBar` orientation reaches every panel's colorbar.
@@ -3180,9 +3217,9 @@ class TestFacetColorbar:
             col_coords=[0, 1, 2],
             colorbar=ColorBar(label="mm", orientation="horizontal"),
         )
-        assert (
-            result.cbar.orientation == "horizontal"
-        ), f"expected horizontal cbar, got {result.cbar.orientation!r}"
+        assert result.cbar.orientation == "horizontal", (
+            f"expected horizontal cbar, got {result.cbar.orientation!r}"
+        )
         xlabels = [ax.get_xlabel() for ax in self._colorbar_axes(result)]
         assert xlabels == [
             "mm",
@@ -3205,9 +3242,9 @@ class TestFacetColorbar:
                 colorbar=ColorBar(label="typed"),
                 cbar_label="loose",
             )
-        assert (
-            result.cbar.ax.get_ylabel() == "typed"
-        ), f"typed ColorBar should win, got {result.cbar.ax.get_ylabel()!r}"
+        assert result.cbar.ax.get_ylabel() == "typed", (
+            f"typed ColorBar should win, got {result.cbar.ax.get_ylabel()!r}"
+        )
 
     def test_facet_invalid_colorbar_type_raises(self):
         """A non-bool / non-`ColorBar` / non-`None` `colorbar` raises `TypeError`.
@@ -3230,10 +3267,12 @@ class TestFacetColorbar:
         result = ArrayGlyph(self._stack_4d()).facet(
             col="t", row="level", colorbar=ColorBar(label="mm")
         )
-        assert result.axes.shape == (2, 2), f"expected a 2x2 grid, got {result.axes.shape}"
-        assert (
-            result.cbar.ax.get_ylabel() == "mm"
-        ), f"4-D facet shared cbar should read 'mm', got {result.cbar.ax.get_ylabel()!r}"
+        assert result.axes.shape == (2, 2), (
+            f"expected a 2x2 grid, got {result.axes.shape}"
+        )
+        assert result.cbar.ax.get_ylabel() == "mm", (
+            f"4-D facet shared cbar should read 'mm', got {result.cbar.ax.get_ylabel()!r}"
+        )
 
     @pytest.mark.parametrize(
         "kwarg, value",
@@ -3284,14 +3323,18 @@ class TestFacetColorbar:
             routing would leave the swatch and no colorbars, failing here.
         """
         result = ArrayGlyph(self._stack_3d()).facet(
-            col="time", col_coords=[0, 1, 2], style="flow_accumulation",
+            col="time",
+            col_coords=[0, 1, 2],
+            data_style=DataStyle(style="flow_accumulation"),
             colorbar=ColorBar(location="right"),
         )
-        assert (
-            len(self._colorbar_axes(result)) == 3
-        ), "a placement colorbar should draw a real colorbar per panel"
+        assert len(self._colorbar_axes(result)) == 3, (
+            "a placement colorbar should draw a real colorbar per panel"
+        )
         swatches = sum(len(ax.child_axes) for ax in result.axes.ravel())
-        assert swatches == 0, f"the preset swatch should be overridden, got {swatches} swatch axes"
+        assert swatches == 0, (
+            f"the preset swatch should be overridden, got {swatches} swatch axes"
+        )
 
     def test_facet_swatch_preset_without_colorbar_keeps_swatch(self):
         """Without a placement `colorbar=`, the preset keeps its swatch (control).
@@ -3302,11 +3345,17 @@ class TestFacetColorbar:
             colorbar axis, so the override test above is meaningfully guarded.
         """
         result = ArrayGlyph(self._stack_3d()).facet(
-            col="time", col_coords=[0, 1, 2], style="flow_accumulation"
+            col="time",
+            col_coords=[0, 1, 2],
+            data_style=DataStyle(style="flow_accumulation"),
         )
-        assert self._colorbar_axes(result) == [], "preset alone should draw no real colorbar"
+        assert self._colorbar_axes(result) == [], (
+            "preset alone should draw no real colorbar"
+        )
         swatches = sum(len(ax.child_axes) for ax in result.axes.ravel())
-        assert swatches == 3, f"each panel should keep its preset swatch, got {swatches}"
+        assert swatches == 3, (
+            f"each panel should keep its preset swatch, got {swatches}"
+        )
 
     def test_facet_loose_cbar_warns_exactly_once(self):
         """A loose `cbar_*` on `facet` deprecates exactly once, not once per panel.
@@ -3322,9 +3371,9 @@ class TestFacetColorbar:
                 col="time", col_coords=[0, 1, 2], cbar_label="mm"
             )
         cbar_warnings = [w for w in record if "cbar_label" in str(w.message)]
-        assert (
-            len(cbar_warnings) == 1
-        ), f"expected exactly one cbar_label deprecation, got {len(cbar_warnings)}"
+        assert len(cbar_warnings) == 1, (
+            f"expected exactly one cbar_label deprecation, got {len(cbar_warnings)}"
+        )
 
 
 @pytest.mark.plot
@@ -4403,7 +4452,7 @@ class TestAnimateDataGetterEdgeCases:
         anim = glyph.animate(
             time=list(range(3)),
             data_getter=lambda i: stack[i],
-            display_cell_value=False,
+            cells=CellValues(show=False),
         )
         try:
             assert isinstance(anim, FuncAnimation), (
@@ -4539,7 +4588,7 @@ class TestAnimateDataGetterEdgeCases:
         anim = glyph.animate(
             time=list(range(3)),
             data_getter=lambda i: stack[i],
-            background_color_threshold=0.5,
+            cells=CellValues(background_threshold=0.5),
         )
         try:
             assert isinstance(anim, FuncAnimation), (
@@ -4824,8 +4873,12 @@ class TestMappableAndColorbarToggle:
             assert len(fig.axes) == 1, (
                 f"shared axes should stay single, got {len(fig.axes)} axes"
             )
-            assert g1.im is not None, 'each layer must expose its mappable for aggregation'
-            assert g2.im is not None, 'each layer must expose its mappable for aggregation'
+            assert g1.im is not None, (
+                'each layer must expose its mappable for aggregation'
+            )
+            assert g2.im is not None, (
+                'each layer must expose its mappable for aggregation'
+            )
         finally:
             plt.close(fig)
 
@@ -5200,14 +5253,16 @@ class TestArrayGlyphHillshade:
 
     def test_hillshade_draws_rgba_image(self):
         """`hillshade=True` replaces the image data with a shaded RGBA image."""
-        _, ax = ArrayGlyph(self._dem(), cmap="terrain", hillshade=True).plot()
+        _, ax = ArrayGlyph(self._dem(), cmap="terrain").plot(
+            data_style=DataStyle(hillshade=True)
+        )
         assert ax.images[0].get_array().shape[-1] == 4
         plt.close("all")
 
     def test_colorbar_survives_hillshade(self):
         """The colorbar still reflects the cmap/norm after shading."""
-        g = ArrayGlyph(self._dem(), cmap="terrain", hillshade=True)
-        g.plot()
+        g = ArrayGlyph(self._dem(), cmap="terrain")
+        g.plot(data_style=DataStyle(hillshade=True))
         assert g.cbar is not None
         lo, hi = g.cbar.mappable.get_clim()
         assert hi > lo
@@ -5218,8 +5273,11 @@ class TestArrayGlyphHillshade:
         _, ax = ArrayGlyph(
             self._dem(),
             cmap="gist_earth",
-            hillshade={"vert_exag": 6, "azimuth": 300, "multidirectional": 3},
-        ).plot()
+        ).plot(
+            data_style=DataStyle(
+                hillshade={"vert_exag": 6, "azimuth": 300, "multidirectional": 3}
+            )
+        )
         assert ax.images[0].get_array().shape[-1] == 4
         plt.close("all")
 
@@ -5228,8 +5286,8 @@ class TestArrayGlyphHillshade:
         with pytest.warns(
             UserWarning, match="hillshade is only applied to kind='imshow'"
         ):
-            ArrayGlyph(self._dem(), cmap="terrain", hillshade=True).plot(
-                kind="pcolormesh"
+            ArrayGlyph(self._dem(), cmap="terrain").plot(
+                data_style=DataStyle(hillshade=True), kind="pcolormesh"
             )
         plt.close("all")
 
@@ -5249,8 +5307,8 @@ class TestArrayGlyphDataStyle:
 
     def test_continuous_preset_renders_image_without_colorbar(self):
         """A continuous preset draws an image and presents its scale via a legend, not a colorbar."""
-        g = ArrayGlyph(self._accum(), style="flow_accumulation")
-        g.plot()
+        g = ArrayGlyph(self._accum())
+        g.plot(data_style=DataStyle(style="flow_accumulation"))
         assert type(g.im).__name__ == "AxesImage"
         assert g.cbar is None
         plt.close("all")
@@ -5262,36 +5320,40 @@ class TestArrayGlyphDataStyle:
         animate path, which keeps the norm on the artist); here the drawn
         image is the baked RGBA that alpha_scaled_image produces.
         """
-        g = ArrayGlyph(self._accum(), style="flow_accumulation")
-        g.plot()
+        g = ArrayGlyph(self._accum())
+        g.plot(data_style=DataStyle(style="flow_accumulation"))
         assert np.asarray(g.im.get_array()).shape[-1] == 4
         plt.close("all")
 
     def test_continuous_preset_draws_swatch_legend(self):
         """A continuous preset draws its swatch legend as an inset child axes."""
-        g = ArrayGlyph(self._accum(), style="flow_accumulation")
-        _, ax = g.plot()
+        g = ArrayGlyph(self._accum())
+        _, ax = g.plot(data_style=DataStyle(style="flow_accumulation"))
         assert len(ax.child_axes) == 1
         plt.close("all")
 
     def test_continuous_add_colorbar_false_suppresses_swatch(self):
         """`add_colorbar=False` suppresses the continuous swatch legend."""
-        g = ArrayGlyph(self._accum(), style="flow_accumulation")
-        _, ax = g.plot(add_colorbar=False)
+        g = ArrayGlyph(self._accum())
+        _, ax = g.plot(
+            data_style=DataStyle(style="flow_accumulation"), add_colorbar=False
+        )
         assert len(ax.child_axes) == 0
         plt.close("all")
 
     def test_categorical_preset_draws_disjoint_legend(self):
         """A categorical preset renders a discrete legend of its class codes."""
-        g = ArrayGlyph(self._d8(), style="flow_direction_d8")
-        _, ax = g.plot()
+        g = ArrayGlyph(self._d8())
+        _, ax = g.plot(data_style=DataStyle(style="flow_direction_d8"))
         assert ax.get_legend() is not None
         plt.close("all")
 
     def test_add_colorbar_false_suppresses_preset_legend(self):
         """`add_colorbar=False` suppresses the preset's legend."""
-        g = ArrayGlyph(self._d8(), style="flow_direction_d8")
-        _, ax = g.plot(add_colorbar=False)
+        g = ArrayGlyph(self._d8())
+        _, ax = g.plot(
+            data_style=DataStyle(style="flow_direction_d8"), add_colorbar=False
+        )
         assert ax.get_legend() is None
         plt.close("all")
 
@@ -5304,10 +5366,14 @@ class TestArrayGlyphDataStyle:
             figure-patch facecolor to black -- scoped to the glyph -- while a
             preset without a background leaves the figure at its default.
         """
-        fig, ax = ArrayGlyph(self._accum(), style="temperature_flame").plot()
+        fig, ax = ArrayGlyph(self._accum()).plot(
+            data_style=DataStyle(style="temperature_flame")
+        )
         assert to_rgba(ax.get_facecolor()) == to_rgba("#000000")
         assert to_rgba(fig.patch.get_facecolor()) == to_rgba("#000000")
-        fig2, _ = ArrayGlyph(self._accum(), style="flow_accumulation").plot()
+        fig2, _ = ArrayGlyph(self._accum()).plot(
+            data_style=DataStyle(style="flow_accumulation")
+        )
         assert to_rgba(fig2.patch.get_facecolor()) != to_rgba("#000000")
         plt.close("all")
 
@@ -5320,8 +5386,12 @@ class TestArrayGlyphDataStyle:
             (via `savefig.facecolor='auto'`).
         """
         stack = np.stack([self._accum(), self._accum() * 1.1])
-        g = ArrayGlyph(stack, style="temperature_flame")
-        g.animate(time=list(range(2)), add_colorbar=False)
+        g = ArrayGlyph(stack)
+        g.animate(
+            data_style=DataStyle(style="temperature_flame"),
+            time=list(range(2)),
+            add_colorbar=False,
+        )
         assert to_rgba(g.fig.patch.get_facecolor()) == to_rgba("#000000")
         plt.close("all")
 
@@ -5334,9 +5404,15 @@ class TestArrayGlyphDataStyle:
             every sibling panel and hide their titles (a style gallery).
         """
         fig, (ax0, _ax1) = plt.subplots(1, 2)
-        ArrayGlyph(self._accum(), style="temperature_flame").plot(ax=ax0)
-        assert to_rgba(ax0.get_facecolor()) == to_rgba("#000000"), "the flame panel's own axes is black"
-        assert to_rgba(fig.patch.get_facecolor()) != to_rgba("#000000"), "the shared figure stays unpainted"
+        ArrayGlyph(self._accum()).plot(
+            data_style=DataStyle(style="temperature_flame"), ax=ax0
+        )
+        assert to_rgba(ax0.get_facecolor()) == to_rgba("#000000"), (
+            "the flame panel's own axes is black"
+        )
+        assert to_rgba(fig.patch.get_facecolor()) != to_rgba("#000000"), (
+            "the shared figure stays unpainted"
+        )
         plt.close(fig)
 
     def test_background_preset_paints_figure_under_explicit_figsize(self):
@@ -5349,21 +5425,25 @@ class TestArrayGlyphDataStyle:
             figure paint. Otherwise an explicit-figsize flame is a black map framed
             by a white border (and a white GIF/PNG surround).
         """
-        fig, ax = ArrayGlyph(self._accum(), style="temperature_flame", figsize=(8, 8)).plot()
+        fig, ax = ArrayGlyph(self._accum(), figsize=(8, 8)).plot(
+            data_style=DataStyle(style="temperature_flame")
+        )
         assert to_rgba(ax.get_facecolor()) == to_rgba("#000000"), "the axes is black"
-        assert to_rgba(fig.patch.get_facecolor()) == to_rgba("#000000"), "an explicit figsize still paints the figure"
+        assert to_rgba(fig.patch.get_facecolor()) == to_rgba("#000000"), (
+            "an explicit figsize still paints the figure"
+        )
         plt.close(fig)
 
     def test_unknown_style_raises(self):
         """An unknown style name raises a clear `ValueError`."""
         with pytest.raises(ValueError, match="unknown data style"):
-            ArrayGlyph(self._accum(), style="not_a_style").plot()
+            ArrayGlyph(self._accum()).plot(data_style=DataStyle(style="not_a_style"))
         plt.close("all")
 
     def test_multilayer_style_rejected(self):
         """A multi-layer preset (`haze`) cannot apply to a single band."""
         with pytest.raises(ValueError, match="multiple layers"):
-            ArrayGlyph(self._accum(), style="haze").plot()
+            ArrayGlyph(self._accum()).plot(data_style=DataStyle(style="haze"))
         plt.close("all")
 
     def test_curvilinear_coords_with_style_renders(self):
@@ -5372,8 +5452,8 @@ class TestArrayGlyphDataStyle:
         ny, nx = arr.shape
         x = np.linspace(-3.0, 3.0, nx)
         y = np.linspace(-3.0, 3.0, ny)
-        g = ArrayGlyph(arr, coords=(x, y), style="flow_accumulation")
-        g.plot()
+        g = ArrayGlyph(arr, coords=(x, y))
+        g.plot(data_style=DataStyle(style="flow_accumulation"))
         assert type(g.im).__name__ == "QuadMesh"
         plt.close("all")
 
@@ -5384,12 +5464,10 @@ class TestArrayGlyphDataStyle:
         pixel colours: a fixed -48..56 render differs from one auto-ranged to the data extent.
         """
         data = np.linspace(-10.0, 50.0, 30 * 40).reshape(30, 40)
-        fixed = ArrayGlyph(data, style="min_temperature_2m")
-        fixed.plot()
-        auto = ArrayGlyph(
-            data, style="min_temperature_2m", vmin=float(data.min()), vmax=float(data.max())
-        )
-        auto.plot()
+        fixed = ArrayGlyph(data)
+        fixed.plot(data_style=DataStyle(style="min_temperature_2m"))
+        auto = ArrayGlyph(data, vmin=float(data.min()), vmax=float(data.max()))
+        auto.plot(data_style=DataStyle(style="min_temperature_2m"))
         assert not np.allclose(fixed.im.get_array(), auto.im.get_array())
         plt.close("all")
 
@@ -5399,21 +5477,23 @@ class TestArrayGlyphDataStyle:
         g = ArrayGlyph(data)
         g.plot(vmin=5.0, vmax=20.0)  # plain plot sets an explicit range...
         g.plot(
-            style="min_temperature_2m"
+            data_style=DataStyle(style="min_temperature_2m")
         )  # ...which sticks into the styled render (not min_temperature_2m's -48..56)
         sticky = np.asarray(g.im.get_array()).copy()
-        fresh = ArrayGlyph(data, style="min_temperature_2m")
-        fresh.plot()  # a fresh glyph uses min_temperature_2m's own fixed range
+        fresh = ArrayGlyph(data)
+        fresh.plot(
+            data_style=DataStyle(style="min_temperature_2m")
+        )  # a fresh glyph uses min_temperature_2m's own fixed range
         assert not np.allclose(sticky, np.asarray(fresh.im.get_array()))
         plt.close("all")
 
     def test_glyph_vmin_vmax_overrides_preset_fixed_range(self):
         """A glyph-level vmin/vmax overrides the preset's encoded fixed range."""
         data = np.linspace(-10.0, 50.0, 30 * 40).reshape(30, 40)
-        default = ArrayGlyph(data, style="min_temperature_2m")
-        default.plot()
-        override = ArrayGlyph(data, style="min_temperature_2m", vmin=-10.0, vmax=50.0)
-        override.plot()
+        default = ArrayGlyph(data)
+        default.plot(data_style=DataStyle(style="min_temperature_2m"))
+        override = ArrayGlyph(data, vmin=-10.0, vmax=50.0)
+        override.plot(data_style=DataStyle(style="min_temperature_2m"))
         assert not np.allclose(default.im.get_array(), override.im.get_array())
         plt.close("all")
 
@@ -5423,15 +5503,15 @@ class TestArrayGlyphDataStyle:
         d8 = rng.choice(
             [0, 1, 2, 4, 8, 16, 32, 64, 128], size=(20, 20)
         )  # int dtype, 0 = nodata
-        g = ArrayGlyph(d8, style="flow_direction_d8", exclude_value=[0])
-        _, ax = g.plot()
+        g = ArrayGlyph(d8, exclude_value=[0])
+        _, ax = g.plot(data_style=DataStyle(style="flow_direction_d8"))
         assert ax.get_legend() is not None
         plt.close("all")
 
     def test_style_hides_pixel_ticks_without_extent(self):
         """A style plot with no extent hides pixel-index ticks, like the imshow path."""
-        g = ArrayGlyph(self._accum(), style="flow_accumulation")
-        _, ax = g.plot()
+        g = ArrayGlyph(self._accum())
+        _, ax = g.plot(data_style=DataStyle(style="flow_accumulation"))
         assert ax.get_xticks().size == 0
         assert ax.get_yticks().size == 0
         plt.close("all")
@@ -5440,27 +5520,31 @@ class TestArrayGlyphDataStyle:
         """A preset bypasses point/cell-value overlays; the drop is warned, not silent."""
         pts = np.array([[1.0, 2, 3], [2.0, 5, 6]])
         with pytest.warns(UserWarning, match="bypass point and cell-value overlays"):
-            ArrayGlyph(self._accum()).plot(points=pts, style="flow_accumulation")
+            ArrayGlyph(self._accum()).plot(
+                points=pts, data_style=DataStyle(style="flow_accumulation")
+            )
         plt.close("all")
 
     def test_rgb_with_style_warns(self):
         """A `style` on an RGB array is ignored with a warning, not silently."""
         rgb = np.random.default_rng(6).random((3, 8, 8))
         with pytest.warns(UserWarning, match="do not apply to RGB"):
-            ArrayGlyph(rgb, rgb=[0, 1, 2], style="flow_accumulation").plot()
+            ArrayGlyph(rgb, rgb=[0, 1, 2]).plot(
+                data_style=DataStyle(style="flow_accumulation")
+            )
         plt.close("all")
 
     def test_plot_style_with_hillshade_composes(self):
         """In `plot`, `style` + `hillshade` compose: the preset RGBA is relief-shaded."""
-        g = ArrayGlyph(
-            self._accum(), style="flow_accumulation", hillshade={"vert_exag": 5}
+        g = ArrayGlyph(self._accum())
+        g.plot(
+            data_style=DataStyle(style="flow_accumulation", hillshade={"vert_exag": 5})
         )
-        g.plot()
         shaded = np.asarray(g.im.get_array())
         assert shaded.ndim == 3
         assert shaded.shape[-1] == 4
-        g2 = ArrayGlyph(self._accum(), style="flow_accumulation")
-        g2.plot()
+        g2 = ArrayGlyph(self._accum())
+        g2.plot(data_style=DataStyle(style="flow_accumulation"))
         base = np.asarray(g2.im.get_array())
         assert not np.allclose(shaded[..., :3], base[..., :3]), (
             "hillshade lit the preset colours"
@@ -5470,8 +5554,8 @@ class TestArrayGlyphDataStyle:
     def test_categorical_style_with_hillshade_warns_not_shaded(self):
         """A categorical preset + hillshade warns and is NOT relief-shaded (like MeshGlyph)."""
         with pytest.warns(UserWarning, match="categorical data-style preset"):
-            g = ArrayGlyph(self._d8(), style="flow_direction_d8", hillshade=True)
-            g.plot()
+            g = ArrayGlyph(self._d8())
+            g.plot(data_style=DataStyle(style="flow_direction_d8", hillshade=True))
         # the categorical image keeps its flat class colours (RGBA from the preset)
         assert np.asarray(g.im.get_array()).shape[-1] == 4
         plt.close("all")
@@ -5483,9 +5567,9 @@ class TestArrayGlyphDataStyle:
         x = np.linspace(-3.0, 3.0, nx)
         y = np.linspace(-3.0, 3.0, ny)
         with pytest.warns(UserWarning, match="curvilinear data-style preset"):
-            ArrayGlyph(
-                arr, coords=(x, y), style="flow_accumulation", hillshade=True
-            ).plot()
+            ArrayGlyph(arr, coords=(x, y)).plot(
+                data_style=DataStyle(style="flow_accumulation", hillshade=True)
+            )
         plt.close("all")
 
     def test_unknown_style_with_coords_reports_style_error_first(self):
@@ -5495,7 +5579,9 @@ class TestArrayGlyphDataStyle:
         x = np.linspace(0.0, 1.0, nx)
         y = np.linspace(0.0, 1.0, ny)
         with pytest.raises(ValueError, match="unknown data style"):
-            ArrayGlyph(arr, coords=(x, y), style="not_a_style").plot()
+            ArrayGlyph(arr, coords=(x, y)).plot(
+                data_style=DataStyle(style="not_a_style")
+            )
         plt.close("all")
 
 
@@ -5516,8 +5602,10 @@ class TestArrayGlyphShadedAnimate:
 
     def test_hillshade_shades_every_frame(self):
         """`animate_a` shades each frame RGBA rather than reverting to the raw scalar frame."""
-        g = ArrayGlyph(self._dem_stack(), cmap="terrain", hillshade={"vert_exag": 5})
-        anim = g.animate(time=list(range(5)))
+        g = ArrayGlyph(self._dem_stack(), cmap="terrain")
+        anim = g.animate(
+            data_style=DataStyle(hillshade={"vert_exag": 5}), time=list(range(5))
+        )
         anim._func(2)  # drive a mid-sequence frame through animate_a
         arr = np.asarray(g.im.get_array())
         assert arr.ndim == 3
@@ -5530,8 +5618,8 @@ class TestArrayGlyphShadedAnimate:
         accum = np.stack(
             [np.abs(rng.normal(size=(20, 25))).cumsum(1) * 40 for _ in range(4)]
         )
-        g = ArrayGlyph(accum, style="flow_accumulation")
-        g.animate(time=list(range(4)))
+        g = ArrayGlyph(accum)
+        g.animate(data_style=DataStyle(style="flow_accumulation"), time=list(range(4)))
         assert g.im.cmap.name == "Blues"
         assert type(g.im.norm).__name__ == "SymLogNorm"
         plt.close("all")
@@ -5542,8 +5630,11 @@ class TestArrayGlyphShadedAnimate:
         accum = np.stack(
             [np.abs(rng.normal(size=(20, 25))).cumsum(1) * 40 for _ in range(4)]
         )
-        g = ArrayGlyph(accum, style="flow_accumulation", hillshade={"vert_exag": 5})
-        anim = g.animate(time=list(range(4)))
+        g = ArrayGlyph(accum)
+        anim = g.animate(
+            data_style=DataStyle(style="flow_accumulation", hillshade={"vert_exag": 5}),
+            time=list(range(4)),
+        )
         anim._func(2)  # drive a frame; must not raise on the scale-norm path
         assert g.im.cmap.name == "Blues"
         assert type(g.im.norm).__name__ == "SymLogNorm"
@@ -5558,8 +5649,8 @@ class TestArrayGlyphShadedAnimate:
         accum = np.stack(
             [np.abs(rng.normal(size=(20, 25))).cumsum(1) * 40 for _ in range(3)]
         )
-        g = ArrayGlyph(accum, style="flow_accumulation")
-        g.animate(time=list(range(3)))
+        g = ArrayGlyph(accum)
+        g.animate(data_style=DataStyle(style="flow_accumulation"), time=list(range(3)))
         assert g.cbar is None
         assert len(g.ax.child_axes) == 1  # the swatch legend inset
         g.animate(time=list(range(3)))  # repeat must not stack swatches
@@ -5571,8 +5662,8 @@ class TestArrayGlyphShadedAnimate:
         ('≤'/'≥') from the norm's extend, matching the plot() legend (M2 parity)."""
         base = np.linspace(-30.0, 38.0, 400).reshape(20, 20)
         stack = np.stack([base + w for w in (-2.0, 0.0, 5.0)])
-        g = ArrayGlyph(stack, style="temperature_2m")
-        g.animate(time=list(range(3)))
+        g = ArrayGlyph(stack)
+        g.animate(data_style=DataStyle(style="temperature_2m"), time=list(range(3)))
         swatch_texts = [t.get_text() for c in g.ax.child_axes for t in c.texts]
         assert "≤-40" in swatch_texts, (
             f"animate legend should cap the low endpoint, got {swatch_texts}"
@@ -5588,8 +5679,10 @@ class TestArrayGlyphShadedAnimate:
         accum = np.stack(
             [np.abs(rng.normal(size=(20, 25))).cumsum(1) * 40 for _ in range(3)]
         )
-        g = ArrayGlyph(accum, style="flow_accumulation")
-        anim = g.animate(time=list(range(3)))
+        g = ArrayGlyph(accum)
+        anim = g.animate(
+            data_style=DataStyle(style="flow_accumulation"), time=list(range(3))
+        )
         anim._func(1)
         frame = np.asarray(g.im.get_array())
         assert frame.shape[-1] == 4, "animate frames are RGBA"
@@ -5602,11 +5695,15 @@ class TestArrayGlyphShadedAnimate:
         """A styled animation honours the preset's fixed range, and a caller vmin/vmax overrides it."""
         base = np.linspace(-2.0, 39.0, 400).reshape(20, 20)
         stack = np.stack([base + w for w in (-4.0, 0.0, 8.0)])
-        fixed = ArrayGlyph(stack, style="min_temperature_2m")
-        fixed.animate(time=list(range(3)))._func(2)
+        fixed = ArrayGlyph(stack)
+        fixed.animate(
+            data_style=DataStyle(style="min_temperature_2m"), time=list(range(3))
+        )._func(2)
         fixed_frame = np.asarray(fixed.im.get_array()).copy()
-        override = ArrayGlyph(stack, style="min_temperature_2m", vmin=-10.0, vmax=50.0)
-        override.animate(time=list(range(3)))._func(2)
+        override = ArrayGlyph(stack, vmin=-10.0, vmax=50.0)
+        override.animate(
+            data_style=DataStyle(style="min_temperature_2m"), time=list(range(3))
+        )._func(2)
         assert not np.allclose(fixed_frame, np.asarray(override.im.get_array()))
         plt.close("all")
 
@@ -5618,8 +5715,12 @@ class TestArrayGlyphShadedAnimate:
         def getter(i):
             return np.ma.array((base + i).astype(int), mask=(base % 7 == 0))
 
-        g = ArrayGlyph(template, cmap="terrain", hillshade=True)
-        anim = g.animate(time=list(range(3)), data_getter=getter)
+        g = ArrayGlyph(template, cmap="terrain")
+        anim = g.animate(
+            data_style=DataStyle(hillshade=True),
+            time=list(range(3)),
+            data_getter=getter,
+        )
         anim._func(1)  # integer masked frame through _display_frame's hillshade branch
         assert np.asarray(g.im.get_array()).shape[-1] == 4
         plt.close("all")
@@ -5630,8 +5731,12 @@ class TestArrayGlyphShadedAnimate:
         accum = np.stack(
             [np.abs(rng.normal(size=(20, 25))).cumsum(1) * 40 for _ in range(4)]
         )
-        g = ArrayGlyph(accum, style="flow_accumulation")
-        g.animate(time=list(range(4)), add_colorbar=False)
+        g = ArrayGlyph(accum)
+        g.animate(
+            data_style=DataStyle(style="flow_accumulation"),
+            time=list(range(4)),
+            add_colorbar=False,
+        )
         assert g.cbar is None
         assert g.im.cmap.name == "Blues"
         plt.close("all")
@@ -5643,9 +5748,13 @@ class TestArrayGlyphShadedAnimate:
             [np.abs(rng.normal(size=(20, 25))).cumsum(1) * 40 for _ in range(3)]
         )
         pts = np.array([[1.0, 2, 3], [2.0, 5, 6]])
-        g = ArrayGlyph(accum, style="flow_accumulation")
+        g = ArrayGlyph(accum)
         with pytest.warns(UserWarning, match="bypass point and cell-value overlays"):
-            g.animate(time=list(range(3)), points=pts)
+            g.animate(
+                data_style=DataStyle(style="flow_accumulation"),
+                time=list(range(3)),
+                points=pts,
+            )
         # no scatter overlay drawn (the preset image is the only artist family)
         assert len(g.ax.collections) == 0
         plt.close("all")
@@ -5659,8 +5768,10 @@ class TestArrayGlyphShadedAnimate:
                 for _ in range(3)
             ]
         )
-        g = ArrayGlyph(d8, style="flow_direction_d8")
-        anim = g.animate(time=list(range(3)))
+        g = ArrayGlyph(d8)
+        anim = g.animate(
+            data_style=DataStyle(style="flow_direction_d8"), time=list(range(3))
+        )
         anim._func(1)
         frame = np.asarray(g.im.get_array())
         assert frame.ndim == 3, 'categorical frames are RGBA'
@@ -5679,8 +5790,9 @@ class TestArrayGlyphShadedAnimate:
             ]
         )
         with pytest.warns(UserWarning, match="categorical data-style preset"):
-            ArrayGlyph(d8, style="flow_direction_d8", hillshade=True).animate(
-                time=list(range(3))
+            ArrayGlyph(d8).animate(
+                data_style=DataStyle(style="flow_direction_d8", hillshade=True),
+                time=list(range(3)),
             )
         plt.close("all")
 
@@ -5693,8 +5805,12 @@ class TestArrayGlyphShadedAnimate:
                 for _ in range(3)
             ]
         )
-        g = ArrayGlyph(d8, style="flow_direction_d8")
-        g.animate(time=list(range(3)), add_colorbar=False)
+        g = ArrayGlyph(d8)
+        g.animate(
+            data_style=DataStyle(style="flow_direction_d8"),
+            time=list(range(3)),
+            add_colorbar=False,
+        )
         assert g.cbar is None
         assert g.ax.get_legend() is None
         plt.close("all")
@@ -5709,8 +5825,10 @@ class TestArrayGlyphShadedAnimate:
             ]
         )
         d8[:, 0, 0] = 999.0  # nodata / out-of-range
-        g = ArrayGlyph(d8, style="flow_direction_d8")
-        anim = g.animate(time=list(range(3)))
+        g = ArrayGlyph(d8)
+        anim = g.animate(
+            data_style=DataStyle(style="flow_direction_d8"), time=list(range(3))
+        )
         anim._func(1)
         assert np.asarray(g.im.get_array())[0, 0, 3] == 0.0
         plt.close("all")
@@ -5772,7 +5890,7 @@ class TestArrayGlyphApplyStyle:
     def test_failed_apply_style_leaves_glyph_usable(self):
         """A bad apply_style name raises without poisoning the style or wiping the render."""
         g = ArrayGlyph(self._dem())
-        g.plot(style="topography")
+        g.plot(data_style=DataStyle(style="topography"))
         with pytest.raises(ValueError, match="unknown data style"):
             g.apply_style("not_a_style")
         assert g.style == "topography"  # prior good style preserved
@@ -5783,19 +5901,42 @@ class TestArrayGlyphApplyStyle:
     def test_failed_plot_style_does_not_poison(self):
         """plot(style='bad') raises and clears the style so later plain plot() works."""
         g = ArrayGlyph(self._dem())
+        bad = DataStyle(style="not_a_style")
         with pytest.raises(ValueError, match="unknown data style"):
-            g.plot(style="not_a_style")
+            g.plot(data_style=bad)
         assert g.style is None
         g.plot()  # not bricked
+        plt.close("all")
+
+    def test_failed_style_rolls_back_co_passed_color(self):
+        """An invalid data_style must not leak a co-passed color= into later plots.
+
+        Test scenario:
+            plot(color=ColorScaling.power(...), data_style=DataStyle(bad))
+            raises, and the persistent color_scale/gamma roll back to their
+            defaults rather than the failed call's power scale (regression for
+            an ArrayGlyph rollback that reverted only `style`).
+        """
+        g = ArrayGlyph(self._dem())
+        power = ColorScaling.power(gamma=0.7)
+        bad = DataStyle(style="not_a_style")
+        with pytest.raises(ValueError, match="unknown data style"):
+            g.plot(color=power, data_style=bad)
+        assert g.default_options["color_scale"] == "linear", (
+            "a failed data_style must roll back the co-passed color scale"
+        )
+        assert g.default_options["gamma"] == 0.5, "gamma must roll back to its default"
+        assert g.style is None
+        g.plot()  # not bricked and renders with the default linear scale
         plt.close("all")
 
     def test_style_is_sticky_and_clearable(self):
         """A style survives a later plain plot() and is cleared by style=None."""
         g = ArrayGlyph(self._dem())
-        g.plot(style="topography")
+        g.plot(data_style=DataStyle(style="topography"))
         g.plot()
         assert g.style == "topography"
-        g.plot(style=None)
+        g.plot(data_style=DataStyle(style=None))
         assert g.style is None
 
     def test_apply_style_on_closed_figure_renders_fresh(self):
@@ -5860,12 +6001,16 @@ class TestAnimateFullBleed:
         glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
         glyph.animate(["a", "b", "c"], full_bleed=True, add_colorbar=False, title="")
         bounds = tuple(round(v, 6) for v in glyph.ax.get_position().bounds)
-        assert bounds == (0.0, 0.0, 1.0, 1.0), f"axes should fill the figure, got {bounds}"
+        assert bounds == (0.0, 0.0, 1.0, 1.0), (
+            f"axes should fill the figure, got {bounds}"
+        )
         assert list(glyph.ax.get_xticks()) == [], "x ticks should be stripped"
         assert list(glyph.ax.get_yticks()) == [], "y ticks should be stripped"
         visible = [s for s in glyph.ax.spines.values() if s.get_visible()]
         assert not visible, f"all spines should be hidden, {len(visible)} still visible"
-        assert glyph.ax.get_facecolor() != (0.0, 0.0, 0.0, 1.0), "True must not paint a black canvas"
+        assert glyph.ax.get_facecolor() != (0.0, 0.0, 0.0, 1.0), (
+            "True must not paint a black canvas"
+        )
         plt.close("all")
 
     def test_full_bleed_colour_paints_canvas(self):
@@ -5878,10 +6023,16 @@ class TestAnimateFullBleed:
         """
         glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
         glyph.animate(["a", "b", "c"], full_bleed="black", add_colorbar=False, title="")
-        assert glyph.ax.get_facecolor() == (0.0, 0.0, 0.0, 1.0), "axes canvas should be black"
-        assert glyph.fig.get_facecolor() == (0.0, 0.0, 0.0, 1.0), "figure canvas should be black"
+        assert glyph.ax.get_facecolor() == (0.0, 0.0, 0.0, 1.0), (
+            "axes canvas should be black"
+        )
+        assert glyph.fig.get_facecolor() == (0.0, 0.0, 0.0, 1.0), (
+            "figure canvas should be black"
+        )
         bounds = tuple(round(v, 6) for v in glyph.ax.get_position().bounds)
-        assert bounds == (0.0, 0.0, 1.0, 1.0), f"colour full-bleed should still fill, got {bounds}"
+        assert bounds == (0.0, 0.0, 1.0, 1.0), (
+            f"colour full-bleed should still fill, got {bounds}"
+        )
         plt.close("all")
 
     def test_full_bleed_resizes_figure_to_data_aspect(self):
@@ -5909,7 +6060,9 @@ class TestAnimateFullBleed:
         glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
         glyph.animate(["a", "b", "c"])
         bounds = tuple(glyph.ax.get_position().bounds)
-        assert bounds != (0.0, 0.0, 1.0, 1.0), f"default layout should not be full-bleed, got {bounds}"
+        assert bounds != (0.0, 0.0, 1.0, 1.0), (
+            f"default layout should not be full-bleed, got {bounds}"
+        )
         plt.close("all")
 
     def test_full_bleed_without_extent_still_fills(self):
@@ -5923,7 +6076,9 @@ class TestAnimateFullBleed:
         glyph = ArrayGlyph(self._stack())
         glyph.animate(["a", "b", "c"], full_bleed=True, add_colorbar=False, title="")
         bounds = tuple(round(v, 6) for v in glyph.ax.get_position().bounds)
-        assert bounds == (0.0, 0.0, 1.0, 1.0), f"axes should fill the figure with no extent, got {bounds}"
+        assert bounds == (0.0, 0.0, 1.0, 1.0), (
+            f"axes should fill the figure with no extent, got {bounds}"
+        )
         plt.close("all")
 
     def test_full_bleed_zero_width_extent_skips_resize(self):
@@ -5938,7 +6093,9 @@ class TestAnimateFullBleed:
         glyph.fig, glyph.ax = glyph.create_figure_axes()
         glyph._apply_full_bleed()
         bounds = tuple(round(v, 6) for v in glyph.ax.get_position().bounds)
-        assert bounds == (0.0, 0.0, 1.0, 1.0), f"axes should still fill on a degenerate extent, got {bounds}"
+        assert bounds == (0.0, 0.0, 1.0, 1.0), (
+            f"axes should still fill on a degenerate extent, got {bounds}"
+        )
         plt.close("all")
 
     def test_full_bleed_emits_no_tight_layout_warning(self):
@@ -5952,9 +6109,13 @@ class TestAnimateFullBleed:
         glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
-            glyph.animate(["a", "b", "c"], full_bleed=True, add_colorbar=False, title="")
+            glyph.animate(
+                ["a", "b", "c"], full_bleed=True, add_colorbar=False, title=""
+            )
         offenders = [str(w.message) for w in caught if "tight_layout" in str(w.message)]
-        assert offenders == [], f"full_bleed should skip tight_layout; got warnings {offenders}"
+        assert offenders == [], (
+            f"full_bleed should skip tight_layout; got warnings {offenders}"
+        )
         plt.close("all")
 
     def test_full_bleed_composes_with_basemap(self, monkeypatch):
@@ -5966,14 +6127,20 @@ class TestAnimateFullBleed:
             proving the two features do not clobber each other.
         """
         drawn: list = []
-        monkeypatch.setattr(refmod, "add_relief", lambda ax, *a, **k: drawn.append("relief") or ax)
-        monkeypatch.setattr(refmod, "add_features", lambda ax, *a, **k: drawn.append("features") or ax)
+        monkeypatch.setattr(
+            refmod, "add_relief", lambda ax, *a, **k: drawn.append("relief") or ax
+        )
+        monkeypatch.setattr(
+            refmod, "add_features", lambda ax, *a, **k: drawn.append("features") or ax
+        )
         glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
         glyph.animate(
             ["a", "b", "c"], full_bleed=True, basemap=True, add_colorbar=False, title=""
         )
         bounds = tuple(round(v, 6) for v in glyph.ax.get_position().bounds)
-        assert bounds == (0.0, 0.0, 1.0, 1.0), f"combined full_bleed should fill, got {bounds}"
+        assert bounds == (0.0, 0.0, 1.0, 1.0), (
+            f"combined full_bleed should fill, got {bounds}"
+        )
         assert "relief" in drawn, "relief should still be drawn under full_bleed"
         assert "features" in drawn, "features should still be drawn under full_bleed"
         plt.close("all")
@@ -6005,7 +6172,9 @@ class TestAnimateBasemap:
             list: One `(args, kwargs)` tuple appended per `add_relief` call.
         """
         calls: list = []
-        monkeypatch.setattr(refmod, "add_relief", lambda ax, *a, **k: calls.append((a, k)) or ax)
+        monkeypatch.setattr(
+            refmod, "add_relief", lambda ax, *a, **k: calls.append((a, k)) or ax
+        )
         return calls
 
     @staticmethod
@@ -6019,7 +6188,9 @@ class TestAnimateBasemap:
             list: One `(args, kwargs)` tuple appended per `add_features` call.
         """
         calls: list = []
-        monkeypatch.setattr(refmod, "add_features", lambda ax, *a, **k: calls.append((a, k)) or ax)
+        monkeypatch.setattr(
+            refmod, "add_features", lambda ax, *a, **k: calls.append((a, k)) or ax
+        )
         return calls
 
     def test_basemap_true_composes_relief_and_features(self, monkeypatch):
@@ -6034,11 +6205,19 @@ class TestAnimateBasemap:
         glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
         glyph.animate(["a", "b", "c"], basemap=True, add_colorbar=False)
         assert relief, "relief should be drawn for basemap=True"
-        assert relief[0][0] == ("low",), f"relief resolution should be 'low', got {relief[0][0]}"
-        assert relief[0][1]["zorder"] == -2, f"relief should sit under data (zorder -2), got {relief[0][1].get('zorder')}"
+        assert relief[0][0] == ("low",), (
+            f"relief resolution should be 'low', got {relief[0][0]}"
+        )
+        assert relief[0][1]["zorder"] == -2, (
+            f"relief should sit under data (zorder -2), got {relief[0][1].get('zorder')}"
+        )
         layers = [args[0] for args, _ in features]
-        assert layers == ["coastline", "borders"], f"default features should be coastline+borders, got {layers}"
-        assert all(kw["zorder"] == 3 for _, kw in features), "features should sit over data (zorder 3)"
+        assert layers == ["coastline", "borders"], (
+            f"default features should be coastline+borders, got {layers}"
+        )
+        assert all(kw["zorder"] == 3 for _, kw in features), (
+            "features should sit over data (zorder 3)"
+        )
         plt.close("all")
 
     def test_basemap_none_draws_nothing(self, monkeypatch):
@@ -6064,8 +6243,12 @@ class TestAnimateBasemap:
         """
         seen: list = []
         glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
-        glyph.animate(["a", "b", "c"], basemap=lambda g: seen.append(g), add_colorbar=False)
-        assert seen == [glyph], f"callable basemap should be called once with the glyph, got {seen}"
+        glyph.animate(
+            ["a", "b", "c"], basemap=lambda g: seen.append(g), add_colorbar=False
+        )
+        assert seen == [glyph], (
+            f"callable basemap should be called once with the glyph, got {seen}"
+        )
         plt.close("all")
 
     def test_basemap_dict_skips_relief_and_selects_features(self, monkeypatch):
@@ -6084,7 +6267,9 @@ class TestAnimateBasemap:
             add_colorbar=False,
         )
         assert relief == [], "relief=False should draw no relief"
-        assert [args[0] for args, _ in features] == ["coastline"], "only coastline should be drawn"
+        assert [args[0] for args, _ in features] == ["coastline"], (
+            "only coastline should be drawn"
+        )
         plt.close("all")
 
     def test_basemap_relief_resolution_string(self, monkeypatch):
@@ -6098,8 +6283,12 @@ class TestAnimateBasemap:
         self._spy_features(monkeypatch)
         glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
         glyph.animate(["a", "b", "c"], basemap={"relief": "medium"}, add_colorbar=False)
-        assert relief, f"relief resolution should be 'medium', got {relief and relief[0][0]}"
-        assert relief[0][0] == ('medium',), f"relief resolution should be 'medium', got {relief and relief[0][0]}"
+        assert relief, (
+            f"relief resolution should be 'medium', got {relief and relief[0][0]}"
+        )
+        assert relief[0][0] == ('medium',), (
+            f"relief resolution should be 'medium', got {relief and relief[0][0]}"
+        )
         assert relief[0][1]["zorder"] == -2, "relief should keep default zorder -2"
         plt.close("all")
 
@@ -6118,11 +6307,19 @@ class TestAnimateBasemap:
             basemap={"relief": {"resolution": "medium", "alpha": 0.9, "zorder": -5}},
             add_colorbar=False,
         )
-        assert relief, f"relief resolution should be 'medium', got {relief and relief[0][0]}"
-        assert relief[0][0] == ('medium',), f"relief resolution should be 'medium', got {relief and relief[0][0]}"
+        assert relief, (
+            f"relief resolution should be 'medium', got {relief and relief[0][0]}"
+        )
+        assert relief[0][0] == ('medium',), (
+            f"relief resolution should be 'medium', got {relief and relief[0][0]}"
+        )
         kwargs = relief[0][1]
-        assert kwargs["alpha"] == 0.9, f"relief alpha override should be 0.9, got {kwargs.get('alpha')}"
-        assert kwargs["zorder"] == -5, f"relief zorder override should be -5, got {kwargs.get('zorder')}"
+        assert kwargs["alpha"] == 0.9, (
+            f"relief alpha override should be 0.9, got {kwargs.get('alpha')}"
+        )
+        assert kwargs["zorder"] == -5, (
+            f"relief zorder override should be -5, got {kwargs.get('zorder')}"
+        )
         plt.close("all")
 
     def test_basemap_feature_resolution_override(self, monkeypatch):
@@ -6136,11 +6333,15 @@ class TestAnimateBasemap:
         features = self._spy_features(monkeypatch)
         glyph = ArrayGlyph(self._stack(), extent=[0.0, 0.0, 40.0, 20.0])
         glyph.animate(
-            ["a", "b", "c"], basemap={"relief": False, "resolution": "110m"}, add_colorbar=False
+            ["a", "b", "c"],
+            basemap={"relief": False, "resolution": "110m"},
+            add_colorbar=False,
         )
         assert features, "features should be drawn"
         resolutions = {args[1] for args, _ in features}
-        assert resolutions == {"110m"}, f"features should use the '110m' resolution, got {resolutions}"
+        assert resolutions == {"110m"}, (
+            f"features should use the '110m' resolution, got {resolutions}"
+        )
         plt.close("all")
 
     def test_basemap_feature_tuple_applies_style(self, monkeypatch):
@@ -6158,11 +6359,19 @@ class TestAnimateBasemap:
             basemap={"relief": False, "features": [("rivers", {"colors": "blue"})]},
             add_colorbar=False,
         )
-        assert len(features) == 1, f"exactly one feature should be drawn, got {len(features)}"
+        assert len(features) == 1, (
+            f"exactly one feature should be drawn, got {len(features)}"
+        )
         args, kwargs = features[0]
-        assert args == ("rivers", "50m"), f"layer/resolution should be rivers/50m, got {args}"
-        assert kwargs["colors"] == "blue", f"style override colors=blue should pass through, got {kwargs.get('colors')}"
-        assert kwargs["zorder"] == 3, f"features should sit over data (zorder 3), got {kwargs.get('zorder')}"
+        assert args == ("rivers", "50m"), (
+            f"layer/resolution should be rivers/50m, got {args}"
+        )
+        assert kwargs["colors"] == "blue", (
+            f"style override colors=blue should pass through, got {kwargs.get('colors')}"
+        )
+        assert kwargs["zorder"] == 3, (
+            f"features should sit over data (zorder 3), got {kwargs.get('zorder')}"
+        )
         plt.close("all")
 
     def test_basemap_check_alignment_opt_in(self, monkeypatch):
@@ -6182,9 +6391,13 @@ class TestAnimateBasemap:
             basemap={"check_alignment": True, "relief": False, "features": []},
             add_colorbar=False,
         )
-        assert seen == [1], f"check_alignment=True should run the check once, got {seen}"
+        assert seen == [1], (
+            f"check_alignment=True should run the check once, got {seen}"
+        )
         glyph.animate(
-            ["a", "b", "c"], basemap={"relief": False, "features": []}, add_colorbar=False
+            ["a", "b", "c"],
+            basemap={"relief": False, "features": []},
+            add_colorbar=False,
         )
         assert seen == [1], "omitting check_alignment must not run the check"
         plt.close("all")
@@ -6209,10 +6422,16 @@ class TestPlotFullBleed:
         glyph = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         glyph.plot(cmap="viridis", full_bleed=True)
         bounds = tuple(round(v, 6) for v in glyph.ax.get_position().bounds)
-        assert bounds == (0.0, 0.0, 1.0, 1.0), f"axes should fill the figure, got {bounds}"
+        assert bounds == (0.0, 0.0, 1.0, 1.0), (
+            f"axes should fill the figure, got {bounds}"
+        )
         assert list(glyph.ax.get_xticks()) == [], "x ticks should be stripped"
-        assert not any(s.get_visible() for s in glyph.ax.spines.values()), "spines should be hidden"
-        assert glyph.ax.get_facecolor() != (0.0, 0.0, 0.0, 1.0), "True must not paint a black canvas"
+        assert not any(s.get_visible() for s in glyph.ax.spines.values()), (
+            "spines should be hidden"
+        )
+        assert glyph.ax.get_facecolor() != (0.0, 0.0, 0.0, 1.0), (
+            "True must not paint a black canvas"
+        )
         plt.close("all")
 
     def test_plot_full_bleed_colour_paints_canvas(self):
@@ -6224,7 +6443,9 @@ class TestPlotFullBleed:
         """
         glyph = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         glyph.plot(cmap="viridis", full_bleed="black")
-        assert glyph.ax.get_facecolor() == (0.0, 0.0, 0.0, 1.0), "full_bleed='black' should paint a black canvas"
+        assert glyph.ax.get_facecolor() == (0.0, 0.0, 0.0, 1.0), (
+            "full_bleed='black' should paint a black canvas"
+        )
         plt.close("all")
 
     def test_plot_full_bleed_style_path_fills(self):
@@ -6235,9 +6456,16 @@ class TestPlotFullBleed:
             style branch, which must still fill the figure `[0, 0, 1, 1]`.
         """
         glyph = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        glyph.plot(style="temperature_2m", vmin=-10, vmax=40, full_bleed=True)
+        glyph.plot(
+            data_style=DataStyle(style="temperature_2m"),
+            vmin=-10,
+            vmax=40,
+            full_bleed=True,
+        )
         bounds = tuple(round(v, 6) for v in glyph.ax.get_position().bounds)
-        assert bounds == (0.0, 0.0, 1.0, 1.0), f"styled full-bleed should fill, got {bounds}"
+        assert bounds == (0.0, 0.0, 1.0, 1.0), (
+            f"styled full-bleed should fill, got {bounds}"
+        )
         plt.close("all")
 
     def test_plot_default_is_not_full_bleed(self):
@@ -6248,7 +6476,9 @@ class TestPlotFullBleed:
         """
         glyph = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         glyph.plot(cmap="viridis")
-        assert tuple(glyph.ax.get_position().bounds) != (0.0, 0.0, 1.0, 1.0), "default plot should not be full-bleed"
+        assert tuple(glyph.ax.get_position().bounds) != (0.0, 0.0, 1.0, 1.0), (
+            "default plot should not be full-bleed"
+        )
         plt.close("all")
 
 
@@ -6270,14 +6500,18 @@ class TestPlotBasemap:
     def _spy_relief(monkeypatch) -> list:
         """Replace `reference.add_relief` with a spy; return its `(args, kwargs)` log."""
         calls: list = []
-        monkeypatch.setattr(refmod, "add_relief", lambda ax, *a, **k: calls.append((a, k)) or ax)
+        monkeypatch.setattr(
+            refmod, "add_relief", lambda ax, *a, **k: calls.append((a, k)) or ax
+        )
         return calls
 
     @staticmethod
     def _spy_features(monkeypatch) -> list:
         """Replace `reference.add_features` with a spy; return its `(args, kwargs)` log."""
         calls: list = []
-        monkeypatch.setattr(refmod, "add_features", lambda ax, *a, **k: calls.append((a, k)) or ax)
+        monkeypatch.setattr(
+            refmod, "add_features", lambda ax, *a, **k: calls.append((a, k)) or ax
+        )
         return calls
 
     def test_basemap_true_composes_relief_and_features(self, monkeypatch):
@@ -6292,11 +6526,19 @@ class TestPlotBasemap:
         glyph = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         glyph.plot(cmap="viridis", basemap=True)
         assert relief, "relief should be drawn for basemap=True"
-        assert relief[0][0] == ("low",), f"relief resolution should be 'low', got {relief[0][0]}"
-        assert relief[0][1]["zorder"] == -2, f"relief should sit under data (zorder -2), got {relief[0][1].get('zorder')}"
+        assert relief[0][0] == ("low",), (
+            f"relief resolution should be 'low', got {relief[0][0]}"
+        )
+        assert relief[0][1]["zorder"] == -2, (
+            f"relief should sit under data (zorder -2), got {relief[0][1].get('zorder')}"
+        )
         layers = [args[0] for args, _ in features]
-        assert layers == ["coastline", "borders"], f"default features should be coastline+borders, got {layers}"
-        assert all(kw["zorder"] == 3 for _, kw in features), "features should sit over data (zorder 3)"
+        assert layers == ["coastline", "borders"], (
+            f"default features should be coastline+borders, got {layers}"
+        )
+        assert all(kw["zorder"] == 3 for _, kw in features), (
+            "features should sit over data (zorder 3)"
+        )
         plt.close("all")
 
     def test_basemap_true_on_style_path(self, monkeypatch):
@@ -6309,10 +6551,17 @@ class TestPlotBasemap:
         relief = self._spy_relief(monkeypatch)
         features = self._spy_features(monkeypatch)
         glyph = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        glyph.plot(style="temperature_2m", vmin=-10, vmax=40, basemap=True)
+        glyph.plot(
+            data_style=DataStyle(style="temperature_2m"),
+            vmin=-10,
+            vmax=40,
+            basemap=True,
+        )
         assert relief, "styled path should draw the relief"
         layers = [args[0] for args, _ in features]
-        assert layers == ["coastline", "borders"], f"styled path features should be coastline+borders, got {layers}"
+        assert layers == ["coastline", "borders"], (
+            f"styled path features should be coastline+borders, got {layers}"
+        )
         plt.close("all")
 
     def test_basemap_none_draws_nothing(self, monkeypatch):
@@ -6338,7 +6587,9 @@ class TestPlotBasemap:
         seen: list = []
         glyph = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         glyph.plot(cmap="viridis", basemap=lambda g: seen.append(g))
-        assert seen == [glyph], f"callable basemap should be called once with the glyph, got {seen}"
+        assert seen == [glyph], (
+            f"callable basemap should be called once with the glyph, got {seen}"
+        )
         plt.close("all")
 
     def test_basemap_composes_with_full_bleed(self, monkeypatch):
@@ -6354,7 +6605,9 @@ class TestPlotBasemap:
         glyph.plot(cmap="viridis", basemap=True, full_bleed=True)
         assert relief, "relief should be drawn under a full-bleed plot"
         bounds = tuple(round(v, 6) for v in glyph.ax.get_position().bounds)
-        assert bounds == (0.0, 0.0, 1.0, 1.0), f"full-bleed with basemap should fill the figure, got {bounds}"
+        assert bounds == (0.0, 0.0, 1.0, 1.0), (
+            f"full-bleed with basemap should fill the figure, got {bounds}"
+        )
         plt.close("all")
 
 
@@ -6374,8 +6627,12 @@ class TestColorbarPlacement:
             `inside` is set, stays `None` otherwise, and an explicit `False` wins.
         """
         assert ColorBar(inside=True).box is True, "inside should default the box on"
-        assert ColorBar(location="right").box is None, "outside should leave the box off"
-        assert ColorBar(inside=True, box=False).box is False, "explicit box=False must win"
+        assert ColorBar(location="right").box is None, (
+            "outside should leave the box off"
+        )
+        assert ColorBar(inside=True, box=False).box is False, (
+            "explicit box=False must win"
+        )
 
     def test_location_left_is_vertical(self):
         """`ColorBar(location='left')` yields a vertical bar.
@@ -6385,7 +6642,9 @@ class TestColorbarPlacement:
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         g.plot(cmap="viridis", colorbar=ColorBar(location="left"))
-        assert g.cbar.orientation == "vertical", "left location should be a vertical bar"
+        assert g.cbar.orientation == "vertical", (
+            "left location should be a vertical bar"
+        )
         plt.close("all")
 
     def test_location_bottom_is_horizontal(self):
@@ -6396,7 +6655,9 @@ class TestColorbarPlacement:
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         g.plot(cmap="viridis", colorbar=ColorBar(location="bottom"))
-        assert g.cbar.orientation == "horizontal", "bottom location should be a horizontal bar"
+        assert g.cbar.orientation == "horizontal", (
+            "bottom location should be a horizontal bar"
+        )
         plt.close("all")
 
     def test_invalid_location_raises(self):
@@ -6442,7 +6703,9 @@ class TestColorbarPlacement:
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         g.plot(cmap="viridis", colorbar=True)
         assert g.cbar is not None, "colorbar=True should draw a colorbar"
-        assert g.cbar.ax not in g.ax.child_axes, "colorbar=True should be outside, not an inset"
+        assert g.cbar.ax not in g.ax.child_axes, (
+            "colorbar=True should be outside, not an inset"
+        )
         plt.close("all")
 
     def test_inside_colorbar_is_axes_child(self):
@@ -6454,7 +6717,9 @@ class TestColorbarPlacement:
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         g.plot(cmap="viridis", colorbar=ColorBar(location="right", inside=True))
-        assert g.cbar.ax in g.ax.child_axes, "inside colorbar should be an inset child of the data axes"
+        assert g.cbar.ax in g.ax.child_axes, (
+            "inside colorbar should be an inset child of the data axes"
+        )
         plt.close("all")
 
     def test_outside_colorbar_is_not_axes_child(self):
@@ -6465,7 +6730,9 @@ class TestColorbarPlacement:
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         g.plot(cmap="viridis")
-        assert g.cbar.ax not in g.ax.child_axes, "outside colorbar should not be an inset child"
+        assert g.cbar.ax not in g.ax.child_axes, (
+            "outside colorbar should not be an inset child"
+        )
         plt.close("all")
 
     def test_inside_box_defaults_on_and_can_disable(self):
@@ -6478,7 +6745,9 @@ class TestColorbarPlacement:
         g_box.plot(cmap="viridis", colorbar=ColorBar(inside=True))
         g_no = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         g_no.plot(cmap="viridis", colorbar=ColorBar(inside=True, box=False))
-        assert len(g_box.ax.patches) == len(g_no.ax.patches) + 1, "inside box should default on (one extra patch)"
+        assert len(g_box.ax.patches) == len(g_no.ax.patches) + 1, (
+            "inside box should default on (one extra patch)"
+        )
         plt.close("all")
 
     def test_inside_box_colour_string(self):
@@ -6489,7 +6758,9 @@ class TestColorbarPlacement:
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         g.plot(cmap="viridis", colorbar=ColorBar(inside=True, box="black"))
-        assert g.ax.patches[-1].get_facecolor()[:3] == (0.0, 0.0, 0.0), "box='black' should paint a black panel"
+        assert g.ax.patches[-1].get_facecolor()[:3] == (0.0, 0.0, 0.0), (
+            "box='black' should paint a black panel"
+        )
         plt.close("all")
 
     def test_inside_colorbar_in_animation(self):
@@ -6501,7 +6772,9 @@ class TestColorbarPlacement:
         stack = np.arange(3 * 20 * 30, dtype=float).reshape(3, 20, 30)
         g = ArrayGlyph(stack, extent=[0.0, 0.0, 40.0, 20.0])
         g.animate(["a", "b", "c"], cmap="viridis", colorbar=ColorBar(inside=True))
-        assert g.cbar.ax in g.ax.child_axes, "inside colorbar should inset in an animation too"
+        assert g.cbar.ax in g.ax.child_axes, (
+            "inside colorbar should inset in an animation too"
+        )
         plt.close("all")
 
     @pytest.mark.parametrize("location", ["left", "right", "top", "bottom"])
@@ -6516,12 +6789,19 @@ class TestColorbarPlacement:
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         g.plot(cmap="viridis", colorbar=ColorBar(location=location, inside=True))
-        assert g.cbar.ax in g.ax.child_axes, f"inside {location} should be an inset child"
+        assert g.cbar.ax in g.ax.child_axes, (
+            f"inside {location} should be an inset child"
+        )
         plt.close("all")
 
     @pytest.mark.parametrize(
         "location, orientation",
-        [("left", "vertical"), ("right", "vertical"), ("top", "horizontal"), ("bottom", "horizontal")],
+        [
+            ("left", "vertical"),
+            ("right", "vertical"),
+            ("top", "horizontal"),
+            ("bottom", "horizontal"),
+        ],
     )
     def test_outside_location_orientation(self, location, orientation):
         """An outside `location` derives the matching orientation from the edge.
@@ -6535,7 +6815,9 @@ class TestColorbarPlacement:
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         g.plot(cmap="viridis", colorbar=ColorBar(location=location))
-        assert g.cbar.orientation == orientation, f"{location} should be {orientation}, got {g.cbar.orientation}"
+        assert g.cbar.orientation == orientation, (
+            f"{location} should be {orientation}, got {g.cbar.orientation}"
+        )
         plt.close("all")
 
     def test_inside_box_dict_forwards_rectangle_kwargs(self):
@@ -6546,9 +6828,14 @@ class TestColorbarPlacement:
             half-opaque panel.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(cmap="viridis", colorbar=ColorBar(inside=True, box={"facecolor": "black", "alpha": 0.5}))
+        g.plot(
+            cmap="viridis",
+            colorbar=ColorBar(inside=True, box={"facecolor": "black", "alpha": 0.5}),
+        )
         patch = g.ax.patches[-1]
-        assert patch.get_facecolor()[:3] == (0.0, 0.0, 0.0), f"box facecolor not applied: {patch.get_facecolor()}"
+        assert patch.get_facecolor()[:3] == (0.0, 0.0, 0.0), (
+            f"box facecolor not applied: {patch.get_facecolor()}"
+        )
         assert patch.get_alpha() == 0.5, f"box alpha not applied: {patch.get_alpha()}"
         plt.close("all")
 
@@ -6562,8 +6849,12 @@ class TestColorbarPlacement:
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         g.plot(cmap="viridis", colorbar=ColorBar(inside=True))
         box = g.ax.patches[-1]
-        assert box.get_zorder() < g.cbar.ax.get_zorder(), "box should render below the colorbar inset"
-        assert box.get_zorder() > g.im.get_zorder(), "box should render above the data image"
+        assert box.get_zorder() < g.cbar.ax.get_zorder(), (
+            "box should render below the colorbar inset"
+        )
+        assert box.get_zorder() > g.im.get_zorder(), (
+            "box should render above the data image"
+        )
         plt.close("all")
 
     def test_colorbar_overrides_legacy_add_colorbar(self):
@@ -6589,7 +6880,9 @@ class TestColorbarPlacement:
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         g.plot(cmap="viridis", add_colorbar=False)
-        assert g.cbar is None, "add_colorbar=False should still suppress when colorbar is unset"
+        assert g.cbar is None, (
+            "add_colorbar=False should still suppress when colorbar is unset"
+        )
         plt.close("all")
 
     def test_tick_color_colours_colorbar_ticks(self):
@@ -6601,7 +6894,9 @@ class TestColorbarPlacement:
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         g.plot(cmap="viridis", colorbar=ColorBar(tick_color="red"))
         color = g.cbar.ax.get_yticklabels()[0].get_color()
-        assert to_rgba(color) == to_rgba("red"), f"tick labels should be red, got {color}"
+        assert to_rgba(color) == to_rgba("red"), (
+            f"tick labels should be red, got {color}"
+        )
         plt.close("all")
 
     def test_label_color_colours_swatch_title_only(self):
@@ -6612,12 +6907,21 @@ class TestColorbarPlacement:
             bold title black while the endpoint values stay white.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(style="temperature_2m", vmin=-10, vmax=40, colorbar=ColorBar(label_color="black"))
+        g.plot(
+            data_style=DataStyle(style="temperature_2m"),
+            vmin=-10,
+            vmax=40,
+            colorbar=ColorBar(label_color="black"),
+        )
         texts = [t for cax in g.ax.child_axes for t in cax.texts]
         title = next(t for t in texts if t.get_fontweight() == "bold")
         values = [t for t in texts if t.get_fontweight() != "bold"]
-        assert to_rgba(title.get_color()) == to_rgba("black"), "swatch title should be black"
-        assert all(to_rgba(t.get_color()) == to_rgba("white") for t in values), "endpoints should stay white"
+        assert to_rgba(title.get_color()) == to_rgba("black"), (
+            "swatch title should be black"
+        )
+        assert all(to_rgba(t.get_color()) == to_rgba("white") for t in values), (
+            "endpoints should stay white"
+        )
         plt.close("all")
 
     def test_tick_color_colours_swatch_endpoints(self):
@@ -6628,12 +6932,21 @@ class TestColorbarPlacement:
             red while the title stays white.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(style="temperature_2m", vmin=-10, vmax=40, colorbar=ColorBar(tick_color="red"))
+        g.plot(
+            data_style=DataStyle(style="temperature_2m"),
+            vmin=-10,
+            vmax=40,
+            colorbar=ColorBar(tick_color="red"),
+        )
         texts = [t for cax in g.ax.child_axes for t in cax.texts]
         title = next(t for t in texts if t.get_fontweight() == "bold")
         values = [t for t in texts if t.get_fontweight() != "bold"]
-        assert to_rgba(title.get_color()) == to_rgba("white"), "swatch title should stay white"
-        assert all(to_rgba(t.get_color()) == to_rgba("red") for t in values), "endpoints should be red"
+        assert to_rgba(title.get_color()) == to_rgba("white"), (
+            "swatch title should stay white"
+        )
+        assert all(to_rgba(t.get_color()) == to_rgba("red") for t in values), (
+            "endpoints should be red"
+        )
         plt.close("all")
 
     def test_label_color_swatch_in_animation(self):
@@ -6644,10 +6957,22 @@ class TestColorbarPlacement:
         """
         stack = np.arange(3 * 20 * 30, dtype=float).reshape(3, 20, 30)
         g = ArrayGlyph(stack, extent=[0.0, 0.0, 40.0, 20.0])
-        g.animate(["a", "b", "c"], style="temperature_2m", vmin=-10, vmax=40,
-                  colorbar=ColorBar(label_color="black"))
-        title = next(t for cax in g.ax.child_axes for t in cax.texts if t.get_fontweight() == "bold")
-        assert to_rgba(title.get_color()) == to_rgba("black"), "animated swatch title should be black"
+        g.animate(
+            ["a", "b", "c"],
+            data_style=DataStyle(style="temperature_2m"),
+            vmin=-10,
+            vmax=40,
+            colorbar=ColorBar(label_color="black"),
+        )
+        title = next(
+            t
+            for cax in g.ax.child_axes
+            for t in cax.texts
+            if t.get_fontweight() == "bold"
+        )
+        assert to_rgba(title.get_color()) == to_rgba("black"), (
+            "animated swatch title should be black"
+        )
         plt.close("all")
 
     def test_box_draws_backing_panel_behind_swatch(self):
@@ -6658,10 +6983,22 @@ class TestColorbarPlacement:
             same style with no box (so a moving field can't show through it).
         """
         g_box = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g_box.plot(style="temperature_2m", vmin=-10, vmax=40, colorbar=ColorBar(box=True))
+        g_box.plot(
+            data_style=DataStyle(style="temperature_2m"),
+            vmin=-10,
+            vmax=40,
+            colorbar=ColorBar(box=True),
+        )
         g_no = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g_no.plot(style="temperature_2m", vmin=-10, vmax=40, colorbar=ColorBar())
-        assert len(g_box.ax.patches) == len(g_no.ax.patches) + 1, "box=True should add one swatch backing panel"
+        g_no.plot(
+            data_style=DataStyle(style="temperature_2m"),
+            vmin=-10,
+            vmax=40,
+            colorbar=ColorBar(),
+        )
+        assert len(g_box.ax.patches) == len(g_no.ax.patches) + 1, (
+            "box=True should add one swatch backing panel"
+        )
         plt.close("all")
 
     def test_caption_via_spec_alone(self):
@@ -6672,9 +7009,14 @@ class TestColorbarPlacement:
             so the caption renders without falling back to a loose `cbar_label=`.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(cmap="viridis", colorbar=ColorBar(location="bottom", label="Rainfall mm/day", length=0.8))
+        g.plot(
+            cmap="viridis",
+            colorbar=ColorBar(location="bottom", label="Rainfall mm/day", length=0.8),
+        )
         caption = g.cbar.ax.get_xlabel() or g.cbar.ax.get_ylabel()
-        assert caption == "Rainfall mm/day", f"caption not set via ColorBar, got {caption!r}"
+        assert caption == "Rainfall mm/day", (
+            f"caption not set via ColorBar, got {caption!r}"
+        )
         plt.close("all")
 
     def test_spec_does_not_clobber_loose_caption(self):
@@ -6686,9 +7028,15 @@ class TestColorbarPlacement:
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         with pytest.warns(DeprecationWarning, match="cbar_label"):
-            g.plot(cmap="viridis", colorbar=ColorBar(location="right"), cbar_label="Legacy caption")
+            g.plot(
+                cmap="viridis",
+                colorbar=ColorBar(location="right"),
+                cbar_label="Legacy caption",
+            )
         caption = g.cbar.ax.get_xlabel() or g.cbar.ax.get_ylabel()
-        assert caption == "Legacy caption", f"loose cbar_label was clobbered, got {caption!r}"
+        assert caption == "Legacy caption", (
+            f"loose cbar_label was clobbered, got {caption!r}"
+        )
         plt.close("all")
 
     def test_ticks_spacing_via_spec_takes_effect(self):
@@ -6699,11 +7047,18 @@ class TestColorbarPlacement:
             being overwritten by the auto-computed `(vmax - vmin) / 10`.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(cmap="viridis", vmin=0.0, vmax=20.0, colorbar=ColorBar(location="right", ticks_spacing=5.0))
+        g.plot(
+            cmap="viridis",
+            vmin=0.0,
+            vmax=20.0,
+            colorbar=ColorBar(location="right", ticks_spacing=5.0),
+        )
         resolved = g.default_options["ticks_spacing"]
         assert resolved == 5.0, f"spec ticks_spacing was clobbered, got {resolved}"
         spacings = np.diff(g.cbar.get_ticks())
-        assert np.allclose(spacings, 5.0), f"drawn ticks not spaced by 5.0, got {g.cbar.get_ticks()}"
+        assert np.allclose(spacings, 5.0), (
+            f"drawn ticks not spaced by 5.0, got {g.cbar.get_ticks()}"
+        )
         plt.close("all")
 
     def test_ticks_spacing_spec_wins_over_loose_kwarg(self):
@@ -6723,7 +7078,9 @@ class TestColorbarPlacement:
                 colorbar=ColorBar(location="right", ticks_spacing=5.0),
             )
         resolved = g.default_options["ticks_spacing"]
-        assert resolved == 5.0, f"loose ticks_spacing should lose to the spec, got {resolved}"
+        assert resolved == 5.0, (
+            f"loose ticks_spacing should lose to the spec, got {resolved}"
+        )
         plt.close("all")
 
     def test_label_rotation_via_spec_takes_effect(self):
@@ -6734,10 +7091,17 @@ class TestColorbarPlacement:
             dropped (matplotlib's default vertical-label rotation is not 0).
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(cmap="viridis", colorbar=ColorBar(location="right", label="Depth", label_rotation=0.0))
+        g.plot(
+            cmap="viridis",
+            colorbar=ColorBar(location="right", label="Depth", label_rotation=0.0),
+        )
         y_label = g.cbar.ax.yaxis.get_label()
-        label_obj = y_label if y_label.get_text() == "Depth" else g.cbar.ax.xaxis.get_label()
-        assert label_obj.get_rotation() == 0.0, f"label_rotation not applied, got {label_obj.get_rotation()}"
+        label_obj = (
+            y_label if y_label.get_text() == "Depth" else g.cbar.ax.xaxis.get_label()
+        )
+        assert label_obj.get_rotation() == 0.0, (
+            f"label_rotation not applied, got {label_obj.get_rotation()}"
+        )
         plt.close("all")
 
     def test_label_rotation_unset_leaves_matplotlib_default(self):
@@ -6750,8 +7114,12 @@ class TestColorbarPlacement:
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         g.plot(cmap="viridis", colorbar=ColorBar(location="right", label="Depth"))
         y_label = g.cbar.ax.yaxis.get_label()
-        label_obj = y_label if y_label.get_text() == "Depth" else g.cbar.ax.xaxis.get_label()
-        assert label_obj.get_rotation() != 0.0, "unset label_rotation should keep matplotlib's default"
+        label_obj = (
+            y_label if y_label.get_text() == "Depth" else g.cbar.ax.xaxis.get_label()
+        )
+        assert label_obj.get_rotation() != 0.0, (
+            "unset label_rotation should keep matplotlib's default"
+        )
         plt.close("all")
 
     def test_label_size_via_spec_takes_effect(self):
@@ -6761,10 +7129,17 @@ class TestColorbarPlacement:
             A spec-provided font size reaches the drawn colorbar label.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(cmap="viridis", colorbar=ColorBar(location="right", label="Depth", label_size=20))
+        g.plot(
+            cmap="viridis",
+            colorbar=ColorBar(location="right", label="Depth", label_size=20),
+        )
         y_label = g.cbar.ax.yaxis.get_label()
-        label_obj = y_label if y_label.get_text() == "Depth" else g.cbar.ax.xaxis.get_label()
-        assert label_obj.get_fontsize() == 20, f"label_size not applied, got {label_obj.get_fontsize()}"
+        label_obj = (
+            y_label if y_label.get_text() == "Depth" else g.cbar.ax.xaxis.get_label()
+        )
+        assert label_obj.get_fontsize() == 20, (
+            f"label_size not applied, got {label_obj.get_fontsize()}"
+        )
         plt.close("all")
 
     def test_length_via_spec_changes_bar_extent(self):
@@ -6780,7 +7155,9 @@ class TestColorbarPlacement:
         tall.plot(cmap="viridis", colorbar=ColorBar(location="right", length=0.9))
         short_h = short.cbar.ax.get_position().height
         tall_h = tall.cbar.ax.get_position().height
-        assert tall_h > short_h, f"length=0.9 bar ({tall_h}) should exceed length=0.3 ({short_h})"
+        assert tall_h > short_h, (
+            f"length=0.9 bar ({tall_h}) should exceed length=0.3 ({short_h})"
+        )
         plt.close("all")
 
     def test_length_inside_changes_bar_extent(self):
@@ -6791,12 +7168,18 @@ class TestColorbarPlacement:
             inset bar rather than the field silently no-opping.
         """
         short = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        short.plot(cmap="viridis", colorbar=ColorBar(location="right", inside=True, length=0.3))
+        short.plot(
+            cmap="viridis", colorbar=ColorBar(location="right", inside=True, length=0.3)
+        )
         tall = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        tall.plot(cmap="viridis", colorbar=ColorBar(location="right", inside=True, length=0.9))
+        tall.plot(
+            cmap="viridis", colorbar=ColorBar(location="right", inside=True, length=0.9)
+        )
         short_h = short.cbar.ax.get_position().height
         tall_h = tall.cbar.ax.get_position().height
-        assert tall_h > short_h, f"inside length=0.9 bar ({tall_h}) should exceed length=0.3 ({short_h})"
+        assert tall_h > short_h, (
+            f"inside length=0.9 bar ({tall_h}) should exceed length=0.3 ({short_h})"
+        )
         plt.close("all")
 
     def test_label_location_via_spec_reaches_render(self):
@@ -6807,12 +7190,20 @@ class TestColorbarPlacement:
             confirming label_location reaches `set_label(loc=...)` at render.
         """
         top = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        top.plot(cmap="viridis", colorbar=ColorBar(location="right", label="Depth", label_location="top"))
+        top.plot(
+            cmap="viridis",
+            colorbar=ColorBar(location="right", label="Depth", label_location="top"),
+        )
         bottom = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        bottom.plot(cmap="viridis", colorbar=ColorBar(location="right", label="Depth", label_location="bottom"))
+        bottom.plot(
+            cmap="viridis",
+            colorbar=ColorBar(location="right", label="Depth", label_location="bottom"),
+        )
         top_y = top.cbar.ax.yaxis.get_label().get_position()[1]
         bottom_y = bottom.cbar.ax.yaxis.get_label().get_position()[1]
-        assert top_y > bottom_y, f"label_location not applied: top_y={top_y}, bottom_y={bottom_y}"
+        assert top_y > bottom_y, (
+            f"label_location not applied: top_y={top_y}, bottom_y={bottom_y}"
+        )
         plt.close("all")
 
     def test_orientation_via_spec_takes_effect(self):
@@ -6824,7 +7215,9 @@ class TestColorbarPlacement:
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         g.plot(cmap="viridis", colorbar=ColorBar(orientation="horizontal"))
-        assert g.cbar.orientation == "horizontal", f"orientation not applied, got {g.cbar.orientation}"
+        assert g.cbar.orientation == "horizontal", (
+            f"orientation not applied, got {g.cbar.orientation}"
+        )
         plt.close("all")
 
     def test_location_wins_over_conflicting_orientation(self):
@@ -6838,7 +7231,9 @@ class TestColorbarPlacement:
         with pytest.warns(UserWarning, match="orientation"):
             spec = ColorBar(location="bottom", orientation="vertical")
         g.plot(cmap="viridis", colorbar=spec)
-        assert g.cbar.orientation == "horizontal", f"location should win, got {g.cbar.orientation}"
+        assert g.cbar.orientation == "horizontal", (
+            f"location should win, got {g.cbar.orientation}"
+        )
         plt.close("all")
 
     @pytest.mark.parametrize("orientation", ["vertical", "horizontal"])
@@ -6855,7 +7250,9 @@ class TestColorbarPlacement:
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         g.plot(cmap="viridis", colorbar=ColorBar(orientation=orientation, inside=True))
-        assert g.cbar.orientation == orientation, f"inset orientation not applied, got {g.cbar.orientation}"
+        assert g.cbar.orientation == orientation, (
+            f"inset orientation not applied, got {g.cbar.orientation}"
+        )
         plt.close("all")
 
     def test_inside_location_bottom_is_horizontal(self):
@@ -6867,7 +7264,9 @@ class TestColorbarPlacement:
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         g.plot(cmap="viridis", colorbar=ColorBar(inside=True, location="bottom"))
-        assert g.cbar.orientation == "horizontal", f"inside bottom should be horizontal, got {g.cbar.orientation}"
+        assert g.cbar.orientation == "horizontal", (
+            f"inside bottom should be horizontal, got {g.cbar.orientation}"
+        )
         plt.close("all")
 
     def test_colorbar_true_resets_sticky_orientation(self):
@@ -6880,7 +7279,9 @@ class TestColorbarPlacement:
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
         g.plot(cmap="viridis", colorbar=ColorBar(orientation="horizontal"))
         g.plot(cmap="viridis", colorbar=True)
-        assert g.cbar.orientation == "vertical", f"colorbar=True should reset to vertical, got {g.cbar.orientation}"
+        assert g.cbar.orientation == "vertical", (
+            f"colorbar=True should reset to vertical, got {g.cbar.orientation}"
+        )
         plt.close("all")
 
 
@@ -6894,8 +7295,12 @@ class TestColorBar:
             The zero-argument construction reflects "matplotlib default placement".
         """
         spec = ColorBar()
-        assert spec.location is None, f"default location should be None, got {spec.location}"
-        assert spec.inside is False, f"default inside should be False, got {spec.inside}"
+        assert spec.location is None, (
+            f"default location should be None, got {spec.location}"
+        )
+        assert spec.inside is False, (
+            f"default inside should be False, got {spec.inside}"
+        )
         assert spec.box is None, f"default box should be None, got {spec.box}"
 
     def test_inside_defaults_box_on(self):
@@ -6924,7 +7329,9 @@ class TestColorBar:
         Test scenario:
             The inside default only applies when `box` is left `None`.
         """
-        assert ColorBar(inside=True, box=box).box == box, f"explicit box {box!r} should be preserved"
+        assert ColorBar(inside=True, box=box).box == box, (
+            f"explicit box {box!r} should be preserved"
+        )
 
     def test_fields_stored(self):
         """`location` and `inside` are stored as given.
@@ -6954,7 +7361,9 @@ class TestColorBar:
         assert ColorBar().label_color is None, "label_color should default to None"
         assert ColorBar().tick_color is None, "tick_color should default to None"
         spec = ColorBar(label_color="black", tick_color="red")
-        assert (spec.label_color, spec.tick_color) == ("black", "red"), "colour fields should store verbatim"
+        assert (spec.label_color, spec.tick_color) == ("black", "red"), (
+            "colour fields should store verbatim"
+        )
 
     def test_caption_sizing_fields_default_none_and_store(self):
         """The caption/sizing fields default to `None` and store verbatim.
@@ -6964,19 +7373,35 @@ class TestColorBar:
             ticks_spacing are optional holders, `None` when unset.
         """
         bare = ColorBar()
-        for f in ("label", "length", "label_size", "label_rotation",
-                  "label_location", "ticks_spacing"):
+        for f in (
+            "label",
+            "length",
+            "label_size",
+            "label_rotation",
+            "label_location",
+            "ticks_spacing",
+        ):
             assert getattr(bare, f) is None, f"{f} should default to None"
         spec = ColorBar(
-            label="Rainfall mm/day", length=0.8, label_size=9.0,
-            label_rotation=90.0, label_location="center", ticks_spacing=5.0,
+            label="Rainfall mm/day",
+            length=0.8,
+            label_size=9.0,
+            label_rotation=90.0,
+            label_location="center",
+            ticks_spacing=5.0,
         )
         assert spec.label == "Rainfall mm/day", f"label not stored: {spec.label}"
         assert spec.length == 0.8, f"length not stored: {spec.length}"
         assert spec.label_size == 9.0, f"label_size not stored: {spec.label_size}"
-        assert spec.label_rotation == 90.0, f"label_rotation not stored: {spec.label_rotation}"
-        assert spec.label_location == "center", f"label_location not stored: {spec.label_location}"
-        assert spec.ticks_spacing == 5.0, f"ticks_spacing not stored: {spec.ticks_spacing}"
+        assert spec.label_rotation == 90.0, (
+            f"label_rotation not stored: {spec.label_rotation}"
+        )
+        assert spec.label_location == "center", (
+            f"label_location not stored: {spec.label_location}"
+        )
+        assert spec.ticks_spacing == 5.0, (
+            f"ticks_spacing not stored: {spec.ticks_spacing}"
+        )
 
     def test_orientation_defaults_none_and_stores(self):
         """`orientation` defaults to `None` and stores verbatim (#235).
@@ -6985,7 +7410,9 @@ class TestColorBar:
             The field is an optional holder, `None` when unset.
         """
         assert ColorBar().orientation is None, "orientation should default to None"
-        assert ColorBar(orientation="horizontal").orientation == "horizontal", "orientation not stored"
+        assert ColorBar(orientation="horizontal").orientation == "horizontal", (
+            "orientation not stored"
+        )
 
     def test_orientation_conflicting_with_location_warns(self):
         """A `location`/`orientation` disagreement warns at construction (#235).
@@ -6994,7 +7421,9 @@ class TestColorBar:
             `location="bottom"` implies horizontal, so `orientation="vertical"`
             is ignored -- with a UserWarning naming both -- rather than silently.
         """
-        with pytest.warns(UserWarning, match=r"orientation='vertical'.*location='bottom'"):
+        with pytest.warns(
+            UserWarning, match=r"orientation='vertical'.*location='bottom'"
+        ):
             ColorBar(location="bottom", orientation="vertical")
 
     def test_orientation_agreeing_with_location_is_silent(self):
@@ -7014,7 +7443,9 @@ class TestColorBar:
             cleopatra validates the value up front rather than letting a typo
             surface as an opaque matplotlib error at render.
         """
-        with pytest.raises(ValueError, match="orientation must be 'vertical' or 'horizontal'"):
+        with pytest.raises(
+            ValueError, match="orientation must be 'vertical' or 'horizontal'"
+        ):
             ColorBar(orientation="horizontl")
 
     def test_invalid_location_skips_conflict_warning(self):
@@ -7030,9 +7461,16 @@ class TestColorBar:
 
     @pytest.mark.parametrize(
         "orientation, label_location",
-        [("horizontal", "top"), ("horizontal", "bottom"), ("vertical", "left"), ("vertical", "right")],
+        [
+            ("horizontal", "top"),
+            ("horizontal", "bottom"),
+            ("vertical", "left"),
+            ("vertical", "right"),
+        ],
     )
-    def test_incompatible_label_location_orientation_raises(self, orientation, label_location):
+    def test_incompatible_label_location_orientation_raises(
+        self, orientation, label_location
+    ):
         """An orientation-incompatible `label_location` raises up front (#241).
 
         Args:
@@ -7043,7 +7481,9 @@ class TestColorBar:
             The pairing is rejected at construction with a clear error instead
             of crashing deep in matplotlib at render.
         """
-        with pytest.raises(ValueError, match=r"label_location=.*not valid for a " + orientation):
+        with pytest.raises(
+            ValueError, match=r"label_location=.*not valid for a " + orientation
+        ):
             ColorBar(orientation=orientation, label_location=label_location)
 
     def test_incompatible_label_location_via_implied_orientation_raises(self):
@@ -7065,7 +7505,9 @@ class TestColorBar:
             a false rejection -- the check is skipped.
         """
         spec = ColorBar(label_location="left")  # no raise
-        assert spec.label_location == "left", "label_location should store even when unvalidated"
+        assert spec.label_location == "left", (
+            "label_location should store even when unvalidated"
+        )
 
     @pytest.mark.parametrize(
         "kwargs",
@@ -7083,7 +7525,9 @@ class TestColorBar:
             kwargs: A valid orientation/location + label_location combination.
         """
         spec = ColorBar(**kwargs)
-        assert spec.label_location == kwargs["label_location"], "compatible pair should store"
+        assert spec.label_location == kwargs["label_location"], (
+            "compatible pair should store"
+        )
 
 
 class TestResolveColorbar:
@@ -7103,7 +7547,9 @@ class TestResolveColorbar:
         Test scenario:
             Turning the colorbar off touches nothing else.
         """
-        assert _resolve_colorbar(False) == {"add_colorbar": False}, "False should suppress the colorbar"
+        assert _resolve_colorbar(False) == {"add_colorbar": False}, (
+            "False should suppress the colorbar"
+        )
 
     def test_true_resets_placement(self):
         """`True` enables a default colorbar and resets the whole cbar_* family.
@@ -7129,7 +7575,9 @@ class TestResolveColorbar:
             "cbar_label_location": STYLE_DEFAULTS["cbar_label_location"],
         }
         assert out == expected, f"True should reset the full cbar_* family, got {out}"
-        assert "ticks_spacing" not in out, "ticks_spacing must stay auto-computed, not reset"
+        assert "ticks_spacing" not in out, (
+            "ticks_spacing must stay auto-computed, not reset"
+        )
 
     def test_true_resets_sticky_caption_on_reused_glyph(self):
         """`colorbar=True` clears a caption/length left sticky by a prior call (#242).
@@ -7141,8 +7589,12 @@ class TestResolveColorbar:
         g = ArrayGlyph(np.arange(36.0).reshape(6, 6), extent=[0.0, 0.0, 6.0, 6.0])
         g.plot(cmap="viridis", colorbar=ColorBar(label="Sticky", length=0.3))
         g.plot(cmap="viridis", colorbar=True)
-        assert g.default_options["cbar_label"] == STYLE_DEFAULTS["cbar_label"], "cbar_label should reset"
-        assert g.default_options["cbar_length"] == STYLE_DEFAULTS["cbar_length"], "cbar_length should reset"
+        assert g.default_options["cbar_label"] == STYLE_DEFAULTS["cbar_label"], (
+            "cbar_label should reset"
+        )
+        assert g.default_options["cbar_length"] == STYLE_DEFAULTS["cbar_length"], (
+            "cbar_length should reset"
+        )
         plt.close("all")
 
     def test_spec_maps_fields(self):
@@ -7152,7 +7604,13 @@ class TestResolveColorbar:
             location/inside/box/colours land on the matching cbar_* keys.
         """
         out = _resolve_colorbar(
-            ColorBar(location="left", inside=True, box="black", label_color="k", tick_color="red")
+            ColorBar(
+                location="left",
+                inside=True,
+                box="black",
+                label_color="k",
+                tick_color="red",
+            )
         )
         expected = {
             "add_colorbar": True,
@@ -7174,15 +7632,23 @@ class TestResolveColorbar:
         """
         out = _resolve_colorbar(
             ColorBar(
-                label="Rainfall mm/day", length=0.8, label_size=9.0,
-                label_rotation=90.0, label_location="center", ticks_spacing=5.0,
+                label="Rainfall mm/day",
+                length=0.8,
+                label_size=9.0,
+                label_rotation=90.0,
+                label_location="center",
+                ticks_spacing=5.0,
             )
         )
         assert out["cbar_label"] == "Rainfall mm/day", f"cbar_label not mapped: {out}"
         assert out["cbar_length"] == 0.8, f"cbar_length not mapped: {out}"
         assert out["cbar_label_size"] == 9.0, f"cbar_label_size not mapped: {out}"
-        assert out["cbar_label_rotation"] == 90.0, f"cbar_label_rotation not mapped: {out}"
-        assert out["cbar_label_location"] == "center", f"cbar_label_location not mapped: {out}"
+        assert out["cbar_label_rotation"] == 90.0, (
+            f"cbar_label_rotation not mapped: {out}"
+        )
+        assert out["cbar_label_location"] == "center", (
+            f"cbar_label_location not mapped: {out}"
+        )
         assert out["ticks_spacing"] == 5.0, f"ticks_spacing not mapped: {out}"
 
     def test_unset_caption_fields_are_not_emitted(self):
@@ -7193,8 +7659,15 @@ class TestResolveColorbar:
             `cbar_*` keys (otherwise it would clobber a loose `cbar_label`).
         """
         out = _resolve_colorbar(ColorBar(location="right"))
-        for key in ("cbar_label", "cbar_length", "cbar_label_size",
-                    "cbar_label_rotation", "cbar_label_location", "cbar_orientation", "ticks_spacing"):
+        for key in (
+            "cbar_label",
+            "cbar_length",
+            "cbar_label_size",
+            "cbar_label_rotation",
+            "cbar_label_location",
+            "cbar_orientation",
+            "ticks_spacing",
+        ):
             assert key not in out, f"{key} should not be emitted when unset, got {out}"
 
     def test_orientation_maps_only_when_set(self):
@@ -7207,7 +7680,9 @@ class TestResolveColorbar:
         out = _resolve_colorbar(ColorBar(orientation="horizontal"))
         assert out["cbar_orientation"] == "horizontal", f"orientation not mapped: {out}"
         unset = _resolve_colorbar(ColorBar(location="right"))
-        assert "cbar_orientation" not in unset, f"unset orientation should not be emitted: {unset}"
+        assert "cbar_orientation" not in unset, (
+            f"unset orientation should not be emitted: {unset}"
+        )
 
     @pytest.mark.parametrize("bad", ["right", 1, 1.5, ["right"], {"location": "right"}])
     def test_invalid_type_raises(self, bad):
@@ -7262,7 +7737,9 @@ class TestDeprecatedCbarKwargs:
         with pytest.warns(DeprecationWarning, match="cbar_label"):
             g.plot(cmap="viridis", cbar_label="Rainfall mm/day")
         caption = g.cbar.ax.get_xlabel() or g.cbar.ax.get_ylabel()
-        assert caption == "Rainfall mm/day", f"deprecated kwarg should still work, got {caption!r}"
+        assert caption == "Rainfall mm/day", (
+            f"deprecated kwarg should still work, got {caption!r}"
+        )
         plt.close("all")
 
     def test_typed_colorbar_does_not_warn(self):
@@ -7289,9 +7766,13 @@ class TestDeprecatedCbarKwargs:
             deprecation like the rest, while still taking effect.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 30.0, 20.0])
-        with pytest.warns(DeprecationWarning, match=r"cbar_orientation.*ColorBar\(orientation="):
+        with pytest.warns(
+            DeprecationWarning, match=r"cbar_orientation.*ColorBar\(orientation="
+        ):
             g.plot(cmap="viridis", cbar_orientation="horizontal")
-        assert g.cbar.orientation == "horizontal", f"deprecated kwarg should still work, got {g.cbar.orientation}"
+        assert g.cbar.orientation == "horizontal", (
+            f"deprecated kwarg should still work, got {g.cbar.orientation}"
+        )
         plt.close("all")
 
     def test_invalid_loose_cbar_orientation_raises(self):
@@ -7303,7 +7784,9 @@ class TestDeprecatedCbarKwargs:
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 30.0, 20.0])
         with pytest.warns(DeprecationWarning, match="cbar_orientation"):
-            with pytest.raises(ValueError, match="cbar_orientation must be 'vertical' or 'horizontal'"):
+            with pytest.raises(
+                ValueError, match="cbar_orientation must be 'vertical' or 'horizontal'"
+            ):
                 g.plot(cmap="viridis", cbar_orientation="horizontl")
         plt.close("all")
 
@@ -7324,9 +7807,14 @@ class TestStylePrecedence:
             than the preset's Spectral_r default (defaults < preset < explicit).
         """
         g_def = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g_def.plot(style="temperature_2m", vmin=-15, vmax=42)
+        g_def.plot(data_style=DataStyle(style="temperature_2m"), vmin=-15, vmax=42)
         g_ov = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g_ov.plot(style="temperature_2m", vmin=-15, vmax=42, cmap="viridis")
+        g_ov.plot(
+            data_style=DataStyle(style="temperature_2m"),
+            vmin=-15,
+            vmax=42,
+            cmap="viridis",
+        )
         differ = not np.allclose(
             np.nan_to_num(np.asarray(g_def.im.get_array())),
             np.nan_to_num(np.asarray(g_ov.im.get_array())),
@@ -7342,9 +7830,15 @@ class TestStylePrecedence:
             preset's swatch with a real, tick-marked colorbar.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(style="temperature_2m", vmin=-15, vmax=42,
-               colorbar=ColorBar(location="right", inside=True))
-        assert g.cbar is not None, "placement ColorBar should draw a real colorbar on a style"
+        g.plot(
+            data_style=DataStyle(style="temperature_2m"),
+            vmin=-15,
+            vmax=42,
+            colorbar=ColorBar(location="right", inside=True),
+        )
+        assert g.cbar is not None, (
+            "placement ColorBar should draw a real colorbar on a style"
+        )
         plt.close("all")
 
     def test_orientation_only_spec_draws_real_colorbar_on_style(self):
@@ -7356,10 +7850,18 @@ class TestStylePrecedence:
             keeping the swatch.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(style="temperature_2m", vmin=-15, vmax=42,
-               colorbar=ColorBar(orientation="horizontal"))
-        assert g.cbar is not None, "orientation-only ColorBar should draw a real colorbar on a style"
-        assert g.cbar.orientation == "horizontal", f"expected horizontal, got {g.cbar.orientation}"
+        g.plot(
+            data_style=DataStyle(style="temperature_2m"),
+            vmin=-15,
+            vmax=42,
+            colorbar=ColorBar(orientation="horizontal"),
+        )
+        assert g.cbar is not None, (
+            "orientation-only ColorBar should draw a real colorbar on a style"
+        )
+        assert g.cbar.orientation == "horizontal", (
+            f"expected horizontal, got {g.cbar.orientation}"
+        )
         plt.close("all")
 
     def test_styled_colorbar_ticks_span_the_data_range(self):
@@ -7370,11 +7872,19 @@ class TestStylePrecedence:
             temperature range (a negative low, a >30 high), not the baked 0..1.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(style="temperature_2m", vmin=-15, vmax=42,
-               colorbar=ColorBar(location="right", inside=True))
+        g.plot(
+            data_style=DataStyle(style="temperature_2m"),
+            vmin=-15,
+            vmax=42,
+            colorbar=ColorBar(location="right", inside=True),
+        )
         ticks = [float(t) for t in g.cbar.get_ticks()]
-        assert min(ticks) < 0, f'styled colorbar ticks should span the data range, got {ticks}'
-        assert max(ticks) > 30, f'styled colorbar ticks should span the data range, got {ticks}'
+        assert min(ticks) < 0, (
+            f'styled colorbar ticks should span the data range, got {ticks}'
+        )
+        assert max(ticks) > 30, (
+            f'styled colorbar ticks should span the data range, got {ticks}'
+        )
         plt.close("all")
 
     def test_colorbar_true_overrides_swatch(self):
@@ -7384,8 +7894,15 @@ class TestStylePrecedence:
             A bare `True` overrides the swatch with a default-placed colorbar.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(style="temperature_2m", vmin=-15, vmax=42, colorbar=True)
-        assert g.cbar is not None, "colorbar=True should draw a real colorbar on a style"
+        g.plot(
+            data_style=DataStyle(style="temperature_2m"),
+            vmin=-15,
+            vmax=42,
+            colorbar=True,
+        )
+        assert g.cbar is not None, (
+            "colorbar=True should draw a real colorbar on a style"
+        )
         plt.close("all")
 
     def test_colours_only_colorbar_keeps_swatch(self):
@@ -7396,8 +7913,15 @@ class TestStylePrecedence:
             no real colorbar is drawn (`self.cbar` stays None).
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(style="temperature_2m", vmin=-15, vmax=42, colorbar=ColorBar(label_color="black"))
-        assert g.cbar is None, "colours-only ColorBar should keep the swatch, not a real colorbar"
+        g.plot(
+            data_style=DataStyle(style="temperature_2m"),
+            vmin=-15,
+            vmax=42,
+            colorbar=ColorBar(label_color="black"),
+        )
+        assert g.cbar is None, (
+            "colours-only ColorBar should keep the swatch, not a real colorbar"
+        )
         plt.close("all")
 
     def test_placement_colorbar_in_animation(self):
@@ -7408,9 +7932,16 @@ class TestStylePrecedence:
         """
         stack = np.linspace(-15, 42, 3 * 600).reshape(3, 20, 30)
         g = ArrayGlyph(stack, extent=[0.0, 0.0, 40.0, 20.0])
-        g.animate(["a", "b", "c"], style="temperature_2m", vmin=-15, vmax=42,
-                  colorbar=ColorBar(location="right", inside=True))
-        assert g.cbar is not None, "placement ColorBar should draw a real colorbar in a styled animation"
+        g.animate(
+            ["a", "b", "c"],
+            data_style=DataStyle(style="temperature_2m"),
+            vmin=-15,
+            vmax=42,
+            colorbar=ColorBar(location="right", inside=True),
+        )
+        assert g.cbar is not None, (
+            "placement ColorBar should draw a real colorbar in a styled animation"
+        )
         plt.close("all")
 
     def test_categorical_style_keeps_discrete_legend(self):
@@ -7422,8 +7953,13 @@ class TestStylePrecedence:
         """
         codes = np.array([[1, 2, 4, 8], [16, 32, 64, 128]], dtype=float)
         g = ArrayGlyph(codes, extent=[0.0, 0.0, 4.0, 2.0])
-        g.plot(style="flow_direction_d8", colorbar=ColorBar(location="right", inside=True))
-        assert g.cbar is None, "categorical style should keep its discrete legend, not a colorbar"
+        g.plot(
+            data_style=DataStyle(style="flow_direction_d8"),
+            colorbar=ColorBar(location="right", inside=True),
+        )
+        assert g.cbar is None, (
+            "categorical style should keep its discrete legend, not a colorbar"
+        )
         plt.close("all")
 
 
@@ -7460,7 +7996,9 @@ class TestColorbarLocationOrientation:
             a location plus a contradictory orientation must not raise -- the
             location wins and the orientation is dropped.
         """
-        g = ArrayGlyph(np.arange(200).reshape(10, 20).astype(float), extent=[0, 0, 20, 10])
+        g = ArrayGlyph(
+            np.arange(200).reshape(10, 20).astype(float), extent=[0, 0, 20, 10]
+        )
         g.plot(
             vmin=0,
             vmax=200,

@@ -17,6 +17,7 @@ from matplotlib.collections import LineCollection
 from matplotlib.legend import Legend
 
 from cleopatra.glyphs.primitives.flow_glyph import FLOW_DEFAULT_OPTIONS, FlowGlyph
+from cleopatra.styling.params import Contour
 from cleopatra.styling.styles import width_legend
 
 
@@ -374,8 +375,8 @@ class TestFlowGlyphPlot:
             With levels set, the collection's norm carries discrete
             boundaries (and `set_clim` is bypassed).
         """
-        glyph = FlowGlyph(paths, values=values, levels=4)
-        _, _, lc = glyph.plot()
+        glyph = FlowGlyph(paths, values=values)
+        _, _, lc = glyph.plot(contour=Contour(levels=4))
         assert lc.norm.boundaries is not None, "levels should yield a BoundaryNorm"
         assert glyph.cbar is not None, "A colorbar should still be drawn"
 
