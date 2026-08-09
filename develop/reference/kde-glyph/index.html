@@ -3439,7 +3439,7 @@ cleopatra.glyphs.gridded.mesh_glyph.MeshGlyph: Contour rendering for unstructure
 <a id="__codelineno-0-317" name="__codelineno-0-317"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the `DATA_STYLES` preset currently applied, or `None`.</span>
 <a id="__codelineno-0-318" name="__codelineno-0-318"></a>
 <a id="__codelineno-0-319" name="__codelineno-0-319"></a><span class="sd">        Reads back the preset set via the `style` constructor kwarg, a</span>
-<a id="__codelineno-0-320" name="__codelineno-0-320"></a><span class="sd">        `plot(style=...)` call, or `apply_style`.</span>
+<a id="__codelineno-0-320" name="__codelineno-0-320"></a><span class="sd">        `plot(data_style=DataStyle(style=...))` call, or `apply_style`.</span>
 <a id="__codelineno-0-321" name="__codelineno-0-321"></a><span class="sd">        &quot;&quot;&quot;</span>
 <a id="__codelineno-0-322" name="__codelineno-0-322"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;style&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-323" name="__codelineno-0-323"></a>
@@ -3453,12 +3453,12 @@ cleopatra.glyphs.gridded.mesh_glyph.MeshGlyph: Contour rendering for unstructure
 <a id="__codelineno-0-331" name="__codelineno-0-331"></a>    <span class="p">):</span>
 <a id="__codelineno-0-332" name="__codelineno-0-332"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply a continuous `DATA_STYLES` preset by name, re-rendering in place.</span>
 <a id="__codelineno-0-333" name="__codelineno-0-333"></a>
-<a id="__codelineno-0-334" name="__codelineno-0-334"></a><span class="sd">        A discoverable wrapper over `plot(style=...)` for restyling an</span>
+<a id="__codelineno-0-334" name="__codelineno-0-334"></a><span class="sd">        A discoverable wrapper over `plot(data_style=DataStyle(style=...))` for restyling an</span>
 <a id="__codelineno-0-335" name="__codelineno-0-335"></a><span class="sd">        already-built glyph. It redraws **in place** on the glyph&#39;s own axes</span>
 <a id="__codelineno-0-336" name="__codelineno-0-336"></a><span class="sd">        (taking full ownership -- do not use on a shared axes), or on a fresh</span>
 <a id="__codelineno-0-337" name="__codelineno-0-337"></a><span class="sd">        figure if the glyph was never plotted or its figure was closed. The</span>
 <a id="__codelineno-0-338" name="__codelineno-0-338"></a><span class="sd">        applied style is **sticky** (survives a later plain `plot()`);</span>
-<a id="__codelineno-0-339" name="__codelineno-0-339"></a><span class="sd">        `plot(style=None)` clears it.</span>
+<a id="__codelineno-0-339" name="__codelineno-0-339"></a><span class="sd">        `plot(data_style=DataStyle(style=None))` clears it.</span>
 <a id="__codelineno-0-340" name="__codelineno-0-340"></a>
 <a id="__codelineno-0-341" name="__codelineno-0-341"></a><span class="sd">        Args:</span>
 <a id="__codelineno-0-342" name="__codelineno-0-342"></a><span class="sd">            style: A continuous `cleopatra.styling.colors.DATA_STYLES` preset name.</span>
@@ -3700,7 +3700,7 @@ cleopatra.glyphs.gridded.mesh_glyph.MeshGlyph: Contour rendering for unstructure
 
         <p>Name of the <code>DATA_STYLES</code> preset currently applied, or <code>None</code>.</p>
 <p>Reads back the preset set via the <code>style</code> constructor kwarg, a
-<code>plot(style=...)</code> call, or <code>apply_style</code>.</p>
+<code>plot(data_style=DataStyle(style=...))</code> call, or <code>apply_style</code>.</p>
 
     </div>
 
@@ -3721,12 +3721,12 @@ cleopatra.glyphs.gridded.mesh_glyph.MeshGlyph: Contour rendering for unstructure
     <div class="doc doc-contents ">
 
         <p>Apply a continuous <code>DATA_STYLES</code> preset by name, re-rendering in place.</p>
-<p>A discoverable wrapper over <code>plot(style=...)</code> for restyling an
+<p>A discoverable wrapper over <code>plot(data_style=DataStyle(style=...))</code> for restyling an
 already-built glyph. It redraws <strong>in place</strong> on the glyph's own axes
 (taking full ownership -- do not use on a shared axes), or on a fresh
 figure if the glyph was never plotted or its figure was closed. The
 applied style is <strong>sticky</strong> (survives a later plain <code>plot()</code>);
-<code>plot(style=None)</code> clears it.</p>
+<code>plot(data_style=DataStyle(style=None))</code> clears it.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3915,12 +3915,12 @@ continuous).</p>
 <a id="__codelineno-0-331" name="__codelineno-0-331"></a><span class="p">):</span>
 <a id="__codelineno-0-332" name="__codelineno-0-332"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply a continuous `DATA_STYLES` preset by name, re-rendering in place.</span>
 <a id="__codelineno-0-333" name="__codelineno-0-333"></a>
-<a id="__codelineno-0-334" name="__codelineno-0-334"></a><span class="sd">    A discoverable wrapper over `plot(style=...)` for restyling an</span>
+<a id="__codelineno-0-334" name="__codelineno-0-334"></a><span class="sd">    A discoverable wrapper over `plot(data_style=DataStyle(style=...))` for restyling an</span>
 <a id="__codelineno-0-335" name="__codelineno-0-335"></a><span class="sd">    already-built glyph. It redraws **in place** on the glyph&#39;s own axes</span>
 <a id="__codelineno-0-336" name="__codelineno-0-336"></a><span class="sd">    (taking full ownership -- do not use on a shared axes), or on a fresh</span>
 <a id="__codelineno-0-337" name="__codelineno-0-337"></a><span class="sd">    figure if the glyph was never plotted or its figure was closed. The</span>
 <a id="__codelineno-0-338" name="__codelineno-0-338"></a><span class="sd">    applied style is **sticky** (survives a later plain `plot()`);</span>
-<a id="__codelineno-0-339" name="__codelineno-0-339"></a><span class="sd">    `plot(style=None)` clears it.</span>
+<a id="__codelineno-0-339" name="__codelineno-0-339"></a><span class="sd">    `plot(data_style=DataStyle(style=None))` clears it.</span>
 <a id="__codelineno-0-340" name="__codelineno-0-340"></a>
 <a id="__codelineno-0-341" name="__codelineno-0-341"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-342" name="__codelineno-0-342"></a><span class="sd">        style: A continuous `cleopatra.styling.colors.DATA_STYLES` preset name.</span>

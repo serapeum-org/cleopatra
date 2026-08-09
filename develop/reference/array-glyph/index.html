@@ -8568,21 +8568,21 @@ isolines (e.g. a constant-value field) yields an empty list.</p>
 <a id="__codelineno-0-2222" name="__codelineno-0-2222"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the `DATA_STYLES` preset currently applied, or `None`.</span>
 <a id="__codelineno-0-2223" name="__codelineno-0-2223"></a>
 <a id="__codelineno-0-2224" name="__codelineno-0-2224"></a><span class="sd">        Reads back the preset set via the `style` constructor kwarg, a</span>
-<a id="__codelineno-0-2225" name="__codelineno-0-2225"></a><span class="sd">        `plot(style=...)` call, or `apply_style`.</span>
+<a id="__codelineno-0-2225" name="__codelineno-0-2225"></a><span class="sd">        `plot(data_style=DataStyle(style=...))` call, or `apply_style`.</span>
 <a id="__codelineno-0-2226" name="__codelineno-0-2226"></a><span class="sd">        &quot;&quot;&quot;</span>
 <a id="__codelineno-0-2227" name="__codelineno-0-2227"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;style&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-2228" name="__codelineno-0-2228"></a>
 <a id="__codelineno-0-2229" name="__codelineno-0-2229"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">apply_style</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">style</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Figure</span><span class="p">,</span> <span class="n">Axes</span><span class="p">]:</span>
 <a id="__codelineno-0-2230" name="__codelineno-0-2230"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply a `DATA_STYLES` preset by name, re-rendering the glyph in place.</span>
 <a id="__codelineno-0-2231" name="__codelineno-0-2231"></a>
-<a id="__codelineno-0-2232" name="__codelineno-0-2232"></a><span class="sd">        A discoverable wrapper over `plot(style=...)` for restyling an</span>
+<a id="__codelineno-0-2232" name="__codelineno-0-2232"></a><span class="sd">        A discoverable wrapper over `plot(data_style=DataStyle(style=...))` for restyling an</span>
 <a id="__codelineno-0-2233" name="__codelineno-0-2233"></a><span class="sd">        already-built glyph. It redraws **in place** on the glyph&#39;s own axes</span>
 <a id="__codelineno-0-2234" name="__codelineno-0-2234"></a><span class="sd">        (clearing the previous render first), so `apply_style` takes full</span>
 <a id="__codelineno-0-2235" name="__codelineno-0-2235"></a><span class="sd">        ownership of that axes -- do not use it on an axes shared with unrelated</span>
 <a id="__codelineno-0-2236" name="__codelineno-0-2236"></a><span class="sd">        caller content. If the glyph was never plotted (or its figure was</span>
 <a id="__codelineno-0-2237" name="__codelineno-0-2237"></a><span class="sd">        closed), it renders on a fresh figure. Extra keyword arguments (e.g.</span>
 <a id="__codelineno-0-2238" name="__codelineno-0-2238"></a><span class="sd">        `hillshade`, `add_colorbar`) are forwarded to `plot`. The applied style</span>
-<a id="__codelineno-0-2239" name="__codelineno-0-2239"></a><span class="sd">        is **sticky** (survives a later plain `plot()`); `plot(style=None)`</span>
+<a id="__codelineno-0-2239" name="__codelineno-0-2239"></a><span class="sd">        is **sticky** (survives a later plain `plot()`); `plot(data_style=DataStyle(style=None))`</span>
 <a id="__codelineno-0-2240" name="__codelineno-0-2240"></a><span class="sd">        clears it.</span>
 <a id="__codelineno-0-2241" name="__codelineno-0-2241"></a>
 <a id="__codelineno-0-2242" name="__codelineno-0-2242"></a><span class="sd">        Args:</span>
@@ -9201,9 +9201,9 @@ isolines (e.g. a constant-value field) yields an empty list.</p>
 <a id="__codelineno-0-2855" name="__codelineno-0-2855"></a><span class="sd">                  `ax.pcolormesh` with `shading=&quot;auto&quot;`. Honours</span>
 <a id="__codelineno-0-2856" name="__codelineno-0-2856"></a><span class="sd">                  `coords` (1-D centres or 2-D curvilinear).</span>
 <a id="__codelineno-0-2857" name="__codelineno-0-2857"></a><span class="sd">                - `&quot;contour&quot;` — line contours via `ax.contour`.</span>
-<a id="__codelineno-0-2858" name="__codelineno-0-2858"></a><span class="sd">                  Honours `levels` from kwargs when set.</span>
+<a id="__codelineno-0-2858" name="__codelineno-0-2858"></a><span class="sd">                  Honours `contour=Contour(levels=...)` when set.</span>
 <a id="__codelineno-0-2859" name="__codelineno-0-2859"></a><span class="sd">                - `&quot;contourf&quot;` — filled contours via `ax.contourf`.</span>
-<a id="__codelineno-0-2860" name="__codelineno-0-2860"></a><span class="sd">                  Honours `levels` from kwargs when set.</span>
+<a id="__codelineno-0-2860" name="__codelineno-0-2860"></a><span class="sd">                  Honours `contour=Contour(levels=...)` when set.</span>
 <a id="__codelineno-0-2861" name="__codelineno-0-2861"></a>
 <a id="__codelineno-0-2862" name="__codelineno-0-2862"></a><span class="sd">                Cell-value display and point overlays only apply to</span>
 <a id="__codelineno-0-2863" name="__codelineno-0-2863"></a><span class="sd">                `&quot;imshow&quot;` and `&quot;pcolormesh&quot;`; they are silently</span>
@@ -11382,7 +11382,7 @@ Will be removed in a future release.</p>
 
         <p>Name of the <code>DATA_STYLES</code> preset currently applied, or <code>None</code>.</p>
 <p>Reads back the preset set via the <code>style</code> constructor kwarg, a
-<code>plot(style=...)</code> call, or <code>apply_style</code>.</p>
+<code>plot(data_style=DataStyle(style=...))</code> call, or <code>apply_style</code>.</p>
 
     </div>
 
@@ -14905,14 +14905,14 @@ doctest because it downloads the <code>[tiles]</code> assets on first use:
     <div class="doc doc-contents ">
 
         <p>Apply a <code>DATA_STYLES</code> preset by name, re-rendering the glyph in place.</p>
-<p>A discoverable wrapper over <code>plot(style=...)</code> for restyling an
+<p>A discoverable wrapper over <code>plot(data_style=DataStyle(style=...))</code> for restyling an
 already-built glyph. It redraws <strong>in place</strong> on the glyph's own axes
 (clearing the previous render first), so <code>apply_style</code> takes full
 ownership of that axes -- do not use it on an axes shared with unrelated
 caller content. If the glyph was never plotted (or its figure was
 closed), it renders on a fresh figure. Extra keyword arguments (e.g.
 <code>hillshade</code>, <code>add_colorbar</code>) are forwarded to <code>plot</code>. The applied style
-is <strong>sticky</strong> (survives a later plain <code>plot()</code>); <code>plot(style=None)</code>
+is <strong>sticky</strong> (survives a later plain <code>plot()</code>); <code>plot(data_style=DataStyle(style=None))</code>
 clears it.</p>
 
 
@@ -15082,14 +15082,14 @@ clears it.</p>
 <span class="normal"><a href="#__codelineno-0-2279">2279</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-2229" name="__codelineno-0-2229"></a><span class="k">def</span><span class="w"> </span><span class="nf">apply_style</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">style</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Figure</span><span class="p">,</span> <span class="n">Axes</span><span class="p">]:</span>
 <a id="__codelineno-0-2230" name="__codelineno-0-2230"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply a `DATA_STYLES` preset by name, re-rendering the glyph in place.</span>
 <a id="__codelineno-0-2231" name="__codelineno-0-2231"></a>
-<a id="__codelineno-0-2232" name="__codelineno-0-2232"></a><span class="sd">    A discoverable wrapper over `plot(style=...)` for restyling an</span>
+<a id="__codelineno-0-2232" name="__codelineno-0-2232"></a><span class="sd">    A discoverable wrapper over `plot(data_style=DataStyle(style=...))` for restyling an</span>
 <a id="__codelineno-0-2233" name="__codelineno-0-2233"></a><span class="sd">    already-built glyph. It redraws **in place** on the glyph&#39;s own axes</span>
 <a id="__codelineno-0-2234" name="__codelineno-0-2234"></a><span class="sd">    (clearing the previous render first), so `apply_style` takes full</span>
 <a id="__codelineno-0-2235" name="__codelineno-0-2235"></a><span class="sd">    ownership of that axes -- do not use it on an axes shared with unrelated</span>
 <a id="__codelineno-0-2236" name="__codelineno-0-2236"></a><span class="sd">    caller content. If the glyph was never plotted (or its figure was</span>
 <a id="__codelineno-0-2237" name="__codelineno-0-2237"></a><span class="sd">    closed), it renders on a fresh figure. Extra keyword arguments (e.g.</span>
 <a id="__codelineno-0-2238" name="__codelineno-0-2238"></a><span class="sd">    `hillshade`, `add_colorbar`) are forwarded to `plot`. The applied style</span>
-<a id="__codelineno-0-2239" name="__codelineno-0-2239"></a><span class="sd">    is **sticky** (survives a later plain `plot()`); `plot(style=None)`</span>
+<a id="__codelineno-0-2239" name="__codelineno-0-2239"></a><span class="sd">    is **sticky** (survives a later plain `plot()`); `plot(data_style=DataStyle(style=None))`</span>
 <a id="__codelineno-0-2240" name="__codelineno-0-2240"></a><span class="sd">    clears it.</span>
 <a id="__codelineno-0-2241" name="__codelineno-0-2241"></a>
 <a id="__codelineno-0-2242" name="__codelineno-0-2242"></a><span class="sd">    Args:</span>
@@ -16306,9 +16306,9 @@ the old keywords still work as <code>**kwargs</code> and emit a
   <code>ax.pcolormesh</code> with <code>shading="auto"</code>. Honours
   <code>coords</code> (1-D centres or 2-D curvilinear).</li>
 <li><code>"contour"</code> — line contours via <code>ax.contour</code>.
-  Honours <code>levels</code> from kwargs when set.</li>
+  Honours <code>contour=Contour(levels=...)</code> when set.</li>
 <li><code>"contourf"</code> — filled contours via <code>ax.contourf</code>.
-  Honours <code>levels</code> from kwargs when set.</li>
+  Honours <code>contour=Contour(levels=...)</code> when set.</li>
 </ul>
 <p>Cell-value display and point overlays only apply to
 <code>"imshow"</code> and <code>"pcolormesh"</code>; they are silently
@@ -17890,9 +17890,9 @@ value if 0.0001, and 0.001 respectively.
 <a id="__codelineno-0-2855" name="__codelineno-0-2855"></a><span class="sd">              `ax.pcolormesh` with `shading=&quot;auto&quot;`. Honours</span>
 <a id="__codelineno-0-2856" name="__codelineno-0-2856"></a><span class="sd">              `coords` (1-D centres or 2-D curvilinear).</span>
 <a id="__codelineno-0-2857" name="__codelineno-0-2857"></a><span class="sd">            - `&quot;contour&quot;` — line contours via `ax.contour`.</span>
-<a id="__codelineno-0-2858" name="__codelineno-0-2858"></a><span class="sd">              Honours `levels` from kwargs when set.</span>
+<a id="__codelineno-0-2858" name="__codelineno-0-2858"></a><span class="sd">              Honours `contour=Contour(levels=...)` when set.</span>
 <a id="__codelineno-0-2859" name="__codelineno-0-2859"></a><span class="sd">            - `&quot;contourf&quot;` — filled contours via `ax.contourf`.</span>
-<a id="__codelineno-0-2860" name="__codelineno-0-2860"></a><span class="sd">              Honours `levels` from kwargs when set.</span>
+<a id="__codelineno-0-2860" name="__codelineno-0-2860"></a><span class="sd">              Honours `contour=Contour(levels=...)` when set.</span>
 <a id="__codelineno-0-2861" name="__codelineno-0-2861"></a>
 <a id="__codelineno-0-2862" name="__codelineno-0-2862"></a><span class="sd">            Cell-value display and point overlays only apply to</span>
 <a id="__codelineno-0-2863" name="__codelineno-0-2863"></a><span class="sd">            `&quot;imshow&quot;` and `&quot;pcolormesh&quot;`; they are silently</span>
