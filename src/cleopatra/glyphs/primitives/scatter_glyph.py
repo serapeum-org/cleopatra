@@ -95,10 +95,15 @@ class ScatterGlyph(GeoMixin, Glyph):
             every point (the original behaviour). Default is None.
         ax: Pre-existing axes to draw on. Default is None.
         fig: Pre-existing figure. Default is None.
-        **kwargs: Override any key in `SCATTER_DEFAULT_OPTIONS`
-            (e.g. `marker`, `point_size`, `cmap`, `vmin`, `vmax`,
-            `levels`, `color_scale`, `ticks_spacing`, `cbar_label`,
-            `figsize`, `title`). Set `add_colorbar=False` to suppress the
+        **kwargs: Construction-time overrides for the non-grouped
+            `SCATTER_DEFAULT_OPTIONS` (e.g. `marker`, `point_size`, `cmap`,
+            `vmin`, `vmax`, `ticks_spacing`, `cbar_label`, `figsize`,
+            `title`). The colour scale, discretisation `levels`, and
+            classification are no longer construction kwargs -- pass them
+            to `plot()` via `color=ColorScaling(...)`,
+            `contour=Contour(levels=...)`, and `classify=Classify(...)` (a
+            loose `color_scale` / `levels` / `scheme` keyword now raises).
+            Set `add_colorbar=False` to suppress the
             per-glyph colorbar (default True) for shared-axes composition
             where the host owns a single aggregated colorbar. The
             `size_limits` (min/max marker area in points², default

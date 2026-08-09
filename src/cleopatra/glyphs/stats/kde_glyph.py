@@ -92,15 +92,19 @@ class KDEGlyph(Glyph):
             data coordinates. Default is None (no clipping).
         ax: Pre-existing axes to draw on. Default is None.
         fig: Pre-existing figure. Default is None.
-        **kwargs: Override any key in `KDE_DEFAULT_OPTIONS`: `levels` (int
-            count or explicit sequence of density levels, default 10),
-            `shade` (filled `contourf` vs line `contour`, default True),
-            `bw_method` (None for Scott's rule, or a positive float
-            bandwidth multiplier), `gridsize` (density grid resolution,
-            default 100), plus the shared colour options (`cmap`, `vmin`,
-            `vmax`, `color_scale`, `ticks_spacing`, `cbar_label`,
-            `figsize`, `title`). Set `add_colorbar=False` to suppress the
-            per-glyph colorbar (default True).
+        **kwargs: Construction-time overrides for the non-grouped
+            `KDE_DEFAULT_OPTIONS`: `shade` (filled `contourf` vs line
+            `contour`, default True), `bw_method` (None for Scott's rule,
+            or a positive float bandwidth multiplier), `gridsize` (density
+            grid resolution, default 100), plus the shared appearance /
+            colorbar options (`cmap`, `vmin`, `vmax`, `ticks_spacing`,
+            `cbar_label`, `figsize`, `title`). Set `add_colorbar=False` to
+            suppress the per-glyph colorbar (default True). The colour
+            scale, density `levels`, and preset / relief shading are no
+            longer construction kwargs -- pass them to `plot()` via
+            `color=ColorScaling(...)`, `contour=Contour(levels=...)`, and
+            `data_style=DataStyle(...)` respectively (a loose `color_scale`
+            / `levels` / `style` keyword now raises).
 
     Raises:
         ValueError: If `x` and `y` have mismatched shapes, if fewer than

@@ -90,12 +90,17 @@ class PolygonGlyph(GeoMixin, Glyph):
             given. Default is None (outline-only).
         ax: Pre-existing axes to draw on. Default is None.
         fig: Pre-existing figure. Default is None.
-        **kwargs: Override any key in `POLYGON_DEFAULT_OPTIONS`
-            (e.g. `edgecolor`, `linewidth`, `cmap`, `vmin`, `vmax`,
-            `levels`, `color_scale`, `ticks_spacing`, `cbar_label`,
+        **kwargs: Construction-time overrides for the non-grouped
+            `POLYGON_DEFAULT_OPTIONS` (e.g. `edgecolor`, `linewidth`,
+            `cmap`, `vmin`, `vmax`, `ticks_spacing`, `cbar_label`,
             `figsize`, `title`). Set `add_colorbar=False` to suppress the
             per-glyph colorbar (default True) for shared-axes composition
-            where the host owns a single aggregated colorbar.
+            where the host owns a single aggregated colorbar. The colour
+            scale, discretisation `levels`, and classification are no
+            longer construction kwargs -- pass them to `plot()` via
+            `color=ColorScaling(...)`, `contour=Contour(levels=...)`, and
+            `classify=Classify(...)` (a loose `color_scale` / `levels` /
+            `scheme` keyword now raises).
 
     Raises:
         ValueError: If `values` is given but its length does not match
