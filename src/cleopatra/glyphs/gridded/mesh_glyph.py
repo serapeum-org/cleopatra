@@ -72,6 +72,11 @@ from cleopatra.styling.styles import disjoint_legend
 MESH_DEFAULT_OPTIONS = {
     "vmin": None,
     "vmax": None,
+    # `None` keeps the colour norm continuous by default (as before). When a
+    # caller sets it via `contour=Contour(levels=N)` it both discretises the
+    # norm (like the other glyphs) and drives the node line/filled-contour
+    # count; a plain node contour with `levels` unset falls back to 20.
+    "levels": None,
     "labels": False,
     "label_kw": None,
     "hillshade": False,
@@ -703,7 +708,11 @@ class MeshGlyph(GeoMixin, Glyph):
             kw.update(render_kwargs)
             return ax.tripcolor(tri, facecolors=tri_values, **kw)
 
-        contour_kw: dict[str, Any] = {"cmap": cmap, "levels": 20}
+        levels = self.default_options["levels"]
+        contour_kw: dict[str, Any] = {
+            "cmap": cmap,
+            "levels": 20 if levels is None else levels,
+        }
         if norm is not None:
             contour_kw["norm"] = norm
         else:
