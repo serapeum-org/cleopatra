@@ -3181,19 +3181,27 @@ data is bundled as NumPy <code>.npz</code>, so nothing here reads GIS files — 
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
 <span class="kn">import</span><span class="w"> </span><span class="nn">cleopatra</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span>
+
 <span class="nb">print</span><span class="p">(</span><span class="s2">"cleopatra"</span><span class="p">,</span> <span class="n">cleopatra</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styling.params</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataStyle</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-1">import numpy as np
+<div class="clipboard-copy-txt" id="cell-1">from pathlib import Path
+
 import matplotlib.pyplot as plt
-from pathlib import Path
+import numpy as np
+
 import cleopatra
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
-print("cleopatra", cleopatra.__version__)</div>
+
+print("cleopatra", cleopatra.__version__)
+from cleopatra.styling.params import DataStyle</div>
 </div>
 </div>
 </div>
@@ -3248,39 +3256,59 @@ print("cleopatra", cleopatra.__version__)</div>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">DATA</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"../../../examples/data"</span><span class="p">)</span>   <span class="c1"># kernel CWD is the notebook's own folder</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">DATA</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"../../../examples/data"</span><span class="p">)</span>  <span class="c1"># kernel CWD is the notebook's own folder</span>
+
 
 <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
     <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">DATA</span> <span class="o">/</span> <span class="n">name</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">z</span><span class="p">[</span><span class="s2">"array"</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">z</span><span class="p">[</span><span class="s2">"extent"</span><span class="p">]]</span>
 
+
 <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">DATA</span> <span class="o">/</span> <span class="s2">"europe_t2m.npz"</span><span class="p">,</span> <span class="n">allow_pickle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">cel</span> <span class="o">=</span> <span class="n">z</span><span class="p">[</span><span class="s2">"celsius"</span><span class="p">]</span>
-<span class="n">day</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">cel</span><span class="p">]))</span>   <span class="c1"># most dynamic day</span>
+<span class="n">day</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">cel</span><span class="p">]))</span>  <span class="c1"># most dynamic day</span>
 <span class="n">t2m</span> <span class="o">=</span> <span class="n">cel</span><span class="p">[</span><span class="n">day</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
 <span class="n">t2m_ext</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">z</span><span class="p">[</span><span class="s2">"extent"</span><span class="p">]]</span>
 <span class="n">precip</span><span class="p">,</span> <span class="n">precip_ext</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s2">"noah_precip_europe.npz"</span><span class="p">)</span>
 <span class="n">facc</span><span class="p">,</span> <span class="n">facc_ext</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s2">"flow_accumulation.npz"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"t2m:"</span><span class="p">,</span> <span class="n">t2m</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="s2">"degC"</span><span class="p">,</span> <span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">t2m</span><span class="p">),</span><span class="mi">1</span><span class="p">),</span> <span class="nb">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">t2m</span><span class="p">),</span><span class="mi">1</span><span class="p">)),</span>
-      <span class="s2">"| precip:"</span><span class="p">,</span> <span class="n">precip</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">precip</span><span class="p">),</span><span class="mi">1</span><span class="p">),</span> <span class="nb">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">precip</span><span class="p">),</span><span class="mi">1</span><span class="p">)),</span>
-      <span class="s2">"| flow_acc:"</span><span class="p">,</span> <span class="n">facc</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="s2">"t2m:"</span><span class="p">,</span>
+    <span class="n">t2m</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+    <span class="s2">"degC"</span><span class="p">,</span>
+    <span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">t2m</span><span class="p">),</span> <span class="mi">1</span><span class="p">),</span> <span class="nb">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">t2m</span><span class="p">),</span> <span class="mi">1</span><span class="p">)),</span>
+    <span class="s2">"| precip:"</span><span class="p">,</span>
+    <span class="n">precip</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+    <span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">precip</span><span class="p">),</span> <span class="mi">1</span><span class="p">),</span> <span class="nb">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">precip</span><span class="p">),</span> <span class="mi">1</span><span class="p">)),</span>
+    <span class="s2">"| flow_acc:"</span><span class="p">,</span>
+    <span class="n">facc</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+<span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-2">DATA = Path("../../../examples/data")   # kernel CWD is the notebook's own folder
+<div class="clipboard-copy-txt" id="cell-2">DATA = Path("../../../examples/data")  # kernel CWD is the notebook's own folder
+
 
 def load(name):
     z = np.load(DATA / name)
     return z["array"].astype(float), [float(v) for v in z["extent"]]
 
+
 z = np.load(DATA / "europe_t2m.npz", allow_pickle=True)
 cel = z["celsius"]
-day = int(np.argmax([np.nanmax(f) - np.nanmin(f) for f in cel]))   # most dynamic day
+day = int(np.argmax([np.nanmax(f) - np.nanmin(f) for f in cel]))  # most dynamic day
 t2m = cel[day].astype(float)
 t2m_ext = [float(v) for v in z["extent"]]
 precip, precip_ext = load("noah_precip_europe.npz")
 facc, facc_ext = load("flow_accumulation.npz")
-print("t2m:", t2m.shape, "degC", (round(np.nanmin(t2m),1), round(np.nanmax(t2m),1)),
-      "| precip:", precip.shape, (round(np.nanmin(precip),1), round(np.nanmax(precip),1)),
-      "| flow_acc:", facc.shape)</div>
+print(
+    "t2m:",
+    t2m.shape,
+    "degC",
+    (round(np.nanmin(t2m), 1), round(np.nanmax(t2m), 1)),
+    "| precip:",
+    precip.shape,
+    (round(np.nanmin(precip), 1), round(np.nanmax(precip), 1)),
+    "| flow_acc:",
+    facc.shape,
+)</div>
 </div>
 </div>
 </div>
@@ -3341,13 +3369,23 @@ per panel:</p>
     <span class="n">nrow</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">styles</span><span class="p">)</span> <span class="o">/</span> <span class="n">ncol</span><span class="p">))</span>
     <span class="c1"># squeeze=False -&gt; axes is always a 2-D array, so .ravel() works for any grid</span>
     <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">nrow</span><span class="p">,</span> <span class="n">ncol</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">13</span><span class="p">,</span> <span class="mf">3.3</span> <span class="o">*</span> <span class="n">nrow</span><span class="p">),</span> <span class="n">squeeze</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="n">gext</span> <span class="o">=</span> <span class="p">[</span><span class="n">extent</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">extent</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">extent</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">extent</span><span class="p">[</span><span class="mi">3</span><span class="p">]]</span>   <span class="c1"># -&gt; ArrayGlyph [xmin, ymin, xmax, ymax]</span>
+    <span class="n">gext</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">extent</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="n">extent</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+        <span class="n">extent</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+        <span class="n">extent</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
+    <span class="p">]</span>  <span class="c1"># -&gt; ArrayGlyph [xmin, ymin, xmax, ymax]</span>
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ax</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">axes</span><span class="o">.</span><span class="n">ravel</span><span class="p">()):</span>
         <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">styles</span><span class="p">):</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>                          <span class="c1"># hide leftover empty panels</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># hide leftover empty panels</span>
             <span class="k">continue</span>
         <span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">gext</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
-        <span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">styles</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">add_colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">styles</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">title_size</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+        <span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+            <span class="n">add_colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">title</span><span class="o">=</span><span class="n">styles</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+            <span class="n">title_size</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span>
+            <span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">styles</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span>
+        <span class="p">)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
     <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s2">"bold"</span><span class="p">)</span>
@@ -3359,13 +3397,23 @@ per panel:</p>
     nrow = int(np.ceil(len(styles) / ncol))
     # squeeze=False -&gt; axes is always a 2-D array, so .ravel() works for any grid
     fig, axes = plt.subplots(nrow, ncol, figsize=(13, 3.3 * nrow), squeeze=False)
-    gext = [extent[0], extent[2], extent[1], extent[3]]   # -&gt; ArrayGlyph [xmin, ymin, xmax, ymax]
+    gext = [
+        extent[0],
+        extent[2],
+        extent[1],
+        extent[3],
+    ]  # -&gt; ArrayGlyph [xmin, ymin, xmax, ymax]
     for i, ax in enumerate(axes.ravel()):
         if i &gt;= len(styles):
-            ax.set_visible(False)                          # hide leftover empty panels
+            ax.set_visible(False)  # hide leftover empty panels
             continue
         glyph = ArrayGlyph(field, extent=gext, ax=ax)
-        glyph.plot(style=styles[i], add_colorbar=False, title=styles[i], title_size=9)
+        glyph.plot(
+            add_colorbar=False,
+            title=styles[i],
+            title_size=9,
+            data_style=DataStyle(style=styles[i]),
+        )
         ax.set_xticks([])
         ax.set_yticks([])
     fig.suptitle(title, fontweight="bold")
@@ -3407,14 +3455,32 @@ per panel:</p>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">temp_styles</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"temperature_2m"</span><span class="p">,</span> <span class="s2">"air_temperature"</span><span class="p">,</span> <span class="s2">"mean_temperature_2m"</span><span class="p">,</span>
-               <span class="s2">"min_temperature_2m"</span><span class="p">,</span> <span class="s2">"max_temperature_2m"</span><span class="p">,</span> <span class="s2">"dewpoint_temperature_2m"</span><span class="p">,</span>
-               <span class="s2">"potential_temperature"</span><span class="p">,</span> <span class="s2">"temperature"</span><span class="p">,</span> <span class="s2">"temperature_flame"</span><span class="p">,</span> <span class="s2">"temperature_flame_amber"</span><span class="p">]</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">temp_styles</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"temperature_2m"</span><span class="p">,</span>
+    <span class="s2">"air_temperature"</span><span class="p">,</span>
+    <span class="s2">"mean_temperature_2m"</span><span class="p">,</span>
+    <span class="s2">"min_temperature_2m"</span><span class="p">,</span>
+    <span class="s2">"max_temperature_2m"</span><span class="p">,</span>
+    <span class="s2">"dewpoint_temperature_2m"</span><span class="p">,</span>
+    <span class="s2">"potential_temperature"</span><span class="p">,</span>
+    <span class="s2">"temperature"</span><span class="p">,</span>
+    <span class="s2">"temperature_flame"</span><span class="p">,</span>
+    <span class="s2">"temperature_flame_amber"</span><span class="p">,</span>
+<span class="p">]</span>
 <span class="n">gallery</span><span class="p">(</span><span class="n">temp_styles</span><span class="p">,</span> <span class="n">t2m</span><span class="p">,</span> <span class="n">t2m_ext</span><span class="p">,</span> <span class="s2">"Temperature styles on real ERA5 2 m temperature"</span><span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-4">temp_styles = ["temperature_2m", "air_temperature", "mean_temperature_2m",
-               "min_temperature_2m", "max_temperature_2m", "dewpoint_temperature_2m",
-               "potential_temperature", "temperature", "temperature_flame", "temperature_flame_amber"]
+<div class="clipboard-copy-txt" id="cell-4">temp_styles = [
+    "temperature_2m",
+    "air_temperature",
+    "mean_temperature_2m",
+    "min_temperature_2m",
+    "max_temperature_2m",
+    "dewpoint_temperature_2m",
+    "potential_temperature",
+    "temperature",
+    "temperature_flame",
+    "temperature_flame_amber",
+]
 gallery(temp_styles, t2m, t2m_ext, "Temperature styles on real ERA5 2 m temperature")</div>
 </div>
 </div>
@@ -3464,15 +3530,37 @@ precipitation field.</p>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">precip_styles</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"total_precipitation"</span><span class="p">,</span> <span class="s2">"precipitation"</span><span class="p">,</span> <span class="s2">"convective_precipitation"</span><span class="p">,</span>
-                 <span class="s2">"large_scale_precipitation"</span><span class="p">,</span> <span class="s2">"precipitation_rate"</span><span class="p">,</span> <span class="s2">"convective_rainfall_rate"</span><span class="p">,</span>
-                 <span class="s2">"large_scale_rainfall_rate"</span><span class="p">,</span> <span class="s2">"rainfall"</span><span class="p">,</span> <span class="s2">"snowfall"</span><span class="p">,</span> <span class="s2">"snowfall_rate_water_equivalent"</span><span class="p">]</span>
-<span class="n">gallery</span><span class="p">(</span><span class="n">precip_styles</span><span class="p">,</span> <span class="n">precip</span><span class="p">,</span> <span class="n">precip_ext</span><span class="p">,</span> <span class="s2">"Precipitation styles on real NOAH precipitation"</span><span class="p">)</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">precip_styles</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"total_precipitation"</span><span class="p">,</span>
+    <span class="s2">"precipitation"</span><span class="p">,</span>
+    <span class="s2">"convective_precipitation"</span><span class="p">,</span>
+    <span class="s2">"large_scale_precipitation"</span><span class="p">,</span>
+    <span class="s2">"precipitation_rate"</span><span class="p">,</span>
+    <span class="s2">"convective_rainfall_rate"</span><span class="p">,</span>
+    <span class="s2">"large_scale_rainfall_rate"</span><span class="p">,</span>
+    <span class="s2">"rainfall"</span><span class="p">,</span>
+    <span class="s2">"snowfall"</span><span class="p">,</span>
+    <span class="s2">"snowfall_rate_water_equivalent"</span><span class="p">,</span>
+<span class="p">]</span>
+<span class="n">gallery</span><span class="p">(</span>
+    <span class="n">precip_styles</span><span class="p">,</span> <span class="n">precip</span><span class="p">,</span> <span class="n">precip_ext</span><span class="p">,</span> <span class="s2">"Precipitation styles on real NOAH precipitation"</span>
+<span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-5">precip_styles = ["total_precipitation", "precipitation", "convective_precipitation",
-                 "large_scale_precipitation", "precipitation_rate", "convective_rainfall_rate",
-                 "large_scale_rainfall_rate", "rainfall", "snowfall", "snowfall_rate_water_equivalent"]
-gallery(precip_styles, precip, precip_ext, "Precipitation styles on real NOAH precipitation")</div>
+<div class="clipboard-copy-txt" id="cell-5">precip_styles = [
+    "total_precipitation",
+    "precipitation",
+    "convective_precipitation",
+    "large_scale_precipitation",
+    "precipitation_rate",
+    "convective_rainfall_rate",
+    "large_scale_rainfall_rate",
+    "rainfall",
+    "snowfall",
+    "snowfall_rate_water_equivalent",
+]
+gallery(
+    precip_styles, precip, precip_ext, "Precipitation styles on real NOAH precipitation"
+)</div>
 </div>
 </div>
 </div>
@@ -3521,9 +3609,21 @@ against faded low-accumulation cells.</p>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">gallery</span><span class="p">([</span><span class="s2">"flow_accumulation"</span><span class="p">],</span> <span class="n">facc</span><span class="p">,</span> <span class="n">facc_ext</span><span class="p">,</span> <span class="s2">"flow_accumulation on a real flow-accumulation raster"</span><span class="p">,</span> <span class="n">ncol</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">gallery</span><span class="p">(</span>
+    <span class="p">[</span><span class="s2">"flow_accumulation"</span><span class="p">],</span>
+    <span class="n">facc</span><span class="p">,</span>
+    <span class="n">facc_ext</span><span class="p">,</span>
+    <span class="s2">"flow_accumulation on a real flow-accumulation raster"</span><span class="p">,</span>
+    <span class="n">ncol</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-6">gallery(["flow_accumulation"], facc, facc_ext, "flow_accumulation on a real flow-accumulation raster", ncol=1)</div>
+<div class="clipboard-copy-txt" id="cell-6">gallery(
+    ["flow_accumulation"],
+    facc,
+    facc_ext,
+    "flow_accumulation on a real flow-accumulation raster",
+    ncol=1,
+)</div>
 </div>
 </div>
 </div>

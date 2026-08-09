@@ -3139,6 +3139,7 @@ fade into the relief. <code>ArrayGlyph</code> applies the preset and runs the an
 
 
 <span class="nb">print</span><span class="p">(</span><span class="s2">"stack:"</span><span class="p">,</span> <span class="n">celsius</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="s2">"| frames:"</span><span class="p">,</span> <span class="n">labels</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">"-&gt;"</span><span class="p">,</span> <span class="n">labels</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styling.params</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataStyle</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-1">from pathlib import Path
 
@@ -3171,7 +3172,8 @@ def add_backdrop(glyph):
     glyph.add_features("borders", "50m", color="0.35", linewidth=0.4, zorder=0)
 
 
-print("stack:", celsius.shape, "| frames:", labels[0], "-&gt;", labels[-1])</div>
+print("stack:", celsius.shape, "| frames:", labels[0], "-&gt;", labels[-1])
+from cleopatra.styling.params import DataStyle</div>
 </div>
 </div>
 </div>
@@ -3223,10 +3225,12 @@ ramp and the value-linked opacity, so the warm areas glow and the cool ones fade
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
-<span class="n">fig</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="s2">"black"</span><span class="p">)</span>   <span class="c1"># the flame preset blackens each panel's axes; the shared figure is ours to paint</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span>
+    <span class="s2">"black"</span>
+<span class="p">)</span>  <span class="c1"># the flame preset blackens each panel's axes; the shared figure is ours to paint</span>
 <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">style</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axs</span><span class="p">,</span> <span class="p">[</span><span class="s2">"temperature_flame"</span><span class="p">,</span> <span class="s2">"temperature_flame_amber"</span><span class="p">]):</span>
-    <span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">celsius</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">extent</span><span class="o">=</span><span class="n">extent</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="n">style</span><span class="p">)</span>
-    <span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">add_colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">celsius</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">extent</span><span class="o">=</span><span class="n">extent</span><span class="p">)</span>
+    <span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="n">style</span><span class="p">),</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">add_colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">add_backdrop</span><span class="p">(</span><span class="n">glyph</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">style</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"white"</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">"left"</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s2">"bold"</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
@@ -3235,10 +3239,12 @@ ramp and the value-linked opacity, so the warm areas glow and the cool ones fade
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-2">fig, axs = plt.subplots(1, 2, figsize=(15, 6))
-fig.set_facecolor("black")   # the flame preset blackens each panel's axes; the shared figure is ours to paint
+fig.set_facecolor(
+    "black"
+)  # the flame preset blackens each panel's axes; the shared figure is ours to paint
 for ax, style in zip(axs, ["temperature_flame", "temperature_flame_amber"]):
-    glyph = ArrayGlyph(celsius[-1], extent=extent, style=style)
-    glyph.plot(ax=ax, add_colorbar=False)
+    glyph = ArrayGlyph(celsius[-1], extent=extent)
+    glyph.plot(data_style=DataStyle(style=style), ax=ax, add_colorbar=False)
     add_backdrop(glyph)
     ax.set_title(style, color="white", loc="left", fontweight="bold")
     ax.set_xticks([])
@@ -3293,18 +3299,20 @@ plt.show()</div>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">celsius</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">extent</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">"temperature_flame"</span><span class="p">)</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">celsius</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">extent</span><span class="p">)</span>
 <span class="n">add_backdrop</span><span class="p">(</span><span class="n">glyph</span><span class="p">)</span>  <span class="c1"># dark hillshaded backdrop, drawn before the frames</span>
 <span class="n">anim_a</span> <span class="o">=</span> <span class="n">glyph</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span>
+    <span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">"temperature_flame"</span><span class="p">),</span>
     <span class="n">time</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
     <span class="n">add_colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">frame_label</span><span class="o">=</span><span class="n">FrameLabel</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">"white"</span><span class="p">),</span>
 <span class="p">)</span>
 <span class="n">embed_gif</span><span class="p">(</span><span class="n">anim_a</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-3">glyph = ArrayGlyph(celsius, extent=extent, style="temperature_flame")
+<div class="clipboard-copy-txt" id="cell-3">glyph = ArrayGlyph(celsius, extent=extent)
 add_backdrop(glyph)  # dark hillshaded backdrop, drawn before the frames
 anim_a = glyph.animate(
+    data_style=DataStyle(style="temperature_flame"),
     time=labels,
     add_colorbar=False,
     frame_label=FrameLabel(color="white"),
@@ -3363,18 +3371,20 @@ embed_gif(anim_a, fps=8)</div>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">celsius</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">extent</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">"temperature_flame_amber"</span><span class="p">)</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">celsius</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">extent</span><span class="p">)</span>
 <span class="n">add_backdrop</span><span class="p">(</span><span class="n">glyph</span><span class="p">)</span>
 <span class="n">anim_b</span> <span class="o">=</span> <span class="n">glyph</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span>
+    <span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">"temperature_flame_amber"</span><span class="p">),</span>
     <span class="n">time</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
     <span class="n">add_colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">frame_label</span><span class="o">=</span><span class="n">FrameLabel</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">"white"</span><span class="p">),</span>
 <span class="p">)</span>
 <span class="n">embed_gif</span><span class="p">(</span><span class="n">anim_b</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-4">glyph = ArrayGlyph(celsius, extent=extent, style="temperature_flame_amber")
+<div class="clipboard-copy-txt" id="cell-4">glyph = ArrayGlyph(celsius, extent=extent)
 add_backdrop(glyph)
 anim_b = glyph.animate(
+    data_style=DataStyle(style="temperature_flame_amber"),
     time=labels,
     add_colorbar=False,
     frame_label=FrameLabel(color="white"),
