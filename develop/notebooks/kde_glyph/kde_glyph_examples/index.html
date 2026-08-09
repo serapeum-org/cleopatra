@@ -3135,8 +3135,7 @@ from cleopatra.glyphs.stats.kde_glyph import KDEGlyph
 rng = np.random.default_rng(0)
 x = np.concatenate([rng.normal(-1, 0.6, 400), rng.normal(1.5, 0.5, 300)])
 y = np.concatenate([rng.normal(0, 0.6, 400), rng.normal(1.0, 0.5, 300)])
-from cleopatra.styling.params import Contour, DataStyle
-</div>
+from cleopatra.styling.params import Contour, DataStyle</div>
 </div>
 </div>
 </div>
@@ -3280,10 +3279,14 @@ surface glyphs, reusing the raster (<code>shade_grid</code>) geometry on the den
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">kde</span> <span class="o">=</span> <span class="n">KDEGlyph</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'magma'</span><span class="p">,</span> <span class="n">gridsize</span><span class="o">=</span><span class="mi">120</span><span class="p">)</span>
-<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">im</span> <span class="o">=</span> <span class="n">kde</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">hillshade</span><span class="o">=</span><span class="p">{</span><span class="s1">'vert_exag'</span><span class="p">:</span> <span class="mi">25</span><span class="p">}),</span> <span class="n">title</span><span class="o">=</span><span class="s1">'Relief-shaded density'</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">im</span> <span class="o">=</span> <span class="n">kde</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">hillshade</span><span class="o">=</span><span class="p">{</span><span class="s1">'vert_exag'</span><span class="p">:</span> <span class="mi">25</span><span class="p">}),</span> <span class="n">title</span><span class="o">=</span><span class="s1">'Relief-shaded density'</span>
+<span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-4">kde = KDEGlyph(x, y, cmap='magma', gridsize=120)
-fig, ax, im = kde.plot(data_style=DataStyle(hillshade={'vert_exag': 25}), title='Relief-shaded density')</div>
+fig, ax, im = kde.plot(
+    data_style=DataStyle(hillshade={'vert_exag': 25}), title='Relief-shaded density'
+)</div>
 </div>
 </div>
 </div>

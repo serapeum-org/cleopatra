@@ -3093,8 +3093,7 @@ west, south, east, north = (float(v) for v in npz["extent"])
 extent = [west, east, south, north]  # ArrayGlyph extent order: [xmin, xmax, ymin, ymax]
 
 print("stack:", celsius.shape, "| frames:", labels[0], "-&gt;", labels[-1])
-from cleopatra.styling.params import DataStyle
-</div>
+from cleopatra.styling.params import DataStyle</div>
 </div>
 </div>
 </div>
@@ -3154,7 +3153,8 @@ axes, and <code>animate</code> reuses it.</p>
 <span class="n">glyph</span><span class="o">.</span><span class="n">add_features</span><span class="p">(</span><span class="s2">"coastline"</span><span class="p">,</span> <span class="s2">"50m"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"0.35"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 <span class="n">glyph</span><span class="o">.</span><span class="n">add_features</span><span class="p">(</span><span class="s2">"borders"</span><span class="p">,</span> <span class="s2">"50m"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"0.55"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 
-<span class="n">anim</span> <span class="o">=</span> <span class="n">glyph</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span><span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">"temperature_2m"</span><span class="p">),</span> 
+<span class="n">anim</span> <span class="o">=</span> <span class="n">glyph</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span>
+    <span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">"temperature_2m"</span><span class="p">),</span>
     <span class="n">time</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
     <span class="n">colorbar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># a full arrow-capped ECMWF colorbar instead of the preset swatch</span>
     <span class="n">title</span><span class="o">=</span><span class="s2">"ERA5-Land 2 m temperature"</span><span class="p">,</span>
@@ -3169,7 +3169,8 @@ axes, and <code>animate</code> reuses it.</p>
 glyph.add_features("coastline", "50m", color="0.35", linewidth=0.6, zorder=5)
 glyph.add_features("borders", "50m", color="0.55", linewidth=0.4, zorder=5)
 
-anim = glyph.animate(data_style=DataStyle(style="temperature_2m"), 
+anim = glyph.animate(
+    data_style=DataStyle(style="temperature_2m"),
     time=labels,
     colorbar=True,  # a full arrow-capped ECMWF colorbar instead of the preset swatch
     title="ERA5-Land 2 m temperature",
