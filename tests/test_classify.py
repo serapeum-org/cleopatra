@@ -41,6 +41,7 @@ from cleopatra.styling.styles import (
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
 from cleopatra.styling.params import Contour
+from cleopatra.styling.params import Classify
 
 
 @pytest.fixture(autouse=True)
@@ -589,8 +590,8 @@ class TestScatterGlyphScheme:
             BoundaryNorm with k+1 boundaries.
         """
         x, y, v = xy_values
-        glyph = ScatterGlyph(x, y, values=v, scheme="quantiles", k=5)
-        _, _, paths = glyph.plot()
+        glyph = ScatterGlyph(x, y, values=v)
+        _, _, paths = glyph.plot(classify=Classify(scheme="quantiles", k=5))
         assert isinstance(paths.norm, mcolors.BoundaryNorm), (
             "scheme should set a BoundaryNorm"
         )
@@ -603,8 +604,8 @@ class TestScatterGlyphScheme:
             ``get_array`` still returns the raw per-point values.
         """
         x, y, v = xy_values
-        glyph = ScatterGlyph(x, y, values=v, scheme="equal_interval", k=4)
-        _, _, paths = glyph.plot()
+        glyph = ScatterGlyph(x, y, values=v)
+        _, _, paths = glyph.plot(classify=Classify(scheme="equal_interval", k=4))
         assert np.array_equal(paths.get_array(), v), "Raw values must be preserved"
 
     def test_colorbar_drawn_by_default(self, xy_values):
@@ -614,8 +615,8 @@ class TestScatterGlyphScheme:
             ``add_colorbar`` defaults to True, so a colorbar is created.
         """
         x, y, v = xy_values
-        glyph = ScatterGlyph(x, y, values=v, scheme="quantiles", k=5)
-        glyph.plot()
+        glyph = ScatterGlyph(x, y, values=v)
+        glyph.plot(classify=Classify(scheme="quantiles", k=5))
         assert glyph.cbar is not None, "A colorbar should be drawn by default"
 
     def test_add_colorbar_false_suppresses(self, xy_values):
@@ -625,8 +626,8 @@ class TestScatterGlyphScheme:
             The plot-time override wins and no colorbar is created.
         """
         x, y, v = xy_values
-        glyph = ScatterGlyph(x, y, values=v, scheme="quantiles", k=5)
-        glyph.plot(add_colorbar=False)
+        glyph = ScatterGlyph(x, y, values=v)
+        glyph.plot(classify=Classify(scheme="quantiles", k=5), add_colorbar=False)
         assert glyph.cbar is None, "add_colorbar=False should suppress the colorbar"
 
     def test_scheme_none_regression(self, xy_values):
@@ -664,8 +665,8 @@ class TestPolygonGlyphScheme:
             delimit five fill classes.
         """
         polys, values = polys_values
-        glyph = PolygonGlyph(polys, values=values, scheme="quantiles", k=5)
-        _, _, pc = glyph.plot()
+        glyph = PolygonGlyph(polys, values=values)
+        _, _, pc = glyph.plot(classify=Classify(scheme="quantiles", k=5))
         assert isinstance(pc.norm, mcolors.BoundaryNorm), (
             "choropleth should use a BoundaryNorm"
         )
@@ -678,8 +679,8 @@ class TestPolygonGlyphScheme:
             ``get_array`` returns the unbinned per-polygon values.
         """
         polys, values = polys_values
-        glyph = PolygonGlyph(polys, values=values, scheme="quantiles", k=5)
-        _, _, pc = glyph.plot()
+        glyph = PolygonGlyph(polys, values=values)
+        _, _, pc = glyph.plot(classify=Classify(scheme="quantiles", k=5))
         assert np.array_equal(pc.get_array(), values), "Raw values must be preserved"
 
     def test_discrete_colorbar_drawn(self, polys_values):
@@ -689,8 +690,8 @@ class TestPolygonGlyphScheme:
             The colorbar exists and its norm is the discrete BoundaryNorm.
         """
         polys, values = polys_values
-        glyph = PolygonGlyph(polys, values=values, scheme="quantiles", k=5)
-        glyph.plot()
+        glyph = PolygonGlyph(polys, values=values)
+        glyph.plot(classify=Classify(scheme="quantiles", k=5))
         assert glyph.cbar is not None, "A discrete colorbar should be drawn"
         assert isinstance(glyph.cbar.norm, mcolors.BoundaryNorm), (
             "Colorbar norm should be discrete"
@@ -745,7 +746,7 @@ class TestSchemeGlyphScope:
             ArrayGlyph bypasses `_prepare_scalar_mapping`, so `scheme` is not
             an accepted option and construction raises.
         """
-        with pytest.raises(ValueError, match="not correct"):
+        with pytest.raises(ValueError, match="moved onto a grouped parameter object"):
             ArrayGlyph(np.arange(9).reshape(3, 3).astype(float), scheme="quantiles")
 
     def test_mesh_glyph_rejects_scheme(self):
@@ -755,7 +756,7 @@ class TestSchemeGlyphScope:
             MeshGlyph bypasses `_prepare_scalar_mapping`, so `scheme` is
             rejected at construction.
         """
-        with pytest.raises(ValueError, match="not correct"):
+        with pytest.raises(ValueError, match="moved onto a grouped parameter object"):
             MeshGlyph(
                 np.array([0.0, 1.0, 0.0]),
                 np.array([0.0, 0.0, 1.0]),
@@ -771,7 +772,7 @@ class TestSchemeGlyphScope:
             is rejected at construction.
         """
         rng = np.random.default_rng(0)
-        with pytest.raises(ValueError, match="not correct"):
+        with pytest.raises(ValueError, match="moved onto a grouped parameter object"):
             KDEGlyph(rng.normal(size=20), rng.normal(size=20), scheme="quantiles")
 
 
@@ -785,14 +786,9 @@ class TestSchemeConflictWarnings:
             `scheme` owns the norm, so `color_scale="midpoint"` is ignored —
             and a warning says so.
         """
-        glyph = ScatterGlyph(
-            np.arange(5.0),
-            np.zeros(5),
-            values=np.arange(5.0),
-            scheme="quantiles",
-        )
+        glyph = ScatterGlyph(np.arange(5.0), np.zeros(5), values=np.arange(5.0))
         with pytest.warns(UserWarning, match="color_scale"):
-            glyph.plot(color=ColorScaling.midpoint())
+            glyph.plot(classify=Classify(scheme="quantiles"), color=ColorScaling.midpoint())
 
     def test_warns_on_conflicting_levels(self):
         """Setting `scheme` together with `levels` warns.
@@ -801,14 +797,9 @@ class TestSchemeConflictWarnings:
             The classification scheme determines the bins, so `levels` is
             ignored — and a warning says so.
         """
-        glyph = ScatterGlyph(
-            np.arange(5.0),
-            np.zeros(5),
-            values=np.arange(5.0),
-            scheme="quantiles",
-        )
+        glyph = ScatterGlyph(np.arange(5.0), np.zeros(5), values=np.arange(5.0))
         with pytest.warns(UserWarning, match="levels"):
-            glyph.plot(contour=Contour(levels=4))
+            glyph.plot(classify=Classify(scheme="quantiles"), contour=Contour(levels=4))
 
     def test_no_warning_without_conflict(self):
         """A plain `scheme` (default color_scale, no levels) does not warn.
@@ -818,15 +809,10 @@ class TestSchemeConflictWarnings:
         """
         import warnings as _warnings
 
-        glyph = ScatterGlyph(
-            np.arange(5.0),
-            np.zeros(5),
-            values=np.arange(5.0),
-            scheme="quantiles",
-        )
+        glyph = ScatterGlyph(np.arange(5.0), np.zeros(5), values=np.arange(5.0))
         with _warnings.catch_warnings():
             _warnings.simplefilter("error")
-            glyph.plot()
+            glyph.plot(classify=Classify(scheme="quantiles"))
 
 
 class TestClassifyTwoDimensional:
@@ -888,8 +874,8 @@ class TestVectorGlyphScheme:
             with k+1 boundaries while still carrying the raw magnitude array.
         """
         x, y, u, v = field
-        glyph = VectorGlyph(x, y, u, v, scheme="quantiles", k=5)
-        _, _, im = glyph.plot(kind="quiver")
+        glyph = VectorGlyph(x, y, u, v)
+        _, _, im = glyph.plot(classify=Classify(scheme="quantiles", k=5), kind="quiver")
         assert isinstance(im.norm, mcolors.BoundaryNorm), (
             "scheme should set a BoundaryNorm"
         )
@@ -906,8 +892,8 @@ class TestVectorGlyphScheme:
             magnitude classification.
         """
         x, y, u, v = field
-        glyph = VectorGlyph(x, y, u, v, scheme="equal_interval", k=4)
-        glyph.plot(kind="barbs")
+        glyph = VectorGlyph(x, y, u, v)
+        glyph.plot(classify=Classify(scheme="equal_interval", k=4), kind="barbs")
         assert glyph.cbar is not None, "A colorbar should be drawn"
         assert isinstance(glyph.cbar.norm, mcolors.BoundaryNorm), (
             "Colorbar norm should be discrete"
@@ -924,8 +910,8 @@ class TestVectorGlyphScheme:
         y, x = np.mgrid[0:6, 0:6].astype(float)
         u = x + 1.0
         v = y + 1.0
-        glyph = VectorGlyph(x, y, u, v, scheme="quantiles", k=4)
-        _, _, im = glyph.plot(kind="streamplot")
+        glyph = VectorGlyph(x, y, u, v)
+        _, _, im = glyph.plot(classify=Classify(scheme="quantiles", k=4), kind="streamplot")
         assert isinstance(im.norm, mcolors.BoundaryNorm), (
             "scheme should set a BoundaryNorm"
         )

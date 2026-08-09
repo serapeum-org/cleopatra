@@ -15,6 +15,7 @@ import numpy as np
 import pytest
 
 from cleopatra.styling.colorbar import ColorBar
+from cleopatra.styling.params import Classify
 from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
 from cleopatra.glyphs.stats.kde_glyph import KDEGlyph
 from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
@@ -249,7 +250,7 @@ def test_colorbar_false_suppresses_under_categorical_scheme():
     """
     glyph = ScatterGlyph(
         list(_RNG.random(9)), list(_RNG.random(9)),
-        values=np.array([0, 1, 2, 0, 1, 2, 0, 1, 2]), scheme="categorical",
+        values=np.array([0, 1, 2, 0, 1, 2, 0, 1, 2]),
     )
-    glyph.plot(colorbar=False)
+    glyph.plot(colorbar=False, classify=Classify(scheme="categorical"))
     assert glyph.cbar is None, "colorbar=False should suppress the bar under a categorical scheme"

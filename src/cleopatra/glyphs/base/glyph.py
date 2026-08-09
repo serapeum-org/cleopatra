@@ -60,6 +60,9 @@ _GROUPED_KWARG_HINTS: dict[str, str] = {
     "display_cell_value": "cells=CellValues(show=True, ...)",
     "num_size": "cells=CellValues(size=...)",
     "background_color_threshold": "cells=CellValues(background_threshold=...)",
+    "scheme": "classify=Classify(scheme=..., k=...)",
+    "k": "classify=Classify(scheme=..., k=...)",
+    "category_legend_kwargs": "classify=Classify(scheme='categorical', category_legend_kwargs=...)",
 }
 
 
@@ -1250,10 +1253,10 @@ class Glyph:
                 >>> import matplotlib.pyplot as plt
                 >>> from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
                 >>> polys = [np.zeros((3, 2))] * 2
-                >>> g = PolygonGlyph(
-                ...     polys, values=np.array(["a", "b"]),
-                ...     category_legend_kwargs={"title": "Class", "loc": "upper left"},
-                ... )
+                >>> g = PolygonGlyph(polys, values=np.array(["a", "b"]))
+                >>> g.default_options["category_legend_kwargs"] = {
+                ...     "title": "Class", "loc": "upper left"
+                ... }
                 >>> _ = g._prepare_categorical_mapping(np.array(["a", "b"]))
                 >>> fig, ax = plt.subplots()
                 >>> legend = g.create_categorical_legend(ax)

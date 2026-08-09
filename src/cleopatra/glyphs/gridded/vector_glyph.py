@@ -38,7 +38,7 @@ from matplotlib.quiver import QuiverKey
 
 from cleopatra.styling.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
 from cleopatra.styling.colors import resolve_colormap
-from cleopatra.styling.params import Contour
+from cleopatra.styling.params import Classify, Contour
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.basemap.geo import GeoMixin
 from cleopatra.glyphs.base.glyph import (
@@ -150,6 +150,7 @@ class VectorGlyph(GeoMixin, Glyph):
         colorbar: bool | ColorBar | None = None,
         color: ColorScaling | None = None,
         contour: Contour | None = None,
+        classify: Classify | None = None,
     ):
         """Render the vector field, coloured by magnitude.
 
@@ -220,7 +221,7 @@ class VectorGlyph(GeoMixin, Glyph):
                 f"{', '.join(VECTOR_KINDS)}."
             )
 
-        self._merge_group_params(color, contour)
+        self._merge_group_params(color, contour, classify)
 
         if ax is not None:
             self.ax = ax

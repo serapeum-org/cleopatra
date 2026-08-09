@@ -35,6 +35,7 @@ from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import categorize
 from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
 from cleopatra.styling.params import Contour
+from cleopatra.styling.params import Classify
 
 
 @pytest.fixture(autouse=True)
@@ -329,11 +330,8 @@ class TestGlyphPrepareCategoricalMapping:
             The shared entry point returns a BoundaryNorm and populates
             `self._categorical` when the scheme is `"categorical"`.
         """
-        g = PolygonGlyph(
-            [np.zeros((3, 2))] * 2,
-            values=np.array(["x", "y"]),
-            scheme="categorical",
-        )
+        g = PolygonGlyph([np.zeros((3, 2))] * 2, values=np.array(["x", "y"]))
+        g.default_options["scheme"] = "categorical"
         norm, cbar_kw, _ = g._prepare_scalar_mapping(np.array(["x", "y"]))
         assert isinstance(norm, mcolors.BoundaryNorm)
         assert g._categorical is not None, "Categorical side-channel not populated"
@@ -369,14 +367,9 @@ class TestGlyphPrepareCategoricalMapping:
             Categorical colouring owns the norm, so a conflicting
             `color_scale` is ignored -- and a warning says so.
         """
-        glyph = ScatterGlyph(
-            np.arange(4.0),
-            np.zeros(4),
-            values=np.array(["a", "b", "a", "b"]),
-            scheme="categorical",
-        )
+        glyph = ScatterGlyph(np.arange(4.0), np.zeros(4), values=np.array(["a", "b", "a", "b"]))
         with pytest.warns(UserWarning, match="color_scale"):
-            glyph.plot(color=ColorScaling.midpoint())
+            glyph.plot(classify=Classify(scheme="categorical"), color=ColorScaling.midpoint())
 
     def test_warns_on_conflicting_levels(self):
         """`scheme="categorical"` together with `levels` warns.
@@ -385,14 +378,9 @@ class TestGlyphPrepareCategoricalMapping:
             The categorical mapping determines the classes, so `levels` is
             ignored -- and a warning says so.
         """
-        glyph = ScatterGlyph(
-            np.arange(4.0),
-            np.zeros(4),
-            values=np.array(["a", "b", "a", "b"]),
-            scheme="categorical",
-        )
+        glyph = ScatterGlyph(np.arange(4.0), np.zeros(4), values=np.array(["a", "b", "a", "b"]))
         with pytest.warns(UserWarning, match="levels"):
-            glyph.plot(contour=Contour(levels=3))
+            glyph.plot(classify=Classify(scheme="categorical"), contour=Contour(levels=3))
 
 
 class TestPolygonGlyphCategorical:
@@ -417,8 +405,8 @@ class TestPolygonGlyphCategorical:
             Three unique labels produce a 3-colour `ListedColormap`.
         """
         polys, labels = polys_land_use
-        glyph = PolygonGlyph(polys, values=labels, scheme="categorical", cmap="tab10")
-        _, _, pc = glyph.plot()
+        glyph = PolygonGlyph(polys, values=labels, cmap="tab10")
+        _, _, pc = glyph.plot(classify=Classify(scheme="categorical"))
         assert isinstance(pc.cmap, mcolors.ListedColormap)
         assert len(pc.cmap.colors) == 3, f"Expected 3 colours: {pc.cmap.colors}"
 
@@ -430,8 +418,8 @@ class TestPolygonGlyphCategorical:
             with one label per distinct value.
         """
         polys, labels = polys_land_use
-        glyph = PolygonGlyph(polys, values=labels, scheme="categorical")
-        glyph.plot()
+        glyph = PolygonGlyph(polys, values=labels)
+        glyph.plot(classify=Classify(scheme="categorical"))
         assert glyph.cbar is None, "A categorical choropleth must not draw a colorbar"
         assert glyph.category_legend is not None, "A disjoint legend should be drawn"
         legend_labels = {t.get_text() for t in glyph.category_legend.get_texts()}
@@ -449,13 +437,8 @@ class TestPolygonGlyphCategorical:
             `cbar_label`-derived default, mirroring `size_legend_kwargs`.
         """
         polys, labels = polys_land_use
-        glyph = PolygonGlyph(
-            polys,
-            values=labels,
-            scheme="categorical",
-            category_legend_kwargs={"title": "Land use", "loc": "lower left"},
-        )
-        glyph.plot()
+        glyph = PolygonGlyph(polys, values=labels)
+        glyph.plot(classify=Classify(scheme="categorical", category_legend_kwargs={"title": "Land use", "loc": "lower left"}))
         assert glyph.category_legend.get_title().get_text() == "Land use"
 
     def test_add_colorbar_false_suppresses_legend(self, polys_land_use):
@@ -466,8 +449,8 @@ class TestPolygonGlyphCategorical:
             disjoint legend for shared-axes composition.
         """
         polys, labels = polys_land_use
-        glyph = PolygonGlyph(polys, values=labels, scheme="categorical")
-        glyph.plot(add_colorbar=False)
+        glyph = PolygonGlyph(polys, values=labels)
+        glyph.plot(classify=Classify(scheme="categorical"), add_colorbar=False)
         assert glyph.category_legend is None
         assert glyph.cbar is None
 
@@ -479,8 +462,8 @@ class TestPolygonGlyphCategorical:
         """
         polys, _ = polys_land_use
         codes = np.array([1, 2, 4, 8, 1, 2])
-        glyph = PolygonGlyph(polys, values=codes, scheme="categorical")
-        _, _, pc = glyph.plot()
+        glyph = PolygonGlyph(polys, values=codes)
+        _, _, pc = glyph.plot(classify=Classify(scheme="categorical"))
         assert len(pc.cmap.colors) == 4, f"Expected 4 colours: {pc.cmap.colors}"
         assert {glyph.category_legend.get_texts()[i].get_text() for i in range(4)} == {
             "1",
@@ -500,8 +483,8 @@ class TestPolygonGlyphCategorical:
         labels = np.array(
             ["forest", "water", None, "forest", "water", "forest"], dtype=object
         )
-        glyph = PolygonGlyph(polys, values=labels, scheme="categorical")
-        _, _, pc = glyph.plot()
+        glyph = PolygonGlyph(polys, values=labels)
+        _, _, pc = glyph.plot(classify=Classify(scheme="categorical"))
         codes = np.ma.asarray(pc.get_array())
         assert codes.mask[2], "The None-valued polygon's code should be masked"
         assert len(pc.cmap.colors) == 2, "Only the 2 real labels become categories"
@@ -527,8 +510,8 @@ class TestPolygonGlyphCategorical:
             the stale `category_legend` reference must not survive.
         """
         polys, labels = polys_land_use
-        glyph = PolygonGlyph(polys, values=labels, scheme="categorical")
-        glyph.plot()
+        glyph = PolygonGlyph(polys, values=labels)
+        glyph.plot(classify=Classify(scheme="categorical"))
         assert glyph.category_legend is not None and glyph.cbar is None
 
         glyph.default_options["scheme"] = None
@@ -583,8 +566,8 @@ class TestScatterGlyphCategorical:
             Three unique labels produce a 3-colour `ListedColormap`.
         """
         x, y, species = xy_species
-        glyph = ScatterGlyph(x, y, values=species, scheme="categorical")
-        _, _, paths = glyph.plot()
+        glyph = ScatterGlyph(x, y, values=species)
+        _, _, paths = glyph.plot(classify=Classify(scheme="categorical"))
         assert isinstance(paths.cmap, mcolors.ListedColormap)
         assert len(paths.cmap.colors) == 3
 
@@ -596,8 +579,8 @@ class TestScatterGlyphCategorical:
             label per distinct species.
         """
         x, y, species = xy_species
-        glyph = ScatterGlyph(x, y, values=species, scheme="categorical")
-        glyph.plot()
+        glyph = ScatterGlyph(x, y, values=species)
+        glyph.plot(classify=Classify(scheme="categorical"))
         assert glyph.cbar is None
         legend_labels = {t.get_text() for t in glyph.category_legend.get_texts()}
         assert legend_labels == {"oak", "pine", "birch"}
@@ -610,8 +593,8 @@ class TestScatterGlyphCategorical:
         """
         x, y, _ = xy_species
         codes = np.array([10, 20, 10, 30, 20, 10])
-        glyph = ScatterGlyph(x, y, values=codes, scheme="categorical")
-        _, _, paths = glyph.plot()
+        glyph = ScatterGlyph(x, y, values=codes)
+        _, _, paths = glyph.plot(classify=Classify(scheme="categorical"))
         assert len(paths.cmap.colors) == 3
 
     def test_missing_value_renders_transparent(self, xy_species):
@@ -623,8 +606,8 @@ class TestScatterGlyphCategorical:
         """
         x, y, _ = xy_species
         values = np.array(["oak", "pine", np.nan, "birch", "pine", "oak"], dtype=object)
-        glyph = ScatterGlyph(x, y, values=values, scheme="categorical")
-        _, _, paths = glyph.plot()
+        glyph = ScatterGlyph(x, y, values=values)
+        _, _, paths = glyph.plot(classify=Classify(scheme="categorical"))
         codes = np.ma.asarray(paths.get_array())
         assert codes.mask[2], "The NaN-valued point's code should be masked"
 
@@ -649,8 +632,8 @@ class TestScatterGlyphCategorical:
             the stale `category_legend` reference must not survive.
         """
         x, y, species = xy_species
-        glyph = ScatterGlyph(x, y, values=species, scheme="categorical")
-        glyph.plot()
+        glyph = ScatterGlyph(x, y, values=species)
+        glyph.plot(classify=Classify(scheme="categorical"))
         assert glyph.category_legend is not None and glyph.cbar is None
 
         glyph.default_options["scheme"] = None
@@ -671,10 +654,8 @@ class TestScatterGlyphCategorical:
         """
         x, y, species = xy_species
         sizes = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
-        glyph = ScatterGlyph(
-            x, y, values=species, sizes=sizes, scheme="categorical", size_legend=True
-        )
-        _, ax, _ = glyph.plot()
+        glyph = ScatterGlyph(x, y, values=species, sizes=sizes, size_legend=True)
+        _, ax, _ = glyph.plot(classify=Classify(scheme="categorical"))
         assert glyph.category_legend in ax.get_children(), (
             "The categorical legend must still be rendered, not silently evicted"
         )
@@ -713,9 +694,9 @@ class TestCategoricalSchemeGlyphScope:
             plotting raises `ValueError` rather than mis-colouring silently.
         """
         paths = [np.array([[0.0, 0.0], [1.0, 1.0]]), np.array([[1.0, 0.0], [2.0, 1.0]])]
-        glyph = FlowGlyph(paths, values=np.array([1.0, 5.0]), scheme="categorical")
+        glyph = FlowGlyph(paths, values=np.array([1.0, 5.0]))
         with pytest.raises(ValueError, match="does not support scheme='categorical'"):
-            glyph.plot()
+            glyph.plot(classify=Classify(scheme="categorical"))
 
     def test_vector_glyph_rejects_categorical(self):
         """`VectorGlyph` rejects `scheme="categorical"` with a clear error.
@@ -727,6 +708,6 @@ class TestCategoricalSchemeGlyphScope:
         rng = np.random.default_rng(2)
         u = rng.uniform(0.1, 5.0, size=x.shape)
         v = rng.uniform(0.1, 5.0, size=x.shape)
-        glyph = VectorGlyph(x, y, u, v, scheme="categorical")
+        glyph = VectorGlyph(x, y, u, v)
         with pytest.raises(ValueError, match="does not support scheme='categorical'"):
-            glyph.plot(kind="quiver")
+            glyph.plot(classify=Classify(scheme="categorical"), kind="quiver")
