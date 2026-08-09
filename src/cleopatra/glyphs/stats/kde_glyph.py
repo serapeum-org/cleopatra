@@ -63,6 +63,12 @@ from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 #: the temporary at ~`MAX_KDE_BLOCK` floats (a few tens of MB).
 MAX_KDE_BLOCK = 4_000_000
 
+#: Sentinel distinguishing "hillshade not forwarded" from an explicit
+#: `hillshade=None` in `apply_style`, so an unset value keeps any sticky
+#: relief shading while an explicit `None` clears it (matching
+#: `ArrayGlyph`/`MeshGlyph.apply_style`).
+_UNSET_HILLSHADE = object()
+
 #: Option keys for KDEGlyph. `ticks_spacing` is `None` so the shared
 #: `_prepare_scalar_mapping` helper auto-derives it from the density range.
 KDE_DEFAULT_OPTIONS = {
@@ -329,7 +335,7 @@ class KDEGlyph(Glyph):
         self,
         style: str,
         *,
-        hillshade: bool | dict | None = None,
+        hillshade: bool | dict | None = _UNSET_HILLSHADE,  # type: ignore[assignment]
         add_colorbar: bool | None = None,
         title: str | None = None,
     ):
@@ -344,7 +350,9 @@ class KDEGlyph(Glyph):
 
         Args:
             style: A continuous `cleopatra.styling.colors.DATA_STYLES` preset name.
-            hillshade: Optional relief shading, forwarded to `plot`.
+            hillshade: Optional relief shading, forwarded to `plot`. Left
+                unset it keeps any sticky relief; an explicit `None` clears
+                it (a bool/dict sets it).
             add_colorbar: Optional colorbar toggle, forwarded to `plot`.
             title: Optional title, forwarded to `plot`.
 
@@ -362,11 +370,12 @@ class KDEGlyph(Glyph):
                 "continuous density, so only continuous presets apply"
             )
         self._reset_axes_for_restyle()
-        # Only override hillshade when the caller passed one; leaving it
-        # unset keeps any sticky relief shading (a plain None would clear it).
+        # Only override hillshade when the caller actually passed one; an
+        # unset value keeps any sticky relief, while an explicit `None`
+        # flows through to `DataStyle(hillshade=None)` and clears it.
         data_style = (
             DataStyle(style=style)
-            if hillshade is None
+            if hillshade is _UNSET_HILLSHADE
             else DataStyle(style=style, hillshade=hillshade)
         )
         return self.plot(
