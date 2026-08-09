@@ -452,9 +452,18 @@ class KDEGlyph(Glyph):
 
                 ```
         """
-        # Capture the sticky style before merging so an invalid new preset
-        # can be rolled back below without bricking later plain plots.
-        prev_style = self.default_options.get("style")
+        # KDE keeps its persistent default_options across plots, so snapshot
+        # every option key these group objects are about to touch (colour
+        # scale, contour levels, style/hillshade) before merging. If the new
+        # preset turns out invalid below, ALL of them are rolled back -- not
+        # just style -- so a co-passed color=/contour= cannot leak into a
+        # later plain plot.
+        prev_group_opts = {}
+        for grp in (color, contour, data_style):
+            if grp is not None:
+                for key in grp.to_options():
+                    if key in self.default_options:
+                        prev_group_opts[key] = self.default_options[key]
         self._merge_group_params(color, contour, data_style)
 
         if ax is not None:
@@ -485,7 +494,8 @@ class KDEGlyph(Glyph):
                         "a continuous density, so only continuous presets apply"
                     )
             except ValueError:
-                opts["style"] = prev_style
+                for key, value in prev_group_opts.items():
+                    opts[key] = value
                 raise
             cfg = {
                 **cfg,
