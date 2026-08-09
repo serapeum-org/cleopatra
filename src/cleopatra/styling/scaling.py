@@ -295,6 +295,13 @@ class ColorScaling:
 
                 ```
         """
+        # Deliberately emits ALL six keys (unlike the params.py groups,
+        # which emit only explicitly-set fields): a `color=` argument fully
+        # specifies one scale, so writing every key -- including the unset
+        # ones at their dataclass defaults -- resets the other scales'
+        # knobs, letting a caller switch scales cleanly without leftover
+        # `gamma`/`bounds`/`midpoint` from a prior `color=`. Do not "fix"
+        # this into a partial emit; it would break scale-switch resets.
         return {
             "color_scale": self.kind.value,
             "gamma": self.gamma,
