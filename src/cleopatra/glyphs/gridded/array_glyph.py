@@ -258,16 +258,16 @@ def _resolve_renamed_kwarg(
     return old_value
 
 
-#: Static typing for the **kwargs `plot`/`animate` accept -- purely a typing
-#: aid (see PEP 692 `Unpack`): with `from __future__ import annotations` the
-#: `**kwargs: Unpack[...]` annotations below are never evaluated at runtime,
-#: so this adds IDE autocomplete / type-checker typo-catching for `**kwargs`
-#: without changing the existing `self.default_options` merge-and-validate
-#: mechanism at all. Grouped to match the methods' own docstring sections;
-#: each group is shared by both methods except `XarrayColourOptions` and
-#: `ContourOptions`, which only `plot` documents (`animate` has no `kind`,
-#: so nothing routes to `contour`/`contourf`, and does not recompute
-#: `vmin`/`vmax` from `robust`/`center`).
+#: Static typing for the loose **kwargs `plot`/`animate` still accept --
+#: purely a typing aid (see PEP 692 `Unpack`): with `from __future__ import
+#: annotations` the `**kwargs: Unpack[...]` annotations below are never
+#: evaluated at runtime, so this adds IDE autocomplete / type-checker
+#: typo-catching for `**kwargs` without changing the existing
+#: `self.default_options` merge-and-validate mechanism at all. The
+#: colour-scale, contour, cell-value, and data-style options moved onto the
+#: grouped parameter objects (`color=`/`contour=`/`cells=`/`data_style=`),
+#: so only appearance, colorbar, and the xarray-aligned colour options
+#: (`XarrayColourOptions`, `plot`-only) remain here.
 class TitleOption(TypedDict, total=False):
     """The `title` kwarg -- `animate` only.
 
@@ -333,31 +333,6 @@ class ColorbarOptions(TypedDict, total=False):
     cbar_label: str | None
 
 
-class ColorScaleOptions(TypedDict, total=False):
-    """Colour-scaling options shared by `plot` and `animate`.
-
-    Attributes:
-        color_scale: Colour scaling kind, by default `'linear'`. See
-            `cleopatra.styling.styles.ColorScale`.
-        gamma: Exponent for the `'power'` colour scale, by default `0.5`.
-        line_threshold: Threshold for the `'sym-lognorm'` colour scale, by
-            default `0.0001`.
-        line_scale: Scale factor for the `'sym-lognorm'` colour scale, by
-            default `0.001`.
-        bounds: Boundaries for the `'boundary-norm'` colour scale, by
-            default `None`.
-        midpoint: Midpoint value for the `'midpoint'` colour scale, by
-            default `0`.
-    """
-
-    color_scale: ColorScale | str
-    gamma: float
-    line_threshold: float
-    line_scale: float
-    bounds: list[float] | None
-    midpoint: float
-
-
 class XarrayColourOptions(TypedDict, total=False):
     """Xarray-aligned colour options -- `plot` only.
 
@@ -377,38 +352,6 @@ class XarrayColourOptions(TypedDict, total=False):
     cbar_kwargs: dict[str, Any] | None
 
 
-class ContourOptions(TypedDict, total=False):
-    """Contour-line and discretisation options -- `plot` only.
-
-    Attributes:
-        levels: Discrete colour levels (xarray-aligned), by default `None`.
-        labels: Draw inline numeric labels on a line `contour`'s isolines,
-            by default `False`.
-        label_kw: Extra keyword arguments forwarded to `ax.clabel` when
-            `labels=True`, by default `None`.
-    """
-
-    levels: int | Sequence[float] | None
-    labels: bool
-    label_kw: dict[str, Any] | None
-
-
-class CellValueOptions(TypedDict, total=False):
-    """Per-cell value-text display options shared by `plot` and `animate`.
-
-    Attributes:
-        display_cell_value: Whether to display each cell's value as text,
-            by default `False`.
-        num_size: Font size of the cell value text, by default `8`.
-        background_color_threshold: Threshold for the cell value text
-            colour, by default `None` (uses `max(array) / 2`).
-    """
-
-    display_cell_value: bool
-    num_size: int
-    background_color_threshold: float | None
-
-
 class AnimateCellValueOptions(TypedDict, total=False):
     """Per-cell value-text option specific to `animate` -- `animate` only.
 
@@ -420,22 +363,6 @@ class AnimateCellValueOptions(TypedDict, total=False):
     """
 
     precision: int
-
-
-class DataStyleOptions(TypedDict, total=False):
-    """Named data-style preset / relief-shading options shared by `plot`
-    and `animate`.
-
-    Attributes:
-        style: Name of a `cleopatra.styling.colors.DATA_STYLES` preset, by default
-            `None`.
-        hillshade: Relief-shade a regular-grid DEM; `True` for defaults,
-            or a dict tuning `vert_exag`/`azimuth`/`altitude`/
-            `blend_mode`/`multidirectional`. By default `False`.
-    """
-
-    style: str | None
-    hillshade: bool | dict[str, Any]
 
 
 class PlotKwargs(
