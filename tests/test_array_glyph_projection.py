@@ -19,6 +19,7 @@ from matplotlib.collections import QuadMesh
 from matplotlib.image import AxesImage
 
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+from cleopatra.styling.params import DataStyle
 
 pytestmark = pytest.mark.plot
 
@@ -145,9 +146,9 @@ class TestArrayGlyphProjection:
         data, lon, lat = field
         scaled = data * 30.0
         glyph = ArrayGlyph(scaled, coords=(lon, lat))
-        glyph.plot(style="temperature_2m", projection="globe")
+        glyph.plot( data_style=DataStyle(style="temperature_2m"), projection="globe")
         assert glyph.ax.get_xlim()[1] > 1e6, "styled globe should freeze the view"
-        glyph.plot(style="temperature_2m", projection=revert)
+        glyph.plot( data_style=DataStyle(style="temperature_2m"), projection=revert)
         assert glyph.ax.get_xlim()[1] <= 360.0, "styled flat replot should restore the view"
         assert glyph.ax.axison, "styled flat replot should turn the axis back on"
         assert len(glyph.ax.patches) == 0, "styled flat replot should remove the globe boundary"

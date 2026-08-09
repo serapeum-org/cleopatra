@@ -57,7 +57,7 @@ from cleopatra.glyphs.base.glyph import (
 )
 from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_faces
 from cleopatra.basemap.projection import apply_projection_style_mesh, projection_draws_frame
-from cleopatra.styling.params import Contour
+from cleopatra.styling.params import Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import disjoint_legend
@@ -72,6 +72,11 @@ MESH_DEFAULT_OPTIONS = {
     "projection": None,
 }
 MESH_DEFAULT_OPTIONS = STYLE_DEFAULTS | MESH_DEFAULT_OPTIONS
+
+#: Sentinel distinguishing "hillshade not forwarded" from an explicit
+#: `hillshade=None` in `apply_style`, so an unset value keeps any sticky
+#: relief shading rather than clearing it.
+_UNSET_HILLSHADE = object()
 
 
 class MeshGlyph(GeoMixin, Glyph):
@@ -819,7 +824,17 @@ class MeshGlyph(GeoMixin, Glyph):
                 )
         location = kwargs.pop("location", self._last_location)
         self._reset_axes_for_restyle()
-        return self.plot(data, location=location, ax=self.ax, style=style, **kwargs)
+        # Fold style (and an optional forwarded hillshade) into the grouped
+        # data_style object; leaving hillshade unset keeps any sticky value.
+        hillshade = kwargs.pop("hillshade", _UNSET_HILLSHADE)
+        data_style = (
+            DataStyle(style=style)
+            if hillshade is _UNSET_HILLSHADE
+            else DataStyle(style=style, hillshade=hillshade)
+        )
+        return self.plot(
+            data, location=location, ax=self.ax, data_style=data_style, **kwargs
+        )
 
     def plot(
         self,
@@ -832,6 +847,7 @@ class MeshGlyph(GeoMixin, Glyph):
         filled: bool = True,
         color: ColorScaling | None = None,
         contour: Contour | None = None,
+        data_style: DataStyle | None = None,
         **kwargs: Any,
     ) -> tuple[plt.Figure, plt.Axes]:
         """Plot mesh data using matplotlib triangulation.
@@ -1008,7 +1024,7 @@ class MeshGlyph(GeoMixin, Glyph):
             else:
                 render_kwargs[key] = val
         self._merge_kwargs(option_kwargs)
-        self._merge_group_params(color, contour)
+        self._merge_group_params(color, contour, data_style)
         _warn_deprecated_cbar_kwargs(kwargs)
         resolved_colorbar = (
             _resolve_colorbar(colorbar) if isinstance(colorbar, ColorBar) else {}
@@ -1017,9 +1033,13 @@ class MeshGlyph(GeoMixin, Glyph):
         if colorbar is not False:
             colorbar = True
 
-        if "hillshade" not in option_kwargs:
+        # `style`/`hillshade` now arrive via the `data_style` group object;
+        # detect whether this call provided each so the sticky-state logic
+        # (a preset persists across later plain plots) still applies.
+        ds_opts = data_style.to_options() if data_style is not None else {}
+        if "hillshade" not in ds_opts:
             self.default_options["hillshade"] = self._construct_hillshade
-        if "style" in option_kwargs:
+        if "style" in ds_opts:
             new_style = self.default_options["style"]
             if new_style is not None:
                 try:
@@ -1172,6 +1192,7 @@ class MeshGlyph(GeoMixin, Glyph):
         text_loc: list | None = None,
         colorbar: bool | ColorBar | None = None,
         color: ColorScaling | None = None,
+        data_style: DataStyle | None = None,
         **kwargs: Any,
     ) -> FuncAnimation:
         """Create an animation from time-varying mesh data.
@@ -1251,7 +1272,7 @@ class MeshGlyph(GeoMixin, Glyph):
 
         self._default_options = MESH_DEFAULT_OPTIONS.copy()
         self._merge_kwargs(kwargs)
-        self._merge_group_params(color)
+        self._merge_group_params(color, data_style)
         _warn_deprecated_cbar_kwargs(kwargs)
         resolved_colorbar = (
             _resolve_colorbar(colorbar) if isinstance(colorbar, ColorBar) else {}

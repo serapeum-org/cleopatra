@@ -75,7 +75,7 @@ from cleopatra.glyphs.base.glyph import (
 )
 from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_grid, shade_rgb
 from cleopatra.basemap.projection import apply_projection_style, projection_draws_frame
-from cleopatra.styling.params import CellValues, Contour
+from cleopatra.styling.params import CellValues, Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import (
@@ -2340,7 +2340,15 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         resolve_single_layer_style(style)
         self._reset_axes_for_restyle()
-        return self.plot(style=style, ax=self.ax, **kwargs)
+        # Fold style (and an optional forwarded hillshade) into the grouped
+        # data_style object; leaving hillshade unset keeps any sticky value.
+        hillshade = kwargs.pop("hillshade", _UNSET)
+        data_style = (
+            DataStyle(style=style)
+            if hillshade is _UNSET
+            else DataStyle(style=style, hillshade=hillshade)
+        )
+        return self.plot(data_style=data_style, ax=self.ax, **kwargs)
 
     def _resolve_style_layer(self, style: str) -> str:
         """Validate a `DATA_STYLES` name and return its single layer key.
@@ -2884,6 +2892,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         color: ColorScaling | None = None,
         contour: Contour | None = None,
         cells: CellValues | None = None,
+        data_style: DataStyle | None = None,
         full_bleed: bool | str = False,
         basemap: bool | dict | Basemap | Callable[[Any], None] | None = None,
         colorbar: bool | ColorBar | None = None,
@@ -3502,7 +3511,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         points = _resolve_point_overlay(points, kwargs)  # type: ignore[arg-type]
         _warn_deprecated_cbar_kwargs(kwargs)
 
-        self._merge_group_params(color, contour, cells)
+        self._merge_group_params(color, contour, cells, data_style)
         resolved_colorbar = self._apply_kwargs_and_colorbar(colorbar, kwargs)  # type: ignore[arg-type]
 
         self._validate_extend(self.default_options.get("extend"))
@@ -3703,6 +3712,10 @@ class ArrayGlyph(GeoMixin, Glyph):
         figsize: tuple[float, float] | None = None,
         extents: Sequence[Sequence[float]] | None = None,
         colorbar: bool | ColorBar | None = None,
+        color: ColorScaling | None = None,
+        contour: Contour | None = None,
+        cells: CellValues | None = None,
+        data_style: DataStyle | None = None,
         **kwargs,
     ) -> FacetGrid:
         """Render a grid of subplots from a 3-D or 4-D stack.
@@ -3983,7 +3996,14 @@ class ArrayGlyph(GeoMixin, Glyph):
             # into the sub-glyph's options and sets `_style_wants_colorbar`, so
             # a placement-bearing colorbar overrides a preset swatch here just
             # as it does on `plot` / `animate`.
-            sub.plot(kind=kind, colorbar=colorbar)
+            sub.plot(
+                kind=kind,
+                colorbar=colorbar,
+                color=color,
+                contour=contour,
+                cells=cells,
+                data_style=data_style,
+            )
 
             col_label = col_coords[col_idx] if col_coords is not None else col_idx
             name_dict: dict[str, Any] = {col: col_label}
@@ -4053,6 +4073,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         *,
         color: ColorScaling | None = None,
         cells: CellValues | None = None,
+        data_style: DataStyle | None = None,
         data_getter: Callable[[int], np.ndarray] | None = None,
         full_bleed: bool | str = False,
         basemap: bool | dict | Basemap | Callable[[Any], None] | None = None,
@@ -4452,7 +4473,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             assert frame_location is not None
             label_location = frame_location
 
-        self._merge_group_params(color, cells)
+        self._merge_group_params(color, cells, data_style)
         resolved_colorbar = self._apply_kwargs_and_colorbar(colorbar, kwargs)  # type: ignore[arg-type]
 
         if "ticks_spacing" not in resolved_colorbar:

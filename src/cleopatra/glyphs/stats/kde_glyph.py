@@ -42,7 +42,7 @@ from matplotlib.patches import Patch
 from matplotlib.path import Path as MplPath
 
 from cleopatra.styling.colorbar import ColorBar, _resolve_colorbar, _warn_deprecated_cbar_kwargs
-from cleopatra.styling.params import Contour
+from cleopatra.styling.params import Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.colors import (
     resolve_colormap,
@@ -58,23 +58,6 @@ from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 #: large `gridsize` / point count never materialises one giant array; this caps
 #: the temporary at ~`MAX_KDE_BLOCK` floats (a few tens of MB).
 MAX_KDE_BLOCK = 4_000_000
-
-
-class _Unset:
-    """Sentinel type for `plot(style=...)`'s tri-state default.
-
-    Distinguishes "not passed" (keep the current sticky style) from an explicit
-    `style=None` (clear it back to plain density colouring); KDE's fixed
-    signature cannot use `None` for both. A named type (rather than a bare
-    `object()`) keeps the `str | None | _Unset` annotation accurate for mypy.
-    """
-
-    def __repr__(self) -> str:  # pragma: no cover - debugging aid
-        return "<UNSET>"
-
-
-#: The single `_Unset` sentinel instance used as `plot(style=...)`'s default.
-_UNSET = _Unset()
 
 #: Option keys for KDEGlyph. `ticks_spacing` is `None` so the shared
 #: `_prepare_scalar_mapping` helper auto-derives it from the density range.
@@ -371,12 +354,18 @@ class KDEGlyph(Glyph):
                 "continuous density, so only continuous presets apply"
             )
         self._reset_axes_for_restyle()
+        # Only override hillshade when the caller passed one; leaving it
+        # unset keeps any sticky relief shading (a plain None would clear it).
+        data_style = (
+            DataStyle(style=style)
+            if hillshade is None
+            else DataStyle(style=style, hillshade=hillshade)
+        )
         return self.plot(
             ax=self.ax,
             title=title,
             add_colorbar=add_colorbar,
-            hillshade=hillshade,
-            style=style,
+            data_style=data_style,
         )
 
     def plot(
@@ -385,10 +374,9 @@ class KDEGlyph(Glyph):
         title: str | None = None,
         add_colorbar: bool | None = None,
         colorbar: bool | ColorBar | None = None,
-        hillshade: bool | dict | None = None,
-        style: str | None | _Unset = _UNSET,
         color: ColorScaling | None = None,
         contour: Contour | None = None,
+        data_style: DataStyle | None = None,
     ):
         """Render the 2-D density as filled or line contours.
 
@@ -464,7 +452,10 @@ class KDEGlyph(Glyph):
 
                 ```
         """
-        self._merge_group_params(color, contour)
+        # Capture the sticky style before merging so an invalid new preset
+        # can be rolled back below without bricking later plain plots.
+        prev_style = self.default_options.get("style")
+        self._merge_group_params(color, contour, data_style)
 
         if ax is not None:
             self.ax = ax
@@ -484,9 +475,6 @@ class KDEGlyph(Glyph):
         norm, cbar_kw, _ = self._prepare_scalar_mapping(density)
         cmap = resolve_colormap(opts["cmap"])
 
-        prev_style = opts.get("style")
-        if style is not _UNSET:
-            opts["style"] = style
         style = opts.get("style")
         if style is not None:
             try:
@@ -508,9 +496,7 @@ class KDEGlyph(Glyph):
             # Drop the linear ticks so the colorbar matches the preset norm.
             cbar_kw.pop("ticks", None)
 
-        hillshade = resolve_hillshade(
-            hillshade if hillshade is not None else opts.get("hillshade")
-        )
+        hillshade = resolve_hillshade(opts.get("hillshade"))
         if hillshade is not None:
             hs_norm = (
                 norm

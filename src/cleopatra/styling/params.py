@@ -120,20 +120,38 @@ class CellValues:
         return options
 
 
+class _Unset:
+    """Sentinel type marking a `DataStyle` field the caller did not set."""
+
+    def __repr__(self) -> str:  # pragma: no cover - cosmetic
+        return "<unset>"
+
+
+#: Single sentinel instance for `DataStyle`'s unset fields. Distinguishes
+#: "not passed" (keep the glyph's current sticky value) from an explicit
+#: `None` (clear the preset / disable hillshade), which a plain `None`
+#: default could not.
+_UNSET = _Unset()
+
+
 @dataclass(frozen=True)
 class DataStyle:
     """Named data-style preset and relief-shading options.
 
     Groups the `style` / `hillshade` options honoured by `ArrayGlyph`,
-    `MeshGlyph`, and `KDEGlyph`.
+    `MeshGlyph`, and `KDEGlyph`. Each field has three states: left unset
+    (keep the glyph's current value -- these options are sticky), set to a
+    value (apply it), or set explicitly to `None` (clear the preset /
+    disable hillshade). `to_options()` emits a key only for a field that
+    was given (set or explicit `None`), never for an unset one.
 
     Attributes:
-        style: Name of a `cleopatra.styling.colors.DATA_STYLES` preset.
-            `None` leaves the glyph default (no preset).
+        style: Name of a `cleopatra.styling.colors.DATA_STYLES` preset, or
+            `None` to clear a sticky preset back to plain colouring.
         hillshade: Relief-shade a regular-grid DEM -- `True` for defaults,
-            or a dict tuning `vert_exag` / `azimuth` / `altitude` /
-            `blend_mode` / `multidirectional`. `None` leaves the default
-            (`False`).
+            a dict tuning `vert_exag` / `azimuth` / `altitude` /
+            `blend_mode` / `multidirectional`, or `None`/`False` to
+            disable.
 
     Examples:
         - Select a preset and turn on relief shading:
@@ -143,21 +161,32 @@ class DataStyle:
             {'style': 'dem', 'hillshade': True}
 
             ```
+        - An unset field is omitted (keeping the sticky value); an
+            explicit `None` is emitted (clearing it):
+            ```python
+            >>> from cleopatra.styling.params import DataStyle
+            >>> DataStyle().to_options()
+            {}
+            >>> DataStyle(style=None).to_options()
+            {'style': None}
+
+            ```
     """
 
-    style: str | None = None
-    hillshade: bool | dict[str, Any] | None = None
+    style: str | None | _Unset = _UNSET
+    hillshade: bool | dict[str, Any] | None | _Unset = _UNSET
 
     def to_options(self) -> dict[str, Any]:
-        """Flatten the explicitly-set fields into `default_options` keys.
+        """Flatten the explicitly-given fields into `default_options` keys.
 
         Returns:
-            dict: `style` / `hillshade` for the fields that were set.
+            dict: `style` / `hillshade` for the fields the caller gave (a
+                value or an explicit `None`); unset fields are omitted.
         """
         options: dict[str, Any] = {}
-        if self.style is not None:
+        if not isinstance(self.style, _Unset):
             options["style"] = self.style
-        if self.hillshade is not None:
+        if not isinstance(self.hillshade, _Unset):
             options["hillshade"] = self.hillshade
         return options
 

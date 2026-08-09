@@ -13,7 +13,7 @@ from matplotlib.text import Text
 from PIL import Image
 
 import cleopatra.basemap.reference as refmod
-from cleopatra.styling.params import CellValues, Contour
+from cleopatra.styling.params import CellValues, Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.glyphs.gridded.array_glyph import (
@@ -3286,9 +3286,8 @@ class TestFacetColorbar:
             routing would leave the swatch and no colorbars, failing here.
         """
         result = ArrayGlyph(self._stack_3d()).facet(
-            col="time", col_coords=[0, 1, 2], style="flow_accumulation",
-            colorbar=ColorBar(location="right"),
-        )
+            col="time", col_coords=[0, 1, 2], data_style=DataStyle(style="flow_accumulation"),
+            colorbar=ColorBar(location="right"))
         assert (
             len(self._colorbar_axes(result)) == 3
         ), "a placement colorbar should draw a real colorbar per panel"
@@ -3304,8 +3303,7 @@ class TestFacetColorbar:
             colorbar axis, so the override test above is meaningfully guarded.
         """
         result = ArrayGlyph(self._stack_3d()).facet(
-            col="time", col_coords=[0, 1, 2], style="flow_accumulation"
-        )
+            col="time", col_coords=[0, 1, 2], data_style=DataStyle(style="flow_accumulation"))
         assert self._colorbar_axes(result) == [], "preset alone should draw no real colorbar"
         swatches = sum(len(ax.child_axes) for ax in result.axes.ravel())
         assert swatches == 3, f"each panel should keep its preset swatch, got {swatches}"
@@ -5202,14 +5200,14 @@ class TestArrayGlyphHillshade:
 
     def test_hillshade_draws_rgba_image(self):
         """`hillshade=True` replaces the image data with a shaded RGBA image."""
-        _, ax = ArrayGlyph(self._dem(), cmap="terrain", hillshade=True).plot()
+        _, ax = ArrayGlyph(self._dem(), cmap="terrain").plot(data_style=DataStyle(hillshade=True))
         assert ax.images[0].get_array().shape[-1] == 4
         plt.close("all")
 
     def test_colorbar_survives_hillshade(self):
         """The colorbar still reflects the cmap/norm after shading."""
-        g = ArrayGlyph(self._dem(), cmap="terrain", hillshade=True)
-        g.plot()
+        g = ArrayGlyph(self._dem(), cmap="terrain")
+        g.plot(data_style=DataStyle(hillshade=True))
         assert g.cbar is not None
         lo, hi = g.cbar.mappable.get_clim()
         assert hi > lo
@@ -5220,8 +5218,11 @@ class TestArrayGlyphHillshade:
         _, ax = ArrayGlyph(
             self._dem(),
             cmap="gist_earth",
-            hillshade={"vert_exag": 6, "azimuth": 300, "multidirectional": 3},
-        ).plot()
+        ).plot(
+            data_style=DataStyle(
+                hillshade={"vert_exag": 6, "azimuth": 300, "multidirectional": 3}
+            )
+        )
         assert ax.images[0].get_array().shape[-1] == 4
         plt.close("all")
 
@@ -5230,7 +5231,7 @@ class TestArrayGlyphHillshade:
         with pytest.warns(
             UserWarning, match="hillshade is only applied to kind='imshow'"
         ):
-            ArrayGlyph(self._dem(), cmap="terrain", hillshade=True).plot(
+            ArrayGlyph(self._dem(), cmap="terrain").plot(data_style=DataStyle(hillshade=True), 
                 kind="pcolormesh"
             )
         plt.close("all")
@@ -5251,8 +5252,8 @@ class TestArrayGlyphDataStyle:
 
     def test_continuous_preset_renders_image_without_colorbar(self):
         """A continuous preset draws an image and presents its scale via a legend, not a colorbar."""
-        g = ArrayGlyph(self._accum(), style="flow_accumulation")
-        g.plot()
+        g = ArrayGlyph(self._accum())
+        g.plot(data_style=DataStyle(style="flow_accumulation"))
         assert type(g.im).__name__ == "AxesImage"
         assert g.cbar is None
         plt.close("all")
@@ -5264,36 +5265,36 @@ class TestArrayGlyphDataStyle:
         animate path, which keeps the norm on the artist); here the drawn
         image is the baked RGBA that alpha_scaled_image produces.
         """
-        g = ArrayGlyph(self._accum(), style="flow_accumulation")
-        g.plot()
+        g = ArrayGlyph(self._accum())
+        g.plot(data_style=DataStyle(style="flow_accumulation"))
         assert np.asarray(g.im.get_array()).shape[-1] == 4
         plt.close("all")
 
     def test_continuous_preset_draws_swatch_legend(self):
         """A continuous preset draws its swatch legend as an inset child axes."""
-        g = ArrayGlyph(self._accum(), style="flow_accumulation")
-        _, ax = g.plot()
+        g = ArrayGlyph(self._accum())
+        _, ax = g.plot(data_style=DataStyle(style="flow_accumulation"))
         assert len(ax.child_axes) == 1
         plt.close("all")
 
     def test_continuous_add_colorbar_false_suppresses_swatch(self):
         """`add_colorbar=False` suppresses the continuous swatch legend."""
-        g = ArrayGlyph(self._accum(), style="flow_accumulation")
-        _, ax = g.plot(add_colorbar=False)
+        g = ArrayGlyph(self._accum())
+        _, ax = g.plot(data_style=DataStyle(style="flow_accumulation"), add_colorbar=False)
         assert len(ax.child_axes) == 0
         plt.close("all")
 
     def test_categorical_preset_draws_disjoint_legend(self):
         """A categorical preset renders a discrete legend of its class codes."""
-        g = ArrayGlyph(self._d8(), style="flow_direction_d8")
-        _, ax = g.plot()
+        g = ArrayGlyph(self._d8())
+        _, ax = g.plot(data_style=DataStyle(style="flow_direction_d8"))
         assert ax.get_legend() is not None
         plt.close("all")
 
     def test_add_colorbar_false_suppresses_preset_legend(self):
         """`add_colorbar=False` suppresses the preset's legend."""
-        g = ArrayGlyph(self._d8(), style="flow_direction_d8")
-        _, ax = g.plot(add_colorbar=False)
+        g = ArrayGlyph(self._d8())
+        _, ax = g.plot(data_style=DataStyle(style="flow_direction_d8"), add_colorbar=False)
         assert ax.get_legend() is None
         plt.close("all")
 
@@ -5306,10 +5307,10 @@ class TestArrayGlyphDataStyle:
             figure-patch facecolor to black -- scoped to the glyph -- while a
             preset without a background leaves the figure at its default.
         """
-        fig, ax = ArrayGlyph(self._accum(), style="temperature_flame").plot()
+        fig, ax = ArrayGlyph(self._accum()).plot(data_style=DataStyle(style="temperature_flame"))
         assert to_rgba(ax.get_facecolor()) == to_rgba("#000000")
         assert to_rgba(fig.patch.get_facecolor()) == to_rgba("#000000")
-        fig2, _ = ArrayGlyph(self._accum(), style="flow_accumulation").plot()
+        fig2, _ = ArrayGlyph(self._accum()).plot(data_style=DataStyle(style="flow_accumulation"))
         assert to_rgba(fig2.patch.get_facecolor()) != to_rgba("#000000")
         plt.close("all")
 
@@ -5322,8 +5323,8 @@ class TestArrayGlyphDataStyle:
             (via `savefig.facecolor='auto'`).
         """
         stack = np.stack([self._accum(), self._accum() * 1.1])
-        g = ArrayGlyph(stack, style="temperature_flame")
-        g.animate(time=list(range(2)), add_colorbar=False)
+        g = ArrayGlyph(stack)
+        g.animate(data_style=DataStyle(style="temperature_flame"), time=list(range(2)), add_colorbar=False)
         assert to_rgba(g.fig.patch.get_facecolor()) == to_rgba("#000000")
         plt.close("all")
 
@@ -5336,7 +5337,7 @@ class TestArrayGlyphDataStyle:
             every sibling panel and hide their titles (a style gallery).
         """
         fig, (ax0, _ax1) = plt.subplots(1, 2)
-        ArrayGlyph(self._accum(), style="temperature_flame").plot(ax=ax0)
+        ArrayGlyph(self._accum()).plot(data_style=DataStyle(style="temperature_flame"), ax=ax0)
         assert to_rgba(ax0.get_facecolor()) == to_rgba("#000000"), "the flame panel's own axes is black"
         assert to_rgba(fig.patch.get_facecolor()) != to_rgba("#000000"), "the shared figure stays unpainted"
         plt.close(fig)
@@ -5351,7 +5352,7 @@ class TestArrayGlyphDataStyle:
             figure paint. Otherwise an explicit-figsize flame is a black map framed
             by a white border (and a white GIF/PNG surround).
         """
-        fig, ax = ArrayGlyph(self._accum(), style="temperature_flame", figsize=(8, 8)).plot()
+        fig, ax = ArrayGlyph(self._accum(), figsize=(8, 8)).plot(data_style=DataStyle(style="temperature_flame"))
         assert to_rgba(ax.get_facecolor()) == to_rgba("#000000"), "the axes is black"
         assert to_rgba(fig.patch.get_facecolor()) == to_rgba("#000000"), "an explicit figsize still paints the figure"
         plt.close(fig)
@@ -5359,13 +5360,13 @@ class TestArrayGlyphDataStyle:
     def test_unknown_style_raises(self):
         """An unknown style name raises a clear `ValueError`."""
         with pytest.raises(ValueError, match="unknown data style"):
-            ArrayGlyph(self._accum(), style="not_a_style").plot()
+            ArrayGlyph(self._accum()).plot(data_style=DataStyle(style="not_a_style"))
         plt.close("all")
 
     def test_multilayer_style_rejected(self):
         """A multi-layer preset (`haze`) cannot apply to a single band."""
         with pytest.raises(ValueError, match="multiple layers"):
-            ArrayGlyph(self._accum(), style="haze").plot()
+            ArrayGlyph(self._accum()).plot(data_style=DataStyle(style="haze"))
         plt.close("all")
 
     def test_curvilinear_coords_with_style_renders(self):
@@ -5374,8 +5375,8 @@ class TestArrayGlyphDataStyle:
         ny, nx = arr.shape
         x = np.linspace(-3.0, 3.0, nx)
         y = np.linspace(-3.0, 3.0, ny)
-        g = ArrayGlyph(arr, coords=(x, y), style="flow_accumulation")
-        g.plot()
+        g = ArrayGlyph(arr, coords=(x, y))
+        g.plot(data_style=DataStyle(style="flow_accumulation"))
         assert type(g.im).__name__ == "QuadMesh"
         plt.close("all")
 
@@ -5386,12 +5387,12 @@ class TestArrayGlyphDataStyle:
         pixel colours: a fixed -48..56 render differs from one auto-ranged to the data extent.
         """
         data = np.linspace(-10.0, 50.0, 30 * 40).reshape(30, 40)
-        fixed = ArrayGlyph(data, style="min_temperature_2m")
-        fixed.plot()
+        fixed = ArrayGlyph(data)
+        fixed.plot(data_style=DataStyle(style="min_temperature_2m"))
         auto = ArrayGlyph(
-            data, style="min_temperature_2m", vmin=float(data.min()), vmax=float(data.max())
+            data, vmin=float(data.min()), vmax=float(data.max())
         )
-        auto.plot()
+        auto.plot(data_style=DataStyle(style="min_temperature_2m"))
         assert not np.allclose(fixed.im.get_array(), auto.im.get_array())
         plt.close("all")
 
@@ -5400,22 +5401,20 @@ class TestArrayGlyphDataStyle:
         data = np.linspace(-30.0, 50.0, 30 * 40).reshape(30, 40)
         g = ArrayGlyph(data)
         g.plot(vmin=5.0, vmax=20.0)  # plain plot sets an explicit range...
-        g.plot(
-            style="min_temperature_2m"
-        )  # ...which sticks into the styled render (not min_temperature_2m's -48..56)
+        g.plot( data_style=DataStyle(style="min_temperature_2m"))  # ...which sticks into the styled render (not min_temperature_2m's -48..56)
         sticky = np.asarray(g.im.get_array()).copy()
-        fresh = ArrayGlyph(data, style="min_temperature_2m")
-        fresh.plot()  # a fresh glyph uses min_temperature_2m's own fixed range
+        fresh = ArrayGlyph(data)
+        fresh.plot(data_style=DataStyle(style="min_temperature_2m"))  # a fresh glyph uses min_temperature_2m's own fixed range
         assert not np.allclose(sticky, np.asarray(fresh.im.get_array()))
         plt.close("all")
 
     def test_glyph_vmin_vmax_overrides_preset_fixed_range(self):
         """A glyph-level vmin/vmax overrides the preset's encoded fixed range."""
         data = np.linspace(-10.0, 50.0, 30 * 40).reshape(30, 40)
-        default = ArrayGlyph(data, style="min_temperature_2m")
-        default.plot()
-        override = ArrayGlyph(data, style="min_temperature_2m", vmin=-10.0, vmax=50.0)
-        override.plot()
+        default = ArrayGlyph(data)
+        default.plot(data_style=DataStyle(style="min_temperature_2m"))
+        override = ArrayGlyph(data, vmin=-10.0, vmax=50.0)
+        override.plot(data_style=DataStyle(style="min_temperature_2m"))
         assert not np.allclose(default.im.get_array(), override.im.get_array())
         plt.close("all")
 
@@ -5425,15 +5424,15 @@ class TestArrayGlyphDataStyle:
         d8 = rng.choice(
             [0, 1, 2, 4, 8, 16, 32, 64, 128], size=(20, 20)
         )  # int dtype, 0 = nodata
-        g = ArrayGlyph(d8, style="flow_direction_d8", exclude_value=[0])
-        _, ax = g.plot()
+        g = ArrayGlyph(d8, exclude_value=[0])
+        _, ax = g.plot(data_style=DataStyle(style="flow_direction_d8"))
         assert ax.get_legend() is not None
         plt.close("all")
 
     def test_style_hides_pixel_ticks_without_extent(self):
         """A style plot with no extent hides pixel-index ticks, like the imshow path."""
-        g = ArrayGlyph(self._accum(), style="flow_accumulation")
-        _, ax = g.plot()
+        g = ArrayGlyph(self._accum())
+        _, ax = g.plot(data_style=DataStyle(style="flow_accumulation"))
         assert ax.get_xticks().size == 0
         assert ax.get_yticks().size == 0
         plt.close("all")
@@ -5442,27 +5441,27 @@ class TestArrayGlyphDataStyle:
         """A preset bypasses point/cell-value overlays; the drop is warned, not silent."""
         pts = np.array([[1.0, 2, 3], [2.0, 5, 6]])
         with pytest.warns(UserWarning, match="bypass point and cell-value overlays"):
-            ArrayGlyph(self._accum()).plot(points=pts, style="flow_accumulation")
+            ArrayGlyph(self._accum()).plot(points=pts, data_style=DataStyle(style="flow_accumulation"))
         plt.close("all")
 
     def test_rgb_with_style_warns(self):
         """A `style` on an RGB array is ignored with a warning, not silently."""
         rgb = np.random.default_rng(6).random((3, 8, 8))
         with pytest.warns(UserWarning, match="do not apply to RGB"):
-            ArrayGlyph(rgb, rgb=[0, 1, 2], style="flow_accumulation").plot()
+            ArrayGlyph(rgb, rgb=[0, 1, 2]).plot(data_style=DataStyle(style="flow_accumulation"))
         plt.close("all")
 
     def test_plot_style_with_hillshade_composes(self):
         """In `plot`, `style` + `hillshade` compose: the preset RGBA is relief-shaded."""
-        g = ArrayGlyph(
-            self._accum(), style="flow_accumulation", hillshade={"vert_exag": 5}
+        g = ArrayGlyph(self._accum())
+        g.plot(
+            data_style=DataStyle(style="flow_accumulation", hillshade={"vert_exag": 5})
         )
-        g.plot()
         shaded = np.asarray(g.im.get_array())
         assert shaded.ndim == 3
         assert shaded.shape[-1] == 4
-        g2 = ArrayGlyph(self._accum(), style="flow_accumulation")
-        g2.plot()
+        g2 = ArrayGlyph(self._accum())
+        g2.plot(data_style=DataStyle(style="flow_accumulation"))
         base = np.asarray(g2.im.get_array())
         assert not np.allclose(shaded[..., :3], base[..., :3]), (
             "hillshade lit the preset colours"
@@ -5472,8 +5471,8 @@ class TestArrayGlyphDataStyle:
     def test_categorical_style_with_hillshade_warns_not_shaded(self):
         """A categorical preset + hillshade warns and is NOT relief-shaded (like MeshGlyph)."""
         with pytest.warns(UserWarning, match="categorical data-style preset"):
-            g = ArrayGlyph(self._d8(), style="flow_direction_d8", hillshade=True)
-            g.plot()
+            g = ArrayGlyph(self._d8())
+            g.plot(data_style=DataStyle(style="flow_direction_d8", hillshade=True))
         # the categorical image keeps its flat class colours (RGBA from the preset)
         assert np.asarray(g.im.get_array()).shape[-1] == 4
         plt.close("all")
@@ -5485,9 +5484,9 @@ class TestArrayGlyphDataStyle:
         x = np.linspace(-3.0, 3.0, nx)
         y = np.linspace(-3.0, 3.0, ny)
         with pytest.warns(UserWarning, match="curvilinear data-style preset"):
-            ArrayGlyph(
-                arr, coords=(x, y), style="flow_accumulation", hillshade=True
-            ).plot()
+            ArrayGlyph(arr, coords=(x, y)).plot(
+                data_style=DataStyle(style="flow_accumulation", hillshade=True)
+            )
         plt.close("all")
 
     def test_unknown_style_with_coords_reports_style_error_first(self):
@@ -5497,7 +5496,7 @@ class TestArrayGlyphDataStyle:
         x = np.linspace(0.0, 1.0, nx)
         y = np.linspace(0.0, 1.0, ny)
         with pytest.raises(ValueError, match="unknown data style"):
-            ArrayGlyph(arr, coords=(x, y), style="not_a_style").plot()
+            ArrayGlyph(arr, coords=(x, y)).plot(data_style=DataStyle(style="not_a_style"))
         plt.close("all")
 
 
@@ -5518,8 +5517,8 @@ class TestArrayGlyphShadedAnimate:
 
     def test_hillshade_shades_every_frame(self):
         """`animate_a` shades each frame RGBA rather than reverting to the raw scalar frame."""
-        g = ArrayGlyph(self._dem_stack(), cmap="terrain", hillshade={"vert_exag": 5})
-        anim = g.animate(time=list(range(5)))
+        g = ArrayGlyph(self._dem_stack(), cmap="terrain")
+        anim = g.animate(data_style=DataStyle(hillshade={"vert_exag": 5}), time=list(range(5)))
         anim._func(2)  # drive a mid-sequence frame through animate_a
         arr = np.asarray(g.im.get_array())
         assert arr.ndim == 3
@@ -5532,8 +5531,8 @@ class TestArrayGlyphShadedAnimate:
         accum = np.stack(
             [np.abs(rng.normal(size=(20, 25))).cumsum(1) * 40 for _ in range(4)]
         )
-        g = ArrayGlyph(accum, style="flow_accumulation")
-        g.animate(time=list(range(4)))
+        g = ArrayGlyph(accum)
+        g.animate(data_style=DataStyle(style="flow_accumulation"), time=list(range(4)))
         assert g.im.cmap.name == "Blues"
         assert type(g.im.norm).__name__ == "SymLogNorm"
         plt.close("all")
@@ -5544,8 +5543,8 @@ class TestArrayGlyphShadedAnimate:
         accum = np.stack(
             [np.abs(rng.normal(size=(20, 25))).cumsum(1) * 40 for _ in range(4)]
         )
-        g = ArrayGlyph(accum, style="flow_accumulation", hillshade={"vert_exag": 5})
-        anim = g.animate(time=list(range(4)))
+        g = ArrayGlyph(accum)
+        anim = g.animate(data_style=DataStyle(style="flow_accumulation", hillshade={"vert_exag": 5}), time=list(range(4)))
         anim._func(2)  # drive a frame; must not raise on the scale-norm path
         assert g.im.cmap.name == "Blues"
         assert type(g.im.norm).__name__ == "SymLogNorm"
@@ -5560,8 +5559,8 @@ class TestArrayGlyphShadedAnimate:
         accum = np.stack(
             [np.abs(rng.normal(size=(20, 25))).cumsum(1) * 40 for _ in range(3)]
         )
-        g = ArrayGlyph(accum, style="flow_accumulation")
-        g.animate(time=list(range(3)))
+        g = ArrayGlyph(accum)
+        g.animate(data_style=DataStyle(style="flow_accumulation"), time=list(range(3)))
         assert g.cbar is None
         assert len(g.ax.child_axes) == 1  # the swatch legend inset
         g.animate(time=list(range(3)))  # repeat must not stack swatches
@@ -5573,8 +5572,8 @@ class TestArrayGlyphShadedAnimate:
         ('≤'/'≥') from the norm's extend, matching the plot() legend (M2 parity)."""
         base = np.linspace(-30.0, 38.0, 400).reshape(20, 20)
         stack = np.stack([base + w for w in (-2.0, 0.0, 5.0)])
-        g = ArrayGlyph(stack, style="temperature_2m")
-        g.animate(time=list(range(3)))
+        g = ArrayGlyph(stack)
+        g.animate(data_style=DataStyle(style="temperature_2m"), time=list(range(3)))
         swatch_texts = [t.get_text() for c in g.ax.child_axes for t in c.texts]
         assert "≤-40" in swatch_texts, (
             f"animate legend should cap the low endpoint, got {swatch_texts}"
@@ -5590,8 +5589,8 @@ class TestArrayGlyphShadedAnimate:
         accum = np.stack(
             [np.abs(rng.normal(size=(20, 25))).cumsum(1) * 40 for _ in range(3)]
         )
-        g = ArrayGlyph(accum, style="flow_accumulation")
-        anim = g.animate(time=list(range(3)))
+        g = ArrayGlyph(accum)
+        anim = g.animate(data_style=DataStyle(style="flow_accumulation"), time=list(range(3)))
         anim._func(1)
         frame = np.asarray(g.im.get_array())
         assert frame.shape[-1] == 4, "animate frames are RGBA"
@@ -5604,11 +5603,11 @@ class TestArrayGlyphShadedAnimate:
         """A styled animation honours the preset's fixed range, and a caller vmin/vmax overrides it."""
         base = np.linspace(-2.0, 39.0, 400).reshape(20, 20)
         stack = np.stack([base + w for w in (-4.0, 0.0, 8.0)])
-        fixed = ArrayGlyph(stack, style="min_temperature_2m")
-        fixed.animate(time=list(range(3)))._func(2)
+        fixed = ArrayGlyph(stack)
+        fixed.animate(data_style=DataStyle(style="min_temperature_2m"), time=list(range(3)))._func(2)
         fixed_frame = np.asarray(fixed.im.get_array()).copy()
-        override = ArrayGlyph(stack, style="min_temperature_2m", vmin=-10.0, vmax=50.0)
-        override.animate(time=list(range(3)))._func(2)
+        override = ArrayGlyph(stack, vmin=-10.0, vmax=50.0)
+        override.animate(data_style=DataStyle(style="min_temperature_2m"), time=list(range(3)))._func(2)
         assert not np.allclose(fixed_frame, np.asarray(override.im.get_array()))
         plt.close("all")
 
@@ -5620,8 +5619,8 @@ class TestArrayGlyphShadedAnimate:
         def getter(i):
             return np.ma.array((base + i).astype(int), mask=(base % 7 == 0))
 
-        g = ArrayGlyph(template, cmap="terrain", hillshade=True)
-        anim = g.animate(time=list(range(3)), data_getter=getter)
+        g = ArrayGlyph(template, cmap="terrain")
+        anim = g.animate(data_style=DataStyle(hillshade=True), time=list(range(3)), data_getter=getter)
         anim._func(1)  # integer masked frame through _display_frame's hillshade branch
         assert np.asarray(g.im.get_array()).shape[-1] == 4
         plt.close("all")
@@ -5632,8 +5631,8 @@ class TestArrayGlyphShadedAnimate:
         accum = np.stack(
             [np.abs(rng.normal(size=(20, 25))).cumsum(1) * 40 for _ in range(4)]
         )
-        g = ArrayGlyph(accum, style="flow_accumulation")
-        g.animate(time=list(range(4)), add_colorbar=False)
+        g = ArrayGlyph(accum)
+        g.animate(data_style=DataStyle(style="flow_accumulation"), time=list(range(4)), add_colorbar=False)
         assert g.cbar is None
         assert g.im.cmap.name == "Blues"
         plt.close("all")
@@ -5645,9 +5644,9 @@ class TestArrayGlyphShadedAnimate:
             [np.abs(rng.normal(size=(20, 25))).cumsum(1) * 40 for _ in range(3)]
         )
         pts = np.array([[1.0, 2, 3], [2.0, 5, 6]])
-        g = ArrayGlyph(accum, style="flow_accumulation")
+        g = ArrayGlyph(accum)
         with pytest.warns(UserWarning, match="bypass point and cell-value overlays"):
-            g.animate(time=list(range(3)), points=pts)
+            g.animate(data_style=DataStyle(style="flow_accumulation"), time=list(range(3)), points=pts)
         # no scatter overlay drawn (the preset image is the only artist family)
         assert len(g.ax.collections) == 0
         plt.close("all")
@@ -5661,8 +5660,8 @@ class TestArrayGlyphShadedAnimate:
                 for _ in range(3)
             ]
         )
-        g = ArrayGlyph(d8, style="flow_direction_d8")
-        anim = g.animate(time=list(range(3)))
+        g = ArrayGlyph(d8)
+        anim = g.animate(data_style=DataStyle(style="flow_direction_d8"), time=list(range(3)))
         anim._func(1)
         frame = np.asarray(g.im.get_array())
         assert frame.ndim == 3, 'categorical frames are RGBA'
@@ -5681,7 +5680,7 @@ class TestArrayGlyphShadedAnimate:
             ]
         )
         with pytest.warns(UserWarning, match="categorical data-style preset"):
-            ArrayGlyph(d8, style="flow_direction_d8", hillshade=True).animate(
+            ArrayGlyph(d8).animate(data_style=DataStyle(style="flow_direction_d8", hillshade=True), 
                 time=list(range(3))
             )
         plt.close("all")
@@ -5695,8 +5694,8 @@ class TestArrayGlyphShadedAnimate:
                 for _ in range(3)
             ]
         )
-        g = ArrayGlyph(d8, style="flow_direction_d8")
-        g.animate(time=list(range(3)), add_colorbar=False)
+        g = ArrayGlyph(d8)
+        g.animate(data_style=DataStyle(style="flow_direction_d8"), time=list(range(3)), add_colorbar=False)
         assert g.cbar is None
         assert g.ax.get_legend() is None
         plt.close("all")
@@ -5711,8 +5710,8 @@ class TestArrayGlyphShadedAnimate:
             ]
         )
         d8[:, 0, 0] = 999.0  # nodata / out-of-range
-        g = ArrayGlyph(d8, style="flow_direction_d8")
-        anim = g.animate(time=list(range(3)))
+        g = ArrayGlyph(d8)
+        anim = g.animate(data_style=DataStyle(style="flow_direction_d8"), time=list(range(3)))
         anim._func(1)
         assert np.asarray(g.im.get_array())[0, 0, 3] == 0.0
         plt.close("all")
@@ -5774,7 +5773,7 @@ class TestArrayGlyphApplyStyle:
     def test_failed_apply_style_leaves_glyph_usable(self):
         """A bad apply_style name raises without poisoning the style or wiping the render."""
         g = ArrayGlyph(self._dem())
-        g.plot(style="topography")
+        g.plot( data_style=DataStyle(style="topography"))
         with pytest.raises(ValueError, match="unknown data style"):
             g.apply_style("not_a_style")
         assert g.style == "topography"  # prior good style preserved
@@ -5786,7 +5785,7 @@ class TestArrayGlyphApplyStyle:
         """plot(style='bad') raises and clears the style so later plain plot() works."""
         g = ArrayGlyph(self._dem())
         with pytest.raises(ValueError, match="unknown data style"):
-            g.plot(style="not_a_style")
+            g.plot( data_style=DataStyle(style="not_a_style"))
         assert g.style is None
         g.plot()  # not bricked
         plt.close("all")
@@ -5794,10 +5793,10 @@ class TestArrayGlyphApplyStyle:
     def test_style_is_sticky_and_clearable(self):
         """A style survives a later plain plot() and is cleared by style=None."""
         g = ArrayGlyph(self._dem())
-        g.plot(style="topography")
+        g.plot( data_style=DataStyle(style="topography"))
         g.plot()
         assert g.style == "topography"
-        g.plot(style=None)
+        g.plot( data_style=DataStyle(style=None))
         assert g.style is None
 
     def test_apply_style_on_closed_figure_renders_fresh(self):
@@ -6237,7 +6236,7 @@ class TestPlotFullBleed:
             style branch, which must still fill the figure `[0, 0, 1, 1]`.
         """
         glyph = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        glyph.plot(style="temperature_2m", vmin=-10, vmax=40, full_bleed=True)
+        glyph.plot( data_style=DataStyle(style="temperature_2m"), vmin=-10, vmax=40, full_bleed=True)
         bounds = tuple(round(v, 6) for v in glyph.ax.get_position().bounds)
         assert bounds == (0.0, 0.0, 1.0, 1.0), f"styled full-bleed should fill, got {bounds}"
         plt.close("all")
@@ -6311,7 +6310,7 @@ class TestPlotBasemap:
         relief = self._spy_relief(monkeypatch)
         features = self._spy_features(monkeypatch)
         glyph = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        glyph.plot(style="temperature_2m", vmin=-10, vmax=40, basemap=True)
+        glyph.plot( data_style=DataStyle(style="temperature_2m"), vmin=-10, vmax=40, basemap=True)
         assert relief, "styled path should draw the relief"
         layers = [args[0] for args, _ in features]
         assert layers == ["coastline", "borders"], f"styled path features should be coastline+borders, got {layers}"
@@ -6614,7 +6613,7 @@ class TestColorbarPlacement:
             bold title black while the endpoint values stay white.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(style="temperature_2m", vmin=-10, vmax=40, colorbar=ColorBar(label_color="black"))
+        g.plot( data_style=DataStyle(style="temperature_2m"), vmin=-10, vmax=40, colorbar=ColorBar(label_color="black"))
         texts = [t for cax in g.ax.child_axes for t in cax.texts]
         title = next(t for t in texts if t.get_fontweight() == "bold")
         values = [t for t in texts if t.get_fontweight() != "bold"]
@@ -6630,7 +6629,7 @@ class TestColorbarPlacement:
             red while the title stays white.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(style="temperature_2m", vmin=-10, vmax=40, colorbar=ColorBar(tick_color="red"))
+        g.plot( data_style=DataStyle(style="temperature_2m"), vmin=-10, vmax=40, colorbar=ColorBar(tick_color="red"))
         texts = [t for cax in g.ax.child_axes for t in cax.texts]
         title = next(t for t in texts if t.get_fontweight() == "bold")
         values = [t for t in texts if t.get_fontweight() != "bold"]
@@ -6646,7 +6645,7 @@ class TestColorbarPlacement:
         """
         stack = np.arange(3 * 20 * 30, dtype=float).reshape(3, 20, 30)
         g = ArrayGlyph(stack, extent=[0.0, 0.0, 40.0, 20.0])
-        g.animate(["a", "b", "c"], style="temperature_2m", vmin=-10, vmax=40,
+        g.animate(["a", "b", "c"], data_style=DataStyle(style="temperature_2m"), vmin=-10, vmax=40,
                   colorbar=ColorBar(label_color="black"))
         title = next(t for cax in g.ax.child_axes for t in cax.texts if t.get_fontweight() == "bold")
         assert to_rgba(title.get_color()) == to_rgba("black"), "animated swatch title should be black"
@@ -6660,9 +6659,9 @@ class TestColorbarPlacement:
             same style with no box (so a moving field can't show through it).
         """
         g_box = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g_box.plot(style="temperature_2m", vmin=-10, vmax=40, colorbar=ColorBar(box=True))
+        g_box.plot( data_style=DataStyle(style="temperature_2m"), vmin=-10, vmax=40, colorbar=ColorBar(box=True))
         g_no = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g_no.plot(style="temperature_2m", vmin=-10, vmax=40, colorbar=ColorBar())
+        g_no.plot( data_style=DataStyle(style="temperature_2m"), vmin=-10, vmax=40, colorbar=ColorBar())
         assert len(g_box.ax.patches) == len(g_no.ax.patches) + 1, "box=True should add one swatch backing panel"
         plt.close("all")
 
@@ -7326,9 +7325,9 @@ class TestStylePrecedence:
             than the preset's Spectral_r default (defaults < preset < explicit).
         """
         g_def = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g_def.plot(style="temperature_2m", vmin=-15, vmax=42)
+        g_def.plot( data_style=DataStyle(style="temperature_2m"), vmin=-15, vmax=42)
         g_ov = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g_ov.plot(style="temperature_2m", vmin=-15, vmax=42, cmap="viridis")
+        g_ov.plot( data_style=DataStyle(style="temperature_2m"), vmin=-15, vmax=42, cmap="viridis")
         differ = not np.allclose(
             np.nan_to_num(np.asarray(g_def.im.get_array())),
             np.nan_to_num(np.asarray(g_ov.im.get_array())),
@@ -7344,7 +7343,7 @@ class TestStylePrecedence:
             preset's swatch with a real, tick-marked colorbar.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(style="temperature_2m", vmin=-15, vmax=42,
+        g.plot( data_style=DataStyle(style="temperature_2m"), vmin=-15, vmax=42,
                colorbar=ColorBar(location="right", inside=True))
         assert g.cbar is not None, "placement ColorBar should draw a real colorbar on a style"
         plt.close("all")
@@ -7358,7 +7357,7 @@ class TestStylePrecedence:
             keeping the swatch.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(style="temperature_2m", vmin=-15, vmax=42,
+        g.plot( data_style=DataStyle(style="temperature_2m"), vmin=-15, vmax=42,
                colorbar=ColorBar(orientation="horizontal"))
         assert g.cbar is not None, "orientation-only ColorBar should draw a real colorbar on a style"
         assert g.cbar.orientation == "horizontal", f"expected horizontal, got {g.cbar.orientation}"
@@ -7372,7 +7371,7 @@ class TestStylePrecedence:
             temperature range (a negative low, a >30 high), not the baked 0..1.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(style="temperature_2m", vmin=-15, vmax=42,
+        g.plot( data_style=DataStyle(style="temperature_2m"), vmin=-15, vmax=42,
                colorbar=ColorBar(location="right", inside=True))
         ticks = [float(t) for t in g.cbar.get_ticks()]
         assert min(ticks) < 0, f'styled colorbar ticks should span the data range, got {ticks}'
@@ -7386,7 +7385,7 @@ class TestStylePrecedence:
             A bare `True` overrides the swatch with a default-placed colorbar.
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(style="temperature_2m", vmin=-15, vmax=42, colorbar=True)
+        g.plot( data_style=DataStyle(style="temperature_2m"), vmin=-15, vmax=42, colorbar=True)
         assert g.cbar is not None, "colorbar=True should draw a real colorbar on a style"
         plt.close("all")
 
@@ -7398,7 +7397,7 @@ class TestStylePrecedence:
             no real colorbar is drawn (`self.cbar` stays None).
         """
         g = ArrayGlyph(self._field(), extent=[0.0, 0.0, 40.0, 20.0])
-        g.plot(style="temperature_2m", vmin=-15, vmax=42, colorbar=ColorBar(label_color="black"))
+        g.plot( data_style=DataStyle(style="temperature_2m"), vmin=-15, vmax=42, colorbar=ColorBar(label_color="black"))
         assert g.cbar is None, "colours-only ColorBar should keep the swatch, not a real colorbar"
         plt.close("all")
 
@@ -7410,7 +7409,7 @@ class TestStylePrecedence:
         """
         stack = np.linspace(-15, 42, 3 * 600).reshape(3, 20, 30)
         g = ArrayGlyph(stack, extent=[0.0, 0.0, 40.0, 20.0])
-        g.animate(["a", "b", "c"], style="temperature_2m", vmin=-15, vmax=42,
+        g.animate(["a", "b", "c"], data_style=DataStyle(style="temperature_2m"), vmin=-15, vmax=42,
                   colorbar=ColorBar(location="right", inside=True))
         assert g.cbar is not None, "placement ColorBar should draw a real colorbar in a styled animation"
         plt.close("all")
@@ -7424,7 +7423,7 @@ class TestStylePrecedence:
         """
         codes = np.array([[1, 2, 4, 8], [16, 32, 64, 128]], dtype=float)
         g = ArrayGlyph(codes, extent=[0.0, 0.0, 4.0, 2.0])
-        g.plot(style="flow_direction_d8", colorbar=ColorBar(location="right", inside=True))
+        g.plot( data_style=DataStyle(style="flow_direction_d8"), colorbar=ColorBar(location="right", inside=True))
         assert g.cbar is None, "categorical style should keep its discrete legend, not a colorbar"
         plt.close("all")
 

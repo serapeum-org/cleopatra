@@ -17,6 +17,7 @@ from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
 
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+from cleopatra.styling.params import DataStyle
 from cleopatra.basemap.reference import add_relief
 
 __all__ = ["publication_map"]
@@ -85,8 +86,6 @@ def publication_map(
     options: dict[str, Any] = {}
     if figsize is not None:
         options["figsize"] = figsize
-    if style is not None:
-        options["style"] = style
     if cmap is not None:
         options["cmap"] = cmap
     if projection is not None:
@@ -94,8 +93,11 @@ def publication_map(
     if title is not None:
         options["title"] = title
 
+    # `style` is a grouped render option now; forward it to `plot` via the
+    # `data_style` object rather than the (rejecting) constructor kwargs.
+    data_style = DataStyle(style=style) if style is not None else None
     glyph = ArrayGlyph(data, coords=coords, extent=extent, **options)
-    fig, ax = glyph.plot(**plot_kwargs)
+    fig, ax = glyph.plot(data_style=data_style, **plot_kwargs)
 
     if relief:
         if projection == "globe":

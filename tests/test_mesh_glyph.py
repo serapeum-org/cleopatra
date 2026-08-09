@@ -17,7 +17,7 @@ from matplotlib.colors import to_rgba
 from matplotlib.text import Text
 
 from cleopatra.styling.colorbar import ColorBar
-from cleopatra.styling.params import Contour
+from cleopatra.styling.params import Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
 
@@ -1638,7 +1638,7 @@ class TestMeshGlyphHillshade:
         """Node-centered `hillshade` renders a per-face shaded `tripcolor` mesh."""
         nx, ny, faces, z = self._terrain_mesh()
         mg = MeshGlyph(nx, ny, faces)
-        mg.plot(z, location="node", cmap="terrain", hillshade={"vert_exag": 3})
+        mg.plot(z, location="node", cmap="terrain", data_style=DataStyle(hillshade={"vert_exag": 3}))
         facecolors = mg.im.get_facecolor()
         assert facecolors.shape[1] == 4
         assert len(np.unique(np.round(facecolors[:, 0], 3))) > 5, "faces should vary"
@@ -1650,8 +1650,7 @@ class TestMeshGlyphHillshade:
         nx, ny, faces, _ = self._terrain_mesh()
         with pytest.raises(ValueError, match="node-centered"):
             MeshGlyph(nx, ny, faces).plot(
-                np.ones(len(faces)), location="face", hillshade=True
-            )
+                np.ones(len(faces)), location="face", data_style=DataStyle(hillshade=True))
         plt.close("all")
 
     def test_without_hillshade_uses_contours(self):
@@ -1669,8 +1668,8 @@ class TestMeshGlyphHillshade:
         restored from the constructor value when plot() does not override it.
         """
         nx, ny, faces, z = self._terrain_mesh()
-        mg = MeshGlyph(nx, ny, faces, hillshade=True)
-        mg.plot(z, location="node", cmap="terrain")
+        mg = MeshGlyph(nx, ny, faces)
+        mg.plot(z, location="node", cmap="terrain", data_style=DataStyle(hillshade=True))
         assert type(mg.im).__name__ == "PolyCollection", (
             "constructor hillshade should shade"
         )
@@ -1685,7 +1684,7 @@ class TestMeshGlyphHillshade:
         """
         nx, ny, faces, z = self._terrain_mesh()
         mg = MeshGlyph(nx, ny, faces)
-        mg.plot(z, location="node", filled=False, contour=Contour(labels=True), hillshade=True)
+        mg.plot(z, location="node", filled=False, contour=Contour(labels=True), data_style=DataStyle(hillshade=True))
         assert mg.contour_labels is None, "labels are a no-op under hillshade"
         plt.close("all")
 
@@ -1701,9 +1700,7 @@ class TestMeshGlyphHillshade:
             z,
             location="node",
             cmap="terrain",
-            color=ColorScaling.power(gamma=0.4),
-            hillshade=True,
-        )
+            color=ColorScaling.power(gamma=0.4), data_style=DataStyle(hillshade=True))
         assert type(mg.im).__name__ == "PolyCollection"
         assert type(mg.im.norm).__name__ == "PowerNorm", (
             "the color_scale norm is applied"
@@ -1721,7 +1718,7 @@ class TestMeshGlyphHillshade:
         faces = np.array([[0, 1, 3], [1, 2, 3], [0, 1, 2]])
         z = np.array([10.0, 20.0, 30.0, np.nan])  # node 3 is nodata
         mg = MeshGlyph(nx, ny, faces)
-        mg.plot(z, location="node", cmap="terrain", hillshade=True)
+        mg.plot(z, location="node", cmap="terrain", data_style=DataStyle(hillshade=True))
         alphas = mg.im.get_facecolor()[:, 3]
         assert np.allclose(alphas[[0, 1]], 0.0), "nodata-touching faces are transparent"
         assert alphas[2] > 0.0, "the fully-finite face stays opaque"
@@ -1749,7 +1746,7 @@ class TestMeshGlyphDataStyle:
         nx, ny, faces = self._mesh()
         fvals = np.abs(np.random.default_rng(0).normal(size=len(faces))) * 100
         g = MeshGlyph(nx, ny, faces)
-        g.plot(fvals, location="face", style="flow_accumulation")
+        g.plot(fvals, location="face", data_style=DataStyle(style="flow_accumulation"))
         assert g.im.cmap.name == "Blues"
         assert type(g.im.norm).__name__ == "SymLogNorm"
         plt.close("all")
@@ -1763,7 +1760,7 @@ class TestMeshGlyphDataStyle:
             .astype(float)
         )
         g = MeshGlyph(nx, ny, faces)
-        _, ax = g.plot(d8, location="face", style="flow_direction_d8")
+        _, ax = g.plot(d8, location="face", data_style=DataStyle(style="flow_direction_d8"))
         assert ax.get_legend() is not None
         assert g._cbar is None
         plt.close("all")
@@ -1773,8 +1770,7 @@ class TestMeshGlyphDataStyle:
         nx, ny, faces = self._mesh()
         with pytest.raises(ValueError, match="unknown data style"):
             MeshGlyph(nx, ny, faces).plot(
-                np.ones(len(faces)), location="face", style="not_a_style"
-            )
+                np.ones(len(faces)), location="face", data_style=DataStyle(style="not_a_style"))
         plt.close("all")
 
     def test_continuous_style_composes_with_hillshade(self):
@@ -1782,7 +1778,7 @@ class TestMeshGlyphDataStyle:
         nx, ny, faces = self._mesh()
         z = 50 + 150 * np.exp(-(((nx - 7) / 2) ** 2 + ((ny - 5) / 3) ** 2))
         g = MeshGlyph(nx, ny, faces)
-        g.plot(z, location="node", style="topography", hillshade=True)
+        g.plot(z, location="node", data_style=DataStyle(style="topography", hillshade=True))
         assert type(g.im).__name__ == "PolyCollection"
         plt.close("all")
 
@@ -1796,8 +1792,7 @@ class TestMeshGlyphDataStyle:
         )
         with pytest.warns(UserWarning, match="interpolates discrete class codes"):
             MeshGlyph(nx, ny, faces).plot(
-                codes, location="node", style="flow_direction_d8"
-            )
+                codes, location="node", data_style=DataStyle(style="flow_direction_d8"))
         plt.close("all")
 
     def test_symlog_preset_colorbar_uses_a_log_locator(self):
@@ -1805,7 +1800,7 @@ class TestMeshGlyphDataStyle:
         nx, ny, faces = self._mesh()
         fvals = np.abs(np.random.default_rng(0).normal(size=len(faces))) * 100
         g = MeshGlyph(nx, ny, faces)
-        g.plot(fvals, location="face", style="flow_accumulation")
+        g.plot(fvals, location="face", data_style=DataStyle(style="flow_accumulation"))
         assert type(g._cbar.locator).__name__ == "SymmetricalLogLocator"
         plt.close("all")
 
@@ -1841,8 +1836,8 @@ class TestMeshGlyphApplyStyle:
         """A `style` set at construction survives plot()'s options reset."""
         nx, ny, faces = self._mesh()
         fvals = np.abs(np.random.default_rng(1).normal(size=len(faces))) * 100
-        g = MeshGlyph(nx, ny, faces, style="flow_accumulation")
-        g.plot(fvals, location="face")
+        g = MeshGlyph(nx, ny, faces)
+        g.plot(fvals, location="face", data_style=DataStyle(style="flow_accumulation"))
         assert g.style == "flow_accumulation" and g.im.cmap.name == "Blues"
         plt.close("all")
 
@@ -1868,10 +1863,10 @@ class TestMeshGlyphApplyStyle:
         nx, ny, faces = self._mesh()
         fvals = np.abs(np.random.default_rng(4).normal(size=len(faces))) * 100
         g = MeshGlyph(nx, ny, faces)
-        g.plot(fvals, location="face", style="flow_accumulation")
+        g.plot(fvals, location="face", data_style=DataStyle(style="flow_accumulation"))
         g.plot(fvals, location="face")
         assert g.style == "flow_accumulation"
-        g.plot(fvals, location="face", style=None)
+        g.plot(fvals, location="face", data_style=DataStyle(style=None))
         assert g.style is None
         plt.close("all")
 
@@ -1893,7 +1888,7 @@ class TestMeshGlyphApplyStyle:
         nx, ny, faces = self._mesh()
         fvals = np.abs(np.random.default_rng(8).normal(size=len(faces))) * 100
         g = MeshGlyph(nx, ny, faces)
-        g.plot(fvals, location="face", style="flow_accumulation")
+        g.plot(fvals, location="face", data_style=DataStyle(style="flow_accumulation"))
         with pytest.raises(ValueError, match="unknown data style"):
             g.apply_style("not_a_style")
         assert g.style == "flow_accumulation"

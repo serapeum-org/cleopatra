@@ -63,6 +63,8 @@ _GROUPED_KWARG_HINTS: dict[str, str] = {
     "scheme": "classify=Classify(scheme=..., k=...)",
     "k": "classify=Classify(scheme=..., k=...)",
     "category_legend_kwargs": "classify=Classify(scheme='categorical', category_legend_kwargs=...)",
+    "style": "data_style=DataStyle(style=...)",
+    "hillshade": "data_style=DataStyle(hillshade=...)",
 }
 
 

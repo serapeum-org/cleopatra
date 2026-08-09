@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
-from cleopatra.styling.params import CellValues
+from cleopatra.styling.params import CellValues, DataStyle
 from cleopatra.styling.colors import DATA_STYLES, convert_units, resolve_colormap, resolve_style_norm
 from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
 from cleopatra.templates import publication_map
