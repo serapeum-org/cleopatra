@@ -3386,6 +3386,8 @@ sorted(DATA_STYLES)  # the presets available by name</div>
  'bathymetry',
  'cams_aod',
  'carbon_monoxide',
+ 'carbon_monoxide_500hpa',
+ 'carbon_monoxide_700hpa',
  'ch4_column_mean_molar_fraction',
  'chlorophyll',
  'cloudy_brightness_temperature',
@@ -3428,10 +3430,17 @@ sorted(DATA_STYLES)  # the presets available by name</div>
  'mean_wave_period',
  'mean_wind_speed_10m',
  'medium_cloud_cover',
+ 'methane_300hpa',
+ 'methane_500hpa',
+ 'methane_50hpa',
+ 'methane_850hpa',
+ 'methane_surface',
  'min_temperature_2m',
  'min_temperature_2m_index',
  'nitrogen_dioxide',
  'ozone',
+ 'particulate_matter_10um',
+ 'particulate_matter_2p5um',
  'phase',
  'potential_temperature',
  'precipitation',
@@ -3479,6 +3488,8 @@ sorted(DATA_STYLES)  # the presets available by name</div>
  'turbidity',
  'uv_biologically_effective_dose',
  'uv_biologically_effective_dose_clear_sky',
+ 'uv_index',
+ 'uv_index_clear_sky',
  'vegetation',
  'vertical_velocity',
  'vorticity',
@@ -4163,7 +4174,7 @@ policy, a decoupled <em>glowing rim</em>, powers the multi-layer <code>haze</cod
 parameter-preset library</strong> -- dozens of official operational-forecast and climate looks, loaded
 from vendored colour data (derived from the open-source
 <a href="https://github.com/ecmwf/magics">Magics</a> and
-<a href="https://github.com/ecmwf/earthkit-plots">earthkit-plots</a> engines, both Apache-2.0). Each is keyed
+ECMWF reference styles, both Apache-2.0). Each is keyed
 by a descriptive parameter name and labelled with the parameter's real name.</p>
 </div>
 </div>
@@ -4241,12 +4252,12 @@ for key in [
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>103 ECMWF weather presets loaded, e.g.:
+<pre>114 ECMWF weather presets loaded, e.g.:
   temperature_2m               -&gt; 2 m temperature [celsius]
   total_precipitation          -&gt; Total precipitation
   aerosol_optical_depth_550nm  -&gt; Total aerosol optical depth at 550 nm
   carbon_monoxide              -&gt; Carbon monoxide
-  ozone                        -&gt; GEMS Ozone
+  ozone                        -&gt; Ozone
   high_cloud_cover             -&gt; High cloud cover
 </pre>
 </div>
@@ -4261,7 +4272,7 @@ for key in [
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<p>Because these come from Magics'/earthkit-plots' open data (which does not always publish the exact
+<p>Because these come from open-source ECMWF colour data (which does not always publish the exact
 contour levels), each preset either auto-ranges to your field or renders over a fixed scale -- and
 the opacity policy is inferred from the source palette: opaque for a plain field, or a
 transparent-where-low overlay where the source palette carries a built-in alpha ramp (as it does
@@ -4353,7 +4364,7 @@ plt.show()</div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <p>The demo fields are reused only to fill the panels -- what matters is that any raster or NetCDF
-slice you pass under the preset's key gets the authentic Magics/earthkit-plots colours and label
+slice you pass under the preset's key gets the authentic ECMWF colours and label
 for that parameter. To find the preset for a variable, scan the descriptive names in
 <code>sorted(DATA_STYLES)</code>.</p>
 </div>
