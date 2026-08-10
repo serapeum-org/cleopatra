@@ -155,6 +155,8 @@ def _reject_loose_alpha(kwargs: dict) -> None:
             "The 'alpha' option moved onto a grouped parameter object; pass "
             "data_style=DataStyle(alpha=...) instead of a loose alpha= keyword."
         )
+
+
 #: Tuple of accepted `kind=` values for `ArrayGlyph.plot`.
 VALID_PLOT_KINDS = ("auto", "imshow", "pcolormesh", "contour", "contourf")
 #: Tuple of accepted values for the xarray-aligned `extend` colorbar kwarg.
