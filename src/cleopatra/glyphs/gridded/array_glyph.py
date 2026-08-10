@@ -139,7 +139,7 @@ class _Unset:
     A plain `object()` sentinel would work too, but this gives `help()` /
     IDE signature tooltips a readable `<unset>` instead of
     `<object object at 0x...>` for the option default that uses it (the
-    `hillshade` key resolved inside `ArrayGlyph.plot`).
+    `hillshade` key resolved inside `ArrayGlyph.apply_style`).
     """
 
     def __repr__(self) -> str:
@@ -148,7 +148,7 @@ class _Unset:
 
 #: Sentinel distinguishing "the `hillshade` key was not passed" from
 #: "`hillshade` was passed as `None`" when it is popped from `**kwargs`
-#: (see `ArrayGlyph.plot`), which a plain `.get`/default check cannot.
+#: (see `ArrayGlyph.apply_style`), which a plain `.get`/default check cannot.
 _UNSET = _Unset()
 
 
