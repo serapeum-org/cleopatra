@@ -3458,9 +3458,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                 dimensions, if `labels.col` / `labels.row` lengths
                 are wrong, if `extents` is combined with the parent's
                 `extent` or `coords`, if `extents` has the wrong
-                length or a non-length-4 element, or if the removed
-                `figsize` keyword is passed (it was renamed to
-                `figure_size`).
+                length or a non-length-4 element, or if a removed keyword is
+                passed -- `figsize` (renamed to `figure_size`) or
+                `col_coords` / `row_coords` (replaced by
+                `labels=PanelLabels(...)`).
 
         Examples:
             - Facet a 3-D stack into a 1xN row of subplots:
