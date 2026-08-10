@@ -43,6 +43,21 @@ from matplotlib.figure import Figure
 from matplotlib.ticker import MaxNLocator
 from PIL import Image
 
+from cleopatra.basemap.geo import Basemap as Basemap
+from cleopatra.basemap.geo import Feature as Feature
+from cleopatra.basemap.geo import GeoMixin
+from cleopatra.basemap.projection import apply_projection_style, projection_draws_frame
+from cleopatra.glyphs.base.glyph import (
+    Glyph,
+    _clear_prior_render_artists,
+    _clear_projection_frame,
+    _mark_render_artists,
+    _reject_grouped_kwargs,
+    _restore_flat_axes,
+    _root_figure,
+    _stash_projection_frame,
+)
+from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_grid, shade_rgb
 from cleopatra.styling.colorbar import (
     ColorBar,
     _resolve_colorbar,
@@ -58,21 +73,6 @@ from cleopatra.styling.colors import (
     resolve_style_norm,
     resolve_style_overrides,
 )
-from cleopatra.basemap.geo import Basemap as Basemap
-from cleopatra.basemap.geo import Feature as Feature
-from cleopatra.basemap.geo import GeoMixin
-from cleopatra.glyphs.base.glyph import (
-    Glyph,
-    _clear_prior_render_artists,
-    _clear_projection_frame,
-    _mark_render_artists,
-    _reject_grouped_kwargs,
-    _restore_flat_axes,
-    _root_figure,
-    _stash_projection_frame,
-)
-from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_grid, shade_rgb
-from cleopatra.basemap.projection import apply_projection_style, projection_draws_frame
 from cleopatra.styling.params import CellValues, Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
