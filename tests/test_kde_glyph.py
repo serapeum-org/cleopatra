@@ -21,7 +21,7 @@ from matplotlib.patches import Circle
 from matplotlib.path import Path as MplPath
 
 import cleopatra.glyphs.stats.kde_glyph as kde_mod
-from cleopatra.glyphs.stats.kde_glyph import KDE_DEFAULT_OPTIONS, KDEGlyph
+from cleopatra.glyphs.stats.kde_glyph import KDEGlyph
 from cleopatra.styling.params import Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
 

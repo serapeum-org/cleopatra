@@ -11,12 +11,12 @@ import numpy as np
 import pytest
 from matplotlib.collections import PolyCollection
 
-from cleopatra.styling.params import Contour
 from cleopatra.glyphs.primitives.polygon_glyph import (
     OUTLINE_EDGECOLOR,
     POLYGON_DEFAULT_OPTIONS,
     PolygonGlyph,
 )
+from cleopatra.styling.params import Contour
 
 
 @pytest.fixture(autouse=True)

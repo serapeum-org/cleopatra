@@ -16,10 +16,10 @@ import pytest
 from matplotlib.colors import to_rgba
 from matplotlib.text import Text
 
+from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
 from cleopatra.styling.colorbar import ColorBar
 from cleopatra.styling.params import Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
-from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
 
 
 @pytest.fixture(scope="module")

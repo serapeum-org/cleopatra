@@ -26,16 +26,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
 from cleopatra.glyphs.base.glyph import CATEGORICAL_DEFAULT_CMAP, Glyph
+from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
+from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
 from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
-from cleopatra.styling.scaling import ColorScaling
 from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
+from cleopatra.styling.params import Classify, Contour
+from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import categorize
-from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
-from cleopatra.styling.params import Contour
-from cleopatra.styling.params import Classify
 
 
 @pytest.fixture(autouse=True)

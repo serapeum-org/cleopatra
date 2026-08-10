@@ -13,14 +13,10 @@ from matplotlib.text import Text
 from PIL import Image
 
 import cleopatra.basemap.reference as refmod
-from cleopatra.styling.params import CellValues, Contour, DataStyle
-from cleopatra.styling.scaling import ColorScaling
-from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.glyphs.gridded.array_glyph import (
     _COORD_DTYPE_MISMATCH,
     _COORD_SHAPE_MISMATCH,
     _UNSET,
-    _Unset,
     AnimateKwargs,
     ArrayGlyph,
     ColorBar,
@@ -31,7 +27,11 @@ from cleopatra.glyphs.gridded.array_glyph import (
     PointOverlay,
     _resolve_colorbar,
     _swatch_text_default,
+    _Unset,
 )
+from cleopatra.styling.params import CellValues, Contour, DataStyle
+from cleopatra.styling.scaling import ColorScaling
+from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 
 class TestProperties:
@@ -4925,7 +4925,7 @@ class TestArrayGlyphHillshade:
         with pytest.warns(
             UserWarning, match="hillshade is only applied to kind='imshow'"
         ):
-            ArrayGlyph(self._dem(), cmap="terrain").plot(data_style=DataStyle(hillshade=True), 
+            ArrayGlyph(self._dem(), cmap="terrain").plot(data_style=DataStyle(hillshade=True),
                 kind="pcolormesh"
             )
         plt.close("all")
@@ -5374,7 +5374,7 @@ class TestArrayGlyphShadedAnimate:
             ]
         )
         with pytest.warns(UserWarning, match="categorical data-style preset"):
-            ArrayGlyph(d8).animate(data_style=DataStyle(style="flow_direction_d8", hillshade=True), 
+            ArrayGlyph(d8).animate(data_style=DataStyle(style="flow_direction_d8", hillshade=True),
                 time=list(range(3))
             )
         plt.close("all")
