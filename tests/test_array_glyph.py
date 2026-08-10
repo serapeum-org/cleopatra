@@ -3782,6 +3782,20 @@ class TestFacetingEdgeCases:
             glyph.facet(col="t", **{kwarg: [0, 1, 2]})
         assert len(plt.get_fignums()) == n_before, "no figure should be created on the error path"
 
+    def test_facet_bad_forwarded_kwarg_does_not_leak_figure(self) -> None:
+        """A sub-glyph kwarg rejected mid-loop closes the facet figure.
+
+        Test scenario:
+            An unknown forwarded kwarg is only caught once the first
+            sub-`ArrayGlyph` is built -- after `plt.subplots`. `facet` must
+            close that figure on the exception rather than orphaning it.
+        """
+        glyph = ArrayGlyph(self._stack(n=3))
+        n_before = len(plt.get_fignums())
+        with pytest.raises(ValueError):
+            glyph.facet(col="t", definitely_not_a_real_kwarg=1)
+        assert len(plt.get_fignums()) == n_before, "the facet figure must be closed on error"
+
     def test_facet_with_extent_propagates_to_subplots(self) -> None:
         """A parent `extent` propagates to each sub-glyph during faceting.
 

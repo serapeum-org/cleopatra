@@ -3651,66 +3651,70 @@ class ArrayGlyph(GeoMixin, Glyph):
         cbar: Colorbar | None = None
         flat_axes = axes.ravel()
 
-        for panel_idx, (col_idx, row_idx) in enumerate(panel_indices):
-            ax = flat_axes[panel_idx]
-            if row is None:
-                panel_arr = arr[col_idx]
-            else:
-                panel_arr = arr[col_idx, row_idx]
+        try:
+            for panel_idx, (col_idx, row_idx) in enumerate(panel_indices):
+                ax = flat_axes[panel_idx]
+                if row is None:
+                    panel_arr = arr[col_idx]
+                else:
+                    panel_arr = arr[col_idx, row_idx]
 
-            if extents is not None:
-                sub_extent = list(extents[panel_idx])
-            elif self.extent is None:
-                sub_extent = None
-            else:
-                sub_extent = [
-                    self.extent[0],  # xmin
-                    self.extent[2],  # ymin
-                    self.extent[1],  # xmax
-                    self.extent[3],  # ymax
-                ]
-            sub = ArrayGlyph(
-                panel_arr,
-                coords=self._coords,
-                extent=sub_extent,
-                fig=fig,
-                ax=ax,
-                **per_subplot_kwargs,
-            )
-            # Route `colorbar=` through `plot` (not the constructor) so the
-            # shared `_apply_kwargs_and_colorbar` logic runs per panel -- it
-            # merges the resolved spec *over* any loose `cbar_*` already folded
-            # into the sub-glyph's options and sets `_style_wants_colorbar`, so
-            # a placement-bearing colorbar overrides a preset swatch here just
-            # as it does on `plot` / `animate`.
-            sub.plot(
-                kind=kind,
-                colorbar=colorbar,
-                color=color,
-                contour=contour,
-                cells=cells,
-                data_style=data_style,
-            )
+                if extents is not None:
+                    sub_extent = list(extents[panel_idx])
+                elif self.extent is None:
+                    sub_extent = None
+                else:
+                    sub_extent = [
+                        self.extent[0],  # xmin
+                        self.extent[2],  # ymin
+                        self.extent[1],  # xmax
+                        self.extent[3],  # ymax
+                    ]
+                sub = ArrayGlyph(
+                    panel_arr,
+                    coords=self._coords,
+                    extent=sub_extent,
+                    fig=fig,
+                    ax=ax,
+                    **per_subplot_kwargs,
+                )
+                # Route `colorbar=` through `plot` (not the constructor) so the
+                # shared `_apply_kwargs_and_colorbar` logic runs per panel -- it
+                # merges the resolved spec *over* any loose `cbar_*` already folded
+                # into the sub-glyph's options and sets `_style_wants_colorbar`, so
+                # a placement-bearing colorbar overrides a preset swatch here just
+                # as it does on `plot` / `animate`.
+                sub.plot(
+                    kind=kind,
+                    colorbar=colorbar,
+                    color=color,
+                    contour=contour,
+                    cells=cells,
+                    data_style=data_style,
+                )
 
-            col_label = col_coords[col_idx] if col_coords is not None else col_idx
-            name_dict: dict[str, Any] = {col: col_label}
-            if row is not None:
-                row_idx = cast(int, row_idx)  # non-None whenever `row` is set
-                row_label = row_coords[row_idx] if row_coords is not None else row_idx
-                name_dict[row] = row_label
-                title = f"{col}={col_label}, {row}={row_label}"
-            else:
-                title = f"{col}={col_label}"
-            ax.set_title(title)
-            name_dicts.append(name_dict)
+                col_label = col_coords[col_idx] if col_coords is not None else col_idx
+                name_dict: dict[str, Any] = {col: col_label}
+                if row is not None:
+                    row_idx = cast(int, row_idx)  # non-None whenever `row` is set
+                    row_label = row_coords[row_idx] if row_coords is not None else row_idx
+                    name_dict[row] = row_label
+                    title = f"{col}={col_label}, {row}={row_label}"
+                else:
+                    title = f"{col}={col_label}"
+                ax.set_title(title)
+                name_dicts.append(name_dict)
 
-            if panel_idx == 0 and getattr(sub, "cbar", None) is not None:
-                cbar = sub.cbar
+                if panel_idx == 0 and getattr(sub, "cbar", None) is not None:
+                    cbar = sub.cbar
 
-        for hidden_idx in range(n_panels, nrows * ncols):
-            flat_axes[hidden_idx].set_visible(False)
+            for hidden_idx in range(n_panels, nrows * ncols):
+                flat_axes[hidden_idx].set_visible(False)
 
-        fig.tight_layout()
+            fig.tight_layout()
+        except Exception:
+            plt.close(fig)
+            raise
         result = FacetGrid(fig=fig, axes=axes, cbar=cbar, name_dicts=name_dicts)
         return result
 
