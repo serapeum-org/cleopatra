@@ -5469,6 +5469,28 @@ class TestArrayGlyphApplyStyle:
         g.plot()  # not bricked
         plt.close("all")
 
+    def test_failed_style_rolls_back_co_passed_color(self):
+        """An invalid data_style must not leak a co-passed color= into later plots.
+
+        Test scenario:
+            plot(color=ColorScaling.power(...), data_style=DataStyle(bad))
+            raises, and the persistent color_scale/gamma roll back to their
+            defaults rather than the failed call's power scale (regression for
+            an ArrayGlyph rollback that reverted only `style`).
+        """
+        g = ArrayGlyph(self._dem())
+        power = ColorScaling.power(gamma=0.7)
+        bad = DataStyle(style="not_a_style")
+        with pytest.raises(ValueError, match="unknown data style"):
+            g.plot(color=power, data_style=bad)
+        assert g.default_options["color_scale"] == "linear", (
+            "a failed data_style must roll back the co-passed color scale"
+        )
+        assert g.default_options["gamma"] == 0.5, "gamma must roll back to its default"
+        assert g.style is None
+        g.plot()  # not bricked and renders with the default linear scale
+        plt.close("all")
+
     def test_style_is_sticky_and_clearable(self):
         """A style survives a later plain plot() and is cleared by style=None."""
         g = ArrayGlyph(self._dem())

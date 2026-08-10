@@ -3230,7 +3230,12 @@ class ArrayGlyph(GeoMixin, Glyph):
             try:
                 resolve_single_layer_style(style)
             except ValueError:
-                self.default_options["style"] = None
+                # Roll back the WHOLE merge to its pre-call snapshot -- every
+                # key the group objects merged (style plus any co-passed
+                # color=/contour=/cells=) -- so a failed styled plot never
+                # leaks options into a later plain plot() on this glyph.
+                for key, value in pre_group_opts.items():
+                    self.default_options[key] = value
                 raise
             if self.rgb:
                 warnings.warn(
