@@ -77,7 +77,9 @@ glyph.animate(time, frame_label=FrameLabel(location=[0.1, 0.1], color="yellow"))
 | `facet(figsize=...)` | `facet(figure_size=...)` |
 | `ArrayGlyph.no_elem` | `ArrayGlyph.num_domain_cells` |
 
-`PanelLabels` is importable from `cleopatra.glyphs.gridded.array_glyph`.
+`PanelLabels` is importable from `cleopatra.glyphs.gridded.array_glyph`. Note that `facet`'s `labels=` names the
+per-panel *title* labels (a `PanelLabels`); it is unrelated to the loose `labels` contour-line keyword that now
+lives on `Contour` (see the colour/scale/cell groups table below).
 
 ### Colour / scale / cell-value groups
 
