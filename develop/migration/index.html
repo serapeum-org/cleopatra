@@ -2737,7 +2737,9 @@ arguments are now bundled into small typed objects. During one release the old k
 <code>DeprecationWarning</code>; <strong>those shims are now gone</strong>. Passing a removed keyword no longer warns — it funnels through
 cleopatra's strict option validation and raises
 <code>ValueError: The given keyword argument:&lt;name&gt; is not correct, possible parameters are, [...]</code>. Passing a bare
-<code>(N, 3)</code> array as <code>points</code> raises <code>AttributeError</code> instead of being auto-wrapped. The one exception is
+<code>(N, 3)</code> array as <code>points</code> raises <code>AttributeError</code> instead of being auto-wrapped on the overlay-drawing kinds
+(<code>imshow</code> / <code>pcolormesh</code>); on <code>contour</code> / <code>contourf</code> the overlay is skipped, so a bare array is ignored rather
+than raising — either way, pass a <code>PointOverlay</code>. The one exception is
 <code>facet(figsize=...)</code>: because <code>figsize</code> is still a valid glyph option it would otherwise be absorbed silently, so
 <code>facet</code> raises a targeted <code>ValueError</code> telling you to use <code>figure_size</code> (see the table below).</p>
 <p>There is no automated rewrite for this one: the changes are semantic (loose keywords → object fields), so update
@@ -2838,7 +2840,9 @@ list passed positionally is no longer accepted).</p>
 </tr>
 </tbody>
 </table>
-<p><code>PanelLabels</code> is importable from <code>cleopatra.glyphs.gridded.array_glyph</code>.</p>
+<p><code>PanelLabels</code> is importable from <code>cleopatra.glyphs.gridded.array_glyph</code>. Note that <code>facet</code>'s <code>labels=</code> names the
+per-panel <em>title</em> labels (a <code>PanelLabels</code>); it is unrelated to the loose <code>labels</code> contour-line keyword that now
+lives on <code>Contour</code> (see the colour/scale/cell groups table below).</p>
 <h3 id="colour-scale-cell-value-groups"><a class="toclink" href="#colour-scale-cell-value-groups">Colour / scale / cell-value groups</a><a class="headerlink" href="#colour-scale-cell-value-groups" title="Permanent link">#</a></h3>
 <p>The colour-scale, discretisation, cell-value, and preset/relief keywords were already folded into typed group
 objects in a prior release; passing them as loose keywords <strong>raises</strong> with a pointer to the object:</p>
