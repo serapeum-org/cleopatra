@@ -47,8 +47,7 @@ animations exported to GIF / MP4 / MOV / AVI.
 
 !!! note "Changes from earlier versions"
     - `ArrayGlyph.plot()` returns `(fig, ax)`.
-    - The cell-value count is exposed as `num_domain_cells` (`no_elem` still works as a
-      deprecated alias).
+    - The cell-value count is exposed as `num_domain_cells` (previously `no_elem`, now removed).
     - `ArrayGlyph(arr)` on an all-NaN / fully-masked array raises `ValueError` instead of
       producing an unusable colour range.
 
