@@ -19,7 +19,9 @@ arguments are now bundled into small typed objects. During one release the old k
 `DeprecationWarning`; **those shims are now gone**. Passing a removed keyword no longer warns — it funnels through
 cleopatra's strict option validation and raises
 `ValueError: The given keyword argument:<name> is not correct, possible parameters are, [...]`. Passing a bare
-`(N, 3)` array as `points` raises `AttributeError` instead of being auto-wrapped. The one exception is
+`(N, 3)` array as `points` raises `AttributeError` instead of being auto-wrapped on the overlay-drawing kinds
+(`imshow` / `pcolormesh`); on `contour` / `contourf` the overlay is skipped, so a bare array is ignored rather
+than raising — either way, pass a `PointOverlay`. The one exception is
 `facet(figsize=...)`: because `figsize` is still a valid glyph option it would otherwise be absorbed silently, so
 `facet` raises a targeted `ValueError` telling you to use `figure_size` (see the table below).
 
