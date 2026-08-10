@@ -1966,14 +1966,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notebooks/presets/ecmwf_temperature_animation/" class="md-nav__link">
+      <a href="../../notebooks/presets/operational_temperature_animation/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    ECMWF-style 2 m temperature animation
+    Operational 2 m temperature animation
   
 
     
@@ -2537,8 +2537,8 @@ importing the standalone helpers:</p>
 <li><code>add_tiles</code> → <a href="../tiles/"><code>cleopatra.basemap.tiles.add_tiles</code></a></li>
 <li><code>add_features</code> → <a href="../reference-data/"><code>cleopatra.basemap.reference.add_features</code></a></li>
 <li><code>add_relief</code> → <a href="../reference-data/"><code>cleopatra.basemap.reference.add_relief</code></a></li>
-<li><code>add_reference_map</code> — a one-call ECMWF/CAMS-style reference-map preset
-  (<code>"ecmwf"</code>, <code>"ecmwf-dark"</code>, or <code>"auto"</code>): grey coastlines + borders, a dashed
+<li><code>add_reference_map</code> — a one-call CAMS-style reference-map preset
+  (<code>"light"</code>, <code>"dark"</code>, or <code>"auto"</code>): grey coastlines + borders, a dashed
   lon/lat graticule, °W/°N labels, and a subtle frame.</li>
 <li><code>add_labels</code> → <code>cleopatra.basemap.geo.add_point_labels</code> (dot + text markers for named
   points, e.g. cities).</li>
@@ -4393,7 +4393,7 @@ axis CRS (a 4326 axis places it in lon/lat, unchanged).</p>
 <a id="__codelineno-0-695" name="__codelineno-0-695"></a>
 <a id="__codelineno-0-696" name="__codelineno-0-696"></a><span class="sd">        Thin wrapper over `cleopatra.basemap.geo.add_point_labels`; draws a plain</span>
 <a id="__codelineno-0-697" name="__codelineno-0-697"></a><span class="sd">        dot marker and text label per point, matching the minimalist</span>
-<a id="__codelineno-0-698" name="__codelineno-0-698"></a><span class="sd">        city-label look ECMWF/CAMS maps use. Points are plotted at whatever</span>
+<a id="__codelineno-0-698" name="__codelineno-0-698"></a><span class="sd">        city-label look CAMS maps use. Points are plotted at whatever</span>
 <a id="__codelineno-0-699" name="__codelineno-0-699"></a><span class="sd">        coordinates the axes is already using -- plain lon/lat for a flat</span>
 <a id="__codelineno-0-700" name="__codelineno-0-700"></a><span class="sd">        map, or reprojected x/y for an orthographic globe.</span>
 <a id="__codelineno-0-701" name="__codelineno-0-701"></a>
@@ -4624,7 +4624,7 @@ axis CRS (a 4326 axis places it in lon/lat, unchanged).</p>
 <a id="__codelineno-0-926" name="__codelineno-0-926"></a>
 <a id="__codelineno-0-927" name="__codelineno-0-927"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">add_reference_map</span><span class="p">(</span>
 <a id="__codelineno-0-928" name="__codelineno-0-928"></a>        <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-929" name="__codelineno-0-929"></a>        <span class="n">style</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ecmwf&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-929" name="__codelineno-0-929"></a>        <span class="n">style</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;light&quot;</span><span class="p">,</span>
 <a id="__codelineno-0-930" name="__codelineno-0-930"></a>        <span class="o">*</span><span class="p">,</span>
 <a id="__codelineno-0-931" name="__codelineno-0-931"></a>        <span class="n">ax</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-932" name="__codelineno-0-932"></a>        <span class="n">extent</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4637,7 +4637,7 @@ axis CRS (a 4326 axis places it in lon/lat, unchanged).</p>
 <a id="__codelineno-0-939" name="__codelineno-0-939"></a><span class="sd">        One call composes the recipe that otherwise takes ~15 lines of</span>
 <a id="__codelineno-0-940" name="__codelineno-0-940"></a><span class="sd">        matplotlib after `plot`/`animate`: grey Natural Earth `coastline`</span>
 <a id="__codelineno-0-941" name="__codelineno-0-941"></a><span class="sd">        + `borders`, a dashed lon/lat graticule, `°W`/`°N` degree labels,</span>
-<a id="__codelineno-0-942" name="__codelineno-0-942"></a><span class="sd">        and a subtle frame, plus -- for `&quot;ecmwf-dark&quot;` -- a dimmed relief</span>
+<a id="__codelineno-0-942" name="__codelineno-0-942"></a><span class="sd">        and a subtle frame, plus -- for `&quot;dark&quot;` -- a dimmed relief</span>
 <a id="__codelineno-0-943" name="__codelineno-0-943"></a><span class="sd">        backdrop beneath the data. The chrome layers on top of the existing</span>
 <a id="__codelineno-0-944" name="__codelineno-0-944"></a><span class="sd">        data, so call it after plotting.</span>
 <a id="__codelineno-0-945" name="__codelineno-0-945"></a>
@@ -4649,11 +4649,11 @@ axis CRS (a 4326 axis places it in lon/lat, unchanged).</p>
 <a id="__codelineno-0-951" name="__codelineno-0-951"></a><span class="sd">        not read geotransforms).</span>
 <a id="__codelineno-0-952" name="__codelineno-0-952"></a>
 <a id="__codelineno-0-953" name="__codelineno-0-953"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-954" name="__codelineno-0-954"></a><span class="sd">            style: A name from `available_map_styles()` (`&quot;ecmwf&quot;`,</span>
-<a id="__codelineno-0-955" name="__codelineno-0-955"></a><span class="sd">                `&quot;ecmwf-dark&quot;`), or `&quot;auto&quot;` to pick between them from the</span>
+<a id="__codelineno-0-954" name="__codelineno-0-954"></a><span class="sd">            style: A name from `available_map_styles()` (`&quot;light&quot;`,</span>
+<a id="__codelineno-0-955" name="__codelineno-0-955"></a><span class="sd">                `&quot;dark&quot;`), or `&quot;auto&quot;` to pick between them from the</span>
 <a id="__codelineno-0-956" name="__codelineno-0-956"></a><span class="sd">                background luminance (dark backgrounds get the lighter</span>
-<a id="__codelineno-0-957" name="__codelineno-0-957"></a><span class="sd">                `&quot;ecmwf-dark&quot;` greys so coastlines stay visible). Default</span>
-<a id="__codelineno-0-958" name="__codelineno-0-958"></a><span class="sd">                `&quot;ecmwf&quot;`. `&quot;ecmwf-dark&quot;` also draws a dimmed relief backdrop</span>
+<a id="__codelineno-0-957" name="__codelineno-0-957"></a><span class="sd">                `&quot;dark&quot;` greys so coastlines stay visible). Default</span>
+<a id="__codelineno-0-958" name="__codelineno-0-958"></a><span class="sd">                `&quot;light&quot;`. `&quot;dark&quot;` also draws a dimmed relief backdrop</span>
 <a id="__codelineno-0-959" name="__codelineno-0-959"></a><span class="sd">                under the data (needs the `[tiles]` extra; if Pillow is</span>
 <a id="__codelineno-0-960" name="__codelineno-0-960"></a><span class="sd">                missing the backdrop is skipped with a warning and the</span>
 <a id="__codelineno-0-961" name="__codelineno-0-961"></a><span class="sd">                coastline/border chrome is still drawn).</span>
@@ -4666,7 +4666,7 @@ axis CRS (a 4326 axis places it in lon/lat, unchanged).</p>
 <a id="__codelineno-0-968" name="__codelineno-0-968"></a><span class="sd">                used.</span>
 <a id="__codelineno-0-969" name="__codelineno-0-969"></a><span class="sd">            resolution: Natural Earth resolution for the coastline/borders</span>
 <a id="__codelineno-0-970" name="__codelineno-0-970"></a><span class="sd">                (`&quot;110m&quot;`/`&quot;50m&quot;`/`&quot;10m&quot;`). Defaults to the style&#39;s value.</span>
-<a id="__codelineno-0-971" name="__codelineno-0-971"></a><span class="sd">                It does not change the `&quot;ecmwf-dark&quot;` relief backdrop, which</span>
+<a id="__codelineno-0-971" name="__codelineno-0-971"></a><span class="sd">                It does not change the `&quot;dark&quot;` relief backdrop, which</span>
 <a id="__codelineno-0-972" name="__codelineno-0-972"></a><span class="sd">                uses the preset&#39;s own relief resolution (`&quot;low&quot;`).</span>
 <a id="__codelineno-0-973" name="__codelineno-0-973"></a><span class="sd">            graticule_step: Degree spacing for the graticule. Defaults to a</span>
 <a id="__codelineno-0-974" name="__codelineno-0-974"></a><span class="sd">                &quot;nice&quot; step giving ~6 divisions across the wider span.</span>
@@ -4687,14 +4687,14 @@ axis CRS (a 4326 axis places it in lon/lat, unchanged).</p>
 <a id="__codelineno-0-989" name="__codelineno-0-989"></a><span class="sd">                environmental relief failure degrades with a warning instead).</span>
 <a id="__codelineno-0-990" name="__codelineno-0-990"></a>
 <a id="__codelineno-0-991" name="__codelineno-0-991"></a><span class="sd">        Examples:</span>
-<a id="__codelineno-0-992" name="__codelineno-0-992"></a><span class="sd">            - Dress a georeferenced field in the ECMWF look:</span>
+<a id="__codelineno-0-992" name="__codelineno-0-992"></a><span class="sd">            - Dress a georeferenced field in the operational look:</span>
 <a id="__codelineno-0-993" name="__codelineno-0-993"></a><span class="sd">                ```python</span>
 <a id="__codelineno-0-994" name="__codelineno-0-994"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
 <a id="__codelineno-0-995" name="__codelineno-0-995"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph</span>
 <a id="__codelineno-0-996" name="__codelineno-0-996"></a><span class="sd">                &gt;&gt;&gt; data = np.random.rand(20, 30)</span>
 <a id="__codelineno-0-997" name="__codelineno-0-997"></a><span class="sd">                &gt;&gt;&gt; glyph = ArrayGlyph(data, extent=[-100, 15, -40, 55])</span>
 <a id="__codelineno-0-998" name="__codelineno-0-998"></a><span class="sd">                &gt;&gt;&gt; fig, ax = glyph.plot()  # doctest: +SKIP</span>
-<a id="__codelineno-0-999" name="__codelineno-0-999"></a><span class="sd">                &gt;&gt;&gt; glyph.add_reference_map(&quot;ecmwf&quot;)  # doctest: +SKIP</span>
+<a id="__codelineno-0-999" name="__codelineno-0-999"></a><span class="sd">                &gt;&gt;&gt; glyph.add_reference_map(&quot;light&quot;)  # doctest: +SKIP</span>
 <a id="__codelineno-0-1000" name="__codelineno-0-1000"></a>
 <a id="__codelineno-0-1001" name="__codelineno-0-1001"></a><span class="sd">                ```</span>
 <a id="__codelineno-0-1002" name="__codelineno-0-1002"></a>
@@ -4713,7 +4713,7 @@ axis CRS (a 4326 axis places it in lon/lat, unchanged).</p>
 <a id="__codelineno-0-1015" name="__codelineno-0-1015"></a>
 <a id="__codelineno-0-1016" name="__codelineno-0-1016"></a>        <span class="n">resolved</span> <span class="o">=</span> <span class="n">style</span>
 <a id="__codelineno-0-1017" name="__codelineno-0-1017"></a>        <span class="k">if</span> <span class="n">style</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-1018" name="__codelineno-0-1018"></a>            <span class="n">resolved</span> <span class="o">=</span> <span class="s2">&quot;ecmwf-dark&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_background_is_dark</span><span class="p">(</span><span class="n">target</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;ecmwf&quot;</span>
+<a id="__codelineno-0-1018" name="__codelineno-0-1018"></a>            <span class="n">resolved</span> <span class="o">=</span> <span class="s2">&quot;dark&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_background_is_dark</span><span class="p">(</span><span class="n">target</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;light&quot;</span>
 <a id="__codelineno-0-1019" name="__codelineno-0-1019"></a>        <span class="k">if</span> <span class="n">resolved</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">REFERENCE_MAP_STYLES</span><span class="p">:</span>
 <a id="__codelineno-0-1020" name="__codelineno-0-1020"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
 <a id="__codelineno-0-1021" name="__codelineno-0-1021"></a>                <span class="sa">f</span><span class="s2">&quot;Unknown map style </span><span class="si">{</span><span class="n">style</span><span class="si">!r}</span><span class="s2">; available: &quot;</span>
@@ -4742,7 +4742,7 @@ axis CRS (a 4326 axis places it in lon/lat, unchanged).</p>
 <a id="__codelineno-0-1044" name="__codelineno-0-1044"></a>                <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
 <a id="__codelineno-0-1045" name="__codelineno-0-1045"></a>            <span class="p">)</span>
 <a id="__codelineno-0-1046" name="__codelineno-0-1046"></a>
-<a id="__codelineno-0-1047" name="__codelineno-0-1047"></a>        <span class="c1"># A preset may bundle a dimmed relief backdrop (ecmwf-dark). Draw it</span>
+<a id="__codelineno-0-1047" name="__codelineno-0-1047"></a>        <span class="c1"># A preset may bundle a dimmed relief backdrop (dark). Draw it</span>
 <a id="__codelineno-0-1048" name="__codelineno-0-1048"></a>        <span class="c1"># under the data, defaulting crs to self.crs like the other helpers.</span>
 <a id="__codelineno-0-1049" name="__codelineno-0-1049"></a>        <span class="c1"># Skip it when the axes are not georeferenced (already warned above),</span>
 <a id="__codelineno-0-1050" name="__codelineno-0-1050"></a>        <span class="c1"># and -- so the coastline chrome never hard-depends on Pillow --</span>
@@ -5097,7 +5097,7 @@ its axes on demand, so the pre-plot builder flow is ArrayGlyph-only
         <p>Annotate named points on the glyph's axes with a dot + label.</p>
 <p>Thin wrapper over <code>cleopatra.basemap.geo.add_point_labels</code>; draws a plain
 dot marker and text label per point, matching the minimalist
-city-label look ECMWF/CAMS maps use. Points are plotted at whatever
+city-label look CAMS maps use. Points are plotted at whatever
 coordinates the axes is already using -- plain lon/lat for a flat
 map, or reprojected x/y for an orthographic globe.</p>
 
@@ -5289,7 +5289,7 @@ add_reference_map: The full basemap-chrome preset this pairs with.</p>
 <a id="__codelineno-0-695" name="__codelineno-0-695"></a>
 <a id="__codelineno-0-696" name="__codelineno-0-696"></a><span class="sd">    Thin wrapper over `cleopatra.basemap.geo.add_point_labels`; draws a plain</span>
 <a id="__codelineno-0-697" name="__codelineno-0-697"></a><span class="sd">    dot marker and text label per point, matching the minimalist</span>
-<a id="__codelineno-0-698" name="__codelineno-0-698"></a><span class="sd">    city-label look ECMWF/CAMS maps use. Points are plotted at whatever</span>
+<a id="__codelineno-0-698" name="__codelineno-0-698"></a><span class="sd">    city-label look CAMS maps use. Points are plotted at whatever</span>
 <a id="__codelineno-0-699" name="__codelineno-0-699"></a><span class="sd">    coordinates the axes is already using -- plain lon/lat for a flat</span>
 <a id="__codelineno-0-700" name="__codelineno-0-700"></a><span class="sd">    map, or reprojected x/y for an orthographic globe.</span>
 <a id="__codelineno-0-701" name="__codelineno-0-701"></a>
@@ -5337,7 +5337,7 @@ add_reference_map: The full basemap-chrome preset this pairs with.</p>
 
 
 <h5 id="cleopatra.basemap.geo.GeoMixin.add_reference_map" class="doc doc-heading"><a href="#cleopatra.basemap.geo.GeoMixin.add_reference_map" class="toclink">
-            <code class="highlight language-python"><span class="n">add_reference_map</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s1">&#39;ecmwf&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">graticule_step</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">add_reference_map</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s1">&#39;light&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">graticule_step</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span></code>
 
 </a><a href="#cleopatra.basemap.geo.GeoMixin.add_reference_map" class="headerlink" title="Permanent link">#</a></h5>
 
@@ -5348,7 +5348,7 @@ add_reference_map: The full basemap-chrome preset this pairs with.</p>
 <p>One call composes the recipe that otherwise takes ~15 lines of
 matplotlib after <code>plot</code>/<code>animate</code>: grey Natural Earth <code>coastline</code>
 + <code>borders</code>, a dashed lon/lat graticule, <code>°W</code>/<code>°N</code> degree labels,
-and a subtle frame, plus -- for <code>"ecmwf-dark"</code> -- a dimmed relief
+and a subtle frame, plus -- for <code>"dark"</code> -- a dimmed relief
 backdrop beneath the data. The chrome layers on top of the existing
 data, so call it after plotting.</p>
 <p>The map is drawn in the axes' current geographic coordinates. Pass
@@ -5379,18 +5379,18 @@ not read geotransforms).</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>A name from <code>available_map_styles()</code> (<code>"ecmwf"</code>,
-<code>"ecmwf-dark"</code>), or <code>"auto"</code> to pick between them from the
+                <p>A name from <code>available_map_styles()</code> (<code>"light"</code>,
+<code>"dark"</code>), or <code>"auto"</code> to pick between them from the
 background luminance (dark backgrounds get the lighter
-<code>"ecmwf-dark"</code> greys so coastlines stay visible). Default
-<code>"ecmwf"</code>. <code>"ecmwf-dark"</code> also draws a dimmed relief backdrop
+<code>"dark"</code> greys so coastlines stay visible). Default
+<code>"light"</code>. <code>"dark"</code> also draws a dimmed relief backdrop
 under the data (needs the <code>[tiles]</code> extra; if Pillow is
 missing the backdrop is skipped with a warning and the
 coastline/border chrome is still drawn).</p>
               </div>
             </td>
             <td>
-                  <code>&#39;ecmwf&#39;</code>
+                  <code>&#39;light&#39;</code>
             </td>
           </tr>
           <tr class="doc-section-item">
@@ -5441,7 +5441,7 @@ used.</p>
               <div class="doc-md-description">
                 <p>Natural Earth resolution for the coastline/borders
 (<code>"110m"</code>/<code>"50m"</code>/<code>"10m"</code>). Defaults to the style's value.
-It does not change the <code>"ecmwf-dark"</code> relief backdrop, which
+It does not change the <code>"dark"</code> relief backdrop, which
 uses the preset's own relief resolution (<code>"low"</code>).</p>
               </div>
             </td>
@@ -5551,13 +5551,13 @@ environmental relief failure degrades with a warning instead).</p>
 
 <p><span class="doc-section-title">Examples:</span></p>
     <ul>
-<li>Dress a georeferenced field in the ECMWF look:
+<li>Dress a georeferenced field in the operational look:
     <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">100</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="o">-</span><span class="mi">40</span><span class="p">,</span> <span class="mi">55</span><span class="p">])</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>  <span class="c1"># doctest: +SKIP</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">glyph</span><span class="o">.</span><span class="n">add_reference_map</span><span class="p">(</span><span class="s2">&quot;ecmwf&quot;</span><span class="p">)</span>  <span class="c1"># doctest: +SKIP</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">glyph</span><span class="o">.</span><span class="n">add_reference_map</span><span class="p">(</span><span class="s2">&quot;light&quot;</span><span class="p">)</span>  <span class="c1"># doctest: +SKIP</span>
 </code></pre></div></li>
 </ul>
 
@@ -5741,7 +5741,7 @@ available_map_styles: The built-in preset names.</p>
 <span class="normal"><a href="#__codelineno-0-1095">1095</a></span>
 <span class="normal"><a href="#__codelineno-0-1096">1096</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-927" name="__codelineno-0-927"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_reference_map</span><span class="p">(</span>
 <a id="__codelineno-0-928" name="__codelineno-0-928"></a>    <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-929" name="__codelineno-0-929"></a>    <span class="n">style</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ecmwf&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-929" name="__codelineno-0-929"></a>    <span class="n">style</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;light&quot;</span><span class="p">,</span>
 <a id="__codelineno-0-930" name="__codelineno-0-930"></a>    <span class="o">*</span><span class="p">,</span>
 <a id="__codelineno-0-931" name="__codelineno-0-931"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-932" name="__codelineno-0-932"></a>    <span class="n">extent</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -5754,7 +5754,7 @@ available_map_styles: The built-in preset names.</p>
 <a id="__codelineno-0-939" name="__codelineno-0-939"></a><span class="sd">    One call composes the recipe that otherwise takes ~15 lines of</span>
 <a id="__codelineno-0-940" name="__codelineno-0-940"></a><span class="sd">    matplotlib after `plot`/`animate`: grey Natural Earth `coastline`</span>
 <a id="__codelineno-0-941" name="__codelineno-0-941"></a><span class="sd">    + `borders`, a dashed lon/lat graticule, `°W`/`°N` degree labels,</span>
-<a id="__codelineno-0-942" name="__codelineno-0-942"></a><span class="sd">    and a subtle frame, plus -- for `&quot;ecmwf-dark&quot;` -- a dimmed relief</span>
+<a id="__codelineno-0-942" name="__codelineno-0-942"></a><span class="sd">    and a subtle frame, plus -- for `&quot;dark&quot;` -- a dimmed relief</span>
 <a id="__codelineno-0-943" name="__codelineno-0-943"></a><span class="sd">    backdrop beneath the data. The chrome layers on top of the existing</span>
 <a id="__codelineno-0-944" name="__codelineno-0-944"></a><span class="sd">    data, so call it after plotting.</span>
 <a id="__codelineno-0-945" name="__codelineno-0-945"></a>
@@ -5766,11 +5766,11 @@ available_map_styles: The built-in preset names.</p>
 <a id="__codelineno-0-951" name="__codelineno-0-951"></a><span class="sd">    not read geotransforms).</span>
 <a id="__codelineno-0-952" name="__codelineno-0-952"></a>
 <a id="__codelineno-0-953" name="__codelineno-0-953"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-954" name="__codelineno-0-954"></a><span class="sd">        style: A name from `available_map_styles()` (`&quot;ecmwf&quot;`,</span>
-<a id="__codelineno-0-955" name="__codelineno-0-955"></a><span class="sd">            `&quot;ecmwf-dark&quot;`), or `&quot;auto&quot;` to pick between them from the</span>
+<a id="__codelineno-0-954" name="__codelineno-0-954"></a><span class="sd">        style: A name from `available_map_styles()` (`&quot;light&quot;`,</span>
+<a id="__codelineno-0-955" name="__codelineno-0-955"></a><span class="sd">            `&quot;dark&quot;`), or `&quot;auto&quot;` to pick between them from the</span>
 <a id="__codelineno-0-956" name="__codelineno-0-956"></a><span class="sd">            background luminance (dark backgrounds get the lighter</span>
-<a id="__codelineno-0-957" name="__codelineno-0-957"></a><span class="sd">            `&quot;ecmwf-dark&quot;` greys so coastlines stay visible). Default</span>
-<a id="__codelineno-0-958" name="__codelineno-0-958"></a><span class="sd">            `&quot;ecmwf&quot;`. `&quot;ecmwf-dark&quot;` also draws a dimmed relief backdrop</span>
+<a id="__codelineno-0-957" name="__codelineno-0-957"></a><span class="sd">            `&quot;dark&quot;` greys so coastlines stay visible). Default</span>
+<a id="__codelineno-0-958" name="__codelineno-0-958"></a><span class="sd">            `&quot;light&quot;`. `&quot;dark&quot;` also draws a dimmed relief backdrop</span>
 <a id="__codelineno-0-959" name="__codelineno-0-959"></a><span class="sd">            under the data (needs the `[tiles]` extra; if Pillow is</span>
 <a id="__codelineno-0-960" name="__codelineno-0-960"></a><span class="sd">            missing the backdrop is skipped with a warning and the</span>
 <a id="__codelineno-0-961" name="__codelineno-0-961"></a><span class="sd">            coastline/border chrome is still drawn).</span>
@@ -5783,7 +5783,7 @@ available_map_styles: The built-in preset names.</p>
 <a id="__codelineno-0-968" name="__codelineno-0-968"></a><span class="sd">            used.</span>
 <a id="__codelineno-0-969" name="__codelineno-0-969"></a><span class="sd">        resolution: Natural Earth resolution for the coastline/borders</span>
 <a id="__codelineno-0-970" name="__codelineno-0-970"></a><span class="sd">            (`&quot;110m&quot;`/`&quot;50m&quot;`/`&quot;10m&quot;`). Defaults to the style&#39;s value.</span>
-<a id="__codelineno-0-971" name="__codelineno-0-971"></a><span class="sd">            It does not change the `&quot;ecmwf-dark&quot;` relief backdrop, which</span>
+<a id="__codelineno-0-971" name="__codelineno-0-971"></a><span class="sd">            It does not change the `&quot;dark&quot;` relief backdrop, which</span>
 <a id="__codelineno-0-972" name="__codelineno-0-972"></a><span class="sd">            uses the preset&#39;s own relief resolution (`&quot;low&quot;`).</span>
 <a id="__codelineno-0-973" name="__codelineno-0-973"></a><span class="sd">        graticule_step: Degree spacing for the graticule. Defaults to a</span>
 <a id="__codelineno-0-974" name="__codelineno-0-974"></a><span class="sd">            &quot;nice&quot; step giving ~6 divisions across the wider span.</span>
@@ -5804,14 +5804,14 @@ available_map_styles: The built-in preset names.</p>
 <a id="__codelineno-0-989" name="__codelineno-0-989"></a><span class="sd">            environmental relief failure degrades with a warning instead).</span>
 <a id="__codelineno-0-990" name="__codelineno-0-990"></a>
 <a id="__codelineno-0-991" name="__codelineno-0-991"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-992" name="__codelineno-0-992"></a><span class="sd">        - Dress a georeferenced field in the ECMWF look:</span>
+<a id="__codelineno-0-992" name="__codelineno-0-992"></a><span class="sd">        - Dress a georeferenced field in the operational look:</span>
 <a id="__codelineno-0-993" name="__codelineno-0-993"></a><span class="sd">            ```python</span>
 <a id="__codelineno-0-994" name="__codelineno-0-994"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
 <a id="__codelineno-0-995" name="__codelineno-0-995"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph</span>
 <a id="__codelineno-0-996" name="__codelineno-0-996"></a><span class="sd">            &gt;&gt;&gt; data = np.random.rand(20, 30)</span>
 <a id="__codelineno-0-997" name="__codelineno-0-997"></a><span class="sd">            &gt;&gt;&gt; glyph = ArrayGlyph(data, extent=[-100, 15, -40, 55])</span>
 <a id="__codelineno-0-998" name="__codelineno-0-998"></a><span class="sd">            &gt;&gt;&gt; fig, ax = glyph.plot()  # doctest: +SKIP</span>
-<a id="__codelineno-0-999" name="__codelineno-0-999"></a><span class="sd">            &gt;&gt;&gt; glyph.add_reference_map(&quot;ecmwf&quot;)  # doctest: +SKIP</span>
+<a id="__codelineno-0-999" name="__codelineno-0-999"></a><span class="sd">            &gt;&gt;&gt; glyph.add_reference_map(&quot;light&quot;)  # doctest: +SKIP</span>
 <a id="__codelineno-0-1000" name="__codelineno-0-1000"></a>
 <a id="__codelineno-0-1001" name="__codelineno-0-1001"></a><span class="sd">            ```</span>
 <a id="__codelineno-0-1002" name="__codelineno-0-1002"></a>
@@ -5830,7 +5830,7 @@ available_map_styles: The built-in preset names.</p>
 <a id="__codelineno-0-1015" name="__codelineno-0-1015"></a>
 <a id="__codelineno-0-1016" name="__codelineno-0-1016"></a>    <span class="n">resolved</span> <span class="o">=</span> <span class="n">style</span>
 <a id="__codelineno-0-1017" name="__codelineno-0-1017"></a>    <span class="k">if</span> <span class="n">style</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-1018" name="__codelineno-0-1018"></a>        <span class="n">resolved</span> <span class="o">=</span> <span class="s2">&quot;ecmwf-dark&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_background_is_dark</span><span class="p">(</span><span class="n">target</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;ecmwf&quot;</span>
+<a id="__codelineno-0-1018" name="__codelineno-0-1018"></a>        <span class="n">resolved</span> <span class="o">=</span> <span class="s2">&quot;dark&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_background_is_dark</span><span class="p">(</span><span class="n">target</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;light&quot;</span>
 <a id="__codelineno-0-1019" name="__codelineno-0-1019"></a>    <span class="k">if</span> <span class="n">resolved</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">REFERENCE_MAP_STYLES</span><span class="p">:</span>
 <a id="__codelineno-0-1020" name="__codelineno-0-1020"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
 <a id="__codelineno-0-1021" name="__codelineno-0-1021"></a>            <span class="sa">f</span><span class="s2">&quot;Unknown map style </span><span class="si">{</span><span class="n">style</span><span class="si">!r}</span><span class="s2">; available: &quot;</span>
@@ -5859,7 +5859,7 @@ available_map_styles: The built-in preset names.</p>
 <a id="__codelineno-0-1044" name="__codelineno-0-1044"></a>            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
 <a id="__codelineno-0-1045" name="__codelineno-0-1045"></a>        <span class="p">)</span>
 <a id="__codelineno-0-1046" name="__codelineno-0-1046"></a>
-<a id="__codelineno-0-1047" name="__codelineno-0-1047"></a>    <span class="c1"># A preset may bundle a dimmed relief backdrop (ecmwf-dark). Draw it</span>
+<a id="__codelineno-0-1047" name="__codelineno-0-1047"></a>    <span class="c1"># A preset may bundle a dimmed relief backdrop (dark). Draw it</span>
 <a id="__codelineno-0-1048" name="__codelineno-0-1048"></a>    <span class="c1"># under the data, defaulting crs to self.crs like the other helpers.</span>
 <a id="__codelineno-0-1049" name="__codelineno-0-1049"></a>    <span class="c1"># Skip it when the axes are not georeferenced (already warned above),</span>
 <a id="__codelineno-0-1050" name="__codelineno-0-1050"></a>    <span class="c1"># and -- so the coastline chrome never hard-depends on Pillow --</span>
@@ -6370,7 +6370,7 @@ its axes on demand, so the pre-plot builder flow is ArrayGlyph-only
         <p>Annotate named points with a plain dot marker + text label.</p>
 <p>Draws a small circular marker at each point and a plain text label
 beside it -- no halo, no bounding box -- matching the minimalist look
-ECMWF/CAMS maps use for city labels. <code>points</code> are plotted at whatever
+CAMS maps use for city labels. <code>points</code> are plotted at whatever
 coordinates <code>ax</code> is already using (plain lon/lat on a flat axes, or
 projected x/y on an orthographic globe -- reproject the points yourself,
 e.g. with the same transformer <code>cleopatra.basemap.projection.orthographic_grid</code>
@@ -6657,7 +6657,7 @@ rather than the data coordinates.</p>
 <a id="__codelineno-0-251" name="__codelineno-0-251"></a>
 <a id="__codelineno-0-252" name="__codelineno-0-252"></a><span class="sd">    Draws a small circular marker at each point and a plain text label</span>
 <a id="__codelineno-0-253" name="__codelineno-0-253"></a><span class="sd">    beside it -- no halo, no bounding box -- matching the minimalist look</span>
-<a id="__codelineno-0-254" name="__codelineno-0-254"></a><span class="sd">    ECMWF/CAMS maps use for city labels. `points` are plotted at whatever</span>
+<a id="__codelineno-0-254" name="__codelineno-0-254"></a><span class="sd">    CAMS maps use for city labels. `points` are plotted at whatever</span>
 <a id="__codelineno-0-255" name="__codelineno-0-255"></a><span class="sd">    coordinates `ax` is already using (plain lon/lat on a flat axes, or</span>
 <a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="sd">    projected x/y on an orthographic globe -- reproject the points yourself,</span>
 <a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="sd">    e.g. with the same transformer `cleopatra.basemap.projection.orthographic_grid`</span>
@@ -6782,7 +6782,7 @@ rather than the data coordinates.</p>
 <p><span class="doc-section-title">Examples:</span></p>
     <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.basemap.geo</span><span class="w"> </span><span class="kn">import</span> <span class="n">available_map_styles</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">available_map_styles</span><span class="p">()</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">[</span><span class="s1">&#39;ecmwf&#39;</span><span class="p">,</span> <span class="s1">&#39;ecmwf-dark&#39;</span><span class="p">]</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">[</span><span class="s1">&#39;light&#39;</span><span class="p">,</span> <span class="s1">&#39;dark&#39;</span><span class="p">]</span>
 </code></pre></div>
 
 
@@ -6814,7 +6814,7 @@ rather than the data coordinates.</p>
 <a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="sd">        ```python</span>
 <a id="__codelineno-0-80" name="__codelineno-0-80"></a><span class="sd">        &gt;&gt;&gt; from cleopatra.basemap.geo import available_map_styles</span>
 <a id="__codelineno-0-81" name="__codelineno-0-81"></a><span class="sd">        &gt;&gt;&gt; available_map_styles()</span>
-<a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="sd">        [&#39;ecmwf&#39;, &#39;ecmwf-dark&#39;]</span>
+<a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="sd">        [&#39;light&#39;, &#39;dark&#39;]</span>
 <a id="__codelineno-0-83" name="__codelineno-0-83"></a>
 <a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="sd">        ```</span>
 <a id="__codelineno-0-85" name="__codelineno-0-85"></a><span class="sd">    &quot;&quot;&quot;</span>

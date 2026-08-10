@@ -93,10 +93,6 @@
          <lastmod>2026-08-10</lastmod>
     </url>
     <url>
-         <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/ecmwf_temperature_animation/</loc>
-         <lastmod>2026-08-10</lastmod>
-    </url>
-    <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/haze_preset_examples/</loc>
          <lastmod>2026-08-10</lastmod>
     </url>
@@ -106,6 +102,10 @@
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/ocean_styles_gallery/</loc>
+         <lastmod>2026-08-10</lastmod>
+    </url>
+    <url>
+         <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/operational_temperature_animation/</loc>
          <lastmod>2026-08-10</lastmod>
     </url>
     <url>
