@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
+from cleopatra.styling.params import DataStyle
 from cleopatra.templates import publication_map
 
 pytestmark = pytest.mark.plot
@@ -38,6 +39,21 @@ class TestPublicationMap:
         assert ax.get_title() == "2 m temperature", f"unexpected title: {ax.get_title()!r}"
         assert ax.images or ax.collections, "the field should be drawn"
         plt.close(fig)
+
+    def test_style_and_data_style_conflict_raises(self, field):
+        """Passing both `style=` and `data_style=` raises, not an opaque TypeError.
+
+        Test scenario:
+            Both set the same grouped render option, so `publication_map`
+            rejects the collision up front instead of crashing with
+            `plot() got multiple values for keyword argument 'data_style'`.
+        """
+        with pytest.raises(ValueError, match="not both"):
+            publication_map(
+                field,
+                style="temperature_2m",
+                data_style=DataStyle(style="temperature_2m"),
+            )
 
     def test_cmap_and_flat_projection_compose(self, field):
         """A `cmap` with a flat projection composes without a style.
