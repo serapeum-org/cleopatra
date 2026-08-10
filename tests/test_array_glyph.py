@@ -2877,8 +2877,9 @@ class TestFacetColorbar:
             `TypeError` rather than silently ignoring the argument.
         """
         glyph = ArrayGlyph(self._stack_3d())
+        labels = PanelLabels(col=[0, 1, 2])
         with pytest.raises(TypeError, match="colorbar must be a bool"):
-            glyph.facet(col="time", labels=PanelLabels(col=[0, 1, 2]), colorbar=object())
+            glyph.facet(col="time", labels=labels, colorbar=object())
 
     def test_facet_4d_accepts_colorbar_spec(self):
         """The `ColorBar` spec also works on a 4-D (`col` + `row`) facet.
@@ -3497,24 +3498,25 @@ class TestFacetingEdgeCases:
     def test_labels_col_length_mismatch_raises(self) -> None:
         """`labels.col` whose length differs from N raises `ValueError`."""
         stack = self._stack(n=4)
+        labels = PanelLabels(col=[0, 1, 2])
         with pytest.raises(ValueError, match="`labels.col` length"):
-            ArrayGlyph(stack).facet(col="t", labels=PanelLabels(col=[0, 1, 2]))
+            ArrayGlyph(stack).facet(col="t", labels=labels)
 
     def test_labels_col_length_mismatch_4d_raises(self) -> None:
         """`labels.col` length wrong on a 4-D stack raises."""
         rng = np.random.default_rng(1337)
         stack = rng.uniform(0.0, 1.0, size=(2, 3, 4, 4))
+        labels = PanelLabels(col=[0])
         with pytest.raises(ValueError, match="`labels.col` length"):
-            ArrayGlyph(stack).facet(col="t", row="lev", labels=PanelLabels(col=[0]))
+            ArrayGlyph(stack).facet(col="t", row="lev", labels=labels)
 
     def test_labels_row_length_mismatch_raises(self) -> None:
         """`labels.row` whose length differs from Nrow raises."""
         rng = np.random.default_rng(1337)
         stack = rng.uniform(0.0, 1.0, size=(2, 3, 4, 4))
+        labels = PanelLabels(col=[0, 1], row=[0])
         with pytest.raises(ValueError, match="`labels.row` length"):
-            ArrayGlyph(stack).facet(
-                col="t", row="lev", labels=PanelLabels(col=[0, 1], row=[0])
-            )
+            ArrayGlyph(stack).facet(col="t", row="lev", labels=labels)
 
     def test_shared_vmin_vmax_global_min_max(self) -> None:
         """Stack-wide `vmin`/`vmax` reflect the *global* min/max across frames.
