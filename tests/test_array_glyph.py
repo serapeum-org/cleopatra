@@ -3712,6 +3712,19 @@ class TestFacetingEdgeCases:
         finally:
             plt.close(result.fig)
 
+    def test_facet_stale_figsize_raises(self) -> None:
+        """The renamed `figsize` keyword is rejected loudly, not silently dropped.
+
+        Test scenario:
+            `figsize` is still a valid glyph option, so without a guard it
+            would be absorbed into `default_options` with no effect. `facet`
+            must instead raise a `ValueError` steering the caller to
+            `figure_size`.
+        """
+        glyph = ArrayGlyph(self._stack(n=3))
+        with pytest.raises(ValueError, match="renamed to `figure_size`"):
+            glyph.facet(col="t", figsize=(12.0, 4.0))
+
     def test_facet_with_extent_propagates_to_subplots(self) -> None:
         """A parent `extent` propagates to each sub-glyph during faceting.
 

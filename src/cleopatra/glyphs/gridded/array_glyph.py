@@ -3528,6 +3528,11 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         if col is None and row is None:
             raise ValueError("at least one of `col`/`row` must be given")
+        if "figsize" in kwargs:
+            raise ValueError(
+                "`figsize` is not a valid `facet` argument; it was renamed to "
+                "`figure_size`. Pass `figure_size=(width, height)` instead."
+            )
         labels = labels or PanelLabels()
         col_coords = labels.col
         row_coords = labels.row
