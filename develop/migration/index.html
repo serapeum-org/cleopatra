@@ -2724,8 +2724,9 @@
 <ol>
 <li><strong><a href="#grouped-render-parameter-objects">Grouped render-parameter objects</a></strong> — the loose styling keywords on
    <code>plot</code> / <code>animate</code> / <code>facet</code> were replaced by typed <em>group objects</em>, and the temporary deprecation shims that
-   kept the old keywords working have now been <strong>removed</strong>. Read this section if you hit a <code>TypeError</code> about an
-   unexpected keyword argument, or an <code>AttributeError</code> from passing a bare array where an object is expected.</li>
+   kept the old keywords working have now been <strong>removed</strong>. Read this section if you hit a
+   <code>ValueError: The given keyword argument:... is not correct</code>, an <code>AttributeError</code> from passing a bare array
+   where an object is expected, or a <code>ValueError</code> from <code>facet</code> saying <code>figsize</code> was renamed to <code>figure_size</code>.</li>
 <li><strong><a href="#subpackage-restructure">Subpackage restructure</a></strong> — an earlier release moved the flat <code>cleopatra.*</code>
    modules into <code>glyphs/</code> / <code>styling/</code> / <code>basemap/</code> subpackages (import paths only).</li>
 </ol>
@@ -2733,9 +2734,12 @@
 <h2 id="grouped-render-parameter-objects"><a class="toclink" href="#grouped-render-parameter-objects">Grouped render-parameter objects</a><a class="headerlink" href="#grouped-render-parameter-objects" title="Permanent link">#</a></h2>
 <p>Related styling keywords that <code>plot</code> / <code>animate</code> (and the other glyphs) used to accept as long lists of loose
 arguments are now bundled into small typed objects. During one release the old keywords kept working behind a
-<code>DeprecationWarning</code>; <strong>those shims are now gone</strong>. Passing a removed keyword no longer warns — it raises the
-ordinary <code>TypeError: ... got an unexpected keyword argument</code>, and passing a bare <code>(N, 3)</code> array as <code>points</code>
-raises <code>AttributeError</code> instead of being auto-wrapped.</p>
+<code>DeprecationWarning</code>; <strong>those shims are now gone</strong>. Passing a removed keyword no longer warns — it funnels through
+cleopatra's strict option validation and raises
+<code>ValueError: The given keyword argument:&lt;name&gt; is not correct, possible parameters are, [...]</code>. Passing a bare
+<code>(N, 3)</code> array as <code>points</code> raises <code>AttributeError</code> instead of being auto-wrapped. The one exception is
+<code>facet(figsize=...)</code>: because <code>figsize</code> is still a valid glyph option it would otherwise be absorbed silently, so
+<code>facet</code> raises a targeted <code>ValueError</code> telling you to use <code>figure_size</code> (see the table below).</p>
 <p>There is no automated rewrite for this one: the changes are semantic (loose keywords → object fields), so update
 each call site by hand using the tables below.</p>
 <h3 id="point-overlays-pointoverlay"><a class="toclink" href="#point-overlays-pointoverlay">Point overlays → <code>PointOverlay</code></a><a class="headerlink" href="#point-overlays-pointoverlay" title="Permanent link">#</a></h3>
