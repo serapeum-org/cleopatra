@@ -709,5 +709,6 @@ class TestCategoricalSchemeGlyphScope:
         u = rng.uniform(0.1, 5.0, size=x.shape)
         v = rng.uniform(0.1, 5.0, size=x.shape)
         glyph = VectorGlyph(x, y, u, v)
+        categorical = Classify(scheme="categorical")
         with pytest.raises(ValueError, match="does not support scheme='categorical'"):
-            glyph.plot(classify=Classify(scheme="categorical"), kind="quiver")
+            glyph.plot(classify=categorical, kind="quiver")
