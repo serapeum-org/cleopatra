@@ -260,6 +260,18 @@ class TestPlotArray:
 
         assert isinstance(fig, Figure)
 
+    def test_plot_bare_array_points_raises(self, arr: np.ndarray, no_data_value: float):
+        """A bare `(N, 3)` array for `points` is no longer auto-wrapped.
+
+        Test scenario:
+            The auto-wrap shim was removed, so on an overlay-drawing kind the
+            bare array's missing `.points` attribute surfaces as `AttributeError`
+            -- callers must pass a `PointOverlay`.
+        """
+        array = ArrayGlyph(arr, exclude_value=[no_data_value])
+        with pytest.raises(AttributeError):
+            array.plot(points=np.array([[5.0, 1, 1]]), kind="imshow")
+
 
 class TestAnimate:
     def test_numpy_array(
