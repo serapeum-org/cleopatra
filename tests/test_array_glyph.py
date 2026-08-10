@@ -417,6 +417,26 @@ class TestKwargsTypedDicts:
         }
         assert cell_texts == {"1.2", "2.3", "3.5", "4.6"}
 
+    def test_cell_value_text_colors_split_by_threshold(self):
+        """`cell_value_text_colors` picks the text colour by the threshold split.
+
+        Test scenario:
+            With a normalized `background_threshold` of 0.5, the low cell
+            (norm 0) uses the first colour and the high cell (norm 1) uses
+            the second.
+        """
+        stack = np.stack([np.array([[0.0, 10.0]]), np.array([[0.0, 10.0]])])
+        array = ArrayGlyph(stack)
+        array.animate(
+            list(range(2)),
+            cells=CellValues(show=True, background_threshold=0.5),
+            cell_value_text_colors=("yellow", "blue"),
+        )
+        array.anim._func(0)
+        colors = {to_rgba(t.get_color()) for t in array.ax.texts if t.get_text()}
+        assert to_rgba("yellow") in colors, f"low cell should be yellow; got {colors}"
+        assert to_rgba("blue") in colors, f"high cell should be blue; got {colors}"
+
 
 class TestUnsetSentinel:
     """`_Unset`/`_UNSET`: the sentinel distinguishing "the caller did not
