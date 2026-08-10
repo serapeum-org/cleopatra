@@ -1,12 +1,12 @@
 {
  "version": 1,
- "source": "crameri",
+ "source": "scientific",
  "license": "MIT",
  "presets": {
   "elevation_bukavu": {
    "layers": {
     "elevation_bukavu": {
-     "label": "Elevation, fine relief (Crameri bukavu)",
+     "label": "Elevation, fine relief (bukavu)",
      "colors": [
       "#1a3333",
       "#1b363b",
@@ -82,7 +82,7 @@
   "elevation_fes": {
    "layers": {
     "elevation_fes": {
-     "label": "Elevation, arid terrain (Crameri fes)",
+     "label": "Elevation, arid terrain (fes)",
      "colors": [
       "#0d0d0d",
       "#161616",
@@ -158,7 +158,7 @@
   "elevation_oleron": {
    "layers": {
     "elevation_oleron": {
-     "label": "Elevation, land & sea (Crameri oleron)",
+     "label": "Elevation, land & sea (oleron)",
      "colors": [
       "#1a2659",
       "#202c5f",

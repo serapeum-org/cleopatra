@@ -43,21 +43,6 @@ from matplotlib.figure import Figure
 from matplotlib.ticker import MaxNLocator
 from PIL import Image
 
-from cleopatra.basemap.geo import Basemap as Basemap
-from cleopatra.basemap.geo import Feature as Feature
-from cleopatra.basemap.geo import GeoMixin
-from cleopatra.basemap.projection import apply_projection_style, projection_draws_frame
-from cleopatra.glyphs.base.glyph import (
-    Glyph,
-    _clear_prior_render_artists,
-    _clear_projection_frame,
-    _mark_render_artists,
-    _reject_grouped_kwargs,
-    _restore_flat_axes,
-    _root_figure,
-    _stash_projection_frame,
-)
-from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_grid, shade_rgb
 from cleopatra.styling.colorbar import (
     ColorBar,
     _resolve_colorbar,
@@ -71,7 +56,23 @@ from cleopatra.styling.colors import (
     resolve_colormap,
     resolve_single_layer_style,
     resolve_style_norm,
+    resolve_style_overrides,
 )
+from cleopatra.basemap.geo import Basemap as Basemap
+from cleopatra.basemap.geo import Feature as Feature
+from cleopatra.basemap.geo import GeoMixin
+from cleopatra.glyphs.base.glyph import (
+    Glyph,
+    _clear_prior_render_artists,
+    _clear_projection_frame,
+    _mark_render_artists,
+    _reject_grouped_kwargs,
+    _restore_flat_axes,
+    _root_figure,
+    _stash_projection_frame,
+)
+from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_grid, shade_rgb
+from cleopatra.basemap.projection import apply_projection_style, projection_draws_frame
 from cleopatra.styling.params import CellValues, Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
@@ -96,6 +97,12 @@ ARRAY_DEFAULT_OPTIONS: dict[str, Any] = {
     "robust": False,
     "center": None,
     "extend": None,
+    #: Per-call `DATA_STYLES` preset overrides (styled `plot`/`animate` only):
+    #: a discrete-band count, a constant opacity, and a value-linked opacity
+    #: range. `None` means "keep the preset's own value".
+    "bands": None,
+    "alpha": None,
+    "alpha_range": None,
     "cbar_kwargs": None,
     "add_colorbar": True,
     "cbar_location": None,
@@ -114,6 +121,40 @@ ARRAY_DEFAULT_OPTIONS = STYLE_DEFAULTS | ARRAY_DEFAULT_OPTIONS
 #: (named like the other glyphs' `*_DEFAULT_OPTIONS` constants).
 DEFAULT_OPTIONS = ARRAY_DEFAULT_OPTIONS
 
+#: Preset fields a caller may override per call on a styled `plot`/`animate`
+#: as loose keywords (still accepted): captured RAW (unresolved) from `kwargs`
+#: into `_style_color_overrides`.
+_STYLE_OVERRIDE_KEYS = ("vmin", "vmax", "center", "cmap", "extend")
+#: Preset fields overridden per call via a grouped parameter object --
+#: `contour=Contour(levels=...)` and `data_style=DataStyle(bands=..., alpha=...,
+#: alpha_range=...)`. They are never loose keys; they arrive through
+#: `_merge_group_params` into `default_options` (defaults `None`) and are
+#: captured from there. The field-interaction rules (e.g. `bands` clearing
+#: `levels`, `alpha` vs `alpha_range`) are applied later by
+#: `cleopatra.styling.colors.resolve_style_overrides`.
+_STYLE_GROUP_OVERRIDE_KEYS = ("levels", "bands", "alpha", "alpha_range")
+
+
+def _reject_loose_alpha(kwargs: dict) -> None:
+    """Raise if a loose `alpha=` keyword was passed to `ArrayGlyph`.
+
+    The per-call constant-opacity override moved onto
+    `data_style=DataStyle(alpha=...)`. Unlike `bands`/`alpha_range` (which are
+    `ArrayGlyph`-only and rejected globally via `_GROUPED_KWARG_HINTS`), `alpha`
+    stays a legitimate loose option on other glyphs, so it is rejected here --
+    locally to `ArrayGlyph` -- with the same message the shared rejection uses.
+
+    Args:
+        kwargs: The keyword-argument mapping to check.
+
+    Raises:
+        ValueError: If `kwargs` contains an `alpha` key.
+    """
+    if "alpha" in kwargs:
+        raise ValueError(
+            "The 'alpha' option moved onto a grouped parameter object; pass "
+            "data_style=DataStyle(alpha=...) instead of a loose alpha= keyword."
+        )
 #: Tuple of accepted `kind=` values for `ArrayGlyph.plot`.
 VALID_PLOT_KINDS = ("auto", "imshow", "pcolormesh", "contour", "contourf")
 #: Tuple of accepted values for the xarray-aligned `extend` colorbar kwarg.
@@ -267,7 +308,8 @@ class PlotKwargs(
 ):
     """The loose `**kwargs` `ArrayGlyph.plot` still accepts.
 
-    The colour-scale, contour, cell-value, and data-style options have
+    The colour-scale, contour, cell-value, and data-style options (including
+    the per-call preset overrides `bands` / `alpha` / `alpha_range`) have
     moved onto grouped parameter objects passed as the `color=` /
     `contour=` / `cells=` / `data_style=` arguments (see
     `cleopatra.styling.scaling.ColorScaling` and
@@ -708,7 +750,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                         Colormap, by default 'coolwarm_r'. A plain matplotlib
                         name (e.g. 'viridis') or a `Colormap` object is used
                         as-is; a **namespaced** name such as 'cmocean:thermal'
-                        or 'crameri:batlow' is resolved via the optional `cmap`
+                        or 'cmasher:ember' is resolved via the optional `cmap`
                         aggregator — install the `[science-colors]` extra
                         (`pip install cleopatra[science-colors]`). The `_r`
                         reverse suffix works on both forms.
@@ -863,6 +905,7 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         ```
         """
+        _reject_loose_alpha(kwargs)
         super().__init__(
             default_options=ARRAY_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs
         )
@@ -914,7 +957,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         explicit_keys = set(kwargs.keys())
         self._style_color_overrides: dict[str, Any] = {
             key: kwargs[key]
-            for key in ("vmin", "vmax", "center", "cmap")
+            for key in _STYLE_OVERRIDE_KEYS
             if key in explicit_keys and kwargs[key] is not None
         }
         #: Whether the latest plot()/animate() call explicitly requested a real
@@ -1337,10 +1380,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         default = tuple(self.default_options["figsize"])
         if self.default_options.get("projection") == "globe":
-            return (
-                7.5,
-                6.5,
-            )  # the orthographic disc is ~square, not the lon/lat aspect
+            return (7.5, 6.5)  # the orthographic disc is ~square, not the lon/lat aspect
         try:
             if self.extent is not None:
                 xmin, xmax, ymin, ymax = (float(v) for v in self.extent)
@@ -1360,14 +1400,12 @@ class ArrayGlyph(GeoMixin, Glyph):
         if not (width > 0 and height > 0):
             return default
         aspect = width / height
-        plot_height = 6.0  # target plot height (inches)
-        cbar_pad = 1.8  # room for the colorbar + its labels
+        plot_height = 6.0        # target plot height (inches)
+        cbar_pad = 1.8           # room for the colorbar + its labels
         max_width = 14.0
         fig_w = plot_height * aspect + cbar_pad
         fig_h = plot_height
-        if (
-            fig_w > max_width
-        ):  # very wide field: cap width, shrink height to keep the aspect
+        if fig_w > max_width:    # very wide field: cap width, shrink height to keep the aspect
             fig_w = max_width
             fig_h = max(3.5, (max_width - cbar_pad) / aspect)
         fig_w = max(5.0, fig_w)
@@ -1964,22 +2002,29 @@ class ArrayGlyph(GeoMixin, Glyph):
         """Name of the `DATA_STYLES` preset currently applied, or `None`.
 
         Reads back the preset set via the `style` constructor kwarg, a
-        `plot(data_style=DataStyle(style=...))` call, or `apply_style`.
+        `plot(style=...)` call, or `apply_style`.
         """
         return self.default_options.get("style")
 
     def apply_style(self, style: str, **kwargs: Any) -> tuple[Figure, Axes]:
         """Apply a `DATA_STYLES` preset by name, re-rendering the glyph in place.
 
-        A discoverable wrapper over `plot(data_style=DataStyle(style=...))` for restyling an
+        A discoverable wrapper over `plot(style=...)` for restyling an
         already-built glyph. It redraws **in place** on the glyph's own axes
         (clearing the previous render first), so `apply_style` takes full
         ownership of that axes -- do not use it on an axes shared with unrelated
         caller content. If the glyph was never plotted (or its figure was
         closed), it renders on a fresh figure. Extra keyword arguments (e.g.
         `hillshade`, `add_colorbar`) are forwarded to `plot`. The applied style
-        is **sticky** (survives a later plain `plot()`); `plot(data_style=DataStyle(style=None))`
-        clears it.
+        is **sticky** (survives a later plain `plot()`); `plot(style=None)`
+        clears it. Per-call render overrides are sticky the same way: the
+        colour-scale keywords (`vmin`/`vmax`/`center`/`cmap`/`extend`) and the
+        `contour=`/`data_style=` group fields (`levels`/`bands`/`alpha`/
+        `alpha_range`) captured on one call persist into later `plot`/`animate`
+        calls on the same glyph until changed or cleared (pass the field as
+        `None`) -- so an override set for one render (e.g. a
+        `contour=Contour(levels=...)`) can carry into a later styled render on
+        the same reused glyph.
 
         Args:
             style: A `cleopatra.styling.colors.DATA_STYLES` preset name (see
@@ -2152,12 +2197,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         if self._coords is not None:
             x, y = self._coords
-            return (
-                float(np.min(x)),
-                float(np.max(x)),
-                float(np.min(y)),
-                float(np.max(y)),
-            )
+            return float(np.min(x)), float(np.max(x)), float(np.min(y)), float(np.max(y))
         if self.extent is not None:
             x0, x1, y0, y1 = self.extent
             return float(x0), float(x1), float(y0), float(y1)
@@ -2219,37 +2259,21 @@ class ArrayGlyph(GeoMixin, Glyph):
                 [a for a in (*self.ax.patches, *self.ax.lines) if id(a) not in before],
             )
             images = apply_data_style(
-                self.ax,
-                {layer: masked},
-                style=style,
-                x=x_edges,
-                y=y_edges,
-                shading="flat",
-                **swatch_kw,
-                **override,
+                self.ax, {layer: masked}, style=style, x=x_edges, y=y_edges,
+                shading="flat", **swatch_kw, **override,
             )
         elif coords is not None:
             images = apply_data_style(
-                self.ax,
-                {layer: data},
-                style=style,
-                x=coords[0],
-                y=coords[1],
-                shading="nearest",
-                **swatch_kw,
-                **override,
+                self.ax, {layer: data}, style=style, x=coords[0], y=coords[1],
+                shading="nearest", **swatch_kw, **override,
             )
         else:
             render_kwargs: dict[str, Any] = (
                 {"extent": self.extent} if self.extent is not None else {}
             )
             images = apply_data_style(
-                self.ax,
-                {layer: data},
-                style=style,
-                **swatch_kw,
-                **render_kwargs,
-                **override,
+                self.ax, {layer: data}, style=style, **swatch_kw,
+                **render_kwargs, **override,
             )
         return images[layer]
 
@@ -2263,7 +2287,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         hillshade = resolve_hillshade(self.default_options.get("hillshade"))
         if hillshade is None:
             return
-        categorical = resolve_single_layer_style(style)[1].get("categories") is not None
+        categorical = (
+            resolve_single_layer_style(style)[1].get("categories") is not None
+        )
         if categorical or self._coords is not None:
             kind = "categorical" if categorical else "curvilinear"
             warnings.warn(
@@ -2281,13 +2307,13 @@ class ArrayGlyph(GeoMixin, Glyph):
         `ScalarMappable` carrying the preset's colormap + norm to
         `create_color_bar`, which honours the `ColorBar` placement.
         """
-        cbar_cfg = {**style_cfg, **self._style_color_overrides}
+        cbar_cfg = {**style_cfg, **resolve_style_overrides(self._style_color_overrides)}
         cbar_norm, _lo, _hi = resolve_style_norm(data, cbar_cfg)
-        mappable = ScalarMappable(
-            norm=cbar_norm, cmap=resolve_colormap(cbar_cfg["cmap"])
-        )
+        mappable = ScalarMappable(norm=cbar_norm, cmap=resolve_colormap(cbar_cfg["cmap"]))
         mappable.set_array([])
-        return self.create_color_bar(self.ax, mappable, self._style_cbar_kw(cbar_norm))
+        return self.create_color_bar(
+            self.ax, mappable, self._style_cbar_kw(cbar_norm)
+        )
 
     def apply_colormap(self, cmap: Colormap | str) -> np.ndarray:
         """Apply a matplotlib colormap to an array.
@@ -2500,6 +2526,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             spec-provided `ticks_spacing` before auto-computing it.
         """
         _reject_grouped_kwargs(kwargs)
+        _reject_loose_alpha(kwargs)
         for key, val in kwargs.items():
             if key not in self.default_options.keys():
                 raise ValueError(
@@ -2510,9 +2537,24 @@ class ArrayGlyph(GeoMixin, Glyph):
                 self.default_options[key] = val
         resolved_colorbar = _resolve_colorbar(colorbar)
         self.default_options.update(resolved_colorbar)
-        for key in ("vmin", "vmax", "center", "cmap"):
+        for key in _STYLE_OVERRIDE_KEYS:
             if key in kwargs and kwargs[key] is not None:
                 self._style_color_overrides[key] = kwargs[key]
+        # `levels`/`bands`/`alpha`/`alpha_range` are grouped kwargs
+        # (`contour=Contour(levels=...)`, `data_style=DataStyle(bands=...,
+        # alpha=..., alpha_range=...)`), so they are never loose keys -- they
+        # arrive via `_merge_group_params` into `default_options` (defaults
+        # `None`). Reconcile the sticky override slice with `default_options`
+        # every call: a set value overrides the preset (and carries into a later
+        # `animate`), while an explicit `None` -- what `DataStyle(bands=None)` /
+        # `alpha=None` emits -- clears any previously-applied override so the
+        # preset's own value is restored.
+        for key in _STYLE_GROUP_OVERRIDE_KEYS:
+            group_override = self.default_options.get(key)
+            if group_override is not None:
+                self._style_color_overrides[key] = group_override
+            else:
+                self._style_color_overrides.pop(key, None)
         self._style_wants_colorbar = colorbar is True or (
             isinstance(colorbar, ColorBar)
             and (
@@ -2562,13 +2604,8 @@ class ArrayGlyph(GeoMixin, Glyph):
         )
         if norm is None:
             im = ax.pcolormesh(
-                x_edges,
-                y_edges,
-                masked,
-                cmap=cmap,
-                vmin=ticks[0],
-                vmax=ticks[-1],
-                shading="flat",
+                x_edges, y_edges, masked, cmap=cmap,
+                vmin=ticks[0], vmax=ticks[-1], shading="flat",
             )
         else:
             im = ax.pcolormesh(
@@ -2616,9 +2653,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                   `ax.pcolormesh` with `shading="auto"`. Honours
                   `coords` (1-D centres or 2-D curvilinear).
                 - `"contour"` — line contours via `ax.contour`.
-                  Honours `contour=Contour(levels=...)` when set.
+                  Honours `levels` from kwargs when set.
                 - `"contourf"` — filled contours via `ax.contourf`.
-                  Honours `contour=Contour(levels=...)` when set.
+                  Honours `levels` from kwargs when set.
 
                 Cell-value display and point overlays only apply to
                 `"imshow"` and `"pcolormesh"`; they are silently
@@ -2654,8 +2691,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                 `background_color_threshold` keywords.
             data_style: Named-preset / relief-shading group object
                 (`cleopatra.styling.params.DataStyle`), e.g.
-                `DataStyle(style="dem", hillshade=True)`. Replaces the
-                loose `style` / `hillshade` keywords.
+                `DataStyle(style="dem", hillshade=True)` or
+                `DataStyle(style="temperature_2m", bands=6, alpha=0.5)`.
+                Replaces the loose `style` / `hillshade` keywords and the
+                per-call preset overrides `bands` / `alpha` / `alpha_range`.
             full_bleed: Fill the whole figure edge-to-edge with no surrounding
                 margin, by default False. `True` hides ticks and spines and
                 resizes the figure to the data box's aspect so the fill has no
@@ -2705,7 +2744,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                         Colormap, by default 'coolwarm_r'. A plain matplotlib
                         name (e.g. 'viridis') or a `Colormap` object is used
                         as-is; a **namespaced** name such as 'cmocean:thermal'
-                        or 'crameri:batlow' is resolved via the optional `cmap`
+                        or 'cmasher:ember' is resolved via the optional `cmap`
                         aggregator — install the `[science-colors]` extra
                         (`pip install cleopatra[science-colors]`). The `_r`
                         reverse suffix works on both forms.
@@ -2794,8 +2833,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                     `contour=Contour(...)`; per-cell value text
                     (`display_cell_value`, `num_size`,
                     `background_color_threshold`) moves to
-                    `cells=CellValues(...)`; the named preset and relief
-                    shading (`style`, `hillshade`) move to
+                    `cells=CellValues(...)`; the named preset, relief
+                    shading, and the per-call preset overrides (`style`,
+                    `hillshade`, `bands`, `alpha`, `alpha_range`) move to
                     `data_style=DataStyle(...)`. See
                     `cleopatra.styling.params`. Passing any of them as a
                     loose keyword raises with a pointer to the object. A
@@ -3187,15 +3227,10 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         style = self.default_options.get("style")
         if style is not None:
-            # Validate the preset; an invalid name rolls back every option the
-            # group objects merged (style plus any co-passed color=/contour=/
-            # cells=) so a failed styled plot never leaks options into a later
-            # plain plot() on this glyph.
             try:
                 resolve_single_layer_style(style)
             except ValueError:
-                for key, value in pre_group_opts.items():
-                    self.default_options[key] = value
+                self.default_options["style"] = None
                 raise
             if self.rgb:
                 warnings.warn(
@@ -3214,9 +3249,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 if basemap is not None:
                     self._draw_basemap(basemap)
                 if full_bleed:
-                    self._apply_full_bleed(
-                        facecolor=full_bleed if isinstance(full_bleed, str) else None
-                    )
+                    self._apply_full_bleed(facecolor=full_bleed if isinstance(full_bleed, str) else None)
                 elif getattr(self, "_auto_figure", False):
                     self._tighten_figure()
                 return self.fig, self.ax
@@ -3246,10 +3279,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 )
                 self._vmin = vmin_final
                 self._vmax = vmax_final
-                if (
-                    "ticks_spacing" not in kwargs
-                    and "ticks_spacing" not in resolved_colorbar
-                ):
+                if "ticks_spacing" not in kwargs and "ticks_spacing" not in resolved_colorbar:
                     self.ticks_spacing = (vmax_final - vmin_final) / 10 or 1.0
                     self.default_options["ticks_spacing"] = self.ticks_spacing
 
@@ -3354,9 +3384,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         if basemap is not None:
             self._draw_basemap(basemap)
         if full_bleed:
-            self._apply_full_bleed(
-                facecolor=full_bleed if isinstance(full_bleed, str) else None
-            )
+            self._apply_full_bleed(facecolor=full_bleed if isinstance(full_bleed, str) else None)
         elif getattr(self, "_auto_figure", False):
             self._tighten_figure()
         return fig, ax
@@ -3764,7 +3792,6 @@ class ArrayGlyph(GeoMixin, Glyph):
         frame_label: FrameLabel | None = None,
         *,
         color: ColorScaling | None = None,
-        contour: Contour | None = None,
         cells: CellValues | None = None,
         data_style: DataStyle | None = None,
         data_getter: Callable[[int], np.ndarray] | None = None,
@@ -3820,11 +3847,6 @@ class ArrayGlyph(GeoMixin, Glyph):
                 `ColorScaling.power(gamma=0.7)`. Replaces the loose
                 `color_scale` / `gamma` / `line_threshold` / `line_scale` /
                 `bounds` / `midpoint` keywords.
-            contour: Discretisation group object
-                (`cleopatra.styling.params.Contour`), e.g.
-                `Contour(levels=5)`, to bin the colour scale into a
-                `BoundaryNorm` for the animation (an animation has no
-                `contour`/`contourf` kind, so only `levels` applies here).
             cells: Per-cell value-text group object
                 (`cleopatra.styling.params.CellValues`), e.g.
                 `CellValues(show=True, size=8)`. Replaces the loose
@@ -3833,8 +3855,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                 `cell_value_text_colors` remain explicit parameters.)
             data_style: Named-preset / relief-shading group object
                 (`cleopatra.styling.params.DataStyle`), e.g.
-                `DataStyle(style="dem", hillshade=True)`. Replaces the
-                loose `style` / `hillshade` keywords.
+                `DataStyle(style="dem", hillshade=True)` or
+                `DataStyle(style="temperature_2m", bands=6, alpha=0.5)`.
+                Replaces the loose `style` / `hillshade` keywords and the
+                per-call preset overrides `bands` / `alpha` / `alpha_range`.
             data_getter: Optional callable `f(i) -> ndarray` that
                 returns the frame for index `i`, by default None.
                 When set, `self.arr` is no longer iterated; each
@@ -3893,7 +3917,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                         Colormap, by default 'coolwarm_r'. A plain matplotlib
                         name (e.g. 'viridis') or a `Colormap` object is used
                         as-is; a **namespaced** name such as 'cmocean:thermal'
-                        or 'crameri:batlow' is resolved via the optional `cmap`
+                        or 'cmasher:ember' is resolved via the optional `cmap`
                         aggregator — install the `[science-colors]` extra
                         (`pip install cleopatra[science-colors]`). The `_r`
                         reverse suffix works on both forms.
@@ -4123,7 +4147,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         else:
             label_location = frame_location
 
-        self._merge_group_params(color, contour, cells, data_style)
+        self._merge_group_params(color, cells, data_style)
         resolved_colorbar = self._apply_kwargs_and_colorbar(colorbar, kwargs)  # type: ignore[arg-type]
 
         if "ticks_spacing" not in resolved_colorbar:
@@ -4216,7 +4240,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                     points = None
                     show_cell_value = False
                 layer = self._resolve_style_layer(style)
-                cfg = {**DATA_STYLES[style][layer], **self._style_color_overrides}
+                cfg = {
+                    **DATA_STYLES[style][layer],
+                    **resolve_style_overrides(self._style_color_overrides),
+                }
                 self._apply_style_background(cfg)
                 hillshade_active = (
                     resolve_hillshade(self.default_options.get("hillshade")) is not None
@@ -4295,13 +4322,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                             vmax_prefix=vmax_prefix,
                             bounds=(0.02, 0.92, 0.32, 0.06),
                             text_color=self.default_options.get("cbar_label_color")
-                            or _swatch_text_default(
-                                self.default_options.get("cbar_box")
-                            ),
+                            or _swatch_text_default(self.default_options.get("cbar_box")),
                             value_color=self.default_options.get("cbar_tick_color")
-                            or _swatch_text_default(
-                                self.default_options.get("cbar_box")
-                            ),
+                            or _swatch_text_default(self.default_options.get("cbar_box")),
                             box=self.default_options.get("cbar_box"),
                         )
                     alpha_vmin = cfg.get("alpha_vmin")
@@ -4500,9 +4523,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         if basemap is not None:
             self._draw_basemap(basemap)
         if full_bleed:
-            self._apply_full_bleed(
-                facecolor=full_bleed if isinstance(full_bleed, str) else None
-            )
+            self._apply_full_bleed(facecolor=full_bleed if isinstance(full_bleed, str) else None)
         else:
             plt.tight_layout()
             if getattr(self, "_auto_figure", False):
@@ -4526,3 +4547,4 @@ class ArrayGlyph(GeoMixin, Glyph):
             *cell_text_value,
         )
         return anim
+

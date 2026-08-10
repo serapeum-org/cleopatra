@@ -4,7 +4,6 @@
  "license": "Apache-2.0",
  "presets": {
   "aerosol_optical_depth_550nm": {
-   "source": "earthkit",
    "layers": {
     "aerosol_optical_depth_550nm": {
      "label": "Total aerosol optical depth at 550 nm",
@@ -100,12 +99,89 @@
     }
    }
   },
+  "carbon_monoxide_500hpa": {
+   "layers": {
+    "carbon_monoxide_500hpa": {
+     "label": "Carbon monoxide at 500 hPa",
+     "colors": [
+      "#265ba0",
+      "#269170",
+      "#6bb25b",
+      "#a8c96b",
+      "#fff49b",
+      "#f4d138",
+      "#eab538",
+      "#dd8740",
+      "#cc3533",
+      "#9b1623",
+      "#561919"
+     ],
+     "colormap": "listed",
+     "levels": [
+      80.0,
+      100.0,
+      120.0,
+      140.0,
+      160.0,
+      180.0,
+      200.0,
+      220.0,
+      250.0,
+      300.0,
+      400.0,
+      500.0
+     ],
+     "extend": "max",
+     "alpha": 1.0
+    }
+   }
+  },
+  "carbon_monoxide_700hpa": {
+   "layers": {
+    "carbon_monoxide_700hpa": {
+     "label": "Carbon monoxide at 700 hPa",
+     "colors": [
+      "#9bc7ea",
+      "#009ee0",
+      "#007bbf",
+      "#265ba0",
+      "#269170",
+      "#6bb25b",
+      "#a8c96b",
+      "#fff49b",
+      "#f4d138",
+      "#eab538",
+      "#dd8740",
+      "#cc3533",
+      "#9b1623"
+     ],
+     "colormap": "listed",
+     "levels": [
+      0.0,
+      40.0,
+      60.0,
+      80.0,
+      100.0,
+      120.0,
+      140.0,
+      160.0,
+      180.0,
+      200.0,
+      500.0,
+      1000.0,
+      2000.0,
+      3000.0
+     ],
+     "extend": "max",
+     "alpha": 1.0
+    }
+   }
+  },
   "ch4_column_mean_molar_fraction": {
    "layers": {
     "ch4_column_mean_molar_fraction": {
      "label": "CH4 column-mean molar fraction",
      "colors": [
-      "#0d0d0d",
       "#7d008e",
       "#2d00a4",
       "#0000dd",
@@ -119,11 +195,27 @@
       "#f9d700",
       "#ff9900",
       "#f40000",
-      "#d20000",
-      "#66001f"
+      "#d20000"
      ],
      "colormap": "listed",
-     "bands": 16,
+     "levels": [
+      1640.0,
+      1660.0,
+      1680.0,
+      1700.0,
+      1720.0,
+      1740.0,
+      1760.0,
+      1780.0,
+      1800.0,
+      1820.0,
+      1840.0,
+      1860.0,
+      1880.0,
+      1900.0,
+      1920.0
+     ],
+     "extend": "both",
      "alpha": 1.0
     }
    }
@@ -190,42 +282,55 @@
     "co2_column_mean_molar_fraction": {
      "label": "CO2 column-mean molar fraction",
      "colors": [
-      "#5e4fa2",
-      "#4e63ac",
-      "#3d79b6",
-      "#3990ba",
-      "#4ea7b0",
-      "#62bda7",
-      "#7ccaa5",
-      "#94d4a4",
-      "#aedea3",
-      "#c6e89f",
-      "#ddf19a",
-      "#ecf7a1",
-      "#f6fbb0",
-      "#fffebe",
-      "#fff3ac",
-      "#fee797",
-      "#fed884",
-      "#fdc574",
-      "#fdb163",
-      "#fa9857",
-      "#f7814c",
-      "#f26944",
-      "#e55749",
-      "#d9444d",
-      "#c72e4c",
-      "#b11747",
-      "#9e0142"
+      "#770088",
+      "#820099",
+      "#0f00ae",
+      "#0010d6",
+      "#0068dd",
+      "#0096d3",
+      "#00a6ae",
+      "#00a670",
+      "#00a725",
+      "#00bb00",
+      "#00dd00",
+      "#2df700",
+      "#99fb00",
+      "#e8eb00",
+      "#fcc900",
+      "#ff8a00",
+      "#fb1300",
+      "#dd0000",
+      "#cc0000"
      ],
      "colormap": "listed",
-     "bands": 27,
+     "levels": [
+      396.0,
+      397.0,
+      398.0,
+      399.0,
+      400.0,
+      401.0,
+      402.0,
+      403.0,
+      404.0,
+      405.0,
+      406.0,
+      407.0,
+      408.0,
+      409.0,
+      410.0,
+      411.0,
+      412.0,
+      413.0,
+      414.0,
+      415.0
+     ],
+     "extend": "both",
      "alpha": 1.0
     }
    }
   },
   "convective_available_potential_energy": {
-   "source": "earthkit",
    "layers": {
     "convective_available_potential_energy": {
      "label": "Convective available potential energy",
@@ -649,7 +754,6 @@
    }
   },
   "dewpoint_temperature_2m": {
-   "source": "earthkit",
    "layers": {
     "dewpoint_temperature_2m": {
      "label": "2 m dewpoint temperature",
@@ -743,7 +847,6 @@
    }
   },
   "dust_aerosol_optical_depth_550nm": {
-   "source": "earthkit",
    "layers": {
     "dust_aerosol_optical_depth_550nm": {
      "label": "Dust aerosol optical depth at 550 nm",
@@ -1214,6 +1317,278 @@
     }
    }
   },
+  "methane_300hpa": {
+   "layers": {
+    "methane_300hpa": {
+     "label": "Methane at 300 hPa",
+     "colors": [
+      "#820093",
+      "#0000b9",
+      "#0078dd",
+      "#00a4bb",
+      "#00a55d",
+      "#00bc00",
+      "#00f400",
+      "#ccf900",
+      "#ffc900",
+      "#ff2d00",
+      "#d70000"
+     ],
+     "colormap": "listed",
+     "units": "ppbv",
+     "levels": [
+      1720.0,
+      1740.0,
+      1760.0,
+      1780.0,
+      1800.0,
+      1820.0,
+      1840.0,
+      1860.0,
+      1880.0,
+      1900.0,
+      1920.0,
+      1940.0
+     ],
+     "extend": "both",
+     "alpha": 1.0
+    }
+   }
+  },
+  "methane_500hpa": {
+   "layers": {
+    "methane_500hpa": {
+     "label": "Methane at 500 hPa",
+     "colors": [
+      "#60036d",
+      "#820093",
+      "#4300a2",
+      "#0000b9",
+      "#0013dd",
+      "#0078dd",
+      "#0092dd",
+      "#00a4bb",
+      "#00aa98",
+      "#00a55d",
+      "#009f00",
+      "#00bc00",
+      "#00d700",
+      "#00f400",
+      "#67ff00",
+      "#ccf900",
+      "#f1e700",
+      "#ffc900",
+      "#ffa100",
+      "#ff2d00",
+      "#ec0000",
+      "#d70000",
+      "#b60007"
+     ],
+     "colormap": "listed",
+     "units": "ppbv",
+     "levels": [
+      1720.0,
+      1730.0,
+      1740.0,
+      1750.0,
+      1760.0,
+      1770.0,
+      1780.0,
+      1790.0,
+      1800.0,
+      1810.0,
+      1820.0,
+      1830.0,
+      1840.0,
+      1850.0,
+      1860.0,
+      1870.0,
+      1880.0,
+      1890.0,
+      1900.0,
+      1910.0,
+      1920.0,
+      1930.0,
+      1940.0,
+      1950.0
+     ],
+     "extend": "both",
+     "alpha": 1.0
+    }
+   }
+  },
+  "methane_50hpa": {
+   "layers": {
+    "methane_50hpa": {
+     "label": "Methane at 50 hPa",
+     "colors": [
+      "#60036d",
+      "#820093",
+      "#4300a2",
+      "#0000b9",
+      "#0013dd",
+      "#0078dd",
+      "#0092dd",
+      "#00a4bb",
+      "#00aa98",
+      "#00a55d",
+      "#009f00",
+      "#00bc00",
+      "#00d700",
+      "#00f400",
+      "#67ff00",
+      "#ccf900",
+      "#f1e700",
+      "#ffc900",
+      "#ffa100",
+      "#ff2d00",
+      "#ec0000",
+      "#d70000",
+      "#b60007"
+     ],
+     "colormap": "listed",
+     "units": "ppbv",
+     "levels": [
+      950.0,
+      1000.0,
+      1050.0,
+      1100.0,
+      1150.0,
+      1200.0,
+      1250.0,
+      1300.0,
+      1350.0,
+      1400.0,
+      1450.0,
+      1500.0,
+      1550.0,
+      1600.0,
+      1650.0,
+      1700.0,
+      1750.0,
+      1800.0,
+      1850.0,
+      1900.0,
+      1950.0,
+      2000.0,
+      2050.0,
+      2100.0
+     ],
+     "extend": "both",
+     "alpha": 1.0
+    }
+   }
+  },
+  "methane_850hpa": {
+   "layers": {
+    "methane_850hpa": {
+     "label": "Methane at 850 hPa",
+     "colors": [
+      "#770088",
+      "#83009a",
+      "#0000b1",
+      "#0013dd",
+      "#0080dd",
+      "#009ecf",
+      "#00aa9d",
+      "#00a353",
+      "#00aa00",
+      "#00cc00",
+      "#00f200",
+      "#75ff00",
+      "#e0f300",
+      "#fbd500",
+      "#ffa100",
+      "#ff1500",
+      "#de0000",
+      "#cc0000"
+     ],
+     "colormap": "listed",
+     "units": "ppbv",
+     "levels": [
+      1660.0,
+      1680.0,
+      1700.0,
+      1720.0,
+      1740.0,
+      1760.0,
+      1780.0,
+      1800.0,
+      1820.0,
+      1840.0,
+      1860.0,
+      1880.0,
+      1900.0,
+      1920.0,
+      1940.0,
+      1960.0,
+      1980.0,
+      2000.0,
+      2020.0
+     ],
+     "extend": "both",
+     "alpha": 1.0
+    }
+   }
+  },
+  "methane_surface": {
+   "layers": {
+    "methane_surface": {
+     "label": "Methane at the surface",
+     "colors": [
+      "#680277",
+      "#850096",
+      "#2d00a4",
+      "#0000c9",
+      "#0041dd",
+      "#0085dd",
+      "#009fcb",
+      "#00aaa0",
+      "#00a773",
+      "#009c00",
+      "#00bc00",
+      "#00da00",
+      "#00fa00",
+      "#84ff00",
+      "#dcf400",
+      "#f8da00",
+      "#ffb500",
+      "#ff5d00",
+      "#f40000",
+      "#da0000",
+      "#be0004"
+     ],
+     "colormap": "listed",
+     "units": "ppbv",
+     "levels": [
+      1640.0,
+      1660.0,
+      1680.0,
+      1700.0,
+      1720.0,
+      1740.0,
+      1760.0,
+      1780.0,
+      1800.0,
+      1820.0,
+      1840.0,
+      1860.0,
+      1880.0,
+      1900.0,
+      1920.0,
+      1940.0,
+      1960.0,
+      1980.0,
+      2000.0,
+      2020.0,
+      2040.0,
+      2060.0
+     ],
+     "extend": "both",
+     "alpha": 1.0
+    }
+   }
+  },
   "min_temperature_2m": {
    "layers": {
     "min_temperature_2m": {
@@ -1301,11 +1676,26 @@
       "#eab538",
       "#dd8740",
       "#cc3533",
-      "#9b1623",
-      "#561919"
+      "#9b1623"
      ],
      "colormap": "listed",
-     "bands": 14,
+     "levels": [
+      0.01,
+      0.02,
+      0.05,
+      0.1,
+      0.2,
+      0.5,
+      1.0,
+      2.0,
+      5.0,
+      10.0,
+      15.0,
+      20.0,
+      50.0,
+      100.0
+     ],
+     "extend": "max",
      "alpha": 1.0
     }
    }
@@ -1313,7 +1703,7 @@
   "ozone": {
    "layers": {
     "ozone": {
-     "label": "GEMS Ozone",
+     "label": "Ozone",
      "colors": [
       "#9bc7ea",
       "#009ee0",
@@ -1327,11 +1717,87 @@
       "#eab538",
       "#dd8740",
       "#cc3533",
-      "#9b1623",
-      "#561919"
+      "#9b1623"
      ],
      "colormap": "listed",
-     "bands": 14,
+     "levels": [
+      0.0,
+      10.0,
+      20.0,
+      30.0,
+      40.0,
+      50.0,
+      60.0,
+      70.0,
+      80.0,
+      90.0,
+      100.0,
+      120.0,
+      150.0
+     ],
+     "extend": "max",
+     "alpha": 1.0
+    }
+   }
+  },
+  "particulate_matter_10um": {
+   "layers": {
+    "particulate_matter_10um": {
+     "label": "Particulate matter d < 10 um",
+     "colors": [
+      "#31ff00",
+      "#31cf00",
+      "#ffff00",
+      "#ffcf00",
+      "#ff9a00",
+      "#ff6464",
+      "#ff0000",
+      "#990000"
+     ],
+     "colormap": "listed",
+     "levels": [
+      17.0,
+      34.0,
+      51.0,
+      59.0,
+      67.0,
+      76.0,
+      84.0,
+      92.0,
+      101.0
+     ],
+     "extend": "max",
+     "alpha": 1.0
+    }
+   }
+  },
+  "particulate_matter_2p5um": {
+   "layers": {
+    "particulate_matter_2p5um": {
+     "label": "Particulate matter d < 2.5 um",
+     "colors": [
+      "#31ff00",
+      "#31cf00",
+      "#ffff00",
+      "#ffcf00",
+      "#ff9a00",
+      "#ff6464",
+      "#ff0000",
+      "#990000"
+     ],
+     "colormap": "listed",
+     "levels": [
+      12.0,
+      24.0,
+      36.0,
+      42.0,
+      48.0,
+      54.0,
+      59.0,
+      65.0,
+      71.0
+     ],
+     "extend": "max",
      "alpha": 1.0
     }
    }
@@ -1664,7 +2130,7 @@
   "sulphate_aerosol_optical_depth_550nm": {
    "layers": {
     "sulphate_aerosol_optical_depth_550nm": {
-     "label": "Sulphate Aerosol Optical Depth at 550nm",
+     "label": "Sulphate aerosol optical depth at 550 nm",
      "colors": [
       "#0000f1",
       "#004cff",
@@ -1674,17 +2140,27 @@
       "#ceff29",
       "#ffc400",
       "#ff6800",
-      "#f10800",
-      "#800000"
+      "#f10800"
      ],
      "colormap": "listed",
-     "bands": 10,
+     "levels": [
+      0.1,
+      0.15,
+      0.2,
+      0.25,
+      0.3,
+      0.35,
+      0.4,
+      0.5,
+      0.8,
+      1.0
+     ],
+     "extend": "max",
      "alpha": 1.0
     }
    }
   },
   "temperature_2m": {
-   "source": "earthkit",
    "layers": {
     "temperature_2m": {
      "label": "2 m temperature",
@@ -1796,25 +2272,42 @@
   "total_column_carbon_monoxide": {
    "layers": {
     "total_column_carbon_monoxide": {
-     "label": "Total column Carbon monoxide",
+     "label": "Total column carbon monoxide",
      "colors": [
-      "#9bc7ea",
-      "#009ee0",
-      "#007bbf",
-      "#265ba0",
-      "#269170",
-      "#6bb25b",
-      "#a8c96b",
-      "#fff49b",
-      "#f4d138",
-      "#eab538",
-      "#dd8740",
-      "#cc3533",
-      "#9b1623",
-      "#561919"
+      "#99c7e8",
+      "#0c9fdf",
+      "#007fc2",
+      "#1c61a5",
+      "#247e7d",
+      "#4ea361",
+      "#8abc62",
+      "#cfdc80",
+      "#fae674",
+      "#efc636",
+      "#e5a838",
+      "#d9783e",
+      "#c83132",
+      "#991421"
      ],
      "colormap": "listed",
-     "bands": 14,
+     "levels": [
+      0.0,
+      0.5,
+      1.0,
+      1.5,
+      2.0,
+      2.5,
+      3.0,
+      3.5,
+      4.0,
+      4.5,
+      5.0,
+      5.5,
+      6.0,
+      10.0,
+      20.0
+     ],
+     "extend": "max",
      "alpha": 1.0
     }
    }
@@ -1822,7 +2315,7 @@
   "total_column_ozone": {
    "layers": {
     "total_column_ozone": {
-     "label": "GEMS Total column ozone",
+     "label": "Total column ozone",
      "colors": [
       "#000000",
       "#000066",
@@ -1847,7 +2340,28 @@
       "#665433"
      ],
      "colormap": "listed",
-     "bands": 21,
+     "levels": [
+      100.0,
+      125.0,
+      150.0,
+      175.0,
+      200.0,
+      225.0,
+      250.0,
+      275.0,
+      300.0,
+      325.0,
+      350.0,
+      375.0,
+      400.0,
+      425.0,
+      450.0,
+      475.0,
+      500.0,
+      550.0,
+      600.0
+     ],
+     "extend": "min",
      "alpha": 1.0
     }
    }
@@ -1855,25 +2369,39 @@
   "total_column_sulphur_dioxide": {
    "layers": {
     "total_column_sulphur_dioxide": {
-     "label": "Total column Sulphur dioxide",
+     "label": "Total column sulphur dioxide",
      "colors": [
-      "#9bc7ea",
-      "#009ee0",
-      "#007bbf",
-      "#265ba0",
-      "#269170",
-      "#6bb25b",
-      "#a8c96b",
+      "#99c7e8",
+      "#009cde",
+      "#007abd",
+      "#24599e",
+      "#248f6e",
+      "#69b059",
+      "#a6c769",
       "#fff49b",
-      "#f4d138",
-      "#eab538",
-      "#dd8740",
-      "#cc3533",
-      "#9b1623",
-      "#561919"
+      "#f2cf36",
+      "#e8b236",
+      "#db8540",
+      "#cc3333",
+      "#991421"
      ],
      "colormap": "listed",
-     "bands": 14,
+     "levels": [
+      0.01,
+      0.02,
+      0.05,
+      0.1,
+      0.2,
+      0.5,
+      1.0,
+      2.0,
+      5.0,
+      10.0,
+      20.0,
+      50.0,
+      100.0
+     ],
+     "extend": "max",
      "alpha": 1.0
     }
    }
@@ -2076,6 +2604,88 @@
     }
    }
   },
+  "uv_index": {
+   "layers": {
+    "uv_index": {
+     "label": "UV index",
+     "colors": [
+      "#42a631",
+      "#a5c600",
+      "#fff300",
+      "#ffd700",
+      "#f7b200",
+      "#ef8a00",
+      "#e66900",
+      "#e63510",
+      "#e62484",
+      "#b565a5",
+      "#847db5",
+      "#7ba6ff",
+      "#63beff"
+     ],
+     "colormap": "listed",
+     "levels": [
+      1.0,
+      2.0,
+      3.0,
+      4.0,
+      5.0,
+      6.0,
+      7.0,
+      8.0,
+      9.0,
+      10.0,
+      11.0,
+      13.0,
+      15.0,
+      18.0
+     ],
+     "extend": "max",
+     "alpha": 1.0
+    }
+   }
+  },
+  "uv_index_clear_sky": {
+   "layers": {
+    "uv_index_clear_sky": {
+     "label": "UV index (clear sky)",
+     "colors": [
+      "#42a631",
+      "#a5c600",
+      "#fff300",
+      "#ffd700",
+      "#f7b200",
+      "#ef8a00",
+      "#e66900",
+      "#e63510",
+      "#e62484",
+      "#b565a5",
+      "#847db5",
+      "#7ba6ff",
+      "#63beff"
+     ],
+     "colormap": "listed",
+     "levels": [
+      1.0,
+      2.0,
+      3.0,
+      4.0,
+      5.0,
+      6.0,
+      7.0,
+      8.0,
+      9.0,
+      10.0,
+      11.0,
+      13.0,
+      15.0,
+      18.0
+     ],
+     "extend": "max",
+     "alpha": 1.0
+    }
+   }
+  },
   "vertical_velocity": {
    "layers": {
     "vertical_velocity": {
@@ -2128,11 +2738,28 @@
       "#ffff07",
       "#ffff46",
       "#ffff85",
-      "#ffffc4",
-      "#ffffff"
+      "#ffffc4"
      ],
      "colormap": "listed",
-     "bands": 16,
+     "levels": [
+      0.0001,
+      0.0002,
+      0.0005,
+      0.001,
+      0.002,
+      0.005,
+      0.01,
+      0.02,
+      0.05,
+      0.1,
+      0.2,
+      0.5,
+      1.0,
+      2.0,
+      5.0,
+      10.0
+     ],
+     "extend": "max",
      "alpha": 1.0
     }
    }
@@ -2188,7 +2815,6 @@
    }
   },
   "wind_speed_10m": {
-   "source": "earthkit",
    "layers": {
     "wind_speed_10m": {
      "label": "10 m wind speed",
@@ -2237,7 +2863,6 @@
    }
   },
   "wind_u_10m": {
-   "source": "earthkit",
    "layers": {
     "wind_u_10m": {
      "label": "10 m U wind component",
@@ -2279,7 +2904,6 @@
    }
   },
   "wind_v_10m": {
-   "source": "earthkit",
    "layers": {
     "wind_v_10m": {
      "label": "10 m V wind component",

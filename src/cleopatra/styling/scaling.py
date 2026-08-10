@@ -129,9 +129,7 @@ class ColorScaling:
         line_threshold: Linear-region threshold for `sym-lognorm`.
         line_scale: Linear-region scale factor for `sym-lognorm`.
         bounds: Explicit bin edges for `boundary-norm`.
-        center: Centre value for the `midpoint` scale (the value pinned to
-            the colormap centre). Named `center` rather than `midpoint` so
-            the field does not shadow the `midpoint()` variant constructor.
+        midpoint: Centre value for the `midpoint` scale.
     """
 
     kind: ColorScale = ColorScale.LINEAR
@@ -139,7 +137,7 @@ class ColorScaling:
     line_threshold: float = 0.0001
     line_scale: float = 0.001
     bounds: list[float] | None = None
-    center: float = 0
+    midpoint: float = 0
 
     @classmethod
     def linear(cls) -> ColorScaling:
@@ -194,9 +192,7 @@ class ColorScaling:
 
                 ```
         """
-        return cls(
-            kind=ColorScale.SYM_LOGNORM, line_threshold=threshold, line_scale=scale
-        )
+        return cls(kind=ColorScale.SYM_LOGNORM, line_threshold=threshold, line_scale=scale)
 
     @classmethod
     def boundary(cls, bounds: list[float] | None = None) -> ColorScaling:
@@ -229,12 +225,12 @@ class ColorScaling:
             - Anchor the colormap centre at a chosen value:
                 ```python
                 >>> from cleopatra.styling.scaling import ColorScaling
-                >>> ColorScaling.midpoint(at=100).center
+                >>> ColorScaling.midpoint(at=100).midpoint
                 100
 
                 ```
         """
-        return cls(kind=ColorScale.MIDPOINT, center=at)
+        return cls(kind=ColorScale.MIDPOINT, midpoint=at)
 
     @classmethod
     def from_options(cls, options: dict[str, Any]) -> ColorScaling:
@@ -277,12 +273,10 @@ class ColorScaling:
         return cls(
             kind=kind,
             gamma=options.get("gamma", _SCALE_DEFAULTS["gamma"]),
-            line_threshold=options.get(
-                "line_threshold", _SCALE_DEFAULTS["line_threshold"]
-            ),
+            line_threshold=options.get("line_threshold", _SCALE_DEFAULTS["line_threshold"]),
             line_scale=options.get("line_scale", _SCALE_DEFAULTS["line_scale"]),
             bounds=options.get("bounds", _SCALE_DEFAULTS["bounds"]),
-            center=options.get("midpoint", _SCALE_DEFAULTS["midpoint"]),
+            midpoint=options.get("midpoint", _SCALE_DEFAULTS["midpoint"]),
         )
 
     def to_options(self) -> dict[str, Any]:
@@ -301,20 +295,13 @@ class ColorScaling:
 
                 ```
         """
-        # Deliberately emits ALL six keys (unlike the params.py groups,
-        # which emit only explicitly-set fields): a `color=` argument fully
-        # specifies one scale, so writing every key -- including the unset
-        # ones at their dataclass defaults -- resets the other scales'
-        # knobs, letting a caller switch scales cleanly without leftover
-        # `gamma`/`bounds`/`midpoint` from a prior `color=`. Do not "fix"
-        # this into a partial emit; it would break scale-switch resets.
         return {
             "color_scale": self.kind.value,
             "gamma": self.gamma,
             "line_threshold": self.line_threshold,
             "line_scale": self.line_scale,
             "bounds": self.bounds,
-            "midpoint": self.center,
+            "midpoint": self.midpoint,
         }
 
     def build_norm(
@@ -377,69 +364,51 @@ class ColorScaling:
         vmax = ticks[-1]
         bounds_from_levels = levels_to_bounds(levels, vmin, vmax)
 
-        builder = self._NORM_BUILDERS.get(self.kind)
-        if builder is None:  # pragma: no cover - guards a future unmapped kind
-            raise ValueError(
-                f"No norm branch implemented for color_scale={self.kind!r}"
+        norm: colors.Normalize | None
+        cbar_kw: dict[str, Any]
+        if self.kind == ColorScale.LINEAR:
+            if bounds_from_levels is not None:
+                norm = colors.BoundaryNorm(boundaries=bounds_from_levels, ncolors=256)
+                cbar_kw = {"ticks": bounds_from_levels}
+            else:
+                norm = None
+                cbar_kw = {"ticks": ticks}
+        elif self.kind == ColorScale.POWER:
+            norm = colors.PowerNorm(gamma=self.gamma, vmin=vmin, vmax=vmax)
+            cbar_kw = {"ticks": ticks}
+        elif self.kind == ColorScale.SYM_LOGNORM:
+            norm = colors.SymLogNorm(
+                linthresh=self.line_threshold,
+                linscale=self.line_scale,
+                base=np.e,
+                vmin=vmin,
+                vmax=vmax,
             )
-        norm, cbar_kw = builder(self, ticks, vmin, vmax, bounds_from_levels)
+            formatter = LogFormatter(10, labelOnlyBase=False)
+            cbar_kw = {"ticks": ticks, "format": formatter}
+        elif self.kind == ColorScale.BOUNDARY_NORM:
+            if self.bounds:
+                bounds = self.bounds
+                cbar_kw = {"ticks": self.bounds}
+            elif bounds_from_levels is not None:
+                bounds = bounds_from_levels
+                cbar_kw = {"ticks": bounds_from_levels}
+            else:
+                bounds = ticks
+                cbar_kw = {"ticks": ticks}
+            norm = colors.BoundaryNorm(boundaries=bounds, ncolors=256)
+        elif self.kind == ColorScale.MIDPOINT:
+            norm = MidpointNormalize(midpoint=self.midpoint, vmin=vmin, vmax=vmax)
+            cbar_kw = {"ticks": ticks}
+        else:  # pragma: no cover - a ColorScale member without a branch
+            raise ValueError(
+                f"No norm branch implemented for color_scale={self.kind!r}."
+            )
 
-        if extend is not None:
-            cbar_kw["extend"] = extend
-        elif levels is not None:
-            cbar_kw["extend"] = "both"
+        if extend is None:
+            extend_effective = "both" if levels is not None else "neither"
         else:
-            cbar_kw["extend"] = "neither"
+            extend_effective = extend
+        cbar_kw["extend"] = extend_effective
+
         return norm, cbar_kw
-
-    def _linear_norm(self, ticks, vmin, vmax, bounds_from_levels):
-        """`linear` scale: a `BoundaryNorm` when levels discretise it, else none."""
-        if bounds_from_levels is not None:
-            norm = colors.BoundaryNorm(boundaries=bounds_from_levels, ncolors=256)
-            return norm, {"ticks": bounds_from_levels}
-        return None, {"ticks": ticks}
-
-    def _power_norm(self, ticks, vmin, vmax, bounds_from_levels):
-        """`power` scale: a `PowerNorm` with this object's `gamma`."""
-        return colors.PowerNorm(gamma=self.gamma, vmin=vmin, vmax=vmax), {
-            "ticks": ticks
-        }
-
-    def _sym_log_norm(self, ticks, vmin, vmax, bounds_from_levels):
-        """`sym-lognorm` scale: a `SymLogNorm` plus a log tick formatter."""
-        norm = colors.SymLogNorm(
-            linthresh=self.line_threshold,
-            linscale=self.line_scale,
-            base=np.e,
-            vmin=vmin,
-            vmax=vmax,
-        )
-        return norm, {"ticks": ticks, "format": LogFormatter(10, labelOnlyBase=False)}
-
-    def _boundary_norm(self, ticks, vmin, vmax, bounds_from_levels):
-        """`boundary-norm` scale: explicit `bounds`, else levels, else the ticks."""
-        if self.bounds:
-            bounds = self.bounds
-        elif bounds_from_levels is not None:
-            bounds = bounds_from_levels
-        else:
-            bounds = ticks
-        norm = colors.BoundaryNorm(boundaries=bounds, ncolors=256)
-        return norm, {"ticks": bounds}
-
-    def _midpoint_norm(self, ticks, vmin, vmax, bounds_from_levels):
-        """`midpoint` scale: a `MidpointNormalize` centred at `self.center`."""
-        return MidpointNormalize(midpoint=self.center, vmin=vmin, vmax=vmax), {
-            "ticks": ticks
-        }
-
-    #: Per-scale norm builders, dispatched by `build_norm` (each takes
-    #: `(self, ticks, vmin, vmax, bounds_from_levels)` and returns
-    #: `(norm, cbar_kw)`), keeping `build_norm` a flat dispatch.
-    _NORM_BUILDERS = {
-        ColorScale.LINEAR: _linear_norm,
-        ColorScale.POWER: _power_norm,
-        ColorScale.SYM_LOGNORM: _sym_log_norm,
-        ColorScale.BOUNDARY_NORM: _boundary_norm,
-        ColorScale.MIDPOINT: _midpoint_norm,
-    }

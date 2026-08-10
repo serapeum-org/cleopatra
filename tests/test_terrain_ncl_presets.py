@@ -1,4 +1,4 @@
-"""Tests for the Crameri terrain presets, NCL/MeteoSwiss tables, and the
+"""Tests for the terrain presets, NCL/MeteoSwiss tables, and the
 hinge-faithful `_preset_cmap` loader (F1/F1b/F2).
 
 Covers the palette colormap modes of `cleopatra.styling.colors._preset_cmap`
@@ -131,7 +131,7 @@ class TestTopographyHingeFix:
 
 
 class TestTerrainPresets:
-    """Tests for the vendored Crameri terrain presets (F1)."""
+    """Tests for the vendored terrain presets (F1)."""
 
     @pytest.mark.parametrize("key", ["elevation_oleron", "elevation_bukavu", "elevation_fes"])
     def test_terrain_preset_registered_linear_centered(self, key):
@@ -141,7 +141,7 @@ class TestTerrainPresets:
             key: The terrain preset name.
 
         Test scenario:
-            Crameri hypsometric maps are registered hinge-faithful
+            hypsometric maps are registered hinge-faithful
             (`LinearSegmentedColormap`) and symmetric about sea level
             (`center=0`).
         """

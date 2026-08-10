@@ -12,28 +12,28 @@ by GRIB shortName:
   ``src/common/Colour.cc``. Every Magics preset renders as equal-width bands
   (``bands`` = its colour count) over a fixed ``vmin``/``vmax`` decoded from its
   style name's ``f<from>t<to>[i<interval>]`` grammar, when the name carries one.
-- **ecmwf/earthkit-plots** (Apache-2.0): a curated subset of parameters using
-  earthkit's ``optimal`` style variant -- ECMWF's actual professional look
+- **ECMWF reference styles** (Apache-2.0): a curated subset of parameters using
+  the ``optimal`` style variant -- ECMWF's actual professional look
   (explicit, non-uniform contour ``levels`` + an ``extend`` cap, or a genuine
   continuous ramp when a parameter has no discrete levels).
 
-Where both sources cover the same shortName, the earthkit-plots record is kept
-and the Magics one dropped (see ``EARTHKIT_OVERRIDE_KEYS``) -- earthkit's is the
+Where both sources cover the same shortName, the reference record is kept
+and the Magics one dropped (see ``REFERENCE_OVERRIDE_KEYS``) -- the reference set is the
 professional weather-service look; only one record per shortName ships.
 
 Only each source's colour *data* and parameter/label associations are vendored,
-never any Magics or earthkit-plots code.
+never any upstream code.
 
 Maintainer dependencies: ``matplotlib`` (already a cleopatra dependency, used to
 resolve Magics' named colours) and ``PyYAML`` (``import yaml``, used to parse
-the earthkit style files) -- neither is a cleopatra runtime dependency; install
+the reference style files) -- neither is a cleopatra runtime dependency; install
 PyYAML in the maintainer environment before re-running.
 
 Re-run (from the repo root)::
 
-    python tools/build_weather_presets.py src/cleopatra/styling/data/weather_presets.json [<magics_ref>] [<earthkit_ref>]
+    python tools/build_weather_presets.py src/cleopatra/styling/data/weather_presets.json [<magics_ref>] [<reference_ref>]
 
-``<magics_ref>`` defaults to ``develop``, ``<earthkit_ref>`` defaults to ``main``.
+``<magics_ref>`` defaults to ``develop``, ``<reference_ref>`` defaults to ``main``.
 """
 
 import colorsys
@@ -44,7 +44,7 @@ import urllib.request
 from pathlib import Path
 
 import yaml
-from matplotlib.colors import to_hex, to_rgba
+from matplotlib.colors import LinearSegmentedColormap, to_hex, to_rgba
 
 # Opener restricted to http(s): only the HTTP(S) handlers are registered (plus
 # the supporting redirect/error-processing handlers `urlopen` needs), so a
@@ -61,9 +61,16 @@ for _handler in (
 ):
     _HTTP_ONLY_OPENER.add_handler(_handler)
 
-#: GRIB shortNames earthkit-plots' curated defaults supersede -- dropped from
+#: GRIB shortNames reference-source curated defaults supersede -- dropped from
 #: the Magics side so the merged file carries exactly one record per shortName.
-EARTHKIT_OVERRIDE_KEYS = {"2d", "2t", "aod550", "duaod550", "tp"}
+REFERENCE_OVERRIDE_KEYS = {
+    "2d", "2t", "aod550", "duaod550", "tp",
+    # CAMS composition shortNames whose reference `optimal` look supersedes the
+    # Magics palette for the same field (reference-only shortNames -- the CH4/CO
+    # level slices, uvi, uvics -- need no entry; they have no Magics record).
+    "suaod550", "tcco", "tcco2", "tcch4", "gtco3", "tcso2",
+    "no2", "go3", "frpfire", "pm10", "pm2p5",
+}
 
 # --- Magics -----------------------------------------------------------------
 
@@ -234,16 +241,16 @@ def build_magics(magics_ref):
     return presets, skipped, sorted(unresolved)
 
 
-# --- earthkit-plots -----------------------------------------------------------
+# --- reference styles -----------------------------------------------------------
 
-EARTHKIT_RAW = (
+REFERENCE_RAW = (
     "https://raw.githubusercontent.com/ecmwf/earthkit-plots/{ref}"
     "/src/earthkit/plots/data/styles/auto-styles/{stem}.yml"
 )
 
-#: earthkit auto-style file stem -> (GRIB shortName cleopatra keys it by, label).
+#: reference auto-style file stem -> (GRIB shortName cleopatra keys it by, label).
 #: The `optimal` variant of each is vendored as the parameter's default style.
-EARTHKIT_PARAMS = {
+REFERENCE_PARAMS = {
     "2t": ("2t", "2 m temperature"),
     "2t_dewpoint": ("2d", "2 m dewpoint temperature"),
     "composition_aod550": ("aod550", "Total aerosol optical depth at 550 nm"),
@@ -253,17 +260,42 @@ EARTHKIT_PARAMS = {
     "wind-speed-at-10m": ("10si", "10 m wind speed"),
     "total-precipitation": ("tp", "Total precipitation"),
     "cape": ("cape", "Convective available potential energy"),
+    # CAMS atmospheric composition. aod550/duaod550 are covered above; the
+    # rest of reference's `composition_*` auto-styles are added here. The
+    # pressure-level CH4/CO slices have no distinct GRIB shortName, so they key
+    # by a synthetic code (`ch4_850`, `co_700`, ...) mapped to a descriptive
+    # name in SHORTNAME_TO_NAME -- style-library entries, not shortName-matched.
+    "composition_suaod550": ("suaod550", "Sulphate aerosol optical depth at 550 nm"),
+    "composition_o3_surface": ("go3", "Ozone"),
+    "composition_o3_totalcolumn": ("gtco3", "Total column ozone"),
+    "composition_no2_surface": ("no2", "Nitrogen dioxide"),
+    "composition_so2_totalcolumn": ("tcso2", "Total column sulphur dioxide"),
+    "composition_co_totalcolumn": ("tcco", "Total column carbon monoxide"),
+    "composition_co700": ("co_700", "Carbon monoxide at 700 hPa"),
+    "composition_co_500hpa": ("co_500", "Carbon monoxide at 500 hPa"),
+    "composition_co2_totalcolumn": ("tcco2", "CO2 column-mean molar fraction"),
+    "composition_ch4_totalcolumn": ("tcch4", "CH4 column-mean molar fraction"),
+    "composition_ch4_surface": ("ch4sfc", "Methane at the surface"),
+    "composition_ch4_850": ("ch4_850", "Methane at 850 hPa"),
+    "composition_ch4_500": ("ch4_500", "Methane at 500 hPa"),
+    "composition_ch4_300": ("ch4_300", "Methane at 300 hPa"),
+    "composition_ch4_50": ("ch4_50", "Methane at 50 hPa"),
+    "composition_pm10": ("pm10", "Particulate matter d < 10 um"),
+    "composition_pm2p5": ("pm2p5", "Particulate matter d < 2.5 um"),
+    "composition_uvindex": ("uvi", "UV index"),
+    "composition_uvindex_clearsky": ("uvics", "UV index (clear sky)"),
+    "composition_fire": ("frpfire", "Wildfire radiative power"),
 }
 
-_EARTHKIT_RANGE = re.compile(r"range\(\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*\)")
+_REFERENCE_RANGE = re.compile(r"range\(\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*\)")
 
 
 def parse_levels(levels):
-    """earthkit `levels` (a ``range(a, b, c)`` string or an explicit list) -> list | None."""
+    """reference `levels` (a ``range(a, b, c)`` string or an explicit list) -> list | None."""
     if levels is None:
         return None
     if isinstance(levels, str):
-        match = _EARTHKIT_RANGE.search(levels)
+        match = _REFERENCE_RANGE.search(levels)
         if match is None:
             return None
         start, stop, step = (int(x) for x in match.groups())
@@ -284,24 +316,47 @@ def clean_colors(colors):
     return out
 
 
-def fetch_earthkit(ref, stem):
-    with _HTTP_ONLY_OPENER.open(EARTHKIT_RAW.format(ref=ref, stem=stem)) as r:
+def fit_colors_to_levels(colors, levels):
+    """Interpolate a short listed palette up to its `levels`-defined bin count.
+
+    A `BoundaryNorm` over N `levels` has N-1 bins, and a `ListedColormap` must
+    supply at least that many colours (the `extend` cap reuses the end colours
+    via set_under/over, so it needs no extra listed colour). A few reference
+    ``optimal`` palettes ship one colour short of their bins -- the source resamples
+    them internally; cleopatra's strict `BoundaryNorm` would raise. Interpolate
+    the palette up to N-1 colours (preserving the full level range and the colour
+    progression) so the vendored data renders directly. A palette that already
+    meets or exceeds its bin count, a matplotlib colormap *name*, or a palette
+    without explicit levels is returned unchanged.
+    """
+    if not isinstance(colors, list) or not isinstance(levels, list):
+        return colors
+    bins = len(levels) - 1
+    if len(colors) >= bins or len(colors) < 2:
+        return colors
+    cmap = LinearSegmentedColormap.from_list("_fit", colors, N=bins)
+    return [to_hex(cmap(i)) for i in range(bins)]
+
+
+def fetch_reference(ref, stem):
+    with _HTTP_ONLY_OPENER.open(REFERENCE_RAW.format(ref=ref, stem=stem)) as r:
         return yaml.safe_load(r.read().decode("utf-8"))
 
 
-def build_earthkit(ref):
-    """Fetch + resolve every curated earthkit parameter style -> (presets, skipped)."""
+def build_reference(ref):
+    """Fetch + resolve every curated reference parameter style -> (presets, skipped)."""
     presets, skipped = {}, []
-    for stem, (short, label) in EARTHKIT_PARAMS.items():
-        doc = fetch_earthkit(ref, stem)
+    for stem, (short, label) in REFERENCE_PARAMS.items():
+        doc = fetch_reference(ref, stem)
         opt = doc["styles"][doc["optimal"]]
         if opt.get("type") != "Style" or opt.get("colors") is None:
             skipped.append((short, stem))
             continue
+        levels = parse_levels(opt.get("levels"))
         presets[short] = {
             "label": label,
-            "colors": clean_colors(opt["colors"]),
-            "levels": parse_levels(opt.get("levels")),
+            "colors": fit_colors_to_levels(clean_colors(opt["colors"]), levels),
+            "levels": levels,
             "extend": opt.get("extend", "neither"),
             "units": opt.get("units"),
         }
@@ -319,11 +374,11 @@ def transform_magics(raw_presets):
     equal-width bands); decodes ``magics_style``'s ``f<from>t<to>`` range into
     plain ``vmin``/``vmax`` when the name carries one, dropping the encoded
     token itself (its optional interval is decoded but never used downstream,
-    same as before); drops the shortNames earthkit-plots supersedes.
+    same as before); drops the shortNames the reference source supersedes.
     """
     out = {}
     for key, rec in raw_presets.items():
-        if key in EARTHKIT_OVERRIDE_KEYS:
+        if key in REFERENCE_OVERRIDE_KEYS:
             continue
         colors = rec["palette"]
         merged = {
@@ -348,23 +403,33 @@ def transform_magics(raw_presets):
     return out
 
 
-def transform_earthkit(raw_presets):
-    """Earthkit raw records -> the merged schema (adds the explicit opacity policy).
+#: reference shortNames whose field fades at the low end (value-linked opacity)
+#: rather than rendering as a constant-alpha opaque layer -- e.g. precipitation,
+#: which should be transparent over dry ground. These carry no constant `alpha`,
+#: so cleopatra ties their opacity to value (see the `total_precipitation`
+#: fade-at-low-end invariant in `tests/test_preset_schema.py`).
+REFERENCE_FADE_KEYS = {"tp"}
 
-    Every earthkit-plots preset renders as an opaque full field.
+
+def transform_reference(raw_presets):
+    """Reference raw records -> the merged schema (adds the explicit opacity policy).
+
+    Every reference preset renders as an opaque full field, except the
+    `REFERENCE_FADE_KEYS` fields, which fade at the low end (a value-linked
+    overlay carrying no constant `alpha`).
     """
     out = {}
     for key, rec in raw_presets.items():
         merged = dict(rec)
-        merged["opacity"] = "opaque"
+        merged["opacity"] = "overlay" if key in REFERENCE_FADE_KEYS else "opaque"
         out[key] = merged
     return out
 
 
 #: GRIB shortName -> the descriptive `DATA_STYLES` key it ships under. Both
-#: Magics and earthkit-plots index their upstream data by shortName (needed to
+#: Magics and the reference source index their upstream data by shortName (needed to
 #: join contours.json/palettes.json, or locate the right auto-style YAML), so
-#: fetching stays shortName-keyed throughout `build_magics`/`build_earthkit`;
+#: fetching stays shortName-keyed throughout `build_magics`/`build_reference`;
 #: this is applied once, at the very end, to the merged asset's keys.
 SHORTNAME_TO_NAME = {
     "10fg": "wind_gust_10m",
@@ -382,9 +447,16 @@ SHORTNAME_TO_NAME = {
     "capei": "convective_available_potential_energy_index",
     "capes": "convective_available_potential_energy_shear",
     "capesi": "convective_available_potential_energy_shear_index",
+    "ch4_300": "methane_300hpa",
+    "ch4_50": "methane_50hpa",
+    "ch4_500": "methane_500hpa",
+    "ch4_850": "methane_850hpa",
+    "ch4sfc": "methane_surface",
     "cin": "convective_inhibition",
     "clbt": "cloudy_brightness_temperature",
     "co": "carbon_monoxide",
+    "co_500": "carbon_monoxide_500hpa",
+    "co_700": "carbon_monoxide_700hpa",
     "cp": "convective_precipitation",
     "crfrate": "convective_rainfall_rate",
     "d": "divergence",
@@ -412,6 +484,8 @@ SHORTNAME_TO_NAME = {
     "mx2ti": "max_temperature_2m_index",
     "no2": "nitrogen_dioxide",
     "ph": "hurricane_probability",
+    "pm10": "particulate_matter_10um",
+    "pm2p5": "particulate_matter_2p5um",
     "prate": "precipitation_rate",
     "pt": "potential_temperature",
     "ptd": "tropical_depression_probability",
@@ -437,6 +511,8 @@ SHORTNAME_TO_NAME = {
     "tpp": "total_precipitation_probability",
     "uvbed": "uv_biologically_effective_dose",
     "uvbedcs": "uv_biologically_effective_dose_clear_sky",
+    "uvi": "uv_index",
+    "uvics": "uv_index_clear_sky",
     "vo": "relative_vorticity",
     "w": "vertical_velocity",
     "ws": "total_wind_speed",
@@ -521,9 +597,7 @@ def _canonical_layer(rec):
 def _to_canonical(records):
     """Wrap the merged old-format records into the canonical v2 preset asset.
 
-    Each record becomes a single-layer preset (see `_canonical_layer`). Records
-    carrying explicit `levels` are earthkit-sourced and tagged so; the rest
-    default to the asset-level Magics provenance.
+    Each record becomes a single-layer preset (see `_canonical_layer`).
 
     Args:
         records: The merged shortName -> old-format record mapping.
@@ -533,19 +607,16 @@ def _to_canonical(records):
     """
     presets = {}
     for name, rec in sorted(records.items()):
-        preset = {"layers": {name: _canonical_layer(rec)}}
-        if rec.get("levels") is not None:  # earthkit records carry explicit levels
-            preset = {"source": "earthkit", **preset}
-        presets[name] = preset
+        presets[name] = {"layers": {name: _canonical_layer(rec)}}
     return {"version": 1, "source": "magics", "license": "Apache-2.0", "presets": presets}
 
 
-def main(out_path, magics_ref="develop", earthkit_ref="main"):
+def main(out_path, magics_ref="develop", reference_ref="main"):
     magics_presets, magics_skipped, unresolved = build_magics(magics_ref)
-    earthkit_presets, earthkit_skipped = build_earthkit(earthkit_ref)
+    reference_presets, reference_skipped = build_reference(reference_ref)
     merged = {
         **transform_magics(magics_presets),
-        **transform_earthkit(earthkit_presets),
+        **transform_reference(reference_presets),
     }
     renamed, unmapped = rename_to_descriptive_keys(merged)
     asset = _to_canonical(renamed)
@@ -558,9 +629,9 @@ def main(out_path, magics_ref="develop", earthkit_ref="main"):
         )
     print(
         f"wrote {len(merged)} weather presets to {out_path} "
-        f"({len(magics_presets) - len(EARTHKIT_OVERRIDE_KEYS)} Magics + "
-        f"{len(earthkit_presets)} earthkit, {len(magics_skipped)} Magics + "
-        f"{len(earthkit_skipped)} earthkit skipped)"
+        f"({len(magics_presets) - len(REFERENCE_OVERRIDE_KEYS)} Magics + "
+        f"{len(reference_presets)} reference, {len(magics_skipped)} Magics + "
+        f"{len(reference_skipped)} reference skipped)"
     )
     if unresolved:
         print(

@@ -36,7 +36,7 @@ tiles = [
     "pyproj>=3.7.2",
     "xyzservices>=2026.3.0",
 ]
-# Namespaced scientific colormaps (cmocean:thermal, crameri:batlow, ...) resolved
+# Namespaced scientific colormaps (cmocean:thermal, cmasher:ember, ...) resolved
 # lazily via the numpy-only `cmap` aggregator. See cleopatra.styling.colors.resolve_colormap.
 science-colors = [
     "cmap>=0.7.2",

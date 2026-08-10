@@ -645,8 +645,8 @@ class TestApplyDataStyle:
             apply_data_style(ax, {"dust": np.array([[0.0, 1.0]])}, **kwargs)
 
 
-class TestEarthkitPresets:
-    """Tests for the earthkit-plots half of the merged `weather_presets.json` library."""
+class TestReferencePresets:
+    """Tests for the reference styles half of the merged `weather_presets.json` library."""
 
     @pytest.fixture
     def ax(self):
@@ -667,10 +667,10 @@ class TestEarthkitPresets:
             "total_precipitation",
             "convective_available_potential_energy",
         ]:
-            assert key in DATA_STYLES, f"missing earthkit preset {key}"
+            assert key in DATA_STYLES, f"missing reference preset {key}"
 
-    def test_earthkit_overrides_magics_neon_2t(self):
-        """The earthkit temperature_2m (Spectral_r, banded) overrides the Magics rainbow ListedColormap."""
+    def test_reference_overrides_magics_neon_2t(self):
+        """The reference temperature_2m (Spectral_r, banded) overrides the Magics rainbow ListedColormap."""
         layer = DATA_STYLES["temperature_2m"]["temperature_2m"]
         assert layer["cmap"] == "Spectral_r"
         assert layer["extend"] == "both"
@@ -679,12 +679,12 @@ class TestEarthkitPresets:
         assert "bands" not in layer  # not the Magics discrete-band path
 
     def test_cmap_name_style_stays_a_name(self):
-        """A style whose earthkit `colors` is a matplotlib name keeps it as a string cmap."""
+        """A style whose reference `colors` is a matplotlib name keeps it as a string cmap."""
         assert DATA_STYLES["dewpoint_temperature_2m"]["dewpoint_temperature_2m"]["cmap"] == "BrBG_r"
         assert DATA_STYLES["wind_u_10m"]["wind_u_10m"]["cmap"] == "PiYG"
 
     def test_colour_list_with_levels_is_discrete_listed_colormap(self):
-        """A colour-list earthkit preset (with levels) keeps the exact ECMWF colours (ListedColormap)."""
+        """A colour-list reference preset (with levels) keeps the exact ECMWF colours (ListedColormap)."""
         layer = DATA_STYLES["aerosol_optical_depth_550nm"]["aerosol_optical_depth_550nm"]
         assert isinstance(layer["cmap"], ListedColormap)
         assert (
@@ -695,7 +695,7 @@ class TestEarthkitPresets:
         assert layer['levels'][-1] == 1.0
 
     def test_colour_list_without_levels_stays_continuous(self):
-        """A colour-list earthkit preset with no levels (total_precipitation gradient) is a continuous ramp."""
+        """A colour-list reference preset with no levels (total_precipitation gradient) is a continuous ramp."""
         layer = DATA_STYLES["total_precipitation"]["total_precipitation"]
         assert isinstance(layer["cmap"], LinearSegmentedColormap)
         assert "levels" not in layer
@@ -719,7 +719,7 @@ class TestEarthkitPresets:
         assert norm.extend == 'neither'
 
     def test_colour_list_preset_renders_exact_discrete_colours(self, ax):
-        """A ListedColormap earthkit preset paints each band with its exact palette colour."""
+        """A ListedColormap reference preset paints each band with its exact palette colour."""
         cmap = DATA_STYLES["aerosol_optical_depth_550nm"]["aerosol_optical_depth_550nm"]["cmap"]
         levels = DATA_STYLES["aerosol_optical_depth_550nm"]["aerosol_optical_depth_550nm"]["levels"]
         data = np.array(
@@ -732,8 +732,8 @@ class TestEarthkitPresets:
         assert np.allclose(rgb[0, 0], to_rgb(cmap.colors[0]), atol=1 / 255)
         assert np.allclose(rgb[0, 1], to_rgb(cmap.colors[4]), atol=1 / 255)
 
-    def test_earthkit_style_renders_banded(self, ax):
-        """A vendored earthkit style renders discrete level bands end-to-end."""
+    def test_reference_style_renders_banded(self, ax):
+        """A vendored reference style renders discrete level bands end-to-end."""
         data = np.linspace(-10.0, 38.0, 60 * 60).reshape(60, 60)
         img = apply_data_style(ax, {"temperature_2m": data}, style="temperature_2m", legend=False)
         rgb = np.asarray(img["temperature_2m"].get_array())[..., :3].reshape(-1, 3)
@@ -760,7 +760,7 @@ class TestContourLevelsStyle:
         plt.close(fig)
 
     def test_2t_uses_ecmwf_spectral_bands(self):
-        """The earthkit `temperature_2m` preset is ECMWF's default: Spectral_r banded at 2 degC over -40..40."""
+        """The reference `temperature_2m` preset is ECMWF's default: Spectral_r banded at 2 degC over -40..40."""
         layer = DATA_STYLES["temperature_2m"]["temperature_2m"]
         assert layer["cmap"] == "Spectral_r"
         assert layer["extend"] == "both"
@@ -980,8 +980,8 @@ class TestMagicsPresets:
     def test_known_parameters_are_registered(self):
         """Well-known GRIB parameters resolve to Magics presets carrying their real labels.
 
-        (Uses `min_temperature_2m`/`max_temperature_2m`: the `temperature_2m`/`total_precipitation`/`aerosol_optical_depth_550nm` shortNames are now the earthkit
-        default styles -- see `TestEarthkitPresets`.)
+        (Uses `min_temperature_2m`/`max_temperature_2m`: the `temperature_2m`/`total_precipitation`/`aerosol_optical_depth_550nm` shortNames are now the reference
+        default styles -- see `TestReferencePresets`.)
         """
         assert DATA_STYLES["min_temperature_2m"]["min_temperature_2m"]["label"].startswith(
             "Minimum temperature at 2 metres"
@@ -1089,8 +1089,8 @@ class TestMagicsPresets:
         ramp and over-weights the magenta cap (whole summers rendered magenta). Guard
         the shipped asset: the ramp is long and the green mid-band survives.
 
-        (Uses `min_temperature_2m`, not `temperature_2m`: `temperature_2m` is now the earthkit default -- see
-        `TestEarthkitPresets` -- but `min_temperature_2m` is from the same Magics temperature
+        (Uses `min_temperature_2m`, not `temperature_2m`: `temperature_2m` is now the reference default -- see
+        `TestReferencePresets` -- but `min_temperature_2m` is from the same Magics temperature
         family and keeps the same long named-colour ramp.)
         """
         rec = json.loads(
@@ -1107,7 +1107,7 @@ class TestMagicsPresets:
     def test_temperature_family_shares_the_style_range(self):
         """The Magics -48..56 temperature family carries the same decoded range.
 
-        (`temperature_2m`/`dewpoint_temperature_2m` are now the earthkit default; `min_temperature_2m`/`max_temperature_2m` remain Magics.)
+        (`temperature_2m`/`dewpoint_temperature_2m` are now the reference default; `min_temperature_2m`/`max_temperature_2m` remain Magics.)
         """
         for key in ("min_temperature_2m", "max_temperature_2m"):
             layer = DATA_STYLES[key][key]

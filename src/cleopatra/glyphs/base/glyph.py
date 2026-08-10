@@ -8,10 +8,9 @@ colorbar creation, tick management, point overlays, and animation.
 from __future__ import annotations
 
 import inspect
+import math
 import os
 import warnings
-from collections.abc import Iterator
-from contextlib import contextmanager
 from typing import Any, cast
 
 import matplotlib.colors as colors
@@ -25,16 +24,11 @@ from matplotlib.figure import Figure, SubFigure
 from matplotlib.legend import Legend
 from matplotlib.patches import Rectangle
 
-from cleopatra.glyphs.base.animation import (
-    SUPPORTED_VIDEO_FORMAT,  # noqa: F401  (re-export)
-)
+from cleopatra.glyphs.base.animation import SUPPORTED_VIDEO_FORMAT  # noqa: F401  (re-export)
 from cleopatra.glyphs.base.animation import save_animation as _save_animation
 from cleopatra.styling.colors import resolve_colormap
-from cleopatra.styling.scaling import (
-    MAX_DISCRETE_LEVELS,  # noqa: F401  (re-export)
-    ColorScaling,
-    levels_to_bounds,
-)
+from cleopatra.styling.scaling import MAX_DISCRETE_LEVELS  # noqa: F401  (re-export)
+from cleopatra.styling.scaling import ColorScaling, levels_to_bounds
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import (
     categorize,
@@ -71,6 +65,13 @@ _GROUPED_KWARG_HINTS: dict[str, str] = {
     "category_legend_kwargs": "classify=Classify(scheme='categorical', category_legend_kwargs=...)",
     "style": "data_style=DataStyle(style=...)",
     "hillshade": "data_style=DataStyle(hillshade=...)",
+    "bands": "data_style=DataStyle(bands=...)",
+    "alpha_range": "data_style=DataStyle(alpha_range=...)",
+    # `alpha` also moved onto `data_style=DataStyle(alpha=...)`, but only for
+    # `ArrayGlyph` -- it stays a legitimate loose opacity option on other
+    # glyphs (`LineGlyph`, `HistogramGlyph`), so it cannot be rejected here
+    # (this hint map gates every glyph's construction). `ArrayGlyph` rejects a
+    # loose `alpha=` locally instead (see its `_reject_loose_alpha`).
 }
 
 
@@ -590,37 +591,6 @@ class Glyph:
             for key, val in group.to_options().items():
                 if key in self.default_options:
                     self.default_options[key] = val
-
-    @contextmanager
-    def _rollback_options_on_error(self) -> Iterator[None]:
-        """Restore `default_options` if the wrapped render body raises.
-
-        A glyph's `plot` merges grouped parameter objects (`color=`, `contour=`,
-        `classify=`, ...) into the persistent `default_options` at the top of the
-        call, then renders. Most glyphs keep those options across plots (they are
-        sticky by design), so a render that raises *after* the merge -- an
-        unsupported `scheme`, a degenerate colour scale -- would leave the
-        half-applied options behind and poison later plain `plot()` calls on the
-        same instance: the stale option re-triggers the same error, or silently
-        renders with a colour scale that was never successfully applied.
-
-        Wrap the render body (the merge included) in this context manager: it
-        snapshots `default_options` on entry and, if the body raises, restores it
-        exactly, so a failed styled render leaves the glyph's option state
-        untouched. On success the merged options stay. Unlike a wrapping
-        decorator, a `with` block adds no stack frame, so warnings emitted inside
-        the render keep their caller-attributed `stacklevel`.
-
-        Yields:
-            None: control returns to the `with` body with the snapshot taken.
-        """
-        snapshot = dict(self._default_options)
-        try:
-            yield
-        except BaseException:
-            self._default_options.clear()
-            self._default_options.update(snapshot)
-            raise
 
     def create_figure_axes(self) -> tuple[Figure, Axes]:
         """Create a new figure and axes from default_options.
@@ -1431,10 +1401,7 @@ class Glyph:
                 f"'bottom', or None, got {location!r}."
             )
         orientation_opt = self.default_options.get("cbar_orientation")
-        if orientation_opt is not None and orientation_opt not in (
-            "vertical",
-            "horizontal",
-        ):
+        if orientation_opt is not None and orientation_opt not in ("vertical", "horizontal"):
             raise ValueError(
                 "cbar_orientation must be 'vertical' or 'horizontal', got "
                 f"{orientation_opt!r}."

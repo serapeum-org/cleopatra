@@ -473,9 +473,7 @@ class TestSwatchLegend:
         readable over the pale middle of a colormap (not just white-on-white)."""
         swatch = swatch_legend(ax, "Spectral_r", "Temperature")
         for text in swatch.texts:
-            assert text.get_path_effects(), (
-                f"{text.get_text()!r} should have a legibility outline"
-            )
+            assert text.get_path_effects(), f"{text.get_text()!r} should have a legibility outline"
 
     def test_dark_label_gets_a_light_outline(self, ax):
         """A dark `text_color` is haloed in light (contrast flips with luminance)."""

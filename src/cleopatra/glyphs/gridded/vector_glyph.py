@@ -84,17 +84,12 @@ class VectorGlyph(GeoMixin, Glyph):
         v: y-components of the vectors. Must broadcast against `x`/`y`.
         ax: Pre-existing axes to draw on. Default is None.
         fig: Pre-existing figure. Default is None.
-        **kwargs: Construction-time overrides for the non-grouped
-            `VECTOR_DEFAULT_OPTIONS` (e.g. `density`, `scale`, `cmap`,
-            `vmin`, `vmax`, `ticks_spacing`, `cbar_label`, `figsize`,
+        **kwargs: Override any key in `VECTOR_DEFAULT_OPTIONS`
+            (e.g. `density`, `scale`, `cmap`, `vmin`, `vmax`, `levels`,
+            `color_scale`, `ticks_spacing`, `cbar_label`, `figsize`,
             `title`). Set `add_colorbar=False` to suppress the per-glyph
             colorbar (default True) for shared-axes composition where the
-            host owns a single aggregated colorbar. The colour scale,
-            discretisation `levels`, and classification are no longer
-            construction kwargs -- pass them to `plot()` via
-            `color=ColorScaling(...)`, `contour=Contour(levels=...)`, and
-            `classify=Classify(...)` (a loose `color_scale` / `levels` /
-            `scheme` keyword now raises).
+            host owns a single aggregated colorbar.
 
     Examples:
         - Build a field and inspect the stored magnitude:
@@ -228,86 +223,83 @@ class VectorGlyph(GeoMixin, Glyph):
                 f"{', '.join(VECTOR_KINDS)}."
             )
 
-        with self._rollback_options_on_error():
-            self._merge_group_params(color, contour, classify)
+        self._merge_group_params(color, contour, classify)
 
-            if ax is not None:
-                self.ax = ax
-                self.fig = _root_figure(ax)
-            elif self.ax is None:
-                self.fig, self.ax = self.create_figure_axes()
-            ax = self.ax
-            opts = self.default_options
+        if ax is not None:
+            self.ax = ax
+            self.fig = _root_figure(ax)
+        elif self.ax is None:
+            self.fig, self.ax = self.create_figure_axes()
+        ax = self.ax
+        opts = self.default_options
 
-            if title is not None:
-                opts["title"] = title
-            opts.update(_resolve_colorbar(colorbar))
-            draw_colorbar = (
-                opts["add_colorbar"] if add_colorbar is None else add_colorbar
+        if title is not None:
+            opts["title"] = title
+        opts.update(_resolve_colorbar(colorbar))
+        draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
+
+        mag = self.magnitude
+        norm, cbar_kw, ticks = self._prepare_scalar_mapping(mag)
+        cmap = resolve_colormap(opts["cmap"])
+        clim = {} if norm else {"clim": (ticks[0], ticks[-1])}
+
+        _clear_prior_render_artists(ax)
+        self.im = None
+        self.cbar = None
+
+        arrow_patches: tuple = ()
+        im: Any
+        if kind == "quiver":
+            im = ax.quiver(
+                self.x,
+                self.y,
+                self.u,
+                self.v,
+                mag,
+                cmap=cmap,
+                norm=norm,
+                scale=opts["scale"],
+                **clim,
             )
+        elif kind == "barbs":
+            im = ax.barbs(
+                self.x,
+                self.y,
+                self.u,
+                self.v,
+                mag,
+                cmap=cmap,
+                norm=norm,
+                **clim,
+            )
+        else:  # streamplot
+            patches_before = set(ax.patches)
+            stream = ax.streamplot(
+                self.x,
+                self.y,
+                self.u,
+                self.v,
+                color=mag,
+                cmap=cmap,
+                norm=norm,
+                density=opts["density"],
+            )
+            arrow_patches = tuple(set(ax.patches) - patches_before)
+            im = stream.lines
+            if im.get_array() is None:
+                im.set_array(np.asarray(mag).ravel())
+            if norm is None:
+                im.set_clim(ticks[0], ticks[-1])
 
-            mag = self.magnitude
-            norm, cbar_kw, ticks = self._prepare_scalar_mapping(mag)
-            cmap = resolve_colormap(opts["cmap"])
-            clim = {} if norm else {"clim": (ticks[0], ticks[-1])}
+        self.im = im
+        if draw_colorbar:
+            self.cbar = self.create_color_bar(ax, im, cbar_kw)
 
-            _clear_prior_render_artists(ax)
-            self.im = None
-            self.cbar = None
+        if opts["title"]:
+            ax.set_title(opts["title"], fontsize=opts["title_size"])
 
-            arrow_patches: tuple = ()
-            im: Any
-            if kind == "quiver":
-                im = ax.quiver(
-                    self.x,
-                    self.y,
-                    self.u,
-                    self.v,
-                    mag,
-                    cmap=cmap,
-                    norm=norm,
-                    scale=opts["scale"],
-                    **clim,
-                )
-            elif kind == "barbs":
-                im = ax.barbs(
-                    self.x,
-                    self.y,
-                    self.u,
-                    self.v,
-                    mag,
-                    cmap=cmap,
-                    norm=norm,
-                    **clim,
-                )
-            else:  # streamplot
-                patches_before = set(ax.patches)
-                stream = ax.streamplot(
-                    self.x,
-                    self.y,
-                    self.u,
-                    self.v,
-                    color=mag,
-                    cmap=cmap,
-                    norm=norm,
-                    density=opts["density"],
-                )
-                arrow_patches = tuple(set(ax.patches) - patches_before)
-                im = stream.lines
-                if im.get_array() is None:
-                    im.set_array(np.asarray(mag).ravel())
-                if norm is None:
-                    im.set_clim(ticks[0], ticks[-1])
-
-            self.im = im
-            if draw_colorbar:
-                self.cbar = self.create_color_bar(ax, im, cbar_kw)
-
-            if opts["title"]:
-                ax.set_title(opts["title"], fontsize=opts["title_size"])
-
-            _mark_render_artists(ax, self.cbar, self.im, *arrow_patches)
-            return self.fig, ax, im
+        _mark_render_artists(ax, self.cbar, self.im, *arrow_patches)
+        return self.fig, ax, im
 
     def add_key(
         self,
