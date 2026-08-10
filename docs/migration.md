@@ -4,8 +4,9 @@ This page collects cleopatra's breaking changes and how to update your code. Two
 
 1. **[Grouped render-parameter objects](#grouped-render-parameter-objects)** — the loose styling keywords on
    `plot` / `animate` / `facet` were replaced by typed *group objects*, and the temporary deprecation shims that
-   kept the old keywords working have now been **removed**. Read this section if you hit a `TypeError` about an
-   unexpected keyword argument, or an `AttributeError` from passing a bare array where an object is expected.
+   kept the old keywords working have now been **removed**. Read this section if you hit a
+   `ValueError: The given keyword argument:... is not correct`, an `AttributeError` from passing a bare array
+   where an object is expected, or a `ValueError` from `facet` saying `figsize` was renamed to `figure_size`.
 2. **[Subpackage restructure](#subpackage-restructure)** — an earlier release moved the flat `cleopatra.*`
    modules into `glyphs/` / `styling/` / `basemap/` subpackages (import paths only).
 
@@ -15,9 +16,12 @@ This page collects cleopatra's breaking changes and how to update your code. Two
 
 Related styling keywords that `plot` / `animate` (and the other glyphs) used to accept as long lists of loose
 arguments are now bundled into small typed objects. During one release the old keywords kept working behind a
-`DeprecationWarning`; **those shims are now gone**. Passing a removed keyword no longer warns — it raises the
-ordinary `TypeError: ... got an unexpected keyword argument`, and passing a bare `(N, 3)` array as `points`
-raises `AttributeError` instead of being auto-wrapped.
+`DeprecationWarning`; **those shims are now gone**. Passing a removed keyword no longer warns — it funnels through
+cleopatra's strict option validation and raises
+`ValueError: The given keyword argument:<name> is not correct, possible parameters are, [...]`. Passing a bare
+`(N, 3)` array as `points` raises `AttributeError` instead of being auto-wrapped. The one exception is
+`facet(figsize=...)`: because `figsize` is still a valid glyph option it would otherwise be absorbed silently, so
+`facet` raises a targeted `ValueError` telling you to use `figure_size` (see the table below).
 
 There is no automated rewrite for this one: the changes are semantic (loose keywords → object fields), so update
 each call site by hand using the tables below.
