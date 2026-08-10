@@ -2228,9 +2228,10 @@ class ArrayGlyph(GeoMixin, Glyph):
     ) -> Any:
         """Draw the styled layer via `apply_data_style`; return its image artist.
 
-        Forwards an explicit caller vmin/vmax/center (from `_style_color_overrides`,
-        which holds ONLY user-supplied limits) so it overrides the preset's own
-        fixed range, and colours the swatch legend to contrast with its box.
+        Forwards the caller's explicit per-call preset overrides (from
+        `_style_color_overrides` -- vmin/vmax/center plus cmap/extend/levels/
+        bands/alpha/alpha_range) so they override the preset's own values,
+        and colours the swatch legend to contrast with its box.
         """
         box = self.default_options.get("cbar_box")
         swatch_kw = {

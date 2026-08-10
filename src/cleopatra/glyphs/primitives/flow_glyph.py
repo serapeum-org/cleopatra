@@ -105,10 +105,15 @@ class FlowGlyph(GeoMixin, Glyph):
             paints thinnest-to-thickest so the widest paths render on top --
             e.g. high stream-order rivers over their tributaries),
             `size_legend` (bool, default False), `size_legend_values`,
-            `size_legend_kwargs`, plus the shared colour options (`cmap`,
-            `vmin`, `vmax`, `levels`, `color_scale`, `ticks_spacing`,
-            `cbar_label`, `figsize`, `title`). Set `add_colorbar=False` to
-            suppress the per-glyph colorbar (default True).
+            `size_legend_kwargs`, plus the shared appearance / colorbar
+            options (`cmap`, `vmin`, `vmax`, `ticks_spacing`, `cbar_label`,
+            `figsize`, `title`). Set `add_colorbar=False` to suppress the
+            per-glyph colorbar (default True). The colour scale,
+            discretisation `levels`, and classification are no longer
+            construction kwargs -- pass them to `plot()` via
+            `color=ColorScaling(...)`, `contour=Contour(levels=...)`, and
+            `classify=Classify(...)` (a loose `color_scale` / `levels` /
+            `scheme` keyword now raises).
 
     Raises:
         ValueError: If `values` or `widths` lengths do not match the number
