@@ -543,7 +543,7 @@ class TestAddReferenceMap:
 
     def test_available_map_styles(self):
         """The built-in preset names are exposed and stable."""
-        assert available_map_styles() == ["ecmwf", "ecmwf-dark"]
+        assert available_map_styles() == ["light", "dark"]
 
     @pytest.mark.parametrize(
         "value,expected",
@@ -568,7 +568,7 @@ class TestAddReferenceMap:
     def test_composes_features_graticule_and_frame(self):
         """The preset draws coastline+borders and styles graticule/labels/frame."""
         host, fig, ax = self._host(extent=[-100, 20, -80, 40])
-        ret = host.add_reference_map("ecmwf")
+        ret = host.add_reference_map("light")
 
         assert ret is ax, "should return the axes for chaining"
         layers = [c.args[0] for c in host.add_features.call_args_list]
@@ -582,16 +582,16 @@ class TestAddReferenceMap:
         plt.close(fig)
 
     def test_dark_style_uses_lighter_greys(self):
-        """`ecmwf-dark` uses light-grey coastlines for dark backgrounds."""
+        """`dark` uses light-grey coastlines for dark backgrounds."""
         host, fig, ax = self._host(extent=[-100, 20, -80, 40])
-        host.add_reference_map("ecmwf-dark")
+        host.add_reference_map("dark")
         assert host.add_features.call_args_list[0].kwargs["colors"] == "0.85"
         plt.close(fig)
 
     def test_dark_style_draws_relief_backdrop(self):
-        """`ecmwf-dark` draws a dimmed relief backdrop under the chrome."""
+        """`dark` draws a dimmed relief backdrop under the chrome."""
         host, fig, ax = self._host(extent=[-100, 15, -40, 55])
-        host.add_reference_map("ecmwf-dark")
+        host.add_reference_map("dark")
         host.add_relief.assert_called_once()
         call = host.add_relief.call_args
         assert call.args[0] == "low", "relief resolution"
@@ -601,9 +601,9 @@ class TestAddReferenceMap:
         plt.close(fig)
 
     def test_light_style_draws_no_relief(self):
-        """Plain `ecmwf` stays chrome-only -- no relief backdrop."""
+        """Plain `light` stays chrome-only -- no relief backdrop."""
         host, fig, ax = self._host(extent=[-100, 15, -40, 55])
-        host.add_reference_map("ecmwf")
+        host.add_reference_map("light")
         host.add_relief.assert_not_called()
         plt.close(fig)
 
@@ -612,7 +612,7 @@ class TestAddReferenceMap:
         host, fig, ax = self._host(extent=[-100, 15, -40, 55])
         host.add_relief = MagicMock(side_effect=ImportError("no Pillow"))
         with pytest.warns(UserWarning, match="relief backdrop skipped"):
-            host.add_reference_map("ecmwf-dark")
+            host.add_reference_map("dark")
         host.add_features.assert_called()  # coastline/borders still drawn
         plt.close(fig)
 
@@ -622,7 +622,7 @@ class TestAddReferenceMap:
         host, fig, ax = self._host(extent=[-100, 15, -40, 55])
         host.add_relief = MagicMock(side_effect=ConnectionError("offline"))
         with pytest.warns(UserWarning, match="relief backdrop skipped"):
-            host.add_reference_map("ecmwf-dark")
+            host.add_reference_map("dark")
         host.add_features.assert_called()  # chrome unaffected by the relief failure
         plt.close(fig)
 
@@ -634,17 +634,17 @@ class TestAddReferenceMap:
             side_effect=ValueError("Unknown relief resolution 'ultra'")
         )
         monkeypatch.setitem(
-            REFERENCE_MAP_STYLES["ecmwf-dark"], "relief", {"resolution": "ultra"}
+            REFERENCE_MAP_STYLES["dark"], "relief", {"resolution": "ultra"}
         )
         with pytest.raises(ValueError, match="Unknown relief resolution"):
-            host.add_reference_map("ecmwf-dark")
+            host.add_reference_map("dark")
         plt.close(fig)
 
     def test_no_extent_skips_relief(self):
         """With no geographic extent, the relief backdrop is skipped entirely."""
         host, fig, ax = self._host(extent=None)
         with pytest.warns(UserWarning, match="no geographic extent"):
-            host.add_reference_map("ecmwf-dark")
+            host.add_reference_map("dark")
         host.add_relief.assert_not_called()
         plt.close(fig)
 
@@ -656,15 +656,15 @@ class TestAddReferenceMap:
         """A preset `relief` as a resolution string or `True` selects the relief
         resolution (a string overrides it; `True` keeps the `"low"` default)."""
         host, fig, ax = self._host(extent=[-100, 15, -40, 55])
-        monkeypatch.setitem(REFERENCE_MAP_STYLES["ecmwf-dark"], "relief", relief_value)
-        host.add_reference_map("ecmwf-dark")
+        monkeypatch.setitem(REFERENCE_MAP_STYLES["dark"], "relief", relief_value)
+        host.add_reference_map("dark")
         assert host.add_relief.call_args.args[0] == expected_resolution, (
             f"expected relief resolution {expected_resolution!r}"
         )
         plt.close(fig)
 
     def test_auto_picks_dark_on_dark_background(self):
-        """`style="auto"` selects `ecmwf-dark` for a dark rendered image."""
+        """`style="auto"` selects `dark` for a dark rendered image."""
         host, fig, ax = self._host(extent=[-100, 15, -40, 55])
         host.im = ax.imshow(np.zeros((4, 4, 3)))  # black RGB
         host.add_reference_map("auto")
@@ -672,7 +672,7 @@ class TestAddReferenceMap:
         plt.close(fig)
 
     def test_auto_picks_light_on_light_background(self):
-        """`style="auto"` selects `ecmwf` for a light rendered image."""
+        """`style="auto"` selects `light` for a light rendered image."""
         host, fig, ax = self._host(extent=[-100, 15, -40, 55])
         host.im = ax.imshow(np.ones((4, 4, 3)))  # white RGB
         host.add_reference_map("auto")
@@ -731,7 +731,7 @@ class TestAddReferenceMap:
         im = MagicMock()
         host, fig, ax = self._host(im=im)
         # [west, south, east, north] == [xmin, ymin, xmax, ymax], like ArrayGlyph
-        host.add_reference_map("ecmwf", extent=[-100, 15, -40, 55])
+        host.add_reference_map("light", extent=[-100, 15, -40, 55])
         im.set_extent.assert_called_once_with((-100, -40, 15, 55))  # matplotlib order
         assert ax.get_xlim() == (-100, -40)
         assert ax.get_ylim() == (15, 55)
@@ -741,7 +741,7 @@ class TestAddReferenceMap:
         """With no extent, a warning flags that coastlines may not align."""
         host, fig, ax = self._host(extent=None)
         with pytest.warns(UserWarning, match="no geographic extent"):
-            host.add_reference_map("ecmwf")
+            host.add_reference_map("light")
         plt.close(fig)
 
     def test_unknown_style_raises(self):
@@ -756,7 +756,7 @@ class TestAddReferenceMap:
         """A non-positive or non-finite graticule_step raises before drawing (L3)."""
         host, fig, ax = self._host(extent=[-100, 15, -40, 55])
         with pytest.raises(ValueError, match="positive, finite"):
-            host.add_reference_map("ecmwf", graticule_step=bad)
+            host.add_reference_map("light", graticule_step=bad)
         host.add_features.assert_not_called()  # failed fast, no layers drawn
         plt.close(fig)
 
@@ -764,13 +764,13 @@ class TestAddReferenceMap:
         """A non-4-element extent raises a clear ValueError naming the order (N1)."""
         host, fig, ax = self._host()
         with pytest.raises(ValueError, match=r"\[xmin, ymin, xmax, ymax\]"):
-            host.add_reference_map("ecmwf", extent=[-100, 15, 55])
+            host.add_reference_map("light", extent=[-100, 15, 55])
         plt.close(fig)
 
     def test_graticule_step_override(self):
         """An explicit `graticule_step` sets the locator base."""
         host, fig, ax = self._host(extent=[-100, 20, -80, 40])
-        host.add_reference_map("ecmwf", graticule_step=10)
+        host.add_reference_map("light", graticule_step=10)
         # base is 10 -> ticks land on multiples of 10 within the view
         ticks = ax.xaxis.get_major_locator().tick_values(-100, 20)
         assert all(abs(t % 10) < 1e-9 for t in ticks), ticks
@@ -787,7 +787,7 @@ class TestAddReferenceMap:
     def test_resolution_and_zorder_override(self):
         """`resolution` and `zorder` reach both underlying add_features calls."""
         host, fig, ax = self._host(extent=[-100, 15, -40, 55])
-        host.add_reference_map("ecmwf", resolution="10m", zorder=9)
+        host.add_reference_map("light", resolution="10m", zorder=9)
         for call in host.add_features.call_args_list:
             assert call.args[1] == "10m"
             assert call.kwargs["zorder"] == 9
@@ -797,7 +797,7 @@ class TestAddReferenceMap:
         """An explicit `ax=` is decorated instead of `self.ax`."""
         host, fig, ax = self._host(extent=[-100, 15, -40, 55])
         fig2, other = plt.subplots()
-        host.add_reference_map("ecmwf", ax=other)
+        host.add_reference_map("light", ax=other)
         assert host.add_features.call_args_list[0].kwargs["ax"] is other
         assert other.spines["bottom"].get_edgecolor() == (0.6, 0.6, 0.6, 1.0)
         plt.close(fig)
@@ -841,7 +841,7 @@ def test_add_reference_map_integration(tmp_path: Path, monkeypatch):
     glyph = ArrayGlyph(np.random.rand(20, 30), extent=[-100, 15, -40, 55])
     fig, ax = glyph.plot()
     xlim0, ylim0 = ax.get_xlim(), ax.get_ylim()
-    glyph.add_reference_map("ecmwf", resolution="110m")
+    glyph.add_reference_map("light", resolution="110m")
 
     lcs = [c for c in ax.collections if isinstance(c, LineCollection)]
     assert len(lcs) >= 2, "coastline + borders should both draw"
@@ -857,14 +857,14 @@ def test_add_reference_map_integration(tmp_path: Path, monkeypatch):
 
 
 def test_add_reference_map_dark_draws_real_relief(tmp_path: Path, monkeypatch):
-    """Non-mocked: `ecmwf-dark` places a real dimmed relief image beneath data."""
+    """Non-mocked: `dark` places a real dimmed relief image beneath data."""
     _seed_reference_cache(tmp_path, monkeypatch, relief=True)
 
     glyph = ArrayGlyph(np.random.rand(20, 30), extent=[-100, 15, -40, 55])
     fig, ax = glyph.plot()
     n_before = len(ax.images)
-    glyph.add_reference_map("ecmwf-dark", resolution="110m")
-    assert len(ax.images) == n_before + 1, "ecmwf-dark should add a relief image"
+    glyph.add_reference_map("dark", resolution="110m")
+    assert len(ax.images) == n_before + 1, "dark should add a relief image"
     relief_img = ax.images[-1]
     assert relief_img.get_zorder() == -2
     assert relief_img.get_alpha() == 0.5
@@ -872,7 +872,7 @@ def test_add_reference_map_dark_draws_real_relief(tmp_path: Path, monkeypatch):
 
 
 def test_add_reference_map_relief_warps_non_4326(tmp_path: Path, monkeypatch):
-    """ecmwf-dark forwards self.crs to the relief, so on a non-4326 axis the
+    """dark forwards self.crs to the relief, so on a non-4326 axis the
     backdrop is warped (RGBA) rather than placed in lon/lat."""
     pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
     _seed_reference_cache(tmp_path, monkeypatch, relief=True)
@@ -880,7 +880,7 @@ def test_add_reference_map_relief_warps_non_4326(tmp_path: Path, monkeypatch):
     glyph = ArrayGlyph(np.random.rand(20, 30), extent=[-2e7, -1e7, 2e7, 1e7])
     glyph.crs = 3857  # axis CRS recorded once; add_reference_map defaults to it
     fig, ax = glyph.plot()
-    glyph.add_reference_map("ecmwf-dark", resolution="110m")
+    glyph.add_reference_map("dark", resolution="110m")
     placed = np.asarray(ax.images[-1].get_array())
     assert placed.shape[2] == 4, f"relief should warp to RGBA, got {placed.shape}"
     plt.close(fig)

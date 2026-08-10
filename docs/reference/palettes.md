@@ -131,5 +131,5 @@ print(available_palettes("diverging"))  # ['temp_anomaly', ...]
 from cleopatra.styling.palettes import available_palettes, get_palette
 
 print(available_palettes("sequential"))            # includes 'haze_dust', 'cams_aod_blue_red', ...
-print(get_palette("cams_aod_blue_red").source)     # 'ecmwf-magics'
+print(get_palette("cams_aod_blue_red").source)     # 'magics'
 ```

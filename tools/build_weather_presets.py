@@ -3,17 +3,17 @@
 
 This script is **not** part of the shipped package and is **not** run at import
 or install time. It is the one-off, maintainer-machine tool that derives
-``src/cleopatra/styling/data/weather_presets.json`` from two open ECMWF sources, keyed
+``src/cleopatra/styling/data/weather_presets.json`` from two open sources, keyed
 by GRIB shortName:
 
-- **ecmwf/magics** (Apache-2.0): the full operational parameter library, each
+- **magics** (Apache-2.0): the full operational parameter library, each
   style's discrete colour bands resolved from ``share/magics/styles/default/
   palettes.json`` + ``contours.json`` + the named-colour table in
   ``src/common/Colour.cc``. Every Magics preset renders as equal-width bands
   (``bands`` = its colour count) over a fixed ``vmin``/``vmax`` decoded from its
   style name's ``f<from>t<to>[i<interval>]`` grammar, when the name carries one.
-- **ECMWF reference styles** (Apache-2.0): a curated subset of parameters using
-  the ``optimal`` style variant -- ECMWF's actual professional look
+- **reference styles** (Apache-2.0): a curated subset of parameters using
+  the ``optimal`` style variant -- the actual professional look
   (explicit, non-uniform contour ``levels`` + an ``extend`` cap, or a genuine
   continuous ramp when a parameter has no discrete levels).
 
@@ -70,6 +70,13 @@ REFERENCE_OVERRIDE_KEYS = {
     # level slices, uvi, uvics -- need no entry; they have no Magics record).
     "suaod550", "tcco", "tcco2", "tcch4", "gtco3", "tcso2",
     "no2", "go3", "frpfire", "pm10", "pm2p5",
+    # Operational long-tail fields the reference curated look supersedes for a
+    # shortName Magics also carries (waves, cloud cover, humidity, the 2 m
+    # extremes, and the instability indices). Reference-only long-tail shortNames
+    # -- the pressure-level slices, hydrology, and single-field additions below --
+    # need no entry; Magics carries no record for them.
+    "swh", "mwp", "mpts", "mpww", "shts", "shww", "sh10",
+    "hcc", "mcc", "lcc", "q", "mn2t", "mx2t", "kx", "totalx", "cin",
 }
 
 # --- Magics -----------------------------------------------------------------
@@ -86,7 +93,7 @@ _RGB_DEF = re.compile(
     r'colours_\["([^"]+)"\]\s*=\s*Rgb\(\s*([-\d.]+)\s*,\s*([-\d.]+)\s*,\s*([-\d.]+)\s*\)'
 )
 
-#: An ECMWF Magics style name encodes its contour range in an
+#: A Magics style name encodes its contour range in an
 #: ``f<from>t<to>[i<interval>]`` grammar (``M`` = minus). The interval is
 #: optional and, once decoded, unused (see `transform_magics`) -- only the
 #: range matters for the merged asset.
@@ -285,6 +292,65 @@ REFERENCE_PARAMS = {
     "composition_uvindex": ("uvi", "UV index"),
     "composition_uvindex_clearsky": ("uvics", "UV index (clear sky)"),
     "composition_fire": ("frpfire", "Wildfire radiative power"),
+    # Operational long tail: the deterministic curated auto-styles beyond the
+    # CAMS composition set. Each vendors the `optimal` variant of a shadable
+    # Style. Fields that already have a GRIB shortName in SHORTNAME_TO_NAME reuse
+    # it (and appear in REFERENCE_OVERRIDE_KEYS above); the pressure-level slices,
+    # hydrology fields, and single additions with no distinct GRIB code key by a
+    # synthetic code mapped to a descriptive name in SHORTNAME_TO_NAME.
+    # Ocean waves.
+    "wave_swh": ("swh", "Significant wave height"),
+    "wave_mwp": ("mwp", "Mean wave period"),
+    "wave_mpts": ("mpts", "Mean period of total swell"),
+    "wave_mpww": ("mpww", "Mean period of wind waves"),
+    "wave_shts": ("shts", "Significant height of total swell"),
+    "wave_shww": ("shww", "Significant height of wind waves"),
+    "wave_sh10": ("sh10", "Significant wave height of waves over 10 s"),
+    # Sea ice.
+    "sea_ice_cover": ("ci", "Sea ice cover"),
+    # Cloud cover and cloud geometry.
+    "hcc": ("hcc", "High cloud cover"),
+    "mcc": ("mcc", "Medium cloud cover"),
+    "lcc": ("lcc", "Low cloud cover"),
+    "cbh": ("cbh", "Cloud base height"),
+    "ceiling": ("ceil", "Cloud ceiling"),
+    # Humidity.
+    "rh1000": ("rh1000", "Relative humidity at 1000 hPa"),
+    "q1000": ("q", "Specific humidity"),
+    # Dynamics: vorticity, potential vorticity, divergence, vertical velocity.
+    "700vorticity": ("vo700", "Relative vorticity at 700 hPa"),
+    "850vorticity": ("vo850", "Relative vorticity at 850 hPa"),
+    "315Kpotvort": ("pv315k", "Potential vorticity on the 315 K surface"),
+    "1000divergence": ("d1000", "Divergence at 1000 hPa"),
+    "700w": ("w700", "Vertical velocity at 700 hPa"),
+    # Precipitation, snow, and hydrology.
+    "tp_rate": ("tprate", "Total precipitation rate"),
+    "snow-water-equivalent": ("swe", "Snow water equivalent"),
+    "total-runoff-water-equivalent": ("trwe", "Total runoff water equivalent"),
+    "river-discharge": ("dis", "River discharge"),
+    "soil-wetness-index": ("swi", "Soil wetness index"),
+    # 2 m temperature extremes and pressure-level temperatures.
+    "mn2t": ("mn2t", "Minimum 2 m temperature"),
+    "mx2t": ("mx2t", "Maximum 2 m temperature"),
+    "t3": ("t3", "Temperature at 3 hPa"),
+    "t250": ("t250", "Temperature at 250 hPa"),
+    "t500": ("t500", "Temperature at 500 hPa"),
+    "t925": ("t925", "Temperature at 925 hPa"),
+    # Wind speed on pressure levels.
+    "200_windspeed_field": ("ws200", "Wind speed at 200 hPa"),
+    "250ws": ("ws250", "Wind speed at 250 hPa"),
+    "300_windspeed": ("ws300", "Wind speed at 300 hPa"),
+    "500ws": ("ws500", "Wind speed at 500 hPa"),
+    "800ws": ("ws800", "Wind speed at 800 hPa"),
+    "925ws": ("ws925", "Wind speed at 925 hPa"),
+    # Other single fields.
+    "visibility": ("vis", "Visibility"),
+    "fzra": ("fzra", "Freezing rain"),
+    "ssr": ("ssr", "Surface net solar radiation"),
+    "kindex": ("kx", "K index"),
+    "totalx": ("totalx", "Total totals index"),
+    "cin": ("cin", "Convective inhibition"),
+    "wbpt850": ("wbpt850", "Wet-bulb potential temperature at 850 hPa"),
 }
 
 _REFERENCE_RANGE = re.compile(r"range\(\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*\)")
@@ -304,13 +370,21 @@ def parse_levels(levels):
 
 
 def clean_colors(colors):
-    """Keep a matplotlib cmap NAME as-is; normalise a colour LIST (#rrggbbaa -> #rrggbb)."""
+    """Keep a matplotlib cmap NAME as-is; normalise a colour LIST to ``#rrggbb``.
+
+    A listed palette entry may arrive as a ``#rrggbbaa`` hex (the trailing alpha
+    is dropped) or as an ``[r, g, b]`` / ``[r, g, b, a]`` float triple/quad in the
+    0-1 range -- both are folded to a plain ``#rrggbb`` string so the vendored
+    ``colors`` is always a list of hex strings the on-disk schema accepts.
+    """
     if not isinstance(colors, list):
         return colors
     out = []
     for c in colors:
         if isinstance(c, str) and c.startswith("#") and len(c) == 9:
             out.append(c[:7])
+        elif isinstance(c, (list, tuple)):
+            out.append(to_hex(tuple(c[:3])))
         else:
             out.append(c)
     return out
@@ -447,11 +521,14 @@ SHORTNAME_TO_NAME = {
     "capei": "convective_available_potential_energy_index",
     "capes": "convective_available_potential_energy_shear",
     "capesi": "convective_available_potential_energy_shear_index",
+    "cbh": "cloud_base_height",
+    "ceil": "cloud_ceiling",
     "ch4_300": "methane_300hpa",
     "ch4_50": "methane_50hpa",
     "ch4_500": "methane_500hpa",
     "ch4_850": "methane_850hpa",
     "ch4sfc": "methane_surface",
+    "ci": "sea_ice_cover",
     "cin": "convective_inhibition",
     "clbt": "cloudy_brightness_temperature",
     "co": "carbon_monoxide",
@@ -460,8 +537,11 @@ SHORTNAME_TO_NAME = {
     "cp": "convective_precipitation",
     "crfrate": "convective_rainfall_rate",
     "d": "divergence",
+    "d1000": "divergence_1000hpa",
+    "dis": "river_discharge",
     "duaod550": "dust_aerosol_optical_depth_550nm",
     "frpfire": "wildfire_radiative_power",
+    "fzra": "freezing_rain",
     "go3": "ozone",
     "gtco3": "total_column_ozone",
     "hcc": "high_cloud_cover",
@@ -490,17 +570,26 @@ SHORTNAME_TO_NAME = {
     "pt": "potential_temperature",
     "ptd": "tropical_depression_probability",
     "pts": "tropical_storm_probability",
+    "pv315k": "potential_vorticity_315k",
     "q": "specific_humidity",
+    "rh1000": "relative_humidity_1000hpa",
     "sf": "snowfall",
     "sfi": "snowfall_index",
     "sh10": "significant_wave_height_over_10s_period",
     "shts": "significant_height_total_swell",
     "shww": "significant_height_wind_waves",
     "srweq": "snowfall_rate_water_equivalent",
+    "ssr": "surface_net_solar_radiation",
     "stl1p": "soil_temperature_level1_probability",
     "suaod550": "sulphate_aerosol_optical_depth_550nm",
+    "swe": "snow_water_equivalent",
     "swh": "significant_wave_height_combined",
+    "swi": "soil_wetness_index",
     "t": "air_temperature",
+    "t250": "temperature_250hpa",
+    "t3": "temperature_3hpa",
+    "t500": "temperature_500hpa",
+    "t925": "temperature_925hpa",
     "tcch4": "ch4_column_mean_molar_fraction",
     "tcco": "total_column_carbon_monoxide",
     "tcco2": "co2_column_mean_molar_fraction",
@@ -509,13 +598,26 @@ SHORTNAME_TO_NAME = {
     "tp": "total_precipitation",
     "tpi": "total_precipitation_index",
     "tpp": "total_precipitation_probability",
+    "tprate": "total_precipitation_rate",
+    "trwe": "total_runoff_water_equivalent",
     "uvbed": "uv_biologically_effective_dose",
     "uvbedcs": "uv_biologically_effective_dose_clear_sky",
     "uvi": "uv_index",
     "uvics": "uv_index_clear_sky",
+    "vis": "visibility",
     "vo": "relative_vorticity",
+    "vo700": "relative_vorticity_700hpa",
+    "vo850": "relative_vorticity_850hpa",
     "w": "vertical_velocity",
+    "w700": "vertical_velocity_700hpa",
+    "wbpt850": "wet_bulb_potential_temperature_850hpa",
     "ws": "total_wind_speed",
+    "ws200": "wind_speed_200hpa",
+    "ws250": "wind_speed_250hpa",
+    "ws300": "wind_speed_300hpa",
+    "ws500": "wind_speed_500hpa",
+    "ws800": "wind_speed_800hpa",
+    "ws925": "wind_speed_925hpa",
 }
 
 

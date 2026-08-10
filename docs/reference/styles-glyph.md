@@ -120,7 +120,7 @@ Reusable, glyph-independent legend helpers that attach a legend to any `Axes`:
 
 `apply_blank_canvas` strips an axes down to just the data — no ticks, spines, or
 frame — and sets the axes' and figure's background colour. It is the minimal look
-the ECMWF/CAMS-style globe animations use (plotted field on black), and composes
+the CAMS-style globe animations use (plotted field on black), and composes
 with a flat axes, an orthographic globe (`projection.apply_projection_frame`), or
 any other cleopatra styling.
 

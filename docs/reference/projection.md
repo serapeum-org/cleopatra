@@ -18,7 +18,7 @@ The `cleopatra.basemap.projection` module has two layers:
    `orthographic_boundary` / `orthographic_graticule` (the globe outline and meridian/parallel
    polylines). `apply_projection_style(style="globe")` reprojects `(lon, lat, data)` and draws
    the boundary + graticule via `apply_projection_frame`; pair it with
-   [`colors.apply_data_style`](colors-glyph.md) to compose the full ECMWF/CAMS "haze" globe in
+   [`colors.apply_data_style`](colors-glyph.md) to compose the full CAMS "haze" globe in
    a couple of lines (see the Haze-style presets example notebook).
 
 If you already have projected geometry from an upstream engine, use `apply_projection_frame`

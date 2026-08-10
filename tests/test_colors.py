@@ -433,7 +433,7 @@ class TestApplyDataStyle:
             rather than a hard-coded 0-1.
         """
         # `wind_speed` (viridis) auto-ranges -- no vmin/vmax/levels -- so it is
-        # the right probe for the data-min/max behaviour. (The fixed ECMWF
+        # the right probe for the data-min/max behaviour. (The fixed reference
         # contour scale lives under the `temperature_2m` preset, not `temperature`.)
         cmap = plt.get_cmap("viridis")
         images = apply_data_style(
@@ -655,7 +655,7 @@ class TestReferencePresets:
         plt.close(fig)
 
     def test_target_parameters_registered(self):
-        """The curated ECMWF parameter set is registered by GRIB shortName."""
+        """The curated parameter set is registered by GRIB shortName."""
         for key in [
             "temperature_2m",
             "dewpoint_temperature_2m",
@@ -684,12 +684,12 @@ class TestReferencePresets:
         assert DATA_STYLES["wind_u_10m"]["wind_u_10m"]["cmap"] == "PiYG"
 
     def test_colour_list_with_levels_is_discrete_listed_colormap(self):
-        """A colour-list reference preset (with levels) keeps the exact ECMWF colours (ListedColormap)."""
+        """A colour-list reference preset (with levels) keeps the exact reference colours (ListedColormap)."""
         layer = DATA_STYLES["aerosol_optical_depth_550nm"]["aerosol_optical_depth_550nm"]
         assert isinstance(layer["cmap"], ListedColormap)
         assert (
             layer["cmap"].N == 9
-        )  # the 9 exact ECMWF colours, not a 256-entry resample
+        )  # the 9 exact reference colours, not a 256-entry resample
         assert layer["extend"] == "max"
         assert layer['levels'][0] == 0.1
         assert layer['levels'][-1] == 1.0
@@ -751,7 +751,7 @@ class TestReferencePresets:
 
 
 class TestContourLevelsStyle:
-    """Tests for the explicit `levels`/`extend` contour-band styling (ECMWF look)."""
+    """Tests for the explicit `levels`/`extend` contour-band styling (operational look)."""
 
     @pytest.fixture
     def ax(self):
@@ -759,8 +759,8 @@ class TestContourLevelsStyle:
         yield ax
         plt.close(fig)
 
-    def test_2t_uses_ecmwf_spectral_bands(self):
-        """The reference `temperature_2m` preset is ECMWF's default: Spectral_r banded at 2 degC over -40..40."""
+    def test_2t_uses_reference_spectral_bands(self):
+        """The reference `temperature_2m` preset default: Spectral_r banded at 2 degC over -40..40."""
         layer = DATA_STYLES["temperature_2m"]["temperature_2m"]
         assert layer["cmap"] == "Spectral_r"
         assert layer["extend"] == "both"
@@ -770,7 +770,7 @@ class TestContourLevelsStyle:
 
     def test_temperature_is_a_generic_auto_ranging_ramp(self):
         """The `temperature` preset is a generic Spectral_r ramp with no fixed levels, so it
-        auto-ranges to the data (the fixed ECMWF scale lives under `temperature_2m`)."""
+        auto-ranges to the data (the fixed reference scale lives under `temperature_2m`)."""
         layer = DATA_STYLES["temperature"]["temperature"]
         assert layer["cmap"] == "Spectral_r"
         assert 'levels' not in layer
@@ -957,7 +957,7 @@ class TestFlameColormapsAndPresets:
 
 
 class TestMagicsPresets:
-    """Tests for the ECMWF/Magics half of the merged `weather_presets.json` library."""
+    """Tests for the Magics half of the merged `weather_presets.json` library."""
 
     @pytest.fixture
     def ax(self):
@@ -980,14 +980,16 @@ class TestMagicsPresets:
     def test_known_parameters_are_registered(self):
         """Well-known GRIB parameters resolve to Magics presets carrying their real labels.
 
-        (Uses `min_temperature_2m`/`max_temperature_2m`: the `temperature_2m`/`total_precipitation`/`aerosol_optical_depth_550nm` shortNames are now the reference
-        default styles -- see `TestReferencePresets`.)
+        (Uses `mean_temperature_2m`/`potential_temperature`: the `temperature_2m`,
+        `min_temperature_2m`/`max_temperature_2m`, `total_precipitation`, and
+        `aerosol_optical_depth_550nm` shortNames are now the reference default
+        styles -- see `TestReferencePresets`.)
         """
-        assert DATA_STYLES["min_temperature_2m"]["min_temperature_2m"]["label"].startswith(
-            "Minimum temperature at 2 metres"
+        assert DATA_STYLES["mean_temperature_2m"]["mean_temperature_2m"]["label"].startswith(
+            "Mean temperature at 2 metres"
         )
-        assert DATA_STYLES["max_temperature_2m"]["max_temperature_2m"]["label"].startswith(
-            "Maximum temperature at 2 metres"
+        assert DATA_STYLES["potential_temperature"]["potential_temperature"]["label"].startswith(
+            "Potential temperature"
         )
 
     def test_a_substantial_library_was_loaded(self):
@@ -1009,8 +1011,12 @@ class TestMagicsPresets:
         assert DATA_STYLES["min_temperature_2m"]["min_temperature_2m"]["alpha"] == 1.0
 
     def test_overlay_preset_has_no_constant_alpha(self):
-        """An alpha-ramped Magics field (high cloud cover) is a value-linked overlay."""
-        assert "alpha" not in DATA_STYLES["high_cloud_cover"]["high_cloud_cover"], (
+        """An alpha-ramped Magics field (snowfall index) is a value-linked overlay.
+
+        (Uses `snowfall_index`: the cloud-cover shortNames are now the reference
+        default styles -- see `TestReferencePresets` -- and render opaque.)
+        """
+        assert "alpha" not in DATA_STYLES["snowfall_index"]["snowfall_index"], (
             "an alpha-ramped Magics palette should map to the overlay policy"
         )
 
@@ -1037,17 +1043,17 @@ class TestMagicsPresets:
 
     def test_preset_carries_decoded_fixed_range(self):
         """A Magics preset whose style name encodes a range ships that vmin/vmax."""
-        layer = DATA_STYLES["min_temperature_2m"]["min_temperature_2m"]
-        assert layer['vmin'] == -48.0
-        assert layer['vmax'] == 56.0
+        layer = DATA_STYLES["air_temperature"]["air_temperature"]
+        assert layer['vmin'] == -52.0
+        assert layer['vmax'] == 48.0
 
     def test_magics_preset_is_discrete_banded(self):
         """A Magics preset renders as flat discrete bands (ListedColormap + band count)."""
-        layer = DATA_STYLES["min_temperature_2m"]["min_temperature_2m"]
+        layer = DATA_STYLES["air_temperature"]["air_temperature"]
         assert isinstance(layer["cmap"], ListedColormap)
-        assert layer["bands"] == layer["cmap"].N == 27
+        assert layer["bands"] == layer["cmap"].N == 25
 
-    @pytest.mark.parametrize("key", ["min_temperature_2m", "total_precipitation_index"])
+    @pytest.mark.parametrize("key", ["air_temperature", "total_precipitation_index"])
     def test_banded_preset_edges_stay_within_the_range(self, key):
         """Band edges partition [vmin, vmax] exactly -- no overshoot beyond vmax (every colour reachable)."""
         layer = DATA_STYLES[key][key]
@@ -1082,36 +1088,39 @@ class TestMagicsPresets:
         assert perceptual_uniformity(DATA_STYLES[style][style]["cmap"]) < 0.05
 
     def test_temperature_preset_keeps_full_colour_ramp(self):
-        """The vendored min_temperature_2m palette keeps its full blue->green->yellow->red->magenta ramp.
+        """The vendored air_temperature palette keeps its full blue->green->yellow->red->magenta ramp.
 
         Magics palettes name intermediate colours (`greenish_blue`, `yellow_green`, ...)
         that are not matplotlib colours; dropping the unrecognised names truncates the
         ramp and over-weights the magenta cap (whole summers rendered magenta). Guard
         the shipped asset: the ramp is long and the green mid-band survives.
 
-        (Uses `min_temperature_2m`, not `temperature_2m`: `temperature_2m` is now the reference default -- see
-        `TestReferencePresets` -- but `min_temperature_2m` is from the same Magics temperature
-        family and keeps the same long named-colour ramp.)
+        (Uses `air_temperature`, not `temperature_2m`: `temperature_2m` and the
+        2 m temperature extremes are now the reference default -- see
+        `TestReferencePresets` -- but `air_temperature` is from the same Magics
+        temperature palette and keeps the same long named-colour ramp.)
         """
         rec = json.loads(
             importlib.resources.files("cleopatra.styling.data")
             .joinpath("weather_presets.json")
             .read_text()
-        )["presets"]["min_temperature_2m"]["layers"]["min_temperature_2m"]
+        )["presets"]["air_temperature"]["layers"]["air_temperature"]
         palette = rec["colors"]
-        assert len(palette) >= 27, f"min_temperature_2m ramp truncated to {len(palette)} colours"
+        assert len(palette) >= 25, f"air_temperature ramp truncated to {len(palette)} colours"
         assert any(g > r and g > b and g > 0.5 for r, g, b in map(to_rgb, palette)), (
             "the green transition band (Magics named colours) must be preserved"
         )
 
     def test_temperature_family_shares_the_style_range(self):
-        """The Magics -48..56 temperature family carries the same decoded range.
+        """The Magics -52..48 temperature palette carries the same decoded range.
 
-        (`temperature_2m`/`dewpoint_temperature_2m` are now the reference default; `min_temperature_2m`/`max_temperature_2m` remain Magics.)
+        (`temperature_2m`/`dewpoint_temperature_2m` and the 2 m temperature
+        extremes are now the reference default; `air_temperature`/`potential_temperature`
+        remain Magics and share the one decoded range.)
         """
-        for key in ("min_temperature_2m", "max_temperature_2m"):
+        for key in ("air_temperature", "potential_temperature"):
             layer = DATA_STYLES[key][key]
-            assert (layer["vmin"], layer["vmax"]) == (-48.0, 56.0), key
+            assert (layer["vmin"], layer["vmax"]) == (-52.0, 48.0), key
 
     def test_explicit_none_vmin_does_not_wipe_fixed_range(self, ax):
         """Passing vmin=None to apply_data_style keeps the preset's fixed range (not auto-range)."""

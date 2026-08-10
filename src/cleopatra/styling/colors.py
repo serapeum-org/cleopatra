@@ -362,7 +362,7 @@ def alpha_scaled_image(
     Builds an RGBA image from `cmap(norm(data))` and overwrites the alpha
     channel with `alpha_norm(data)`, so low values fade toward fully
     transparent instead of being drawn at full opacity in a pale colour.
-    This is the "smoke fading into haze" look used by ECMWF/CAMS aerosol
+    This is the "smoke fading into haze" look used by CAMS aerosol
     animations: whatever is plotted underneath (a basemap, another layer)
     shows through wherever the value is near zero. Any non-finite entry in
     `data` (NaN) is drawn fully transparent regardless of `alpha_norm`.
@@ -598,7 +598,7 @@ def alpha_scaled_mesh(
 #:   rather than a gradient swatch. ``cmap``/``vmin``/``vmax``/``center`` are
 #:   ignored when ``categories`` is set; only ``label`` (the legend title) is used.
 #:
-#: This is the colour/legend half of the ECMWF/CAMS look; pair it with a
+#: This is the colour/legend half of the CAMS look; pair it with a
 #: `cleopatra.basemap.projection` projection-style preset (globe or flat) -- the two
 #: are independent and neither requires the other.
 #:
@@ -606,7 +606,7 @@ def alpha_scaled_mesh(
 #: from colour: opacity saturates over a much narrower band (0.1-0.5) than
 #: colour (0.0-1.0), so the vivid mid-colormap tones are fully opaque well
 #: before the data reaches its maximum. This reproduces the bright, glowing
-#: "flame" rim ECMWF/CAMS aerosol maps show at a plume's edge -- with a
+#: "flame" rim CAMS aerosol maps show at a plume's edge -- with a
 #: single shared curve, that rim's colour is barely visible because it sits
 #: at low, nearly-transparent opacity.
 #:
@@ -763,7 +763,7 @@ def _load_presets(resource: str) -> dict[str, dict[str, dict[str, Any]]]:
 #: (`_load_presets`): the cmocean ocean/hydrology/DEM set, the terrain
 #: (hypsometric) maps, the scientific perceptually-uniform colour maps, the
 #: radar/satellite meteorology colour tables, the NCL/MeteoSwiss tables, the
-#: merged ECMWF weather parameters, and the hand-authored built-in presets
+#: merged weather parameters, and the hand-authored built-in presets
 #: (haze, flame, categorical hydrology, radar).
 #: List them all with `sorted(DATA_STYLES)`.
 #: Load order matters on a key collision (a later asset's preset wins via
@@ -833,7 +833,7 @@ def style_for_parameter(short_name: str) -> str | None:
 
     Maps a GRIB shortName (e.g. ``"2t"``) to the vendored preset that styles it
     (``"temperature_2m"``), so a caller holding a field's shortName can pick the
-    matching ECMWF-style preset. A descriptive preset name passed straight
+    matching reference-style preset. A descriptive preset name passed straight
     through is also accepted. Returns ``None`` when nothing matches, so callers
     can fall back to a default.
 
@@ -911,7 +911,7 @@ def resolve_style_norm(
 
     Resolution order:
 
-    - **Explicit `levels`** (the ECMWF contour model) resolve to a
+    - **Explicit `levels`** (the reference contour model) resolve to a
       discrete `BoundaryNorm` over those boundaries, with `extend` capping the
       out-of-range ends -- unless the caller supplied `vmin`/`vmax`/`center` or a
       non-linear `norm` kind (`"log"`/`"symlog"`) merged into `cfg`, which take
@@ -1158,11 +1158,11 @@ def apply_data_style(
     Applies `alpha_scaled_image` (and, if `legend`, a stacked `swatch_legend`
     per layer) to each array in `layers`, using the colormap/label/range that
     `style` defines for that layer name in `DATA_STYLES`. Calling this with
-    `layers={"organic_matter": ..., "dust": ...}` reproduces the ECMWF/CAMS
+    `layers={"organic_matter": ..., "dust": ...}` reproduces the CAMS
     aerosol look in one call -- but it is only a thin orchestration over
     `alpha_scaled_image` + `swatch_legend`, so nothing about it requires the
     orthographic globe: it works on a plain flat axes, an existing
-    `"ecmwf"`/`"ecmwf-dark"` reference map (`cleopatra.basemap.geo`), or any other
+    `"light"`/`"dark"` reference map (`cleopatra.basemap.geo`), or any other
     projection just as well. Pass `x`/`y` (e.g. from
     `cleopatra.basemap.projection.orthographic_grid`) to render on a curvilinear grid
     via `alpha_scaled_mesh` instead of the default `imshow`-based

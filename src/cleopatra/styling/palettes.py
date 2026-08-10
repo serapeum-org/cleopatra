@@ -132,7 +132,7 @@ class Palette:
         colors: The palette colours (hex strings or names) -- interpolation
             anchors for continuous kinds, exact class swatches for
             `qualitative`.
-        source: Free-text provenance (e.g. `"cleopatra"`, `"ecmwf"`); metadata
+        source: Free-text provenance (e.g. `"cleopatra"`, `"magics"`); metadata
             only. Defaults to `"cleopatra"`.
 
     Examples:
@@ -405,14 +405,14 @@ def preview_palettes(
 
 
 #: Sequential "haze" ramps (white at 0.0, saturating toward the named hue) -- the
-#: value-modulated-alpha glow of ECMWF/CAMS aerosol animations.
+#: value-modulated-alpha glow of CAMS aerosol animations.
 _HAZE_ANCHORS: dict[str, list[str]] = {
     "organic_matter": ["#ffffff", "#ffd9f2", "#ff5fc9", "#c400a0", "#5c0050", "#200018"],
     "dust": ["#ffffff", "#fff2b3", "#ffcc33", "#ff6a00", "#7a1500", "#2a0800"],
 }
 
-#: The official ECMWF/CAMS aerosol-optical-depth (AOD at 550 nm) scales, colour
-#: stops transcribed from the open-source Magics engine (`ecmwf/magics`,
+#: The official CAMS aerosol-optical-depth (AOD at 550 nm) scales, colour
+#: stops transcribed from the open-source Magics engine (`magics`,
 #: Apache-2.0); only colour data, no code. The Magics style name is noted per
 #: entry. Opacity ramps in the Magics originals are handled by cleopatra's
 #: separate opacity axis, not baked into the colour.
@@ -453,7 +453,7 @@ _FLAME_ANCHORS: dict[str, list[str]] = {
 
 for _prefix, _anchor_map, _src in [
     ("haze", _HAZE_ANCHORS, "cleopatra"),
-    ("cams_aod", _CAMS_AOD_ANCHORS, "ecmwf-magics"),
+    ("cams_aod", _CAMS_AOD_ANCHORS, "magics"),
     ("flame", _FLAME_ANCHORS, "cleopatra"),
 ]:
     for _key, _anchors in _anchor_map.items():

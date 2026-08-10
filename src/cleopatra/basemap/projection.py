@@ -350,7 +350,7 @@ def orthographic_grid(
         data: 2D array of values to reproject alongside the grid.
         center_lat: Latitude the globe is centred on (the "camera" points at
             this point). Defaults to `90.0` (the North Pole), matching the
-            ECMWF/CAMS Arctic-centred style.
+            CAMS Arctic-centred style.
         center_lon: Longitude the globe is centred on. Defaults to `0.0`.
 
     Returns:
@@ -714,7 +714,7 @@ def orthographic_graticule(
 
 
 #: Named "projection style" presets for `apply_projection_style` -- the
-#: coordinate-frame half of the "haze" look (the glowing, ECMWF/CAMS-style
+#: coordinate-frame half of the "haze" look (the glowing, CAMS-style
 #: aerosol-animation aesthetic), independent of the
 #: `cleopatra.styling.colors.DATA_STYLES` colour/legend half. `"globe"` reprojects
 #: onto an orthographic view and frames it with a boundary + graticule;

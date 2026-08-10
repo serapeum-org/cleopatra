@@ -138,7 +138,7 @@ nav:
       - Weather styles gallery: notebooks/presets/weather_styles_gallery.ipynb
       - Temperature animation: notebooks/presets/temperature_animation.ipynb
       - Precipitation animation: notebooks/presets/precipitation_animation.ipynb
-      - ECMWF temperature animation: notebooks/presets/ecmwf_temperature_animation.ipynb
+      - Operational temperature animation: notebooks/presets/operational_temperature_animation.ipynb
       - Magics 2t flame plume: notebooks/presets/magics_2t_flame_plume.ipynb
     - MeshGlyph: notebooks/mesh_glyph/mesh_glyph_examples.ipynb
     - ScatterGlyph: notebooks/scatter_glyph/scatter_glyph_examples.ipynb

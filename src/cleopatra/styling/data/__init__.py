@@ -1,7 +1,7 @@
 """Color presets.
 
 - `weather_presets.json` -- colour data and parameter labels for GRIB
-  shortName-keyed atmospheric presets, derived from ECMWF reference styles.
+  shortName-keyed atmospheric presets, derived from reference styles.
 - `ocean_presets.json` -- colour data for ocean/hydrology/DEM presets,
   derived from cmocean.
 - `builtin_presets.json` -- cleopatra's hand-authored presets.

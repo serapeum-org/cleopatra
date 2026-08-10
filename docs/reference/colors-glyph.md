@@ -19,7 +19,7 @@ color values, extracts colour ramps from images, and builds matplotlib colormaps
 ## Composable data styles ("haze")
 
 These module-level helpers render one or more value layers with per-pixel opacity
-tied to value — the ECMWF/CAMS aerosol look — without constructing a glyph. They
+tied to value — the CAMS aerosol look — without constructing a glyph. They
 pair with [`projection.apply_projection_style`](projection.md) to compose the same
 style on a flat map or an orthographic globe.
 
