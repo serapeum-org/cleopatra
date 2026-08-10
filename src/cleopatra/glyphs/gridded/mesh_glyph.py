@@ -1208,6 +1208,7 @@ class MeshGlyph(GeoMixin, Glyph):
         text_loc: list | None = None,
         colorbar: bool | ColorBar | None = None,
         color: ColorScaling | None = None,
+        contour: Contour | None = None,
         data_style: DataStyle | None = None,
         **kwargs: Any,
     ) -> FuncAnimation:
@@ -1287,7 +1288,7 @@ class MeshGlyph(GeoMixin, Glyph):
 
         self._default_options = MESH_DEFAULT_OPTIONS.copy()
         self._merge_kwargs(kwargs)
-        self._merge_group_params(color, data_style)
+        self._merge_group_params(color, contour, data_style)
         resolved_colorbar = (
             _resolve_colorbar(colorbar) if isinstance(colorbar, ColorBar) else {}
         )

@@ -3797,6 +3797,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         frame_label: FrameLabel | None = None,
         *,
         color: ColorScaling | None = None,
+        contour: Contour | None = None,
         cells: CellValues | None = None,
         data_style: DataStyle | None = None,
         data_getter: Callable[[int], np.ndarray] | None = None,
@@ -4152,7 +4153,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         else:
             label_location = frame_location
 
-        self._merge_group_params(color, cells, data_style)
+        self._merge_group_params(color, contour, cells, data_style)
         resolved_colorbar = self._apply_kwargs_and_colorbar(colorbar, kwargs)  # type: ignore[arg-type]
 
         if "ticks_spacing" not in resolved_colorbar:
