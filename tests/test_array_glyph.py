@@ -1881,6 +1881,25 @@ class TestAnimateEdgeCases:
             f"loose kwarg should still work in animate, got {glyph.cbar.orientation}"
         )
 
+    def test_animate_invalid_cbar_orientation_raises(
+        self,
+        coello_data: np.ndarray,
+        animate_time_list: list,
+        no_data_value: float,
+    ):
+        """An invalid loose `cbar_orientation` value still raises at render.
+
+        Test scenario:
+            The loose `cbar_*` kwargs survive (only their deprecation warning
+            was removed), so their render-time validation must still reject a
+            bad orientation with an actionable `ValueError`.
+        """
+        glyph = ArrayGlyph(coello_data, exclude_value=[no_data_value])
+        with pytest.raises(
+            ValueError, match="cbar_orientation must be 'vertical' or 'horizontal'"
+        ):
+            glyph.animate(animate_time_list, cbar_orientation="horizontl")
+
     def test_data_getter_is_keyword_only(
         self,
         coello_data: np.ndarray,
