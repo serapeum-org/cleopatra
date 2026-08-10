@@ -24,7 +24,7 @@ from cleopatra.styling.params import DataStyle
 pytestmark = pytest.mark.plot
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def field():
     """Provide a small lon/lat field with 1-D coordinate vectors.
 
