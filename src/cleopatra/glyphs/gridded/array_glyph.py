@@ -4105,7 +4105,7 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         frame_location = frame_label.location
         label_location_is_default = frame_location is None
-        if frame_location is None:
+        if label_location_is_default:
             label_location = [0.02, 0.95]
         else:
             label_location = frame_location
