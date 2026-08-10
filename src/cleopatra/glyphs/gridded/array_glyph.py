@@ -3853,6 +3853,11 @@ class ArrayGlyph(GeoMixin, Glyph):
                 `ColorScaling.power(gamma=0.7)`. Replaces the loose
                 `color_scale` / `gamma` / `line_threshold` / `line_scale` /
                 `bounds` / `midpoint` keywords.
+            contour: Discretisation group object
+                (`cleopatra.styling.params.Contour`), e.g.
+                `Contour(levels=5)`, to bin the colour scale into a
+                `BoundaryNorm` for the animation (an animation has no
+                `contour`/`contourf` kind, so only `levels` applies here).
             cells: Per-cell value-text group object
                 (`cleopatra.styling.params.CellValues`), e.g.
                 `CellValues(show=True, size=8)`. Replaces the loose
