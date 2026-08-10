@@ -49,9 +49,6 @@ from cleopatra.styling.colorbar import (
 from cleopatra.styling.colors import resolve_colormap, resolve_glow_options
 from cleopatra.styling.params import Classify, Contour
 from cleopatra.styling.scaling import ColorScaling
-from cleopatra.styling.colors import resolve_colormap, resolve_glow_options
-from cleopatra.basemap.geo import GeoMixin
-from cleopatra.glyphs.base.glyph import Glyph, _root_figure
 from cleopatra.styling.styles import CLASSIFY_OPTIONS, resolve_sizes, width_legend
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 

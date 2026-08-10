@@ -8,7 +8,6 @@ colorbar creation, tick management, point overlays, and animation.
 from __future__ import annotations
 
 import inspect
-import math
 import os
 import warnings
 from collections.abc import Iterator
