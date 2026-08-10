@@ -223,83 +223,84 @@ class VectorGlyph(GeoMixin, Glyph):
                 f"{', '.join(VECTOR_KINDS)}."
             )
 
-        self._merge_group_params(color, contour, classify)
+        with self._rollback_options_on_error():
+            self._merge_group_params(color, contour, classify)
 
-        if ax is not None:
-            self.ax = ax
-            self.fig = _root_figure(ax)
-        elif self.ax is None:
-            self.fig, self.ax = self.create_figure_axes()
-        ax = self.ax
-        opts = self.default_options
+            if ax is not None:
+                self.ax = ax
+                self.fig = _root_figure(ax)
+            elif self.ax is None:
+                self.fig, self.ax = self.create_figure_axes()
+            ax = self.ax
+            opts = self.default_options
 
-        if title is not None:
-            opts["title"] = title
-        opts.update(_resolve_colorbar(colorbar))
-        draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
+            if title is not None:
+                opts["title"] = title
+            opts.update(_resolve_colorbar(colorbar))
+            draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
 
-        mag = self.magnitude
-        norm, cbar_kw, ticks = self._prepare_scalar_mapping(mag)
-        cmap = resolve_colormap(opts["cmap"])
-        clim = {} if norm else {"clim": (ticks[0], ticks[-1])}
+            mag = self.magnitude
+            norm, cbar_kw, ticks = self._prepare_scalar_mapping(mag)
+            cmap = resolve_colormap(opts["cmap"])
+            clim = {} if norm else {"clim": (ticks[0], ticks[-1])}
 
-        _clear_prior_render_artists(ax)
-        self.im = None
-        self.cbar = None
+            _clear_prior_render_artists(ax)
+            self.im = None
+            self.cbar = None
 
-        arrow_patches: tuple = ()
-        im: Any
-        if kind == "quiver":
-            im = ax.quiver(
-                self.x,
-                self.y,
-                self.u,
-                self.v,
-                mag,
-                cmap=cmap,
-                norm=norm,
-                scale=opts["scale"],
-                **clim,
-            )
-        elif kind == "barbs":
-            im = ax.barbs(
-                self.x,
-                self.y,
-                self.u,
-                self.v,
-                mag,
-                cmap=cmap,
-                norm=norm,
-                **clim,
-            )
-        else:  # streamplot
-            patches_before = set(ax.patches)
-            stream = ax.streamplot(
-                self.x,
-                self.y,
-                self.u,
-                self.v,
-                color=mag,
-                cmap=cmap,
-                norm=norm,
-                density=opts["density"],
-            )
-            arrow_patches = tuple(set(ax.patches) - patches_before)
-            im = stream.lines
-            if im.get_array() is None:
-                im.set_array(np.asarray(mag).ravel())
-            if norm is None:
-                im.set_clim(ticks[0], ticks[-1])
+            arrow_patches: tuple = ()
+            im: Any
+            if kind == "quiver":
+                im = ax.quiver(
+                    self.x,
+                    self.y,
+                    self.u,
+                    self.v,
+                    mag,
+                    cmap=cmap,
+                    norm=norm,
+                    scale=opts["scale"],
+                    **clim,
+                )
+            elif kind == "barbs":
+                im = ax.barbs(
+                    self.x,
+                    self.y,
+                    self.u,
+                    self.v,
+                    mag,
+                    cmap=cmap,
+                    norm=norm,
+                    **clim,
+                )
+            else:  # streamplot
+                patches_before = set(ax.patches)
+                stream = ax.streamplot(
+                    self.x,
+                    self.y,
+                    self.u,
+                    self.v,
+                    color=mag,
+                    cmap=cmap,
+                    norm=norm,
+                    density=opts["density"],
+                )
+                arrow_patches = tuple(set(ax.patches) - patches_before)
+                im = stream.lines
+                if im.get_array() is None:
+                    im.set_array(np.asarray(mag).ravel())
+                if norm is None:
+                    im.set_clim(ticks[0], ticks[-1])
 
-        self.im = im
-        if draw_colorbar:
-            self.cbar = self.create_color_bar(ax, im, cbar_kw)
+            self.im = im
+            if draw_colorbar:
+                self.cbar = self.create_color_bar(ax, im, cbar_kw)
 
-        if opts["title"]:
-            ax.set_title(opts["title"], fontsize=opts["title_size"])
+            if opts["title"]:
+                ax.set_title(opts["title"], fontsize=opts["title_size"])
 
-        _mark_render_artists(ax, self.cbar, self.im, *arrow_patches)
-        return self.fig, ax, im
+            _mark_render_artists(ax, self.cbar, self.im, *arrow_patches)
+            return self.fig, ax, im
 
     def add_key(
         self,

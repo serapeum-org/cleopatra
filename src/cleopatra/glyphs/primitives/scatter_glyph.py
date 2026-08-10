@@ -304,68 +304,69 @@ class ScatterGlyph(GeoMixin, Glyph):
 
                 ```
         """
-        self._merge_group_params(color, contour, classify)
+        with self._rollback_options_on_error():
+            self._merge_group_params(color, contour, classify)
 
-        if ax is not None:
-            self.ax = ax
-            self.fig = _root_figure(ax)
-        elif self.ax is None:
-            self.fig, self.ax = self.create_figure_axes()
-        ax = self.ax
-        assert self.fig is not None
-        opts = self.default_options
+            if ax is not None:
+                self.ax = ax
+                self.fig = _root_figure(ax)
+            elif self.ax is None:
+                self.fig, self.ax = self.create_figure_axes()
+            ax = self.ax
+            assert self.fig is not None
+            opts = self.default_options
 
-        if title is not None:
-            opts["title"] = title
-        opts.update(_resolve_colorbar(colorbar))
-        draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
-        self.cbar = None
-        self.category_legend = None
+            if title is not None:
+                opts["title"] = title
+            opts.update(_resolve_colorbar(colorbar))
+            draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
+            self.cbar = None
+            self.category_legend = None
 
-        marker_area = self._resolve_marker_area()
+            marker_area = self._resolve_marker_area()
 
-        if self.values is None:
-            paths = ax.scatter(
-                self.x,
-                self.y,
-                s=marker_area,
-                marker=opts["marker"],
-            )
-        else:
-            norm, cbar_kw, ticks = self._prepare_scalar_mapping(self.values)
-            categorical = self._categorical
-            if categorical is not None:
-                color_array, cmap = categorical["codes"], categorical["cmap"]
+            if self.values is None:
+                paths = ax.scatter(
+                    self.x,
+                    self.y,
+                    s=marker_area,
+                    marker=opts["marker"],
+                )
             else:
-                color_array, cmap = np.asarray(self.values), resolve_colormap(opts["cmap"])
-            paths = ax.scatter(
-                self.x,
-                self.y,
-                c=color_array,
-                s=marker_area,
-                marker=opts["marker"],
-                cmap=cmap,
-                norm=norm,
-                vmin=None if norm else ticks[0],
-                vmax=None if norm else ticks[-1],
-            )
-            if draw_colorbar:
+                norm, cbar_kw, ticks = self._prepare_scalar_mapping(self.values)
+                categorical = self._categorical
                 if categorical is not None:
-                    self.category_legend = self.create_categorical_legend(ax)
+                    color_array, cmap = categorical["codes"], categorical["cmap"]
                 else:
-                    self.cbar = self.create_color_bar(ax, paths, cbar_kw)
+                    color_array, cmap = np.asarray(self.values), resolve_colormap(opts["cmap"])
+                paths = ax.scatter(
+                    self.x,
+                    self.y,
+                    c=color_array,
+                    s=marker_area,
+                    marker=opts["marker"],
+                    cmap=cmap,
+                    norm=norm,
+                    vmin=None if norm else ticks[0],
+                    vmax=None if norm else ticks[-1],
+                )
+                if draw_colorbar:
+                    if categorical is not None:
+                        self.category_legend = self.create_categorical_legend(ax)
+                    else:
+                        self.cbar = self.create_color_bar(ax, paths, cbar_kw)
 
-        if self.sizes is not None and opts["size_legend"]:
-            if self.category_legend is not None:
-                ax.add_artist(self.category_legend)
-            self.size_legend_artist = self._draw_size_legend(
-                ax, cast(np.ndarray, marker_area)
-            )
+            if self.sizes is not None and opts["size_legend"]:
+                if self.category_legend is not None:
+                    ax.add_artist(self.category_legend)
+                self.size_legend_artist = self._draw_size_legend(
+                    ax, cast(np.ndarray, marker_area)
+                )
 
-        if opts["title"]:
-            ax.set_title(opts["title"], fontsize=opts["title_size"])
+            if opts["title"]:
+                ax.set_title(opts["title"], fontsize=opts["title_size"])
 
-        return self.fig, ax, paths
+            return self.fig, ax, paths
 
     def _resolve_marker_area(self) -> float | np.ndarray:
         """Resolve the scatter `s` (marker area) for this glyph.

@@ -762,8 +762,9 @@ def _load_presets(resource: str) -> dict[str, dict[str, dict[str, Any]]]:
 #: later asset wins a key collision). One canonical schema backs them all
 #: (`_load_presets`): the cmocean ocean/hydrology/DEM set, the terrain
 #: (hypsometric) maps, the scientific perceptually-uniform colour maps, the
-#: NCL/MeteoSwiss tables, the merged ECMWF weather parameters, and the
-#: hand-authored built-in presets (haze, flame, categorical hydrology, radar).
+#: radar/satellite meteorology colour tables, the NCL/MeteoSwiss tables, the
+#: merged ECMWF weather parameters, and the hand-authored built-in presets
+#: (haze, flame, categorical hydrology, radar).
 #: List them all with `sorted(DATA_STYLES)`.
 #: Load order matters on a key collision (a later asset's preset wins via
 #: `dict.update`). The built-in asset is loaded FIRST so a vendored preset would
@@ -775,6 +776,7 @@ _PRESET_ASSETS = (
     "ocean_presets.json",
     "terrain_presets.json",
     "scientific_presets.json",
+    "radar_presets.json",
     "ncl_presets.json",
     "weather_presets.json",
 )

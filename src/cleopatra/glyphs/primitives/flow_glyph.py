@@ -332,95 +332,96 @@ class FlowGlyph(GeoMixin, Glyph):
 
                 ```
         """
-        self._merge_group_params(color, contour, classify)
+        with self._rollback_options_on_error():
+            self._merge_group_params(color, contour, classify)
 
-        if ax is not None:
-            self.ax = ax
-            self.fig = _root_figure(ax)
-        elif self.ax is None:
-            self.fig, self.ax = self.create_figure_axes()
-        ax = self.ax
-        assert self.fig is not None
-        opts = self.default_options
-        opts.update(_resolve_colorbar(colorbar))
+            if ax is not None:
+                self.ax = ax
+                self.fig = _root_figure(ax)
+            elif self.ax is None:
+                self.fig, self.ax = self.create_figure_axes()
+            ax = self.ax
+            assert self.fig is not None
+            opts = self.default_options
+            opts.update(_resolve_colorbar(colorbar))
 
-        if title is not None:
-            opts["title"] = title
-        draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
-        if opts["draw_order"] not in ("input", "width"):
-            raise ValueError(
-                f"draw_order must be 'input' or 'width', got {opts['draw_order']!r}"
-            )
+            if title is not None:
+                opts["title"] = title
+            draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
+            if opts["draw_order"] not in ("input", "width"):
+                raise ValueError(
+                    f"draw_order must be 'input' or 'width', got {opts['draw_order']!r}"
+                )
 
-        linewidths = self._resolve_linewidths()
+            linewidths = self._resolve_linewidths()
 
-        draw_paths, draw_values, draw_widths = self.paths, self.values, linewidths
-        if opts["draw_order"] == "width" and self.widths is not None:
-            order = np.argsort(np.asarray(self.widths, dtype=float), kind="stable")
-            draw_paths = [self.paths[k] for k in order]
-            if isinstance(linewidths, np.ndarray):
-                draw_widths = linewidths[order]
-            if self.values is not None:
-                draw_values = np.asarray(self.values)[order]
+            draw_paths, draw_values, draw_widths = self.paths, self.values, linewidths
+            if opts["draw_order"] == "width" and self.widths is not None:
+                order = np.argsort(np.asarray(self.widths, dtype=float), kind="stable")
+                draw_paths = [self.paths[k] for k in order]
+                if isinstance(linewidths, np.ndarray):
+                    draw_widths = linewidths[order]
+                if self.values is not None:
+                    draw_values = np.asarray(self.values)[order]
 
-        if self.values is None:
-            lc = LineCollection(
-                draw_paths, colors=opts["color_1"], linewidths=draw_widths
-            )
-            ax.add_collection(lc)
-        else:
-            norm, cbar_kw, ticks = self._prepare_scalar_mapping(self.values)
-            lc = LineCollection(
-                draw_paths,
-                array=np.asarray(draw_values),
-                cmap=resolve_colormap(opts["cmap"]),
-                norm=norm,
-                linewidths=draw_widths,
-            )
-            if norm is None:
-                lc.set_clim(ticks[0], ticks[-1])
-            ax.add_collection(lc)
-            if draw_colorbar:
-                self.cbar = self.create_color_bar(ax, lc, cbar_kw)
+            if self.values is None:
+                lc = LineCollection(
+                    draw_paths, colors=opts["color_1"], linewidths=draw_widths
+                )
+                ax.add_collection(lc)
+            else:
+                norm, cbar_kw, ticks = self._prepare_scalar_mapping(self.values)
+                lc = LineCollection(
+                    draw_paths,
+                    array=np.asarray(draw_values),
+                    cmap=resolve_colormap(opts["cmap"]),
+                    norm=norm,
+                    linewidths=draw_widths,
+                )
+                if norm is None:
+                    lc.set_clim(ticks[0], ticks[-1])
+                ax.add_collection(lc)
+                if draw_colorbar:
+                    self.cbar = self.create_color_bar(ax, lc, cbar_kw)
 
-        if opts["glow"]:
-            glow_opts = resolve_glow_options(opts["glow"])
-            n_glow = glow_opts.get("n_glow", 6)
-            glow_alpha = glow_opts.get("alpha", 0.05)
-            lw_step = glow_opts.get("linewidth_step", 1.0)
-            under = lc.get_zorder() - 1
-            for i in range(1, n_glow + 1):
-                glow_widths = draw_widths + lw_step * i
-                if self.values is None:
-                    glow_lc = LineCollection(
-                        draw_paths,
-                        colors=opts["color_1"],
-                        linewidths=glow_widths,
-                        alpha=glow_alpha,
-                        zorder=under,
-                    )
-                else:
-                    glow_lc = LineCollection(
-                        draw_paths,
-                        array=np.asarray(draw_values),
-                        cmap=resolve_colormap(opts["cmap"]),
-                        norm=norm,
-                        linewidths=glow_widths,
-                        alpha=glow_alpha,
-                        zorder=under,
-                    )
-                    if norm is None:
-                        glow_lc.set_clim(ticks[0], ticks[-1])
-                ax.add_collection(glow_lc)
+            if opts["glow"]:
+                glow_opts = resolve_glow_options(opts["glow"])
+                n_glow = glow_opts.get("n_glow", 6)
+                glow_alpha = glow_opts.get("alpha", 0.05)
+                lw_step = glow_opts.get("linewidth_step", 1.0)
+                under = lc.get_zorder() - 1
+                for i in range(1, n_glow + 1):
+                    glow_widths = draw_widths + lw_step * i
+                    if self.values is None:
+                        glow_lc = LineCollection(
+                            draw_paths,
+                            colors=opts["color_1"],
+                            linewidths=glow_widths,
+                            alpha=glow_alpha,
+                            zorder=under,
+                        )
+                    else:
+                        glow_lc = LineCollection(
+                            draw_paths,
+                            array=np.asarray(draw_values),
+                            cmap=resolve_colormap(opts["cmap"]),
+                            norm=norm,
+                            linewidths=glow_widths,
+                            alpha=glow_alpha,
+                            zorder=under,
+                        )
+                        if norm is None:
+                            glow_lc.set_clim(ticks[0], ticks[-1])
+                    ax.add_collection(glow_lc)
 
-        ax.autoscale_view()
+            ax.autoscale_view()
 
-        if self.widths is not None and opts["size_legend"]:
-            self.size_legend_artist = self._draw_width_legend(
-                ax, cast(np.ndarray, linewidths)
-            )
+            if self.widths is not None and opts["size_legend"]:
+                self.size_legend_artist = self._draw_width_legend(
+                    ax, cast(np.ndarray, linewidths)
+                )
 
-        if opts["title"]:
-            ax.set_title(opts["title"], fontsize=opts["title_size"])
+            if opts["title"]:
+                ax.set_title(opts["title"], fontsize=opts["title_size"])
 
-        return self.fig, ax, lc
+            return self.fig, ax, lc

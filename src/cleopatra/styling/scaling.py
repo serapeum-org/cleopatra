@@ -129,7 +129,9 @@ class ColorScaling:
         line_threshold: Linear-region threshold for `sym-lognorm`.
         line_scale: Linear-region scale factor for `sym-lognorm`.
         bounds: Explicit bin edges for `boundary-norm`.
-        midpoint: Centre value for the `midpoint` scale.
+        center: Centre value for the `midpoint` scale (the value pinned to
+            the colormap centre). Named `center` rather than `midpoint` so
+            the field does not shadow the `midpoint()` variant constructor.
     """
 
     kind: ColorScale = ColorScale.LINEAR
@@ -137,7 +139,7 @@ class ColorScaling:
     line_threshold: float = 0.0001
     line_scale: float = 0.001
     bounds: list[float] | None = None
-    midpoint: float = 0
+    center: float = 0
 
     @classmethod
     def linear(cls) -> ColorScaling:
@@ -225,12 +227,12 @@ class ColorScaling:
             - Anchor the colormap centre at a chosen value:
                 ```python
                 >>> from cleopatra.styling.scaling import ColorScaling
-                >>> ColorScaling.midpoint(at=100).midpoint
+                >>> ColorScaling.midpoint(at=100).center
                 100
 
                 ```
         """
-        return cls(kind=ColorScale.MIDPOINT, midpoint=at)
+        return cls(kind=ColorScale.MIDPOINT, center=at)
 
     @classmethod
     def from_options(cls, options: dict[str, Any]) -> ColorScaling:
@@ -276,7 +278,7 @@ class ColorScaling:
             line_threshold=options.get("line_threshold", _SCALE_DEFAULTS["line_threshold"]),
             line_scale=options.get("line_scale", _SCALE_DEFAULTS["line_scale"]),
             bounds=options.get("bounds", _SCALE_DEFAULTS["bounds"]),
-            midpoint=options.get("midpoint", _SCALE_DEFAULTS["midpoint"]),
+            center=options.get("midpoint", _SCALE_DEFAULTS["midpoint"]),
         )
 
     def to_options(self) -> dict[str, Any]:
@@ -301,7 +303,7 @@ class ColorScaling:
             "line_threshold": self.line_threshold,
             "line_scale": self.line_scale,
             "bounds": self.bounds,
-            "midpoint": self.midpoint,
+            "midpoint": self.center,
         }
 
     def build_norm(
@@ -398,7 +400,7 @@ class ColorScaling:
                 cbar_kw = {"ticks": ticks}
             norm = colors.BoundaryNorm(boundaries=bounds, ncolors=256)
         elif self.kind == ColorScale.MIDPOINT:
-            norm = MidpointNormalize(midpoint=self.midpoint, vmin=vmin, vmax=vmax)
+            norm = MidpointNormalize(midpoint=self.center, vmin=vmin, vmax=vmax)
             cbar_kw = {"ticks": ticks}
         else:  # pragma: no cover - a ColorScale member without a branch
             raise ValueError(

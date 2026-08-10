@@ -11,6 +11,8 @@ import inspect
 import math
 import os
 import warnings
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any, cast
 
 import matplotlib.colors as colors
@@ -591,6 +593,37 @@ class Glyph:
             for key, val in group.to_options().items():
                 if key in self.default_options:
                     self.default_options[key] = val
+
+    @contextmanager
+    def _rollback_options_on_error(self) -> Iterator[None]:
+        """Restore `default_options` if the wrapped render body raises.
+
+        A glyph's `plot` merges grouped parameter objects (`color=`, `contour=`,
+        `classify=`, ...) into the persistent `default_options` at the top of the
+        call, then renders. Most glyphs keep those options across plots (they are
+        sticky by design), so a render that raises *after* the merge -- an
+        unsupported `scheme`, a degenerate colour scale -- would leave the
+        half-applied options behind and poison later plain `plot()` calls on the
+        same instance: the stale option re-triggers the same error, or silently
+        renders with a colour scale that was never successfully applied.
+
+        Wrap the render body (the merge included) in this context manager: it
+        snapshots `default_options` on entry and, if the body raises, restores it
+        exactly, so a failed styled render leaves the glyph's option state
+        untouched. On success the merged options stay. Unlike a wrapping
+        decorator, a `with` block adds no stack frame, so warnings emitted inside
+        the render keep their caller-attributed `stacklevel`.
+
+        Yields:
+            None: control returns to the `with` body with the snapshot taken.
+        """
+        snapshot = dict(self._default_options)
+        try:
+            yield
+        except BaseException:
+            self._default_options.clear()
+            self._default_options.update(snapshot)
+            raise
 
     def create_figure_axes(self) -> tuple[Figure, Axes]:
         """Create a new figure and axes from default_options.
