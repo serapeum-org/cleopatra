@@ -78,6 +78,11 @@ KDE_DEFAULT_OPTIONS = {
 }
 KDE_DEFAULT_OPTIONS = STYLE_DEFAULTS | KDE_DEFAULT_OPTIONS
 
+#: Sentinel distinguishing "hillshade not passed to apply_style" from an
+#: explicit `hillshade=None` (which clears sticky relief), matching the
+#: `_UNSET` sentinels on ArrayGlyph / MeshGlyph.
+_UNSET_HILLSHADE = object()
+
 
 class KDEGlyph(Glyph):
     """Visualization class for 2-D kernel-density estimates.
@@ -323,7 +328,7 @@ class KDEGlyph(Glyph):
         self,
         style: str,
         *,
-        hillshade: bool | dict | None = None,
+        hillshade: bool | dict | None = _UNSET_HILLSHADE,  # type: ignore[assignment]
         add_colorbar: bool | None = None,
         title: str | None = None,
     ):
@@ -356,11 +361,12 @@ class KDEGlyph(Glyph):
                 "continuous density, so only continuous presets apply"
             )
         self._reset_axes_for_restyle()
-        # Only override hillshade when the caller passed one; leaving it
-        # unset keeps any sticky relief shading (a plain None would clear it).
+        # Only override hillshade when the caller actually passed one; an
+        # unset value keeps any sticky relief shading, while an explicit
+        # `None` flows through to `DataStyle(hillshade=None)` and clears it.
         data_style = (
             DataStyle(style=style)
-            if hillshade is None
+            if hillshade is _UNSET_HILLSHADE
             else DataStyle(style=style, hillshade=hillshade)
         )
         return self.plot(

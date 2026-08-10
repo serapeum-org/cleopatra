@@ -711,9 +711,43 @@ class TestKDEGlyphApplyStyle:
         """A style survives a later plain plot() and is cleared by style=None."""
         x, y = self._cloud()
         g = KDEGlyph(x, y, gridsize=40)
-        g.plot( data_style=DataStyle(style="temperature"))
+        g.plot(data_style=DataStyle(style="temperature"))
         g.plot()
         assert g.style == "temperature"
-        g.plot( data_style=DataStyle(style=None))
+        g.plot(data_style=DataStyle(style=None))
         assert g.style is None
+        plt.close("all")
+
+    def test_hillshade_is_sticky_and_clearable(self):
+        """Plot-time hillshade is sticky (per the data_style contract) and clearable.
+
+        Test scenario:
+            `data_style` fields are sticky, so `plot(data_style=DataStyle(
+            hillshade=True))` persists into a later plain `plot()`; an
+            explicit `DataStyle(hillshade=False/None)` clears it.
+        """
+        x, y = self._cloud()
+        g = KDEGlyph(x, y, gridsize=40)
+        g.plot(data_style=DataStyle(hillshade=True))
+        g.plot()  # plain re-plot keeps the sticky relief
+        assert g.default_options["hillshade"] is True
+        g.plot(data_style=DataStyle(hillshade=False))
+        assert g.default_options["hillshade"] is False
+        plt.close("all")
+
+    def test_apply_style_clears_hillshade_only_on_explicit_none(self):
+        """`apply_style` keeps sticky relief when unset, clears it on explicit None.
+
+        Test scenario:
+            Regression: `apply_style` used `hillshade is None` so an
+            explicit `None` was indistinguishable from "not passed" and
+            never cleared, unlike ArrayGlyph/MeshGlyph.
+        """
+        x, y = self._cloud()
+        g = KDEGlyph(x, y, gridsize=40)
+        g.plot(data_style=DataStyle(hillshade=True))
+        g.apply_style("temperature")  # hillshade unset -> keeps sticky relief
+        assert g.default_options["hillshade"] is True
+        g.apply_style("temperature", hillshade=None)  # explicit None -> clears
+        assert g.default_options["hillshade"] is None
         plt.close("all")
