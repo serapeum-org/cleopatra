@@ -3076,8 +3076,8 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="ecmwf-style-2-m-temperature-animation">ECMWF-style 2 m temperature animation<a class="anchor-link" href="#ecmwf-style-2-m-temperature-animation">¶</a></h1><p>This uses cleopatra's <code>temperature_2m</code> data-style — <strong>ECMWF's actual default</strong> (from earthkit-plots'
-<code>2t.yml</code>): the muted <strong><code>Spectral_r</code></strong> colour ramp rendered as <strong>discrete 2 °C contour bands</strong> over −40…40 °C with
+<h1 id="ecmwf-style-2-m-temperature-animation">ECMWF-style 2 m temperature animation<a class="anchor-link" href="#ecmwf-style-2-m-temperature-animation">¶</a></h1><p>This uses cleopatra's <code>temperature_2m</code> data-style — <strong>ECMWF's actual default</strong>:
+the muted <strong><code>Spectral_r</code></strong> colour ramp rendered as <strong>discrete 2 °C contour bands</strong> over −40…40 °C with
 the out-of-range ends capped (<code>extend="both"</code>) — the look of a professional weather-service chart, not the neon
 blue→magenta rainbow. (The generic <code>temperature</code> preset auto-ranges to the data instead; pass it <code>vmin</code>/<code>vmax</code>
 to pin a non-Celsius field to a chosen range.)</p>
@@ -3139,7 +3139,8 @@ west, south, east, north = (float(v) for v in npz["extent"])
 extent = [west, east, south, north]  # ArrayGlyph extent order: [xmin, xmax, ymin, ymax]
 
 print("stack:", celsius.shape, "| frames:", labels[0], "-&gt;", labels[-1])
-from cleopatra.styling.params import DataStyle</div>
+from cleopatra.styling.params import DataStyle
+</div>
 </div>
 </div>
 </div>
@@ -3199,8 +3200,7 @@ axes, and <code>animate</code> reuses it.</p>
 <span class="n">glyph</span><span class="o">.</span><span class="n">add_features</span><span class="p">(</span><span class="s2">"coastline"</span><span class="p">,</span> <span class="s2">"50m"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"0.35"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 <span class="n">glyph</span><span class="o">.</span><span class="n">add_features</span><span class="p">(</span><span class="s2">"borders"</span><span class="p">,</span> <span class="s2">"50m"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"0.55"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 
-<span class="n">anim</span> <span class="o">=</span> <span class="n">glyph</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span>
-    <span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">"temperature_2m"</span><span class="p">),</span>
+<span class="n">anim</span> <span class="o">=</span> <span class="n">glyph</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span><span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">"temperature_2m"</span><span class="p">),</span> 
     <span class="n">time</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
     <span class="n">colorbar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># a full arrow-capped ECMWF colorbar instead of the preset swatch</span>
     <span class="n">title</span><span class="o">=</span><span class="s2">"ERA5-Land 2 m temperature"</span><span class="p">,</span>
@@ -3215,8 +3215,7 @@ axes, and <code>animate</code> reuses it.</p>
 glyph.add_features("coastline", "50m", color="0.35", linewidth=0.6, zorder=5)
 glyph.add_features("borders", "50m", color="0.55", linewidth=0.4, zorder=5)
 
-anim = glyph.animate(
-    data_style=DataStyle(style="temperature_2m"),
+anim = glyph.animate(data_style=DataStyle(style="temperature_2m"), 
     time=labels,
     colorbar=True,  # a full arrow-capped ECMWF colorbar instead of the preset swatch
     title="ERA5-Land 2 m temperature",
