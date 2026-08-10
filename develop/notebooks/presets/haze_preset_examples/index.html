@@ -1775,10 +1775,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#mixing-the-haze-data-style-with-the-existing-reference-map" class="md-nav__link">
+  <a href="#mixing-the-haze-data-style-with-the-existing-ecmwf-reference-map" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Mixing the haze data style with the existing reference map
+        Mixing the haze data style with the existing ECMWF reference map
       
     </span>
   </a>
@@ -2024,14 +2024,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../operational_temperature_animation/" class="md-nav__link">
+      <a href="../ecmwf_temperature_animation/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Operational 2 m temperature animation
+    ECMWF-style 2 m temperature animation
   
 
     
@@ -2511,10 +2511,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#mixing-the-haze-data-style-with-the-existing-reference-map" class="md-nav__link">
+  <a href="#mixing-the-haze-data-style-with-the-existing-ecmwf-reference-map" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Mixing the haze data style with the existing reference map
+        Mixing the haze data style with the existing ECMWF reference map
       
     </span>
   </a>
@@ -3364,7 +3364,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="composable-haze-style-presets-data-style-projection-style">Composable haze-style presets: data style + projection style<a class="anchor-link" href="#composable-haze-style-presets-data-style-projection-style">¶</a></h1><p>"Haze" is a value-modulated-opacity, glowing-rim visual style -- the recognisable look of CAMS
+<h1 id="composable-haze-style-presets-data-style-projection-style">Composable haze-style presets: data style + projection style<a class="anchor-link" href="#composable-haze-style-presets-data-style-projection-style">¶</a></h1><p>"Haze" is a value-modulated-opacity, glowing-rim visual style -- the recognisable look of ECMWF/CAMS
 aerosol-forecast animations: an orthographic globe, two colour layers ("Organic Matter" smoke and
 "Dust") that glow brightest at moderate density and fade to transparent at the edges, a chrome-free
 black canvas, and plain white city labels. This notebook builds that look from cleopatra's building
@@ -3394,7 +3394,7 @@ and shows that every piece is <strong>independently usable</strong>, not bundled
 </tbody>
 </table>
 <p>Neither axis requires the other. By the end of this notebook you will have used the haze colours on a
-flat map, the globe with plain colours, and the haze colours paired with the pre-existing <code>"dark"</code>
+flat map, the globe with plain colours, and the haze colours paired with the pre-existing <code>"ecmwf-dark"</code>
 reference-map style -- three combinations the two-axis design makes possible for free.</p>
 </div>
 </div>
@@ -3628,7 +3628,7 @@ plt.show()</div>
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<p>That single figure reproduces the haze look (the CAMS aerosol-animation aesthetic): a globe,
+<p>That single figure reproduces the haze look (the ECMWF/CAMS aerosol-animation aesthetic): a globe,
 two fading colour layers, and their
 labelled swatches -- built entirely from generic primitives, none of which know about each other.</p>
 </div>
@@ -3777,11 +3777,11 @@ plt.show()</div>
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="mixing-the-haze-data-style-with-the-existing-reference-map">Mixing the haze data style with the existing reference map<a class="anchor-link" href="#mixing-the-haze-data-style-with-the-existing-reference-map">¶</a></h2><p><code>apply_data_style</code> composes with styling from earlier work too -- here the haze colour layers sit on
-top of the pre-existing reference coastline/graticule preset
+<h2 id="mixing-the-haze-data-style-with-the-existing-ecmwf-reference-map">Mixing the haze data style with the existing ECMWF reference map<a class="anchor-link" href="#mixing-the-haze-data-style-with-the-existing-ecmwf-reference-map">¶</a></h2><p><code>apply_data_style</code> composes with styling from earlier work too -- here the haze colour layers sit on
+top of the pre-existing ECMWF coastline/graticule preset
 (<a href="../../reference/geo.md"><code>GeoMixin.add_reference_map</code></a>) instead of the globe, using <code>style="flat"</code>
 from <code>apply_projection_style</code> as a pure pass-through. <code>add_reference_map("auto")</code> picks the
-<code>"light"</code> (dark coastlines) or <code>"dark"</code> (light coastlines) variant by sampling the backdrop's
+<code>"ecmwf"</code> (dark coastlines) or <code>"ecmwf-dark"</code> (light coastlines) variant by sampling the backdrop's
 own displayed luminance -- always the right pick regardless of what colour the backdrop turns out to be.</p>
 </div>
 </div>
@@ -3853,7 +3853,7 @@ plt.show()</div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h2 id="city-labels">City labels<a class="anchor-link" href="#city-labels">¶</a></h2><p><code>add_point_labels</code> (or the <code>GeoMixin.add_labels</code> glyph method) draws the plain dot-and-text city
-labels CAMS maps use, independent of everything above -- it just needs coordinates in whatever
+labels ECMWF/CAMS maps use, independent of everything above -- it just needs coordinates in whatever
 space the axes is already using. Here that space is real lon/lat degrees (thanks to the <code>extent</code>
 above), so city coordinates can be passed straight through unmodified; on the globe they would need
 reprojecting first with <code>orthographic_points</code> (see the animation below).</p>
@@ -4009,7 +4009,7 @@ plt.show()</div>
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="animating-a-multi-day-forecast-loop">Animating a multi-day forecast loop<a class="anchor-link" href="#animating-a-multi-day-forecast-loop">¶</a></h2><p>The style this notebook builds comes from CAMS <strong>animations</strong> -- a multi-day aerosol forecast
+<h2 id="animating-a-multi-day-forecast-loop">Animating a multi-day forecast loop<a class="anchor-link" href="#animating-a-multi-day-forecast-loop">¶</a></h2><p>The style this notebook builds comes from ECMWF/CAMS <strong>animations</strong> -- a multi-day aerosol forecast
 playing as a loop, with the plumes drifting across a fixed globe view and the date advancing in the
 title. This section builds exactly that, combining every piece from above: <code>apply_projection_style</code>
 redrawn per frame, <code>apply_data_style</code> for the colour layers, <code>apply_blank_canvas</code> for the chrome-free
@@ -4256,9 +4256,9 @@ independent axes -- pick either, both, or neither.</li>
 <code>apply_blank_canvas</code>, <code>orthographic_grid</code>/<code>_boundary</code>/<code>_graticule</code>/<code>_points</code>, <code>add_point_labels</code>) is
 a plain function usable on its own, with any other colormap, projection, or cleopatra styling.</li>
 <li>The <code>"haze"</code> and <code>"globe"</code> names are just convenience presets over those primitives -- the same
-presets compose with prior work like the <code>"light"</code>/<code>"dark"</code> reference-map style.</li>
+presets compose with prior work like the <code>"ecmwf"</code>/<code>"ecmwf-dark"</code> reference-map style.</li>
 <li>The same primitives redrawn per frame with <code>FuncAnimation</code> and exported with <code>to_gif</code> reproduce the
-real CAMS multi-day forecast loop this style is modelled on.</li>
+real ECMWF/CAMS multi-day forecast loop this style is modelled on.</li>
 </ul>
 </div>
 </div>

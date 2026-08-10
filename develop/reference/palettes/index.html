@@ -2078,14 +2078,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notebooks/presets/operational_temperature_animation/" class="md-nav__link">
+      <a href="../../notebooks/presets/ecmwf_temperature_animation/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Operational 2 m temperature animation
+    ECMWF-style 2 m temperature animation
   
 
     
@@ -3031,7 +3031,7 @@ anchors for continuous kinds, exact class swatches for
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Free-text provenance (e.g. <code>"cleopatra"</code>, <code>"magics"</code>); metadata
+                <p>Free-text provenance (e.g. <code>"cleopatra"</code>, <code>"ecmwf"</code>); metadata
 only. Defaults to <code>"cleopatra"</code>.</p>
               </div>
             </td>
@@ -3193,7 +3193,7 @@ only. Defaults to <code>"cleopatra"</code>.</p>
 <a id="__codelineno-0-132" name="__codelineno-0-132"></a><span class="sd">        colors: The palette colours (hex strings or names) -- interpolation</span>
 <a id="__codelineno-0-133" name="__codelineno-0-133"></a><span class="sd">            anchors for continuous kinds, exact class swatches for</span>
 <a id="__codelineno-0-134" name="__codelineno-0-134"></a><span class="sd">            `qualitative`.</span>
-<a id="__codelineno-0-135" name="__codelineno-0-135"></a><span class="sd">        source: Free-text provenance (e.g. `&quot;cleopatra&quot;`, `&quot;magics&quot;`); metadata</span>
+<a id="__codelineno-0-135" name="__codelineno-0-135"></a><span class="sd">        source: Free-text provenance (e.g. `&quot;cleopatra&quot;`, `&quot;ecmwf&quot;`); metadata</span>
 <a id="__codelineno-0-136" name="__codelineno-0-136"></a><span class="sd">            only. Defaults to `&quot;cleopatra&quot;`.</span>
 <a id="__codelineno-0-137" name="__codelineno-0-137"></a>
 <a id="__codelineno-0-138" name="__codelineno-0-138"></a><span class="sd">    Examples:</span>
@@ -4491,7 +4491,7 @@ when <code>names</code> is given. Defaults to <code>None</code> (every registere
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styling.palettes</span><span class="w"> </span><span class="kn">import</span> <span class="n">available_palettes</span><span class="p">,</span> <span class="n">get_palette</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nb">print</span><span class="p">(</span><span class="n">available_palettes</span><span class="p">(</span><span class="s2">&quot;sequential&quot;</span><span class="p">))</span>            <span class="c1"># includes &#39;haze_dust&#39;, &#39;cams_aod_blue_red&#39;, ...</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nb">print</span><span class="p">(</span><span class="n">get_palette</span><span class="p">(</span><span class="s2">&quot;cams_aod_blue_red&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">source</span><span class="p">)</span>     <span class="c1"># &#39;magics&#39;</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nb">print</span><span class="p">(</span><span class="n">get_palette</span><span class="p">(</span><span class="s2">&quot;cams_aod_blue_red&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">source</span><span class="p">)</span>     <span class="c1"># &#39;ecmwf-magics&#39;</span>
 </code></pre></div>
 
 
