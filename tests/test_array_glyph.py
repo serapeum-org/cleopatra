@@ -3499,24 +3499,27 @@ class TestFacetingEdgeCases:
         """`labels.col` whose length differs from N raises `ValueError`."""
         stack = self._stack(n=4)
         labels = PanelLabels(col=[0, 1, 2])
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError, match="`labels.col` length"):
-            ArrayGlyph(stack).facet(col="t", labels=labels)
+            glyph.facet(col="t", labels=labels)
 
     def test_labels_col_length_mismatch_4d_raises(self) -> None:
         """`labels.col` length wrong on a 4-D stack raises."""
         rng = np.random.default_rng(1337)
         stack = rng.uniform(0.0, 1.0, size=(2, 3, 4, 4))
         labels = PanelLabels(col=[0])
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError, match="`labels.col` length"):
-            ArrayGlyph(stack).facet(col="t", row="lev", labels=labels)
+            glyph.facet(col="t", row="lev", labels=labels)
 
     def test_labels_row_length_mismatch_raises(self) -> None:
         """`labels.row` whose length differs from Nrow raises."""
         rng = np.random.default_rng(1337)
         stack = rng.uniform(0.0, 1.0, size=(2, 3, 4, 4))
         labels = PanelLabels(col=[0, 1], row=[0])
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError, match="`labels.row` length"):
-            ArrayGlyph(stack).facet(col="t", row="lev", labels=labels)
+            glyph.facet(col="t", row="lev", labels=labels)
 
     def test_shared_vmin_vmax_global_min_max(self) -> None:
         """Stack-wide `vmin`/`vmax` reflect the *global* min/max across frames.
