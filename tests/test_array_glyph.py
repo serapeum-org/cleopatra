@@ -3764,6 +3764,24 @@ class TestFacetingEdgeCases:
         with pytest.raises(ValueError, match="renamed to `figure_size`"):
             glyph.facet(col="t", figsize=(12.0, 4.0))
 
+    @pytest.mark.parametrize("kwarg", ["col_coords", "row_coords"])
+    def test_facet_stale_coords_raise_pointing_to_panel_labels(self, kwarg) -> None:
+        """Removed `col_coords`/`row_coords` raise a targeted error, not a deep one.
+
+        Args:
+            kwarg: The removed coordinate-label keyword under test.
+
+        Test scenario:
+            Both were replaced by `labels=PanelLabels(...)`; `facet` must
+            reject them up front with a message naming `PanelLabels`, rather
+            than failing deep in the per-panel loop.
+        """
+        glyph = ArrayGlyph(self._stack(n=3))
+        n_before = len(plt.get_fignums())
+        with pytest.raises(ValueError, match="labels=PanelLabels"):
+            glyph.facet(col="t", **{kwarg: [0, 1, 2]})
+        assert len(plt.get_fignums()) == n_before, "no figure should be created on the error path"
+
     def test_facet_with_extent_propagates_to_subplots(self) -> None:
         """A parent `extent` propagates to each sub-glyph during faceting.
 
