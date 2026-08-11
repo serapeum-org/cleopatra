@@ -313,7 +313,11 @@ class ColorBar:
         resettable `cbar_*` family to `STYLE_DEFAULTS`, so a reused glyph does
         not inherit a prior sticky spec's placement or caption. Distinct from
         `to_options`, which maps a *specific* spec's fields and omits unset
-        ones; this resets everything to the defaults.
+        ones; this resets the whole `cbar_*` family to the defaults.
+        `ticks_spacing` is deliberately excluded: it is glyph-specific
+        (`KDEGlyph`, for one, auto-derives it from the data range when unset),
+        so a single shared reset value could not restore each glyph's own
+        default -- it is therefore left untouched by `colorbar=True`.
 
         Returns:
             dict: `default_options` updates for a default colorbar.
