@@ -1,5 +1,203 @@
 # Changelog
 
+## 0.30.0 (2026-08-11)
+
+
+- feat(styling)!: grouped render parameters and a large vendored preset-library expansion (#275)
+- Complete the migration of ArrayGlyph/MeshGlyph plot/animate/facet from                                            
+  flat keyword arguments to typed group objects, and substantially expand                                           
+  the vendored preset library.                                                                                      
+                                                                                                                    
+  - Finish the grouped-parameter render API: data_style=DataStyle(...),                                             
+    color=ColorScaling(...), contour=Contour(...), cells=CellValues(...),                                           
+    classify=Classify(...); remove the legacy-keyword shims so a moved                                              
+    keyword now raises with a pointer to its group object.                                                          
+  - Widen per-call styled-preset overrides (bands/alpha/alpha_range) onto                                           
+    DataStyle: sticky across calls on a reused glyph, with correct opacity                                          
+    mode-switch and clearing.                                                                                       
+  - Vendor ~200 presets across seven libraries: 39 perceptually-uniform                                             
+    scientific colour maps, 11 radar/satellite tables, 3 hypsometric                                                
+    terrain ramps, and the weather library grown to 112 (+28 CAMS                                                   
+    atmospheric-composition and operational fields).                                                                
+  - Add an optional [science-colors] extra for namespaced colour maps                                               
+    (cmocean:thermal, ...) via the numpy-only cmap aggregator; no new                                               
+    runtime dependency.                                                                                             
+  - Add gallery notebooks for the new preset sets, committed output-free.                                           
+  - Treat vendored colour data as derived under neutral-source naming; keep                                         
+    the maintainer download scripts local-only.                                                                     
+                                                                                                                    
+  BREAKING CHANGE: the legacy flat render keywords on ArrayGlyph/MeshGlyph                                          
+  plot/animate/facet are removed. Pass them through the group objects                                               
+  (DataStyle, ColorScaling, Contour, CellValues, Classify) instead; a                                               
+  removed keyword now raises with a pointer to its group.                                                           
+-   Closes #288, #289
+- refactor(glyphs)!: group plot/animate parameters into typed objects (#287)
+- Replace the loose **kwargs surface on every glyph's plot() / animate()                                            
+  with a small set of discoverable, typed parameter objects, and remove the                                         
+  backward-compatibility shims that kept the old loose keywords working.                                            
+                                                                                                                    
+  - bundle the loose plot() / animate() keywords into grouped objects:                                              
+    color=ColorScaling, contour=Contour, cells=CellValues,                                                          
+    classify=Classify, data_style=DataStyle, points=PointOverlay,                                                   
+    frame_label=FrameLabel, colorbar=ColorBar                                                                       
+  - group facet's per-panel coordinate labels into PanelLabels and rename                                           
+    facet's figsize to figure_size                                                                                  
+  - remove the legacy loose-kwarg shims; a removed keyword now raises with a                                        
+    pointer to its group object                                                                                     
+  - rename text_colors to cell_value_text_colors and no_elem to                                                     
+    num_domain_cells                                                                                                
+                                                                                                                    
+  BREAKING CHANGE: the loose plot / animate styling keywords (point_color /                                         
+  point_size / point_label_color / point_label_size / pid_color / pid_size,                                         
+  label_location / label_color / text_loc, text_colors, col_coords /                                                
+  row_coords, and facet's figsize) are removed and now raise; pass the                                              
+  matching group object instead (PointOverlay, FrameLabel,                                                          
+  cell_value_text_colors, labels=PanelLabels, figure_size). ArrayGlyph.no_elem                                      
+  is renamed to num_domain_cells, and a bare array for points must be wrapped                                       
+  in a PointOverlay.                                                                                                
+-   Closes #281, #283, #285
+- refactor(glyphs)!: group plot/animate parameters into typed objects (#274)
+- Replace the flat ~30 keyword surface on every glyph's plot()/animate()
+with a small set of discoverable, typed parameter objects, and remove
+the backward-compatible shims that kept the old keywords working.
+- - add ColorScaling owning norm/colorbar construction, with variants
+  linear/power/sym_log/boundary/midpoint
+- add Contour, CellValues, DataStyle, and Classify group objects in
+  styling/params.py, each emitting only set fields via to_options()
+- add PointOverlay and FrameLabel for point overlays and animation
+  frame labels
+- group facet parameters into PanelLabels; rename facet figsize to
+  figure_size
+- add base group-merge infrastructure (_merge_group_params,
+  _reject_grouped_kwargs, _rollback_options_on_error): loose grouped
+  kwargs raise with a pointer, failed styled plots roll back
+- remove all deprecation shims; rename text_colors to
+  cell_value_text_colors and no_elem to num_domain_cells
+- reject conflicting style and data_style in templates.publication_map
+- add a migration guide and wire it into the mkdocs nav
+- BREAKING CHANGE: the flat styling keywords (color_scale, gamma, bounds,
+midpoint, line_threshold, line_scale, levels, labels, display_cell_value,
+num_size, background_color_threshold, style, hillshade, scheme, k,
+point_color, point_size, point_label_color, point_label_size,
+label_location, label_color, text_loc) are removed; pass the matching
+group object instead. text_colors is renamed to cell_value_text_colors,
+no_elem to num_domain_cells, and facet's figsize to figure_size. Passing
+a bare array as points no longer works; wrap it in a PointOverlay.
+- Closes #277, #278, #279, #280, #281, #282, #283, #284, #285
+- feat(geo): add a relief backdrop to the ecmwf-dark reference map (#273)
+- add_reference_map now draws a dimmed hypsometric relief backdrop beneath
+the data when the resolved preset carries a "relief" entry -- present on
+ecmwf-dark, absent on the chrome-only ecmwf. The relief config accepts a
+resolution string, an add_relief kwargs dict, or True (mirroring the
+sibling _draw_basemap), and defaults crs to self.crs via _basemap_kwargs
+so it warps to match non-EPSG:4326 data.
+- The backdrop is skipped when the axes are not georeferenced, and an
+environmental relief failure -- missing Pillow (the [tiles] extra), an
+offline/uncached fetch, or a corrupt cache -- degrades with a warning
+while the coastline/border chrome still draws, so the chrome never
+hard-depends on the relief. A bad relief resolution in a custom preset
+still raises loudly. The per-call resolution= knob affects only the
+features, not the relief.
+- Closes #216
+- feat(config): add Config.get_cache_dir for the basemap cache directory (#272)
+- Surface CLEOPATRA_CACHE_DIR — previously a bare os.environ read buried in
+basemap/reference._cache_dir — as a single, discoverable Config method,
+so it lives alongside set_matplotlib_backend where users look for
+configuration.
+- - resolve in order: a non-empty explicit path argument, then the
+  CLEOPATRA_CACHE_DIR environment variable, then the default
+  ~/.cleopatra/naturalearth; a leading ~ is expanded
+- treat any value that is None, empty, or whitespace-only (for both the
+  argument and the env var) as not provided, so get_cache_dir("") and
+  get_cache_dir("   ") behave like get_cache_dir(); Path("") is Path(".")
+  under pathlib and resolves to the current directory, as documented
+- keep it a pure getter that only resolves the path; reference._cache_dir
+  delegates to it and retains the create-on-use mkdir, so config stays the
+  leaf owner of the setting and reference remains its sole consumer
+- expand ~ in the env var, fixing a latent bug where CLEOPATRA_CACHE_DIR=
+  ~/foo created a literal ./~/foo directory
+- add unit tests (14 get_cache_dir scenarios, including the Path("") and
+  whitespace edges), a reference delegation/creation test, and a hermetic
+  doctest runner; document get_cache_dir on the config reference page
+- Closes #253
+- feat(array_glyph): accept colorbar=ColorBar on ArrayGlyph.facet (#271)
+- Give ArrayGlyph.facet a colorbar: bool | ColorBar | None parameter
+mirroring plot / animate, so the typed spec no longer falls into
+**kwargs and raises a ValueError. The colorbar is resolved per panel
+through sub.plot(colorbar=...), so the shared _apply_kwargs_and_colorbar
+logic runs: the resolved spec wins over any loose cbar_* kwargs and sets
+_style_wants_colorbar, letting a placement-bearing colour bar override a
+preset swatch on the faceted path just as on plot / animate. facet also
+calls _warn_deprecated_cbar_kwargs so loose cbar_* deprecate uniformly.
+colorbar=None (default) preserves the prior per-panel behaviour.
+- - feat: facet(colorbar=bool | ColorBar | None), routed via sub.plot
+- fix: warn on loose cbar_* only after the col/row and structural
+  validation, so a malformed call raises without a spurious warning
+- refactor: collapse redundant multiple returns in is_notebook and the
+  Colors hex/rgb validators into single boolean expressions
+- docs: document the facet colorbar param, True's sticky-cbar reset, and
+  that None keeps each panel's default colour legend (bar or swatch)
+- test: TestFacetColorbar matrix (None/True/False/ColorBar/invalid,
+  per-panel application, orientation, precedence, vmin/vmax sharing,
+  preset-swatch override, single-emission deprecation, 4-D facets) plus
+  is_notebook branch coverage
+- Closes #256
+- refactor!: reorganize the package into glyphs/styling/basemap subpackages (#254)
+- Split the flat src/cleopatra/ module layout into three concern-based                                       
+  subpackages so the ~25 modules are navigable, and rename the histogram                                     
+  glyph for accuracy. Behavior is unchanged throughout -- only import                                        
+  paths (and one class name) move; every function, method, argument, and                                     
+  return value keeps its name and semantics. Verified behavior-preserving                                    
+  via byte-identical ASTs and the full test suite (2157 passed).                                             
+                                                                                                             
+  - glyphs/ -- chart-type building blocks, grouped by data model:                                            
+    base/ (Glyph, animation, hillshade), gridded/ (array, mesh, vector),                                     
+    primitives/ (scatter, line, polygon, flow), stats/ (histogram, kde)                                      
+  - styling/ -- colour/legend/presentation layer (styles, colors,                                            
+    colorbar, palettes, perceptual) plus the data/ preset assets                                             
+  - basemap/ -- networked basemap/CRS helpers (geo, tiles, reference,                                        
+    projection)                                                                                              
+  - config and templates stay at the top level                                                               
+  - rename statistical_glyph -> glyphs/stats/histogram_glyph and the class                                   
+    StatisticalGlyph -> HistogramGlyph (it only draws histogram-family                                       
+    plots)                                                                                                   
+  - rewrite every internal import and all docs, notebooks, and tools to                                      
+    the new paths; the package root still re-exports nothing                                                 
+  - strip ~1300 redundant/rationale comment lines and simplify glyphs/base                                   
+    (single-return helpers, hoisted Pillow import); promote pillow to a                                      
+    core dependency                                                                                          
+  - add docs/migration.md with the full old->new import map and an                                           
+    automated-migration script for downstream packages                                                       
+                                                                                                             
+  BREAKING CHANGE: all submodule import paths change, e.g.                                                   
+  `from cleopatra.array_glyph import ArrayGlyph` is now                                                      
+  `from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph`, and                                         
+  `cleopatra.statistical_glyph.StatisticalGlyph` is now                                                      
+  `cleopatra.glyphs.stats.histogram_glyph.HistogramGlyph`. See                                               
+  docs/migration.md for the complete mapping and a migration script.                                         
+                                                                                                             
+  Closes #268, #269, #270
+- feat(styles): unified preset schema, science colormaps, glow, projection, rendering polish (#246)
+- Land the outstanding style & preset workstreams, the preset schema                                                 
+  restructure, and the rendering polish surfaced in review.                                                          
+                                                                                                                     
+  - Unify all 111 presets onto one canonical on-disk schema with a single                                            
+    loader; the in-memory DATA_STYLES is byte-for-byte unchanged.                                                    
+  - Add a namespaced scientific-colormap resolver (cmocean:/crameri:)                                                
+    behind the optional [science-colors] extra.                                                                      
+  - Add a native line-glow primitive and glow= on LineGlyph/FlowGlyph.                                               
+  - Add projection= (globe/flat) on ArrayGlyph and MeshGlyph, styled-globe                                           
+    composition, Crameri terrain and NCL/MeteoSwiss colour tables, and fix                                           
+    the topography hinge mis-registration.                                                                           
+  - Add a units layer (convert_units), a shortName->style lookup, a NEXRAD                                           
+    radar preset, THIRD_PARTY_NOTICES, and the publication_map composer.                                             
+  - Tighten auto-sized figures to their content, add a preset background                                             
+    canvas with value-linked opacity, and create+seed the axes on demand                                             
+    so basemap layers work before plot/animate.                                                                      
+  - Rewrite the preset example notebooks to the glyph builder flow.                                                  
+                                                                                                                     
+  Closes #247, #248, #249, #250, #251, #252, #257, #258, #259, #260, #261, #262, #263, #264, #265, #266, #267
+
 ## 0.29.0 (2026-08-03)
 
 
