@@ -102,6 +102,29 @@ Only the `DeprecationWarning` that steered you toward `ColorBar` is gone. The ty
 `colorbar=ColorBar(...)` form (`cleopatra.styling.colorbar.ColorBar`) is still preferred and wins when both are
 given.
 
+### RGB band preparation → `RgbBands`
+
+`ArrayGlyph`'s **constructor** no longer takes the four loose RGB keywords. Bundle them into an `RgbBands`
+(importable from `cleopatra.glyphs.gridded.array_glyph`) passed as `rgb_bands=`:
+
+| Old | New |
+| --- | --- |
+| `ArrayGlyph(arr, rgb=[r, g, b])` | `ArrayGlyph(arr, rgb_bands=RgbBands([r, g, b]))` |
+| `ArrayGlyph(arr, rgb=..., surface_reflectance=..., cutoff=..., percentile=...)` | `ArrayGlyph(arr, rgb_bands=RgbBands([...], surface_reflectance=..., cutoff=..., percentile=...))` |
+
+```python
+# before
+ArrayGlyph(sentinel_2, rgb=[3, 2, 1], surface_reflectance=10000, cutoff=[0.3, 0.3, 0.3])
+
+# after
+from cleopatra.glyphs.gridded.array_glyph import RgbBands
+ArrayGlyph(sentinel_2, rgb_bands=RgbBands([3, 2, 1], surface_reflectance=10000, cutoff=[0.3, 0.3, 0.3]))
+```
+
+The lower-level `ArrayGlyph.prepare_array(...)` and `ArrayGlyph.scale_percentile(...)` utilities are unchanged —
+they still accept the loose `rgb` / `surface_reflectance` / `cutoff` / `percentile` keywords (they now build an
+`RgbBands` internally).
+
 ---
 
 ## Subpackage restructure

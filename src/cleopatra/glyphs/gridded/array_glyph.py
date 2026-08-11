@@ -670,6 +670,118 @@ class PanelLabels:
         return title, name_dict
 
 
+class RgbBands:
+    """Band selection and stretch for an RGB `ArrayGlyph`.
+
+    Bundles the four RGB data-preparation parameters -- the band `indices`
+    and the mutually-exclusive stretch controls (`surface_reflectance`,
+    `cutoff`, `percentile`) -- that `ArrayGlyph.__init__` previously accepted
+    as four separate keywords. Pass an instance as
+    `ArrayGlyph(array, rgb_bands=...)`; it is only meaningful in RGB mode (the
+    plain single-band path takes no `rgb_bands`).
+
+    Attributes:
+        indices: The `[r, g, b]` (or 4-band `[r, g, b, a]`) indices to pull
+            from the input array's first (band) axis.
+        surface_reflectance: Reflectance scale to normalise by (e.g. `10000`
+            for Sentinel-2, `255` for 8-bit imagery). `None` (default) skips
+            reflectance normalisation.
+        cutoff: Per-band clip cutoffs applied on the reflectance path, one
+            value per band. `None` (default) applies none.
+        percentile: Percentile for contrast-stretching the histogram; takes
+            precedence over `surface_reflectance` when set. `None` (default)
+            skips it.
+
+    Examples:
+        - Band selection with a percentile stretch:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph, RgbBands
+            >>> arr = np.random.default_rng(0).integers(0, 10000, size=(3, 8, 8)).astype(float)
+            >>> glyph = ArrayGlyph(arr, rgb_bands=RgbBands([0, 1, 2], percentile=2))
+            >>> glyph.rgb
+            True
+
+            ```
+    """
+
+    def __init__(
+        self,
+        indices: list[int],
+        *,
+        surface_reflectance: int | None = None,
+        cutoff: list | None = None,
+        percentile: int | None = None,
+    ) -> None:
+        """Initialise an `RgbBands`.
+
+        Args:
+            indices: The `[r, g, b]` band indices in the input array.
+            surface_reflectance: Reflectance scale to normalise by, or `None`.
+            cutoff: Per-band clip cutoffs, or `None`.
+            percentile: Percentile stretch (wins over `surface_reflectance`),
+                or `None`.
+        """
+        self.indices = indices
+        self.surface_reflectance = surface_reflectance
+        self.cutoff = cutoff
+        self.percentile = percentile
+
+    def validate(self, array: np.ndarray) -> None:
+        """Check the input array has enough bands for RGB compositing.
+
+        Args:
+            array: The band-first input array to be composited.
+
+        Raises:
+            ValueError: If the array has fewer than 3 bands on its first axis.
+        """
+        if array.shape[0] < 3:
+            raise ValueError(
+                f"To plot RGB plot the given array should have only 3 arrays, "
+                f"given array have {array.shape[0]}"
+            )
+
+    def prepare(self, array: np.ndarray) -> np.ndarray:
+        """Composite and stretch `array` into a displayable RGB image.
+
+        Selects `indices` from the band axis and moves bands last, then applies
+        the stretch: `percentile` (contrast stretch) wins, else
+        `surface_reflectance` (with optional `cutoff`), else the bands are just
+        reordered.
+
+        Args:
+            array: The band-first input array.
+
+        Returns:
+            np.ndarray: An `(H, W, 3)` array; normalised to `[0, 1]` when a
+                stretch was applied.
+        """
+        array = array[self.indices].transpose(1, 2, 0)
+        if self.percentile is not None:
+            return ArrayGlyph.scale_percentile(array, percentile=self.percentile)
+        if self.surface_reflectance is not None:
+            return self._apply_surface_reflectance(array)
+        return array
+
+    def _apply_surface_reflectance(self, array: np.ndarray) -> np.ndarray:
+        """Normalise by `surface_reflectance`, then apply the optional `cutoff`.
+
+        Args:
+            array: The `(H, W, 3)` band-last array to normalise.
+
+        Returns:
+            np.ndarray: The normalised array, clipped to `[0, 1]`.
+        """
+        array = np.clip(array / self.surface_reflectance, 0, 1)
+        if self.cutoff is not None:
+            bands = self.indices
+            array[0] = np.clip(bands[0], 0, self.cutoff[0]) / self.cutoff[0]
+            array[1] = np.clip(bands[1], 0, self.cutoff[1]) / self.cutoff[1]
+            array[2] = np.clip(bands[2], 0, self.cutoff[2]) / self.cutoff[2]
+        return array
+
+
 class FacetGrid:
     """Result object for a multi-subplot facet plot.
 
@@ -813,8 +925,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         ```
     - Create an RGB plot from a 3D array:
     ```python
+    >>> from cleopatra.glyphs.gridded.array_glyph import RgbBands
     >>> rgb_array = np.random.randint(0, 255, size=(3, 10, 10))
-    >>> rgb_glyph = ArrayGlyph(rgb_array, rgb=[0, 1, 2])
+    >>> rgb_glyph = ArrayGlyph(rgb_array, rgb_bands=RgbBands([0, 1, 2]))
     >>> fig, ax = rgb_glyph.plot()
 
     ```
@@ -837,12 +950,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         exclude_value: float | list = np.nan,
         extent: list | None = None,
         coords: tuple[np.ndarray, np.ndarray] | list[np.ndarray] | None = None,
-        rgb: list[int] | None = None,
-        surface_reflectance: int | None = None,
-        cutoff: list | None = None,
+        rgb_bands: RgbBands | None = None,
         ax: Axes | None = None,
         fig: Figure | None = None,
-        percentile: int | None = None,
         **kwargs,
     ):
         """Initialize the ArrayGlyph object with an array and optional parameters.
@@ -861,14 +971,12 @@ class ArrayGlyph(GeoMixin, Glyph):
                 matching the last two axes of `array`. When set,
                 `kind="auto"` routes to `pcolormesh` instead of
                 `imshow`. Mutually exclusive with `extent`.
-            rgb: The indices of the red, green, and blue bands in the given array, by default None.
-                If provided, the array will be treated as an RGB image.
-                Can be a list of three values [r, g, b], or four values if alpha band is included [r, g, b, a].
-            surface_reflectance: Surface reflectance value for normalizing satellite data, by default None.
-                Typically 10000 for Sentinel-2 data.
-            cutoff: Clip the range of pixel values for each band, by default None.
-                Takes only pixel values from 0 to the value of the cutoff and scales them back to between 0 and 1.
-                Should be a list with one value per band.
+            rgb_bands: An `RgbBands` bundling the band indices and stretch for
+                an RGB image, by default None. When given, the array is treated
+                as band-first and composited to RGB via `RgbBands.prepare`
+                (band selection plus a percentile / surface-reflectance / cutoff
+                stretch). Replaces the former loose `rgb`, `surface_reflectance`,
+                `cutoff`, and `percentile` keywords.
             ax: A pre-existing axes to plot on, by default None. Bound to
                 the glyph and used by `plot`/`animate` unless `plot(ax=...)`
                 overrides it. Passing `ax` alone is enough — its parent
@@ -879,8 +987,6 @@ class ArrayGlyph(GeoMixin, Glyph):
                 parameter — `plot` derives the figure from its axes). When
                 `ax` is given, `fig` is optional; if both are None a new
                 figure is created at render time.
-            percentile: The percentile value to be used for scaling the array values, by default None.
-                Used to enhance contrast by stretching the histogram.
             **kwargs: Additional keyword arguments for customizing the plot.
                 Supported arguments include:
                     figsize : tuple, optional
@@ -934,7 +1040,8 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         Raises:
             ValueError: If an invalid keyword argument is provided.
-            ValueError: If rgb is provided but the array doesn't have enough dimensions.
+            ValueError: If `rgb_bands` is given but the array has fewer than
+                3 bands.
             ValueError: If `extend` is set to a value outside
                 `{"neither", "both", "min", "max"}`.
             ValueError: If both `extent` and `coords` are supplied,
@@ -961,8 +1068,11 @@ class ArrayGlyph(GeoMixin, Glyph):
         ```
         Initialization with RGB bands from a 3D array:
         ```python
+        >>> from cleopatra.glyphs.gridded.array_glyph import RgbBands
         >>> rgb_array = np.random.randint(0, 255, size=(3, 10, 10))
-        >>> rgb_glyph = ArrayGlyph(rgb_array, rgb=[0, 1, 2], surface_reflectance=255)
+        >>> rgb_glyph = ArrayGlyph(
+        ...     rgb_array, rgb_bands=RgbBands([0, 1, 2], surface_reflectance=255)
+        ... )
         >>> fig, ax = rgb_glyph.plot()
 
         ```
@@ -1080,21 +1190,10 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         self._coords = self._validate_coords(coords, array)
 
-        if rgb is not None:
+        if rgb_bands is not None:
             self.rgb = True
-            if array.shape[0] < 3:
-                raise ValueError(
-                    f"To plot RGB plot the given array should have only 3 arrays, given array have "
-                    f"{array.shape[0]}"
-                )
-            else:
-                array = self.prepare_array(
-                    array,
-                    rgb=rgb,
-                    surface_reflectance=surface_reflectance,
-                    cutoff=cutoff,
-                    percentile=percentile,
-                )
+            rgb_bands.validate(array)
+            array = rgb_bands.prepare(array)
         else:
             self.rgb = False
 
@@ -1312,77 +1411,12 @@ class ArrayGlyph(GeoMixin, Glyph):
 
                 ```
         """
-        array = array[rgb].transpose(1, 2, 0)
-
-        if percentile is not None:
-            array = self.scale_percentile(array, percentile=percentile)
-        elif surface_reflectance is not None:
-            array = self._prepare_sentinel_rgb(
-                array,
-                rgb=rgb,
-                surface_reflectance=surface_reflectance,
-                cutoff=cutoff,
-            )
-        return array
-
-    def _prepare_sentinel_rgb(
-        self,
-        array: np.ndarray,
-        rgb: list[int] | None = None,
-        surface_reflectance: int = 10000,
-        cutoff: list | None = None,
-    ) -> np.ndarray:
-        """Prepare Sentinel satellite data for RGB visualization.
-
-        This method specifically handles Sentinel satellite imagery by normalizing the data
-        using the provided surface reflectance value and optional cutoff values.
-
-        Args:
-            array: The input array with shape (height, width, 3) containing RGB bands.
-                This array should already be transposed from the original band-first format.
-            rgb: The indices of the red, green, and blue bands in the original array, by default None.
-                Used only for cutoff application.
-            surface_reflectance: Surface reflectance value for normalizing satellite data, by default 10000.
-                Sentinel-2 data typically uses 10000 as the maximum reflectance value.
-                Used to scale values to the range [0, 1].
-            cutoff: Clip the range of pixel values for each band, by default None.
-                Takes only pixel values from 0 to the value of the cutoff and scales them back to between 0 and 1.
-                Should be a list with one value per band.
-
-        Returns:
-            np.ndarray: The prepared array with shape (height, width, 3) suitable for RGB visualization.
-                Values are normalized to the range [0, 1].
-
-        Examples:
-        Prepare Sentinel-2 data with default surface reflectance:
-        ```python
-        >>> import numpy as np
-        >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
-        >>> # Create a simulated Sentinel-2 RGB array
-        >>> rgb_data = np.random.randint(0, 10000, size=(100, 100, 3))
-        >>> glyph = ArrayGlyph(np.zeros((1, 1)))  # Dummy initialization
-        >>> normalized = glyph._prepare_sentinel_rgb(rgb_data)
-        >>> np.all((0 <= normalized) & (normalized <= 1))
-        np.True_
-
-        ```
-        Prepare Sentinel-2 data with custom cutoff values:
-        ```python
-        >>> cutoffs = [8000, 7000, 9000]
-        >>> normalized = glyph._prepare_sentinel_rgb(rgb_data, rgb=[0, 1, 2], cutoff=cutoffs)
-        >>> np.all((0 <= normalized) & (normalized <= 1))
-        np.True_
-
-        ```
-        """
-        array = np.clip(array / surface_reflectance, 0, 1)
-        if cutoff is not None:
-            bands = cast(list, rgb)
-            array[0] = np.clip(bands[0], 0, cutoff[0]) / cutoff[0]
-            array[1] = np.clip(bands[1], 0, cutoff[1]) / cutoff[1]
-            array[2] = np.clip(bands[2], 0, cutoff[2]) / cutoff[2]
-
-        return array
+        return RgbBands(
+            rgb,
+            surface_reflectance=surface_reflectance,
+            cutoff=cutoff,
+            percentile=percentile,
+        ).prepare(array)
 
     @staticmethod
     def scale_percentile(arr: np.ndarray, percentile: int = 1) -> np.ndarray:

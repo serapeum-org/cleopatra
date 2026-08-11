@@ -13,14 +13,10 @@ from matplotlib.text import Text
 from PIL import Image
 
 import cleopatra.basemap.reference as refmod
-from cleopatra.styling.params import CellValues, Contour, DataStyle
-from cleopatra.styling.scaling import ColorScaling
-from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.glyphs.gridded.array_glyph import (
     _COORD_DTYPE_MISMATCH,
     _COORD_SHAPE_MISMATCH,
     _UNSET,
-    _Unset,
     AnimateKwargs,
     ArrayGlyph,
     ColorBar,
@@ -29,10 +25,14 @@ from cleopatra.glyphs.gridded.array_glyph import (
     PanelLabels,
     PlotKwargs,
     PointOverlay,
+    RgbBands,
     _resolve_colorbar,
     _swatch_text_default,
     _Unset,
 )
+from cleopatra.styling.params import CellValues, Contour, DataStyle
+from cleopatra.styling.scaling import ColorScaling
+from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 
 class TestProperties:
@@ -62,7 +62,9 @@ class TestRGB:
             31.8504762335605,
         ]
         array = ArrayGlyph(
-            sentinel_2, rgb=[3, 2, 1], cutoff=[0.3, 0.3, 0.3], extent=extent
+            sentinel_2,
+            rgb_bands=RgbBands([3, 2, 1], cutoff=[0.3, 0.3, 0.3]),
+            extent=extent,
         )
         fig, ax = array.plot(title="Flow Accumulation")
         im = ax.get_images()[0]
@@ -951,7 +953,7 @@ class TestPlotKindDispatch:
     def test_rgb_with_non_imshow_kind_raises(self):
         """RGB compositing is imshow-only — other kinds must raise."""
         rgb_arr = np.random.randint(0, 255, size=(3, 8, 8)).astype(np.float32)
-        glyph = ArrayGlyph(rgb_arr, rgb=[0, 1, 2])
+        glyph = ArrayGlyph(rgb_arr, rgb_bands=RgbBands([0, 1, 2]))
         with pytest.raises(ValueError, match="RGB"):
             glyph.plot(kind="pcolormesh")
 
@@ -1300,7 +1302,7 @@ class TestPrepareArrayValidation:
         """An RGB array with fewer than 3 bands raises `ValueError`."""
         arr = np.zeros((2, 4, 4), dtype=np.float32)
         with pytest.raises(ValueError, match="3 arrays"):
-            ArrayGlyph(arr, rgb=[0, 1])
+            ArrayGlyph(arr, rgb_bands=RgbBands([0, 1]))
 
     def test_prepare_array_with_cutoff_only(self):
         """`cutoff` is applied via the surface-reflectance branch."""
@@ -1325,7 +1327,7 @@ class TestPrepareArrayValidation:
         np.testing.assert_array_equal(result[..., 0], arr[0])
 
     def test_prepare_sentinel_rgb_no_cutoff(self):
-        """`_prepare_sentinel_rgb` returns clipped data with no cutoff path."""
+        """The surface-reflectance path returns clipped data with no cutoff."""
         arr = (
             np.random.default_rng(0)
             .integers(0, 10000, size=(3, 5, 5))
@@ -2384,7 +2386,7 @@ class TestCenterCmapDoesNotApplyToRgb:
         rgb_arr = (
             np.random.default_rng(0).integers(0, 255, size=(3, 8, 8)).astype(np.float32)
         )
-        glyph = ArrayGlyph(rgb_arr, rgb=[0, 1, 2])
+        glyph = ArrayGlyph(rgb_arr, rgb_bands=RgbBands([0, 1, 2]))
         fig, ax = glyph.plot()
         assert isinstance(fig, Figure)
         # No colorbar is created on the RGB path; `cbar` stays None.
@@ -4357,7 +4359,7 @@ class TestMappableAndColorbarToggle:
         """
         from matplotlib.image import AxesImage
 
-        glyph = ArrayGlyph(self._rgb_arr(), rgb=[0, 1, 2])
+        glyph = ArrayGlyph(self._rgb_arr(), rgb_bands=RgbBands([0, 1, 2]))
         fig, ax = glyph.plot(kind="imshow")
         try:
             assert isinstance(glyph.im, AxesImage), (
@@ -4520,7 +4522,7 @@ class TestMappableAndColorbarToggle:
             RGB has no scalar mapping, so `self.cbar` stays None regardless of
             the toggle, while `self.im` is always populated.
         """
-        glyph = ArrayGlyph(self._rgb_arr(), rgb=[0, 1, 2])
+        glyph = ArrayGlyph(self._rgb_arr(), rgb_bands=RgbBands([0, 1, 2]))
         fig, ax = glyph.plot(kind="imshow", add_colorbar=add_colorbar)
         try:
             assert glyph.cbar is None, "RGB path must never create a colorbar"
@@ -5128,7 +5130,7 @@ class TestArrayGlyphDataStyle:
         """A `style` on an RGB array is ignored with a warning, not silently."""
         rgb = np.random.default_rng(6).random((3, 8, 8))
         with pytest.warns(UserWarning, match="do not apply to RGB"):
-            ArrayGlyph(rgb, rgb=[0, 1, 2]).plot(data_style=DataStyle(style="flow_accumulation"))
+            ArrayGlyph(rgb, rgb_bands=RgbBands([0, 1, 2])).plot(data_style=DataStyle(style="flow_accumulation"))
         plt.close("all")
 
     def test_plot_style_with_hillshade_composes(self):
