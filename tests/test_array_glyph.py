@@ -7095,6 +7095,16 @@ class TestRgbBands:
         """
         RgbBands([0, 1, 2]).validate(np.zeros((3, 4, 4)))
 
+    def test_prepare_raises_when_indices_none(self):
+        """`prepare` fails loudly rather than producing garbage for `indices=None`.
+
+        Test scenario:
+            `RgbBands(None).prepare(arr)` raises `ValueError` instead of
+            `array[None]` (a spurious new axis).
+        """
+        with pytest.raises(ValueError, match="indices must be"):
+            RgbBands(None).prepare(np.zeros((3, 4, 4)))
+
     def test_prepare_reorders_bands_without_stretch(self):
         """With no stretch, `prepare` only selects + reorders the bands.
 

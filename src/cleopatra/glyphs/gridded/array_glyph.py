@@ -827,6 +827,9 @@ class RgbBands:
             np.ndarray: An `(H, W, 3)` array; normalised to `[0, 1]` when a
                 stretch was applied.
 
+        Raises:
+            ValueError: If `indices` is `None` (no bands to select).
+
         Examples:
             - Select and reorder three bands into a band-last image:
                 ```python
@@ -841,6 +844,10 @@ class RgbBands:
 
                 ```
         """
+        if self.indices is None:
+            raise ValueError(
+                "RgbBands.indices must be the [r, g, b] band indices, got None."
+            )
         array = array[self.indices].transpose(1, 2, 0)
         if self.percentile is not None:
             return ArrayGlyph.scale_percentile(array, percentile=self.percentile)
