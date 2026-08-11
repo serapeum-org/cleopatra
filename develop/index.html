@@ -2032,14 +2032,14 @@
   
   
     <li class="md-nav__item">
-      <a href="notebooks/presets/ecmwf_temperature_animation/" class="md-nav__link">
+      <a href="notebooks/presets/operational_temperature_animation/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    ECMWF-style 2 m temperature animation
+    Operational 2 m temperature animation
   
 
     
@@ -2754,7 +2754,7 @@ sensible scientific defaults.</p>
   <code>data_getter</code> for streaming frames) and export to GIF / WebP / MP4 / MOV / AVI (bundled ffmpeg, no separate
   install).</li>
 <li>Overlay point markers and per-cell value labels.</li>
-<li>Drop in an ECMWF/CAMS-style basemap (coastlines, borders, graticule) with a single <code>add_reference_map</code> call.</li>
+<li>Drop in a CAMS-style basemap (coastlines, borders, graticule) with a single <code>add_reference_map</code> call.</li>
 </ul>
 <p>See the <a href="reference/array-glyph/">ArrayGlyph reference</a>.</p>
 <h3 id="meshglyph-unstructured-mesh-visualization"><a class="toclink" href="#meshglyph-unstructured-mesh-visualization"><code>MeshGlyph</code> — unstructured mesh visualization</a><a class="headerlink" href="#meshglyph-unstructured-mesh-visualization" title="Permanent link">#</a></h3>
@@ -2806,7 +2806,7 @@ sensible scientific defaults.</p>
 <li><code>ArrayGlyph</code>, <code>MeshGlyph</code>, <code>ScatterGlyph</code>, <code>VectorGlyph</code>, <code>FlowGlyph</code>, and <code>PolygonGlyph</code> mix in <code>GeoMixin</code>,
   adding a settable <code>crs</code> plus one-call basemap helpers on <code>glyph.ax</code>: <code>add_tiles</code> (XYZ web-tile mosaics),
   <code>add_features</code> / <code>add_relief</code> (Natural Earth coastlines, borders, land, ocean, rivers, lakes, and a hypsometric
-  relief backdrop), a one-call <code>add_reference_map</code> preset (<code>"ecmwf"</code>, <code>"ecmwf-dark"</code>, or <code>"auto"</code>), and
+  relief backdrop), a one-call <code>add_reference_map</code> preset (<code>"light"</code>, <code>"dark"</code>, or <code>"auto"</code>), and
   <code>add_labels</code> for city/point labels.</li>
 </ul>
 <p>See the <a href="reference/geo/">Geo basemap methods reference</a>, <a href="reference/tiles/">Tiles reference</a>, and
@@ -2826,7 +2826,7 @@ sensible scientific defaults.</p>
   organic-matter / dust look) — per-pixel opacity tied to value via <code>alpha_scaled_image</code> / <code>alpha_scaled_mesh</code>,
   plus a swatch legend, in one call.</li>
 <li><code>projection.apply_projection_style</code> reprojects <code>(lon, lat, data)</code> onto an orthographic "globe" view (or leaves it
-  flat) via named presets, pairing with <code>apply_data_style</code> to build ECMWF/CAMS-style globe animations in a few
+  flat) via named presets, pairing with <code>apply_data_style</code> to build CAMS-style globe animations in a few
   lines. The orthographic helpers need the <code>cleopatra[tiles]</code> extra (<code>pyproj</code>).</li>
 </ul>
 <p>See the <a href="notebooks/haze_preset/haze_preset_examples.ipynb">Haze-style presets example</a> and the
