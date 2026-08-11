@@ -176,25 +176,6 @@ _COORD_SHAPE_MISMATCH = "coord array shape does not match the data array"
 _COORD_DTYPE_MISMATCH = "coord arrays must be numeric (integer or float)"
 
 
-class _Unset:
-    """Sentinel type for "the caller did not pass this explicit parameter".
-
-    A plain `object()` sentinel would work too, but this gives `help()` /
-    IDE signature tooltips a readable `<unset>` instead of
-    `<object object at 0x...>` for the option default that uses it (the
-    `hillshade` key resolved inside `ArrayGlyph.apply_style`).
-    """
-
-    def __repr__(self) -> str:
-        return "<unset>"
-
-
-#: Sentinel distinguishing "the `hillshade` key was not passed" from
-#: "`hillshade` was passed as `None`" when it is popped from `**kwargs`
-#: (see `ArrayGlyph.apply_style`), which a plain `.get`/default check cannot.
-_UNSET = _Unset()
-
-
 #: Static typing for the loose **kwargs `plot`/`animate` still accept --
 #: purely a typing aid (see PEP 692 `Unpack`): with `from __future__ import
 #: annotations` the `**kwargs: Unpack[...]` annotations below are never

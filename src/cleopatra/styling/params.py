@@ -123,7 +123,7 @@ class CellValues:
 class _Unset:
     """Sentinel type marking a `DataStyle` field the caller did not set."""
 
-    def __repr__(self) -> str:  # pragma: no cover - cosmetic
+    def __repr__(self) -> str:
         return "<unset>"
 
 

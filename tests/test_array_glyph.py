@@ -16,7 +16,6 @@ import cleopatra.basemap.reference as refmod
 from cleopatra.glyphs.gridded.array_glyph import (
     _COORD_DTYPE_MISMATCH,
     _COORD_SHAPE_MISMATCH,
-    _UNSET,
     AnimateKwargs,
     ArrayGlyph,
     ColorBar,
@@ -28,7 +27,6 @@ from cleopatra.glyphs.gridded.array_glyph import (
     RgbBands,
     _resolve_colorbar,
     _swatch_text_default,
-    _Unset,
 )
 from cleopatra.styling.params import CellValues, Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
@@ -432,37 +430,6 @@ class TestKwargsTypedDicts:
         colors = {to_rgba(t.get_color()) for t in array.ax.texts if t.get_text()}
         assert to_rgba("yellow") in colors, f"low cell should be yellow; got {colors}"
         assert to_rgba("blue") in colors, f"high cell should be blue; got {colors}"
-
-
-class TestUnsetSentinel:
-    """`_Unset`/`_UNSET`: the sentinel distinguishing "the caller did not
-    pass this" from "passed as `None`" for the `hillshade` key resolved
-    inside `ArrayGlyph.plot`.
-    """
-
-    def test_repr_is_readable(self):
-        """`repr(_UNSET)` reads `<unset>`, not the default `object()` repr.
-
-        Test scenario:
-            The class docstring's whole reason for existing over a plain
-            `object()` sentinel is a readable `help()`/IDE tooltip; a
-            regression here (e.g. deleting `__repr__`) would silently
-            fall back to `<cleopatra.glyphs.gridded.array_glyph._Unset object at 0x...>`.
-        """
-        assert repr(_UNSET) == "<unset>", f"Unexpected repr: {repr(_UNSET)!r}"
-
-    def test_is_singleton_identity(self):
-        """`_UNSET` is a single shared instance, compared with `is` not `==`.
-
-        Test scenario:
-            Callers test `value is _UNSET`; a second `_Unset()` instance
-            must NOT be `is _UNSET` (no `__eq__` override makes two
-            instances equal either), confirming the sentinel can only be
-            obtained by importing `_UNSET` itself.
-        """
-        other = _Unset()
-        assert other is not _UNSET, "A fresh _Unset() must not be the _UNSET singleton"
-        assert other != _UNSET, "Two distinct _Unset instances must not compare equal"
 
 
 class TestPointOverlay:

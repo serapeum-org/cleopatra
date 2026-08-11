@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from cleopatra.styling.params import _UNSET, DataStyle
+from cleopatra.styling.params import _UNSET, DataStyle, _Unset
 
 
 class TestDataStyleForApplyStyle:
@@ -62,3 +62,28 @@ class TestDataStyleForApplyStyle:
         """
         ds = DataStyle.for_apply_style(None)
         assert ds.to_options() == {"style": None}, f"unexpected options: {ds.to_options()}"
+
+
+class TestUnsetSentinel:
+    """Tests for the `DataStyle` "not passed" sentinel `_UNSET` / `_Unset`."""
+
+    def test_repr_is_readable(self):
+        """`repr(_UNSET)` reads `<unset>` for legible `help()` / IDE tooltips.
+
+        Test scenario:
+            The sentinel exists over a plain `object()` precisely for a
+            readable repr; deleting `__repr__` would regress to the default
+            `<...params._Unset object at 0x...>`.
+        """
+        assert repr(_UNSET) == "<unset>", f"Unexpected repr: {repr(_UNSET)!r}"
+
+    def test_is_singleton_identity(self):
+        """`_UNSET` is a single shared instance, compared with `is` not `==`.
+
+        Test scenario:
+            Gates test `value is _UNSET` (or `isinstance(value, _Unset)`); a
+            fresh `_Unset()` must not be the singleton nor compare equal to it.
+        """
+        other = _Unset()
+        assert other is not _UNSET, "A fresh _Unset() must not be the _UNSET singleton"
+        assert other != _UNSET, "Two distinct _Unset instances must not compare equal"
