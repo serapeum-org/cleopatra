@@ -1354,7 +1354,7 @@ class TestPrepareArrayValidation:
         assert result.shape == (3, 3, 3)
         np.testing.assert_array_equal(result[..., 0], arr[0])
 
-    def test_prepare_sentinel_rgb_no_cutoff(self):
+    def test_surface_reflectance_no_cutoff(self):
         """The surface-reflectance path returns clipped data with no cutoff."""
         arr = (
             np.random.default_rng(0)
@@ -1676,7 +1676,7 @@ class TestSharedAxesArtistCleanup:
             Regression: only the colorbar/image were tracked by the
             shared-axes cleanup; the point-overlay scatter
             (`ax.scatter`) and per-point value labels
-            (`_plot_point_values`) were not, so both doubled on a
+            (`PointOverlay.draw`) were not, so both doubled on a
             second call.
         """
         arr = np.arange(25.0).reshape(5, 5)
