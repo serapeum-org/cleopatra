@@ -1272,18 +1272,26 @@ class TestPrepareArrayValidation:
             ArrayGlyph(arr, rgb_bands=RgbBands([0, 1]))
 
     def test_prepare_array_with_cutoff_only(self):
-        """`cutoff` is applied via the surface-reflectance branch."""
-        arr = (
-            np.random.default_rng(0)
-            .integers(0, 10000, size=(3, 5, 5))
-            .astype(np.float32)
+        """`cutoff` clips + rescales each band via the surface-reflectance branch.
+
+        Uses a fractional `cutoff` (of the normalised range) and pins the exact
+        per-band stretched output, so the assertion is meaningful rather than a
+        vacuous `[0, 1]` range check.
+        """
+        arr = np.array(
+            [
+                [[0.0, 3000.0]],
+                [[1500.0, 6000.0]],
+                [[9000.0, 10000.0]],
+            ],
+            dtype=float,
         )
         glyph = ArrayGlyph(np.zeros((1, 1)))
         result = glyph.prepare_array(
-            arr, rgb=[0, 1, 2], surface_reflectance=10000, cutoff=[5000, 5000, 5000]
+            arr, rgb=[0, 1, 2], surface_reflectance=10000, cutoff=[0.3, 0.3, 0.3]
         )
-        assert result.shape == (5, 5, 3)
-        assert np.all((0.0 <= result) & (result <= 1.0))
+        expected = np.array([[[0.0, 0.5, 1.0], [1.0, 1.0, 1.0]]])
+        np.testing.assert_allclose(result, expected)
 
     def test_cutoff_stretches_each_band_by_its_limit(self):
         """`cutoff` clips + rescales each band's *data* (not the band indices).
