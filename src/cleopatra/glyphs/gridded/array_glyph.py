@@ -392,6 +392,39 @@ class PointOverlay:
         self.label_color = label_color
         self.label_size = label_size
 
+    def draw(self, ax) -> tuple:
+        """Draw this overlay's markers and per-point value labels on `ax`.
+
+        Owns the scatter-plus-value-label drawing that `ArrayGlyph.plot` and
+        `.animate` share, reading only this overlay's own fields. The returned
+        row/column arrays let `animate` reuse the same coordinates for its
+        per-frame `set_offsets` updates without re-deriving them.
+
+        Args:
+            ax: The matplotlib axes to draw on.
+
+        Returns:
+            tuple: `(row, col, scatter, labels)` -- the point row and column
+                index arrays, the marker `PathCollection`, and the list of
+                per-point value-label `Text` artists (empty for no points).
+        """
+        row = self.points[:, 1]
+        col = self.points[:, 2]
+        scatter = ax.scatter(col, row, color=self.color, s=self.size)
+        labels = [
+            ax.text(
+                point[2],
+                point[1],
+                point[0],
+                ha="center",
+                va="center",
+                color=self.label_color,
+                fontsize=self.label_size,
+            )
+            for point in self.points
+        ]
+        return row, col, scatter, labels
+
 
 class FrameLabel:
     """Styling for the per-frame time label `ArrayGlyph.animate` draws.
@@ -452,6 +485,47 @@ class FrameLabel:
         self.location = location
         self.color = color
         self.size = size
+
+    def resolve_location(self) -> tuple[list[float], bool]:
+        """Resolve the label anchor and whether it is the auto default.
+
+        Returns:
+            tuple: `(location, is_default)` -- the `[x, y]` anchor and a flag
+                that is `True` when `location` was unset (the top-left
+                axes-fraction default), which drives the transform and vertical
+                alignment in `draw`.
+        """
+        if self.location is None:
+            return [0.02, 0.95], True
+        return self.location, False
+
+    def draw(self, ax, default_size: float):
+        """Draw the (blank) per-frame label text artist on `ax`.
+
+        Owns the placement / transform / alignment logic derived from this
+        label's fields; the caller sets the text per frame on the returned
+        artist. The auto default anchors in axes-fraction coordinates
+        (top-left, `va="top"`); an explicit `location` uses data coordinates
+        (`va="baseline"`).
+
+        Args:
+            ax: The matplotlib axes to draw on.
+            default_size: Font size used when this label's own `size` is unset
+                (the glyph passes its `cbar_label_size`).
+
+        Returns:
+            matplotlib.text.Text: The created label artist (initially blank).
+        """
+        location, is_default = self.resolve_location()
+        return ax.text(
+            location[0],
+            location[1],
+            " ",
+            fontsize=self.size if self.size is not None else default_size,
+            color=self.color,
+            transform=ax.transAxes if is_default else ax.transData,
+            va="top" if is_default else "baseline",
+        )
 
 
 class PanelLabels:
@@ -3372,14 +3446,9 @@ class ArrayGlyph(GeoMixin, Glyph):
             )
 
         if points is not None and supports_overlay:
-            row = points.points[:, 1]
-            col = points.points[:, 2]
-            optional_display["points_scatter"] = ax.scatter(
-                col, row, color=points.color, s=points.size
-            )
-            optional_display["points_id"] = self._plot_point_values(
-                ax, points.points, points.label_color, points.label_size
-            )
+            _, _, points_scatter, points_labels = points.draw(ax)
+            optional_display["points_scatter"] = points_scatter
+            optional_display["points_id"] = points_labels
 
         _mark_render_artists(
             ax,
@@ -4154,13 +4223,6 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         frame_label = frame_label or FrameLabel()
 
-        frame_location = frame_label.location
-        label_location_is_default = frame_location is None
-        if label_location_is_default:
-            label_location = [0.02, 0.95]
-        else:
-            label_location = frame_location
-
         self._merge_group_params(color, contour, cells, data_style)
         resolved_colorbar = self._apply_kwargs_and_colorbar(colorbar, kwargs)  # type: ignore[arg-type]
 
@@ -4376,12 +4438,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         points_scatter = None
         points_id: list = []
         if points is not None:
-            row = points.points[:, 1]
-            col = points.points[:, 2]
-            points_scatter = ax.scatter(col, row, color=points.color, s=points.size)
-            points_id = self._plot_point_values(
-                ax, points.points, points.label_color, points.label_size
-            )
+            row, col, points_scatter, points_id = points.draw(ax)
 
         background_color_threshold = None
         if not rgb_frames:
@@ -4393,19 +4450,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 ref_for_threshold = array if data_getter is None else frame_0
                 background_color_threshold = im.norm(np.nanmax(ref_for_threshold)) / 2.0
 
-        day_text = ax.text(
-            label_location[0],
-            label_location[1],
-            " ",
-            fontsize=(
-                frame_label.size
-                if frame_label.size is not None
-                else self.default_options["cbar_label_size"]
-            ),
-            color=frame_label.color,
-            transform=ax.transAxes if label_location_is_default else ax.transData,
-            va="top" if label_location_is_default else "baseline",
-        )
+        day_text = frame_label.draw(ax, self.default_options["cbar_label_size"])
         self._day_text = day_text
 
         def _fetch_frame(i: int) -> np.ndarray:

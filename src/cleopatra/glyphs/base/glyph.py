@@ -1700,22 +1700,6 @@ class Glyph:
             else:
                 self.ax.get_yaxis().set_visible(visible)
 
-    @staticmethod
-    def _plot_point_values(
-        ax, point_table: np.ndarray, point_label_color, point_label_size
-    ):
-        """Plot point value labels on the axes."""
-        write_points = lambda x: ax.text(
-            x[2],
-            x[1],
-            x[0],
-            ha="center",
-            va="center",
-            color=point_label_color,
-            fontsize=point_label_size,
-        )
-        return list(map(write_points, point_table))
-
     def save_animation(self, path: str | os.PathLike, fps: int = 2, **kwargs) -> None:
         """Save this glyph's animation (`self.anim`) to a file.
 

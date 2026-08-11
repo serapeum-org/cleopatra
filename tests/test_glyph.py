@@ -25,6 +25,7 @@ from cleopatra.glyphs.base.glyph import (
     _clear_prior_render_artists,
     _mark_render_artists,
 )
+from cleopatra.glyphs.gridded.array_glyph import PointOverlay
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import ColorScale, MidpointNormalize
 
@@ -593,31 +594,37 @@ class TestAdjustTicks:
         plt.close(fig)
 
 
-class TestPlotPointValues:
-    """Tests for Glyph._plot_point_values static method."""
+class TestPointOverlayDraw:
+    """Tests for PointOverlay.draw (per-point markers + value labels)."""
 
     def test_creates_text_per_point(self):
-        """Test that one text artist is created per point."""
+        """Test that one value-label text artist is created per point."""
         fig, ax = plt.subplots()
-        points = np.array([[10.0, 0, 0], [20.0, 1, 1], [30.0, 2, 2]])
-        texts = Glyph._plot_point_values(ax, points, "blue", 12)
+        overlay = PointOverlay(
+            np.array([[10.0, 0, 0], [20.0, 1, 1], [30.0, 2, 2]]),
+            label_color="blue",
+            label_size=12,
+        )
+        _, _, _, texts = overlay.draw(ax)
         assert len(texts) == 3, f"Expected 3 text artists, got {len(texts)}"
         plt.close(fig)
 
     def test_text_positions(self):
-        """Test that text is placed at (col, row) coordinates."""
+        """Test that each value label is placed at its (col, row) coordinate."""
         fig, ax = plt.subplots()
-        points = np.array([[99.0, 3.0, 5.0]])
-        texts = Glyph._plot_point_values(ax, points, "red", 10)
+        overlay = PointOverlay(
+            np.array([[99.0, 3.0, 5.0]]), label_color="red", label_size=10
+        )
+        _, _, _, texts = overlay.draw(ax)
         pos = texts[0].get_position()
         assert pos == (5.0, 3.0), f"Expected position (5, 3), got {pos}"
         plt.close(fig)
 
     def test_empty_points_returns_empty_list(self):
-        """Test that empty points array returns empty list."""
+        """Test that an empty points array draws no value labels."""
         fig, ax = plt.subplots()
-        points = np.empty((0, 3))
-        texts = Glyph._plot_point_values(ax, points, "red", 10)
+        overlay = PointOverlay(np.empty((0, 3)))
+        _, _, _, texts = overlay.draw(ax)
         assert len(texts) == 0, f"Expected 0 text artists, got {len(texts)}"
         plt.close(fig)
 
