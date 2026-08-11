@@ -39,7 +39,7 @@ from matplotlib.ticker import FuncFormatter, MultipleLocator
 from cleopatra.basemap import reference, tiles
 
 #: Built-in reference-map style presets for `GeoMixin.add_reference_map`.
-#: `"ecmwf"` is tuned for light backgrounds; `"ecmwf-dark"` uses lighter
+#: `"light"` is tuned for light backgrounds; `"dark"` uses lighter
 #: greys so coastlines stay visible over a dark field (e.g. a satellite
 #: true-colour RGB) and adds a dimmed hypsometric relief backdrop under the
 #: data. Each entry is a plain dict of the layer styles, graticule,
@@ -48,7 +48,7 @@ from cleopatra.basemap import reference, tiles
 #: -- read or copy it to build a custom preset; `add_reference_map` itself
 #: exposes only the `resolution` and `graticule_step` knobs per call.
 REFERENCE_MAP_STYLES: dict[str, dict[str, Any]] = {
-    "ecmwf": {
+    "light": {
         "resolution": "50m",
         "coastline": {"colors": "0.45", "linewidths": 0.8},
         "borders": {"colors": "0.55", "linewidths": 0.5},
@@ -56,7 +56,7 @@ REFERENCE_MAP_STYLES: dict[str, dict[str, Any]] = {
         "labels": {"colors": "0.35", "labelsize": 8},
         "spines": {"edgecolor": "0.6", "linewidth": 0.8},
     },
-    "ecmwf-dark": {
+    "dark": {
         "resolution": "50m",
         "relief": {"resolution": "low", "alpha": 0.5, "zorder": -2},
         "coastline": {"colors": "0.85", "linewidths": 0.8},
@@ -79,7 +79,7 @@ def available_map_styles() -> list[str]:
         ```python
         >>> from cleopatra.basemap.geo import available_map_styles
         >>> available_map_styles()
-        ['ecmwf', 'ecmwf-dark']
+        ['light', 'dark']
 
         ```
     """
@@ -251,7 +251,7 @@ def add_point_labels(
 
     Draws a small circular marker at each point and a plain text label
     beside it -- no halo, no bounding box -- matching the minimalist look
-    ECMWF/CAMS maps use for city labels. `points` are plotted at whatever
+    CAMS maps use for city labels. `points` are plotted at whatever
     coordinates `ax` is already using (plain lon/lat on a flat axes, or
     projected x/y on an orthographic globe -- reproject the points yourself,
     e.g. with the same transformer `cleopatra.basemap.projection.orthographic_grid`
@@ -695,7 +695,7 @@ class GeoMixin:
 
         Thin wrapper over `cleopatra.basemap.geo.add_point_labels`; draws a plain
         dot marker and text label per point, matching the minimalist
-        city-label look ECMWF/CAMS maps use. Points are plotted at whatever
+        city-label look CAMS maps use. Points are plotted at whatever
         coordinates the axes is already using -- plain lon/lat for a flat
         map, or reprojected x/y for an orthographic globe.
 
@@ -926,7 +926,7 @@ class GeoMixin:
 
     def add_reference_map(
         self,
-        style: str = "ecmwf",
+        style: str = "light",
         *,
         ax: Any = None,
         extent: Any = None,
@@ -939,7 +939,7 @@ class GeoMixin:
         One call composes the recipe that otherwise takes ~15 lines of
         matplotlib after `plot`/`animate`: grey Natural Earth `coastline`
         + `borders`, a dashed lon/lat graticule, `°W`/`°N` degree labels,
-        and a subtle frame, plus -- for `"ecmwf-dark"` -- a dimmed relief
+        and a subtle frame, plus -- for `"dark"` -- a dimmed relief
         backdrop beneath the data. The chrome layers on top of the existing
         data, so call it after plotting.
 
@@ -951,11 +951,11 @@ class GeoMixin:
         not read geotransforms).
 
         Args:
-            style: A name from `available_map_styles()` (`"ecmwf"`,
-                `"ecmwf-dark"`), or `"auto"` to pick between them from the
+            style: A name from `available_map_styles()` (`"light"`,
+                `"dark"`), or `"auto"` to pick between them from the
                 background luminance (dark backgrounds get the lighter
-                `"ecmwf-dark"` greys so coastlines stay visible). Default
-                `"ecmwf"`. `"ecmwf-dark"` also draws a dimmed relief backdrop
+                `"dark"` greys so coastlines stay visible). Default
+                `"light"`. `"dark"` also draws a dimmed relief backdrop
                 under the data (needs the `[tiles]` extra; if Pillow is
                 missing the backdrop is skipped with a warning and the
                 coastline/border chrome is still drawn).
@@ -968,7 +968,7 @@ class GeoMixin:
                 used.
             resolution: Natural Earth resolution for the coastline/borders
                 (`"110m"`/`"50m"`/`"10m"`). Defaults to the style's value.
-                It does not change the `"ecmwf-dark"` relief backdrop, which
+                It does not change the `"dark"` relief backdrop, which
                 uses the preset's own relief resolution (`"low"`).
             graticule_step: Degree spacing for the graticule. Defaults to a
                 "nice" step giving ~6 divisions across the wider span.
@@ -989,14 +989,14 @@ class GeoMixin:
                 environmental relief failure degrades with a warning instead).
 
         Examples:
-            - Dress a georeferenced field in the ECMWF look:
+            - Dress a georeferenced field in the operational look:
                 ```python
                 >>> import numpy as np
                 >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
                 >>> data = np.random.rand(20, 30)
                 >>> glyph = ArrayGlyph(data, extent=[-100, 15, -40, 55])
                 >>> fig, ax = glyph.plot()  # doctest: +SKIP
-                >>> glyph.add_reference_map("ecmwf")  # doctest: +SKIP
+                >>> glyph.add_reference_map("light")  # doctest: +SKIP
 
                 ```
 
@@ -1015,7 +1015,7 @@ class GeoMixin:
 
         resolved = style
         if style == "auto":
-            resolved = "ecmwf-dark" if self._background_is_dark(target) else "ecmwf"
+            resolved = "dark" if self._background_is_dark(target) else "light"
         if resolved not in REFERENCE_MAP_STYLES:
             raise ValueError(
                 f"Unknown map style {style!r}; available: "
@@ -1044,7 +1044,7 @@ class GeoMixin:
                 stacklevel=2,
             )
 
-        # A preset may bundle a dimmed relief backdrop (ecmwf-dark). Draw it
+        # A preset may bundle a dimmed relief backdrop (dark). Draw it
         # under the data, defaulting crs to self.crs like the other helpers.
         # Skip it when the axes are not georeferenced (already warned above),
         # and -- so the coastline chrome never hard-depends on Pillow --

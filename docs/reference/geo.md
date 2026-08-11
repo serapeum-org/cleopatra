@@ -12,8 +12,8 @@ importing the standalone helpers:
 - `add_tiles` → [`cleopatra.basemap.tiles.add_tiles`](tiles.md)
 - `add_features` → [`cleopatra.basemap.reference.add_features`](reference-data.md)
 - `add_relief` → [`cleopatra.basemap.reference.add_relief`](reference-data.md)
-- `add_reference_map` — a one-call ECMWF/CAMS-style reference-map preset
-  (`"ecmwf"`, `"ecmwf-dark"`, or `"auto"`): grey coastlines + borders, a dashed
+- `add_reference_map` — a one-call CAMS-style reference-map preset
+  (`"light"`, `"dark"`, or `"auto"`): grey coastlines + borders, a dashed
   lon/lat graticule, °W/°N labels, and a subtle frame.
 - `add_labels` → `cleopatra.basemap.geo.add_point_labels` (dot + text markers for named
   points, e.g. cities).

@@ -1427,7 +1427,7 @@ def swatch_legend(
     printed centred on top of the bar itself and the two endpoint values
     printed below its corners -- a much more compact alternative to a full
     `colorbar_legend` when several continuous layers need labelling at once
-    (e.g. two alpha-blended overlays from `alpha_scaled_image`, as ECMWF/CAMS
+    (e.g. two alpha-blended overlays from `alpha_scaled_image`, as CAMS
     aerosol maps do for "Organic Matter" / "Dust"). Unlike a colorbar, there
     are no intermediate tick marks -- only the two endpoints are labelled.
 
@@ -1604,7 +1604,7 @@ def apply_blank_canvas(ax: Axes, facecolor: str = "black") -> Axes:
 
     Turns off every axis decoration (ticks, tick labels, spines) and sets
     both the axes' and its figure's background colour, leaving nothing but
-    the data itself -- the minimal look ECMWF/CAMS-style globe animations
+    the data itself -- the minimal look CAMS-style globe animations
     use (no coordinate frame, just the plotted field on black). This is a
     generic chrome primitive: it doesn't know about any projection or
     colormap, so it composes with a plain flat axes, an orthographic globe

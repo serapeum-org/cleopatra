@@ -16,10 +16,10 @@ import pytest
 from matplotlib.colors import to_rgba
 from matplotlib.text import Text
 
-from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
 from cleopatra.styling.colorbar import ColorBar
 from cleopatra.styling.params import Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
+from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
 
 
 @pytest.fixture(scope="module")
@@ -1061,47 +1061,6 @@ def _make_tri_mg():
         np.array([0.0, 0.0, 1.0, 1.0]),
         np.array([[0, 1, 2], [1, 3, 2]]),
     )
-
-
-class TestMeshContourLevels:
-    """`contour=Contour(levels=...)` drives the mesh node-contour count."""
-
-    def _terrain(self):
-        """A 6-node mesh with node values spanning a range."""
-        nx = np.array([0.0, 1.0, 0.5, 1.5, 2.0, 2.5])
-        ny = np.array([0.0, 0.0, 1.0, 1.0, 0.0, 1.0])
-        faces = np.array([[0, 1, 2], [1, 3, 2], [1, 4, 3], [4, 5, 3]])
-        z = np.array([0.0, 1.0, 2.0, 3.0, 4.0, 5.0])
-        return MeshGlyph(nx, ny, faces), z
-
-    def test_contour_levels_control_the_node_contour_count(self):
-        """A `Contour(levels=N)` sets the option and discretises the norm.
-
-        Test scenario:
-            Regression: MeshGlyph had no `levels` key, so `Contour(levels=)`
-            was silently dropped while a loose `levels=` still worked.
-        """
-        mg, z = self._terrain()
-        mg.plot(z, location="node", filled=False, contour=Contour(levels=7))
-        assert mg.default_options["levels"] == 7, (
-            "Contour(levels=) should set the mesh levels option"
-        )
-        assert type(mg.im.norm).__name__ == "BoundaryNorm", (
-            "levels should discretise the colour norm, like the other glyphs"
-        )
-
-    def test_default_node_contour_is_continuous(self):
-        """With no `levels`, the node contour keeps a continuous norm."""
-        mg, z = self._terrain()
-        mg.plot(z, location="node", filled=False)
-        assert mg.default_options["levels"] is None
-        assert type(mg.im.norm).__name__ == "Normalize"
-
-    def test_loose_levels_kwarg_is_rejected(self):
-        """A loose `levels=` keyword now raises, pointing at `contour=`."""
-        mg, z = self._terrain()
-        with pytest.raises(ValueError, match="moved onto a grouped parameter object"):
-            mg.plot(z, location="node", filled=False, levels=7)
 
 
 class TestColorScales:

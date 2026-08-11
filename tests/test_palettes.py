@@ -198,8 +198,8 @@ class TestBuiltinsRegistered:
         assert get_palette(name).kind is PaletteKind.SEQUENTIAL
 
     def test_cams_records_magics_provenance(self):
-        """The CAMS palettes record their ECMWF/Magics provenance in source."""
-        assert get_palette("cams_aod_blue_red").source == "ecmwf-magics"
+        """The CAMS palettes record their Magics provenance in source."""
+        assert get_palette("cams_aod_blue_red").source == "magics"
 
 
 class TestCuratedPalettes:

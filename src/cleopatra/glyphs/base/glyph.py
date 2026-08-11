@@ -8,6 +8,7 @@ colorbar creation, tick management, point overlays, and animation.
 from __future__ import annotations
 
 import inspect
+import math
 import os
 import warnings
 from collections.abc import Iterator
@@ -25,16 +26,11 @@ from matplotlib.figure import Figure, SubFigure
 from matplotlib.legend import Legend
 from matplotlib.patches import Rectangle
 
-from cleopatra.glyphs.base.animation import (
-    SUPPORTED_VIDEO_FORMAT,  # noqa: F401  (re-export)
-)
+from cleopatra.glyphs.base.animation import SUPPORTED_VIDEO_FORMAT  # noqa: F401  (re-export)
 from cleopatra.glyphs.base.animation import save_animation as _save_animation
 from cleopatra.styling.colors import resolve_colormap
-from cleopatra.styling.scaling import (
-    MAX_DISCRETE_LEVELS,  # noqa: F401  (re-export)
-    ColorScaling,
-    levels_to_bounds,
-)
+from cleopatra.styling.scaling import MAX_DISCRETE_LEVELS  # noqa: F401  (re-export)
+from cleopatra.styling.scaling import ColorScaling, levels_to_bounds
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import (
     categorize,

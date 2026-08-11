@@ -93,7 +93,7 @@ graph TD
 - Display cell values and overlay point markers on the plot.
 - Animate 3D single-band stacks or 4D RGB/RGBA true-colour stacks over time, and export to GIF, WebP, MP4, MOV, or
   AVI (bundled ffmpeg -- no separate install needed).
-- Drop in an ECMWF/CAMS-style basemap (coastlines, borders, graticule) with a single `add_reference_map` call.
+- Drop in a CAMS-style basemap (coastlines, borders, graticule) with a single `add_reference_map` call.
 
 <p align="center">
   <img src="docs/images/array_glyph/array-plot.png" width="45%" alt="Array Plot" />
@@ -177,7 +177,7 @@ graph TD
 - `ArrayGlyph`, `MeshGlyph`, `ScatterGlyph`, `VectorGlyph`, `FlowGlyph`, and `PolygonGlyph` mix in `GeoMixin`, adding a
   settable `crs` plus one-call basemap helpers on `glyph.ax`: `add_tiles` (XYZ web-tile mosaics), `add_features` /
   `add_relief` (Natural Earth coastlines, borders, land, ocean, rivers, lakes, and a hypsometric relief backdrop), a
-  one-call `add_reference_map` preset (`"ecmwf"`, `"ecmwf-dark"`, or `"auto"`), and `add_labels` for city/point labels.
+  one-call `add_reference_map` preset (`"light"`, `"dark"`, or `"auto"`), and `add_labels` for city/point labels.
 - `tiles` and the fixed-public-dataset `reference` layers require the `cleopatra[tiles]` extra.
 
 <p align="center">
@@ -190,7 +190,7 @@ graph TD
   organic-matter / dust look) -- per-pixel opacity tied to value via `alpha_scaled_image` / `alpha_scaled_mesh`, plus a
   swatch legend, in one call.
 - `projection.apply_projection_style` reprojects `(lon, lat, data)` onto an orthographic "globe" view (or leaves it
-  flat) via named presets, pairing with `apply_data_style` to build ECMWF/CAMS-style globe animations in a few lines.
+  flat) via named presets, pairing with `apply_data_style` to build CAMS-style globe animations in a few lines.
   The orthographic helpers require the `cleopatra[tiles]` extra (`pyproj`).
 
 ### Colors -- Color Utilities
@@ -301,7 +301,7 @@ from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 field = np.random.rand(80, 120)
 glyph = ArrayGlyph(field, extent=[-100, 15, -40, 55])  # west, south, east, north
 glyph.plot(cmap="turbo", cbar_label="anomaly")
-glyph.add_reference_map("ecmwf")  # coastlines, borders, and a lon/lat graticule
+glyph.add_reference_map("light")  # coastlines, borders, and a lon/lat graticule
 ```
 
 ## Requirements

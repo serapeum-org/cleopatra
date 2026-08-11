@@ -99,7 +99,7 @@ graph TD
   `data_getter` for streaming frames) and export to GIF / WebP / MP4 / MOV / AVI (bundled ffmpeg, no separate
   install).
 - Overlay point markers and per-cell value labels.
-- Drop in an ECMWF/CAMS-style basemap (coastlines, borders, graticule) with a single `add_reference_map` call.
+- Drop in a CAMS-style basemap (coastlines, borders, graticule) with a single `add_reference_map` call.
 
 See the [ArrayGlyph reference](reference/array-glyph.md).
 
@@ -160,7 +160,7 @@ See the [KDEGlyph reference](reference/kde-glyph.md).
 - `ArrayGlyph`, `MeshGlyph`, `ScatterGlyph`, `VectorGlyph`, `FlowGlyph`, and `PolygonGlyph` mix in `GeoMixin`,
   adding a settable `crs` plus one-call basemap helpers on `glyph.ax`: `add_tiles` (XYZ web-tile mosaics),
   `add_features` / `add_relief` (Natural Earth coastlines, borders, land, ocean, rivers, lakes, and a hypsometric
-  relief backdrop), a one-call `add_reference_map` preset (`"ecmwf"`, `"ecmwf-dark"`, or `"auto"`), and
+  relief backdrop), a one-call `add_reference_map` preset (`"light"`, `"dark"`, or `"auto"`), and
   `add_labels` for city/point labels.
 
 See the [Geo basemap methods reference](reference/geo.md), [Tiles reference](reference/tiles.md), and
@@ -182,7 +182,7 @@ See the [Tiles reference](reference/tiles.md) and [Reference data reference](ref
   organic-matter / dust look) — per-pixel opacity tied to value via `alpha_scaled_image` / `alpha_scaled_mesh`,
   plus a swatch legend, in one call.
 - `projection.apply_projection_style` reprojects `(lon, lat, data)` onto an orthographic "globe" view (or leaves it
-  flat) via named presets, pairing with `apply_data_style` to build ECMWF/CAMS-style globe animations in a few
+  flat) via named presets, pairing with `apply_data_style` to build CAMS-style globe animations in a few
   lines. The orthographic helpers need the `cleopatra[tiles]` extra (`pyproj`).
 
 See the [Haze-style presets example](notebooks/haze_preset/haze_preset_examples.ipynb) and the

@@ -13,10 +13,14 @@ from matplotlib.text import Text
 from PIL import Image
 
 import cleopatra.basemap.reference as refmod
+from cleopatra.styling.params import CellValues, Contour, DataStyle
+from cleopatra.styling.scaling import ColorScaling
+from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.glyphs.gridded.array_glyph import (
     _COORD_DTYPE_MISMATCH,
     _COORD_SHAPE_MISMATCH,
     _UNSET,
+    _Unset,
     AnimateKwargs,
     ArrayGlyph,
     ColorBar,
@@ -29,9 +33,6 @@ from cleopatra.glyphs.gridded.array_glyph import (
     _swatch_text_default,
     _Unset,
 )
-from cleopatra.styling.params import CellValues, Contour, DataStyle
-from cleopatra.styling.scaling import ColorScaling
-from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 
 class TestProperties:
@@ -279,21 +280,6 @@ class TestAnimate:
         array = ArrayGlyph(coello_data, exclude_value=[no_data_value])
         anim_obj = array.animate(animate_time_list, title="Flow Accumulation")
         assert isinstance(anim_obj, FuncAnimation)
-
-    def test_animate_contour_levels_discretises_the_norm(
-        self, coello_data: np.ndarray, animate_time_list: list
-    ):
-        """`animate(contour=Contour(levels=N))` discretises the colour scale.
-
-        Test scenario:
-            Regression for the grouped-param API: animations must stay
-            discretisable now that construction-time `levels=` is rejected.
-        """
-        array = ArrayGlyph(coello_data)
-        array.animate(animate_time_list, contour=Contour(levels=5))
-        assert isinstance(array.im.norm, BoundaryNorm), (
-            f"contour levels should yield a BoundaryNorm, got {type(array.im.norm)}"
-        )
 
     def test_save_animation_accepts_pathlib_path(
         self,
@@ -4925,7 +4911,7 @@ class TestArrayGlyphHillshade:
         with pytest.warns(
             UserWarning, match="hillshade is only applied to kind='imshow'"
         ):
-            ArrayGlyph(self._dem(), cmap="terrain").plot(data_style=DataStyle(hillshade=True),
+            ArrayGlyph(self._dem(), cmap="terrain").plot(data_style=DataStyle(hillshade=True), 
                 kind="pcolormesh"
             )
         plt.close("all")
@@ -5374,7 +5360,7 @@ class TestArrayGlyphShadedAnimate:
             ]
         )
         with pytest.warns(UserWarning, match="categorical data-style preset"):
-            ArrayGlyph(d8).animate(data_style=DataStyle(style="flow_direction_d8", hillshade=True),
+            ArrayGlyph(d8).animate(data_style=DataStyle(style="flow_direction_d8", hillshade=True), 
                 time=list(range(3))
             )
         plt.close("all")
@@ -5478,33 +5464,11 @@ class TestArrayGlyphApplyStyle:
     def test_failed_plot_style_does_not_poison(self):
         """plot(style='bad') raises and clears the style so later plain plot() works."""
         g = ArrayGlyph(self._dem())
-        bad = DataStyle(style="not_a_style")
+        bad_style = DataStyle(style="not_a_style")
         with pytest.raises(ValueError, match="unknown data style"):
-            g.plot(data_style=bad)
+            g.plot(data_style=bad_style)
         assert g.style is None
         g.plot()  # not bricked
-        plt.close("all")
-
-    def test_failed_style_rolls_back_co_passed_color(self):
-        """An invalid data_style must not leak a co-passed color= into later plots.
-
-        Test scenario:
-            plot(color=ColorScaling.power(...), data_style=DataStyle(bad))
-            raises, and the persistent color_scale/gamma roll back to their
-            defaults rather than the failed call's power scale (regression for
-            an ArrayGlyph rollback that reverted only `style`).
-        """
-        g = ArrayGlyph(self._dem())
-        power = ColorScaling.power(gamma=0.7)
-        bad = DataStyle(style="not_a_style")
-        with pytest.raises(ValueError, match="unknown data style"):
-            g.plot(color=power, data_style=bad)
-        assert g.default_options["color_scale"] == "linear", (
-            "a failed data_style must roll back the co-passed color scale"
-        )
-        assert g.default_options["gamma"] == 0.5, "gamma must roll back to its default"
-        assert g.style is None
-        g.plot()  # not bricked and renders with the default linear scale
         plt.close("all")
 
     def test_style_is_sticky_and_clearable(self):

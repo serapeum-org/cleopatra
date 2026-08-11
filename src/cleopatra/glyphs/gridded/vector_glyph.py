@@ -84,17 +84,12 @@ class VectorGlyph(GeoMixin, Glyph):
         v: y-components of the vectors. Must broadcast against `x`/`y`.
         ax: Pre-existing axes to draw on. Default is None.
         fig: Pre-existing figure. Default is None.
-        **kwargs: Construction-time overrides for the non-grouped
-            `VECTOR_DEFAULT_OPTIONS` (e.g. `density`, `scale`, `cmap`,
-            `vmin`, `vmax`, `ticks_spacing`, `cbar_label`, `figsize`,
+        **kwargs: Override any key in `VECTOR_DEFAULT_OPTIONS`
+            (e.g. `density`, `scale`, `cmap`, `vmin`, `vmax`, `levels`,
+            `color_scale`, `ticks_spacing`, `cbar_label`, `figsize`,
             `title`). Set `add_colorbar=False` to suppress the per-glyph
             colorbar (default True) for shared-axes composition where the
-            host owns a single aggregated colorbar. The colour scale,
-            discretisation `levels`, and classification are no longer
-            construction kwargs -- pass them to `plot()` via
-            `color=ColorScaling(...)`, `contour=Contour(levels=...)`, and
-            `classify=Classify(...)` (a loose `color_scale` / `levels` /
-            `scheme` keyword now raises).
+            host owns a single aggregated colorbar.
 
     Examples:
         - Build a field and inspect the stored magnitude:

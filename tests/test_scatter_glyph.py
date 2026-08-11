@@ -11,12 +11,9 @@ import numpy as np
 import pytest
 from matplotlib.collections import PathCollection
 
-from cleopatra.glyphs.primitives.scatter_glyph import (
-    SCATTER_DEFAULT_OPTIONS,
-    ScatterGlyph,
-)
-from cleopatra.styling.params import Contour
 from cleopatra.styling.scaling import ColorScaling
+from cleopatra.glyphs.primitives.scatter_glyph import SCATTER_DEFAULT_OPTIONS, ScatterGlyph
+from cleopatra.styling.params import Contour
 
 
 @pytest.fixture(autouse=True)

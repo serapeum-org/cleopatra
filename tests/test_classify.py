@@ -22,16 +22,14 @@ import numpy as np
 import pytest
 
 import cleopatra.styling.styles as styles_mod
-from cleopatra.glyphs.base.glyph import Glyph
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
-from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
-from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
 from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
-from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
-from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
+from cleopatra.glyphs.base.glyph import Glyph
 from cleopatra.glyphs.stats.kde_glyph import KDEGlyph
-from cleopatra.styling.params import Classify, Contour
+from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
+from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
 from cleopatra.styling.scaling import ColorScaling
+from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
 from cleopatra.styling.styles import (
     CLASSIFY_OPTIONS,
     JENKS_SCHEMES,
@@ -41,6 +39,9 @@ from cleopatra.styling.styles import (
     classify,
 )
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
+from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
+from cleopatra.styling.params import Contour
+from cleopatra.styling.params import Classify
 
 
 @pytest.fixture(autouse=True)
@@ -772,9 +773,10 @@ class TestSchemeGlyphScope:
             is rejected at construction.
         """
         rng = np.random.default_rng(0)
-        x, y = rng.normal(size=20), rng.normal(size=20)
+        kx = rng.normal(size=20)
+        ky = rng.normal(size=20)
         with pytest.raises(ValueError, match="moved onto a grouped parameter object"):
-            KDEGlyph(x, y, scheme="quantiles")
+            KDEGlyph(kx, ky, scheme="quantiles")
 
 
 class TestSchemeConflictWarnings:

@@ -16,9 +16,9 @@ from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
 
-from cleopatra.basemap.reference import add_relief
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 from cleopatra.styling.params import DataStyle
+from cleopatra.basemap.reference import add_relief
 
 __all__ = ["publication_map"]
 
@@ -95,22 +95,14 @@ def publication_map(
 
     # `style` is a grouped render option now; forward it to `plot` via the
     # `data_style` object rather than the (rejecting) constructor kwargs. A
-    # caller may instead pass a full `data_style=DataStyle(...)` through
-    # `plot_kwargs`; pop it here so the explicit `data_style=` below cannot
-    # collide with it (which would raise an opaque "multiple values" TypeError),
-    # and reject giving both `style=` and `data_style=` for the same option.
-    explicit_data_style = plot_kwargs.pop("data_style", None)
-    if explicit_data_style is not None and style is not None:
+    # caller may pass either `style=` or a ready `data_style=` (through
+    # `plot_kwargs`) -- but not both, since they set the same grouped option.
+    passed_data_style = plot_kwargs.pop("data_style", None)
+    if style is not None and passed_data_style is not None:
         raise ValueError(
-            "pass either `style=` or `data_style=`, not both -- they set the "
-            "same grouped render option."
+            "pass either `style=` or `data_style=` to publication_map, not both"
         )
-    if explicit_data_style is not None:
-        data_style = explicit_data_style
-    elif style is not None:
-        data_style = DataStyle(style=style)
-    else:
-        data_style = None
+    data_style = DataStyle(style=style) if style is not None else passed_data_style
     glyph = ArrayGlyph(data, coords=coords, extent=extent, **options)
     fig, ax = glyph.plot(data_style=data_style, **plot_kwargs)
 
