@@ -2312,14 +2312,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notebooks/presets/ecmwf_temperature_animation/" class="md-nav__link">
+      <a href="../../notebooks/presets/operational_temperature_animation/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    ECMWF-style 2 m temperature animation
+    Operational 2 m temperature animation
   
 
     
@@ -8702,7 +8702,7 @@ the same length as <code>colors</code>.</p>
 printed centred on top of the bar itself and the two endpoint values
 printed below its corners -- a much more compact alternative to a full
 <code>colorbar_legend</code> when several continuous layers need labelling at once
-(e.g. two alpha-blended overlays from <code>alpha_scaled_image</code>, as ECMWF/CAMS
+(e.g. two alpha-blended overlays from <code>alpha_scaled_image</code>, as CAMS
 aerosol maps do for "Organic Matter" / "Dust"). Unlike a colorbar, there
 are no intermediate tick marks -- only the two endpoints are labelled.</p>
 <p>This is a generic legend primitive: any colormap and any label/range
@@ -9218,7 +9218,7 @@ colorbar_legend: A full colorbar with tick marks, for a single layer.</p>
 <a id="__codelineno-0-1427" name="__codelineno-0-1427"></a><span class="sd">    printed centred on top of the bar itself and the two endpoint values</span>
 <a id="__codelineno-0-1428" name="__codelineno-0-1428"></a><span class="sd">    printed below its corners -- a much more compact alternative to a full</span>
 <a id="__codelineno-0-1429" name="__codelineno-0-1429"></a><span class="sd">    `colorbar_legend` when several continuous layers need labelling at once</span>
-<a id="__codelineno-0-1430" name="__codelineno-0-1430"></a><span class="sd">    (e.g. two alpha-blended overlays from `alpha_scaled_image`, as ECMWF/CAMS</span>
+<a id="__codelineno-0-1430" name="__codelineno-0-1430"></a><span class="sd">    (e.g. two alpha-blended overlays from `alpha_scaled_image`, as CAMS</span>
 <a id="__codelineno-0-1431" name="__codelineno-0-1431"></a><span class="sd">    aerosol maps do for &quot;Organic Matter&quot; / &quot;Dust&quot;). Unlike a colorbar, there</span>
 <a id="__codelineno-0-1432" name="__codelineno-0-1432"></a><span class="sd">    are no intermediate tick marks -- only the two endpoints are labelled.</span>
 <a id="__codelineno-0-1433" name="__codelineno-0-1433"></a>
@@ -10819,7 +10819,7 @@ is provided, if there are no finite values, or if
 </div><h2 id="chrome-free-canvas-apply_blank_canvas"><a class="toclink" href="#chrome-free-canvas-apply_blank_canvas">Chrome-free canvas — <code>apply_blank_canvas</code></a><a class="headerlink" href="#chrome-free-canvas-apply_blank_canvas" title="Permanent link">#</a></h2>
 <p><code>apply_blank_canvas</code> strips an axes down to just the data — no ticks, spines, or
 frame — and sets the axes' and figure's background colour. It is the minimal look
-the ECMWF/CAMS-style globe animations use (plotted field on black), and composes
+the CAMS-style globe animations use (plotted field on black), and composes
 with a flat axes, an orthographic globe (<code>projection.apply_projection_frame</code>), or
 any other cleopatra styling.</p>
 
@@ -10838,7 +10838,7 @@ any other cleopatra styling.</p>
         <p>Strip an axes down to a chrome-free canvas: no ticks, spines, or frame.</p>
 <p>Turns off every axis decoration (ticks, tick labels, spines) and sets
 both the axes' and its figure's background colour, leaving nothing but
-the data itself -- the minimal look ECMWF/CAMS-style globe animations
+the data itself -- the minimal look CAMS-style globe animations
 use (no coordinate frame, just the plotted field on black). This is a
 generic chrome primitive: it doesn't know about any projection or
 colormap, so it composes with a plain flat axes, an orthographic globe
@@ -11011,7 +11011,7 @@ Defaults to <code>"black"</code>, matching the haze style; pass e.g.
 <a id="__codelineno-0-1604" name="__codelineno-0-1604"></a>
 <a id="__codelineno-0-1605" name="__codelineno-0-1605"></a><span class="sd">    Turns off every axis decoration (ticks, tick labels, spines) and sets</span>
 <a id="__codelineno-0-1606" name="__codelineno-0-1606"></a><span class="sd">    both the axes&#39; and its figure&#39;s background colour, leaving nothing but</span>
-<a id="__codelineno-0-1607" name="__codelineno-0-1607"></a><span class="sd">    the data itself -- the minimal look ECMWF/CAMS-style globe animations</span>
+<a id="__codelineno-0-1607" name="__codelineno-0-1607"></a><span class="sd">    the data itself -- the minimal look CAMS-style globe animations</span>
 <a id="__codelineno-0-1608" name="__codelineno-0-1608"></a><span class="sd">    use (no coordinate frame, just the plotted field on black). This is a</span>
 <a id="__codelineno-0-1609" name="__codelineno-0-1609"></a><span class="sd">    generic chrome primitive: it doesn&#39;t know about any projection or</span>
 <a id="__codelineno-0-1610" name="__codelineno-0-1610"></a><span class="sd">    colormap, so it composes with a plain flat axes, an orthographic globe</span>

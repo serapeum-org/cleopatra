@@ -2099,14 +2099,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notebooks/presets/ecmwf_temperature_animation/" class="md-nav__link">
+      <a href="../../notebooks/presets/operational_temperature_animation/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    ECMWF-style 2 m temperature animation
+    Operational 2 m temperature animation
   
 
     
@@ -6093,7 +6093,7 @@ Each tuple contains three values (R, G, B).
 
 </div><h2 id="composable-data-styles-haze"><a class="toclink" href="#composable-data-styles-haze">Composable data styles ("haze")</a><a class="headerlink" href="#composable-data-styles-haze" title="Permanent link">#</a></h2>
 <p>These module-level helpers render one or more value layers with per-pixel opacity
-tied to value — the ECMWF/CAMS aerosol look — without constructing a glyph. They
+tied to value — the CAMS aerosol look — without constructing a glyph. They
 pair with <a href="../projection/"><code>projection.apply_projection_style</code></a> to compose the same
 style on a flat map or an orthographic globe.</p>
 <ul>
@@ -6146,11 +6146,11 @@ style on a flat map or an orthographic globe.</p>
 <p>Applies <code>alpha_scaled_image</code> (and, if <code>legend</code>, a stacked <code>swatch_legend</code>
 per layer) to each array in <code>layers</code>, using the colormap/label/range that
 <code>style</code> defines for that layer name in <code>DATA_STYLES</code>. Calling this with
-<code>layers={"organic_matter": ..., "dust": ...}</code> reproduces the ECMWF/CAMS
+<code>layers={"organic_matter": ..., "dust": ...}</code> reproduces the CAMS
 aerosol look in one call -- but it is only a thin orchestration over
 <code>alpha_scaled_image</code> + <code>swatch_legend</code>, so nothing about it requires the
 orthographic globe: it works on a plain flat axes, an existing
-<code>"ecmwf"</code>/<code>"ecmwf-dark"</code> reference map (<code>cleopatra.basemap.geo</code>), or any other
+<code>"light"</code>/<code>"dark"</code> reference map (<code>cleopatra.basemap.geo</code>), or any other
 projection just as well. Pass <code>x</code>/<code>y</code> (e.g. from
 <code>cleopatra.basemap.projection.orthographic_grid</code>) to render on a curvilinear grid
 via <code>alpha_scaled_mesh</code> instead of the default <code>imshow</code>-based
@@ -6832,11 +6832,11 @@ cleopatra.basemap.projection.apply_projection_style: The companion
 <a id="__codelineno-0-1158" name="__codelineno-0-1158"></a><span class="sd">    Applies `alpha_scaled_image` (and, if `legend`, a stacked `swatch_legend`</span>
 <a id="__codelineno-0-1159" name="__codelineno-0-1159"></a><span class="sd">    per layer) to each array in `layers`, using the colormap/label/range that</span>
 <a id="__codelineno-0-1160" name="__codelineno-0-1160"></a><span class="sd">    `style` defines for that layer name in `DATA_STYLES`. Calling this with</span>
-<a id="__codelineno-0-1161" name="__codelineno-0-1161"></a><span class="sd">    `layers={&quot;organic_matter&quot;: ..., &quot;dust&quot;: ...}` reproduces the ECMWF/CAMS</span>
+<a id="__codelineno-0-1161" name="__codelineno-0-1161"></a><span class="sd">    `layers={&quot;organic_matter&quot;: ..., &quot;dust&quot;: ...}` reproduces the CAMS</span>
 <a id="__codelineno-0-1162" name="__codelineno-0-1162"></a><span class="sd">    aerosol look in one call -- but it is only a thin orchestration over</span>
 <a id="__codelineno-0-1163" name="__codelineno-0-1163"></a><span class="sd">    `alpha_scaled_image` + `swatch_legend`, so nothing about it requires the</span>
 <a id="__codelineno-0-1164" name="__codelineno-0-1164"></a><span class="sd">    orthographic globe: it works on a plain flat axes, an existing</span>
-<a id="__codelineno-0-1165" name="__codelineno-0-1165"></a><span class="sd">    `&quot;ecmwf&quot;`/`&quot;ecmwf-dark&quot;` reference map (`cleopatra.basemap.geo`), or any other</span>
+<a id="__codelineno-0-1165" name="__codelineno-0-1165"></a><span class="sd">    `&quot;light&quot;`/`&quot;dark&quot;` reference map (`cleopatra.basemap.geo`), or any other</span>
 <a id="__codelineno-0-1166" name="__codelineno-0-1166"></a><span class="sd">    projection just as well. Pass `x`/`y` (e.g. from</span>
 <a id="__codelineno-0-1167" name="__codelineno-0-1167"></a><span class="sd">    `cleopatra.basemap.projection.orthographic_grid`) to render on a curvilinear grid</span>
 <a id="__codelineno-0-1168" name="__codelineno-0-1168"></a><span class="sd">    via `alpha_scaled_mesh` instead of the default `imshow`-based</span>
@@ -7140,7 +7140,7 @@ cleopatra.basemap.projection.apply_projection_style: The companion
 <p>Builds an RGBA image from <code>cmap(norm(data))</code> and overwrites the alpha
 channel with <code>alpha_norm(data)</code>, so low values fade toward fully
 transparent instead of being drawn at full opacity in a pale colour.
-This is the "smoke fading into haze" look used by ECMWF/CAMS aerosol
+This is the "smoke fading into haze" look used by CAMS aerosol
 animations: whatever is plotted underneath (a basemap, another layer)
 shows through wherever the value is near zero. Any non-finite entry in
 <code>data</code> (NaN) is drawn fully transparent regardless of <code>alpha_norm</code>.</p>
@@ -7476,7 +7476,7 @@ swatch_legend: A matching two-stop legend for the same data.</p>
 <a id="__codelineno-0-362" name="__codelineno-0-362"></a><span class="sd">    Builds an RGBA image from `cmap(norm(data))` and overwrites the alpha</span>
 <a id="__codelineno-0-363" name="__codelineno-0-363"></a><span class="sd">    channel with `alpha_norm(data)`, so low values fade toward fully</span>
 <a id="__codelineno-0-364" name="__codelineno-0-364"></a><span class="sd">    transparent instead of being drawn at full opacity in a pale colour.</span>
-<a id="__codelineno-0-365" name="__codelineno-0-365"></a><span class="sd">    This is the &quot;smoke fading into haze&quot; look used by ECMWF/CAMS aerosol</span>
+<a id="__codelineno-0-365" name="__codelineno-0-365"></a><span class="sd">    This is the &quot;smoke fading into haze&quot; look used by CAMS aerosol</span>
 <a id="__codelineno-0-366" name="__codelineno-0-366"></a><span class="sd">    animations: whatever is plotted underneath (a basemap, another layer)</span>
 <a id="__codelineno-0-367" name="__codelineno-0-367"></a><span class="sd">    shows through wherever the value is near zero. Any non-finite entry in</span>
 <a id="__codelineno-0-368" name="__codelineno-0-368"></a><span class="sd">    `data` (NaN) is drawn fully transparent regardless of `alpha_norm`.</span>
