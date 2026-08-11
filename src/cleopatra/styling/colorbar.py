@@ -278,6 +278,76 @@ class ColorBar:
         updates.update({k: v for k, v in optional.items() if v is not None})
         return updates
 
+    @classmethod
+    def reset_options(cls) -> dict:
+        """`default_options` updates for a default, sticky-clearing colorbar.
+
+        The dict `colorbar=True` applies: it draws a default bar and resets the
+        resettable `cbar_*` family to `STYLE_DEFAULTS`, so a reused glyph does
+        not inherit a prior sticky spec's placement or caption. Distinct from
+        `to_options`, which maps a *specific* spec's fields and omits unset
+        ones; this resets everything to the defaults.
+
+        Returns:
+            dict: `default_options` updates for a default colorbar.
+        """
+        return {
+            "add_colorbar": True,
+            "cbar_location": None,
+            "cbar_inside": False,
+            "cbar_box": None,
+            "cbar_label_color": None,
+            "cbar_tick_color": None,
+            "cbar_orientation": STYLE_DEFAULTS["cbar_orientation"],
+            "cbar_label": STYLE_DEFAULTS["cbar_label"],
+            "cbar_length": STYLE_DEFAULTS["cbar_length"],
+            "cbar_label_size": STYLE_DEFAULTS["cbar_label_size"],
+            "cbar_label_rotation": STYLE_DEFAULTS["cbar_label_rotation"],
+            "cbar_label_location": STYLE_DEFAULTS["cbar_label_location"],
+        }
+
+    @classmethod
+    def resolve(cls, colorbar: "bool | ColorBar | None") -> dict:
+        """Translate a `colorbar=` argument into `default_options` updates.
+
+        Owns the full `None` / `False` / `True` / `ColorBar` dispatch: `None`
+        leaves the colorbar options untouched; `False` suppresses the bar;
+        `True` resets to a default bar via `reset_options`; a `ColorBar`
+        instance maps its fields via `to_options`.
+
+        Args:
+            colorbar: `None`, `False`, `True`, or a `ColorBar` instance.
+
+        Returns:
+            dict: Updates to merge into `default_options` (empty for `None`).
+
+        Raises:
+            TypeError: If `colorbar` is not a bool, `ColorBar`, or `None`.
+
+        Examples:
+            ```python
+            >>> from cleopatra.styling.colorbar import ColorBar
+            >>> ColorBar.resolve(False)
+            {'add_colorbar': False}
+            >>> ColorBar.resolve(ColorBar(location="left", inside=True))["cbar_location"]
+            'left'
+            >>> "cbar_label" in ColorBar.resolve(ColorBar(location="right"))
+            False
+
+            ```
+        """
+        if colorbar is None:
+            return {}
+        if colorbar is False:
+            return {"add_colorbar": False}
+        if colorbar is True:
+            return cls.reset_options()
+        if isinstance(colorbar, cls):
+            return colorbar.to_options()
+        raise TypeError(
+            f"colorbar must be a bool, ColorBar, or None, got {type(colorbar).__name__}."
+        )
+
 
 def _swatch_text_default(box: bool | str | dict | None) -> str:
     """Default swatch title/value colour that stays legible over `box`.
@@ -352,27 +422,4 @@ def _resolve_colorbar(colorbar: bool | ColorBar | None) -> dict:
 
             ```
     """
-    if colorbar is None:
-        return {}
-    if colorbar is False:
-        return {"add_colorbar": False}
-    if colorbar is True:
-        return {
-            "add_colorbar": True,
-            "cbar_location": None,
-            "cbar_inside": False,
-            "cbar_box": None,
-            "cbar_label_color": None,
-            "cbar_tick_color": None,
-            "cbar_orientation": STYLE_DEFAULTS["cbar_orientation"],
-            "cbar_label": STYLE_DEFAULTS["cbar_label"],
-            "cbar_length": STYLE_DEFAULTS["cbar_length"],
-            "cbar_label_size": STYLE_DEFAULTS["cbar_label_size"],
-            "cbar_label_rotation": STYLE_DEFAULTS["cbar_label_rotation"],
-            "cbar_label_location": STYLE_DEFAULTS["cbar_label_location"],
-        }
-    if isinstance(colorbar, ColorBar):
-        return colorbar.to_options()
-    raise TypeError(
-        f"colorbar must be a bool, ColorBar, or None, got {type(colorbar).__name__}."
-    )
+    return ColorBar.resolve(colorbar)

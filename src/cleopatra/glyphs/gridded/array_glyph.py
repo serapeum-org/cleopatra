@@ -598,6 +598,77 @@ class PanelLabels:
         self.col = col
         self.row = row
 
+    def validate(self, n_col: int, n_row: int | None = None) -> None:
+        """Check the label sequences match the facet axis sizes.
+
+        Args:
+            n_col: Size of the column-facet axis.
+            n_row: Size of the row-facet axis, or `None` for a col-only facet.
+
+        Raises:
+            ValueError: If `col` (or `row`) is set and its length does not
+                match the corresponding axis size.
+        """
+        if self.col is not None and len(self.col) != n_col:
+            raise ValueError(
+                f"`labels.col` length {len(self.col)} does not match "
+                f"the column axis size {n_col}."
+            )
+        if n_row is not None and self.row is not None and len(self.row) != n_row:
+            raise ValueError(
+                f"`labels.row` length {len(self.row)} does not match "
+                f"the row axis size {n_row}."
+            )
+
+    def label_for(self, axis: Literal["col", "row"], index: int) -> Any:
+        """Return the display label for a facet panel along `axis`.
+
+        Falls back to the integer `index` when that axis has no labels -- the
+        field-only half of a panel's title.
+
+        Args:
+            axis: Which facet axis, `"col"` or `"row"`.
+            index: Zero-based slice index of the panel along that axis.
+
+        Returns:
+            The configured label at `index`, or `index` itself when that axis
+            has no labels.
+        """
+        coords = self.col if axis == "col" else self.row
+        return coords[index] if coords is not None else index
+
+    def panel_title(
+        self,
+        col_dim: str,
+        col_idx: int,
+        row_dim: str | None = None,
+        row_idx: int | None = None,
+    ) -> tuple[str, dict]:
+        """Build a panel's title string and `name_dict` from the facet indices.
+
+        Args:
+            col_dim: Name of the column dimension (the `col` argument to
+                `facet`).
+            col_idx: Zero-based column-slice index of the panel.
+            row_dim: Name of the row dimension, or `None` for a col-only
+                (3-D) facet.
+            row_idx: Zero-based row-slice index, or `None` for a col-only
+                facet.
+
+        Returns:
+            tuple: `(title, name_dict)` -- the `"dim=label"` title and the
+                `{dim_name: label}` mapping (both axes when `row_dim` is set).
+        """
+        col_label = self.label_for("col", col_idx)
+        name_dict: dict[str, Any] = {col_dim: col_label}
+        if row_dim is not None:
+            row_label = self.label_for("row", cast(int, row_idx))
+            name_dict[row_dim] = row_label
+            title = f"{col_dim}={col_label}, {row_dim}={row_label}"
+        else:
+            title = f"{col_dim}={col_label}"
+        return title, name_dict
+
 
 class FacetGrid:
     """Result object for a multi-subplot facet plot.
@@ -3648,8 +3719,6 @@ class ArrayGlyph(GeoMixin, Glyph):
         if col is None and row is None:
             raise ValueError("at least one of `col`/`row` must be given")
         labels = labels or PanelLabels()
-        col_coords = labels.col
-        row_coords = labels.row
         if extents is not None:
             if self.extent is not None:
                 raise ValueError(
@@ -3683,11 +3752,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             else:
                 ncols = n_col
                 nrows = 1
-            if col_coords is not None and len(col_coords) != n_col:
-                raise ValueError(
-                    f"`labels.col` length {len(col_coords)} does not match "
-                    f"the column axis size {n_col}."
-                )
+            labels.validate(n_col)
             panel_indices: list[tuple[int, int | None]] = [
                 (i, None) for i in range(n_col)
             ]
@@ -3703,16 +3768,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             n_col, n_row = arr.shape[0], arr.shape[1]
             ncols = n_col
             nrows = n_row
-            if col_coords is not None and len(col_coords) != n_col:
-                raise ValueError(
-                    f"`labels.col` length {len(col_coords)} does not match "
-                    f"the column axis size {n_col}."
-                )
-            if row_coords is not None and len(row_coords) != n_row:
-                raise ValueError(
-                    f"`labels.row` length {len(row_coords)} does not match "
-                    f"the row axis size {n_row}."
-                )
+            labels.validate(n_col, n_row)
             panel_indices = [(i, j) for j in range(n_row) for i in range(n_col)]
             n_panels = n_col * n_row
 
@@ -3799,15 +3855,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     data_style=data_style,
                 )
 
-                col_label = col_coords[col_idx] if col_coords is not None else col_idx
-                name_dict: dict[str, Any] = {col: col_label}
-                if row is not None:
-                    row_idx = cast(int, row_idx)  # non-None whenever `row` is set
-                    row_label = row_coords[row_idx] if row_coords is not None else row_idx
-                    name_dict[row] = row_label
-                    title = f"{col}={col_label}, {row}={row_label}"
-                else:
-                    title = f"{col}={col_label}"
+                title, name_dict = labels.panel_title(col, col_idx, row, row_idx)
                 ax.set_title(title)
                 name_dicts.append(name_dict)
 
