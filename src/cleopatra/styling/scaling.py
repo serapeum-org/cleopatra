@@ -392,9 +392,9 @@ class ColorScaling:
                 f"No norm branch implemented for color_scale={self.kind!r}."
             )
 
-        cbar_kw["extend"] = (
-            extend if extend is not None else ("both" if levels is not None else "neither")
-        )
+        if extend is None:
+            extend = "both" if levels is not None else "neither"
+        cbar_kw["extend"] = extend
         return norm, cbar_kw
 
     def _linear_norm(
