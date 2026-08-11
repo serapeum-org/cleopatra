@@ -745,8 +745,9 @@ class TestSchemeGlyphScope:
             ArrayGlyph bypasses `_prepare_scalar_mapping`, so `scheme` is not
             an accepted option and construction raises.
         """
+        arr = np.arange(9).reshape(3, 3).astype(float)
         with pytest.raises(ValueError, match="moved onto a grouped parameter object"):
-            ArrayGlyph(np.arange(9).reshape(3, 3).astype(float), scheme="quantiles")
+            ArrayGlyph(arr, scheme="quantiles")
 
     def test_mesh_glyph_rejects_scheme(self):
         """`MeshGlyph` rejects `scheme` instead of silently ignoring it.
@@ -771,8 +772,9 @@ class TestSchemeGlyphScope:
             is rejected at construction.
         """
         rng = np.random.default_rng(0)
+        x, y = rng.normal(size=20), rng.normal(size=20)
         with pytest.raises(ValueError, match="moved onto a grouped parameter object"):
-            KDEGlyph(rng.normal(size=20), rng.normal(size=20), scheme="quantiles")
+            KDEGlyph(x, y, scheme="quantiles")
 
 
 class TestSchemeConflictWarnings:

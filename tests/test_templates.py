@@ -16,7 +16,7 @@ from cleopatra.templates import publication_map
 pytestmark = pytest.mark.plot
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def field():
     """Provide a small temperature-like field.
 
@@ -48,12 +48,9 @@ class TestPublicationMap:
             rejects the collision up front instead of crashing with
             `plot() got multiple values for keyword argument 'data_style'`.
         """
+        ds = DataStyle(style="temperature_2m")
         with pytest.raises(ValueError, match="not both"):
-            publication_map(
-                field,
-                style="temperature_2m",
-                data_style=DataStyle(style="temperature_2m"),
-            )
+            publication_map(field, style="temperature_2m", data_style=ds)
 
     def test_cmap_and_flat_projection_compose(self, field):
         """A `cmap` with a flat projection composes without a style.

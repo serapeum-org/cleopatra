@@ -701,8 +701,9 @@ class TestKDEGlyphApplyStyle:
         """plot(style='bad') raises and does not brick later plain plot()."""
         x, y = self._cloud()
         g = KDEGlyph(x, y, gridsize=40)
+        bad = DataStyle(style="not_a_style")
         with pytest.raises(ValueError, match="unknown data style"):
-            g.plot(data_style=DataStyle(style="not_a_style"))
+            g.plot(data_style=bad)
         assert g.style is None
         g.plot()  # not bricked
         plt.close("all")
