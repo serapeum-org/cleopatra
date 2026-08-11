@@ -767,6 +767,10 @@ class RgbBands:
     def _apply_surface_reflectance(self, array: np.ndarray) -> np.ndarray:
         """Normalise by `surface_reflectance`, then apply the optional `cutoff`.
 
+        With a `cutoff`, each band's normalised data is clipped to
+        `[0, cutoff[band]]` and rescaled back to `[0, 1]` (a per-band contrast
+        stretch), one cutoff value per band.
+
         Args:
             array: The `(H, W, 3)` band-last array to normalise.
 
@@ -775,10 +779,8 @@ class RgbBands:
         """
         array = np.clip(array / self.surface_reflectance, 0, 1)
         if self.cutoff is not None:
-            bands = self.indices
-            array[0] = np.clip(bands[0], 0, self.cutoff[0]) / self.cutoff[0]
-            array[1] = np.clip(bands[1], 0, self.cutoff[1]) / self.cutoff[1]
-            array[2] = np.clip(bands[2], 0, self.cutoff[2]) / self.cutoff[2]
+            for band, limit in enumerate(self.cutoff):
+                array[..., band] = np.clip(array[..., band], 0, limit) / limit
         return array
 
 

@@ -1318,6 +1318,34 @@ class TestPrepareArrayValidation:
         assert result.shape == (5, 5, 3)
         assert np.all((0.0 <= result) & (result <= 1.0))
 
+    def test_cutoff_stretches_each_band_by_its_limit(self):
+        """`cutoff` clips + rescales each band's *data* (not the band indices).
+
+        Regression guard: the previous code indexed `array[0]` (the first row
+        of the band-last array) and used the integer band index rather than the
+        band's pixel data, so `cutoff` never actually stretched the bands. Here
+        each band is clipped to `[0, cutoff[band]]` and rescaled to `[0, 1]`.
+        """
+        # Band-first (3, 1, 2); values chosen so each band spans a different
+        # fraction of the reflectance range after normalisation.
+        arr = np.array(
+            [
+                [[0.0, 5000.0]],  # band 0
+                [[2500.0, 10000.0]],  # band 1
+                [[10000.0, 0.0]],  # band 2
+            ],
+            dtype=float,
+        )
+        out = RgbBands(
+            [0, 1, 2], surface_reflectance=10000, cutoff=[0.5, 0.5, 0.5]
+        ).prepare(arr)
+        # After /10000 then clip-to-0.5-and-rescale, per band (last axis):
+        #   band 0: [0, 0.5]  -> [0.0, 1.0]
+        #   band 1: [0.25, 1] -> [0.5, 1.0]
+        #   band 2: [1, 0]    -> [1.0, 0.0]
+        expected = np.array([[[0.0, 0.5, 1.0], [1.0, 1.0, 0.0]]])
+        np.testing.assert_allclose(out, expected)
+
     def test_prepare_array_no_normalisation(self):
         """No percentile and no surface_reflectance -> only reorder bands."""
         arr = np.arange(27, dtype=np.float32).reshape(3, 3, 3)
