@@ -24,7 +24,7 @@ plt.imshow(rgb)
 plt.show()
 # %%
 # plt.ioff()
-array = ArrayGlyph(arr, rgb_bands=RgbBands([3, 2, 1], cutoff=[0.3, 0.3, 0.3]))
+array = ArrayGlyph(arr, rgb_bands=RgbBands([3, 2, 1]))
 # %%
 arr = np.load("tests/data/arr.npy")
 exclude_value = arr[0, 0]

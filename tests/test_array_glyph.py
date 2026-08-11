@@ -61,7 +61,7 @@ class TestRGB:
         ]
         array = ArrayGlyph(
             sentinel_2,
-            rgb_bands=RgbBands([3, 2, 1], cutoff=[0.3, 0.3, 0.3]),
+            rgb_bands=RgbBands([3, 2, 1]),
             extent=extent,
         )
         fig, ax = array.plot(title="Flow Accumulation")
