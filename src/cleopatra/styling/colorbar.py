@@ -278,6 +278,22 @@ class ColorBar:
         updates.update({k: v for k, v in optional.items() if v is not None})
         return updates
 
+    def specifies_placement(self) -> bool:
+        """Whether this spec explicitly requests a placement or orientation.
+
+        `True` when any of `location`, `inside`, or `orientation` is set -- the
+        spec asks for a specific colorbar rather than leaving the default. Used
+        to decide whether a styled (preset) render should still draw a colorbar.
+
+        Returns:
+            bool: `True` if `location`, `inside`, or `orientation` is set.
+        """
+        return (
+            self.location is not None
+            or self.inside
+            or self.orientation is not None
+        )
+
     @classmethod
     def reset_options(cls) -> dict:
         """`default_options` updates for a default, sticky-clearing colorbar.

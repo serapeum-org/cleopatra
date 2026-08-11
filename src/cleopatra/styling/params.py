@@ -230,6 +230,45 @@ class DataStyle:
                 f"numbers, got {ar!r}"
             ) from exc
 
+    @classmethod
+    def for_apply_style(
+        cls,
+        style: str | None,
+        hillshade: bool | dict[str, Any] | None | _Unset = _UNSET,
+    ) -> DataStyle:
+        """Build the `DataStyle` an `apply_style(...)` call forwards to `plot`.
+
+        Folds a preset `style` and an optionally-forwarded `hillshade` into one
+        object: when `hillshade` is left unset (the default sentinel) it is
+        omitted so any sticky relief shading is kept; an explicit value (a dict,
+        `True`/`False`, or `None` to clear) flows through to
+        `DataStyle(hillshade=...)`. Centralises the sentinel-gated construction
+        that the `apply_style` helpers of `ArrayGlyph`, `MeshGlyph`, and
+        `KDEGlyph` previously each hand-rolled with their own sentinels.
+
+        Args:
+            style: The `DATA_STYLES` preset name to apply (or `None` to clear).
+            hillshade: Relief-shading override, or the `_UNSET` sentinel
+                (default) to leave it unset.
+
+        Returns:
+            DataStyle: `DataStyle(style=style)` when `hillshade` is unset, else
+                `DataStyle(style=style, hillshade=hillshade)`.
+
+        Examples:
+            ```python
+            >>> from cleopatra.styling.params import DataStyle
+            >>> DataStyle.for_apply_style("dem").to_options()
+            {'style': 'dem'}
+            >>> DataStyle.for_apply_style("dem", hillshade=True).to_options()
+            {'style': 'dem', 'hillshade': True}
+
+            ```
+        """
+        if isinstance(hillshade, _Unset):
+            return cls(style=style)
+        return cls(style=style, hillshade=hillshade)
+
     def to_options(self) -> dict[str, Any]:
         """Flatten the explicitly-given fields into `default_options` keys.
 

@@ -2238,12 +2238,10 @@ class ArrayGlyph(GeoMixin, Glyph):
         self._reset_axes_for_restyle()
         # Fold style (and an optional forwarded hillshade) into the grouped
         # data_style object; leaving hillshade unset keeps any sticky value.
-        hillshade = kwargs.pop("hillshade", _UNSET)
-        data_style = (
-            DataStyle(style=style)
-            if hillshade is _UNSET
-            else DataStyle(style=style, hillshade=hillshade)
-        )
+        if "hillshade" in kwargs:
+            data_style = DataStyle.for_apply_style(style, hillshade=kwargs.pop("hillshade"))
+        else:
+            data_style = DataStyle.for_apply_style(style)
         return self.plot(data_style=data_style, ax=self.ax, **kwargs)
 
     def _resolve_style_layer(self, style: str) -> str:
@@ -2738,12 +2736,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             else:
                 self._style_color_overrides.pop(key, None)
         self._style_wants_colorbar = colorbar is True or (
-            isinstance(colorbar, ColorBar)
-            and (
-                colorbar.location is not None
-                or colorbar.inside
-                or colorbar.orientation is not None
-            )
+            isinstance(colorbar, ColorBar) and colorbar.specifies_placement()
         )
         return resolved_colorbar
 
@@ -3376,12 +3369,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         # will touch, so an invalid `style` (validated below) can roll back the
         # WHOLE merge -- not just `style` -- and a co-passed color=/contour=/cells=
         # cannot leak into a later plain plot() on this (sticky-options) glyph.
-        pre_group_opts = {}
-        for grp in (color, contour, cells, data_style):
-            if grp is not None:
-                for key in grp.to_options():
-                    if key in self.default_options and key not in pre_group_opts:
-                        pre_group_opts[key] = self.default_options[key]
+        pre_group_opts = self._snapshot_group_options(color, contour, cells, data_style)
         self._merge_group_params(color, contour, cells, data_style)
         resolved_colorbar = self._apply_kwargs_and_colorbar(colorbar, kwargs)  # type: ignore[arg-type]
 

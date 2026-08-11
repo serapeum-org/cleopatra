@@ -8,7 +8,6 @@ colorbar creation, tick management, point overlays, and animation.
 from __future__ import annotations
 
 import inspect
-import math
 import os
 import warnings
 from collections.abc import Iterator
@@ -26,11 +25,16 @@ from matplotlib.figure import Figure, SubFigure
 from matplotlib.legend import Legend
 from matplotlib.patches import Rectangle
 
-from cleopatra.glyphs.base.animation import SUPPORTED_VIDEO_FORMAT  # noqa: F401  (re-export)
+from cleopatra.glyphs.base.animation import (
+    SUPPORTED_VIDEO_FORMAT,  # noqa: F401  (re-export)
+)
 from cleopatra.glyphs.base.animation import save_animation as _save_animation
 from cleopatra.styling.colors import resolve_colormap
-from cleopatra.styling.scaling import MAX_DISCRETE_LEVELS  # noqa: F401  (re-export)
-from cleopatra.styling.scaling import ColorScaling, levels_to_bounds
+from cleopatra.styling.scaling import (
+    MAX_DISCRETE_LEVELS,  # noqa: F401  (re-export)
+    ColorScaling,
+    levels_to_bounds,
+)
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import (
     categorize,
@@ -593,6 +597,33 @@ class Glyph:
             for key, val in group.to_options().items():
                 if key in self.default_options:
                     self.default_options[key] = val
+
+    def _snapshot_group_options(self, *groups: Any) -> dict:
+        """Snapshot the current value of every option key `groups` will touch.
+
+        Records the pre-merge value of each `default_options` key any of the
+        given group objects will write (via `to_options()`), so a failed merge
+        (e.g. an invalid `style` validated afterwards) can restore the WHOLE
+        set -- not just the key that failed -- keeping a co-passed
+        `color=`/`contour=`/`cells=` from leaking into a later plain `plot()`
+        on a sticky-options glyph.
+
+        Args:
+            *groups: The grouped parameter objects about to be merged (each a
+                `to_options()`-bearing object, or `None` to skip).
+
+        Returns:
+            dict: `{key: current value}` for every key the groups will touch
+                that exists in `default_options`.
+        """
+        snapshot: dict = {}
+        for group in groups:
+            if group is None:
+                continue
+            for key in group.to_options():
+                if key in self.default_options and key not in snapshot:
+                    snapshot[key] = self.default_options[key]
+        return snapshot
 
     @contextmanager
     def _rollback_options_on_error(self) -> Iterator[None]:
