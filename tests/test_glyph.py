@@ -26,6 +26,7 @@ from cleopatra.glyphs.base.glyph import (
     _mark_render_artists,
 )
 from cleopatra.glyphs.gridded.array_glyph import PointOverlay
+from cleopatra.styling.params import CellValues, Contour
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import ColorScale, MidpointNormalize
 
@@ -1690,3 +1691,66 @@ class TestClearAndMarkRenderArtists:
                 _clear_prior_render_artists(ax)
         finally:
             plt.close(fig)
+
+
+class _FakeGlyph:
+    """Minimal stand-in exposing only `default_options` for helper tests."""
+
+    def __init__(self, options):
+        """Store a copy of `options` as `default_options`.
+
+        Args:
+            options: The flat option dict the fake glyph should expose.
+        """
+        self.default_options = dict(options)
+
+
+class TestSnapshotGroupOptions:
+    """Tests for `Glyph._snapshot_group_options`."""
+
+    def test_records_current_value_of_touched_keys(self):
+        """Snapshots the pre-merge value of each supported key the groups touch.
+
+        Test scenario:
+            Two groups touching `levels` and `display_cell_value` yield a
+            snapshot of exactly those keys' current values.
+        """
+        glyph = _FakeGlyph({"levels": 3, "display_cell_value": False, "other": 1})
+        snap = Glyph._snapshot_group_options(
+            glyph, Contour(levels=9), CellValues(show=True)
+        )
+        assert snap == {"levels": 3, "display_cell_value": False}, f"got {snap}"
+
+    def test_skips_none_groups(self):
+        """A `None` group is skipped without error.
+
+        Test scenario:
+            Passing `None` alongside a real group snapshots only the real one.
+        """
+        glyph = _FakeGlyph({"levels": 3})
+        snap = Glyph._snapshot_group_options(glyph, None, Contour(levels=9))
+        assert snap == {"levels": 3}, f"got {snap}"
+
+    def test_skips_keys_absent_from_default_options(self):
+        """Keys a group touches but the glyph does not support are ignored.
+
+        Test scenario:
+            A `Contour(levels=...)` on a glyph whose options lack `levels`
+            snapshots nothing.
+        """
+        glyph = _FakeGlyph({"unrelated": 1})
+        snap = Glyph._snapshot_group_options(glyph, Contour(levels=9))
+        assert snap == {}, f"got {snap}"
+
+    def test_first_group_wins_on_duplicate_key(self):
+        """A key touched by two groups is snapshotted once (pre-merge value).
+
+        Test scenario:
+            Two `Contour` objects both emit `levels`; the snapshot keeps the
+            single current value, not a later group's requested value.
+        """
+        glyph = _FakeGlyph({"levels": 7})
+        snap = Glyph._snapshot_group_options(
+            glyph, Contour(levels=1), Contour(levels=2)
+        )
+        assert snap == {"levels": 7}, f"got {snap}"

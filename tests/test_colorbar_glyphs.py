@@ -14,14 +14,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from cleopatra.styling.colorbar import ColorBar
-from cleopatra.styling.params import Classify
-from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
-from cleopatra.glyphs.stats.kde_glyph import KDEGlyph
 from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
+from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
+from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
 from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
 from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
-from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
+from cleopatra.glyphs.stats.kde_glyph import KDEGlyph
+from cleopatra.styling.colorbar import ColorBar
+from cleopatra.styling.params import Classify
+from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 _RNG = np.random.default_rng(1337)
 _FLOW_PATHS = [np.array([[0.0, 0.0], [1.0, 1.0]]), np.array([[0.0, 1.0], [1.0, 0.0]])]
@@ -238,3 +239,118 @@ def test_colorbar_false_suppresses_under_categorical_scheme():
     )
     glyph.plot(colorbar=False, classify=Classify(scheme="categorical"))
     assert glyph.cbar is None, "colorbar=False should suppress the bar under a categorical scheme"
+
+
+class TestColorBarMethods:
+    """Direct unit tests for `ColorBar`'s own option-building methods."""
+
+    def test_to_options_maps_placement_and_omits_unset(self):
+        """`to_options` emits placement keys but omits unset caption fields.
+
+        Test scenario:
+            A spec with only placement set yields the `cbar_*` placement keys
+            plus `add_colorbar=True`, and no `cbar_label` (it was never set).
+        """
+        opts = ColorBar(location="left", inside=True).to_options()
+        assert opts["cbar_location"] == "left", f"location not mapped: {opts}"
+        assert opts["cbar_inside"] is True, f"inside not mapped: {opts}"
+        assert opts["add_colorbar"] is True, f"add_colorbar missing: {opts}"
+        assert "cbar_label" not in opts, f"unset caption should be omitted: {opts}"
+
+    def test_to_options_emits_set_caption_and_tick_fields(self):
+        """Set caption / sizing / tick fields map onto their `cbar_*` keys.
+
+        Test scenario:
+            `label`, `length`, and `ticks_spacing` set on the spec appear in the
+            emitted dict.
+        """
+        opts = ColorBar(label="Depth", length=0.8, ticks_spacing=2.0).to_options()
+        assert opts["cbar_label"] == "Depth", f"label not mapped: {opts}"
+        assert opts["cbar_length"] == 0.8, f"length not mapped: {opts}"
+        assert opts["ticks_spacing"] == 2.0, f"ticks_spacing not mapped: {opts}"
+
+    def test_resolve_none_returns_empty(self):
+        """`resolve(None)` leaves options untouched (empty dict).
+
+        Test scenario:
+            `None` is the "keep current" case, so no keys are emitted.
+        """
+        assert ColorBar.resolve(None) == {}, "None should resolve to an empty dict"
+
+    def test_resolve_false_suppresses(self):
+        """`resolve(False)` emits only `add_colorbar=False`.
+
+        Test scenario:
+            `False` suppresses the colorbar and nothing else.
+        """
+        assert ColorBar.resolve(False) == {"add_colorbar": False}, "False should suppress"
+
+    def test_resolve_true_matches_reset_options(self):
+        """`resolve(True)` returns the `reset_options` default dict.
+
+        Test scenario:
+            `True` and `reset_options()` must agree (both draw the default bar).
+        """
+        assert ColorBar.resolve(True) == ColorBar.reset_options(), (
+            "resolve(True) should equal reset_options()"
+        )
+
+    def test_resolve_instance_delegates_to_to_options(self):
+        """`resolve(spec)` delegates to the instance's `to_options`.
+
+        Test scenario:
+            A `ColorBar` instance resolves to exactly its `to_options()` dict.
+        """
+        cb = ColorBar(location="bottom")
+        assert ColorBar.resolve(cb) == cb.to_options(), "instance should delegate to to_options"
+
+    def test_resolve_invalid_type_raises(self):
+        """`resolve` rejects a non-bool / non-`ColorBar` / non-`None` argument.
+
+        Test scenario:
+            An int argument raises `TypeError` naming the accepted types.
+        """
+        with pytest.raises(TypeError, match="bool, ColorBar, or None"):
+            ColorBar.resolve(123)
+
+    def test_reset_options_resets_family_to_defaults(self):
+        """`reset_options` clears the resettable `cbar_*` family to defaults.
+
+        Test scenario:
+            Placement keys go to `None`/`False`, and the caption/orientation keys
+            take their `STYLE_DEFAULTS` values.
+        """
+        opts = ColorBar.reset_options()
+        assert opts["add_colorbar"] is True, f"add_colorbar missing: {opts}"
+        assert opts["cbar_location"] is None, f"location not reset: {opts}"
+        assert opts["cbar_inside"] is False, f"inside not reset: {opts}"
+        assert opts["cbar_orientation"] == STYLE_DEFAULTS["cbar_orientation"], (
+            f"orientation not from defaults: {opts}"
+        )
+        assert opts["cbar_label"] == STYLE_DEFAULTS["cbar_label"], (
+            f"label not from defaults: {opts}"
+        )
+
+    @pytest.mark.parametrize(
+        "kwargs, expected",
+        [
+            ({"location": "left"}, True),
+            ({"inside": True}, True),
+            ({"orientation": "horizontal"}, True),
+            ({}, False),
+            ({"label": "x"}, False),
+        ],
+    )
+    def test_specifies_placement(self, kwargs, expected):
+        """`specifies_placement` is true iff location/inside/orientation is set.
+
+        Args:
+            kwargs: `ColorBar` constructor arguments for the case.
+            expected: Whether the spec should count as requesting placement.
+
+        Test scenario:
+            Any of `location`/`inside`/`orientation` yields True; a bare spec or
+            a caption-only spec yields False.
+        """
+        got = ColorBar(**kwargs).specifies_placement()
+        assert got is expected, f"specifies_placement({kwargs}) -> {got}, expected {expected}"

@@ -407,6 +407,23 @@ class PointOverlay:
             tuple: `(row, col, scatter, labels)` -- the point row and column
                 index arrays, the marker `PathCollection`, and the list of
                 per-point value-label `Text` artists (empty for no points).
+
+        Examples:
+            - Draw two points and read back the value labels:
+                ```python
+                >>> import matplotlib
+                >>> matplotlib.use("Agg")
+                >>> import matplotlib.pyplot as plt
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.gridded.array_glyph import PointOverlay
+                >>> fig, ax = plt.subplots()
+                >>> overlay = PointOverlay(np.array([[5.0, 0, 0], [9.0, 1, 1]]))
+                >>> row, col, scatter, labels = overlay.draw(ax)
+                >>> len(labels)
+                2
+                >>> plt.close(fig)
+
+                ```
         """
         row = self.points[:, 1]
         col = self.points[:, 2]
@@ -494,6 +511,17 @@ class FrameLabel:
                 that is `True` when `location` was unset (the top-left
                 axes-fraction default), which drives the transform and vertical
                 alignment in `draw`.
+
+        Examples:
+            - An unset label auto-anchors top-left; an explicit one is kept:
+                ```python
+                >>> from cleopatra.glyphs.gridded.array_glyph import FrameLabel
+                >>> FrameLabel().resolve_location()
+                ([0.02, 0.95], True)
+                >>> FrameLabel(location=[0.3, 0.4]).resolve_location()
+                ([0.3, 0.4], False)
+
+                ```
         """
         if self.location is None:
             return [0.02, 0.95], True
@@ -515,6 +543,21 @@ class FrameLabel:
 
         Returns:
             matplotlib.text.Text: The created label artist (initially blank).
+
+        Examples:
+            - Draw a label with its own size and read it back:
+                ```python
+                >>> import matplotlib
+                >>> matplotlib.use("Agg")
+                >>> import matplotlib.pyplot as plt
+                >>> from cleopatra.glyphs.gridded.array_glyph import FrameLabel
+                >>> fig, ax = plt.subplots()
+                >>> text = FrameLabel(size=9).draw(ax, default_size=12)
+                >>> text.get_fontsize()
+                9.0
+                >>> plt.close(fig)
+
+                ```
         """
         location, is_default = self.resolve_location()
         return ax.text(
@@ -608,6 +651,18 @@ class PanelLabels:
         Raises:
             ValueError: If `col` (or `row`) is set and its length does not
                 match the corresponding axis size.
+
+        Examples:
+            - Matching lengths pass; a mismatch is rejected:
+                ```python
+                >>> from cleopatra.glyphs.gridded.array_glyph import PanelLabels
+                >>> PanelLabels(col=["a", "b"]).validate(2)
+                >>> PanelLabels(col=["a", "b"]).validate(3)
+                Traceback (most recent call last):
+                    ...
+                ValueError: `labels.col` length 2 does not match the column axis size 3.
+
+                ```
         """
         if self.col is not None and len(self.col) != n_col:
             raise ValueError(
@@ -633,6 +688,17 @@ class PanelLabels:
         Returns:
             The configured label at `index`, or `index` itself when that axis
             has no labels.
+
+        Examples:
+            - A configured label vs the integer-index fallback:
+                ```python
+                >>> from cleopatra.glyphs.gridded.array_glyph import PanelLabels
+                >>> PanelLabels(col=["Jan", "Feb"]).label_for("col", 1)
+                'Feb'
+                >>> PanelLabels().label_for("col", 2)
+                2
+
+                ```
         """
         coords = self.col if axis == "col" else self.row
         return coords[index] if coords is not None else index
@@ -658,6 +724,16 @@ class PanelLabels:
         Returns:
             tuple: `(title, name_dict)` -- the `"dim=label"` title and the
                 `{dim_name: label}` mapping (both axes when `row_dim` is set).
+
+        Examples:
+            - A two-axis panel title and its coordinate mapping:
+                ```python
+                >>> from cleopatra.glyphs.gridded.array_glyph import PanelLabels
+                >>> labels = PanelLabels(col=["Jan"], row=["North"])
+                >>> labels.panel_title("month", 0, "region", 0)
+                ('month=Jan, region=North', {'month': 'Jan', 'region': 'North'})
+
+                ```
         """
         col_label = self.label_for("col", col_idx)
         name_dict: dict[str, Any] = {col_dim: col_label}
@@ -735,6 +811,19 @@ class RgbBands:
 
         Raises:
             ValueError: If the array has fewer than 3 bands on its first axis.
+
+        Examples:
+            - A 3-band array validates; a 2-band array is rejected:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.gridded.array_glyph import RgbBands
+                >>> RgbBands([0, 1, 2]).validate(np.zeros((3, 4, 4)))
+                >>> RgbBands([0, 1, 2]).validate(np.zeros((2, 4, 4)))
+                Traceback (most recent call last):
+                    ...
+                ValueError: To plot RGB plot the given array should have only 3 arrays, given array have 2
+
+                ```
         """
         if array.shape[0] < 3:
             raise ValueError(
@@ -756,6 +845,20 @@ class RgbBands:
         Returns:
             np.ndarray: An `(H, W, 3)` array; normalised to `[0, 1]` when a
                 stretch was applied.
+
+        Examples:
+            - Select and reorder three bands into a band-last image:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.gridded.array_glyph import RgbBands
+                >>> arr = np.arange(12, dtype=float).reshape(3, 2, 2)
+                >>> out = RgbBands([2, 1, 0]).prepare(arr)
+                >>> out.shape
+                (2, 2, 3)
+                >>> bool((out[..., 0] == arr[2]).all())
+                True
+
+                ```
         """
         array = array[self.indices].transpose(1, 2, 0)
         if self.percentile is not None:

@@ -287,6 +287,17 @@ class ColorBar:
 
         Returns:
             bool: `True` if `location`, `inside`, or `orientation` is set.
+
+        Examples:
+            - A placement edge counts as specified; a bare spec does not:
+                ```python
+                >>> from cleopatra.styling.colorbar import ColorBar
+                >>> ColorBar(location="bottom").specifies_placement()
+                True
+                >>> ColorBar().specifies_placement()
+                False
+
+                ```
         """
         return (
             self.location is not None
@@ -306,6 +317,18 @@ class ColorBar:
 
         Returns:
             dict: `default_options` updates for a default colorbar.
+
+        Examples:
+            - The reset always enables the bar and clears the placement:
+                ```python
+                >>> from cleopatra.styling.colorbar import ColorBar
+                >>> opts = ColorBar.reset_options()
+                >>> opts["add_colorbar"]
+                True
+                >>> opts["cbar_location"] is None
+                True
+
+                ```
         """
         return {
             "add_colorbar": True,

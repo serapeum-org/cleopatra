@@ -7098,3 +7098,195 @@ class TestColorbarLocationOrientation:
         )
         assert g.cbar is not None, "a colorbar should still be drawn"
         plt.close("all")
+
+
+class TestRgbBands:
+    """Direct unit tests for the `RgbBands` band-selection + stretch object."""
+
+    def test_validate_raises_for_too_few_bands(self):
+        """`validate` rejects an array with fewer than 3 bands.
+
+        Test scenario:
+            A `(2, H, W)` array raises `ValueError` naming the 3-band need.
+        """
+        with pytest.raises(ValueError, match="3 arrays"):
+            RgbBands([0, 1, 2]).validate(np.zeros((2, 4, 4)))
+
+    def test_validate_passes_for_three_bands(self):
+        """`validate` accepts an array with at least 3 bands.
+
+        Test scenario:
+            A `(3, H, W)` array validates without raising.
+        """
+        RgbBands([0, 1, 2]).validate(np.zeros((3, 4, 4)))
+
+    def test_prepare_reorders_bands_without_stretch(self):
+        """With no stretch, `prepare` only selects + reorders the bands.
+
+        Test scenario:
+            `indices=[2, 1, 0]` puts band 2 first in the band-last output and
+            applies no normalisation.
+        """
+        arr = np.arange(27, dtype=float).reshape(3, 3, 3)
+        out = RgbBands([2, 1, 0]).prepare(arr)
+        assert out.shape == (3, 3, 3), f"unexpected shape {out.shape}"
+        np.testing.assert_array_equal(out[..., 0], arr[2])
+
+    def test_prepare_percentile_path_maps_to_unit_range(self):
+        """The percentile branch contrast-stretches into `[0, 1]`.
+
+        Test scenario:
+            `percentile=2` routes through `scale_percentile`, yielding a
+            band-last array clipped to `[0, 1]`.
+        """
+        arr = np.random.default_rng(0).integers(0, 10000, size=(3, 6, 6)).astype(float)
+        out = RgbBands([0, 1, 2], percentile=2).prepare(arr)
+        assert out.shape == (6, 6, 3), f"unexpected shape {out.shape}"
+        assert np.all((0.0 <= out) & (out <= 1.0)), "percentile output out of [0, 1]"
+
+    def test_prepare_surface_reflectance_path_maps_to_unit_range(self):
+        """The reflectance branch normalises into `[0, 1]`.
+
+        Test scenario:
+            `surface_reflectance=10000` divides + clips into `[0, 1]`.
+        """
+        arr = np.random.default_rng(0).integers(0, 10000, size=(3, 6, 6)).astype(float)
+        out = RgbBands([0, 1, 2], surface_reflectance=10000).prepare(arr)
+        assert out.shape == (6, 6, 3), f"unexpected shape {out.shape}"
+        assert np.all((0.0 <= out) & (out <= 1.0)), "reflectance output out of [0, 1]"
+
+
+class TestFrameLabelMethods:
+    """Tests for `FrameLabel.resolve_location` and `FrameLabel.draw`."""
+
+    def test_resolve_location_default_when_unset(self):
+        """An unset location resolves to the top-left auto-anchor flagged default.
+
+        Test scenario:
+            `FrameLabel()` yields `([0.02, 0.95], True)`.
+        """
+        loc, is_default = FrameLabel().resolve_location()
+        assert loc == [0.02, 0.95], f"unexpected default location {loc}"
+        assert is_default is True, "unset location should be flagged default"
+
+    def test_resolve_location_uses_explicit_location(self):
+        """An explicit location is returned as-is, not flagged default.
+
+        Test scenario:
+            `FrameLabel(location=[0.3, 0.4])` yields `([0.3, 0.4], False)`.
+        """
+        loc, is_default = FrameLabel(location=[0.3, 0.4]).resolve_location()
+        assert loc == [0.3, 0.4], f"explicit location not returned: {loc}"
+        assert is_default is False, "explicit location should not be flagged default"
+
+    def test_draw_default_uses_default_size_and_top_alignment(self):
+        """`draw` on an unset label uses `default_size` and axes-fraction top anchor.
+
+        Test scenario:
+            With no own size, the artist takes `default_size` and `va="top"`.
+        """
+        fig, ax = plt.subplots()
+        try:
+            text = FrameLabel().draw(ax, default_size=14)
+            assert text.get_fontsize() == 14, f"size {text.get_fontsize()}"
+            assert text.get_verticalalignment() == "top", "default anchor should be va=top"
+        finally:
+            plt.close(fig)
+
+    def test_draw_explicit_uses_own_size_color_and_baseline(self):
+        """`draw` with an explicit label uses its own size/colour and data-coord baseline.
+
+        Test scenario:
+            An explicit size/colour/location yields those values and `va="baseline"`.
+        """
+        fig, ax = plt.subplots()
+        try:
+            text = FrameLabel(location=[0.1, 0.2], color="white", size=9).draw(
+                ax, default_size=14
+            )
+            assert text.get_fontsize() == 9, f"size {text.get_fontsize()}"
+            assert text.get_color() == "white", f"color {text.get_color()}"
+            assert text.get_verticalalignment() == "baseline", "explicit should use va=baseline"
+        finally:
+            plt.close(fig)
+
+
+class TestPanelLabelsMethods:
+    """Tests for `PanelLabels.label_for`, `panel_title`, and `validate`."""
+
+    def test_label_for_uses_coords_when_present(self):
+        """`label_for` returns the configured label at the index.
+
+        Test scenario:
+            Given `col`/`row` sequences, the index maps to the label.
+        """
+        labels = PanelLabels(col=["Jan", "Feb"], row=["A", "B"])
+        assert labels.label_for("col", 1) == "Feb", "col label mismatch"
+        assert labels.label_for("row", 0) == "A", "row label mismatch"
+
+    def test_label_for_falls_back_to_index(self):
+        """`label_for` returns the integer index when that axis has no labels.
+
+        Test scenario:
+            An empty `PanelLabels` returns the index itself.
+        """
+        labels = PanelLabels()
+        assert labels.label_for("col", 2) == 2, "col fallback mismatch"
+        assert labels.label_for("row", 3) == 3, "row fallback mismatch"
+
+    def test_panel_title_col_only(self):
+        """`panel_title` builds a col-only title and name_dict.
+
+        Test scenario:
+            With no row dim, only the column dim/label appear.
+        """
+        title, name_dict = PanelLabels(col=["Jan", "Feb"]).panel_title("month", 1)
+        assert title == "month=Feb", f"title {title!r}"
+        assert name_dict == {"month": "Feb"}, f"name_dict {name_dict}"
+
+    def test_panel_title_col_and_row(self):
+        """`panel_title` builds a two-axis title and name_dict.
+
+        Test scenario:
+            Both dims/labels appear in the title and mapping.
+        """
+        labels = PanelLabels(col=["Jan", "Feb"], row=["North", "South"])
+        title, name_dict = labels.panel_title("month", 0, "region", 1)
+        assert title == "month=Jan, region=South", f"title {title!r}"
+        assert name_dict == {"month": "Jan", "region": "South"}, f"name_dict {name_dict}"
+
+    def test_panel_title_index_fallback(self):
+        """`panel_title` uses the integer index when labels are absent.
+
+        Test scenario:
+            An unset `PanelLabels` titles by index.
+        """
+        title, name_dict = PanelLabels().panel_title("m", 2)
+        assert title == "m=2", f"title {title!r}"
+        assert name_dict == {"m": 2}, f"name_dict {name_dict}"
+
+    def test_validate_passes_when_lengths_match(self):
+        """`validate` accepts label sequences matching the axis sizes.
+
+        Test scenario:
+            2 col labels + 1 row label against `(2, 1)` axes validate cleanly.
+        """
+        PanelLabels(col=["a", "b"], row=["x"]).validate(2, 1)
+
+    def test_validate_raises_on_col_length_mismatch(self):
+        """`validate` rejects a col-label count that does not match the axis.
+
+        Test scenario:
+            2 col labels against a 3-column axis raises, naming `labels.col`.
+        """
+        with pytest.raises(ValueError, match=r"labels\.col"):
+            PanelLabels(col=["a", "b"]).validate(3)
+
+    def test_validate_raises_on_row_length_mismatch(self):
+        """`validate` rejects a row-label count that does not match the axis.
+
+        Test scenario:
+            1 row label against a 2-row axis raises, naming `labels.row`.
+        """
+        with pytest.raises(ValueError, match=r"labels\.row"):
+            PanelLabels(col=["a", "b"], row=["x"]).validate(2, 2)
