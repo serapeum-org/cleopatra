@@ -46,7 +46,6 @@ from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_grid
 from cleopatra.styling.colorbar import (
     ColorBar,
     _resolve_colorbar,
-    _warn_deprecated_cbar_kwargs,
 )
 from cleopatra.styling.colors import (
     resolve_colormap,
@@ -63,12 +62,6 @@ from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 #: the temporary at ~`MAX_KDE_BLOCK` floats (a few tens of MB).
 MAX_KDE_BLOCK = 4_000_000
 
-#: Sentinel distinguishing "hillshade not forwarded" from an explicit
-#: `hillshade=None` in `apply_style`, so an unset value keeps any sticky
-#: relief shading while an explicit `None` clears it (matching
-#: `ArrayGlyph`/`MeshGlyph.apply_style`).
-_UNSET_HILLSHADE = object()
-
 #: Option keys for KDEGlyph. `ticks_spacing` is `None` so the shared
 #: `_prepare_scalar_mapping` helper auto-derives it from the density range.
 KDE_DEFAULT_OPTIONS = {
@@ -84,6 +77,11 @@ KDE_DEFAULT_OPTIONS = {
     "style": None,
 }
 KDE_DEFAULT_OPTIONS = STYLE_DEFAULTS | KDE_DEFAULT_OPTIONS
+
+#: Sentinel distinguishing "hillshade not passed to apply_style" from an
+#: explicit `hillshade=None` (which clears sticky relief), matching the
+#: `_UNSET` sentinels on ArrayGlyph / MeshGlyph.
+_UNSET_HILLSHADE = object()
 
 
 class KDEGlyph(Glyph):
@@ -158,7 +156,6 @@ class KDEGlyph(Glyph):
         fig: Figure | None = None,
         **kwargs,
     ):
-        _warn_deprecated_cbar_kwargs(kwargs)
         super().__init__(default_options=KDE_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs)
         self.x = np.asarray(x, dtype=float)
         self.y = np.asarray(y, dtype=float)
@@ -327,7 +324,7 @@ class KDEGlyph(Glyph):
         """Name of the `DATA_STYLES` preset currently applied, or `None`.
 
         Reads back the preset set via the `style` constructor kwarg, a
-        `plot(data_style=DataStyle(style=...))` call, or `apply_style`.
+        `plot(style=...)` call, or `apply_style`.
         """
         return self.default_options.get("style")
 
@@ -341,18 +338,16 @@ class KDEGlyph(Glyph):
     ):
         """Apply a continuous `DATA_STYLES` preset by name, re-rendering in place.
 
-        A discoverable wrapper over `plot(data_style=DataStyle(style=...))` for restyling an
+        A discoverable wrapper over `plot(style=...)` for restyling an
         already-built glyph. It redraws **in place** on the glyph's own axes
         (taking full ownership -- do not use on a shared axes), or on a fresh
         figure if the glyph was never plotted or its figure was closed. The
         applied style is **sticky** (survives a later plain `plot()`);
-        `plot(data_style=DataStyle(style=None))` clears it.
+        `plot(style=None)` clears it.
 
         Args:
             style: A continuous `cleopatra.styling.colors.DATA_STYLES` preset name.
-            hillshade: Optional relief shading, forwarded to `plot`. Left
-                unset it keeps any sticky relief; an explicit `None` clears
-                it (a bool/dict sets it).
+            hillshade: Optional relief shading, forwarded to `plot`.
             add_colorbar: Optional colorbar toggle, forwarded to `plot`.
             title: Optional title, forwarded to `plot`.
 
@@ -371,8 +366,8 @@ class KDEGlyph(Glyph):
             )
         self._reset_axes_for_restyle()
         # Only override hillshade when the caller actually passed one; an
-        # unset value keeps any sticky relief, while an explicit `None`
-        # flows through to `DataStyle(hillshade=None)` and clears it.
+        # unset value keeps any sticky relief shading, while an explicit
+        # `None` flows through to `DataStyle(hillshade=None)` and clears it.
         data_style = (
             DataStyle(style=style)
             if hillshade is _UNSET_HILLSHADE
@@ -469,10 +464,8 @@ class KDEGlyph(Glyph):
 
                 ```
         """
-        # KDE keeps its persistent default_options across plots, so snapshot
-        # every option key these group objects are about to touch (colour
-        # scale, contour levels, style/hillshade) before merging. If the new
-        # preset turns out invalid below, ALL of them are rolled back -- not
+        # Snapshot every option key the group objects will touch before
+        # merging, so an invalid preset rolls back the WHOLE merge -- not
         # just style -- so a co-passed color=/contour= cannot leak into a
         # later plain plot.
         prev_group_opts = {}

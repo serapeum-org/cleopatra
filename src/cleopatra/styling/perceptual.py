@@ -15,7 +15,7 @@ things on top of it:
 - `make_categorical`: the *glasbey* method -- greedily pick colours with the
     maximum minimum Lab distance, so N classes stay maximally distinguishable.
 
-Nothing here imports or copies data from cmocean / cmcrameri / colorcet; the
+Nothing here imports or copies data from cmocean / colorcet; the
 quality comes from the *method* (designing in a perceptual space), which is pure
 math. For scientific-grade sequential and cyclic maps, prefer matplotlib's own
 `viridis` family and `twilight` (already optimised in CAM02-UCS); this module

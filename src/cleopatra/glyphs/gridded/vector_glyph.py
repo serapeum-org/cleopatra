@@ -46,7 +46,6 @@ from cleopatra.glyphs.base.glyph import (
 from cleopatra.styling.colorbar import (
     ColorBar,
     _resolve_colorbar,
-    _warn_deprecated_cbar_kwargs,
 )
 from cleopatra.styling.colors import resolve_colormap
 from cleopatra.styling.params import Classify, Contour
@@ -130,7 +129,6 @@ class VectorGlyph(GeoMixin, Glyph):
         fig: Figure | None = None,
         **kwargs,
     ):
-        _warn_deprecated_cbar_kwargs(kwargs)
         super().__init__(
             default_options=VECTOR_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs
         )
@@ -244,9 +242,7 @@ class VectorGlyph(GeoMixin, Glyph):
             if title is not None:
                 opts["title"] = title
             opts.update(_resolve_colorbar(colorbar))
-            draw_colorbar = (
-                opts["add_colorbar"] if add_colorbar is None else add_colorbar
-            )
+            draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
 
             mag = self.magnitude
             norm, cbar_kw, ticks = self._prepare_scalar_mapping(mag)

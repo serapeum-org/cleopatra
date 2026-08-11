@@ -3,8 +3,7 @@
 `ColorBar` bundles the colorbar layout / caption / sizing choices into one value
 passed as `plot(colorbar=...)` / `animate(colorbar=...)`. `_resolve_colorbar`
 maps it onto the internal `cbar_*` / `ticks_spacing` options that the base
-`Glyph.create_color_bar` renders, and `_warn_deprecated_cbar_kwargs` steers
-callers off the loose `cbar_*` kwargs it supersedes.
+`Glyph.create_color_bar` renders.
 
 Kept in its own module (rather than in any single glyph) so every glyph type can
 import it without depending on `array_glyph`. `cleopatra.glyphs.gridded.array_glyph` re-exports
@@ -350,40 +349,3 @@ def _resolve_colorbar(colorbar: bool | ColorBar | None) -> dict:
     raise TypeError(
         f"colorbar must be a bool, ColorBar, or None, got {type(colorbar).__name__}."
     )
-
-
-#: Loose colorbar kwargs now superseded by `ColorBar` fields (issue #234).
-#: Passing any of these to `plot` / `animate` is deprecated -- use the mapped
-#: `ColorBar` field instead. This set includes the non-`cbar_`-prefixed
-#: `ticks_spacing`, deprecated in favour of `ColorBar(ticks_spacing=...)`, not
-#: only the `cbar_*` keys. They still take effect (folded into
-#: `default_options`) so nothing breaks during the deprecation window.
-_DEPRECATED_CBAR_KWARGS = {
-    "cbar_label": "label",
-    "cbar_length": "length",
-    "cbar_label_size": "label_size",
-    "cbar_label_rotation": "label_rotation",
-    "cbar_label_location": "label_location",
-    "cbar_orientation": "orientation",
-    "ticks_spacing": "ticks_spacing",
-}
-
-
-def _warn_deprecated_cbar_kwargs(kwargs: dict) -> None:
-    """Warn for any loose `cbar_*` kwarg that a `ColorBar` field now replaces.
-
-    The kwargs still take effect (the caller folds them into `default_options`);
-    this only steers callers toward the typed `colorbar=ColorBar(...)` spec.
-
-    Args:
-        kwargs: The `plot` / `animate` keyword arguments to inspect for the
-            deprecated loose colorbar keys.
-    """
-    for key, field in _DEPRECATED_CBAR_KWARGS.items():
-        if key in kwargs:
-            warnings.warn(
-                f"The '{key}' keyword is deprecated; pass "
-                f"colorbar=ColorBar({field}=...) instead.",
-                DeprecationWarning,
-                stacklevel=3,
-            )

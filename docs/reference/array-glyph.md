@@ -36,9 +36,10 @@ animations exported to GIF / MP4 / MOV / AVI.
 - **`ArrayGlyph(..., coords=(x, y))`** — plot curvilinear / non-uniform grids (1-D cell
   centres or 2-D meshgrids); with `kind="auto"` this routes to `pcolormesh`. Mutually
   exclusive with `extent`.
-- **`ArrayGlyph.facet(col=, row=, col_wrap=, col_coords=, row_coords=, kind=, figsize=,
-  extents=)`** — a grid of subplots from a 3-D `(N, H, W)` or 4-D `(N, M, H, W)` stack
-  with one shared colour scale and colorbar.
+- **`ArrayGlyph.facet(col=, row=, col_wrap=, labels=, kind=, figure_size=, extents=)`** — a grid
+  of subplots from a 3-D `(N, H, W)` or 4-D `(N, M, H, W)` stack with one shared colour scale
+  and colorbar. Pass `labels=PanelLabels(col=..., row=...)` to title panels by coordinate
+  value instead of the integer slice index.
 - **`animate(..., data_getter=callable)`** — supply each frame lazily (e.g. a NetCDF time
   slab) instead of holding the whole stack in memory.
 - `color_scale` is validated against `cleopatra.styling.styles.ColorScale` (also re-exported as
@@ -46,8 +47,7 @@ animations exported to GIF / MP4 / MOV / AVI.
 
 !!! note "Changes from earlier versions"
     - `ArrayGlyph.plot()` returns `(fig, ax)`.
-    - The cell-value count is exposed as `num_domain_cells` (`no_elem` still works as a
-      deprecated alias).
+    - The cell-value count is exposed as `num_domain_cells` (previously `no_elem`, now removed).
     - `ArrayGlyph(arr)` on an all-NaN / fully-masked array raises `ValueError` instead of
       producing an unusable colour range.
 

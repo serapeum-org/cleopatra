@@ -49,7 +49,6 @@ from cleopatra.glyphs.base.glyph import Glyph, _root_figure
 from cleopatra.styling.colorbar import (
     ColorBar,
     _resolve_colorbar,
-    _warn_deprecated_cbar_kwargs,
 )
 from cleopatra.styling.colors import resolve_colormap
 from cleopatra.styling.params import Classify, Contour
@@ -94,17 +93,12 @@ class PolygonGlyph(GeoMixin, Glyph):
             given. Default is None (outline-only).
         ax: Pre-existing axes to draw on. Default is None.
         fig: Pre-existing figure. Default is None.
-        **kwargs: Construction-time overrides for the non-grouped
-            `POLYGON_DEFAULT_OPTIONS` (e.g. `edgecolor`, `linewidth`,
-            `cmap`, `vmin`, `vmax`, `ticks_spacing`, `cbar_label`,
+        **kwargs: Override any key in `POLYGON_DEFAULT_OPTIONS`
+            (e.g. `edgecolor`, `linewidth`, `cmap`, `vmin`, `vmax`,
+            `levels`, `color_scale`, `ticks_spacing`, `cbar_label`,
             `figsize`, `title`). Set `add_colorbar=False` to suppress the
             per-glyph colorbar (default True) for shared-axes composition
-            where the host owns a single aggregated colorbar. The colour
-            scale, discretisation `levels`, and classification are no
-            longer construction kwargs -- pass them to `plot()` via
-            `color=ColorScaling(...)`, `contour=Contour(levels=...)`, and
-            `classify=Classify(...)` (a loose `color_scale` / `levels` /
-            `scheme` keyword now raises).
+            where the host owns a single aggregated colorbar.
 
     Raises:
         ValueError: If `values` is given but its length does not match
@@ -146,7 +140,6 @@ class PolygonGlyph(GeoMixin, Glyph):
         fig: Figure | None = None,
         **kwargs,
     ):
-        _warn_deprecated_cbar_kwargs(kwargs)
         super().__init__(
             default_options=POLYGON_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs
         )
@@ -254,9 +247,7 @@ class PolygonGlyph(GeoMixin, Glyph):
             if title is not None:
                 opts["title"] = title
             opts.update(_resolve_colorbar(colorbar))
-            draw_colorbar = (
-                opts["add_colorbar"] if add_colorbar is None else add_colorbar
-            )
+            draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
             self.cbar = None
             self.category_legend = None
 
@@ -278,10 +269,7 @@ class PolygonGlyph(GeoMixin, Glyph):
                 if categorical is not None:
                     color_array, cmap = categorical["codes"], categorical["cmap"]
                 else:
-                    color_array, cmap = (
-                        np.asarray(self.values),
-                        resolve_colormap(opts["cmap"]),
-                    )
+                    color_array, cmap = np.asarray(self.values), resolve_colormap(opts["cmap"])
                 pc = PolyCollection(
                     self.polygons,
                     array=color_array,

@@ -366,13 +366,9 @@ class TestGlyphPrepareCategoricalMapping:
             Categorical colouring owns the norm, so a conflicting
             `color_scale` is ignored -- and a warning says so.
         """
-        glyph = ScatterGlyph(
-            np.arange(4.0), np.zeros(4), values=np.array(["a", "b", "a", "b"])
-        )
+        glyph = ScatterGlyph(np.arange(4.0), np.zeros(4), values=np.array(["a", "b", "a", "b"]))
         with pytest.warns(UserWarning, match="color_scale"):
-            glyph.plot(
-                classify=Classify(scheme="categorical"), color=ColorScaling.midpoint()
-            )
+            glyph.plot(classify=Classify(scheme="categorical"), color=ColorScaling.midpoint())
 
     def test_warns_on_conflicting_levels(self):
         """`scheme="categorical"` together with `levels` warns.
@@ -381,13 +377,9 @@ class TestGlyphPrepareCategoricalMapping:
             The categorical mapping determines the classes, so `levels` is
             ignored -- and a warning says so.
         """
-        glyph = ScatterGlyph(
-            np.arange(4.0), np.zeros(4), values=np.array(["a", "b", "a", "b"])
-        )
+        glyph = ScatterGlyph(np.arange(4.0), np.zeros(4), values=np.array(["a", "b", "a", "b"]))
         with pytest.warns(UserWarning, match="levels"):
-            glyph.plot(
-                classify=Classify(scheme="categorical"), contour=Contour(levels=3)
-            )
+            glyph.plot(classify=Classify(scheme="categorical"), contour=Contour(levels=3))
 
 
 class TestPolygonGlyphCategorical:
@@ -445,12 +437,7 @@ class TestPolygonGlyphCategorical:
         """
         polys, labels = polys_land_use
         glyph = PolygonGlyph(polys, values=labels)
-        glyph.plot(
-            classify=Classify(
-                scheme="categorical",
-                category_legend_kwargs={"title": "Land use", "loc": "lower left"},
-            )
-        )
+        glyph.plot(classify=Classify(scheme="categorical", category_legend_kwargs={"title": "Land use", "loc": "lower left"}))
         assert glyph.category_legend.get_title().get_text() == "Land use"
 
     def test_add_colorbar_false_suppresses_legend(self, polys_land_use):
@@ -707,9 +694,8 @@ class TestCategoricalSchemeGlyphScope:
         """
         paths = [np.array([[0.0, 0.0], [1.0, 1.0]]), np.array([[1.0, 0.0], [2.0, 1.0]])]
         glyph = FlowGlyph(paths, values=np.array([1.0, 5.0]))
-        categorical = Classify(scheme="categorical")
         with pytest.raises(ValueError, match="does not support scheme='categorical'"):
-            glyph.plot(classify=categorical)
+            glyph.plot(classify=Classify(scheme="categorical"))
 
     def test_vector_glyph_rejects_categorical(self):
         """`VectorGlyph` rejects `scheme="categorical"` with a clear error.

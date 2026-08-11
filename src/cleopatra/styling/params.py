@@ -136,14 +136,26 @@ _UNSET = _Unset()
 
 @dataclass(frozen=True)
 class DataStyle:
-    """Named data-style preset and relief-shading options.
+    """Named data-style preset, relief-shading, and per-call preset overrides.
 
     Groups the `style` / `hillshade` options honoured by `ArrayGlyph`,
-    `MeshGlyph`, and `KDEGlyph`. Each field has three states: left unset
-    (keep the glyph's current value -- these options are sticky), set to a
-    value (apply it), or set explicitly to `None` (clear the preset /
-    disable hillshade). `to_options()` emits a key only for a field that
-    was given (set or explicit `None`), never for an unset one.
+    `MeshGlyph`, and `KDEGlyph`, plus the `bands` / `alpha` / `alpha_range`
+    per-call overrides of an active `ArrayGlyph` preset. Each field has three
+    states: left unset (keep the glyph's current value -- these options are
+    sticky), set to a value (apply it), or set explicitly to `None` (clear the
+    preset / disable hillshade / drop the override). `to_options()` emits a key
+    only for a field that was given (set or explicit `None`), never for an
+    unset one.
+
+    The `bands` / `alpha` / `alpha_range` fields override just one aspect of a
+    styled render while keeping the rest of the preset; they are only
+    meaningful alongside a `style` (they replace one field of the active
+    `DATA_STYLES` preset). `bands` rebands the scale (replacing the preset's
+    `levels`); `alpha` sets a constant opacity and `alpha_range` a value-linked
+    one -- the two are mutually exclusive and resolved downstream (a constant
+    `alpha` wins). They apply to a continuous/levelled preset only; a
+    categorical (class-colour) preset renders opaque with its fixed class
+    colours and ignores these overrides.
 
     Attributes:
         style: Name of a `cleopatra.styling.colors.DATA_STYLES` preset, or
@@ -152,6 +164,16 @@ class DataStyle:
             a dict tuning `vert_exag` / `azimuth` / `altitude` /
             `blend_mode` / `multidirectional`, or `None`/`False` to
             disable.
+        bands: Discrete band count partitioning the preset's value range,
+            replacing the preset's own `levels`/`bands`. Rebands a plain
+            linear scale only -- it is ignored (with a warning) on a diverging
+            (`center`) or `log`/`symlog` preset, whose own scale is kept.
+            `None` clears a sticky override, keeping the preset's own scale.
+        alpha: Constant layer opacity in `[0, 1]` overriding the preset's
+            opacity. `None` clears a sticky override.
+        alpha_range: `(vmin, vmax)` mapping data values to opacity (a
+            value-linked alpha) overriding the preset's opacity. `None`
+            clears a sticky override.
 
     Examples:
         - Select a preset and turn on relief shading:
@@ -159,6 +181,15 @@ class DataStyle:
             >>> from cleopatra.styling.params import DataStyle
             >>> DataStyle(style="dem", hillshade=True).to_options()
             {'style': 'dem', 'hillshade': True}
+
+            ```
+        - Override a styled preset's banding and opacity per call:
+            ```python
+            >>> from cleopatra.styling.params import DataStyle
+            >>> DataStyle(style="temperature_2m", bands=6, alpha=0.5).to_options()
+            {'style': 'temperature_2m', 'bands': 6, 'alpha': 0.5, 'alpha_range': None}
+            >>> DataStyle(alpha_range=(0.0, 40.0)).to_options()
+            {'alpha_range': (0.0, 40.0), 'alpha': None}
 
             ```
         - An unset field is omitted (keeping the sticky value); an
@@ -175,19 +206,64 @@ class DataStyle:
 
     style: str | None | _Unset = _UNSET
     hillshade: bool | dict[str, Any] | None | _Unset = _UNSET
+    bands: int | None | _Unset = _UNSET
+    alpha: float | None | _Unset = _UNSET
+    alpha_range: tuple[float, float] | None | _Unset = _UNSET
+
+    def __post_init__(self) -> None:
+        """Validate `alpha_range` is a `(vmin, vmax)` numeric pair when given.
+
+        Raises:
+            TypeError: If `alpha_range` is set to something that is not a
+                length-2 sequence of numbers, so the error surfaces at the
+                `DataStyle` boundary rather than deep inside the render.
+        """
+        ar = self.alpha_range
+        if isinstance(ar, _Unset) or ar is None:
+            return
+        try:
+            lo, hi = ar
+            float(lo), float(hi)
+        except (TypeError, ValueError) as exc:
+            raise TypeError(
+                "DataStyle(alpha_range=...) must be a (vmin, vmax) pair of "
+                f"numbers, got {ar!r}"
+            ) from exc
 
     def to_options(self) -> dict[str, Any]:
         """Flatten the explicitly-given fields into `default_options` keys.
 
         Returns:
-            dict: `style` / `hillshade` for the fields the caller gave (a
-                value or an explicit `None`); unset fields are omitted.
+            dict: `style` / `hillshade` / `bands` / `alpha` / `alpha_range`
+                for the fields the caller gave (a value or an explicit
+                `None`); unset fields are omitted. Setting one of the two
+                mutually-exclusive opacity fields to a real value also emits an
+                explicit `None` for the other, so a mode switch clears the
+                sticky opposite field.
         """
         options: dict[str, Any] = {}
         if not isinstance(self.style, _Unset):
             options["style"] = self.style
         if not isinstance(self.hillshade, _Unset):
             options["hillshade"] = self.hillshade
+        if not isinstance(self.bands, _Unset):
+            options["bands"] = self.bands
+        alpha_set = not isinstance(self.alpha, _Unset)
+        range_set = not isinstance(self.alpha_range, _Unset)
+        if alpha_set:
+            options["alpha"] = self.alpha
+        if range_set:
+            options["alpha_range"] = self.alpha_range
+        # `alpha` (constant) and `alpha_range` (value-linked) are mutually
+        # exclusive opacity modes. Setting one to a real value emits an explicit
+        # `None` for the other so switching modes on the same (sticky) glyph is
+        # not defeated by the stale field -- a leftover constant `alpha` would
+        # otherwise win the tie-break in `resolve_style_overrides`. Clearing a
+        # field (`=None`) leaves the other untouched.
+        if alpha_set and self.alpha is not None and not range_set:
+            options["alpha_range"] = None
+        elif range_set and self.alpha_range is not None and not alpha_set:
+            options["alpha"] = None
         return options
 
 

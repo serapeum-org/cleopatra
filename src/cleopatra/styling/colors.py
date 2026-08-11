@@ -54,8 +54,8 @@ def resolve_colormap(cmap: str | Colormap | None, *, param: str = "cmap") -> Col
       the glyph options store both objects and names, so the resolver must accept
       either).
     - A **namespaced** name containing ``":"`` (e.g. ``"cmocean:thermal"``,
-      ``"crameri:batlow_r"``) is resolved through the optional `cmap` package (the
-      ``[science-colors]`` extra), which aggregates cmocean, cmasher, Crameri,
+      ``"cmasher:ember"``) is resolved through the optional `cmap` package (the
+      ``[science-colors]`` extra), which aggregates cmocean, cmasher,
       ColorBrewer, colorcet and more into one numpy-only library. The ``_r``
       reverse suffix works on namespaced names too.
     - A **plain** name (``"viridis"``, ``"coolwarm_r"``) goes straight to
@@ -295,7 +295,7 @@ def convert_units(
     """Convert `data` from one unit to another via a small affine table.
 
     A dependency-free converter for the handful of units cleopatra's presets use
-    (temperature K/°C/°F). Following earthkit's contract, the conversion is a
+    (temperature K/°C/°F). By convention, the conversion is a
     no-op when either unit is missing or the two are the same, and an unknown
     pair leaves the data unchanged with a warning rather than raising -- styling
     should never crash on an unrecognised unit.
@@ -760,9 +760,11 @@ def _load_presets(resource: str) -> dict[str, dict[str, dict[str, Any]]]:
 
 #: The preset asset library, loaded into `DATA_STYLES` at import in order (a
 #: later asset wins a key collision). One canonical schema backs them all
-#: (`_load_presets`): the cmocean ocean/hydrology/DEM set, the Crameri terrain
-#: maps, the NCL/MeteoSwiss tables, the merged ECMWF weather parameters, and the
-#: hand-authored built-in presets (haze, flame, categorical hydrology, radar).
+#: (`_load_presets`): the cmocean ocean/hydrology/DEM set, the terrain
+#: (hypsometric) maps, the scientific perceptually-uniform colour maps, the
+#: radar/satellite meteorology colour tables, the NCL/MeteoSwiss tables, the
+#: merged ECMWF weather parameters, and the hand-authored built-in presets
+#: (haze, flame, categorical hydrology, radar).
 #: List them all with `sorted(DATA_STYLES)`.
 #: Load order matters on a key collision (a later asset's preset wins via
 #: `dict.update`). The built-in asset is loaded FIRST so a vendored preset would
@@ -773,6 +775,8 @@ _PRESET_ASSETS = (
     "builtin_presets.json",
     "ocean_presets.json",
     "terrain_presets.json",
+    "scientific_presets.json",
+    "radar_presets.json",
     "ncl_presets.json",
     "weather_presets.json",
 )
@@ -907,7 +911,7 @@ def resolve_style_norm(
 
     Resolution order:
 
-    - **Explicit `levels`** (the ECMWF / earthkit contour model) resolve to a
+    - **Explicit `levels`** (the ECMWF contour model) resolve to a
       discrete `BoundaryNorm` over those boundaries, with `extend` capping the
       out-of-range ends -- unless the caller supplied `vmin`/`vmax`/`center` or a
       non-linear `norm` kind (`"log"`/`"symlog"`) merged into `cfg`, which take
@@ -976,6 +980,14 @@ def resolve_style_norm(
         vmax = vmin + 1.0
 
     bands = cfg.get("bands")
+    if bands and not (norm_kind in (None, "linear") and center is None):
+        warnings.warn(
+            f"a `bands={bands}` override is ignored on this preset's "
+            f"diverging/non-linear scale (center={center!r}, norm={norm_kind!r}); "
+            "the preset's own scale is used. `bands` rebands a plain linear "
+            "scale only.",
+            stacklevel=2,
+        )
     if bands and norm_kind in (None, "linear") and center is None:
         if cfg.get("vmin") is not None or cfg.get("vmax") is not None:
             _warn_if_outside_fixed_range(data, vmin, vmax)
@@ -1014,6 +1026,80 @@ def resolve_style_norm(
             f"data style 'norm' must be 'linear', 'log', or 'symlog', got {norm_kind!r}"
         )
     return norm, vmin, vmax
+
+
+def resolve_style_overrides(raw: dict[str, Any]) -> dict[str, Any]:
+    """Turn per-call style overrides into a `cfg`-merge dict for a preset render.
+
+    A styled `ArrayGlyph` plot/animate keeps the `DATA_STYLES` preset as the
+    base and lets the caller override individual fields per call. This resolves
+    the raw user inputs into the dict `d` such that `{**preset[layer], **d}` is
+    self-consistent -- applying the field-interaction rules the preset config
+    expects so `resolve_style_norm` and the alpha mutual-exclusion check treat
+    the merged config the way the caller intends:
+
+    - Scalar colour fields (`vmin`/`vmax`/`center`/`cmap`/`norm`/`extend`/
+      `levels`) pass straight through when set (a `None` means "unset -- keep
+      the preset's value").
+    - An explicit `bands` replaces the preset's `levels` (`levels` naturally
+      wins over `bands` in `resolve_style_norm`, so it is cleared to `None`),
+      turning the scale into a Magics-style discrete banding. `bands` only
+      applies to a plain linear scale: `resolve_style_norm` keeps the preset's
+      own scale and warns if the merged config carries a diverging `center` or
+      a `log`/`symlog` norm.
+    - A constant `alpha` replaces value-linked opacity: it clears
+      `alpha_vmin`/`alpha_vmax` so the merged config never trips the
+      "both constant and value-linked alpha" error.
+    - Conversely an `alpha_range` (a two-tuple mapped to `alpha_vmin`/
+      `alpha_vmax`) replaces a preset's constant `alpha` (cleared to `None`),
+      making opacity value-linked.
+
+    Args:
+        raw: The per-call override inputs, e.g. `{"vmin": 0, "extend": "both",
+            "alpha": 0.5, ...}`. Any key absent or `None` is ignored (the
+            preset's own value is kept). `alpha`/`alpha_range` are mutually
+            exclusive; when both are given, `alpha` wins.
+
+    Returns:
+        dict[str, Any]: The resolved overrides to merge over `preset[layer]`.
+        May contain explicit `None` values (the "clear this preset field"
+        markers) that `resolve_style_norm` / the alpha check read as "unset".
+
+    Examples:
+        - A bare colour override passes straight through:
+            ```python
+            >>> resolve_style_overrides({"vmin": 0.0, "cmap": "viridis"})
+            {'vmin': 0.0, 'cmap': 'viridis'}
+
+            ```
+        - `bands` clears the preset's `levels`; `alpha` clears value-linked opacity:
+            ```python
+            >>> resolve_style_overrides({"bands": 5, "alpha": 0.4})
+            {'bands': 5, 'levels': None, 'alpha': 0.4, 'alpha_vmin': None, 'alpha_vmax': None}
+
+            ```
+        - `alpha_range` makes opacity value-linked (and clears a constant `alpha`):
+            ```python
+            >>> resolve_style_overrides({"alpha_range": (0.1, 0.9)})
+            {'alpha_vmin': 0.1, 'alpha_vmax': 0.9, 'alpha': None}
+
+            ```
+    """
+    out: dict[str, Any] = {}
+    for k in ("vmin", "vmax", "center", "cmap", "norm", "extend", "levels"):
+        if raw.get(k) is not None:
+            out[k] = raw[k]
+    if raw.get("bands") is not None:
+        out["bands"] = raw["bands"]
+        out["levels"] = None  # an explicit `bands` replaces the preset's `levels`
+    alpha, alpha_range = raw.get("alpha"), raw.get("alpha_range")
+    if alpha is not None:
+        out["alpha"] = alpha
+        out["alpha_vmin"] = out["alpha_vmax"] = None  # constant replaces value-linked
+    elif alpha_range is not None:
+        out["alpha_vmin"], out["alpha_vmax"] = float(alpha_range[0]), float(alpha_range[1])
+        out["alpha"] = None  # value-linked replaces constant
+    return out
 
 
 #: Backward-compatible private aliases for symbols that were renamed public.
@@ -1111,11 +1197,16 @@ def apply_data_style(
         swatch_box: Optional opaque backing panel behind each swatch legend
             (`True` / colour / dict), by default `None` (none).
         **render_kwargs: Forwarded to every `alpha_scaled_image` (or
-            `alpha_scaled_mesh`, when `x`/`y` are given) call. A `vmin`/`vmax`/
-            `center` here overrides the preset's own colour scale (e.g. a fixed
-            Magics range or contour `levels`); a string `norm` (`"log"`/
-            `"symlog"`) overrides the preset's norm kind and a `Normalize`
-            instance is used directly as the colour norm.
+            `alpha_scaled_mesh`, when `x`/`y` are given) call. A
+            `vmin`/`vmax`/`center`/`cmap`/`extend`/`levels`/`bands`/`alpha`/
+            `alpha_range` here overrides just that field of the preset (the
+            rest of the preset is kept), routed through
+            `resolve_style_overrides` so the field-interaction rules hold
+            (`bands` replaces `levels`; `alpha` and `alpha_range` are mutually
+            exclusive). A string `norm` (`"log"`/`"symlog"`) overrides the
+            preset's norm kind and a `Normalize` instance is used directly as
+            the colour norm. None of these override keys leak on to the
+            underlying `imshow`/`pcolormesh` call.
 
     Returns:
         dict[str, Any]: The image (or mesh) artist for each layer, keyed by
@@ -1212,16 +1303,18 @@ def apply_data_style(
     curvilinear = x is not None and y is not None
     if curvilinear:
         render_kwargs.setdefault("shading", "flat")
-    style_override: dict[str, Any] = {}
-    for key in ("vmin", "vmax", "center", "cmap"):
-        if key in render_kwargs:
-            value = render_kwargs.pop(key)
-            if value is not None:
-                style_override[key] = value
     norm_override = render_kwargs.pop("norm", None)
+    raw_overrides = {
+        key: render_kwargs.pop(key, None)
+        for key in (
+            "vmin", "vmax", "center", "cmap",
+            "extend", "levels", "bands", "alpha", "alpha_range",
+        )
+    }
     if isinstance(norm_override, str):
-        style_override["norm"] = norm_override
+        raw_overrides["norm"] = norm_override
         norm_override = None
+    style_override = resolve_style_overrides(raw_overrides)
     images: dict[str, Any] = {}
     for i, (name, data) in enumerate(layers.items()):
         cfg = {**preset[name], **style_override}

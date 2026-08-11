@@ -745,9 +745,9 @@ class TestSchemeGlyphScope:
             ArrayGlyph bypasses `_prepare_scalar_mapping`, so `scheme` is not
             an accepted option and construction raises.
         """
-        data = np.arange(9).reshape(3, 3).astype(float)
+        arr = np.arange(9).reshape(3, 3).astype(float)
         with pytest.raises(ValueError, match="moved onto a grouped parameter object"):
-            ArrayGlyph(data, scheme="quantiles")
+            ArrayGlyph(arr, scheme="quantiles")
 
     def test_mesh_glyph_rejects_scheme(self):
         """`MeshGlyph` rejects `scheme` instead of silently ignoring it.
@@ -756,11 +756,13 @@ class TestSchemeGlyphScope:
             MeshGlyph bypasses `_prepare_scalar_mapping`, so `scheme` is
             rejected at construction.
         """
-        nx = np.array([0.0, 1.0, 0.0])
-        ny = np.array([0.0, 0.0, 1.0])
-        faces = np.array([[0, 1, 2]])
         with pytest.raises(ValueError, match="moved onto a grouped parameter object"):
-            MeshGlyph(nx, ny, faces, scheme="quantiles")
+            MeshGlyph(
+                np.array([0.0, 1.0, 0.0]),
+                np.array([0.0, 0.0, 1.0]),
+                np.array([[0, 1, 2]]),
+                scheme="quantiles",
+            )
 
     def test_kde_glyph_rejects_scheme(self):
         """`KDEGlyph` rejects `scheme` (its `levels` owns discretisation).
@@ -787,9 +789,7 @@ class TestSchemeConflictWarnings:
         """
         glyph = ScatterGlyph(np.arange(5.0), np.zeros(5), values=np.arange(5.0))
         with pytest.warns(UserWarning, match="color_scale"):
-            glyph.plot(
-                classify=Classify(scheme="quantiles"), color=ColorScaling.midpoint()
-            )
+            glyph.plot(classify=Classify(scheme="quantiles"), color=ColorScaling.midpoint())
 
     def test_warns_on_conflicting_levels(self):
         """Setting `scheme` together with `levels` warns.
@@ -912,9 +912,7 @@ class TestVectorGlyphScheme:
         u = x + 1.0
         v = y + 1.0
         glyph = VectorGlyph(x, y, u, v)
-        _, _, im = glyph.plot(
-            classify=Classify(scheme="quantiles", k=4), kind="streamplot"
-        )
+        _, _, im = glyph.plot(classify=Classify(scheme="quantiles", k=4), kind="streamplot")
         assert isinstance(im.norm, mcolors.BoundaryNorm), (
             "scheme should set a BoundaryNorm"
         )

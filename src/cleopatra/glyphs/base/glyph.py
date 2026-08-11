@@ -71,6 +71,13 @@ _GROUPED_KWARG_HINTS: dict[str, str] = {
     "category_legend_kwargs": "classify=Classify(scheme='categorical', category_legend_kwargs=...)",
     "style": "data_style=DataStyle(style=...)",
     "hillshade": "data_style=DataStyle(hillshade=...)",
+    "bands": "data_style=DataStyle(bands=...)",
+    "alpha_range": "data_style=DataStyle(alpha_range=...)",
+    # `alpha` also moved onto `data_style=DataStyle(alpha=...)`, but only for
+    # `ArrayGlyph` -- it stays a legitimate loose opacity option on other
+    # glyphs (`LineGlyph`, `HistogramGlyph`), so it cannot be rejected here
+    # (this hint map gates every glyph's construction). `ArrayGlyph` rejects a
+    # loose `alpha=` locally instead (see its `_reject_loose_alpha`).
 }
 
 
@@ -1431,10 +1438,7 @@ class Glyph:
                 f"'bottom', or None, got {location!r}."
             )
         orientation_opt = self.default_options.get("cbar_orientation")
-        if orientation_opt is not None and orientation_opt not in (
-            "vertical",
-            "horizontal",
-        ):
+        if orientation_opt is not None and orientation_opt not in ("vertical", "horizontal"):
             raise ValueError(
                 "cbar_orientation must be 'vertical' or 'horizontal', got "
                 f"{orientation_opt!r}."

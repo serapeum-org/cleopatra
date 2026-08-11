@@ -194,9 +194,7 @@ class ColorScaling:
 
                 ```
         """
-        return cls(
-            kind=ColorScale.SYM_LOGNORM, line_threshold=threshold, line_scale=scale
-        )
+        return cls(kind=ColorScale.SYM_LOGNORM, line_threshold=threshold, line_scale=scale)
 
     @classmethod
     def boundary(cls, bounds: list[float] | None = None) -> ColorScaling:
@@ -277,9 +275,7 @@ class ColorScaling:
         return cls(
             kind=kind,
             gamma=options.get("gamma", _SCALE_DEFAULTS["gamma"]),
-            line_threshold=options.get(
-                "line_threshold", _SCALE_DEFAULTS["line_threshold"]
-            ),
+            line_threshold=options.get("line_threshold", _SCALE_DEFAULTS["line_threshold"]),
             line_scale=options.get("line_scale", _SCALE_DEFAULTS["line_scale"]),
             bounds=options.get("bounds", _SCALE_DEFAULTS["bounds"]),
             center=options.get("midpoint", _SCALE_DEFAULTS["midpoint"]),
@@ -301,13 +297,6 @@ class ColorScaling:
 
                 ```
         """
-        # Deliberately emits ALL six keys (unlike the params.py groups,
-        # which emit only explicitly-set fields): a `color=` argument fully
-        # specifies one scale, so writing every key -- including the unset
-        # ones at their dataclass defaults -- resets the other scales'
-        # knobs, letting a caller switch scales cleanly without leftover
-        # `gamma`/`bounds`/`midpoint` from a prior `color=`. Do not "fix"
-        # this into a partial emit; it would break scale-switch resets.
         return {
             "color_scale": self.kind.value,
             "gamma": self.gamma,

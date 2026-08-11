@@ -53,11 +53,7 @@ from cleopatra.glyphs.base.glyph import (
     _stash_projection_frame,
 )
 from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_faces
-from cleopatra.styling.colorbar import (
-    ColorBar,
-    _resolve_colorbar,
-    _warn_deprecated_cbar_kwargs,
-)
+from cleopatra.styling.colorbar import ColorBar, _resolve_colorbar
 from cleopatra.styling.colors import (
     category_boundaries,
     resolve_colormap,
@@ -799,7 +795,7 @@ class MeshGlyph(GeoMixin, Glyph):
         """Name of the `DATA_STYLES` preset currently applied, or `None`.
 
         Reads back the preset set via the `style` constructor kwarg, a
-        `plot(data_style=DataStyle(style=...))` call, or `apply_style`.
+        `plot(style=...)` call, or `apply_style`.
         """
         return self.default_options.get("style")
 
@@ -808,16 +804,15 @@ class MeshGlyph(GeoMixin, Glyph):
     ) -> tuple[plt.Figure, plt.Axes]:
         """Apply a `DATA_STYLES` preset by name, re-rendering the mesh in place.
 
-        A discoverable wrapper over `plot(data_style=DataStyle(style=...))` for restyling an
+        A discoverable wrapper over `plot(style=...)` for restyling an
         already-built glyph. It redraws **in place** on the glyph's own axes
         (taking full ownership -- do not use on a shared axes), or on a fresh
         figure if the glyph was never plotted or its figure was closed. It
         reuses the last-plotted mesh data (and location) so the caller need not
         re-supply it; pass `data=` when the glyph has not been plotted yet. The
         applied style is **sticky** (survives a later plain `plot(data)`);
-        `plot(data, data_style=DataStyle(style=None))` clears it. Extra
-        keyword arguments (e.g. `location`, `edgecolor`) are forwarded to
-        `plot`.
+        `plot(data, style=None)` clears it. Extra keyword arguments (e.g.
+        `location`, `hillshade`, `edgecolor`) are forwarded to `plot`.
 
         Args:
             style: A `cleopatra.styling.colors.DATA_STYLES` preset name.
@@ -916,8 +911,8 @@ class MeshGlyph(GeoMixin, Glyph):
             **kwargs: Construction-time-style overrides for the non-grouped
                 `default_options` (`cmap`, `vmin`, `vmax`, `title_size`,
                 `figsize`, …). The loose `ticks_spacing` / `cbar_*` keys
-                still work but are deprecated -- pass `colorbar=ColorBar(...)`
-                instead. The colour-scale, discretisation/label, and
+                still work, but prefer `colorbar=ColorBar(...)`.
+                The colour-scale, discretisation/label, and
                 preset/relief options moved onto the `color=` / `contour=` /
                 `data_style=` group objects above; passing any of them as a
                 loose keyword now raises.
@@ -1050,7 +1045,6 @@ class MeshGlyph(GeoMixin, Glyph):
                 render_kwargs[key] = val
         self._merge_kwargs(option_kwargs)
         self._merge_group_params(color, contour, data_style)
-        _warn_deprecated_cbar_kwargs(kwargs)
         resolved_colorbar = (
             _resolve_colorbar(colorbar) if isinstance(colorbar, ColorBar) else {}
         )
@@ -1244,8 +1238,7 @@ class MeshGlyph(GeoMixin, Glyph):
             **kwargs: Override any key in `default_options` (cmap,
                 vmin, vmax, color_scale, gamma, midpoint, figsize,
                 title, etc.). The loose `ticks_spacing` / `cbar_*` keys
-                still work but are deprecated -- pass
-                `colorbar=ColorBar(...)` instead.
+                still work, but prefer `colorbar=ColorBar(...)`.
 
         Returns:
             FuncAnimation: The animation object. Use
@@ -1299,7 +1292,6 @@ class MeshGlyph(GeoMixin, Glyph):
         self._default_options = MESH_DEFAULT_OPTIONS.copy()
         self._merge_kwargs(kwargs)
         self._merge_group_params(color, contour, data_style)
-        _warn_deprecated_cbar_kwargs(kwargs)
         resolved_colorbar = (
             _resolve_colorbar(colorbar) if isinstance(colorbar, ColorBar) else {}
         )
