@@ -78,6 +78,11 @@ KDE_DEFAULT_OPTIONS = {
 }
 KDE_DEFAULT_OPTIONS = STYLE_DEFAULTS | KDE_DEFAULT_OPTIONS
 
+#: Sentinel distinguishing "hillshade not passed to apply_style" from an
+#: explicit `hillshade=None` (which clears sticky relief), matching the
+#: `_UNSET` sentinels on ArrayGlyph / MeshGlyph.
+_UNSET_HILLSHADE = object()
+
 
 class KDEGlyph(Glyph):
     """Visualization class for 2-D kernel-density estimates.
@@ -95,15 +100,19 @@ class KDEGlyph(Glyph):
             data coordinates. Default is None (no clipping).
         ax: Pre-existing axes to draw on. Default is None.
         fig: Pre-existing figure. Default is None.
-        **kwargs: Override any key in `KDE_DEFAULT_OPTIONS`: `levels` (int
-            count or explicit sequence of density levels, default 10),
-            `shade` (filled `contourf` vs line `contour`, default True),
-            `bw_method` (None for Scott's rule, or a positive float
-            bandwidth multiplier), `gridsize` (density grid resolution,
-            default 100), plus the shared colour options (`cmap`, `vmin`,
-            `vmax`, `color_scale`, `ticks_spacing`, `cbar_label`,
-            `figsize`, `title`). Set `add_colorbar=False` to suppress the
-            per-glyph colorbar (default True).
+        **kwargs: Construction-time overrides for the non-grouped
+            `KDE_DEFAULT_OPTIONS`: `shade` (filled `contourf` vs line
+            `contour`, default True), `bw_method` (None for Scott's rule,
+            or a positive float bandwidth multiplier), `gridsize` (density
+            grid resolution, default 100), plus the shared appearance /
+            colorbar options (`cmap`, `vmin`, `vmax`, `ticks_spacing`,
+            `cbar_label`, `figsize`, `title`). Set `add_colorbar=False` to
+            suppress the per-glyph colorbar (default True). The colour
+            scale, density `levels`, and preset / relief shading are no
+            longer construction kwargs -- pass them to `plot()` via
+            `color=ColorScaling(...)`, `contour=Contour(levels=...)`, and
+            `data_style=DataStyle(...)` respectively (a loose `color_scale`
+            / `levels` / `style` keyword now raises).
 
     Raises:
         ValueError: If `x` and `y` have mismatched shapes, if fewer than
@@ -323,7 +332,7 @@ class KDEGlyph(Glyph):
         self,
         style: str,
         *,
-        hillshade: bool | dict | None = None,
+        hillshade: bool | dict | None = _UNSET_HILLSHADE,  # type: ignore[assignment]
         add_colorbar: bool | None = None,
         title: str | None = None,
     ):
@@ -356,11 +365,12 @@ class KDEGlyph(Glyph):
                 "continuous density, so only continuous presets apply"
             )
         self._reset_axes_for_restyle()
-        # Only override hillshade when the caller passed one; leaving it
-        # unset keeps any sticky relief shading (a plain None would clear it).
+        # Only override hillshade when the caller actually passed one; an
+        # unset value keeps any sticky relief shading, while an explicit
+        # `None` flows through to `DataStyle(hillshade=None)` and clears it.
         data_style = (
             DataStyle(style=style)
-            if hillshade is None
+            if hillshade is _UNSET_HILLSHADE
             else DataStyle(style=style, hillshade=hillshade)
         )
         return self.plot(
@@ -454,9 +464,16 @@ class KDEGlyph(Glyph):
 
                 ```
         """
-        # Capture the sticky style before merging so an invalid new preset
-        # can be rolled back below without bricking later plain plots.
-        prev_style = self.default_options.get("style")
+        # Snapshot every option key the group objects will touch before
+        # merging, so an invalid preset rolls back the WHOLE merge -- not
+        # just style -- so a co-passed color=/contour= cannot leak into a
+        # later plain plot.
+        prev_group_opts = {}
+        for grp in (color, contour, data_style):
+            if grp is not None:
+                for key in grp.to_options():
+                    if key in self.default_options:
+                        prev_group_opts[key] = self.default_options[key]
         self._merge_group_params(color, contour, data_style)
 
         if ax is not None:
@@ -487,7 +504,8 @@ class KDEGlyph(Glyph):
                         "a continuous density, so only continuous presets apply"
                     )
             except ValueError:
-                opts["style"] = prev_style
+                for key, value in prev_group_opts.items():
+                    opts[key] = value
                 raise
             cfg = {
                 **cfg,

@@ -19,7 +19,6 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
-from matplotlib.collections import PathCollection
 from matplotlib.legend import Legend
 
 from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph

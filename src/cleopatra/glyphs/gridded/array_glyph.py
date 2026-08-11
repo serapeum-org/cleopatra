@@ -43,6 +43,21 @@ from matplotlib.figure import Figure
 from matplotlib.ticker import MaxNLocator
 from PIL import Image
 
+from cleopatra.basemap.geo import Basemap as Basemap
+from cleopatra.basemap.geo import Feature as Feature
+from cleopatra.basemap.geo import GeoMixin
+from cleopatra.basemap.projection import apply_projection_style, projection_draws_frame
+from cleopatra.glyphs.base.glyph import (
+    Glyph,
+    _clear_prior_render_artists,
+    _clear_projection_frame,
+    _mark_render_artists,
+    _reject_grouped_kwargs,
+    _restore_flat_axes,
+    _root_figure,
+    _stash_projection_frame,
+)
+from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_grid, shade_rgb
 from cleopatra.styling.colorbar import (
     ColorBar,
     _resolve_colorbar,
@@ -58,21 +73,6 @@ from cleopatra.styling.colors import (
     resolve_style_norm,
     resolve_style_overrides,
 )
-from cleopatra.basemap.geo import Basemap as Basemap
-from cleopatra.basemap.geo import Feature as Feature
-from cleopatra.basemap.geo import GeoMixin
-from cleopatra.glyphs.base.glyph import (
-    Glyph,
-    _clear_prior_render_artists,
-    _clear_projection_frame,
-    _mark_render_artists,
-    _reject_grouped_kwargs,
-    _restore_flat_axes,
-    _root_figure,
-    _stash_projection_frame,
-)
-from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_grid, shade_rgb
-from cleopatra.basemap.projection import apply_projection_style, projection_draws_frame
 from cleopatra.styling.params import CellValues, Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
@@ -155,6 +155,8 @@ def _reject_loose_alpha(kwargs: dict) -> None:
             "The 'alpha' option moved onto a grouped parameter object; pass "
             "data_style=DataStyle(alpha=...) instead of a loose alpha= keyword."
         )
+
+
 #: Tuple of accepted `kind=` values for `ArrayGlyph.plot`.
 VALID_PLOT_KINDS = ("auto", "imshow", "pcolormesh", "contour", "contourf")
 #: Tuple of accepted values for the xarray-aligned `extend` colorbar kwarg.
@@ -2228,9 +2230,10 @@ class ArrayGlyph(GeoMixin, Glyph):
     ) -> Any:
         """Draw the styled layer via `apply_data_style`; return its image artist.
 
-        Forwards an explicit caller vmin/vmax/center (from `_style_color_overrides`,
-        which holds ONLY user-supplied limits) so it overrides the preset's own
-        fixed range, and colours the swatch legend to contrast with its box.
+        Forwards the caller's explicit per-call preset overrides (from
+        `_style_color_overrides` -- vmin/vmax/center plus cmap/extend/levels/
+        bands/alpha/alpha_range) so they override the preset's own values,
+        and colours the swatch legend to contrast with its box.
         """
         box = self.default_options.get("cbar_box")
         swatch_kw = {
@@ -3230,7 +3233,12 @@ class ArrayGlyph(GeoMixin, Glyph):
             try:
                 resolve_single_layer_style(style)
             except ValueError:
-                self.default_options["style"] = None
+                # Roll back the WHOLE merge to its pre-call snapshot -- every
+                # key the group objects merged (style plus any co-passed
+                # color=/contour=/cells=) -- so a failed styled plot never
+                # leaks options into a later plain plot() on this glyph.
+                for key, value in pre_group_opts.items():
+                    self.default_options[key] = value
                 raise
             if self.rgb:
                 warnings.warn(
@@ -3792,6 +3800,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         frame_label: FrameLabel | None = None,
         *,
         color: ColorScaling | None = None,
+        contour: Contour | None = None,
         cells: CellValues | None = None,
         data_style: DataStyle | None = None,
         data_getter: Callable[[int], np.ndarray] | None = None,
@@ -3847,6 +3856,11 @@ class ArrayGlyph(GeoMixin, Glyph):
                 `ColorScaling.power(gamma=0.7)`. Replaces the loose
                 `color_scale` / `gamma` / `line_threshold` / `line_scale` /
                 `bounds` / `midpoint` keywords.
+            contour: Discretisation group object
+                (`cleopatra.styling.params.Contour`), e.g.
+                `Contour(levels=5)`, to bin the colour scale into a
+                `BoundaryNorm` for the animation (an animation has no
+                `contour`/`contourf` kind, so only `levels` applies here).
             cells: Per-cell value-text group object
                 (`cleopatra.styling.params.CellValues`), e.g.
                 `CellValues(show=True, size=8)`. Replaces the loose
@@ -4147,7 +4161,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         else:
             label_location = frame_location
 
-        self._merge_group_params(color, cells, data_style)
+        self._merge_group_params(color, contour, cells, data_style)
         resolved_colorbar = self._apply_kwargs_and_colorbar(colorbar, kwargs)  # type: ignore[arg-type]
 
         if "ticks_spacing" not in resolved_colorbar:

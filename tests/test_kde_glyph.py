@@ -21,8 +21,9 @@ from matplotlib.patches import Circle
 from matplotlib.path import Path as MplPath
 
 import cleopatra.glyphs.stats.kde_glyph as kde_mod
-from cleopatra.glyphs.stats.kde_glyph import KDE_DEFAULT_OPTIONS, KDEGlyph
+from cleopatra.glyphs.stats.kde_glyph import KDEGlyph
 from cleopatra.styling.params import Contour, DataStyle
+from cleopatra.styling.scaling import ColorScaling
 
 
 @pytest.fixture(autouse=True)
@@ -545,7 +546,7 @@ class TestKDEGlyphHillshade:
     def test_hillshade_at_plot_time(self):
         """`hillshade` passed to `plot()` shades, mirroring ArrayGlyph/MeshGlyph."""
         x, y = self._cloud()
-        _, _, im = KDEGlyph(x, y, gridsize=40, cmap="magma").plot( data_style=DataStyle(hillshade={"vert_exag": 20}))
+        _, _, im = KDEGlyph(x, y, gridsize=40, cmap="magma").plot(data_style=DataStyle(hillshade={"vert_exag": 20}))
         assert type(im).__name__ == "AxesImage"
         assert im.get_array().shape[-1] == 4
         plt.close("all")
@@ -580,14 +581,14 @@ class TestKDEGlyphDataStyle:
     def test_continuous_preset_at_plot_time(self):
         """A continuous preset passed to `plot()` colours the density."""
         x, y = self._cloud()
-        _, _, cs = KDEGlyph(x, y, gridsize=40).plot( data_style=DataStyle(style="elevation"))
+        _, _, cs = KDEGlyph(x, y, gridsize=40).plot(data_style=DataStyle(style="elevation"))
         assert cs.get_cmap().name == "terrain"
         plt.close("all")
 
     def test_style_composes_with_hillshade(self):
         """A continuous preset composes with the relief-shaded density image."""
         x, y = self._cloud()
-        _, _, im = KDEGlyph(x, y, gridsize=40).plot( data_style=DataStyle(style="temperature", hillshade=True))
+        _, _, im = KDEGlyph(x, y, gridsize=40).plot(data_style=DataStyle(style="temperature", hillshade=True))
         assert type(im).__name__ == "AxesImage"
         plt.close("all")
 
@@ -660,6 +661,26 @@ class TestKDEGlyphApplyStyle:
         g.plot()
         _, _, cs = g.apply_style("temperature")
         assert g.style == "temperature" and cs.get_cmap().name == "Spectral_r"
+        plt.close("all")
+
+    def test_failed_style_rolls_back_co_passed_groups(self):
+        """An invalid data_style must not leak a co-passed color= into later plots.
+
+        Test scenario:
+            plot(color=ColorScaling.power(...), data_style=DataStyle(bad))
+            raises, and the persistent color_scale/gamma are rolled back to
+            their defaults rather than the failed call's power scale.
+        """
+        x, y = self._cloud()
+        g = KDEGlyph(x, y, gridsize=40)
+        power = ColorScaling.power(gamma=0.7)
+        bad = DataStyle(style="not_a_style")
+        with pytest.raises(ValueError, match="unknown data style"):
+            g.plot(color=power, data_style=bad)
+        assert g.default_options["color_scale"] == "linear", (
+            "a failed data_style must roll back the co-passed color scale"
+        )
+        assert g.default_options["gamma"] == 0.5, "gamma must roll back to its default"
         plt.close("all")
 
     def test_apply_style_categorical_raises(self):

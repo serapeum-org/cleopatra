@@ -39,14 +39,11 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.colorbar import Colorbar
 from matplotlib.colors import BoundaryNorm, ListedColormap
 
-from cleopatra.styling.colorbar import ColorBar, _resolve_colorbar
-from cleopatra.styling.colors import (
-    category_boundaries,
-    resolve_colormap,
-    resolve_single_layer_style,
-    resolve_style_norm,
-)
 from cleopatra.basemap.geo import GeoMixin
+from cleopatra.basemap.projection import (
+    apply_projection_style_mesh,
+    projection_draws_frame,
+)
 from cleopatra.glyphs.base.glyph import (
     Glyph,
     _clear_prior_render_artists,
@@ -56,7 +53,13 @@ from cleopatra.glyphs.base.glyph import (
     _stash_projection_frame,
 )
 from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_faces
-from cleopatra.basemap.projection import apply_projection_style_mesh, projection_draws_frame
+from cleopatra.styling.colorbar import ColorBar, _resolve_colorbar
+from cleopatra.styling.colors import (
+    category_boundaries,
+    resolve_colormap,
+    resolve_single_layer_style,
+    resolve_style_norm,
+)
 from cleopatra.styling.params import Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
@@ -65,6 +68,11 @@ from cleopatra.styling.styles import disjoint_legend
 MESH_DEFAULT_OPTIONS = {
     "vmin": None,
     "vmax": None,
+    # `None` keeps the colour norm continuous by default (as before). When a
+    # caller sets it via `contour=Contour(levels=N)` it both discretises the
+    # norm (like the other glyphs) and drives the node line/filled-contour
+    # count; a plain node contour with `levels` unset falls back to 20.
+    "levels": None,
     "labels": False,
     "label_kw": None,
     "hillshade": False,
@@ -696,7 +704,11 @@ class MeshGlyph(GeoMixin, Glyph):
             kw.update(render_kwargs)
             return ax.tripcolor(tri, facecolors=tri_values, **kw)
 
-        contour_kw: dict[str, Any] = {"cmap": cmap, "levels": 20}
+        levels = self.default_options["levels"]
+        contour_kw: dict[str, Any] = {
+            "cmap": cmap,
+            "levels": 20 if levels is None else levels,
+        }
         if norm is not None:
             contour_kw["norm"] = norm
         else:
@@ -1199,6 +1211,7 @@ class MeshGlyph(GeoMixin, Glyph):
         text_loc: list | None = None,
         colorbar: bool | ColorBar | None = None,
         color: ColorScaling | None = None,
+        contour: Contour | None = None,
         data_style: DataStyle | None = None,
         **kwargs: Any,
     ) -> FuncAnimation:
@@ -1278,7 +1291,7 @@ class MeshGlyph(GeoMixin, Glyph):
 
         self._default_options = MESH_DEFAULT_OPTIONS.copy()
         self._merge_kwargs(kwargs)
-        self._merge_group_params(color, data_style)
+        self._merge_group_params(color, contour, data_style)
         resolved_colorbar = (
             _resolve_colorbar(colorbar) if isinstance(colorbar, ColorBar) else {}
         )

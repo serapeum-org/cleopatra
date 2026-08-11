@@ -94,8 +94,15 @@ def publication_map(
         options["title"] = title
 
     # `style` is a grouped render option now; forward it to `plot` via the
-    # `data_style` object rather than the (rejecting) constructor kwargs.
-    data_style = DataStyle(style=style) if style is not None else None
+    # `data_style` object rather than the (rejecting) constructor kwargs. A
+    # caller may pass either `style=` or a ready `data_style=` (through
+    # `plot_kwargs`) -- but not both, since they set the same grouped option.
+    passed_data_style = plot_kwargs.pop("data_style", None)
+    if style is not None and passed_data_style is not None:
+        raise ValueError(
+            "pass either `style=` or `data_style=` to publication_map, not both"
+        )
+    data_style = DataStyle(style=style) if style is not None else passed_data_style
     glyph = ArrayGlyph(data, coords=coords, extent=extent, **options)
     fig, ax = glyph.plot(data_style=data_style, **plot_kwargs)
 

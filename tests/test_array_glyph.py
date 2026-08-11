@@ -31,6 +31,7 @@ from cleopatra.glyphs.gridded.array_glyph import (
     PointOverlay,
     _resolve_colorbar,
     _swatch_text_default,
+    _Unset,
 )
 
 
