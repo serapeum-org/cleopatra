@@ -1390,8 +1390,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         Args:
             array: The input array containing multiple bands. For RGB visualization,
                 this should be a 3D array where the first dimension represents the bands.
-            rgb: The indices of the red, green, and blue bands in the given array, by default None.
-                If None, assumes the order is [3, 2, 1] (common for Sentinel-2 data).
+            rgb: The `[r, g, b]` indices of the bands to composite from the input
+                array. Provide the band indices explicitly; there is no
+                functional default -- a missing `rgb` does not select bands.
             surface_reflectance: Surface reflectance value for normalizing satellite data, by default None.
                 Typically 10000 for Sentinel-2 data or 255 for 8-bit imagery.
                 Used to scale values to the range [0, 1].
