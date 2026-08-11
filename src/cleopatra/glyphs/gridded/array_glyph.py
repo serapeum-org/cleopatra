@@ -802,14 +802,14 @@ class RgbBands:
                 >>> RgbBands([0, 1, 2]).validate(np.zeros((2, 4, 4)))
                 Traceback (most recent call last):
                     ...
-                ValueError: To plot RGB plot the given array should have only 3 arrays, given array have 2
+                ValueError: RgbBands needs an array with at least 3 bands, got 2.
 
                 ```
         """
         if array.shape[0] < 3:
             raise ValueError(
-                f"To plot RGB plot the given array should have only 3 arrays, "
-                f"given array have {array.shape[0]}"
+                f"RgbBands needs an array with at least 3 bands, "
+                f"got {array.shape[0]}."
             )
 
     def prepare(self, array: np.ndarray) -> np.ndarray:

@@ -1268,7 +1268,7 @@ class TestPrepareArrayValidation:
     def test_too_few_bands_raises(self):
         """An RGB array with fewer than 3 bands raises `ValueError`."""
         arr = np.zeros((2, 4, 4), dtype=np.float32)
-        with pytest.raises(ValueError, match="3 arrays"):
+        with pytest.raises(ValueError, match="at least 3 bands"):
             ArrayGlyph(arr, rgb_bands=RgbBands([0, 1]))
 
     def test_prepare_array_with_cutoff_only(self):
@@ -7084,7 +7084,7 @@ class TestRgbBands:
         Test scenario:
             A `(2, H, W)` array raises `ValueError` naming the 3-band need.
         """
-        with pytest.raises(ValueError, match="3 arrays"):
+        with pytest.raises(ValueError, match="at least 3 bands"):
             RgbBands([0, 1, 2]).validate(np.zeros((2, 4, 4)))
 
     def test_validate_passes_for_three_bands(self):
