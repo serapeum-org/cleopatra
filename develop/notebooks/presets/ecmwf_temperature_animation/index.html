@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/operational_temperature_animation/">
+        <link rel="canonical" href="https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/ecmwf_temperature_animation/">
       
       
         <link rel="prev" href="../precipitation_animation/">
@@ -27,7 +27,7 @@
     
     
       
-        <title>Operational 2 m temperature animation - Cleopatra</title>
+        <title>ECMWF-style 2 m temperature animation - Cleopatra</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#operational-2-m-temperature-animation" class="md-skip">
+        <a href="#ecmwf-style-2-m-temperature-animation" class="md-skip">
           Skip to content
         </a>
       
@@ -120,7 +120,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Operational 2 m temperature animation
+              ECMWF-style 2 m temperature animation
             
           </span>
         </div>
@@ -1838,7 +1838,7 @@
   <span class="md-ellipsis">
     
   
-    Operational 2 m temperature animation
+    ECMWF-style 2 m temperature animation
   
 
     
@@ -1856,7 +1856,7 @@
   <span class="md-ellipsis">
     
   
-    Operational 2 m temperature animation
+    ECMWF-style 2 m temperature animation
   
 
     
@@ -2333,7 +2333,7 @@
 
 
   
-    <a href="https://github.com/serapeum-org/cleopatra/edit/master/docs/notebooks/presets/operational_temperature_animation.ipynb" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/serapeum-org/cleopatra/edit/master/docs/notebooks/presets/ecmwf_temperature_animation.ipynb" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2342,7 +2342,7 @@
     
       
     
-    <a href="https://github.com/serapeum-org/cleopatra/raw/master/docs/notebooks/presets/operational_temperature_animation.ipynb" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/serapeum-org/cleopatra/raw/master/docs/notebooks/presets/ecmwf_temperature_animation.ipynb" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
     </a>
@@ -3076,12 +3076,12 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="operational-2-m-temperature-animation">Operational 2 m temperature animation<a class="anchor-link" href="#operational-2-m-temperature-animation">¶</a></h1><p>This uses cleopatra's <code>temperature_2m</code> data-style — <strong>the operational default</strong>:
+<h1 id="ecmwf-style-2-m-temperature-animation">ECMWF-style 2 m temperature animation<a class="anchor-link" href="#ecmwf-style-2-m-temperature-animation">¶</a></h1><p>This uses cleopatra's <code>temperature_2m</code> data-style — <strong>ECMWF's actual default</strong>:
 the muted <strong><code>Spectral_r</code></strong> colour ramp rendered as <strong>discrete 2 °C contour bands</strong> over −40…40 °C with
 the out-of-range ends capped (<code>extend="both"</code>) — the look of a professional weather-service chart, not the neon
 blue→magenta rainbow. (The generic <code>temperature</code> preset auto-ranges to the data instead; pass it <code>vmin</code>/<code>vmax</code>
 to pin a non-Celsius field to a chosen range.)</p>
-<p>The map is composed like an reference chart: temperature bands + grey coastlines/borders + an arrow-capped colorbar
+<p>The map is composed like an ECMWF chart: temperature bands + grey coastlines/borders + an arrow-capped colorbar
 labelled with the contour levels, over the real ERA5-Land data (1 Jun – 15 Jul 2026).</p>
 </div>
 </div>
@@ -3202,7 +3202,7 @@ axes, and <code>animate</code> reuses it.</p>
 
 <span class="n">anim</span> <span class="o">=</span> <span class="n">glyph</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span><span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">"temperature_2m"</span><span class="p">),</span> 
     <span class="n">time</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
-    <span class="n">colorbar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># a full arrow-capped reference colorbar instead of the preset swatch</span>
+    <span class="n">colorbar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># a full arrow-capped ECMWF colorbar instead of the preset swatch</span>
     <span class="n">title</span><span class="o">=</span><span class="s2">"ERA5-Land 2 m temperature"</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">glyph</span><span class="o">.</span><span class="n">fig</span><span class="p">)</span>  <span class="c1"># drop the figure from the inline backend so only the GIF shows</span>
@@ -3217,7 +3217,7 @@ glyph.add_features("borders", "50m", color="0.55", linewidth=0.4, zorder=5)
 
 anim = glyph.animate(data_style=DataStyle(style="temperature_2m"), 
     time=labels,
-    colorbar=True,  # a full arrow-capped reference colorbar instead of the preset swatch
+    colorbar=True,  # a full arrow-capped ECMWF colorbar instead of the preset swatch
     title="ERA5-Land 2 m temperature",
 )
 plt.close(glyph.fig)  # drop the figure from the inline backend so only the GIF shows
@@ -3246,9 +3246,9 @@ embed_gif(anim, fps=6)</div>
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<p>That whole reference chart — banded <code>Spectral_r</code>, the 2 °C <code>levels</code>, <code>extend="both"</code>, the arrow-capped
+<p>That whole ECMWF chart — banded <code>Spectral_r</code>, the 2 °C <code>levels</code>, <code>extend="both"</code>, the arrow-capped
 colorbar, coastlines — is one <code>ArrayGlyph(..., style="temperature_2m")</code> plus <code>.animate(...)</code>, because the look is
-baked into the preset. The same one line styles a static <code>.plot()</code> too. For a field that is <em>not</em> fixed to the reference
+baked into the preset. The same one line styles a static <code>.plot()</code> too. For a field that is <em>not</em> fixed to the ECMWF
 −40 … 40 °C window, use the generic <code>temperature</code> style (optionally with <code>vmin</code>/<code>vmax</code>), which
 auto-ranges to the data.</p>
 </div>

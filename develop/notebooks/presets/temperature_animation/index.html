@@ -1902,14 +1902,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../operational_temperature_animation/" class="md-nav__link">
+      <a href="../ecmwf_temperature_animation/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Operational 2 m temperature animation
+    ECMWF-style 2 m temperature animation
   
 
     
@@ -3121,7 +3121,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h1 id="real-2-m-temperature-styled-plot-and-animation">Real 2 m temperature — styled plot <strong>and animation</strong><a class="anchor-link" href="#real-2-m-temperature-styled-plot-and-animation">¶</a></h1><p><code>examples/data/europe_t2m.npz</code> is a real <strong>ERA5 2 m air temperature</strong> stack over Europe: 45 daily frames
-(°C). It is rendered with the <code>temperature_2m</code> style (<code>Spectral_r</code>) on a <strong>single fixed scale matched
+(°C). It is rendered with the <code>temperature_2m</code> style (ECMWF's <code>Spectral_r</code>) on a <strong>single fixed scale matched
 to the data</strong> (the global min/max across all frames). That fixed, data-matched scale is what keeps the colours
 comparable frame-to-frame <em>and</em> well-exposed — auto-ranging each frame (or using the full −40…40 climatology
 scale) washes a summer field into a flat orange-red.</p>
@@ -3380,7 +3380,7 @@ embed_gif(anim, fps=7)</div>
 the fixed <code>2…30 °C</code> scale, the date label, the <strong>full-bleed</strong> layout (<code>full_bleed=True</code> — fills the frame, no
 chrome, aspect-matched so there's no distortion) and the <strong>basemap</strong> (<code>basemap=Basemap()</code> — the typed default:
 a relief backdrop plus Natural-Earth coastlines/borders, composed by <code>zorder</code>). The flame preset's value-linked opacity lets the cool
-areas reveal the terrain while the hot plume glows on top (the CAMS look). The <code>2…30 °C</code> scale rides
+areas reveal the terrain while the hot plume glows on top (the ECMWF/CAMS look). The <code>2…30 °C</code> scale rides
 along as an inside colorbar — <code>colorbar=ColorBar(location="right", inside=True, box=False, tick_color="white")</code>
 — with white ticks to read on the dark frame.</p>
 </div>
