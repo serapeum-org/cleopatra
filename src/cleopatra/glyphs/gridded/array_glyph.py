@@ -1449,7 +1449,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         Prepare an array with cutoff values:
             ```python
             >>> rgb_array = glyph.prepare_array(
-            ...     bands, rgb=[0, 1, 2], surface_reflectance=10000, cutoff=[5000, 5000, 5000]
+            ...     bands, rgb=[0, 1, 2], surface_reflectance=10000, cutoff=[0.3, 0.3, 0.3]
             ... )
             >>> rgb_array.shape
             (100, 100, 3)
