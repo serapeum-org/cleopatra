@@ -176,25 +176,6 @@ _COORD_SHAPE_MISMATCH = "coord array shape does not match the data array"
 _COORD_DTYPE_MISMATCH = "coord arrays must be numeric (integer or float)"
 
 
-class _Unset:
-    """Sentinel type for "the caller did not pass this explicit parameter".
-
-    A plain `object()` sentinel would work too, but this gives `help()` /
-    IDE signature tooltips a readable `<unset>` instead of
-    `<object object at 0x...>` for the option default that uses it (the
-    `hillshade` key resolved inside `ArrayGlyph.apply_style`).
-    """
-
-    def __repr__(self) -> str:
-        return "<unset>"
-
-
-#: Sentinel distinguishing "the `hillshade` key was not passed" from
-#: "`hillshade` was passed as `None`" when it is popped from `**kwargs`
-#: (see `ArrayGlyph.apply_style`), which a plain `.get`/default check cannot.
-_UNSET = _Unset()
-
-
 #: Static typing for the loose **kwargs `plot`/`animate` still accept --
 #: purely a typing aid (see PEP 692 `Unpack`): with `from __future__ import
 #: annotations` the `**kwargs: Unpack[...]` annotations below are never
@@ -392,6 +373,56 @@ class PointOverlay:
         self.label_color = label_color
         self.label_size = label_size
 
+    def draw(self, ax) -> tuple:
+        """Draw this overlay's markers and per-point value labels on `ax`.
+
+        Owns the scatter-plus-value-label drawing that `ArrayGlyph.plot` and
+        `.animate` share, reading only this overlay's own fields. The returned
+        row/column arrays let `animate` reuse the same coordinates for its
+        per-frame `set_offsets` updates without re-deriving them.
+
+        Args:
+            ax: The matplotlib axes to draw on.
+
+        Returns:
+            tuple: `(row, col, scatter, labels)` -- the point row and column
+                index arrays, the marker `PathCollection`, and the list of
+                per-point value-label `Text` artists (empty for no points).
+
+        Examples:
+            - Draw two points and read back the value labels:
+                ```python
+                >>> import matplotlib
+                >>> matplotlib.use("Agg")
+                >>> import matplotlib.pyplot as plt
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.gridded.array_glyph import PointOverlay
+                >>> fig, ax = plt.subplots()
+                >>> overlay = PointOverlay(np.array([[5.0, 0, 0], [9.0, 1, 1]]))
+                >>> row, col, scatter, labels = overlay.draw(ax)
+                >>> len(labels)
+                2
+                >>> plt.close(fig)
+
+                ```
+        """
+        row = self.points[:, 1]
+        col = self.points[:, 2]
+        scatter = ax.scatter(col, row, color=self.color, s=self.size)
+        labels = [
+            ax.text(
+                point[2],
+                point[1],
+                point[0],
+                ha="center",
+                va="center",
+                color=self.label_color,
+                fontsize=self.label_size,
+            )
+            for point in self.points
+        ]
+        return row, col, scatter, labels
+
 
 class FrameLabel:
     """Styling for the per-frame time label `ArrayGlyph.animate` draws.
@@ -452,6 +483,73 @@ class FrameLabel:
         self.location = location
         self.color = color
         self.size = size
+
+    def resolve_location(self) -> tuple[list[float], bool]:
+        """Resolve the label anchor and whether it is the auto default.
+
+        Returns:
+            tuple: `(location, is_default)` -- the `[x, y]` anchor and a flag
+                that is `True` when `location` was unset (the top-left
+                axes-fraction default), which drives the transform and vertical
+                alignment in `draw`.
+
+        Examples:
+            - An unset label auto-anchors top-left; an explicit one is kept:
+                ```python
+                >>> from cleopatra.glyphs.gridded.array_glyph import FrameLabel
+                >>> FrameLabel().resolve_location()
+                ([0.02, 0.95], True)
+                >>> FrameLabel(location=[0.3, 0.4]).resolve_location()
+                ([0.3, 0.4], False)
+
+                ```
+        """
+        if self.location is None:
+            return [0.02, 0.95], True
+        return self.location, False
+
+    def draw(self, ax, default_size: float):
+        """Draw the (blank) per-frame label text artist on `ax`.
+
+        Owns the placement / transform / alignment logic derived from this
+        label's fields; the caller sets the text per frame on the returned
+        artist. The auto default anchors in axes-fraction coordinates
+        (top-left, `va="top"`); an explicit `location` uses data coordinates
+        (`va="baseline"`).
+
+        Args:
+            ax: The matplotlib axes to draw on.
+            default_size: Font size used when this label's own `size` is unset
+                (the glyph passes its `cbar_label_size`).
+
+        Returns:
+            matplotlib.text.Text: The created label artist (initially blank).
+
+        Examples:
+            - Draw a label with its own size and read it back:
+                ```python
+                >>> import matplotlib
+                >>> matplotlib.use("Agg")
+                >>> import matplotlib.pyplot as plt
+                >>> from cleopatra.glyphs.gridded.array_glyph import FrameLabel
+                >>> fig, ax = plt.subplots()
+                >>> text = FrameLabel(size=9).draw(ax, default_size=12)
+                >>> text.get_fontsize()
+                9.0
+                >>> plt.close(fig)
+
+                ```
+        """
+        location, is_default = self.resolve_location()
+        return ax.text(
+            location[0],
+            location[1],
+            " ",
+            fontsize=self.size if self.size is not None else default_size,
+            color=self.color,
+            transform=ax.transAxes if is_default else ax.transData,
+            va="top" if is_default else "baseline",
+        )
 
 
 class PanelLabels:
@@ -523,6 +621,258 @@ class PanelLabels:
         """
         self.col = col
         self.row = row
+
+    def validate(self, n_col: int, n_row: int | None = None) -> None:
+        """Check the label sequences match the facet axis sizes.
+
+        Args:
+            n_col: Size of the column-facet axis.
+            n_row: Size of the row-facet axis, or `None` for a col-only facet.
+
+        Raises:
+            ValueError: If `col` (or `row`) is set and its length does not
+                match the corresponding axis size.
+
+        Examples:
+            - Matching lengths pass; a mismatch is rejected:
+                ```python
+                >>> from cleopatra.glyphs.gridded.array_glyph import PanelLabels
+                >>> PanelLabels(col=["a", "b"]).validate(2)
+                >>> PanelLabels(col=["a", "b"]).validate(3)
+                Traceback (most recent call last):
+                    ...
+                ValueError: `labels.col` length 2 does not match the column axis size 3.
+
+                ```
+        """
+        if self.col is not None and len(self.col) != n_col:
+            raise ValueError(
+                f"`labels.col` length {len(self.col)} does not match "
+                f"the column axis size {n_col}."
+            )
+        if n_row is not None and self.row is not None and len(self.row) != n_row:
+            raise ValueError(
+                f"`labels.row` length {len(self.row)} does not match "
+                f"the row axis size {n_row}."
+            )
+
+    def label_for(self, axis: Literal["col", "row"], index: int) -> Any:
+        """Return the display label for a facet panel along `axis`.
+
+        Falls back to the integer `index` when that axis has no labels -- the
+        field-only half of a panel's title.
+
+        Args:
+            axis: Which facet axis, `"col"` or `"row"`.
+            index: Zero-based slice index of the panel along that axis.
+
+        Returns:
+            The configured label at `index`, or `index` itself when that axis
+            has no labels.
+
+        Examples:
+            - A configured label vs the integer-index fallback:
+                ```python
+                >>> from cleopatra.glyphs.gridded.array_glyph import PanelLabels
+                >>> PanelLabels(col=["Jan", "Feb"]).label_for("col", 1)
+                'Feb'
+                >>> PanelLabels().label_for("col", 2)
+                2
+
+                ```
+        """
+        coords = self.col if axis == "col" else self.row
+        return coords[index] if coords is not None else index
+
+    def panel_title(
+        self,
+        col_dim: str,
+        col_idx: int,
+        row_dim: str | None = None,
+        row_idx: int | None = None,
+    ) -> tuple[str, dict]:
+        """Build a panel's title string and `name_dict` from the facet indices.
+
+        Args:
+            col_dim: Name of the column dimension (the `col` argument to
+                `facet`).
+            col_idx: Zero-based column-slice index of the panel.
+            row_dim: Name of the row dimension, or `None` for a col-only
+                (3-D) facet.
+            row_idx: Zero-based row-slice index, or `None` for a col-only
+                facet.
+
+        Returns:
+            tuple: `(title, name_dict)` -- the `"dim=label"` title and the
+                `{dim_name: label}` mapping (both axes when `row_dim` is set).
+
+        Examples:
+            - A two-axis panel title and its coordinate mapping:
+                ```python
+                >>> from cleopatra.glyphs.gridded.array_glyph import PanelLabels
+                >>> labels = PanelLabels(col=["Jan"], row=["North"])
+                >>> labels.panel_title("month", 0, "region", 0)
+                ('month=Jan, region=North', {'month': 'Jan', 'region': 'North'})
+
+                ```
+        """
+        col_label = self.label_for("col", col_idx)
+        name_dict: dict[str, Any] = {col_dim: col_label}
+        if row_dim is not None:
+            row_label = self.label_for("row", cast(int, row_idx))
+            name_dict[row_dim] = row_label
+            title = f"{col_dim}={col_label}, {row_dim}={row_label}"
+        else:
+            title = f"{col_dim}={col_label}"
+        return title, name_dict
+
+
+class RgbBands:
+    """Band selection and stretch for an RGB `ArrayGlyph`.
+
+    Bundles the four RGB data-preparation parameters -- the band `indices`
+    and the mutually-exclusive stretch controls (`surface_reflectance`,
+    `cutoff`, `percentile`) -- that `ArrayGlyph.__init__` previously accepted
+    as four separate keywords. Pass an instance as
+    `ArrayGlyph(array, rgb_bands=...)`; it is only meaningful in RGB mode (the
+    plain single-band path takes no `rgb_bands`).
+
+    Attributes:
+        indices: The `[r, g, b]` (or 4-band `[r, g, b, a]`) indices to pull
+            from the input array's first (band) axis.
+        surface_reflectance: Reflectance scale to normalise by (e.g. `10000`
+            for Sentinel-2, `255` for 8-bit imagery). `None` (default) skips
+            reflectance normalisation.
+        cutoff: Per-band clip cutoffs applied on the reflectance path, one
+            value per band. `None` (default) applies none.
+        percentile: Percentile for contrast-stretching the histogram; takes
+            precedence over `surface_reflectance` when set. `None` (default)
+            skips it.
+
+    Examples:
+        - Band selection with a percentile stretch:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph, RgbBands
+            >>> arr = np.random.default_rng(0).integers(0, 10000, size=(3, 8, 8)).astype(float)
+            >>> glyph = ArrayGlyph(arr, rgb_bands=RgbBands([0, 1, 2], percentile=2))
+            >>> glyph.rgb
+            True
+
+            ```
+    """
+
+    def __init__(
+        self,
+        indices: list[int],
+        *,
+        surface_reflectance: int | None = None,
+        cutoff: list | None = None,
+        percentile: int | None = None,
+    ) -> None:
+        """Initialise an `RgbBands`.
+
+        Args:
+            indices: The `[r, g, b]` band indices in the input array.
+            surface_reflectance: Reflectance scale to normalise by, or `None`.
+            cutoff: Per-band clip cutoffs, or `None`.
+            percentile: Percentile stretch (wins over `surface_reflectance`),
+                or `None`.
+        """
+        self.indices = indices
+        self.surface_reflectance = surface_reflectance
+        self.cutoff = cutoff
+        self.percentile = percentile
+
+    def validate(self, array: np.ndarray) -> None:
+        """Check the input array has enough bands for RGB compositing.
+
+        Args:
+            array: The band-first input array to be composited.
+
+        Raises:
+            ValueError: If the array has fewer than 3 bands on its first axis.
+
+        Examples:
+            - A 3-band array validates; a 2-band array is rejected:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.gridded.array_glyph import RgbBands
+                >>> RgbBands([0, 1, 2]).validate(np.zeros((3, 4, 4)))
+                >>> RgbBands([0, 1, 2]).validate(np.zeros((2, 4, 4)))
+                Traceback (most recent call last):
+                    ...
+                ValueError: RgbBands needs an array with at least 3 bands, got 2.
+
+                ```
+        """
+        if array.shape[0] < 3:
+            raise ValueError(
+                f"RgbBands needs an array with at least 3 bands, "
+                f"got {array.shape[0]}."
+            )
+
+    def prepare(self, array: np.ndarray) -> np.ndarray:
+        """Composite and stretch `array` into a displayable RGB image.
+
+        Selects `indices` from the band axis and moves bands last, then applies
+        the stretch: `percentile` (contrast stretch) wins, else
+        `surface_reflectance` (with optional `cutoff`), else the bands are just
+        reordered.
+
+        Args:
+            array: The band-first input array.
+
+        Returns:
+            np.ndarray: An `(H, W, 3)` array; normalised to `[0, 1]` when a
+                stretch was applied.
+
+        Raises:
+            ValueError: If `indices` is `None` (no bands to select).
+
+        Examples:
+            - Select and reorder three bands into a band-last image:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.gridded.array_glyph import RgbBands
+                >>> arr = np.arange(12, dtype=float).reshape(3, 2, 2)
+                >>> out = RgbBands([2, 1, 0]).prepare(arr)
+                >>> out.shape
+                (2, 2, 3)
+                >>> bool((out[..., 0] == arr[2]).all())
+                True
+
+                ```
+        """
+        if self.indices is None:
+            raise ValueError(
+                "RgbBands.indices must be the [r, g, b] band indices, got None."
+            )
+        array = array[self.indices].transpose(1, 2, 0)
+        if self.percentile is not None:
+            return ArrayGlyph.scale_percentile(array, percentile=self.percentile)
+        if self.surface_reflectance is not None:
+            return self._apply_surface_reflectance(array)
+        return array
+
+    def _apply_surface_reflectance(self, array: np.ndarray) -> np.ndarray:
+        """Normalise by `surface_reflectance`, then apply the optional `cutoff`.
+
+        With a `cutoff`, each band's normalised data is clipped to
+        `[0, cutoff[band]]` and rescaled back to `[0, 1]` (a per-band contrast
+        stretch), one cutoff value per band.
+
+        Args:
+            array: The `(H, W, 3)` band-last array to normalise.
+
+        Returns:
+            np.ndarray: The normalised array, clipped to `[0, 1]`.
+        """
+        array = np.clip(array / self.surface_reflectance, 0, 1)
+        if self.cutoff is not None:
+            for band, limit in enumerate(self.cutoff):
+                array[..., band] = np.clip(array[..., band], 0, limit) / limit
+        return array
 
 
 class FacetGrid:
@@ -668,8 +1018,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         ```
     - Create an RGB plot from a 3D array:
     ```python
+    >>> from cleopatra.glyphs.gridded.array_glyph import RgbBands
     >>> rgb_array = np.random.randint(0, 255, size=(3, 10, 10))
-    >>> rgb_glyph = ArrayGlyph(rgb_array, rgb=[0, 1, 2])
+    >>> rgb_glyph = ArrayGlyph(rgb_array, rgb_bands=RgbBands([0, 1, 2]))
     >>> fig, ax = rgb_glyph.plot()
 
     ```
@@ -692,12 +1043,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         exclude_value: float | list = np.nan,
         extent: list | None = None,
         coords: tuple[np.ndarray, np.ndarray] | list[np.ndarray] | None = None,
-        rgb: list[int] | None = None,
-        surface_reflectance: int | None = None,
-        cutoff: list | None = None,
+        rgb_bands: RgbBands | None = None,
         ax: Axes | None = None,
         fig: Figure | None = None,
-        percentile: int | None = None,
         **kwargs,
     ):
         """Initialize the ArrayGlyph object with an array and optional parameters.
@@ -716,14 +1064,12 @@ class ArrayGlyph(GeoMixin, Glyph):
                 matching the last two axes of `array`. When set,
                 `kind="auto"` routes to `pcolormesh` instead of
                 `imshow`. Mutually exclusive with `extent`.
-            rgb: The indices of the red, green, and blue bands in the given array, by default None.
-                If provided, the array will be treated as an RGB image.
-                Can be a list of three values [r, g, b], or four values if alpha band is included [r, g, b, a].
-            surface_reflectance: Surface reflectance value for normalizing satellite data, by default None.
-                Typically 10000 for Sentinel-2 data.
-            cutoff: Clip the range of pixel values for each band, by default None.
-                Takes only pixel values from 0 to the value of the cutoff and scales them back to between 0 and 1.
-                Should be a list with one value per band.
+            rgb_bands: An `RgbBands` bundling the band indices and stretch for
+                an RGB image, by default None. When given, the array is treated
+                as band-first and composited to RGB via `RgbBands.prepare`
+                (band selection plus a percentile / surface-reflectance / cutoff
+                stretch). Replaces the former loose `rgb`, `surface_reflectance`,
+                `cutoff`, and `percentile` keywords.
             ax: A pre-existing axes to plot on, by default None. Bound to
                 the glyph and used by `plot`/`animate` unless `plot(ax=...)`
                 overrides it. Passing `ax` alone is enough — its parent
@@ -734,8 +1080,6 @@ class ArrayGlyph(GeoMixin, Glyph):
                 parameter — `plot` derives the figure from its axes). When
                 `ax` is given, `fig` is optional; if both are None a new
                 figure is created at render time.
-            percentile: The percentile value to be used for scaling the array values, by default None.
-                Used to enhance contrast by stretching the histogram.
             **kwargs: Additional keyword arguments for customizing the plot.
                 Supported arguments include:
                     figsize : tuple, optional
@@ -789,7 +1133,8 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         Raises:
             ValueError: If an invalid keyword argument is provided.
-            ValueError: If rgb is provided but the array doesn't have enough dimensions.
+            ValueError: If `rgb_bands` is given but the array has fewer than
+                3 bands.
             ValueError: If `extend` is set to a value outside
                 `{"neither", "both", "min", "max"}`.
             ValueError: If both `extent` and `coords` are supplied,
@@ -816,8 +1161,11 @@ class ArrayGlyph(GeoMixin, Glyph):
         ```
         Initialization with RGB bands from a 3D array:
         ```python
+        >>> from cleopatra.glyphs.gridded.array_glyph import RgbBands
         >>> rgb_array = np.random.randint(0, 255, size=(3, 10, 10))
-        >>> rgb_glyph = ArrayGlyph(rgb_array, rgb=[0, 1, 2], surface_reflectance=255)
+        >>> rgb_glyph = ArrayGlyph(
+        ...     rgb_array, rgb_bands=RgbBands([0, 1, 2], surface_reflectance=255)
+        ... )
         >>> fig, ax = rgb_glyph.plot()
 
         ```
@@ -935,21 +1283,10 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         self._coords = self._validate_coords(coords, array)
 
-        if rgb is not None:
+        if rgb_bands is not None:
             self.rgb = True
-            if array.shape[0] < 3:
-                raise ValueError(
-                    f"To plot RGB plot the given array should have only 3 arrays, given array have "
-                    f"{array.shape[0]}"
-                )
-            else:
-                array = self.prepare_array(
-                    array,
-                    rgb=rgb,
-                    surface_reflectance=surface_reflectance,
-                    cutoff=cutoff,
-                    percentile=percentile,
-                )
+            rgb_bands.validate(array)
+            array = rgb_bands.prepare(array)
         else:
             self.rgb = False
 
@@ -1041,8 +1378,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         Args:
             array: The input array containing multiple bands. For RGB visualization,
                 this should be a 3D array where the first dimension represents the bands.
-            rgb: The indices of the red, green, and blue bands in the given array, by default None.
-                If None, assumes the order is [3, 2, 1] (common for Sentinel-2 data).
+            rgb: The `[r, g, b]` indices of the bands to composite from the input
+                array. Provide the band indices explicitly; there is no
+                functional default -- a missing `rgb` does not select bands.
             surface_reflectance: Surface reflectance value for normalizing satellite data, by default None.
                 Typically 10000 for Sentinel-2 data or 255 for 8-bit imagery.
                 Used to scale values to the range [0, 1].
@@ -1099,7 +1437,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         Prepare an array with cutoff values:
             ```python
             >>> rgb_array = glyph.prepare_array(
-            ...     bands, rgb=[0, 1, 2], surface_reflectance=10000, cutoff=[5000, 5000, 5000]
+            ...     bands, rgb=[0, 1, 2], surface_reflectance=10000, cutoff=[0.3, 0.3, 0.3]
             ... )
             >>> rgb_array.shape
             (100, 100, 3)
@@ -1167,77 +1505,12 @@ class ArrayGlyph(GeoMixin, Glyph):
 
                 ```
         """
-        array = array[rgb].transpose(1, 2, 0)
-
-        if percentile is not None:
-            array = self.scale_percentile(array, percentile=percentile)
-        elif surface_reflectance is not None:
-            array = self._prepare_sentinel_rgb(
-                array,
-                rgb=rgb,
-                surface_reflectance=surface_reflectance,
-                cutoff=cutoff,
-            )
-        return array
-
-    def _prepare_sentinel_rgb(
-        self,
-        array: np.ndarray,
-        rgb: list[int] | None = None,
-        surface_reflectance: int = 10000,
-        cutoff: list | None = None,
-    ) -> np.ndarray:
-        """Prepare Sentinel satellite data for RGB visualization.
-
-        This method specifically handles Sentinel satellite imagery by normalizing the data
-        using the provided surface reflectance value and optional cutoff values.
-
-        Args:
-            array: The input array with shape (height, width, 3) containing RGB bands.
-                This array should already be transposed from the original band-first format.
-            rgb: The indices of the red, green, and blue bands in the original array, by default None.
-                Used only for cutoff application.
-            surface_reflectance: Surface reflectance value for normalizing satellite data, by default 10000.
-                Sentinel-2 data typically uses 10000 as the maximum reflectance value.
-                Used to scale values to the range [0, 1].
-            cutoff: Clip the range of pixel values for each band, by default None.
-                Takes only pixel values from 0 to the value of the cutoff and scales them back to between 0 and 1.
-                Should be a list with one value per band.
-
-        Returns:
-            np.ndarray: The prepared array with shape (height, width, 3) suitable for RGB visualization.
-                Values are normalized to the range [0, 1].
-
-        Examples:
-        Prepare Sentinel-2 data with default surface reflectance:
-        ```python
-        >>> import numpy as np
-        >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
-        >>> # Create a simulated Sentinel-2 RGB array
-        >>> rgb_data = np.random.randint(0, 10000, size=(100, 100, 3))
-        >>> glyph = ArrayGlyph(np.zeros((1, 1)))  # Dummy initialization
-        >>> normalized = glyph._prepare_sentinel_rgb(rgb_data)
-        >>> np.all((0 <= normalized) & (normalized <= 1))
-        np.True_
-
-        ```
-        Prepare Sentinel-2 data with custom cutoff values:
-        ```python
-        >>> cutoffs = [8000, 7000, 9000]
-        >>> normalized = glyph._prepare_sentinel_rgb(rgb_data, rgb=[0, 1, 2], cutoff=cutoffs)
-        >>> np.all((0 <= normalized) & (normalized <= 1))
-        np.True_
-
-        ```
-        """
-        array = np.clip(array / surface_reflectance, 0, 1)
-        if cutoff is not None:
-            bands = cast(list, rgb)
-            array[0] = np.clip(bands[0], 0, cutoff[0]) / cutoff[0]
-            array[1] = np.clip(bands[1], 0, cutoff[1]) / cutoff[1]
-            array[2] = np.clip(bands[2], 0, cutoff[2]) / cutoff[2]
-
-        return array
+        return RgbBands(
+            rgb,
+            surface_reflectance=surface_reflectance,
+            cutoff=cutoff,
+            percentile=percentile,
+        ).prepare(array)
 
     @staticmethod
     def scale_percentile(arr: np.ndarray, percentile: int = 1) -> np.ndarray:
@@ -2059,12 +2332,10 @@ class ArrayGlyph(GeoMixin, Glyph):
         self._reset_axes_for_restyle()
         # Fold style (and an optional forwarded hillshade) into the grouped
         # data_style object; leaving hillshade unset keeps any sticky value.
-        hillshade = kwargs.pop("hillshade", _UNSET)
-        data_style = (
-            DataStyle(style=style)
-            if hillshade is _UNSET
-            else DataStyle(style=style, hillshade=hillshade)
-        )
+        if "hillshade" in kwargs:
+            data_style = DataStyle.for_apply_style(style, hillshade=kwargs.pop("hillshade"))
+        else:
+            data_style = DataStyle.for_apply_style(style)
         return self.plot(data_style=data_style, ax=self.ax, **kwargs)
 
     def _resolve_style_layer(self, style: str) -> str:
@@ -2559,12 +2830,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             else:
                 self._style_color_overrides.pop(key, None)
         self._style_wants_colorbar = colorbar is True or (
-            isinstance(colorbar, ColorBar)
-            and (
-                colorbar.location is not None
-                or colorbar.inside
-                or colorbar.orientation is not None
-            )
+            isinstance(colorbar, ColorBar) and colorbar.specifies_placement()
         )
         return resolved_colorbar
 
@@ -3197,12 +3463,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         # will touch, so an invalid `style` (validated below) can roll back the
         # WHOLE merge -- not just `style` -- and a co-passed color=/contour=/cells=
         # cannot leak into a later plain plot() on this (sticky-options) glyph.
-        pre_group_opts = {}
-        for grp in (color, contour, cells, data_style):
-            if grp is not None:
-                for key in grp.to_options():
-                    if key in self.default_options and key not in pre_group_opts:
-                        pre_group_opts[key] = self.default_options[key]
+        pre_group_opts = self._snapshot_group_options(color, contour, cells, data_style)
         self._merge_group_params(color, contour, cells, data_style)
         resolved_colorbar = self._apply_kwargs_and_colorbar(colorbar, kwargs)  # type: ignore[arg-type]
 
@@ -3372,14 +3633,9 @@ class ArrayGlyph(GeoMixin, Glyph):
             )
 
         if points is not None and supports_overlay:
-            row = points.points[:, 1]
-            col = points.points[:, 2]
-            optional_display["points_scatter"] = ax.scatter(
-                col, row, color=points.color, s=points.size
-            )
-            optional_display["points_id"] = self._plot_point_values(
-                ax, points.points, points.label_color, points.label_size
-            )
+            _, _, points_scatter, points_labels = points.draw(ax)
+            optional_display["points_scatter"] = points_scatter
+            optional_display["points_id"] = points_labels
 
         _mark_render_artists(
             ax,
@@ -3579,8 +3835,6 @@ class ArrayGlyph(GeoMixin, Glyph):
         if col is None and row is None:
             raise ValueError("at least one of `col`/`row` must be given")
         labels = labels or PanelLabels()
-        col_coords = labels.col
-        row_coords = labels.row
         if extents is not None:
             if self.extent is not None:
                 raise ValueError(
@@ -3614,11 +3868,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             else:
                 ncols = n_col
                 nrows = 1
-            if col_coords is not None and len(col_coords) != n_col:
-                raise ValueError(
-                    f"`labels.col` length {len(col_coords)} does not match "
-                    f"the column axis size {n_col}."
-                )
+            labels.validate(n_col)
             panel_indices: list[tuple[int, int | None]] = [
                 (i, None) for i in range(n_col)
             ]
@@ -3634,16 +3884,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             n_col, n_row = arr.shape[0], arr.shape[1]
             ncols = n_col
             nrows = n_row
-            if col_coords is not None and len(col_coords) != n_col:
-                raise ValueError(
-                    f"`labels.col` length {len(col_coords)} does not match "
-                    f"the column axis size {n_col}."
-                )
-            if row_coords is not None and len(row_coords) != n_row:
-                raise ValueError(
-                    f"`labels.row` length {len(row_coords)} does not match "
-                    f"the row axis size {n_row}."
-                )
+            labels.validate(n_col, n_row)
             panel_indices = [(i, j) for j in range(n_row) for i in range(n_col)]
             n_panels = n_col * n_row
 
@@ -3730,15 +3971,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     data_style=data_style,
                 )
 
-                col_label = col_coords[col_idx] if col_coords is not None else col_idx
-                name_dict: dict[str, Any] = {col: col_label}
-                if row is not None:
-                    row_idx = cast(int, row_idx)  # non-None whenever `row` is set
-                    row_label = row_coords[row_idx] if row_coords is not None else row_idx
-                    name_dict[row] = row_label
-                    title = f"{col}={col_label}, {row}={row_label}"
-                else:
-                    title = f"{col}={col_label}"
+                title, name_dict = labels.panel_title(col, col_idx, row, row_idx)
                 ax.set_title(title)
                 name_dicts.append(name_dict)
 
@@ -4154,13 +4387,6 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         frame_label = frame_label or FrameLabel()
 
-        frame_location = frame_label.location
-        label_location_is_default = frame_location is None
-        if label_location_is_default:
-            label_location = [0.02, 0.95]
-        else:
-            label_location = frame_location
-
         self._merge_group_params(color, contour, cells, data_style)
         resolved_colorbar = self._apply_kwargs_and_colorbar(colorbar, kwargs)  # type: ignore[arg-type]
 
@@ -4376,12 +4602,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         points_scatter = None
         points_id: list = []
         if points is not None:
-            row = points.points[:, 1]
-            col = points.points[:, 2]
-            points_scatter = ax.scatter(col, row, color=points.color, s=points.size)
-            points_id = self._plot_point_values(
-                ax, points.points, points.label_color, points.label_size
-            )
+            row, col, points_scatter, points_id = points.draw(ax)
 
         background_color_threshold = None
         if not rgb_frames:
@@ -4393,19 +4614,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 ref_for_threshold = array if data_getter is None else frame_0
                 background_color_threshold = im.norm(np.nanmax(ref_for_threshold)) / 2.0
 
-        day_text = ax.text(
-            label_location[0],
-            label_location[1],
-            " ",
-            fontsize=(
-                frame_label.size
-                if frame_label.size is not None
-                else self.default_options["cbar_label_size"]
-            ),
-            color=frame_label.color,
-            transform=ax.transAxes if label_location_is_default else ax.transData,
-            va="top" if label_location_is_default else "baseline",
-        )
+        day_text = frame_label.draw(ax, self.default_options["cbar_label_size"])
         self._day_text = day_text
 
         def _fetch_frame(i: int) -> np.ndarray:

@@ -233,6 +233,164 @@ class ColorBar:
         self.label_location = label_location
         self.ticks_spacing = ticks_spacing
 
+    def to_options(self) -> dict:
+        """Map this spec's fields onto the `cbar_*` `default_options` keys.
+
+        Mirrors the other grouped styling objects' `to_options`: the object
+        owns the translation from its own fields to the flat render options
+        `create_color_bar` reads. Placement fields are always emitted (so a
+        reused glyph's prior placement is overwritten); the caption / sizing /
+        orientation / tick-spacing fields are emitted only when set, leaving an
+        unset field at the existing default.
+
+        Returns:
+            dict: `default_options` updates for this spec, always including
+                `add_colorbar=True`.
+
+        Examples:
+            - Placement maps onto `cbar_*`; unset caption fields are omitted:
+                ```python
+                >>> from cleopatra.styling.colorbar import ColorBar
+                >>> ColorBar(location="left", inside=True).to_options()["cbar_location"]
+                'left'
+                >>> "cbar_label" in ColorBar(location="right").to_options()
+                False
+
+                ```
+        """
+        updates = {
+            "add_colorbar": True,
+            "cbar_location": self.location,
+            "cbar_inside": self.inside,
+            "cbar_box": self.box,
+            "cbar_label_color": self.label_color,
+            "cbar_tick_color": self.tick_color,
+        }
+        optional = {
+            "cbar_label": self.label,
+            "cbar_length": self.length,
+            "cbar_label_size": self.label_size,
+            "cbar_label_rotation": self.label_rotation,
+            "cbar_label_location": self.label_location,
+            "cbar_orientation": self.orientation,
+            "ticks_spacing": self.ticks_spacing,
+        }
+        updates.update({k: v for k, v in optional.items() if v is not None})
+        return updates
+
+    def specifies_placement(self) -> bool:
+        """Whether this spec explicitly requests a placement or orientation.
+
+        `True` when any of `location`, `inside`, or `orientation` is set -- the
+        spec asks for a specific colorbar rather than leaving the default. Used
+        to decide whether a styled (preset) render should still draw a colorbar.
+
+        Returns:
+            bool: `True` if `location`, `inside`, or `orientation` is set.
+
+        Examples:
+            - A placement edge counts as specified; a bare spec does not:
+                ```python
+                >>> from cleopatra.styling.colorbar import ColorBar
+                >>> ColorBar(location="bottom").specifies_placement()
+                True
+                >>> ColorBar().specifies_placement()
+                False
+
+                ```
+        """
+        return (
+            self.location is not None
+            or self.inside
+            or self.orientation is not None
+        )
+
+    @classmethod
+    def reset_options(cls) -> dict:
+        """`default_options` updates for a default, sticky-clearing colorbar.
+
+        The dict `colorbar=True` applies: it draws a default bar and resets the
+        resettable `cbar_*` family to `STYLE_DEFAULTS`, so a reused glyph does
+        not inherit a prior sticky spec's placement or caption. Distinct from
+        `to_options`, which maps a *specific* spec's fields and omits unset
+        ones; this resets the whole `cbar_*` family to the defaults.
+        `ticks_spacing` is deliberately excluded: it is glyph-specific
+        (`KDEGlyph`, for one, auto-derives it from the data range when unset),
+        so a single shared reset value could not restore each glyph's own
+        default -- it is therefore left untouched by `colorbar=True`.
+
+        Returns:
+            dict: `default_options` updates for a default colorbar.
+
+        Examples:
+            - The reset always enables the bar and clears the placement:
+                ```python
+                >>> from cleopatra.styling.colorbar import ColorBar
+                >>> opts = ColorBar.reset_options()
+                >>> opts["add_colorbar"]
+                True
+                >>> opts["cbar_location"] is None
+                True
+
+                ```
+        """
+        return {
+            "add_colorbar": True,
+            "cbar_location": None,
+            "cbar_inside": False,
+            "cbar_box": None,
+            "cbar_label_color": None,
+            "cbar_tick_color": None,
+            "cbar_orientation": STYLE_DEFAULTS["cbar_orientation"],
+            "cbar_label": STYLE_DEFAULTS["cbar_label"],
+            "cbar_length": STYLE_DEFAULTS["cbar_length"],
+            "cbar_label_size": STYLE_DEFAULTS["cbar_label_size"],
+            "cbar_label_rotation": STYLE_DEFAULTS["cbar_label_rotation"],
+            "cbar_label_location": STYLE_DEFAULTS["cbar_label_location"],
+        }
+
+    @classmethod
+    def resolve(cls, colorbar: "bool | ColorBar | None") -> dict:
+        """Translate a `colorbar=` argument into `default_options` updates.
+
+        Owns the full `None` / `False` / `True` / `ColorBar` dispatch: `None`
+        leaves the colorbar options untouched; `False` suppresses the bar;
+        `True` resets to a default bar via `reset_options`; a `ColorBar`
+        instance maps its fields via `to_options`.
+
+        Args:
+            colorbar: `None`, `False`, `True`, or a `ColorBar` instance.
+
+        Returns:
+            dict: Updates to merge into `default_options` (empty for `None`).
+
+        Raises:
+            TypeError: If `colorbar` is not a bool, `ColorBar`, or `None`.
+
+        Examples:
+            ```python
+            >>> from cleopatra.styling.colorbar import ColorBar
+            >>> ColorBar.resolve(False)
+            {'add_colorbar': False}
+            >>> ColorBar.resolve(ColorBar(location="left", inside=True))["cbar_location"]
+            'left'
+            >>> "cbar_label" in ColorBar.resolve(ColorBar(location="right"))
+            False
+
+            ```
+        """
+        if colorbar is None:
+            return {}
+        if colorbar is False:
+            return {"add_colorbar": False}
+        if colorbar is True:
+            return cls.reset_options()
+        if isinstance(colorbar, cls):
+            return colorbar.to_options()
+        raise TypeError(
+            f"colorbar must be a bool, ColorBar, or None, got {type(colorbar).__name__}."
+        )
+
 
 def _swatch_text_default(box: bool | str | dict | None) -> str:
     """Default swatch title/value colour that stays legible over `box`.
@@ -307,45 +465,4 @@ def _resolve_colorbar(colorbar: bool | ColorBar | None) -> dict:
 
             ```
     """
-    if colorbar is None:
-        return {}
-    if colorbar is False:
-        return {"add_colorbar": False}
-    if colorbar is True:
-        return {
-            "add_colorbar": True,
-            "cbar_location": None,
-            "cbar_inside": False,
-            "cbar_box": None,
-            "cbar_label_color": None,
-            "cbar_tick_color": None,
-            "cbar_orientation": STYLE_DEFAULTS["cbar_orientation"],
-            "cbar_label": STYLE_DEFAULTS["cbar_label"],
-            "cbar_length": STYLE_DEFAULTS["cbar_length"],
-            "cbar_label_size": STYLE_DEFAULTS["cbar_label_size"],
-            "cbar_label_rotation": STYLE_DEFAULTS["cbar_label_rotation"],
-            "cbar_label_location": STYLE_DEFAULTS["cbar_label_location"],
-        }
-    if isinstance(colorbar, ColorBar):
-        updates = {
-            "add_colorbar": True,
-            "cbar_location": colorbar.location,
-            "cbar_inside": colorbar.inside,
-            "cbar_box": colorbar.box,
-            "cbar_label_color": colorbar.label_color,
-            "cbar_tick_color": colorbar.tick_color,
-        }
-        optional = {
-            "cbar_label": colorbar.label,
-            "cbar_length": colorbar.length,
-            "cbar_label_size": colorbar.label_size,
-            "cbar_label_rotation": colorbar.label_rotation,
-            "cbar_label_location": colorbar.label_location,
-            "cbar_orientation": colorbar.orientation,
-            "ticks_spacing": colorbar.ticks_spacing,
-        }
-        updates.update({k: v for k, v in optional.items() if v is not None})
-        return updates
-    raise TypeError(
-        f"colorbar must be a bool, ColorBar, or None, got {type(colorbar).__name__}."
-    )
+    return ColorBar.resolve(colorbar)

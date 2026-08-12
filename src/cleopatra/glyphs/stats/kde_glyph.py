@@ -52,7 +52,7 @@ from cleopatra.styling.colors import (
     resolve_single_layer_style,
     resolve_style_norm,
 )
-from cleopatra.styling.params import Contour, DataStyle
+from cleopatra.styling.params import _UNSET, Contour, DataStyle, _Unset
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
@@ -77,12 +77,6 @@ KDE_DEFAULT_OPTIONS = {
     "style": None,
 }
 KDE_DEFAULT_OPTIONS = STYLE_DEFAULTS | KDE_DEFAULT_OPTIONS
-
-#: Sentinel distinguishing "hillshade not passed to apply_style" from an
-#: explicit `hillshade=None` (which clears sticky relief), matching the
-#: `_UNSET` sentinels on ArrayGlyph / MeshGlyph.
-_UNSET_HILLSHADE = object()
-
 
 class KDEGlyph(Glyph):
     """Visualization class for 2-D kernel-density estimates.
@@ -332,7 +326,7 @@ class KDEGlyph(Glyph):
         self,
         style: str,
         *,
-        hillshade: bool | dict | None = _UNSET_HILLSHADE,  # type: ignore[assignment]
+        hillshade: bool | dict | None | _Unset = _UNSET,
         add_colorbar: bool | None = None,
         title: str | None = None,
     ):
@@ -368,11 +362,7 @@ class KDEGlyph(Glyph):
         # Only override hillshade when the caller actually passed one; an
         # unset value keeps any sticky relief shading, while an explicit
         # `None` flows through to `DataStyle(hillshade=None)` and clears it.
-        data_style = (
-            DataStyle(style=style)
-            if hillshade is _UNSET_HILLSHADE
-            else DataStyle(style=style, hillshade=hillshade)
-        )
+        data_style = DataStyle.for_apply_style(style, hillshade=hillshade)
         return self.plot(
             ax=self.ax,
             title=title,
@@ -468,12 +458,7 @@ class KDEGlyph(Glyph):
         # merging, so an invalid preset rolls back the WHOLE merge -- not
         # just style -- so a co-passed color=/contour= cannot leak into a
         # later plain plot.
-        prev_group_opts = {}
-        for grp in (color, contour, data_style):
-            if grp is not None:
-                for key in grp.to_options():
-                    if key in self.default_options:
-                        prev_group_opts[key] = self.default_options[key]
+        prev_group_opts = self._snapshot_group_options(color, contour, data_style)
         self._merge_group_params(color, contour, data_style)
 
         if ax is not None:

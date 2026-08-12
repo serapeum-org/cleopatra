@@ -81,12 +81,6 @@ MESH_DEFAULT_OPTIONS = {
 }
 MESH_DEFAULT_OPTIONS = STYLE_DEFAULTS | MESH_DEFAULT_OPTIONS
 
-#: Sentinel distinguishing "hillshade not forwarded" from an explicit
-#: `hillshade=None` in `apply_style`, so an unset value keeps any sticky
-#: relief shading rather than clearing it.
-_UNSET_HILLSHADE = object()
-
-
 class MeshGlyph(GeoMixin, Glyph):
     """Visualization class for unstructured mesh data.
 
@@ -838,12 +832,10 @@ class MeshGlyph(GeoMixin, Glyph):
         self._reset_axes_for_restyle()
         # Fold style (and an optional forwarded hillshade) into the grouped
         # data_style object; leaving hillshade unset keeps any sticky value.
-        hillshade = kwargs.pop("hillshade", _UNSET_HILLSHADE)
-        data_style = (
-            DataStyle(style=style)
-            if hillshade is _UNSET_HILLSHADE
-            else DataStyle(style=style, hillshade=hillshade)
-        )
+        if "hillshade" in kwargs:
+            data_style = DataStyle.for_apply_style(style, hillshade=kwargs.pop("hillshade"))
+        else:
+            data_style = DataStyle.for_apply_style(style)
         return self.plot(
             data, location=location, ax=self.ax, data_style=data_style, **kwargs
         )

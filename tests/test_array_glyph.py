@@ -13,14 +13,9 @@ from matplotlib.text import Text
 from PIL import Image
 
 import cleopatra.basemap.reference as refmod
-from cleopatra.styling.params import CellValues, Contour, DataStyle
-from cleopatra.styling.scaling import ColorScaling
-from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.glyphs.gridded.array_glyph import (
     _COORD_DTYPE_MISMATCH,
     _COORD_SHAPE_MISMATCH,
-    _UNSET,
-    _Unset,
     AnimateKwargs,
     ArrayGlyph,
     ColorBar,
@@ -29,10 +24,13 @@ from cleopatra.glyphs.gridded.array_glyph import (
     PanelLabels,
     PlotKwargs,
     PointOverlay,
+    RgbBands,
     _resolve_colorbar,
     _swatch_text_default,
-    _Unset,
 )
+from cleopatra.styling.params import CellValues, Contour, DataStyle
+from cleopatra.styling.scaling import ColorScaling
+from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 
 class TestProperties:
@@ -62,7 +60,9 @@ class TestRGB:
             31.8504762335605,
         ]
         array = ArrayGlyph(
-            sentinel_2, rgb=[3, 2, 1], cutoff=[0.3, 0.3, 0.3], extent=extent
+            sentinel_2,
+            rgb_bands=RgbBands([3, 2, 1]),
+            extent=extent,
         )
         fig, ax = array.plot(title="Flow Accumulation")
         im = ax.get_images()[0]
@@ -430,37 +430,6 @@ class TestKwargsTypedDicts:
         colors = {to_rgba(t.get_color()) for t in array.ax.texts if t.get_text()}
         assert to_rgba("yellow") in colors, f"low cell should be yellow; got {colors}"
         assert to_rgba("blue") in colors, f"high cell should be blue; got {colors}"
-
-
-class TestUnsetSentinel:
-    """`_Unset`/`_UNSET`: the sentinel distinguishing "the caller did not
-    pass this" from "passed as `None`" for the `hillshade` key resolved
-    inside `ArrayGlyph.plot`.
-    """
-
-    def test_repr_is_readable(self):
-        """`repr(_UNSET)` reads `<unset>`, not the default `object()` repr.
-
-        Test scenario:
-            The class docstring's whole reason for existing over a plain
-            `object()` sentinel is a readable `help()`/IDE tooltip; a
-            regression here (e.g. deleting `__repr__`) would silently
-            fall back to `<cleopatra.glyphs.gridded.array_glyph._Unset object at 0x...>`.
-        """
-        assert repr(_UNSET) == "<unset>", f"Unexpected repr: {repr(_UNSET)!r}"
-
-    def test_is_singleton_identity(self):
-        """`_UNSET` is a single shared instance, compared with `is` not `==`.
-
-        Test scenario:
-            Callers test `value is _UNSET`; a second `_Unset()` instance
-            must NOT be `is _UNSET` (no `__eq__` override makes two
-            instances equal either), confirming the sentinel can only be
-            obtained by importing `_UNSET` itself.
-        """
-        other = _Unset()
-        assert other is not _UNSET, "A fresh _Unset() must not be the _UNSET singleton"
-        assert other != _UNSET, "Two distinct _Unset instances must not compare equal"
 
 
 class TestPointOverlay:
@@ -951,7 +920,7 @@ class TestPlotKindDispatch:
     def test_rgb_with_non_imshow_kind_raises(self):
         """RGB compositing is imshow-only — other kinds must raise."""
         rgb_arr = np.random.randint(0, 255, size=(3, 8, 8)).astype(np.float32)
-        glyph = ArrayGlyph(rgb_arr, rgb=[0, 1, 2])
+        glyph = ArrayGlyph(rgb_arr, rgb_bands=RgbBands([0, 1, 2]))
         with pytest.raises(ValueError, match="RGB"):
             glyph.plot(kind="pcolormesh")
 
@@ -1299,22 +1268,59 @@ class TestPrepareArrayValidation:
     def test_too_few_bands_raises(self):
         """An RGB array with fewer than 3 bands raises `ValueError`."""
         arr = np.zeros((2, 4, 4), dtype=np.float32)
-        with pytest.raises(ValueError, match="3 arrays"):
-            ArrayGlyph(arr, rgb=[0, 1])
+        bands = RgbBands([0, 1])
+        with pytest.raises(ValueError, match="at least 3 bands"):
+            ArrayGlyph(arr, rgb_bands=bands)
 
     def test_prepare_array_with_cutoff_only(self):
-        """`cutoff` is applied via the surface-reflectance branch."""
-        arr = (
-            np.random.default_rng(0)
-            .integers(0, 10000, size=(3, 5, 5))
-            .astype(np.float32)
+        """`cutoff` clips + rescales each band via the surface-reflectance branch.
+
+        Uses a fractional `cutoff` (of the normalised range) and pins the exact
+        per-band stretched output, so the assertion is meaningful rather than a
+        vacuous `[0, 1]` range check.
+        """
+        arr = np.array(
+            [
+                [[0.0, 3000.0]],
+                [[1500.0, 6000.0]],
+                [[9000.0, 10000.0]],
+            ],
+            dtype=float,
         )
         glyph = ArrayGlyph(np.zeros((1, 1)))
         result = glyph.prepare_array(
-            arr, rgb=[0, 1, 2], surface_reflectance=10000, cutoff=[5000, 5000, 5000]
+            arr, rgb=[0, 1, 2], surface_reflectance=10000, cutoff=[0.3, 0.3, 0.3]
         )
-        assert result.shape == (5, 5, 3)
-        assert np.all((0.0 <= result) & (result <= 1.0))
+        expected = np.array([[[0.0, 0.5, 1.0], [1.0, 1.0, 1.0]]])
+        np.testing.assert_allclose(result, expected)
+
+    def test_cutoff_stretches_each_band_by_its_limit(self):
+        """`cutoff` clips + rescales each band's *data* (not the band indices).
+
+        Regression guard: the previous code indexed `array[0]` (the first row
+        of the band-last array) and used the integer band index rather than the
+        band's pixel data, so `cutoff` never actually stretched the bands. Here
+        each band is clipped to `[0, cutoff[band]]` and rescaled to `[0, 1]`.
+        """
+        # Band-first (3, 1, 2); values chosen so each band spans a different
+        # fraction of the reflectance range after normalisation.
+        arr = np.array(
+            [
+                [[0.0, 5000.0]],  # band 0
+                [[2500.0, 10000.0]],  # band 1
+                [[10000.0, 0.0]],  # band 2
+            ],
+            dtype=float,
+        )
+        out = RgbBands(
+            [0, 1, 2], surface_reflectance=10000, cutoff=[0.5, 0.5, 0.5]
+        ).prepare(arr)
+        # After /10000 then clip-to-0.5-and-rescale, per band (last axis):
+        #   band 0: [0, 0.5]  -> [0.0, 1.0]
+        #   band 1: [0.25, 1] -> [0.5, 1.0]
+        #   band 2: [1, 0]    -> [1.0, 0.0]
+        expected = np.array([[[0.0, 0.5, 1.0], [1.0, 1.0, 0.0]]])
+        np.testing.assert_allclose(out, expected)
 
     def test_prepare_array_no_normalisation(self):
         """No percentile and no surface_reflectance -> only reorder bands."""
@@ -1324,8 +1330,8 @@ class TestPrepareArrayValidation:
         assert result.shape == (3, 3, 3)
         np.testing.assert_array_equal(result[..., 0], arr[0])
 
-    def test_prepare_sentinel_rgb_no_cutoff(self):
-        """`_prepare_sentinel_rgb` returns clipped data with no cutoff path."""
+    def test_surface_reflectance_no_cutoff(self):
+        """The surface-reflectance path returns clipped data with no cutoff."""
         arr = (
             np.random.default_rng(0)
             .integers(0, 10000, size=(3, 5, 5))
@@ -1646,7 +1652,7 @@ class TestSharedAxesArtistCleanup:
             Regression: only the colorbar/image were tracked by the
             shared-axes cleanup; the point-overlay scatter
             (`ax.scatter`) and per-point value labels
-            (`_plot_point_values`) were not, so both doubled on a
+            (`PointOverlay.draw`) were not, so both doubled on a
             second call.
         """
         arr = np.arange(25.0).reshape(5, 5)
@@ -2384,7 +2390,7 @@ class TestCenterCmapDoesNotApplyToRgb:
         rgb_arr = (
             np.random.default_rng(0).integers(0, 255, size=(3, 8, 8)).astype(np.float32)
         )
-        glyph = ArrayGlyph(rgb_arr, rgb=[0, 1, 2])
+        glyph = ArrayGlyph(rgb_arr, rgb_bands=RgbBands([0, 1, 2]))
         fig, ax = glyph.plot()
         assert isinstance(fig, Figure)
         # No colorbar is created on the RGB path; `cbar` stays None.
@@ -4357,7 +4363,7 @@ class TestMappableAndColorbarToggle:
         """
         from matplotlib.image import AxesImage
 
-        glyph = ArrayGlyph(self._rgb_arr(), rgb=[0, 1, 2])
+        glyph = ArrayGlyph(self._rgb_arr(), rgb_bands=RgbBands([0, 1, 2]))
         fig, ax = glyph.plot(kind="imshow")
         try:
             assert isinstance(glyph.im, AxesImage), (
@@ -4520,7 +4526,7 @@ class TestMappableAndColorbarToggle:
             RGB has no scalar mapping, so `self.cbar` stays None regardless of
             the toggle, while `self.im` is always populated.
         """
-        glyph = ArrayGlyph(self._rgb_arr(), rgb=[0, 1, 2])
+        glyph = ArrayGlyph(self._rgb_arr(), rgb_bands=RgbBands([0, 1, 2]))
         fig, ax = glyph.plot(kind="imshow", add_colorbar=add_colorbar)
         try:
             assert glyph.cbar is None, "RGB path must never create a colorbar"
@@ -5128,7 +5134,7 @@ class TestArrayGlyphDataStyle:
         """A `style` on an RGB array is ignored with a warning, not silently."""
         rgb = np.random.default_rng(6).random((3, 8, 8))
         with pytest.warns(UserWarning, match="do not apply to RGB"):
-            ArrayGlyph(rgb, rgb=[0, 1, 2]).plot(data_style=DataStyle(style="flow_accumulation"))
+            ArrayGlyph(rgb, rgb_bands=RgbBands([0, 1, 2])).plot(data_style=DataStyle(style="flow_accumulation"))
         plt.close("all")
 
     def test_plot_style_with_hillshade_composes(self):
@@ -7068,3 +7074,211 @@ class TestColorbarLocationOrientation:
         )
         assert g.cbar is not None, "a colorbar should still be drawn"
         plt.close("all")
+
+
+class TestRgbBands:
+    """Direct unit tests for the `RgbBands` band-selection + stretch object."""
+
+    def test_validate_raises_for_too_few_bands(self):
+        """`validate` rejects an array with fewer than 3 bands.
+
+        Test scenario:
+            A `(2, H, W)` array raises `ValueError` naming the 3-band need.
+        """
+        bands = RgbBands([0, 1, 2])
+        arr = np.zeros((2, 4, 4))
+        with pytest.raises(ValueError, match="at least 3 bands"):
+            bands.validate(arr)
+
+    def test_validate_passes_for_three_bands(self):
+        """`validate` accepts an array with at least 3 bands.
+
+        Test scenario:
+            A `(3, H, W)` array validates without raising.
+        """
+        RgbBands([0, 1, 2]).validate(np.zeros((3, 4, 4)))
+
+    def test_prepare_raises_when_indices_none(self):
+        """`prepare` fails loudly rather than producing garbage for `indices=None`.
+
+        Test scenario:
+            `RgbBands(None).prepare(arr)` raises `ValueError` instead of
+            `array[None]` (a spurious new axis).
+        """
+        bands = RgbBands(None)
+        arr = np.zeros((3, 4, 4))
+        with pytest.raises(ValueError, match="indices must be"):
+            bands.prepare(arr)
+
+    def test_prepare_reorders_bands_without_stretch(self):
+        """With no stretch, `prepare` only selects + reorders the bands.
+
+        Test scenario:
+            `indices=[2, 1, 0]` puts band 2 first in the band-last output and
+            applies no normalisation.
+        """
+        arr = np.arange(27, dtype=float).reshape(3, 3, 3)
+        out = RgbBands([2, 1, 0]).prepare(arr)
+        assert out.shape == (3, 3, 3), f"unexpected shape {out.shape}"
+        np.testing.assert_array_equal(out[..., 0], arr[2])
+
+    def test_prepare_percentile_path_maps_to_unit_range(self):
+        """The percentile branch contrast-stretches into `[0, 1]`.
+
+        Test scenario:
+            `percentile=2` routes through `scale_percentile`, yielding a
+            band-last array clipped to `[0, 1]`.
+        """
+        arr = np.random.default_rng(0).integers(0, 10000, size=(3, 6, 6)).astype(float)
+        out = RgbBands([0, 1, 2], percentile=2).prepare(arr)
+        assert out.shape == (6, 6, 3), f"unexpected shape {out.shape}"
+        assert np.all((0.0 <= out) & (out <= 1.0)), "percentile output out of [0, 1]"
+
+    def test_prepare_surface_reflectance_path_maps_to_unit_range(self):
+        """The reflectance branch normalises into `[0, 1]`.
+
+        Test scenario:
+            `surface_reflectance=10000` divides + clips into `[0, 1]`.
+        """
+        arr = np.random.default_rng(0).integers(0, 10000, size=(3, 6, 6)).astype(float)
+        out = RgbBands([0, 1, 2], surface_reflectance=10000).prepare(arr)
+        assert out.shape == (6, 6, 3), f"unexpected shape {out.shape}"
+        assert np.all((0.0 <= out) & (out <= 1.0)), "reflectance output out of [0, 1]"
+
+
+class TestFrameLabelMethods:
+    """Tests for `FrameLabel.resolve_location` and `FrameLabel.draw`."""
+
+    def test_resolve_location_default_when_unset(self):
+        """An unset location resolves to the top-left auto-anchor flagged default.
+
+        Test scenario:
+            `FrameLabel()` yields `([0.02, 0.95], True)`.
+        """
+        loc, is_default = FrameLabel().resolve_location()
+        assert loc == [0.02, 0.95], f"unexpected default location {loc}"
+        assert is_default is True, "unset location should be flagged default"
+
+    def test_resolve_location_uses_explicit_location(self):
+        """An explicit location is returned as-is, not flagged default.
+
+        Test scenario:
+            `FrameLabel(location=[0.3, 0.4])` yields `([0.3, 0.4], False)`.
+        """
+        loc, is_default = FrameLabel(location=[0.3, 0.4]).resolve_location()
+        assert loc == [0.3, 0.4], f"explicit location not returned: {loc}"
+        assert is_default is False, "explicit location should not be flagged default"
+
+    def test_draw_default_uses_default_size_and_top_alignment(self):
+        """`draw` on an unset label uses `default_size` and axes-fraction top anchor.
+
+        Test scenario:
+            With no own size, the artist takes `default_size` and `va="top"`.
+        """
+        fig, ax = plt.subplots()
+        try:
+            text = FrameLabel().draw(ax, default_size=14)
+            assert text.get_fontsize() == 14, f"size {text.get_fontsize()}"
+            assert text.get_verticalalignment() == "top", "default anchor should be va=top"
+        finally:
+            plt.close(fig)
+
+    def test_draw_explicit_uses_own_size_color_and_baseline(self):
+        """`draw` with an explicit label uses its own size/colour and data-coord baseline.
+
+        Test scenario:
+            An explicit size/colour/location yields those values and `va="baseline"`.
+        """
+        fig, ax = plt.subplots()
+        try:
+            text = FrameLabel(location=[0.1, 0.2], color="white", size=9).draw(
+                ax, default_size=14
+            )
+            assert text.get_fontsize() == 9, f"size {text.get_fontsize()}"
+            assert text.get_color() == "white", f"color {text.get_color()}"
+            assert text.get_verticalalignment() == "baseline", "explicit should use va=baseline"
+        finally:
+            plt.close(fig)
+
+
+class TestPanelLabelsMethods:
+    """Tests for `PanelLabels.label_for`, `panel_title`, and `validate`."""
+
+    def test_label_for_uses_coords_when_present(self):
+        """`label_for` returns the configured label at the index.
+
+        Test scenario:
+            Given `col`/`row` sequences, the index maps to the label.
+        """
+        labels = PanelLabels(col=["Jan", "Feb"], row=["A", "B"])
+        assert labels.label_for("col", 1) == "Feb", "col label mismatch"
+        assert labels.label_for("row", 0) == "A", "row label mismatch"
+
+    def test_label_for_falls_back_to_index(self):
+        """`label_for` returns the integer index when that axis has no labels.
+
+        Test scenario:
+            An empty `PanelLabels` returns the index itself.
+        """
+        labels = PanelLabels()
+        assert labels.label_for("col", 2) == 2, "col fallback mismatch"
+        assert labels.label_for("row", 3) == 3, "row fallback mismatch"
+
+    def test_panel_title_col_only(self):
+        """`panel_title` builds a col-only title and name_dict.
+
+        Test scenario:
+            With no row dim, only the column dim/label appear.
+        """
+        title, name_dict = PanelLabels(col=["Jan", "Feb"]).panel_title("month", 1)
+        assert title == "month=Feb", f"title {title!r}"
+        assert name_dict == {"month": "Feb"}, f"name_dict {name_dict}"
+
+    def test_panel_title_col_and_row(self):
+        """`panel_title` builds a two-axis title and name_dict.
+
+        Test scenario:
+            Both dims/labels appear in the title and mapping.
+        """
+        labels = PanelLabels(col=["Jan", "Feb"], row=["North", "South"])
+        title, name_dict = labels.panel_title("month", 0, "region", 1)
+        assert title == "month=Jan, region=South", f"title {title!r}"
+        assert name_dict == {"month": "Jan", "region": "South"}, f"name_dict {name_dict}"
+
+    def test_panel_title_index_fallback(self):
+        """`panel_title` uses the integer index when labels are absent.
+
+        Test scenario:
+            An unset `PanelLabels` titles by index.
+        """
+        title, name_dict = PanelLabels().panel_title("m", 2)
+        assert title == "m=2", f"title {title!r}"
+        assert name_dict == {"m": 2}, f"name_dict {name_dict}"
+
+    def test_validate_passes_when_lengths_match(self):
+        """`validate` accepts label sequences matching the axis sizes.
+
+        Test scenario:
+            2 col labels + 1 row label against `(2, 1)` axes validate cleanly.
+        """
+        PanelLabels(col=["a", "b"], row=["x"]).validate(2, 1)
+
+    def test_validate_raises_on_col_length_mismatch(self):
+        """`validate` rejects a col-label count that does not match the axis.
+
+        Test scenario:
+            2 col labels against a 3-column axis raises, naming `labels.col`.
+        """
+        labels = PanelLabels(col=["a", "b"])
+        with pytest.raises(ValueError, match=r"labels\.col"):
+            labels.validate(3)
+
+    def test_validate_raises_on_row_length_mismatch(self):
+        """`validate` rejects a row-label count that does not match the axis.
+
+        Test scenario:
+            1 row label against a 2-row axis raises, naming `labels.row`.
+        """
+        labels = PanelLabels(col=["a", "b"], row=["x"])
+        with pytest.raises(ValueError, match=r"labels\.row"):
+            labels.validate(2, 2)

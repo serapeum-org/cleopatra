@@ -6,7 +6,7 @@ from cleopatra.config import Config
 Config.set_matplotlib_backend()
 import matplotlib.pyplot as plt
 
-from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph, RgbBands
 
 # from matplotlib.transforms import blended_transform_factory
 # %% create the glyph from a masked array
@@ -24,7 +24,7 @@ plt.imshow(rgb)
 plt.show()
 # %%
 # plt.ioff()
-array = ArrayGlyph(arr, rgb=[3, 2, 1], cutoff=[0.3, 0.3, 0.3])
+array = ArrayGlyph(arr, rgb_bands=RgbBands([3, 2, 1]))
 # %%
 arr = np.load("tests/data/arr.npy")
 exclude_value = arr[0, 0]
