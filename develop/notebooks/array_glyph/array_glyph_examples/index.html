@@ -725,6 +725,8 @@
       
         
       
+        
+      
     
     
     
@@ -787,6 +789,34 @@
     
   
     Glyph (base)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/render-options/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Render options (grouped params)
   
 
     
@@ -1685,15 +1715,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#10-data-style-presets-via-the-option" class="md-nav__link">
+  <a href="#10-data-style-presets-via" class="md-nav__link">
     <span class="md-ellipsis">
       
-        10. Data-style presets via the option
+        10. Data-style presets via
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="10. Data-style presets via the option">
+    <nav class="md-nav" aria-label="10. Data-style presets via">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2710,15 +2740,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#10-data-style-presets-via-the-option" class="md-nav__link">
+  <a href="#10-data-style-presets-via" class="md-nav__link">
     <span class="md-ellipsis">
       
-        10. Data-style presets via the option
+        10. Data-style presets via
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="10. Data-style presets via the option">
+    <nav class="md-nav" aria-label="10. Data-style presets via">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -4884,8 +4914,8 @@ fig, ax = array_glyph_colorbar.plot(
 <h2 id="9-relief-shading-hillshade-for-dems">9. Relief shading (hillshade) for DEMs<a class="anchor-link" href="#9-relief-shading-hillshade-for-dems">¶</a></h2><p>A DEM with a wide elevation range cannot be read from colour alone: a flat plain and a high plateau land on
 different colours, but both look featureless. The <code>hillshade</code> option blends terrain <strong>illumination</strong> into the
 colour-mapped surface, so it reads by <em>form</em> (slopes, ridges, valleys) independent of the elevation range.
-Pass <code>hillshade=True</code> for defaults, or a dict to tune <code>vert_exag</code> (relief contrast), <code>azimuth</code>/<code>altitude</code>
-(light position), <code>blend_mode</code>, or <code>multidirectional</code>.</p>
+Pass it via <code>data_style=DataStyle(hillshade=True)</code> for defaults, or a dict to tune <code>vert_exag</code> (relief
+contrast), <code>azimuth</code>/<code>altitude</code> (light position), <code>blend_mode</code>, or <code>multidirectional</code>.</p>
 </div>
 </div>
 </div>
@@ -5072,8 +5102,9 @@ glyph.plot(data_style=DataStyle(hillshade={'vert_exag': 8}), title='+ hillshade'
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <p>The relief is the part colour alone could not provide. <code>hillshade</code> is a shared capability, not an ArrayGlyph
 special case: it works the same way on any glyph whose data is a continuous surface -- <code>MeshGlyph</code> (a
-triangulated terrain, <code>plot(z, location='node', hillshade=True)</code>) and <code>KDEGlyph</code> (relief-shading a density
-surface). It composes with the <code>topography</code> data-style preset and the diverging <code>center=0</code> sea-level hinge.</p>
+triangulated terrain, <code>plot(z, location='node', data_style=DataStyle(hillshade=True))</code>) and <code>KDEGlyph</code>
+(relief-shading a density surface). It composes with the <code>topography</code> data-style preset and the diverging
+<code>center=0</code> sea-level hinge.</p>
 </div>
 </div>
 </div>
@@ -5084,7 +5115,11 @@ surface). It composes with the <code>topography</code> data-style preset and the
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="10-data-style-presets-via-the-style-option">10. Data-style presets via the <code>style=</code> option<a class="anchor-link" href="#10-data-style-presets-via-the-style-option">¶</a></h2><p>Instead of choosing a colormap and scale by hand, pass <code>style=</code> a named preset from <code>cleopatra.styling.colors.DATA_STYLES</code>. The preset owns the colormap, the norm (linear / log / symlog / diverging), the transparent nodata, any value-linked opacity, and — for categorical presets — a discrete legend. The same <code>style=</code> option works on <code>MeshGlyph</code> and <code>KDEGlyph</code> too, and composes with <code>hillshade</code>.</p>
+<h2 id="10-data-style-presets-via-data_styledatastylestyle">10. Data-style presets via <code>data_style=DataStyle(style=...)</code><a class="anchor-link" href="#10-data-style-presets-via-data_styledatastylestyle">¶</a></h2><p>Instead of choosing a colormap and scale by hand, pass a named preset from
+<code>cleopatra.styling.colors.DATA_STYLES</code> via <code>data_style=DataStyle(style="...")</code>. The preset owns the colormap,
+the norm (linear / log / symlog / diverging), the transparent nodata, any value-linked opacity, and — for
+categorical presets — a discrete legend. The same <code>data_style=</code> option works on <code>MeshGlyph</code> and <code>KDEGlyph</code>
+too, and composes with <code>hillshade</code>.</p>
 </div>
 </div>
 </div>
@@ -5242,7 +5277,7 @@ d8_glyph.plot(data_style=DataStyle(style='flow_direction_d8'), title="style='flo
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h3 id="restyling-an-existing-glyph-apply_style-and-style">Restyling an existing glyph: <code>apply_style()</code> and <code>.style</code><a class="anchor-link" href="#restyling-an-existing-glyph-apply_style-and-style">¶</a></h3><p>You can apply -- or change -- a preset on a glyph that already exists, without rebuilding it. <code>apply_style(name)</code> re-renders the glyph <strong>in place</strong> by preset name, <code>glyph.style</code> reads the applied preset back, and the style is <strong>sticky</strong> (a later plain <code>plot()</code> keeps it) and <strong>clearable</strong> (<code>plot(style=None)</code>). <code>apply_style</code> takes ownership of the glyph's own axes -- don't use it on an axes shared with other content.</p>
+<h3 id="restyling-an-existing-glyph-apply_style-and-style">Restyling an existing glyph: <code>apply_style()</code> and <code>.style</code><a class="anchor-link" href="#restyling-an-existing-glyph-apply_style-and-style">¶</a></h3><p>You can apply -- or change -- a preset on a glyph that already exists, without rebuilding it. <code>apply_style(name)</code> re-renders the glyph <strong>in place</strong> by preset name, <code>glyph.style</code> reads the applied preset back, and the style is <strong>sticky</strong> (a later plain <code>plot()</code> keeps it) and <strong>clearable</strong> (<code>plot(data_style=DataStyle(style=None))</code>). <code>apply_style</code> takes ownership of the glyph's own axes -- don't use it on an axes shared with other content.</p>
 </div>
 </div>
 </div>
