@@ -2283,6 +2283,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0310-2026-08-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.31.0 (2026-08-12)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0300-2026-08-11" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3027,6 +3038,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0310-2026-08-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.31.0 (2026-08-12)
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#0300-2026-08-11" class="md-nav__link">
@@ -3774,6 +3796,54 @@
 
 
 <h1 id="changelog"><a class="toclink" href="#changelog">Changelog</a><a class="headerlink" href="#changelog" title="Permanent link">#</a></h1>
+<h2 id="0310-2026-08-12"><a class="toclink" href="#0310-2026-08-12">0.31.0 (2026-08-12)</a><a class="headerlink" href="#0310-2026-08-12" title="Permanent link">#</a></h2>
+<ul>
+<li>chore: repo housekeeping and docs refresh for the grouped-parameter API (#298)</li>
+<li>
+<ul>
+<li>untrack the maintainer-only tools/build_<em>.py scripts (kept on disk)
+  and broaden the ignore rule to tools/</em>.py</li>
+</ul>
+</li>
+<li>remove nbqa's leaked *_nbqa_ipynb.py temp files and ignore the pattern</li>
+<li>refresh the docs and README for the grouped render-parameter API: fix
+  examples that used removed loose keywords, add a Render-options
+  reference page, complete the migration guide, and fix a broken link</li>
+<li>rephrase historical change-log entries to drop vendored-source and
+  library names</li>
+<li>Closes #299, #300</li>
+<li>refactor(glyphs)!: move render/prep logic onto the grouped parameter objects (#291)</li>
+<li>Cohere the grouped rendering/prep objects with the logic that consumes
+their fields (the ColorScaling.build_norm / to_options model): the object
+owns the transform, the glyph just calls it. Also groups ArrayGlyph's
+loose RGB band-prep keywords into a new RgbBands object.</li>
+<li>
+<ul>
+<li>ColorBar owns to_options(), resolve(), reset_options(), and
+  specifies_placement(); _resolve_colorbar just delegates</li>
+</ul>
+</li>
+<li>PointOverlay.draw(), FrameLabel.resolve_location()/draw(), and
+  PanelLabels.label_for()/panel_title()/validate() replace the inline
+  plot/animate/facet logic; base Glyph._plot_point_values is removed</li>
+<li>add DataStyle.for_apply_style() and unify the hillshade "unset"
+  sentinel, deleting three per-glyph duplicates</li>
+<li>add Glyph._snapshot_group_options() for the shared pre-merge
+  option-snapshot (ArrayGlyph.plot and KDEGlyph.plot)</li>
+<li>group ArrayGlyph's rgb / surface_reflectance / cutoff / percentile
+  constructor keywords into an RgbBands object owning validate() /
+  prepare(); <strong>init</strong> drops from 10 to 7 explicit params</li>
+<li>fix the RGB surface-reflectance cutoff to clip each band's data, not
+  the integer band index</li>
+<li>add unit tests + doctest examples for the new methods; migrate the
+  examples, the array_glyph notebook, and add a migration-guide entry</li>
+<li>BREAKING CHANGE: ArrayGlyph no longer accepts the loose rgb /
+surface_reflectance / cutoff / percentile constructor keywords; pass
+rgb_bands=RgbBands([r, g, b], surface_reflectance=..., cutoff=...,
+percentile=...) instead. prepare_array() and scale_percentile() keep
+their loose keyword signatures.</li>
+<li>Closes #292, #293, #294, #295, #296, #297</li>
+</ul>
 <h2 id="0300-2026-08-11"><a class="toclink" href="#0300-2026-08-11">0.30.0 (2026-08-11)</a><a class="headerlink" href="#0300-2026-08-11" title="Permanent link">#</a></h2>
 <ul>
 <li>feat(styling)!: grouped render parameters and a large vendored preset-library expansion (#275)</li>
