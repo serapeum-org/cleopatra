@@ -93,7 +93,8 @@ objects in a prior release; passing them as loose keywords **raises** with a poi
 | `color_scale`, `gamma`, `line_threshold`, `line_scale`, `bounds`, `midpoint` | `cleopatra.styling.scaling.ColorScaling` |
 | `levels`, `labels`, `label_kw` | `cleopatra.styling.params.Contour` |
 | `display_cell_value`, `num_size`, `background_color_threshold` | `cleopatra.styling.params.CellValues` |
-| `style`, `hillshade` | `cleopatra.styling.params.DataStyle` |
+| `style`, `hillshade`, `bands`, `alpha`, `alpha_range` | `cleopatra.styling.params.DataStyle` |
+| `scheme`, `k`, `category_legend_kwargs` | `cleopatra.styling.params.Classify` (passed as `classify=` on the scatter/vector/flow/polygon glyphs) |
 
 ### Colour bars — `cbar_*` still work
 

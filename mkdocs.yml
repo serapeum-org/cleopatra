@@ -106,6 +106,7 @@ nav:
     - Glyph architecture: diagrams/glyph-architecture.md
   - Reference:
     - Glyph (base): reference/glyph.md
+    - Render options (grouped params): reference/render-options.md
     - HistogramGlyph: reference/histogram-glyph.md
     - ArrayGlyph: reference/array-glyph.md
     - MeshGlyph: reference/mesh-glyph.md

@@ -198,6 +198,15 @@ graph TD
 - Extract color ramps from images and create custom matplotlib colormaps.
 - Ready-made "haze" colormaps and alpha-scaled rendering helpers for the composable data styles above.
 
+### Styling with grouped options
+- Every glyph's `plot()` / `animate()` takes small, discoverable **typed objects** instead of a long list of loose
+  keyword arguments: `color=ColorScaling(...)`, `contour=Contour(levels=...)`, `cells=CellValues(...)`,
+  `classify=Classify(...)`, `data_style=DataStyle(style=..., hillshade=...)`, and `colorbar=ColorBar(...)`.
+- `ArrayGlyph` adds `points=PointOverlay(...)`, `frame_label=FrameLabel(...)`, `facet(labels=PanelLabels(...))`, and
+  `ArrayGlyph(array, rgb_bands=RgbBands([r, g, b], surface_reflectance=..., percentile=...))` for RGB composites.
+- Migrating from the old loose-keyword API (e.g. `rgb=`, `cutoff=`, `col_coords=`, `text_colors=`)? See the
+  [migration guide](https://serapeum-org.github.io/cleopatra/latest/migration/).
+
 ## Installation
 
 ### pip
@@ -317,6 +326,8 @@ separate system install. Geospatial basemaps and globe-projection presets (`GeoM
 ## Documentation
 
 Full documentation is available at [serapeum-org.github.io/cleopatra](https://serapeum-org.github.io/cleopatra/latest/).
+Upgrading across a breaking release? See the
+[migration guide](https://serapeum-org.github.io/cleopatra/latest/migration/).
 
 ## License
 

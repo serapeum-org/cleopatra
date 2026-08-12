@@ -24,15 +24,44 @@ animations exported to GIF / MP4 / MOV / AVI.
       show_source: true
       heading_level: 3
 
+## Grouped input objects
+
+`ArrayGlyph`'s `plot()` / `animate()` / `facet()` accept these typed objects (importable from
+`cleopatra.glyphs.gridded.array_glyph`) in place of the loose keyword arguments they replaced:
+`rgb_bands=RgbBands(...)` for RGB compositing, `points=PointOverlay(...)` for a point overlay,
+`frame_label=FrameLabel(...)` for the per-frame `animate` label, and `labels=PanelLabels(...)`
+to title `facet` panels by coordinate.
+
+::: cleopatra.glyphs.gridded.array_glyph.RgbBands
+    options:
+      show_root_heading: true
+      heading_level: 3
+
+::: cleopatra.glyphs.gridded.array_glyph.PointOverlay
+    options:
+      show_root_heading: true
+      heading_level: 3
+
+::: cleopatra.glyphs.gridded.array_glyph.FrameLabel
+    options:
+      show_root_heading: true
+      heading_level: 3
+
+::: cleopatra.glyphs.gridded.array_glyph.PanelLabels
+    options:
+      show_root_heading: true
+      heading_level: 3
+
 ## What's new
 
 - **`plot(kind=...)`** — choose the renderer: `"auto"` (default — `pcolormesh` when
   `coords=` was given, otherwise `imshow`), `"imshow"`, `"pcolormesh"`, `"contour"`,
   `"contourf"`.
-- **xarray-aligned colour kwargs** (on the constructor and `plot()`): `robust` (clip
+- **xarray-aligned colour kwargs** (still loose, on the constructor and `plot()`): `robust` (clip
   `vmin`/`vmax` to the 2nd/98th percentile), `center` (symmetrise around a value, auto
-  `RdBu_r`), `levels` (discrete colour bins / contour edges), `extend` (colorbar arrows),
-  `cbar_kwargs` (forwarded to `fig.colorbar`).
+  `RdBu_r`), `extend` (colorbar arrows), `cbar_kwargs` (forwarded to `fig.colorbar`). Discrete
+  colour bins / contour edges moved onto the `Contour` group object — pass
+  `contour=Contour(levels=...)`.
 - **`ArrayGlyph(..., coords=(x, y))`** — plot curvilinear / non-uniform grids (1-D cell
   centres or 2-D meshgrids); with `kind="auto"` this routes to `pcolormesh`. Mutually
   exclusive with `extent`.
@@ -42,8 +71,10 @@ animations exported to GIF / MP4 / MOV / AVI.
   value instead of the integer slice index.
 - **`animate(..., data_getter=callable)`** — supply each frame lazily (e.g. a NetCDF time
   slab) instead of holding the whole stack in memory.
-- `color_scale` is validated against `cleopatra.styling.styles.ColorScale` (also re-exported as
-  `cleopatra.glyphs.gridded.array_glyph.ColorScale`); a bad value raises `ValueError`.
+- **The colour scale is chosen via the `ColorScaling` group object** —
+  `plot(color=ColorScaling.power(gamma=...))`, `ColorScaling.sym_log(...)`,
+  `ColorScaling.midpoint(at=...)`, `ColorScaling.boundary(bounds=...)`, etc. (the loose
+  `color_scale` keyword was removed and now raises).
 
 !!! note "Changes from earlier versions"
     - `ArrayGlyph.plot()` returns `(fig, ax)`.
@@ -69,7 +100,9 @@ fig, ax = glyph.plot()
 ### Display cell values
 
 ```python
-fig, ax = glyph.plot(display_cell_value=True)
+from cleopatra.styling.params import CellValues
+
+fig, ax = glyph.plot(cells=CellValues(show=True))
 ```
 
 ![Display Cell Values Example](../images/array_glyph/display-cell-values.png)
@@ -77,9 +110,11 @@ fig, ax = glyph.plot(display_cell_value=True)
 ### Display points
 
 ```python
+from cleopatra.glyphs.gridded.array_glyph import PointOverlay
+
 # [value, row, col] per point
 points = np.array([[1, 2, 3], [2, 5, 7], [3, 8, 1]])
-fig, ax = glyph.plot(points=points)
+fig, ax = glyph.plot(points=PointOverlay(points))
 ```
 
 ![Display Points Example](../images/array_glyph/display-points.png)
@@ -89,11 +124,12 @@ fig, ax = glyph.plot(points=points)
 ```python
 import numpy as np
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+from cleopatra.styling.params import Contour
 
 data = np.linspace(-3.0, 8.0, 25).reshape(5, 5)
 
 # filled contours, discretised into 6 levels, colorbar arrows on both ends
-fig, ax = ArrayGlyph(data).plot(kind="contourf", levels=6, extend="both")
+fig, ax = ArrayGlyph(data).plot(kind="contourf", contour=Contour(levels=6), extend="both")
 
 # centre a diverging colormap on 0 (auto RdBu_r), clip outliers (robust)
 fig, ax = ArrayGlyph(data).plot(center=0.0, robust=True)

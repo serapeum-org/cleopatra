@@ -256,18 +256,22 @@ mg.save_animation("simulation.gif", fps=5)
 |-------|----------|----------------|
 | `linear` | Default. Uniform mapping from data to color. | `vmin`, `vmax` |
 | `power` | Emphasize low or high values. | `gamma` (< 1 emphasizes low) |
-| `sym-lognorm` | Data spanning many orders of magnitude with a zero crossing. | `line_threshold`, `line_scale` |
+| `sym-lognorm` | Data spanning many orders of magnitude with a zero crossing. | `threshold`, `scale` |
 | `boundary-norm` | Discrete color bins at specific thresholds. | `bounds` (list of boundaries) |
-| `midpoint` | Split the colormap at a meaningful value (e.g., zero for difference plots). | `midpoint` |
+| `midpoint` | Split the colormap at a meaningful value (e.g., zero for difference plots). | `at` |
+
+Pick a scale by passing the matching `ColorScaling` factory as `color=`:
+`ColorScaling.power(gamma=...)`, `ColorScaling.sym_log(threshold=..., scale=...)`,
+`ColorScaling.boundary(bounds=[...])`, `ColorScaling.midpoint(at=...)`, or `ColorScaling.linear()`.
 
 ```python
 # Example: midpoint scale for a difference plot
 from cleopatra.styling.colorbar import ColorBar
+from cleopatra.styling.scaling import ColorScaling
 
 mg.plot(
     difference_data,
-    color_scale="midpoint",
-    midpoint=0.0,
+    color=ColorScaling.midpoint(at=0.0),
     cmap="RdBu_r",
     colorbar=ColorBar(label="Change [m]"),
 )
