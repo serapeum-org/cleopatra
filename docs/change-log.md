@@ -1,5 +1,46 @@
 # Changelog
 
+## 0.31.0 (2026-08-12)
+
+
+- chore: repo housekeeping and docs refresh for the grouped-parameter API (#298)
+- - untrack the maintainer-only tools/build_*.py scripts (kept on disk)
+  and broaden the ignore rule to tools/*.py
+- remove nbqa's leaked *_nbqa_ipynb.py temp files and ignore the pattern
+- refresh the docs and README for the grouped render-parameter API: fix
+  examples that used removed loose keywords, add a Render-options
+  reference page, complete the migration guide, and fix a broken link
+- rephrase historical change-log entries to drop vendored-source and
+  library names
+- Closes #299, #300
+- refactor(glyphs)!: move render/prep logic onto the grouped parameter objects (#291)
+- Cohere the grouped rendering/prep objects with the logic that consumes
+their fields (the ColorScaling.build_norm / to_options model): the object
+owns the transform, the glyph just calls it. Also groups ArrayGlyph's
+loose RGB band-prep keywords into a new RgbBands object.
+- - ColorBar owns to_options(), resolve(), reset_options(), and
+  specifies_placement(); _resolve_colorbar just delegates
+- PointOverlay.draw(), FrameLabel.resolve_location()/draw(), and
+  PanelLabels.label_for()/panel_title()/validate() replace the inline
+  plot/animate/facet logic; base Glyph._plot_point_values is removed
+- add DataStyle.for_apply_style() and unify the hillshade "unset"
+  sentinel, deleting three per-glyph duplicates
+- add Glyph._snapshot_group_options() for the shared pre-merge
+  option-snapshot (ArrayGlyph.plot and KDEGlyph.plot)
+- group ArrayGlyph's rgb / surface_reflectance / cutoff / percentile
+  constructor keywords into an RgbBands object owning validate() /
+  prepare(); __init__ drops from 10 to 7 explicit params
+- fix the RGB surface-reflectance cutoff to clip each band's data, not
+  the integer band index
+- add unit tests + doctest examples for the new methods; migrate the
+  examples, the array_glyph notebook, and add a migration-guide entry
+- BREAKING CHANGE: ArrayGlyph no longer accepts the loose rgb /
+surface_reflectance / cutoff / percentile constructor keywords; pass
+rgb_bands=RgbBands([r, g, b], surface_reflectance=..., cutoff=...,
+percentile=...) instead. prepare_array() and scale_percentile() keep
+their loose keyword signatures.
+- Closes #292, #293, #294, #295, #296, #297
+
 ## 0.30.0 (2026-08-11)
 
 
