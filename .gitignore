@@ -76,6 +76,8 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+# nbqa leaks a temp .py next to each notebook it lints; ignore those scratch files
+*_nbqa_ipynb.py
 
 # IPython
 profile_default/
