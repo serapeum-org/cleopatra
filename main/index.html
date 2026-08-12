@@ -941,6 +941,8 @@
       
         
       
+        
+      
     
     
     
@@ -1003,6 +1005,34 @@
     
   
     Glyph (base)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/render-options/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Render options (grouped params)
   
 
     
@@ -2747,7 +2777,8 @@ sensible scientific defaults.</p>
 <li>Plot 2-D and 3-D <code>numpy</code> arrays with automatic colorbars and selectable colour scales
   (<code>linear</code>, <code>power</code>, <code>sym-lognorm</code>, <code>boundary-norm</code>, <code>midpoint</code>), rendered via <code>imshow</code>,
   <code>pcolormesh</code>, <code>contour</code>, or <code>contourf</code> (<code>plot(kind=...)</code>).</li>
-<li>xarray-aligned colour options: <code>robust</code>, <code>center</code>, <code>levels</code>, <code>extend</code>, <code>cbar_kwargs</code>.</li>
+<li>xarray-aligned colour options (still loose): <code>robust</code>, <code>center</code>, <code>extend</code>, <code>cbar_kwargs</code>
+  (discrete <code>levels</code> moved onto <code>contour=Contour(levels=...)</code>).</li>
 <li>Curvilinear / non-uniform grids with <code>coords=(x, y)</code>; faceted grids of subplots with
   <code>facet(col=, row=, col_wrap=, extents=)</code> → <code>FacetGrid</code>.</li>
 <li>Animate 3-D single-band stacks or 4-D RGB/RGBA true-colour stacks over time (with an optional lazy
@@ -2829,7 +2860,7 @@ sensible scientific defaults.</p>
   flat) via named presets, pairing with <code>apply_data_style</code> to build CAMS-style globe animations in a few
   lines. The orthographic helpers need the <code>cleopatra[tiles]</code> extra (<code>pyproj</code>).</li>
 </ul>
-<p>See the <a href="notebooks/haze_preset/haze_preset_examples.ipynb">Haze-style presets example</a> and the
+<p>See the <a href="notebooks/presets/haze_preset_examples/">Haze-style presets example</a> and the
 <a href="reference/projection/">Projection reference</a>.</p>
 <h3 id="colors-styles-config"><a class="toclink" href="#colors-styles-config"><code>Colors</code>, <code>styles</code>, <code>config</code></a><a class="headerlink" href="#colors-styles-config" title="Permanent link">#</a></h3>
 <ul>

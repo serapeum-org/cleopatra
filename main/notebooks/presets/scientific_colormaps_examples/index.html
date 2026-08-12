@@ -725,6 +725,8 @@
       
         
       
+        
+      
     
     
     
@@ -787,6 +789,34 @@
     
   
     Glyph (base)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/render-options/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Render options (grouped params)
   
 
     
@@ -3524,7 +3554,7 @@ fig, ax = glyph.plot(title="Reversed — cmocean:thermal_r")</div>
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="elevation-with-a-landsea-colormap">Elevation with a land+sea colormap<a class="anchor-link" href="#elevation-with-a-landsea-colormap">¶</a></h2><p><code>cmocean:topo</code> is a <strong>hypsometric</strong> colormap: one colour family for the ocean (blues) and another for land (greens/browns), meeting at a hinge. For that hinge to land on <strong>sea level</strong>, centre the colour scale at 0 with <code>color_scale="midpoint", midpoint=0</code> — otherwise the ocean/land split falls at the middle of the <em>data</em> range (here ≈ −1100 m), not at the coastline.</p>
+<h2 id="elevation-with-a-landsea-colormap">Elevation with a land+sea colormap<a class="anchor-link" href="#elevation-with-a-landsea-colormap">¶</a></h2><p><code>cmocean:topo</code> is a <strong>hypsometric</strong> colormap: one colour family for the ocean (blues) and another for land (greens/browns), meeting at a hinge. For that hinge to land on <strong>sea level</strong>, centre the colour scale at 0 with <code>color=ColorScaling.midpoint(at=0)</code> — otherwise the ocean/land split falls at the middle of the <em>data</em> range (here ≈ −1100 m), not at the coastline.</p>
 </div>
 </div>
 </div>

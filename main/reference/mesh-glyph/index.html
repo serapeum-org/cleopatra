@@ -727,6 +727,8 @@
       
         
       
+        
+      
     
     
     
@@ -790,6 +792,34 @@
     
   
     Glyph (base)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../render-options/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Render options (grouped params)
   
 
     
@@ -6701,7 +6731,7 @@ Default is <code>[0.1, 0.2]</code>.</p>
                 <code>colorbar</code>
             </td>
             <td>
-                  <code><span title="bool">bool</span> | <span title="cleopatra.styling.colorbar.ColorBar">ColorBar</span> | None</code>
+                  <code><span title="bool">bool</span> | <a class="autorefs autorefs-internal" title="&lt;code&gt;cleopatra.styling.colorbar.ColorBar&lt;/code&gt;" href="../render-options/#cleopatra.styling.colorbar.ColorBar">ColorBar</a> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -7516,7 +7546,7 @@ new.</p>
                 <code>colorbar</code>
             </td>
             <td>
-                  <code><span title="bool">bool</span> | <span title="cleopatra.styling.colorbar.ColorBar">ColorBar</span> | None</code>
+                  <code><span title="bool">bool</span> | <a class="autorefs autorefs-internal" title="&lt;code&gt;cleopatra.styling.colorbar.ColorBar&lt;/code&gt;" href="../render-options/#cleopatra.styling.colorbar.ColorBar">ColorBar</a> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -7568,7 +7598,12 @@ the default) or line contours (<code>tricontour</code>) when
                 <code>color</code>
             </td>
             <td>
-                  <code><span title="cleopatra.styling.scaling.ColorScaling">ColorScaling</span> | None</code>
+                  <code><a class="autorefs autorefs-internal" title="&lt;code&gt;cleopatra.styling.scaling.ColorScaling&lt;/code&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../render-options/#cleopatra.styling.scaling.ColorScaling">ColorScaling</a> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -7588,7 +7623,12 @@ the default) or line contours (<code>tricontour</code>) when
                 <code>contour</code>
             </td>
             <td>
-                  <code><span title="cleopatra.styling.params.Contour">Contour</span> | None</code>
+                  <code><a class="autorefs autorefs-internal" title="&lt;code&gt;cleopatra.styling.params.Contour&lt;/code&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../render-options/#cleopatra.styling.params.Contour">Contour</a> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -7613,7 +7653,12 @@ artists on <code>self.contour_labels</code> -- a no-op for <code>tripcolor</code
                 <code>data_style</code>
             </td>
             <td>
-                  <code><span title="cleopatra.styling.params.DataStyle">DataStyle</span> | None</code>
+                  <code><a class="autorefs autorefs-internal" title="&lt;code&gt;cleopatra.styling.params.DataStyle&lt;/code&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../render-options/#cleopatra.styling.params.DataStyle">DataStyle</a> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -8880,20 +8925,22 @@ to None (clearing any colour-mapped artist left by a prior
 <a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">mg</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">]),</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="color-scales"><a class="toclink" href="#color-scales">Color Scales</a><a class="headerlink" href="#color-scales" title="Permanent link">#</a></h3>
-<p>All 5 color scale types are supported via the <code>color_scale</code> keyword:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">mg</span> <span class="o">=</span> <span class="n">MeshGlyph</span><span class="p">(</span><span class="n">node_x</span><span class="p">,</span> <span class="n">node_y</span><span class="p">,</span> <span class="n">faces</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+<p>All color-scale types are chosen via the <code>color=ColorScaling.…</code> group object:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styling.scaling</span><span class="w"> </span><span class="kn">import</span> <span class="n">ColorScaling</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1"># Power scale (emphasize low values)</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">mg</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">color_scale</span><span class="o">=</span><span class="s2">&quot;power&quot;</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="c1"># Symmetrical log scale</span>
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">mg</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">color_scale</span><span class="o">=</span><span class="s2">&quot;sym-lognorm&quot;</span><span class="p">)</span>
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="c1"># Discrete boundary scale</span>
-<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">mg</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">color_scale</span><span class="o">=</span><span class="s2">&quot;boundary-norm&quot;</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">])</span>
-<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>
-<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="c1"># Midpoint scale (split at a value)</span>
-<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">mg</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">color_scale</span><span class="o">=</span><span class="s2">&quot;midpoint&quot;</span><span class="p">,</span> <span class="n">midpoint</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;RdBu_r&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">mg</span> <span class="o">=</span> <span class="n">MeshGlyph</span><span class="p">(</span><span class="n">node_x</span><span class="p">,</span> <span class="n">node_y</span><span class="p">,</span> <span class="n">faces</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="c1"># Power scale (emphasize low values)</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">mg</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">ColorScaling</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">gamma</span><span class="o">=</span><span class="mf">0.3</span><span class="p">))</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="c1"># Symmetrical log scale</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">mg</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">ColorScaling</span><span class="o">.</span><span class="n">sym_log</span><span class="p">())</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="c1"># Discrete boundary scale</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">mg</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">ColorScaling</span><span class="o">.</span><span class="n">boundary</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">]))</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="c1"># Midpoint scale (split at a value)</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">mg</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">ColorScaling</span><span class="o">.</span><span class="n">midpoint</span><span class="p">(</span><span class="n">at</span><span class="o">=</span><span class="mf">3.0</span><span class="p">),</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;RdBu_r&quot;</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="colorbar-customization"><a class="toclink" href="#colorbar-customization">Colorbar Customization</a><a class="headerlink" href="#colorbar-customization" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">mg</span> <span class="o">=</span> <span class="n">MeshGlyph</span><span class="p">(</span><span class="n">node_x</span><span class="p">,</span> <span class="n">node_y</span><span class="p">,</span> <span class="n">faces</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
