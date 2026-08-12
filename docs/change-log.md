@@ -84,10 +84,10 @@ group object instead. text_colors is renamed to cell_value_text_colors,
 no_elem to num_domain_cells, and facet's figsize to figure_size. Passing
 a bare array as points no longer works; wrap it in a PointOverlay.
 - Closes #277, #278, #279, #280, #281, #282, #283, #284, #285
-- feat(geo): add a relief backdrop to the ecmwf-dark reference map (#273)
+- feat(geo): add a relief backdrop to the dark reference map (#273)
 - add_reference_map now draws a dimmed hypsometric relief backdrop beneath
 the data when the resolved preset carries a "relief" entry -- present on
-ecmwf-dark, absent on the chrome-only ecmwf. The relief config accepts a
+the dark map, absent on the chrome-only light map. The relief config accepts a
 resolution string, an add_relief kwargs dict, or True (mirroring the
 sibling _draw_basemap), and defaults crs to self.crs via _basemap_kwargs
 so it warps to match non-EPSG:4326 data.
@@ -183,11 +183,11 @@ colorbar=None (default) preserves the prior per-panel behaviour.
                                                                                                                      
   - Unify all 111 presets onto one canonical on-disk schema with a single                                            
     loader; the in-memory DATA_STYLES is byte-for-byte unchanged.                                                    
-  - Add a namespaced scientific-colormap resolver (cmocean:/crameri:)                                                
+  - Add a namespaced scientific-colormap resolver (cmocean: and other collections)                                                
     behind the optional [science-colors] extra.                                                                      
   - Add a native line-glow primitive and glow= on LineGlyph/FlowGlyph.                                               
   - Add projection= (globe/flat) on ArrayGlyph and MeshGlyph, styled-globe                                           
-    composition, Crameri terrain and NCL/MeteoSwiss colour tables, and fix                                           
+    composition, scientific terrain and NCL/MeteoSwiss colour tables, and fix                                           
     the topography hinge mis-registration.                                                                           
   - Add a units layer (convert_units), a shortName->style lookup, a NEXRAD                                           
     radar preset, THIRD_PARTY_NOTICES, and the publication_map composer.                                             
@@ -347,7 +347,7 @@ target, and stop wasted CI time on superseded pull request pushes.
 - palettes: one Palette record + PaletteKind registry with a
   kind-driven default_norm and preview_palettes(); the haze / CAMS-AOD
   / flame families now build in CIELAB and register at import
-- colors: ECMWF/cmocean ocean & weather data-style presets, continuous
+- colors: cmocean ocean & weather data-style presets, continuous
   ramps re-interpolated in CIELAB, and a defaults < preset < explicit
   style precedence
 - array_glyph/glyph: a ColorBar spec (location / inside / box /
@@ -365,8 +365,8 @@ Refs #216
 BREAKING CHANGE: the weather/ocean data-style preset keys were renamed
 from GRIB shortNames to descriptive names; update any code that looks
 up presets by the old keys.
-- refactor(data)!: restructure the ECMWF weather/ocean preset system and rename its keys (#217)
-- - Merge the Magics and earthkit-plots preset libraries into one
+- refactor(data)!: restructure the weather/ocean preset system and rename its keys (#217)
+- - Merge the Magics and reference preset libraries into one
   weather_presets.json with a single loader, and rename every weather
   preset key from a raw GRIB shortName to a descriptive slug (e.g.
   2t -> temperature_2m).
@@ -543,7 +543,7 @@ lines up under the plot instead of being stretched or misprojected.
 - - Add a reusable cleopatra.hillshade module (shade_grid, shade_faces,  
     resolve_hillshade) and wire relief shading into ArrayGlyph, MeshGlyph,  
     and KDEGlyph via a hillshade option at construction and plot() time.  
-  - Extend the DATA_STYLES preset system with vendored ECMWF/Magics (69)  
+  - Extend the DATA_STYLES preset system with vendored Magics (69)  
     and cmocean (15) libraries, CAMS AOD colormaps, and log, symlog,  
     diverging, and categorical norm handling in apply_data_style.  
   - Add flow_direction_d8 and flow_accumulation presets and a  
@@ -662,13 +662,13 @@ lines up under the plot instead of being stretched or misprojected.
     and MeshGlyph inherit them.  
 
   Closes #185
-- feat(geo): add ECMWF reference-map style preset for georeferenced glyphs (#187)
+- feat(geo): add a reference-map style preset for georeferenced glyphs (#187)
 - Add GeoMixin.add_reference_map(style=...) so the ~15-line weather-centre  
   map recipe (grey Natural Earth coastline + borders, a dashed lon/lat  
   graticule, degree labels, a subtle frame) is a single call on top of a  
   plotted, georeferenced glyph.  
 
-  - Presets "ecmwf" (light backgrounds) and "ecmwf-dark" (lighter greys so  
+  - Light-background and dark-field reference-map presets (lighter greys so  
     coastlines stay visible over a dark field), plus style="auto" that  
     picks between them from the displayed luminance (im.to_rgba through the  
     colormap/norm; only opaque cells count, so light no-data fields are not  
@@ -916,7 +916,7 @@ update_changelog_on_bump is set. That key was missing from the
 
   Add `labels` (bool) and `label_kw` (dict) options to ArrayGlyph.plot so
   line contours can carry inline numeric labels through ax.clabel, the way
-  ECMWF Magics / cartopy / earthkit-plots label isolines. Previously the
+  Magics / cartopy and similar tools label isolines. Previously the
   QuadContourSet was returned as the mappable but every caller had to
   re-roll the same ax.clabel glue.
 -   - labels=True draws inline labels (defaults inline=True, fontsize=8,

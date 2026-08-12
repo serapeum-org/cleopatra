@@ -87,22 +87,24 @@ fig, ax = mg.plot(np.array([1.0, 2.0, 3.0]), edgecolor="black")
 
 ### Color Scales
 
-All 5 color scale types are supported via the `color_scale` keyword:
+All color-scale types are chosen via the `color=ColorScaling.…` group object:
 
 ```python
+from cleopatra.styling.scaling import ColorScaling
+
 mg = MeshGlyph(node_x, node_y, faces, fill_value=-1)
 
 # Power scale (emphasize low values)
-fig, ax = mg.plot(data, color_scale="power", gamma=0.3)
+fig, ax = mg.plot(data, color=ColorScaling.power(gamma=0.3))
 
 # Symmetrical log scale
-fig, ax = mg.plot(data, color_scale="sym-lognorm")
+fig, ax = mg.plot(data, color=ColorScaling.sym_log())
 
 # Discrete boundary scale
-fig, ax = mg.plot(data, color_scale="boundary-norm", bounds=[0, 2, 4, 6])
+fig, ax = mg.plot(data, color=ColorScaling.boundary(bounds=[0, 2, 4, 6]))
 
 # Midpoint scale (split at a value)
-fig, ax = mg.plot(data, color_scale="midpoint", midpoint=3.0, cmap="RdBu_r")
+fig, ax = mg.plot(data, color=ColorScaling.midpoint(at=3.0), cmap="RdBu_r")
 ```
 
 ### Colorbar Customization

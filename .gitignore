@@ -76,6 +76,8 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+# nbqa leaks a temp .py next to each notebook it lints; ignore those scratch files
+*_nbqa_ipynb.py
 
 # IPython
 profile_default/
@@ -138,7 +140,5 @@ dmypy.json
 # Local-only project guidance for Claude Code (not tracked)
 CLAUDE.md
 
-# Local-only maintainer colour-map download scripts (kept out of git)
-tools/build_scientific_presets.py
-tools/build_terrain_presets.py
-tools/build_weather_presets.py
+# Local-only maintainer build / colour-map download scripts (kept out of git)
+tools/*.py

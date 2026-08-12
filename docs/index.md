@@ -92,7 +92,8 @@ graph TD
 - Plot 2-D and 3-D `numpy` arrays with automatic colorbars and selectable colour scales
   (`linear`, `power`, `sym-lognorm`, `boundary-norm`, `midpoint`), rendered via `imshow`,
   `pcolormesh`, `contour`, or `contourf` (`plot(kind=...)`).
-- xarray-aligned colour options: `robust`, `center`, `levels`, `extend`, `cbar_kwargs`.
+- xarray-aligned colour options (still loose): `robust`, `center`, `extend`, `cbar_kwargs`
+  (discrete `levels` moved onto `contour=Contour(levels=...)`).
 - Curvilinear / non-uniform grids with `coords=(x, y)`; faceted grids of subplots with
   `facet(col=, row=, col_wrap=, extents=)` → `FacetGrid`.
 - Animate 3-D single-band stacks or 4-D RGB/RGBA true-colour stacks over time (with an optional lazy
@@ -185,7 +186,7 @@ See the [Tiles reference](reference/tiles.md) and [Reference data reference](ref
   flat) via named presets, pairing with `apply_data_style` to build CAMS-style globe animations in a few
   lines. The orthographic helpers need the `cleopatra[tiles]` extra (`pyproj`).
 
-See the [Haze-style presets example](notebooks/haze_preset/haze_preset_examples.ipynb) and the
+See the [Haze-style presets example](notebooks/presets/haze_preset_examples.ipynb) and the
 [Projection reference](reference/projection.md).
 
 ### `Colors`, `styles`, `config`
