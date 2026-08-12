@@ -1268,8 +1268,9 @@ class TestPrepareArrayValidation:
     def test_too_few_bands_raises(self):
         """An RGB array with fewer than 3 bands raises `ValueError`."""
         arr = np.zeros((2, 4, 4), dtype=np.float32)
+        bands = RgbBands([0, 1])
         with pytest.raises(ValueError, match="at least 3 bands"):
-            ArrayGlyph(arr, rgb_bands=RgbBands([0, 1]))
+            ArrayGlyph(arr, rgb_bands=bands)
 
     def test_prepare_array_with_cutoff_only(self):
         """`cutoff` clips + rescales each band via the surface-reflectance branch.
@@ -7084,8 +7085,10 @@ class TestRgbBands:
         Test scenario:
             A `(2, H, W)` array raises `ValueError` naming the 3-band need.
         """
+        bands = RgbBands([0, 1, 2])
+        arr = np.zeros((2, 4, 4))
         with pytest.raises(ValueError, match="at least 3 bands"):
-            RgbBands([0, 1, 2]).validate(np.zeros((2, 4, 4)))
+            bands.validate(arr)
 
     def test_validate_passes_for_three_bands(self):
         """`validate` accepts an array with at least 3 bands.
@@ -7102,8 +7105,10 @@ class TestRgbBands:
             `RgbBands(None).prepare(arr)` raises `ValueError` instead of
             `array[None]` (a spurious new axis).
         """
+        bands = RgbBands(None)
+        arr = np.zeros((3, 4, 4))
         with pytest.raises(ValueError, match="indices must be"):
-            RgbBands(None).prepare(np.zeros((3, 4, 4)))
+            bands.prepare(arr)
 
     def test_prepare_reorders_bands_without_stretch(self):
         """With no stretch, `prepare` only selects + reorders the bands.
@@ -7264,8 +7269,9 @@ class TestPanelLabelsMethods:
         Test scenario:
             2 col labels against a 3-column axis raises, naming `labels.col`.
         """
+        labels = PanelLabels(col=["a", "b"])
         with pytest.raises(ValueError, match=r"labels\.col"):
-            PanelLabels(col=["a", "b"]).validate(3)
+            labels.validate(3)
 
     def test_validate_raises_on_row_length_mismatch(self):
         """`validate` rejects a row-label count that does not match the axis.
@@ -7273,5 +7279,6 @@ class TestPanelLabelsMethods:
         Test scenario:
             1 row label against a 2-row axis raises, naming `labels.row`.
         """
+        labels = PanelLabels(col=["a", "b"], row=["x"])
         with pytest.raises(ValueError, match=r"labels\.row"):
-            PanelLabels(col=["a", "b"], row=["x"]).validate(2, 2)
+            labels.validate(2, 2)
