@@ -1,0 +1,5364 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Visualization package">
+      
+      
+      
+        <link rel="canonical" href="https://serapeum-org.github.io/cleopatra/0.31.0/change-log/">
+      
+      
+        <link rel="prev" href="../notebooks/reference/reference_examples/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+    
+    
+      
+        <title>Change-log - Cleopatra</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#changelog" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Cleopatra" class="md-header__button md-logo" aria-label="Cleopatra" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Cleopatra
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Change-log
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="lime"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/serapeum-org/cleopatra" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    serapeum-org/cleopatra
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../installation/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Installation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../scope/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Scope
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../migration/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Migration guide
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../unstructured-mesh-guide/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../reference/glyph/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../notebooks/array_glyph/array_glyph_examples/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Examples
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Change-log
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Cleopatra" class="md-nav__button md-logo" aria-label="Cleopatra" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Cleopatra
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/serapeum-org/cleopatra" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    serapeum-org/cleopatra
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../unstructured-mesh-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Unstructured meshes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diagrams/glyph-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glyph architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glyph (base)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/render-options/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Render options (grouped params)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/histogram-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HistogramGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/array-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ArrayGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/mesh-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/scatter-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ScatterGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/vector-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    VectorGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/flow-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FlowGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/line-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LineGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/polygon-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PolygonGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/kde-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    KDEGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/tiles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tiles (basemaps)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/reference-data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference data (coastlines/relief)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/geo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Geo basemap methods (glyphs)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/projection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Projection (globe frames)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/animation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Animations (save/embed)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/colors-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Colors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/styles-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Styles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/perceptual/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Perceptual colour toolkit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/palettes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Palettes (registry)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/array_glyph/array_glyph_examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ArrayGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/array_glyph/rgb_animation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Animating RGB / true-colour stacks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/array_glyph/reference_map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Weather-centre reference maps with
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/animation/animation_examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Saving and embedding animations with
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_5" id="__nav_7_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Presets
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Presets
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/presets/data_style_presets_examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data-style presets: name a look, pass a field
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/presets/haze_preset_examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Composable haze-style presets: data style + projection style
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/presets/scientific_colormaps_examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scientific colormaps in cleopatra
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/presets/ocean_styles_gallery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cleopatra ocean styles on real data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/presets/weather_styles_gallery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cleopatra weather styles on real data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/presets/temperature_animation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Real 2 m temperature — styled plot and animation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/presets/precipitation_animation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Real precipitation — styled plot and animation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/presets/operational_temperature_animation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operational 2 m temperature animation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/presets/magics_2t_flame_plume/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Temperature as a glowing flame / plume
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/mesh_glyph/mesh_glyph_examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshGlyph — Unstructured Mesh Visualization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/scatter_glyph/scatter_glyph_examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ScatterGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/vector_glyph/vector_glyph_examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    VectorGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/flow_glyph/flow_glyph_examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FlowGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/line_glyph/line_glyph_examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LineGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/polygon_glyph/polygon_glyph_examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PolygonGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/kde_glyph/kde_glyph_examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    KDEGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/statistics/statistics_examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Statistics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/colors/colors_examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Colors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/styles/styles_examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Styles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/reference/reference_examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference basemaps — coastlines, borders &amp; relief
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Change-log
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Change-log
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0310-2026-08-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.31.0 (2026-08-12)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0300-2026-08-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.30.0 (2026-08-11)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0290-2026-08-03" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.29.0 (2026-08-03)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0280-2026-08-02" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.28.0 (2026-08-02)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0270-2026-08-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.27.0 (2026-08-01)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0261-2026-07-18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.26.1 (2026-07-18)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0260-2026-07-16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.26.0 (2026-07-16)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0250-2026-07-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.25.0 (2026-07-12)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0240-2026-07-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.24.0 (2026-07-12)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0230-2026-07-09" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.23.0 (2026-07-09)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0220-2026-07-07" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.22.0 (2026-07-07)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0210-2026-07-06" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.21.0 (2026-07-06)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0200-2026-06-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.20.0 (2026-06-26)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0190-2026-06-22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.19.0 (2026-06-22)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0180-2026-06-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.18.0 (2026-06-14)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0170-2026-06-07" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.17.0 (2026-06-07)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0160-2026-06-06" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.16.0 (2026-06-06)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0150-2026-06-02" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.15.0 (2026-06-02)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0140-2026-06-02" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.14.0 (2026-06-02)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0130-2026-06-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.13.0 (2026-06-01)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0120-2026-05-29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.12.0 (2026-05-29)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0110-2026-05-28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.11.0 (2026-05-28)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0101-2026-05-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.10.1 (2026-05-27)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0100-2026-05-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.10.0 (2026-05-27)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#090-2026-05-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.9.0 (2026-05-26)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#080-2026-05-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.8.0 (2026-05-11)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#071-2026-04-09" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.7.1 (2026-04-09)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.7.1 (2026-04-09)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        fix
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        chore
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        test
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        docs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#070-2026-04-08" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.7.0 (2026-04-08)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.7.0 (2026-04-08)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#feat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        feat
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fix_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        fix
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        build
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docs_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        docs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        test
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chore_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        chore
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#060-2025-06-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.6.0 (2025-06-25)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.6.0 (2025-06-25)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dev" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dev
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#arrayglyph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ArrayGlyph
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#colors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        colors
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#051-2024-07-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.1 (2024-07-24)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.5.1 (2024-07-24)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#arrayglyph_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ArrayGlyph
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#050-2024-07-22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.0 (2024-07-22)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.5.0 (2024-07-22)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#arrayglyph_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ArrayGlyph
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#colors_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Colors
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#043-2024-07-13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.4.3 (2024-07-13)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#042-2024-06-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.4.2 (2024-06-30)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#041-2024-1-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.4.1 (2024-1-11)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#040-2023-9-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.4.0 (2023-9-24)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#035-2023-8-31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.3.5 (2023-8-31)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#034-2023-04-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.3.4 (2023-04-26)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#033-2023-04-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.3.3 (2023-04-25)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#032-2023-04-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.3.2 (2023-04-23)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#031-2023-04-17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.3.1 (2023-04-17)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#030-2023-04-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.3.0 (2023-04-11)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#027-2023-01-31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.2.7 (2023-01-31)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#026-2023-01-31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.2.6 (2023-01-31)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#025-2022-12-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.2.5 (2022-12-26)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#024-2022-12-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.2.4 (2022-12-26)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#010-2022-05-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.0 (2022-05-24)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0310-2026-08-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.31.0 (2026-08-12)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0300-2026-08-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.30.0 (2026-08-11)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0290-2026-08-03" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.29.0 (2026-08-03)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0280-2026-08-02" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.28.0 (2026-08-02)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0270-2026-08-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.27.0 (2026-08-01)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0261-2026-07-18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.26.1 (2026-07-18)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0260-2026-07-16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.26.0 (2026-07-16)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0250-2026-07-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.25.0 (2026-07-12)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0240-2026-07-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.24.0 (2026-07-12)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0230-2026-07-09" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.23.0 (2026-07-09)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0220-2026-07-07" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.22.0 (2026-07-07)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0210-2026-07-06" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.21.0 (2026-07-06)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0200-2026-06-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.20.0 (2026-06-26)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0190-2026-06-22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.19.0 (2026-06-22)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0180-2026-06-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.18.0 (2026-06-14)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0170-2026-06-07" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.17.0 (2026-06-07)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0160-2026-06-06" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.16.0 (2026-06-06)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0150-2026-06-02" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.15.0 (2026-06-02)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0140-2026-06-02" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.14.0 (2026-06-02)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0130-2026-06-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.13.0 (2026-06-01)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0120-2026-05-29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.12.0 (2026-05-29)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0110-2026-05-28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.11.0 (2026-05-28)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0101-2026-05-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.10.1 (2026-05-27)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0100-2026-05-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.10.0 (2026-05-27)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#090-2026-05-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.9.0 (2026-05-26)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#080-2026-05-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.8.0 (2026-05-11)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#071-2026-04-09" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.7.1 (2026-04-09)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.7.1 (2026-04-09)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        fix
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        chore
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        test
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        docs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#070-2026-04-08" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.7.0 (2026-04-08)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.7.0 (2026-04-08)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#feat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        feat
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fix_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        fix
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        build
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docs_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        docs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        test
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chore_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        chore
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#060-2025-06-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.6.0 (2025-06-25)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.6.0 (2025-06-25)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dev" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dev
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#arrayglyph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ArrayGlyph
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#colors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        colors
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#051-2024-07-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.1 (2024-07-24)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.5.1 (2024-07-24)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#arrayglyph_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ArrayGlyph
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#050-2024-07-22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.0 (2024-07-22)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.5.0 (2024-07-22)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#arrayglyph_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ArrayGlyph
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#colors_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Colors
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#043-2024-07-13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.4.3 (2024-07-13)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#042-2024-06-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.4.2 (2024-06-30)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#041-2024-1-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.4.1 (2024-1-11)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#040-2023-9-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.4.0 (2023-9-24)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#035-2023-8-31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.3.5 (2023-8-31)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#034-2023-04-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.3.4 (2023-04-26)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#033-2023-04-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.3.3 (2023-04-25)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#032-2023-04-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.3.2 (2023-04-23)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#031-2023-04-17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.3.1 (2023-04-17)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#030-2023-04-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.3.0 (2023-04-11)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#027-2023-01-31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.2.7 (2023-01-31)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#026-2023-01-31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.2.6 (2023-01-31)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#025-2022-12-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.2.5 (2022-12-26)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#024-2022-12-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.2.4 (2022-12-26)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#010-2022-05-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.0 (2022-05-24)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/serapeum-org/cleopatra/edit/master/docs/change-log.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+    
+      
+    
+    <a href="https://github.com/serapeum-org/cleopatra/raw/master/docs/change-log.md" title="View source of this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
+    </a>
+  
+
+
+<h1 id="changelog"><a class="toclink" href="#changelog">Changelog</a><a class="headerlink" href="#changelog" title="Permanent link">#</a></h1>
+<h2 id="0310-2026-08-12"><a class="toclink" href="#0310-2026-08-12">0.31.0 (2026-08-12)</a><a class="headerlink" href="#0310-2026-08-12" title="Permanent link">#</a></h2>
+<ul>
+<li>chore: repo housekeeping and docs refresh for the grouped-parameter API (#298)</li>
+<li>
+<ul>
+<li>untrack the maintainer-only tools/build_<em>.py scripts (kept on disk)
+  and broaden the ignore rule to tools/</em>.py</li>
+</ul>
+</li>
+<li>remove nbqa's leaked *_nbqa_ipynb.py temp files and ignore the pattern</li>
+<li>refresh the docs and README for the grouped render-parameter API: fix
+  examples that used removed loose keywords, add a Render-options
+  reference page, complete the migration guide, and fix a broken link</li>
+<li>rephrase historical change-log entries to drop vendored-source and
+  library names</li>
+<li>Closes #299, #300</li>
+<li>refactor(glyphs)!: move render/prep logic onto the grouped parameter objects (#291)</li>
+<li>Cohere the grouped rendering/prep objects with the logic that consumes
+their fields (the ColorScaling.build_norm / to_options model): the object
+owns the transform, the glyph just calls it. Also groups ArrayGlyph's
+loose RGB band-prep keywords into a new RgbBands object.</li>
+<li>
+<ul>
+<li>ColorBar owns to_options(), resolve(), reset_options(), and
+  specifies_placement(); _resolve_colorbar just delegates</li>
+</ul>
+</li>
+<li>PointOverlay.draw(), FrameLabel.resolve_location()/draw(), and
+  PanelLabels.label_for()/panel_title()/validate() replace the inline
+  plot/animate/facet logic; base Glyph._plot_point_values is removed</li>
+<li>add DataStyle.for_apply_style() and unify the hillshade "unset"
+  sentinel, deleting three per-glyph duplicates</li>
+<li>add Glyph._snapshot_group_options() for the shared pre-merge
+  option-snapshot (ArrayGlyph.plot and KDEGlyph.plot)</li>
+<li>group ArrayGlyph's rgb / surface_reflectance / cutoff / percentile
+  constructor keywords into an RgbBands object owning validate() /
+  prepare(); <strong>init</strong> drops from 10 to 7 explicit params</li>
+<li>fix the RGB surface-reflectance cutoff to clip each band's data, not
+  the integer band index</li>
+<li>add unit tests + doctest examples for the new methods; migrate the
+  examples, the array_glyph notebook, and add a migration-guide entry</li>
+<li>BREAKING CHANGE: ArrayGlyph no longer accepts the loose rgb /
+surface_reflectance / cutoff / percentile constructor keywords; pass
+rgb_bands=RgbBands([r, g, b], surface_reflectance=..., cutoff=...,
+percentile=...) instead. prepare_array() and scale_percentile() keep
+their loose keyword signatures.</li>
+<li>Closes #292, #293, #294, #295, #296, #297</li>
+</ul>
+<h2 id="0300-2026-08-11"><a class="toclink" href="#0300-2026-08-11">0.30.0 (2026-08-11)</a><a class="headerlink" href="#0300-2026-08-11" title="Permanent link">#</a></h2>
+<ul>
+<li>feat(styling)!: grouped render parameters and a large vendored preset-library expansion (#275)</li>
+<li>
+<p>Complete the migration of ArrayGlyph/MeshGlyph plot/animate/facet from                                          <br />
+  flat keyword arguments to typed group objects, and substantially expand                                         <br />
+  the vendored preset library.                                                                                      </p>
+</li>
+<li>
+<p>Finish the grouped-parameter render API: data_style=DataStyle(...),                                           <br />
+    color=ColorScaling(...), contour=Contour(...), cells=CellValues(...),                                         <br />
+    classify=Classify(...); remove the legacy-keyword shims so a moved                                            <br />
+    keyword now raises with a pointer to its group object.                                                          </p>
+</li>
+<li>Widen per-call styled-preset overrides (bands/alpha/alpha_range) onto                                         <br />
+    DataStyle: sticky across calls on a reused glyph, with correct opacity                                        <br />
+    mode-switch and clearing.                                                                                       </li>
+<li>Vendor ~200 presets across seven libraries: 39 perceptually-uniform                                           <br />
+    scientific colour maps, 11 radar/satellite tables, 3 hypsometric                                              <br />
+    terrain ramps, and the weather library grown to 112 (+28 CAMS                                                 <br />
+    atmospheric-composition and operational fields).                                                                </li>
+<li>Add an optional [science-colors] extra for namespaced colour maps                                             <br />
+    (cmocean:thermal, ...) via the numpy-only cmap aggregator; no new                                             <br />
+    runtime dependency.                                                                                             </li>
+<li>Add gallery notebooks for the new preset sets, committed output-free.                                           </li>
+<li>Treat vendored colour data as derived under neutral-source naming; keep                                       <br />
+    the maintainer download scripts local-only.                                                                     </li>
+</ul>
+<p>BREAKING CHANGE: the legacy flat render keywords on ArrayGlyph/MeshGlyph                                        <br />
+  plot/animate/facet are removed. Pass them through the group objects                                             <br />
+  (DataStyle, ColorScaling, Contour, CellValues, Classify) instead; a                                             <br />
+  removed keyword now raises with a pointer to its group.                                                         <br />
+-   Closes #288, #289
+- refactor(glyphs)!: group plot/animate parameters into typed objects (#287)
+- Replace the loose **kwargs surface on every glyph's plot() / animate()                                          <br />
+  with a small set of discoverable, typed parameter objects, and remove the                                       <br />
+  backward-compatibility shims that kept the old loose keywords working.                                            </p>
+<ul>
+<li>bundle the loose plot() / animate() keywords into grouped objects:                                            <br />
+    color=ColorScaling, contour=Contour, cells=CellValues,                                                        <br />
+    classify=Classify, data_style=DataStyle, points=PointOverlay,                                                 <br />
+    frame_label=FrameLabel, colorbar=ColorBar                                                                       </li>
+<li>group facet's per-panel coordinate labels into PanelLabels and rename                                         <br />
+    facet's figsize to figure_size                                                                                  </li>
+<li>remove the legacy loose-kwarg shims; a removed keyword now raises with a                                      <br />
+    pointer to its group object                                                                                     </li>
+<li>rename text_colors to cell_value_text_colors and no_elem to                                                   <br />
+    num_domain_cells                                                                                                </li>
+</ul>
+<p>BREAKING CHANGE: the loose plot / animate styling keywords (point_color /                                       <br />
+  point_size / point_label_color / point_label_size / pid_color / pid_size,                                       <br />
+  label_location / label_color / text_loc, text_colors, col_coords /                                              <br />
+  row_coords, and facet's figsize) are removed and now raise; pass the                                            <br />
+  matching group object instead (PointOverlay, FrameLabel,                                                        <br />
+  cell_value_text_colors, labels=PanelLabels, figure_size). ArrayGlyph.no_elem                                    <br />
+  is renamed to num_domain_cells, and a bare array for points must be wrapped                                     <br />
+  in a PointOverlay.                                                                                              <br />
+-   Closes #281, #283, #285
+- refactor(glyphs)!: group plot/animate parameters into typed objects (#274)
+- Replace the flat ~30 keyword surface on every glyph's plot()/animate()
+with a small set of discoverable, typed parameter objects, and remove
+the backward-compatible shims that kept the old keywords working.
+- - add ColorScaling owning norm/colorbar construction, with variants
+  linear/power/sym_log/boundary/midpoint
+- add Contour, CellValues, DataStyle, and Classify group objects in
+  styling/params.py, each emitting only set fields via to_options()
+- add PointOverlay and FrameLabel for point overlays and animation
+  frame labels
+- group facet parameters into PanelLabels; rename facet figsize to
+  figure_size
+- add base group-merge infrastructure (<em>merge_group_params,
+  _reject_grouped_kwargs, _rollback_options_on_error): loose grouped
+  kwargs raise with a pointer, failed styled plots roll back
+- remove all deprecation shims; rename text_colors to
+  cell_value_text_colors and no_elem to num_domain_cells
+- reject conflicting style and data_style in templates.publication_map
+- add a migration guide and wire it into the mkdocs nav
+- BREAKING CHANGE: the flat styling keywords (color_scale, gamma, bounds,
+midpoint, line_threshold, line_scale, levels, labels, display_cell_value,
+num_size, background_color_threshold, style, hillshade, scheme, k,
+point_color, point_size, point_label_color, point_label_size,
+label_location, label_color, text_loc) are removed; pass the matching
+group object instead. text_colors is renamed to cell_value_text_colors,
+no_elem to num_domain_cells, and facet's figsize to figure_size. Passing
+a bare array as points no longer works; wrap it in a PointOverlay.
+- Closes #277, #278, #279, #280, #281, #282, #283, #284, #285
+- feat(geo): add a relief backdrop to the dark reference map (#273)
+- add_reference_map now draws a dimmed hypsometric relief backdrop beneath
+the data when the resolved preset carries a "relief" entry -- present on
+the dark map, absent on the chrome-only light map. The relief config accepts a
+resolution string, an add_relief kwargs dict, or True (mirroring the
+sibling _draw_basemap), and defaults crs to self.crs via _basemap_kwargs
+so it warps to match non-EPSG:4326 data.
+- The backdrop is skipped when the axes are not georeferenced, and an
+environmental relief failure -- missing Pillow (the [tiles] extra), an
+offline/uncached fetch, or a corrupt cache -- degrades with a warning
+while the coastline/border chrome still draws, so the chrome never
+hard-depends on the relief. A bad relief resolution in a custom preset
+still raises loudly. The per-call resolution= knob affects only the
+features, not the relief.
+- Closes #216
+- feat(config): add Config.get_cache_dir for the basemap cache directory (#272)
+- Surface CLEOPATRA_CACHE_DIR — previously a bare os.environ read buried in
+basemap/reference._cache_dir — as a single, discoverable Config method,
+so it lives alongside set_matplotlib_backend where users look for
+configuration.
+- - resolve in order: a non-empty explicit path argument, then the
+  CLEOPATRA_CACHE_DIR environment variable, then the default
+  ~/.cleopatra/naturalearth; a leading ~ is expanded
+- treat any value that is None, empty, or whitespace-only (for both the
+  argument and the env var) as not provided, so get_cache_dir("") and
+  get_cache_dir("   ") behave like get_cache_dir(); Path("") is Path(".")
+  under pathlib and resolves to the current directory, as documented
+- keep it a pure getter that only resolves the path; reference._cache_dir
+  delegates to it and retains the create-on-use mkdir, so config stays the
+  leaf owner of the setting and reference remains its sole consumer
+- expand ~ in the env var, fixing a latent bug where CLEOPATRA_CACHE_DIR=
+  ~/foo created a literal ./~/foo directory
+- add unit tests (14 get_cache_dir scenarios, including the Path("") and
+  whitespace edges), a reference delegation/creation test, and a hermetic
+  doctest runner; document get_cache_dir on the config reference page
+- Closes #253
+- feat(array_glyph): accept colorbar=ColorBar on ArrayGlyph.facet (#271)
+- Give ArrayGlyph.facet a colorbar: bool | ColorBar | None parameter
+mirroring plot / animate, so the typed spec no longer falls into
+<em><em>kwargs and raises a ValueError. The colorbar is resolved per panel
+through sub.plot(colorbar=...), so the shared <em>apply_kwargs_and_colorbar
+logic runs: the resolved spec wins over any loose cbar</em></em> kwargs and sets
+<em>style_wants_colorbar, letting a placement-bearing colour bar override a
+preset swatch on the faceted path just as on plot / animate. facet also
+calls _warn_deprecated_cbar_kwargs so loose cbar</em></em> deprecate uniformly.
+colorbar=None (default) preserves the prior per-panel behaviour.
+- - feat: facet(colorbar=bool | ColorBar | None), routed via sub.plot
+- fix: warn on loose cbar</em>* only after the col/row and structural
+  validation, so a malformed call raises without a spurious warning
+- refactor: collapse redundant multiple returns in is_notebook and the
+  Colors hex/rgb validators into single boolean expressions
+- docs: document the facet colorbar param, True's sticky-cbar reset, and
+  that None keeps each panel's default colour legend (bar or swatch)
+- test: TestFacetColorbar matrix (None/True/False/ColorBar/invalid,
+  per-panel application, orientation, precedence, vmin/vmax sharing,
+  preset-swatch override, single-emission deprecation, 4-D facets) plus
+  is_notebook branch coverage
+- Closes #256
+- refactor!: reorganize the package into glyphs/styling/basemap subpackages (#254)
+- Split the flat src/cleopatra/ module layout into three concern-based                                     <br />
+  subpackages so the ~25 modules are navigable, and rename the histogram                                   <br />
+  glyph for accuracy. Behavior is unchanged throughout -- only import                                      <br />
+  paths (and one class name) move; every function, method, argument, and                                   <br />
+  return value keeps its name and semantics. Verified behavior-preserving                                  <br />
+  via byte-identical ASTs and the full test suite (2157 passed).                                             </p>
+<ul>
+<li>glyphs/ -- chart-type building blocks, grouped by data model:                                          <br />
+    base/ (Glyph, animation, hillshade), gridded/ (array, mesh, vector),                                   <br />
+    primitives/ (scatter, line, polygon, flow), stats/ (histogram, kde)                                      </li>
+<li>styling/ -- colour/legend/presentation layer (styles, colors,                                          <br />
+    colorbar, palettes, perceptual) plus the data/ preset assets                                             </li>
+<li>basemap/ -- networked basemap/CRS helpers (geo, tiles, reference,                                      <br />
+    projection)                                                                                              </li>
+<li>config and templates stay at the top level                                                               </li>
+<li>rename statistical_glyph -&gt; glyphs/stats/histogram_glyph and the class                                 <br />
+    StatisticalGlyph -&gt; HistogramGlyph (it only draws histogram-family                                     <br />
+    plots)                                                                                                   </li>
+<li>rewrite every internal import and all docs, notebooks, and tools to                                    <br />
+    the new paths; the package root still re-exports nothing                                                 </li>
+<li>strip ~1300 redundant/rationale comment lines and simplify glyphs/base                                 <br />
+    (single-return helpers, hoisted Pillow import); promote pillow to a                                    <br />
+    core dependency                                                                                          </li>
+<li>add docs/migration.md with the full old-&gt;new import map and an                                         <br />
+    automated-migration script for downstream packages                                                       </li>
+</ul>
+<p>BREAKING CHANGE: all submodule import paths change, e.g.                                                 <br />
+<code>from cleopatra.array_glyph import ArrayGlyph</code> is now                                                    <br />
+<code>from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph</code>, and                                       <br />
+<code>cleopatra.statistical_glyph.StatisticalGlyph</code> is now                                                    <br />
+<code>cleopatra.glyphs.stats.histogram_glyph.HistogramGlyph</code>. See                                             <br />
+  docs/migration.md for the complete mapping and a migration script.                                         </p>
+<p>Closes #268, #269, #270
+- feat(styles): unified preset schema, science colormaps, glow, projection, rendering polish (#246)
+- Land the outstanding style &amp; preset workstreams, the preset schema                                               <br />
+  restructure, and the rendering polish surfaced in review.                                                          </p>
+<ul>
+<li>Unify all 111 presets onto one canonical on-disk schema with a single                                          <br />
+    loader; the in-memory DATA_STYLES is byte-for-byte unchanged.                                                    </li>
+<li>Add a namespaced scientific-colormap resolver (cmocean: and other collections)                                              <br />
+    behind the optional [science-colors] extra.                                                                      </li>
+<li>Add a native line-glow primitive and glow= on LineGlyph/FlowGlyph.                                               </li>
+<li>Add projection= (globe/flat) on ArrayGlyph and MeshGlyph, styled-globe                                         <br />
+    composition, scientific terrain and NCL/MeteoSwiss colour tables, and fix                                         <br />
+    the topography hinge mis-registration.                                                                           </li>
+<li>Add a units layer (convert_units), a shortName-&gt;style lookup, a NEXRAD                                         <br />
+    radar preset, THIRD_PARTY_NOTICES, and the publication_map composer.                                             </li>
+<li>Tighten auto-sized figures to their content, add a preset background                                           <br />
+    canvas with value-linked opacity, and create+seed the axes on demand                                           <br />
+    so basemap layers work before plot/animate.                                                                      </li>
+<li>Rewrite the preset example notebooks to the glyph builder flow.                                                  </li>
+</ul>
+<p>Closes #247, #248, #249, #250, #251, #252, #257, #258, #259, #260, #261, #262, #263, #264, #265, #266, #267</p>
+<h2 id="0290-2026-08-03"><a class="toclink" href="#0290-2026-08-03">0.29.0 (2026-08-03)</a><a class="headerlink" href="#0290-2026-08-03" title="Permanent link">#</a></h2>
+<ul>
+<li>feat(glyphs): accept colorbar=ColorBar on every glyph, plus label_location validation and colorbar=True reset (#244)</li>
+<li>
+<p>Follow-ups to the ColorBar spec (#234/#235) that make it work package-wide                                       <br />
+  and harden two edges.                                                                                              </p>
+</li>
+<li>
+<p>Move ColorBar, _resolve_colorbar, _swatch_text_default,                                                        <br />
+    _warn_deprecated_cbar_kwargs, and _DEPRECATED_CBAR_KWARGS into a lean,                                         <br />
+    glyph-independent cleopatra.colorbar module, re-exported from array_glyph                                      <br />
+    for back-compat.                                                                                                 </p>
+</li>
+<li>Wire a colorbar: bool | ColorBar | None parameter into MeshGlyph (plot and                                     <br />
+    animate), FlowGlyph, KDEGlyph, ScatterGlyph, PolygonGlyph, and VectorGlyph;                                    <br />
+    each merges the resolved spec into its options and deprecates the loose                                        <br />
+    cbar_* kwargs. Non-breaking: existing add_colorbar params and MeshGlyph's                                      <br />
+    colorbar bool toggle keep working, and the merged spec is sticky like                                          <br />
+    ArrayGlyph (colorbar=True resets, False suppresses).                                                             </li>
+<li>Reject an orientation-incompatible label_location up front (and at render,                                     <br />
+    against the resolved orientation, for the unpinned case) instead of crashing                                   <br />
+    in matplotlib; drop the invalid baseline/center_baseline label positions.                                        </li>
+<li>Make colorbar=True reset the whole caption/sizing cbar_* family to defaults                                    <br />
+    on a reused glyph, and honour a ColorBar(ticks_spacing=...) spec on                                            <br />
+    MeshGlyph rather than auto-overwriting it.                                                                       </li>
+</ul>
+<p>Closes #239, #241, #242</p>
+<h2 id="0280-2026-08-02"><a class="toclink" href="#0280-2026-08-02">0.28.0 (2026-08-02)</a><a class="headerlink" href="#0280-2026-08-02" title="Permanent link">#</a></h2>
+<ul>
+<li>feat(array_glyph): add ColorBar.orientation and deprecate the loose cbar_orientation kwarg (#240)</li>
+<li>Give ColorBar a typed orientation field so the colorbar orientation can be
+set through colorbar=ColorBar(...) instead of the loose cbar_orientation
+kwarg, and resolve the silent-override footgun behind #235.</li>
+<li>
+<ul>
+<li>Map ColorBar.orientation onto cbar_orientation only when set; deprecate
+  the loose cbar_orientation kwarg (it still works but warns).</li>
+</ul>
+</li>
+<li>Warn at construction when an explicit orientation disagrees with a set
+  location (location wins at render); validate orientation up front and at
+  render so a typo raises an actionable error, not an opaque matplotlib one.</li>
+<li>Fix a crash: a horizontal inset colorbar with no location now derives its
+  inset edge from the resolved orientation instead of the vertical layout.</li>
+<li>Reset a sticky orientation on colorbar=True, and draw a real colorbar for
+  an orientation-only spec over a style preset instead of dropping it.</li>
+<li>Migrate the docstrings, numpydoc blocks, a plot example, and the tutorial
+  notebook to the typed form, and extract the shared plot/animate
+  kwargs+colorbar setup to remove duplication.</li>
+<li>Closes #235</li>
+<li>feat(array_glyph): complete the ColorBar spec with caption and sizing fields (#237)</li>
+<li>Add six caption/sizing fields to ColorBar (label, length, label_size,
+label_rotation, label_location, ticks_spacing) and map them through
+<em>resolve_colorbar onto the internal cbar</em><em> keys, but only when set, so a
+loose cbar_</em> value survives during the transition.</li>
+<li>
+<ul>
+<li>Wire cbar_label_rotation into the colorbar label and honour
+  ColorBar.length for inside (inset) colorbars; both were silent no-ops.</li>
+</ul>
+</li>
+<li>Stop the auto-computed tick spacing from clobbering a
+  ColorBar(ticks_spacing=...) value in plot() and animate().</li>
+<li>Deprecate the loose cbar_* and ticks_spacing kwargs in favour of
+  colorbar=ColorBar(...) via a DeprecationWarning; they still take
+  effect during the deprecation window.</li>
+<li>Migrate the plot/animate docstrings, the ArrayGlyph tutorial
+  notebooks, and the tests to the typed spec; add render-level tests.</li>
+<li>Use numpy.random.Generator in the migrated notebook example
+  (SonarCloud S6711).</li>
+<li>Closes #234</li>
+<li>refactor(tiles): replace the mercantile dependency with built-in tile math (#236)</li>
+<li>
+<ul>
+<li>Add a Tile NamedTuple plus _tiles_for_bbox()/_tile_xy_bounds()/                                                  <br />
+    _lonlat_to_tile_xy(), a direct port of mercantile's tile(),                                                      <br />
+    tiles(), and xy_bounds() (the only three things cleopatra.tiles                                                  <br />
+    used from it), verified formula-for-formula against mercantile's                                                 <br />
+    own installed source.                                                                                              </li>
+</ul>
+</li>
+<li>Drop mercantile from the [tiles] extra, uv.lock, and docs/README;                                                <br />
+    update tests/test_tiles.py to mock the new internal function                                                     <br />
+    instead of patching the mercantile module.                                                                         </li>
+<li>Clamp both latitude bounds symmetrically (north was capped but                                                   <br />
+    south only floored, and vice versa) and nudge sin(lat) away from                                                 <br />
+    the exact +/-90 singularity, closing a crash on any bbox whose                                                   <br />
+    north or south sits within ~1e-7 degrees of a pole.                                                                </li>
+<li>Split an antimeridian-crossing bbox (west &gt; east) into its two                                                   <br />
+    dateline-side sub-boxes instead of raising, matching                                                             <br />
+    mercantile.tiles()'s own behavior -- needed because reprojecting a                                               <br />
+    near-global Web Mercator extent to EPSG:4326 wraps longitude at                                                  <br />
+    the +/-180 seam, so this is a real, reachable input through                                                      <br />
+    add_tiles(), not just a hand-crafted edge case.                                                                    </li>
+<li>Add 30+ direct unit tests for the tile-math functions and Tile's                                                 <br />
+    NamedTuple behavior, with expected values cross-checked against                                                  <br />
+    the real mercantile package, plus an end-to-end add_tiles() test                                                 <br />
+    exercising the reprojection-driven antimeridian wraparound.                                                        </li>
+<li>Fix a tautological-looking test assertion (same expression on                                                    <br />
+    both sides of ==) flagged by SonarCloud.                                                                           </li>
+</ul>
+<p>No public API changes; add_tiles/fetch_tiles/stitch_tiles/get_provider                                             <br />
+  keep their existing signatures and behavior.                                                                       <br />
+  Closes #238
+- ci(docs): resolve release tag for workflow_run-triggered mkdocs deploys (#233)
+- deploy-release hardcoded trigger: 'release' but never supplied a
+release-tag, so mkdocs-deploy could only resolve the version from
+github.event.release.tag_name -- populated only on a real release
+event. This job normally runs via workflow_run instead, so that
+payload is absent and the deploy fails outright, as it did for the
+0.27.0 release.
+- - Check out the branch the release actually ran on
+  (workflow_run.head_branch) instead of the default trigger ref
+- Extract the version from the just-bumped pyproject.toml as a
+  fallback source for the release tag
+- Pass release-tag with a fallback: release event payload first,
+  extracted version otherwise
+- Guard the workflow_run branch of the job condition against forks
+- Mirrors the existing working implementation in pyramids.
+- ci(docs): resolve the release tag for workflow_run-triggered deploys
+- deploy-release hardcoded trigger: 'release' but never supplied a
+release-tag, so mkdocs-deploy could only resolve the version from
+github.event.release.tag_name -- which is only populated on a real
+release event. Since this job is normally reached via workflow_run
+(github-release completing), that payload is absent and the job
+fails outright, as it did for the 0.27.0 release.
+- Mirror the fix already used in pyramids: check out the branch the
+release actually ran on instead of defaulting to the trigger ref,
+extract the version straight from the just-bumped pyproject.toml,
+and fall back to it whenever the release event payload isn't
+available. Also guard the workflow_run branch of the job condition
+against forks, matching pyramids.</p>
+<h2 id="0270-2026-08-01"><a class="toclink" href="#0270-2026-08-01">0.27.0 (2026-08-01)</a><a class="headerlink" href="#0270-2026-08-01" title="Permanent link">#</a></h2>
+<ul>
+<li>ci: pin workflow action versions and tighten CI concurrency (#231)</li>
+<li>Harden the GitHub Actions workflows by resolving every action
+reference to an explicit, verified version instead of a moving
+target, and stop wasted CI time on superseded pull request pushes.</li>
+<li>
+<ul>
+<li>Bump actions/checkout (v5 -&gt; v7.0.1) and codecov/codecov-action
+  (v5 -&gt; v7.0.0), both two majors behind</li>
+</ul>
+</li>
+<li>Pin every serapeum-org/github-actions composite action to a
+  specific released version instead of the floating v1 major tag</li>
+<li>Replace every tag reference with the full commit SHA it resolves
+  to, keeping the version as a trailing comment</li>
+<li>Fix mkdocs-deploy using an unpinned @main ref in two of its three
+  jobs while the third used a pinned tag</li>
+<li>Pin the uv version installed in tests.yml and github-release.yml
+  to 0.12.1 to match the local dev environment</li>
+<li>Group tests.yml by PR number with cancel-in-progress so a new
+  push cancels its own stale run, while push events to main are
+  grouped by commit SHA so they always run to completion</li>
+<li>feat!: add a perceptual palette system and richer plotting controls (#220)</li>
+<li>
+<ul>
+<li>perceptual: a numpy-only sRGB&lt;-&gt;CIELAB toolkit -- interp_perceptual /
+  perceptual_colormap (exact endpoints preserved), make_diverging
+  (two lightness-balanced Lab arms), make_categorical (the glasbey
+  max-min method) and a perceptual_uniformity diagnostic</li>
+</ul>
+</li>
+<li>palettes: one Palette record + PaletteKind registry with a
+  kind-driven default_norm and preview_palettes(); the haze / CAMS-AOD
+  / flame families now build in CIELAB and register at import</li>
+<li>colors: cmocean ocean &amp; weather data-style presets, continuous
+  ramps re-interpolated in CIELAB, and a defaults &lt; preset &lt; explicit
+  style precedence</li>
+<li>array_glyph/glyph: a ColorBar spec (location / inside / box /
+  label_color / tick_color) replacing the separate cbar_* kwargs, a
+  FrameLabel with its own size, and a full_bleed chrome-free layout</li>
+<li>geo: a basemap= parameter with typed Basemap / Feature specs,
+  CRS-aware relief warping, and an opt-in mis-georeference check</li>
+<li>animation: one shared GIF palette across frames with pure black and
+  white reserved, so date labels and colorbar ticks stay crisp</li>
+<li>tooling: a ruff / mypy / bandit lint stack, http(s)-only urlopen and
+  a path-traversal guard in the asset builders, and NumPy-only example
+  notebooks</li>
+<li>Closes #218, #219, #225, #226, #227, #228, #229, #230
+Refs #216
+BREAKING CHANGE: the weather/ocean data-style preset keys were renamed
+from GRIB shortNames to descriptive names; update any code that looks
+up presets by the old keys.</li>
+<li>refactor(data)!: restructure the weather/ocean preset system and rename its keys (#217)</li>
+<li>
+<ul>
+<li>Merge the Magics and reference preset libraries into one
+  weather_presets.json with a single loader, and rename every weather
+  preset key from a raw GRIB shortName to a descriptive slug (e.g.
+  2t -&gt; temperature_2m).</li>
+</ul>
+</li>
+<li>Drop dead per-vendor metadata (_meta, source_style,
+  continuous_colormap) never read by any loader, and fix a silent bug
+  where colors.py pointed at the pre-rename ocean presets file.</li>
+<li>Migrate lint/type tooling to Ruff, add a mypy hook, and fix the 194
+  pre-existing type errors it surfaced.</li>
+<li>Close bandit and SonarCloud security findings (restrict urlopen to
+  http(s), guard build-script output paths against path traversal,
+  parse URL schemes properly) without suppressing any of them.</li>
+<li>Serialize the mkdocs deploy-pr/deploy-main jobs to stop them racing
+  gh-pages pushes.</li>
+<li>BREAKING CHANGE: DATA_STYLES weather presets are keyed by descriptive
+names now, not GRIB shortNames (e.g. "temperature_2m" instead of "2t").
+Closes #221, #222, #223, #224</li>
+<li>feat(reference): make add_relief honor the axis CRS (#214)</li>
+<li>add_relief now respects the CRS of the data on the axis, so the relief
+lines up under the plot instead of being stretched or misprojected.</li>
+<li>
+<ul>
+<li>Crop a lon/lat extent that lies within the global bounds out of the
+  relief array and draw it at that box, instead of stretching the whole
+  globe into it (the issue #177 footgun). extent=None and out-of-bounds
+  extents keep the previous whole-image placement.</li>
+</ul>
+</li>
+<li>Add a keyword-only crs= parameter. A None or EPSG:4326 axis runs the
+  lon/lat path unchanged, with no pyproj import; any other CRS warps the
+  global relief into the axis CRS -- an output grid over the axis view is
+  inverse-transformed to lon/lat via pyproj, sampled per pixel, and cells
+  outside the CRS domain are left transparent.</li>
+<li>GeoMixin.add_relief defaults crs to self.crs (via _basemap_kwargs),
+  matching add_features and add_tiles; an explicit crs= still wins and an
+  unset self.crs preserves the prior behaviour.</li>
+<li>No new dependencies (pyproj already ships in the [tiles] extra) and no
+  GDAL.</li>
+<li>Closes #177</li>
+</ul>
+<h2 id="0261-2026-07-18"><a class="toclink" href="#0261-2026-07-18">0.26.1 (2026-07-18)</a><a class="headerlink" href="#0261-2026-07-18" title="Permanent link">#</a></h2>
+<ul>
+<li>fix(glyphs): remove orphaned render artists on repeated plot()/animate() calls (#211)</li>
+<li>
+<ul>
+<li>Track each Axes' prior render artists via a shared marker so a second<br />
+    plot()/animate() call — same glyph instance, or a different glyph<br />
+    sharing the Axes via <code>ax=</code>/<code>fig=</code> — removes them instead of leaving<br />
+    them attached and undriven.  </li>
+</ul>
+</li>
+<li>Extend cleanup to ArrayGlyph, MeshGlyph, StatisticalGlyph, and<br />
+    VectorGlyph: colorbars, frame-label text, point/cell-value overlays,<br />
+    and streamplot arrowheads (never actually attached via the returned<br />
+    collection, so removed by diffing ax.patches instead).  </li>
+<li>Defer cleanup until after each call's own input validation succeeds,<br />
+    so a failed call (e.g. an invalid color_scale, or a mismatched color<br />
+    list) no longer destroys a valid prior render before propagating its<br />
+    exception.  </li>
+<li>Tolerate an artist already partially removed by ax.clear() or a<br />
+    prior apply_style() call instead of crashing on the second removal<br />
+    attempt.  </li>
+<li>Add direct unit tests for the shared cleanup helpers and regression<br />
+    tests covering same-instance repeats, cross-glyph shared axes, and<br />
+    validation-failure paths across all four glyph classes.  </li>
+</ul>
+<p>Closes #210</p>
+<h2 id="0260-2026-07-16"><a class="toclink" href="#0260-2026-07-16">0.26.0 (2026-07-16)</a><a class="headerlink" href="#0260-2026-07-16" title="Permanent link">#</a></h2>
+<ul>
+<li>refactor(array_glyph)!: clean up plot()/animate()'s kwarg API (#207)</li>
+<li>
+<ul>
+<li>Rename pid_color/pid_size to point_label_color/point_label_size,<br />
+    animate()'s text_colors to cell_value_text_colors, and text_loc to<br />
+    label_location  </li>
+</ul>
+</li>
+<li>Bundle the five point-overlay parameters into a new PointOverlay<br />
+    class and animate()'s two frame-label parameters into a new<br />
+    FrameLabel class  </li>
+<li>Type the remaining **kwargs on both methods via TypedDict + Unpack<br />
+    (PEP 692), inert at runtime  </li>
+<li>Keep every removed name/shape working via **kwargs behind a<br />
+    DeprecationWarning, resolved before the strict kwargs validation  </li>
+<li>Fix bugs found during two rounds of adversarial review: a silent<br />
+    positional-arg drop, wrong warning stacklevels, a both-given<br />
+    conflict false-negative, a missing precision field, and a crash on<br />
+    deprecated point kwargs passed without points  </li>
+<li>Update the example notebooks to the new PointOverlay/FrameLabel API  </li>
+</ul>
+<p>BREAKING CHANGE: point_color, point_size, pid_color, pid_size, and<br />
+  animate()'s label_color are no longer explicit parameters. Keyword<br />
+  calls still work via a deprecated alias with a warning; positional<br />
+  calls to these slots now bind to the wrong parameter or raise<br />
+  TypeError.<br />
+  Closes #208
+- feat(styles,glyphs): distinct-value categorical colouring for PolygonGlyph/ScatterGlyph (#206)
+- Add styles.categorize(values, cmap="tab10") -&gt; (categories, colors), the<br />
+  distinct-value counterpart to classify(): one colour per unique value,<br />
+  sorted when sortable, cycling past the cmap's size, nulls dropped.  </p>
+<p>Wire a "categorical" scheme into the shared Glyph scalar-mapping<br />
+  pipeline: _prepare_categorical_mapping builds a ListedColormap +<br />
+  BoundaryNorm over per-element integer class codes, and<br />
+  create_categorical_legend draws a disjoint_legend in place of a<br />
+  colorbar. PolygonGlyph and ScatterGlyph opt in via<br />
+  _SUPPORTS_CATEGORICAL_SCHEME; VectorGlyph/FlowGlyph still accept scheme<br />
+  for continuous classification but reject "categorical" with a clear<br />
+  error.  </p>
+<ul>
+<li>Validate the full values shape (not just its first dimension) in<br />
+    PolygonGlyph, closing a silent colour-array mis-sizing bug  </li>
+<li>Reset cbar/category_legend unconditionally on every plot() call so a<br />
+    scheme-switching re-plot never leaves a stale reference  </li>
+<li>Fall back to a qualitative cmap when the caller left cmap at the<br />
+    glyph's own continuous default, matched by resolved name so a<br />
+    Colormap object is caught the same as the equivalent string  </li>
+<li>Re-attach the categorical legend via ax.add_artist() before drawing<br />
+    ScatterGlyph's size legend, since Axes.legend() is single-slot per<br />
+    axes and would otherwise silently evict it  </li>
+<li>Add category_legend_kwargs (mirroring size_legend_kwargs) to<br />
+    reposition/restyle the disjoint legend  </li>
+<li>categorize() raises the documented TypeError for non-hashable<br />
+    entries and documents the int/bool/float dedup collision  </li>
+</ul>
+<p>Closes #204</p>
+<h2 id="0250-2026-07-12"><a class="toclink" href="#0250-2026-07-12">0.25.0 (2026-07-12)</a><a class="headerlink" href="#0250-2026-07-12" title="Permanent link">#</a></h2>
+<ul>
+<li>feat(glyphs): public apply_style() to (re)apply a data-style preset on an existing glyph (#203)</li>
+<li>
+<p>Add a discoverable way to (re)apply a DATA_STYLES preset on a glyph<br />
+  instance that already exists, so a caller holding a rendered glyph can<br />
+  restyle it by name without rebuilding it.  </p>
+</li>
+<li>
+<p>Add apply_style(name, **kwargs) and a style read-back property to<br />
+    ArrayGlyph, MeshGlyph, and KDEGlyph. apply_style re-renders the glyph<br />
+    in place on its own axes (or a fresh figure if never plotted or the<br />
+    figure was closed) and forwards extra kwargs (hillshade, ...) to plot.  </p>
+</li>
+<li>Unify style persistence across the three glyphs: an applied style is<br />
+    sticky (survives a plain plot()) and clearable (plot(style=None)).<br />
+    MeshGlyph tracks the current style and restores it after its options<br />
+    reset; KDEGlyph uses a typed _Unset sentinel so style=None can clear.  </li>
+<li>Validate a preset name before persisting or clearing, and roll back on<br />
+    a bad/categorical name, so a typo can't wipe the render or brick the<br />
+    glyph for later plain plots.  </li>
+<li>Add a shared Glyph._reset_axes_for_restyle helper (root-figure aware,<br />
+    reuses an existing axes) and copy MeshGlyph's cached data (preserving a<br />
+    masked array's mask). Honour a construction-time MeshGlyph style too.  </li>
+<li>Document the option and add an apply_style example to the ArrayGlyph,<br />
+    MeshGlyph, and KDEGlyph notebooks.  </li>
+</ul>
+<p>Closes #202</p>
+<h2 id="0240-2026-07-12"><a class="toclink" href="#0240-2026-07-12">0.24.0 (2026-07-12)</a><a class="headerlink" href="#0240-2026-07-12" title="Permanent link">#</a></h2>
+<ul>
+<li>feat(glyphs): add a data-style preset option across the surface glyphs (#200)</li>
+<li>
+<p>Add a <code>style</code> option that renders a named cleopatra DATA_STYLES preset<br />
+  (colormap, norm, transparent nodata, value-linked opacity, and a<br />
+  categorical legend) so a field can be visualised by name rather than by<br />
+  hand-built colour settings.  </p>
+</li>
+<li>
+<p>ArrayGlyph: plot() delegates to apply_data_style; animate() reproduces<br />
+    the preset per frame for both continuous and categorical presets. It<br />
+    supports curvilinear coords, composes with hillshade (via the new<br />
+    hillshade.shade_rgb), and presents a swatch / discrete legend<br />
+    consistently across plot and animate. Unknown or multi-layer names,<br />
+    RGB arrays, and overlay kwargs are guarded with clear errors or<br />
+    warnings; integer-masked rasters are handled.  </p>
+</li>
+<li>MeshGlyph: continuous presets override the tripcolor/tricontour<br />
+    cmap+norm (composing with node-elevation hillshade); categorical<br />
+    presets draw a discrete legend and mask out-of-range codes.  </li>
+<li>KDEGlyph: continuous presets colour the density; a categorical preset<br />
+    raises a clear error.  </li>
+<li>Add hillshade.shade_rgb (light an already-coloured image) and promote<br />
+    colors.resolve_style_norm, alpha_rgba, category_boundaries, and<br />
+    resolve_single_layer_style to public API (private aliases kept).  </li>
+<li>Document the option in the glyph docstrings and add a style section to<br />
+    the ArrayGlyph example notebook.  </li>
+</ul>
+<p>Closes #199
+- feat(colors,glyphs): add reusable hillshade, style-preset libraries, and flow-raster palettes (#195)
+- - Add a reusable cleopatra.hillshade module (shade_grid, shade_faces,<br />
+    resolve_hillshade) and wire relief shading into ArrayGlyph, MeshGlyph,<br />
+    and KDEGlyph via a hillshade option at construction and plot() time.<br />
+  - Extend the DATA_STYLES preset system with vendored Magics (69)<br />
+    and cmocean (15) libraries, CAMS AOD colormaps, and log, symlog,<br />
+    diverging, and categorical norm handling in apply_data_style.<br />
+  - Add flow_direction_d8 and flow_accumulation presets and a<br />
+    draw_order="width" stream-order mode for FlowGlyph.<br />
+  - Bundle the vendored preset JSON assets with upstream NOTICE/LICENSE<br />
+    text, regenerated by tools/build_magics_presets.py and<br />
+    tools/build_ocean_presets.py.<br />
+  - Give swatch_legend a norm parameter so log/symlog legends sample the<br />
+    gradient honestly.<br />
+  - Cover the new behaviour with tests (incl. tests/test_hillshade.py) and<br />
+    document it in the example notebooks and the mkdocs nav.  </p>
+<p>Closes #198
+- fix(polygon_glyph): render visible outlines in outline_only mode (#196)
+- PolygonGlyph.plot(outline_only=True) drew nothing under default<br />
+  options: the "none" borderless-fill edgecolor was passed straight to<br />
+  the outline PolyCollection, leaving an unfilled polygon with a<br />
+  transparent edge. Substitute a new OUTLINE_EDGECOLOR ("black") when<br />
+  edgecolor is left at its "none" default; an explicit edgecolor is<br />
+  still honoured and the filled choropleth branch keeps its borderless<br />
+  default. Add regression tests for the fallback, the no-values path, an<br />
+  explicit colour, and the still-borderless filled branch.  </p>
+<p>Also refresh the documentation to the 0.23.0 API and fix stale or<br />
+  incorrect content found in a full docs audit:  </p>
+<ul>
+<li>document the geo/GeoMixin basemap methods, the reference module, the<br />
+    haze data-styles in colors, and the orthographic globe presets in<br />
+    projection across the README, docs/index.md, and reference pages  </li>
+<li>add swatch_legend and apply_blank_canvas (styles), and WebP / to_mp4<br />
+    / quality kwargs / bundled ffmpeg (animation), correcting the<br />
+    projection "single stateless helper" and "no PROJ dependency" claims  </li>
+<li>correct the bar() docs (bar takes a single 1D series, not one series<br />
+    per column) in the reference page and the LineGlyph docstring  </li>
+<li>note the [tiles] extra also powers reference and the projection<br />
+    presets; fix the ArrayGlyph render kinds and netCDF4 note in the mesh<br />
+    guide; add per-glyph example figures to the README  </li>
+<li>clean up mkdocs.yml (duplicate features/extensions, stray theme keys,<br />
+    unused table-reader/tags plugins) and un-orphan the glyph-architecture<br />
+    diagram, wiring it into the nav  </li>
+<li>fix the CODE_OF_CONDUCT project name and empty contact fields, and<br />
+    align CONTRIBUTING with the commitizen workflow  </li>
+</ul>
+<p>Closes #197</p>
+<h2 id="0230-2026-07-09"><a class="toclink" href="#0230-2026-07-09">0.23.0 (2026-07-09)</a><a class="headerlink" href="#0230-2026-07-09" title="Permanent link">#</a></h2>
+<ul>
+<li>feat(colors,projection): add composable haze-style data and globe projection presets (#192)</li>
+<li>
+<ul>
+<li>Add HAZE_COLORMAPS, DATA_STYLES["haze"], and apply_data_style() for<br />
+    value-modulated-alpha colour layers with decoupled alpha/colour<br />
+    ranges (a glowing "flame" rim effect) plus swatch legends.  </li>
+</ul>
+</li>
+<li>Add alpha_scaled_image()/alpha_scaled_mesh() low-level rendering<br />
+    primitives that apply_data_style is built on.  </li>
+<li>Add PROJECTION_STYLES and apply_projection_style() to reproject<br />
+    gridded data onto an orthographic globe or leave it flat behind one<br />
+    call, backed by orthographic_grid(), orthographic_grid_edges(),<br />
+    orthographic_points(), orthographic_boundary(), and<br />
+    orthographic_graticule().  </li>
+<li>Add apply_blank_canvas() and swatch_legend() to cleopatra.styles.  </li>
+<li>Add add_point_labels() to cleopatra.geo for plain dot-and-text<br />
+    point/city labels, reprojectable onto a globe via<br />
+    orthographic_points().  </li>
+<li>Add a tutorial notebook demonstrating every primitive independently<br />
+    and composed, including an animated multi-day globe view.  </li>
+<li>Cover every new primitive with tests, guarding the pyproj-backed<br />
+    globe helpers with pytest.importorskip so the suite still passes<br />
+    without the [tiles] extra installed.  </li>
+</ul>
+<p>Closes #193
+- fix: stop animate() label clipping and execute docs notebooks in CI (#190)
+- - Wire notebook execution into all three mkdocs-deploy jobs
+  (deploy-pr/main/release) so docs/notebooks/<em><em> render fresh, real
+  output during the build instead of whatever was last committed by
+  hand.
+- Add an nbstripout pre-commit hook so notebooks never carry baked-in
+  outputs in git history again.
+- Fix ArrayGlyph.animate()'s default text_loc: it clipped the frame
+  label under the array's inverted Y-axis for any shape. The default
+  now anchors via axes-fraction coordinates with top alignment; an
+  explicit text_loc keeps the prior data-coordinate behavior
+  unchanged.
+- Add a keyword-only label_color parameter to animate() for the frame
+  label's color.
+- Retry transient network failures in reference._download with
+  exponential backoff, so the two live-data example notebooks no
+  longer hard-fail the docs build on a flaky fetch.
+- Reformat most of src/cleopatra/</em>.py and tests/</em>.py (line-wrap and
+  isort); no behavior change.
+- Closes #191</p>
+<h2 id="0220-2026-07-07"><a class="toclink" href="#0220-2026-07-07">0.22.0 (2026-07-07)</a><a class="headerlink" href="#0220-2026-07-07" title="Permanent link">#</a></h2>
+<ul>
+<li>feat(animation): add save_animation quality controls, WebP, and bundled ffmpeg (#188)</li>
+<li>
+<p>Rework save_animation (and the Glyph.save_animation wrapper) from a<br />
+  minimal two-line writer into a configurable, robust exporter, resolving<br />
+  the rough edges surfaced in issue #185.  </p>
+</li>
+<li>
+<p>Replace the declared-but-unused ffmpeg-python dependency with<br />
+    imageio-ffmpeg, and fall back to its bundled static binary when no<br />
+    system ffmpeg is on PATH, so MP4/MOV/AVI export works out of the box.  </p>
+</li>
+<li>Auto-pad odd frame dimensions (-vf pad) so libx264 no longer crashes<br />
+    on odd-sized figures, and set pix_fmt=yuv420p for universal playback.  </li>
+<li>Add keyword-only crf, bitrate, codec, preset, pix_fmt, dpi, optimize,<br />
+    loop, and extra_args controls, with crf and bitrate mutually<br />
+    exclusive and a caller -vf/-pix_fmt merged into the built arguments.  </li>
+<li>Drop the hardcoded bitrate=1800 default in favour of libx264's<br />
+    constant-quality default; existing 3-arg calls stay valid but encode<br />
+    smaller, better files.  </li>
+<li>Add animated WebP output and optimise/loop-configurable GIF output<br />
+    via an _OptimizedPillowWriter subclass.  </li>
+<li>Add to_bytes and to_mp4 in-memory render helpers alongside the<br />
+    existing to_gif/embed_gif; to_gif now delegates to to_bytes.  </li>
+<li>Forward the new controls through Glyph.save_animation so ArrayGlyph<br />
+    and MeshGlyph inherit them.  </li>
+</ul>
+<p>Closes #185
+- feat(geo): add a reference-map style preset for georeferenced glyphs (#187)
+- Add GeoMixin.add_reference_map(style=...) so the ~15-line weather-centre<br />
+  map recipe (grey Natural Earth coastline + borders, a dashed lon/lat<br />
+  graticule, degree labels, a subtle frame) is a single call on top of a<br />
+  plotted, georeferenced glyph.  </p>
+<ul>
+<li>Light-background and dark-field reference-map presets (lighter greys so<br />
+    coastlines stay visible over a dark field), plus style="auto" that<br />
+    picks between them from the displayed luminance (im.to_rgba through the<br />
+    colormap/norm; only opaque cells count, so light no-data fields are not<br />
+    misread as dark; the target axes' image is preferred over self.im).  </li>
+<li>extent=[xmin, ymin, xmax, ymax] (the ArrayGlyph order) georeferences<br />
+    the image and axis limits, handling the pixel-coordinate RGB/animate<br />
+    case; a warning fires when the glyph has no geographic extent.  </li>
+<li>Degree formatters label the +/-180 antimeridian as "180"; _nice_step<br />
+    covers sub-degree to 90-degree spacing; graticule_step is validated as<br />
+    positive and finite; extent length is validated with a clear message.  </li>
+<li>available_map_styles() and the REFERENCE_MAP_STYLES table expose and<br />
+    allow copying the presets; the geographic knowledge (deriving extent<br />
+    from a dataset geotransform) stays upstream.  </li>
+</ul>
+<p>Add a runnable docs notebook (docs/notebooks/array_glyph/reference_map)<br />
+  wired into the mkdocs nav, and TestAddReferenceMap plus a non-mocked<br />
+  integration test (geo.py coverage 98%).  </p>
+<p>Closes #184
+- fix(tiles): align web-tile basemap for non-EPSG:3857 data (#186)
+- For a non-EPSG:3857 axis, add_tiles stretched the stitched Mercator
+mosaic onto the data bounds, discarding the mosaic's tile-snapped (larger)
+coverage and offsetting the basemap by up to hundreds of km at coarse
+zoom (e.g. a curvilinear ROMS field over the Gulf of Mexico).
+- - Place the mosaic at its own geographic footprint: reproject its
+  Web-Mercator bounds (extent_3857) into the target CRS with edge
+  densification and use that as the imshow extent, keeping set_xlim/ylim
+  at the data bounds. If a coarse mosaic overflows a limited-domain CRS
+  (e.g. a whole-world mosaic into a UTM zone or a singular projection),
+  the reprojection is caught and the basemap falls back to the data
+  bounds with a warning, so a figure is still produced.
+- Add an auto_zoom floor via a new min_tiles_across parameter (default 2,
+  also exposed and validated on add_tiles): pick the smallest zoom at
+  which the larger extent spans at least that many tiles, so a mid-range
+  region is no longer rendered from one or two coarse tiles (global
+  z0-&gt;z1, Berlin z10-&gt;z11, Gulf z6-&gt;z7). min_tiles_across=1 restores the
+  old heuristic and MAX_TILES still caps the tile count.
+- Update the module and reference-doc notes; add tests for the
+  reprojected/enveloping extent, the overflow fallback, and the
+  auto_zoom floor and its validation.
+- The auto_zoom floor applies to every zoom="auto" call (all CRS, including
+EPSG:3857), so the default basemap fetches a slightly higher zoom and a
+few more tiles (bounded by MAX_TILES); a residual Mercator-vs-linear-axis
+nonlinearity remains for very large extents.
+- Closes #176</p>
+<h2 id="0210-2026-07-06"><a class="toclink" href="#0210-2026-07-06">0.21.0 (2026-07-06)</a><a class="headerlink" href="#0210-2026-07-06" title="Permanent link">#</a></h2>
+<ul>
+<li>fix(animation): accept os.PathLike in save_animation and create_from_image (#181)</li>
+<li>
+<p>save_animation derived the output format with str.rsplit, so passing a<br />
+  pathlib.Path (idiomatic from pyramids' Path-everywhere Dataset API)<br />
+  raised AttributeError: 'WindowsPath' object has no attribute 'rsplit'.  </p>
+</li>
+<li>
+<p>Normalise paths with os.fspath and derive the extension via<br />
+    os.path.splitext, so both str and os.PathLike work.  </p>
+</li>
+<li>Widen the type hints to str | os.PathLike on animation.save_animation,<br />
+    ArrayGlyph.save_animation, and Colors.create_from_image (the only two<br />
+    public path-taking APIs; reference/tiles handle internal paths only).  </li>
+<li>Give a clear error when the path has no file extension, and lock the<br />
+    tightened dotfile / extension-less rejection (.gif, dir/.gif, bare<br />
+    gif) with a regression test.  </li>
+<li>Cover PathLike on the happy and error branches of every widened API.  </li>
+</ul>
+<p>Closes #180</p>
+<h2 id="0200-2026-06-26"><a class="toclink" href="#0200-2026-06-26">0.20.0 (2026-06-26)</a><a class="headerlink" href="#0200-2026-06-26" title="Permanent link">#</a></h2>
+<ul>
+<li>feat(geo)!: glyph axis CRS with defaulting and assignment-time validation (#178)</li>
+<li>
+<p>Let the geographic glyphs carry the CRS of their plotted data so reference<br />
+  layers default to it, and make bad values fail fast.  </p>
+</li>
+<li>
+<p><code>GeoMixin</code> gains a <code>crs</code> property (default <code>None</code>). <code>add_features</code> and<br />
+<code>add_tiles</code> default their <code>crs=</code> to <code>self.crs</code> when omitted, so a caller<br />
+    that records the axis CRS once (<code>glyph.crs = 4326</code>) gets correctly placed<br />
+    layers without restating it; an explicit <code>crs=</code> still wins and<br />
+<code>self.crs is None</code> is a pure pass-through.  </p>
+</li>
+<li><code>crs</code> lives on <code>GeoMixin</code>, not the base <code>Glyph</code>, so non-geographic glyphs<br />
+    are unaffected. <code>add_relief</code> is excluded -- it has no <code>crs</code> parameter<br />
+    (relief is a fixed EPSG:4326 raster placed by <code>extent</code>).  </li>
+<li>The <code>crs</code> setter validates on assignment: <code>TypeError</code> for non<br />
+    int/str/None (bool rejected), <code>ValueError</code> for a non-positive EPSG code,<br />
+    an empty string, or -- when <code>pyproj</code> is installed -- an unresolvable CRS.<br />
+    Strings are stripped and a bare numeric string (<code>"4326"</code>) is normalised<br />
+    to the int <code>4326</code>. Setting <code>crs</code> never requires the <code>[tiles]</code> extra; the<br />
+    deep check is skipped (deferred to draw time) without <code>pyproj</code>.  </li>
+<li>Make <code>add_tiles</code> options keyword-only after <code>source</code> (matching<br />
+<code>add_features</code>), so <code>crs</code> can no longer be passed positionally and the<br />
+    default injection is unconditionally safe.  </li>
+<li>Hoist the <code>cleopatra.tiles</code> / <code>cleopatra.reference</code> imports to module top<br />
+    and call via the module, removing the inline imports.  </li>
+</ul>
+<p>BREAKING CHANGE: <code>cleopatra.tiles.add_tiles</code> now accepts <code>crs</code>, <code>zoom</code>,<br />
+<code>alpha</code>, <code>attribution</code>, <code>zorder</code>, <code>interpolation</code>, <code>timeout</code>, <code>retries</code>,<br />
+<code>user_agent</code> and <code>max_tiles</code> as keyword-only arguments (everything after<br />
+<code>source</code>). Callers that passed any of these positionally must switch to<br />
+  keyword arguments; <code>ax</code> and <code>source</code> remain positional.  </p>
+<p>Closes #177</p>
+<h2 id="0190-2026-06-22"><a class="toclink" href="#0190-2026-06-22">0.19.0 (2026-06-22)</a><a class="headerlink" href="#0190-2026-06-22" title="Permanent link">#</a></h2>
+<ul>
+<li>feat(geo): glyph convenience methods for basemaps (GeoMixin) (#172)</li>
+<li>Add cleopatra.geo.GeoMixin so the glyphs that plot geographic data can
+  drop a basemap straight from the glyph, plus the supporting reference
+  docs.</li>
+<li>
+<ul>
+<li>GeoMixin exposes add_tiles / add_features / add_relief; each draws on
+    the glyph's own axes (or an explicit ax=) and forwards all arguments
+    to the standalone cleopatra.tiles / cleopatra.reference functions,
+    which stay the single source of truth.</li>
+</ul>
+</li>
+<li>Basemap modules are imported lazily, so importing a glyph never pulls
+    in the optional [tiles] extra.</li>
+<li>ArrayGlyph, MeshGlyph, VectorGlyph, FlowGlyph, PolygonGlyph and
+    ScatterGlyph inherit the mixin; the chart/statistical glyphs
+    (LineGlyph, StatisticalGlyph, KDEGlyph) deliberately do not.</li>
+<li>docs: add a reference example notebook (network/[tiles] cells tagged
+    nbval-skip), a geo.md page, embedded equal-aspect screenshots, and a
+    discovery-helper note; correct the polygon note to PathCollection.</li>
+<li>Add tests covering inheritance gating, delegation, the ax= override,
+    and the no-axes error.</li>
+<li>
+<ul>
+<li>Closes #173</li>
+</ul>
+</li>
+<li>Closes #174</li>
+</ul>
+<h2 id="0180-2026-06-14"><a class="toclink" href="#0180-2026-06-14">0.18.0 (2026-06-14)</a><a class="headerlink" href="#0180-2026-06-14" title="Permanent link">#</a></h2>
+<ul>
+<li>fix(changelog): generate on bump and backfill 0.8.0-0.17.0</li>
+<li>The release flow runs cz bump, which only writes the changelog when
+update_changelog_on_bump is set. That key was missing from the
+[tool.commitizen] config, so docs/change-log.md froze at 0.7.1 while
+0.8.0-0.17.0 shipped (their notes only reached the GitHub Releases page).</li>
+<li>
+<ul>
+<li>Add update_changelog_on_bump = true so cz bump regenerates and commits
+  the changelog on every future release.</li>
+</ul>
+</li>
+<li>Backfill the missing 0.8.0-0.17.0 sections (regenerated with commitizen
+  from the release commits on main; the 0.1.0-0.7.1 history is unchanged).</li>
+<li>feat(array_glyph): animate RGB / true-colour stacks (#169)</li>
+<li>ArrayGlyph.animate previously handled only 2-D single-band frames, so
+  producing an RGB time-lapse meant abandoning cleopatra and hand-rolling
+  matplotlib's FuncAnimation. It now also accepts a 4-D
+  (time, rows, cols, 3|4) RGB/RGBA stack:</li>
+<li>
+<ul>
+<li>4-D stacks render each frame through imshow as true colour, with no
+    norm/colormap/colorbar (self.cbar stays None), mirroring plot()'s RGB
+    branch.</li>
+</ul>
+</li>
+<li>The lazy data_getter path accepts RGB frames whose spatial dims (first
+    two axes) match the template's last two axes.</li>
+<li>display_cell_value and background_color_threshold are skipped for RGB
+    frames (per-cell annotation needs a scalar field).</li>
+<li>The 3-D single-band path is unchanged; the no-time-axis error now
+    names both the 3-D and 4-D accepted shapes.</li>
+<li>Add TestAnimateRGB covering 4-D RGB/RGBA stacks, GIF rendering, lazy RGB
+  frames, bad-shape errors, display_cell_value being ignored, and the
+  unchanged single-band path. Update the animate docstring/doctest and add
+  a docs/notebooks/array_glyph/rgb_animation.ipynb example wired into the
+  mkdocs nav.</li>
+<li>Closes #168</li>
+</ul>
+<h2 id="0170-2026-06-07"><a class="toclink" href="#0170-2026-06-07">0.17.0 (2026-06-07)</a><a class="headerlink" href="#0170-2026-06-07" title="Permanent link">#</a></h2>
+<ul>
+<li>feat(reference): add Natural Earth and relief basemap helpers (#166)</li>
+<li>Add <code>cleopatra.reference</code>, a matplotlib map-decoration layer that draws
+  fixed public reference data under a plot — the cartopy
+  <code>ax.coastlines()</code> / <code>GeoAxes.stock_img()</code> niche and the vector/raster
+  sibling of <code>cleopatra.tiles</code>.</li>
+<li>
+<ul>
+<li><code>add_features</code> (Natural Earth coastline/borders/land/ocean/rivers/
+    lakes across 110m/50m/10m) and <code>add_relief</code> (global hypsometric
+    backdrop, low/medium) axes helpers, plus raw <code>natural_earth</code> /
+    <code>relief</code> accessors and discovery helpers.</li>
+</ul>
+</li>
+<li>Assets are fixed public datasets re-hosted on a cleopatra-owned
+    <code>basemap-data-v1</code> release (gzipped GeoJSON + PNG); no GDAL/geopandas
+    and no dependency on pyramids. Features in EPSG:4326 need only
+    numpy+matplotlib; relief decode and <code>crs=</code> reprojection use the
+    existing <code>[tiles]</code> extra.</li>
+<li>Downloads are http(s)-only, streamed atomically, cached under
+    <code>~/.cleopatra/naturalearth</code> (override <code>CLEOPATRA_CACHE_DIR</code>), and
+    self-heal a corrupt/poisoned cache.</li>
+<li>Polygon layers render hole-aware via compound paths (nonzero fill), so
+    <code>ocean</code> continent cut-outs are correct; reprojection drops non-finite
+    vertices at projection singularities; invalid <code>crs</code> raises a clear
+    <code>ValueError</code>.</li>
+<li>Add <code>tools/build_basemap_assets.py</code>, the offline maintainer script that
+    builds the artifacts from upstream Natural Earth shapefiles and relief
+    GeoTIFFs.</li>
+<li>Document usage and migration from <code>pyramids.basemap.natural_earth</code> /
+    <code>relief</code>; amend <code>SCOPE.md</code> to record the <code>tiles</code>/<code>reference</code> basemap
+    helpers as the deliberate networked exception.</li>
+<li>Tests reach 100% line and branch coverage of <code>cleopatra.reference</code>
+    (50 tests) with 47 passing doctests.</li>
+<li>ref: #165</li>
+</ul>
+<h2 id="0160-2026-06-06"><a class="toclink" href="#0160-2026-06-06">0.16.0 (2026-06-06)</a><a class="headerlink" href="#0160-2026-06-06" title="Permanent link">#</a></h2>
+<ul>
+<li>feat(glyphs ): add classification scheme, value-to-size, KDEGlyph, FlowGlyph (#162)</li>
+<li>Consolidates the geoplot/Digital-Earth upstream tasks (#154–#157) into the
+  shared glyph subsystem, all pure numpy + matplotlib with no new dependency.</li>
+<li>
+<ul>
+<li>Categorical colour <code>scheme</code> (quantiles, equal_interval, percentiles,
+    std_mean, explicit edges, and a native Fisher-Jenks natural-breaks
+    optimisation) via <code>styles.classify</code> wired into the shared
+    <code>Glyph._prepare_scalar_mapping</code>, so every norm-driven glyph
+    (Scatter/Polygon/Vector/Flow) gains discrete classes and a stepped
+    colorbar. Array/Mesh/KDE reject <code>scheme</code> rather than ignore it.</li>
+</ul>
+</li>
+<li><code>ScatterGlyph</code> value-to-size scaling with an optional size legend,
+    factored into the reusable <code>styles.resolve_sizes</code> helper.</li>
+<li><code>FlowGlyph</code>: magnitude-coloured, width-scaled <code>LineCollection</code> for
+    flow/Sankey maps, reusing <code>resolve_sizes</code> for line width.</li>
+<li><code>KDEGlyph</code>: numpy-only 2-D Gaussian KDE drawn as filled/line contours
+    with an optional clip path and memory-chunked evaluation.</li>
+<li>Fisher-Jenks runs natively (exact O(k·n^2) DP, mean-centred for numeric
+    stability) and falls back to a quantile sample above <code>MAX_JENKS_N</code>.</li>
+<li>ref: #154, #155, #156, #157</li>
+</ul>
+<h2 id="0150-2026-06-02"><a class="toclink" href="#0150-2026-06-02">0.15.0 (2026-06-02)</a><a class="headerlink" href="#0150-2026-06-02" title="Permanent link">#</a></h2>
+<ul>
+<li>feat(mesh_glyph): inline labels for line tricontours via labels argument (#152)</li>
+<li>Add <code>labels</code> (bool) and <code>label_kw</code> (dict) options to <code>MeshGlyph.plot</code>
+  so node line tricontours can carry inline numeric labels through
+  <code>ax.clabel</code>, the unstructured mirror of <code>ArrayGlyph</code>'s contour labels
+  (#148/#149). The <code>TriContourSet</code> mappable was already returned, but
+  every caller had to re-roll the same <code>ax.clabel</code> glue.</li>
+<li>
+<ul>
+<li>labels=True (location="node", filled=False) draws inline labels
+    (defaults inline=True, fontsize=8, fmt="%g") and stores the Text
+    artists on self.contour_labels</li>
+</ul>
+</li>
+<li>label_kw is merged over those defaults and forwarded to ax.clabel,
+    so user keys win on collision</li>
+<li>documented no-op for tripcolor (face data) and tricontourf
+    (filled=True); a labelled line set with no isolines yields an empty
+    list</li>
+<li>contour_labels resets to None on every plot() and animate() render,
+    so re-plotting without labels (or switching to filled/animation)
+    clears stale label artists</li>
+<li>complete the node_x/node_y/n_faces/n_nodes/n_edges property
+    docstrings and add TestContourLabels plus coverage for the
+    render/animate option branches (mesh_glyph coverage 96% -&gt; 98%)</li>
+<li>Closes #151</li>
+</ul>
+<h2 id="0140-2026-06-02"><a class="toclink" href="#0140-2026-06-02">0.14.0 (2026-06-02)</a><a class="headerlink" href="#0140-2026-06-02" title="Permanent link">#</a></h2>
+<ul>
+<li>feat(array_glyph): inline contour labels via plot(kind="contour", labels=True) (#149)</li>
+<li>feat(array_glyph): inline contour labels via plot(kind="contour", labels=True)</li>
+</ul>
+<p>Add <code>labels</code> (bool) and <code>label_kw</code> (dict) options to ArrayGlyph.plot so
+  line contours can carry inline numeric labels through ax.clabel, the way
+  Magics / cartopy and similar tools label isolines. Previously the
+  QuadContourSet was returned as the mappable but every caller had to
+  re-roll the same ax.clabel glue.
+-   - labels=True draws inline labels (defaults inline=True, fontsize=8,
+    fmt="%g") and keeps the Text artists on self.contour_labels.
+  - label_kw is merged over those defaults and forwarded to ax.clabel,
+    so user keys win on collision.
+  - labels is a documented no-op for contourf and every non-contour kind;
+    a labelled contour with no isolines yields an empty list.
+  - self.contour_labels resets to None on each render, so re-plotting
+    without labels (or switching kind) clears stale label artists.
+-   Docstring section + two doctests on plot(); TestContourLabels adds 8
+  cases covering draw/expose, default no-op, contourf no-op, both reset
+  paths, the degenerate empty-list case, and label_kw forwarding and
+  precedence.
+-  ref: #148.</p>
+<h2 id="0130-2026-06-01"><a class="toclink" href="#0130-2026-06-01">0.13.0 (2026-06-01)</a><a class="headerlink" href="#0130-2026-06-01" title="Permanent link">#</a></h2>
+<ul>
+<li>feat(animation): glyph-independent save/embed helpers for any FuncAnimation (#145)</li>
+<li>Expose cleopatra's animation save/embed machinery as glyph-independent
+  free functions in a new <code>cleopatra.animation</code> module, so downstream
+  packages and notebooks can reuse the writer/format handling on any
+  matplotlib <code>FuncAnimation</code> instead of re-rolling temp-file + writer +
+  <code>IPython.display</code> glue.</li>
+<li>
+<ul>
+<li>add <code>save_animation(anim, path, fps=2)</code>, <code>to_gif(anim, fps=2)</code>, and
+    <code>embed_gif(anim, fps=2)</code>; the writer is chosen from the file extension
+    (gif via PillowWriter, mov/avi/mp4 via FFMpegWriter)</li>
+</ul>
+</li>
+<li><code>Glyph.save_animation</code> now delegates to the free function, removing the
+    duplicated writer logic; <code>SUPPORTED_VIDEO_FORMAT</code> moves to the new
+    module and is re-exported from <code>cleopatra.glyph</code> for back-compat</li>
+<li>match the file extension case-insensitively (<code>out.GIF</code> works)</li>
+<li>raise actionable errors: a missing FFmpeg points at ffmpeg.org, and a
+    missing IPython points at <code>pip install ipython</code> (and <code>to_gif</code>), while a
+    missing IPython sub-dependency is surfaced unchanged</li>
+<li>import IPython lazily so importing cleopatra never requires it</li>
+<li>add an API reference page and register the <code>animation</code> submodule in the
+    package surface</li>
+<li>cover the module with unit tests (100% line + branch) and executable
+    doctests</li>
+<li>ref: #144</li>
+</ul>
+<h2 id="0120-2026-05-29"><a class="toclink" href="#0120-2026-05-29">0.12.0 (2026-05-29)</a><a class="headerlink" href="#0120-2026-05-29" title="Permanent link">#</a></h2>
+<ul>
+<li>feat(projection): add apply_projection_frame for static projected map frames (#142)</li>
+<li>Add a stateless, PROJ-free helper that turns a plain matplotlib Axes into
+  a static projected ("globe") frame: it sets equal aspect and projected
+  limits, draws the projection boundary as a PathPatch, draws graticule
+  polylines, and optionally clips existing data layers to the boundary.</li>
+<li>All geometry (boundary vertices, graticule polylines, limits) is supplied
+  as plain (N, 2) arrays, so the module has no PROJ/CRS dependency -- the
+  upstream engine owns reprojection, cleopatra owns matplotlib.</li>
+<li>
+<ul>
+<li>add cleopatra/projection.py with apply_projection_frame and the _as_xy
+    input-coercion helper, validating axes, limits, and array shapes</li>
+</ul>
+</li>
+<li>register the projection submodule in the package docstring and the
+    package-surface allowlist test</li>
+<li>add a full test suite (100% line + branch coverage) plus an in-band
+    doctest runner so the module examples are exercised by the default run</li>
+<li>add the projection reference page and wire it into the mkdocs nav</li>
+<li>Closes #141</li>
+</ul>
+<h2 id="0110-2026-05-28"><a class="toclink" href="#0110-2026-05-28">0.11.0 (2026-05-28)</a><a class="headerlink" href="#0110-2026-05-28" title="Permanent link">#</a></h2>
+<ul>
+<li>feat(glyph): colorbar toggles, mesh mappable, per-band RGB stretch, flat-data guard (#136)</li>
+<li>Close the remaining cleopatra composition gaps used by the Digital-Earth port.</li>
+<li>
+<ul>
+<li>Add an <code>add_colorbar</code> option (default True) to ScatterGlyph/PolygonGlyph/
+    VectorGlyph and a plot-time override, so a shared-axes host can own one
+    aggregated colorbar instead of one per layer. (MeshGlyph already exposes a
+    <code>colorbar=</code> toggle; LineGlyph draws no colorbar.)</li>
+</ul>
+</li>
+<li>Expose the tripcolor/tricontour(f) artist as <code>MeshGlyph.im</code> (cleared by
+    <code>plot_outline</code>), mirroring <code>ArrayGlyph.im</code> and the other glyphs.</li>
+<li>Add a per-band percentile stretch to <code>ArrayGlyph.scale_to_rgb</code>
+    (<code>per_band=True</code>, default cut <code>(2, 98)</code>); the default global-max path is
+    unchanged, guards an all-zero array, and maps NaN/flat bands to a flat zero
+    band without warning.</li>
+<li>Fix constant-value arrays raising <code>ZeroDivisionError</code>: <code>Glyph.get_ticks</code>
+    returns a single tick for a degenerate range, <code>ArrayGlyph</code> falls back to a
+    unit <code>ticks_spacing</code>, and a constant-field line <code>contour</code> skips its empty
+    colorbar with a warning.</li>
+<li>ref: #61, #137, #138, #139</li>
+</ul>
+<h2 id="0101-2026-05-27"><a class="toclink" href="#0101-2026-05-27">0.10.1 (2026-05-27)</a><a class="headerlink" href="#0101-2026-05-27" title="Permanent link">#</a></h2>
+<ul>
+<li>perf(mesh): vectorize fan triangulation and edge derivation (#134)</li>
+<li>Replace the Python loops in MeshGlyph._fan_triangles and
+  MeshGlyph._build_edge_segments with vectorized numpy index
+  manipulation, removing the performance bottleneck on large
+  mixed-element meshes (&gt;100k faces).</li>
+<li>
+<ul>
+<li>_fan_triangles: compact valid nodes in face order and build fan
+    triangles with np.repeat plus fancy indexing, via a new
+    _grouped_arange helper (handles zero-size groups); no per-face
+    Python loop.</li>
+</ul>
+</li>
+<li>_build_edge_segments: derive polygon edges with wrap-around
+    indexing and deduplicate undirected edges via an int64 key encoding
+    plus sort/diff instead of a Python set.</li>
+<li>Fix a latent bug where a pure-triangle mesh stored in a wider padded
+    connectivity array leaked fill values into the triangulation; the
+    fast path now only applies to a clean (n, 3) array.</li>
+<li>Add Google-style docstring examples for the vectorized helpers and
+    expand the test suite (randomized equivalence vs the original loops,
+    pentagon/pure-quad fans, shared-edge dedup, grouped-arange edge
+    cases, and a non-flaky performance guard).</li>
+<li>A 100k mixed-element mesh now triangulates and derives edges in well
+  under 100ms; focus methods reach 100% line and branch coverage.</li>
+<li>ref: #102</li>
+</ul>
+<h2 id="0100-2026-05-27"><a class="toclink" href="#0100-2026-05-27">0.10.0 (2026-05-27)</a><a class="headerlink" href="#0100-2026-05-27" title="Permanent link">#</a></h2>
+<ul>
+<li>feat(glyph)!: standardize axes/figure API and expand glyph controls (#132)</li>
+<li>
+<p>Unify how the cleopatra glyphs bind to matplotlib axes/figures and round
+  out ArrayGlyph's rendering surface, with a small pre-construction
+  introspection API shared across all glyphs.</p>
+</li>
+<li>
+<p>ArrayGlyph: store the colour-mapped artist on <code>self.im</code> for every kind
+    (imshow/pcolormesh/contour/contourf/RGB) and add an <code>add_colorbar</code>
+    option (default True) honoured by both <code>plot</code> and <code>animate</code>.</p>
+</li>
+<li>ArrayGlyph.plot: accept <code>ax</code> and <code>title</code>; resolve axes as
+    <code>plot(ax=)</code> &gt; constructor ax &gt; fresh figure. <code>fig</code> stays a
+    construction-time binding (derived from the axes, never a plot arg).</li>
+<li>Glyph: keep a constructor <code>ax</code> given without <code>fig</code> (derive the figure
+    from it) and warn on a mismatched <code>fig</code>/<code>ax</code> pair; resolve the
+    top-level figure across matplotlib versions (SubFigure-safe).</li>
+<li>Glyph: add <code>option_keys()</code> / <code>filter_kwargs()</code> classmethods plus a
+    per-glyph <code>DEFAULT_OPTIONS</code> class attribute so accepted option keys can
+    be inspected and filtered before construction; StatisticalGlyph gains
+    matching helpers.</li>
+<li>Rename the array/statistical option dicts to <code>ARRAY_DEFAULT_OPTIONS</code> /
+    <code>STATISTICAL_DEFAULT_OPTIONS</code> (aligned with the other glyphs) with a
+    backwards-compatible <code>DEFAULT_OPTIONS</code> alias.</li>
+<li>BREAKING CHANGE: StatisticalGlyph.boxplot/multiboxplot/stripes no longer
+  accept a <code>fig</code> argument; bind the figure at construction instead, e.g.
+  <code>StatisticalGlyph(values, fig=fig).boxplot(ax=ax)</code>.</li>
+<li>Closes #128, #129, #130, #131</li>
+</ul>
+<h2 id="090-2026-05-26"><a class="toclink" href="#090-2026-05-26">0.9.0 (2026-05-26)</a><a class="headerlink" href="#090-2026-05-26" title="Permanent link">#</a></h2>
+<ul>
+<li>feat: add matplotlib glyph primitives for new plot types (#117)</li>
+<li>Add generic matplotlib building blocks for point, vector, polygon, line,
+  and statistical plots, each with tests and Google-style docstrings.</li>
+<li>
+<ul>
+<li>glyph: add shared Glyph._prepare_scalar_mapping (+ _resolve_limits) so
+    every colour-by-value glyph reuses one resolve-limits -&gt; ticks_spacing
+    -&gt; norm/colorbar pipeline instead of re-deriving it; ArrayGlyph output
+    is unchanged</li>
+</ul>
+</li>
+<li>scatter_glyph: new ScatterGlyph for coloured/uncoloured point clouds</li>
+<li>vector_glyph: new VectorGlyph for quiver/barbs/streamplot coloured by
+    magnitude, plus add_key (quiverkey)</li>
+<li>polygon_glyph: new PolygonGlyph for filled choropleths / outlines,
+    geometry-agnostic (plain vertex arrays, no geopandas)</li>
+<li>line_glyph: new LineGlyph for line/bar/fill_between, and extend
+    StatisticalGlyph with boxplot, multiboxplot, and stripes</li>
+<li>mesh_glyph: add filled=False to render node data as line tricontour</li>
+<li>styles: add disjoint_legend, colorbar_legend, and histogram_legend to
+    complete the three reusable legend styles</li>
+<li>build: raise the matplotlib floor to &gt;=3.9 to match the APIs used</li>
+<li>ref: #118, #119, #120, #121, #122, #123, #124, #125</li>
+<li>feat(statistical_glyph)!: compose histograms into caller fig/ax; drop implicit plt.show() (#111)</li>
+<li>
+<ul>
+<li>add optional <code>fig</code>/<code>ax</code> parameters to <code>StatisticalGlyph</code>; <code>histogram()</code> resolves three
+    composition modes: draw into a supplied <code>ax</code> (inferring its figure), add an axes onto an
+    empty supplied <code>fig</code> (raising <code>ValueError</code> if that figure already has axes), or create a
+    new figure/axes when neither is given</li>
+</ul>
+</li>
+<li>switch histogram styling from pyplot (<code>plt.grid/xlabel/ylabel/xticks/yticks</code>) to axes-level
+    (<code>ax.grid/set_xlabel/set_ylabel/tick_params</code>) so labels land on the intended axes</li>
+<li>remove internal <code>plt.show()</code> from <code>StatisticalGlyph.histogram()</code>, <code>ArrayGlyph.plot()</code>, and
+    <code>ArrayGlyph.animate()</code>; these now return their <code>Figure</code>/<code>Axes</code>/<code>FuncAnimation</code> for the caller
+    to display or save</li>
+<li>document the composition modes and no-show behavior in docstrings; fix stale <code>Statistic</code>
+    naming and the module usage example</li>
+<li>add tests for fig/ax injection, the populated-figure <code>ValueError</code>, the no-show contract, a
+    self-checking doctest runner, and validation guards (statistical_glyph at 100% coverage)</li>
+<li>BREAKING CHANGE: <code>StatisticalGlyph.histogram()</code>, <code>ArrayGlyph.plot()</code>, and <code>ArrayGlyph.animate()</code>
+  no longer call <code>plt.show()</code>. Code relying on the implicit display must call <code>plt.show()</code> itself
+  (or save the returned figure/animation).</li>
+<li>Closes #116</li>
+</ul>
+<h2 id="080-2026-05-11"><a class="toclink" href="#080-2026-05-11">0.8.0 (2026-05-11)</a><a class="headerlink" href="#080-2026-05-11" title="Permanent link">#</a></h2>
+<ul>
+<li>feat!: Expand <code>ArrayGlyph</code> plotting and add the <code>cleopatra.tiles</code> module (#112)</li>
+<li>xarray-aligned plotting features, a new web-tile basemap module, plus
+  bug fixes and packaging cleanups from PR review.</li>
+<li>
+<ul>
+<li>ArrayGlyph: plot(kind=imshow/pcolormesh/contour/contourf), colour
+    kwargs (robust/center/levels/extend/cbar_kwargs), coords=(x, y)
+    curvilinear grids, facet(col=, row=, col_wrap=, extents=) -&gt;
+    FacetGrid, animate(data_getter=) lazy frames.</li>
+</ul>
+</li>
+<li>New cleopatra.tiles module (add_tiles + helpers) behind the
+    cleopatra[tiles] extra (mercantile, pillow, pyproj, xyzservices);
+    cleopatra.styles.ColorScale enum.</li>
+<li>Fixes: facet mask preservation, animate(display_cell_value=True)
+    IndexError, import-time matplotlib backend no longer touched,
+    all-NaN colour-limit guard, broader tile image-signature acceptance,
+    color_scale validation.</li>
+<li>Internal: single-backtick docstrings, CLAUDE.md untracked/gitignored,
+    tests expanded.</li>
+<li>Refs: #113, #114</li>
+<li>BREAKING CHANGE: ArrayGlyph.no_elem -&gt; num_domain_cells (deprecated
+  alias kept); cleopatra.add_tiles / cleopatra.Config top-level re-exports
+  removed (use the submodules); import cleopatra no longer sets the
+  matplotlib backend; ArrayGlyph(all_nan_arr) and bad color_scale now
+  raise ValueError.</li>
+</ul>
+<h2 id="071-2026-04-09"><a class="toclink" href="#071-2026-04-09">0.7.1 (2026-04-09)</a><a class="headerlink" href="#071-2026-04-09" title="Permanent link">#</a></h2>
+<h3 id="fix"><a class="toclink" href="#fix">fix</a><a class="headerlink" href="#fix" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>glyph</strong>: set <code>use_gridspec=False</code> for colorbar on subplot figures
+  so colorbars allocate space locally instead of stealing from sibling
+  axes (#109)</li>
+</ul>
+<h3 id="chore"><a class="toclink" href="#chore">chore</a><a class="headerlink" href="#chore" title="Permanent link">#</a></h3>
+<ul>
+<li>remove dead boilerplate from <code>__init__.py</code> (unused author metadata,
+  empty hard-dependency checker, redundant module docstring)</li>
+<li>replace deprecated <code>typing.List</code> with builtin <code>list</code> in
+  <code>array_glyph.py</code> parameter annotations and docstrings</li>
+</ul>
+<h3 id="test"><a class="toclink" href="#test">test</a><a class="headerlink" href="#test" title="Permanent link">#</a></h3>
+<ul>
+<li>add subplot colorbar tests for single-axes, 1x2, 1x3, and 2x2
+  grid layouts in <code>test_glyph.py</code></li>
+<li>add MeshGlyph subplot rendering tests in <code>test_mesh_glyph.py</code></li>
+</ul>
+<h3 id="docs"><a class="toclink" href="#docs">docs</a><a class="headerlink" href="#docs" title="Permanent link">#</a></h3>
+<ul>
+<li>update README</li>
+</ul>
+<h2 id="070-2026-04-08"><a class="toclink" href="#070-2026-04-08">0.7.0 (2026-04-08)</a><a class="headerlink" href="#070-2026-04-08" title="Permanent link">#</a></h2>
+<h3 id="feat"><a class="toclink" href="#feat">feat</a><a class="headerlink" href="#feat" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>mesh</strong>: add MeshGlyph class for UGRID unstructured mesh
+  visualization with tripcolor/tricontourf rendering, wireframe
+  outlines via LineCollection, and mixed-element fan triangulation
+  (#99, #100)</li>
+<li><strong>mesh</strong>: add face-centered and node-centered data plotting with
+  all 5 color scale types (linear, power, sym-lognorm, boundary-norm,
+  midpoint) and full colorbar customization</li>
+<li><strong>mesh</strong>: add <code>animate()</code> for time-varying mesh data with
+  frame-by-frame rendering and gif/mp4/mov/avi export</li>
+<li><strong>mesh</strong>: add <code>plot_outline()</code> for wireframe rendering with
+  optional explicit edge connectivity</li>
+<li>extract <code>Glyph</code> base class from <code>ArrayGlyph</code> with shared
+  infrastructure: fig/ax lifecycle, color scale normalization,
+  colorbar creation, tick management, point overlays, and animation
+  saving (#101)</li>
+<li>add input validation for constructor arrays, data length, all-NaN
+  data, constant data, and animation frame consistency</li>
+</ul>
+<h3 id="fix_1"><a class="toclink" href="#fix_1">fix</a><a class="headerlink" href="#fix_1" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>ci</strong>: correct PyPI release workflow (#94)</li>
+<li>fix ticks_spacing not propagated to <code>default_options</code>, causing
+  wrong colorbar ticks for non-default data ranges</li>
+<li>fix colorbar accumulation on repeated <code>plot()</code> calls</li>
+<li>fix <code>default_options</code> mutation leaking across <code>plot()</code> calls on
+  the same instance</li>
+<li>fix <code>save_animation</code> silently swallowing <code>FileNotFoundError</code> when
+  FFmpeg is missing</li>
+<li>fix <code>anim</code> property returning <code>None</code> instead of raising when
+  <code>_anim</code> is not set</li>
+<li>remove <code>plt.show()</code> from <code>adjust_ticks()</code> and <code>animate()</code> to
+  prevent blocking in interactive backends</li>
+<li>fix broken image paths in reference documentation</li>
+</ul>
+<h3 id="build"><a class="toclink" href="#build">build</a><a class="headerlink" href="#build" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>packaging</strong>: migrate from setuptools/pip to uv and hatchling
+  (#96, #97)</li>
+<li>replace setuptools build backend with hatchling</li>
+<li>convert <code>[project.optional-dependencies]</code> to PEP 735
+  <code>[dependency-groups]</code> for dev and docs groups</li>
+<li>migrate all GitHub Actions workflows to composite actions with uv</li>
+<li>generate <code>uv.lock</code> for reproducible dependency resolution</li>
+<li>update classifiers to Python 3.11/3.12/3.13, drop 3.10</li>
+</ul>
+<h3 id="docs_1"><a class="toclink" href="#docs_1">docs</a><a class="headerlink" href="#docs_1" title="Permanent link">#</a></h3>
+<ul>
+<li>convert all package docstrings from NumPy to Google style (#103)</li>
+<li>add API reference pages for <code>Glyph</code> and <code>MeshGlyph</code></li>
+<li>add unstructured mesh visualization guide</li>
+<li>add MeshGlyph example Jupyter notebook</li>
+<li>update <code>mkdocs.yml</code> to <code>docstring_style: google</code></li>
+<li>add missing type annotations to fix griffe/mkdocstrings warnings</li>
+</ul>
+<h3 id="test_1"><a class="toclink" href="#test_1">test</a><a class="headerlink" href="#test_1" title="Permanent link">#</a></h3>
+<ul>
+<li>add 105 new tests (45 Glyph, 60 MeshGlyph) with 100% line and
+  branch coverage (#104)</li>
+<li>vectorize <code>_build_edge_segments</code> and <code>_map_face_to_triangle_values</code>
+  with numpy; add fast path for pure-triangle meshes</li>
+<li>skip FFmpeg-dependent tests when FFmpeg is unavailable</li>
+<li>replace deprecated <code>typing.List</code>/<code>Tuple</code>/<code>Union</code>/<code>Dict</code> with
+  Python 3.11+ builtins</li>
+</ul>
+<h3 id="chore_1"><a class="toclink" href="#chore_1">chore</a><a class="headerlink" href="#chore_1" title="Permanent link">#</a></h3>
+<ul>
+<li>rename organisation from Serapieum-of-alex to serapeum-org (#98)</li>
+</ul>
+<h2 id="060-2025-06-25"><a class="toclink" href="#060-2025-06-25">0.6.0 (2025-06-25)</a><a class="headerlink" href="#060-2025-06-25" title="Permanent link">#</a></h2>
+<h3 id="dev"><a class="toclink" href="#dev">Dev</a><a class="headerlink" href="#dev" title="Permanent link">#</a></h3>
+<ul>
+<li>replace the setup.py with pyproject.toml</li>
+<li>convert the documentation to use mkdocs instead of sphinx.</li>
+<li>remove the CI test workflow based on conda.</li>
+<li>test the jupyter notebook in ci.</li>
+</ul>
+<h3 id="config"><a class="toclink" href="#config">config</a><a class="headerlink" href="#config" title="Permanent link">#</a></h3>
+<ul>
+<li>add a config file to the package to handle the configuration of the matplotlib backend.</li>
+<li>in the <strong>init</strong>.py file, load the config file and set the matplotlib backend to <code>Agg</code>.</li>
+</ul>
+<h3 id="arrayglyph"><a class="toclink" href="#arrayglyph">ArrayGlyph</a><a class="headerlink" href="#arrayglyph" title="Permanent link">#</a></h3>
+<ul>
+<li>rename the statistics module to statistical_glyph.</li>
+<li>move creating the ax, and fig from the constructor to the <code>plot</code>/<code>animate</code> methods .</li>
+<li>create <code>arr</code> property to access the array data.</li>
+<li>create <code>apply_colormap</code> method to apply a colormap to the array.</li>
+<li>create <code>to_image</code> method to convert the array to an RGB image.</li>
+<li>create <code>scale_to_rgb</code> method to scale the array to RGB values.</li>
+<li>create <code>adjust_ticks</code> method to adjust the plot ticks.</li>
+</ul>
+<h3 id="colors"><a class="toclink" href="#colors">colors</a><a class="headerlink" href="#colors" title="Permanent link">#</a></h3>
+<ul>
+<li>add <code>get_color_map</code> function to create a color map from a list of colors.</li>
+<li>make the <code>_is_valid_rgb_norm</code>, and <code>_is_valid_rgb_255</code> protected and the public method is only <code>is_valid_rgb</code>.</li>
+<li>make the <code>_is_valid_hex_i</code> protected and the public method is only <code>is_valid_hex</code> to process single value and lists.</li>
+<li>create a <code>create_from_image</code> function to create a color map from an image.</li>
+</ul>
+<h2 id="051-2024-07-24"><a class="toclink" href="#051-2024-07-24">0.5.1 (2024-07-24)</a><a class="headerlink" href="#051-2024-07-24" title="Permanent link">#</a></h2>
+<h3 id="arrayglyph_1"><a class="toclink" href="#arrayglyph_1">ArrayGlyph</a><a class="headerlink" href="#arrayglyph_1" title="Permanent link">#</a></h3>
+<ul>
+<li>the ArrayGlyph constructor uses a masked array instead of a numpy array.</li>
+</ul>
+<h2 id="050-2024-07-22"><a class="toclink" href="#050-2024-07-22">0.5.0 (2024-07-22)</a><a class="headerlink" href="#050-2024-07-22" title="Permanent link">#</a></h2>
+<h3 id="arrayglyph_2"><a class="toclink" href="#arrayglyph_2">ArrayGlyph</a><a class="headerlink" href="#arrayglyph_2" title="Permanent link">#</a></h3>
+<ul>
+<li>rename the <code>Array</code> class to <code>ArrayGlyph</code>.</li>
+<li>add <code>scale_percentile</code> method to the <code>Array</code> class to scale the array using the percentile values.</li>
+<li>the <code>statistic.histogram</code> can plot multiple column array.</li>
+<li>change the <code>color_scale</code> values to be string (<code>linear</code>, "power", ...)</li>
+<li>the <code>kwargs</code> can be provided to the constructor or the <code>plot</code> method to plot the array.</li>
+</ul>
+<h3 id="colors_1"><a class="toclink" href="#colors_1">Colors</a><a class="headerlink" href="#colors_1" title="Permanent link">#</a></h3>
+<ul>
+<li>rename the <code>get_rgb</code> to <code>to_rgb</code></li>
+<li>add <code>get_type</code> to get the type of the color.</li>
+<li>add <code>to_hex</code> to convert the color to hex.</li>
+<li>add <code>to_rgb</code> to convert the color to rgb.</li>
+</ul>
+<h2 id="043-2024-07-13"><a class="toclink" href="#043-2024-07-13">0.4.3 (2024-07-13)</a><a class="headerlink" href="#043-2024-07-13" title="Permanent link">#</a></h2>
+<ul>
+<li>Add extent to the array plot when plotting an rgb array.</li>
+<li>Add <code>ax</code>, and <code>fig</code> parameters to the <code>Array</code> constructor method to take an Axes and plot the array on it.</li>
+<li>Add <code>__str__</code> to the <code>Array</code> class.</li>
+</ul>
+<h2 id="042-2024-06-30"><a class="toclink" href="#042-2024-06-30">0.4.2 (2024-06-30)</a><a class="headerlink" href="#042-2024-06-30" title="Permanent link">#</a></h2>
+<ul>
+<li>Update dependencies</li>
+</ul>
+<h2 id="041-2024-1-11"><a class="toclink" href="#041-2024-1-11">0.4.1 (2024-1-11)</a><a class="headerlink" href="#041-2024-1-11" title="Permanent link">#</a></h2>
+<ul>
+<li>add extent to the array plot.</li>
+</ul>
+<h2 id="040-2023-9-24"><a class="toclink" href="#040-2023-9-24">0.4.0 (2023-9-24)</a><a class="headerlink" href="#040-2023-9-24" title="Permanent link">#</a></h2>
+<ul>
+<li>Add a colors module to handle issues related to</li>
+<li>Converting colors from one format to another</li>
+<li>Creating colormaps</li>
+</ul>
+<h2 id="035-2023-8-31"><a class="toclink" href="#035-2023-8-31">0.3.5 (2023-8-31)</a><a class="headerlink" href="#035-2023-8-31" title="Permanent link">#</a></h2>
+<ul>
+<li>Update dependencies</li>
+</ul>
+<h2 id="034-2023-04-26"><a class="toclink" href="#034-2023-04-26">0.3.4 (2023-04-26)</a><a class="headerlink" href="#034-2023-04-26" title="Permanent link">#</a></h2>
+<ul>
+<li>pass the plot kwargs to the init of the array to scale the color bar using the vmin and vmax.</li>
+</ul>
+<h2 id="033-2023-04-25"><a class="toclink" href="#033-2023-04-25">0.3.3 (2023-04-25)</a><a class="headerlink" href="#033-2023-04-25" title="Permanent link">#</a></h2>
+<ul>
+<li>change the default value for the color bar label.</li>
+</ul>
+<h2 id="032-2023-04-23"><a class="toclink" href="#032-2023-04-23">0.3.2 (2023-04-23)</a><a class="headerlink" href="#032-2023-04-23" title="Permanent link">#</a></h2>
+<ul>
+<li>bump up hpc version</li>
+</ul>
+<h2 id="031-2023-04-17"><a class="toclink" href="#031-2023-04-17">0.3.1 (2023-04-17)</a><a class="headerlink" href="#031-2023-04-17" title="Permanent link">#</a></h2>
+<ul>
+<li>plot RGB plots</li>
+</ul>
+<h2 id="030-2023-04-11"><a class="toclink" href="#030-2023-04-11">0.3.0 (2023-04-11)</a><a class="headerlink" href="#030-2023-04-11" title="Permanent link">#</a></h2>
+<ul>
+<li>change API to work completly with numpy array inputs</li>
+<li>chenge to conda config</li>
+<li>add hpc-utils to filter and access arrays</li>
+<li>restructure the whole modules to array, statistics, and styles modules.</li>
+<li>all modules has classes.</li>
+<li>save animation function using ffmpeg.</li>
+</ul>
+<h2 id="027-2023-01-31"><a class="toclink" href="#027-2023-01-31">0.2.7 (2023-01-31)</a><a class="headerlink" href="#027-2023-01-31" title="Permanent link">#</a></h2>
+<ul>
+<li>bump up numpy to version 1.24.1</li>
+</ul>
+<h2 id="026-2023-01-31"><a class="toclink" href="#026-2023-01-31">0.2.6 (2023-01-31)</a><a class="headerlink" href="#026-2023-01-31" title="Permanent link">#</a></h2>
+<ul>
+<li>bump up versions</li>
+<li>add serapeum_utils as a dependency</li>
+</ul>
+<h2 id="025-2022-12-26"><a class="toclink" href="#025-2022-12-26">0.2.5 (2022-12-26)</a><a class="headerlink" href="#025-2022-12-26" title="Permanent link">#</a></h2>
+<ul>
+<li>plot array with discrete bounds takes the bounds as a parameter</li>
+</ul>
+<h2 id="024-2022-12-26"><a class="toclink" href="#024-2022-12-26">0.2.4 (2022-12-26)</a><a class="headerlink" href="#024-2022-12-26" title="Permanent link">#</a></h2>
+<ul>
+<li>bump up numpy versions to 1.23.5, add pandas</li>
+</ul>
+<h2 id="010-2022-05-24"><a class="toclink" href="#010-2022-05-24">0.1.0 (2022-05-24)</a><a class="headerlink" href="#010-2022-05-24" title="Permanent link">#</a></h2>
+<ul>
+<li>First release on PyPI.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../notebooks/reference/reference_examples/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Reference basemaps — coastlines, borders &amp;amp; relief">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Reference basemaps — coastlines, borders &amp; relief
+              </div>
+            </div>
+          </a>
+        
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/serapeum-org/cleopatra" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.expand", "navigation.indexes", "navigation.footer", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "content.code.copy", "content.action.edit", "content.action.view", "content.code.annotate", "content.tooltips", "search.highlight", "search.suggest", "toc.follow", "announce.dismiss"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
