@@ -1798,6 +1798,64 @@ def classify(
     return edges, norm
 
 
+def _categorical_is_null(value: Any, pd_isna) -> bool:
+    """Return whether a scalar `value` is a missing/null entry `categorize` drops.
+
+    Recognises every null flavour a categorical column can carry -- ``None``,
+    ``float('nan')`` / ``np.nan`` (via ``np.isnan``), ``np.datetime64('NaT')``
+    (via ``np.isnan``, or ``pd.isna`` / ``np.isnat`` on numpy builds whose
+    ``np.isnan`` rejects datetime dtypes -- ``pd.isna`` when pandas is present,
+    ``np.isnat`` when it is absent), and pandas' own ``pd.NA`` / ``pd.NaT``
+    sentinels (via `pd_isna`) -- so the category set never depends on the source
+    dtype.
+
+    Args:
+        value: A single (already-flattened) scalar from `categorize`'s input.
+        pd_isna: ``pandas.isna`` resolved once by the caller, or ``None`` when
+            pandas is unavailable (its sentinels then cannot occur).
+
+    Returns:
+        bool: ``True`` if `value` is null and should be dropped; ``False``
+        otherwise. A container argument (list/tuple/dict/set/ndarray) or a
+        string/bytes label also returns ``False`` -- neither is treated as null
+        -- though a container is not itself colourable and would fail later in
+        deduplication.
+    """
+    if value is None:
+        return True
+    if isinstance(value, (list, tuple, dict, set, np.ndarray)):
+        return False
+    # A string/bytes label -- the most common categorical value -- is never
+    # null, so short-circuit before the `np.isnan` TypeError + `pd.isna`
+    # dispatch that every non-numeric scalar would otherwise pay per element.
+    if isinstance(value, (str, bytes)):
+        return False
+    try:
+        return bool(np.isnan(value))
+    except (TypeError, ValueError):
+        # TypeError: not a float/datetime scalar (pd.NA, ...). ValueError: an
+        # array-like element (e.g. `range`) made `np.isnan` return an array, so
+        # `bool(...)` is ambiguous -- fall through to the guarded checks below.
+        pass
+    # pandas' own sentinels (`pd.NA` / `pd.NaT`) raise under `np.isnan`; catch
+    # them with the once-resolved `pd_isna` when pandas is available. Guard the
+    # call (as `np.isnat` below): an array-like element makes `pd.isna` return
+    # an array and `bool(array)` raises `ValueError` -- such an element is
+    # simply not null (carried through, as base does).
+    if pd_isna is not None:
+        try:
+            return bool(pd_isna(value))
+        except (TypeError, ValueError):
+            return False
+    # pandas absent: a `datetime64`/`timedelta64` NaT still reaches here on numpy
+    # builds whose `np.isnan` rejects datetime dtypes; `np.isnat` drops it
+    # robustly. Any other unrecognised scalar is a real, colourable value.
+    try:
+        return bool(np.isnat(value))
+    except (TypeError, ValueError):
+        return False
+
+
 def categorize(
     values: np.ndarray | Sequence,
     cmap: str | colors.Colormap = "tab10",
@@ -1919,67 +1977,7 @@ def categorize(
     except ImportError:
         _pd_isna = None
 
-    def _is_null(value: Any) -> bool:
-        """Return whether a scalar `value` is a missing/null entry to drop.
-
-        Recognises every null flavour a categorical column can carry -- ``None``,
-        ``float('nan')`` / ``np.nan`` (via ``np.isnan``), ``np.datetime64('NaT')``
-        (via ``np.isnan``, or ``pd.isna`` / ``np.isnat`` on numpy builds whose
-        ``np.isnan`` rejects datetime dtypes -- ``pd.isna`` when pandas is
-        present, ``np.isnat`` when it is absent), and pandas' own ``pd.NA`` /
-        ``pd.NaT`` sentinels (via the once-resolved ``pd.isna``) -- so the
-        category set never depends on the source dtype.
-
-        Args:
-            value: A single (already-flattened) scalar from ``values``.
-
-        Returns:
-            bool: ``True`` if `value` is null and should be dropped; ``False``
-            otherwise. A container argument (list/tuple/dict/set/ndarray) also
-            returns ``False`` -- it is never treated as null, via an early
-            short-circuit that keeps it away from the scalar ``np.isnan`` check
-            -- though a container is not itself colourable and would fail later
-            in deduplication.
-        """
-        if value is None:
-            return True
-        if isinstance(value, (list, tuple, dict, set, np.ndarray)):
-            return False
-        # A string/bytes label -- the most common categorical value -- is never
-        # null, so short-circuit before the `np.isnan` TypeError + `pd.isna`
-        # dispatch that every non-numeric scalar would otherwise pay per element.
-        if isinstance(value, (str, bytes)):
-            return False
-        try:
-            return bool(np.isnan(value))
-        except (TypeError, ValueError):
-            # TypeError: not a float/datetime scalar (str, pd.NA, ...).
-            # ValueError: an array-like element (e.g. `range`) made `np.isnan`
-            # return an array, so `bool(...)` is ambiguous -- fall through and
-            # let the guarded pandas/`np.isnat` checks classify it as non-null.
-            pass
-        # pandas' own sentinels (`pd.NA` / `pd.NaT`) raise under `np.isnan`
-        # ("boolean value of NA is ambiguous"); catch them with the
-        # once-resolved `pd.isna` when pandas is available. Guard the call the
-        # same way as `np.isnat` below: an array-like element not caught by the
-        # container short-circuit (e.g. a `range` or nested `Series`) makes
-        # `pd.isna` return an array, and `bool(array)` raises `ValueError` --
-        # such an odd element is simply not null (carried through as base does).
-        if _pd_isna is not None:
-            try:
-                return bool(_pd_isna(value))
-            except (TypeError, ValueError):
-                return False
-        # pandas absent: a `datetime64`/`timedelta64` NaT still reaches here on
-        # numpy builds whose `np.isnan` rejects datetime dtypes; `np.isnat`
-        # drops it robustly (version-independent) so NaT never leaks in as a
-        # class. Any other unrecognised scalar is a real, colourable value.
-        try:
-            return bool(np.isnat(value))
-        except (TypeError, ValueError):
-            return False
-
-    seen = list(dict.fromkeys(v for v in raw if not _is_null(v)))
+    seen = list(dict.fromkeys(v for v in raw if not _categorical_is_null(v, _pd_isna)))
     if not seen:
         raise ValueError("Cannot categorize: `values` has no non-null entries.")
     try:
