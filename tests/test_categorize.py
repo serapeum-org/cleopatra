@@ -237,6 +237,21 @@ class TestCategorize:
         str_cats, _ = categorize(pd.Series(["a", "b", None, "a"], dtype="string"))
         assert list(str_cats) == ["a", "b"], f"string-dtype null leaked into categories: {str_cats}"
 
+    def test_arraylike_object_element_does_not_crash(self):
+        """An array-like object element is carried through, not crashed on.
+
+        Test scenario:
+            A non-container array-like (e.g. `range`) stored in an object array
+            is not a null sentinel, but `pd.isna` returns an array for it and
+            `bool(array)` would raise `ValueError`. `categorize` must guard that
+            and keep the element as a (non-null) value, matching base behaviour,
+            rather than crashing.
+        """
+        categories, _ = categorize(np.array(["a", "b", range(3)], dtype=object))
+        cats = list(categories)
+        assert "a" in cats and "b" in cats, f"real labels lost: {cats}"
+        assert len(cats) == 3, f"array-like element not carried through: {cats}"
+
     def test_colors_aligned_with_categories(self):
         """Colours and categories have the same length, one-to-one.
 

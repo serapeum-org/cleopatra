@@ -1949,9 +1949,16 @@ def categorize(
             pass
         # pandas' own sentinels (`pd.NA` / `pd.NaT`) raise under `np.isnan`
         # ("boolean value of NA is ambiguous"); catch them with the
-        # once-resolved `pd.isna` when pandas is available.
+        # once-resolved `pd.isna` when pandas is available. Guard the call the
+        # same way as `np.isnat` below: an array-like element not caught by the
+        # container short-circuit (e.g. a `range` or nested `Series`) makes
+        # `pd.isna` return an array, and `bool(array)` raises `ValueError` --
+        # such an odd element is simply not null (carried through as base does).
         if _pd_isna is not None:
-            return bool(_pd_isna(value))
+            try:
+                return bool(_pd_isna(value))
+            except (TypeError, ValueError):
+                return False
         # pandas absent: a `datetime64`/`timedelta64` NaT still reaches here on
         # numpy builds whose `np.isnan` rejects datetime dtypes; `np.isnat`
         # drops it robustly (version-independent) so NaT never leaks in as a
