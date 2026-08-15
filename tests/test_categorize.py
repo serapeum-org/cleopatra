@@ -249,7 +249,8 @@ class TestCategorize:
         """
         categories, _ = categorize(np.array(["a", "b", range(3)], dtype=object))
         cats = list(categories)
-        assert "a" in cats and "b" in cats, f"real labels lost: {cats}"
+        assert "a" in cats, f"real label 'a' lost: {cats}"
+        assert "b" in cats, f"real label 'b' lost: {cats}"
         assert len(cats) == 3, f"array-like element not carried through: {cats}"
 
     def test_colors_aligned_with_categories(self):
