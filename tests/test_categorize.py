@@ -152,6 +152,33 @@ class TestCategorize:
             "water",
         ], f"categorize must not require pandas: {categories}"
 
+    def test_all_pandas_null_raises(self):
+        """An all-`pd.NA` input has no category to assign (issue #302).
+
+        Test scenario:
+            Every entry is a pandas null sentinel, so after dropping there is
+            nothing to categorize -- the same `ValueError` as the all-`None`/
+            `NaN` case, not a silent empty result.
+        """
+        pd = pytest.importorskip("pandas")
+        with pytest.raises(ValueError, match="no non-null entries"):
+            categorize(np.array([pd.NA, pd.NA], dtype=object))
+
+    def test_mixed_null_kinds_dtype_independent(self):
+        """`None`, `np.nan`, and `pd.NA` mixed drop to the same categories.
+
+        Test scenario:
+            A single array carrying every null flavour yields only the two
+            real categories -- categorisation depends on the distinct real
+            values, never on which null sentinel (or column dtype) produced
+            the missing entries.
+        """
+        pd = pytest.importorskip("pandas")
+        categories, _ = categorize(
+            np.array(["a", None, "b", np.nan, pd.NA, "a"], dtype=object)
+        )
+        assert list(categories) == ["a", "b"], f"Mixed null kinds leaked: {categories}"
+
     def test_colors_aligned_with_categories(self):
         """Colours and categories have the same length, one-to-one.
 

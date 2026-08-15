@@ -1809,7 +1809,11 @@ def categorize(
     the auto-derived equivalent of a hand-authored `colors.DATA_STYLES`
     categorical preset. Values are sorted when they support `<` (numbers,
     strings); otherwise first-encounter order is kept. Null entries
-    (`None` / `NaN`) never become a category. Deduplication is by Python
+    (`None`, `NaN`, and pandas' own `pd.NA` / `pd.NaT` sentinels) never
+    become a category, so categorisation is dtype-independent: the same
+    data yields the same categories whether a missing value arrives as
+    `None`, `float('nan')`, or a pandas nullable-dtype sentinel.
+    Deduplication is by Python
     `hash`/`==`, so values that are *equal but differently typed* collapse
     into one category, same as any other Python `dict`/`set`: `1`, `1.0`,
     and `True` are indistinguishable class codes here (`1 == True` and
@@ -1905,6 +1909,22 @@ def categorize(
     raw = np.asarray(values, dtype=object).ravel().tolist()
 
     def _is_null(value: Any) -> bool:
+        """Return whether a scalar `value` is a missing/null entry to drop.
+
+        Recognises every null flavour a categorical column can carry -- ``None``,
+        ``float('nan')`` / ``np.nan``, ``np.datetime64('NaT')`` (all via
+        ``np.isnan``), and pandas' own ``pd.NA`` / ``pd.NaT`` sentinels (via a
+        lazily-imported ``pd.isna`` fallback) -- so the category set never
+        depends on the source dtype.
+
+        Args:
+            value: A single (already-flattened) scalar from ``values``.
+
+        Returns:
+            bool: ``True`` if `value` is null and should be dropped; ``False``
+            for a real, colourable value (including any container argument,
+            which short-circuits before the scalar null checks).
+        """
         if value is None:
             return True
         if isinstance(value, (list, tuple, dict, set, np.ndarray)):
