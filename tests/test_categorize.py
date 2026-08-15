@@ -18,6 +18,8 @@ Covers:
 
 from __future__ import annotations
 
+import builtins
+
 import matplotlib
 
 matplotlib.use("Agg")
@@ -101,6 +103,54 @@ class TestCategorize:
             "urban",
             "water",
         ], f"Null entries leaked into categories: {categories}"
+
+    def test_pandas_null_sentinels_dropped(self):
+        """pandas' `pd.NA` / `pd.NaT` are dropped, not coloured (issue #302).
+
+        Test scenario:
+            `categorize` must be dtype-independent: identical categorical data
+            yields the same categories whether a missing value is `None`,
+            `np.nan`, or a pandas sentinel. `pd.NA`/`pd.NaT` raise "boolean
+            value of NA is ambiguous" under `np.isnan`, so without the
+            `pd.isna` fallback they slip past the null test and become an extra
+            coloured class.
+        """
+        pd = pytest.importorskip("pandas")
+        na_cats, _ = categorize(np.array(["a", "b", pd.NA, "a"], dtype=object))
+        assert list(na_cats) == ["a", "b"], f"pd.NA leaked into categories: {na_cats}"
+
+        nat_cats, _ = categorize(
+            np.array(
+                [pd.Timestamp("2020-01-01"), pd.Timestamp("2021-01-01"), pd.NaT],
+                dtype=object,
+            )
+        )
+        assert len(nat_cats) == 2, f"pd.NaT leaked into categories: {nat_cats}"
+
+    def test_categorize_without_pandas(self, monkeypatch):
+        """Categorisation still works when pandas is not installed (no hard dep).
+
+        Test scenario:
+            Non-null strings raise `TypeError` under `np.isnan`, so they reach
+            the lazy `import pandas` in the null check. Simulate pandas being
+            absent: the import raises `ModuleNotFoundError`, the value falls
+            back to non-null, and categorisation succeeds -- proving pandas
+            stays an optional soft dependency rather than a runtime requirement.
+        """
+        real_import = builtins.__import__
+
+        def blocked_import(name, *args, **kwargs):
+            if name == "pandas" or name.startswith("pandas."):
+                raise ModuleNotFoundError("No module named 'pandas'")
+            return real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", blocked_import)
+        categories, _ = categorize(["urban", "water", None, "forest", np.nan])
+        assert list(categories) == [
+            "forest",
+            "urban",
+            "water",
+        ], f"categorize must not require pandas: {categories}"
 
     def test_colors_aligned_with_categories(self):
         """Colours and categories have the same length, one-to-one.

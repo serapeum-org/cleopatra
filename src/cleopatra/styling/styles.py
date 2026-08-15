@@ -1912,7 +1912,18 @@ def categorize(
         try:
             return bool(np.isnan(value))
         except TypeError:
+            pass
+        # pandas' own null sentinels (`pd.NA` / `pd.NaT`) raise under
+        # `np.isnan` (`bool(np.isnan(pd.NA))` -> "boolean value of NA is
+        # ambiguous"), so they fall through to here. They can only exist when
+        # pandas is installed -- an undeclared soft dependency -- so import it
+        # lazily and treat the value as non-null when pandas is absent (the
+        # sentinels cannot occur in that case).
+        try:
+            import pandas as pd
+        except ModuleNotFoundError:
             return False
+        return bool(pd.isna(value))
 
     seen = list(dict.fromkeys(v for v in raw if not _is_null(v)))
     if not seen:
