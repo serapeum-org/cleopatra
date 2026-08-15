@@ -18,6 +18,8 @@ Covers:
 
 from __future__ import annotations
 
+import builtins
+
 import matplotlib
 
 matplotlib.use("Agg")
@@ -101,6 +103,155 @@ class TestCategorize:
             "urban",
             "water",
         ], f"Null entries leaked into categories: {categories}"
+
+    def test_pandas_null_sentinels_dropped(self):
+        """pandas' `pd.NA` / `pd.NaT` are dropped, not coloured (issue #302).
+
+        Test scenario:
+            `categorize` must be dtype-independent: identical categorical data
+            yields the same categories whether a missing value is `None`,
+            `np.nan`, or a pandas sentinel. `pd.NA`/`pd.NaT` raise "boolean
+            value of NA is ambiguous" under `np.isnan`, so without the
+            `pd.isna` fallback they slip past the null test and become an extra
+            coloured class.
+        """
+        pd = pytest.importorskip("pandas")
+        na_cats, _ = categorize(np.array(["a", "b", pd.NA, "a"], dtype=object))
+        assert list(na_cats) == ["a", "b"], f"pd.NA leaked into categories: {na_cats}"
+
+        nat_cats, _ = categorize(
+            np.array(
+                [pd.Timestamp("2020-01-01"), pd.Timestamp("2021-01-01"), pd.NaT],
+                dtype=object,
+            )
+        )
+        assert len(nat_cats) == 2, f"pd.NaT leaked into categories: {nat_cats}"
+
+    def test_categorize_without_pandas(self, monkeypatch):
+        """Categorisation still works when pandas is not installed (no hard dep).
+
+        Test scenario:
+            Non-null strings raise `TypeError` under `np.isnan`, so they reach
+            the lazy `import pandas` in the null check. Simulate pandas being
+            absent: the import raises `ModuleNotFoundError`, the value falls
+            back to non-null, and categorisation succeeds -- proving pandas
+            stays an optional soft dependency rather than a runtime requirement.
+        """
+        real_import = builtins.__import__
+
+        def blocked_import(name, *args, **kwargs):
+            if name == "pandas" or name.startswith("pandas."):
+                raise ModuleNotFoundError("No module named 'pandas'")
+            return real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", blocked_import)
+        categories, _ = categorize(["urban", "water", None, "forest", np.nan])
+        assert list(categories) == [
+            "forest",
+            "urban",
+            "water",
+        ], f"categorize must not require pandas: {categories}"
+
+    def test_all_pandas_null_raises(self):
+        """An all-`pd.NA` input has no category to assign (issue #302).
+
+        Test scenario:
+            Every entry is a pandas null sentinel, so after dropping there is
+            nothing to categorize -- the same `ValueError` as the all-`None`/
+            `NaN` case, not a silent empty result.
+        """
+        pd = pytest.importorskip("pandas")
+        with pytest.raises(ValueError, match="no non-null entries"):
+            categorize(np.array([pd.NA, pd.NA], dtype=object))
+
+    def test_mixed_null_kinds_dtype_independent(self):
+        """`None`, `np.nan`, and `pd.NA` mixed drop to the same categories.
+
+        Test scenario:
+            A single array carrying every null flavour yields only the two
+            real categories -- categorisation depends on the distinct real
+            values, never on which null sentinel (or column dtype) produced
+            the missing entries.
+        """
+        pd = pytest.importorskip("pandas")
+        categories, _ = categorize(
+            np.array(["a", None, "b", np.nan, pd.NA, "a"], dtype=object)
+        )
+        assert list(categories) == ["a", "b"], f"Mixed null kinds leaked: {categories}"
+
+    def test_numpy_datetime_nat_dropped(self):
+        """A pure-numpy `datetime64('NaT')` is dropped, not coloured (issue #302).
+
+        Test scenario:
+            NaT arrives as a numpy datetime (no pandas sentinel involved). It
+            must be dropped so a numpy datetime categorical never gains a
+            spurious NaT class alongside its real timestamps.
+        """
+        real = [np.datetime64("2020-01-01"), np.datetime64("2021-01-01")]
+        categories, _ = categorize(np.array(real + [np.datetime64("NaT")], dtype=object))
+        assert len(categories) == 2, f"numpy NaT leaked into categories: {categories}"
+
+    def test_datetime_nat_dropped_via_isnat_without_pandas(self, monkeypatch):
+        """`datetime64('NaT')` is dropped by `np.isnat` when pandas is absent (M2).
+
+        Test scenario:
+            Reproduce the silent-regression edge: a numpy whose `np.isnan`
+            rejects `datetime64` (patched to raise), with pandas unavailable.
+            The `np.isnat` fallback must still drop NaT so it never becomes a
+            colour class, while real timestamps survive.
+        """
+        real_np_isnan = np.isnan
+
+        def isnan_no_datetime(value):
+            if isinstance(value, np.datetime64):
+                raise TypeError("simulated: np.isnan rejects datetime64")
+            return real_np_isnan(value)
+
+        real_import = builtins.__import__
+
+        def blocked_import(name, *args, **kwargs):
+            if name == "pandas" or name.startswith("pandas."):
+                raise ModuleNotFoundError("No module named 'pandas'")
+            return real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(np, "isnan", isnan_no_datetime)
+        monkeypatch.setattr(builtins, "__import__", blocked_import)
+        real = [np.datetime64("2020-01-01"), np.datetime64("2021-01-01")]
+        categories, _ = categorize(np.array(real + [np.datetime64("NaT")], dtype=object))
+        assert len(categories) == 2, f"NaT leaked via isnat fallback: {categories}"
+
+    def test_pandas_nullable_dtype_missing_dropped(self):
+        """A genuine pandas nullable dtype's missing entry is dropped (issue #302).
+
+        Test scenario:
+            Build the input from real nullable dtypes -- an `Int64` array and a
+            `string` Series -- whose missing entries materialise as `pd.NA`
+            rather than being hand-placed in an object array. Categorisation
+            must yield only the distinct real values, proving genuine
+            dtype-independence through the actual pandas conversion path.
+        """
+        pd = pytest.importorskip("pandas")
+        int_cats, _ = categorize(pd.array([1, 2, pd.NA, 1], dtype="Int64"))
+        assert list(int_cats) == [1, 2], f"Int64 pd.NA leaked into categories: {int_cats}"
+
+        str_cats, _ = categorize(pd.Series(["a", "b", None, "a"], dtype="string"))
+        assert list(str_cats) == ["a", "b"], f"string-dtype null leaked into categories: {str_cats}"
+
+    def test_arraylike_object_element_does_not_crash(self):
+        """An array-like object element is carried through, not crashed on.
+
+        Test scenario:
+            A non-container array-like (e.g. `range`) stored in an object array
+            is not a null sentinel, but `pd.isna` returns an array for it and
+            `bool(array)` would raise `ValueError`. `categorize` must guard that
+            and keep the element as a (non-null) value, matching base behaviour,
+            rather than crashing.
+        """
+        categories, _ = categorize(np.array(["a", "b", range(3)], dtype=object))
+        cats = list(categories)
+        assert "a" in cats, f"real label 'a' lost: {cats}"
+        assert "b" in cats, f"real label 'b' lost: {cats}"
+        assert len(cats) == 3, f"array-like element not carried through: {cats}"
 
     def test_colors_aligned_with_categories(self):
         """Colours and categories have the same length, one-to-one.
@@ -368,8 +519,10 @@ class TestGlyphPrepareCategoricalMapping:
             `color_scale` is ignored -- and a warning says so.
         """
         glyph = ScatterGlyph(np.arange(4.0), np.zeros(4), values=np.array(["a", "b", "a", "b"]))
+        classify = Classify(scheme="categorical")
+        color = ColorScaling.midpoint()
         with pytest.warns(UserWarning, match="color_scale"):
-            glyph.plot(classify=Classify(scheme="categorical"), color=ColorScaling.midpoint())
+            glyph.plot(classify=classify, color=color)
 
     def test_warns_on_conflicting_levels(self):
         """`scheme="categorical"` together with `levels` warns.
@@ -379,8 +532,10 @@ class TestGlyphPrepareCategoricalMapping:
             ignored -- and a warning says so.
         """
         glyph = ScatterGlyph(np.arange(4.0), np.zeros(4), values=np.array(["a", "b", "a", "b"]))
+        classify = Classify(scheme="categorical")
+        contour = Contour(levels=3)
         with pytest.warns(UserWarning, match="levels"):
-            glyph.plot(classify=Classify(scheme="categorical"), contour=Contour(levels=3))
+            glyph.plot(classify=classify, contour=contour)
 
 
 class TestPolygonGlyphCategorical:

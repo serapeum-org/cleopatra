@@ -1798,6 +1798,64 @@ def classify(
     return edges, norm
 
 
+def _categorical_is_null(value: Any, pd_isna) -> bool:
+    """Return whether a scalar `value` is a missing/null entry `categorize` drops.
+
+    Recognises every null flavour a categorical column can carry -- ``None``,
+    ``float('nan')`` / ``np.nan`` (via ``np.isnan``), ``np.datetime64('NaT')``
+    (via ``np.isnan``, or ``pd.isna`` / ``np.isnat`` on numpy builds whose
+    ``np.isnan`` rejects datetime dtypes -- ``pd.isna`` when pandas is present,
+    ``np.isnat`` when it is absent), and pandas' own ``pd.NA`` / ``pd.NaT``
+    sentinels (via `pd_isna`) -- so the category set never depends on the source
+    dtype.
+
+    Args:
+        value: A single (already-flattened) scalar from `categorize`'s input.
+        pd_isna: ``pandas.isna`` resolved once by the caller, or ``None`` when
+            pandas is unavailable (its sentinels then cannot occur).
+
+    Returns:
+        bool: ``True`` if `value` is null and should be dropped; ``False``
+        otherwise. A container argument (list/tuple/dict/set/ndarray) or a
+        string/bytes label also returns ``False`` -- neither is treated as null
+        -- though a container is not itself colourable and would fail later in
+        deduplication.
+    """
+    if value is None:
+        return True
+    if isinstance(value, (list, tuple, dict, set, np.ndarray)):
+        return False
+    # A string/bytes label -- the most common categorical value -- is never
+    # null, so short-circuit before the `np.isnan` TypeError + `pd.isna`
+    # dispatch that every non-numeric scalar would otherwise pay per element.
+    if isinstance(value, (str, bytes)):
+        return False
+    try:
+        return bool(np.isnan(value))
+    except (TypeError, ValueError):
+        # TypeError: not a float/datetime scalar (pd.NA, ...). ValueError: an
+        # array-like element (e.g. `range`) made `np.isnan` return an array, so
+        # `bool(...)` is ambiguous -- fall through to the guarded checks below.
+        pass
+    # pandas' own sentinels (`pd.NA` / `pd.NaT`) raise under `np.isnan`; catch
+    # them with the once-resolved `pd_isna` when pandas is available. Guard the
+    # call (as `np.isnat` below): an array-like element makes `pd.isna` return
+    # an array and `bool(array)` raises `ValueError` -- such an element is
+    # simply not null (carried through, as base does).
+    if pd_isna is not None:
+        try:
+            return bool(pd_isna(value))
+        except (TypeError, ValueError):
+            return False
+    # pandas absent: a `datetime64`/`timedelta64` NaT still reaches here on numpy
+    # builds whose `np.isnan` rejects datetime dtypes; `np.isnat` drops it
+    # robustly. Any other unrecognised scalar is a real, colourable value.
+    try:
+        return bool(np.isnat(value))
+    except (TypeError, ValueError):
+        return False
+
+
 def categorize(
     values: np.ndarray | Sequence,
     cmap: str | colors.Colormap = "tab10",
@@ -1809,7 +1867,11 @@ def categorize(
     the auto-derived equivalent of a hand-authored `colors.DATA_STYLES`
     categorical preset. Values are sorted when they support `<` (numbers,
     strings); otherwise first-encounter order is kept. Null entries
-    (`None` / `NaN`) never become a category. Deduplication is by Python
+    (`None`, `NaN`, and pandas' own `pd.NA` / `pd.NaT` sentinels) never
+    become a category, so categorisation is dtype-independent: the same
+    data yields the same categories whether a missing value arrives as
+    `None`, `float('nan')`, or a pandas nullable-dtype sentinel.
+    Deduplication is by Python
     `hash`/`==`, so values that are *equal but differently typed* collapse
     into one category, same as any other Python `dict`/`set`: `1`, `1.0`,
     and `True` are indistinguishable class codes here (`1 == True` and
@@ -1904,17 +1966,18 @@ def categorize(
     """
     raw = np.asarray(values, dtype=object).ravel().tolist()
 
-    def _is_null(value: Any) -> bool:
-        if value is None:
-            return True
-        if isinstance(value, (list, tuple, dict, set, np.ndarray)):
-            return False
-        try:
-            return bool(np.isnan(value))
-        except TypeError:
-            return False
+    # Resolve pandas' scalar null check once (not per element). pandas is an
+    # undeclared soft dependency of cleopatra, so bind `pd.isna` when it is
+    # importable and fall back to the numpy-only path otherwise -- `pd.NA` /
+    # `pd.NaT` cannot exist unless pandas is installed. `except ImportError`
+    # (broader than `ModuleNotFoundError`) also degrades gracefully on a
+    # broken/partial pandas install rather than crashing categorisation.
+    try:
+        from pandas import isna as _pd_isna
+    except ImportError:
+        _pd_isna = None
 
-    seen = list(dict.fromkeys(v for v in raw if not _is_null(v)))
+    seen = list(dict.fromkeys(v for v in raw if not _categorical_is_null(v, _pd_isna)))
     if not seen:
         raise ValueError("Cannot categorize: `values` has no non-null entries.")
     try:
