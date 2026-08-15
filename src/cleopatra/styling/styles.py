@@ -1943,6 +1943,11 @@ def categorize(
             return True
         if isinstance(value, (list, tuple, dict, set, np.ndarray)):
             return False
+        # A string/bytes label -- the most common categorical value -- is never
+        # null, so short-circuit before the `np.isnan` TypeError + `pd.isna`
+        # dispatch that every non-numeric scalar would otherwise pay per element.
+        if isinstance(value, (str, bytes)):
+            return False
         try:
             return bool(np.isnan(value))
         except (TypeError, ValueError):
