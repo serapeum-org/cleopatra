@@ -1924,9 +1924,11 @@ def categorize(
 
         Recognises every null flavour a categorical column can carry -- ``None``,
         ``float('nan')`` / ``np.nan`` (via ``np.isnan``), ``np.datetime64('NaT')``
-        (via ``np.isnan`` or, when pandas is absent, ``np.isnat``), and pandas'
-        own ``pd.NA`` / ``pd.NaT`` sentinels (via the once-resolved ``pd.isna``)
-        -- so the category set never depends on the source dtype.
+        (via ``np.isnan``, or ``pd.isna`` / ``np.isnat`` on numpy builds whose
+        ``np.isnan`` rejects datetime dtypes -- ``pd.isna`` when pandas is
+        present, ``np.isnat`` when it is absent), and pandas' own ``pd.NA`` /
+        ``pd.NaT`` sentinels (via the once-resolved ``pd.isna``) -- so the
+        category set never depends on the source dtype.
 
         Args:
             value: A single (already-flattened) scalar from ``values``.
