@@ -1933,8 +1933,11 @@ def categorize(
 
         Returns:
             bool: ``True`` if `value` is null and should be dropped; ``False``
-            for a real, colourable value (including any container argument,
-            which short-circuits before the scalar null checks).
+            otherwise. A container argument (list/tuple/dict/set/ndarray) also
+            returns ``False`` -- it is never treated as null, via an early
+            short-circuit that keeps it away from the scalar ``np.isnan`` check
+            -- though a container is not itself colourable and would fail later
+            in deduplication.
         """
         if value is None:
             return True
