@@ -519,8 +519,10 @@ class TestGlyphPrepareCategoricalMapping:
             `color_scale` is ignored -- and a warning says so.
         """
         glyph = ScatterGlyph(np.arange(4.0), np.zeros(4), values=np.array(["a", "b", "a", "b"]))
+        classify = Classify(scheme="categorical")
+        color = ColorScaling.midpoint()
         with pytest.warns(UserWarning, match="color_scale"):
-            glyph.plot(classify=Classify(scheme="categorical"), color=ColorScaling.midpoint())
+            glyph.plot(classify=classify, color=color)
 
     def test_warns_on_conflicting_levels(self):
         """`scheme="categorical"` together with `levels` warns.
@@ -530,8 +532,10 @@ class TestGlyphPrepareCategoricalMapping:
             ignored -- and a warning says so.
         """
         glyph = ScatterGlyph(np.arange(4.0), np.zeros(4), values=np.array(["a", "b", "a", "b"]))
+        classify = Classify(scheme="categorical")
+        contour = Contour(levels=3)
         with pytest.warns(UserWarning, match="levels"):
-            glyph.plot(classify=Classify(scheme="categorical"), contour=Contour(levels=3))
+            glyph.plot(classify=classify, contour=contour)
 
 
 class TestPolygonGlyphCategorical:
