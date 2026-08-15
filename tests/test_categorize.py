@@ -220,6 +220,23 @@ class TestCategorize:
         categories, _ = categorize(np.array(real + [np.datetime64("NaT")], dtype=object))
         assert len(categories) == 2, f"NaT leaked via isnat fallback: {categories}"
 
+    def test_pandas_nullable_dtype_missing_dropped(self):
+        """A genuine pandas nullable dtype's missing entry is dropped (issue #302).
+
+        Test scenario:
+            Build the input from real nullable dtypes -- an `Int64` array and a
+            `string` Series -- whose missing entries materialise as `pd.NA`
+            rather than being hand-placed in an object array. Categorisation
+            must yield only the distinct real values, proving genuine
+            dtype-independence through the actual pandas conversion path.
+        """
+        pd = pytest.importorskip("pandas")
+        int_cats, _ = categorize(pd.array([1, 2, pd.NA, 1], dtype="Int64"))
+        assert list(int_cats) == [1, 2], f"Int64 pd.NA leaked into categories: {int_cats}"
+
+        str_cats, _ = categorize(pd.Series(["a", "b", None, "a"], dtype="string"))
+        assert list(str_cats) == ["a", "b"], f"string-dtype null leaked into categories: {str_cats}"
+
     def test_colors_aligned_with_categories(self):
         """Colours and categories have the same length, one-to-one.
 
