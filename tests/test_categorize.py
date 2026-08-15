@@ -179,6 +179,47 @@ class TestCategorize:
         )
         assert list(categories) == ["a", "b"], f"Mixed null kinds leaked: {categories}"
 
+    def test_numpy_datetime_nat_dropped(self):
+        """A pure-numpy `datetime64('NaT')` is dropped, not coloured (issue #302).
+
+        Test scenario:
+            NaT arrives as a numpy datetime (no pandas sentinel involved). It
+            must be dropped so a numpy datetime categorical never gains a
+            spurious NaT class alongside its real timestamps.
+        """
+        real = [np.datetime64("2020-01-01"), np.datetime64("2021-01-01")]
+        categories, _ = categorize(np.array(real + [np.datetime64("NaT")], dtype=object))
+        assert len(categories) == 2, f"numpy NaT leaked into categories: {categories}"
+
+    def test_datetime_nat_dropped_via_isnat_without_pandas(self, monkeypatch):
+        """`datetime64('NaT')` is dropped by `np.isnat` when pandas is absent (M2).
+
+        Test scenario:
+            Reproduce the silent-regression edge: a numpy whose `np.isnan`
+            rejects `datetime64` (patched to raise), with pandas unavailable.
+            The `np.isnat` fallback must still drop NaT so it never becomes a
+            colour class, while real timestamps survive.
+        """
+        real_np_isnan = np.isnan
+
+        def isnan_no_datetime(value):
+            if isinstance(value, np.datetime64):
+                raise TypeError("simulated: np.isnan rejects datetime64")
+            return real_np_isnan(value)
+
+        real_import = builtins.__import__
+
+        def blocked_import(name, *args, **kwargs):
+            if name == "pandas" or name.startswith("pandas."):
+                raise ModuleNotFoundError("No module named 'pandas'")
+            return real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(np, "isnan", isnan_no_datetime)
+        monkeypatch.setattr(builtins, "__import__", blocked_import)
+        real = [np.datetime64("2020-01-01"), np.datetime64("2021-01-01")]
+        categories, _ = categorize(np.array(real + [np.datetime64("NaT")], dtype=object))
+        assert len(categories) == 2, f"NaT leaked via isnat fallback: {categories}"
+
     def test_colors_aligned_with_categories(self):
         """Colours and categories have the same length, one-to-one.
 

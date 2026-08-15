@@ -1923,10 +1923,10 @@ def categorize(
         """Return whether a scalar `value` is a missing/null entry to drop.
 
         Recognises every null flavour a categorical column can carry -- ``None``,
-        ``float('nan')`` / ``np.nan``, ``np.datetime64('NaT')`` (via ``np.isnan``),
-        and pandas' own ``pd.NA`` / ``pd.NaT`` sentinels (via the once-resolved
-        ``pd.isna`` fallback) -- so the category set never depends on the source
-        dtype.
+        ``float('nan')`` / ``np.nan`` (via ``np.isnan``), ``np.datetime64('NaT')``
+        (via ``np.isnan`` or, when pandas is absent, ``np.isnat``), and pandas'
+        own ``pd.NA`` / ``pd.NaT`` sentinels (via the once-resolved ``pd.isna``)
+        -- so the category set never depends on the source dtype.
 
         Args:
             value: A single (already-flattened) scalar from ``values``.
@@ -1946,11 +1946,17 @@ def categorize(
             pass
         # pandas' own sentinels (`pd.NA` / `pd.NaT`) raise under `np.isnan`
         # ("boolean value of NA is ambiguous"); catch them with the
-        # once-resolved `pd.isna` when pandas is available, else treat the
-        # value as non-null (the sentinels cannot occur without pandas).
-        if _pd_isna is None:
+        # once-resolved `pd.isna` when pandas is available.
+        if _pd_isna is not None:
+            return bool(_pd_isna(value))
+        # pandas absent: a `datetime64`/`timedelta64` NaT still reaches here on
+        # numpy builds whose `np.isnan` rejects datetime dtypes; `np.isnat`
+        # drops it robustly (version-independent) so NaT never leaks in as a
+        # class. Any other unrecognised scalar is a real, colourable value.
+        try:
+            return bool(np.isnat(value))
+        except (TypeError, ValueError):
             return False
-        return bool(_pd_isna(value))
 
     seen = list(dict.fromkeys(v for v in raw if not _is_null(v)))
     if not seen:
