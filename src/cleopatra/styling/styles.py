@@ -1908,14 +1908,25 @@ def categorize(
     """
     raw = np.asarray(values, dtype=object).ravel().tolist()
 
+    # Resolve pandas' scalar null check once (not per element). pandas is an
+    # undeclared soft dependency of cleopatra, so bind `pd.isna` when it is
+    # importable and fall back to the numpy-only path otherwise -- `pd.NA` /
+    # `pd.NaT` cannot exist unless pandas is installed. `except ImportError`
+    # (broader than `ModuleNotFoundError`) also degrades gracefully on a
+    # broken/partial pandas install rather than crashing categorisation.
+    try:
+        from pandas import isna as _pd_isna
+    except ImportError:
+        _pd_isna = None
+
     def _is_null(value: Any) -> bool:
         """Return whether a scalar `value` is a missing/null entry to drop.
 
         Recognises every null flavour a categorical column can carry -- ``None``,
-        ``float('nan')`` / ``np.nan``, ``np.datetime64('NaT')`` (all via
-        ``np.isnan``), and pandas' own ``pd.NA`` / ``pd.NaT`` sentinels (via a
-        lazily-imported ``pd.isna`` fallback) -- so the category set never
-        depends on the source dtype.
+        ``float('nan')`` / ``np.nan``, ``np.datetime64('NaT')`` (via ``np.isnan``),
+        and pandas' own ``pd.NA`` / ``pd.NaT`` sentinels (via the once-resolved
+        ``pd.isna`` fallback) -- so the category set never depends on the source
+        dtype.
 
         Args:
             value: A single (already-flattened) scalar from ``values``.
@@ -1933,17 +1944,13 @@ def categorize(
             return bool(np.isnan(value))
         except TypeError:
             pass
-        # pandas' own null sentinels (`pd.NA` / `pd.NaT`) raise under
-        # `np.isnan` (`bool(np.isnan(pd.NA))` -> "boolean value of NA is
-        # ambiguous"), so they fall through to here. They can only exist when
-        # pandas is installed -- an undeclared soft dependency -- so import it
-        # lazily and treat the value as non-null when pandas is absent (the
-        # sentinels cannot occur in that case).
-        try:
-            import pandas as pd
-        except ModuleNotFoundError:
+        # pandas' own sentinels (`pd.NA` / `pd.NaT`) raise under `np.isnan`
+        # ("boolean value of NA is ambiguous"); catch them with the
+        # once-resolved `pd.isna` when pandas is available, else treat the
+        # value as non-null (the sentinels cannot occur without pandas).
+        if _pd_isna is None:
             return False
-        return bool(pd.isna(value))
+        return bool(_pd_isna(value))
 
     seen = list(dict.fromkeys(v for v in raw if not _is_null(v)))
     if not seen:
