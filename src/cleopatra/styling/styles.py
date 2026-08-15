@@ -1945,7 +1945,11 @@ def categorize(
             return False
         try:
             return bool(np.isnan(value))
-        except TypeError:
+        except (TypeError, ValueError):
+            # TypeError: not a float/datetime scalar (str, pd.NA, ...).
+            # ValueError: an array-like element (e.g. `range`) made `np.isnan`
+            # return an array, so `bool(...)` is ambiguous -- fall through and
+            # let the guarded pandas/`np.isnat` checks classify it as non-null.
             pass
         # pandas' own sentinels (`pd.NA` / `pd.NaT`) raise under `np.isnan`
         # ("boolean value of NA is ambiguous"); catch them with the
