@@ -2283,6 +2283,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0320-2026-08-17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.32.0 (2026-08-17)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0310-2026-08-12" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3038,6 +3049,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0320-2026-08-17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.32.0 (2026-08-17)
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#0310-2026-08-12" class="md-nav__link">
@@ -3796,6 +3818,57 @@
 
 
 <h1 id="changelog"><a class="toclink" href="#changelog">Changelog</a><a class="headerlink" href="#changelog" title="Permanent link">#</a></h1>
+<h2 id="0320-2026-08-17"><a class="toclink" href="#0320-2026-08-17">0.32.0 (2026-08-17)</a><a class="headerlink" href="#0320-2026-08-17" title="Permanent link">#</a></h2>
+<ul>
+<li>perf(array_glyph): count domain cells without materialising a per-cell index list (#305)</li>
+<li>Replace <code>len(get_indices2(frame, [np.nan]))</code>, which built one Python tuple
+per cell, with a pure-numpy, mask-aware reduction extracted into
+<code>ArrayGlyph._count_domain_cells</code>.</li>
+<li>
+<ul>
+<li>fixes the MemoryError when building a 4-D <code>(n, h, w, 3)</code> RGB animation
+  stack: the old <code>len(shape) == 3</code> frame pick passed the whole stack to
+  <code>get_indices2</code> (~15 GB tuple list); the reduction is O(1) in Python
+  objects and ~3000x faster on large frames</li>
+</ul>
+</li>
+<li>count a stack on frame 0 and a single frame (2-D, or an <code>(h, w, 3)</code> RGB
+  image from <code>rgb_bands</code>) whole, using <code>self.rgb</code> to disambiguate the two
+  3-D shapes and fix a lone RGB image counting only its first row</li>
+<li>keep the mask term so <code>exclude_value</code>-masked cells stay excluded,
+  byte-equivalent to the old <code>get_indices2</code> (a plain <code>~np.isnan</code> would
+  over-count masked cells)</li>
+<li>add regression tests (4-D, 3-D multi-frame, zero-domain, masked 2-D and
+  masked stack, single RGB image, integer dtype) and clarify the
+  <code>num_domain_cells</code> docstring</li>
+<li>Closes #304</li>
+<li>fix(styling): drop pandas &amp; numpy null sentinels in categorize (#303)</li>
+<li>
+<p>categorize's null filter recognised only None and np.nan, so pandas'                                            <br />
+  pd.NA / pd.NaT (and, on some numpy builds, datetime64('NaT')) survived                                          <br />
+  and became their own colour category -- making categorisation depend on                                         <br />
+  the column dtype. Treat every null flavour uniformly so the category set                                        <br />
+  depends only on the distinct real values (the in-glyph categorical path                                         <br />
+  delegates to categorize and inherits the fix).                                                                    </p>
+</li>
+<li>
+<p>Drop pd.NA / pd.NaT via pandas' scalar pd.isna, and datetime64('NaT')                                         <br />
+    via np.isnan or np.isnat.                                                                                       </p>
+</li>
+<li>Keep pandas an undeclared soft dependency: import pd.isna lazily and                                          <br />
+    once (not per element), degrading to the numpy-only path (np.isnat for                                        <br />
+    datetime NaT) when pandas is absent -- no new runtime dependency.                                               </li>
+<li>Short-circuit str/bytes and guard np.isnan / pd.isna against array-like                                       <br />
+    object-array elements (e.g. range) so odd contents are carried through                                        <br />
+    as non-null rather than crashing, matching base behaviour.                                                      </li>
+<li>Extract the check to a module-level _categorical_is_null helper to keep                                       <br />
+    categorize's cognitive complexity within bounds.                                                                </li>
+<li>Add tests (pd.NA/pd.NaT, no-pandas fallback, all-null error, mixed null                                       <br />
+    kinds, numpy datetime NaT incl. the forced np.isnat path, genuine                                             <br />
+    pandas nullable dtypes, array-like element) and refresh the categorize                                        <br />
+    / _is_null docstrings.                                                                                          </li>
+</ul>
+<p>Closes #302</p>
 <h2 id="0310-2026-08-12"><a class="toclink" href="#0310-2026-08-12">0.31.0 (2026-08-12)</a><a class="headerlink" href="#0310-2026-08-12" title="Permanent link">#</a></h2>
 <ul>
 <li>chore: repo housekeeping and docs refresh for the grouped-parameter API (#298)</li>
