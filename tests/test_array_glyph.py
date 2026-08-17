@@ -2160,6 +2160,31 @@ class TestNanNoDataConvention:
             f"{glyph.num_domain_cells}"
         )
 
+    def test_num_domain_cells_counts_first_frame_of_3d_stack(self):
+        """On a multi-frame 3-D `(n, h, w)` stack the count is on frame 0 only:
+        NaNs placed in a later frame (none in frame 0) leave the count at the
+        full frame size."""
+        stack = np.random.default_rng(1).random((3, 4, 5)) * 100.0
+        stack[2, 0, 0] = np.nan  # NaN only in frame 2, not frame 0
+        stack[2, 1, 1] = np.nan
+        glyph = ArrayGlyph(stack)
+        assert glyph.num_domain_cells == 4 * 5, (
+            f"frame 0 has no NaN, so all {4 * 5} cells are in-domain; got "
+            f"{glyph.num_domain_cells}"
+        )
+
+    def test_num_domain_cells_zero_when_first_frame_all_nan(self):
+        """`num_domain_cells` is 0 when frame 0 is entirely NaN, even though a
+        later frame carries data (which keeps the colour range valid) — the
+        count is on frame 0 and its domain is empty."""
+        stack = np.ones((2, 4, 5))
+        stack[0] = np.nan  # frame 0 all-NaN; frame 1 has data (no ValueError)
+        glyph = ArrayGlyph(stack)
+        assert glyph.num_domain_cells == 0, (
+            f"frame 0 is all-NaN so its domain is empty, got "
+            f"{glyph.num_domain_cells}"
+        )
+
     def test_animate_display_cell_value_true_with_nan_nodata(self):
         """`animate(display_cell_value=True)` on a NaN-nodata stack runs
         without `IndexError` (the cell-update loop iterates the artist list,
