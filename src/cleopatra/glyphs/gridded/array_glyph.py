@@ -1041,6 +1041,29 @@ class ArrayGlyph(GeoMixin, Glyph):
     #: Option keys this glyph accepts (see `Glyph.option_keys`/`filter_kwargs`).
     DEFAULT_OPTIONS = ARRAY_DEFAULT_OPTIONS
 
+    @staticmethod
+    def _count_domain_cells(array: np.ndarray, is_rgb: bool) -> int:
+        """Count the in-domain cells -- neither `exclude_value`-masked nor NaN.
+
+        Replaces the old `len(get_indices2(frame, [np.nan]))`, which allocated
+        one Python tuple per cell (O(n) objects that raised `MemoryError` on a
+        large animation stack). A stack (3-D `(n, h, w)` grey or 4-D
+        `(n, h, w, 3)`) is counted on frame 0; a single frame -- 2-D, or an
+        `(h, w, 3)` RGB image from `rgb_bands` (also 3-D) -- is counted whole.
+
+        Args:
+            array: The already-masked input array (an `ma.array`).
+            is_rgb: Whether `array` is a single band-last RGB image.
+
+        Returns:
+            int: The number of in-domain cells on the counted frame.
+        """
+        first_frame = array if (is_rgb or array.ndim < 3) else array[0]
+        in_domain = ~(
+            ma.getmaskarray(first_frame) | np.isnan(ma.getdata(first_frame))
+        )
+        return int(np.count_nonzero(in_domain))
+
     def __init__(
         self,
         array: np.ndarray,
@@ -1323,20 +1346,7 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         self._arr = array
         self.ticks_spacing = (self._vmax - self._vmin) / 10 or 1.0
-        # Count in-domain cells (neither `exclude_value`-masked nor NaN) with a
-        # pure-numpy reduction. The old `len(get_indices2(first_frame, [np.nan]))`
-        # allocated one Python tuple per cell -- O(n) objects that raised a
-        # MemoryError on a large true-colour animation stack -- and its
-        # `len(shape) == 3` frame pick selected the whole 4-D `(n, h, w, 3)`
-        # stack instead of one frame. Count a stack (3-D `(n, h, w)` grey or 4-D
-        # `(n, h, w, 3)`) on frame 0; count a single frame -- 2-D, or an
-        # `(h, w, 3)` RGB image from `rgb_bands` (also 3-D) -- whole. `array` is
-        # always an `ma.array` by here, so honour its mask too.
-        first_frame = array if (self.rgb or array.ndim < 3) else array[0]
-        in_domain = ~(
-            ma.getmaskarray(first_frame) | np.isnan(ma.getdata(first_frame))
-        )
-        self.num_domain_cells = int(np.count_nonzero(in_domain))
+        self.num_domain_cells = self._count_domain_cells(array, self.rgb)
         self.im: Any = None
         self.cbar: Colorbar | None = None
         self._day_text: Any = None
