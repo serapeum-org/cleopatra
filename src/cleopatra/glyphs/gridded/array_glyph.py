@@ -982,8 +982,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         rgb (bool): Whether the array is an RGB array.
         num_domain_cells (int): Number of cells in the data domain — cells
             that are neither masked (via `exclude_value`) nor NaN. For a
-            3-D stack this is counted on the first frame. Equals the number
-            of per-cell value labels drawn when `display_cell_value=True`.
+            3-D `(n, h, w)` or 4-D `(n, h, w, 3)` stack this is counted on the
+            first frame. Equals the number of per-cell value labels drawn when
+            `display_cell_value=True`.
         anim (matplotlib.animation.FuncAnimation): The animation object if created.
         im (matplotlib.cm.ScalarMappable): The colour-mapped artist produced by
             the most recent `plot`/`animate` call (e.g. the `AxesImage` for
@@ -1319,9 +1320,17 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         self._arr = array
         self.ticks_spacing = (self._vmax - self._vmin) / 10 or 1.0
-        shape = array.shape
-        first_frame = array[0, :, :] if len(shape) == 3 else array
-        self.num_domain_cells = len(get_indices2(first_frame, [np.nan]))
+        # Count in-domain cells (neither `exclude_value`-masked nor NaN) with a
+        # pure-numpy reduction. The old `len(get_indices2(first_frame, [np.nan]))`
+        # allocated one Python tuple per cell -- O(n) objects that raised a
+        # MemoryError on a large RGB animation stack -- and its `len(shape) == 3`
+        # frame pick selected the whole 4-D `(n, h, w, 3)` stack instead of one
+        # frame. `array` is always an `ma.array` by here, so honour its mask too.
+        first_frame = array[0] if array.ndim >= 3 else array
+        in_domain = ~(
+            ma.getmaskarray(first_frame) | np.isnan(ma.getdata(first_frame))
+        )
+        self.num_domain_cells = int(np.count_nonzero(in_domain))
         self.im: Any = None
         self.cbar: Colorbar | None = None
         self._day_text: Any = None

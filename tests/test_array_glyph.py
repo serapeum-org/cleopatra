@@ -2110,6 +2110,45 @@ class TestNanNoDataConvention:
             f"(expected {expected}), got {glyph.num_domain_cells}"
         )
 
+    def test_num_domain_cells_counts_first_frame_of_4d_rgb_stack(self):
+        """On a 4-D `(n, h, w, 3)` RGB stack the count is taken on the first
+        *frame* (`array[0]`), not the whole stack -- the old `len(shape) == 3`
+        check selected the entire `(n, h, w, 3)` array (issue #304)."""
+        stack = np.random.default_rng(0).random((3, 4, 5, 3))  # 3 RGB frames
+        stack[0, 0, 0, 0] = np.nan  # one NaN in frame 0
+        glyph = ArrayGlyph(stack)
+        expected = int(np.count_nonzero(~np.isnan(stack[0])))  # frame 0 only
+        assert glyph.num_domain_cells == expected, (
+            f"expected the first-frame domain count {expected}, got "
+            f"{glyph.num_domain_cells}"
+        )
+        assert glyph.num_domain_cells < stack.size, (
+            "count must be per-frame, not over the whole 4-D stack"
+        )
+
+    def test_num_domain_cells_excludes_exclude_value_masked_cells(self):
+        """`num_domain_cells` also excludes `exclude_value`-masked cells, not
+        only NaN -- the mask-aware count matches the old `get_indices2`
+        behaviour (a plain `~isnan` would over-count the masked cell)."""
+        arr = np.arange(25, dtype=float).reshape(5, 5)
+        arr[0, 0] = -9999.0  # a no-data cell to mask via exclude_value
+        arr[1, 1] = np.nan  # plus a NaN cell
+        glyph = ArrayGlyph(arr, exclude_value=[-9999.0])
+        assert glyph.num_domain_cells == 23, (
+            f"count should exclude both the masked and the NaN cell "
+            f"(expected 23), got {glyph.num_domain_cells}"
+        )
+
+    def test_large_rgb_stack_constructs_without_materialising_index_list(self):
+        """A large-per-frame 4-D RGB stack constructs without the old per-cell
+        tuple-list allocation that raised `MemoryError`; ~3M cells per frame,
+        counted on one frame so it stays cheap (issue #304)."""
+        stack = np.ones((2, 1000, 1000, 3), dtype="float32")
+        glyph = ArrayGlyph(stack)
+        assert glyph.num_domain_cells == 1000 * 1000 * 3, (
+            f"all cells are in-domain; got {glyph.num_domain_cells}"
+        )
+
     def test_animate_display_cell_value_true_with_nan_nodata(self):
         """`animate(display_cell_value=True)` on a NaN-nodata stack runs
         without `IndexError` (the cell-update loop iterates the artist list,
