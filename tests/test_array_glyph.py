@@ -2200,6 +2200,19 @@ class TestNanNoDataConvention:
             f"got {glyph.num_domain_cells}"
         )
 
+    def test_num_domain_cells_masked_stack_counts_first_frame_only(self):
+        """`exclude_value` masking on a 3-D stack is honoured but only on frame
+        0: a no-data value in frame 0 and in a later frame excludes just the
+        frame-0 occurrence from the count."""
+        stack = np.arange(2 * 4 * 5, dtype=float).reshape(2, 4, 5)
+        stack[0, 0, 0] = -9999.0  # masked cell in frame 0
+        stack[1, 2, 2] = -9999.0  # masked cell in a later frame (ignored)
+        glyph = ArrayGlyph(stack, exclude_value=[-9999.0])
+        assert glyph.num_domain_cells == 4 * 5 - 1, (
+            f"only the frame-0 masked cell should be excluded, got "
+            f"{glyph.num_domain_cells}"
+        )
+
     def test_animate_display_cell_value_true_with_nan_nodata(self):
         """`animate(display_cell_value=True)` on a NaN-nodata stack runs
         without `IndexError` (the cell-update loop iterates the artist list,
