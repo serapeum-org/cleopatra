@@ -2110,6 +2110,109 @@ class TestNanNoDataConvention:
             f"(expected {expected}), got {glyph.num_domain_cells}"
         )
 
+    def test_num_domain_cells_counts_first_frame_of_4d_stack(self):
+        """On a 4-D `(n, h, w, 3)` stack the count is taken on the first frame
+        (`array[0]`), not the whole stack -- the old `len(shape) == 3` check
+        selected the entire `(n, h, w, 3)` array (issue #304). Uses a bare 4-D
+        array (no `rgb_bands`); only the count logic is under test."""
+        stack = np.random.default_rng(0).random((3, 4, 5, 3))  # 3 frames
+        stack[0, 0, 0, 0] = np.nan  # one NaN in frame 0
+        glyph = ArrayGlyph(stack)
+        expected = int(np.count_nonzero(~np.isnan(stack[0])))  # frame 0 only
+        assert glyph.num_domain_cells == expected, (
+            f"expected the first-frame domain count {expected}, got "
+            f"{glyph.num_domain_cells}"
+        )
+        assert glyph.num_domain_cells < stack.size, (
+            "count must be per-frame, not over the whole 4-D stack"
+        )
+
+    def test_num_domain_cells_excludes_exclude_value_masked_cells(self):
+        """`num_domain_cells` also excludes `exclude_value`-masked cells, not
+        only NaN -- the mask-aware count matches the old `get_indices2`
+        behaviour (a plain `~isnan` would over-count the masked cell)."""
+        arr = np.arange(25, dtype=float).reshape(5, 5)
+        arr[0, 0] = -9999.0  # a no-data cell to mask via exclude_value
+        arr[1, 1] = np.nan  # plus a NaN cell
+        glyph = ArrayGlyph(arr, exclude_value=[-9999.0])
+        assert glyph.num_domain_cells == 23, (
+            f"count should exclude both the masked and the NaN cell "
+            f"(expected 23), got {glyph.num_domain_cells}"
+        )
+
+    def test_large_4d_stack_uses_cheap_per_frame_count(self):
+        """A large-per-frame 4-D `(n, h, w, 3)` stack constructs and the count
+        is over one frame (~3M elements), not the whole stack -- a
+        clean-construction / per-frame-count guard for the numpy reduction that
+        replaced the old per-cell index list (issue #304)."""
+        stack = np.ones((2, 1000, 1000, 3), dtype="float32")
+        glyph = ArrayGlyph(stack)
+        assert glyph.num_domain_cells == 1000 * 1000 * 3, (
+            f"count is over one (1000, 1000, 3) frame; got "
+            f"{glyph.num_domain_cells}"
+        )
+
+    def test_num_domain_cells_integer_array_counts_all_cells(self):
+        """On an integer array every cell is in-domain: `np.isnan` on integer
+        data is all-False, so the mask-aware reduction returns the full size
+        (guards the non-float dtype path of the count)."""
+        arr = np.arange(20, dtype=int).reshape(4, 5)
+        glyph = ArrayGlyph(arr)
+        assert glyph.num_domain_cells == arr.size, (
+            f"all {arr.size} integer cells are in-domain, got "
+            f"{glyph.num_domain_cells}"
+        )
+
+    def test_num_domain_cells_counts_first_frame_of_3d_stack(self):
+        """On a multi-frame 3-D `(n, h, w)` stack the count is on frame 0 only:
+        NaNs placed in a later frame (none in frame 0) leave the count at the
+        full frame size."""
+        stack = np.random.default_rng(1).random((3, 4, 5)) * 100.0
+        stack[2, 0, 0] = np.nan  # NaN only in frame 2, not frame 0
+        stack[2, 1, 1] = np.nan
+        glyph = ArrayGlyph(stack)
+        assert glyph.num_domain_cells == 4 * 5, (
+            f"frame 0 has no NaN, so all {4 * 5} cells are in-domain; got "
+            f"{glyph.num_domain_cells}"
+        )
+
+    def test_num_domain_cells_zero_when_first_frame_all_nan(self):
+        """`num_domain_cells` is 0 when frame 0 is entirely NaN, even though a
+        later frame carries data (which keeps the colour range valid) — the
+        count is on frame 0 and its domain is empty."""
+        stack = np.ones((2, 4, 5))
+        stack[0] = np.nan  # frame 0 all-NaN; frame 1 has data (no ValueError)
+        glyph = ArrayGlyph(stack)
+        assert glyph.num_domain_cells == 0, (
+            f"frame 0 is all-NaN so its domain is empty, got "
+            f"{glyph.num_domain_cells}"
+        )
+
+    def test_num_domain_cells_counts_whole_single_rgb_image(self):
+        """A single RGB image from `rgb_bands` is 3-D `(h, w, 3)` -- a lone
+        frame, so the count is the whole image (`h*w*3`), not one row: `rgb`
+        distinguishes it from an `(n, h, w)` grey stack."""
+        band_first = np.random.default_rng(0).random((3, 4, 5))
+        glyph = ArrayGlyph(band_first, rgb_bands=RgbBands([0, 1, 2]))
+        assert glyph.rgb is True, "rgb_bands input should set rgb=True"
+        assert glyph.num_domain_cells == 4 * 5 * 3, (
+            f"a single (4, 5, 3) RGB image has {4 * 5 * 3} in-domain elements, "
+            f"got {glyph.num_domain_cells}"
+        )
+
+    def test_num_domain_cells_masked_stack_counts_first_frame_only(self):
+        """`exclude_value` masking on a 3-D stack is honoured but only on frame
+        0: a no-data value in frame 0 and in a later frame excludes just the
+        frame-0 occurrence from the count."""
+        stack = np.arange(2 * 4 * 5, dtype=float).reshape(2, 4, 5)
+        stack[0, 0, 0] = -9999.0  # masked cell in frame 0
+        stack[1, 2, 2] = -9999.0  # masked cell in a later frame (ignored)
+        glyph = ArrayGlyph(stack, exclude_value=[-9999.0])
+        assert glyph.num_domain_cells == 4 * 5 - 1, (
+            f"only the frame-0 masked cell should be excluded, got "
+            f"{glyph.num_domain_cells}"
+        )
+
     def test_animate_display_cell_value_true_with_nan_nodata(self):
         """`animate(display_cell_value=True)` on a NaN-nodata stack runs
         without `IndexError` (the cell-update loop iterates the artist list,

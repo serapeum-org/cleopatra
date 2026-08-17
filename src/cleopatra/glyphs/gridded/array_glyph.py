@@ -981,9 +981,13 @@ class ArrayGlyph(GeoMixin, Glyph):
         extent (List): The extent of the array [xmin, xmax, ymin, ymax].
         rgb (bool): Whether the array is an RGB array.
         num_domain_cells (int): Number of cells in the data domain — cells
-            that are neither masked (via `exclude_value`) nor NaN. For a
-            3-D stack this is counted on the first frame. Equals the number
-            of per-cell value labels drawn when `display_cell_value=True`.
+            that are neither masked (via `exclude_value`) nor NaN. A stack
+            (3-D `(n, h, w)` grey or 4-D `(n, h, w, 3)`) is counted on its first
+            frame; a single frame (2-D, or an `(h, w, 3)` RGB image from
+            `rgb_bands`) is counted whole. For a single-band frame it equals the
+            number of per-cell value labels drawn when `display_cell_value=True`;
+            for multi-channel RGB data it counts elements and is informational
+            (RGB renders draw no per-cell labels).
         anim (matplotlib.animation.FuncAnimation): The animation object if created.
         im (matplotlib.cm.ScalarMappable): The colour-mapped artist produced by
             the most recent `plot`/`animate` call (e.g. the `AxesImage` for
@@ -1036,6 +1040,29 @@ class ArrayGlyph(GeoMixin, Glyph):
 
     #: Option keys this glyph accepts (see `Glyph.option_keys`/`filter_kwargs`).
     DEFAULT_OPTIONS = ARRAY_DEFAULT_OPTIONS
+
+    @staticmethod
+    def _count_domain_cells(array: np.ndarray, is_rgb: bool) -> int:
+        """Count the in-domain cells -- neither `exclude_value`-masked nor NaN.
+
+        Replaces the old `len(get_indices2(frame, [np.nan]))`, which allocated
+        one Python tuple per cell (O(n) objects that raised `MemoryError` on a
+        large animation stack). A stack (3-D `(n, h, w)` grey or 4-D
+        `(n, h, w, 3)`) is counted on frame 0; a single frame -- 2-D, or an
+        `(h, w, 3)` RGB image from `rgb_bands` (also 3-D) -- is counted whole.
+
+        Args:
+            array: The already-masked input array (an `ma.array`).
+            is_rgb: Whether `array` is a single band-last RGB image.
+
+        Returns:
+            int: The number of in-domain cells on the counted frame.
+        """
+        first_frame = array if (is_rgb or array.ndim < 3) else array[0]
+        in_domain = ~(
+            ma.getmaskarray(first_frame) | np.isnan(ma.getdata(first_frame))
+        )
+        return int(np.count_nonzero(in_domain))
 
     def __init__(
         self,
@@ -1319,9 +1346,7 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         self._arr = array
         self.ticks_spacing = (self._vmax - self._vmin) / 10 or 1.0
-        shape = array.shape
-        first_frame = array[0, :, :] if len(shape) == 3 else array
-        self.num_domain_cells = len(get_indices2(first_frame, [np.nan]))
+        self.num_domain_cells = self._count_domain_cells(array, self.rgb)
         self.im: Any = None
         self.cbar: Colorbar | None = None
         self._day_text: Any = None
