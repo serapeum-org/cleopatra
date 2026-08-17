@@ -1,5 +1,51 @@
 # Changelog
 
+## 0.32.0 (2026-08-17)
+
+
+- perf(array_glyph): count domain cells without materialising a per-cell index list (#305)
+- Replace `len(get_indices2(frame, [np.nan]))`, which built one Python tuple
+per cell, with a pure-numpy, mask-aware reduction extracted into
+`ArrayGlyph._count_domain_cells`.
+- - fixes the MemoryError when building a 4-D `(n, h, w, 3)` RGB animation
+  stack: the old `len(shape) == 3` frame pick passed the whole stack to
+  `get_indices2` (~15 GB tuple list); the reduction is O(1) in Python
+  objects and ~3000x faster on large frames
+- count a stack on frame 0 and a single frame (2-D, or an `(h, w, 3)` RGB
+  image from `rgb_bands`) whole, using `self.rgb` to disambiguate the two
+  3-D shapes and fix a lone RGB image counting only its first row
+- keep the mask term so `exclude_value`-masked cells stay excluded,
+  byte-equivalent to the old `get_indices2` (a plain `~np.isnan` would
+  over-count masked cells)
+- add regression tests (4-D, 3-D multi-frame, zero-domain, masked 2-D and
+  masked stack, single RGB image, integer dtype) and clarify the
+  `num_domain_cells` docstring
+- Closes #304
+- fix(styling): drop pandas & numpy null sentinels in categorize (#303)
+- categorize's null filter recognised only None and np.nan, so pandas'                                              
+  pd.NA / pd.NaT (and, on some numpy builds, datetime64('NaT')) survived                                            
+  and became their own colour category -- making categorisation depend on                                           
+  the column dtype. Treat every null flavour uniformly so the category set                                          
+  depends only on the distinct real values (the in-glyph categorical path                                           
+  delegates to categorize and inherits the fix).                                                                    
+                                                                                                                    
+  - Drop pd.NA / pd.NaT via pandas' scalar pd.isna, and datetime64('NaT')                                           
+    via np.isnan or np.isnat.                                                                                       
+  - Keep pandas an undeclared soft dependency: import pd.isna lazily and                                            
+    once (not per element), degrading to the numpy-only path (np.isnat for                                          
+    datetime NaT) when pandas is absent -- no new runtime dependency.                                               
+  - Short-circuit str/bytes and guard np.isnan / pd.isna against array-like                                         
+    object-array elements (e.g. range) so odd contents are carried through                                          
+    as non-null rather than crashing, matching base behaviour.                                                      
+  - Extract the check to a module-level _categorical_is_null helper to keep                                         
+    categorize's cognitive complexity within bounds.                                                                
+  - Add tests (pd.NA/pd.NaT, no-pandas fallback, all-null error, mixed null                                         
+    kinds, numpy datetime NaT incl. the forced np.isnat path, genuine                                               
+    pandas nullable dtypes, array-like element) and refresh the categorize                                          
+    / _is_null docstrings.                                                                                          
+                                                                                                                    
+  Closes #302
+
 ## 0.31.0 (2026-08-12)
 
 
