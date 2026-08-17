@@ -2110,11 +2110,12 @@ class TestNanNoDataConvention:
             f"(expected {expected}), got {glyph.num_domain_cells}"
         )
 
-    def test_num_domain_cells_counts_first_frame_of_4d_rgb_stack(self):
-        """On a 4-D `(n, h, w, 3)` RGB stack the count is taken on the first
-        *frame* (`array[0]`), not the whole stack -- the old `len(shape) == 3`
-        check selected the entire `(n, h, w, 3)` array (issue #304)."""
-        stack = np.random.default_rng(0).random((3, 4, 5, 3))  # 3 RGB frames
+    def test_num_domain_cells_counts_first_frame_of_4d_stack(self):
+        """On a 4-D `(n, h, w, 3)` stack the count is taken on the first frame
+        (`array[0]`), not the whole stack -- the old `len(shape) == 3` check
+        selected the entire `(n, h, w, 3)` array (issue #304). Uses a bare 4-D
+        array (no `rgb_bands`); only the count logic is under test."""
+        stack = np.random.default_rng(0).random((3, 4, 5, 3))  # 3 frames
         stack[0, 0, 0, 0] = np.nan  # one NaN in frame 0
         glyph = ArrayGlyph(stack)
         expected = int(np.count_nonzero(~np.isnan(stack[0])))  # frame 0 only
@@ -2139,14 +2140,16 @@ class TestNanNoDataConvention:
             f"(expected 23), got {glyph.num_domain_cells}"
         )
 
-    def test_large_rgb_stack_constructs_without_materialising_index_list(self):
-        """A large-per-frame 4-D RGB stack constructs without the old per-cell
-        tuple-list allocation that raised `MemoryError`; ~3M cells per frame,
-        counted on one frame so it stays cheap (issue #304)."""
+    def test_large_4d_stack_uses_cheap_per_frame_count(self):
+        """A large-per-frame 4-D `(n, h, w, 3)` stack constructs and the count
+        is over one frame (~3M elements), not the whole stack -- a
+        clean-construction / per-frame-count guard for the numpy reduction that
+        replaced the old per-cell index list (issue #304)."""
         stack = np.ones((2, 1000, 1000, 3), dtype="float32")
         glyph = ArrayGlyph(stack)
         assert glyph.num_domain_cells == 1000 * 1000 * 3, (
-            f"all cells are in-domain; got {glyph.num_domain_cells}"
+            f"count is over one (1000, 1000, 3) frame; got "
+            f"{glyph.num_domain_cells}"
         )
 
     def test_num_domain_cells_integer_array_counts_all_cells(self):
