@@ -2188,6 +2188,18 @@ class TestNanNoDataConvention:
             f"{glyph.num_domain_cells}"
         )
 
+    def test_num_domain_cells_counts_whole_single_rgb_image(self):
+        """A single RGB image from `rgb_bands` is 3-D `(h, w, 3)` -- a lone
+        frame, so the count is the whole image (`h*w*3`), not one row: `rgb`
+        distinguishes it from an `(n, h, w)` grey stack."""
+        band_first = np.random.default_rng(0).random((3, 4, 5))
+        glyph = ArrayGlyph(band_first, rgb_bands=RgbBands([0, 1, 2]))
+        assert glyph.rgb is True, "rgb_bands input should set rgb=True"
+        assert glyph.num_domain_cells == 4 * 5 * 3, (
+            f"a single (4, 5, 3) RGB image has {4 * 5 * 3} in-domain elements, "
+            f"got {glyph.num_domain_cells}"
+        )
+
     def test_animate_display_cell_value_true_with_nan_nodata(self):
         """`animate(display_cell_value=True)` on a NaN-nodata stack runs
         without `IndexError` (the cell-update loop iterates the artist list,

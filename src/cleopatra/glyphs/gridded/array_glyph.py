@@ -981,12 +981,13 @@ class ArrayGlyph(GeoMixin, Glyph):
         extent (List): The extent of the array [xmin, xmax, ymin, ymax].
         rgb (bool): Whether the array is an RGB array.
         num_domain_cells (int): Number of cells in the data domain — cells
-            that are neither masked (via `exclude_value`) nor NaN. Counted on
-            the first frame of a 3-D `(n, h, w)` stack. For a single-band frame
-            it equals the number of per-cell value labels drawn when
-            `display_cell_value=True`. For a 4-D `(n, h, w, 3)` RGB stack it is
-            counted over the first frame's elements and is informational (RGB
-            renders draw no per-cell labels).
+            that are neither masked (via `exclude_value`) nor NaN. A stack
+            (3-D `(n, h, w)` grey or 4-D `(n, h, w, 3)`) is counted on its first
+            frame; a single frame (2-D, or an `(h, w, 3)` RGB image from
+            `rgb_bands`) is counted whole. For a single-band frame it equals the
+            number of per-cell value labels drawn when `display_cell_value=True`;
+            for multi-channel RGB data it counts elements and is informational
+            (RGB renders draw no per-cell labels).
         anim (matplotlib.animation.FuncAnimation): The animation object if created.
         im (matplotlib.cm.ScalarMappable): The colour-mapped artist produced by
             the most recent `plot`/`animate` call (e.g. the `AxesImage` for
@@ -1325,10 +1326,13 @@ class ArrayGlyph(GeoMixin, Glyph):
         # Count in-domain cells (neither `exclude_value`-masked nor NaN) with a
         # pure-numpy reduction. The old `len(get_indices2(first_frame, [np.nan]))`
         # allocated one Python tuple per cell -- O(n) objects that raised a
-        # MemoryError on a large RGB animation stack -- and its `len(shape) == 3`
-        # frame pick selected the whole 4-D `(n, h, w, 3)` stack instead of one
-        # frame. `array` is always an `ma.array` by here, so honour its mask too.
-        first_frame = array[0] if array.ndim >= 3 else array
+        # MemoryError on a large true-colour animation stack -- and its
+        # `len(shape) == 3` frame pick selected the whole 4-D `(n, h, w, 3)`
+        # stack instead of one frame. Count a stack (3-D `(n, h, w)` grey or 4-D
+        # `(n, h, w, 3)`) on frame 0; count a single frame -- 2-D, or an
+        # `(h, w, 3)` RGB image from `rgb_bands` (also 3-D) -- whole. `array` is
+        # always an `ma.array` by here, so honour its mask too.
+        first_frame = array if (self.rgb or array.ndim < 3) else array[0]
         in_domain = ~(
             ma.getmaskarray(first_frame) | np.isnan(ma.getdata(first_frame))
         )
