@@ -2149,6 +2149,17 @@ class TestNanNoDataConvention:
             f"all cells are in-domain; got {glyph.num_domain_cells}"
         )
 
+    def test_num_domain_cells_integer_array_counts_all_cells(self):
+        """On an integer array every cell is in-domain: `np.isnan` on integer
+        data is all-False, so the mask-aware reduction returns the full size
+        (guards the non-float dtype path of the count)."""
+        arr = np.arange(20, dtype=int).reshape(4, 5)
+        glyph = ArrayGlyph(arr)
+        assert glyph.num_domain_cells == arr.size, (
+            f"all {arr.size} integer cells are in-domain, got "
+            f"{glyph.num_domain_cells}"
+        )
+
     def test_animate_display_cell_value_true_with_nan_nodata(self):
         """`animate(display_cell_value=True)` on a NaN-nodata stack runs
         without `IndexError` (the cell-update loop iterates the artist list,
