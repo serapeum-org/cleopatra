@@ -981,10 +981,12 @@ class ArrayGlyph(GeoMixin, Glyph):
         extent (List): The extent of the array [xmin, xmax, ymin, ymax].
         rgb (bool): Whether the array is an RGB array.
         num_domain_cells (int): Number of cells in the data domain — cells
-            that are neither masked (via `exclude_value`) nor NaN. For a
-            3-D `(n, h, w)` or 4-D `(n, h, w, 3)` stack this is counted on the
-            first frame. Equals the number of per-cell value labels drawn when
-            `display_cell_value=True`.
+            that are neither masked (via `exclude_value`) nor NaN. Counted on
+            the first frame of a 3-D `(n, h, w)` stack. For a single-band frame
+            it equals the number of per-cell value labels drawn when
+            `display_cell_value=True`. For a 4-D `(n, h, w, 3)` RGB stack it is
+            counted over the first frame's elements and is informational (RGB
+            renders draw no per-cell labels).
         anim (matplotlib.animation.FuncAnimation): The animation object if created.
         im (matplotlib.cm.ScalarMappable): The colour-mapped artist produced by
             the most recent `plot`/`animate` call (e.g. the `AxesImage` for
