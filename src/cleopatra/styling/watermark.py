@@ -106,9 +106,10 @@ def stamp_mark(
     Raises:
         ValueError: If `corner` is not one of the four accepted anchors, if
             `frac` is not in ``(0, 1]``, if `margin` is not a scalar or
-            ``(x, y)`` pair in ``[0, 1)``, if `blur` is negative, or if
-            an image array is out of contract (wrong shape, a non-``uint8``
-            integer dtype, or a float outside ``[0, 1]`` -- see `_as_rgba`).
+            ``(x, y)`` pair in ``[0, 1)``, if `margin + mark size` exceeds the
+            figure, if `blur` is negative, or if an image array is out of
+            contract (wrong shape, a non-``uint8`` non-float dtype, or a float
+            outside ``[0, 1]`` or containing NaN/inf -- see `_as_rgba`).
         FileNotFoundError: If `path` is a file path that does not exist.
         PIL.UnidentifiedImageError: If `path` is a file that is not an image
             `PIL` can decode.
@@ -229,8 +230,9 @@ def _as_rgba(path: "str | os.PathLike | np.ndarray") -> np.ndarray:
 
     Raises:
         ValueError: If an array input is not ``(H, W, 3)`` / ``(H, W, 4)``, is a
-            non-``uint8`` integer array, or is a float array with values outside
-            ``[0, 1]``.
+            non-``uint8`` non-float array (e.g. ``uint16``, ``int32``, ``bool``),
+            or is a float array with values outside ``[0, 1]`` or containing
+            NaN/inf.
     """
     if isinstance(path, np.ndarray):
         arr = np.asarray(path)
