@@ -1551,6 +1551,18 @@ class TestWorldTexture:
         cache_files = list((tmp_path / "world-textures").glob("*.npy"))
         assert len(cache_files) == 2, f"expected two distinct cache files, got {cache_files}"
 
+    def test_cache_write_failure_removes_temp(self, tmp_path, monkeypatch):
+        """A failed texture save leaves no temp file behind and re-raises."""
+        monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))
+        monkeypatch.setattr(tiles_mod, "fetch_tiles", _fetch_split_by_x())
+        monkeypatch.setattr(
+            tiles_mod.np, "save", MagicMock(side_effect=OSError("disk full"))
+        )
+        with pytest.raises(OSError, match="disk full"):
+            world_texture(zoom=1, n_lon=8, n_lat=4)
+        leftovers = list((tmp_path / "world-textures").glob("*.tmp"))
+        assert leftovers == [], f"temp file left behind: {leftovers}"
+
     def test_missing_extra_raises_import_error(self, monkeypatch):
         """Without the `[tiles]` extra, `world_texture` raises `ImportError`."""
         monkeypatch.setattr(tiles_mod, "_TILES_AVAILABLE", False)
