@@ -154,11 +154,13 @@ class TexturedGlobeGlyph:
                 brightens. Must be `>= 0`.
             fig: Pre-existing matplotlib `Figure` to draw on when `draw`/`animate` are called without their own `ax`.
             ax: Pre-existing 3-D matplotlib `Axes` (`Axes3D`) to draw on. If given it must be a 3-D axes.
-            **kwargs: Render options overriding `DEFAULT_OPTIONS` (`figsize`, `elev`, `azim`, `background`).
+            **kwargs: Render options overriding `DEFAULT_OPTIONS` (`figsize`, `elev`, `azim`, `background`). An
+                unrecognised key raises `ValueError`.
 
         Raises:
             ValueError: If `texture` is not an `(H, W, 3)`/`(H, W, 4)` array with `H, W >= 2`, if `n_lon`/`n_lat` are
-                `< 2`, if `brightness` is negative, or if `ax` is given but is not a 3-D axes.
+                `< 2`, if `brightness` is negative, if `ax` is given but is not a 3-D axes, or if an unknown render
+                option is passed.
 
         Examples:
             ```python
@@ -189,6 +191,7 @@ class TexturedGlobeGlyph:
         self._fig = fig
         self._ax = ax
 
+        self._reject_unknown_options(kwargs)
         options_dict = GLOBE_DEFAULT_OPTIONS.copy()
         options_dict.update(kwargs)
         self._default_options = options_dict
@@ -415,6 +418,27 @@ class TexturedGlobeGlyph:
         keys = cls.option_keys()
         return {key: val for key, val in kwargs.items() if key in keys}
 
+    @classmethod
+    def _reject_unknown_options(cls, kwargs: dict) -> None:
+        """Raise `ValueError` if `kwargs` holds keys this glyph does not accept.
+
+        Mirrors the rest of the package (`Glyph._merge_kwargs`,
+        `HistogramGlyph._apply_options`), which reject unknown options rather than
+        silently ignoring them, so a typo like `elevv=` surfaces immediately.
+
+        Args:
+            kwargs: The render options passed to `__init__`/`draw`/`animate`.
+
+        Raises:
+            ValueError: If any key is not in `option_keys()`.
+        """
+        unknown = set(kwargs) - cls.option_keys()
+        if unknown:
+            raise ValueError(
+                f"Unknown option(s) {sorted(unknown)}; accepted keys are "
+                f"{sorted(cls.option_keys())}."
+            )
+
     # ------------------------------------------------------------------ #
     # Rendering                                                            #
     # ------------------------------------------------------------------ #
@@ -435,7 +459,7 @@ class TexturedGlobeGlyph:
                 available as the `surface` attribute.
 
         Raises:
-            ValueError: If `ax` is supplied but is not a 3-D axes.
+            ValueError: If `ax` is supplied but is not a 3-D axes, or if an unknown render option is passed.
 
         Examples:
             ```python
@@ -449,6 +473,7 @@ class TexturedGlobeGlyph:
 
             ```
         """
+        self._reject_unknown_options(kwargs)
         options = self._default_options.copy()
         options.update(kwargs)
         fig, target = self._resolve_axes(ax, options)
@@ -509,6 +534,9 @@ class TexturedGlobeGlyph:
         Returns:
             matplotlib.animation.FuncAnimation: The animation, ready to save or embed.
 
+        Raises:
+            ValueError: If `ax` is supplied but is not a 3-D axes, or if an unknown render option is passed.
+
         Examples:
             ```python
             >>> import numpy as np
@@ -520,6 +548,7 @@ class TexturedGlobeGlyph:
 
             ```
         """
+        self._reject_unknown_options(kwargs)
         options = self._default_options.copy()
         options.update(kwargs)
         fig, target = self._resolve_axes(ax, options)

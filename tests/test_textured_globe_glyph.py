@@ -134,6 +134,10 @@ class TestConstruction:
         with pytest.raises(ValueError):
             TexturedGlobeGlyph(texture, ax=ax2d)
 
+    def test_unknown_kwarg_raises(self, texture):
+        with pytest.raises(ValueError, match="Unknown option"):
+            TexturedGlobeGlyph(texture, elevv=80)
+
 
 class TestDraw:
     def test_returns_3d_axes(self, texture):
@@ -185,6 +189,11 @@ class TestDraw:
             background="black"
         )
         assert fig.get_facecolor() == to_rgba("black")
+
+    def test_draw_unknown_kwarg_raises(self, texture):
+        globe = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12)
+        with pytest.raises(ValueError, match="Unknown option"):
+            globe.draw(elevv=80)
 
 
 class TestOrientation:
@@ -254,6 +263,11 @@ class TestAnimate:
         globe = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12)
         anim = globe.animate(n_frames=3)
         assert isinstance(anim, FuncAnimation)
+
+    def test_animate_unknown_kwarg_raises(self, texture):
+        globe = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12)
+        with pytest.raises(ValueError, match="Unknown option"):
+            globe.animate(n_frames=3, elevv=80)
 
     def test_animate_reuses_single_axes(self, texture):
         globe = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12)
