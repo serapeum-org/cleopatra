@@ -401,6 +401,20 @@ class TestStampMark:
         with pytest.raises(ValueError, match=r"\[0, 1\]"):
             stamp_mark(fig, f255, shadow=False)
 
+    def test_nan_float_array_rejected(self, fig):
+        """A float array with a ``NaN`` is rejected, not silently cast to 0.
+
+        Test scenario:
+            A ``NaN`` makes ``min``/``max`` ``NaN``, whose comparisons are all
+            ``False``, so without a finiteness check it would slip past the
+            range guard and cast to 0 with a `RuntimeWarning`. It must raise a
+            `ValueError` about finite values instead.
+        """
+        arr = np.ones((20, 20, 4), dtype=np.float32)
+        arr[0, 0, 0] = np.nan
+        with pytest.raises(ValueError, match="finite"):
+            stamp_mark(fig, arr, shadow=False)
+
     @pytest.mark.parametrize("bad", [np.zeros((10, 10)), np.zeros((10, 10, 2))])
     def test_bad_array_shape_raises(self, fig, bad):
         """A non-``(H, W, 3|4)`` array raises `ValueError`.

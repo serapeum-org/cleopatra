@@ -226,7 +226,15 @@ def _as_rgba(path: "str | os.PathLike | np.ndarray") -> np.ndarray:
         if np.issubdtype(arr.dtype, np.floating):
             # A float image is the ``0-1`` contract; reject clearly out-of-range
             # values rather than silently clipping (e.g. a ``0-255`` float array
-            # would otherwise flatten to all-white).
+            # would otherwise flatten to all-white). Reject non-finite values
+            # first: a NaN makes `min()`/`max()` NaN, whose comparisons are all
+            # False, so it would otherwise slip past the range check and cast to
+            # 0 with a RuntimeWarning -- the very silent garbling this guards.
+            if arr.size and not np.all(np.isfinite(arr)):
+                raise ValueError(
+                    "a float image array must hold finite values in [0, 1]; "
+                    "it contains NaN or inf."
+                )
             if arr.size and (arr.min() < -1e-6 or arr.max() > 1.0 + 1e-6):
                 raise ValueError(
                     "a float image array must hold values in [0, 1]; got range "
