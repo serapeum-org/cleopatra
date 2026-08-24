@@ -41,6 +41,9 @@ def texture() -> np.ndarray:
     return tex
 
 
+@pytest.mark.filterwarnings(
+    "ignore:Animation was deleted without rendering anything"
+)
 def test_module_doctests_execute():
     """Run the module's docstring examples (pytest is not configured with --doctest-modules)."""
     try:
@@ -278,6 +281,9 @@ class TestTiltAndSpin:
 
 
 class TestAnimate:
+    @pytest.mark.filterwarnings(
+        "ignore:Animation was deleted without rendering anything"
+    )
     def test_returns_funcanimation(self, texture):
         globe = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12)
         anim = globe.animate(n_frames=3)
