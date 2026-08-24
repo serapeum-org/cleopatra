@@ -128,6 +128,24 @@ class TestDraw:
         assert ax2 is ax
         assert fig2 is fig
 
+    def test_draw_on_non_3d_ax_raises(self, texture):
+        _, ax2d = plt.subplots()
+        with pytest.raises(ValueError):
+            TexturedGlobeGlyph(texture, n_lon=24, n_lat=12).draw(ax2d)
+
+    def test_draw_uses_instance_fig(self, texture):
+        fig = plt.figure()
+        fig2, ax = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12, fig=fig).draw()
+        assert fig2 is fig
+        assert isinstance(ax, Axes3D)
+
+    def test_draw_uses_instance_ax(self, texture):
+        fig = plt.figure()
+        ax = fig.add_subplot(projection="3d")
+        fig2, ax2 = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12, ax=ax).draw()
+        assert ax2 is ax
+        assert fig2 is fig
+
     def test_redraw_clears_prior_surface(self, texture):
         globe = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12)
         fig, ax = globe.draw(spin=0.0)
@@ -229,6 +247,12 @@ class TestIntrospection:
     def test_filter_kwargs(self):
         filtered = TexturedGlobeGlyph.filter_kwargs({"elev": 30, "bogus": 1})
         assert filtered == {"elev": 30}
+
+    def test_default_options_merges_overrides(self, texture):
+        globe = TexturedGlobeGlyph(texture, elev=42)
+        opts = globe.default_options
+        assert opts["elev"] == 42
+        assert opts["azim"] == 0.0  # untouched default retained
 
 
 def test_no_new_dependency():

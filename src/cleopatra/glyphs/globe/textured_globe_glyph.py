@@ -115,8 +115,10 @@ class TexturedGlobeGlyph:
         >>> texture[:8] = (40, 90, 180)
         >>> globe = TexturedGlobeGlyph(texture, n_lon=48, n_lat=24)
         >>> fig, ax = globe.draw(spin=45.0)
-        >>> type(ax).__name__
-        'Axes3D'
+        >>> ax.name
+        '3d'
+        >>> globe.surface is not None
+        True
 
         ```
     """
@@ -500,12 +502,11 @@ class TexturedGlobeGlyph:
         Examples:
             ```python
             >>> import numpy as np
-            >>> from matplotlib.animation import FuncAnimation
             >>> from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph
             >>> globe = TexturedGlobeGlyph(np.zeros((8, 16, 3), dtype=np.uint8), n_lon=24, n_lat=12)
             >>> anim = globe.animate(n_frames=4)
-            >>> isinstance(anim, FuncAnimation)
-            True
+            >>> list(anim.new_frame_seq())    # one entry per rendered frame
+            [0, 1, 2, 3]
 
             ```
         """
