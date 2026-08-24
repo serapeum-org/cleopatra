@@ -41,9 +41,7 @@ def texture() -> np.ndarray:
     return tex
 
 
-@pytest.mark.filterwarnings(
-    "ignore:Animation was deleted without rendering anything"
-)
+@pytest.mark.filterwarnings("ignore:Animation was deleted without rendering anything")
 def test_module_doctests_execute():
     """Run the module's docstring examples (pytest is not configured with --doctest-modules)."""
     try:
