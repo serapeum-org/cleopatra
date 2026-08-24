@@ -135,8 +135,10 @@ class TestStampMark:
         tall[..., 3] = 255
         ax = stamp_mark(fig, tall, frac=0.5, corner="upper left", shadow=False)
         x0, y0, w, h = (float(v) for v in ax.get_position().bounds)
-        assert 0.0 <= x0 and x0 + w <= 1.0, f"mark overflows horizontally: {(x0, w)}"
-        assert 0.0 <= y0 and y0 + h <= 1.0, f"mark overflows vertically: {(y0, h)}"
+        assert 0.0 <= x0, f"mark overflows the left edge: x0={x0}"
+        assert x0 + w <= 1.0, f"mark overflows the right edge: {(x0, w)}"
+        assert 0.0 <= y0, f"mark overflows the bottom edge: y0={y0}"
+        assert y0 + h <= 1.0, f"mark overflows the top edge: {(y0, h)}"
         assert np.isclose(max(w, h), 0.5), f"longer side should equal frac: {(w, h)}"
         assert np.isclose((h * 6.0) / (w * 8.0), 400 / 40), (
             f"tall logo distorted: {(w, h)}"
@@ -158,8 +160,11 @@ class TestStampMark:
         )
         drawn = ax.images[0].get_array()
         assert drawn.shape[2] == 4, "the composited mark should carry alpha"
-        assert drawn.shape[0] > logo.shape[0] and drawn.shape[1] > logo.shape[1], (
-            f"halo canvas should exceed the mark: {drawn.shape} vs {logo.shape}"
+        assert drawn.shape[0] > logo.shape[0], (
+            f"halo canvas height should exceed the mark: {drawn.shape} vs {logo.shape}"
+        )
+        assert drawn.shape[1] > logo.shape[1], (
+            f"halo canvas width should exceed the mark: {drawn.shape} vs {logo.shape}"
         )
 
     def test_halo_grows_the_axes_so_the_mark_keeps_its_size(self, fig, logo):
@@ -265,9 +270,8 @@ class TestStampMark:
         dark_cols = np.where(darkened.any(axis=0))[0]
         left = red_cols.min() - dark_cols.min()
         right = dark_cols.max() - red_cols.max()
-        assert left > 0 and right > 0, (
-            f"halo should reach past both sides: {(left, right)}"
-        )
+        assert left > 0, f"halo should reach past the left side: {(left, right)}"
+        assert right > 0, f"halo should reach past the right side: {(left, right)}"
         assert abs(left - right) <= 2, (
             f"halo is off-centre: {left}px left vs {right}px right"
         )
