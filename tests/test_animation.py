@@ -2116,8 +2116,9 @@ class TestWritePillowAnimation:
             clip.
         """
         out = str(tmp_path / "e.gif")
+        empty = iter(())
         with pytest.raises(ValueError, match="at least one frame"):
-            anim_mod._write_pillow_animation(iter(()), out, 5, 0, True)
+            anim_mod._write_pillow_animation(empty, out, 5, 0, True)
 
     def test_single_frame_gif_reserves_black_and_white(self, tmp_path):
         """A one-frame GIF still goes through the shared palette.
