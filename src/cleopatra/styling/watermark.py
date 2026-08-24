@@ -178,6 +178,15 @@ def stamp_mark(
         scale = frac / longest
         width *= scale
         height *= scale
+    # `frac` and `margin` are each in range on their own, but their sum must
+    # still leave the mark on the figure: `margin + size > 1` would place the
+    # mark off the opposite edge (`x0 = 1 - margin - width < 0`).
+    if margin_x + width > 1.0 or margin_y + height > 1.0:
+        raise ValueError(
+            f"margin + mark size exceeds the figure: margin={(margin_x, margin_y)} "
+            f"leaves no room for a {width:.3g}x{height:.3g} (figure-fraction) mark. "
+            "Reduce frac or margin."
+        )
     x0, y0 = _corner_origin(corner, width, height, margin_x, margin_y)
 
     # `width`/`height` are the MARK's rect. When a halo is composited in, the

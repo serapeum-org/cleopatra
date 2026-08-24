@@ -334,6 +334,17 @@ class TestStampMark:
         with pytest.raises(ValueError, match="margin must be"):
             stamp_mark(fig, logo, margin=bad)
 
+    def test_margin_plus_size_off_canvas_raises(self, fig, logo):
+        """A margin that leaves no room for the mark raises, not silent overflow.
+
+        Test scenario:
+            `frac` and `margin` are each in range, but `margin=0.95` +
+            `frac=0.11` sums past 1, which would place the mark off the opposite
+            edge. `stamp_mark` raises a clear `ValueError` instead.
+        """
+        with pytest.raises(ValueError, match="exceeds the figure"):
+            stamp_mark(fig, logo, frac=0.11, margin=0.95, shadow=False)
+
     def test_negative_blur_raises(self, fig, logo):
         """A negative `blur` raises `ValueError`.
 
