@@ -222,6 +222,40 @@ def stamp_mark(
     return ax
 
 
+def _float_to_uint8(arr: np.ndarray) -> np.ndarray:
+    """Validate a float ``0-1`` image array and scale it to ``uint8`` ``0-255``.
+
+    A float image is the ``0-1`` contract; reject out-of-range or non-finite
+    values rather than silently clipping (a ``0-255`` float array would
+    otherwise flatten to white, and a ``NaN`` -- whose ``min``/``max``
+    comparisons are all ``False`` -- would slip past a plain range check and
+    cast to 0 with a ``RuntimeWarning``).
+
+    Args:
+        arr: A floating-dtype image array expected to hold finite values in
+            ``[0, 1]``.
+
+    Returns:
+        np.ndarray: The array scaled to ``uint8`` ``0-255``.
+
+    Raises:
+        ValueError: If `arr` holds non-finite values (NaN/inf) or values
+            outside ``[0, 1]``.
+    """
+    if arr.size and not np.all(np.isfinite(arr)):
+        raise ValueError(
+            "a float image array must hold finite values in [0, 1]; "
+            "it contains NaN or inf."
+        )
+    if arr.size and (arr.min() < -1e-6 or arr.max() > 1.0 + 1e-6):
+        raise ValueError(
+            "a float image array must hold values in [0, 1]; got range "
+            f"[{float(arr.min()):.4g}, {float(arr.max()):.4g}]. "
+            "For 0-255 data pass a uint8 array."
+        )
+    return (np.clip(arr, 0.0, 1.0) * 255).round().astype(np.uint8)
+
+
 def _as_rgba(path: "str | os.PathLike | np.ndarray") -> np.ndarray:
     """Return the mark as an ``(H, W, 4)`` ``uint8`` RGBA array.
 
@@ -246,24 +280,7 @@ def _as_rgba(path: "str | os.PathLike | np.ndarray") -> np.ndarray:
                 f"an image array must be (H, W, 3) or (H, W, 4); got shape {arr.shape}."
             )
         if np.issubdtype(arr.dtype, np.floating):
-            # A float image is the ``0-1`` contract; reject clearly out-of-range
-            # values rather than silently clipping (e.g. a ``0-255`` float array
-            # would otherwise flatten to all-white). Reject non-finite values
-            # first: a NaN makes `min()`/`max()` NaN, whose comparisons are all
-            # False, so it would otherwise slip past the range check and cast to
-            # 0 with a RuntimeWarning -- the very silent garbling this guards.
-            if arr.size and not np.all(np.isfinite(arr)):
-                raise ValueError(
-                    "a float image array must hold finite values in [0, 1]; "
-                    "it contains NaN or inf."
-                )
-            if arr.size and (arr.min() < -1e-6 or arr.max() > 1.0 + 1e-6):
-                raise ValueError(
-                    "a float image array must hold values in [0, 1]; got range "
-                    f"[{float(arr.min()):.4g}, {float(arr.max()):.4g}]. "
-                    "For 0-255 data pass a uint8 array."
-                )
-            arr = (np.clip(arr, 0.0, 1.0) * 255).round().astype(np.uint8)
+            arr = _float_to_uint8(arr)
         elif arr.dtype != np.uint8:
             # Any other non-float dtype (uint16, int32, bool, ...) would truncate
             # mod 256 under a bare uint8 cast and silently garble the mark.
