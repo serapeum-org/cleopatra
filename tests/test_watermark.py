@@ -306,7 +306,7 @@ class TestStampMark:
             f"horizontal margin should be 0.025: {x0 + w}"
         )
 
-    @pytest.mark.parametrize("bad", ["0.1", (0.1, 0.2, 0.3), (0.1,)])
+    @pytest.mark.parametrize("bad", ["0.1", (0.1, 0.2, 0.3), (0.1,), None])
     def test_malformed_margin_raises(self, fig, logo, bad):
         """A margin that is neither a scalar nor an ``(x, y)`` pair raises.
 
@@ -316,7 +316,8 @@ class TestStampMark:
             bad: A malformed margin value.
 
         Test scenario:
-            Strings and wrong-length sequences are rejected with a clear message.
+            Strings, wrong-length sequences, and a non-iterable non-number
+            (``None``) are all rejected with a clear message.
         """
         with pytest.raises(ValueError, match="margin must be"):
             stamp_mark(fig, logo, margin=bad)
