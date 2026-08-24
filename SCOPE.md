@@ -28,11 +28,9 @@ animation export.
 
 ### The glyph family (data → matplotlib artist + colorbar)
 
-Most glyphs share a `Glyph` base class providing the figure/axes lifecycle,
+All glyphs share a `Glyph` base class providing the figure/axes lifecycle,
 colour norms (`linear`, `power`, `sym-lognorm`, `boundary-norm`, `midpoint`),
-colorbars, ticks, classification, and animation. A few are deliberately
-standalone classes because that 2-D pipeline does not apply: `histogram_glyph`
-(distribution summaries) and `textured_globe_glyph` (the one 3-D glyph).
+colorbars, ticks, classification, and animation.
 
 | Module | Class | Visualizes |
 | --- | --- | --- |
@@ -45,7 +43,6 @@ standalone classes because that 2-D pipeline does not apply: `histogram_glyph`
 | `line_glyph` | `LineGlyph` | Line, bar, and fill-between (band) plots |
 | `polygon_glyph` | `PolygonGlyph` | Filled / outlined polygon collections, value-coloured |
 | `kde_glyph` | `KDEGlyph` | 2D Gaussian kernel-density contours (NumPy-only, no scipy) |
-| `textured_globe_glyph` | `TexturedGlobeGlyph` | Equirectangular lon/lat texture wrapped on a tilted, spinnable 3-D sphere (`Axes3D`); the one deliberate 3-D glyph |
 
 ### Supporting utilities
 
@@ -106,16 +103,9 @@ standalone classes because that 2-D pipeline does not apply: `histogram_glyph`
   `ffmpeg-python` and bundles a static FFmpeg binary so `save_animation` can
   export MP4/MOV/AVI out of the box (issue #185), which pure-Python packaging
   cannot provide.
-- **General 3D rendering** (arbitrary mplot3d surfaces/volumes). The **one
-  deliberate exception** is the single-purpose `TexturedGlobeGlyph`, which wraps
-  an equirectangular texture onto a sphere on an `Axes3D`: it adds no dependency
-  (`mpl_toolkits.mplot3d` ships with matplotlib) and keeps the "NumPy in →
-  matplotlib artist out" contract. General-purpose 3-D plotting (arbitrary
-  surfaces, volumes, a `plot3d`/`Axes3D` toolkit) stays out of scope — the globe
-  is a fixed, self-contained glyph, not a foothold for a 3-D layer.
-- **Networked data sources** other than the `tiles` / `reference` basemap
-  helpers, and general-purpose plotting that matplotlib already does well
-  without added value.
+- **3D rendering** (mplot3d surfaces/volumes), networked data sources other
+  than the `tiles` / `reference` basemap helpers, and general-purpose plotting
+  that matplotlib already does well without added value.
 
 ## Boundary heuristic for a feature request
 
