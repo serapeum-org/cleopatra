@@ -1466,22 +1466,23 @@ class TestMercatorToEquirectangular:
     @pytest.mark.parametrize("bad", [np.zeros((2,)), np.zeros((2, 2, 2, 2))])
     def test_rejects_non_2d_3d_mosaic(self, bad):
         """A 1-D or 4-D mosaic raises `ValueError`."""
+        bounds = _world_bounds()
         with pytest.raises(ValueError, match="2-D or 3-D"):
-            mercator_to_equirectangular(bad, _world_bounds())
+            mercator_to_equirectangular(bad, bounds)
 
     @pytest.mark.parametrize("n_lon,n_lat", [(0, 4), (4, 0), (-1, 4)])
     def test_rejects_non_positive_grid(self, n_lon, n_lat):
         """A non-positive `n_lon`/`n_lat` raises `ValueError`."""
+        mosaic, bounds = np.zeros((4, 4, 3)), _world_bounds()
         with pytest.raises(ValueError, match="must be positive"):
-            mercator_to_equirectangular(
-                np.zeros((4, 4, 3)), _world_bounds(), n_lon=n_lon, n_lat=n_lat
-            )
+            mercator_to_equirectangular(mosaic, bounds, n_lon=n_lon, n_lat=n_lat)
 
     @pytest.mark.parametrize("bounds", [(1.0, 1.0, 0.0, 2.0), (0.0, 2.0, 2.0, 1.0)])
     def test_rejects_degenerate_bounds(self, bounds):
         """Bounds with `east <= west` or `north <= south` raise `ValueError`."""
+        mosaic = np.zeros((4, 4, 3))
         with pytest.raises(ValueError, match="east > west"):
-            mercator_to_equirectangular(np.zeros((4, 4, 3)), bounds)
+            mercator_to_equirectangular(mosaic, bounds)
 
 
 class TestWorldTexture:
@@ -1494,7 +1495,8 @@ class TestWorldTexture:
         tex = world_texture(zoom=1, n_lon=16, n_lat=8)
         assert tex.shape == (8, 16, 3), f"unexpected shape {tex.shape}"
         assert tex.dtype == np.float32, f"expected float32, got {tex.dtype}"
-        assert 0.0 <= float(tex.min()) and float(tex.max()) <= 1.0, "not in [0, 1]"
+        assert float(tex.min()) >= 0.0, f"min below 0: {float(tex.min())}"
+        assert float(tex.max()) <= 1.0, f"max above 1: {float(tex.max())}"
 
     def test_preserves_longitude_order(self, tmp_path, monkeypatch):
         """West tiles (blue) stay west end-to-end through fetch/stitch/reproject."""
