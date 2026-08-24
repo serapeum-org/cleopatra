@@ -35,12 +35,16 @@ Examples:
 
 from __future__ import annotations
 
+import contextlib
+import hashlib
 import html
 import importlib.util
 import io
 import logging
 import math
+import os
 import re
+import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -51,6 +55,7 @@ import numpy as np
 
 from cleopatra import __version__
 from cleopatra.basemap._net import urlopen_http
+from cleopatra.config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -153,6 +158,19 @@ _EARTH_RADIUS = 6378137.0
 #: Circumference of the Web Mercator sphere (metres): the width and height,
 #: in projected metres, of the whole world at any zoom level.
 _CIRCUMFERENCE = 2 * math.pi * _EARTH_RADIUS
+
+#: Half the Web Mercator circumference (metres): the projected x/y extent from
+#: the origin to the antimeridian / pole clamp, i.e. `pi * _EARTH_RADIUS`
+#: (~20 037 508 m). The `(west, south, east, north)` extent `stitch_tiles`
+#: returns is in these units, and `mercator_to_equirectangular` maps lon/lat
+#: edges onto them.
+_MERC_MAX = _CIRCUMFERENCE / 2.0
+
+#: Highest zoom `world_texture` will fetch. A world grid is `2**zoom` tiles per
+#: side, i.e. `4**zoom` tiles; zoom 6 already pulls 4096 tiles and stitches a
+#: ~16k x 16k (~1 GB) mosaic. Higher zooms would exhaust memory, so they are
+#: rejected rather than attempted.
+_MAX_WORLD_ZOOM = 6
 
 #: The maximum (and, negated, minimum) latitude Web Mercator can represent --
 #: beyond this the projection's `y` coordinate diverges to infinity. XYZ tile
@@ -1152,3 +1170,256 @@ def add_tiles(
         )
 
     return ax
+
+
+def mercator_to_equirectangular(
+    mosaic: np.ndarray,
+    bounds: tuple[float, float, float, float],
+    n_lon: int = 2880,
+    n_lat: int = 1440,
+) -> np.ndarray:
+    """Resample a Web Mercator image onto an equirectangular lon/lat grid.
+
+    XYZ tiles -- and the mosaic `stitch_tiles` builds from them -- are in Web
+    Mercator (EPSG:3857), where a degree of latitude occupies more pixels near
+    the poles. A globe, or a plain lon/lat (EPSG:4326) axis, is textured in
+    equirectangular longitude and latitude, so the mosaic must be resampled
+    from its Mercator rows onto evenly spaced latitude rows.
+
+    Each output cell area-averages the whole contiguous block of source pixels
+    that falls inside it, found from the cell's **edges** -- not a fixed number
+    of point samples, which over-reads the compressed equatorial rows and skips
+    source rows near the poles, exactly where Mercator's stretch makes aliasing
+    worst. Latitudes beyond the Mercator limit (`+/-85.051` deg) clamp onto the
+    edge rows; a cell thinner than one source pixel keeps that single row.
+
+    Args:
+        mosaic: The Web Mercator image, `(H, W)` or `(H, W, C)`, north-up
+            (row 0 = north), as returned by `stitch_tiles`.
+        bounds: `(west, south, east, north)` of `mosaic` in EPSG:3857 metres,
+            as returned by `stitch_tiles`. The output always spans the whole
+            globe (-180..180, 90..-90); latitudes and longitudes outside the
+            mosaic's coverage clamp onto its edge rows/columns rather than
+            being cropped, so a partial mosaic is placed within a full frame.
+        n_lon: Width of the output grid, spanning -180..180 degrees.
+        n_lat: Height of the output grid, spanning 90..-90 degrees.
+
+    Returns:
+        numpy.ndarray: The `(n_lat, n_lon)` or `(n_lat, n_lon, C)`
+        equirectangular resample as `float32`, in the same value scale as
+        `mosaic` (a `uint8` 0..255 mosaic yields 0..255 floats -- averaging is
+        inherently fractional; `world_texture` normalises to 0..1).
+
+    Raises:
+        ValueError: If `mosaic` is not 2-D or 3-D, `n_lon`/`n_lat` are not
+            positive, or `bounds` is degenerate (`east <= west` or
+            `north <= south`).
+
+    Examples:
+        - A west-blue / east-red Mercator mosaic keeps its longitudinal order
+            after resampling (Web Mercator x is linear in longitude):
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.basemap.tiles import mercator_to_equirectangular
+            >>> m = np.zeros((4, 8, 3), dtype="uint8")
+            >>> m[:, :4] = (0, 0, 255)
+            >>> m[:, 4:] = (255, 0, 0)
+            >>> world = (-20037508.34, -20037508.34, 20037508.34, 20037508.34)
+            >>> tex = mercator_to_equirectangular(m, world, n_lon=8, n_lat=4)
+            >>> tex.shape
+            (4, 8, 3)
+            >>> bool(tex[0, 0, 2] > tex[0, 0, 0])  # west stays blue
+            True
+            >>> bool(tex[0, -1, 0] > tex[0, -1, 2])  # east stays red
+            True
+
+            ```
+    """
+    mosaic = np.asarray(mosaic)
+    if mosaic.ndim not in (2, 3):
+        raise ValueError(f"mosaic must be a 2-D or 3-D array, got {mosaic.ndim}-D")
+    if n_lon < 1 or n_lat < 1:
+        raise ValueError(
+            f"n_lon and n_lat must be positive, got n_lon={n_lon}, n_lat={n_lat}"
+        )
+    west, south, east, north = (float(v) for v in bounds)
+    if not (east > west and north > south):
+        raise ValueError(
+            "bounds must be (west, south, east, north) with east > west and "
+            f"north > south, got {bounds!r}"
+        )
+    h, w = mosaic.shape[:2]
+
+    lat_edges = np.clip(
+        np.linspace(90.0, -90.0, n_lat + 1), -_MAX_LATITUDE, _MAX_LATITUDE
+    )
+    y_edges = np.log(np.tan(np.pi / 4 + np.deg2rad(lat_edges) / 2)) * _MERC_MAX / np.pi
+    row_edges = np.clip(
+        np.round((north - y_edges) / (north - south) * h).astype(int), 0, h
+    )
+    x_edges = np.linspace(-180.0, 180.0, n_lon + 1) / 180.0 * _MERC_MAX
+    col_edges = np.clip(
+        np.round((x_edges - west) / (east - west) * w).astype(int), 0, w
+    )
+
+    # reduceat sums each block band[start[i]:start[i+1]] (the last runs to the
+    # array end). The block END is the next *capped* start, not the raw edge, so
+    # size the mean's divisor from the actual block widths: otherwise the south
+    # clamp (row_edges == h collapses start to h-1) sums one row fewer than it
+    # divides by, darkening the row near -85 deg S. max(.,1) keeps a collapsed
+    # polar row (next start == start) on its own.
+    row_start = np.minimum(row_edges[:-1], h - 1)
+    col_start = np.minimum(col_edges[:-1], w - 1)
+    row_next = np.concatenate([row_start[1:], [h]])
+    col_next = np.concatenate([col_start[1:], [w]])
+    row_w = np.maximum(row_next - row_start, 1)[:, None].astype("float32")
+    col_w = np.maximum(col_next - col_start, 1)[None, :].astype("float32")
+
+    flat = mosaic.reshape(h, w, -1)  # (H, W, C), C == 1 for a 2-D mosaic
+    bands = []
+    for band_index in range(flat.shape[2]):
+        # One band at a time: the float32 copy of a large mosaic is heavy, and
+        # converting every band at once multiplies the transient peak.
+        band = flat[..., band_index].astype("float32")
+        band = np.add.reduceat(band, row_start, axis=0) / row_w
+        bands.append(np.add.reduceat(band, col_start, axis=1) / col_w)
+    grid = np.stack(bands, axis=-1)
+    return grid[..., 0] if mosaic.ndim == 2 else grid
+
+
+def world_texture(
+    provider: Any = None,
+    *,
+    zoom: int = 5,
+    n_lon: int = 2880,
+    n_lat: int = 1440,
+    cache: bool = True,
+    max_workers: int = 8,
+    timeout: int = 10,
+    retries: int = 2,
+    user_agent: str = USER_AGENT,
+) -> np.ndarray:
+    """Fetch a whole-world XYZ tile basemap as an equirectangular texture.
+
+    The XYZ-provider analogue of `cleopatra.basemap.reference.relief`: it
+    fetches every tile of the `zoom`-level world grid, stitches them into a Web
+    Mercator mosaic, and resamples that onto an equirectangular lon/lat grid
+    (`mercator_to_equirectangular`), so the result can texture a globe or back
+    an EPSG:4326 axis. Unlike `relief` (a fixed re-hosted asset), this pulls
+    live tiles from any `xyzservices` provider.
+
+    The grid is `2**zoom` tiles per side (`4**zoom` total -- 1024 at the default
+    zoom 5, capped at zoom 6 / 4096 tiles), so the texture is cached on disk and
+    fetched once per `(provider, zoom, n_lon, n_lat)`.
+
+    Note:
+        A whole-world fetch pulls thousands of tiles. The default provider,
+        `OpenStreetMap.Mapnik`, prohibits bulk downloading in its usage policy;
+        pass a bulk-permitting imagery provider (e.g. `"Esri.WorldImagery"`) for
+        whole-world textures.
+
+    Args:
+        provider: An `xyzservices` provider name (e.g. `"Esri.WorldImagery"`) or
+            a resolved `xyzservices.TileProvider` (as `add_tiles` accepts);
+            `None` uses the default (`OpenStreetMap.Mapnik`). A name is resolved
+            by `get_provider`.
+        zoom: Tile zoom level (0..6); the world grid is `2**zoom` tiles per side.
+        n_lon: Width of the returned texture, spanning -180..180 degrees.
+        n_lat: Height of the returned texture, spanning 90..-90 degrees.
+        cache: When `True` (default), read/write the texture under
+            `Config.get_cache_dir()/"world-textures"` so the tiles are fetched
+            once. `False` always refetches.
+        max_workers: Maximum concurrent tile HTTP connections.
+        timeout: Per-tile HTTP request timeout in seconds.
+        retries: Per-tile retry count on failure.
+        user_agent: `User-Agent` header sent on every tile request.
+
+    Returns:
+        numpy.ndarray: The `(n_lat, n_lon, 3)` texture as `float32` in `[0, 1]`
+        (RGB; the tiles' alpha is dropped). This differs from
+        `reference.relief`, which returns `uint8` 0..255.
+
+    Raises:
+        ImportError: If the `[tiles]` extra (xyzservices, Pillow, pyproj) is
+            not installed.
+        ValueError: If `zoom` is outside `0..6`, or `n_lon`/`n_lat` are not
+            positive.
+        ConnectionError: If any tile cannot be fetched after all retries.
+
+    Examples:
+        - Fetch a coarse world texture (network-dependent, hence skipped under
+            doctest):
+            ```python
+            >>> from cleopatra.basemap.tiles import world_texture
+            >>> tex = world_texture("Esri.WorldImagery", zoom=2)  # doctest: +SKIP
+            >>> tex.shape, tex.dtype.name  # doctest: +SKIP
+            ((1440, 2880, 3), 'float32')
+
+            ```
+    """
+    _require_tiles_extra()
+    if not 0 <= zoom <= _MAX_WORLD_ZOOM:
+        raise ValueError(
+            f"zoom must be between 0 and {_MAX_WORLD_ZOOM} (a world grid is "
+            f"4**zoom tiles; a higher zoom would exhaust memory), got {zoom}"
+        )
+    if n_lon < 1 or n_lat < 1:
+        raise ValueError(
+            f"n_lon and n_lat must be positive, got n_lon={n_lon}, n_lat={n_lat}"
+        )
+    # Accept a name string or a resolved TileProvider, matching add_tiles.
+    if isinstance(provider, str) or provider is None:
+        resolved = get_provider(provider)
+    else:
+        resolved = provider
+
+    cache_path = None
+    if cache:
+        name = re.sub(r"[^0-9A-Za-z]+", "_", str(resolved.get("name", "default")))
+        digest = hashlib.blake2s(
+            repr((name, zoom, n_lon, n_lat)).encode(), digest_size=8
+        ).hexdigest()
+        cache_dir = Config.get_cache_dir() / "world-textures"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        cache_path = cache_dir / f"{name}_z{zoom}_{digest}.npy"
+        if cache_path.exists():
+            try:
+                return np.load(cache_path)
+            except (OSError, ValueError, EOFError):
+                # A truncated / foreign / pre-atomic .npy: drop it and rebuild
+                # (as reference.relief does with a poisoned cached asset).
+                cache_path.unlink(missing_ok=True)
+
+    side = 2**zoom
+    tiles = [Tile(x, y, zoom) for x in range(side) for y in range(side)]
+    mosaic, bounds = stitch_tiles(
+        fetch_tiles(
+            tiles,
+            resolved,
+            max_workers=max_workers,
+            timeout=timeout,
+            retries=retries,
+            user_agent=user_agent,
+        ),
+        tiles,
+        zoom,
+    )
+    rgb = np.asarray(mosaic)[..., :3]
+    texture = mercator_to_equirectangular(rgb, bounds, n_lon=n_lon, n_lat=n_lat)
+    texture = np.clip(texture / 255.0, 0.0, 1.0).astype("float32")
+
+    if cache_path is not None:
+        # Write to a unique temp file, then rename: np.save straight onto the
+        # final path leaves a truncated array under the name the next run trusts
+        # if it is interrupted, and a fixed .tmp name lets concurrent same-key
+        # writes clobber each other. Remove the temp if the write fails.
+        fd, tmp_name = tempfile.mkstemp(dir=cache_path.parent, suffix=".npy.tmp")
+        try:
+            with os.fdopen(fd, "wb") as fh:
+                np.save(fh, texture)
+            os.replace(tmp_name, cache_path)
+        except BaseException:
+            with contextlib.suppress(FileNotFoundError):
+                os.remove(tmp_name)
+            raise
+    return texture
