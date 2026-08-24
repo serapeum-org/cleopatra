@@ -4,7 +4,7 @@ matplotlib `Axes3D`, with an optional axial tilt and a `spin` angle so the globe
 animation.
 
 It is cleopatra's one deliberate 3-D glyph. Every other glyph targets a 2-D axes; this one is a single, self-contained
-exception (see `SCOPE.md`). It adds no dependency -- `mpl_toolkits.mplot3d` ships with matplotlib -- and keeps the
+exception. It adds no dependency -- `mpl_toolkits.mplot3d` ships with matplotlib -- and keeps the
 "NumPy in -> matplotlib artist out" contract: you bring an `(H, W, 3)` or `(H, W, 4)` equirectangular array (for
 example `cleopatra.basemap.reference.relief()`), and you get back a matplotlib `Figure`/`Axes3D`.
 
