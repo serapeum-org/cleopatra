@@ -220,6 +220,30 @@ class TestStampMark:
             )
             plt.close(figure)
 
+    def test_undistorted_with_halo(self):
+        """The mark keeps its aspect ratio even under the asymmetric halo pad.
+
+        Test scenario:
+            The halo pads by a fixed pixel count, so a non-square mark gets an
+            asymmetric grow (``grow_w != grow_h``). Render with the halo and
+            measure the red mark's painted width and height; their ratio must
+            still equal the image's 40:80 aspect -- the mark is not stretched.
+        """
+        figure = plt.figure(figsize=(8.0, 6.0), facecolor="white")
+        mark = np.zeros((40, 80, 4), dtype=np.uint8)
+        mark[..., 0] = 255
+        mark[..., 3] = 255
+        stamp_mark(figure, mark, frac=0.25, corner="lower left", margin=0.15, shadow=True)
+        figure.canvas.draw()
+        rgba = np.asarray(figure.canvas.buffer_rgba())
+        red = (rgba[..., 0] > 200) & (rgba[..., 1] < 60) & (rgba[..., 2] < 60)
+        h_px = np.ptp(np.where(red.any(axis=1))[0]) + 1
+        w_px = np.ptp(np.where(red.any(axis=0))[0]) + 1
+        assert abs((h_px / w_px) - (40 / 80)) < 0.02, (
+            f"mark distorted under the halo: h/w={h_px / w_px:.4f}, expected {40 / 80}"
+        )
+        plt.close(figure)
+
     def test_halo_is_centred_not_offset(self):
         """The halo spreads symmetrically, with no light direction implied.
 
@@ -437,6 +461,28 @@ class TestStampMark:
         arr[0, 0, 0] = np.nan
         with pytest.raises(ValueError, match="finite"):
             stamp_mark(fig, arr, shadow=False)
+
+    def test_float_rgb_array_accepted(self, fig):
+        """A float ``0-1`` **RGB** ``(H, W, 3)`` array is accepted (opaque alpha).
+
+        Test scenario:
+            Only float RGBA was covered; a float RGB array must also render, with
+            an opaque alpha added internally.
+        """
+        rgb = np.full((30, 60, 3), 0.5, dtype=np.float32)
+        ax = stamp_mark(fig, rgb, shadow=False)
+        assert ax.images, "float RGB array should produce a drawn image"
+
+    def test_bool_array_rejected(self, fig):
+        """A ``bool`` array is rejected with a clear message, not silently cast.
+
+        Test scenario:
+            A bool array is not ``uint8``; it must raise the non-float/uint8
+            error rather than being truncated.
+        """
+        b = np.ones((20, 20, 4), dtype=bool)
+        with pytest.raises(ValueError, match="uint8"):
+            stamp_mark(fig, b, shadow=False)
 
     @pytest.mark.parametrize("bad", [np.zeros((10, 10)), np.zeros((10, 10, 2))])
     def test_bad_array_shape_raises(self, fig, bad):
