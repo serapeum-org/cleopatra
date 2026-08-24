@@ -21,6 +21,7 @@ import warnings
 from typing import TYPE_CHECKING, Any
 
 import matplotlib as mpl
+import numpy as np
 from matplotlib.animation import FFMpegWriter, FuncAnimation, PillowWriter
 from PIL import Image as PILImage
 
@@ -39,24 +40,77 @@ _PILLOW_FORMATS = {"gif", "webp"}
 #: 256 are held back for pure black and white (see `build_clip_palette`).
 _CLIP_PALETTE_COLORS = 254
 
-#: Divisor applied to each frame before it joins the palette montage. Sampling
-#: at a third of the frame size keeps the montage cheap on a long clip; it does
-#: not measurably change which colours are chosen.
-_MONTAGE_DIVISOR = 3
+#: Bits per channel kept when collecting the colours a clip contains. Six bits
+#: resolves 262144 buckets -- far finer than a 254-entry palette can express --
+#: and caps the census at that many pixels however long the clip runs.
+_GAMUT_BITS = 6
+
+
+def _clip_gamut(frames: list) -> "PILImage.Image":
+    """Collect every colour the clip contains, once each, as a compact image.
+
+    The palette is chosen for colour *coverage*, so what the quantiser needs is
+    the set of colours present, not how many pixels each covers. Spatially
+    downsampling the frames to save time -- the obvious way to build a cheap
+    palette source -- destroys exactly the information this change exists to
+    keep: an interpolating resize blends a one-pixel mark into its background
+    before the quantiser ever sees it, and a nearest-neighbour resize drops it
+    whenever it falls between samples. Counting distinct colours instead is
+    independent of how large a feature is on screen, and a presence bitmap makes
+    it a single linear pass with no sort.
+
+    Args:
+        frames: The clip's frames as RGB `PIL.Image.Image` objects. They need
+            not share a size.
+
+    Returns:
+        PIL.Image.Image: An RGB image holding one real colour from each occupied
+        bucket, exactly once.
+    """
+    shift = 8 - _GAMUT_BITS
+    seen = np.zeros(1 << (3 * _GAMUT_BITS), dtype=bool)
+    # Each bucket keeps a colour that genuinely occurs in the clip rather than
+    # its own centre, so an exact colour -- pure red, a brand hue -- reaches the
+    # quantiser unshifted instead of arriving a bucket-width off.
+    representative = np.zeros(1 << (3 * _GAMUT_BITS), dtype=np.uint32)
+    for frame in frames:
+        pixels = np.asarray(frame, dtype=np.uint8).reshape(-1, 3).astype(np.uint32)
+        exact = (pixels[:, 0] << 16) | (pixels[:, 1] << 8) | pixels[:, 2]
+        bucket = (
+            ((pixels[:, 0] >> shift) << (2 * _GAMUT_BITS))
+            | ((pixels[:, 1] >> shift) << _GAMUT_BITS)
+            | (pixels[:, 2] >> shift)
+        )
+        seen[bucket] = True
+        representative[bucket] = exact
+
+    keys = representative[np.flatnonzero(seen)]
+    colours = np.stack(
+        [(keys >> 16) & 0xFF, (keys >> 8) & 0xFF, keys & 0xFF], axis=-1
+    ).astype(np.uint8)
+
+    side = int(np.ceil(np.sqrt(len(colours))))
+    canvas = np.empty((side * side, 3), dtype=np.uint8)
+    canvas[: len(colours)] = colours
+    canvas[len(colours) :] = colours[-1]  # pad with a colour already present
+    return PILImage.fromarray(canvas.reshape(side, side, 3), "RGB")
 
 
 def build_clip_palette(frames: list, colors: int = _CLIP_PALETTE_COLORS):
     """Build one colour palette shared by every frame of a clip.
 
     Quantising each frame independently makes constant regions shimmer and lets
-    the same colour drift between frames, so a single table is derived from a
-    montage of all the frames and every frame is mapped through it.
+    the same colour drift between frames, so one table is derived from the whole
+    clip and every frame is mapped through it.
 
-    The montage is quantised with Pillow's `MAXCOVERAGE`, which picks colours to
-    span the clip's colour *range*. Median cut, the obvious alternative, splits
-    by pixel population instead: on a clip with a large textured area the
-    background claims nearly every slot and small saturated marks -- overlay
-    glyphs, thin paths, labels -- collapse to the nearest muddy neighbour.
+    The table is chosen for colour *coverage* (Pillow's `MAXCOVERAGE`) over the
+    set of colours the clip contains, gathered by `_clip_gamut`. Median cut, the
+    obvious alternative, splits by pixel population instead: on a clip with a
+    large textured area the background claims nearly every slot and small
+    saturated marks -- overlay glyphs, thin paths, labels -- collapse to the
+    nearest muddy neighbour. Because coverage is computed over distinct colours
+    rather than pixels, a mark survives no matter how few pixels it covers; a
+    single-pixel mark is kept as faithfully as a large one.
 
     Args:
         frames: The clip's frames as RGB `PIL.Image.Image` objects.
@@ -117,14 +171,8 @@ def build_clip_palette(frames: list, colors: int = _CLIP_PALETTE_COLORS):
         quantize_to_palette: Map the frames onto the palette this returns.
         gif_from_video: Derives a GIF through this same palette.
     """
-    width, height = frames[0].size
-    tile_w = max(1, width // _MONTAGE_DIVISOR)
-    tile_h = max(1, height // _MONTAGE_DIVISOR)
-    montage = PILImage.new("RGB", (tile_w, tile_h * len(frames)))
-    for index, frame in enumerate(frames):
-        montage.paste(frame.resize((tile_w, tile_h)), (0, index * tile_h))
-
-    base = montage.quantize(colors=colors, method=PILImage.Quantize.MAXCOVERAGE)
+    census = _clip_gamut(frames)
+    base = census.quantize(colors=colors, method=PILImage.Quantize.MAXCOVERAGE)
     entries = (list(base.getpalette() or []) + [0] * 768)[:768]
     entries[colors * 3 : colors * 3 + 6] = [0, 0, 0, 255, 255, 255]
     palette = PILImage.new("P", (1, 1))

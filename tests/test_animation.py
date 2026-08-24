@@ -1055,8 +1055,12 @@ _MARK_ROWS = (40, 80, 120, 160)
 _MARK_RADIUS = 2
 
 
-def _clip_frames():
+def _clip_frames(radius=_MARK_RADIUS):
     """Build the texture-heavy clip.
+
+    Args:
+        radius: Half-width of each saturated mark, so a test can vary how many
+            pixels a mark covers. ``0`` gives a single-pixel mark.
 
     Returns:
         list: One ``(frame, boxes)`` pair per frame, where `frame` is a float
@@ -1084,8 +1088,8 @@ def _clip_frames():
         boxes = []
         for slot, rgb in enumerate(_MARK_COLORS):
             cy, cx = _MARK_ROWS[slot], 30 + index * 20
-            y0, y1 = cy - _MARK_RADIUS, cy + _MARK_RADIUS + 1
-            x0, x1 = cx - _MARK_RADIUS, cx + _MARK_RADIUS + 1
+            y0, y1 = cy - radius, cy + radius + 1
+            x0, x1 = cx - radius, cx + radius + 1
             arr[y0:y1, x0:x1] = np.array(rgb) / 255.0
             boxes.append((y0, y1, x0, x1))
         frames.append((arr, boxes))
@@ -1161,17 +1165,27 @@ def _mark_distances(decoded, frames):
 class TestClipPaletteQuality:
     """The shared GIF palette must not starve small saturated colours (#315)."""
 
-    def test_small_saturated_marks_survive_quantisation(self, tmp_path):
-        """Tiny saturated marks stay their own colour on a texture-heavy clip.
+    @pytest.mark.parametrize("radius, size", [(2, "5x5"), (1, "3x3"), (0, "1x1")])
+    def test_small_saturated_marks_survive_quantisation(self, tmp_path, radius, size):
+        """Saturated marks stay their own colour however few pixels they cover.
+
+        Args:
+            tmp_path: pytest temp directory.
+            radius: Half-width of the marks under test.
+            size: Human-readable mark size, for the failure message.
 
         Test scenario:
             The background owns ~99% of the pixels. Allocating palette slots by
             pixel population (median cut) hands nearly all of them to the
-            texture, and the four marks decode ~100-180 away from the colours
-            they were drawn in -- visibly grey. Selecting for colour *coverage*
-            keeps them, so every mark must land close to its intended colour.
+            texture and the marks decode ~100-180 away from the colours they
+            were drawn in. The size sweep is the point: a palette built from a
+            spatially downsampled clip passes at 5x5 and fails at 1x1, because
+            the resize blends a one-pixel mark away before the quantiser sees
+            it. Building it from the clip's distinct colours is independent of
+            how large a mark is, so every size must hold -- and 1x1 is the size
+            that actually matters for satellites, orbit paths and labels.
         """
-        frames = _clip_frames()
+        frames = _clip_frames(radius)
         fig, anim = _clip_animation(frames)
         out = tmp_path / "clip.gif"
         save_animation(anim, str(out), fps=12)
@@ -1179,9 +1193,8 @@ class TestClipPaletteQuality:
 
         distances = _mark_distances(_decode(out), frames)
         assert max(distances) < 40, (
-            "small saturated marks were quantised away; distances from the "
-            f"intended colours were {[round(d, 1) for d in distances]} "
-            "(median cut scored ~100-180 here, coverage-based ~4-11)"
+            f"{size} saturated marks were quantised away; distances from the "
+            f"intended colours were {[round(d, 1) for d in distances]}"
         )
 
     def test_palette_is_shared_across_the_clip(self, tmp_path):

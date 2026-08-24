@@ -30,12 +30,22 @@ by every frame (`build_clip_palette`), derived from a montage of all the frames.
 palettes would make constant regions shimmer and let a colour drift between frames; two of
 the 256 entries are pinned to pure black and white so single-colour overlays stay crisp.
 
-The montage is quantised for colour **coverage**, not pixel population. The distinction
-matters on exactly the clips this package produces: with a population-weighted split (median
-cut) a large textured background claims nearly every palette slot, and small saturated marks —
-overlay glyphs, thin paths, labels — collapse to the nearest muddy neighbour. On a
-texture-heavy test clip those marks landed 100–180 away (in RGB distance) from the colours
-they were drawn in; selecting for coverage brings that under 12, in a **smaller** file.
+The palette is chosen for colour **coverage**, not pixel population, over the set of colours the
+clip contains. The distinction matters on exactly the clips this package produces: with a
+population-weighted split (median cut) a large textured background claims nearly every palette
+slot, and small saturated marks — overlay glyphs, thin paths, labels — collapse to the nearest
+muddy neighbour. On a texture-heavy test clip those marks landed 100–180 away (in RGB distance)
+from the colours they were drawn in; selecting for coverage reproduces them exactly.
+
+Because coverage is computed over **distinct colours rather than pixels**, a mark survives no
+matter how small it is: a one-pixel orbit path is kept as faithfully as a large glyph. Sampling
+the frames spatially to build a cheaper palette source would undo that — an interpolating resize
+blends a one-pixel mark into its background before the quantiser ever sees it.
+
+The trade is a marginally coarser background: on the same clip, background RMSE moves from 7.5 to
+8.3, because palette entries now go to colours the clip contains rather than to the colours it
+contains *most of*. File size moves either way depending on the clip — it shrank on the
+texture-heavy case and grew on a constant-background one.
 
 !!! warning "Render the intermediate with `pix_fmt="yuv444p"` if a GIF will be derived from it"
 
