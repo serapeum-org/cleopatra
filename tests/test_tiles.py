@@ -1484,6 +1484,33 @@ class TestMercatorToEquirectangular:
         with pytest.raises(ValueError, match="east > west"):
             mercator_to_equirectangular(mosaic, bounds)
 
+    def test_rejects_nan_bounds(self):
+        """Non-finite (NaN) bounds fail the `east > west` finiteness guard."""
+        mosaic = np.zeros((4, 4, 3))
+        with pytest.raises(ValueError, match="east > west"):
+            mercator_to_equirectangular(mosaic, (float("nan"), -1.0, 1.0, 1.0))
+
+    def test_single_output_cell_averages_whole_mosaic(self):
+        """`n_lon = n_lat = 1` averages the entire mosaic into one cell."""
+        tex = mercator_to_equirectangular(
+            np.full((8, 8, 3), 100, "uint8"), _world_bounds(), n_lon=1, n_lat=1
+        )
+        assert tex.shape == (1, 1, 3), f"unexpected shape {tex.shape}"
+        assert np.allclose(tex, 100.0), "a constant mosaic averages to its value"
+
+    def test_sub_region_bounds_clamp_to_edges(self):
+        """A mosaic covering only a mid-latitude band still fills the whole
+        output frame; the poles clamp onto the mosaic's edge rows."""
+        m = np.zeros((8, 8, 3), "uint8")
+        m[0] = (255, 0, 0)
+        m[-1] = (0, 0, 255)
+        merc = _world_bounds()[3]
+        bounds = (-merc, -merc / 2.0, merc, merc / 2.0)
+        tex = mercator_to_equirectangular(m, bounds, n_lon=4, n_lat=8)
+        assert tex.shape == (8, 4, 3), f"output must span the frame, got {tex.shape}"
+        assert tex[0, 0, 0] > tex[0, 0, 2], "north pole clamps to the red top row"
+        assert tex[-1, 0, 2] > tex[-1, 0, 0], "south pole clamps to the blue bottom row"
+
 
 class TestWorldTexture:
     """Tests for `cleopatra.basemap.tiles.world_texture`."""
@@ -1497,6 +1524,14 @@ class TestWorldTexture:
         assert tex.dtype == np.float32, f"expected float32, got {tex.dtype}"
         assert float(tex.min()) >= 0.0, f"min below 0: {float(tex.min())}"
         assert float(tex.max()) <= 1.0, f"max above 1: {float(tex.max())}"
+
+    def test_zoom_zero_single_tile(self, tmp_path, monkeypatch):
+        """`zoom=0` (a single world tile) produces a valid float32 texture."""
+        monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))
+        monkeypatch.setattr(tiles_mod, "fetch_tiles", _fetch_split_by_x())
+        tex = world_texture(zoom=0, n_lon=8, n_lat=4)
+        assert tex.shape == (4, 8, 3), f"unexpected shape {tex.shape}"
+        assert tex.dtype == np.float32, f"expected float32, got {tex.dtype}"
 
     def test_preserves_longitude_order(self, tmp_path, monkeypatch):
         """West tiles (blue) stay west end-to-end through fetch/stitch/reproject."""
