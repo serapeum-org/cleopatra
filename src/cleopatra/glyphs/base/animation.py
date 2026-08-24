@@ -159,9 +159,14 @@ def build_clip_palette(
             up to 256 are reserved -- pure black and white are pinned so
             single-colour overlays stay crisp.
         method: Which strategy picks the entries; a key of `QUANTIZE_METHODS`.
-            Defaults to ``"coverage"``. Choose ``"median"`` for a smooth
-            photographic clip with no small marks at stake, where weighting by
-            pixel population renders the dominant colours a little more finely.
+            Defaults to ``"coverage"``, which spreads them across the clip's
+            colour range. ``"median"`` splits the colour cube by how densely
+            the clip populates it, so it spends the table on the crowded regions
+            a photographic background occupies -- worth choosing for a smooth
+            clip with no small marks at stake, where that renders the dominant
+            colours a little more finely. Note it sees each colour once, not
+            once per pixel, so it weights by distinct colours rather than by
+            area.
 
     Returns:
         PIL.Image.Image: A ``"P"``-mode image carrying the shared palette,
@@ -212,6 +217,26 @@ def build_clip_palette(
             >>> frames.append(Image.new("RGB", (9, 9), (255, 0, 255)))
             >>> entries = build_clip_palette(frames).getpalette()
             >>> triples = [tuple(entries[i : i + 3]) for i in range(0, 254 * 3, 3)]
+            >>> any(r > 200 and g < 40 and b > 200 for r, g, b in triples)
+            True
+
+            ```
+
+        - The strategy is selectable. On a clip with few enough colours to fit
+          the budget every strategy keeps them all -- the choice only starts to
+          matter once colours must be discarded:
+            ```python
+            >>> from PIL import Image
+            >>> from cleopatra.glyphs.base.animation import (
+            ...     QUANTIZE_METHODS,
+            ...     build_clip_palette,
+            ... )
+            >>> sorted(QUANTIZE_METHODS)
+            ['coverage', 'median', 'octree']
+            >>> frame = Image.new("RGB", (40, 40), (30, 30, 30))
+            >>> frame.putpixel((0, 0), (255, 0, 255))  # one magenta pixel
+            >>> table = build_clip_palette([frame], colors=4, method="median").getpalette()
+            >>> triples = [tuple(table[i : i + 3]) for i in range(0, 4 * 3, 3)]
             >>> any(r > 200 and g < 40 and b > 200 for r, g, b in triples)
             True
 
