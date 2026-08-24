@@ -458,7 +458,8 @@ class TexturedGlobeGlyph:
                 is created on the instance's `fig` (or a new figure sized by the `figsize` option).
             spin: Rotation of the globe about its tilted polar axis, in degrees. The camera stays put.
             **kwargs: Render options overriding the instance defaults for this call (`figsize`, `elev`, `azim`,
-                `background`).
+                `background`). `figsize` applies only when a new figure is created; it is ignored when drawing onto
+                an existing (supplied or instance) axes. An unrecognised key raises `ValueError`.
 
         Returns:
             tuple: `(fig, ax)` -- the figure and the 3-D axes the globe was drawn on. The surface artist is also
@@ -527,7 +528,8 @@ class TexturedGlobeGlyph:
 
         The texture is sampled once (via `draw`'s cached `_prepare`); each frame only rotates the pre-computed vertices
         and re-draws, so the per-frame cost is dominated by matplotlib's surface draw at the chosen mesh resolution.
-        Save it with `cleopatra.glyphs.base.animation` (or matplotlib's own writers).
+        Save it with `cleopatra.glyphs.base.animation.save_animation` (to a file) or `to_gif`/`to_mp4` (to bytes),
+        or matplotlib's own writers.
 
         Args:
             ax: A 3-D axes to animate on, or `None` to create one (see `draw`).

@@ -66,6 +66,8 @@ from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph
 
 globe = TexturedGlobeGlyph(relief("low"), n_lon=180, n_lat=90)
 anim = globe.animate(n_frames=60, revolutions=1.0, interval=50)
-# save with cleopatra.glyphs.base.animation or matplotlib's writers:
-# anim.save("globe.gif")
+# save with cleopatra.glyphs.base.animation.save_animation (or to_gif/to_mp4),
+# or matplotlib's own writers:
+# from cleopatra.glyphs.base.animation import save_animation
+# save_animation(anim, "globe.gif")
 ```
