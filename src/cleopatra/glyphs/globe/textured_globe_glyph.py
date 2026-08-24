@@ -68,14 +68,14 @@ from cleopatra.glyphs.base.glyph import (
 #: Earth's axial tilt (obliquity of the ecliptic), in degrees -- the default lean of the polar axis.
 EARTH_TILT_DEG = 23.44
 
+#: Default render options for :class:`TexturedGlobeGlyph` (the module constant; the class re-exposes it as
+#: ``TexturedGlobeGlyph.DEFAULT_OPTIONS`` for introspection).
 GLOBE_DEFAULT_OPTIONS = {
     "figsize": (6, 6),
     "elev": 15.0,
     "azim": 0.0,
     "background": None,
 }
-#: Default render options for :class:`TexturedGlobeGlyph` (named like the other glyphs' ``*_DEFAULT_OPTIONS``).
-DEFAULT_OPTIONS = GLOBE_DEFAULT_OPTIONS
 
 
 class TexturedGlobeGlyph:
@@ -97,7 +97,7 @@ class TexturedGlobeGlyph:
         default_options: The resolved render options (`figsize`, `elev`, `azim`, `background`).
 
     Methods:
-        draw(ax=None, spin=0.0, **kwargs): Render the globe onto a 3-D axes at a given spin angle.
+        draw(ax=None, *, spin=0.0, **kwargs): Render the globe onto a 3-D axes at a given spin angle.
         animate(ax=None, n_frames=60, revolutions=1.0, ...): Return a `FuncAnimation` spinning the globe.
 
     Notes:
