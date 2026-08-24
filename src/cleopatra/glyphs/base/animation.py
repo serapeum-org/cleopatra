@@ -912,8 +912,17 @@ def _read_video_frames(src: str, **kwargs):
         raw ``rgb24`` bytes. Close it when done.
 
     Raises:
-        FileNotFoundError: If imageio-ffmpeg is not installed, so no FFmpeg
-            binary is available to decode with.
+        FileNotFoundError: If neither a system FFmpeg nor imageio-ffmpeg's
+            bundled binary can be found.
+
+    Notes:
+        Decoding resolves its binary the same way writing does, through
+        `_ensure_ffmpeg_available` -- a system FFmpeg on `PATH` or the one named
+        by matplotlib's ``animation.ffmpeg_path`` takes precedence over the
+        bundled copy. Without this, reading and writing in the same process
+        could disagree about which FFmpeg to run. The resolved path is exported
+        as ``IMAGEIO_FFMPEG_EXE`` for imageio-ffmpeg to pick up, and an existing
+        value of that variable is left alone.
     """
     try:
         import imageio_ffmpeg
@@ -922,6 +931,8 @@ def _read_video_frames(src: str, **kwargs):
             "Deriving a GIF from a video needs FFmpeg. Install imageio-ffmpeg "
             "(ships a bundled binary) or an ffmpeg on PATH."
         ) from e
+    _ensure_ffmpeg_available()
+    os.environ.setdefault("IMAGEIO_FFMPEG_EXE", mpl.rcParams["animation.ffmpeg_path"])
     return imageio_ffmpeg.read_frames(src, **kwargs)
 
 
@@ -1014,8 +1025,8 @@ def gif_from_video(
         The output path as a `str`, convenient for chaining.
 
     Raises:
-        FileNotFoundError: If `src` does not exist, or if no FFmpeg binary can
-            be found.
+        FileNotFoundError: If `src` does not exist, or if neither a system
+            FFmpeg nor imageio-ffmpeg's bundled binary can be found.
         ValueError: If `max_colors` is outside ``2-254``, if `fps` is not
             positive, if `width` is not positive, if `loop` is negative, if
             `path` does not end in ``.gif``, or if `src` yields no frames.
