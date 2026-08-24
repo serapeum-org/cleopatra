@@ -65,7 +65,8 @@ colorbars, ticks, classification, and animation.
 - `tiles` and `reference` are cleopatra's **only** networked features.
 - `projection`: lightweight axes-frame / coordinate helpers.
 - `animation`: turn a matplotlib `FuncAnimation` into a saved file, GIF bytes,
-  or an embeddable IPython image (via ffmpeg).
+  or an embeddable IPython image (via ffmpeg), and derive one output format from
+  another (`gif_from_video`) — see "Animation output".
 - `config` (`Config`): opt-in matplotlib-backend selection; notebook detection.
 
 ### What new work generally belongs here
@@ -85,10 +86,11 @@ colorbars, ticks, classification, and animation.
 - **Data I/O and formats:** reading/writing *user* GeoTIFF, NetCDF,
   shapefiles, GeoJSON, CSV, databases. Users bring NumPy arrays already;
   file/raster I/O of user data belongs in sibling packages (e.g. `pyramids`),
-  not here. The deliberate exception is the `tiles` / `reference` basemap
-  helpers, which fetch a handful of *fixed public* reference datasets (never
-  user data) that cleopatra re-hosts as dependency-light artifacts — see
-  "Supporting utilities".
+  not here. There are two deliberate exceptions: the `tiles` / `reference`
+  basemap helpers, which fetch a handful of *fixed public* reference datasets
+  (never user data) that cleopatra re-hosts as dependency-light artifacts — see
+  "Supporting utilities"; and re-encoding cleopatra's **own animation output**
+  between formats — see "Animation output" below.
 - **GIS / geoprocessing:** reprojection of user data, clipping, resampling,
   zonal stats, CRS management beyond what the optional `tiles` basemap needs.
 - **Interactive / GUI apps:** dashboards, widget servers, event callbacks,
@@ -107,13 +109,33 @@ colorbars, ticks, classification, and animation.
   than the `tiles` / `reference` basemap helpers, and general-purpose plotting
   that matplotlib already does well without added value.
 
+## Animation output
+
+Rendering frames is by far the most expensive part of an animation — hours, for a
+long scientific clip — while encoding them is cheap. Forcing every output format
+to be produced from a live `FuncAnimation` therefore means re-rendering the same
+frames once per format, which is the wrong trade at any real size.
+
+So a helper may **read back a video cleopatra itself wrote** and re-encode it to
+another supported format, as `gif_from_video` does. This is not user-data I/O:
+the input is our own artifact, produced by `save_animation` moments earlier, in a
+format from `SUPPORTED_VIDEO_FORMAT`. It reads no user dataset, opens no GIS
+format, and adds no dependency — the FFmpeg it decodes with is the one
+`save_animation` already encodes with.
+
+The boundary that still holds: cleopatra does not read a file it did not write,
+and does not become a general media-conversion tool. A helper that ingested
+arbitrary user video, or one whose input was not a cleopatra output, would be out
+of scope.
+
 ## Boundary heuristic for a feature request
 
 Ask, in order:
 
 1. **Input** — does it start from in-memory NumPy data (not a file/CRS/URL)?
-   (The `tiles` / `reference` basemap helpers are the deliberate exception:
-   they acquire fixed *public* reference data, never user files.)
+   (Two deliberate exceptions: the `tiles` / `reference` basemap helpers, which
+   acquire fixed *public* reference data, never user files; and the animation
+   re-encoders, whose input is cleopatra's own output — see "Animation output".)
 2. **Output** — does it produce a matplotlib `Figure`/`Axes`/artist (or an
    animation of one)?
 3. **Reuse** — can it build on `Glyph` and the shared colour/colorbar/legend
