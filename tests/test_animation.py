@@ -13,6 +13,7 @@ import warnings
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import imageio_ffmpeg
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -1224,9 +1225,13 @@ class TestClipPaletteQuality:
 class TestGifFromVideo:
     """`gif_from_video` derives a GIF from an already-rendered video (#308)."""
 
-    @pytest.fixture
+    @pytest.fixture(scope="module")
     def clip_mp4(self, tmp_path_factory):
-        """Render the texture clip once to a full-chroma MP4.
+        """Render the texture clip once to a full-chroma MP4, shared module-wide.
+
+        Encoding the source is the slowest thing in this file and none of the
+        tests mutate it, so it is built once for the module rather than once per
+        test.
 
         Returns:
             tuple: The MP4 path and the `_clip_frames` output behind it.
@@ -1337,9 +1342,11 @@ class TestGifFromVideo:
             resolution, or it would be noise.
         """
         src, _ = clip_mp4
-        with warnings.catch_warnings():
-            warnings.simplefilter("error", UserWarning)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
             anim_mod.gif_from_video(src, str(tmp_path / "out.gif"), fps=12)
+        chroma = [w for w in caught if "reduced" in str(w.message)]
+        assert not chroma, f"a full-chroma source should not warn: {chroma}"
 
     def test_decoder_is_closed_when_iteration_stops_early(self, monkeypatch):
         """Abandoning the frame stream closes the decoder rather than leaking it.
@@ -1432,16 +1439,34 @@ class TestGifFromVideo:
                 src, str(tmp_path / "out.gif"), max_colors=max_colors
             )
 
-    def test_width_matching_the_source_skips_resizing(self, clip_mp4, tmp_path):
-        """Asking for the source's own width leaves the frames untouched.
+    def test_width_matching_the_source_skips_resizing(
+        self, clip_mp4, tmp_path, monkeypatch
+    ):
+        """Asking for the source's own width performs no resample at all.
+
+        Args:
+            clip_mp4: The rendered source fixture.
+            tmp_path: pytest temp directory.
+            monkeypatch: pytest monkeypatch fixture.
 
         Test scenario:
-            The resize is skipped when it would be a no-op, and the output
-            keeps the source dimensions.
+            Checking the output size alone cannot tell a skipped resize from one
+            that resampled to the same dimensions -- and resampling a frame to
+            its own size still costs time and softens it. `Image.resize` is
+            wrapped to record any call, and must not fire.
         """
         src, _ = clip_mp4
+        resizes = []
+        original = Image.Image.resize
+
+        def spy(self, size, *args, **kwargs):
+            resizes.append(size)
+            return original(self, size, *args, **kwargs)
+
+        monkeypatch.setattr(Image.Image, "resize", spy)
         out = tmp_path / "same.gif"
         anim_mod.gif_from_video(src, str(out), fps=12, width=_CLIP_W)
+        assert not resizes, f"a same-width request should not resample: {resizes}"
         with Image.open(out) as handle:
             assert handle.size == (_CLIP_W, _CLIP_H), f"unexpected size {handle.size}"
 
@@ -1459,7 +1484,6 @@ class TestGifFromVideo:
             the guard is exercised directly.
         """
         src, _ = clip_mp4
-        import imageio_ffmpeg
 
         def only_meta(path, **kwargs):
             yield {"size": (4, 4), "pix_fmt": "yuv444p"}
@@ -1801,7 +1825,9 @@ class TestWritePillowAnimation:
         frames = [Image.new("RGB", (8, 8), c) for c in ((255, 0, 0), (0, 0, 255))]
         return anim_mod.quantize_to_palette(frames, anim_mod.build_clip_palette(frames))
 
-    @pytest.mark.parametrize("fps, expected", [(4, 250), (10, 100), (2, 500)])
+    @pytest.mark.parametrize(
+        "fps, expected", [(4, 250), (10, 100), (2, 500), (12, 80), (3, 330)]
+    )
     def test_duration_follows_fps(self, palette_frames, tmp_path, fps, expected):
         """Frame duration is the millisecond reciprocal of `fps`.
 
@@ -1813,7 +1839,11 @@ class TestWritePillowAnimation:
 
         Test scenario:
             GIF stores a per-frame delay, so fps has to be converted; 4 fps is
-            250 ms per frame.
+            250 ms per frame. The default 12 fps and 3 fps are included because
+            they do not divide 1000 exactly, and the delay field is in
+            hundredths of a second -- so 83 ms is stored as 80 and 333 as 330.
+            The expectations are what actually round-trips, which is where a
+            rounding change would show up.
         """
         out = tmp_path / "d.gif"
         anim_mod._write_pillow_animation(palette_frames, str(out), fps, 0, True)
