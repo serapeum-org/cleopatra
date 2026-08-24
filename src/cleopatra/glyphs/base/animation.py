@@ -15,6 +15,7 @@ writer/format logic has a single source of truth.
 from __future__ import annotations
 
 import itertools
+import math
 import os
 import shutil
 import tempfile
@@ -48,6 +49,9 @@ __all__ = [
 #: Pillow (`_OptimizedPillowWriter`); mov/avi/mp4 require FFmpeg (`FFMpegWriter`).
 #: WebP is typically 3-5x smaller than GIF for photographic/satellite frames.
 SUPPORTED_VIDEO_FORMAT = ["gif", "mov", "avi", "mp4", "webp"]
+
+#: The matplotlib rcParam naming the ffmpeg binary to shell out to.
+_FFMPEG_PATH_RCPARAM = "animation.ffmpeg_path"
 
 #: Formats written by Pillow rather than FFmpeg.
 _PILLOW_FORMATS = {"gif", "webp"}
@@ -338,8 +342,8 @@ def _validate_pillow_options(fps: float, loop: int) -> None:
             negative (it is written as an unsigned short, so Pillow would raise
             a bare `struct.error`).
     """
-    if not fps > 0 or fps == float("inf"):
-        # `not fps > 0` also rejects NaN, which slips past `fps <= 0`.
+    if not math.isfinite(fps) or fps <= 0:
+        # isfinite rejects NaN and infinity, both of which slip past `fps <= 0`.
         raise ValueError(f"fps must be a positive finite number, got {fps!r}.")
     if loop < 0:
         raise ValueError(f"loop must be zero or positive, got {loop!r}.")
@@ -410,7 +414,7 @@ def _ensure_ffmpeg_available() -> None:
         FileNotFoundError: If neither a system ffmpeg nor `imageio-ffmpeg`'s
             bundled binary can be located.
     """
-    configured = mpl.rcParams["animation.ffmpeg_path"]
+    configured = mpl.rcParams[_FFMPEG_PATH_RCPARAM]
     if os.path.isfile(configured) or shutil.which(configured):
         return
     try:
@@ -429,7 +433,7 @@ def _ensure_ffmpeg_available() -> None:
             RuntimeWarning,
             stacklevel=3,
         )
-    mpl.rcParams["animation.ffmpeg_path"] = bundled
+    mpl.rcParams[_FFMPEG_PATH_RCPARAM] = bundled
 
 
 class _OptimizedPillowWriter(PillowWriter):
@@ -561,6 +565,62 @@ def _build_ffmpeg_extra_args(
         built += ["-preset", preset]
     built += passthrough
     return built
+
+
+def _validated_output_format(
+    path: str,
+    fps: float,
+    loop: int,
+    quantize_method: str,
+    crf: int | None,
+    bitrate: int | None,
+) -> str:
+    """Resolve the output format from the path and check the options against it.
+
+    Args:
+        path: The output path; its extension selects the format.
+        fps: Frames per second.
+        loop: Loop count for the Pillow formats.
+        quantize_method: Palette strategy for the Pillow formats.
+        crf: Constant Rate Factor for the FFmpeg formats.
+        bitrate: Target bitrate for the FFmpeg formats.
+
+    Returns:
+        The lower-cased extension, one of `SUPPORTED_VIDEO_FORMAT`.
+
+    Raises:
+        ValueError: If the path has no extension or an unsupported one, if the
+            Pillow options are invalid for a Pillow format, or if both `crf` and
+            `bitrate` are given.
+    """
+    video_format = os.path.splitext(path)[1].lstrip(".").lower()
+    if not video_format:
+        raise ValueError(
+            f"The output path {path!r} has no file extension; the output "
+            f"format is taken from the extension, so use one of "
+            f"{SUPPORTED_VIDEO_FORMAT}."
+        )
+    if video_format not in SUPPORTED_VIDEO_FORMAT:
+        raise ValueError(
+            f"The given extension {video_format} implies a format that is "
+            f"not supported, only {SUPPORTED_VIDEO_FORMAT} are supported"
+        )
+    if video_format in _PILLOW_FORMATS:
+        _validate_pillow_options(fps, loop)
+        if quantize_method not in QUANTIZE_METHODS:
+            # Checked here rather than only where the palette is built, which a
+            # WebP or single-frame GIF never reaches -- a typo would otherwise
+            # survive the whole render and then be silently ignored.
+            raise ValueError(
+                f"quantize_method must be one of {sorted(QUANTIZE_METHODS)}, "
+                f"got {quantize_method!r}."
+            )
+    if crf is not None and bitrate is not None:
+        raise ValueError(
+            "Pass either crf or bitrate, not both: they are competing "
+            "rate-control modes for the encoder."
+        )
+    return video_format
 
 
 def save_animation(
@@ -716,35 +776,9 @@ def save_animation(
         embed_gif: Wrap an animation as an `IPython.display.Image`.
     """
     path = os.fspath(path)
-    video_format = os.path.splitext(path)[1].lstrip(".").lower()
-    if not video_format:
-        raise ValueError(
-            f"The output path {path!r} has no file extension; the output "
-            f"format is taken from the extension, so use one of "
-            f"{SUPPORTED_VIDEO_FORMAT}."
-        )
-    if video_format not in SUPPORTED_VIDEO_FORMAT:
-        raise ValueError(
-            f"The given extension {video_format} implies a format that is "
-            f"not supported, only {SUPPORTED_VIDEO_FORMAT} are supported"
-        )
-
-    if video_format in _PILLOW_FORMATS:
-        _validate_pillow_options(fps, loop)
-        if quantize_method not in QUANTIZE_METHODS:
-            # Checked here rather than only where the palette is built, which a
-            # WebP or single-frame GIF never reaches -- a typo would otherwise
-            # survive the whole render and then be silently ignored.
-            raise ValueError(
-                f"quantize_method must be one of {sorted(QUANTIZE_METHODS)}, "
-                f"got {quantize_method!r}."
-            )
-
-    if crf is not None and bitrate is not None:
-        raise ValueError(
-            "Pass either crf or bitrate, not both: they are competing "
-            "rate-control modes for the encoder."
-        )
+    video_format = _validated_output_format(
+        path, fps, loop, quantize_method, crf, bitrate
+    )
 
     save_kwargs: dict[str, Any] = {} if dpi is None else {"dpi": dpi}
 
@@ -1060,7 +1094,7 @@ def _read_video_frames(src: str, **kwargs) -> tuple[dict, Generator[bytes, None,
         ) from e
     _ensure_ffmpeg_available()
     previous = os.environ.get("IMAGEIO_FFMPEG_EXE")
-    os.environ["IMAGEIO_FFMPEG_EXE"] = mpl.rcParams["animation.ffmpeg_path"]
+    os.environ["IMAGEIO_FFMPEG_EXE"] = mpl.rcParams[_FFMPEG_PATH_RCPARAM]
     try:
         reader = imageio_ffmpeg.read_frames(src, **kwargs)
         metadata = next(reader)  # starts the child while the variable is set

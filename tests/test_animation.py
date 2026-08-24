@@ -8,8 +8,8 @@ animation is rendered on the Agg backend (set globally via `MPLBACKEND`).
 from __future__ import annotations
 
 import builtins
-import os
 import doctest
+import os
 import warnings
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -1862,8 +1862,9 @@ class TestClipGamutInputs:
             An empty image is a different mistake from an empty clip, and the
             message should say which one happened.
         """
+        empty = Image.new("RGB", (0, 0))
         with pytest.raises(ValueError, match="hold no pixels"):
-            anim_mod.build_clip_palette([Image.new("RGB", (0, 0))])
+            anim_mod.build_clip_palette([empty])
 
     def test_padding_does_not_favour_one_colour(self):
         """Squaring the census tiles the colours instead of repeating one.
@@ -2114,10 +2115,9 @@ class TestWritePillowAnimation:
             StopIteration, which reads as a generator bug rather than an empty
             clip.
         """
+        out = str(tmp_path / "e.gif")
         with pytest.raises(ValueError, match="at least one frame"):
-            anim_mod._write_pillow_animation(
-                iter(()), str(tmp_path / "e.gif"), 5, 0, True
-            )
+            anim_mod._write_pillow_animation(iter(()), out, 5, 0, True)
 
     def test_single_frame_gif_reserves_black_and_white(self, tmp_path):
         """A one-frame GIF still goes through the shared palette.
