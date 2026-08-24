@@ -1549,7 +1549,9 @@ class TestWorldTexture:
         world_texture(zoom=1, n_lon=8, n_lat=4)
         world_texture(zoom=1, n_lon=16, n_lat=4)
         cache_files = list((tmp_path / "world-textures").glob("*.npy"))
-        assert len(cache_files) == 2, f"expected two distinct cache files, got {cache_files}"
+        assert len(cache_files) == 2, (
+            f"expected two distinct cache files, got {cache_files}"
+        )
 
     def test_cache_write_failure_removes_temp(self, tmp_path, monkeypatch):
         """A failed texture save leaves no temp file behind and re-raises."""
