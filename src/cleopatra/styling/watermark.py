@@ -254,10 +254,10 @@ def _as_rgba(path: "str | os.PathLike | np.ndarray") -> np.ndarray:
                 )
             arr = (np.clip(arr, 0.0, 1.0) * 255).round().astype(np.uint8)
         elif arr.dtype != np.uint8:
-            # Any other integer dtype (uint16, int32, bool, ...) would truncate
+            # Any other non-float dtype (uint16, int32, bool, ...) would truncate
             # mod 256 under a bare uint8 cast and silently garble the mark.
             raise ValueError(
-                f"an integer image array must be uint8 (0-255); got dtype {arr.dtype}. "
+                f"a non-float image array must be uint8 (0-255); got dtype {arr.dtype}. "
                 "Convert / rescale it to uint8 (or pass a float 0-1 array) first."
             )
         if arr.shape[2] == 3:
