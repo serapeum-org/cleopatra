@@ -14,6 +14,7 @@ writer/format logic has a single source of truth.
 
 from __future__ import annotations
 
+import itertools
 import os
 import shutil
 import tempfile
@@ -242,17 +243,22 @@ def _write_pillow_animation(
     """Write frames out as an animated GIF or WebP via Pillow.
 
     Args:
-        frames: The clip's frames. For GIF these are ``"P"``-mode images
-            sharing one palette; for WebP they are passed through as grabbed.
+        frames: The clip's frames, as a sequence or a lazy iterable. For GIF
+            these are ``"P"``-mode images sharing one palette; for WebP they are
+            passed through as grabbed.
         path: Where to write the animation.
         fps: Playback rate, converted to a per-frame duration in milliseconds.
         loop: How many times to loop; `0` loops forever.
         optimize: Run Pillow's optimisation pass (a no-op for WebP).
     """
-    frames[0].save(
+    stream = iter(frames)
+    first = next(stream)
+    # Pillow consumes `append_images` lazily, so handing it the rest of the
+    # iterator keeps a streamed clip from being materialised just to be written.
+    first.save(
         path,
         save_all=True,
-        append_images=frames[1:],
+        append_images=stream,
         duration=int(1000 / fps),
         loop=loop,
         optimize=optimize,
@@ -839,6 +845,78 @@ def _is_chroma_subsampled(pix_fmt: str | None) -> bool:
     return fmt.startswith(("yuv", "yuvj")) and "444" not in fmt
 
 
+def _read_video_frames(src: str, **kwargs):
+    """Open a video for raw-frame reading via the bundled FFmpeg.
+
+    Args:
+        src: Path to the video.
+        **kwargs: Passed through to `imageio_ffmpeg.read_frames` (e.g.
+            `output_params`).
+
+    Returns:
+        Generator: Yields the decoder's metadata dict first, then each frame as
+        raw ``rgb24`` bytes. Close it when done.
+
+    Raises:
+        FileNotFoundError: If imageio-ffmpeg is not installed, so no FFmpeg
+            binary is available to decode with.
+    """
+    try:
+        import imageio_ffmpeg
+    except ModuleNotFoundError as e:  # pragma: no cover - imageio-ffmpeg is a dep
+        raise FileNotFoundError(
+            "Deriving a GIF from a video needs FFmpeg. Install imageio-ffmpeg "
+            "(ships a bundled binary) or an ffmpeg on PATH."
+        ) from e
+    return imageio_ffmpeg.read_frames(src, **kwargs)
+
+
+def _video_metadata(src: str) -> dict:
+    """Read a video's header without decoding any of it.
+
+    Args:
+        src: Path to the video.
+
+    Returns:
+        dict: The decoder's metadata, including ``size`` and ``pix_fmt``.
+    """
+    reader = _read_video_frames(src)
+    try:
+        return next(reader)
+    finally:
+        reader.close()
+
+
+def _iter_video_frames(src: str, fps: float, width: int | None):
+    """Yield a video's frames as RGB images, closing the decoder afterwards.
+
+    Frames are produced lazily so a clip never has to be held in memory all at
+    once, and the decoder is closed on the way out however the caller stops --
+    exhausted, `break`, or an exception -- rather than leaving an orphaned
+    ffmpeg child behind.
+
+    Args:
+        src: Path to the video.
+        fps: Rate to sample at; FFmpeg drops or duplicates frames to hit it.
+        width: Width to scale to, preserving aspect, or `None` to keep the
+            source size.
+
+    Yields:
+        PIL.Image.Image: Each sampled frame, as RGB.
+    """
+    reader = _read_video_frames(src, output_params=["-vf", f"fps={fps}"])
+    try:
+        frame_w, frame_h = next(reader)["size"]
+        target = None
+        if width is not None and width != frame_w:
+            target = (width, max(1, round(frame_h * width / frame_w)))
+        for buffer in reader:
+            frame = PILImage.frombytes("RGB", (frame_w, frame_h), bytes(buffer))
+            yield frame if target is None else frame.resize(target, PILImage.LANCZOS)
+    finally:
+        reader.close()
+
+
 def gif_from_video(
     src: str | os.PathLike,
     path: str | os.PathLike,
@@ -860,6 +938,11 @@ def gif_from_video(
     The frames go through exactly the same clip-wide palette as
     `save_animation`'s GIF path (`build_clip_palette`), so a GIF derived from a
     video and one rendered straight from the animation quantise identically.
+
+    The source is decoded twice and streamed both times -- once to learn the
+    clip's colours, once to quantise and write -- so peak memory is flat in the
+    clip's length rather than proportional to it, and a long master does not
+    have to fit in RAM.
 
     Args:
         src: The source video. Any container the bundled FFmpeg can decode.
@@ -962,17 +1045,7 @@ def gif_from_video(
     if width is not None and width <= 0:
         raise ValueError(f"width must be positive, got {width!r}.")
 
-    try:
-        import imageio_ffmpeg
-    except ModuleNotFoundError as e:  # pragma: no cover - imageio-ffmpeg is a dep
-        raise FileNotFoundError(
-            "Deriving a GIF from a video needs FFmpeg. Install imageio-ffmpeg "
-            "(ships a bundled binary) or an ffmpeg on PATH."
-        ) from e
-
-    reader = imageio_ffmpeg.read_frames(src, output_params=["-vf", f"fps={fps}"])
-    meta = next(reader)
-    frame_w, frame_h = meta["size"]
+    meta = _video_metadata(src)
     if _is_chroma_subsampled(meta.get("pix_fmt")):
         warnings.warn(
             f"{src!r} is {meta.get('pix_fmt')}, which stores colour at reduced "
@@ -983,20 +1056,22 @@ def gif_from_video(
             stacklevel=2,
         )
 
-    frames = [
-        PILImage.frombytes("RGB", (frame_w, frame_h), bytes(buffer))
-        for buffer in reader
-    ]
-    if not frames:
+    # Two streamed passes rather than one buffered one: the palette needs to see
+    # the whole clip before any frame can be quantised, but neither pass needs
+    # to keep a frame once it has been read, so peak memory stays flat in the
+    # clip's length. Decoding twice is far cheaper than holding it all in RAM --
+    # a 10-minute 1080p master would otherwise need tens of gigabytes.
+    survey = _iter_video_frames(src, fps, width)
+    first = next(survey, None)
+    if first is None:
         raise ValueError(f"The source video {src!r} yielded no frames.")
-    if width is not None and width != frame_w:
-        height = max(1, round(frame_h * width / frame_w))
-        frames = [f.resize((width, height), PILImage.LANCZOS) for f in frames]
+    palette = build_clip_palette(itertools.chain([first], survey), colors=max_colors)
 
-    palette = build_clip_palette(frames, colors=max_colors)
-    _write_pillow_animation(
-        quantize_to_palette(frames, palette), path, fps, loop, optimize
+    quantised = (
+        frame.quantize(palette=palette, dither=PILImage.Dither.FLOYDSTEINBERG)
+        for frame in _iter_video_frames(src, fps, width)
     )
+    _write_pillow_animation(quantised, path, fps, loop, optimize)
     return path
 
 

@@ -1341,6 +1341,34 @@ class TestGifFromVideo:
             warnings.simplefilter("error", UserWarning)
             anim_mod.gif_from_video(src, str(tmp_path / "out.gif"), fps=12)
 
+    def test_decoder_is_closed_when_iteration_stops_early(self, monkeypatch):
+        """Abandoning the frame stream closes the decoder rather than leaking it.
+
+        Args:
+            monkeypatch: pytest monkeypatch fixture.
+
+        Test scenario:
+            A caller that stops early -- or an exception raised mid-iteration --
+            must not leave an ffmpeg child running. The decoder is replaced with
+            a generator that records its own closure, and the frame iterator is
+            abandoned after one frame.
+        """
+        closed = []
+
+        def fake_reader(src, **kwargs):
+            try:
+                yield {"size": (2, 2), "pix_fmt": "yuv444p"}
+                while True:
+                    yield bytes(12)
+            finally:
+                closed.append(True)
+
+        monkeypatch.setattr(anim_mod, "_read_video_frames", fake_reader)
+        stream = anim_mod._iter_video_frames("ignored.mp4", 12, None)
+        next(stream)
+        stream.close()
+        assert closed, "the decoder was not closed when the stream was abandoned"
+
     def test_missing_source_raises(self, tmp_path):
         """A source that does not exist raises `FileNotFoundError`.
 
