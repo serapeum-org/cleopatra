@@ -86,11 +86,14 @@ colorbars, ticks, classification, and animation.
 - **Data I/O and formats:** reading/writing *user* GeoTIFF, NetCDF,
   shapefiles, GeoJSON, CSV, databases. Users bring NumPy arrays already;
   file/raster I/O of user data belongs in sibling packages (e.g. `pyramids`),
-  not here. There are two deliberate exceptions: the `tiles` / `reference`
-  basemap helpers, which fetch a handful of *fixed public* reference datasets
-  (never user data) that cleopatra re-hosts as dependency-light artifacts — see
-  "Supporting utilities"; and re-encoding cleopatra's **own animation output**
-  between formats — see "Animation output" below.
+  not here. Three deliberate exceptions: the `tiles` / `reference` basemap
+  helpers, which fetch a handful of *fixed public* reference datasets (never
+  user data) that cleopatra re-hosts as dependency-light artifacts — see
+  "Supporting utilities"; reading a **presentation asset** — a logo / watermark
+  image for `styling.watermark.stamp_mark` — which is decoration on the rendered
+  figure, not user data, and loads via Pillow (an existing dependency), never
+  GDAL/geopandas; and re-encoding cleopatra's **own animation output** between
+  formats — see "Animation output" below.
 - **GIS / geoprocessing:** reprojection of user data, clipping, resampling,
   zonal stats, CRS management beyond what the optional `tiles` basemap needs.
 - **Interactive / GUI apps:** dashboards, widget servers, event callbacks,
@@ -137,9 +140,10 @@ or that grew a codec/container matrix, would be out of scope.
 Ask, in order:
 
 1. **Input** — does it start from in-memory NumPy data (not a file/CRS/URL)?
-   (Two deliberate exceptions: the `tiles` / `reference` basemap helpers, which
-   acquire fixed *public* reference data, never user files; and the animation
-   re-encoders, whose input is cleopatra's own output — see "Animation output".)
+   (Three deliberate exceptions: the `tiles` / `reference` basemap helpers,
+   which acquire fixed *public* reference data, never user files; a presentation
+   asset such as a logo for `stamp_mark`; and the animation re-encoders, whose
+   input is cleopatra's own output — see "Animation output".)
 2. **Output** — does it produce a matplotlib `Figure`/`Axes`/artist (or an
    animation of one)?
 3. **Reuse** — can it build on `Glyph` and the shared colour/colorbar/legend
