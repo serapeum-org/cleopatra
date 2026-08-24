@@ -87,8 +87,23 @@ def stamp_mark(
 
     Raises:
         ValueError: If `corner` is not one of the four accepted anchors, if
-            `frac` is not in ``(0, 1]``, if `margin` is not in ``[0, 1)``, or
-            if an image array does not have shape ``(H, W, 3)`` / ``(H, W, 4)``.
+            `frac` is not in ``(0, 1]``, if `margin` is not in ``[0, 1)``, or if
+            an image array is out of contract (wrong shape, a non-``uint8``
+            integer dtype, or a float outside ``[0, 1]`` -- see `_as_rgba`).
+        FileNotFoundError: If `path` is a file path that does not exist.
+        PIL.UnidentifiedImageError: If `path` is a file that is not an image
+            `PIL` can decode.
+
+    Notes:
+        The mark is baked at stamp time from the figure's current size, so call
+        `stamp_mark` **last** -- after any `tight_layout()` / layout
+        finalization (stamping first then calling `tight_layout()` warns), and
+        after the final `set_size_inches`. Placement holds across dpi but not
+        across a later figure-size change. Saving with `bbox_inches="tight"`
+        crops surrounding whitespace and so changes the mark's relative margin /
+        size; a plain ``dpi=`` save preserves them. Leave enough `margin` for
+        the drop shadow (the default does) or its soft outer edge is clipped in
+        the corner.
 
     Examples:
         - Stamp a logo array in the lower-right corner at 11 % of the width:

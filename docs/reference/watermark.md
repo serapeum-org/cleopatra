@@ -54,4 +54,13 @@ fig.savefig("figure.png", dpi=200)  # the mark keeps its proportion at any dpi
 `"upper left"`; anything else raises a `ValueError` naming the bad value. `margin` is the gap
 to the figure edges as a fraction of the figure.
 
+!!! note "Call `stamp_mark` last, and save the whole figure"
+
+    The mark is baked at stamp time from the figure's current size, so stamp **after** any
+    `tight_layout()` / layout finalization and after the final `set_size_inches` (stamping first
+    then calling `tight_layout()` emits a `UserWarning`). The fraction-of-figure sizing assumes the
+    **whole** figure is saved: a plain `dpi=` save keeps the mark proportional, but
+    `savefig(bbox_inches="tight")` crops surrounding whitespace and so changes the mark's relative
+    margin and size.
+
 ::: cleopatra.styling.watermark.stamp_mark

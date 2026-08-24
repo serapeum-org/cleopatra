@@ -231,6 +231,16 @@ class TestStampMark:
         ax = stamp_mark(fig, rgba, shadow=False)
         assert ax.images, "float array should produce a drawn image"
 
+    def test_missing_path_raises(self, fig, tmp_path):
+        """A non-existent file path raises `FileNotFoundError`.
+
+        Test scenario:
+            Passing a path that does not exist surfaces a clear
+            `FileNotFoundError` at stamp time, not a confusing later failure.
+        """
+        with pytest.raises(FileNotFoundError):
+            stamp_mark(fig, str(tmp_path / "does_not_exist.png"), shadow=False)
+
     def test_uint16_array_rejected(self, fig):
         """A non-``uint8`` integer array is rejected, not truncated mod 256.
 
