@@ -69,7 +69,8 @@ class TestConstruction:
         globe = TexturedGlobeGlyph(texture)
         assert globe.texture.shape == (16, 32, 4)
         assert globe.texture.dtype == float
-        assert globe.texture.min() >= 0.0 and globe.texture.max() <= 1.0
+        assert globe.texture.min() >= 0.0
+        assert globe.texture.max() <= 1.0
         # opaque alpha added for an RGB source
         assert np.all(globe.texture[..., 3] == 1.0)
 
@@ -171,7 +172,8 @@ class TestDraw:
         globe = TexturedGlobeGlyph(texture, n_lon=36, n_lat=18)
         globe.draw()
         assert globe._facecolors.shape == (17, 35, 4)  # (n_lat-1, n_lon-1, 4)
-        assert globe._facecolors.min() >= 0.0 and globe._facecolors.max() <= 1.0
+        assert globe._facecolors.min() >= 0.0
+        assert globe._facecolors.max() <= 1.0
         assert globe.surface is not None
 
     def test_draw_on_supplied_3d_axes(self, texture):
