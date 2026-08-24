@@ -109,6 +109,13 @@ class TestConstruction:
         globe = TexturedGlobeGlyph(tex, n_lon=6, n_lat=4)
         assert np.allclose(globe.texture[..., 3], 128.0 / 255.0)
 
+    def test_float_rgba_peak_above_one_preserves_alpha(self):
+        tex = np.full((4, 4, 4), 0.5, dtype=float)
+        tex[0, 0, 0] = 2.0  # an RGB value > 1 triggers peak normalization
+        globe = TexturedGlobeGlyph(tex, n_lon=6, n_lat=4)
+        # only RGB is scaled by the peak; alpha stays as supplied
+        assert np.allclose(globe.texture[..., 3], 0.5)
+
     @pytest.mark.parametrize(
         "bad",
         [

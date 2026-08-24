@@ -242,7 +242,8 @@ class TexturedGlobeGlyph:
             # cannot disable normalisation for the whole texture.
             peak = np.nanmax(rgba[..., :3])
             if np.isfinite(peak) and peak > 1.0:
-                rgba = rgba / peak
+                # Scale only the RGB channels; alpha is already assumed to be in [0, 1].
+                rgba[..., :3] = rgba[..., :3] / peak
         rgb = np.nan_to_num(np.clip(rgba[..., :3] * brightness, 0.0, 1.0), nan=0.0)
         if arr.shape[-1] == 4:
             alpha = np.nan_to_num(np.clip(rgba[..., 3:4], 0.0, 1.0), nan=1.0)
