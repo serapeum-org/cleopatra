@@ -1530,9 +1530,15 @@ class TestWorldTexture:
             world_texture(zoom=0)
 
     @pytest.mark.parametrize(
-        "kwargs", [{"zoom": -1}, {"zoom": 1, "n_lon": 0}, {"zoom": 1, "n_lat": 0}]
+        "kwargs",
+        [
+            {"zoom": -1},
+            {"zoom": 7},
+            {"zoom": 1, "n_lon": 0},
+            {"zoom": 1, "n_lat": 0},
+        ],
     )
     def test_rejects_invalid_params(self, kwargs):
-        """A negative zoom or non-positive grid dimension raises `ValueError`."""
+        """A zoom outside 0..6 or a non-positive grid dimension raises `ValueError`."""
         with pytest.raises(ValueError):
             world_texture(**kwargs)

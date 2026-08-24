@@ -164,6 +164,12 @@ _CIRCUMFERENCE = 2 * math.pi * _EARTH_RADIUS
 #: edges onto them.
 _MERC_MAX = _CIRCUMFERENCE / 2.0
 
+#: Highest zoom `world_texture` will fetch. A world grid is `2**zoom` tiles per
+#: side, i.e. `4**zoom` tiles; zoom 6 already pulls 4096 tiles and stitches a
+#: ~16k x 16k (~1 GB) mosaic. Higher zooms would exhaust memory, so they are
+#: rejected rather than attempted.
+_MAX_WORLD_ZOOM = 6
+
 #: The maximum (and, negated, minimum) latitude Web Mercator can represent --
 #: beyond this the projection's `y` coordinate diverges to infinity. XYZ tile
 #: grids clip to this band and simply do not cover the poles.
@@ -1301,14 +1307,20 @@ def world_texture(
     live tiles from any `xyzservices` provider.
 
     The grid is `2**zoom` tiles per side (`4**zoom` total -- 1024 at the default
-    zoom 5), so the texture is cached on disk and fetched once per
-    `(provider, zoom, n_lon, n_lat)`.
+    zoom 5, capped at zoom 6 / 4096 tiles), so the texture is cached on disk and
+    fetched once per `(provider, zoom, n_lon, n_lat)`.
+
+    Note:
+        A whole-world fetch pulls thousands of tiles. The default provider,
+        `OpenStreetMap.Mapnik`, prohibits bulk downloading in its usage policy;
+        pass a bulk-permitting imagery provider (e.g. `"Esri.WorldImagery"`) for
+        whole-world textures.
 
     Args:
         provider: An `xyzservices` provider name (e.g. `"Esri.WorldImagery"`);
             `None` uses the default (`OpenStreetMap.Mapnik`). Resolved by
             `get_provider`.
-        zoom: Tile zoom level; the world grid is `2**zoom` tiles per side.
+        zoom: Tile zoom level (0..6); the world grid is `2**zoom` tiles per side.
         n_lon: Width of the returned texture, spanning -180..180 degrees.
         n_lat: Height of the returned texture, spanning 90..-90 degrees.
         cache: When `True` (default), read/write the texture under
@@ -1327,7 +1339,8 @@ def world_texture(
     Raises:
         ImportError: If the `[tiles]` extra (xyzservices, Pillow, pyproj) is
             not installed.
-        ValueError: If `zoom` is negative or `n_lon`/`n_lat` are not positive.
+        ValueError: If `zoom` is outside `0..6`, or `n_lon`/`n_lat` are not
+            positive.
         ConnectionError: If any tile cannot be fetched after all retries.
 
     Examples:
@@ -1342,8 +1355,11 @@ def world_texture(
             ```
     """
     _require_tiles_extra()
-    if zoom < 0:
-        raise ValueError(f"zoom must be non-negative, got {zoom}")
+    if not 0 <= zoom <= _MAX_WORLD_ZOOM:
+        raise ValueError(
+            f"zoom must be between 0 and {_MAX_WORLD_ZOOM} (a world grid is "
+            f"4**zoom tiles; a higher zoom would exhaust memory), got {zoom}"
+        )
     if n_lon < 1 or n_lat < 1:
         raise ValueError(
             f"n_lon and n_lat must be positive, got n_lon={n_lon}, n_lat={n_lat}"
