@@ -82,6 +82,33 @@ class TestConstruction:
         bright = TexturedGlobeGlyph(texture, brightness=100.0)
         assert bright.texture[..., :3].max() <= 1.0
 
+    def test_float_texture_above_one_normalised_by_peak_not_255(self):
+        tex = np.full((4, 4, 3), 0.5, dtype=float)
+        tex[0, 0, 0] = 1.5
+        globe = TexturedGlobeGlyph(tex, n_lon=6, n_lat=4)
+        # 0.5 / 1.5 == 1/3, not 0.5/255 (which would be ~black)
+        assert np.isclose(globe.texture[1, 1, 0], 1.0 / 3.0)
+
+    def test_nan_cells_render_black_without_breaking_normalisation(self):
+        tex = np.linspace(0.0, 200.0, 4 * 4 * 3, dtype=float).reshape(4, 4, 3)
+        tex[0, 0, 0] = np.nan
+        globe = TexturedGlobeGlyph(tex, n_lon=6, n_lat=4)
+        assert not np.any(np.isnan(globe.texture))
+        assert globe.texture.max() <= 1.0
+        assert globe.texture[0, 0, 0] == 0.0  # NaN -> black
+
+    def test_integer_max_one_scaled_by_255(self):
+        tex = np.zeros((4, 4, 3), dtype=np.uint8)
+        tex[0, 0, 0] = 1
+        globe = TexturedGlobeGlyph(tex, n_lon=6, n_lat=4)
+        assert np.isclose(globe.texture[0, 0, 0], 1.0 / 255.0)
+
+    def test_integer_alpha_scaled_by_255(self):
+        tex = np.full((4, 4, 4), 255, dtype=np.uint8)
+        tex[..., 3] = 128
+        globe = TexturedGlobeGlyph(tex, n_lon=6, n_lat=4)
+        assert np.allclose(globe.texture[..., 3], 128.0 / 255.0)
+
     @pytest.mark.parametrize(
         "bad",
         [

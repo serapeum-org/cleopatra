@@ -143,9 +143,10 @@ class TexturedGlobeGlyph:
 
         Args:
             texture: An equirectangular RGB(A) array of shape `(H, W, 3)` or `(H, W, 4)`, `H >= 2` and `W >= 2`.
-                Integer arrays (0-255) and float arrays (0-1, or any range that is then normalised by its own max)
-                are both accepted. Row 0 is the northern edge (+90 deg), the last row the southern edge (-90 deg);
-                column 0 is -180 deg, the last column +180 deg.
+                Integer arrays are read as 8-bit (0-255); float arrays are assumed to be in `[0, 1]` and, only if a
+                channel exceeds 1, are normalised by their own peak. A float `(H, W, 4)` array's alpha must already
+                be in `[0, 1]`. NaN cells render black. Row 0 is the northern edge (+90 deg), the last row the
+                southern edge (-90 deg); column 0 is -180 deg, the last column +180 deg.
             tilt_deg: Axial tilt of the polar axis from vertical, in degrees. Defaults to Earth's 23.44 deg.
             n_lon: Longitude samples in the sphere mesh (>= 2). Higher is sharper but quadratically slower to draw.
             n_lat: Latitude samples in the sphere mesh (>= 2). Higher is sharper but quadratically slower to draw.
@@ -206,7 +207,9 @@ class TexturedGlobeGlyph:
         """Return `texture` as a float `(H, W, 4)` RGBA array in `[0, 1]`, brightness-scaled.
 
         Args:
-            texture: An `(H, W, 3)` or `(H, W, 4)` RGB(A) array, integer or float.
+            texture: An `(H, W, 3)` or `(H, W, 4)` RGB(A) array. Integer arrays are read as 8-bit
+                (0-255) and divided by 255; float arrays are assumed to be in `[0, 1]` and, only if a
+                channel exceeds 1, normalised by their own peak (NaN ignored). NaN cells render black.
             brightness: Multiplier applied to the RGB channels before clipping.
 
         Returns:
@@ -227,13 +230,20 @@ class TexturedGlobeGlyph:
                 f"got shape {arr.shape}."
             )
         rgba = arr.astype(float)
-        # Normalise integer/0-255 (or any >1) data to 0-1.
-        peak = rgba[..., :3].max() if rgba.size else 1.0
-        if peak > 1.0:
-            rgba = rgba / 255.0 if peak <= 255.0 else rgba / peak
-        rgb = np.clip(rgba[..., :3] * brightness, 0.0, 1.0)
+        if np.issubdtype(arr.dtype, np.integer):
+            # Integer textures are 8-bit 0-255 by convention (alpha included).
+            rgba = rgba / 255.0
+        else:
+            # Float textures are assumed to be in [0, 1]; if any channel exceeds 1 the
+            # texture is normalised by its own peak (NaN ignored) rather than a fixed
+            # /255, so a stray highlight cannot black out the globe and a single NaN
+            # cannot disable normalisation for the whole texture.
+            peak = np.nanmax(rgba[..., :3])
+            if np.isfinite(peak) and peak > 1.0:
+                rgba = rgba / peak
+        rgb = np.nan_to_num(np.clip(rgba[..., :3] * brightness, 0.0, 1.0), nan=0.0)
         if arr.shape[-1] == 4:
-            alpha = np.clip(rgba[..., 3:4], 0.0, 1.0)
+            alpha = np.nan_to_num(np.clip(rgba[..., 3:4], 0.0, 1.0), nan=1.0)
         else:
             alpha = np.ones((*rgb.shape[:2], 1))
         return np.ascontiguousarray(np.concatenate([rgb, alpha], axis=-1))
