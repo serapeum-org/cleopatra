@@ -1504,6 +1504,14 @@ class TestWorldTexture:
         assert tex[4, 0, 2] > tex[4, 0, 0], "west should be blue"
         assert tex[4, -1, 0] > tex[4, -1, 2], "east should be red"
 
+    def test_accepts_a_tileprovider_object(self, tmp_path, monkeypatch):
+        """A resolved `TileProvider` object is accepted, not only a name string."""
+        monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))
+        monkeypatch.setattr(tiles_mod, "fetch_tiles", _fetch_split_by_x())
+        provider = get_provider("OpenStreetMap.Mapnik")
+        tex = world_texture(provider, zoom=1, n_lon=8, n_lat=4)
+        assert tex.shape == (4, 8, 3), f"unexpected shape {tex.shape}"
+
     def test_caches_texture_and_skips_refetch(self, tmp_path, monkeypatch):
         """A second call reads the on-disk cache instead of refetching tiles."""
         monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))

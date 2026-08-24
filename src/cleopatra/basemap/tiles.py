@@ -1286,7 +1286,7 @@ def mercator_to_equirectangular(
 
 
 def world_texture(
-    provider: str | None = None,
+    provider: Any = None,
     *,
     zoom: int = 5,
     n_lon: int = 2880,
@@ -1317,9 +1317,10 @@ def world_texture(
         whole-world textures.
 
     Args:
-        provider: An `xyzservices` provider name (e.g. `"Esri.WorldImagery"`);
-            `None` uses the default (`OpenStreetMap.Mapnik`). Resolved by
-            `get_provider`.
+        provider: An `xyzservices` provider name (e.g. `"Esri.WorldImagery"`) or
+            a resolved `xyzservices.TileProvider` (as `add_tiles` accepts);
+            `None` uses the default (`OpenStreetMap.Mapnik`). A name is resolved
+            by `get_provider`.
         zoom: Tile zoom level (0..6); the world grid is `2**zoom` tiles per side.
         n_lon: Width of the returned texture, spanning -180..180 degrees.
         n_lat: Height of the returned texture, spanning 90..-90 degrees.
@@ -1364,7 +1365,11 @@ def world_texture(
         raise ValueError(
             f"n_lon and n_lat must be positive, got n_lon={n_lon}, n_lat={n_lat}"
         )
-    resolved = get_provider(provider)
+    # Accept a name string or a resolved TileProvider, matching add_tiles.
+    if isinstance(provider, str) or provider is None:
+        resolved = get_provider(provider)
+    else:
+        resolved = provider
 
     cache_path = None
     if cache:
