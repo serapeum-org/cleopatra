@@ -1369,6 +1369,38 @@ class TestGifFromVideo:
         stream.close()
         assert closed, "the decoder was not closed when the stream was abandoned"
 
+    @pytest.mark.parametrize("name", ["out.png", "out.webp", "out.mp4", "out"])
+    def test_non_gif_output_extension_raises(self, clip_mp4, tmp_path, name):
+        """An output path that is not a GIF raises rather than writing one.
+
+        Args:
+            clip_mp4: The rendered source fixture.
+            tmp_path: pytest temp directory.
+            name: The wrong-extension output name under test.
+
+        Test scenario:
+            Pillow picks its encoder from the extension, so `.png` silently
+            produced an APNG and `.webp` a WebP -- neither of which a caller of
+            `gif_from_video` asked for.
+        """
+        src, _ = clip_mp4
+        with pytest.raises(ValueError, match="writes GIFs"):
+            anim_mod.gif_from_video(src, str(tmp_path / name), fps=6)
+
+    def test_negative_loop_raises(self, clip_mp4, tmp_path):
+        """A negative `loop` is rejected before any decoding starts.
+
+        Args:
+            clip_mp4: The rendered source fixture.
+            tmp_path: pytest temp directory.
+
+        Test scenario:
+            The same unsigned-short limit as the writer, surfaced up front.
+        """
+        src, _ = clip_mp4
+        with pytest.raises(ValueError, match="loop must be zero or positive"):
+            anim_mod.gif_from_video(src, str(tmp_path / "out.gif"), loop=-1)
+
     def test_missing_source_raises(self, tmp_path):
         """A source that does not exist raises `FileNotFoundError`.
 
@@ -1604,6 +1636,105 @@ class TestBuildClipPalette:
         """
         palette = anim_mod.build_clip_palette([self._solid((1, 2, 3), size=(2, 2))])
         assert palette.mode == "P", "a sub-divisor frame should not break the montage"
+
+
+class TestClipPaletteValidation:
+    """Input validation on the public palette builder."""
+
+    def test_empty_frame_list_raises(self):
+        """No frames raises `ValueError`, not `IndexError` from deep inside.
+
+        Test scenario:
+            A palette needs at least one frame to describe; an empty clip used
+            to surface as a confusing IndexError while indexing the colour list.
+        """
+        with pytest.raises(ValueError, match="at least one frame"):
+            anim_mod.build_clip_palette([])
+
+    @pytest.mark.parametrize("colors", [1, 0, -5, 255, 256, 300])
+    def test_out_of_range_colors_raises(self, colors):
+        """A palette budget outside ``2-254`` raises `ValueError`.
+
+        Args:
+            colors: The out-of-range budget under test.
+
+        Test scenario:
+            Two entries are reserved for pure black and white, so 254 is the
+            ceiling -- above it the reserved pair would overwrite chosen colours
+            and Pillow rejects 256 with a bare "invalid palette size".
+        """
+        frames = [Image.new("RGB", (8, 8), (10, 20, 30))]
+        with pytest.raises(ValueError, match="colors must be"):
+            anim_mod.build_clip_palette(frames, colors=colors)
+
+    def test_frames_of_differing_sizes_are_accepted(self):
+        """Frames need not share a size for the palette to be built.
+
+        Test scenario:
+            The palette is derived from the colours present, not from a spatial
+            layout, so a clip whose frames differ in size is still describable.
+        """
+        frames = [
+            Image.new("RGB", (8, 8), (255, 0, 0)),
+            Image.new("RGB", (16, 4), (0, 0, 255)),
+        ]
+        palette = anim_mod.build_clip_palette(frames)
+        assert palette.mode == "P", "mismatched frame sizes should still quantise"
+
+
+class TestPillowOptionValidation:
+    """Rate and loop validation shared by the Pillow-backed writers."""
+
+    @pytest.mark.parametrize("fps", [0, -1, -0.5])
+    def test_non_positive_fps_raises(self, tiny_anim, tmp_path, fps):
+        """A non-positive `fps` raises `ValueError`, not `ZeroDivisionError`.
+
+        Args:
+            tiny_anim: Small animation fixture.
+            tmp_path: pytest temp directory.
+            fps: The invalid rate under test.
+
+        Test scenario:
+            The rate becomes a per-frame duration by division, so zero used to
+            surface as a bare ZeroDivisionError from inside the writer.
+        """
+        with pytest.raises(ValueError, match="fps must be positive"):
+            save_animation(tiny_anim, str(tmp_path / "a.gif"), fps=fps)
+
+    def test_negative_loop_raises(self, tiny_anim, tmp_path):
+        """A negative `loop` raises `ValueError`, not `struct.error`.
+
+        Args:
+            tiny_anim: Small animation fixture.
+            tmp_path: pytest temp directory.
+
+        Test scenario:
+            GIF stores the loop count as an unsigned short, so a negative value
+            used to fail inside Pillow's struct packing.
+        """
+        with pytest.raises(ValueError, match="loop must be zero or positive"):
+            save_animation(tiny_anim, str(tmp_path / "a.gif"), loop=-1)
+
+    def test_very_high_fps_keeps_a_visible_delay(self, tiny_anim, tmp_path):
+        """Above 100 fps the GIF delay is held at the format's 10 ms floor.
+
+        Args:
+            tiny_anim: Small animation fixture.
+            tmp_path: pytest temp directory.
+
+        Test scenario:
+            GIF stores its delay in hundredths of a second, so a sub-10 ms delay
+            rounds to zero on disk; viewers discard a zero delay and replay at
+            their own default, far slower than asked for. Flooring at 10 ms
+            keeps the fastest timing the format can actually express.
+        """
+        out = tmp_path / "fast.gif"
+        save_animation(tiny_anim, str(out), fps=2000)
+        with Image.open(out) as handle:
+            assert handle.info.get("duration", 0) >= 10, (
+                "a sub-centisecond delay is dropped by viewers: "
+                f"{handle.info.get('duration')}"
+            )
 
 
 class TestQuantizeToPalette:

@@ -67,7 +67,13 @@ def _clip_gamut(frames: list) -> "PILImage.Image":
     Returns:
         PIL.Image.Image: An RGB image holding one real colour from each occupied
         bucket, exactly once.
+
+    Raises:
+        ValueError: If `frames` is empty.
     """
+    if not frames:
+        raise ValueError("a clip palette needs at least one frame, got none.")
+
     shift = 8 - _GAMUT_BITS
     seen = np.zeros(1 << (3 * _GAMUT_BITS), dtype=bool)
     # Each bucket keeps a colour that genuinely occurs in the clip rather than
@@ -123,6 +129,11 @@ def build_clip_palette(frames: list, colors: int = _CLIP_PALETTE_COLORS):
         PIL.Image.Image: A ``"P"``-mode image carrying the shared palette,
         ready to pass to `Image.quantize(palette=...)`.
 
+    Raises:
+        ValueError: If `frames` is empty, or `colors` is outside ``2-254`` --
+            above 254 the reserved black and white would displace chosen
+            entries.
+
     Examples:
         - Pure black and white are held back at the top of the table, so a
           single-colour overlay drawn on the clip stays crisp:
@@ -172,6 +183,11 @@ def build_clip_palette(frames: list, colors: int = _CLIP_PALETTE_COLORS):
         quantize_to_palette: Map the frames onto the palette this returns.
         gif_from_video: Derives a GIF through this same palette.
     """
+    if not 2 <= colors <= _CLIP_PALETTE_COLORS:
+        # Above 254 the reserved black/white pair would overwrite chosen entries,
+        # and Pillow rejects 256 outright with a bare "invalid palette size".
+        raise ValueError(f"colors must be in 2-{_CLIP_PALETTE_COLORS}, got {colors!r}.")
+
     census = _clip_gamut(frames)
     base = census.quantize(colors=colors, method=PILImage.Quantize.MAXCOVERAGE)
     entries = (list(base.getpalette() or []) + [0] * 768)[:768]
@@ -237,6 +253,25 @@ def quantize_to_palette(frames: list, palette) -> list:
     ]
 
 
+def _validate_pillow_options(fps: float, loop: int) -> None:
+    """Check the options Pillow cannot fail cleanly on itself.
+
+    Args:
+        fps: Playback rate; becomes a per-frame duration in milliseconds.
+        loop: Loop count; `0` loops forever.
+
+    Raises:
+        ValueError: If `fps` is not positive (Pillow would surface a bare
+            `ZeroDivisionError` from the duration conversion) or if `loop` is
+            negative (it is written as an unsigned short, so Pillow would raise
+            a bare `struct.error`).
+    """
+    if fps <= 0:
+        raise ValueError(f"fps must be positive, got {fps!r}.")
+    if loop < 0:
+        raise ValueError(f"loop must be zero or positive, got {loop!r}.")
+
+
 def _write_pillow_animation(
     frames: list, path, fps: float, loop: int, optimize: bool
 ) -> None:
@@ -247,10 +282,24 @@ def _write_pillow_animation(
             these are ``"P"``-mode images sharing one palette; for WebP they are
             passed through as grabbed.
         path: Where to write the animation.
-        fps: Playback rate, converted to a per-frame duration in milliseconds.
+        fps: Playback rate, converted to a per-frame duration in
+            milliseconds. GIF's delay field is in hundredths of a second, so
+            rates above 100 fps are held at that format's 10 ms floor rather
+            than rounding to a zero delay viewers discard; WebP keeps
+            millisecond timing and only floors at 1 ms.
         loop: How many times to loop; `0` loops forever.
         optimize: Run Pillow's optimisation pass (a no-op for WebP).
+
+    Raises:
+        ValueError: If `fps` is not positive or `loop` is negative.
     """
+    _validate_pillow_options(fps, loop)
+    # GIF stores its frame delay in hundredths of a second, so anything under
+    # 10 ms rounds to zero on disk and viewers fall back to their own default --
+    # far slower than asked for. WebP keeps millisecond timing, so it only needs
+    # to stay above zero.
+    floor = 10 if str(path).lower().endswith(".gif") else 1
+    duration = max(floor, int(1000 / fps))
     stream = iter(frames)
     first = next(stream)
     # Pillow consumes `append_images` lazily, so handing it the rest of the
@@ -259,7 +308,7 @@ def _write_pillow_animation(
         path,
         save_all=True,
         append_images=stream,
-        duration=int(1000 / fps),
+        duration=duration,
         loop=loop,
         optimize=optimize,
     )
@@ -496,8 +545,10 @@ def save_animation(
         back as its string form, not the original object.
 
     Raises:
-        ValueError: If the file format is not supported, or if both `crf`
-            and `bitrate` are given (competing rate-control modes).
+        ValueError: If the file format is not supported, if both `crf`
+            and `bitrate` are given (competing rate-control modes), or -- for
+            the Pillow formats -- if `fps` is not positive or `loop` is
+            negative.
         FileNotFoundError: If a video format is requested but neither a system
             FFmpeg nor imageio-ffmpeg's bundled binary can be found.
 
@@ -579,6 +630,9 @@ def save_animation(
             f"The given extension {video_format} implies a format that is "
             f"not supported, only {SUPPORTED_VIDEO_FORMAT} are supported"
         )
+
+    if video_format in _PILLOW_FORMATS:
+        _validate_pillow_options(fps, loop)
 
     if crf is not None and bitrate is not None:
         raise ValueError(
@@ -963,7 +1017,8 @@ def gif_from_video(
         FileNotFoundError: If `src` does not exist, or if no FFmpeg binary can
             be found.
         ValueError: If `max_colors` is outside ``2-254``, if `fps` is not
-            positive, if `width` is not positive, or if `src` yields no frames.
+            positive, if `width` is not positive, if `loop` is negative, if
+            `path` does not end in ``.gif``, or if `src` yields no frames.
 
     Warns:
         UserWarning: If `src` is chroma-subsampled (e.g. the ``yuv420p`` that
@@ -1044,6 +1099,16 @@ def gif_from_video(
         raise ValueError(f"fps must be positive, got {fps!r}.")
     if width is not None and width <= 0:
         raise ValueError(f"width must be positive, got {width!r}.")
+    # Pillow picks its encoder from the extension, so a stray one silently
+    # writes a different format -- .png yields an APNG that no caller of a
+    # function named gif_from_video is expecting.
+    extension = os.path.splitext(path)[1].lstrip(".").lower()
+    if extension != "gif":
+        raise ValueError(
+            f"gif_from_video writes GIFs, but {path!r} implies {extension or 'no'} "
+            "format. Use a .gif extension."
+        )
+    _validate_pillow_options(fps, loop)
 
     meta = _video_metadata(src)
     if _is_chroma_subsampled(meta.get("pix_fmt")):
