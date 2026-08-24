@@ -93,7 +93,9 @@ def stamp_mark(
         shadow: Whether to composite a gaussian-blurred halo behind the mark so
             it separates from a busy or dark canvas. Defaults to ``True``.
         blur: Halo blur sigma, as a fraction of the mark's own **unpadded**
-            width. Defaults to `DEFAULT_BLUR`. Ignored when ``shadow=False``.
+            width. Defaults to `DEFAULT_BLUR`. Must be non-negative (validated
+            even when ``shadow=False``, where it is otherwise unused); ``0`` is
+            treated as no halo.
 
     Returns:
         Axes: The frameless inset axes the mark was drawn on, so the caller can
@@ -117,8 +119,10 @@ def stamp_mark(
         finalization (stamping first then calling `tight_layout()` warns), and
         after the final `set_size_inches`. Placement holds across dpi but not
         across a later figure-size change. Saving with `bbox_inches="tight"`
-        crops surrounding whitespace and so changes the mark's relative margin /
-        size; a plain ``dpi=`` save preserves them.
+        changes the mark's relative margin / size -- it crops surrounding
+        whitespace, and a halo tucked near an edge (whose grown axes overflows
+        the figure) can even *extend* the tight bbox outward; a plain ``dpi=``
+        save preserves the placement.
 
         `frac` always sizes the **mark itself**, never the canvas it is
         composited on. The halo needs a transparent pad of
