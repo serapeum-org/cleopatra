@@ -2,7 +2,7 @@
 
 Covers `cleopatra.styling.watermark.stamp_mark`: corner placement in
 figure-fraction coordinates, dpi-invariant sizing, undistorted aspect, the
-optional gaussian-blurred drop shadow, image-input handling (RGBA/RGB arrays,
+optional gaussian-blurred halo, image-input handling (RGBA/RGB arrays,
 float arrays, file paths), and input validation.
 """
 
@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from cleopatra.styling.watermark import _CORNERS, stamp_mark
+from cleopatra.styling.watermark import _CORNERS, _HALO_SIGMAS, DEFAULT_BLUR, stamp_mark
 
 
 @pytest.fixture
@@ -75,7 +75,9 @@ class TestStampMark:
             correct edges by `margin`.
         """
         frac, margin = 0.11, 0.025
-        ax = stamp_mark(fig, logo, frac=frac, corner=corner, margin=margin, shadow=False)
+        ax = stamp_mark(
+            fig, logo, frac=frac, corner=corner, margin=margin, shadow=False
+        )
         x0, y0, w, h = (float(v) for v in ax.get_position().bounds)
 
         exp_w = frac
@@ -99,7 +101,9 @@ class TestStampMark:
         at_100 = tuple(ax.get_position().bounds)
         fig.set_dpi(300)
         at_300 = tuple(ax.get_position().bounds)
-        assert np.allclose(at_100, at_300), f"position changed with dpi: {at_100} vs {at_300}"
+        assert np.allclose(at_100, at_300), (
+            f"position changed with dpi: {at_100} vs {at_300}"
+        )
 
     def test_image_is_undistorted(self, fig, logo):
         """The on-figure mark keeps the image's aspect ratio.
@@ -113,7 +117,9 @@ class TestStampMark:
         box = ax.get_position()
         w_in = box.width * 8.0
         h_in = box.height * 6.0
-        assert np.isclose(h_in / w_in, 40 / 80), f"aspect distorted: {h_in / w_in} != {40 / 80}"
+        assert np.isclose(h_in / w_in, 40 / 80), (
+            f"aspect distorted: {h_in / w_in} != {40 / 80}"
+        )
 
     def test_tall_logo_stays_on_canvas(self, fig):
         """A portrait logo is sized by height and never overflows the figure.
@@ -132,21 +138,104 @@ class TestStampMark:
         assert 0.0 <= x0 and x0 + w <= 1.0, f"mark overflows horizontally: {(x0, w)}"
         assert 0.0 <= y0 and y0 + h <= 1.0, f"mark overflows vertically: {(y0, h)}"
         assert np.isclose(max(w, h), 0.5), f"longer side should equal frac: {(w, h)}"
-        assert np.isclose((h * 6.0) / (w * 8.0), 400 / 40), f"tall logo distorted: {(w, h)}"
+        assert np.isclose((h * 6.0) / (w * 8.0), 400 / 40), (
+            f"tall logo distorted: {(w, h)}"
+        )
 
-    def test_shadow_adds_a_second_axes(self, fig, logo):
-        """`shadow=True` draws the shadow on its own axes beneath the mark.
+    def test_shadow_composites_into_one_axes(self, fig, logo):
+        """`shadow=True` composites the halo into the mark's own axes.
 
         Test scenario:
-            Stamping with a shadow adds two axes (shadow + mark), and the
-            shadow's zorder is below the mark's.
+            The halo and mark are alpha-composited into a single image before
+            placement, so only one axes is added -- one resample keeps the halo
+            in register with the mark's soft edges, which two independently
+            resampled axes would not guarantee.
         """
         n_before = len(fig.axes)
         ax = stamp_mark(fig, logo, shadow=True)
-        assert len(fig.axes) - n_before == 2, "shadow should add a mark axes and a shadow axes"
-        others = [a for a in fig.axes if a is not ax and a.get_zorder() >= 1_000_000]
-        assert others, "no shadow axes found"
-        assert others[0].get_zorder() < ax.get_zorder(), "shadow must sit beneath the mark"
+        assert len(fig.axes) - n_before == 1, (
+            "halo should be composited, not drawn on its own axes"
+        )
+        drawn = ax.images[0].get_array()
+        assert drawn.shape[2] == 4, "the composited mark should carry alpha"
+        assert drawn.shape[0] > logo.shape[0] and drawn.shape[1] > logo.shape[1], (
+            f"halo canvas should exceed the mark: {drawn.shape} vs {logo.shape}"
+        )
+
+    def test_halo_grows_the_axes_so_the_mark_keeps_its_size(self, fig, logo):
+        """The axes rect grows by the halo pad, leaving the mark at `frac`.
+
+        Test scenario:
+            The padded canvas is ``1 + 2 * _HALO_SIGMAS * blur`` times the
+            mark's width. The axes rect is grown by exactly that, so the mark
+            itself still measures `frac` -- without the compensation it would
+            render at 1/grow (about 72 %) of the requested size.
+        """
+        frac = 0.2
+        plain = stamp_mark(fig, logo, frac=frac, shadow=False).get_position().width
+        haloed = stamp_mark(fig, logo, frac=frac, shadow=True).get_position().width
+        grow = 1.0 + 2.0 * _HALO_SIGMAS * DEFAULT_BLUR
+        assert np.isclose(plain, frac), f"unhaloed mark should measure frac: {plain}"
+        assert np.isclose(haloed, frac * grow, rtol=0.02), (
+            f"haloed axes should be frac*{grow:.3f}={frac * grow:.4f}, got {haloed:.4f}"
+        )
+
+    def test_mark_painted_extent_is_frac(self):
+        """The **mark's own painted width** is `frac` of the figure, halo or not.
+
+        Test scenario:
+            This is the invariant the padding can silently break: render the
+            figure and measure the red mark's actual extent in pixels. Sizing
+            the padded canvas to `frac` instead would put the visible mark at
+            roughly 7.9 % for a requested 11 %, while the axes bbox still looked
+            correct.
+        """
+        for shadow in (False, True):
+            figure = plt.figure(figsize=(8.0, 6.0), facecolor="white")
+            mark = np.zeros((40, 80, 4), dtype=np.uint8)
+            mark[..., 0] = 255  # opaque pure red, distinct from the black halo
+            mark[..., 3] = 255
+            stamp_mark(
+                figure, mark, frac=0.25, corner="lower left", margin=0.15, shadow=shadow
+            )
+            figure.canvas.draw()
+            rgba = np.asarray(figure.canvas.buffer_rgba())
+            red = (rgba[..., 0] > 200) & (rgba[..., 1] < 60) & (rgba[..., 2] < 60)
+            cols = np.where(red.any(axis=0))[0]
+            painted = (cols.max() - cols.min() + 1) / rgba.shape[1]
+            assert abs(painted - 0.25) < 0.01, (
+                f"shadow={shadow}: mark painted at {painted:.4f} of the figure, expected 0.25"
+            )
+            plt.close(figure)
+
+    def test_halo_is_centred_not_offset(self):
+        """The halo spreads symmetrically, with no light direction implied.
+
+        Test scenario:
+            A drop shadow offset down-and-right would put more darkening on one
+            side of the mark than the other. Measure the halo's reach beyond the
+            mark on the left and the right; they should match.
+        """
+        figure = plt.figure(figsize=(8.0, 6.0), facecolor="white")
+        mark = np.zeros((40, 80, 4), dtype=np.uint8)
+        mark[..., 0] = 255
+        mark[..., 3] = 255
+        stamp_mark(figure, mark, frac=0.3, corner="lower left", margin=0.3, shadow=True)
+        figure.canvas.draw()
+        rgba = np.asarray(figure.canvas.buffer_rgba())
+        red = (rgba[..., 0] > 200) & (rgba[..., 1] < 60) & (rgba[..., 2] < 60)
+        darkened = rgba[..., :3].min(axis=2) < 250  # halo or mark, vs the white canvas
+        red_cols = np.where(red.any(axis=0))[0]
+        dark_cols = np.where(darkened.any(axis=0))[0]
+        left = red_cols.min() - dark_cols.min()
+        right = dark_cols.max() - red_cols.max()
+        assert left > 0 and right > 0, (
+            f"halo should reach past both sides: {(left, right)}"
+        )
+        assert abs(left - right) <= 2, (
+            f"halo is off-centre: {left}px left vs {right}px right"
+        )
+        plt.close(figure)
 
     def test_no_shadow_adds_single_axes(self, fig, logo):
         """`shadow=False` draws only the mark axes.
@@ -156,7 +245,9 @@ class TestStampMark:
         """
         n_before = len(fig.axes)
         stamp_mark(fig, logo, shadow=False)
-        assert len(fig.axes) - n_before == 1, "no-shadow stamp should add exactly one axes"
+        assert len(fig.axes) - n_before == 1, (
+            "no-shadow stamp should add exactly one axes"
+        )
 
     def test_returns_frameless_axes_above_content(self, fig, logo):
         """The mark axes is frameless, off, and above ordinary content.
@@ -168,7 +259,9 @@ class TestStampMark:
         ax = stamp_mark(fig, logo, shadow=False)
         assert not ax.get_frame_on(), "mark axes must be frameless (no background box)"
         assert not ax.axison, "mark axes must have its axis turned off"
-        assert ax.get_zorder() >= 1_000_000, "mark must sit above ordinary figure content"
+        assert ax.get_zorder() >= 1_000_000, (
+            "mark must sit above ordinary figure content"
+        )
 
     def test_unknown_corner_raises(self, fig, logo):
         """An unrecognised corner raises a clear `ValueError` naming the input.
@@ -194,6 +287,48 @@ class TestStampMark:
         """
         with pytest.raises(ValueError, match="frac must be in"):
             stamp_mark(fig, logo, frac=frac)
+
+    def test_margin_accepts_an_xy_pair(self, fig, logo):
+        """`margin` takes an ``(x, y)`` pair, not just one scalar.
+
+        Test scenario:
+            The showcase tucks the mark hard into the corner vertically while
+            keeping a horizontal gap, so a scalar cannot express its placement.
+            ``margin=(0.025, 0.0)`` puts the mark flush with the bottom edge and
+            0.025 in from the right.
+        """
+        ax = stamp_mark(
+            fig, logo, corner="lower right", margin=(0.025, 0.0), shadow=False
+        )
+        x0, y0, w, _ = (float(v) for v in ax.get_position().bounds)
+        assert np.isclose(y0, 0.0), f"vertical margin 0 should sit flush: {y0}"
+        assert np.isclose(x0 + w, 1.0 - 0.025), (
+            f"horizontal margin should be 0.025: {x0 + w}"
+        )
+
+    @pytest.mark.parametrize("bad", ["0.1", (0.1, 0.2, 0.3), (0.1,)])
+    def test_malformed_margin_raises(self, fig, logo, bad):
+        """A margin that is neither a scalar nor an ``(x, y)`` pair raises.
+
+        Args:
+            fig: Figure fixture.
+            logo: RGBA logo fixture.
+            bad: A malformed margin value.
+
+        Test scenario:
+            Strings and wrong-length sequences are rejected with a clear message.
+        """
+        with pytest.raises(ValueError, match="margin must be"):
+            stamp_mark(fig, logo, margin=bad)
+
+    def test_negative_blur_raises(self, fig, logo):
+        """A negative `blur` raises `ValueError`.
+
+        Test scenario:
+            Blur is a sigma, so it cannot be negative.
+        """
+        with pytest.raises(ValueError, match="blur must be non-negative"):
+            stamp_mark(fig, logo, blur=-0.1)
 
     @pytest.mark.parametrize("margin", [-0.01, 1.0, 1.5])
     def test_invalid_margin_raises(self, fig, logo, margin):
@@ -296,7 +431,8 @@ class TestStampMark:
         ax_path = stamp_mark(fig, str(png), shadow=False)
         assert ax_path.images, "file-path input should produce a drawn image"
         assert np.allclose(
-            ax_path.get_position().bounds, (0.865, 0.025, 0.11, 0.11 * 0.5 * (8.0 / 6.0))
+            ax_path.get_position().bounds,
+            (0.865, 0.025, 0.11, 0.11 * 0.5 * (8.0 / 6.0)),
         ), f"file-path placement wrong: {ax_path.get_position().bounds}"
 
     def test_frac_controls_width(self, fig, logo):
@@ -307,7 +443,9 @@ class TestStampMark:
         """
         small = stamp_mark(fig, logo, frac=0.1, shadow=False).get_position().width
         big = stamp_mark(fig, logo, frac=0.2, shadow=False).get_position().width
-        assert np.isclose(big, 2 * small), f"frac should scale width linearly: {big} vs {small}"
+        assert np.isclose(big, 2 * small), (
+            f"frac should scale width linearly: {big} vs {small}"
+        )
 
     def test_corners_constant_exposes_four_anchors(self):
         """`_CORNERS` lists exactly the four documented anchors.
@@ -315,4 +453,9 @@ class TestStampMark:
         Test scenario:
             The accepted-corner set matches the documented four.
         """
-        assert set(_CORNERS) == {"lower right", "lower left", "upper right", "upper left"}
+        assert set(_CORNERS) == {
+            "lower right",
+            "lower left",
+            "upper right",
+            "upper left",
+        }

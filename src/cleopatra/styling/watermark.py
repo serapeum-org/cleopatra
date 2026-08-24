@@ -4,7 +4,12 @@
 sized as a *fraction of the figure* (so it stays proportional across the
 several dpis a figure is often exported at -- an MP4 master, a smaller web
 copy, a GIF) and anchored in one of the four corners, with an optional
-gaussian-blurred drop shadow so the mark reads on a busy or dark canvas.
+gaussian-blurred *halo* so the mark reads on a busy or dark canvas.
+
+The halo is centred, not offset: the mark is composited over arbitrary
+imagery -- night-side ocean, sunlit cloud, a bright limb -- and a symmetric
+halo reads the same whichever way the background falls, where an offset drop
+shadow would imply a light direction nothing else in the frame has.
 
 This is a presentation helper, not a glyph: it takes a finished `Figure` and
 draws on top of it via a frameless inset axes in figure-fraction coordinates
@@ -13,7 +18,7 @@ It covers only single-image, corner-anchored marks -- text watermarks,
 tiled / repeated marks, and any licensing / provenance semantics are
 deliberately out of scope.
 
-The gaussian blur for the shadow uses `PIL` (Pillow), already a hard cleopatra
+The gaussian blur for the halo uses `PIL` (Pillow), already a hard cleopatra
 dependency, so no new dependency (and no SciPy) is pulled in.
 """
 
@@ -35,14 +40,18 @@ __all__ = ["stamp_mark"]
 #: The four corner anchors `stamp_mark` accepts.
 _CORNERS = ("lower right", "lower left", "upper right", "upper left")
 
-#: Drop-shadow tuning, all as fractions of the mark's own size / alpha.
-_SHADOW_PAD = 0.14  #: transparent border added around the mark before blurring
-_SHADOW_BLUR_FRAC = 0.5  #: gaussian blur radius, as a fraction of the pad
-_SHADOW_OFFSET = 0.045  #: shadow shift down-and-right, as a fraction of the mark
-_SHADOW_ALPHA = 0.5  #: peak shadow opacity
+#: Default halo blur sigma, as a fraction of the mark's own (unpadded) width.
+DEFAULT_BLUR = 0.065
 
-#: Inset zorders: both marks sit above ordinary figure content, shadow under mark.
-_SHADOW_ZORDER = 1_000_000
+#: Transparent border added around the mark before blurring, in sigmas. Three
+#: sigmas hold ~99.7% of the kernel, so the halo's tail is not clipped by the
+#: canvas it is drawn on -- the pad exists precisely to contain that tail.
+_HALO_SIGMAS = 3.0
+
+#: Peak halo opacity.
+_HALO_ALPHA = 0.5
+
+#: Inset zorder: the mark sits above ordinary figure content.
 _MARK_ZORDER = 1_000_001
 
 
@@ -52,8 +61,9 @@ def stamp_mark(
     *,
     frac: float = 0.11,
     corner: str = "lower right",
-    margin: float = 0.025,
+    margin: "float | tuple[float, float]" = 0.025,
     shadow: bool = True,
+    blur: float = DEFAULT_BLUR,
 ) -> "Axes":
     """Stamp a logo / watermark image onto a figure, sized as a fraction of it.
 
@@ -75,19 +85,26 @@ def stamp_mark(
             fits and is never distorted. Defaults to ``0.11``.
         corner: Which corner to anchor to -- ``"lower right"`` (default),
             ``"lower left"``, ``"upper right"``, or ``"upper left"``.
-        margin: The gap between the mark and the figure edges, as a fraction of
-            the figure, in ``[0, 1)``. Defaults to ``0.025``.
-        shadow: Whether to draw a gaussian-blurred drop shadow beneath the mark
-            so it separates from a busy or dark canvas. Defaults to ``True``.
+        margin: The gap between the **mark** and the figure edges, as a fraction
+            of the figure, each in ``[0, 1)``. Either a scalar applied to both
+            axes or an ``(x, y)`` pair -- a pair is what lets a mark tuck hard
+            into a corner on one axis (``margin=(0.025, 0.0)``) while keeping a
+            gap on the other. Defaults to ``0.025``.
+        shadow: Whether to composite a gaussian-blurred halo behind the mark so
+            it separates from a busy or dark canvas. Defaults to ``True``.
+        blur: Halo blur sigma, as a fraction of the mark's own **unpadded**
+            width. Defaults to `DEFAULT_BLUR`. Ignored when ``shadow=False``.
 
     Returns:
         Axes: The frameless inset axes the mark was drawn on, so the caller can
-        further adjust it (e.g. ``ax.set_zorder(...)``). The optional shadow is
-        drawn on its own separate axes beneath this one.
+        further adjust it (e.g. ``ax.set_zorder(...)``). With ``shadow=True``
+        that axes holds the mark *and* its halo, so its bbox is larger than the
+        mark by the halo pad -- see the sizing note below.
 
     Raises:
         ValueError: If `corner` is not one of the four accepted anchors, if
-            `frac` is not in ``(0, 1]``, if `margin` is not in ``[0, 1)``, or if
+            `frac` is not in ``(0, 1]``, if `margin` is not a scalar or
+            ``(x, y)`` pair in ``[0, 1)``, if `blur` is negative, or if
             an image array is out of contract (wrong shape, a non-``uint8``
             integer dtype, or a float outside ``[0, 1]`` -- see `_as_rgba`).
         FileNotFoundError: If `path` is a file path that does not exist.
@@ -101,9 +118,20 @@ def stamp_mark(
         after the final `set_size_inches`. Placement holds across dpi but not
         across a later figure-size change. Saving with `bbox_inches="tight"`
         crops surrounding whitespace and so changes the mark's relative margin /
-        size; a plain ``dpi=`` save preserves them. Leave enough `margin` for
-        the drop shadow (the default does) or its soft outer edge is clipped in
-        the corner.
+        size; a plain ``dpi=`` save preserves them.
+
+        `frac` always sizes the **mark itself**, never the canvas it is
+        composited on. The halo needs a transparent pad of
+        ``_HALO_SIGMAS * blur`` on each side to hold its own tail, which makes
+        that canvas ``1 + 2 * _HALO_SIGMAS * blur`` times the mark's width
+        (1.39x at the defaults). The axes rect is grown by exactly that factor
+        so the visible mark still measures `frac`; sizing the padded canvas to
+        `frac` instead would silently render the mark at ~72% of the requested
+        size, which is easy to miss because the axes bbox looks right.
+
+        `margin` is measured to the mark, so a halo next to a small margin is
+        clipped at the figure edge -- which is what you want when tucking a
+        mark hard into a corner.
 
     Examples:
         - Stamp a logo array in the lower-right corner at 11 % of the width:
@@ -128,8 +156,9 @@ def stamp_mark(
         raise ValueError(f"corner must be one of {list(_CORNERS)}, got {corner!r}.")
     if not 0.0 < frac <= 1.0:
         raise ValueError(f"frac must be in (0, 1], got {frac!r}.")
-    if not 0.0 <= margin < 1.0:
-        raise ValueError(f"margin must be in [0, 1), got {margin!r}.")
+    margin_x, margin_y = _as_margins(margin)
+    if blur < 0.0:
+        raise ValueError(f"blur must be non-negative, got {blur!r}.")
 
     image = _as_rgba(path)
     img_h, img_w = image.shape[:2]
@@ -149,13 +178,24 @@ def stamp_mark(
         scale = frac / longest
         width *= scale
         height *= scale
-    x0, y0 = _corner_origin(corner, width, height, margin)
+    x0, y0 = _corner_origin(corner, width, height, margin_x, margin_y)
 
+    # `width`/`height` are the MARK's rect. When a halo is composited in, the
+    # image handed to `imshow` is the padded canvas, so the axes rect has to grow
+    # by the same ratio (about the mark's centre) or the mark would render at
+    # 1/grow of the requested `frac`.
+    drawn, grow_w, grow_h = (image, 1.0, 1.0)
     if shadow:
-        _stamp_shadow(fig, image, x0, y0, width, height)
+        drawn, grow_w, grow_h = _composite_halo(image, blur)
+    rect_w = width * grow_w
+    rect_h = height * grow_h
+    rect_x = x0 - (rect_w - width) / 2.0
+    rect_y = y0 - (rect_h - height) / 2.0
 
-    ax = fig.add_axes((x0, y0, width, height), frameon=False, zorder=_MARK_ZORDER)
-    ax.imshow(image, aspect="auto", interpolation="antialiased")
+    ax = fig.add_axes(
+        (rect_x, rect_y, rect_w, rect_h), frameon=False, zorder=_MARK_ZORDER
+    )
+    ax.imshow(drawn, aspect="auto", interpolation="antialiased")
     ax.axis("off")
     ax.set_in_layout(False)
     return ax
@@ -209,68 +249,129 @@ def _as_rgba(path: "str | os.PathLike | np.ndarray") -> np.ndarray:
         return np.asarray(im.convert("RGBA"))
 
 
-def _corner_origin(corner: str, width: float, height: float, margin: float) -> tuple[float, float]:
+def _as_margins(margin: "float | tuple[float, float]") -> tuple[float, float]:
+    """Normalise `margin` to an ``(x, y)`` pair of figure fractions.
+
+    Args:
+        margin: A scalar applied to both axes, or an ``(x, y)`` pair. A pair is
+            needed when a mark must tuck hard into a corner on one axis while
+            keeping a gap on the other.
+
+    Returns:
+        tuple[float, float]: The ``(x, y)`` margins.
+
+    Raises:
+        ValueError: If `margin` is not a scalar or a 2-sequence, or if either
+            component is outside ``[0, 1)``.
+    """
+    if isinstance(margin, (int, float)) and not isinstance(margin, bool):
+        pair = (float(margin), float(margin))
+    else:
+        try:
+            values = tuple(margin)  # type: ignore[arg-type]
+        except TypeError:
+            raise ValueError(
+                f"margin must be a number or an (x, y) pair, got {margin!r}."
+            ) from None
+        if len(values) != 2:
+            raise ValueError(
+                f"margin must be a number or an (x, y) pair, got {margin!r}."
+            )
+        pair = (float(values[0]), float(values[1]))
+    for name, value in zip(("x", "y"), pair):
+        if not 0.0 <= value < 1.0:
+            raise ValueError(f"margin must be in [0, 1), got {name}={value!r}.")
+    return pair
+
+
+def _corner_origin(
+    corner: str, width: float, height: float, margin_x: float, margin_y: float
+) -> tuple[float, float]:
     """Return the ``(x0, y0)`` figure-fraction origin for a corner-anchored rect.
 
     Args:
         corner: One of the `_CORNERS` anchors.
         width: The mark width in figure fraction.
         height: The mark height in figure fraction.
-        margin: The edge gap in figure fraction.
+        margin_x: The horizontal edge gap in figure fraction.
+        margin_y: The vertical edge gap in figure fraction.
 
     Returns:
-        tuple[float, float]: The bottom-left ``(x0, y0)`` of the mark's axes.
+        tuple[float, float]: The bottom-left ``(x0, y0)`` of the mark's rect.
     """
     at_right = corner.endswith("right")
     at_top = corner.startswith("upper")
-    x0 = (1.0 - margin - width) if at_right else margin
-    y0 = (1.0 - margin - height) if at_top else margin
+    x0 = (1.0 - margin_x - width) if at_right else margin_x
+    y0 = (1.0 - margin_y - height) if at_top else margin_y
     return x0, y0
 
 
-def _stamp_shadow(
-    fig: "Figure", image: np.ndarray, x0: float, y0: float, width: float, height: float
-) -> "Axes":
-    """Draw a gaussian-blurred drop shadow beneath a mark on its own axes.
+def _alpha_over(foreground: np.ndarray, background: np.ndarray) -> np.ndarray:
+    """Composite RGBA over RGBA (Porter-Duff "over"), un-premultiplied.
 
-    Builds the shadow from the mark's alpha channel: pad it (to give the blur
-    room), gaussian-blur it, tint it black, and place it in a slightly larger,
-    down-and-right-offset frameless axes under the mark so the mark separates
-    from a busy / dark canvas.
+    The colour a pixel ends up with is the foreground's, weighted by its own
+    alpha, plus the background's weighted by whatever coverage the foreground
+    left over -- so the halo contributes black only where the mark does not
+    already cover, including partially across a soft edge.
 
     Args:
-        fig: The figure to draw on.
-        image: The RGBA ``uint8`` mark (its alpha drives the shadow shape).
-        x0: The mark's figure-fraction left edge.
-        y0: The mark's figure-fraction bottom edge.
-        width: The mark's figure-fraction width.
-        height: The mark's figure-fraction height.
+        foreground: An ``(H, W, 4)`` float array in ``[0, 1]``.
+        background: An ``(H, W, 4)`` float array in ``[0, 1]``, same shape.
 
     Returns:
-        Axes: The frameless axes the shadow was drawn on.
+        np.ndarray: The composited ``(H, W, 4)`` float array in ``[0, 1]``.
+
+    Notes:
+        This is the same operator issue #306 proposes to centralise as
+        `glyphs.base.compositing.alpha_over`; swap this private helper for it
+        once that lands rather than keeping two copies.
+    """
+    fg_a = foreground[..., 3:4]
+    bg_a = background[..., 3:4]
+    out_a = fg_a + bg_a * (1.0 - fg_a)
+    # Guard the un-premultiply where nothing covers at all; those pixels are
+    # fully transparent, so their colour is arbitrary -- keep it at zero.
+    safe = np.where(out_a > 0.0, out_a, 1.0)
+    rgb = (
+        foreground[..., :3] * fg_a + background[..., :3] * bg_a * (1.0 - fg_a)
+    ) / safe
+    return np.concatenate([np.where(out_a > 0.0, rgb, 0.0), out_a], axis=2)
+
+
+def _composite_halo(image: np.ndarray, blur: float) -> tuple[np.ndarray, float, float]:
+    """Composite a mark over its own blurred halo, returning the growth factors.
+
+    Pads the mark symmetrically so the blur's tail has room, blurs a black copy
+    of its alpha to make the halo, and composites the mark back over it. The
+    halo is *centred* on the mark rather than offset: the mark goes over
+    arbitrary imagery, and a symmetric halo reads the same whichever way the
+    background falls.
+
+    Args:
+        image: The RGBA ``uint8`` mark; its alpha channel drives the halo shape.
+        blur: The blur sigma as a fraction of the mark's own unpadded width.
+
+    Returns:
+        tuple[np.ndarray, float, float]: The composited RGBA ``uint8`` canvas,
+        and the factors by which it is wider and taller than the mark. The
+        caller grows the axes rect by these so the *mark* still measures `frac`.
     """
     img_h, img_w = image.shape[:2]
-    pad = max(1, int(round(_SHADOW_PAD * max(img_h, img_w))))
+    # Sigma comes off the mark's own width, so `blur` means what it says; taking
+    # it off the padded width instead would inflate the effective blur and leave
+    # the pad too small for the tail it was sized to contain.
+    sigma = blur * img_w
+    pad = max(1, int(round(_HALO_SIGMAS * sigma)))
+
     alpha = np.pad(image[..., 3], pad, mode="constant", constant_values=0)
-    blurred = np.asarray(
-        Image.fromarray(alpha).filter(ImageFilter.GaussianBlur(pad * _SHADOW_BLUR_FRAC))
-    )
-    shadow = np.zeros(blurred.shape + (4,), dtype=np.uint8)
-    shadow[..., 3] = (blurred.astype(np.float64) * _SHADOW_ALPHA).astype(np.uint8)
+    blurred = np.asarray(Image.fromarray(alpha).filter(ImageFilter.GaussianBlur(sigma)))
 
-    # The mark occupies (img_w, img_h) centred within the padded (pad_w, pad_h),
-    # so scale the mark's rect by the same ratio to keep the shadow aligned, then
-    # nudge it down-and-right for the drop-shadow offset.
-    pad_h, pad_w = shadow.shape[:2]
-    shadow_w = width * pad_w / img_w
-    shadow_h = height * pad_h / img_h
-    shadow_x = x0 - (shadow_w - width) / 2.0 + _SHADOW_OFFSET * width
-    shadow_y = y0 - (shadow_h - height) / 2.0 - _SHADOW_OFFSET * height
+    halo = np.zeros(blurred.shape + (4,), dtype=np.float64)  # black, alpha-only
+    halo[..., 3] = blurred / 255.0 * _HALO_ALPHA
 
-    sax = fig.add_axes(
-        (shadow_x, shadow_y, shadow_w, shadow_h), frameon=False, zorder=_SHADOW_ZORDER
-    )
-    sax.imshow(shadow, aspect="auto", interpolation="antialiased")
-    sax.axis("off")
-    sax.set_in_layout(False)
-    return sax
+    mark = np.zeros_like(halo)
+    mark[pad : pad + img_h, pad : pad + img_w] = image / 255.0
+
+    out = _alpha_over(mark, halo)
+    pad_h, pad_w = out.shape[:2]
+    return (out * 255).round().astype(np.uint8), pad_w / img_w, pad_h / img_h

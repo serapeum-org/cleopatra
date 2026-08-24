@@ -5,7 +5,7 @@ matplotlib `Figure` with a single call, so anything you publish or share can car
 without re-rolling the same inset-axes glue in every notebook.
 
 The one entry point is `stamp_mark(fig, path, *, frac=0.11, corner="lower right", margin=0.025,
-shadow=True)`. Two things make it more than a one-liner over `imshow`:
+shadow=True, blur=0.065)`. Two things make it more than a one-liner over `imshow`:
 
 - **Fraction-of-figure sizing.** The mark is drawn on a frameless inset axes in
   *figure-fraction* coordinates, so it stays the same proportion (and corner offset) no
@@ -14,10 +14,15 @@ shadow=True)`. Two things make it more than a one-liner over `imshow`:
   figure width; the height is derived from the image and figure aspect ratios, so the image
   is never stretched. (This is the dpi-independent counterpart of `Figure.figimage`, which is
   pixel-based.)
-- **Optional drop shadow.** With `shadow=True` (the default) a gaussian-blurred, black,
-  slightly-offset copy of the mark's alpha is drawn beneath it so the mark separates from a
-  busy or dark canvas. The blur uses Pillow (already a cleopatra dependency), so no new
-  dependency — and no SciPy — is pulled in.
+- **Optional halo.** With `shadow=True` (the default) a gaussian-blurred black copy of the
+  mark's alpha is composited *behind* it so the mark separates from a busy or dark canvas.
+  The blur uses Pillow (already a cleopatra dependency), so no new dependency — and no
+  SciPy — is pulled in.
+
+  The halo is **centred, not offset**. A mark is composited over arbitrary imagery — night
+  ocean, sunlit cloud, a bright limb — and a symmetric halo reads the same whichever way the
+  background falls, where a down-right drop shadow implies a light direction nothing else in
+  the frame has. `blur` is the halo's sigma as a fraction of the mark's own width.
 
 It is a presentation helper, not a glyph: it takes whatever `Figure` you hand it and draws on
 top. Single-image, corner-anchored marks only — text watermarks, tiled / repeated marks, and
@@ -52,7 +57,13 @@ fig.savefig("figure.png", dpi=200)  # the mark keeps its proportion at any dpi
 
 `corner` is one of `"lower right"` (default), `"lower left"`, `"upper right"`, or
 `"upper left"`; anything else raises a `ValueError` naming the bad value. `margin` is the gap
-to the figure edges as a fraction of the figure.
+between the **mark** and the figure edges as a fraction of the figure — either a scalar for
+both axes or an `(x, y)` pair. The pair matters when a mark has to tuck hard into a corner on
+one axis while keeping a gap on the other:
+
+```python
+stamp_mark(fig, "brand/logo.png", margin=(0.025, 0.0))  # flush with the bottom, inset from the right
+```
 
 !!! note "Call `stamp_mark` last, and save the whole figure"
 
@@ -62,5 +73,16 @@ to the figure edges as a fraction of the figure.
     **whole** figure is saved: a plain `dpi=` save keeps the mark proportional, but
     `savefig(bbox_inches="tight")` crops surrounding whitespace and so changes the mark's relative
     margin and size.
+
+!!! note "`frac` sizes the mark, not the halo canvas"
+
+    The halo needs a transparent pad of three sigmas on each side to hold its own tail, which
+    makes the composited canvas about 1.39x the mark's width at the default `blur`. `stamp_mark`
+    grows the inset axes by exactly that factor, so the **visible mark** still measures `frac`.
+    Sizing the padded canvas to `frac` instead would render the mark at roughly 72 % of the
+    requested size — easy to miss, because the axes bounding box still looks correct. With
+    `shadow=True` the returned axes' bbox therefore covers mark *and* halo, and is larger than
+    `frac`; `margin` is still measured to the mark, so a halo beside a small margin is clipped at
+    the figure edge (which is what you want when tucking a mark into a corner).
 
 ::: cleopatra.styling.watermark.stamp_mark
