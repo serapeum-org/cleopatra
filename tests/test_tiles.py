@@ -42,7 +42,9 @@ from cleopatra.basemap.tiles import (  # noqa: E402
     fetch_single_tile,
     fetch_tiles,
     get_provider,
+    mercator_to_equirectangular,
     stitch_tiles,
+    world_texture,
 )
 
 
@@ -1386,3 +1388,144 @@ class TestAddTilesNearGlobalExtent:
         assert max(xs) >= 2**3 - 1, (
             "should include tiles from the eastern half of the split (x near the grid edge)"
         )
+
+
+def _world_bounds() -> tuple[float, float, float, float]:
+    """The full-world EPSG:3857 extent `(west, south, east, north)` in metres."""
+    m = tiles_mod._MERC_MAX
+    return (-m, -m, m, m)
+
+
+def _fetch_split_by_x():
+    """A `fetch_tiles` stand-in: west tiles solid blue, east tiles solid red."""
+
+    def fake(tile_list, provider, **kwargs):
+        out = {}
+        for tile in tile_list:
+            half = 2**tile.z // 2
+            colour = (0, 0, 255, 255) if tile.x < half else (255, 0, 0, 255)
+            buf = io.BytesIO()
+            Image.new("RGBA", (256, 256), colour).save(buf, "PNG")
+            out[tile] = buf.getvalue()
+        return out
+
+    return fake
+
+
+class TestMercatorToEquirectangular:
+    """Tests for `cleopatra.basemap.tiles.mercator_to_equirectangular`."""
+
+    def test_returns_equirectangular_shape_and_float32(self):
+        """A 3-band mosaic resamples to an `(n_lat, n_lon, 3)` float32 grid."""
+        tex = mercator_to_equirectangular(
+            np.zeros((16, 16, 3), "uint8"), _world_bounds(), n_lon=8, n_lat=6
+        )
+        assert tex.shape == (6, 8, 3), f"unexpected shape {tex.shape}"
+        assert tex.dtype == np.float32, f"expected float32, got {tex.dtype}"
+
+    def test_two_dimensional_mosaic_stays_2d(self):
+        """A single-band (2-D) mosaic returns a 2-D `(n_lat, n_lon)` grid."""
+        tex = mercator_to_equirectangular(
+            np.zeros((16, 16), "uint8"), _world_bounds(), n_lon=8, n_lat=6
+        )
+        assert tex.shape == (6, 8), f"unexpected shape {tex.shape}"
+
+    def test_preserves_west_east_longitude_order(self):
+        """West-blue / east-red survives the resample (x is linear in longitude)."""
+        m = np.zeros((8, 8, 3), "uint8")
+        m[:, :4] = (0, 0, 255)
+        m[:, 4:] = (255, 0, 0)
+        tex = mercator_to_equirectangular(m, _world_bounds(), n_lon=8, n_lat=6)
+        assert (tex[:, 0, 2] > tex[:, 0, 0]).all(), "west column should stay blue"
+        assert (tex[:, -1, 0] > tex[:, -1, 2]).all(), "east column should stay red"
+
+    def test_preserves_north_south_latitude_order(self):
+        """North-red / south-blue keeps red at the top (north-up, origin upper)."""
+        m = np.zeros((8, 8, 3), "uint8")
+        m[:4] = (255, 0, 0)
+        m[4:] = (0, 0, 255)
+        tex = mercator_to_equirectangular(m, _world_bounds(), n_lon=8, n_lat=8)
+        assert tex[0, 0, 0] > tex[0, 0, 2], "north row should stay red"
+        assert tex[-1, 0, 2] > tex[-1, 0, 0], "south row should stay blue"
+
+    def test_value_scale_preserved_and_averaged(self):
+        """A constant uint8 mosaic yields that same value as float32 (0..255)."""
+        tex = mercator_to_equirectangular(
+            np.full((8, 8, 1), 200, "uint8"), _world_bounds(), n_lon=4, n_lat=4
+        )
+        assert tex.dtype == np.float32, f"expected float32, got {tex.dtype}"
+        assert np.allclose(tex, 200.0), "a constant mosaic stays at its value"
+
+    @pytest.mark.parametrize("bad", [np.zeros((2,)), np.zeros((2, 2, 2, 2))])
+    def test_rejects_non_2d_3d_mosaic(self, bad):
+        """A 1-D or 4-D mosaic raises `ValueError`."""
+        with pytest.raises(ValueError, match="2-D or 3-D"):
+            mercator_to_equirectangular(bad, _world_bounds())
+
+    @pytest.mark.parametrize("n_lon,n_lat", [(0, 4), (4, 0), (-1, 4)])
+    def test_rejects_non_positive_grid(self, n_lon, n_lat):
+        """A non-positive `n_lon`/`n_lat` raises `ValueError`."""
+        with pytest.raises(ValueError, match="must be positive"):
+            mercator_to_equirectangular(
+                np.zeros((4, 4, 3)), _world_bounds(), n_lon=n_lon, n_lat=n_lat
+            )
+
+    @pytest.mark.parametrize("bounds", [(1.0, 1.0, 0.0, 2.0), (0.0, 2.0, 2.0, 1.0)])
+    def test_rejects_degenerate_bounds(self, bounds):
+        """Bounds with `east <= west` or `north <= south` raise `ValueError`."""
+        with pytest.raises(ValueError, match="east > west"):
+            mercator_to_equirectangular(np.zeros((4, 4, 3)), bounds)
+
+
+class TestWorldTexture:
+    """Tests for `cleopatra.basemap.tiles.world_texture`."""
+
+    def test_returns_float32_texture_in_unit_range(self, tmp_path, monkeypatch):
+        """A whole-world fetch resamples to an `(n_lat, n_lon, 3)` float32 in [0, 1]."""
+        monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))
+        monkeypatch.setattr(tiles_mod, "fetch_tiles", _fetch_split_by_x())
+        tex = world_texture(zoom=1, n_lon=16, n_lat=8)
+        assert tex.shape == (8, 16, 3), f"unexpected shape {tex.shape}"
+        assert tex.dtype == np.float32, f"expected float32, got {tex.dtype}"
+        assert 0.0 <= float(tex.min()) and float(tex.max()) <= 1.0, "not in [0, 1]"
+
+    def test_preserves_longitude_order(self, tmp_path, monkeypatch):
+        """West tiles (blue) stay west end-to-end through fetch/stitch/reproject."""
+        monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))
+        monkeypatch.setattr(tiles_mod, "fetch_tiles", _fetch_split_by_x())
+        tex = world_texture(zoom=1, n_lon=16, n_lat=8)
+        assert tex[4, 0, 2] > tex[4, 0, 0], "west should be blue"
+        assert tex[4, -1, 0] > tex[4, -1, 2], "east should be red"
+
+    def test_caches_texture_and_skips_refetch(self, tmp_path, monkeypatch):
+        """A second call reads the on-disk cache instead of refetching tiles."""
+        monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))
+        fetch = MagicMock(side_effect=_fetch_split_by_x())
+        monkeypatch.setattr(tiles_mod, "fetch_tiles", fetch)
+        first = world_texture(zoom=1, n_lon=8, n_lat=4)
+        second = world_texture(zoom=1, n_lon=8, n_lat=4)
+        assert fetch.call_count == 1, "the second call should hit the cache"
+        assert np.array_equal(first, second), "cached texture should match"
+
+    def test_cache_false_always_refetches(self, tmp_path, monkeypatch):
+        """`cache=False` refetches on every call."""
+        monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))
+        fetch = MagicMock(side_effect=_fetch_split_by_x())
+        monkeypatch.setattr(tiles_mod, "fetch_tiles", fetch)
+        world_texture(zoom=1, n_lon=8, n_lat=4, cache=False)
+        world_texture(zoom=1, n_lon=8, n_lat=4, cache=False)
+        assert fetch.call_count == 2, "cache=False must not reuse a cached texture"
+
+    def test_missing_extra_raises_import_error(self, monkeypatch):
+        """Without the `[tiles]` extra, `world_texture` raises `ImportError`."""
+        monkeypatch.setattr(tiles_mod, "_TILES_AVAILABLE", False)
+        with pytest.raises(ImportError, match=r"cleopatra\[tiles\]"):
+            world_texture(zoom=0)
+
+    @pytest.mark.parametrize(
+        "kwargs", [{"zoom": -1}, {"zoom": 1, "n_lon": 0}, {"zoom": 1, "n_lat": 0}]
+    )
+    def test_rejects_invalid_params(self, kwargs):
+        """A negative zoom or non-positive grid dimension raises `ValueError`."""
+        with pytest.raises(ValueError):
+            world_texture(**kwargs)
