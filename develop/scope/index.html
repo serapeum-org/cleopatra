@@ -649,6 +649,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#animation-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Animation output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#boundary-heuristic-for-a-feature-request" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2556,6 +2567,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#animation-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Animation output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#boundary-heuristic-for-a-feature-request" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2703,7 +2725,8 @@ colorbars, ticks, classification, and animation.</p>
 <li><code>tiles</code> and <code>reference</code> are cleopatra's <strong>only</strong> networked features.</li>
 <li><code>projection</code>: lightweight axes-frame / coordinate helpers.</li>
 <li><code>animation</code>: turn a matplotlib <code>FuncAnimation</code> into a saved file, GIF bytes,
-  or an embeddable IPython image (via ffmpeg).</li>
+  or an embeddable IPython image (via ffmpeg), and derive one output format from
+  another (<code>gif_from_video</code>) — see "Animation output".</li>
 <li><code>config</code> (<code>Config</code>): opt-in matplotlib-backend selection; notebook detection.</li>
 </ul>
 <h3 id="what-new-work-generally-belongs-here"><a class="toclink" href="#what-new-work-generally-belongs-here">What new work generally belongs here</a><a class="headerlink" href="#what-new-work-generally-belongs-here" title="Permanent link">#</a></h3>
@@ -2723,13 +2746,14 @@ colorbars, ticks, classification, and animation.</p>
 <li><strong>Data I/O and formats:</strong> reading/writing <em>user</em> GeoTIFF, NetCDF,
   shapefiles, GeoJSON, CSV, databases. Users bring NumPy arrays already;
   file/raster I/O of user data belongs in sibling packages (e.g. <code>pyramids</code>),
-  not here. The deliberate exception is the <code>tiles</code> / <code>reference</code> basemap
+  not here. Three deliberate exceptions: the <code>tiles</code> / <code>reference</code> basemap
   helpers, which fetch a handful of <em>fixed public</em> reference datasets (never
   user data) that cleopatra re-hosts as dependency-light artifacts — see
-  "Supporting utilities". Reading a <strong>presentation asset</strong> — a logo / watermark
-  image for <code>styling.watermark.stamp_mark</code> — is likewise allowed: it is
-  decoration on the rendered figure, not user data, and it loads via Pillow (an
-  existing dependency), never GDAL/geopandas.</li>
+  "Supporting utilities"; reading a <strong>presentation asset</strong> — a logo / watermark
+  image for <code>styling.watermark.stamp_mark</code> — which is decoration on the rendered
+  figure, not user data, and loads via Pillow (an existing dependency), never
+  GDAL/geopandas; and re-encoding cleopatra's <strong>own animation output</strong> between
+  formats — see "Animation output" below.</li>
 <li><strong>GIS / geoprocessing:</strong> reprojection of user data, clipping, resampling,
   zonal stats, CRS management beyond what the optional <code>tiles</code> basemap needs.</li>
 <li><strong>Interactive / GUI apps:</strong> dashboards, widget servers, event callbacks,
@@ -2748,12 +2772,32 @@ colorbars, ticks, classification, and animation.</p>
   than the <code>tiles</code> / <code>reference</code> basemap helpers, and general-purpose plotting
   that matplotlib already does well without added value.</li>
 </ul>
+<h2 id="animation-output"><a class="toclink" href="#animation-output">Animation output</a><a class="headerlink" href="#animation-output" title="Permanent link">#</a></h2>
+<p>Rendering frames is by far the most expensive part of an animation — hours, for a
+long scientific clip — while encoding them is cheap. Forcing every output format
+to be produced from a live <code>FuncAnimation</code> therefore means re-rendering the same
+frames once per format, which is the wrong trade at any real size.</p>
+<p>So a helper may <strong>read back a rendered video</strong> and re-encode it to another
+supported format, as <code>gif_from_video</code> does. The intended input is cleopatra's own
+output, produced by <code>save_animation</code> moments earlier. Nothing in the code
+enforces that — it decodes whatever FFmpeg can read, and a check would buy
+nothing but a worse error message — so this is a statement of <em>purpose</em>, not a
+guarantee about the argument.</p>
+<p>What keeps it inside the line is what it does not do: it reads no user dataset in
+an analytical format, opens no GIS format, exposes no transcoding matrix, and
+adds no dependency — the FFmpeg it decodes with is the one <code>save_animation</code>
+already encodes with. What it returns is an animation, not data.</p>
+<p>The boundary that still holds: cleopatra does not become a general
+media-conversion tool. A helper whose purpose was ingesting arbitrary user video,
+or that grew a codec/container matrix, would be out of scope.</p>
 <h2 id="boundary-heuristic-for-a-feature-request"><a class="toclink" href="#boundary-heuristic-for-a-feature-request">Boundary heuristic for a feature request</a><a class="headerlink" href="#boundary-heuristic-for-a-feature-request" title="Permanent link">#</a></h2>
 <p>Ask, in order:</p>
 <ol>
 <li><strong>Input</strong> — does it start from in-memory NumPy data (not a file/CRS/URL)?
-   (The <code>tiles</code> / <code>reference</code> basemap helpers are the deliberate exception:
-   they acquire fixed <em>public</em> reference data, never user files.)</li>
+   (Three deliberate exceptions: the <code>tiles</code> / <code>reference</code> basemap helpers,
+   which acquire fixed <em>public</em> reference data, never user files; a presentation
+   asset such as a logo for <code>stamp_mark</code>; and the animation re-encoders, whose
+   input is cleopatra's own output — see "Animation output".)</li>
 <li><strong>Output</strong> — does it produce a matplotlib <code>Figure</code>/<code>Axes</code>/artist (or an
    animation of one)?</li>
 <li><strong>Reuse</strong> — can it build on <code>Glyph</code> and the shared colour/colorbar/legend
