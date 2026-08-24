@@ -116,6 +116,12 @@ class TestConstruction:
         # only RGB is scaled by the peak; alpha stays as supplied
         assert np.allclose(globe.texture[..., 3], 0.5)
 
+    def test_all_nan_texture_renders_black_without_warning(self, recwarn):
+        tex = np.full((4, 4, 3), np.nan, dtype=float)
+        globe = TexturedGlobeGlyph(tex, n_lon=6, n_lat=4)
+        assert not any(issubclass(w.category, RuntimeWarning) for w in recwarn)
+        assert np.all(globe.texture[..., :3] == 0.0)
+
     @pytest.mark.parametrize(
         "bad",
         [
