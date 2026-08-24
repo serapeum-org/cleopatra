@@ -26,7 +26,9 @@ machinery as **glyph-independent** helpers. They operate on *any*
 ## The GIF palette
 
 Both GIF paths — `save_animation` and `gif_from_video` — quantise through one palette shared
-by every frame (`build_clip_palette`), derived from a montage of all the frames. Per-frame
+by every frame, built by `build_clip_palette` from the colours the whole clip contains and
+applied by `quantize_to_palette`. Both are public, so a downstream package writing its own
+frames can reuse the same table rather than re-deriving one. Per-frame
 palettes would make constant regions shimmer and let a colour drift between frames; two of
 the 256 entries are pinned to pure black and white so single-colour overlays stay crisp.
 

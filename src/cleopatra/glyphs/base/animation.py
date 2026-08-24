@@ -19,6 +19,7 @@ import os
 import shutil
 import tempfile
 import warnings
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any
 
 import matplotlib as mpl
@@ -29,6 +30,19 @@ from PIL import Image as PILImage
 if TYPE_CHECKING:  # import only for type checkers; IPython stays optional
     from IPython.display import Image
 
+__all__ = [
+    "CLIP_PALETTE_COLORS",
+    "SUPPORTED_VIDEO_FORMAT",
+    "build_clip_palette",
+    "embed_gif",
+    "gif_from_video",
+    "quantize_to_palette",
+    "save_animation",
+    "to_bytes",
+    "to_gif",
+    "to_mp4",
+]
+
 #: Container formats `save_animation` can write. GIF and (animated) WebP use
 #: Pillow (`_OptimizedPillowWriter`); mov/avi/mp4 require FFmpeg (`FFMpegWriter`).
 #: WebP is typically 3-5x smaller than GIF for photographic/satellite frames.
@@ -38,8 +52,10 @@ SUPPORTED_VIDEO_FORMAT = ["gif", "mov", "avi", "mp4", "webp"]
 _PILLOW_FORMATS = {"gif", "webp"}
 
 #: Palette entries a GIF clip's shared colour table is quantised to. Two of the
-#: 256 are held back for pure black and white (see `build_clip_palette`).
-_CLIP_PALETTE_COLORS = 254
+#: 256 are held back for pure black and white (see `build_clip_palette`). Public
+#: because it is the default of `build_clip_palette` and `gif_from_video`, so it
+#: appears in their rendered signatures.
+CLIP_PALETTE_COLORS = 254
 
 #: Bits per channel kept when collecting the colours a clip contains. Six bits
 #: resolves 262144 buckets -- far finer than a 254-entry palette can express --
@@ -47,7 +63,7 @@ _CLIP_PALETTE_COLORS = 254
 _GAMUT_BITS = 6
 
 
-def _clip_gamut(frames: list) -> "PILImage.Image":
+def _clip_gamut(frames: Iterable["PILImage.Image"]) -> "PILImage.Image":
     """Collect every colour the clip contains, once each, as a compact image.
 
     The palette is chosen for colour *coverage*, so what the quantiser needs is
@@ -71,9 +87,6 @@ def _clip_gamut(frames: list) -> "PILImage.Image":
     Raises:
         ValueError: If `frames` is empty.
     """
-    if not frames:
-        raise ValueError("a clip palette needs at least one frame, got none.")
-
     shift = 8 - _GAMUT_BITS
     seen = np.zeros(1 << (3 * _GAMUT_BITS), dtype=bool)
     # Each bucket keeps a colour that genuinely occurs in the clip rather than
@@ -91,6 +104,9 @@ def _clip_gamut(frames: list) -> "PILImage.Image":
         seen[bucket] = True
         representative[bucket] = exact
 
+    if not seen.any():
+        raise ValueError("a clip palette needs at least one frame, got none.")
+
     keys = representative[np.flatnonzero(seen)]
     colours = np.stack(
         [(keys >> 16) & 0xFF, (keys >> 8) & 0xFF, keys & 0xFF], axis=-1
@@ -103,7 +119,9 @@ def _clip_gamut(frames: list) -> "PILImage.Image":
     return PILImage.fromarray(canvas.reshape(side, side, 3), "RGB")
 
 
-def build_clip_palette(frames: list, colors: int = _CLIP_PALETTE_COLORS):
+def build_clip_palette(
+    frames: Iterable["PILImage.Image"], colors: int = CLIP_PALETTE_COLORS
+) -> "PILImage.Image":
     """Build one colour palette shared by every frame of a clip.
 
     Quantising each frame independently makes constant regions shimmer and lets
@@ -183,10 +201,10 @@ def build_clip_palette(frames: list, colors: int = _CLIP_PALETTE_COLORS):
         quantize_to_palette: Map the frames onto the palette this returns.
         gif_from_video: Derives a GIF through this same palette.
     """
-    if not 2 <= colors <= _CLIP_PALETTE_COLORS:
+    if not 2 <= colors <= CLIP_PALETTE_COLORS:
         # Above 254 the reserved black/white pair would overwrite chosen entries,
         # and Pillow rejects 256 outright with a bare "invalid palette size".
-        raise ValueError(f"colors must be in 2-{_CLIP_PALETTE_COLORS}, got {colors!r}.")
+        raise ValueError(f"colors must be in 2-{CLIP_PALETTE_COLORS}, got {colors!r}.")
 
     census = _clip_gamut(frames)
     base = census.quantize(colors=colors, method=PILImage.Quantize.MAXCOVERAGE)
@@ -197,7 +215,9 @@ def build_clip_palette(frames: list, colors: int = _CLIP_PALETTE_COLORS):
     return palette
 
 
-def quantize_to_palette(frames: list, palette) -> list:
+def quantize_to_palette(
+    frames: Iterable["PILImage.Image"], palette: "PILImage.Image"
+) -> list["PILImage.Image"]:
     """Map every frame onto a shared palette, dithering the residual error.
 
     Args:
@@ -273,7 +293,11 @@ def _validate_pillow_options(fps: float, loop: int) -> None:
 
 
 def _write_pillow_animation(
-    frames: list, path, fps: float, loop: int, optimize: bool
+    frames: Iterable["PILImage.Image"],
+    path: str | os.PathLike,
+    fps: float,
+    loop: int,
+    optimize: bool,
 ) -> None:
     """Write frames out as an animated GIF or WebP via Pillow.
 
@@ -998,7 +1022,7 @@ def gif_from_video(
     *,
     fps: float = 12,
     width: int | None = None,
-    max_colors: int = _CLIP_PALETTE_COLORS,
+    max_colors: int = CLIP_PALETTE_COLORS,
     loop: int = 0,
     optimize: bool = True,
 ) -> str:
@@ -1052,7 +1076,7 @@ def gif_from_video(
     Examples:
         - Render an animation once to MP4, then derive a GIF from that file:
             ```python
-            >>> import os, shutil, tempfile, warnings, matplotlib
+            >>> import os, shutil, tempfile, matplotlib
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
             >>> from matplotlib.animation import FuncAnimation
@@ -1112,9 +1136,9 @@ def gif_from_video(
     path = os.fspath(path)
     if not os.path.isfile(src):
         raise FileNotFoundError(f"The source video {src!r} does not exist.")
-    if not 2 <= max_colors <= _CLIP_PALETTE_COLORS:
+    if not 2 <= max_colors <= CLIP_PALETTE_COLORS:
         raise ValueError(
-            f"max_colors must be in 2-{_CLIP_PALETTE_COLORS}, got {max_colors!r}."
+            f"max_colors must be in 2-{CLIP_PALETTE_COLORS}, got {max_colors!r}."
         )
     if fps <= 0:
         raise ValueError(f"fps must be positive, got {fps!r}.")
