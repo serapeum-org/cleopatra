@@ -881,22 +881,32 @@ def to_mp4(anim: FuncAnimation, fps: int = 2, **kwargs) -> bytes:
 
 
 def _is_chroma_subsampled(pix_fmt: str | None) -> bool:
-    """Whether a pixel format throws away colour resolution.
+    """Whether a pixel format stores colour at reduced resolution.
+
+    Chroma subsampling is decided by the family a format belongs to, not by a
+    prefix: `nv24` and `nv42` are 4:4:4 despite sharing the `nv` family with
+    4:2:0 `nv12`, and the semi-planar high-bit-depth formats spell their
+    sampling in the first digit (`p010` is 4:2:0, `p210` 4:2:2, `p410` 4:4:4).
 
     Args:
-        pix_fmt: The source's pixel format as ffmpeg reports it, e.g.
-            ``"yuv420p"``. `None` when the decoder did not report one.
+        pix_fmt: The source's pixel format as FFmpeg reports it, e.g.
+            ``"yuv420p"`` or ``"p010le"``. `None` when none was reported.
 
     Returns:
-        bool: `True` for a YUV format that is not 4:4:4 (or the NV planar
-        formats, which are 4:2:0), `False` otherwise.
+        bool: `True` when colour resolution is reduced, `False` for full-chroma
+        and RGB-family formats, and for an unreported format -- guessing there
+        would mean warning about a file that may be fine.
     """
     if not pix_fmt:
         return False
     fmt = pix_fmt.lower()
-    if fmt.startswith("nv"):  # nv12 / nv21 are 4:2:0
-        return True
-    return fmt.startswith(("yuv", "yuvj")) and "444" not in fmt
+    if fmt.startswith("yuv"):  # also covers the full-range yuvj variants
+        return "444" not in fmt
+    if fmt.startswith("nv"):
+        return not fmt.startswith(("nv24", "nv42"))
+    if fmt.startswith("p") and fmt[1:2].isdigit():
+        return not fmt.startswith("p4")
+    return False
 
 
 def _read_video_frames(src: str, **kwargs):

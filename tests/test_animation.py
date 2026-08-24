@@ -1511,13 +1511,27 @@ class TestIsChromaSubsampled:
         [
             ("yuv420p", True),
             ("yuv422p", True),
+            ("yuv440p", True),
             ("yuvj420p", True),
+            ("yuvj440p", True),
             ("YUV420P", True),
+            ("yuv420p10le", True),
             ("nv12", True),
             ("nv21", True),
+            ("nv16", True),
+            ("nv20le", True),
+            ("p010le", True),
+            ("p016be", True),
+            ("p210le", True),
             ("yuv444p", False),
             ("yuvj444p", False),
+            ("yuv444p10le", False),
+            ("nv24", False),
+            ("nv42", False),
+            ("p410le", False),
+            ("p416be", False),
             ("rgb24", False),
+            ("rgb444le", False),
             ("gbrp", False),
             ("", False),
             (None, False),
@@ -1531,9 +1545,11 @@ class TestIsChromaSubsampled:
             expected: Whether it should be reported as chroma-subsampled.
 
         Test scenario:
-            RGB-family formats keep full colour resolution, `yuv444p` keeps it
-            too, and an unreported format must not trigger a false warning.
-            `nv12` / `nv21` are 4:2:0 despite not starting with ``yuv``.
+            Every case is a real FFmpeg format name. The families do not split
+            on a prefix: `nv24` / `nv42` are 4:4:4 while `nv12` / `nv16` are
+            not, and the semi-planar `p0xx` / `p2xx` / `p4xx` formats spell
+            their sampling in the first digit. RGB-family names and an
+            unreported format must never trigger a warning.
         """
         result = anim_mod._is_chroma_subsampled(pix_fmt)
         assert result is expected, (
