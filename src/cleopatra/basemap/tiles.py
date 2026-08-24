@@ -1189,8 +1189,10 @@ def mercator_to_equirectangular(
         mosaic: The Web Mercator image, `(H, W)` or `(H, W, C)`, north-up
             (row 0 = north), as returned by `stitch_tiles`.
         bounds: `(west, south, east, north)` of `mosaic` in EPSG:3857 metres,
-            as returned by `stitch_tiles`. Read from the mosaic rather than
-            assumed global, so a partial mosaic reprojects correctly.
+            as returned by `stitch_tiles`. The output always spans the whole
+            globe (-180..180, 90..-90); latitudes and longitudes outside the
+            mosaic's coverage clamp onto its edge rows/columns rather than
+            being cropped, so a partial mosaic is placed within a full frame.
         n_lon: Width of the output grid, spanning -180..180 degrees.
         n_lat: Height of the output grid, spanning 90..-90 degrees.
 
@@ -1252,12 +1254,18 @@ def mercator_to_equirectangular(
         np.round((x_edges - west) / (east - west) * w).astype(int), 0, w
     )
 
-    # reduceat sums each [start[i]:start[i+1]] block; the edge-derived widths
-    # (min 1) turn the sums into means and keep a collapsed polar row on its own.
+    # reduceat sums each block band[start[i]:start[i+1]] (the last runs to the
+    # array end). The block END is the next *capped* start, not the raw edge, so
+    # size the mean's divisor from the actual block widths: otherwise the south
+    # clamp (row_edges == h collapses start to h-1) sums one row fewer than it
+    # divides by, darkening the row near -85 deg S. max(.,1) keeps a collapsed
+    # polar row (next start == start) on its own.
     row_start = np.minimum(row_edges[:-1], h - 1)
     col_start = np.minimum(col_edges[:-1], w - 1)
-    row_w = np.maximum(np.diff(row_edges), 1)[:, None].astype("float32")
-    col_w = np.maximum(np.diff(col_edges), 1)[None, :].astype("float32")
+    row_next = np.concatenate([row_start[1:], [h]])
+    col_next = np.concatenate([col_start[1:], [w]])
+    row_w = np.maximum(row_next - row_start, 1)[:, None].astype("float32")
+    col_w = np.maximum(col_next - col_start, 1)[None, :].astype("float32")
 
     flat = mosaic.reshape(h, w, -1)  # (H, W, C), C == 1 for a 2-D mosaic
     bands = []

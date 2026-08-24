@@ -1456,6 +1456,13 @@ class TestMercatorToEquirectangular:
         assert tex.dtype == np.float32, f"expected float32, got {tex.dtype}"
         assert np.allclose(tex, 200.0), "a constant mosaic stays at its value"
 
+    def test_no_south_seam_at_realistic_height(self):
+        """A tall constant mosaic stays flat at the default `n_lat`, guarding the
+        south-clamp divisor bug that darkened the output row near -85 deg S."""
+        m = np.full((8192, 8, 3), 255, "uint8")
+        tex = mercator_to_equirectangular(m, _world_bounds(), n_lon=8, n_lat=1440)
+        assert np.allclose(tex, 255.0), f"seam near -85S: min {float(tex.min())}"
+
     @pytest.mark.parametrize("bad", [np.zeros((2,)), np.zeros((2, 2, 2, 2))])
     def test_rejects_non_2d_3d_mosaic(self, bad):
         """A 1-D or 4-D mosaic raises `ValueError`."""
