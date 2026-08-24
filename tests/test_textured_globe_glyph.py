@@ -103,6 +103,12 @@ class TestConstruction:
         globe = TexturedGlobeGlyph(tex, n_lon=6, n_lat=4)
         assert np.isclose(globe.texture[0, 0, 0], 1.0 / 255.0)
 
+    def test_uint16_texture_scaled_by_dtype_max(self):
+        tex = np.zeros((4, 4, 3), dtype=np.uint16)
+        tex[0, 0, 0] = 30000
+        globe = TexturedGlobeGlyph(tex, n_lon=6, n_lat=4)
+        assert np.isclose(globe.texture[0, 0, 0], 30000.0 / 65535.0)
+
     def test_integer_alpha_scaled_by_255(self):
         tex = np.full((4, 4, 4), 255, dtype=np.uint8)
         tex[..., 3] = 128
