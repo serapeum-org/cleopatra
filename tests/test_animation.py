@@ -471,12 +471,8 @@ class TestOddDimensionAutoPad:
         (line,) = ax.plot([0, 1], [0, 0])
         width = int(round(fig.get_figwidth() * fig.dpi))
         height = int(round(fig.get_figheight() * fig.dpi))
-        assert width % 2 == 1, (
-            f'fixture must be odd-sized to exercise the pad, got {width}x{height}'
-        )
-        assert height % 2 == 1, (
-            f'fixture must be odd-sized to exercise the pad, got {width}x{height}'
-        )
+        assert width % 2 == 1, f'fixture must be odd-sized to exercise the pad, got {width}x{height}'
+        assert height % 2 == 1, f'fixture must be odd-sized to exercise the pad, got {width}x{height}'
         anim = FuncAnimation(fig, lambda i: (line,), frames=2)
         out = tmp_path / "odd.mp4"
 
@@ -740,14 +736,10 @@ class TestOptimizedPillowWriter:
         gif.seek(5)
         last = np.asarray(gif.convert("RGB")).copy()
         top = slice(0, first.shape[0] // 3)  # safely inside the constant white top
-        changed = (
-            np.abs(first[top].astype(int) - last[top].astype(int)).sum(2) > 8
-        ).mean()
+        changed = (np.abs(first[top].astype(int) - last[top].astype(int)).sum(2) > 8).mean()
         plt.close("all")
 
-        assert changed == 0.0, (
-            f"shared palette should keep a constant region byte-stable, got {changed}"
-        )
+        assert changed == 0.0, f"shared palette should keep a constant region byte-stable, got {changed}"
 
     def test_gif_reserves_black_for_crisp_overlays(self, tmp_path):
         """A pure-black overlay on a colourful field stays black in the GIF.
