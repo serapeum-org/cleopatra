@@ -56,7 +56,6 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
-from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
 
@@ -136,7 +135,7 @@ class TexturedGlobeGlyph:
         n_lat: int = 90,
         brightness: float = 1.0,
         fig: Figure | None = None,
-        ax: Axes | None = None,
+        ax: Axes3D | None = None,
         **kwargs,
     ):
         """Initialize the globe from an equirectangular texture.
@@ -318,7 +317,7 @@ class TexturedGlobeGlyph:
         coords = self._tilt_matrix @ (self._rotation_z(spin) @ self._base_xyz)
         return tuple(coords.reshape(3, self._n_lat, self._n_lon))
 
-    def _resolve_axes(self, ax: Axes | None, options: dict) -> tuple[Figure, Axes]:
+    def _resolve_axes(self, ax: Axes3D | None, options: dict) -> tuple[Figure, Axes3D]:
         """Resolve the 3-D `(fig, ax)` to draw on, creating a 3-D axes if none was supplied.
 
         Args:
@@ -443,8 +442,8 @@ class TexturedGlobeGlyph:
     # Rendering                                                            #
     # ------------------------------------------------------------------ #
     def draw(
-        self, ax: Axes | None = None, *, spin: float = 0.0, **kwargs
-    ) -> tuple[Figure, Axes]:
+        self, ax: Axes3D | None = None, *, spin: float = 0.0, **kwargs
+    ) -> tuple[Figure, Axes3D]:
         """Render the textured globe onto a 3-D axes at a given spin angle.
 
         Args:
@@ -509,7 +508,7 @@ class TexturedGlobeGlyph:
 
     def animate(
         self,
-        ax: Axes | None = None,
+        ax: Axes3D | None = None,
         *,
         n_frames: int = 60,
         revolutions: float = 1.0,
