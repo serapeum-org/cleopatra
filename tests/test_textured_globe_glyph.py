@@ -185,8 +185,9 @@ class TestDraw:
 
     def test_draw_on_non_3d_ax_raises(self, texture):
         _, ax2d = plt.subplots()
+        globe = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12)
         with pytest.raises(ValueError):
-            TexturedGlobeGlyph(texture, n_lon=24, n_lat=12).draw(ax2d)
+            globe.draw(ax2d)
 
     def test_draw_uses_instance_fig(self, texture):
         fig = plt.figure()
