@@ -35,6 +35,93 @@ SUPPORTED_VIDEO_FORMAT = ["gif", "mov", "avi", "mp4", "webp"]
 #: Formats written by Pillow rather than FFmpeg.
 _PILLOW_FORMATS = {"gif", "webp"}
 
+#: Palette entries a GIF clip's shared colour table is quantised to. Two of the
+#: 256 are held back for pure black and white (see `build_clip_palette`).
+_CLIP_PALETTE_COLORS = 254
+
+#: Divisor applied to each frame before it joins the palette montage. Sampling
+#: at a third of the frame size keeps the montage cheap on a long clip; it does
+#: not measurably change which colours are chosen.
+_MONTAGE_DIVISOR = 3
+
+
+def build_clip_palette(frames: list, colors: int = _CLIP_PALETTE_COLORS):
+    """Build one colour palette shared by every frame of a clip.
+
+    Quantising each frame independently makes constant regions shimmer and lets
+    the same colour drift between frames, so a single table is derived from a
+    montage of all the frames and every frame is mapped through it.
+
+    The montage is quantised with Pillow's `MAXCOVERAGE`, which picks colours to
+    span the clip's colour *range*. Median cut, the obvious alternative, splits
+    by pixel population instead: on a clip with a large textured area the
+    background claims nearly every slot and small saturated marks -- overlay
+    glyphs, thin paths, labels -- collapse to the nearest muddy neighbour.
+
+    Args:
+        frames: The clip's frames as RGB `PIL.Image.Image` objects.
+        colors: How many palette entries to quantise to. The remaining entries
+            up to 256 are reserved -- pure black and white are pinned so
+            single-colour overlays stay crisp.
+
+    Returns:
+        PIL.Image.Image: A ``"P"``-mode image carrying the shared palette,
+        ready to pass to `Image.quantize(palette=...)`.
+    """
+    width, height = frames[0].size
+    tile_w = max(1, width // _MONTAGE_DIVISOR)
+    tile_h = max(1, height // _MONTAGE_DIVISOR)
+    montage = PILImage.new("RGB", (tile_w, tile_h * len(frames)))
+    for index, frame in enumerate(frames):
+        montage.paste(frame.resize((tile_w, tile_h)), (0, index * tile_h))
+
+    base = montage.quantize(colors=colors, method=PILImage.Quantize.MAXCOVERAGE)
+    entries = (list(base.getpalette() or []) + [0] * 768)[:768]
+    entries[colors * 3 : colors * 3 + 6] = [0, 0, 0, 255, 255, 255]
+    palette = PILImage.new("P", (1, 1))
+    palette.putpalette(entries)
+    return palette
+
+
+def quantize_to_palette(frames: list, palette) -> list:
+    """Map every frame onto a shared palette, dithering the residual error.
+
+    Args:
+        frames: The clip's frames as RGB `PIL.Image.Image` objects.
+        palette: A ``"P"``-mode image carrying the palette, from
+            `build_clip_palette`.
+
+    Returns:
+        list: The frames as ``"P"``-mode images sharing `palette`.
+    """
+    return [
+        frame.quantize(palette=palette, dither=PILImage.Dither.FLOYDSTEINBERG)
+        for frame in frames
+    ]
+
+
+def _write_pillow_animation(
+    frames: list, path, fps: float, loop: int, optimize: bool
+) -> None:
+    """Write frames out as an animated GIF or WebP via Pillow.
+
+    Args:
+        frames: The clip's frames. For GIF these are ``"P"``-mode images
+            sharing one palette; for WebP they are passed through as grabbed.
+        path: Where to write the animation.
+        fps: Playback rate, converted to a per-frame duration in milliseconds.
+        loop: How many times to loop; `0` loops forever.
+        optimize: Run Pillow's optimisation pass (a no-op for WebP).
+    """
+    frames[0].save(
+        path,
+        save_all=True,
+        append_images=frames[1:],
+        duration=int(1000 / fps),
+        loop=loop,
+        optimize=optimize,
+    )
+
 
 def _ensure_ffmpeg_available() -> None:
     """Make sure matplotlib can find an ffmpeg binary to shell out to.
@@ -99,27 +186,9 @@ class _OptimizedPillowWriter(PillowWriter):
         frames = self._frames  # type: ignore[attr-defined]
         if str(self.outfile).lower().endswith(".gif") and len(frames) > 1:
             rgb = [f.convert("RGB") for f in frames]
-            w, h = rgb[0].size
-            tw, th = max(1, w // 3), max(1, h // 3)
-            montage = PILImage.new("RGB", (tw, th * len(rgb)))
-            for i, frame in enumerate(rgb):
-                montage.paste(frame.resize((tw, th)), (0, i * th))
-            base = montage.quantize(colors=254, method=PILImage.Quantize.MEDIANCUT)
-            pal = (list(base.getpalette() or []) + [0] * 768)[:768]
-            pal[254 * 3 : 254 * 3 + 6] = [0, 0, 0, 255, 255, 255]
-            palette = PILImage.new("P", (1, 1))
-            palette.putpalette(pal)
-            frames = [
-                f.quantize(palette=palette, dither=PILImage.Dither.FLOYDSTEINBERG)
-                for f in rgb
-            ]
-        frames[0].save(
-            self.outfile,
-            save_all=True,
-            append_images=frames[1:],
-            duration=int(1000 / self.fps),
-            loop=self._loop,
-            optimize=self._optimize,
+            frames = quantize_to_palette(rgb, build_clip_palette(rgb))
+        _write_pillow_animation(
+            frames, self.outfile, self.fps, self._loop, self._optimize
         )
 
 
@@ -613,6 +682,153 @@ def to_mp4(anim: FuncAnimation, fps: int = 2, **kwargs) -> bytes:
         save_animation: Write an animation directly to a file path.
     """
     return to_bytes(anim, fmt="mp4", fps=fps, **kwargs)
+
+
+def _is_chroma_subsampled(pix_fmt: str | None) -> bool:
+    """Whether a pixel format throws away colour resolution.
+
+    Args:
+        pix_fmt: The source's pixel format as ffmpeg reports it, e.g.
+            ``"yuv420p"``. `None` when the decoder did not report one.
+
+    Returns:
+        bool: `True` for a YUV format that is not 4:4:4 (or the NV planar
+        formats, which are 4:2:0), `False` otherwise.
+    """
+    if not pix_fmt:
+        return False
+    fmt = pix_fmt.lower()
+    if fmt.startswith("nv"):  # nv12 / nv21 are 4:2:0
+        return True
+    return fmt.startswith(("yuv", "yuvj")) and "444" not in fmt
+
+
+def gif_from_video(
+    src: str | os.PathLike,
+    path: str | os.PathLike,
+    *,
+    fps: float = 12,
+    width: int | None = None,
+    max_colors: int = _CLIP_PALETTE_COLORS,
+    loop: int = 0,
+    optimize: bool = True,
+) -> str:
+    """Derive a GIF from an existing video, without re-rendering the frames.
+
+    Drawing is usually far more expensive than encoding -- hours, for a long
+    scientific animation -- so a clip is best rendered once to a video and every
+    other format derived from that file. `save_animation` needs a live
+    `FuncAnimation` and would re-render; this reads the frames back off disk
+    instead.
+
+    The frames go through exactly the same clip-wide palette as
+    `save_animation`'s GIF path (`build_clip_palette`), so a GIF derived from a
+    video and one rendered straight from the animation quantise identically.
+
+    Args:
+        src: The source video. Any container the bundled FFmpeg can decode.
+        path: Where to write the GIF.
+        fps: Frames per second to sample the source at. Frames are dropped or
+            duplicated by FFmpeg's `fps` filter as needed. Defaults to `12`.
+        width: Scale the output to this width in pixels, preserving aspect.
+            `None` (the default) keeps the source's own size.
+        max_colors: Palette size, in ``2-254``. The rest of the 256 entries are
+            reserved for pure black and white.
+        loop: How many times the GIF loops; `0` loops forever.
+        optimize: Run Pillow's optimisation pass.
+
+    Returns:
+        The output path as a `str`, convenient for chaining.
+
+    Raises:
+        FileNotFoundError: If `src` does not exist, or if no FFmpeg binary can
+            be found.
+        ValueError: If `max_colors` is outside ``2-254``, if `fps` is not
+            positive, if `width` is not positive, or if `src` yields no frames.
+
+    Warns:
+        UserWarning: If `src` is chroma-subsampled (e.g. the ``yuv420p`` that
+            `save_animation` writes by default). Colour resolution is already
+            gone from such a file, which caps how well saturated detail can
+            survive whatever the GIF palette then does -- render the
+            intermediate with ``pix_fmt="yuv444p"`` and a low `crf` when the
+            plan is to derive a GIF from it.
+
+    Examples:
+        - Render an animation once to MP4, then derive a GIF from that file:
+            ```python
+            >>> import os, shutil, tempfile, warnings, matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from matplotlib.animation import FuncAnimation
+            >>> from cleopatra.glyphs.base.animation import gif_from_video, save_animation
+            >>> tmp = tempfile.mkdtemp()
+            >>> fig, ax = plt.subplots()
+            >>> (line,) = ax.plot([0, 1], [0, 0])
+            >>> anim = FuncAnimation(fig, lambda i: (line,), frames=4)
+            >>> mp4 = save_animation(anim, os.path.join(tmp, "clip.mp4"), fps=4,
+            ...                      pix_fmt="yuv444p")
+            >>> gif = gif_from_video(mp4, os.path.join(tmp, "clip.gif"), fps=4)
+            >>> open(gif, "rb").read()[:6] in (b"GIF87a", b"GIF89a")
+            True
+            >>> plt.close(fig)
+            >>> shutil.rmtree(tmp)
+
+            ```
+
+    See Also:
+        save_animation: Write a live `FuncAnimation` straight to a file.
+        build_clip_palette: The shared palette both paths quantise through.
+    """
+    src = os.fspath(src)
+    path = os.fspath(path)
+    if not os.path.isfile(src):
+        raise FileNotFoundError(f"The source video {src!r} does not exist.")
+    if not 2 <= max_colors <= _CLIP_PALETTE_COLORS:
+        raise ValueError(
+            f"max_colors must be in 2-{_CLIP_PALETTE_COLORS}, got {max_colors!r}."
+        )
+    if fps <= 0:
+        raise ValueError(f"fps must be positive, got {fps!r}.")
+    if width is not None and width <= 0:
+        raise ValueError(f"width must be positive, got {width!r}.")
+
+    try:
+        import imageio_ffmpeg
+    except ModuleNotFoundError as e:  # pragma: no cover - imageio-ffmpeg is a dep
+        raise FileNotFoundError(
+            "Deriving a GIF from a video needs FFmpeg. Install imageio-ffmpeg "
+            "(ships a bundled binary) or an ffmpeg on PATH."
+        ) from e
+
+    reader = imageio_ffmpeg.read_frames(src, output_params=["-vf", f"fps={fps}"])
+    meta = next(reader)
+    frame_w, frame_h = meta["size"]
+    if _is_chroma_subsampled(meta.get("pix_fmt")):
+        warnings.warn(
+            f"{src!r} is {meta.get('pix_fmt')}, which stores colour at reduced "
+            "resolution; saturated detail is already degraded before the GIF "
+            "palette sees it. Render the intermediate with pix_fmt='yuv444p' "
+            "and a low crf when a GIF will be derived from it.",
+            UserWarning,
+            stacklevel=2,
+        )
+
+    frames = [
+        PILImage.frombytes("RGB", (frame_w, frame_h), bytes(buffer))
+        for buffer in reader
+    ]
+    if not frames:
+        raise ValueError(f"The source video {src!r} yielded no frames.")
+    if width is not None and width != frame_w:
+        height = max(1, round(frame_h * width / frame_w))
+        frames = [f.resize((width, height), PILImage.LANCZOS) for f in frames]
+
+    palette = build_clip_palette(frames, colors=max_colors)
+    _write_pillow_animation(
+        quantize_to_palette(frames, palette), path, fps, loop, optimize
+    )
+    return path
 
 
 def embed_gif(anim: FuncAnimation, fps: int = 2) -> Image:

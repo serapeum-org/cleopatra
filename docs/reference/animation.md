@@ -18,6 +18,37 @@ machinery as **glyph-independent** helpers. They operate on *any*
   IPython is imported **lazily** (and is bundled with Jupyter, so any notebook already has
   it); if it is absent, `embed_gif` raises a clear `ModuleNotFoundError` with a
   `pip install ipython` hint — or use `to_gif` for raw bytes with no IPython dependency.
+- `gif_from_video(src, path, fps=12, width=None, max_colors=254, ...)` derives a GIF from a
+  video **already on disk**, without re-rendering. Drawing is usually far more expensive than
+  encoding, so a long clip is best rendered once to MP4 and every other format derived from
+  that file.
+
+## The GIF palette
+
+Both GIF paths — `save_animation` and `gif_from_video` — quantise through one palette shared
+by every frame (`build_clip_palette`), derived from a montage of all the frames. Per-frame
+palettes would make constant regions shimmer and let a colour drift between frames; two of
+the 256 entries are pinned to pure black and white so single-colour overlays stay crisp.
+
+The montage is quantised for colour **coverage**, not pixel population. The distinction
+matters on exactly the clips this package produces: with a population-weighted split (median
+cut) a large textured background claims nearly every palette slot, and small saturated marks —
+overlay glyphs, thin paths, labels — collapse to the nearest muddy neighbour. On a
+texture-heavy test clip those marks landed 100–180 away (in RGB distance) from the colours
+they were drawn in; selecting for coverage brings that under 12, in a **smaller** file.
+
+!!! warning "Render the intermediate with `pix_fmt="yuv444p"` if a GIF will be derived from it"
+
+    `save_animation` writes `yuv420p` by default — the right choice for playback compatibility,
+    but it stores colour at half resolution in each direction. That loss happens *before* the
+    GIF palette ever runs, and no quantiser can undo it: on the same test clip a `yuv420p`
+    intermediate caps the derived GIF at ~50 RGB distance, against ~5 from a `yuv444p` one.
+    `gif_from_video` emits a `UserWarning` when it is handed a subsampled source.
+
+    ```python
+    mp4 = save_animation(anim, "master.mp4", fps=12, crf=0, pix_fmt="yuv444p")
+    gif_from_video(mp4, "web.gif", fps=12, width=720)
+    ```
 
 `SUPPORTED_VIDEO_FORMAT` is `["gif", "mov", "avi", "mp4", "webp"]`. `Glyph.save_animation`
 delegates to `save_animation`, so the writer/format logic has a single source of truth.
