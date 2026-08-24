@@ -68,8 +68,8 @@ from cleopatra.glyphs.base.glyph import (
 #: Earth's axial tilt (obliquity of the ecliptic), in degrees -- the default lean of the polar axis.
 EARTH_TILT_DEG = 23.44
 
-#: Default render options for :class:`TexturedGlobeGlyph` (the module constant; the class re-exposes it as
-#: ``TexturedGlobeGlyph.DEFAULT_OPTIONS`` for introspection).
+#: Default render options for `TexturedGlobeGlyph` (the module constant; the class re-exposes it as
+#: `TexturedGlobeGlyph.DEFAULT_OPTIONS` for introspection).
 GLOBE_DEFAULT_OPTIONS = {
     "figsize": (6, 6),
     "elev": 15.0,
