@@ -158,7 +158,9 @@ def _as_rgba(path: "str | os.PathLike | np.ndarray") -> np.ndarray:
         when the input is RGB.
 
     Raises:
-        ValueError: If an array input is not ``(H, W, 3)`` or ``(H, W, 4)``.
+        ValueError: If an array input is not ``(H, W, 3)`` / ``(H, W, 4)``, is a
+            non-``uint8`` integer array, or is a float array with values outside
+            ``[0, 1]``.
     """
     if isinstance(path, np.ndarray):
         arr = np.asarray(path)
@@ -167,9 +169,23 @@ def _as_rgba(path: "str | os.PathLike | np.ndarray") -> np.ndarray:
                 f"an image array must be (H, W, 3) or (H, W, 4); got shape {arr.shape}."
             )
         if np.issubdtype(arr.dtype, np.floating):
+            # A float image is the ``0-1`` contract; reject clearly out-of-range
+            # values rather than silently clipping (e.g. a ``0-255`` float array
+            # would otherwise flatten to all-white).
+            if arr.size and (arr.min() < -1e-6 or arr.max() > 1.0 + 1e-6):
+                raise ValueError(
+                    "a float image array must hold values in [0, 1]; got range "
+                    f"[{float(arr.min()):.4g}, {float(arr.max()):.4g}]. "
+                    "For 0-255 data pass a uint8 array."
+                )
             arr = (np.clip(arr, 0.0, 1.0) * 255).round().astype(np.uint8)
-        else:
-            arr = arr.astype(np.uint8, copy=False)
+        elif arr.dtype != np.uint8:
+            # Any other integer dtype (uint16, int32, bool, ...) would truncate
+            # mod 256 under a bare uint8 cast and silently garble the mark.
+            raise ValueError(
+                f"an integer image array must be uint8 (0-255); got dtype {arr.dtype}. "
+                "Convert / rescale it to uint8 (or pass a float 0-1 array) first."
+            )
         if arr.shape[2] == 3:
             opaque = np.full(arr.shape[:2] + (1,), 255, dtype=np.uint8)
             arr = np.concatenate([arr, opaque], axis=2)

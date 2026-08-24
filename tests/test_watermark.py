@@ -231,6 +231,30 @@ class TestStampMark:
         ax = stamp_mark(fig, rgba, shadow=False)
         assert ax.images, "float array should produce a drawn image"
 
+    def test_uint16_array_rejected(self, fig):
+        """A non-``uint8`` integer array is rejected, not truncated mod 256.
+
+        Test scenario:
+            A ``uint16`` image (value 1000 would become 232 under a bare
+            ``uint8`` cast) raises a `ValueError` naming the dtype instead of
+            silently garbling the mark.
+        """
+        u16 = np.full((20, 20, 4), 1000, dtype=np.uint16)
+        with pytest.raises(ValueError, match="uint8"):
+            stamp_mark(fig, u16, shadow=False)
+
+    def test_out_of_range_float_array_rejected(self, fig):
+        """A float array outside ``[0, 1]`` is rejected, not clipped to white.
+
+        Test scenario:
+            A ``0-255`` float array (common way to hold an image) raises a
+            `ValueError` about the ``[0, 1]`` contract rather than flattening to
+            all-white.
+        """
+        f255 = np.full((20, 20, 4), 128.0, dtype=np.float32)
+        with pytest.raises(ValueError, match=r"\[0, 1\]"):
+            stamp_mark(fig, f255, shadow=False)
+
     @pytest.mark.parametrize("bad", [np.zeros((10, 10)), np.zeros((10, 10, 2))])
     def test_bad_array_shape_raises(self, fig, bad):
         """A non-``(H, W, 3|4)`` array raises `ValueError`.
