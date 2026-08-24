@@ -498,6 +498,18 @@ class TestStampMark:
         with pytest.raises(ValueError, match="must be"):
             stamp_mark(fig, bad, shadow=False)
 
+    def test_zero_size_image_rejected(self, fig):
+        """A zero-size image dimension raises clearly, not a matplotlib error.
+
+        Test scenario:
+            A ``(0, W, C)`` array passes the shape check but has no pixels;
+            `stamp_mark` rejects it up front rather than surfacing a confusing
+            matplotlib-internal reduction error.
+        """
+        empty = np.zeros((0, 10, 4), dtype=np.uint8)
+        with pytest.raises(ValueError, match="zero-size"):
+            stamp_mark(fig, empty, shadow=False)
+
     def test_file_path_input(self, fig, tmp_path, logo):
         """A PNG file path is loaded via PIL and stamped.
 

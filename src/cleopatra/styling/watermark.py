@@ -167,6 +167,11 @@ def stamp_mark(
 
     image = _as_rgba(path)
     img_h, img_w = image.shape[:2]
+    if img_h == 0 or img_w == 0:
+        raise ValueError(
+            f"the mark image has a zero-size dimension {image.shape[:2]}; "
+            "it must have a positive height and width."
+        )
     fig_w_in, fig_h_in = fig.get_size_inches()
 
     width = float(frac)
