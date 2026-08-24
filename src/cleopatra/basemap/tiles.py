@@ -35,6 +35,7 @@ Examples:
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import html
 import importlib.util
@@ -1418,7 +1419,7 @@ def world_texture(
                 np.save(fh, texture)
             os.replace(tmp_name, cache_path)
         except BaseException:
-            if os.path.exists(tmp_name):
+            with contextlib.suppress(FileNotFoundError):
                 os.remove(tmp_name)
             raise
     return texture
