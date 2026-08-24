@@ -69,8 +69,10 @@ def stamp_mark(
         path: The mark image. A file path (any format `PIL` can open, read as
             RGBA) or an in-memory ``(H, W, 3)`` / ``(H, W, 4)`` array -- either
             ``uint8`` ``0-255`` or float ``0-1``; RGB gains an opaque alpha.
-        frac: The mark's width as a fraction of the figure width, in ``(0, 1]``.
-            Defaults to ``0.11``.
+        frac: The size of the mark's *longer* on-figure side as a fraction of
+            the corresponding figure side, in ``(0, 1]`` -- the width for a
+            landscape mark, the height for a portrait one -- so the mark always
+            fits and is never distorted. Defaults to ``0.11``.
         corner: Which corner to anchor to -- ``"lower right"`` (default),
             ``"lower left"``, ``"upper right"``, or ``"upper left"``.
         margin: The gap between the mark and the figure edges, as a fraction of
@@ -123,6 +125,15 @@ def stamp_mark(
     # image aspect and corrected for the figure's own aspect, because a unit of
     # figure-fraction height spans fewer inches than a unit of width (or more).
     height = width * (img_h / img_w) * (fig_w_in / fig_h_in)
+    # `frac` sizes the mark's *longer* on-figure side: for a landscape mark that
+    # is the width (unchanged), but a portrait mark whose derived height exceeds
+    # `frac` is scaled down so its height is `frac` instead -- otherwise a tall
+    # logo would silently overflow the figure. Aspect is preserved either way.
+    longest = max(width, height)
+    if longest > frac:
+        scale = frac / longest
+        width *= scale
+        height *= scale
     x0, y0 = _corner_origin(corner, width, height, margin)
 
     if shadow:

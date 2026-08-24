@@ -115,6 +115,25 @@ class TestStampMark:
         h_in = box.height * 6.0
         assert np.isclose(h_in / w_in, 40 / 80), f"aspect distorted: {h_in / w_in} != {40 / 80}"
 
+    def test_tall_logo_stays_on_canvas(self, fig):
+        """A portrait logo is sized by height and never overflows the figure.
+
+        Test scenario:
+            A 10:1 tall logo would, if `frac` only sized the width, derive a
+            height above 1 and land off-canvas. `frac` instead caps the mark's
+            longer (height) side, so the mark stays within ``[0, 1]`` in both
+            dimensions and keeps its aspect ratio.
+        """
+        tall = np.zeros((400, 40, 4), dtype=np.uint8)
+        tall[..., :3] = 255
+        tall[..., 3] = 255
+        ax = stamp_mark(fig, tall, frac=0.5, corner="upper left", shadow=False)
+        x0, y0, w, h = (float(v) for v in ax.get_position().bounds)
+        assert 0.0 <= x0 and x0 + w <= 1.0, f"mark overflows horizontally: {(x0, w)}"
+        assert 0.0 <= y0 and y0 + h <= 1.0, f"mark overflows vertically: {(y0, h)}"
+        assert np.isclose(max(w, h), 0.5), f"longer side should equal frac: {(w, h)}"
+        assert np.isclose((h * 6.0) / (w * 8.0), 400 / 40), f"tall logo distorted: {(w, h)}"
+
     def test_shadow_adds_a_second_axes(self, fig, logo):
         """`shadow=True` draws the shadow on its own axes beneath the mark.
 
