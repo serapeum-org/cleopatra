@@ -459,7 +459,7 @@ notebook = [
 requires-dist = [
     { name = "cmap", marker = "extra == 'science-colors'", specifier = ">=0.7.2" },
     { name = "hpc-utils", specifier = ">=0.1.4" },
-    { name = "imageio-ffmpeg", specifier = ">=0.4.9" },
+    { name = "imageio-ffmpeg", specifier = ">=0.6.0" },
     { name = "matplotlib", specifier = ">=3.9" },
     { name = "numpy", specifier = ">=2.0.0" },
     { name = "pillow", specifier = ">=12.1.1" },
