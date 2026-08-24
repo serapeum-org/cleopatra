@@ -116,6 +116,7 @@ nav:
     - LineGlyph: reference/line-glyph.md
     - PolygonGlyph: reference/polygon-glyph.md
     - KDEGlyph: reference/kde-glyph.md
+    - TexturedGlobeGlyph (3-D): reference/textured-globe-glyph.md
     - Tiles (basemaps): reference/tiles.md
     - Reference data (coastlines/relief): reference/reference-data.md
     - Geo basemap methods (glyphs): reference/geo.md
