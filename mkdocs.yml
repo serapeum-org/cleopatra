@@ -122,6 +122,7 @@ nav:
     - Geo basemap methods (glyphs): reference/geo.md
     - Projection (globe frames): reference/projection.md
     - Animations (save/embed): reference/animation.md
+    - Watermark (figure mark): reference/watermark.md
     - Colors: reference/colors-glyph.md
     - Styles: reference/styles-glyph.md
     - Perceptual colour toolkit: reference/perceptual.md

@@ -88,7 +88,10 @@ colorbars, ticks, classification, and animation.
   not here. The deliberate exception is the `tiles` / `reference` basemap
   helpers, which fetch a handful of *fixed public* reference datasets (never
   user data) that cleopatra re-hosts as dependency-light artifacts — see
-  "Supporting utilities".
+  "Supporting utilities". Reading a **presentation asset** — a logo / watermark
+  image for `styling.watermark.stamp_mark` — is likewise allowed: it is
+  decoration on the rendered figure, not user data, and it loads via Pillow (an
+  existing dependency), never GDAL/geopandas.
 - **GIS / geoprocessing:** reprojection of user data, clipping, resampling,
   zonal stats, CRS management beyond what the optional `tiles` basemap needs.
 - **Interactive / GUI apps:** dashboards, widget servers, event callbacks,
