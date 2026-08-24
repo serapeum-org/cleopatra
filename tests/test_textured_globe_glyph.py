@@ -269,15 +269,15 @@ class TestAnimate:
         with pytest.raises(ValueError, match="Unknown option"):
             globe.animate(n_frames=3, elevv=80)
 
-    def test_animate_reuses_single_axes(self, texture):
+    def test_animate_reuses_single_axes(self, texture, tmp_path):
         globe = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12)
         fig = plt.figure()
         ax = fig.add_subplot(projection="3d")
         anim = globe.animate(ax, n_frames=4)
         assert list(anim.new_frame_seq()) == [0, 1, 2, 3]
-        # animate's per-frame update is draw(); its redraw keeps a single surface
-        for angle in (0.0, 90.0, 180.0):
-            globe.draw(ax, spin=angle)
+        # render every frame via the public writer; each frame's update is draw(),
+        # whose redraw keeps a single surface on the reused axes
+        anim.save(tmp_path / "globe.gif", writer="pillow", fps=5)
         assert len(ax.collections) == 1
 
 
