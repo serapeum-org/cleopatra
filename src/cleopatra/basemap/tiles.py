@@ -43,6 +43,7 @@ import logging
 import math
 import os
 import re
+import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -1381,7 +1382,12 @@ def world_texture(
         cache_dir.mkdir(parents=True, exist_ok=True)
         cache_path = cache_dir / f"{name}_z{zoom}_{digest}.npy"
         if cache_path.exists():
-            return np.load(cache_path)
+            try:
+                return np.load(cache_path)
+            except (OSError, ValueError, EOFError):
+                # A truncated / foreign / pre-atomic .npy: drop it and rebuild
+                # (as reference.relief does with a poisoned cached asset).
+                cache_path.unlink(missing_ok=True)
 
     side = 2**zoom
     tiles = [Tile(x, y, zoom) for x in range(side) for y in range(side)]
@@ -1402,10 +1408,17 @@ def world_texture(
     texture = np.clip(texture / 255.0, 0.0, 1.0).astype("float32")
 
     if cache_path is not None:
-        # Write aside and rename: np.save straight onto the final path leaves a
-        # truncated array under the name the next run trusts if it is interrupted.
-        tmp = cache_path.with_name(cache_path.name + ".tmp")
-        with open(tmp, "wb") as fh:
-            np.save(fh, texture)
-        os.replace(tmp, cache_path)
+        # Write to a unique temp file, then rename: np.save straight onto the
+        # final path leaves a truncated array under the name the next run trusts
+        # if it is interrupted, and a fixed .tmp name lets concurrent same-key
+        # writes clobber each other. Remove the temp if the write fails.
+        fd, tmp_name = tempfile.mkstemp(dir=cache_path.parent, suffix=".npy.tmp")
+        try:
+            with os.fdopen(fd, "wb") as fh:
+                np.save(fh, texture)
+            os.replace(tmp_name, cache_path)
+        except BaseException:
+            if os.path.exists(tmp_name):
+                os.remove(tmp_name)
+            raise
     return texture

@@ -1531,6 +1531,26 @@ class TestWorldTexture:
         world_texture(zoom=1, n_lon=8, n_lat=4, cache=False)
         assert fetch.call_count == 2, "cache=False must not reuse a cached texture"
 
+    def test_recovers_from_a_corrupt_cache_file(self, tmp_path, monkeypatch):
+        """A truncated/foreign cache file is dropped and the texture recomputed."""
+        monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))
+        monkeypatch.setattr(tiles_mod, "fetch_tiles", _fetch_split_by_x())
+        world_texture(zoom=1, n_lon=8, n_lat=4)
+        cache_files = list((tmp_path / "world-textures").glob("*.npy"))
+        assert len(cache_files) == 1, f"expected one cache file, got {cache_files}"
+        cache_files[0].write_bytes(b"not a valid npy")
+        tex = world_texture(zoom=1, n_lon=8, n_lat=4)
+        assert tex.shape == (4, 8, 3), "a poisoned cache must be rebuilt, not raise"
+
+    def test_cache_key_discriminates_params(self, tmp_path, monkeypatch):
+        """A different `n_lon` yields a distinct cache entry (the key discriminates)."""
+        monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))
+        monkeypatch.setattr(tiles_mod, "fetch_tiles", _fetch_split_by_x())
+        world_texture(zoom=1, n_lon=8, n_lat=4)
+        world_texture(zoom=1, n_lon=16, n_lat=4)
+        cache_files = list((tmp_path / "world-textures").glob("*.npy"))
+        assert len(cache_files) == 2, f"expected two distinct cache files, got {cache_files}"
+
     def test_missing_extra_raises_import_error(self, monkeypatch):
         """Without the `[tiles]` extra, `world_texture` raises `ImportError`."""
         monkeypatch.setattr(tiles_mod, "_TILES_AVAILABLE", False)
