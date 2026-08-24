@@ -67,6 +67,55 @@ def build_clip_palette(frames: list, colors: int = _CLIP_PALETTE_COLORS):
     Returns:
         PIL.Image.Image: A ``"P"``-mode image carrying the shared palette,
         ready to pass to `Image.quantize(palette=...)`.
+
+    Examples:
+        - Pure black and white are held back at the top of the table, so a
+          single-colour overlay drawn on the clip stays crisp:
+            ```python
+            >>> from PIL import Image
+            >>> from cleopatra.glyphs.base.animation import build_clip_palette
+            >>> frames = [
+            ...     Image.new("RGB", (12, 12), (200, 30, 30)),
+            ...     Image.new("RGB", (12, 12), (30, 30, 200)),
+            ... ]
+            >>> entries = build_clip_palette(frames).getpalette()
+            >>> entries[254 * 3 : 254 * 3 + 3]
+            [0, 0, 0]
+            >>> entries[255 * 3 : 255 * 3 + 3]
+            [255, 255, 255]
+
+            ```
+        - A smaller budget moves the reserved pair up behind it, so asking for
+          16 colours still leaves black and white reachable:
+            ```python
+            >>> from PIL import Image
+            >>> from cleopatra.glyphs.base.animation import build_clip_palette
+            >>> frames = [
+            ...     Image.new("RGB", (12, 12), (200, 30, 30)),
+            ...     Image.new("RGB", (12, 12), (30, 30, 200)),
+            ... ]
+            >>> entries = build_clip_palette(frames, colors=16).getpalette()
+            >>> entries[16 * 3 : 16 * 3 + 3]
+            [0, 0, 0]
+
+            ```
+        - The table spans the whole clip, so a colour introduced only in the
+          last frame is still represented:
+            ```python
+            >>> from PIL import Image
+            >>> from cleopatra.glyphs.base.animation import build_clip_palette
+            >>> frames = [Image.new("RGB", (9, 9), (0, 0, 0))] * 4
+            >>> frames.append(Image.new("RGB", (9, 9), (255, 0, 255)))
+            >>> entries = build_clip_palette(frames).getpalette()
+            >>> triples = [tuple(entries[i : i + 3]) for i in range(0, 254 * 3, 3)]
+            >>> any(r > 200 and g < 40 and b > 200 for r, g, b in triples)
+            True
+
+            ```
+
+    See Also:
+        quantize_to_palette: Map the frames onto the palette this returns.
+        gif_from_video: Derives a GIF through this same palette.
     """
     width, height = frames[0].size
     tile_w = max(1, width // _MONTAGE_DIVISOR)
@@ -93,6 +142,45 @@ def quantize_to_palette(frames: list, palette) -> list:
 
     Returns:
         list: The frames as ``"P"``-mode images sharing `palette`.
+
+    Examples:
+        - Every frame comes back palette-mode, carrying the same table -- which
+          is what keeps a constant region byte-stable from frame to frame:
+            ```python
+            >>> from PIL import Image
+            >>> from cleopatra.glyphs.base.animation import (
+            ...     build_clip_palette,
+            ...     quantize_to_palette,
+            ... )
+            >>> frames = [
+            ...     Image.new("RGB", (8, 8), (255, 0, 0)),
+            ...     Image.new("RGB", (8, 8), (0, 0, 255)),
+            ... ]
+            >>> quantised = quantize_to_palette(frames, build_clip_palette(frames))
+            >>> len(quantised)
+            2
+            >>> quantised[0].mode
+            'P'
+            >>> quantised[0].getpalette() == quantised[1].getpalette()
+            True
+
+            ```
+        - A colour the palette holds exactly survives the round trip unchanged:
+            ```python
+            >>> from PIL import Image
+            >>> from cleopatra.glyphs.base.animation import (
+            ...     build_clip_palette,
+            ...     quantize_to_palette,
+            ... )
+            >>> frames = [Image.new("RGB", (8, 8), (255, 0, 0))]
+            >>> quantised = quantize_to_palette(frames, build_clip_palette(frames))
+            >>> quantised[0].convert("RGB").getpixel((0, 0))
+            (255, 0, 0)
+
+            ```
+
+    See Also:
+        build_clip_palette: Builds the shared palette these frames map onto.
     """
     return [
         frame.quantize(palette=palette, dither=PILImage.Dither.FLOYDSTEINBERG)
@@ -773,6 +861,39 @@ def gif_from_video(
             True
             >>> plt.close(fig)
             >>> shutil.rmtree(tmp)
+
+            ```
+        - `width` scales the output for a web copy, keeping the aspect ratio of
+          the source and leaving the master untouched:
+            ```python
+            >>> import os, shutil, tempfile, matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from PIL import Image
+            >>> from matplotlib.animation import FuncAnimation
+            >>> from cleopatra.glyphs.base.animation import gif_from_video, save_animation
+            >>> tmp = tempfile.mkdtemp()
+            >>> fig, ax = plt.subplots()
+            >>> (line,) = ax.plot([0, 1], [0, 0])
+            >>> anim = FuncAnimation(fig, lambda i: (line,), frames=4)
+            >>> mp4 = save_animation(anim, os.path.join(tmp, "master.mp4"), fps=4,
+            ...                      pix_fmt="yuv444p")
+            >>> gif = gif_from_video(mp4, os.path.join(tmp, "web.gif"), fps=4, width=160)
+            >>> with Image.open(gif) as web:
+            ...     web.size
+            (160, 120)
+            >>> plt.close(fig)
+            >>> shutil.rmtree(tmp)
+
+            ```
+        - A source that does not exist is reported up front, rather than
+          failing later inside the decoder:
+            ```python
+            >>> from cleopatra.glyphs.base.animation import gif_from_video
+            >>> gif_from_video("no-such-clip.mp4", "out.gif")
+            Traceback (most recent call last):
+                ...
+            FileNotFoundError: The source video 'no-such-clip.mp4' does not exist.
 
             ```
 
