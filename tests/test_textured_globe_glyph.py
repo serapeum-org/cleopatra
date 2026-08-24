@@ -274,9 +274,10 @@ class TestAnimate:
         fig = plt.figure()
         ax = fig.add_subplot(projection="3d")
         anim = globe.animate(ax, n_frames=4)
-        # drive a couple of frames; the redraw contract keeps one surface
-        anim._func(0)
-        anim._func(1)
+        assert list(anim.new_frame_seq()) == [0, 1, 2, 3]
+        # animate's per-frame update is draw(); its redraw keeps a single surface
+        for angle in (0.0, 90.0, 180.0):
+            globe.draw(ax, spin=angle)
         assert len(ax.collections) == 1
 
 
