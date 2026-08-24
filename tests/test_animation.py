@@ -115,7 +115,9 @@ class TestSaveAnimation:
 
         result = save_animation(anim, "clip.gif", fps=7)
 
-        pillow.assert_called_once_with(fps=7, optimize=True, loop=0)
+        pillow.assert_called_once_with(
+            fps=7, optimize=True, loop=0, quantize_method='coverage'
+        )
         anim.save.assert_called_once_with("clip.gif", writer=pillow.return_value)
         assert result == "clip.gif", f"should return the path, got {result!r}"
 
@@ -204,7 +206,9 @@ class TestSaveAnimation:
 
         save_animation(MagicMock(spec=FuncAnimation), "clip.gif")
 
-        pillow.assert_called_once_with(fps=2, optimize=True, loop=0)
+        pillow.assert_called_once_with(
+            fps=2, optimize=True, loop=0, quantize_method='coverage'
+        )
 
 
 class TestToGif:
@@ -471,8 +475,12 @@ class TestOddDimensionAutoPad:
         (line,) = ax.plot([0, 1], [0, 0])
         width = int(round(fig.get_figwidth() * fig.dpi))
         height = int(round(fig.get_figheight() * fig.dpi))
-        assert width % 2 == 1, f'fixture must be odd-sized to exercise the pad, got {width}x{height}'
-        assert height % 2 == 1, f'fixture must be odd-sized to exercise the pad, got {width}x{height}'
+        assert width % 2 == 1, (
+            f'fixture must be odd-sized to exercise the pad, got {width}x{height}'
+        )
+        assert height % 2 == 1, (
+            f'fixture must be odd-sized to exercise the pad, got {width}x{height}'
+        )
         anim = FuncAnimation(fig, lambda i: (line,), frames=2)
         out = tmp_path / "odd.mp4"
 
@@ -518,7 +526,9 @@ class TestWebP:
 
         save_animation(anim, "clip.webp", fps=4, loop=1)
 
-        pillow.assert_called_once_with(fps=4, optimize=True, loop=1)
+        pillow.assert_called_once_with(
+            fps=4, optimize=True, loop=1, quantize_method='coverage'
+        )
         ffmpeg.assert_not_called()
 
 
@@ -736,10 +746,14 @@ class TestOptimizedPillowWriter:
         gif.seek(5)
         last = np.asarray(gif.convert("RGB")).copy()
         top = slice(0, first.shape[0] // 3)  # safely inside the constant white top
-        changed = (np.abs(first[top].astype(int) - last[top].astype(int)).sum(2) > 8).mean()
+        changed = (
+            np.abs(first[top].astype(int) - last[top].astype(int)).sum(2) > 8
+        ).mean()
         plt.close("all")
 
-        assert changed == 0.0, f"shared palette should keep a constant region byte-stable, got {changed}"
+        assert changed == 0.0, (
+            f"shared palette should keep a constant region byte-stable, got {changed}"
+        )
 
     def test_gif_reserves_black_for_crisp_overlays(self, tmp_path):
         """A pure-black overlay on a colourful field stays black in the GIF.
@@ -997,7 +1011,9 @@ class TestQualityControls:
             MagicMock(spec=FuncAnimation), "clip.gif", optimize=False, loop=3
         )
 
-        pillow.assert_called_once_with(fps=2, optimize=False, loop=3)
+        pillow.assert_called_once_with(
+            fps=2, optimize=False, loop=3, quantize_method='coverage'
+        )
 
 
 class TestSupportedVideoFormat:
@@ -1400,6 +1416,24 @@ class TestGifFromVideo:
         with pytest.raises(ValueError, match="loop must be zero or positive"):
             anim_mod.gif_from_video(src, str(tmp_path / "out.gif"), loop=-1)
 
+    def test_gif_from_video_forwards_the_method(self, clip_mp4, tmp_path):
+        """`gif_from_video` passes the strategy through to the palette.
+
+        Args:
+            clip_mp4: The rendered source fixture.
+            tmp_path: pytest temp directory.
+
+        Test scenario:
+            The derived path must offer the same choice as the rendered one, or
+            the two would quantise differently for the same request.
+        """
+        src, frames = clip_mp4
+        out = tmp_path / "median.gif"
+        anim_mod.gif_from_video(src, str(out), fps=12, quantize_method="median")
+        assert max(_mark_distances(_decode(out), frames)) > 40, (
+            "median cut should have been applied to the derived GIF"
+        )
+
     def test_missing_source_raises(self, tmp_path):
         """A source that does not exist raises `FileNotFoundError`.
 
@@ -1712,6 +1746,63 @@ class TestClipPaletteValidation:
         ]
         palette = anim_mod.build_clip_palette(frames)
         assert palette.mode == "P", "mismatched frame sizes should still quantise"
+
+
+class TestQuantizeMethod:
+    """The palette strategy is selectable, with coverage as the default."""
+
+    def test_unknown_method_raises(self):
+        """A method outside `QUANTIZE_METHODS` raises `ValueError`.
+
+        Test scenario:
+            The message names the accepted keys, so a typo is self-correcting.
+        """
+        frames = [Image.new("RGB", (8, 8), (10, 20, 30))]
+        with pytest.raises(ValueError, match="method must be one of"):
+            anim_mod.build_clip_palette(frames, method="nearest")
+
+    @pytest.mark.parametrize("method", ["coverage", "median", "octree"])
+    def test_every_documented_method_builds_a_palette(self, method):
+        """Each key of `QUANTIZE_METHODS` produces a usable palette.
+
+        Args:
+            method: The strategy under test.
+
+        Test scenario:
+            All three map to a Pillow quantiser that returns a palette image.
+        """
+        frames = [Image.new("RGB", (8, 8), c) for c in ((255, 0, 0), (0, 0, 255))]
+        palette = anim_mod.build_clip_palette(frames, method=method)
+        assert palette.mode == "P", f"{method} should yield a palette image"
+
+    def test_median_trades_marks_away_and_coverage_keeps_them(self, tmp_path):
+        """The opt-out really does change the outcome it exists to change.
+
+        Args:
+            tmp_path: pytest temp directory.
+
+        Test scenario:
+            This is what makes the knob meaningful rather than decorative: on a
+            texture-heavy clip the default keeps the saturated marks, while
+            median cut -- which weights by pixel population -- discards them.
+            If both scored alike the parameter would be doing nothing.
+        """
+        frames = _clip_frames()
+        results = {}
+        for method in ("coverage", "median"):
+            fig, anim = _clip_animation(frames)
+            out = tmp_path / f"{method}.gif"
+            save_animation(anim, str(out), fps=12, quantize_method=method)
+            plt.close(fig)
+            results[method] = max(_mark_distances(_decode(out), frames))
+
+        assert results["coverage"] < 40, (
+            f"the default should keep the marks, got {results['coverage']:.1f}"
+        )
+        assert results["median"] > results["coverage"] * 3, (
+            "median cut should visibly lose the marks the default keeps: "
+            f"{results['median']:.1f} vs {results['coverage']:.1f}"
+        )
 
 
 class TestPillowOptionValidation:

@@ -32,6 +32,7 @@ if TYPE_CHECKING:  # import only for type checkers; IPython stays optional
 
 __all__ = [
     "CLIP_PALETTE_COLORS",
+    "QUANTIZE_METHODS",
     "SUPPORTED_VIDEO_FORMAT",
     "build_clip_palette",
     "embed_gif",
@@ -56,6 +57,19 @@ _PILLOW_FORMATS = {"gif", "webp"}
 #: because it is the default of `build_clip_palette` and `gif_from_video`, so it
 #: appears in their rendered signatures.
 CLIP_PALETTE_COLORS = 254
+
+#: Palette strategies `build_clip_palette` accepts. `"coverage"` spans the
+#: clip's colour range and is the default: it keeps small saturated marks that
+#: population-weighted splitting discards. `"median"` is Pillow's median cut,
+#: which favours whatever covers the most pixels -- worth choosing for a smooth
+#: photographic clip with no small marks to lose, where spending the palette on
+#: the dominant colours renders the background a little more finely.
+#: `"octree"` sits between the two.
+QUANTIZE_METHODS = {
+    "coverage": PILImage.Quantize.MAXCOVERAGE,
+    "median": PILImage.Quantize.MEDIANCUT,
+    "octree": PILImage.Quantize.FASTOCTREE,
+}
 
 #: Bits per channel kept when collecting the colours a clip contains. Six bits
 #: resolves 262144 buckets -- far finer than a 254-entry palette can express --
@@ -120,7 +134,9 @@ def _clip_gamut(frames: Iterable["PILImage.Image"]) -> "PILImage.Image":
 
 
 def build_clip_palette(
-    frames: Iterable["PILImage.Image"], colors: int = CLIP_PALETTE_COLORS
+    frames: Iterable["PILImage.Image"],
+    colors: int = CLIP_PALETTE_COLORS,
+    method: str = "coverage",
 ) -> "PILImage.Image":
     """Build one colour palette shared by every frame of a clip.
 
@@ -142,15 +158,19 @@ def build_clip_palette(
         colors: How many palette entries to quantise to. The remaining entries
             up to 256 are reserved -- pure black and white are pinned so
             single-colour overlays stay crisp.
+        method: Which strategy picks the entries; a key of `QUANTIZE_METHODS`.
+            Defaults to ``"coverage"``. Choose ``"median"`` for a smooth
+            photographic clip with no small marks at stake, where weighting by
+            pixel population renders the dominant colours a little more finely.
 
     Returns:
         PIL.Image.Image: A ``"P"``-mode image carrying the shared palette,
         ready to pass to `Image.quantize(palette=...)`.
 
     Raises:
-        ValueError: If `frames` is empty, or `colors` is outside ``2-254`` --
+        ValueError: If `frames` is empty, if `colors` is outside ``2-254`` --
             above 254 the reserved black and white would displace chosen
-            entries.
+            entries -- or if `method` is not a key of `QUANTIZE_METHODS`.
 
     Examples:
         - Pure black and white are held back at the top of the table, so a
@@ -201,13 +221,17 @@ def build_clip_palette(
         quantize_to_palette: Map the frames onto the palette this returns.
         gif_from_video: Derives a GIF through this same palette.
     """
+    if method not in QUANTIZE_METHODS:
+        raise ValueError(
+            f"method must be one of {sorted(QUANTIZE_METHODS)}, got {method!r}."
+        )
     if not 2 <= colors <= CLIP_PALETTE_COLORS:
         # Above 254 the reserved black/white pair would overwrite chosen entries,
         # and Pillow rejects 256 outright with a bare "invalid palette size".
         raise ValueError(f"colors must be in 2-{CLIP_PALETTE_COLORS}, got {colors!r}.")
 
     census = _clip_gamut(frames)
-    base = census.quantize(colors=colors, method=PILImage.Quantize.MAXCOVERAGE)
+    base = census.quantize(colors=colors, method=QUANTIZE_METHODS[method])
     entries = (list(base.getpalette() or []) + [0] * 768)[:768]
     entries[colors * 3 : colors * 3 + 6] = [0, 0, 0, 255, 255, 255]
     palette = PILImage.new("P", (1, 1))
@@ -390,18 +414,28 @@ class _OptimizedPillowWriter(PillowWriter):
             compression); the WebP encoder ignores it, so it is a no-op there.
         loop: Number of times the animation loops; `0` means loop forever
             (Pillow's convention). Honoured by both GIF and WebP.
+        quantize_method: Palette strategy for GIF; a key of `QUANTIZE_METHODS`.
     """
 
-    def __init__(self, *args, optimize: bool = True, loop: int = 0, **kwargs):
+    def __init__(
+        self,
+        *args,
+        optimize: bool = True,
+        loop: int = 0,
+        quantize_method: str = "coverage",
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self._optimize = optimize
         self._loop = loop
+        self._quantize_method = quantize_method
 
     def finish(self):
         frames = self._frames  # type: ignore[attr-defined]
         if str(self.outfile).lower().endswith(".gif") and len(frames) > 1:
             rgb = [f.convert("RGB") for f in frames]
-            frames = quantize_to_palette(rgb, build_clip_palette(rgb))
+            palette = build_clip_palette(rgb, method=self._quantize_method)
+            frames = quantize_to_palette(rgb, palette)
         _write_pillow_animation(
             frames, self.outfile, self.fps, self._loop, self._optimize
         )
@@ -510,6 +544,7 @@ def save_animation(
     dpi: int | None = None,
     optimize: bool = True,
     loop: int = 0,
+    quantize_method: str = "coverage",
     extra_args: list[str] | None = None,
 ) -> str:
     """Save any `FuncAnimation` to a file.
@@ -557,6 +592,11 @@ def save_animation(
         optimize: GIF only — run Pillow's palette optimisation pass (a no-op
             for WebP, whose encoder ignores it). Default `True`.
         loop: GIF/WebP only — number of times to loop; `0` loops forever.
+        quantize_method: GIF only -- which strategy picks the shared palette; a
+            key of `QUANTIZE_METHODS`. Defaults to ``"coverage"``, which keeps
+            small saturated marks. ``"median"`` weights by pixel population
+            instead, which suits a smooth photographic clip with no small marks
+            at stake.
         extra_args: Extra ffmpeg flags. A `-vf` filter here is merged with
             the automatic even-dimension pad and a `-pix_fmt` overrides
             `pix_fmt`. Note these flags bypass the `crf`/`bitrate`
@@ -669,7 +709,12 @@ def save_animation(
     if video_format in _PILLOW_FORMATS:
         anim.save(
             path,
-            writer=_OptimizedPillowWriter(fps=fps, optimize=optimize, loop=loop),
+            writer=_OptimizedPillowWriter(
+                fps=fps,
+                optimize=optimize,
+                loop=loop,
+                quantize_method=quantize_method,
+            ),
             **save_kwargs,
         )
     else:
@@ -1025,6 +1070,7 @@ def gif_from_video(
     max_colors: int = CLIP_PALETTE_COLORS,
     loop: int = 0,
     optimize: bool = True,
+    quantize_method: str = "coverage",
 ) -> str:
     """Derive a GIF from an existing video, without re-rendering the frames.
 
@@ -1054,6 +1100,8 @@ def gif_from_video(
             reserved for pure black and white.
         loop: How many times the GIF loops; `0` loops forever.
         optimize: Run Pillow's optimisation pass.
+        quantize_method: Which strategy picks the shared palette; a key of
+            `QUANTIZE_METHODS`. Defaults to ``"coverage"``.
 
     Returns:
         The output path as a `str`, convenient for chaining.
@@ -1175,7 +1223,9 @@ def gif_from_video(
     first = next(survey, None)
     if first is None:
         raise ValueError(f"The source video {src!r} yielded no frames.")
-    palette = build_clip_palette(itertools.chain([first], survey), colors=max_colors)
+    palette = build_clip_palette(
+        itertools.chain([first], survey), colors=max_colors, method=quantize_method
+    )
 
     quantised = (
         frame.quantize(palette=palette, dither=PILImage.Dither.FLOYDSTEINBERG)

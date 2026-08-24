@@ -49,6 +49,15 @@ The trade is a marginally coarser background: on the same clip, background RMSE 
 contains *most of*. File size moves either way depending on the clip — it shrank on the
 texture-heavy case and grew on a constant-background one.
 
+`quantize_method` is the opt-out, on both `save_animation` and `gif_from_video`. It takes a key of
+`QUANTIZE_METHODS` — `"coverage"` (the default), `"median"`, or `"octree"`. Reach for `"median"` on
+a smooth photographic clip with no small marks at stake, where weighting by pixel population spends
+the palette on the dominant colours and renders the background a little more finely:
+
+```python
+save_animation(anim, "clip.gif", fps=12, quantize_method="median")
+```
+
 !!! warning "Render the intermediate with `pix_fmt="yuv444p"` if a GIF will be derived from it"
 
     `save_animation` writes `yuv420p` by default — the right choice for playback compatibility,
