@@ -116,17 +116,21 @@ long scientific clip — while encoding them is cheap. Forcing every output form
 to be produced from a live `FuncAnimation` therefore means re-rendering the same
 frames once per format, which is the wrong trade at any real size.
 
-So a helper may **read back a video cleopatra itself wrote** and re-encode it to
-another supported format, as `gif_from_video` does. This is not user-data I/O:
-the input is our own artifact, produced by `save_animation` moments earlier, in a
-format from `SUPPORTED_VIDEO_FORMAT`. It reads no user dataset, opens no GIS
-format, and adds no dependency — the FFmpeg it decodes with is the one
-`save_animation` already encodes with.
+So a helper may **read back a rendered video** and re-encode it to another
+supported format, as `gif_from_video` does. The intended input is cleopatra's own
+output, produced by `save_animation` moments earlier. Nothing in the code
+enforces that — it decodes whatever FFmpeg can read, and a check would buy
+nothing but a worse error message — so this is a statement of *purpose*, not a
+guarantee about the argument.
 
-The boundary that still holds: cleopatra does not read a file it did not write,
-and does not become a general media-conversion tool. A helper that ingested
-arbitrary user video, or one whose input was not a cleopatra output, would be out
-of scope.
+What keeps it inside the line is what it does not do: it reads no user dataset in
+an analytical format, opens no GIS format, exposes no transcoding matrix, and
+adds no dependency — the FFmpeg it decodes with is the one `save_animation`
+already encodes with. What it returns is an animation, not data.
+
+The boundary that still holds: cleopatra does not become a general
+media-conversion tool. A helper whose purpose was ingesting arbitrary user video,
+or that grew a codec/container matrix, would be out of scope.
 
 ## Boundary heuristic for a feature request
 

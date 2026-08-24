@@ -36,23 +36,26 @@ The palette is chosen for colour **coverage**, not pixel population, over the se
 clip contains. The distinction matters on exactly the clips this package produces: with a
 population-weighted split (median cut) a large textured background claims nearly every palette
 slot, and small saturated marks — overlay glyphs, thin paths, labels — collapse to the nearest
-muddy neighbour. On a texture-heavy test clip those marks landed 100–180 away (in RGB distance)
-from the colours they were drawn in; selecting for coverage reproduces them exactly.
+muddy neighbour. On the texture-heavy clip in `tests/test_animation.py` those marks landed 100–180 away (in RGB
+distance) from the colours they were drawn in; selecting for coverage reproduces them exactly, and
+`TestClipPaletteQuality` asserts it — so the claim is checked, not remembered.
 
 Because coverage is computed over **distinct colours rather than pixels**, a mark survives no
 matter how small it is: a one-pixel orbit path is kept as faithfully as a large glyph. Sampling
 the frames spatially to build a cheaper palette source would undo that — an interpolating resize
 blends a one-pixel mark into its background before the quantiser ever sees it.
 
-The trade is a marginally coarser background: on the same clip, background RMSE moves from 7.5 to
-8.3, because palette entries now go to colours the clip contains rather than to the colours it
-contains *most of*. File size moves either way depending on the clip — it shrank on the
-texture-heavy case and grew on a constant-background one.
+The trade is a marginally coarser background, because palette entries now go to colours the clip
+contains rather than to the colours it contains *most of*, and file size moves either way depending
+on the clip. Both were measured while developing this and neither is asserted by a test, so treat
+the direction as reliable and the magnitude as indicative.
 
 `quantize_method` is the opt-out, on both `save_animation` and `gif_from_video`. It takes a key of
 `QUANTIZE_METHODS` — `"coverage"` (the default), `"median"`, or `"octree"`. Reach for `"median"` on
-a smooth photographic clip with no small marks at stake, where weighting by pixel population spends
-the palette on the dominant colours and renders the background a little more finely:
+a smooth photographic clip with no small marks at stake: it splits the colour cube by how densely
+the clip populates it, so the crowded regions a photographic background occupies win the table.
+Note none of these see pixel counts — the palette is built from each colour once, so they weight by
+distinct colours, not by area:
 
 ```python
 save_animation(anim, "clip.gif", fps=12, quantize_method="median")
@@ -65,6 +68,14 @@ save_animation(anim, "clip.gif", fps=12, quantize_method="median")
     GIF palette ever runs, and no quantiser can undo it: on the same test clip a `yuv420p`
     intermediate caps the derived GIF at ~50 RGB distance, against ~5 from a `yuv444p` one.
     `gif_from_video` emits a `UserWarning` when it is handed a subsampled source.
+
+!!! note "Memory"
+
+    `gif_from_video` decodes the source twice rather than holding it, so the decoded RGB frames are
+    never all resident. The quantised frames still are — Pillow's GIF encoder accumulates every
+    frame before writing its first byte. Expect roughly `width × height × frames` bytes at peak: a
+    third of what the RGB frames would cost, but still proportional to the clip's length. Use
+    `width` to bring a long master down.
 
     ```python
     mp4 = save_animation(anim, "master.mp4", fps=12, crf=0, pix_fmt="yuv444p")

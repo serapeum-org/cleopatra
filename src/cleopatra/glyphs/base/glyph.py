@@ -1465,7 +1465,10 @@ class Glyph:
                 f"'bottom', or None, got {location!r}."
             )
         orientation_opt = self.default_options.get("cbar_orientation")
-        if orientation_opt is not None and orientation_opt not in ("vertical", "horizontal"):
+        if orientation_opt is not None and orientation_opt not in (
+            "vertical",
+            "horizontal",
+        ):
             raise ValueError(
                 "cbar_orientation must be 'vertical' or 'horizontal', got "
                 f"{orientation_opt!r}."
@@ -1747,7 +1750,7 @@ class Glyph:
             **kwargs: Additional keyword arguments forwarded to
                 `cleopatra.glyphs.base.animation.save_animation`, e.g. `crf`, `bitrate`,
                 `codec`, `preset`, `pix_fmt`, `dpi` (ffmpeg formats) or
-                `optimize` and `loop` (GIF).
+                `optimize`, `loop` and `quantize_method` (GIF/WebP).
 
         Raises:
             ValueError: If `animate()` has not been called yet, if the file
