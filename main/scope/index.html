@@ -870,6 +870,8 @@
       
         
       
+        
+      
     
     
     
@@ -1380,6 +1382,34 @@
     
   
     Animations (save/embed)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/watermark/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Watermark (figure mark)
   
 
     
@@ -2696,7 +2726,10 @@ colorbars, ticks, classification, and animation.</p>
   not here. The deliberate exception is the <code>tiles</code> / <code>reference</code> basemap
   helpers, which fetch a handful of <em>fixed public</em> reference datasets (never
   user data) that cleopatra re-hosts as dependency-light artifacts — see
-  "Supporting utilities".</li>
+  "Supporting utilities". Reading a <strong>presentation asset</strong> — a logo / watermark
+  image for <code>styling.watermark.stamp_mark</code> — is likewise allowed: it is
+  decoration on the rendered figure, not user data, and it loads via Pillow (an
+  existing dependency), never GDAL/geopandas.</li>
 <li><strong>GIS / geoprocessing:</strong> reprojection of user data, clipping, resampling,
   zonal stats, CRS management beyond what the optional <code>tiles</code> basemap needs.</li>
 <li><strong>Interactive / GUI apps:</strong> dashboards, widget servers, event callbacks,
