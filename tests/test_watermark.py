@@ -180,6 +180,18 @@ class TestStampMark:
             f"haloed axes should be frac*{grow:.3f}={frac * grow:.4f}, got {haloed:.4f}"
         )
 
+    def test_blur_zero_skips_the_halo(self, fig, logo):
+        """`blur=0` with `shadow=True` skips the invisible halo, so no bbox growth.
+
+        Test scenario:
+            A zero-sigma halo is invisible but would still pad the canvas by a
+            pixel and inflate the axes bbox. With `blur=0` the composite is
+            skipped, so the axes measures exactly `frac` -- like `shadow=False`.
+        """
+        frac = 0.2
+        haloed = stamp_mark(fig, logo, frac=frac, shadow=True, blur=0.0).get_position().width
+        assert np.isclose(haloed, frac), f"blur=0 should not grow the axes: {haloed} != {frac}"
+
     def test_mark_painted_extent_is_frac(self):
         """The **mark's own painted width** is `frac` of the figure, halo or not.
 

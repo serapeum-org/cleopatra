@@ -185,7 +185,9 @@ def stamp_mark(
     # by the same ratio (about the mark's centre) or the mark would render at
     # 1/grow of the requested `frac`.
     drawn, grow_w, grow_h = (image, 1.0, 1.0)
-    if shadow:
+    # `blur == 0` yields an invisible halo but still pads the canvas (min 1 px),
+    # so skip the composite entirely -- it only wastes work and inflates the bbox.
+    if shadow and blur > 0.0:
         drawn, grow_w, grow_h = _composite_halo(image, blur)
     rect_w = width * grow_w
     rect_h = height * grow_h
