@@ -419,6 +419,63 @@ class TestLighting:
         with pytest.raises(ValueError):
             globe.draw(sun=(0.0, 0.0, 0.0))
 
+    @pytest.mark.parametrize("bad_sun", [[[1.0, 0.0, 0.0]], np.zeros((3, 1)), 1.0])
+    def test_non_1d_sun_raises(self, texture, bad_sun):
+        with pytest.raises(ValueError):
+            TexturedGlobeGlyph(texture, sun=bad_sun)
+
+    def test_ambient_nan_raises(self, texture):
+        with pytest.raises(ValueError):
+            TexturedGlobeGlyph(texture, ambient=float("nan"))
+
+    def test_ambient_zero_gives_black_night(self):
+        tex = np.full((8, 16, 3), 200, np.uint8)
+        globe = TexturedGlobeGlyph(tex, n_lon=24, n_lat=12)
+        globe._prepare()
+        lit = globe._lit_facecolors(
+            globe._spun_mesh(0.0), np.array([1.0, 0.0, 0.0]), 0.0
+        )
+        assert float(lit[..., :3].min()) == pytest.approx(
+            0.0, abs=1e-9
+        )  # night -> black
+
+    def test_ambient_one_equals_cache(self):
+        tex = np.full((8, 16, 3), 200, np.uint8)
+        globe = TexturedGlobeGlyph(tex, n_lon=24, n_lat=12)
+        globe._prepare()
+        lit = globe._lit_facecolors(
+            globe._spun_mesh(0.0), np.array([1.0, 0.0, 0.0]), 1.0
+        )
+        assert np.allclose(lit, globe._facecolors)  # no dimming at ambient=1
+
+    def test_animate_validates_sun_eagerly(self, texture):
+        globe = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12)
+        fig = plt.figure()
+        ax = fig.add_subplot(projection="3d")
+        with pytest.raises(
+            ValueError
+        ):  # raised at the animate() call, not at frame render
+            globe.animate(ax, n_frames=3, sun=(0.0, 0.0, 0.0))
+
+    def test_animate_validates_ambient_eagerly(self, texture):
+        globe = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12)
+        fig = plt.figure()
+        ax = fig.add_subplot(projection="3d")
+        with pytest.raises(ValueError):
+            globe.animate(ax, n_frames=3, ambient=5.0)
+
+    def test_world_space_sun_honoured_under_tilt(self):
+        # a uniform texture lit from +z (north): with a 45deg tilt the north cap is brighter than the south
+        tex = np.full((16, 32, 3), 200, np.uint8)
+        globe = TexturedGlobeGlyph(tex, n_lon=48, n_lat=24, tilt_deg=45.0)
+        globe._prepare()
+        lit = globe._lit_facecolors(
+            globe._spun_mesh(0.0), np.array([0.0, 0.0, 1.0]), 0.1
+        )
+        north = lit[0, :, :3].mean()
+        south = lit[-1, :, :3].mean()
+        assert north > south
+
 
 def test_no_new_dependency():
     """The globe uses mpl_toolkits.mplot3d, which ships with matplotlib -- no new dependency."""
