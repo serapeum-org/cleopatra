@@ -65,7 +65,8 @@ colorbars, ticks, classification, and animation.
 - `tiles` and `reference` are cleopatra's **only** networked features.
 - `projection`: lightweight axes-frame / coordinate helpers.
 - `animation`: turn a matplotlib `FuncAnimation` into a saved file, GIF bytes,
-  or an embeddable IPython image (via ffmpeg).
+  or an embeddable IPython image (via ffmpeg), and derive one output format from
+  another (`gif_from_video`) — see "Animation output".
 - `config` (`Config`): opt-in matplotlib-backend selection; notebook detection.
 
 ### What new work generally belongs here
@@ -85,13 +86,14 @@ colorbars, ticks, classification, and animation.
 - **Data I/O and formats:** reading/writing *user* GeoTIFF, NetCDF,
   shapefiles, GeoJSON, CSV, databases. Users bring NumPy arrays already;
   file/raster I/O of user data belongs in sibling packages (e.g. `pyramids`),
-  not here. The deliberate exception is the `tiles` / `reference` basemap
+  not here. Three deliberate exceptions: the `tiles` / `reference` basemap
   helpers, which fetch a handful of *fixed public* reference datasets (never
   user data) that cleopatra re-hosts as dependency-light artifacts — see
-  "Supporting utilities". Reading a **presentation asset** — a logo / watermark
-  image for `styling.watermark.stamp_mark` — is likewise allowed: it is
-  decoration on the rendered figure, not user data, and it loads via Pillow (an
-  existing dependency), never GDAL/geopandas.
+  "Supporting utilities"; reading a **presentation asset** — a logo / watermark
+  image for `styling.watermark.stamp_mark` — which is decoration on the rendered
+  figure, not user data, and loads via Pillow (an existing dependency), never
+  GDAL/geopandas; and re-encoding cleopatra's **own animation output** between
+  formats — see "Animation output" below.
 - **GIS / geoprocessing:** reprojection of user data, clipping, resampling,
   zonal stats, CRS management beyond what the optional `tiles` basemap needs.
 - **Interactive / GUI apps:** dashboards, widget servers, event callbacks,
@@ -110,13 +112,38 @@ colorbars, ticks, classification, and animation.
   than the `tiles` / `reference` basemap helpers, and general-purpose plotting
   that matplotlib already does well without added value.
 
+## Animation output
+
+Rendering frames is by far the most expensive part of an animation — hours, for a
+long scientific clip — while encoding them is cheap. Forcing every output format
+to be produced from a live `FuncAnimation` therefore means re-rendering the same
+frames once per format, which is the wrong trade at any real size.
+
+So a helper may **read back a rendered video** and re-encode it to another
+supported format, as `gif_from_video` does. The intended input is cleopatra's own
+output, produced by `save_animation` moments earlier. Nothing in the code
+enforces that — it decodes whatever FFmpeg can read, and a check would buy
+nothing but a worse error message — so this is a statement of *purpose*, not a
+guarantee about the argument.
+
+What keeps it inside the line is what it does not do: it reads no user dataset in
+an analytical format, opens no GIS format, exposes no transcoding matrix, and
+adds no dependency — the FFmpeg it decodes with is the one `save_animation`
+already encodes with. What it returns is an animation, not data.
+
+The boundary that still holds: cleopatra does not become a general
+media-conversion tool. A helper whose purpose was ingesting arbitrary user video,
+or that grew a codec/container matrix, would be out of scope.
+
 ## Boundary heuristic for a feature request
 
 Ask, in order:
 
 1. **Input** — does it start from in-memory NumPy data (not a file/CRS/URL)?
-   (The `tiles` / `reference` basemap helpers are the deliberate exception:
-   they acquire fixed *public* reference data, never user files.)
+   (Three deliberate exceptions: the `tiles` / `reference` basemap helpers,
+   which acquire fixed *public* reference data, never user files; a presentation
+   asset such as a logo for `stamp_mark`; and the animation re-encoders, whose
+   input is cleopatra's own output — see "Animation output".)
 2. **Output** — does it produce a matplotlib `Figure`/`Axes`/artist (or an
    animation of one)?
 3. **Reuse** — can it build on `Glyph` and the shared colour/colorbar/legend

@@ -9,9 +9,12 @@ from __future__ import annotations
 
 import builtins
 import doctest
+import os
+import warnings
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import imageio_ffmpeg
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -113,7 +116,9 @@ class TestSaveAnimation:
 
         result = save_animation(anim, "clip.gif", fps=7)
 
-        pillow.assert_called_once_with(fps=7, optimize=True, loop=0)
+        pillow.assert_called_once_with(
+            fps=7, optimize=True, loop=0, quantize_method="coverage"
+        )
         anim.save.assert_called_once_with("clip.gif", writer=pillow.return_value)
         assert result == "clip.gif", f"should return the path, got {result!r}"
 
@@ -202,7 +207,9 @@ class TestSaveAnimation:
 
         save_animation(MagicMock(spec=FuncAnimation), "clip.gif")
 
-        pillow.assert_called_once_with(fps=2, optimize=True, loop=0)
+        pillow.assert_called_once_with(
+            fps=2, optimize=True, loop=0, quantize_method="coverage"
+        )
 
 
 class TestToGif:
@@ -469,8 +476,12 @@ class TestOddDimensionAutoPad:
         (line,) = ax.plot([0, 1], [0, 0])
         width = int(round(fig.get_figwidth() * fig.dpi))
         height = int(round(fig.get_figheight() * fig.dpi))
-        assert width % 2 == 1, f'fixture must be odd-sized to exercise the pad, got {width}x{height}'
-        assert height % 2 == 1, f'fixture must be odd-sized to exercise the pad, got {width}x{height}'
+        assert width % 2 == 1, (
+            f'fixture must be odd-sized to exercise the pad, got {width}x{height}'
+        )
+        assert height % 2 == 1, (
+            f'fixture must be odd-sized to exercise the pad, got {width}x{height}'
+        )
         anim = FuncAnimation(fig, lambda i: (line,), frames=2)
         out = tmp_path / "odd.mp4"
 
@@ -516,7 +527,9 @@ class TestWebP:
 
         save_animation(anim, "clip.webp", fps=4, loop=1)
 
-        pillow.assert_called_once_with(fps=4, optimize=True, loop=1)
+        pillow.assert_called_once_with(
+            fps=4, optimize=True, loop=1, quantize_method="coverage"
+        )
         ffmpeg.assert_not_called()
 
 
@@ -734,10 +747,14 @@ class TestOptimizedPillowWriter:
         gif.seek(5)
         last = np.asarray(gif.convert("RGB")).copy()
         top = slice(0, first.shape[0] // 3)  # safely inside the constant white top
-        changed = (np.abs(first[top].astype(int) - last[top].astype(int)).sum(2) > 8).mean()
+        changed = (
+            np.abs(first[top].astype(int) - last[top].astype(int)).sum(2) > 8
+        ).mean()
         plt.close("all")
 
-        assert changed == 0.0, f"shared palette should keep a constant region byte-stable, got {changed}"
+        assert changed == 0.0, (
+            f"shared palette should keep a constant region byte-stable, got {changed}"
+        )
 
     def test_gif_reserves_black_for_crisp_overlays(self, tmp_path):
         """A pure-black overlay on a colourful field stays black in the GIF.
@@ -995,7 +1012,9 @@ class TestQualityControls:
             MagicMock(spec=FuncAnimation), "clip.gif", optimize=False, loop=3
         )
 
-        pillow.assert_called_once_with(fps=2, optimize=False, loop=3)
+        pillow.assert_called_once_with(
+            fps=2, optimize=False, loop=3, quantize_method="coverage"
+        )
 
 
 class TestSupportedVideoFormat:
@@ -1034,3 +1053,1102 @@ def test_module_doctests_execute():
         "no doctest examples were collected from animation; the module's docstring "
         "examples may have been moved or removed, silently dropping this coverage"
     )
+
+
+#: A textured background with four small, highly saturated marks that move each
+#: frame -- the shape of a satellite-showcase clip in miniature. The texture owns
+#: ~99% of the pixels, so it is exactly the case where a population-weighted
+#: palette starves the marks.
+_CLIP_W, _CLIP_H, _CLIP_FRAMES = 320, 180, 12
+_MARK_COLORS = ((255, 0, 255), (0, 255, 255), (255, 255, 0), (255, 40, 0))
+_MARK_ROWS = (40, 80, 120, 160)
+_MARK_RADIUS = 2
+
+
+def _clip_frames(radius=_MARK_RADIUS):
+    """Build the texture-heavy clip.
+
+    Args:
+        radius: Half-width of each saturated mark, so a test can vary how many
+            pixels a mark covers. ``0`` gives a single-pixel mark.
+
+    Returns:
+        list: One ``(frame, boxes)`` pair per frame, where `frame` is a float
+        ``(H, W, 3)`` array in ``[0, 1]`` and `boxes` are the
+        ``(y0, y1, x0, x1)`` slices holding each saturated mark.
+    """
+    rng = np.random.default_rng(0)
+    yy, xx = np.mgrid[0:_CLIP_H, 0:_CLIP_W]
+    base = np.clip(
+        np.stack(
+            [
+                0.45 + 0.20 * np.sin(xx / 37.0) + 0.10 * np.cos(yy / 23.0),
+                0.40 + 0.18 * np.cos(xx / 29.0) + 0.12 * np.sin(yy / 19.0),
+                0.35 + 0.15 * np.sin((xx + yy) / 41.0),
+            ],
+            axis=-1,
+        )
+        + rng.normal(0, 0.035, (_CLIP_H, _CLIP_W, 3)),
+        0,
+        1,
+    )
+    frames = []
+    for index in range(_CLIP_FRAMES):
+        arr = base.copy()
+        boxes = []
+        for slot, rgb in enumerate(_MARK_COLORS):
+            cy, cx = _MARK_ROWS[slot], 30 + index * 20
+            y0, y1 = cy - radius, cy + radius + 1
+            x0, x1 = cx - radius, cx + radius + 1
+            arr[y0:y1, x0:x1] = np.array(rgb) / 255.0
+            boxes.append((y0, y1, x0, x1))
+        frames.append((arr, boxes))
+    return frames
+
+
+def _clip_animation(frames):
+    """Wrap `_clip_frames` output in a pixel-exact `FuncAnimation`.
+
+    Args:
+        frames: The output of `_clip_frames`.
+
+    Returns:
+        tuple: The `Figure` and its `FuncAnimation`. The figure is sized so one
+        array cell maps to one output pixel, letting a test read a mark's colour
+        straight back out of the decoded GIF.
+    """
+    fig = plt.figure(figsize=(_CLIP_W / 100, _CLIP_H / 100), dpi=100)
+    ax = fig.add_axes((0, 0, 1, 1))
+    ax.set_axis_off()
+    image = ax.imshow(frames[0][0], interpolation="nearest")
+
+    def update(i):
+        image.set_data(frames[i][0])
+        return (image,)
+
+    return fig, FuncAnimation(fig, update, frames=len(frames))
+
+
+def _decode(path):
+    """Read every frame of an animated image back as an RGB array.
+
+    Args:
+        path: The animation to read.
+
+    Returns:
+        list: One ``(H, W, 3)`` ``uint8`` array per frame.
+    """
+    decoded = []
+    with Image.open(path) as handle:
+        try:
+            while True:
+                decoded.append(np.asarray(handle.convert("RGB"), dtype=np.uint8))
+                handle.seek(handle.tell() + 1)
+        except EOFError:
+            pass
+    return decoded
+
+
+def _mark_distances(decoded, frames):
+    """Mean RGB distance between each decoded mark and its intended colour.
+
+    Args:
+        decoded: Frames read back from the written file.
+        frames: The source `_clip_frames` output the marks came from.
+
+    Returns:
+        list: One mean distance per mark, in the order of `_MARK_COLORS`.
+    """
+    distances = []
+    for slot, rgb in enumerate(_MARK_COLORS):
+        samples = []
+        for index in range(min(len(decoded), len(frames))):
+            y0, y1, x0, x1 = frames[index][1][slot]
+            patch = decoded[index][y0:y1, x0:x1].reshape(-1, 3).astype(float)
+            samples.append(patch.mean(axis=0))
+        distances.append(
+            float(np.linalg.norm(np.mean(samples, axis=0) - np.array(rgb, dtype=float)))
+        )
+    return distances
+
+
+class TestClipPaletteQuality:
+    """The shared GIF palette must not starve small saturated colours (#315)."""
+
+    @pytest.mark.parametrize("radius, size", [(2, "5x5"), (1, "3x3"), (0, "1x1")])
+    def test_small_saturated_marks_survive_quantisation(self, tmp_path, radius, size):
+        """Saturated marks stay their own colour however few pixels they cover.
+
+        Args:
+            tmp_path: pytest temp directory.
+            radius: Half-width of the marks under test.
+            size: Human-readable mark size, for the failure message.
+
+        Test scenario:
+            The background owns ~99% of the pixels. Allocating palette slots by
+            pixel population (median cut) hands nearly all of them to the
+            texture and the marks decode ~100-180 away from the colours they
+            were drawn in. The size sweep is the point: a palette built from a
+            spatially downsampled clip passed at 5x5 and failed at 1x1, because
+            a resize blends a one-pixel mark away before the quantiser sees it.
+            Building it from the clip's distinct colours is independent of
+            how large a mark is, so every size must hold -- and 1x1 is the size
+            that actually matters for satellites, orbit paths and labels.
+        """
+        frames = _clip_frames(radius)
+        fig, anim = _clip_animation(frames)
+        out = tmp_path / "clip.gif"
+        save_animation(anim, str(out), fps=12)
+        plt.close(fig)
+
+        distances = _mark_distances(_decode(out), frames)
+        assert max(distances) < 40, (
+            f"{size} saturated marks were quantised away; distances from the "
+            f"intended colours were {[round(d, 1) for d in distances]}"
+        )
+
+    def test_palette_is_shared_across_the_clip(self, tmp_path):
+        """Every frame draws from one 256-entry table, not its own.
+
+        Test scenario:
+            Independently quantised frames would between them use far more than
+            256 distinct colours. The union across all frames must stay within
+            a single palette.
+        """
+        frames = _clip_frames()
+        fig, anim = _clip_animation(frames)
+        out = tmp_path / "clip.gif"
+        save_animation(anim, str(out), fps=12)
+        plt.close(fig)
+
+        decoded = _decode(out)
+        union = set()
+        for frame in decoded:
+            union |= {tuple(pixel) for pixel in frame.reshape(-1, 3)}
+        assert len(union) <= 256, (
+            f"frames appear to be quantised independently: {len(union)} distinct "
+            f"colours across {len(decoded)} frames"
+        )
+
+
+class TestGifFromVideo:
+    """`gif_from_video` derives a GIF from an already-rendered video (#308)."""
+
+    @pytest.fixture
+    def clip_mp4(self, tmp_path):
+        """Render the texture clip to a full-chroma MP4, per test.
+
+        Deliberately not shared across the module. Every test here depends on
+        it, so a single flaky encode in a module-scoped fixture fails all of
+        them at once as errors rather than one of them as a failure -- which
+        hides which test actually broke.
+
+        Returns:
+            tuple: The MP4 path and the `_clip_frames` output behind it.
+        """
+        frames = _clip_frames()
+        fig, anim = _clip_animation(frames)
+        path = tmp_path / "clip.mp4"
+        save_animation(anim, str(path), fps=12, crf=0, pix_fmt="yuv444p")
+        plt.close(fig)
+        return str(path), frames
+
+    def test_derives_a_gif_from_an_mp4(self, clip_mp4, tmp_path):
+        """A GIF is written from the video and the path comes back.
+
+        Test scenario:
+            The rendered MP4 is converted without touching the original
+            animation, and the result carries the GIF magic bytes.
+        """
+        src, _ = clip_mp4
+        out = tmp_path / "derived.gif"
+        returned = anim_mod.gif_from_video(src, str(out), fps=12)
+        assert returned == str(out), "the output path should be returned"
+        assert out.read_bytes()[:6] in (b"GIF87a", b"GIF89a"), "not a GIF"
+
+    def test_uses_one_clip_wide_palette(self, clip_mp4, tmp_path):
+        """The derived GIF shares a single palette across its frames.
+
+        Test scenario:
+            `gif_from_video` runs the decoded frames through the same
+            `build_clip_palette` the live-animation path uses, so the colour
+            union across frames stays within one table.
+        """
+        src, _ = clip_mp4
+        out = tmp_path / "derived.gif"
+        anim_mod.gif_from_video(src, str(out), fps=12)
+        union = set()
+        for frame in _decode(out):
+            union |= {tuple(pixel) for pixel in frame.reshape(-1, 3)}
+        assert len(union) <= 256, f"palette is not clip-wide: {len(union)} colours"
+
+    def test_saturated_marks_survive_the_round_trip(self, clip_mp4, tmp_path):
+        """Marks survive decode + re-quantisation from a full-chroma source.
+
+        Test scenario:
+            Deriving from a video only pays off if the marks are still there
+            afterwards. With a `yuv444p` source the round trip must land close
+            to what rendering the GIF directly achieves.
+        """
+        src, frames = clip_mp4
+        out = tmp_path / "derived.gif"
+        anim_mod.gif_from_video(src, str(out), fps=12)
+        distances = _mark_distances(_decode(out), frames)
+        assert max(distances) < 40, (
+            f"marks degraded through the video round trip: "
+            f"{[round(d, 1) for d in distances]}"
+        )
+
+    def test_fps_controls_the_frame_count(self, clip_mp4, tmp_path):
+        """Sampling at a lower fps yields proportionally fewer frames.
+
+        Test scenario:
+            The source is 12 frames at 12 fps (one second). Sampling at 6 fps
+            halves the frame count.
+        """
+        src, _ = clip_mp4
+        full = tmp_path / "full.gif"
+        half = tmp_path / "half.gif"
+        anim_mod.gif_from_video(src, str(full), fps=12)
+        anim_mod.gif_from_video(src, str(half), fps=6)
+        assert len(_decode(half)) < len(_decode(full)), (
+            "a lower fps should sample fewer frames"
+        )
+
+    def test_width_scales_and_preserves_aspect(self, clip_mp4, tmp_path):
+        """`width` resizes the output, keeping the source's aspect ratio.
+
+        Test scenario:
+            Asking for 160px from a 320x180 source gives a 160x90 GIF.
+        """
+        src, _ = clip_mp4
+        out = tmp_path / "small.gif"
+        anim_mod.gif_from_video(src, str(out), fps=12, width=160)
+        with Image.open(out) as handle:
+            assert handle.size == (160, 90), f"unexpected size {handle.size}"
+
+    def test_warns_on_a_chroma_subsampled_source(self, tmp_path):
+        """A 4:2:0 source warns that colour detail is already gone.
+
+        Test scenario:
+            `save_animation` writes `yuv420p` by default, which discards colour
+            resolution before the GIF palette ever runs. Deriving a GIF from
+            such a file must say so rather than silently under-delivering.
+        """
+        frames = _clip_frames()
+        fig, anim = _clip_animation(frames)
+        src = tmp_path / "subsampled.mp4"
+        save_animation(anim, str(src), fps=12)
+        plt.close(fig)
+
+        with pytest.warns(UserWarning, match="yuv420p|reduced resolution"):
+            anim_mod.gif_from_video(str(src), str(tmp_path / "out.gif"), fps=12)
+
+    def test_full_chroma_source_does_not_warn(self, clip_mp4, tmp_path):
+        """A `yuv444p` source is the recommended input and stays quiet.
+
+        Test scenario:
+            The warning must not fire for a source that kept its colour
+            resolution, or it would be noise.
+        """
+        src, _ = clip_mp4
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            anim_mod.gif_from_video(src, str(tmp_path / "out.gif"), fps=12)
+        chroma = [w for w in caught if "reduced" in str(w.message)]
+        assert not chroma, f"a full-chroma source should not warn: {chroma}"
+
+    def test_decoder_is_closed_when_iteration_stops_early(self, monkeypatch):
+        """Abandoning the frame stream closes the decoder rather than leaking it.
+
+        Args:
+            monkeypatch: pytest monkeypatch fixture.
+
+        Test scenario:
+            A caller that stops early -- or an exception raised mid-iteration --
+            must not leave an ffmpeg child running. The decoder is replaced with
+            a generator that records its own closure, and the frame iterator is
+            abandoned after one frame.
+        """
+        closed = []
+
+        def frames():
+            try:
+                while True:
+                    yield bytes(12)
+            finally:
+                closed.append(True)
+
+        def fake_reader(src, **kwargs):
+            return {"size": (2, 2), "pix_fmt": "yuv444p"}, frames()
+
+        monkeypatch.setattr(anim_mod, "_read_video_frames", fake_reader)
+        stream = anim_mod._iter_video_frames("ignored.mp4", 12, None)
+        next(stream)
+        stream.close()
+        assert closed, "the decoder was not closed when the stream was abandoned"
+
+    @pytest.mark.parametrize("name", ["out.png", "out.webp", "out.mp4", "out"])
+    def test_non_gif_output_extension_raises(self, clip_mp4, tmp_path, name):
+        """An output path that is not a GIF raises rather than writing one.
+
+        Args:
+            clip_mp4: The rendered source fixture.
+            tmp_path: pytest temp directory.
+            name: The wrong-extension output name under test.
+
+        Test scenario:
+            Pillow picks its encoder from the extension, so `.png` silently
+            produced an APNG and `.webp` a WebP -- neither of which a caller of
+            `gif_from_video` asked for.
+        """
+        src, _ = clip_mp4
+        with pytest.raises(ValueError, match="writes GIFs"):
+            anim_mod.gif_from_video(src, str(tmp_path / name), fps=6)
+
+    def test_negative_loop_raises(self, clip_mp4, tmp_path):
+        """A negative `loop` is rejected before any decoding starts.
+
+        Args:
+            clip_mp4: The rendered source fixture.
+            tmp_path: pytest temp directory.
+
+        Test scenario:
+            The same unsigned-short limit as the writer, surfaced up front.
+        """
+        src, _ = clip_mp4
+        with pytest.raises(ValueError, match="loop must be zero or positive"):
+            anim_mod.gif_from_video(src, str(tmp_path / "out.gif"), loop=-1)
+
+    def test_unknown_quantize_method_raises_before_rendering(self, tiny_anim, tmp_path):
+        """A bad strategy is rejected up front, not after the whole render.
+
+        Args:
+            tiny_anim: Small animation fixture.
+            tmp_path: pytest temp directory.
+
+        Test scenario:
+            WebP and a single-frame GIF never reach the palette builder, so a
+            typo checked only there would survive the render and be silently
+            ignored.
+        """
+        with pytest.raises(ValueError, match="quantize_method must be one of"):
+            save_animation(tiny_anim, str(tmp_path / "a.webp"), quantize_method="nope")
+
+    def test_variable_is_restored_when_previously_unset(self, clip_mp4, monkeypatch):
+        """An unset variable is unset again afterwards.
+
+        Args:
+            clip_mp4: The rendered source fixture.
+            monkeypatch: pytest monkeypatch fixture.
+
+        Test scenario:
+            Setting it permanently would outlive the call, go stale if the
+            rcParam changed, and leak into unrelated code in the same process.
+        """
+        src, _ = clip_mp4
+        monkeypatch.delenv("IMAGEIO_FFMPEG_EXE", raising=False)
+        metadata, reader = anim_mod._read_video_frames(src)
+        reader.close()
+        assert metadata["size"], "the decoder should still have reported metadata"
+        assert "IMAGEIO_FFMPEG_EXE" not in os.environ, (
+            "an unset variable should not be left behind"
+        )
+
+    def test_existing_value_is_put_back(self, clip_mp4, monkeypatch):
+        """A caller's own value survives the call unchanged.
+
+        Args:
+            clip_mp4: The rendered source fixture.
+            monkeypatch: pytest monkeypatch fixture.
+
+        Test scenario:
+            Someone who pinned their own binary must get it back, not ours.
+        """
+        src, _ = clip_mp4
+        monkeypatch.setenv("IMAGEIO_FFMPEG_EXE", imageio_ffmpeg.get_ffmpeg_exe())
+        chosen = os.environ["IMAGEIO_FFMPEG_EXE"]
+        metadata, reader = anim_mod._read_video_frames(src)
+        reader.close()
+        assert os.environ["IMAGEIO_FFMPEG_EXE"] == chosen, (
+            "the caller's pinned binary should be restored"
+        )
+
+    def test_gif_from_video_forwards_the_method(self, clip_mp4, tmp_path):
+        """`gif_from_video` passes the strategy through to the palette.
+
+        Args:
+            clip_mp4: The rendered source fixture.
+            tmp_path: pytest temp directory.
+
+        Test scenario:
+            The derived path must offer the same choice as the rendered one, or
+            the two would quantise differently for the same request.
+        """
+        src, frames = clip_mp4
+        out = tmp_path / "median.gif"
+        anim_mod.gif_from_video(src, str(out), fps=12, quantize_method="median")
+        assert max(_mark_distances(_decode(out), frames)) > 40, (
+            "median cut should have been applied to the derived GIF"
+        )
+
+    def test_missing_source_raises(self, tmp_path):
+        """A source that does not exist raises `FileNotFoundError`.
+
+        Test scenario:
+            The failure surfaces up front, naming the path, rather than as a
+            decoder error later.
+        """
+        with pytest.raises(FileNotFoundError, match="does not exist"):
+            anim_mod.gif_from_video(
+                str(tmp_path / "nope.mp4"), str(tmp_path / "out.gif")
+            )
+
+    @pytest.mark.parametrize("max_colors", [1, 0, 255, 300])
+    def test_invalid_max_colors_raises(self, clip_mp4, tmp_path, max_colors):
+        """A palette size outside ``2-254`` raises `ValueError`.
+
+        Args:
+            clip_mp4: The rendered source fixture.
+            tmp_path: pytest temp directory.
+            max_colors: The out-of-range palette size under test.
+
+        Test scenario:
+            Two entries are reserved for pure black and white, so 254 is the
+            ceiling; fewer than two colours is not a palette.
+        """
+        src, _ = clip_mp4
+        with pytest.raises(ValueError, match="max_colors must be"):
+            anim_mod.gif_from_video(
+                src, str(tmp_path / "out.gif"), max_colors=max_colors
+            )
+
+    def test_width_matching_the_source_skips_resizing(
+        self, clip_mp4, tmp_path, monkeypatch
+    ):
+        """Asking for the source's own width performs no resample at all.
+
+        Args:
+            clip_mp4: The rendered source fixture.
+            tmp_path: pytest temp directory.
+            monkeypatch: pytest monkeypatch fixture.
+
+        Test scenario:
+            Checking the output size alone cannot tell a skipped resize from one
+            that resampled to the same dimensions -- and resampling a frame to
+            its own size still costs time and softens it. `Image.resize` is
+            wrapped to record any call, and must not fire.
+        """
+        src, _ = clip_mp4
+        resizes = []
+        original = Image.Image.resize
+
+        def spy(self, size, *args, **kwargs):
+            resizes.append(size)
+            return original(self, size, *args, **kwargs)
+
+        monkeypatch.setattr(Image.Image, "resize", spy)
+        out = tmp_path / "same.gif"
+        anim_mod.gif_from_video(src, str(out), fps=12, width=_CLIP_W)
+        assert not resizes, f"a same-width request should not resample: {resizes}"
+        with Image.open(out) as handle:
+            assert handle.size == (_CLIP_W, _CLIP_H), f"unexpected size {handle.size}"
+
+    def test_source_yielding_no_frames_raises(self, clip_mp4, tmp_path, monkeypatch):
+        """A video that decodes to nothing raises a clear `ValueError`.
+
+        Args:
+            clip_mp4: The rendered source fixture.
+            tmp_path: pytest temp directory.
+            monkeypatch: pytest monkeypatch fixture.
+
+        Test scenario:
+            A truncated or empty stream would otherwise fail deep inside Pillow
+            with an IndexError; the decoder is stubbed to yield only metadata so
+            the guard is exercised directly.
+        """
+        src, _ = clip_mp4
+
+        def empty_frames():
+            return
+            yield  # pragma: no cover - never reached, makes this a generator
+
+        def only_meta(src, **kwargs):
+            return {"size": (4, 4), "pix_fmt": "yuv444p"}, empty_frames()
+
+        monkeypatch.setattr(anim_mod, "_read_video_frames", only_meta)
+        with pytest.raises(ValueError, match="yielded no frames"):
+            anim_mod.gif_from_video(src, str(tmp_path / "out.gif"))
+
+    def test_max_colors_limits_the_palette(self, clip_mp4, tmp_path):
+        """A small `max_colors` narrows the colours actually used.
+
+        Test scenario:
+            Quantising to 8 entries must yield far fewer distinct colours than
+            the default 254, proving the argument reaches the palette builder
+            rather than being ignored.
+        """
+        src, _ = clip_mp4
+        narrow = tmp_path / "narrow.gif"
+        anim_mod.gif_from_video(src, str(narrow), fps=6, max_colors=8)
+        union = set()
+        for frame in _decode(narrow):
+            union |= {tuple(pixel) for pixel in frame.reshape(-1, 3)}
+        assert len(union) <= 16, (
+            f"max_colors=8 should keep the palette tiny, saw {len(union)} colours"
+        )
+
+    @pytest.mark.parametrize("kwargs", [{"fps": 0}, {"fps": -1}, {"width": 0}])
+    def test_invalid_sampling_arguments_raise(self, clip_mp4, tmp_path, kwargs):
+        """Non-positive `fps` or `width` raise `ValueError`.
+
+        Args:
+            clip_mp4: The rendered source fixture.
+            tmp_path: pytest temp directory.
+            kwargs: The invalid argument under test.
+
+        Test scenario:
+            Both are rejected before any decoding starts.
+        """
+        src, _ = clip_mp4
+        with pytest.raises(ValueError, match="must be positive|positive finite"):
+            anim_mod.gif_from_video(src, str(tmp_path / "out.gif"), **kwargs)
+
+
+class TestIsChromaSubsampled:
+    """Tests for `_is_chroma_subsampled`."""
+
+    @pytest.mark.parametrize(
+        "pix_fmt, expected",
+        [
+            ("yuv420p", True),
+            ("yuv422p", True),
+            ("yuv440p", True),
+            ("yuvj420p", True),
+            ("yuvj440p", True),
+            ("YUV420P", True),
+            ("yuv420p10le", True),
+            ("nv12", True),
+            ("nv21", True),
+            ("nv16", True),
+            ("nv20le", True),
+            ("p010le", True),
+            ("p016be", True),
+            ("p210le", True),
+            ("yuyv422", True),
+            ("uyvy422", True),
+            ("y210le", True),
+            ("yuv444p", False),
+            ("yuvj444p", False),
+            ("yuv444p10le", False),
+            ("nv24", False),
+            ("nv42", False),
+            ("p410le", False),
+            ("p416be", False),
+            ("rgb24", False),
+            ("rgb444le", False),
+            ("gbrp", False),
+            ("", False),
+            (None, False),
+        ],
+    )
+    def test_classifies_pixel_formats(self, pix_fmt, expected):
+        """Only sub-4:4:4 YUV and the NV planar formats count as subsampled.
+
+        Args:
+            pix_fmt: The pixel format string under test.
+            expected: Whether it should be reported as chroma-subsampled.
+
+        Test scenario:
+            Every case is a real FFmpeg format name. The families do not split
+            on a prefix: `nv24` / `nv42` are 4:4:4 while `nv12` / `nv16` are
+            not, and the semi-planar `p0xx` / `p2xx` / `p4xx` formats spell
+            their sampling in the first digit. RGB-family names and an
+            unreported format must never trigger a warning.
+        """
+        result = anim_mod._is_chroma_subsampled(pix_fmt)
+        assert result is expected, (
+            f"{pix_fmt!r} should be {'subsampled' if expected else 'full chroma'}, got {result}"
+        )
+
+
+class TestBuildClipPalette:
+    """Tests for `build_clip_palette`."""
+
+    @staticmethod
+    def _solid(color, size=(12, 12)):
+        """Build a solid-colour RGB frame.
+
+        Args:
+            color: The ``(r, g, b)`` fill.
+            size: The frame size.
+
+        Returns:
+            PIL.Image.Image: The filled frame.
+        """
+        return Image.new("RGB", size, color)
+
+    def test_reserves_pure_black_and_white(self):
+        """Entries 254 and 255 are pinned to black and white.
+
+        Test scenario:
+            A colourful clip would otherwise spend every slot on its own
+            colours, leaving a single-colour overlay to snap to the nearest
+            photographic neighbour. The last two entries are held back.
+        """
+        frames = [self._solid((200, 30, 30)), self._solid((30, 200, 30))]
+        palette = anim_mod.build_clip_palette(frames)
+        entries = palette.getpalette()
+        assert entries[254 * 3 : 254 * 3 + 3] == [0, 0, 0], "entry 254 should be black"
+        assert entries[255 * 3 : 255 * 3 + 3] == [255, 255, 255], (
+            "entry 255 should be white"
+        )
+
+    def test_returns_a_palette_mode_image(self):
+        """The result is a ``"P"``-mode image usable as a quantize palette.
+
+        Test scenario:
+            `Image.quantize(palette=...)` requires a palette-mode image, so the
+            builder must hand one back rather than a raw list of entries.
+        """
+        palette = anim_mod.build_clip_palette([self._solid((10, 20, 30))])
+        assert palette.mode == "P", f"expected a P-mode image, got {palette.mode}"
+        assert len(palette.getpalette()) == 768, "palette should carry 256 RGB entries"
+
+    def test_honours_the_colors_argument(self):
+        """A smaller `colors` budget reserves black/white at that offset.
+
+        Test scenario:
+            Passing ``colors=16`` quantises to 16 entries and pins black and
+            white immediately after them, so a caller asking for a small
+            palette still gets the reserved pair.
+        """
+        frames = [self._solid((200, 30, 30)), self._solid((30, 30, 200))]
+        entries = anim_mod.build_clip_palette(frames, colors=16).getpalette()
+        assert entries[16 * 3 : 16 * 3 + 3] == [0, 0, 0], (
+            "black should follow the budget"
+        )
+        assert entries[17 * 3 : 17 * 3 + 3] == [255, 255, 255], (
+            "white should follow black"
+        )
+
+    def test_palette_spans_the_whole_clip_not_one_frame(self):
+        """A colour that appears only in a late frame still reaches the palette.
+
+        Test scenario:
+            The palette is built from a montage of every frame. A distinctive
+            colour introduced in the last frame must therefore be represented,
+            which a first-frame-only palette would miss.
+        """
+        frames = [self._solid((0, 0, 0))] * 4 + [self._solid((255, 0, 255))]
+        entries = anim_mod.build_clip_palette(frames).getpalette()
+        triples = [tuple(entries[i : i + 3]) for i in range(0, 254 * 3, 3)]
+        assert any(
+            abs(r - 255) < 30 and g < 30 and abs(b - 255) < 30 for r, g, b in triples
+        ), "the late frame's magenta is absent from the clip-wide palette"
+
+    def test_single_frame_clip(self):
+        """A one-frame clip builds a palette without special-casing.
+
+        Test scenario:
+            The montage degenerates to a single tile; the builder must still
+            return a usable palette.
+        """
+        palette = anim_mod.build_clip_palette([self._solid((123, 45, 67))])
+        assert palette.mode == "P", "a single-frame clip should still yield a palette"
+
+    def test_tiny_frames_do_not_collapse_to_zero(self):
+        """Frames smaller than the montage divisor still produce a tile.
+
+        Test scenario:
+            A 2x2 frame divided by the montage divisor floors to 0, which would
+            be an invalid image size; the builder clamps each tile to at least
+            one pixel.
+        """
+        palette = anim_mod.build_clip_palette([self._solid((1, 2, 3), size=(2, 2))])
+        assert palette.mode == "P", "a sub-divisor frame should not break the montage"
+
+
+class TestClipPaletteValidation:
+    """Input validation on the public palette builder."""
+
+    def test_empty_frame_list_raises(self):
+        """No frames raises `ValueError`, not `IndexError` from deep inside.
+
+        Test scenario:
+            A palette needs at least one frame to describe; an empty clip used
+            to surface as a confusing IndexError while indexing the colour list.
+        """
+        with pytest.raises(ValueError, match="at least one frame"):
+            anim_mod.build_clip_palette([])
+
+    @pytest.mark.parametrize("colors", [1, 0, -5, 255, 256, 300])
+    def test_out_of_range_colors_raises(self, colors):
+        """A palette budget outside ``2-254`` raises `ValueError`.
+
+        Args:
+            colors: The out-of-range budget under test.
+
+        Test scenario:
+            Two entries are reserved for pure black and white, so 254 is the
+            ceiling -- above it the reserved pair would overwrite chosen colours
+            and Pillow rejects 256 with a bare "invalid palette size".
+        """
+        frames = [Image.new("RGB", (8, 8), (10, 20, 30))]
+        with pytest.raises(ValueError, match="colors must be"):
+            anim_mod.build_clip_palette(frames, colors=colors)
+
+    def test_frames_of_differing_sizes_are_accepted(self):
+        """Frames need not share a size for the palette to be built.
+
+        Test scenario:
+            The palette is derived from the colours present, not from any
+            spatial layout, so a clip whose frames differ in size is still
+            describable.
+        """
+        frames = [
+            Image.new("RGB", (8, 8), (255, 0, 0)),
+            Image.new("RGB", (16, 4), (0, 0, 255)),
+        ]
+        palette = anim_mod.build_clip_palette(frames)
+        assert palette.mode == "P", "mismatched frame sizes should still quantise"
+
+
+class TestClipGamutInputs:
+    """Frame-mode handling and exactness of the colour census."""
+
+    @pytest.mark.parametrize("mode", ["RGBA", "L", "P", "CMYK"])
+    def test_non_rgb_frames_are_converted_not_misread(self, mode):
+        """A non-RGB frame is converted, never reinterpreted byte-wise.
+
+        Args:
+            mode: The source image mode under test.
+
+        Test scenario:
+            Flattening an RGBA frame and reshaping it to three columns succeeds
+            whenever the byte count divides by three, and yields a palette of
+            pure misalignment artifacts rather than the frame's actual colours.
+            A solid frame must produce its own colour whatever mode it arrives
+            in.
+        """
+        frame = Image.new("RGB", (12, 12), (200, 40, 90)).convert(mode)
+        expected = frame.convert("RGB").getpixel((0, 0))
+        palette = anim_mod.build_clip_palette([frame], colors=8)
+        quantised = anim_mod.quantize_to_palette([frame.convert("RGB")], palette)
+        assert quantised[0].convert("RGB").getpixel((0, 0)) == expected, (
+            f"{mode} frame round-tripped to "
+            f"{quantised[0].convert('RGB').getpixel((0, 0))}, expected {expected}"
+        )
+
+    def test_colours_are_reproduced_exactly(self):
+        """Every distinct colour reaches the palette unshifted.
+
+        Test scenario:
+            The census records colours at full 8-bit precision, so a palette
+            with room for them all must hold them exactly -- bucketing to fewer
+            bits would return neighbours a step or two away.
+        """
+        colours = [(255, 0, 255), (1, 2, 3), (128, 129, 130), (0, 255, 254)]
+        frames = [Image.new("RGB", (4, 4), c) for c in colours]
+        table = anim_mod.build_clip_palette(frames, colors=8).getpalette()
+        triples = {tuple(table[i : i + 3]) for i in range(0, 8 * 3, 3)}
+        missing = [c for c in colours if c not in triples]
+        assert not missing, f"colours shifted by the census: {missing}"
+
+    def test_zero_pixel_frame_says_so(self):
+        """A frame with no pixels reports that, not "no frames".
+
+        Test scenario:
+            An empty image is a different mistake from an empty clip, and the
+            message should say which one happened.
+        """
+        empty = Image.new("RGB", (0, 0))
+        with pytest.raises(ValueError, match="hold no pixels"):
+            anim_mod.build_clip_palette([empty])
+
+    def test_padding_does_not_favour_one_colour(self):
+        """Squaring the census tiles the colours instead of repeating one.
+
+        Test scenario:
+            A five-colour census pads to nine pixels. Repeating the last colour
+            would give it more than half the census, which the strategies read
+            as prominence; tiling keeps the five roughly even.
+        """
+        colours = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255)]
+        frames = [Image.new("RGB", (2, 2), c) for c in colours]
+        census = np.asarray(anim_mod._clip_gamut(frames)).reshape(-1, 3)
+        counts = {tuple(c): 0 for c in colours}
+        for pixel in census:
+            counts[tuple(pixel)] += 1
+        assert max(counts.values()) <= 2, (
+            f"one colour dominates the padded census: {counts}"
+        )
+
+
+class TestQuantizeMethod:
+    """The palette strategy is selectable, with coverage as the default."""
+
+    def test_unknown_method_raises(self):
+        """A method outside `QUANTIZE_METHODS` raises `ValueError`.
+
+        Test scenario:
+            The message names the accepted keys, so a typo is self-correcting.
+        """
+        frames = [Image.new("RGB", (8, 8), (10, 20, 30))]
+        with pytest.raises(ValueError, match="method must be one of"):
+            anim_mod.build_clip_palette(frames, method="nearest")
+
+    @pytest.mark.parametrize("method", ["coverage", "median", "octree"])
+    def test_every_documented_method_builds_a_palette(self, method):
+        """Each key of `QUANTIZE_METHODS` produces a usable palette.
+
+        Args:
+            method: The strategy under test.
+
+        Test scenario:
+            All three map to a Pillow quantiser that returns a palette image.
+        """
+        frames = [Image.new("RGB", (8, 8), c) for c in ((255, 0, 0), (0, 0, 255))]
+        palette = anim_mod.build_clip_palette(frames, method=method)
+        assert palette.mode == "P", f"{method} should yield a palette image"
+
+    def test_median_trades_marks_away_and_coverage_keeps_them(self, tmp_path):
+        """The opt-out really does change the outcome it exists to change.
+
+        Args:
+            tmp_path: pytest temp directory.
+
+        Test scenario:
+            This is what makes the knob meaningful rather than decorative: on a
+            texture-heavy clip the default keeps the saturated marks, while
+            median cut -- which weights by pixel population -- discards them.
+            If both scored alike the parameter would be doing nothing.
+        """
+        frames = _clip_frames()
+        results = {}
+        for method in ("coverage", "median"):
+            fig, anim = _clip_animation(frames)
+            out = tmp_path / f"{method}.gif"
+            save_animation(anim, str(out), fps=12, quantize_method=method)
+            plt.close(fig)
+            results[method] = max(_mark_distances(_decode(out), frames))
+
+        assert results["coverage"] < 40, (
+            f"the default should keep the marks, got {results['coverage']:.1f}"
+        )
+        assert results["median"] > results["coverage"] * 3, (
+            "median cut should visibly lose the marks the default keeps: "
+            f"{results['median']:.1f} vs {results['coverage']:.1f}"
+        )
+
+
+class TestPillowOptionValidation:
+    """Rate and loop validation shared by the Pillow-backed writers."""
+
+    @pytest.mark.parametrize("fps", [0, -1, -0.5, float("nan"), float("inf")])
+    def test_non_positive_fps_raises(self, tiny_anim, tmp_path, fps):
+        """A non-positive `fps` raises `ValueError`, not `ZeroDivisionError`.
+
+        Args:
+            tiny_anim: Small animation fixture.
+            tmp_path: pytest temp directory.
+            fps: The invalid rate under test.
+
+        Test scenario:
+            The rate becomes a per-frame duration by division, so zero used to
+            surface as a bare ZeroDivisionError from inside the writer. NaN and
+            infinity are included because a plain ``fps <= 0`` test lets both
+            through -- NaN compares false against everything, and infinity
+            divides to a zero delay.
+        """
+        with pytest.raises(ValueError, match="fps must be a positive finite"):
+            save_animation(tiny_anim, str(tmp_path / "a.gif"), fps=fps)
+
+    def test_negative_loop_raises(self, tiny_anim, tmp_path):
+        """A negative `loop` raises `ValueError`, not `struct.error`.
+
+        Args:
+            tiny_anim: Small animation fixture.
+            tmp_path: pytest temp directory.
+
+        Test scenario:
+            GIF stores the loop count as an unsigned short, so a negative value
+            used to fail inside Pillow's struct packing.
+        """
+        with pytest.raises(ValueError, match="loop must be zero or positive"):
+            save_animation(tiny_anim, str(tmp_path / "a.gif"), loop=-1)
+
+    def test_very_high_fps_keeps_a_visible_delay(self, tiny_anim, tmp_path):
+        """Above 100 fps the GIF delay is held at the format's 10 ms floor.
+
+        Args:
+            tiny_anim: Small animation fixture.
+            tmp_path: pytest temp directory.
+
+        Test scenario:
+            GIF stores its delay in hundredths of a second, so a sub-10 ms delay
+            rounds to zero on disk; viewers discard a zero delay and replay at
+            their own default, far slower than asked for. Flooring at 10 ms
+            keeps the fastest timing the format can actually express.
+        """
+        out = tmp_path / "fast.gif"
+        save_animation(tiny_anim, str(out), fps=2000)
+        with Image.open(out) as handle:
+            assert handle.info.get("duration", 0) >= 10, (
+                "a sub-centisecond delay is dropped by viewers: "
+                f"{handle.info.get('duration')}"
+            )
+
+
+class TestQuantizeToPalette:
+    """Tests for `quantize_to_palette`."""
+
+    def test_returns_one_palette_frame_per_input(self):
+        """Every input frame comes back as a ``"P"``-mode image.
+
+        Test scenario:
+            The count is preserved and each frame is converted, so the writer
+            can hand the list straight to Pillow.
+        """
+        frames = [Image.new("RGB", (8, 8), c) for c in ((255, 0, 0), (0, 255, 0))]
+        palette = anim_mod.build_clip_palette(frames)
+        result = anim_mod.quantize_to_palette(frames, palette)
+        assert len(result) == len(frames), (
+            f"expected {len(frames)} frames, got {len(result)}"
+        )
+        assert all(f.mode == "P" for f in result), "every frame should be palette-mode"
+
+    def test_frames_share_one_palette(self):
+        """All quantised frames carry the same colour table.
+
+        Test scenario:
+            A shared table is what keeps constant regions byte-stable between
+            frames, so the palettes must be identical, not merely similar.
+        """
+        frames = [Image.new("RGB", (8, 8), c) for c in ((255, 0, 0), (0, 0, 255))]
+        result = anim_mod.quantize_to_palette(
+            frames, anim_mod.build_clip_palette(frames)
+        )
+        first = result[0].getpalette()
+        assert all(f.getpalette() == first for f in result[1:]), (
+            "frames do not share a single palette"
+        )
+
+
+class TestWritePillowAnimation:
+    """Tests for `_write_pillow_animation`."""
+
+    @pytest.fixture
+    def palette_frames(self):
+        """Two palette-mode frames sharing one table.
+
+        Returns:
+            list: The quantised frames.
+        """
+        frames = [Image.new("RGB", (8, 8), c) for c in ((255, 0, 0), (0, 0, 255))]
+        return anim_mod.quantize_to_palette(frames, anim_mod.build_clip_palette(frames))
+
+    @pytest.mark.parametrize(
+        "fps, expected", [(4, 250), (10, 100), (2, 500), (12, 80), (3, 330)]
+    )
+    def test_duration_follows_fps(self, palette_frames, tmp_path, fps, expected):
+        """Frame duration is the millisecond reciprocal of `fps`.
+
+        Args:
+            palette_frames: The quantised-frames fixture.
+            tmp_path: pytest temp directory.
+            fps: Playback rate under test.
+            expected: The per-frame duration it implies.
+
+        Test scenario:
+            GIF stores a per-frame delay, so fps has to be converted; 4 fps is
+            250 ms per frame. The default 12 fps and 3 fps are included because
+            they do not divide 1000 exactly, and the delay field is in
+            hundredths of a second -- so 83 ms is stored as 80 and 333 as 330.
+            The expectations are what actually round-trips, which is where a
+            rounding change would show up.
+        """
+        out = tmp_path / "d.gif"
+        anim_mod._write_pillow_animation(palette_frames, str(out), fps, 0, True)
+        with Image.open(out) as handle:
+            assert handle.info["duration"] == expected, (
+                f"fps={fps} should give {expected}ms, got {handle.info['duration']}"
+            )
+
+    def test_loop_is_written(self, palette_frames, tmp_path):
+        """A non-zero `loop` reaches the written file.
+
+        Test scenario:
+            `loop=3` must be recorded rather than silently defaulting to the
+            forever-loop Pillow's writer hardcodes.
+        """
+        out = tmp_path / "l.gif"
+        anim_mod._write_pillow_animation(palette_frames, str(out), 5, 3, True)
+        with Image.open(out) as handle:
+            assert handle.info.get("loop") == 3, (
+                f"expected loop=3, got {handle.info.get('loop')}"
+            )
+
+    def test_accepts_a_lazy_iterable(self, palette_frames, tmp_path):
+        """Frames may arrive as a generator, not only as a list.
+
+        Args:
+            palette_frames: The quantised-frames fixture.
+            tmp_path: pytest temp directory.
+
+        Test scenario:
+            The video path hands the writer a generator so the clip is never
+            materialised to be written; the writer must consume one.
+        """
+        out = tmp_path / "lazy.gif"
+        anim_mod._write_pillow_animation(iter(palette_frames), str(out), 5, 0, True)
+        assert len(_decode(out)) == len(palette_frames), "generator input lost frames"
+
+    def test_empty_stream_raises(self, tmp_path):
+        """No frames raises `ValueError`, not a bare `StopIteration`.
+
+        Args:
+            tmp_path: pytest temp directory.
+
+        Test scenario:
+            Pulling the first frame off an exhausted iterator used to surface as
+            StopIteration, which reads as a generator bug rather than an empty
+            clip.
+        """
+        out = str(tmp_path / "e.gif")
+        empty = iter(())
+        with pytest.raises(ValueError, match="at least one frame"):
+            anim_mod._write_pillow_animation(empty, out, 5, 0, True)
+
+    def test_single_frame_gif_reserves_black_and_white(self, tmp_path):
+        """A one-frame GIF still goes through the shared palette.
+
+        Args:
+            tmp_path: pytest temp directory.
+
+        Test scenario:
+            The palette branch used to require more than one frame, so a
+            single-frame GIF skipped it and lost the reserved black and white
+            the docs promise for overlays.
+        """
+        frame = Image.new("RGB", (16, 16), (120, 30, 200))
+        frame.putpixel((0, 0), (0, 0, 0))
+        out = tmp_path / "one.gif"
+        palette = anim_mod.build_clip_palette([frame])
+        anim_mod._write_pillow_animation(
+            anim_mod.quantize_to_palette([frame], palette), str(out), 5, 0, True
+        )
+        assert _decode(out)[0][0, 0].tolist() == [0, 0, 0], (
+            "pure black should survive in a single-frame GIF"
+        )
+
+    def test_all_frames_are_written(self, palette_frames, tmp_path):
+        """Every frame ends up in the file, not just the first.
+
+        Test scenario:
+            The first frame is saved with the rest appended; a mistake there
+            would silently produce a single-frame GIF.
+        """
+        out = tmp_path / "n.gif"
+        anim_mod._write_pillow_animation(palette_frames, str(out), 5, 0, True)
+        assert len(_decode(out)) == len(palette_frames), "frame count mismatch"

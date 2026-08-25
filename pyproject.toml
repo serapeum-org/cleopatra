@@ -27,7 +27,11 @@ dependencies = [
     "numpy>=2.0.0",
     "matplotlib>=3.9",
     "pillow>=12.1.1",
-    "imageio-ffmpeg>=0.4.9",
+    # 0.6.0 is the floor the suite actually exercises. gif_from_video reads
+    # frames back through read_frames with output_params and relies on the
+    # reported size being post-filter, none of which the previous 0.4.9 floor
+    # was ever tested against.
+    "imageio-ffmpeg>=0.6.0",
     "hpc-utils>=0.1.4",
 ]
 

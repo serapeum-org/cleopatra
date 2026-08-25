@@ -14,26 +14,388 @@ writer/format logic has a single source of truth.
 
 from __future__ import annotations
 
+import itertools
+import math
 import os
 import shutil
 import tempfile
 import warnings
+from collections.abc import Generator, Iterable, Iterator
 from typing import TYPE_CHECKING, Any
 
 import matplotlib as mpl
+import numpy as np
 from matplotlib.animation import FFMpegWriter, FuncAnimation, PillowWriter
 from PIL import Image as PILImage
 
 if TYPE_CHECKING:  # import only for type checkers; IPython stays optional
     from IPython.display import Image
 
+__all__ = [
+    "CLIP_PALETTE_COLORS",
+    "QUANTIZE_METHODS",
+    "SUPPORTED_VIDEO_FORMAT",
+    "build_clip_palette",
+    "embed_gif",
+    "gif_from_video",
+    "quantize_to_palette",
+    "save_animation",
+    "to_bytes",
+    "to_gif",
+    "to_mp4",
+]
+
 #: Container formats `save_animation` can write. GIF and (animated) WebP use
 #: Pillow (`_OptimizedPillowWriter`); mov/avi/mp4 require FFmpeg (`FFMpegWriter`).
 #: WebP is typically 3-5x smaller than GIF for photographic/satellite frames.
 SUPPORTED_VIDEO_FORMAT = ["gif", "mov", "avi", "mp4", "webp"]
 
+#: The matplotlib rcParam naming the ffmpeg binary to shell out to.
+_FFMPEG_PATH_RCPARAM = "animation.ffmpeg_path"
+
 #: Formats written by Pillow rather than FFmpeg.
 _PILLOW_FORMATS = {"gif", "webp"}
+
+#: Palette entries a GIF clip's shared colour table is quantised to. Two of the
+#: 256 are held back for pure black and white (see `build_clip_palette`). Public
+#: because it is the default of `build_clip_palette` and `gif_from_video`, so it
+#: appears in their rendered signatures.
+CLIP_PALETTE_COLORS = 254
+
+#: Palette strategies `build_clip_palette` accepts. `"coverage"` spans the
+#: clip's colour range and is the default: it keeps small saturated marks that
+#: population-weighted splitting discards. `"median"` is Pillow's median cut,
+#: which splits the colour cube by how densely the clip populates it. Note the
+#: census holds each colour once, so no strategy here sees pixel counts: they
+#: weight by distinct colours, not by area. `"median"` still favours the crowded
+#: regions of colour space a photographic background occupies, which is why it
+#: renders such a background a little more finely. `"octree"` sits between them.
+QUANTIZE_METHODS = {
+    "coverage": PILImage.Quantize.MAXCOVERAGE,
+    "median": PILImage.Quantize.MEDIANCUT,
+    "octree": PILImage.Quantize.FASTOCTREE,
+}
+
+#: Pixels hashed per pass when collecting a clip's colours. Bounds the
+#: temporary index array so a 4K frame does not briefly cost hundreds of
+#: megabytes just to be surveyed.
+_GAMUT_CHUNK = 1 << 20
+
+
+def _clip_gamut(frames: Iterable[PILImage.Image]) -> PILImage.Image:
+    """Collect every colour the clip contains, once each, as a compact image.
+
+    The palette is chosen for colour *coverage*, so what the quantiser needs is
+    the set of colours present, not how many pixels each covers. Spatially
+    downsampling the frames to save time -- the obvious way to build a cheap
+    palette source -- destroys exactly the information this exists to keep: an
+    interpolating resize blends a one-pixel mark into its background before the
+    quantiser ever sees it, and a nearest-neighbour resize drops it whenever it
+    falls between samples. Counting distinct colours instead is independent of
+    how large a feature is on screen.
+
+    Colours are recorded at full 8-bit precision in a presence bitmap indexed by
+    the packed RGB triple, so the census reproduces every colour exactly and the
+    survey is a single linear pass with no sort. The bitmap is 16 MB regardless
+    of how long the clip runs or how many colours it holds.
+
+    Args:
+        frames: The clip's frames as `PIL.Image.Image` objects. Any mode is
+            accepted and converted to RGB; they need not share a size.
+
+    Returns:
+        PIL.Image.Image: An RGB image holding each distinct colour exactly once.
+        It is padded to a square by tiling the colour list, so no single colour
+        is over-represented in what the quantiser then sees.
+
+    Raises:
+        ValueError: If `frames` is empty, or if the frames hold no pixels.
+    """
+    seen = np.zeros(1 << 24, dtype=bool)
+    saw_frame = False
+    for frame in frames:
+        saw_frame = True
+        # A frame that is not already RGB -- RGBA, L, P -- would otherwise be
+        # reinterpreted by the reshape below whenever its byte count happens to
+        # divide by three, producing a palette of pure misalignment artifacts.
+        rgb = frame if frame.mode == "RGB" else frame.convert("RGB")
+        flat = np.asarray(rgb, dtype=np.uint8).reshape(-1, 3)
+        for begin in range(0, len(flat), _GAMUT_CHUNK):
+            block = flat[begin : begin + _GAMUT_CHUNK].astype(np.uint32)
+            seen[(block[:, 0] << 16) | (block[:, 1] << 8) | block[:, 2]] = True
+
+    if not saw_frame:
+        raise ValueError("a clip palette needs at least one frame, got none.")
+    keys = np.flatnonzero(seen).astype(np.uint32)
+    if not len(keys):
+        raise ValueError("the clip's frames hold no pixels, so it has no colours.")
+
+    colours = np.stack(
+        [(keys >> 16) & 0xFF, (keys >> 8) & 0xFF, keys & 0xFF], axis=-1
+    ).astype(np.uint8)
+    side = int(np.ceil(np.sqrt(len(colours))))
+    # Tile rather than repeat the last colour: padding with one colour would
+    # hand it a share of the census that the strategies read as prominence.
+    canvas = np.resize(colours, (side * side, 3))
+    return PILImage.fromarray(canvas.reshape(side, side, 3), "RGB")
+
+
+def build_clip_palette(
+    frames: Iterable[PILImage.Image],
+    colors: int = CLIP_PALETTE_COLORS,
+    method: str = "coverage",
+) -> PILImage.Image:
+    """Build one colour palette shared by every frame of a clip.
+
+    Quantising each frame independently makes constant regions shimmer and lets
+    the same colour drift between frames, so one table is derived from the whole
+    clip and every frame is mapped through it.
+
+    The table is chosen for colour *coverage* (Pillow's `MAXCOVERAGE`) over the
+    set of colours the clip contains, gathered by `_clip_gamut`. Median cut, the
+    obvious alternative, splits by pixel population instead: on a clip with a
+    large textured area the background claims nearly every slot and small
+    saturated marks -- overlay glyphs, thin paths, labels -- collapse to the
+    nearest muddy neighbour. Because coverage is computed over distinct colours
+    rather than pixels, a mark survives no matter how few pixels it covers; a
+    single-pixel mark is kept as faithfully as a large one.
+
+    Args:
+        frames: The clip's frames as RGB `PIL.Image.Image` objects.
+        colors: How many palette entries to quantise to. The remaining entries
+            up to 256 are reserved -- pure black and white are pinned so
+            single-colour overlays stay crisp.
+        method: Which strategy picks the entries; a key of `QUANTIZE_METHODS`.
+            Defaults to ``"coverage"``, which spreads them across the clip's
+            colour range. ``"median"`` splits the colour cube by how densely
+            the clip populates it, so it spends the table on the crowded regions
+            a photographic background occupies -- worth choosing for a smooth
+            clip with no small marks at stake, where that renders the dominant
+            colours a little more finely. Note it sees each colour once, not
+            once per pixel, so it weights by distinct colours rather than by
+            area.
+
+    Returns:
+        PIL.Image.Image: A ``"P"``-mode image carrying the shared palette,
+        ready to pass to `Image.quantize(palette=...)`.
+
+    Raises:
+        ValueError: If `frames` is empty, if `colors` is outside ``2-254`` --
+            above 254 the reserved black and white would displace chosen
+            entries -- or if `method` is not a key of `QUANTIZE_METHODS`.
+
+    Examples:
+        - Pure black and white are held back at the top of the table, so a
+          single-colour overlay drawn on the clip stays crisp:
+            ```python
+            >>> from PIL import Image
+            >>> from cleopatra.glyphs.base.animation import build_clip_palette
+            >>> frames = [
+            ...     Image.new("RGB", (12, 12), (200, 30, 30)),
+            ...     Image.new("RGB", (12, 12), (30, 30, 200)),
+            ... ]
+            >>> entries = build_clip_palette(frames).getpalette()
+            >>> entries[254 * 3 : 254 * 3 + 3]
+            [0, 0, 0]
+            >>> entries[255 * 3 : 255 * 3 + 3]
+            [255, 255, 255]
+
+            ```
+        - A smaller budget moves the reserved pair up behind it, so asking for
+          16 colours still leaves black and white reachable:
+            ```python
+            >>> from PIL import Image
+            >>> from cleopatra.glyphs.base.animation import build_clip_palette
+            >>> frames = [
+            ...     Image.new("RGB", (12, 12), (200, 30, 30)),
+            ...     Image.new("RGB", (12, 12), (30, 30, 200)),
+            ... ]
+            >>> entries = build_clip_palette(frames, colors=16).getpalette()
+            >>> entries[16 * 3 : 16 * 3 + 3]
+            [0, 0, 0]
+
+            ```
+        - The table spans the whole clip, so a colour introduced only in the
+          last frame is still represented:
+            ```python
+            >>> from PIL import Image
+            >>> from cleopatra.glyphs.base.animation import build_clip_palette
+            >>> frames = [Image.new("RGB", (9, 9), (0, 0, 0))] * 4
+            >>> frames.append(Image.new("RGB", (9, 9), (255, 0, 255)))
+            >>> entries = build_clip_palette(frames).getpalette()
+            >>> triples = [tuple(entries[i : i + 3]) for i in range(0, 254 * 3, 3)]
+            >>> any(r > 200 and g < 40 and b > 200 for r, g, b in triples)
+            True
+
+            ```
+
+        - The strategy is selectable. On a clip with few enough colours to fit
+          the budget every strategy keeps them all -- the choice only starts to
+          matter once colours must be discarded:
+            ```python
+            >>> from PIL import Image
+            >>> from cleopatra.glyphs.base.animation import (
+            ...     QUANTIZE_METHODS,
+            ...     build_clip_palette,
+            ... )
+            >>> sorted(QUANTIZE_METHODS)
+            ['coverage', 'median', 'octree']
+            >>> frame = Image.new("RGB", (40, 40), (30, 30, 30))
+            >>> frame.putpixel((0, 0), (255, 0, 255))  # one magenta pixel
+            >>> table = build_clip_palette([frame], colors=4, method="median").getpalette()
+            >>> triples = [tuple(table[i : i + 3]) for i in range(0, 4 * 3, 3)]
+            >>> any(r > 200 and g < 40 and b > 200 for r, g, b in triples)
+            True
+
+            ```
+
+    See Also:
+        quantize_to_palette: Map the frames onto the palette this returns.
+        gif_from_video: Derives a GIF through this same palette.
+    """
+    if method not in QUANTIZE_METHODS:
+        raise ValueError(
+            f"method must be one of {sorted(QUANTIZE_METHODS)}, got {method!r}."
+        )
+    if not 2 <= colors <= CLIP_PALETTE_COLORS:
+        # Above 254 the reserved black/white pair would overwrite chosen entries,
+        # and Pillow rejects 256 outright with a bare "invalid palette size".
+        raise ValueError(f"colors must be in 2-{CLIP_PALETTE_COLORS}, got {colors!r}.")
+
+    census = _clip_gamut(frames)
+    base = census.quantize(colors=colors, method=QUANTIZE_METHODS[method])
+    entries = (list(base.getpalette() or []) + [0] * 768)[:768]
+    entries[colors * 3 : colors * 3 + 6] = [0, 0, 0, 255, 255, 255]
+    palette = PILImage.new("P", (1, 1))
+    palette.putpalette(entries)
+    return palette
+
+
+def quantize_to_palette(
+    frames: Iterable[PILImage.Image], palette: PILImage.Image
+) -> list[PILImage.Image]:
+    """Map every frame onto a shared palette, dithering the residual error.
+
+    Args:
+        frames: The clip's frames as RGB `PIL.Image.Image` objects.
+        palette: A ``"P"``-mode image carrying the palette, from
+            `build_clip_palette`.
+
+    Returns:
+        list: The frames as ``"P"``-mode images sharing `palette`.
+
+    Examples:
+        - Every frame comes back palette-mode, carrying the same table -- which
+          is what keeps a constant region byte-stable from frame to frame:
+            ```python
+            >>> from PIL import Image
+            >>> from cleopatra.glyphs.base.animation import (
+            ...     build_clip_palette,
+            ...     quantize_to_palette,
+            ... )
+            >>> frames = [
+            ...     Image.new("RGB", (8, 8), (255, 0, 0)),
+            ...     Image.new("RGB", (8, 8), (0, 0, 255)),
+            ... ]
+            >>> quantised = quantize_to_palette(frames, build_clip_palette(frames))
+            >>> len(quantised)
+            2
+            >>> quantised[0].mode
+            'P'
+            >>> quantised[0].getpalette() == quantised[1].getpalette()
+            True
+
+            ```
+        - A colour the palette holds exactly survives the round trip unchanged:
+            ```python
+            >>> from PIL import Image
+            >>> from cleopatra.glyphs.base.animation import (
+            ...     build_clip_palette,
+            ...     quantize_to_palette,
+            ... )
+            >>> frames = [Image.new("RGB", (8, 8), (255, 0, 0))]
+            >>> quantised = quantize_to_palette(frames, build_clip_palette(frames))
+            >>> quantised[0].convert("RGB").getpixel((0, 0))
+            (255, 0, 0)
+
+            ```
+
+    See Also:
+        build_clip_palette: Builds the shared palette these frames map onto.
+    """
+    return [
+        frame.quantize(palette=palette, dither=PILImage.Dither.FLOYDSTEINBERG)
+        for frame in frames
+    ]
+
+
+def _validate_pillow_options(fps: float, loop: int) -> None:
+    """Check the options Pillow cannot fail cleanly on itself.
+
+    Args:
+        fps: Playback rate; becomes a per-frame duration in milliseconds.
+        loop: Loop count; `0` loops forever.
+
+    Raises:
+        ValueError: If `fps` is not positive (Pillow would surface a bare
+            `ZeroDivisionError` from the duration conversion) or if `loop` is
+            negative (it is written as an unsigned short, so Pillow would raise
+            a bare `struct.error`).
+    """
+    if not math.isfinite(fps) or fps <= 0:
+        # isfinite rejects NaN and infinity, both of which slip past `fps <= 0`.
+        raise ValueError(f"fps must be a positive finite number, got {fps!r}.")
+    if loop < 0:
+        raise ValueError(f"loop must be zero or positive, got {loop!r}.")
+
+
+def _write_pillow_animation(
+    frames: Iterable[PILImage.Image],
+    path: str | os.PathLike,
+    fps: float,
+    loop: int,
+    optimize: bool,
+) -> None:
+    """Write frames out as an animated GIF or WebP via Pillow.
+
+    Args:
+        frames: The clip's frames, as a sequence or a lazy iterable. For GIF
+            these are ``"P"``-mode images sharing one palette; for WebP they are
+            passed through as grabbed.
+        path: Where to write the animation.
+        fps: Playback rate, converted to a per-frame duration in
+            milliseconds. GIF's delay field is in hundredths of a second, so
+            rates above 100 fps are held at that format's 10 ms floor rather
+            than rounding to a zero delay viewers discard; WebP keeps
+            millisecond timing and only floors at 1 ms.
+        loop: How many times to loop; `0` loops forever.
+        optimize: Run Pillow's optimisation pass (a no-op for WebP).
+
+    Raises:
+        ValueError: If `frames` is empty, `fps` is not positive, or `loop` is
+            negative.
+    """
+    _validate_pillow_options(fps, loop)
+    # GIF stores its frame delay in hundredths of a second, so anything under
+    # 10 ms rounds to zero on disk and viewers fall back to their own default --
+    # far slower than asked for. WebP keeps millisecond timing, so it only needs
+    # to stay above zero.
+    floor = 10 if str(path).lower().endswith(".gif") else 1
+    duration = max(floor, int(1000 / fps))
+    stream = iter(frames)
+    first = next(stream, None)
+    if first is None:
+        raise ValueError("an animation needs at least one frame, got none.")
+    # Pillow consumes `append_images` lazily, so handing it the rest of the
+    # iterator keeps a streamed clip from being materialised just to be written.
+    first.save(
+        path,
+        save_all=True,
+        append_images=stream,
+        duration=duration,
+        loop=loop,
+        optimize=optimize,
+    )
 
 
 def _ensure_ffmpeg_available() -> None:
@@ -52,7 +414,7 @@ def _ensure_ffmpeg_available() -> None:
         FileNotFoundError: If neither a system ffmpeg nor `imageio-ffmpeg`'s
             bundled binary can be located.
     """
-    configured = mpl.rcParams["animation.ffmpeg_path"]
+    configured = mpl.rcParams[_FFMPEG_PATH_RCPARAM]
     if os.path.isfile(configured) or shutil.which(configured):
         return
     try:
@@ -71,7 +433,7 @@ def _ensure_ffmpeg_available() -> None:
             RuntimeWarning,
             stacklevel=3,
         )
-    mpl.rcParams["animation.ffmpeg_path"] = bundled
+    mpl.rcParams[_FFMPEG_PATH_RCPARAM] = bundled
 
 
 class _OptimizedPillowWriter(PillowWriter):
@@ -88,38 +450,30 @@ class _OptimizedPillowWriter(PillowWriter):
             compression); the WebP encoder ignores it, so it is a no-op there.
         loop: Number of times the animation loops; `0` means loop forever
             (Pillow's convention). Honoured by both GIF and WebP.
+        quantize_method: Palette strategy for GIF; a key of `QUANTIZE_METHODS`.
     """
 
-    def __init__(self, *args, optimize: bool = True, loop: int = 0, **kwargs):
+    def __init__(
+        self,
+        *args,
+        optimize: bool = True,
+        loop: int = 0,
+        quantize_method: str = "coverage",
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self._optimize = optimize
         self._loop = loop
+        self._quantize_method = quantize_method
 
     def finish(self):
         frames = self._frames  # type: ignore[attr-defined]
-        if str(self.outfile).lower().endswith(".gif") and len(frames) > 1:
+        if str(self.outfile).lower().endswith(".gif") and frames:
             rgb = [f.convert("RGB") for f in frames]
-            w, h = rgb[0].size
-            tw, th = max(1, w // 3), max(1, h // 3)
-            montage = PILImage.new("RGB", (tw, th * len(rgb)))
-            for i, frame in enumerate(rgb):
-                montage.paste(frame.resize((tw, th)), (0, i * th))
-            base = montage.quantize(colors=254, method=PILImage.Quantize.MEDIANCUT)
-            pal = (list(base.getpalette() or []) + [0] * 768)[:768]
-            pal[254 * 3 : 254 * 3 + 6] = [0, 0, 0, 255, 255, 255]
-            palette = PILImage.new("P", (1, 1))
-            palette.putpalette(pal)
-            frames = [
-                f.quantize(palette=palette, dither=PILImage.Dither.FLOYDSTEINBERG)
-                for f in rgb
-            ]
-        frames[0].save(
-            self.outfile,
-            save_all=True,
-            append_images=frames[1:],
-            duration=int(1000 / self.fps),
-            loop=self._loop,
-            optimize=self._optimize,
+            palette = build_clip_palette(rgb, method=self._quantize_method)
+            frames = quantize_to_palette(rgb, palette)
+        _write_pillow_animation(
+            frames, self.outfile, self.fps, self._loop, self._optimize
         )
 
 
@@ -213,6 +567,62 @@ def _build_ffmpeg_extra_args(
     return built
 
 
+def _validated_output_format(
+    path: str,
+    fps: float,
+    loop: int,
+    quantize_method: str,
+    crf: int | None,
+    bitrate: int | None,
+) -> str:
+    """Resolve the output format from the path and check the options against it.
+
+    Args:
+        path: The output path; its extension selects the format.
+        fps: Frames per second.
+        loop: Loop count for the Pillow formats.
+        quantize_method: Palette strategy for the Pillow formats.
+        crf: Constant Rate Factor for the FFmpeg formats.
+        bitrate: Target bitrate for the FFmpeg formats.
+
+    Returns:
+        The lower-cased extension, one of `SUPPORTED_VIDEO_FORMAT`.
+
+    Raises:
+        ValueError: If the path has no extension or an unsupported one, if the
+            Pillow options are invalid for a Pillow format, or if both `crf` and
+            `bitrate` are given.
+    """
+    video_format = os.path.splitext(path)[1].lstrip(".").lower()
+    if not video_format:
+        raise ValueError(
+            f"The output path {path!r} has no file extension; the output "
+            f"format is taken from the extension, so use one of "
+            f"{SUPPORTED_VIDEO_FORMAT}."
+        )
+    if video_format not in SUPPORTED_VIDEO_FORMAT:
+        raise ValueError(
+            f"The given extension {video_format} implies a format that is "
+            f"not supported, only {SUPPORTED_VIDEO_FORMAT} are supported"
+        )
+    if video_format in _PILLOW_FORMATS:
+        _validate_pillow_options(fps, loop)
+        if quantize_method not in QUANTIZE_METHODS:
+            # Checked here rather than only where the palette is built, which a
+            # WebP or single-frame GIF never reaches -- a typo would otherwise
+            # survive the whole render and then be silently ignored.
+            raise ValueError(
+                f"quantize_method must be one of {sorted(QUANTIZE_METHODS)}, "
+                f"got {quantize_method!r}."
+            )
+    if crf is not None and bitrate is not None:
+        raise ValueError(
+            "Pass either crf or bitrate, not both: they are competing "
+            "rate-control modes for the encoder."
+        )
+    return video_format
+
+
 def save_animation(
     anim: FuncAnimation,
     path: str | os.PathLike,
@@ -226,6 +636,7 @@ def save_animation(
     dpi: int | None = None,
     optimize: bool = True,
     loop: int = 0,
+    quantize_method: str = "coverage",
     extra_args: list[str] | None = None,
 ) -> str:
     """Save any `FuncAnimation` to a file.
@@ -273,6 +684,13 @@ def save_animation(
         optimize: GIF only — run Pillow's palette optimisation pass (a no-op
             for WebP, whose encoder ignores it). Default `True`.
         loop: GIF/WebP only — number of times to loop; `0` loops forever.
+        quantize_method: GIF only -- which strategy picks the shared palette; a
+            key of `QUANTIZE_METHODS`. Defaults to ``"coverage"``, which keeps
+            small saturated marks. ``"median"`` splits the colour cube by how
+            densely the clip populates it, which suits a smooth photographic
+            clip with no small marks at stake. Neither sees pixel counts: the
+            palette is built from each colour once, so they weight by distinct
+            colours rather than by area.
         extra_args: Extra ffmpeg flags. A `-vf` filter here is merged with
             the automatic even-dimension pad and a `-pix_fmt` overrides
             `pix_fmt`. Note these flags bypass the `crf`/`bitrate`
@@ -285,8 +703,10 @@ def save_animation(
         back as its string form, not the original object.
 
     Raises:
-        ValueError: If the file format is not supported, or if both `crf`
-            and `bitrate` are given (competing rate-control modes).
+        ValueError: If the file format is not supported, if both `crf`
+            and `bitrate` are given (competing rate-control modes), or -- for
+            the Pillow formats -- if `fps` is not positive or `loop` is
+            negative.
         FileNotFoundError: If a video format is requested but neither a system
             FFmpeg nor imageio-ffmpeg's bundled binary can be found.
 
@@ -356,31 +776,21 @@ def save_animation(
         embed_gif: Wrap an animation as an `IPython.display.Image`.
     """
     path = os.fspath(path)
-    video_format = os.path.splitext(path)[1].lstrip(".").lower()
-    if not video_format:
-        raise ValueError(
-            f"The output path {path!r} has no file extension; the output "
-            f"format is taken from the extension, so use one of "
-            f"{SUPPORTED_VIDEO_FORMAT}."
-        )
-    if video_format not in SUPPORTED_VIDEO_FORMAT:
-        raise ValueError(
-            f"The given extension {video_format} implies a format that is "
-            f"not supported, only {SUPPORTED_VIDEO_FORMAT} are supported"
-        )
-
-    if crf is not None and bitrate is not None:
-        raise ValueError(
-            "Pass either crf or bitrate, not both: they are competing "
-            "rate-control modes for the encoder."
-        )
+    video_format = _validated_output_format(
+        path, fps, loop, quantize_method, crf, bitrate
+    )
 
     save_kwargs: dict[str, Any] = {} if dpi is None else {"dpi": dpi}
 
     if video_format in _PILLOW_FORMATS:
         anim.save(
             path,
-            writer=_OptimizedPillowWriter(fps=fps, optimize=optimize, loop=loop),
+            writer=_OptimizedPillowWriter(
+                fps=fps,
+                optimize=optimize,
+                loop=loop,
+                quantize_method=quantize_method,
+            ),
             **save_kwargs,
         )
     else:
@@ -613,6 +1023,315 @@ def to_mp4(anim: FuncAnimation, fps: int = 2, **kwargs) -> bytes:
         save_animation: Write an animation directly to a file path.
     """
     return to_bytes(anim, fmt="mp4", fps=fps, **kwargs)
+
+
+def _is_chroma_subsampled(pix_fmt: str | None) -> bool:
+    """Whether a pixel format stores colour at reduced resolution.
+
+    Chroma subsampling is decided by the family a format belongs to, not by a
+    prefix: `nv24` and `nv42` are 4:4:4 despite sharing the `nv` family with
+    4:2:0 `nv12`, and the semi-planar high-bit-depth formats spell their
+    sampling in the first digit (`p010` is 4:2:0, `p210` 4:2:2, `p410` 4:4:4).
+    The packed formats -- `yuyv422`, `uyvy422`, `y210le` -- name their sampling
+    rather than their layout, and are all 4:2:2.
+
+    Args:
+        pix_fmt: The source's pixel format as FFmpeg reports it, e.g.
+            ``"yuv420p"`` or ``"p010le"``. `None` when none was reported.
+
+    Returns:
+        bool: `True` when colour resolution is reduced, `False` for full-chroma
+        and RGB-family formats, and for an unreported format -- guessing there
+        would mean warning about a file that may be fine.
+    """
+    if not pix_fmt:
+        return False
+    fmt = pix_fmt.lower()
+    if fmt.startswith("yuv"):  # also covers the full-range yuvj variants
+        return "444" not in fmt
+    if fmt.startswith("nv"):
+        return not fmt.startswith(("nv24", "nv42"))
+    if fmt.startswith("p") and fmt[1:2].isdigit():
+        return not fmt.startswith("p4")
+    # Packed formats name their sampling instead of their layout.
+    return fmt.startswith(("yuyv", "uyvy", "yvyu", "y210", "y212", "y216"))
+
+
+def _read_video_frames(src: str, **kwargs) -> tuple[dict, Generator[bytes, None, None]]:
+    """Open a video for raw-frame reading via the bundled FFmpeg.
+
+    Args:
+        src: Path to the video.
+        **kwargs: Passed through to `imageio_ffmpeg.read_frames` (e.g.
+            `output_params`).
+
+    Returns:
+        tuple: The decoder's metadata dict, and a generator yielding each frame
+        as raw ``rgb24`` bytes. Close the generator when done.
+
+    Raises:
+        FileNotFoundError: If neither a system FFmpeg nor imageio-ffmpeg's
+            bundled binary can be found.
+
+    Notes:
+        Decoding resolves its binary the same way writing does, through
+        `_ensure_ffmpeg_available` -- a system FFmpeg on `PATH` or the one named
+        by matplotlib's ``animation.ffmpeg_path`` takes precedence over the
+        bundled copy -- so reading and writing in the same process never
+        disagree about which FFmpeg to run.
+
+        imageio-ffmpeg takes its binary from ``IMAGEIO_FFMPEG_EXE``, so that
+        variable is set only while the decoder starts and then restored. Setting
+        it permanently would outlive the call, go stale if the rcParam later
+        changed, and leak into unrelated code in the same process.
+    """
+    try:
+        import imageio_ffmpeg
+    except ModuleNotFoundError as e:  # pragma: no cover - imageio-ffmpeg is a dep
+        raise FileNotFoundError(
+            "Deriving a GIF from a video needs FFmpeg. Install imageio-ffmpeg "
+            "(ships a bundled binary) or an ffmpeg on PATH."
+        ) from e
+    _ensure_ffmpeg_available()
+    previous = os.environ.get("IMAGEIO_FFMPEG_EXE")
+    os.environ["IMAGEIO_FFMPEG_EXE"] = mpl.rcParams[_FFMPEG_PATH_RCPARAM]
+    try:
+        reader = imageio_ffmpeg.read_frames(src, **kwargs)
+        metadata = next(reader)  # starts the child while the variable is set
+    finally:
+        if previous is None:
+            os.environ.pop("IMAGEIO_FFMPEG_EXE", None)
+        else:
+            os.environ["IMAGEIO_FFMPEG_EXE"] = previous
+    return metadata, reader
+
+
+def _video_metadata(src: str) -> dict:
+    """Read a video's header without decoding any of it.
+
+    Args:
+        src: Path to the video.
+
+    Returns:
+        dict: The decoder's metadata, including ``size`` and ``pix_fmt``.
+    """
+    metadata, reader = _read_video_frames(src)
+    reader.close()
+    return dict(metadata)
+
+
+def _iter_video_frames(
+    src: str, fps: float, width: int | None
+) -> Iterator[PILImage.Image]:
+    """Yield a video's frames as RGB images, closing the decoder afterwards.
+
+    Frames are produced lazily so a clip never has to be held in memory all at
+    once, and the decoder is closed on the way out however the caller stops --
+    exhausted, `break`, or an exception -- rather than leaving an orphaned
+    ffmpeg child behind.
+
+    Args:
+        src: Path to the video.
+        fps: Rate to sample at; FFmpeg drops or duplicates frames to hit it.
+        width: Width to scale to, preserving aspect, or `None` to keep the
+            source size. Applied by FFmpeg's own scaler.
+
+    Yields:
+        PIL.Image.Image: Each sampled frame, as RGB.
+    """
+    # Scaling in the filter chain rather than per frame in Pillow: ffmpeg is
+    # already touching every pixel, and it reports the post-filter size, so the
+    # frames arrive at their final dimensions in both passes.
+    filters = [f"fps={fps}"]
+    if width is not None:
+        filters.append(f"scale={width}:-2:flags=lanczos")
+    metadata, reader = _read_video_frames(src, output_params=["-vf", ",".join(filters)])
+    try:
+        frame_w, frame_h = metadata["size"]
+        for buffer in reader:
+            yield PILImage.frombytes("RGB", (frame_w, frame_h), bytes(buffer))
+    finally:
+        reader.close()
+
+
+def gif_from_video(
+    src: str | os.PathLike,
+    path: str | os.PathLike,
+    *,
+    fps: float = 12,
+    width: int | None = None,
+    max_colors: int = CLIP_PALETTE_COLORS,
+    loop: int = 0,
+    optimize: bool = True,
+    quantize_method: str = "coverage",
+) -> str:
+    """Derive a GIF from an existing video, without re-rendering the frames.
+
+    Drawing is usually far more expensive than encoding -- hours, for a long
+    scientific animation -- so a clip is best rendered once to a video and every
+    other format derived from that file. `save_animation` needs a live
+    `FuncAnimation` and would re-render; this reads the frames back off disk
+    instead.
+
+    The frames go through exactly the same clip-wide palette as
+    `save_animation`'s GIF path (`build_clip_palette`), so a GIF derived from a
+    video and one rendered straight from the animation quantise identically.
+
+    The source is decoded twice -- once to learn the clip's colours, once to
+    quantise and write -- rather than decoded once into a list. That keeps the
+    decoded RGB frames from ever being held together, which is the larger of the
+    two costs: 150 frames of 720p are 415 MB as RGB against 138 MB as palette
+    indices.
+
+    It does **not** make memory flat in the clip's length. Pillow's GIF encoder
+    accumulates every frame before writing its first byte, so the quantised
+    frames are all resident by the end -- measured at a 154 MB peak for those
+    same 150 frames. A clip whose palette-indexed frames do not fit in memory
+    will still not encode; use `width` to bring them down.
+
+    Args:
+        src: The source video. Any container the bundled FFmpeg can decode.
+        path: Where to write the GIF.
+        fps: Frames per second to sample the source at. Frames are dropped or
+            duplicated by FFmpeg's `fps` filter as needed. Defaults to `12`.
+        width: Scale the output to this width in pixels, preserving aspect.
+            `None` (the default) keeps the source's own size.
+        max_colors: Palette size, in ``2-254``. The rest of the 256 entries are
+            reserved for pure black and white.
+        loop: How many times the GIF loops; `0` loops forever.
+        optimize: Run Pillow's optimisation pass.
+        quantize_method: Which strategy picks the shared palette; a key of
+            `QUANTIZE_METHODS`. Defaults to ``"coverage"``.
+
+    Returns:
+        The output path as a `str`, convenient for chaining.
+
+    Raises:
+        FileNotFoundError: If `src` does not exist, or if neither a system
+            FFmpeg nor imageio-ffmpeg's bundled binary can be found.
+        ValueError: If `max_colors` is outside ``2-254``, if `fps` is not
+            positive, if `width` is not positive, if `loop` is negative, if
+            `path` does not end in ``.gif``, or if `src` yields no frames.
+
+    Warns:
+        UserWarning: If `src` is chroma-subsampled (e.g. the ``yuv420p`` that
+            `save_animation` writes by default). Colour resolution is already
+            gone from such a file, which caps how well saturated detail can
+            survive whatever the GIF palette then does -- render the
+            intermediate with ``pix_fmt="yuv444p"`` and a low `crf` when the
+            plan is to derive a GIF from it.
+
+    Examples:
+        - Render an animation once to MP4, then derive a GIF from that file:
+            ```python
+            >>> import os, shutil, tempfile, matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from matplotlib.animation import FuncAnimation
+            >>> from cleopatra.glyphs.base.animation import gif_from_video, save_animation
+            >>> tmp = tempfile.mkdtemp()
+            >>> fig, ax = plt.subplots()
+            >>> (line,) = ax.plot([0, 1], [0, 0])
+            >>> anim = FuncAnimation(fig, lambda i: (line,), frames=4)
+            >>> mp4 = save_animation(anim, os.path.join(tmp, "clip.mp4"), fps=4,
+            ...                      pix_fmt="yuv444p")
+            >>> gif = gif_from_video(mp4, os.path.join(tmp, "clip.gif"), fps=4)
+            >>> from pathlib import Path
+            >>> Path(gif).read_bytes()[:6] in (b"GIF87a", b"GIF89a")
+            True
+            >>> plt.close(fig)
+            >>> shutil.rmtree(tmp)
+
+            ```
+        - `width` scales the output for a web copy, keeping the aspect ratio of
+          the source and leaving the master untouched:
+            ```python
+            >>> import os, shutil, tempfile, matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from PIL import Image
+            >>> from matplotlib.animation import FuncAnimation
+            >>> from cleopatra.glyphs.base.animation import gif_from_video, save_animation
+            >>> tmp = tempfile.mkdtemp()
+            >>> fig, ax = plt.subplots()
+            >>> (line,) = ax.plot([0, 1], [0, 0])
+            >>> anim = FuncAnimation(fig, lambda i: (line,), frames=4)
+            >>> mp4 = save_animation(anim, os.path.join(tmp, "master.mp4"), fps=4,
+            ...                      pix_fmt="yuv444p")
+            >>> gif = gif_from_video(mp4, os.path.join(tmp, "web.gif"), fps=4, width=160)
+            >>> with Image.open(gif) as web:
+            ...     web.size
+            (160, 120)
+            >>> plt.close(fig)
+            >>> shutil.rmtree(tmp)
+
+            ```
+        - A source that does not exist is reported up front, rather than
+          failing later inside the decoder:
+            ```python
+            >>> from cleopatra.glyphs.base.animation import gif_from_video
+            >>> gif_from_video("no-such-clip.mp4", "out.gif")
+            Traceback (most recent call last):
+                ...
+            FileNotFoundError: The source video 'no-such-clip.mp4' does not exist.
+
+            ```
+
+    See Also:
+        save_animation: Write a live `FuncAnimation` straight to a file.
+        build_clip_palette: The shared palette both paths quantise through.
+    """
+    src = os.fspath(src)
+    path = os.fspath(path)
+    if not os.path.isfile(src):
+        raise FileNotFoundError(f"The source video {src!r} does not exist.")
+    if not 2 <= max_colors <= CLIP_PALETTE_COLORS:
+        raise ValueError(
+            f"max_colors must be in 2-{CLIP_PALETTE_COLORS}, got {max_colors!r}."
+        )
+    if width is not None and width <= 0:
+        raise ValueError(f"width must be positive, got {width!r}.")
+    # Pillow picks its encoder from the extension, so a stray one silently
+    # writes a different format -- .png yields an APNG that no caller of a
+    # function named gif_from_video is expecting.
+    extension = os.path.splitext(path)[1].lstrip(".").lower()
+    if extension != "gif":
+        raise ValueError(
+            f"gif_from_video writes GIFs, but {path!r} implies {extension or 'no'} "
+            "format. Use a .gif extension."
+        )
+    _validate_pillow_options(fps, loop)
+
+    meta = _video_metadata(src)
+    if _is_chroma_subsampled(meta.get("pix_fmt")):
+        warnings.warn(
+            f"{src!r} is {meta.get('pix_fmt')}, which stores colour at reduced "
+            "resolution; saturated detail is already degraded before the GIF "
+            "palette sees it. Render the intermediate with pix_fmt='yuv444p' "
+            "and a low crf when a GIF will be derived from it.",
+            UserWarning,
+            stacklevel=2,
+        )
+
+    # Two passes rather than one buffered one: the palette must see the whole
+    # clip before any frame can be quantised. The survey pass keeps nothing, so
+    # the decoded RGB frames are never all resident -- the dominant cost. The
+    # write pass is still bounded by Pillow, which accumulates the quantised
+    # frames before emitting anything; those are a third the size.
+    survey = _iter_video_frames(src, fps, width)
+    first = next(survey, None)
+    if first is None:
+        raise ValueError(f"The source video {src!r} yielded no frames.")
+    palette = build_clip_palette(
+        itertools.chain([first], survey), colors=max_colors, method=quantize_method
+    )
+
+    quantised = (
+        frame.quantize(palette=palette, dither=PILImage.Dither.FLOYDSTEINBERG)
+        for frame in _iter_video_frames(src, fps, width)
+    )
+    _write_pillow_animation(quantised, path, fps, loop, optimize)
+    return path
 
 
 def embed_gif(anim: FuncAnimation, fps: int = 2) -> Image:

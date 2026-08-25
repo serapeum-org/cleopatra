@@ -18,6 +18,69 @@ machinery as **glyph-independent** helpers. They operate on *any*
   IPython is imported **lazily** (and is bundled with Jupyter, so any notebook already has
   it); if it is absent, `embed_gif` raises a clear `ModuleNotFoundError` with a
   `pip install ipython` hint — or use `to_gif` for raw bytes with no IPython dependency.
+- `gif_from_video(src, path, fps=12, width=None, max_colors=254, ...)` derives a GIF from a
+  video **already on disk**, without re-rendering. Drawing is usually far more expensive than
+  encoding, so a long clip is best rendered once to MP4 and every other format derived from
+  that file.
+
+## The GIF palette
+
+Both GIF paths — `save_animation` and `gif_from_video` — quantise through one palette shared
+by every frame, built by `build_clip_palette` from the colours the whole clip contains and
+applied by `quantize_to_palette`. Both are public, so a downstream package writing its own
+frames can reuse the same table rather than re-deriving one. Per-frame
+palettes would make constant regions shimmer and let a colour drift between frames; two of
+the 256 entries are pinned to pure black and white so single-colour overlays stay crisp.
+
+The palette is chosen for colour **coverage**, not pixel population, over the set of colours the
+clip contains. The distinction matters on exactly the clips this package produces: with a
+population-weighted split (median cut) a large textured background claims nearly every palette
+slot, and small saturated marks — overlay glyphs, thin paths, labels — collapse to the nearest
+muddy neighbour. On the texture-heavy clip in `tests/test_animation.py` those marks landed 100–180 away (in RGB
+distance) from the colours they were drawn in; selecting for coverage reproduces them exactly, and
+`TestClipPaletteQuality` asserts it — so the claim is checked, not remembered.
+
+Because coverage is computed over **distinct colours rather than pixels**, a mark survives no
+matter how small it is: a one-pixel orbit path is kept as faithfully as a large glyph. Sampling
+the frames spatially to build a cheaper palette source would undo that — an interpolating resize
+blends a one-pixel mark into its background before the quantiser ever sees it.
+
+The trade is a marginally coarser background, because palette entries now go to colours the clip
+contains rather than to the colours it contains *most of*, and file size moves either way depending
+on the clip. Both were measured while developing this and neither is asserted by a test, so treat
+the direction as reliable and the magnitude as indicative.
+
+`quantize_method` is the opt-out, on both `save_animation` and `gif_from_video`. It takes a key of
+`QUANTIZE_METHODS` — `"coverage"` (the default), `"median"`, or `"octree"`. Reach for `"median"` on
+a smooth photographic clip with no small marks at stake: it splits the colour cube by how densely
+the clip populates it, so the crowded regions a photographic background occupies win the table.
+Note none of these see pixel counts — the palette is built from each colour once, so they weight by
+distinct colours, not by area:
+
+```python
+save_animation(anim, "clip.gif", fps=12, quantize_method="median")
+```
+
+!!! warning "Render the intermediate with `pix_fmt="yuv444p"` if a GIF will be derived from it"
+
+    `save_animation` writes `yuv420p` by default — the right choice for playback compatibility,
+    but it stores colour at half resolution in each direction. That loss happens *before* the
+    GIF palette ever runs, and no quantiser can undo it: on the same test clip a `yuv420p`
+    intermediate caps the derived GIF at ~50 RGB distance, against ~5 from a `yuv444p` one.
+    `gif_from_video` emits a `UserWarning` when it is handed a subsampled source.
+
+!!! note "Memory"
+
+    `gif_from_video` decodes the source twice rather than holding it, so the decoded RGB frames are
+    never all resident. The quantised frames still are — Pillow's GIF encoder accumulates every
+    frame before writing its first byte. Expect roughly `width × height × frames` bytes at peak: a
+    third of what the RGB frames would cost, but still proportional to the clip's length. Use
+    `width` to bring a long master down.
+
+    ```python
+    mp4 = save_animation(anim, "master.mp4", fps=12, crf=0, pix_fmt="yuv444p")
+    gif_from_video(mp4, "web.gif", fps=12, width=720)
+    ```
 
 `SUPPORTED_VIDEO_FORMAT` is `["gif", "mov", "avi", "mp4", "webp"]`. `Glyph.save_animation`
 delegates to `save_animation`, so the writer/format logic has a single source of truth.
