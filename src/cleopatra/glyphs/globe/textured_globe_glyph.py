@@ -53,6 +53,8 @@ plt.show()
 
 from __future__ import annotations
 
+from typing import Any
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
@@ -82,8 +84,9 @@ GLOBE_DEFAULT_OPTIONS = {
 DEFAULT_AMBIENT = 0.13
 
 #: Sentinel for `draw`/`animate` lighting arguments meaning "inherit the instance default"
-#: (so an explicit `sun=None` can still turn lighting off for one call).
-_INHERIT = object()
+#: (so an explicit `sun=None` can still turn lighting off for one call). Typed `Any` so it is a
+#: valid default for the `tuple | None` / `float` lighting parameters.
+_INHERIT: Any = object()
 
 
 class TexturedGlobeGlyph:
@@ -176,7 +179,8 @@ class TexturedGlobeGlyph:
                 rendering. Need not be unit length -- it is normalised. Can be overridden per call in
                 `draw`/`animate`.
             ambient: Floor brightness (fraction in `[0, 1]`) the unlit side keeps under directional lighting, so the
-                night side is not pure black. Defaults to `0.13`. Ignored when `sun is None`.
+                night side is not pure black. Defaults to `0.13`. Always validated, but only affects the render
+                when `sun` is set.
             fig: Pre-existing matplotlib `Figure` to draw on when `draw`/`animate` are called without their own `ax`.
             ax: Pre-existing 3-D matplotlib `Axes` (`Axes3D`) to draw on. If given it must be a 3-D axes.
             **kwargs: Render options overriding `DEFAULT_OPTIONS` (`figsize`, `elev`, `azim`, `background`). An
@@ -368,10 +372,10 @@ class TexturedGlobeGlyph:
         """
         if sun is None:
             return None
-        vec = np.asarray(sun, dtype=float).ravel()
+        vec = np.asarray(sun, dtype=float)
         if vec.shape != (3,) or not np.all(np.isfinite(vec)):
             raise ValueError(
-                f"sun must be a length-3 finite (x, y, z) vector or None; got {sun!r}."
+                f"sun must be a 1-D length-3 finite (x, y, z) vector or None; got {sun!r}."
             )
         norm = float(np.sqrt(vec @ vec))
         if norm == 0.0:
@@ -409,6 +413,7 @@ class TexturedGlobeGlyph:
         Returns:
             numpy.ndarray: An `(n_lat - 1, n_lon - 1, 4)` facecolors array.
         """
+        assert self._facecolors is not None  # populated by _prepare() before any draw
         if sun is None:
             return self._facecolors
         x, y, z = spun_xyz
@@ -578,7 +583,7 @@ class TexturedGlobeGlyph:
             sun: Light direction for this call, overriding the instance's `sun`. A length-3 world-space vector, or
                 `None` to render evenly. Omitted (default) inherits the value passed to `__init__`.
             ambient: Ambient floor for this call, overriding the instance's `ambient`. Omitted inherits the
-                constructor value. Ignored when the effective `sun` is `None`.
+                constructor value. Always validated, but only affects the render when the effective `sun` is set.
             **kwargs: Render options overriding the instance defaults for this call (`figsize`, `elev`, `azim`,
                 `background`). `figsize` applies only when a new figure is created; it is ignored when drawing onto
                 an existing (supplied or instance) axes. An unrecognised key raises `ValueError`.
@@ -683,7 +688,8 @@ class TexturedGlobeGlyph:
             matplotlib.animation.FuncAnimation: The animation, ready to save or embed.
 
         Raises:
-            ValueError: If `ax` is supplied but is not a 3-D axes, or if an unknown render option is passed.
+            ValueError: If `ax` is supplied but is not a 3-D axes, if `sun`/`ambient` are invalid, or if an unknown
+                render option is passed. `sun`/`ambient` are validated eagerly here (not deferred to frame render).
 
         Examples:
             ```python
@@ -697,6 +703,12 @@ class TexturedGlobeGlyph:
             ```
         """
         self._reject_unknown_options(kwargs)
+        # Validate lighting eagerly (like draw), so a bad sun/ambient raises here at the
+        # animate() call rather than later from inside matplotlib's per-frame render loop.
+        if sun is not _INHERIT:
+            self._normalize_sun(sun)
+        if ambient is not _INHERIT:
+            self._validate_ambient(ambient)
         options = self._default_options.copy()
         options.update(kwargs)
         fig, target = self._resolve_axes(ax, options)
