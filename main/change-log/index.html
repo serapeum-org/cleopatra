@@ -2343,6 +2343,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0330-2026-08-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.33.0 (2026-08-25)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0320-2026-08-17" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3109,6 +3120,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0330-2026-08-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.33.0 (2026-08-25)
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#0320-2026-08-17" class="md-nav__link">
@@ -3878,6 +3900,97 @@
 
 
 <h1 id="changelog"><a class="toclink" href="#changelog">Changelog</a><a class="headerlink" href="#changelog" title="Permanent link">#</a></h1>
+<h2 id="0330-2026-08-25"><a class="toclink" href="#0330-2026-08-25">0.33.0 (2026-08-25)</a><a class="headerlink" href="#0330-2026-08-25" title="Permanent link">#</a></h2>
+<ul>
+<li>feat(animation): derive a GIF from an existing video and fix the clip palette (#317)</li>
+<li>
+<p>The shared GIF palette was chosen by pixel population, so on a clip with a                                      <br />
+  large textured area the background claimed nearly the whole table and small                                     <br />
+  saturated marks collapsed to the nearest muddy neighbour. It is now chosen                                      <br />
+  for colour coverage over the set of colours the clip contains, collected at                                     <br />
+  full 8-bit precision, so a mark survives however few pixels it covers.                                            </p>
+</li>
+<li>
+<p>Add gif_from_video, deriving a GIF from a video already on disk so the                                        <br />
+    frames are rendered once and every other format read back off that file                                         </p>
+</li>
+<li>Build the palette from a colour census rather than a spatial downsample,                                      <br />
+    which blended one-pixel marks away before the quantiser could see them                                          </li>
+<li>Share build_clip_palette and quantize_to_palette between the rendered and                                     <br />
+    derived paths so both quantise identically                                                                      </li>
+<li>Stream the video in two passes instead of buffering it, keeping the                                           <br />
+    decoded RGB frames from ever being resident together                                                            </li>
+<li>Warn when the source is chroma-subsampled, since that loss precedes the                                       <br />
+    palette and no quantiser can undo it                                                                            </li>
+<li>Add quantize_method for clips better served by a population-weighted split                                      </li>
+<li>Validate writer inputs, close the decoder, resolve ffmpeg the same way for                                    <br />
+    reading as for writing, and classify pixel formats by family                                                    </li>
+<li>Document the real memory cost: Pillow accumulates the quantised frames, so                                    <br />
+    peak stays proportional to the clip's length                                                                    </li>
+<li>Record in SCOPE.md why re-encoding cleopatra's own animation output is in                                     <br />
+    scope, and what still is not                                                                                    </li>
+</ul>
+<p>Closes #315, #308
+- feat(styling): add stamp_mark figure watermark / brand-mark helper (#314)
+- Stamp a logo/watermark image onto a matplotlib Figure with one call,
+sized as a fraction of the figure so it stays proportional across the
+dpis a figure is exported at (MP4 master, web copy, GIF).
+- - Draw on a frameless inset axes in figure-fraction coordinates (the
+  dpi-independent counterpart of Figure.figimage). <code>frac</code> sizes the
+  mark's longer side, so it is never distorted and always fits, in any
+  of the four corners; <code>margin</code> is a scalar or an (x, y) pair.
+- Optionally composite a centred, gaussian-blurred halo behind the mark
+  (alpha-over into a single axes) so it separates from a busy or dark
+  canvas; <code>blur</code> is a fraction of the mark's unpadded width, and the
+  axes is grown so the mark's own painted extent still equals <code>frac</code>.
+- Accept a file path (via Pillow) or an in-memory RGB/RGBA array (uint8
+  0-255 or float 0-1); reject out-of-contract inputs -- bad shape, a
+  non-uint8 non-float dtype, a float outside [0, 1] or with NaN/inf, a
+  zero-size image, or a margin that pushes the mark off-canvas -- with
+  clear ValueErrors.
+- No new dependency (Pillow is already a base dependency; no SciPy).
+- Add a docs reference page and a SCOPE.md note that reading a
+  presentation asset (a logo, not user data) is an allowed exception.
+- Closes #312
+- feat(glyphs): add TexturedGlobeGlyph for 3-D textured globes (#316)
+- Add cleopatra's first 3-D glyph: wrap an equirectangular (lon/lat)                                              <br />
+  RGB(A) texture onto a tilted, spinnable sphere on a matplotlib Axes3D.                                            </p>
+<ul>
+<li>Take an (H, W, 3)/(H, W, 4) equirectangular array (the north-up                                               <br />
+    layout of basemap.reference.relief()) and return (fig, Axes3D); a                                             <br />
+    standalone class like HistogramGlyph, not a Glyph subclass.                                                     </li>
+<li>draw(spin=...) rotates the globe about its fixed tilted polar axis by                                         <br />
+    rotating only the once-sampled mesh; animate() returns a FuncAnimation                                        <br />
+    of a full rotation.                                                                                             </li>
+<li>Normalize textures by dtype: integer by dtype max, float by their own                                         <br />
+    peak only when a channel exceeds 1 (RGB only, so alpha is preserved);                                         <br />
+    NaN and negative cells render black; unknown render options raise                                             <br />
+    ValueError.                                                                                                     </li>
+<li>Add no dependency (mpl_toolkits.mplot3d ships with matplotlib);                                               <br />
+    default mesh 180x90, with the quadratic render cost documented.                                                 </li>
+<li>Add a full test suite (100% line + branch) and a reference doc page.                                            </li>
+</ul>
+<p>Closes #311
+- feat(basemap): add world_texture() and mercator_to_equirectangular (#313)
+- Port the two generic basemap helpers from the earthlens satellite
+showcase notebook's inline basemap_texture into cleopatra.basemap.tiles.
+- - mercator_to_equirectangular(mosaic, bounds, n_lon, n_lat): a
+  pure-NumPy area-averaging resample of a Web Mercator (EPSG:3857) tile
+  mosaic onto an equirectangular lon/lat grid via np.add.reduceat. It
+  reads the mosaic's own 3857 bounds and sizes each cell's divisor from
+  the actual reduceat block widths so the poles do not seam. Returns
+  float32 in the input value scale; the output always spans the globe,
+  clamping out-of-coverage edges. No network, Pillow, or pyproj needed.
+- world_texture(provider, <em>, zoom, n_lon, n_lat, cache, ...): the XYZ
+  analogue of reference.relief -- fetches the whole 2</em>*zoom world tile
+  grid (zoom capped at 6), stitches, reprojects, and returns an
+  (n_lat, n_lon, 3) float32 texture in [0, 1]. Accepts a provider name
+  or a resolved TileProvider. Caches the texture under
+  Config.get_cache_dir() with a guarded read that rebuilds a corrupt
+  file and an atomic mkstemp write. Requires the [tiles] extra.
+- The earthlens-specific two-tone / ocean-land recolour stays in the
+notebook.
+- Closes #309, #310</p>
 <h2 id="0320-2026-08-17"><a class="toclink" href="#0320-2026-08-17">0.32.0 (2026-08-17)</a><a class="headerlink" href="#0320-2026-08-17" title="Permanent link">#</a></h2>
 <ul>
 <li>perf(array_glyph): count domain cells without materialising a per-cell index list (#305)</li>
