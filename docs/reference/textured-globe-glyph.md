@@ -67,8 +67,8 @@ evenly.
 from cleopatra.basemap.reference import relief
 from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph
 
-globe = TexturedGlobeGlyph(relief("low"), sun=(1.0, 0.0, 0.3), ambient=0.13)
-fig, ax = globe.draw(spin=40.0, background="black")   # left half in daylight, right in night
+globe = TexturedGlobeGlyph(relief("low"), sun=(0.0, 1.0, 0.3), ambient=0.13)
+fig, ax = globe.draw(spin=40.0, background="black")   # side-lit: one half in daylight, the other in night
 ```
 
 ### A spinning animation
