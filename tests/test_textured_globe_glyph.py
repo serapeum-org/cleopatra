@@ -465,16 +465,23 @@ class TestLighting:
             globe.animate(ax, n_frames=3, ambient=5.0)
 
     def test_world_space_sun_honoured_under_tilt(self):
-        # a uniform texture lit from +z (north): with a 45deg tilt the north cap is brighter than the south
+        # sun is world-space (+z), not body-space. With a 45deg tilt the geographic north
+        # cap leans toward +z (so north > south), but it is NOT the brightest region --
+        # an equatorial face pointing straight at world +z is. A body-space regression
+        # (dotting the un-tilted normals) would instead light the pole fully (north == peak).
         tex = np.full((16, 32, 3), 200, np.uint8)
         globe = TexturedGlobeGlyph(tex, n_lon=48, n_lat=24, tilt_deg=45.0)
         globe._prepare()
         lit = globe._lit_facecolors(
             globe._spun_mesh(0.0), np.array([0.0, 0.0, 1.0]), 0.1
         )
-        north = lit[0, :, :3].mean()
-        south = lit[-1, :, :3].mean()
-        assert north > south
+        north = float(lit[0, :, :3].mean())
+        south = float(lit[-1, :, :3].mean())
+        peak = float(lit[..., :3].max())
+        assert north > south  # tilt leans the north cap toward the light
+        assert (
+            north < peak - 0.1
+        )  # but the pole is not the peak -> world-space, not body-space
 
 
 def test_no_new_dependency():
