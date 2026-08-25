@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.34.0 (2026-08-25)
+
+
+- feat(glyphs): add directional lighting to TexturedGlobeGlyph (#320)
+- Add a sun unit vector and an ambient floor so the globe can be lit from a
+direction, shading a lambertian day/night terminator instead of reading as
+evenly illuminated. sun=None (the default) renders byte-identical to 0.33.0.
+- - Accept sun/ambient on __init__ and override per call on draw/animate
+  (mirroring spin, via an inherit sentinel so sun=None can disable lighting
+  for one call); sun is world-space (+z up/north, +x toward the viewer at
+  spin=0), auto-normalized to unit length; ambient must be in [0, 1].
+- Apply lighting per frame from the already-rotated vertices (one dot product
+  over the mesh, whose unit-sphere positions are the surface normals), scaling
+  a copy of the cached facecolors by
+  ambient + (1 - ambient) * clip(dot(normal, sun), 0, 1). The facecolors cache
+  is never mutated and the texture is never re-sampled, so the
+  sample-once/rotate-per-frame contract holds and a fixed sun sweeps the
+  terminator as the globe spins; alpha is preserved.
+- Validate sun/ambient eagerly on both draw and animate; reject non-1-D or
+  zero sun vectors and out-of-range ambient.
+- Add lighting tests (byte-identical sun=None, terminator + ambient floor,
+  lit fraction tracks spin, cache untouched, world-space sun under tilt,
+  validation) and a reference-doc example.
+- Closes #319
+
 ## 0.33.0 (2026-08-25)
 
 
