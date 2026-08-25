@@ -1,5 +1,95 @@
 # Changelog
 
+## 0.33.0 (2026-08-25)
+
+
+- feat(animation): derive a GIF from an existing video and fix the clip palette (#317)
+- The shared GIF palette was chosen by pixel population, so on a clip with a                                        
+  large textured area the background claimed nearly the whole table and small                                       
+  saturated marks collapsed to the nearest muddy neighbour. It is now chosen                                        
+  for colour coverage over the set of colours the clip contains, collected at                                       
+  full 8-bit precision, so a mark survives however few pixels it covers.                                            
+                                                                                                                    
+  - Add gif_from_video, deriving a GIF from a video already on disk so the                                          
+    frames are rendered once and every other format read back off that file                                         
+  - Build the palette from a colour census rather than a spatial downsample,                                        
+    which blended one-pixel marks away before the quantiser could see them                                          
+  - Share build_clip_palette and quantize_to_palette between the rendered and                                       
+    derived paths so both quantise identically                                                                      
+  - Stream the video in two passes instead of buffering it, keeping the                                             
+    decoded RGB frames from ever being resident together                                                            
+  - Warn when the source is chroma-subsampled, since that loss precedes the                                         
+    palette and no quantiser can undo it                                                                            
+  - Add quantize_method for clips better served by a population-weighted split                                      
+  - Validate writer inputs, close the decoder, resolve ffmpeg the same way for                                      
+    reading as for writing, and classify pixel formats by family                                                    
+  - Document the real memory cost: Pillow accumulates the quantised frames, so                                      
+    peak stays proportional to the clip's length                                                                    
+  - Record in SCOPE.md why re-encoding cleopatra's own animation output is in                                       
+    scope, and what still is not                                                                                    
+                                                                                                                    
+  Closes #315, #308
+- feat(styling): add stamp_mark figure watermark / brand-mark helper (#314)
+- Stamp a logo/watermark image onto a matplotlib Figure with one call,
+sized as a fraction of the figure so it stays proportional across the
+dpis a figure is exported at (MP4 master, web copy, GIF).
+- - Draw on a frameless inset axes in figure-fraction coordinates (the
+  dpi-independent counterpart of Figure.figimage). `frac` sizes the
+  mark's longer side, so it is never distorted and always fits, in any
+  of the four corners; `margin` is a scalar or an (x, y) pair.
+- Optionally composite a centred, gaussian-blurred halo behind the mark
+  (alpha-over into a single axes) so it separates from a busy or dark
+  canvas; `blur` is a fraction of the mark's unpadded width, and the
+  axes is grown so the mark's own painted extent still equals `frac`.
+- Accept a file path (via Pillow) or an in-memory RGB/RGBA array (uint8
+  0-255 or float 0-1); reject out-of-contract inputs -- bad shape, a
+  non-uint8 non-float dtype, a float outside [0, 1] or with NaN/inf, a
+  zero-size image, or a margin that pushes the mark off-canvas -- with
+  clear ValueErrors.
+- No new dependency (Pillow is already a base dependency; no SciPy).
+- Add a docs reference page and a SCOPE.md note that reading a
+  presentation asset (a logo, not user data) is an allowed exception.
+- Closes #312
+- feat(glyphs): add TexturedGlobeGlyph for 3-D textured globes (#316)
+- Add cleopatra's first 3-D glyph: wrap an equirectangular (lon/lat)                                                
+  RGB(A) texture onto a tilted, spinnable sphere on a matplotlib Axes3D.                                            
+                                                                                                                    
+  - Take an (H, W, 3)/(H, W, 4) equirectangular array (the north-up                                                 
+    layout of basemap.reference.relief()) and return (fig, Axes3D); a                                               
+    standalone class like HistogramGlyph, not a Glyph subclass.                                                     
+  - draw(spin=...) rotates the globe about its fixed tilted polar axis by                                           
+    rotating only the once-sampled mesh; animate() returns a FuncAnimation                                          
+    of a full rotation.                                                                                             
+  - Normalize textures by dtype: integer by dtype max, float by their own                                           
+    peak only when a channel exceeds 1 (RGB only, so alpha is preserved);                                           
+    NaN and negative cells render black; unknown render options raise                                               
+    ValueError.                                                                                                     
+  - Add no dependency (mpl_toolkits.mplot3d ships with matplotlib);                                                 
+    default mesh 180x90, with the quadratic render cost documented.                                                 
+  - Add a full test suite (100% line + branch) and a reference doc page.                                            
+                                                                                                                    
+  Closes #311
+- feat(basemap): add world_texture() and mercator_to_equirectangular (#313)
+- Port the two generic basemap helpers from the earthlens satellite
+showcase notebook's inline basemap_texture into cleopatra.basemap.tiles.
+- - mercator_to_equirectangular(mosaic, bounds, n_lon, n_lat): a
+  pure-NumPy area-averaging resample of a Web Mercator (EPSG:3857) tile
+  mosaic onto an equirectangular lon/lat grid via np.add.reduceat. It
+  reads the mosaic's own 3857 bounds and sizes each cell's divisor from
+  the actual reduceat block widths so the poles do not seam. Returns
+  float32 in the input value scale; the output always spans the globe,
+  clamping out-of-coverage edges. No network, Pillow, or pyproj needed.
+- world_texture(provider, *, zoom, n_lon, n_lat, cache, ...): the XYZ
+  analogue of reference.relief -- fetches the whole 2**zoom world tile
+  grid (zoom capped at 6), stitches, reprojects, and returns an
+  (n_lat, n_lon, 3) float32 texture in [0, 1]. Accepts a provider name
+  or a resolved TileProvider. Caches the texture under
+  Config.get_cache_dir() with a guarded read that rebuilds a corrupt
+  file and an atomic mkstemp write. Requires the [tiles] extra.
+- The earthlens-specific two-tone / ocean-land recolour stays in the
+notebook.
+- Closes #309, #310
+
 ## 0.32.0 (2026-08-17)
 
 
