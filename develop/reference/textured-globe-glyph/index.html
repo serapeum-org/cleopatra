@@ -3799,7 +3799,8 @@ and <code>filter_kwargs</code> classmethods.</p>
 <span class="normal"><a href="#__codelineno-0-734">734</a></span>
 <span class="normal"><a href="#__codelineno-0-735">735</a></span>
 <span class="normal"><a href="#__codelineno-0-736">736</a></span>
-<span class="normal"><a href="#__codelineno-0-737">737</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-92" name="__codelineno-0-92"></a><span class="k">class</span><span class="w"> </span><span class="nc">TexturedGlobeGlyph</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-737">737</a></span>
+<span class="normal"><a href="#__codelineno-0-738">738</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-92" name="__codelineno-0-92"></a><span class="k">class</span><span class="w"> </span><span class="nc">TexturedGlobeGlyph</span><span class="p">:</span>
 <a id="__codelineno-0-93" name="__codelineno-0-93"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Wrap an equirectangular texture onto a tilted, spinnable 3-D sphere.</span>
 <a id="__codelineno-0-94" name="__codelineno-0-94"></a>
 <a id="__codelineno-0-95" name="__codelineno-0-95"></a><span class="sd">    The glyph takes an equirectangular (plate-carree) `(H, W, 3)` or `(H, W, 4)` array -- rows running north (row 0,</span>
@@ -4088,7 +4089,7 @@ and <code>filter_kwargs</code> classmethods.</p>
 <a id="__codelineno-0-378" name="__codelineno-0-378"></a>                <span class="sa">f</span><span class="s2">&quot;sun must be a 1-D length-3 finite (x, y, z) vector or None; got </span><span class="si">{</span><span class="n">sun</span><span class="si">!r}</span><span class="s2">.&quot;</span>
 <a id="__codelineno-0-379" name="__codelineno-0-379"></a>            <span class="p">)</span>
 <a id="__codelineno-0-380" name="__codelineno-0-380"></a>        <span class="n">norm</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">vec</span> <span class="o">@</span> <span class="n">vec</span><span class="p">))</span>
-<a id="__codelineno-0-381" name="__codelineno-0-381"></a>        <span class="k">if</span> <span class="n">norm</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span>
+<a id="__codelineno-0-381" name="__codelineno-0-381"></a>        <span class="k">if</span> <span class="n">norm</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
 <a id="__codelineno-0-382" name="__codelineno-0-382"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;sun must be a non-zero direction vector; got (0, 0, 0).&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-383" name="__codelineno-0-383"></a>        <span class="k">return</span> <span class="n">vec</span> <span class="o">/</span> <span class="n">norm</span>
 <a id="__codelineno-0-384" name="__codelineno-0-384"></a>
@@ -4131,320 +4132,321 @@ and <code>filter_kwargs</code> classmethods.</p>
 <a id="__codelineno-0-421" name="__codelineno-0-421"></a>        <span class="n">nx</span> <span class="o">=</span> <span class="mf">0.25</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">x</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">:,</span> <span class="mi">1</span><span class="p">:])</span>
 <a id="__codelineno-0-422" name="__codelineno-0-422"></a>        <span class="n">ny</span> <span class="o">=</span> <span class="mf">0.25</span> <span class="o">*</span> <span class="p">(</span><span class="n">y</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">y</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">:,</span> <span class="mi">1</span><span class="p">:])</span>
 <a id="__codelineno-0-423" name="__codelineno-0-423"></a>        <span class="n">nz</span> <span class="o">=</span> <span class="mf">0.25</span> <span class="o">*</span> <span class="p">(</span><span class="n">z</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">z</span><span class="p">[</span><span class="mi">1</span><span class="p">:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">z</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="n">z</span><span class="p">[</span><span class="mi">1</span><span class="p">:,</span> <span class="mi">1</span><span class="p">:])</span>
-<a id="__codelineno-0-424" name="__codelineno-0-424"></a>        <span class="n">norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">nx</span> <span class="o">*</span> <span class="n">nx</span> <span class="o">+</span> <span class="n">ny</span> <span class="o">*</span> <span class="n">ny</span> <span class="o">+</span> <span class="n">nz</span> <span class="o">*</span> <span class="n">nz</span><span class="p">)</span>
-<a id="__codelineno-0-425" name="__codelineno-0-425"></a>        <span class="n">norm</span><span class="p">[</span><span class="n">norm</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
-<a id="__codelineno-0-426" name="__codelineno-0-426"></a>        <span class="n">lit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">((</span><span class="n">nx</span> <span class="o">*</span> <span class="n">sun</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">ny</span> <span class="o">*</span> <span class="n">sun</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">nz</span> <span class="o">*</span> <span class="n">sun</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="o">/</span> <span class="n">norm</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
-<a id="__codelineno-0-427" name="__codelineno-0-427"></a>        <span class="n">factor</span> <span class="o">=</span> <span class="n">ambient</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">ambient</span><span class="p">)</span> <span class="o">*</span> <span class="n">lit</span>
-<a id="__codelineno-0-428" name="__codelineno-0-428"></a>        <span class="n">lit_face</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_facecolors</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-<a id="__codelineno-0-429" name="__codelineno-0-429"></a>        <span class="n">lit_face</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span>
-<a id="__codelineno-0-430" name="__codelineno-0-430"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_facecolors</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">*</span> <span class="n">factor</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span>
-<a id="__codelineno-0-431" name="__codelineno-0-431"></a>        <span class="p">)</span>
-<a id="__codelineno-0-432" name="__codelineno-0-432"></a>        <span class="k">return</span> <span class="n">lit_face</span>
-<a id="__codelineno-0-433" name="__codelineno-0-433"></a>
-<a id="__codelineno-0-434" name="__codelineno-0-434"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Axes3D</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Figure</span><span class="p">,</span> <span class="n">Axes3D</span><span class="p">]:</span>
-<a id="__codelineno-0-435" name="__codelineno-0-435"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Resolve the 3-D `(fig, ax)` to draw on, creating a 3-D axes if none was supplied.</span>
-<a id="__codelineno-0-436" name="__codelineno-0-436"></a>
-<a id="__codelineno-0-437" name="__codelineno-0-437"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-438" name="__codelineno-0-438"></a><span class="sd">            ax: An explicit 3-D axes for this call, or `None` to fall back to the instance&#39;s `ax`/`fig` or a new one.</span>
-<a id="__codelineno-0-439" name="__codelineno-0-439"></a><span class="sd">            options: The resolved render options (uses `figsize` when a new figure is made).</span>
-<a id="__codelineno-0-440" name="__codelineno-0-440"></a>
-<a id="__codelineno-0-441" name="__codelineno-0-441"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-442" name="__codelineno-0-442"></a><span class="sd">            tuple: `(fig, ax)` where `ax` is an `Axes3D`.</span>
-<a id="__codelineno-0-443" name="__codelineno-0-443"></a>
-<a id="__codelineno-0-444" name="__codelineno-0-444"></a><span class="sd">        Raises:</span>
-<a id="__codelineno-0-445" name="__codelineno-0-445"></a><span class="sd">            ValueError: If a supplied axes is not a 3-D axes.</span>
-<a id="__codelineno-0-446" name="__codelineno-0-446"></a><span class="sd">        &quot;&quot;&quot;</span>
-<a id="__codelineno-0-447" name="__codelineno-0-447"></a>        <span class="n">target</span> <span class="o">=</span> <span class="n">ax</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span>
-<a id="__codelineno-0-448" name="__codelineno-0-448"></a>        <span class="k">if</span> <span class="n">target</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-449" name="__codelineno-0-449"></a>            <span class="n">fig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fig</span> <span class="ow">or</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;figsize&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-450" name="__codelineno-0-450"></a>            <span class="n">target</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">projection</span><span class="o">=</span><span class="s2">&quot;3d&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-451" name="__codelineno-0-451"></a>        <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-452" name="__codelineno-0-452"></a>            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Axes3D</span><span class="p">):</span>
-<a id="__codelineno-0-453" name="__codelineno-0-453"></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-454" name="__codelineno-0-454"></a>                    <span class="s2">&quot;TexturedGlobeGlyph needs a 3-D axes; create one with fig.add_subplot(projection=&#39;3d&#39;).&quot;</span>
-<a id="__codelineno-0-455" name="__codelineno-0-455"></a>                <span class="p">)</span>
-<a id="__codelineno-0-456" name="__codelineno-0-456"></a>            <span class="n">fig</span> <span class="o">=</span> <span class="n">_root_figure</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
-<a id="__codelineno-0-457" name="__codelineno-0-457"></a>        <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">target</span>
-<a id="__codelineno-0-458" name="__codelineno-0-458"></a>
-<a id="__codelineno-0-459" name="__codelineno-0-459"></a>    <span class="c1"># ------------------------------------------------------------------ #</span>
-<a id="__codelineno-0-460" name="__codelineno-0-460"></a>    <span class="c1"># Introspection (mirrors Glyph / HistogramGlyph)                      #</span>
-<a id="__codelineno-0-461" name="__codelineno-0-461"></a>    <span class="c1"># ------------------------------------------------------------------ #</span>
-<a id="__codelineno-0-462" name="__codelineno-0-462"></a>    <span class="nd">@property</span>
-<a id="__codelineno-0-463" name="__codelineno-0-463"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">texture</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<a id="__codelineno-0-464" name="__codelineno-0-464"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;The normalised RGBA texture (float `(H, W, 4)` in `[0, 1]`).&quot;&quot;&quot;</span>
-<a id="__codelineno-0-465" name="__codelineno-0-465"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_texture</span>
-<a id="__codelineno-0-466" name="__codelineno-0-466"></a>
-<a id="__codelineno-0-467" name="__codelineno-0-467"></a>    <span class="nd">@property</span>
-<a id="__codelineno-0-468" name="__codelineno-0-468"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">tilt_deg</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<a id="__codelineno-0-469" name="__codelineno-0-469"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Axial tilt of the polar axis from vertical, in degrees.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-470" name="__codelineno-0-470"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tilt_deg</span>
-<a id="__codelineno-0-471" name="__codelineno-0-471"></a>
-<a id="__codelineno-0-472" name="__codelineno-0-472"></a>    <span class="nd">@property</span>
-<a id="__codelineno-0-473" name="__codelineno-0-473"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">n_lon</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<a id="__codelineno-0-474" name="__codelineno-0-474"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Number of longitude samples in the sphere mesh.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-475" name="__codelineno-0-475"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_lon</span>
-<a id="__codelineno-0-476" name="__codelineno-0-476"></a>
-<a id="__codelineno-0-477" name="__codelineno-0-477"></a>    <span class="nd">@property</span>
-<a id="__codelineno-0-478" name="__codelineno-0-478"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">n_lat</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<a id="__codelineno-0-479" name="__codelineno-0-479"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Number of latitude samples in the sphere mesh.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-480" name="__codelineno-0-480"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_lat</span>
-<a id="__codelineno-0-481" name="__codelineno-0-481"></a>
-<a id="__codelineno-0-482" name="__codelineno-0-482"></a>    <span class="nd">@property</span>
-<a id="__codelineno-0-483" name="__codelineno-0-483"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">brightness</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<a id="__codelineno-0-484" name="__codelineno-0-484"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;The brightness multiplier applied to the RGB channels.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-485" name="__codelineno-0-485"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_brightness</span>
-<a id="__codelineno-0-486" name="__codelineno-0-486"></a>
-<a id="__codelineno-0-487" name="__codelineno-0-487"></a>    <span class="nd">@property</span>
-<a id="__codelineno-0-488" name="__codelineno-0-488"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">sun</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-489" name="__codelineno-0-489"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;The unit light direction in world space, or `None` for even (unlit) rendering.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-490" name="__codelineno-0-490"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sun</span>
-<a id="__codelineno-0-491" name="__codelineno-0-491"></a>
-<a id="__codelineno-0-492" name="__codelineno-0-492"></a>    <span class="nd">@property</span>
-<a id="__codelineno-0-493" name="__codelineno-0-493"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">ambient</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<a id="__codelineno-0-494" name="__codelineno-0-494"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;The ambient floor (fraction) kept on the unlit side under directional lighting.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-495" name="__codelineno-0-495"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ambient</span>
-<a id="__codelineno-0-496" name="__codelineno-0-496"></a>
-<a id="__codelineno-0-497" name="__codelineno-0-497"></a>    <span class="nd">@property</span>
-<a id="__codelineno-0-498" name="__codelineno-0-498"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">default_options</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<a id="__codelineno-0-499" name="__codelineno-0-499"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;The resolved render options (`figsize`, `elev`, `azim`, `background`).&quot;&quot;&quot;</span>
-<a id="__codelineno-0-500" name="__codelineno-0-500"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_options</span>
-<a id="__codelineno-0-501" name="__codelineno-0-501"></a>
-<a id="__codelineno-0-502" name="__codelineno-0-502"></a>    <span class="nd">@classmethod</span>
-<a id="__codelineno-0-503" name="__codelineno-0-503"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">option_keys</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<a id="__codelineno-0-504" name="__codelineno-0-504"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the keyword-argument keys this glyph accepts.</span>
-<a id="__codelineno-0-505" name="__codelineno-0-505"></a>
-<a id="__codelineno-0-506" name="__codelineno-0-506"></a><span class="sd">        Resolves from the class-level `DEFAULT_OPTIONS` so the accepted keys can be inspected without constructing an</span>
-<a id="__codelineno-0-507" name="__codelineno-0-507"></a><span class="sd">        instance. Mirrors `cleopatra.glyphs.base.glyph.Glyph.option_keys` (`TexturedGlobeGlyph` is a standalone class,</span>
-<a id="__codelineno-0-508" name="__codelineno-0-508"></a><span class="sd">        not a `Glyph` subclass).</span>
-<a id="__codelineno-0-509" name="__codelineno-0-509"></a>
-<a id="__codelineno-0-510" name="__codelineno-0-510"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-511" name="__codelineno-0-511"></a><span class="sd">            set: The accepted option keys for this glyph class.</span>
-<a id="__codelineno-0-512" name="__codelineno-0-512"></a>
-<a id="__codelineno-0-513" name="__codelineno-0-513"></a><span class="sd">        Examples:</span>
-<a id="__codelineno-0-514" name="__codelineno-0-514"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-515" name="__codelineno-0-515"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph</span>
-<a id="__codelineno-0-516" name="__codelineno-0-516"></a><span class="sd">            &gt;&gt;&gt; &quot;elev&quot; in TexturedGlobeGlyph.option_keys()</span>
-<a id="__codelineno-0-517" name="__codelineno-0-517"></a><span class="sd">            True</span>
-<a id="__codelineno-0-518" name="__codelineno-0-518"></a>
-<a id="__codelineno-0-519" name="__codelineno-0-519"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-520" name="__codelineno-0-520"></a><span class="sd">        &quot;&quot;&quot;</span>
-<a id="__codelineno-0-521" name="__codelineno-0-521"></a>        <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">DEFAULT_OPTIONS</span><span class="p">)</span>
-<a id="__codelineno-0-522" name="__codelineno-0-522"></a>
-<a id="__codelineno-0-523" name="__codelineno-0-523"></a>    <span class="nd">@classmethod</span>
-<a id="__codelineno-0-524" name="__codelineno-0-524"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">filter_kwargs</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<a id="__codelineno-0-525" name="__codelineno-0-525"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return only the subset of `kwargs` whose keys this glyph accepts.</span>
-<a id="__codelineno-0-526" name="__codelineno-0-526"></a>
-<a id="__codelineno-0-527" name="__codelineno-0-527"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-528" name="__codelineno-0-528"></a><span class="sd">            kwargs: A mapping of candidate option keys to values.</span>
-<a id="__codelineno-0-529" name="__codelineno-0-529"></a>
-<a id="__codelineno-0-530" name="__codelineno-0-530"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-531" name="__codelineno-0-531"></a><span class="sd">            dict: The entries of `kwargs` whose keys are in `option_keys()`.</span>
-<a id="__codelineno-0-532" name="__codelineno-0-532"></a>
-<a id="__codelineno-0-533" name="__codelineno-0-533"></a><span class="sd">        Examples:</span>
-<a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-535" name="__codelineno-0-535"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph</span>
-<a id="__codelineno-0-536" name="__codelineno-0-536"></a><span class="sd">            &gt;&gt;&gt; sorted(TexturedGlobeGlyph.filter_kwargs({&quot;elev&quot;: 30, &quot;bogus&quot;: 1}))</span>
-<a id="__codelineno-0-537" name="__codelineno-0-537"></a><span class="sd">            [&#39;elev&#39;]</span>
-<a id="__codelineno-0-538" name="__codelineno-0-538"></a>
-<a id="__codelineno-0-539" name="__codelineno-0-539"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-540" name="__codelineno-0-540"></a><span class="sd">        &quot;&quot;&quot;</span>
-<a id="__codelineno-0-541" name="__codelineno-0-541"></a>        <span class="n">keys</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">option_keys</span><span class="p">()</span>
-<a id="__codelineno-0-542" name="__codelineno-0-542"></a>        <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">val</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">}</span>
-<a id="__codelineno-0-543" name="__codelineno-0-543"></a>
-<a id="__codelineno-0-544" name="__codelineno-0-544"></a>    <span class="nd">@classmethod</span>
-<a id="__codelineno-0-545" name="__codelineno-0-545"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_reject_unknown_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-546" name="__codelineno-0-546"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Raise `ValueError` if `kwargs` holds keys this glyph does not accept.</span>
-<a id="__codelineno-0-547" name="__codelineno-0-547"></a>
-<a id="__codelineno-0-548" name="__codelineno-0-548"></a><span class="sd">        Mirrors the rest of the package (`Glyph._merge_kwargs`,</span>
-<a id="__codelineno-0-549" name="__codelineno-0-549"></a><span class="sd">        `HistogramGlyph._apply_options`), which reject unknown options rather than</span>
-<a id="__codelineno-0-550" name="__codelineno-0-550"></a><span class="sd">        silently ignoring them, so a typo like `elevv=` surfaces immediately.</span>
-<a id="__codelineno-0-551" name="__codelineno-0-551"></a>
-<a id="__codelineno-0-552" name="__codelineno-0-552"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-553" name="__codelineno-0-553"></a><span class="sd">            kwargs: The render options passed to `__init__`/`draw`/`animate`.</span>
-<a id="__codelineno-0-554" name="__codelineno-0-554"></a>
-<a id="__codelineno-0-555" name="__codelineno-0-555"></a><span class="sd">        Raises:</span>
-<a id="__codelineno-0-556" name="__codelineno-0-556"></a><span class="sd">            ValueError: If any key is not in `option_keys()`.</span>
-<a id="__codelineno-0-557" name="__codelineno-0-557"></a><span class="sd">        &quot;&quot;&quot;</span>
-<a id="__codelineno-0-558" name="__codelineno-0-558"></a>        <span class="n">unknown</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-</span> <span class="bp">cls</span><span class="o">.</span><span class="n">option_keys</span><span class="p">()</span>
-<a id="__codelineno-0-559" name="__codelineno-0-559"></a>        <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
-<a id="__codelineno-0-560" name="__codelineno-0-560"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-561" name="__codelineno-0-561"></a>                <span class="sa">f</span><span class="s2">&quot;Unknown option(s) </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">unknown</span><span class="p">)</span><span class="si">}</span><span class="s2">; accepted keys are &quot;</span>
-<a id="__codelineno-0-562" name="__codelineno-0-562"></a>                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">option_keys</span><span class="p">())</span><span class="si">}</span><span class="s2">.&quot;</span>
-<a id="__codelineno-0-563" name="__codelineno-0-563"></a>            <span class="p">)</span>
-<a id="__codelineno-0-564" name="__codelineno-0-564"></a>
-<a id="__codelineno-0-565" name="__codelineno-0-565"></a>    <span class="c1"># ------------------------------------------------------------------ #</span>
-<a id="__codelineno-0-566" name="__codelineno-0-566"></a>    <span class="c1"># Rendering                                                            #</span>
-<a id="__codelineno-0-567" name="__codelineno-0-567"></a>    <span class="c1"># ------------------------------------------------------------------ #</span>
-<a id="__codelineno-0-568" name="__codelineno-0-568"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">draw</span><span class="p">(</span>
-<a id="__codelineno-0-569" name="__codelineno-0-569"></a>        <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-570" name="__codelineno-0-570"></a>        <span class="n">ax</span><span class="p">:</span> <span class="n">Axes3D</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-571" name="__codelineno-0-571"></a>        <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-572" name="__codelineno-0-572"></a>        <span class="n">spin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
-<a id="__codelineno-0-573" name="__codelineno-0-573"></a>        <span class="n">sun</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">_INHERIT</span><span class="p">,</span>
-<a id="__codelineno-0-574" name="__codelineno-0-574"></a>        <span class="n">ambient</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">_INHERIT</span><span class="p">,</span>
-<a id="__codelineno-0-575" name="__codelineno-0-575"></a>        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-<a id="__codelineno-0-576" name="__codelineno-0-576"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Figure</span><span class="p">,</span> <span class="n">Axes3D</span><span class="p">]:</span>
-<a id="__codelineno-0-577" name="__codelineno-0-577"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Render the textured globe onto a 3-D axes at a given spin angle.</span>
-<a id="__codelineno-0-578" name="__codelineno-0-578"></a>
-<a id="__codelineno-0-579" name="__codelineno-0-579"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-580" name="__codelineno-0-580"></a><span class="sd">            ax: A 3-D matplotlib axes (`Axes3D`) to draw on. If `None`, the instance&#39;s `ax` is used, or a new 3-D axes</span>
-<a id="__codelineno-0-581" name="__codelineno-0-581"></a><span class="sd">                is created on the instance&#39;s `fig` (or a new figure sized by the `figsize` option).</span>
-<a id="__codelineno-0-582" name="__codelineno-0-582"></a><span class="sd">            spin: Rotation of the globe about its tilted polar axis, in degrees. The camera stays put.</span>
-<a id="__codelineno-0-583" name="__codelineno-0-583"></a><span class="sd">            sun: Light direction for this call, overriding the instance&#39;s `sun`. A length-3 world-space vector, or</span>
-<a id="__codelineno-0-584" name="__codelineno-0-584"></a><span class="sd">                `None` to render evenly. Omitted (default) inherits the value passed to `__init__`.</span>
-<a id="__codelineno-0-585" name="__codelineno-0-585"></a><span class="sd">            ambient: Ambient floor for this call, overriding the instance&#39;s `ambient`. Omitted inherits the</span>
-<a id="__codelineno-0-586" name="__codelineno-0-586"></a><span class="sd">                constructor value. Always validated, but only affects the render when the effective `sun` is set.</span>
-<a id="__codelineno-0-587" name="__codelineno-0-587"></a><span class="sd">            **kwargs: Render options overriding the instance defaults for this call (`figsize`, `elev`, `azim`,</span>
-<a id="__codelineno-0-588" name="__codelineno-0-588"></a><span class="sd">                `background`). `figsize` applies only when a new figure is created; it is ignored when drawing onto</span>
-<a id="__codelineno-0-589" name="__codelineno-0-589"></a><span class="sd">                an existing (supplied or instance) axes. An unrecognised key raises `ValueError`.</span>
-<a id="__codelineno-0-590" name="__codelineno-0-590"></a>
-<a id="__codelineno-0-591" name="__codelineno-0-591"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-592" name="__codelineno-0-592"></a><span class="sd">            tuple: `(fig, ax)` -- the figure and the 3-D axes the globe was drawn on. The surface artist is also</span>
-<a id="__codelineno-0-593" name="__codelineno-0-593"></a><span class="sd">                available as the `surface` attribute.</span>
-<a id="__codelineno-0-594" name="__codelineno-0-594"></a>
-<a id="__codelineno-0-595" name="__codelineno-0-595"></a><span class="sd">        Raises:</span>
-<a id="__codelineno-0-596" name="__codelineno-0-596"></a><span class="sd">            ValueError: If `ax` is supplied but is not a 3-D axes, if `sun`/`ambient` are invalid, or if an unknown</span>
-<a id="__codelineno-0-597" name="__codelineno-0-597"></a><span class="sd">                render option is passed.</span>
-<a id="__codelineno-0-598" name="__codelineno-0-598"></a>
-<a id="__codelineno-0-599" name="__codelineno-0-599"></a><span class="sd">        Examples:</span>
-<a id="__codelineno-0-600" name="__codelineno-0-600"></a><span class="sd">            - Render a spun frame:</span>
-<a id="__codelineno-0-601" name="__codelineno-0-601"></a><span class="sd">                ```python</span>
-<a id="__codelineno-0-602" name="__codelineno-0-602"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-603" name="__codelineno-0-603"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph</span>
-<a id="__codelineno-0-604" name="__codelineno-0-604"></a><span class="sd">                &gt;&gt;&gt; texture = np.zeros((16, 32, 3), dtype=np.uint8)</span>
-<a id="__codelineno-0-605" name="__codelineno-0-605"></a><span class="sd">                &gt;&gt;&gt; texture[:, :16] = (200, 40, 40)</span>
-<a id="__codelineno-0-606" name="__codelineno-0-606"></a><span class="sd">                &gt;&gt;&gt; fig, ax = TexturedGlobeGlyph(texture, n_lon=36, n_lat=18).draw(spin=90.0)</span>
-<a id="__codelineno-0-607" name="__codelineno-0-607"></a><span class="sd">                &gt;&gt;&gt; ax.name</span>
-<a id="__codelineno-0-608" name="__codelineno-0-608"></a><span class="sd">                &#39;3d&#39;</span>
-<a id="__codelineno-0-609" name="__codelineno-0-609"></a>
-<a id="__codelineno-0-610" name="__codelineno-0-610"></a><span class="sd">                ```</span>
-<a id="__codelineno-0-611" name="__codelineno-0-611"></a><span class="sd">            - Light it from the `+x` direction for a day/night terminator:</span>
-<a id="__codelineno-0-612" name="__codelineno-0-612"></a><span class="sd">                ```python</span>
-<a id="__codelineno-0-613" name="__codelineno-0-613"></a><span class="sd">                &gt;&gt;&gt; globe = TexturedGlobeGlyph(np.full((16, 32, 3), 200, np.uint8), n_lon=36, n_lat=18)</span>
-<a id="__codelineno-0-614" name="__codelineno-0-614"></a><span class="sd">                &gt;&gt;&gt; fig, ax = globe.draw(sun=(1.0, 0.0, 0.0), ambient=0.15)</span>
-<a id="__codelineno-0-615" name="__codelineno-0-615"></a><span class="sd">                &gt;&gt;&gt; ax.name</span>
-<a id="__codelineno-0-616" name="__codelineno-0-616"></a><span class="sd">                &#39;3d&#39;</span>
-<a id="__codelineno-0-617" name="__codelineno-0-617"></a>
-<a id="__codelineno-0-618" name="__codelineno-0-618"></a><span class="sd">                ```</span>
-<a id="__codelineno-0-619" name="__codelineno-0-619"></a><span class="sd">        &quot;&quot;&quot;</span>
-<a id="__codelineno-0-620" name="__codelineno-0-620"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_reject_unknown_options</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
-<a id="__codelineno-0-621" name="__codelineno-0-621"></a>        <span class="n">options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_options</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-<a id="__codelineno-0-622" name="__codelineno-0-622"></a>        <span class="n">options</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
-<a id="__codelineno-0-623" name="__codelineno-0-623"></a>        <span class="n">fig</span><span class="p">,</span> <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
-<a id="__codelineno-0-624" name="__codelineno-0-624"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_prepare</span><span class="p">()</span>
-<a id="__codelineno-0-625" name="__codelineno-0-625"></a>        <span class="n">_clear_prior_render_artists</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
-<a id="__codelineno-0-626" name="__codelineno-0-626"></a>
-<a id="__codelineno-0-627" name="__codelineno-0-627"></a>        <span class="k">if</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-628" name="__codelineno-0-628"></a>            <span class="n">fig</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-629" name="__codelineno-0-629"></a>            <span class="n">target</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-630" name="__codelineno-0-630"></a>
-<a id="__codelineno-0-631" name="__codelineno-0-631"></a>        <span class="n">sun_vec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sun</span> <span class="k">if</span> <span class="n">sun</span> <span class="ow">is</span> <span class="n">_INHERIT</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_sun</span><span class="p">(</span><span class="n">sun</span><span class="p">)</span>
-<a id="__codelineno-0-632" name="__codelineno-0-632"></a>        <span class="n">amb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ambient</span> <span class="k">if</span> <span class="n">ambient</span> <span class="ow">is</span> <span class="n">_INHERIT</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_ambient</span><span class="p">(</span><span class="n">ambient</span><span class="p">)</span>
-<a id="__codelineno-0-633" name="__codelineno-0-633"></a>        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spun_mesh</span><span class="p">(</span><span class="n">spin</span><span class="p">)</span>
-<a id="__codelineno-0-634" name="__codelineno-0-634"></a>        <span class="n">surface</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">plot_surface</span><span class="p">(</span>
-<a id="__codelineno-0-635" name="__codelineno-0-635"></a>            <span class="n">x</span><span class="p">,</span>
-<a id="__codelineno-0-636" name="__codelineno-0-636"></a>            <span class="n">y</span><span class="p">,</span>
-<a id="__codelineno-0-637" name="__codelineno-0-637"></a>            <span class="n">z</span><span class="p">,</span>
-<a id="__codelineno-0-638" name="__codelineno-0-638"></a>            <span class="n">facecolors</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_lit_facecolors</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">),</span> <span class="n">sun_vec</span><span class="p">,</span> <span class="n">amb</span><span class="p">),</span>
-<a id="__codelineno-0-639" name="__codelineno-0-639"></a>            <span class="n">rstride</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-0-640" name="__codelineno-0-640"></a>            <span class="n">cstride</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-0-641" name="__codelineno-0-641"></a>            <span class="n">shade</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-642" name="__codelineno-0-642"></a>            <span class="n">antialiased</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-643" name="__codelineno-0-643"></a>            <span class="n">linewidth</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-<a id="__codelineno-0-644" name="__codelineno-0-644"></a>        <span class="p">)</span>
-<a id="__codelineno-0-645" name="__codelineno-0-645"></a>        <span class="n">target</span><span class="o">.</span><span class="n">set_box_aspect</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
-<a id="__codelineno-0-646" name="__codelineno-0-646"></a>        <span class="n">target</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-<a id="__codelineno-0-647" name="__codelineno-0-647"></a>        <span class="n">target</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-<a id="__codelineno-0-648" name="__codelineno-0-648"></a>        <span class="n">target</span><span class="o">.</span><span class="n">set_zlim</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-<a id="__codelineno-0-649" name="__codelineno-0-649"></a>        <span class="n">target</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
-<a id="__codelineno-0-650" name="__codelineno-0-650"></a>        <span class="n">target</span><span class="o">.</span><span class="n">view_init</span><span class="p">(</span><span class="n">elev</span><span class="o">=</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;elev&quot;</span><span class="p">],</span> <span class="n">azim</span><span class="o">=</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;azim&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-651" name="__codelineno-0-651"></a>
-<a id="__codelineno-0-652" name="__codelineno-0-652"></a>        <span class="n">_mark_render_artists</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">surface</span><span class="p">)</span>
-<a id="__codelineno-0-653" name="__codelineno-0-653"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_surface</span> <span class="o">=</span> <span class="n">surface</span>
-<a id="__codelineno-0-654" name="__codelineno-0-654"></a>        <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">target</span>
-<a id="__codelineno-0-655" name="__codelineno-0-655"></a>
-<a id="__codelineno-0-656" name="__codelineno-0-656"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">animate</span><span class="p">(</span>
-<a id="__codelineno-0-657" name="__codelineno-0-657"></a>        <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-658" name="__codelineno-0-658"></a>        <span class="n">ax</span><span class="p">:</span> <span class="n">Axes3D</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-659" name="__codelineno-0-659"></a>        <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-660" name="__codelineno-0-660"></a>        <span class="n">n_frames</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">60</span><span class="p">,</span>
-<a id="__codelineno-0-661" name="__codelineno-0-661"></a>        <span class="n">revolutions</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
-<a id="__codelineno-0-662" name="__codelineno-0-662"></a>        <span class="n">start_spin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
-<a id="__codelineno-0-663" name="__codelineno-0-663"></a>        <span class="n">sun</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">_INHERIT</span><span class="p">,</span>
-<a id="__codelineno-0-664" name="__codelineno-0-664"></a>        <span class="n">ambient</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">_INHERIT</span><span class="p">,</span>
-<a id="__codelineno-0-665" name="__codelineno-0-665"></a>        <span class="n">interval</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
-<a id="__codelineno-0-666" name="__codelineno-0-666"></a>        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-<a id="__codelineno-0-667" name="__codelineno-0-667"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FuncAnimation</span><span class="p">:</span>
-<a id="__codelineno-0-668" name="__codelineno-0-668"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a `FuncAnimation` that spins the globe about its polar axis.</span>
-<a id="__codelineno-0-669" name="__codelineno-0-669"></a>
-<a id="__codelineno-0-670" name="__codelineno-0-670"></a><span class="sd">        The texture is sampled once (via `draw`&#39;s cached `_prepare`); each frame only rotates the pre-computed vertices</span>
-<a id="__codelineno-0-671" name="__codelineno-0-671"></a><span class="sd">        and re-draws, so the per-frame cost is dominated by matplotlib&#39;s surface draw at the chosen mesh resolution.</span>
-<a id="__codelineno-0-672" name="__codelineno-0-672"></a><span class="sd">        Save it with `cleopatra.glyphs.base.animation.save_animation` (to a file) or `to_gif`/`to_mp4` (to bytes),</span>
-<a id="__codelineno-0-673" name="__codelineno-0-673"></a><span class="sd">        or matplotlib&#39;s own writers.</span>
-<a id="__codelineno-0-674" name="__codelineno-0-674"></a>
-<a id="__codelineno-0-675" name="__codelineno-0-675"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-676" name="__codelineno-0-676"></a><span class="sd">            ax: A 3-D axes to animate on, or `None` to create one (see `draw`).</span>
-<a id="__codelineno-0-677" name="__codelineno-0-677"></a><span class="sd">            n_frames: Number of frames in the animation.</span>
-<a id="__codelineno-0-678" name="__codelineno-0-678"></a><span class="sd">            revolutions: How many full turns the globe makes over `n_frames` (`1.0` = one 360 deg rotation).</span>
-<a id="__codelineno-0-679" name="__codelineno-0-679"></a><span class="sd">            start_spin: Spin angle of the first frame, in degrees.</span>
-<a id="__codelineno-0-680" name="__codelineno-0-680"></a><span class="sd">            sun: Light direction forwarded to `draw` on every frame (world space; overrides the instance&#39;s `sun`).</span>
-<a id="__codelineno-0-681" name="__codelineno-0-681"></a><span class="sd">                Held fixed while the globe spins, so the terminator sweeps across the surface. Omitted inherits the</span>
-<a id="__codelineno-0-682" name="__codelineno-0-682"></a><span class="sd">                constructor value; `None` renders evenly.</span>
-<a id="__codelineno-0-683" name="__codelineno-0-683"></a><span class="sd">            ambient: Ambient floor forwarded to `draw` on every frame. Omitted inherits the constructor value.</span>
-<a id="__codelineno-0-684" name="__codelineno-0-684"></a><span class="sd">            interval: Delay between frames in milliseconds (matplotlib playback hint).</span>
-<a id="__codelineno-0-685" name="__codelineno-0-685"></a><span class="sd">            **kwargs: Render options forwarded to `draw` on every frame (`figsize`, `elev`, `azim`, `background`).</span>
-<a id="__codelineno-0-686" name="__codelineno-0-686"></a>
-<a id="__codelineno-0-687" name="__codelineno-0-687"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-688" name="__codelineno-0-688"></a><span class="sd">            matplotlib.animation.FuncAnimation: The animation, ready to save or embed.</span>
-<a id="__codelineno-0-689" name="__codelineno-0-689"></a>
-<a id="__codelineno-0-690" name="__codelineno-0-690"></a><span class="sd">        Raises:</span>
-<a id="__codelineno-0-691" name="__codelineno-0-691"></a><span class="sd">            ValueError: If `ax` is supplied but is not a 3-D axes, if `sun`/`ambient` are invalid, or if an unknown</span>
-<a id="__codelineno-0-692" name="__codelineno-0-692"></a><span class="sd">                render option is passed. `sun`/`ambient` are validated eagerly here (not deferred to frame render).</span>
-<a id="__codelineno-0-693" name="__codelineno-0-693"></a>
-<a id="__codelineno-0-694" name="__codelineno-0-694"></a><span class="sd">        Examples:</span>
-<a id="__codelineno-0-695" name="__codelineno-0-695"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-696" name="__codelineno-0-696"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-697" name="__codelineno-0-697"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph</span>
-<a id="__codelineno-0-698" name="__codelineno-0-698"></a><span class="sd">            &gt;&gt;&gt; globe = TexturedGlobeGlyph(np.zeros((8, 16, 3), dtype=np.uint8), n_lon=24, n_lat=12)</span>
-<a id="__codelineno-0-699" name="__codelineno-0-699"></a><span class="sd">            &gt;&gt;&gt; anim = globe.animate(n_frames=4)</span>
-<a id="__codelineno-0-700" name="__codelineno-0-700"></a><span class="sd">            &gt;&gt;&gt; list(anim.new_frame_seq())    # one entry per rendered frame</span>
-<a id="__codelineno-0-701" name="__codelineno-0-701"></a><span class="sd">            [0, 1, 2, 3]</span>
-<a id="__codelineno-0-702" name="__codelineno-0-702"></a>
-<a id="__codelineno-0-703" name="__codelineno-0-703"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-704" name="__codelineno-0-704"></a><span class="sd">        &quot;&quot;&quot;</span>
-<a id="__codelineno-0-705" name="__codelineno-0-705"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_reject_unknown_options</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
-<a id="__codelineno-0-706" name="__codelineno-0-706"></a>        <span class="c1"># Validate lighting eagerly (like draw), so a bad sun/ambient raises here at the</span>
-<a id="__codelineno-0-707" name="__codelineno-0-707"></a>        <span class="c1"># animate() call rather than later from inside matplotlib&#39;s per-frame render loop.</span>
-<a id="__codelineno-0-708" name="__codelineno-0-708"></a>        <span class="k">if</span> <span class="n">sun</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">_INHERIT</span><span class="p">:</span>
-<a id="__codelineno-0-709" name="__codelineno-0-709"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_sun</span><span class="p">(</span><span class="n">sun</span><span class="p">)</span>
-<a id="__codelineno-0-710" name="__codelineno-0-710"></a>        <span class="k">if</span> <span class="n">ambient</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">_INHERIT</span><span class="p">:</span>
-<a id="__codelineno-0-711" name="__codelineno-0-711"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_validate_ambient</span><span class="p">(</span><span class="n">ambient</span><span class="p">)</span>
-<a id="__codelineno-0-712" name="__codelineno-0-712"></a>        <span class="n">options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_options</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-<a id="__codelineno-0-713" name="__codelineno-0-713"></a>        <span class="n">options</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
-<a id="__codelineno-0-714" name="__codelineno-0-714"></a>        <span class="n">fig</span><span class="p">,</span> <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
-<a id="__codelineno-0-715" name="__codelineno-0-715"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_prepare</span><span class="p">()</span>
-<a id="__codelineno-0-716" name="__codelineno-0-716"></a>        <span class="n">angles</span> <span class="o">=</span> <span class="n">start_spin</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span>
-<a id="__codelineno-0-717" name="__codelineno-0-717"></a>            <span class="mf">0.0</span><span class="p">,</span> <span class="mf">360.0</span> <span class="o">*</span> <span class="n">revolutions</span><span class="p">,</span> <span class="n">n_frames</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="kc">False</span>
-<a id="__codelineno-0-718" name="__codelineno-0-718"></a>        <span class="p">)</span>
-<a id="__codelineno-0-719" name="__codelineno-0-719"></a>
-<a id="__codelineno-0-720" name="__codelineno-0-720"></a>        <span class="k">def</span><span class="w"> </span><span class="nf">_update</span><span class="p">(</span><span class="n">frame_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
-<a id="__codelineno-0-721" name="__codelineno-0-721"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span>
-<a id="__codelineno-0-722" name="__codelineno-0-722"></a>                <span class="n">target</span><span class="p">,</span>
-<a id="__codelineno-0-723" name="__codelineno-0-723"></a>                <span class="n">spin</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">angles</span><span class="p">[</span><span class="n">frame_index</span><span class="p">]),</span>
-<a id="__codelineno-0-724" name="__codelineno-0-724"></a>                <span class="n">sun</span><span class="o">=</span><span class="n">sun</span><span class="p">,</span>
-<a id="__codelineno-0-725" name="__codelineno-0-725"></a>                <span class="n">ambient</span><span class="o">=</span><span class="n">ambient</span><span class="p">,</span>
-<a id="__codelineno-0-726" name="__codelineno-0-726"></a>                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-<a id="__codelineno-0-727" name="__codelineno-0-727"></a>            <span class="p">)</span>
-<a id="__codelineno-0-728" name="__codelineno-0-728"></a>            <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_surface</span><span class="p">,)</span>
-<a id="__codelineno-0-729" name="__codelineno-0-729"></a>
-<a id="__codelineno-0-730" name="__codelineno-0-730"></a>        <span class="k">return</span> <span class="n">FuncAnimation</span><span class="p">(</span>
-<a id="__codelineno-0-731" name="__codelineno-0-731"></a>            <span class="n">fig</span><span class="p">,</span> <span class="n">_update</span><span class="p">,</span> <span class="n">frames</span><span class="o">=</span><span class="n">n_frames</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="n">interval</span><span class="p">,</span> <span class="n">blit</span><span class="o">=</span><span class="kc">False</span>
-<a id="__codelineno-0-732" name="__codelineno-0-732"></a>        <span class="p">)</span>
-<a id="__codelineno-0-733" name="__codelineno-0-733"></a>
-<a id="__codelineno-0-734" name="__codelineno-0-734"></a>    <span class="nd">@property</span>
-<a id="__codelineno-0-735" name="__codelineno-0-735"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">surface</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a id="__codelineno-0-736" name="__codelineno-0-736"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;The `Poly3DCollection` from the most recent `draw`, or `None` before the first draw.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-737" name="__codelineno-0-737"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_surface</span>
+<a id="__codelineno-0-424" name="__codelineno-0-424"></a>        <span class="c1"># Floor the magnitude at a tiny epsilon to avoid division by zero on a</span>
+<a id="__codelineno-0-425" name="__codelineno-0-425"></a>        <span class="c1"># degenerate quad (never hit on real meshes; min magnitude is ~1).</span>
+<a id="__codelineno-0-426" name="__codelineno-0-426"></a>        <span class="n">norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">nx</span> <span class="o">*</span> <span class="n">nx</span> <span class="o">+</span> <span class="n">ny</span> <span class="o">*</span> <span class="n">ny</span> <span class="o">+</span> <span class="n">nz</span> <span class="o">*</span> <span class="n">nz</span><span class="p">),</span> <span class="mf">1e-12</span><span class="p">)</span>
+<a id="__codelineno-0-427" name="__codelineno-0-427"></a>        <span class="n">lit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">((</span><span class="n">nx</span> <span class="o">*</span> <span class="n">sun</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">ny</span> <span class="o">*</span> <span class="n">sun</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">nz</span> <span class="o">*</span> <span class="n">sun</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="o">/</span> <span class="n">norm</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+<a id="__codelineno-0-428" name="__codelineno-0-428"></a>        <span class="n">factor</span> <span class="o">=</span> <span class="n">ambient</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">ambient</span><span class="p">)</span> <span class="o">*</span> <span class="n">lit</span>
+<a id="__codelineno-0-429" name="__codelineno-0-429"></a>        <span class="n">lit_face</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_facecolors</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<a id="__codelineno-0-430" name="__codelineno-0-430"></a>        <span class="n">lit_face</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span>
+<a id="__codelineno-0-431" name="__codelineno-0-431"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_facecolors</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">*</span> <span class="n">factor</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span>
+<a id="__codelineno-0-432" name="__codelineno-0-432"></a>        <span class="p">)</span>
+<a id="__codelineno-0-433" name="__codelineno-0-433"></a>        <span class="k">return</span> <span class="n">lit_face</span>
+<a id="__codelineno-0-434" name="__codelineno-0-434"></a>
+<a id="__codelineno-0-435" name="__codelineno-0-435"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Axes3D</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Figure</span><span class="p">,</span> <span class="n">Axes3D</span><span class="p">]:</span>
+<a id="__codelineno-0-436" name="__codelineno-0-436"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Resolve the 3-D `(fig, ax)` to draw on, creating a 3-D axes if none was supplied.</span>
+<a id="__codelineno-0-437" name="__codelineno-0-437"></a>
+<a id="__codelineno-0-438" name="__codelineno-0-438"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-439" name="__codelineno-0-439"></a><span class="sd">            ax: An explicit 3-D axes for this call, or `None` to fall back to the instance&#39;s `ax`/`fig` or a new one.</span>
+<a id="__codelineno-0-440" name="__codelineno-0-440"></a><span class="sd">            options: The resolved render options (uses `figsize` when a new figure is made).</span>
+<a id="__codelineno-0-441" name="__codelineno-0-441"></a>
+<a id="__codelineno-0-442" name="__codelineno-0-442"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-0-443" name="__codelineno-0-443"></a><span class="sd">            tuple: `(fig, ax)` where `ax` is an `Axes3D`.</span>
+<a id="__codelineno-0-444" name="__codelineno-0-444"></a>
+<a id="__codelineno-0-445" name="__codelineno-0-445"></a><span class="sd">        Raises:</span>
+<a id="__codelineno-0-446" name="__codelineno-0-446"></a><span class="sd">            ValueError: If a supplied axes is not a 3-D axes.</span>
+<a id="__codelineno-0-447" name="__codelineno-0-447"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-448" name="__codelineno-0-448"></a>        <span class="n">target</span> <span class="o">=</span> <span class="n">ax</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ax</span>
+<a id="__codelineno-0-449" name="__codelineno-0-449"></a>        <span class="k">if</span> <span class="n">target</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-450" name="__codelineno-0-450"></a>            <span class="n">fig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fig</span> <span class="ow">or</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;figsize&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-451" name="__codelineno-0-451"></a>            <span class="n">target</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">projection</span><span class="o">=</span><span class="s2">&quot;3d&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-452" name="__codelineno-0-452"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-453" name="__codelineno-0-453"></a>            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Axes3D</span><span class="p">):</span>
+<a id="__codelineno-0-454" name="__codelineno-0-454"></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-455" name="__codelineno-0-455"></a>                    <span class="s2">&quot;TexturedGlobeGlyph needs a 3-D axes; create one with fig.add_subplot(projection=&#39;3d&#39;).&quot;</span>
+<a id="__codelineno-0-456" name="__codelineno-0-456"></a>                <span class="p">)</span>
+<a id="__codelineno-0-457" name="__codelineno-0-457"></a>            <span class="n">fig</span> <span class="o">=</span> <span class="n">_root_figure</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+<a id="__codelineno-0-458" name="__codelineno-0-458"></a>        <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">target</span>
+<a id="__codelineno-0-459" name="__codelineno-0-459"></a>
+<a id="__codelineno-0-460" name="__codelineno-0-460"></a>    <span class="c1"># ------------------------------------------------------------------ #</span>
+<a id="__codelineno-0-461" name="__codelineno-0-461"></a>    <span class="c1"># Introspection (mirrors Glyph / HistogramGlyph)                      #</span>
+<a id="__codelineno-0-462" name="__codelineno-0-462"></a>    <span class="c1"># ------------------------------------------------------------------ #</span>
+<a id="__codelineno-0-463" name="__codelineno-0-463"></a>    <span class="nd">@property</span>
+<a id="__codelineno-0-464" name="__codelineno-0-464"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">texture</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<a id="__codelineno-0-465" name="__codelineno-0-465"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;The normalised RGBA texture (float `(H, W, 4)` in `[0, 1]`).&quot;&quot;&quot;</span>
+<a id="__codelineno-0-466" name="__codelineno-0-466"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_texture</span>
+<a id="__codelineno-0-467" name="__codelineno-0-467"></a>
+<a id="__codelineno-0-468" name="__codelineno-0-468"></a>    <span class="nd">@property</span>
+<a id="__codelineno-0-469" name="__codelineno-0-469"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">tilt_deg</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<a id="__codelineno-0-470" name="__codelineno-0-470"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Axial tilt of the polar axis from vertical, in degrees.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-471" name="__codelineno-0-471"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tilt_deg</span>
+<a id="__codelineno-0-472" name="__codelineno-0-472"></a>
+<a id="__codelineno-0-473" name="__codelineno-0-473"></a>    <span class="nd">@property</span>
+<a id="__codelineno-0-474" name="__codelineno-0-474"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">n_lon</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<a id="__codelineno-0-475" name="__codelineno-0-475"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Number of longitude samples in the sphere mesh.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-476" name="__codelineno-0-476"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_lon</span>
+<a id="__codelineno-0-477" name="__codelineno-0-477"></a>
+<a id="__codelineno-0-478" name="__codelineno-0-478"></a>    <span class="nd">@property</span>
+<a id="__codelineno-0-479" name="__codelineno-0-479"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">n_lat</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<a id="__codelineno-0-480" name="__codelineno-0-480"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Number of latitude samples in the sphere mesh.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-481" name="__codelineno-0-481"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_lat</span>
+<a id="__codelineno-0-482" name="__codelineno-0-482"></a>
+<a id="__codelineno-0-483" name="__codelineno-0-483"></a>    <span class="nd">@property</span>
+<a id="__codelineno-0-484" name="__codelineno-0-484"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">brightness</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<a id="__codelineno-0-485" name="__codelineno-0-485"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;The brightness multiplier applied to the RGB channels.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-486" name="__codelineno-0-486"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_brightness</span>
+<a id="__codelineno-0-487" name="__codelineno-0-487"></a>
+<a id="__codelineno-0-488" name="__codelineno-0-488"></a>    <span class="nd">@property</span>
+<a id="__codelineno-0-489" name="__codelineno-0-489"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">sun</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-490" name="__codelineno-0-490"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;The unit light direction in world space, or `None` for even (unlit) rendering.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-491" name="__codelineno-0-491"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sun</span>
+<a id="__codelineno-0-492" name="__codelineno-0-492"></a>
+<a id="__codelineno-0-493" name="__codelineno-0-493"></a>    <span class="nd">@property</span>
+<a id="__codelineno-0-494" name="__codelineno-0-494"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">ambient</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<a id="__codelineno-0-495" name="__codelineno-0-495"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;The ambient floor (fraction) kept on the unlit side under directional lighting.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-496" name="__codelineno-0-496"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ambient</span>
+<a id="__codelineno-0-497" name="__codelineno-0-497"></a>
+<a id="__codelineno-0-498" name="__codelineno-0-498"></a>    <span class="nd">@property</span>
+<a id="__codelineno-0-499" name="__codelineno-0-499"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">default_options</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-0-500" name="__codelineno-0-500"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;The resolved render options (`figsize`, `elev`, `azim`, `background`).&quot;&quot;&quot;</span>
+<a id="__codelineno-0-501" name="__codelineno-0-501"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_options</span>
+<a id="__codelineno-0-502" name="__codelineno-0-502"></a>
+<a id="__codelineno-0-503" name="__codelineno-0-503"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-0-504" name="__codelineno-0-504"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">option_keys</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<a id="__codelineno-0-505" name="__codelineno-0-505"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the keyword-argument keys this glyph accepts.</span>
+<a id="__codelineno-0-506" name="__codelineno-0-506"></a>
+<a id="__codelineno-0-507" name="__codelineno-0-507"></a><span class="sd">        Resolves from the class-level `DEFAULT_OPTIONS` so the accepted keys can be inspected without constructing an</span>
+<a id="__codelineno-0-508" name="__codelineno-0-508"></a><span class="sd">        instance. Mirrors `cleopatra.glyphs.base.glyph.Glyph.option_keys` (`TexturedGlobeGlyph` is a standalone class,</span>
+<a id="__codelineno-0-509" name="__codelineno-0-509"></a><span class="sd">        not a `Glyph` subclass).</span>
+<a id="__codelineno-0-510" name="__codelineno-0-510"></a>
+<a id="__codelineno-0-511" name="__codelineno-0-511"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-0-512" name="__codelineno-0-512"></a><span class="sd">            set: The accepted option keys for this glyph class.</span>
+<a id="__codelineno-0-513" name="__codelineno-0-513"></a>
+<a id="__codelineno-0-514" name="__codelineno-0-514"></a><span class="sd">        Examples:</span>
+<a id="__codelineno-0-515" name="__codelineno-0-515"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-516" name="__codelineno-0-516"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph</span>
+<a id="__codelineno-0-517" name="__codelineno-0-517"></a><span class="sd">            &gt;&gt;&gt; &quot;elev&quot; in TexturedGlobeGlyph.option_keys()</span>
+<a id="__codelineno-0-518" name="__codelineno-0-518"></a><span class="sd">            True</span>
+<a id="__codelineno-0-519" name="__codelineno-0-519"></a>
+<a id="__codelineno-0-520" name="__codelineno-0-520"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-521" name="__codelineno-0-521"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-522" name="__codelineno-0-522"></a>        <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">DEFAULT_OPTIONS</span><span class="p">)</span>
+<a id="__codelineno-0-523" name="__codelineno-0-523"></a>
+<a id="__codelineno-0-524" name="__codelineno-0-524"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-0-525" name="__codelineno-0-525"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">filter_kwargs</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-0-526" name="__codelineno-0-526"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return only the subset of `kwargs` whose keys this glyph accepts.</span>
+<a id="__codelineno-0-527" name="__codelineno-0-527"></a>
+<a id="__codelineno-0-528" name="__codelineno-0-528"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-529" name="__codelineno-0-529"></a><span class="sd">            kwargs: A mapping of candidate option keys to values.</span>
+<a id="__codelineno-0-530" name="__codelineno-0-530"></a>
+<a id="__codelineno-0-531" name="__codelineno-0-531"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-0-532" name="__codelineno-0-532"></a><span class="sd">            dict: The entries of `kwargs` whose keys are in `option_keys()`.</span>
+<a id="__codelineno-0-533" name="__codelineno-0-533"></a>
+<a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="sd">        Examples:</span>
+<a id="__codelineno-0-535" name="__codelineno-0-535"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-536" name="__codelineno-0-536"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph</span>
+<a id="__codelineno-0-537" name="__codelineno-0-537"></a><span class="sd">            &gt;&gt;&gt; sorted(TexturedGlobeGlyph.filter_kwargs({&quot;elev&quot;: 30, &quot;bogus&quot;: 1}))</span>
+<a id="__codelineno-0-538" name="__codelineno-0-538"></a><span class="sd">            [&#39;elev&#39;]</span>
+<a id="__codelineno-0-539" name="__codelineno-0-539"></a>
+<a id="__codelineno-0-540" name="__codelineno-0-540"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-541" name="__codelineno-0-541"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-542" name="__codelineno-0-542"></a>        <span class="n">keys</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">option_keys</span><span class="p">()</span>
+<a id="__codelineno-0-543" name="__codelineno-0-543"></a>        <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">val</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">}</span>
+<a id="__codelineno-0-544" name="__codelineno-0-544"></a>
+<a id="__codelineno-0-545" name="__codelineno-0-545"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-0-546" name="__codelineno-0-546"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_reject_unknown_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-547" name="__codelineno-0-547"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Raise `ValueError` if `kwargs` holds keys this glyph does not accept.</span>
+<a id="__codelineno-0-548" name="__codelineno-0-548"></a>
+<a id="__codelineno-0-549" name="__codelineno-0-549"></a><span class="sd">        Mirrors the rest of the package (`Glyph._merge_kwargs`,</span>
+<a id="__codelineno-0-550" name="__codelineno-0-550"></a><span class="sd">        `HistogramGlyph._apply_options`), which reject unknown options rather than</span>
+<a id="__codelineno-0-551" name="__codelineno-0-551"></a><span class="sd">        silently ignoring them, so a typo like `elevv=` surfaces immediately.</span>
+<a id="__codelineno-0-552" name="__codelineno-0-552"></a>
+<a id="__codelineno-0-553" name="__codelineno-0-553"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-554" name="__codelineno-0-554"></a><span class="sd">            kwargs: The render options passed to `__init__`/`draw`/`animate`.</span>
+<a id="__codelineno-0-555" name="__codelineno-0-555"></a>
+<a id="__codelineno-0-556" name="__codelineno-0-556"></a><span class="sd">        Raises:</span>
+<a id="__codelineno-0-557" name="__codelineno-0-557"></a><span class="sd">            ValueError: If any key is not in `option_keys()`.</span>
+<a id="__codelineno-0-558" name="__codelineno-0-558"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-559" name="__codelineno-0-559"></a>        <span class="n">unknown</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-</span> <span class="bp">cls</span><span class="o">.</span><span class="n">option_keys</span><span class="p">()</span>
+<a id="__codelineno-0-560" name="__codelineno-0-560"></a>        <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
+<a id="__codelineno-0-561" name="__codelineno-0-561"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-562" name="__codelineno-0-562"></a>                <span class="sa">f</span><span class="s2">&quot;Unknown option(s) </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">unknown</span><span class="p">)</span><span class="si">}</span><span class="s2">; accepted keys are &quot;</span>
+<a id="__codelineno-0-563" name="__codelineno-0-563"></a>                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">option_keys</span><span class="p">())</span><span class="si">}</span><span class="s2">.&quot;</span>
+<a id="__codelineno-0-564" name="__codelineno-0-564"></a>            <span class="p">)</span>
+<a id="__codelineno-0-565" name="__codelineno-0-565"></a>
+<a id="__codelineno-0-566" name="__codelineno-0-566"></a>    <span class="c1"># ------------------------------------------------------------------ #</span>
+<a id="__codelineno-0-567" name="__codelineno-0-567"></a>    <span class="c1"># Rendering                                                            #</span>
+<a id="__codelineno-0-568" name="__codelineno-0-568"></a>    <span class="c1"># ------------------------------------------------------------------ #</span>
+<a id="__codelineno-0-569" name="__codelineno-0-569"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">draw</span><span class="p">(</span>
+<a id="__codelineno-0-570" name="__codelineno-0-570"></a>        <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-571" name="__codelineno-0-571"></a>        <span class="n">ax</span><span class="p">:</span> <span class="n">Axes3D</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-572" name="__codelineno-0-572"></a>        <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-0-573" name="__codelineno-0-573"></a>        <span class="n">spin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+<a id="__codelineno-0-574" name="__codelineno-0-574"></a>        <span class="n">sun</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">_INHERIT</span><span class="p">,</span>
+<a id="__codelineno-0-575" name="__codelineno-0-575"></a>        <span class="n">ambient</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">_INHERIT</span><span class="p">,</span>
+<a id="__codelineno-0-576" name="__codelineno-0-576"></a>        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<a id="__codelineno-0-577" name="__codelineno-0-577"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Figure</span><span class="p">,</span> <span class="n">Axes3D</span><span class="p">]:</span>
+<a id="__codelineno-0-578" name="__codelineno-0-578"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Render the textured globe onto a 3-D axes at a given spin angle.</span>
+<a id="__codelineno-0-579" name="__codelineno-0-579"></a>
+<a id="__codelineno-0-580" name="__codelineno-0-580"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-581" name="__codelineno-0-581"></a><span class="sd">            ax: A 3-D matplotlib axes (`Axes3D`) to draw on. If `None`, the instance&#39;s `ax` is used, or a new 3-D axes</span>
+<a id="__codelineno-0-582" name="__codelineno-0-582"></a><span class="sd">                is created on the instance&#39;s `fig` (or a new figure sized by the `figsize` option).</span>
+<a id="__codelineno-0-583" name="__codelineno-0-583"></a><span class="sd">            spin: Rotation of the globe about its tilted polar axis, in degrees. The camera stays put.</span>
+<a id="__codelineno-0-584" name="__codelineno-0-584"></a><span class="sd">            sun: Light direction for this call, overriding the instance&#39;s `sun`. A length-3 world-space vector, or</span>
+<a id="__codelineno-0-585" name="__codelineno-0-585"></a><span class="sd">                `None` to render evenly. Omitted (default) inherits the value passed to `__init__`.</span>
+<a id="__codelineno-0-586" name="__codelineno-0-586"></a><span class="sd">            ambient: Ambient floor for this call, overriding the instance&#39;s `ambient`. Omitted inherits the</span>
+<a id="__codelineno-0-587" name="__codelineno-0-587"></a><span class="sd">                constructor value. Always validated, but only affects the render when the effective `sun` is set.</span>
+<a id="__codelineno-0-588" name="__codelineno-0-588"></a><span class="sd">            **kwargs: Render options overriding the instance defaults for this call (`figsize`, `elev`, `azim`,</span>
+<a id="__codelineno-0-589" name="__codelineno-0-589"></a><span class="sd">                `background`). `figsize` applies only when a new figure is created; it is ignored when drawing onto</span>
+<a id="__codelineno-0-590" name="__codelineno-0-590"></a><span class="sd">                an existing (supplied or instance) axes. An unrecognised key raises `ValueError`.</span>
+<a id="__codelineno-0-591" name="__codelineno-0-591"></a>
+<a id="__codelineno-0-592" name="__codelineno-0-592"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-0-593" name="__codelineno-0-593"></a><span class="sd">            tuple: `(fig, ax)` -- the figure and the 3-D axes the globe was drawn on. The surface artist is also</span>
+<a id="__codelineno-0-594" name="__codelineno-0-594"></a><span class="sd">                available as the `surface` attribute.</span>
+<a id="__codelineno-0-595" name="__codelineno-0-595"></a>
+<a id="__codelineno-0-596" name="__codelineno-0-596"></a><span class="sd">        Raises:</span>
+<a id="__codelineno-0-597" name="__codelineno-0-597"></a><span class="sd">            ValueError: If `ax` is supplied but is not a 3-D axes, if `sun`/`ambient` are invalid, or if an unknown</span>
+<a id="__codelineno-0-598" name="__codelineno-0-598"></a><span class="sd">                render option is passed.</span>
+<a id="__codelineno-0-599" name="__codelineno-0-599"></a>
+<a id="__codelineno-0-600" name="__codelineno-0-600"></a><span class="sd">        Examples:</span>
+<a id="__codelineno-0-601" name="__codelineno-0-601"></a><span class="sd">            - Render a spun frame:</span>
+<a id="__codelineno-0-602" name="__codelineno-0-602"></a><span class="sd">                ```python</span>
+<a id="__codelineno-0-603" name="__codelineno-0-603"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-604" name="__codelineno-0-604"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph</span>
+<a id="__codelineno-0-605" name="__codelineno-0-605"></a><span class="sd">                &gt;&gt;&gt; texture = np.zeros((16, 32, 3), dtype=np.uint8)</span>
+<a id="__codelineno-0-606" name="__codelineno-0-606"></a><span class="sd">                &gt;&gt;&gt; texture[:, :16] = (200, 40, 40)</span>
+<a id="__codelineno-0-607" name="__codelineno-0-607"></a><span class="sd">                &gt;&gt;&gt; fig, ax = TexturedGlobeGlyph(texture, n_lon=36, n_lat=18).draw(spin=90.0)</span>
+<a id="__codelineno-0-608" name="__codelineno-0-608"></a><span class="sd">                &gt;&gt;&gt; ax.name</span>
+<a id="__codelineno-0-609" name="__codelineno-0-609"></a><span class="sd">                &#39;3d&#39;</span>
+<a id="__codelineno-0-610" name="__codelineno-0-610"></a>
+<a id="__codelineno-0-611" name="__codelineno-0-611"></a><span class="sd">                ```</span>
+<a id="__codelineno-0-612" name="__codelineno-0-612"></a><span class="sd">            - Light it from the `+x` direction for a day/night terminator:</span>
+<a id="__codelineno-0-613" name="__codelineno-0-613"></a><span class="sd">                ```python</span>
+<a id="__codelineno-0-614" name="__codelineno-0-614"></a><span class="sd">                &gt;&gt;&gt; globe = TexturedGlobeGlyph(np.full((16, 32, 3), 200, np.uint8), n_lon=36, n_lat=18)</span>
+<a id="__codelineno-0-615" name="__codelineno-0-615"></a><span class="sd">                &gt;&gt;&gt; fig, ax = globe.draw(sun=(1.0, 0.0, 0.0), ambient=0.15)</span>
+<a id="__codelineno-0-616" name="__codelineno-0-616"></a><span class="sd">                &gt;&gt;&gt; ax.name</span>
+<a id="__codelineno-0-617" name="__codelineno-0-617"></a><span class="sd">                &#39;3d&#39;</span>
+<a id="__codelineno-0-618" name="__codelineno-0-618"></a>
+<a id="__codelineno-0-619" name="__codelineno-0-619"></a><span class="sd">                ```</span>
+<a id="__codelineno-0-620" name="__codelineno-0-620"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-621" name="__codelineno-0-621"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_reject_unknown_options</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-622" name="__codelineno-0-622"></a>        <span class="n">options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_options</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<a id="__codelineno-0-623" name="__codelineno-0-623"></a>        <span class="n">options</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-624" name="__codelineno-0-624"></a>        <span class="n">fig</span><span class="p">,</span> <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+<a id="__codelineno-0-625" name="__codelineno-0-625"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_prepare</span><span class="p">()</span>
+<a id="__codelineno-0-626" name="__codelineno-0-626"></a>        <span class="n">_clear_prior_render_artists</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+<a id="__codelineno-0-627" name="__codelineno-0-627"></a>
+<a id="__codelineno-0-628" name="__codelineno-0-628"></a>        <span class="k">if</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-629" name="__codelineno-0-629"></a>            <span class="n">fig</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-630" name="__codelineno-0-630"></a>            <span class="n">target</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-631" name="__codelineno-0-631"></a>
+<a id="__codelineno-0-632" name="__codelineno-0-632"></a>        <span class="n">sun_vec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sun</span> <span class="k">if</span> <span class="n">sun</span> <span class="ow">is</span> <span class="n">_INHERIT</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_sun</span><span class="p">(</span><span class="n">sun</span><span class="p">)</span>
+<a id="__codelineno-0-633" name="__codelineno-0-633"></a>        <span class="n">amb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ambient</span> <span class="k">if</span> <span class="n">ambient</span> <span class="ow">is</span> <span class="n">_INHERIT</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_ambient</span><span class="p">(</span><span class="n">ambient</span><span class="p">)</span>
+<a id="__codelineno-0-634" name="__codelineno-0-634"></a>        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spun_mesh</span><span class="p">(</span><span class="n">spin</span><span class="p">)</span>
+<a id="__codelineno-0-635" name="__codelineno-0-635"></a>        <span class="n">surface</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">plot_surface</span><span class="p">(</span>
+<a id="__codelineno-0-636" name="__codelineno-0-636"></a>            <span class="n">x</span><span class="p">,</span>
+<a id="__codelineno-0-637" name="__codelineno-0-637"></a>            <span class="n">y</span><span class="p">,</span>
+<a id="__codelineno-0-638" name="__codelineno-0-638"></a>            <span class="n">z</span><span class="p">,</span>
+<a id="__codelineno-0-639" name="__codelineno-0-639"></a>            <span class="n">facecolors</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_lit_facecolors</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">),</span> <span class="n">sun_vec</span><span class="p">,</span> <span class="n">amb</span><span class="p">),</span>
+<a id="__codelineno-0-640" name="__codelineno-0-640"></a>            <span class="n">rstride</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-641" name="__codelineno-0-641"></a>            <span class="n">cstride</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-642" name="__codelineno-0-642"></a>            <span class="n">shade</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-643" name="__codelineno-0-643"></a>            <span class="n">antialiased</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-644" name="__codelineno-0-644"></a>            <span class="n">linewidth</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+<a id="__codelineno-0-645" name="__codelineno-0-645"></a>        <span class="p">)</span>
+<a id="__codelineno-0-646" name="__codelineno-0-646"></a>        <span class="n">target</span><span class="o">.</span><span class="n">set_box_aspect</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<a id="__codelineno-0-647" name="__codelineno-0-647"></a>        <span class="n">target</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-0-648" name="__codelineno-0-648"></a>        <span class="n">target</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-0-649" name="__codelineno-0-649"></a>        <span class="n">target</span><span class="o">.</span><span class="n">set_zlim</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-0-650" name="__codelineno-0-650"></a>        <span class="n">target</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<a id="__codelineno-0-651" name="__codelineno-0-651"></a>        <span class="n">target</span><span class="o">.</span><span class="n">view_init</span><span class="p">(</span><span class="n">elev</span><span class="o">=</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;elev&quot;</span><span class="p">],</span> <span class="n">azim</span><span class="o">=</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;azim&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-652" name="__codelineno-0-652"></a>
+<a id="__codelineno-0-653" name="__codelineno-0-653"></a>        <span class="n">_mark_render_artists</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">surface</span><span class="p">)</span>
+<a id="__codelineno-0-654" name="__codelineno-0-654"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_surface</span> <span class="o">=</span> <span class="n">surface</span>
+<a id="__codelineno-0-655" name="__codelineno-0-655"></a>        <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">target</span>
+<a id="__codelineno-0-656" name="__codelineno-0-656"></a>
+<a id="__codelineno-0-657" name="__codelineno-0-657"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">animate</span><span class="p">(</span>
+<a id="__codelineno-0-658" name="__codelineno-0-658"></a>        <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-659" name="__codelineno-0-659"></a>        <span class="n">ax</span><span class="p">:</span> <span class="n">Axes3D</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-660" name="__codelineno-0-660"></a>        <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-0-661" name="__codelineno-0-661"></a>        <span class="n">n_frames</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">60</span><span class="p">,</span>
+<a id="__codelineno-0-662" name="__codelineno-0-662"></a>        <span class="n">revolutions</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+<a id="__codelineno-0-663" name="__codelineno-0-663"></a>        <span class="n">start_spin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+<a id="__codelineno-0-664" name="__codelineno-0-664"></a>        <span class="n">sun</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">_INHERIT</span><span class="p">,</span>
+<a id="__codelineno-0-665" name="__codelineno-0-665"></a>        <span class="n">ambient</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">_INHERIT</span><span class="p">,</span>
+<a id="__codelineno-0-666" name="__codelineno-0-666"></a>        <span class="n">interval</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+<a id="__codelineno-0-667" name="__codelineno-0-667"></a>        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<a id="__codelineno-0-668" name="__codelineno-0-668"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FuncAnimation</span><span class="p">:</span>
+<a id="__codelineno-0-669" name="__codelineno-0-669"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a `FuncAnimation` that spins the globe about its polar axis.</span>
+<a id="__codelineno-0-670" name="__codelineno-0-670"></a>
+<a id="__codelineno-0-671" name="__codelineno-0-671"></a><span class="sd">        The texture is sampled once (via `draw`&#39;s cached `_prepare`); each frame only rotates the pre-computed vertices</span>
+<a id="__codelineno-0-672" name="__codelineno-0-672"></a><span class="sd">        and re-draws, so the per-frame cost is dominated by matplotlib&#39;s surface draw at the chosen mesh resolution.</span>
+<a id="__codelineno-0-673" name="__codelineno-0-673"></a><span class="sd">        Save it with `cleopatra.glyphs.base.animation.save_animation` (to a file) or `to_gif`/`to_mp4` (to bytes),</span>
+<a id="__codelineno-0-674" name="__codelineno-0-674"></a><span class="sd">        or matplotlib&#39;s own writers.</span>
+<a id="__codelineno-0-675" name="__codelineno-0-675"></a>
+<a id="__codelineno-0-676" name="__codelineno-0-676"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-677" name="__codelineno-0-677"></a><span class="sd">            ax: A 3-D axes to animate on, or `None` to create one (see `draw`).</span>
+<a id="__codelineno-0-678" name="__codelineno-0-678"></a><span class="sd">            n_frames: Number of frames in the animation.</span>
+<a id="__codelineno-0-679" name="__codelineno-0-679"></a><span class="sd">            revolutions: How many full turns the globe makes over `n_frames` (`1.0` = one 360 deg rotation).</span>
+<a id="__codelineno-0-680" name="__codelineno-0-680"></a><span class="sd">            start_spin: Spin angle of the first frame, in degrees.</span>
+<a id="__codelineno-0-681" name="__codelineno-0-681"></a><span class="sd">            sun: Light direction forwarded to `draw` on every frame (world space; overrides the instance&#39;s `sun`).</span>
+<a id="__codelineno-0-682" name="__codelineno-0-682"></a><span class="sd">                Held fixed while the globe spins, so the terminator sweeps across the surface. Omitted inherits the</span>
+<a id="__codelineno-0-683" name="__codelineno-0-683"></a><span class="sd">                constructor value; `None` renders evenly.</span>
+<a id="__codelineno-0-684" name="__codelineno-0-684"></a><span class="sd">            ambient: Ambient floor forwarded to `draw` on every frame. Omitted inherits the constructor value.</span>
+<a id="__codelineno-0-685" name="__codelineno-0-685"></a><span class="sd">            interval: Delay between frames in milliseconds (matplotlib playback hint).</span>
+<a id="__codelineno-0-686" name="__codelineno-0-686"></a><span class="sd">            **kwargs: Render options forwarded to `draw` on every frame (`figsize`, `elev`, `azim`, `background`).</span>
+<a id="__codelineno-0-687" name="__codelineno-0-687"></a>
+<a id="__codelineno-0-688" name="__codelineno-0-688"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-0-689" name="__codelineno-0-689"></a><span class="sd">            matplotlib.animation.FuncAnimation: The animation, ready to save or embed.</span>
+<a id="__codelineno-0-690" name="__codelineno-0-690"></a>
+<a id="__codelineno-0-691" name="__codelineno-0-691"></a><span class="sd">        Raises:</span>
+<a id="__codelineno-0-692" name="__codelineno-0-692"></a><span class="sd">            ValueError: If `ax` is supplied but is not a 3-D axes, if `sun`/`ambient` are invalid, or if an unknown</span>
+<a id="__codelineno-0-693" name="__codelineno-0-693"></a><span class="sd">                render option is passed. `sun`/`ambient` are validated eagerly here (not deferred to frame render).</span>
+<a id="__codelineno-0-694" name="__codelineno-0-694"></a>
+<a id="__codelineno-0-695" name="__codelineno-0-695"></a><span class="sd">        Examples:</span>
+<a id="__codelineno-0-696" name="__codelineno-0-696"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-697" name="__codelineno-0-697"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-698" name="__codelineno-0-698"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph</span>
+<a id="__codelineno-0-699" name="__codelineno-0-699"></a><span class="sd">            &gt;&gt;&gt; globe = TexturedGlobeGlyph(np.zeros((8, 16, 3), dtype=np.uint8), n_lon=24, n_lat=12)</span>
+<a id="__codelineno-0-700" name="__codelineno-0-700"></a><span class="sd">            &gt;&gt;&gt; anim = globe.animate(n_frames=4)</span>
+<a id="__codelineno-0-701" name="__codelineno-0-701"></a><span class="sd">            &gt;&gt;&gt; list(anim.new_frame_seq())    # one entry per rendered frame</span>
+<a id="__codelineno-0-702" name="__codelineno-0-702"></a><span class="sd">            [0, 1, 2, 3]</span>
+<a id="__codelineno-0-703" name="__codelineno-0-703"></a>
+<a id="__codelineno-0-704" name="__codelineno-0-704"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-705" name="__codelineno-0-705"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-706" name="__codelineno-0-706"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_reject_unknown_options</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-707" name="__codelineno-0-707"></a>        <span class="c1"># Validate lighting eagerly (like draw), so a bad sun/ambient raises here at the</span>
+<a id="__codelineno-0-708" name="__codelineno-0-708"></a>        <span class="c1"># animate() call rather than later from inside matplotlib&#39;s per-frame render loop.</span>
+<a id="__codelineno-0-709" name="__codelineno-0-709"></a>        <span class="k">if</span> <span class="n">sun</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">_INHERIT</span><span class="p">:</span>
+<a id="__codelineno-0-710" name="__codelineno-0-710"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_sun</span><span class="p">(</span><span class="n">sun</span><span class="p">)</span>
+<a id="__codelineno-0-711" name="__codelineno-0-711"></a>        <span class="k">if</span> <span class="n">ambient</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">_INHERIT</span><span class="p">:</span>
+<a id="__codelineno-0-712" name="__codelineno-0-712"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_validate_ambient</span><span class="p">(</span><span class="n">ambient</span><span class="p">)</span>
+<a id="__codelineno-0-713" name="__codelineno-0-713"></a>        <span class="n">options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_options</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<a id="__codelineno-0-714" name="__codelineno-0-714"></a>        <span class="n">options</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-715" name="__codelineno-0-715"></a>        <span class="n">fig</span><span class="p">,</span> <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+<a id="__codelineno-0-716" name="__codelineno-0-716"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_prepare</span><span class="p">()</span>
+<a id="__codelineno-0-717" name="__codelineno-0-717"></a>        <span class="n">angles</span> <span class="o">=</span> <span class="n">start_spin</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span>
+<a id="__codelineno-0-718" name="__codelineno-0-718"></a>            <span class="mf">0.0</span><span class="p">,</span> <span class="mf">360.0</span> <span class="o">*</span> <span class="n">revolutions</span><span class="p">,</span> <span class="n">n_frames</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="kc">False</span>
+<a id="__codelineno-0-719" name="__codelineno-0-719"></a>        <span class="p">)</span>
+<a id="__codelineno-0-720" name="__codelineno-0-720"></a>
+<a id="__codelineno-0-721" name="__codelineno-0-721"></a>        <span class="k">def</span><span class="w"> </span><span class="nf">_update</span><span class="p">(</span><span class="n">frame_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<a id="__codelineno-0-722" name="__codelineno-0-722"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span>
+<a id="__codelineno-0-723" name="__codelineno-0-723"></a>                <span class="n">target</span><span class="p">,</span>
+<a id="__codelineno-0-724" name="__codelineno-0-724"></a>                <span class="n">spin</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">angles</span><span class="p">[</span><span class="n">frame_index</span><span class="p">]),</span>
+<a id="__codelineno-0-725" name="__codelineno-0-725"></a>                <span class="n">sun</span><span class="o">=</span><span class="n">sun</span><span class="p">,</span>
+<a id="__codelineno-0-726" name="__codelineno-0-726"></a>                <span class="n">ambient</span><span class="o">=</span><span class="n">ambient</span><span class="p">,</span>
+<a id="__codelineno-0-727" name="__codelineno-0-727"></a>                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<a id="__codelineno-0-728" name="__codelineno-0-728"></a>            <span class="p">)</span>
+<a id="__codelineno-0-729" name="__codelineno-0-729"></a>            <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_surface</span><span class="p">,)</span>
+<a id="__codelineno-0-730" name="__codelineno-0-730"></a>
+<a id="__codelineno-0-731" name="__codelineno-0-731"></a>        <span class="k">return</span> <span class="n">FuncAnimation</span><span class="p">(</span>
+<a id="__codelineno-0-732" name="__codelineno-0-732"></a>            <span class="n">fig</span><span class="p">,</span> <span class="n">_update</span><span class="p">,</span> <span class="n">frames</span><span class="o">=</span><span class="n">n_frames</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="n">interval</span><span class="p">,</span> <span class="n">blit</span><span class="o">=</span><span class="kc">False</span>
+<a id="__codelineno-0-733" name="__codelineno-0-733"></a>        <span class="p">)</span>
+<a id="__codelineno-0-734" name="__codelineno-0-734"></a>
+<a id="__codelineno-0-735" name="__codelineno-0-735"></a>    <span class="nd">@property</span>
+<a id="__codelineno-0-736" name="__codelineno-0-736"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">surface</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-737" name="__codelineno-0-737"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;The `Poly3DCollection` from the most recent `draw`, or `None` before the first draw.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-738" name="__codelineno-0-738"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_surface</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -5296,8 +5298,7 @@ render option is passed. <code>sun</code>/<code>ambient</code> are validated eag
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/cleopatra/glyphs/globe/textured_globe_glyph.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-656">656</a></span>
-<span class="normal"><a href="#__codelineno-0-657">657</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-657">657</a></span>
 <span class="normal"><a href="#__codelineno-0-658">658</a></span>
 <span class="normal"><a href="#__codelineno-0-659">659</a></span>
 <span class="normal"><a href="#__codelineno-0-660">660</a></span>
@@ -5372,83 +5373,84 @@ render option is passed. <code>sun</code>/<code>ambient</code> are validated eag
 <span class="normal"><a href="#__codelineno-0-729">729</a></span>
 <span class="normal"><a href="#__codelineno-0-730">730</a></span>
 <span class="normal"><a href="#__codelineno-0-731">731</a></span>
-<span class="normal"><a href="#__codelineno-0-732">732</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-656" name="__codelineno-0-656"></a><span class="k">def</span><span class="w"> </span><span class="nf">animate</span><span class="p">(</span>
-<a id="__codelineno-0-657" name="__codelineno-0-657"></a>    <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-658" name="__codelineno-0-658"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Axes3D</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-659" name="__codelineno-0-659"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-660" name="__codelineno-0-660"></a>    <span class="n">n_frames</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">60</span><span class="p">,</span>
-<a id="__codelineno-0-661" name="__codelineno-0-661"></a>    <span class="n">revolutions</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
-<a id="__codelineno-0-662" name="__codelineno-0-662"></a>    <span class="n">start_spin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
-<a id="__codelineno-0-663" name="__codelineno-0-663"></a>    <span class="n">sun</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">_INHERIT</span><span class="p">,</span>
-<a id="__codelineno-0-664" name="__codelineno-0-664"></a>    <span class="n">ambient</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">_INHERIT</span><span class="p">,</span>
-<a id="__codelineno-0-665" name="__codelineno-0-665"></a>    <span class="n">interval</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
-<a id="__codelineno-0-666" name="__codelineno-0-666"></a>    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-<a id="__codelineno-0-667" name="__codelineno-0-667"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FuncAnimation</span><span class="p">:</span>
-<a id="__codelineno-0-668" name="__codelineno-0-668"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a `FuncAnimation` that spins the globe about its polar axis.</span>
-<a id="__codelineno-0-669" name="__codelineno-0-669"></a>
-<a id="__codelineno-0-670" name="__codelineno-0-670"></a><span class="sd">    The texture is sampled once (via `draw`&#39;s cached `_prepare`); each frame only rotates the pre-computed vertices</span>
-<a id="__codelineno-0-671" name="__codelineno-0-671"></a><span class="sd">    and re-draws, so the per-frame cost is dominated by matplotlib&#39;s surface draw at the chosen mesh resolution.</span>
-<a id="__codelineno-0-672" name="__codelineno-0-672"></a><span class="sd">    Save it with `cleopatra.glyphs.base.animation.save_animation` (to a file) or `to_gif`/`to_mp4` (to bytes),</span>
-<a id="__codelineno-0-673" name="__codelineno-0-673"></a><span class="sd">    or matplotlib&#39;s own writers.</span>
-<a id="__codelineno-0-674" name="__codelineno-0-674"></a>
-<a id="__codelineno-0-675" name="__codelineno-0-675"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-676" name="__codelineno-0-676"></a><span class="sd">        ax: A 3-D axes to animate on, or `None` to create one (see `draw`).</span>
-<a id="__codelineno-0-677" name="__codelineno-0-677"></a><span class="sd">        n_frames: Number of frames in the animation.</span>
-<a id="__codelineno-0-678" name="__codelineno-0-678"></a><span class="sd">        revolutions: How many full turns the globe makes over `n_frames` (`1.0` = one 360 deg rotation).</span>
-<a id="__codelineno-0-679" name="__codelineno-0-679"></a><span class="sd">        start_spin: Spin angle of the first frame, in degrees.</span>
-<a id="__codelineno-0-680" name="__codelineno-0-680"></a><span class="sd">        sun: Light direction forwarded to `draw` on every frame (world space; overrides the instance&#39;s `sun`).</span>
-<a id="__codelineno-0-681" name="__codelineno-0-681"></a><span class="sd">            Held fixed while the globe spins, so the terminator sweeps across the surface. Omitted inherits the</span>
-<a id="__codelineno-0-682" name="__codelineno-0-682"></a><span class="sd">            constructor value; `None` renders evenly.</span>
-<a id="__codelineno-0-683" name="__codelineno-0-683"></a><span class="sd">        ambient: Ambient floor forwarded to `draw` on every frame. Omitted inherits the constructor value.</span>
-<a id="__codelineno-0-684" name="__codelineno-0-684"></a><span class="sd">        interval: Delay between frames in milliseconds (matplotlib playback hint).</span>
-<a id="__codelineno-0-685" name="__codelineno-0-685"></a><span class="sd">        **kwargs: Render options forwarded to `draw` on every frame (`figsize`, `elev`, `azim`, `background`).</span>
-<a id="__codelineno-0-686" name="__codelineno-0-686"></a>
-<a id="__codelineno-0-687" name="__codelineno-0-687"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-688" name="__codelineno-0-688"></a><span class="sd">        matplotlib.animation.FuncAnimation: The animation, ready to save or embed.</span>
-<a id="__codelineno-0-689" name="__codelineno-0-689"></a>
-<a id="__codelineno-0-690" name="__codelineno-0-690"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-691" name="__codelineno-0-691"></a><span class="sd">        ValueError: If `ax` is supplied but is not a 3-D axes, if `sun`/`ambient` are invalid, or if an unknown</span>
-<a id="__codelineno-0-692" name="__codelineno-0-692"></a><span class="sd">            render option is passed. `sun`/`ambient` are validated eagerly here (not deferred to frame render).</span>
-<a id="__codelineno-0-693" name="__codelineno-0-693"></a>
-<a id="__codelineno-0-694" name="__codelineno-0-694"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-695" name="__codelineno-0-695"></a><span class="sd">        ```python</span>
-<a id="__codelineno-0-696" name="__codelineno-0-696"></a><span class="sd">        &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-697" name="__codelineno-0-697"></a><span class="sd">        &gt;&gt;&gt; from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph</span>
-<a id="__codelineno-0-698" name="__codelineno-0-698"></a><span class="sd">        &gt;&gt;&gt; globe = TexturedGlobeGlyph(np.zeros((8, 16, 3), dtype=np.uint8), n_lon=24, n_lat=12)</span>
-<a id="__codelineno-0-699" name="__codelineno-0-699"></a><span class="sd">        &gt;&gt;&gt; anim = globe.animate(n_frames=4)</span>
-<a id="__codelineno-0-700" name="__codelineno-0-700"></a><span class="sd">        &gt;&gt;&gt; list(anim.new_frame_seq())    # one entry per rendered frame</span>
-<a id="__codelineno-0-701" name="__codelineno-0-701"></a><span class="sd">        [0, 1, 2, 3]</span>
-<a id="__codelineno-0-702" name="__codelineno-0-702"></a>
-<a id="__codelineno-0-703" name="__codelineno-0-703"></a><span class="sd">        ```</span>
-<a id="__codelineno-0-704" name="__codelineno-0-704"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-705" name="__codelineno-0-705"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_reject_unknown_options</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
-<a id="__codelineno-0-706" name="__codelineno-0-706"></a>    <span class="c1"># Validate lighting eagerly (like draw), so a bad sun/ambient raises here at the</span>
-<a id="__codelineno-0-707" name="__codelineno-0-707"></a>    <span class="c1"># animate() call rather than later from inside matplotlib&#39;s per-frame render loop.</span>
-<a id="__codelineno-0-708" name="__codelineno-0-708"></a>    <span class="k">if</span> <span class="n">sun</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">_INHERIT</span><span class="p">:</span>
-<a id="__codelineno-0-709" name="__codelineno-0-709"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_sun</span><span class="p">(</span><span class="n">sun</span><span class="p">)</span>
-<a id="__codelineno-0-710" name="__codelineno-0-710"></a>    <span class="k">if</span> <span class="n">ambient</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">_INHERIT</span><span class="p">:</span>
-<a id="__codelineno-0-711" name="__codelineno-0-711"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_ambient</span><span class="p">(</span><span class="n">ambient</span><span class="p">)</span>
-<a id="__codelineno-0-712" name="__codelineno-0-712"></a>    <span class="n">options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_options</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-<a id="__codelineno-0-713" name="__codelineno-0-713"></a>    <span class="n">options</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
-<a id="__codelineno-0-714" name="__codelineno-0-714"></a>    <span class="n">fig</span><span class="p">,</span> <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
-<a id="__codelineno-0-715" name="__codelineno-0-715"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_prepare</span><span class="p">()</span>
-<a id="__codelineno-0-716" name="__codelineno-0-716"></a>    <span class="n">angles</span> <span class="o">=</span> <span class="n">start_spin</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span>
-<a id="__codelineno-0-717" name="__codelineno-0-717"></a>        <span class="mf">0.0</span><span class="p">,</span> <span class="mf">360.0</span> <span class="o">*</span> <span class="n">revolutions</span><span class="p">,</span> <span class="n">n_frames</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="kc">False</span>
-<a id="__codelineno-0-718" name="__codelineno-0-718"></a>    <span class="p">)</span>
-<a id="__codelineno-0-719" name="__codelineno-0-719"></a>
-<a id="__codelineno-0-720" name="__codelineno-0-720"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_update</span><span class="p">(</span><span class="n">frame_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
-<a id="__codelineno-0-721" name="__codelineno-0-721"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span>
-<a id="__codelineno-0-722" name="__codelineno-0-722"></a>            <span class="n">target</span><span class="p">,</span>
-<a id="__codelineno-0-723" name="__codelineno-0-723"></a>            <span class="n">spin</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">angles</span><span class="p">[</span><span class="n">frame_index</span><span class="p">]),</span>
-<a id="__codelineno-0-724" name="__codelineno-0-724"></a>            <span class="n">sun</span><span class="o">=</span><span class="n">sun</span><span class="p">,</span>
-<a id="__codelineno-0-725" name="__codelineno-0-725"></a>            <span class="n">ambient</span><span class="o">=</span><span class="n">ambient</span><span class="p">,</span>
-<a id="__codelineno-0-726" name="__codelineno-0-726"></a>            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-<a id="__codelineno-0-727" name="__codelineno-0-727"></a>        <span class="p">)</span>
-<a id="__codelineno-0-728" name="__codelineno-0-728"></a>        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_surface</span><span class="p">,)</span>
-<a id="__codelineno-0-729" name="__codelineno-0-729"></a>
-<a id="__codelineno-0-730" name="__codelineno-0-730"></a>    <span class="k">return</span> <span class="n">FuncAnimation</span><span class="p">(</span>
-<a id="__codelineno-0-731" name="__codelineno-0-731"></a>        <span class="n">fig</span><span class="p">,</span> <span class="n">_update</span><span class="p">,</span> <span class="n">frames</span><span class="o">=</span><span class="n">n_frames</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="n">interval</span><span class="p">,</span> <span class="n">blit</span><span class="o">=</span><span class="kc">False</span>
-<a id="__codelineno-0-732" name="__codelineno-0-732"></a>    <span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-732">732</a></span>
+<span class="normal"><a href="#__codelineno-0-733">733</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-657" name="__codelineno-0-657"></a><span class="k">def</span><span class="w"> </span><span class="nf">animate</span><span class="p">(</span>
+<a id="__codelineno-0-658" name="__codelineno-0-658"></a>    <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-659" name="__codelineno-0-659"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Axes3D</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-660" name="__codelineno-0-660"></a>    <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-0-661" name="__codelineno-0-661"></a>    <span class="n">n_frames</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">60</span><span class="p">,</span>
+<a id="__codelineno-0-662" name="__codelineno-0-662"></a>    <span class="n">revolutions</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+<a id="__codelineno-0-663" name="__codelineno-0-663"></a>    <span class="n">start_spin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+<a id="__codelineno-0-664" name="__codelineno-0-664"></a>    <span class="n">sun</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">_INHERIT</span><span class="p">,</span>
+<a id="__codelineno-0-665" name="__codelineno-0-665"></a>    <span class="n">ambient</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">_INHERIT</span><span class="p">,</span>
+<a id="__codelineno-0-666" name="__codelineno-0-666"></a>    <span class="n">interval</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+<a id="__codelineno-0-667" name="__codelineno-0-667"></a>    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<a id="__codelineno-0-668" name="__codelineno-0-668"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FuncAnimation</span><span class="p">:</span>
+<a id="__codelineno-0-669" name="__codelineno-0-669"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a `FuncAnimation` that spins the globe about its polar axis.</span>
+<a id="__codelineno-0-670" name="__codelineno-0-670"></a>
+<a id="__codelineno-0-671" name="__codelineno-0-671"></a><span class="sd">    The texture is sampled once (via `draw`&#39;s cached `_prepare`); each frame only rotates the pre-computed vertices</span>
+<a id="__codelineno-0-672" name="__codelineno-0-672"></a><span class="sd">    and re-draws, so the per-frame cost is dominated by matplotlib&#39;s surface draw at the chosen mesh resolution.</span>
+<a id="__codelineno-0-673" name="__codelineno-0-673"></a><span class="sd">    Save it with `cleopatra.glyphs.base.animation.save_animation` (to a file) or `to_gif`/`to_mp4` (to bytes),</span>
+<a id="__codelineno-0-674" name="__codelineno-0-674"></a><span class="sd">    or matplotlib&#39;s own writers.</span>
+<a id="__codelineno-0-675" name="__codelineno-0-675"></a>
+<a id="__codelineno-0-676" name="__codelineno-0-676"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-677" name="__codelineno-0-677"></a><span class="sd">        ax: A 3-D axes to animate on, or `None` to create one (see `draw`).</span>
+<a id="__codelineno-0-678" name="__codelineno-0-678"></a><span class="sd">        n_frames: Number of frames in the animation.</span>
+<a id="__codelineno-0-679" name="__codelineno-0-679"></a><span class="sd">        revolutions: How many full turns the globe makes over `n_frames` (`1.0` = one 360 deg rotation).</span>
+<a id="__codelineno-0-680" name="__codelineno-0-680"></a><span class="sd">        start_spin: Spin angle of the first frame, in degrees.</span>
+<a id="__codelineno-0-681" name="__codelineno-0-681"></a><span class="sd">        sun: Light direction forwarded to `draw` on every frame (world space; overrides the instance&#39;s `sun`).</span>
+<a id="__codelineno-0-682" name="__codelineno-0-682"></a><span class="sd">            Held fixed while the globe spins, so the terminator sweeps across the surface. Omitted inherits the</span>
+<a id="__codelineno-0-683" name="__codelineno-0-683"></a><span class="sd">            constructor value; `None` renders evenly.</span>
+<a id="__codelineno-0-684" name="__codelineno-0-684"></a><span class="sd">        ambient: Ambient floor forwarded to `draw` on every frame. Omitted inherits the constructor value.</span>
+<a id="__codelineno-0-685" name="__codelineno-0-685"></a><span class="sd">        interval: Delay between frames in milliseconds (matplotlib playback hint).</span>
+<a id="__codelineno-0-686" name="__codelineno-0-686"></a><span class="sd">        **kwargs: Render options forwarded to `draw` on every frame (`figsize`, `elev`, `azim`, `background`).</span>
+<a id="__codelineno-0-687" name="__codelineno-0-687"></a>
+<a id="__codelineno-0-688" name="__codelineno-0-688"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-689" name="__codelineno-0-689"></a><span class="sd">        matplotlib.animation.FuncAnimation: The animation, ready to save or embed.</span>
+<a id="__codelineno-0-690" name="__codelineno-0-690"></a>
+<a id="__codelineno-0-691" name="__codelineno-0-691"></a><span class="sd">    Raises:</span>
+<a id="__codelineno-0-692" name="__codelineno-0-692"></a><span class="sd">        ValueError: If `ax` is supplied but is not a 3-D axes, if `sun`/`ambient` are invalid, or if an unknown</span>
+<a id="__codelineno-0-693" name="__codelineno-0-693"></a><span class="sd">            render option is passed. `sun`/`ambient` are validated eagerly here (not deferred to frame render).</span>
+<a id="__codelineno-0-694" name="__codelineno-0-694"></a>
+<a id="__codelineno-0-695" name="__codelineno-0-695"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-696" name="__codelineno-0-696"></a><span class="sd">        ```python</span>
+<a id="__codelineno-0-697" name="__codelineno-0-697"></a><span class="sd">        &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-698" name="__codelineno-0-698"></a><span class="sd">        &gt;&gt;&gt; from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph</span>
+<a id="__codelineno-0-699" name="__codelineno-0-699"></a><span class="sd">        &gt;&gt;&gt; globe = TexturedGlobeGlyph(np.zeros((8, 16, 3), dtype=np.uint8), n_lon=24, n_lat=12)</span>
+<a id="__codelineno-0-700" name="__codelineno-0-700"></a><span class="sd">        &gt;&gt;&gt; anim = globe.animate(n_frames=4)</span>
+<a id="__codelineno-0-701" name="__codelineno-0-701"></a><span class="sd">        &gt;&gt;&gt; list(anim.new_frame_seq())    # one entry per rendered frame</span>
+<a id="__codelineno-0-702" name="__codelineno-0-702"></a><span class="sd">        [0, 1, 2, 3]</span>
+<a id="__codelineno-0-703" name="__codelineno-0-703"></a>
+<a id="__codelineno-0-704" name="__codelineno-0-704"></a><span class="sd">        ```</span>
+<a id="__codelineno-0-705" name="__codelineno-0-705"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-706" name="__codelineno-0-706"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_reject_unknown_options</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-707" name="__codelineno-0-707"></a>    <span class="c1"># Validate lighting eagerly (like draw), so a bad sun/ambient raises here at the</span>
+<a id="__codelineno-0-708" name="__codelineno-0-708"></a>    <span class="c1"># animate() call rather than later from inside matplotlib&#39;s per-frame render loop.</span>
+<a id="__codelineno-0-709" name="__codelineno-0-709"></a>    <span class="k">if</span> <span class="n">sun</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">_INHERIT</span><span class="p">:</span>
+<a id="__codelineno-0-710" name="__codelineno-0-710"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_sun</span><span class="p">(</span><span class="n">sun</span><span class="p">)</span>
+<a id="__codelineno-0-711" name="__codelineno-0-711"></a>    <span class="k">if</span> <span class="n">ambient</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">_INHERIT</span><span class="p">:</span>
+<a id="__codelineno-0-712" name="__codelineno-0-712"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_ambient</span><span class="p">(</span><span class="n">ambient</span><span class="p">)</span>
+<a id="__codelineno-0-713" name="__codelineno-0-713"></a>    <span class="n">options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_options</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<a id="__codelineno-0-714" name="__codelineno-0-714"></a>    <span class="n">options</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-715" name="__codelineno-0-715"></a>    <span class="n">fig</span><span class="p">,</span> <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+<a id="__codelineno-0-716" name="__codelineno-0-716"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_prepare</span><span class="p">()</span>
+<a id="__codelineno-0-717" name="__codelineno-0-717"></a>    <span class="n">angles</span> <span class="o">=</span> <span class="n">start_spin</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span>
+<a id="__codelineno-0-718" name="__codelineno-0-718"></a>        <span class="mf">0.0</span><span class="p">,</span> <span class="mf">360.0</span> <span class="o">*</span> <span class="n">revolutions</span><span class="p">,</span> <span class="n">n_frames</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="kc">False</span>
+<a id="__codelineno-0-719" name="__codelineno-0-719"></a>    <span class="p">)</span>
+<a id="__codelineno-0-720" name="__codelineno-0-720"></a>
+<a id="__codelineno-0-721" name="__codelineno-0-721"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_update</span><span class="p">(</span><span class="n">frame_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<a id="__codelineno-0-722" name="__codelineno-0-722"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span>
+<a id="__codelineno-0-723" name="__codelineno-0-723"></a>            <span class="n">target</span><span class="p">,</span>
+<a id="__codelineno-0-724" name="__codelineno-0-724"></a>            <span class="n">spin</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">angles</span><span class="p">[</span><span class="n">frame_index</span><span class="p">]),</span>
+<a id="__codelineno-0-725" name="__codelineno-0-725"></a>            <span class="n">sun</span><span class="o">=</span><span class="n">sun</span><span class="p">,</span>
+<a id="__codelineno-0-726" name="__codelineno-0-726"></a>            <span class="n">ambient</span><span class="o">=</span><span class="n">ambient</span><span class="p">,</span>
+<a id="__codelineno-0-727" name="__codelineno-0-727"></a>            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<a id="__codelineno-0-728" name="__codelineno-0-728"></a>        <span class="p">)</span>
+<a id="__codelineno-0-729" name="__codelineno-0-729"></a>        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_surface</span><span class="p">,)</span>
+<a id="__codelineno-0-730" name="__codelineno-0-730"></a>
+<a id="__codelineno-0-731" name="__codelineno-0-731"></a>    <span class="k">return</span> <span class="n">FuncAnimation</span><span class="p">(</span>
+<a id="__codelineno-0-732" name="__codelineno-0-732"></a>        <span class="n">fig</span><span class="p">,</span> <span class="n">_update</span><span class="p">,</span> <span class="n">frames</span><span class="o">=</span><span class="n">n_frames</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="n">interval</span><span class="p">,</span> <span class="n">blit</span><span class="o">=</span><span class="kc">False</span>
+<a id="__codelineno-0-733" name="__codelineno-0-733"></a>    <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5638,8 +5640,7 @@ render option is passed.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/cleopatra/glyphs/globe/textured_globe_glyph.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-568">568</a></span>
-<span class="normal"><a href="#__codelineno-0-569">569</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-569">569</a></span>
 <span class="normal"><a href="#__codelineno-0-570">570</a></span>
 <span class="normal"><a href="#__codelineno-0-571">571</a></span>
 <span class="normal"><a href="#__codelineno-0-572">572</a></span>
@@ -5724,93 +5725,94 @@ render option is passed.</p>
 <span class="normal"><a href="#__codelineno-0-651">651</a></span>
 <span class="normal"><a href="#__codelineno-0-652">652</a></span>
 <span class="normal"><a href="#__codelineno-0-653">653</a></span>
-<span class="normal"><a href="#__codelineno-0-654">654</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-568" name="__codelineno-0-568"></a><span class="k">def</span><span class="w"> </span><span class="nf">draw</span><span class="p">(</span>
-<a id="__codelineno-0-569" name="__codelineno-0-569"></a>    <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-570" name="__codelineno-0-570"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Axes3D</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-571" name="__codelineno-0-571"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-572" name="__codelineno-0-572"></a>    <span class="n">spin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
-<a id="__codelineno-0-573" name="__codelineno-0-573"></a>    <span class="n">sun</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">_INHERIT</span><span class="p">,</span>
-<a id="__codelineno-0-574" name="__codelineno-0-574"></a>    <span class="n">ambient</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">_INHERIT</span><span class="p">,</span>
-<a id="__codelineno-0-575" name="__codelineno-0-575"></a>    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-<a id="__codelineno-0-576" name="__codelineno-0-576"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Figure</span><span class="p">,</span> <span class="n">Axes3D</span><span class="p">]:</span>
-<a id="__codelineno-0-577" name="__codelineno-0-577"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Render the textured globe onto a 3-D axes at a given spin angle.</span>
-<a id="__codelineno-0-578" name="__codelineno-0-578"></a>
-<a id="__codelineno-0-579" name="__codelineno-0-579"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-580" name="__codelineno-0-580"></a><span class="sd">        ax: A 3-D matplotlib axes (`Axes3D`) to draw on. If `None`, the instance&#39;s `ax` is used, or a new 3-D axes</span>
-<a id="__codelineno-0-581" name="__codelineno-0-581"></a><span class="sd">            is created on the instance&#39;s `fig` (or a new figure sized by the `figsize` option).</span>
-<a id="__codelineno-0-582" name="__codelineno-0-582"></a><span class="sd">        spin: Rotation of the globe about its tilted polar axis, in degrees. The camera stays put.</span>
-<a id="__codelineno-0-583" name="__codelineno-0-583"></a><span class="sd">        sun: Light direction for this call, overriding the instance&#39;s `sun`. A length-3 world-space vector, or</span>
-<a id="__codelineno-0-584" name="__codelineno-0-584"></a><span class="sd">            `None` to render evenly. Omitted (default) inherits the value passed to `__init__`.</span>
-<a id="__codelineno-0-585" name="__codelineno-0-585"></a><span class="sd">        ambient: Ambient floor for this call, overriding the instance&#39;s `ambient`. Omitted inherits the</span>
-<a id="__codelineno-0-586" name="__codelineno-0-586"></a><span class="sd">            constructor value. Always validated, but only affects the render when the effective `sun` is set.</span>
-<a id="__codelineno-0-587" name="__codelineno-0-587"></a><span class="sd">        **kwargs: Render options overriding the instance defaults for this call (`figsize`, `elev`, `azim`,</span>
-<a id="__codelineno-0-588" name="__codelineno-0-588"></a><span class="sd">            `background`). `figsize` applies only when a new figure is created; it is ignored when drawing onto</span>
-<a id="__codelineno-0-589" name="__codelineno-0-589"></a><span class="sd">            an existing (supplied or instance) axes. An unrecognised key raises `ValueError`.</span>
-<a id="__codelineno-0-590" name="__codelineno-0-590"></a>
-<a id="__codelineno-0-591" name="__codelineno-0-591"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-592" name="__codelineno-0-592"></a><span class="sd">        tuple: `(fig, ax)` -- the figure and the 3-D axes the globe was drawn on. The surface artist is also</span>
-<a id="__codelineno-0-593" name="__codelineno-0-593"></a><span class="sd">            available as the `surface` attribute.</span>
-<a id="__codelineno-0-594" name="__codelineno-0-594"></a>
-<a id="__codelineno-0-595" name="__codelineno-0-595"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-596" name="__codelineno-0-596"></a><span class="sd">        ValueError: If `ax` is supplied but is not a 3-D axes, if `sun`/`ambient` are invalid, or if an unknown</span>
-<a id="__codelineno-0-597" name="__codelineno-0-597"></a><span class="sd">            render option is passed.</span>
-<a id="__codelineno-0-598" name="__codelineno-0-598"></a>
-<a id="__codelineno-0-599" name="__codelineno-0-599"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-600" name="__codelineno-0-600"></a><span class="sd">        - Render a spun frame:</span>
-<a id="__codelineno-0-601" name="__codelineno-0-601"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-602" name="__codelineno-0-602"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-603" name="__codelineno-0-603"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph</span>
-<a id="__codelineno-0-604" name="__codelineno-0-604"></a><span class="sd">            &gt;&gt;&gt; texture = np.zeros((16, 32, 3), dtype=np.uint8)</span>
-<a id="__codelineno-0-605" name="__codelineno-0-605"></a><span class="sd">            &gt;&gt;&gt; texture[:, :16] = (200, 40, 40)</span>
-<a id="__codelineno-0-606" name="__codelineno-0-606"></a><span class="sd">            &gt;&gt;&gt; fig, ax = TexturedGlobeGlyph(texture, n_lon=36, n_lat=18).draw(spin=90.0)</span>
-<a id="__codelineno-0-607" name="__codelineno-0-607"></a><span class="sd">            &gt;&gt;&gt; ax.name</span>
-<a id="__codelineno-0-608" name="__codelineno-0-608"></a><span class="sd">            &#39;3d&#39;</span>
-<a id="__codelineno-0-609" name="__codelineno-0-609"></a>
-<a id="__codelineno-0-610" name="__codelineno-0-610"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-611" name="__codelineno-0-611"></a><span class="sd">        - Light it from the `+x` direction for a day/night terminator:</span>
-<a id="__codelineno-0-612" name="__codelineno-0-612"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-613" name="__codelineno-0-613"></a><span class="sd">            &gt;&gt;&gt; globe = TexturedGlobeGlyph(np.full((16, 32, 3), 200, np.uint8), n_lon=36, n_lat=18)</span>
-<a id="__codelineno-0-614" name="__codelineno-0-614"></a><span class="sd">            &gt;&gt;&gt; fig, ax = globe.draw(sun=(1.0, 0.0, 0.0), ambient=0.15)</span>
-<a id="__codelineno-0-615" name="__codelineno-0-615"></a><span class="sd">            &gt;&gt;&gt; ax.name</span>
-<a id="__codelineno-0-616" name="__codelineno-0-616"></a><span class="sd">            &#39;3d&#39;</span>
-<a id="__codelineno-0-617" name="__codelineno-0-617"></a>
-<a id="__codelineno-0-618" name="__codelineno-0-618"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-619" name="__codelineno-0-619"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-620" name="__codelineno-0-620"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_reject_unknown_options</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
-<a id="__codelineno-0-621" name="__codelineno-0-621"></a>    <span class="n">options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_options</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-<a id="__codelineno-0-622" name="__codelineno-0-622"></a>    <span class="n">options</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
-<a id="__codelineno-0-623" name="__codelineno-0-623"></a>    <span class="n">fig</span><span class="p">,</span> <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
-<a id="__codelineno-0-624" name="__codelineno-0-624"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_prepare</span><span class="p">()</span>
-<a id="__codelineno-0-625" name="__codelineno-0-625"></a>    <span class="n">_clear_prior_render_artists</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
-<a id="__codelineno-0-626" name="__codelineno-0-626"></a>
-<a id="__codelineno-0-627" name="__codelineno-0-627"></a>    <span class="k">if</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-628" name="__codelineno-0-628"></a>        <span class="n">fig</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-629" name="__codelineno-0-629"></a>        <span class="n">target</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-630" name="__codelineno-0-630"></a>
-<a id="__codelineno-0-631" name="__codelineno-0-631"></a>    <span class="n">sun_vec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sun</span> <span class="k">if</span> <span class="n">sun</span> <span class="ow">is</span> <span class="n">_INHERIT</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_sun</span><span class="p">(</span><span class="n">sun</span><span class="p">)</span>
-<a id="__codelineno-0-632" name="__codelineno-0-632"></a>    <span class="n">amb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ambient</span> <span class="k">if</span> <span class="n">ambient</span> <span class="ow">is</span> <span class="n">_INHERIT</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_ambient</span><span class="p">(</span><span class="n">ambient</span><span class="p">)</span>
-<a id="__codelineno-0-633" name="__codelineno-0-633"></a>    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spun_mesh</span><span class="p">(</span><span class="n">spin</span><span class="p">)</span>
-<a id="__codelineno-0-634" name="__codelineno-0-634"></a>    <span class="n">surface</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">plot_surface</span><span class="p">(</span>
-<a id="__codelineno-0-635" name="__codelineno-0-635"></a>        <span class="n">x</span><span class="p">,</span>
-<a id="__codelineno-0-636" name="__codelineno-0-636"></a>        <span class="n">y</span><span class="p">,</span>
-<a id="__codelineno-0-637" name="__codelineno-0-637"></a>        <span class="n">z</span><span class="p">,</span>
-<a id="__codelineno-0-638" name="__codelineno-0-638"></a>        <span class="n">facecolors</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_lit_facecolors</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">),</span> <span class="n">sun_vec</span><span class="p">,</span> <span class="n">amb</span><span class="p">),</span>
-<a id="__codelineno-0-639" name="__codelineno-0-639"></a>        <span class="n">rstride</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-0-640" name="__codelineno-0-640"></a>        <span class="n">cstride</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-0-641" name="__codelineno-0-641"></a>        <span class="n">shade</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-642" name="__codelineno-0-642"></a>        <span class="n">antialiased</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-643" name="__codelineno-0-643"></a>        <span class="n">linewidth</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-<a id="__codelineno-0-644" name="__codelineno-0-644"></a>    <span class="p">)</span>
-<a id="__codelineno-0-645" name="__codelineno-0-645"></a>    <span class="n">target</span><span class="o">.</span><span class="n">set_box_aspect</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
-<a id="__codelineno-0-646" name="__codelineno-0-646"></a>    <span class="n">target</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-<a id="__codelineno-0-647" name="__codelineno-0-647"></a>    <span class="n">target</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-<a id="__codelineno-0-648" name="__codelineno-0-648"></a>    <span class="n">target</span><span class="o">.</span><span class="n">set_zlim</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-<a id="__codelineno-0-649" name="__codelineno-0-649"></a>    <span class="n">target</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
-<a id="__codelineno-0-650" name="__codelineno-0-650"></a>    <span class="n">target</span><span class="o">.</span><span class="n">view_init</span><span class="p">(</span><span class="n">elev</span><span class="o">=</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;elev&quot;</span><span class="p">],</span> <span class="n">azim</span><span class="o">=</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;azim&quot;</span><span class="p">])</span>
-<a id="__codelineno-0-651" name="__codelineno-0-651"></a>
-<a id="__codelineno-0-652" name="__codelineno-0-652"></a>    <span class="n">_mark_render_artists</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">surface</span><span class="p">)</span>
-<a id="__codelineno-0-653" name="__codelineno-0-653"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_surface</span> <span class="o">=</span> <span class="n">surface</span>
-<a id="__codelineno-0-654" name="__codelineno-0-654"></a>    <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">target</span>
+<span class="normal"><a href="#__codelineno-0-654">654</a></span>
+<span class="normal"><a href="#__codelineno-0-655">655</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-569" name="__codelineno-0-569"></a><span class="k">def</span><span class="w"> </span><span class="nf">draw</span><span class="p">(</span>
+<a id="__codelineno-0-570" name="__codelineno-0-570"></a>    <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-571" name="__codelineno-0-571"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Axes3D</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-572" name="__codelineno-0-572"></a>    <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-0-573" name="__codelineno-0-573"></a>    <span class="n">spin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+<a id="__codelineno-0-574" name="__codelineno-0-574"></a>    <span class="n">sun</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">_INHERIT</span><span class="p">,</span>
+<a id="__codelineno-0-575" name="__codelineno-0-575"></a>    <span class="n">ambient</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">_INHERIT</span><span class="p">,</span>
+<a id="__codelineno-0-576" name="__codelineno-0-576"></a>    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<a id="__codelineno-0-577" name="__codelineno-0-577"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Figure</span><span class="p">,</span> <span class="n">Axes3D</span><span class="p">]:</span>
+<a id="__codelineno-0-578" name="__codelineno-0-578"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Render the textured globe onto a 3-D axes at a given spin angle.</span>
+<a id="__codelineno-0-579" name="__codelineno-0-579"></a>
+<a id="__codelineno-0-580" name="__codelineno-0-580"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-581" name="__codelineno-0-581"></a><span class="sd">        ax: A 3-D matplotlib axes (`Axes3D`) to draw on. If `None`, the instance&#39;s `ax` is used, or a new 3-D axes</span>
+<a id="__codelineno-0-582" name="__codelineno-0-582"></a><span class="sd">            is created on the instance&#39;s `fig` (or a new figure sized by the `figsize` option).</span>
+<a id="__codelineno-0-583" name="__codelineno-0-583"></a><span class="sd">        spin: Rotation of the globe about its tilted polar axis, in degrees. The camera stays put.</span>
+<a id="__codelineno-0-584" name="__codelineno-0-584"></a><span class="sd">        sun: Light direction for this call, overriding the instance&#39;s `sun`. A length-3 world-space vector, or</span>
+<a id="__codelineno-0-585" name="__codelineno-0-585"></a><span class="sd">            `None` to render evenly. Omitted (default) inherits the value passed to `__init__`.</span>
+<a id="__codelineno-0-586" name="__codelineno-0-586"></a><span class="sd">        ambient: Ambient floor for this call, overriding the instance&#39;s `ambient`. Omitted inherits the</span>
+<a id="__codelineno-0-587" name="__codelineno-0-587"></a><span class="sd">            constructor value. Always validated, but only affects the render when the effective `sun` is set.</span>
+<a id="__codelineno-0-588" name="__codelineno-0-588"></a><span class="sd">        **kwargs: Render options overriding the instance defaults for this call (`figsize`, `elev`, `azim`,</span>
+<a id="__codelineno-0-589" name="__codelineno-0-589"></a><span class="sd">            `background`). `figsize` applies only when a new figure is created; it is ignored when drawing onto</span>
+<a id="__codelineno-0-590" name="__codelineno-0-590"></a><span class="sd">            an existing (supplied or instance) axes. An unrecognised key raises `ValueError`.</span>
+<a id="__codelineno-0-591" name="__codelineno-0-591"></a>
+<a id="__codelineno-0-592" name="__codelineno-0-592"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-593" name="__codelineno-0-593"></a><span class="sd">        tuple: `(fig, ax)` -- the figure and the 3-D axes the globe was drawn on. The surface artist is also</span>
+<a id="__codelineno-0-594" name="__codelineno-0-594"></a><span class="sd">            available as the `surface` attribute.</span>
+<a id="__codelineno-0-595" name="__codelineno-0-595"></a>
+<a id="__codelineno-0-596" name="__codelineno-0-596"></a><span class="sd">    Raises:</span>
+<a id="__codelineno-0-597" name="__codelineno-0-597"></a><span class="sd">        ValueError: If `ax` is supplied but is not a 3-D axes, if `sun`/`ambient` are invalid, or if an unknown</span>
+<a id="__codelineno-0-598" name="__codelineno-0-598"></a><span class="sd">            render option is passed.</span>
+<a id="__codelineno-0-599" name="__codelineno-0-599"></a>
+<a id="__codelineno-0-600" name="__codelineno-0-600"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-601" name="__codelineno-0-601"></a><span class="sd">        - Render a spun frame:</span>
+<a id="__codelineno-0-602" name="__codelineno-0-602"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-603" name="__codelineno-0-603"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-604" name="__codelineno-0-604"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph</span>
+<a id="__codelineno-0-605" name="__codelineno-0-605"></a><span class="sd">            &gt;&gt;&gt; texture = np.zeros((16, 32, 3), dtype=np.uint8)</span>
+<a id="__codelineno-0-606" name="__codelineno-0-606"></a><span class="sd">            &gt;&gt;&gt; texture[:, :16] = (200, 40, 40)</span>
+<a id="__codelineno-0-607" name="__codelineno-0-607"></a><span class="sd">            &gt;&gt;&gt; fig, ax = TexturedGlobeGlyph(texture, n_lon=36, n_lat=18).draw(spin=90.0)</span>
+<a id="__codelineno-0-608" name="__codelineno-0-608"></a><span class="sd">            &gt;&gt;&gt; ax.name</span>
+<a id="__codelineno-0-609" name="__codelineno-0-609"></a><span class="sd">            &#39;3d&#39;</span>
+<a id="__codelineno-0-610" name="__codelineno-0-610"></a>
+<a id="__codelineno-0-611" name="__codelineno-0-611"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-612" name="__codelineno-0-612"></a><span class="sd">        - Light it from the `+x` direction for a day/night terminator:</span>
+<a id="__codelineno-0-613" name="__codelineno-0-613"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-614" name="__codelineno-0-614"></a><span class="sd">            &gt;&gt;&gt; globe = TexturedGlobeGlyph(np.full((16, 32, 3), 200, np.uint8), n_lon=36, n_lat=18)</span>
+<a id="__codelineno-0-615" name="__codelineno-0-615"></a><span class="sd">            &gt;&gt;&gt; fig, ax = globe.draw(sun=(1.0, 0.0, 0.0), ambient=0.15)</span>
+<a id="__codelineno-0-616" name="__codelineno-0-616"></a><span class="sd">            &gt;&gt;&gt; ax.name</span>
+<a id="__codelineno-0-617" name="__codelineno-0-617"></a><span class="sd">            &#39;3d&#39;</span>
+<a id="__codelineno-0-618" name="__codelineno-0-618"></a>
+<a id="__codelineno-0-619" name="__codelineno-0-619"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-620" name="__codelineno-0-620"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-621" name="__codelineno-0-621"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_reject_unknown_options</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-622" name="__codelineno-0-622"></a>    <span class="n">options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_options</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<a id="__codelineno-0-623" name="__codelineno-0-623"></a>    <span class="n">options</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-624" name="__codelineno-0-624"></a>    <span class="n">fig</span><span class="p">,</span> <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+<a id="__codelineno-0-625" name="__codelineno-0-625"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_prepare</span><span class="p">()</span>
+<a id="__codelineno-0-626" name="__codelineno-0-626"></a>    <span class="n">_clear_prior_render_artists</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+<a id="__codelineno-0-627" name="__codelineno-0-627"></a>
+<a id="__codelineno-0-628" name="__codelineno-0-628"></a>    <span class="k">if</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-629" name="__codelineno-0-629"></a>        <span class="n">fig</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-630" name="__codelineno-0-630"></a>        <span class="n">target</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-631" name="__codelineno-0-631"></a>
+<a id="__codelineno-0-632" name="__codelineno-0-632"></a>    <span class="n">sun_vec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sun</span> <span class="k">if</span> <span class="n">sun</span> <span class="ow">is</span> <span class="n">_INHERIT</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_sun</span><span class="p">(</span><span class="n">sun</span><span class="p">)</span>
+<a id="__codelineno-0-633" name="__codelineno-0-633"></a>    <span class="n">amb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ambient</span> <span class="k">if</span> <span class="n">ambient</span> <span class="ow">is</span> <span class="n">_INHERIT</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_ambient</span><span class="p">(</span><span class="n">ambient</span><span class="p">)</span>
+<a id="__codelineno-0-634" name="__codelineno-0-634"></a>    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spun_mesh</span><span class="p">(</span><span class="n">spin</span><span class="p">)</span>
+<a id="__codelineno-0-635" name="__codelineno-0-635"></a>    <span class="n">surface</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">plot_surface</span><span class="p">(</span>
+<a id="__codelineno-0-636" name="__codelineno-0-636"></a>        <span class="n">x</span><span class="p">,</span>
+<a id="__codelineno-0-637" name="__codelineno-0-637"></a>        <span class="n">y</span><span class="p">,</span>
+<a id="__codelineno-0-638" name="__codelineno-0-638"></a>        <span class="n">z</span><span class="p">,</span>
+<a id="__codelineno-0-639" name="__codelineno-0-639"></a>        <span class="n">facecolors</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_lit_facecolors</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">),</span> <span class="n">sun_vec</span><span class="p">,</span> <span class="n">amb</span><span class="p">),</span>
+<a id="__codelineno-0-640" name="__codelineno-0-640"></a>        <span class="n">rstride</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-641" name="__codelineno-0-641"></a>        <span class="n">cstride</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-642" name="__codelineno-0-642"></a>        <span class="n">shade</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-643" name="__codelineno-0-643"></a>        <span class="n">antialiased</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-644" name="__codelineno-0-644"></a>        <span class="n">linewidth</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+<a id="__codelineno-0-645" name="__codelineno-0-645"></a>    <span class="p">)</span>
+<a id="__codelineno-0-646" name="__codelineno-0-646"></a>    <span class="n">target</span><span class="o">.</span><span class="n">set_box_aspect</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<a id="__codelineno-0-647" name="__codelineno-0-647"></a>    <span class="n">target</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-0-648" name="__codelineno-0-648"></a>    <span class="n">target</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-0-649" name="__codelineno-0-649"></a>    <span class="n">target</span><span class="o">.</span><span class="n">set_zlim</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-0-650" name="__codelineno-0-650"></a>    <span class="n">target</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<a id="__codelineno-0-651" name="__codelineno-0-651"></a>    <span class="n">target</span><span class="o">.</span><span class="n">view_init</span><span class="p">(</span><span class="n">elev</span><span class="o">=</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;elev&quot;</span><span class="p">],</span> <span class="n">azim</span><span class="o">=</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;azim&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-652" name="__codelineno-0-652"></a>
+<a id="__codelineno-0-653" name="__codelineno-0-653"></a>    <span class="n">_mark_render_artists</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">surface</span><span class="p">)</span>
+<a id="__codelineno-0-654" name="__codelineno-0-654"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_surface</span> <span class="o">=</span> <span class="n">surface</span>
+<a id="__codelineno-0-655" name="__codelineno-0-655"></a>    <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">target</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5898,8 +5900,7 @@ render option is passed.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/cleopatra/glyphs/globe/textured_globe_glyph.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-523">523</a></span>
-<span class="normal"><a href="#__codelineno-0-524">524</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-524">524</a></span>
 <span class="normal"><a href="#__codelineno-0-525">525</a></span>
 <span class="normal"><a href="#__codelineno-0-526">526</a></span>
 <span class="normal"><a href="#__codelineno-0-527">527</a></span>
@@ -5917,26 +5918,27 @@ render option is passed.</p>
 <span class="normal"><a href="#__codelineno-0-539">539</a></span>
 <span class="normal"><a href="#__codelineno-0-540">540</a></span>
 <span class="normal"><a href="#__codelineno-0-541">541</a></span>
-<span class="normal"><a href="#__codelineno-0-542">542</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-523" name="__codelineno-0-523"></a><span class="nd">@classmethod</span>
-<a id="__codelineno-0-524" name="__codelineno-0-524"></a><span class="k">def</span><span class="w"> </span><span class="nf">filter_kwargs</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<a id="__codelineno-0-525" name="__codelineno-0-525"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return only the subset of `kwargs` whose keys this glyph accepts.</span>
-<a id="__codelineno-0-526" name="__codelineno-0-526"></a>
-<a id="__codelineno-0-527" name="__codelineno-0-527"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-528" name="__codelineno-0-528"></a><span class="sd">        kwargs: A mapping of candidate option keys to values.</span>
-<a id="__codelineno-0-529" name="__codelineno-0-529"></a>
-<a id="__codelineno-0-530" name="__codelineno-0-530"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-531" name="__codelineno-0-531"></a><span class="sd">        dict: The entries of `kwargs` whose keys are in `option_keys()`.</span>
-<a id="__codelineno-0-532" name="__codelineno-0-532"></a>
-<a id="__codelineno-0-533" name="__codelineno-0-533"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="sd">        ```python</span>
-<a id="__codelineno-0-535" name="__codelineno-0-535"></a><span class="sd">        &gt;&gt;&gt; from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph</span>
-<a id="__codelineno-0-536" name="__codelineno-0-536"></a><span class="sd">        &gt;&gt;&gt; sorted(TexturedGlobeGlyph.filter_kwargs({&quot;elev&quot;: 30, &quot;bogus&quot;: 1}))</span>
-<a id="__codelineno-0-537" name="__codelineno-0-537"></a><span class="sd">        [&#39;elev&#39;]</span>
-<a id="__codelineno-0-538" name="__codelineno-0-538"></a>
-<a id="__codelineno-0-539" name="__codelineno-0-539"></a><span class="sd">        ```</span>
-<a id="__codelineno-0-540" name="__codelineno-0-540"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-541" name="__codelineno-0-541"></a>    <span class="n">keys</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">option_keys</span><span class="p">()</span>
-<a id="__codelineno-0-542" name="__codelineno-0-542"></a>    <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">val</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">}</span>
+<span class="normal"><a href="#__codelineno-0-542">542</a></span>
+<span class="normal"><a href="#__codelineno-0-543">543</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-524" name="__codelineno-0-524"></a><span class="nd">@classmethod</span>
+<a id="__codelineno-0-525" name="__codelineno-0-525"></a><span class="k">def</span><span class="w"> </span><span class="nf">filter_kwargs</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-0-526" name="__codelineno-0-526"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return only the subset of `kwargs` whose keys this glyph accepts.</span>
+<a id="__codelineno-0-527" name="__codelineno-0-527"></a>
+<a id="__codelineno-0-528" name="__codelineno-0-528"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-529" name="__codelineno-0-529"></a><span class="sd">        kwargs: A mapping of candidate option keys to values.</span>
+<a id="__codelineno-0-530" name="__codelineno-0-530"></a>
+<a id="__codelineno-0-531" name="__codelineno-0-531"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-532" name="__codelineno-0-532"></a><span class="sd">        dict: The entries of `kwargs` whose keys are in `option_keys()`.</span>
+<a id="__codelineno-0-533" name="__codelineno-0-533"></a>
+<a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-535" name="__codelineno-0-535"></a><span class="sd">        ```python</span>
+<a id="__codelineno-0-536" name="__codelineno-0-536"></a><span class="sd">        &gt;&gt;&gt; from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph</span>
+<a id="__codelineno-0-537" name="__codelineno-0-537"></a><span class="sd">        &gt;&gt;&gt; sorted(TexturedGlobeGlyph.filter_kwargs({&quot;elev&quot;: 30, &quot;bogus&quot;: 1}))</span>
+<a id="__codelineno-0-538" name="__codelineno-0-538"></a><span class="sd">        [&#39;elev&#39;]</span>
+<a id="__codelineno-0-539" name="__codelineno-0-539"></a>
+<a id="__codelineno-0-540" name="__codelineno-0-540"></a><span class="sd">        ```</span>
+<a id="__codelineno-0-541" name="__codelineno-0-541"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-542" name="__codelineno-0-542"></a>    <span class="n">keys</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">option_keys</span><span class="p">()</span>
+<a id="__codelineno-0-543" name="__codelineno-0-543"></a>    <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">val</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">}</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5996,8 +5998,7 @@ not a <code>Glyph</code> subclass).</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/cleopatra/glyphs/globe/textured_globe_glyph.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-502">502</a></span>
-<span class="normal"><a href="#__codelineno-0-503">503</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-503">503</a></span>
 <span class="normal"><a href="#__codelineno-0-504">504</a></span>
 <span class="normal"><a href="#__codelineno-0-505">505</a></span>
 <span class="normal"><a href="#__codelineno-0-506">506</a></span>
@@ -6015,26 +6016,27 @@ not a <code>Glyph</code> subclass).</p>
 <span class="normal"><a href="#__codelineno-0-518">518</a></span>
 <span class="normal"><a href="#__codelineno-0-519">519</a></span>
 <span class="normal"><a href="#__codelineno-0-520">520</a></span>
-<span class="normal"><a href="#__codelineno-0-521">521</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-502" name="__codelineno-0-502"></a><span class="nd">@classmethod</span>
-<a id="__codelineno-0-503" name="__codelineno-0-503"></a><span class="k">def</span><span class="w"> </span><span class="nf">option_keys</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<a id="__codelineno-0-504" name="__codelineno-0-504"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the keyword-argument keys this glyph accepts.</span>
-<a id="__codelineno-0-505" name="__codelineno-0-505"></a>
-<a id="__codelineno-0-506" name="__codelineno-0-506"></a><span class="sd">    Resolves from the class-level `DEFAULT_OPTIONS` so the accepted keys can be inspected without constructing an</span>
-<a id="__codelineno-0-507" name="__codelineno-0-507"></a><span class="sd">    instance. Mirrors `cleopatra.glyphs.base.glyph.Glyph.option_keys` (`TexturedGlobeGlyph` is a standalone class,</span>
-<a id="__codelineno-0-508" name="__codelineno-0-508"></a><span class="sd">    not a `Glyph` subclass).</span>
-<a id="__codelineno-0-509" name="__codelineno-0-509"></a>
-<a id="__codelineno-0-510" name="__codelineno-0-510"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-511" name="__codelineno-0-511"></a><span class="sd">        set: The accepted option keys for this glyph class.</span>
-<a id="__codelineno-0-512" name="__codelineno-0-512"></a>
-<a id="__codelineno-0-513" name="__codelineno-0-513"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-514" name="__codelineno-0-514"></a><span class="sd">        ```python</span>
-<a id="__codelineno-0-515" name="__codelineno-0-515"></a><span class="sd">        &gt;&gt;&gt; from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph</span>
-<a id="__codelineno-0-516" name="__codelineno-0-516"></a><span class="sd">        &gt;&gt;&gt; &quot;elev&quot; in TexturedGlobeGlyph.option_keys()</span>
-<a id="__codelineno-0-517" name="__codelineno-0-517"></a><span class="sd">        True</span>
-<a id="__codelineno-0-518" name="__codelineno-0-518"></a>
-<a id="__codelineno-0-519" name="__codelineno-0-519"></a><span class="sd">        ```</span>
-<a id="__codelineno-0-520" name="__codelineno-0-520"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-521" name="__codelineno-0-521"></a>    <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">DEFAULT_OPTIONS</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-521">521</a></span>
+<span class="normal"><a href="#__codelineno-0-522">522</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-503" name="__codelineno-0-503"></a><span class="nd">@classmethod</span>
+<a id="__codelineno-0-504" name="__codelineno-0-504"></a><span class="k">def</span><span class="w"> </span><span class="nf">option_keys</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<a id="__codelineno-0-505" name="__codelineno-0-505"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the keyword-argument keys this glyph accepts.</span>
+<a id="__codelineno-0-506" name="__codelineno-0-506"></a>
+<a id="__codelineno-0-507" name="__codelineno-0-507"></a><span class="sd">    Resolves from the class-level `DEFAULT_OPTIONS` so the accepted keys can be inspected without constructing an</span>
+<a id="__codelineno-0-508" name="__codelineno-0-508"></a><span class="sd">    instance. Mirrors `cleopatra.glyphs.base.glyph.Glyph.option_keys` (`TexturedGlobeGlyph` is a standalone class,</span>
+<a id="__codelineno-0-509" name="__codelineno-0-509"></a><span class="sd">    not a `Glyph` subclass).</span>
+<a id="__codelineno-0-510" name="__codelineno-0-510"></a>
+<a id="__codelineno-0-511" name="__codelineno-0-511"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-512" name="__codelineno-0-512"></a><span class="sd">        set: The accepted option keys for this glyph class.</span>
+<a id="__codelineno-0-513" name="__codelineno-0-513"></a>
+<a id="__codelineno-0-514" name="__codelineno-0-514"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-515" name="__codelineno-0-515"></a><span class="sd">        ```python</span>
+<a id="__codelineno-0-516" name="__codelineno-0-516"></a><span class="sd">        &gt;&gt;&gt; from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph</span>
+<a id="__codelineno-0-517" name="__codelineno-0-517"></a><span class="sd">        &gt;&gt;&gt; &quot;elev&quot; in TexturedGlobeGlyph.option_keys()</span>
+<a id="__codelineno-0-518" name="__codelineno-0-518"></a><span class="sd">        True</span>
+<a id="__codelineno-0-519" name="__codelineno-0-519"></a>
+<a id="__codelineno-0-520" name="__codelineno-0-520"></a><span class="sd">        ```</span>
+<a id="__codelineno-0-521" name="__codelineno-0-521"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-522" name="__codelineno-0-522"></a>    <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">DEFAULT_OPTIONS</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
