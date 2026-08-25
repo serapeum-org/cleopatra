@@ -2343,6 +2343,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0340-2026-08-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.34.0 (2026-08-25)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0330-2026-08-25" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3120,6 +3131,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0340-2026-08-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.34.0 (2026-08-25)
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#0330-2026-08-25" class="md-nav__link">
@@ -3900,6 +3922,34 @@
 
 
 <h1 id="changelog"><a class="toclink" href="#changelog">Changelog</a><a class="headerlink" href="#changelog" title="Permanent link">#</a></h1>
+<h2 id="0340-2026-08-25"><a class="toclink" href="#0340-2026-08-25">0.34.0 (2026-08-25)</a><a class="headerlink" href="#0340-2026-08-25" title="Permanent link">#</a></h2>
+<ul>
+<li>feat(glyphs): add directional lighting to TexturedGlobeGlyph (#320)</li>
+<li>Add a sun unit vector and an ambient floor so the globe can be lit from a
+direction, shading a lambertian day/night terminator instead of reading as
+evenly illuminated. sun=None (the default) renders byte-identical to 0.33.0.</li>
+<li>
+<ul>
+<li>Accept sun/ambient on <strong>init</strong> and override per call on draw/animate
+  (mirroring spin, via an inherit sentinel so sun=None can disable lighting
+  for one call); sun is world-space (+z up/north, +x toward the viewer at
+  spin=0), auto-normalized to unit length; ambient must be in [0, 1].</li>
+</ul>
+</li>
+<li>Apply lighting per frame from the already-rotated vertices (one dot product
+  over the mesh, whose unit-sphere positions are the surface normals), scaling
+  a copy of the cached facecolors by
+  ambient + (1 - ambient) * clip(dot(normal, sun), 0, 1). The facecolors cache
+  is never mutated and the texture is never re-sampled, so the
+  sample-once/rotate-per-frame contract holds and a fixed sun sweeps the
+  terminator as the globe spins; alpha is preserved.</li>
+<li>Validate sun/ambient eagerly on both draw and animate; reject non-1-D or
+  zero sun vectors and out-of-range ambient.</li>
+<li>Add lighting tests (byte-identical sun=None, terminator + ambient floor,
+  lit fraction tracks spin, cache untouched, world-space sun under tilt,
+  validation) and a reference-doc example.</li>
+<li>Closes #319</li>
+</ul>
 <h2 id="0330-2026-08-25"><a class="toclink" href="#0330-2026-08-25">0.33.0 (2026-08-25)</a><a class="headerlink" href="#0330-2026-08-25" title="Permanent link">#</a></h2>
 <ul>
 <li>feat(animation): derive a GIF from an existing video and fix the clip palette (#317)</li>
