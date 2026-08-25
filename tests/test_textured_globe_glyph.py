@@ -323,6 +323,167 @@ class TestIntrospection:
         assert opts["azim"] == 0.0  # untouched default retained
 
 
+class TestLighting:
+    def test_sun_defaults_to_none_even(self, texture):
+        globe = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12)
+        assert globe.sun is None
+        globe._prepare()
+        # sun=None returns the cache unchanged -- byte-identical to a 0.33.0 unlit render
+        lit = globe._lit_facecolors(globe._spun_mesh(0.0), None, globe.ambient)
+        assert lit is globe._facecolors
+
+    def test_default_ambient(self, texture):
+        assert TexturedGlobeGlyph(texture).ambient == pytest.approx(0.13)
+
+    def test_sun_normalised_to_unit(self, texture):
+        globe = TexturedGlobeGlyph(texture, sun=(3.0, 0.0, 0.0))
+        assert np.allclose(globe.sun, [1.0, 0.0, 0.0])
+
+    def test_lighting_produces_terminator(self):
+        tex = np.full((8, 16, 3), 200, np.uint8)
+        globe = TexturedGlobeGlyph(tex, n_lon=48, n_lat=24)
+        globe._prepare()
+        lit = globe._lit_facecolors(
+            globe._spun_mesh(0.0), np.array([1.0, 0.0, 0.0]), 0.13
+        )
+        rgb = lit[..., :3]
+        assert (
+            rgb.min() < 0.5 * rgb.max()
+        )  # a real day/night range on a uniform texture
+
+    def test_ambient_floor_not_black(self):
+        tex = np.full((8, 16, 3), 200, np.uint8)
+        globe = TexturedGlobeGlyph(tex, n_lon=24, n_lat=12)
+        globe._prepare()
+        cache_max = float(globe._facecolors[..., :3].max())
+        lit = globe._lit_facecolors(
+            globe._spun_mesh(0.0), np.array([1.0, 0.0, 0.0]), 0.2
+        )
+        assert float(lit[..., :3].min()) == pytest.approx(0.2 * cache_max, abs=1e-6)
+
+    def test_lit_fraction_tracks_spin(self, texture):
+        globe = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12, sun=(1.0, 0.0, 0.0))
+        globe._prepare()
+        lit0 = globe._lit_facecolors(globe._spun_mesh(0.0), globe.sun, globe.ambient)
+        lit180 = globe._lit_facecolors(
+            globe._spun_mesh(180.0), globe.sun, globe.ambient
+        )
+        assert not np.allclose(
+            lit0, lit180
+        )  # fixed sun, spinning globe -> terminator moves
+
+    def test_cache_not_mutated_by_lighting(self, texture):
+        globe = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12, sun=(1.0, 0.0, 0.0))
+        globe._prepare()
+        before = globe._facecolors.copy()
+        globe.draw()
+        assert np.array_equal(
+            globe._facecolors, before
+        )  # no re-sample / mutation per frame
+
+    def test_draw_sun_none_disables_instance_light(self, texture):
+        globe = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12, sun=(1.0, 0.0, 0.0))
+        globe._prepare()
+        lit = globe._lit_facecolors(globe._spun_mesh(0.0), None, globe.ambient)
+        assert lit is globe._facecolors
+
+    def test_draw_accepts_sun_on_init_and_per_call(self, texture):
+        fig, ax = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12, sun=(1, 0, 0)).draw()
+        assert ax.name == "3d"
+        globe = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12)
+        globe.draw(sun=(0, 0, 1), ambient=0.25)
+        assert globe.surface is not None
+
+    def test_animate_forwards_sun(self, texture, tmp_path):
+        globe = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12)
+        fig = plt.figure()
+        ax = fig.add_subplot(projection="3d")
+        anim = globe.animate(ax, n_frames=3, sun=(1.0, 0.0, 0.0))
+        anim.save(tmp_path / "lit.gif", writer="pillow", fps=5)
+        assert len(ax.collections) == 1
+
+    @pytest.mark.parametrize(
+        "bad_sun", [(1.0, 0.0), (0.0, 0.0, 0.0), (np.nan, 0.0, 0.0), (1, 2, 3, 4)]
+    )
+    def test_bad_sun_raises(self, texture, bad_sun):
+        with pytest.raises(ValueError):
+            TexturedGlobeGlyph(texture, sun=bad_sun)
+
+    @pytest.mark.parametrize("bad_ambient", [-0.1, 1.5])
+    def test_bad_ambient_raises(self, texture, bad_ambient):
+        with pytest.raises(ValueError):
+            TexturedGlobeGlyph(texture, ambient=bad_ambient)
+
+    def test_draw_bad_sun_raises(self, texture):
+        globe = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12)
+        with pytest.raises(ValueError):
+            globe.draw(sun=(0.0, 0.0, 0.0))
+
+    @pytest.mark.parametrize("bad_sun", [[[1.0, 0.0, 0.0]], np.zeros((3, 1)), 1.0])
+    def test_non_1d_sun_raises(self, texture, bad_sun):
+        with pytest.raises(ValueError):
+            TexturedGlobeGlyph(texture, sun=bad_sun)
+
+    def test_ambient_nan_raises(self, texture):
+        with pytest.raises(ValueError):
+            TexturedGlobeGlyph(texture, ambient=float("nan"))
+
+    def test_ambient_zero_gives_black_night(self):
+        tex = np.full((8, 16, 3), 200, np.uint8)
+        globe = TexturedGlobeGlyph(tex, n_lon=24, n_lat=12)
+        globe._prepare()
+        lit = globe._lit_facecolors(
+            globe._spun_mesh(0.0), np.array([1.0, 0.0, 0.0]), 0.0
+        )
+        assert float(lit[..., :3].min()) == pytest.approx(
+            0.0, abs=1e-9
+        )  # night -> black
+
+    def test_ambient_one_equals_cache(self):
+        tex = np.full((8, 16, 3), 200, np.uint8)
+        globe = TexturedGlobeGlyph(tex, n_lon=24, n_lat=12)
+        globe._prepare()
+        lit = globe._lit_facecolors(
+            globe._spun_mesh(0.0), np.array([1.0, 0.0, 0.0]), 1.0
+        )
+        assert np.allclose(lit, globe._facecolors)  # no dimming at ambient=1
+
+    def test_animate_validates_sun_eagerly(self, texture):
+        globe = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12)
+        fig = plt.figure()
+        ax = fig.add_subplot(projection="3d")
+        with pytest.raises(
+            ValueError
+        ):  # raised at the animate() call, not at frame render
+            globe.animate(ax, n_frames=3, sun=(0.0, 0.0, 0.0))
+
+    def test_animate_validates_ambient_eagerly(self, texture):
+        globe = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12)
+        fig = plt.figure()
+        ax = fig.add_subplot(projection="3d")
+        with pytest.raises(ValueError):
+            globe.animate(ax, n_frames=3, ambient=5.0)
+
+    def test_world_space_sun_honoured_under_tilt(self):
+        # sun is world-space (+z), not body-space. With a 45deg tilt the geographic north
+        # cap leans toward +z (so north > south), but it is NOT the brightest region --
+        # an equatorial face pointing straight at world +z is. A body-space regression
+        # (dotting the un-tilted normals) would instead light the pole fully (north == peak).
+        tex = np.full((16, 32, 3), 200, np.uint8)
+        globe = TexturedGlobeGlyph(tex, n_lon=48, n_lat=24, tilt_deg=45.0)
+        globe._prepare()
+        lit = globe._lit_facecolors(
+            globe._spun_mesh(0.0), np.array([0.0, 0.0, 1.0]), 0.1
+        )
+        north = float(lit[0, :, :3].mean())
+        south = float(lit[-1, :, :3].mean())
+        peak = float(lit[..., :3].max())
+        assert north > south  # tilt leans the north cap toward the light
+        assert (
+            north < peak - 0.1
+        )  # but the pole is not the peak -> world-space, not body-space
+
+
 def test_no_new_dependency():
     """The globe uses mpl_toolkits.mplot3d, which ships with matplotlib -- no new dependency."""
     import mpl_toolkits.mplot3d as m3d

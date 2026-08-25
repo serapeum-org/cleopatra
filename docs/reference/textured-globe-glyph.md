@@ -55,17 +55,33 @@ fig, ax = TexturedGlobeGlyph(texture).draw(spin=45.0)
 plt.show()
 ```
 
+### A day/night terminator (directional lighting)
+
+Pass a `sun` unit vector (in world space: `+z` is north/up, `+x` faces the viewer at `spin=0`) to
+light the sphere from a direction. `ambient` is a floor so the night side stays legible. Lighting
+is applied per frame from the already-rotated vertices — no texture re-sampling — so a fixed `sun`
+with a spinning globe sweeps the terminator across the surface. `sun=None` (the default) renders
+evenly.
+
+```python
+from cleopatra.basemap.reference import relief
+from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph
+
+globe = TexturedGlobeGlyph(relief("low"), sun=(0.0, 1.0, 0.3), ambient=0.13)
+fig, ax = globe.draw(spin=40.0, background="black")   # side-lit: one half in daylight, the other in night
+```
+
 ### A spinning animation
 
 The texture is sampled once; each frame only rotates the pre-computed mesh, so use a modest
-resolution for smooth playback.
+resolution for smooth playback. Add `sun=...` for a lit globe whose terminator moves as it turns.
 
 ```python
 from cleopatra.basemap.reference import relief
 from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph
 
 globe = TexturedGlobeGlyph(relief("low"), n_lon=180, n_lat=90)
-anim = globe.animate(n_frames=60, revolutions=1.0, interval=50)
+anim = globe.animate(n_frames=60, revolutions=1.0, interval=50, sun=(1.0, 0.0, 0.0))
 # save with cleopatra.glyphs.base.animation.save_animation (or to_gif/to_mp4),
 # or matplotlib's own writers:
 # from cleopatra.glyphs.base.animation import save_animation

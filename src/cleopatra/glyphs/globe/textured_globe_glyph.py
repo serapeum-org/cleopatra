@@ -53,6 +53,8 @@ plt.show()
 
 from __future__ import annotations
 
+from typing import Any
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
@@ -77,6 +79,15 @@ GLOBE_DEFAULT_OPTIONS = {
     "background": None,
 }
 
+#: Default ambient floor for directional lighting -- the fraction of full brightness the
+#: unlit (night) side keeps so it stays legible rather than going pure black.
+DEFAULT_AMBIENT = 0.13
+
+#: Sentinel for `draw`/`animate` lighting arguments meaning "inherit the instance default"
+#: (so an explicit `sun=None` can still turn lighting off for one call). Typed `Any` so it is a
+#: valid default for the `tuple | None` / `float` lighting parameters.
+_INHERIT: Any = object()
+
 
 class TexturedGlobeGlyph:
     """Wrap an equirectangular texture onto a tilted, spinnable 3-D sphere.
@@ -88,17 +99,26 @@ class TexturedGlobeGlyph:
     The polar axis is tilted `tilt_deg` from vertical, and `draw(spin=...)` rotates the sphere about that axis so the
     same instance can render a whole rotation without re-sampling the texture (see the module docstring).
 
+    The sphere can be lit from a direction: pass a `sun` unit vector (in world space) to shade a lambertian day/night
+    terminator, with an `ambient` floor so the unlit side stays legible rather than going black. Lighting is applied
+    per frame from the already-rotated vertices (one dot product), so the sample-once/rotate-per-frame design is kept
+    -- the texture is never re-sampled and the `facecolors` cache is never mutated. `sun=None` (the default) renders
+    evenly, byte-identical to an unlit globe; a fixed `sun` with a spinning globe sweeps the terminator across the
+    surface as it turns.
+
     Attributes:
         texture: The normalised RGBA texture, float in `[0, 1]`, shape `(H, W, 4)`.
         tilt_deg: Axial tilt of the polar axis from vertical, in degrees.
         n_lon: Number of longitude samples in the sphere mesh.
         n_lat: Number of latitude samples in the sphere mesh.
         brightness: Multiplier applied to the RGB channels (clipped to `[0, 1]`).
+        sun: The unit light direction in world space, or `None` for even lighting.
+        ambient: The ambient floor (fraction) kept on the unlit side.
         default_options: The resolved render options (`figsize`, `elev`, `azim`, `background`).
 
     Methods:
-        draw(ax=None, *, spin=0.0, **kwargs): Render the globe onto a 3-D axes at a given spin angle.
-        animate(ax=None, n_frames=60, revolutions=1.0, ...): Return a `FuncAnimation` spinning the globe.
+        draw(ax=None, *, spin=0.0, sun=..., ambient=..., **kwargs): Render the globe at a given spin angle.
+        animate(ax=None, n_frames=60, revolutions=1.0, sun=..., ...): Return a `FuncAnimation` spinning the globe.
 
     Notes:
         `TexturedGlobeGlyph` is a standalone class, not a `Glyph` subclass (like `HistogramGlyph`). The accepted option
@@ -134,6 +154,8 @@ class TexturedGlobeGlyph:
         n_lon: int = 180,
         n_lat: int = 90,
         brightness: float = 1.0,
+        sun: tuple[float, float, float] | None = None,
+        ambient: float = DEFAULT_AMBIENT,
         fig: Figure | None = None,
         ax: Axes3D | None = None,
         **kwargs,
@@ -152,6 +174,13 @@ class TexturedGlobeGlyph:
             n_lat: Latitude samples in the sphere mesh (>= 2). Higher is sharper but quadratically slower to draw.
             brightness: Multiplier applied to the RGB channels before clipping to `[0, 1]`. `< 1` darkens, `> 1`
                 brightens. Must be `>= 0`.
+            sun: Light direction as a length-3 `(x, y, z)` vector in world space (the same frame the globe is drawn
+                in: `+z` is up/north, `+x` toward the viewer at `spin=0`), or `None` (default) for even, unlit
+                rendering. Need not be unit length -- it is normalised. Can be overridden per call in
+                `draw`/`animate`.
+            ambient: Floor brightness (fraction in `[0, 1]`) the unlit side keeps under directional lighting, so the
+                night side is not pure black. Defaults to `0.13`. Always validated, but only affects the render
+                when `sun` is set.
             fig: Pre-existing matplotlib `Figure` to draw on when `draw`/`animate` are called without their own `ax`.
             ax: Pre-existing 3-D matplotlib `Axes` (`Axes3D`) to draw on. If given it must be a 3-D axes.
             **kwargs: Render options overriding `DEFAULT_OPTIONS` (`figsize`, `elev`, `azim`, `background`). An
@@ -159,8 +188,9 @@ class TexturedGlobeGlyph:
 
         Raises:
             ValueError: If `texture` is not an `(H, W, 3)`/`(H, W, 4)` array with `H, W >= 2`, if `n_lon`/`n_lat` are
-                `< 2`, if `brightness` is negative, if `ax` is given but is not a 3-D axes, or if an unknown render
-                option is passed.
+                `< 2`, if `brightness` is negative, if `sun` is not a length-3 finite non-zero vector (or `None`), if
+                `ambient` is outside `[0, 1]`, if `ax` is given but is not a 3-D axes, or if an unknown render option
+                is passed.
 
         Examples:
             ```python
@@ -188,6 +218,8 @@ class TexturedGlobeGlyph:
         self._tilt_deg = float(tilt_deg)
         self._n_lon = int(n_lon)
         self._n_lat = int(n_lat)
+        self._sun = self._normalize_sun(sun)
+        self._ambient = self._validate_ambient(ambient)
         self._fig = fig
         self._ax = ax
 
@@ -324,6 +356,82 @@ class TexturedGlobeGlyph:
         coords = self._tilt_matrix @ (self._rotation_z(spin) @ self._base_xyz)
         return tuple(coords.reshape(3, self._n_lat, self._n_lon))
 
+    @staticmethod
+    def _normalize_sun(sun: tuple[float, float, float] | None) -> np.ndarray | None:
+        """Validate a light direction and return it as a unit vector (or `None`).
+
+        Args:
+            sun: A length-3 `(x, y, z)` direction in world space, or `None` for even lighting. Need not be
+                unit length -- it is normalised here.
+
+        Returns:
+            numpy.ndarray | None: The unit-length light direction, or `None` when `sun` is `None`.
+
+        Raises:
+            ValueError: If `sun` is not a length-3 finite vector, or is the zero vector.
+        """
+        if sun is None:
+            return None
+        vec = np.asarray(sun, dtype=float)
+        if vec.shape != (3,) or not np.all(np.isfinite(vec)):
+            raise ValueError(
+                f"sun must be a 1-D length-3 finite (x, y, z) vector or None; got {sun!r}."
+            )
+        norm = float(np.sqrt(vec @ vec))
+        if norm <= 0.0:
+            raise ValueError("sun must be a non-zero direction vector; got (0, 0, 0).")
+        return vec / norm
+
+    @staticmethod
+    def _validate_ambient(ambient: float) -> float:
+        """Return `ambient` as a float in `[0, 1]`, raising `ValueError` otherwise."""
+        amb = float(ambient)
+        if not 0.0 <= amb <= 1.0:
+            raise ValueError(f"ambient must be in [0, 1]; got {ambient}.")
+        return amb
+
+    def _lit_facecolors(
+        self,
+        spun_xyz: tuple[np.ndarray, np.ndarray, np.ndarray],
+        sun: np.ndarray | None,
+        ambient: float,
+    ) -> np.ndarray:
+        """Return the per-face colours scaled by a lambertian directional-light term.
+
+        With `sun is None` the cached `facecolors` are returned unchanged (byte-identical to an unlit render). With a
+        light direction, each face is dimmed toward `ambient` on the side facing away from the light, giving a
+        day/night terminator. The cache itself is never mutated -- a scaled copy is returned -- so the
+        sample-once/rotate-per-frame contract holds: only a dot product over the already-rotated vertices is done per
+        frame, no texture re-sampling.
+
+        Args:
+            spun_xyz: The `(x, y, z)` unit-sphere vertex arrays from `_spun_mesh(spin)`; for a unit sphere each
+                vertex position is its outward normal.
+            sun: A unit light direction in world space, or `None` for even lighting.
+            ambient: The floor brightness (fraction) kept on the unlit side.
+
+        Returns:
+            numpy.ndarray: An `(n_lat - 1, n_lon - 1, 4)` facecolors array.
+        """
+        assert self._facecolors is not None  # populated by _prepare() before any draw
+        if sun is None:
+            return self._facecolors
+        x, y, z = spun_xyz
+        # Per-face outward normal = mean of the quad's four corner vertices, renormalised.
+        nx = 0.25 * (x[:-1, :-1] + x[1:, :-1] + x[:-1, 1:] + x[1:, 1:])
+        ny = 0.25 * (y[:-1, :-1] + y[1:, :-1] + y[:-1, 1:] + y[1:, 1:])
+        nz = 0.25 * (z[:-1, :-1] + z[1:, :-1] + z[:-1, 1:] + z[1:, 1:])
+        # Floor the magnitude at a tiny epsilon to avoid division by zero on a
+        # degenerate quad (never hit on real meshes; min magnitude is ~1).
+        norm = np.maximum(np.sqrt(nx * nx + ny * ny + nz * nz), 1e-12)
+        lit = np.clip((nx * sun[0] + ny * sun[1] + nz * sun[2]) / norm, 0.0, 1.0)
+        factor = ambient + (1.0 - ambient) * lit
+        lit_face = self._facecolors.copy()
+        lit_face[..., :3] = np.clip(
+            self._facecolors[..., :3] * factor[..., None], 0.0, 1.0
+        )
+        return lit_face
+
     def _resolve_axes(self, ax: Axes3D | None, options: dict) -> tuple[Figure, Axes3D]:
         """Resolve the 3-D `(fig, ax)` to draw on, creating a 3-D axes if none was supplied.
 
@@ -376,6 +484,16 @@ class TexturedGlobeGlyph:
     def brightness(self) -> float:
         """The brightness multiplier applied to the RGB channels."""
         return self._brightness
+
+    @property
+    def sun(self) -> np.ndarray | None:
+        """The unit light direction in world space, or `None` for even (unlit) rendering."""
+        return self._sun
+
+    @property
+    def ambient(self) -> float:
+        """The ambient floor (fraction) kept on the unlit side under directional lighting."""
+        return self._ambient
 
     @property
     def default_options(self) -> dict:
@@ -449,7 +567,13 @@ class TexturedGlobeGlyph:
     # Rendering                                                            #
     # ------------------------------------------------------------------ #
     def draw(
-        self, ax: Axes3D | None = None, *, spin: float = 0.0, **kwargs
+        self,
+        ax: Axes3D | None = None,
+        *,
+        spin: float = 0.0,
+        sun: tuple[float, float, float] | None = _INHERIT,
+        ambient: float = _INHERIT,
+        **kwargs,
     ) -> tuple[Figure, Axes3D]:
         """Render the textured globe onto a 3-D axes at a given spin angle.
 
@@ -457,6 +581,10 @@ class TexturedGlobeGlyph:
             ax: A 3-D matplotlib axes (`Axes3D`) to draw on. If `None`, the instance's `ax` is used, or a new 3-D axes
                 is created on the instance's `fig` (or a new figure sized by the `figsize` option).
             spin: Rotation of the globe about its tilted polar axis, in degrees. The camera stays put.
+            sun: Light direction for this call, overriding the instance's `sun`. A length-3 world-space vector, or
+                `None` to render evenly. Omitted (default) inherits the value passed to `__init__`.
+            ambient: Ambient floor for this call, overriding the instance's `ambient`. Omitted inherits the
+                constructor value. Always validated, but only affects the render when the effective `sun` is set.
             **kwargs: Render options overriding the instance defaults for this call (`figsize`, `elev`, `azim`,
                 `background`). `figsize` applies only when a new figure is created; it is ignored when drawing onto
                 an existing (supplied or instance) axes. An unrecognised key raises `ValueError`.
@@ -466,19 +594,29 @@ class TexturedGlobeGlyph:
                 available as the `surface` attribute.
 
         Raises:
-            ValueError: If `ax` is supplied but is not a 3-D axes, or if an unknown render option is passed.
+            ValueError: If `ax` is supplied but is not a 3-D axes, if `sun`/`ambient` are invalid, or if an unknown
+                render option is passed.
 
         Examples:
-            ```python
-            >>> import numpy as np
-            >>> from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph
-            >>> texture = np.zeros((16, 32, 3), dtype=np.uint8)
-            >>> texture[:, :16] = (200, 40, 40)
-            >>> fig, ax = TexturedGlobeGlyph(texture, n_lon=36, n_lat=18).draw(spin=90.0)
-            >>> ax.name
-            '3d'
+            - Render a spun frame:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph
+                >>> texture = np.zeros((16, 32, 3), dtype=np.uint8)
+                >>> texture[:, :16] = (200, 40, 40)
+                >>> fig, ax = TexturedGlobeGlyph(texture, n_lon=36, n_lat=18).draw(spin=90.0)
+                >>> ax.name
+                '3d'
 
-            ```
+                ```
+            - Light it from the `+x` direction for a day/night terminator:
+                ```python
+                >>> globe = TexturedGlobeGlyph(np.full((16, 32, 3), 200, np.uint8), n_lon=36, n_lat=18)
+                >>> fig, ax = globe.draw(sun=(1.0, 0.0, 0.0), ambient=0.15)
+                >>> ax.name
+                '3d'
+
+                ```
         """
         self._reject_unknown_options(kwargs)
         options = self._default_options.copy()
@@ -491,12 +629,14 @@ class TexturedGlobeGlyph:
             fig.set_facecolor(options["background"])
             target.set_facecolor(options["background"])
 
+        sun_vec = self._sun if sun is _INHERIT else self._normalize_sun(sun)
+        amb = self._ambient if ambient is _INHERIT else self._validate_ambient(ambient)
         x, y, z = self._spun_mesh(spin)
         surface = target.plot_surface(
             x,
             y,
             z,
-            facecolors=self._facecolors,
+            facecolors=self._lit_facecolors((x, y, z), sun_vec, amb),
             rstride=1,
             cstride=1,
             shade=False,
@@ -521,6 +661,8 @@ class TexturedGlobeGlyph:
         n_frames: int = 60,
         revolutions: float = 1.0,
         start_spin: float = 0.0,
+        sun: tuple[float, float, float] | None = _INHERIT,
+        ambient: float = _INHERIT,
         interval: int = 50,
         **kwargs,
     ) -> FuncAnimation:
@@ -536,6 +678,10 @@ class TexturedGlobeGlyph:
             n_frames: Number of frames in the animation.
             revolutions: How many full turns the globe makes over `n_frames` (`1.0` = one 360 deg rotation).
             start_spin: Spin angle of the first frame, in degrees.
+            sun: Light direction forwarded to `draw` on every frame (world space; overrides the instance's `sun`).
+                Held fixed while the globe spins, so the terminator sweeps across the surface. Omitted inherits the
+                constructor value; `None` renders evenly.
+            ambient: Ambient floor forwarded to `draw` on every frame. Omitted inherits the constructor value.
             interval: Delay between frames in milliseconds (matplotlib playback hint).
             **kwargs: Render options forwarded to `draw` on every frame (`figsize`, `elev`, `azim`, `background`).
 
@@ -543,7 +689,8 @@ class TexturedGlobeGlyph:
             matplotlib.animation.FuncAnimation: The animation, ready to save or embed.
 
         Raises:
-            ValueError: If `ax` is supplied but is not a 3-D axes, or if an unknown render option is passed.
+            ValueError: If `ax` is supplied but is not a 3-D axes, if `sun`/`ambient` are invalid, or if an unknown
+                render option is passed. `sun`/`ambient` are validated eagerly here (not deferred to frame render).
 
         Examples:
             ```python
@@ -557,6 +704,12 @@ class TexturedGlobeGlyph:
             ```
         """
         self._reject_unknown_options(kwargs)
+        # Validate lighting eagerly (like draw), so a bad sun/ambient raises here at the
+        # animate() call rather than later from inside matplotlib's per-frame render loop.
+        if sun is not _INHERIT:
+            self._normalize_sun(sun)
+        if ambient is not _INHERIT:
+            self._validate_ambient(ambient)
         options = self._default_options.copy()
         options.update(kwargs)
         fig, target = self._resolve_axes(ax, options)
@@ -566,7 +719,13 @@ class TexturedGlobeGlyph:
         )
 
         def _update(frame_index: int):
-            self.draw(target, spin=float(angles[frame_index]), **kwargs)
+            self.draw(
+                target,
+                spin=float(angles[frame_index]),
+                sun=sun,
+                ambient=ambient,
+                **kwargs,
+            )
             return (self._surface,)
 
         return FuncAnimation(
