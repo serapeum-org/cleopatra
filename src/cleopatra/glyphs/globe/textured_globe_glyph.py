@@ -378,7 +378,7 @@ class TexturedGlobeGlyph:
                 f"sun must be a 1-D length-3 finite (x, y, z) vector or None; got {sun!r}."
             )
         norm = float(np.sqrt(vec @ vec))
-        if norm == 0.0:
+        if norm <= 0.0:
             raise ValueError("sun must be a non-zero direction vector; got (0, 0, 0).")
         return vec / norm
 
@@ -421,8 +421,9 @@ class TexturedGlobeGlyph:
         nx = 0.25 * (x[:-1, :-1] + x[1:, :-1] + x[:-1, 1:] + x[1:, 1:])
         ny = 0.25 * (y[:-1, :-1] + y[1:, :-1] + y[:-1, 1:] + y[1:, 1:])
         nz = 0.25 * (z[:-1, :-1] + z[1:, :-1] + z[:-1, 1:] + z[1:, 1:])
-        norm = np.sqrt(nx * nx + ny * ny + nz * nz)
-        norm[norm == 0.0] = 1.0
+        # Floor the magnitude at a tiny epsilon to avoid division by zero on a
+        # degenerate quad (never hit on real meshes; min magnitude is ~1).
+        norm = np.maximum(np.sqrt(nx * nx + ny * ny + nz * nz), 1e-12)
         lit = np.clip((nx * sun[0] + ny * sun[1] + nz * sun[2]) / norm, 0.0, 1.0)
         factor = ambient + (1.0 - ambient) * lit
         lit_face = self._facecolors.copy()
