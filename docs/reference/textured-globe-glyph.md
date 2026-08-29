@@ -99,6 +99,7 @@ frame is the unit sphere: `+z` at the north pole, so a surface point at `(lon, l
 
 ```python
 import numpy as np
+from cleopatra.basemap.reference import relief
 from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph
 
 globe = TexturedGlobeGlyph(relief("low"), tilt_deg=23.44)
@@ -109,4 +110,8 @@ theta = np.linspace(0, 2 * np.pi, 200)
 ring = np.column_stack([1.3 * np.cos(theta), 1.3 * np.sin(theta), np.zeros_like(theta)])
 ring = globe.transform(ring, spin=40.0)
 ax.plot(ring[:, 0], ring[:, 1], ring[:, 2])
+
+# draw() fixes the axis limits to the unit sphere; widen them so the ring is visible
+for set_lim in (ax.set_xlim, ax.set_ylim, ax.set_zlim):
+    set_lim(-1.4, 1.4)
 ```
