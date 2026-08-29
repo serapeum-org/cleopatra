@@ -528,8 +528,9 @@ class TestTiltTransform:
     )
     def test_transform_bad_shape_raises(self, texture, bad):
         # scalar / 0-d must raise ValueError (not IndexError from indexing shape[-1])
+        globe = TexturedGlobeGlyph(texture)
         with pytest.raises(ValueError):
-            TexturedGlobeGlyph(texture).transform(bad)
+            globe.transform(bad)
 
     def test_default_tilt_mesh_unchanged(self, texture):
         # the refactor keeps the X-axis default: the mesh equals R_x(tilt) @ R_z(spin) @ base
