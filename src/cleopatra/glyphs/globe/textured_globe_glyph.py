@@ -57,6 +57,7 @@ from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 from matplotlib.animation import FuncAnimation
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
@@ -383,9 +384,9 @@ class TexturedGlobeGlyph:
         See Also:
             transform: Apply this matrix to an `(N, 3)` array of points.
         """
-        return self._rotation_x(self._tilt_deg) @ self._rotation_z(spin)
+        return np.asarray(self._rotation_x(self._tilt_deg) @ self._rotation_z(spin))
 
-    def transform(self, points: np.ndarray, spin: float = 0.0) -> np.ndarray:
+    def transform(self, points: npt.ArrayLike, spin: float = 0.0) -> np.ndarray:
         """Map body-frame point(s) into world space exactly as the glyph places its mesh.
 
         Pushes points through `rotation_matrix(spin)` (spin about the polar axis, then the axial tilt). The body
@@ -395,7 +396,8 @@ class TexturedGlobeGlyph:
         with the rendered globe.
 
         Args:
-            points: A single `(3,)` point or an `(N, 3)` array of body-frame points.
+            points: A single `(3,)` point or an `(N, 3)` array of body-frame points (any array-like). Non-finite
+                values (`NaN`/`inf`) are propagated, not rejected -- pass finite coordinates.
             spin: Rotation about the polar axis, in degrees (matching `draw`/`animate`'s `spin`).
 
         Returns:
@@ -419,13 +421,14 @@ class TexturedGlobeGlyph:
             rotation_matrix: The `(3, 3)` matrix this method applies.
         """
         pts = np.asarray(points, dtype=float)
-        if pts.shape[-1] != 3 or pts.ndim not in (1, 2):
+        if pts.ndim not in (1, 2) or pts.shape[-1] != 3:
             raise ValueError(
                 f"points must be a (3,) point or an (N, 3) array; got shape {pts.shape}."
             )
-        matrix = self.rotation_matrix(spin)
-        out = np.atleast_2d(pts) @ matrix.T
-        return out[0] if pts.ndim == 1 else out
+        result = np.atleast_2d(pts) @ self.rotation_matrix(spin).T
+        if pts.ndim == 1:
+            result = result[0]
+        return np.asarray(result)
 
     @staticmethod
     def _normalize_sun(sun: tuple[float, float, float] | None) -> np.ndarray | None:

@@ -519,9 +519,11 @@ class TestTiltTransform:
         assert out.shape == (5, 3)
 
     @pytest.mark.parametrize(
-        "bad", [np.zeros(2), np.zeros((4, 2)), np.zeros((2, 3, 3))]
+        "bad",
+        [np.zeros(2), np.zeros((4, 2)), np.zeros((2, 3, 3)), 5.0, np.array(5.0)],
     )
     def test_transform_bad_shape_raises(self, texture, bad):
+        # scalar / 0-d must raise ValueError (not IndexError from indexing shape[-1])
         with pytest.raises(ValueError):
             TexturedGlobeGlyph(texture).transform(bad)
 
