@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.35.0 (2026-08-29)
+
+
+- feat(glyphs): expose TexturedGlobeGlyph's tilt transform for callers (#323)
+- Expose the transform the glyph applies to place its sphere, so a caller can
+align their own scene geometry with the rendered globe instead of
+reimplementing the tilt.
+- - Add rotation_matrix(spin=0.0) returning the (3, 3) body-to-world matrix
+  R_tilt(x) @ R_z(spin) -- spin about the polar axis, then the fixed axial
+  tilt about world x -- computable without a texture or a draw.
+- Add transform(points, spin=0.0) applying that matrix to a (3,) point or an
+  (N, 3) array of body-frame points (unit sphere, +z pole, equatorial plane
+  z=0); non-1-D or scalar input raises ValueError.
+- Route _spun_mesh through rotation_matrix and drop the redundant cached
+  _tilt_matrix, so the exposed transform provably lands where the glyph's own
+  mesh does.
+- Keep the X-axis tilt default unchanged for every existing caller (the mesh
+  still equals R_x(tilt) @ R_z(spin) @ base within floating-point rounding).
+- Add tests (transform-equals-mesh, matrix orthogonality/freshness, shape and
+  validation, output independence, pre-draw use) and a docs example.
+- Closes #322
+
 ## 0.34.0 (2026-08-25)
 
 
