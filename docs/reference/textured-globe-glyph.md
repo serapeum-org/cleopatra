@@ -90,9 +90,11 @@ anim = globe.animate(n_frames=60, revolutions=1.0, interval=50, sun=(1.0, 0.0, 0
 
 ### Aligning your own geometry with the globe (the tilt transform)
 
-The glyph tilts the sphere about the world `x` axis by `tilt_deg`, then spins it about the polar axis.
-To place your own scene geometry — a marker on the surface, a ring in the equatorial plane, an orbit
-plane — so it sits consistently with the rendered globe, push it through the **same** transform with
+The glyph places the sphere with a fixed transform: it spins about the polar axis, then leans that
+axis `tilt_deg` from vertical about the world `x` axis — exactly the `R_tilt @ R_z` matrix
+`rotation_matrix(spin)` returns. To place your own scene geometry — a marker on the surface, a ring in
+the equatorial plane, an orbit plane — so it sits consistently with the rendered globe, push it through
+the **same** transform with
 `transform(points, spin=...)` (or grab the `(3, 3)` matrix with `rotation_matrix(spin)`). The body
 frame is the unit sphere: `+z` at the north pole, so a surface point at `(lon, lat)` is
 `[cos(lat)·cos(lon), cos(lat)·sin(lon), sin(lat)]` and the equatorial plane is `z = 0`.

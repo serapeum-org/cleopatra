@@ -397,7 +397,8 @@ class TexturedGlobeGlyph:
 
         Args:
             points: A single `(3,)` point or an `(N, 3)` array of body-frame points (any array-like). Non-finite
-                values (`NaN`/`inf`) are propagated, not rejected -- pass finite coordinates.
+                values (`NaN`/`inf`) are propagated, not rejected (`inf` also emits a numpy `RuntimeWarning`) --
+                pass finite coordinates.
             spin: Rotation about the polar axis, in degrees (matching `draw`/`animate`'s `spin`).
 
         Returns:
