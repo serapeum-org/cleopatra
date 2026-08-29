@@ -484,6 +484,58 @@ class TestLighting:
         )  # but the pole is not the peak -> world-space, not body-space
 
 
+class TestTiltTransform:
+    def test_rotation_matrix_identity_without_tilt_or_spin(self, texture):
+        globe = TexturedGlobeGlyph(texture, tilt_deg=0.0)
+        assert np.allclose(globe.rotation_matrix(0.0), np.eye(3))
+
+    def test_rotation_matrix_is_tilt_then_spin(self, texture):
+        globe = TexturedGlobeGlyph(texture, tilt_deg=30.0)
+        expected = TexturedGlobeGlyph._rotation_x(
+            30.0
+        ) @ TexturedGlobeGlyph._rotation_z(47.0)
+        assert np.allclose(globe.rotation_matrix(47.0), expected)
+
+    def test_transform_lands_where_the_mesh_does(self, texture):
+        # DoD: a point pushed through the exposed transform lands where the glyph's own mesh puts it
+        globe = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12, tilt_deg=30.0)
+        globe._prepare()
+        spin = 47.0
+        mesh = np.stack(globe._spun_mesh(spin)).reshape(3, -1).T  # (N, 3) world points
+        out = globe.transform(
+            globe._base_xyz.T, spin=spin
+        )  # base points through the public transform
+        assert np.allclose(out, mesh)
+
+    def test_transform_single_point_shape_and_value(self, texture):
+        globe = TexturedGlobeGlyph(texture, tilt_deg=90.0)
+        out = globe.transform([0.0, 0.0, 1.0])  # north pole under a 90deg x-tilt -> -y
+        assert out.shape == (3,)
+        assert np.allclose(out, [0.0, -1.0, 0.0])
+
+    def test_transform_array_shape(self, texture):
+        globe = TexturedGlobeGlyph(texture)
+        out = globe.transform(np.zeros((5, 3)), spin=12.0)
+        assert out.shape == (5, 3)
+
+    @pytest.mark.parametrize(
+        "bad", [np.zeros(2), np.zeros((4, 2)), np.zeros((2, 3, 3))]
+    )
+    def test_transform_bad_shape_raises(self, texture, bad):
+        with pytest.raises(ValueError):
+            TexturedGlobeGlyph(texture).transform(bad)
+
+    def test_default_tilt_mesh_unchanged(self, texture):
+        # the refactor keeps the X-axis default: the mesh equals R_x(tilt) @ R_z(spin) @ base
+        globe = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12)
+        globe._prepare()
+        expected = TexturedGlobeGlyph._rotation_x(globe.tilt_deg) @ (
+            TexturedGlobeGlyph._rotation_z(15.0) @ globe._base_xyz
+        )
+        actual = np.stack(globe._spun_mesh(15.0)).reshape(3, -1)
+        assert np.allclose(actual, expected)
+
+
 def test_no_new_dependency():
     """The globe uses mpl_toolkits.mplot3d, which ships with matplotlib -- no new dependency."""
     import mpl_toolkits.mplot3d as m3d

@@ -87,3 +87,26 @@ anim = globe.animate(n_frames=60, revolutions=1.0, interval=50, sun=(1.0, 0.0, 0
 # from cleopatra.glyphs.base.animation import save_animation
 # save_animation(anim, "globe.gif")
 ```
+
+### Aligning your own geometry with the globe (the tilt transform)
+
+The glyph tilts the sphere about the world `x` axis by `tilt_deg`, then spins it about the polar axis.
+To place your own scene geometry — a marker on the surface, a ring in the equatorial plane, an orbit
+plane — so it sits consistently with the rendered globe, push it through the **same** transform with
+`transform(points, spin=...)` (or grab the `(3, 3)` matrix with `rotation_matrix(spin)`). The body
+frame is the unit sphere: `+z` at the north pole, so a surface point at `(lon, lat)` is
+`[cos(lat)·cos(lon), cos(lat)·sin(lon), sin(lat)]` and the equatorial plane is `z = 0`.
+
+```python
+import numpy as np
+from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph
+
+globe = TexturedGlobeGlyph(relief("low"), tilt_deg=23.44)
+fig, ax = globe.draw(spin=40.0)
+
+# a geostationary ring in the equatorial plane, tilted+spun to match the globe
+theta = np.linspace(0, 2 * np.pi, 200)
+ring = np.column_stack([1.3 * np.cos(theta), 1.3 * np.sin(theta), np.zeros_like(theta)])
+ring = globe.transform(ring, spin=40.0)
+ax.plot(ring[:, 0], ring[:, 1], ring[:, 2])
+```

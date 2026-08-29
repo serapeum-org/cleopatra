@@ -119,6 +119,8 @@ class TexturedGlobeGlyph:
     Methods:
         draw(ax=None, *, spin=0.0, sun=..., ambient=..., **kwargs): Render the globe at a given spin angle.
         animate(ax=None, n_frames=60, revolutions=1.0, sun=..., ...): Return a `FuncAnimation` spinning the globe.
+        rotation_matrix(spin=0.0): The `(3, 3)` body-to-world transform the glyph applies (tilt then spin).
+        transform(points, spin=0.0): Push your own `(N, 3)` scene geometry through that same transform.
 
     Notes:
         `TexturedGlobeGlyph` is a standalone class, not a `Glyph` subclass (like `HistogramGlyph`). The accepted option
@@ -231,7 +233,6 @@ class TexturedGlobeGlyph:
         # Filled lazily and cached by `_prepare` (sample-once contract).
         self._base_xyz: np.ndarray | None = None
         self._facecolors: np.ndarray | None = None
-        self._tilt_matrix: np.ndarray | None = None
         self._surface = None
 
     # ------------------------------------------------------------------ #
@@ -292,9 +293,9 @@ class TexturedGlobeGlyph:
     def _prepare(self) -> None:
         """Sample the texture and build the base sphere mesh once, caching the results on the instance.
 
-        Computes and caches the un-spun vertex coordinates `(3, n_lat * n_lon)`, the per-face `facecolors`
-        `(n_lat - 1, n_lon - 1, 4)` sampled at face centres, and the fixed axial-tilt rotation matrix. Idempotent:
-        repeated calls (e.g. one per animation frame) return immediately.
+        Computes and caches the un-spun vertex coordinates `(3, n_lat * n_lon)` and the per-face `facecolors`
+        `(n_lat - 1, n_lon - 1, 4)` sampled at face centres. Idempotent: repeated calls (e.g. one per animation
+        frame) return immediately.
         """
         if self._base_xyz is not None:
             return
@@ -324,8 +325,6 @@ class TexturedGlobeGlyph:
         row_idx, col_idx = np.meshgrid(rows, cols, indexing="ij")
         self._facecolors = self._texture[row_idx, col_idx]
 
-        self._tilt_matrix = self._rotation_x(self._tilt_deg)
-
     @staticmethod
     def _rotation_x(deg: float) -> np.ndarray:
         """Return the 3x3 matrix rotating a point cloud by `deg` degrees about the x-axis."""
@@ -353,8 +352,80 @@ class TexturedGlobeGlyph:
         Returns:
             tuple: Three `(n_lat, n_lon)` arrays `(x, y, z)` for `Axes3D.plot_surface`.
         """
-        coords = self._tilt_matrix @ (self._rotation_z(spin) @ self._base_xyz)
+        coords = self.rotation_matrix(spin) @ self._base_xyz
         return tuple(coords.reshape(3, self._n_lat, self._n_lon))
+
+    def rotation_matrix(self, spin: float = 0.0) -> np.ndarray:
+        """Return the 3x3 body-to-world rotation the glyph applies at a given spin.
+
+        This is the exact transform `draw(spin=...)` uses to place the sphere: a rotation of `spin` degrees about
+        the body polar axis (`z`), then the fixed axial tilt of `tilt_deg` about the world `x` axis --
+        `R_tilt(x) @ R_z(spin)`. Apply it (or `transform`) to your own scene geometry so it sits consistently with
+        the rendered globe without reimplementing the tilt.
+
+        Args:
+            spin: Rotation about the polar axis, in degrees (matching `draw`/`animate`'s `spin`).
+
+        Returns:
+            numpy.ndarray: A `(3, 3)` matrix `M` such that a body-frame column vector `p` maps to world as `M @ p`.
+
+        Examples:
+            - Identity at `spin=0` with no tilt:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph
+                >>> globe = TexturedGlobeGlyph(np.zeros((8, 16, 3), dtype=np.uint8), tilt_deg=0.0)
+                >>> np.allclose(globe.rotation_matrix(0.0), np.eye(3))
+                True
+
+                ```
+
+        See Also:
+            transform: Apply this matrix to an `(N, 3)` array of points.
+        """
+        return self._rotation_x(self._tilt_deg) @ self._rotation_z(spin)
+
+    def transform(self, points: np.ndarray, spin: float = 0.0) -> np.ndarray:
+        """Map body-frame point(s) into world space exactly as the glyph places its mesh.
+
+        Pushes points through `rotation_matrix(spin)` (spin about the polar axis, then the axial tilt). The body
+        frame is the same one the mesh is built in: a unit sphere with `+z` at the north pole, so a surface point at
+        `(lon, lat)` is `[cos(lat) cos(lon), cos(lat) sin(lon), sin(lat)]`, the equatorial plane is `z = 0`, and the
+        polar axis is `+z`. Use it to place an eclipse marker, a geostationary ring, or an orbit plane so they align
+        with the rendered globe.
+
+        Args:
+            points: A single `(3,)` point or an `(N, 3)` array of body-frame points.
+            spin: Rotation about the polar axis, in degrees (matching `draw`/`animate`'s `spin`).
+
+        Returns:
+            numpy.ndarray: The transformed point(s), same shape as `points` (`(3,)` or `(N, 3)`).
+
+        Raises:
+            ValueError: If `points` is not `(3,)` or `(N, 3)`.
+
+        Examples:
+            - The north pole maps to the tilted axis; a 90 deg tilt lays it onto `-y`:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph
+                >>> globe = TexturedGlobeGlyph(np.zeros((8, 16, 3), dtype=np.uint8), tilt_deg=90.0)
+                >>> np.round(globe.transform([0.0, 0.0, 1.0]), 6)
+                array([ 0., -1.,  0.])
+
+                ```
+
+        See Also:
+            rotation_matrix: The `(3, 3)` matrix this method applies.
+        """
+        pts = np.asarray(points, dtype=float)
+        if pts.shape[-1] != 3 or pts.ndim not in (1, 2):
+            raise ValueError(
+                f"points must be a (3,) point or an (N, 3) array; got shape {pts.shape}."
+            )
+        matrix = self.rotation_matrix(spin)
+        out = np.atleast_2d(pts) @ matrix.T
+        return out[0] if pts.ndim == 1 else out
 
     @staticmethod
     def _normalize_sun(sun: tuple[float, float, float] | None) -> np.ndarray | None:
