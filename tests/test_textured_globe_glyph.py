@@ -513,10 +513,14 @@ class TestTiltTransform:
         assert out.shape == (3,)
         assert np.allclose(out, [0.0, -1.0, 0.0])
 
-    def test_transform_array_shape(self, texture):
-        globe = TexturedGlobeGlyph(texture)
-        out = globe.transform(np.zeros((5, 3)), spin=12.0)
-        assert out.shape == (5, 3)
+    def test_transform_array_applies_per_row(self, texture):
+        globe = TexturedGlobeGlyph(texture, tilt_deg=30.0)
+        pts = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
+        out = globe.transform(pts, spin=12.0)
+        assert out.shape == (3, 3)
+        # each row is transformed like a single point (not merely reshaped)
+        for row_in, row_out in zip(pts, out):
+            assert np.allclose(row_out, globe.transform(row_in, spin=12.0))
 
     @pytest.mark.parametrize(
         "bad",
@@ -536,6 +540,40 @@ class TestTiltTransform:
         )
         actual = np.stack(globe._spun_mesh(15.0)).reshape(3, -1)
         assert np.allclose(actual, expected)
+
+    def test_transform_empty_array_preserved(self, texture):
+        out = TexturedGlobeGlyph(texture).transform(np.zeros((0, 3)))
+        assert out.shape == (0, 3)
+
+    def test_transform_1x3_not_squeezed(self, texture):
+        out = TexturedGlobeGlyph(texture).transform([[1.0, 0.0, 0.0]])
+        assert out.shape == (1, 3)
+
+    def test_transform_accepts_list_input(self, texture):
+        globe = TexturedGlobeGlyph(texture, tilt_deg=20.0)
+        from_list = globe.transform([0.0, 0.0, 1.0], spin=30.0)
+        from_array = globe.transform(np.array([0.0, 0.0, 1.0]), spin=30.0)
+        assert np.allclose(from_list, from_array)
+
+    def test_rotation_matrix_orthogonal_and_fresh(self, texture):
+        globe = TexturedGlobeGlyph(texture, tilt_deg=23.44)
+        m = globe.rotation_matrix(47.0)
+        assert np.allclose(m @ m.T, np.eye(3))  # orthogonal
+        assert np.isclose(np.linalg.det(m), 1.0)  # a proper rotation
+        m[0, 0] = 9.0  # mutating the returned matrix must not corrupt a later call
+        assert not np.allclose(globe.rotation_matrix(47.0), m)
+
+    def test_transform_works_before_prepare(self, texture):
+        globe = TexturedGlobeGlyph(texture)
+        assert globe._base_xyz is None  # never drawn / prepared
+        assert globe.transform([0.0, 0.0, 1.0], spin=10.0).shape == (3,)
+
+    def test_transform_output_independent_of_input(self, texture):
+        globe = TexturedGlobeGlyph(texture, tilt_deg=0.0)
+        inp = np.array([1.0, 2.0, 3.0])
+        out = globe.transform(inp, spin=0.0)
+        out[0] = 99.0
+        assert inp[0] == 1.0  # the returned array does not alias the input
 
 
 def test_no_new_dependency():
