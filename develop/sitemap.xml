@@ -2,254 +2,254 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/change-log/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/installation/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/migration/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/scope/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/unstructured-mesh-guide/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/diagrams/glyph-architecture/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/animation/animation_examples/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/array_glyph/array_glyph_examples/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/array_glyph/reference_map/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/array_glyph/rgb_animation/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/colors/colors_examples/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/flow_glyph/flow_glyph_examples/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/glow/glow_examples/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/kde_glyph/kde_glyph_examples/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/line_glyph/line_glyph_examples/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/mesh_glyph/mesh_glyph_examples/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/polygon_glyph/polygon_glyph_examples/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/cams_aerosols_and_particulates/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/cams_greenhouse_gases/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/cams_reactive_gases/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/cams_uv_and_fire/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/data_style_presets_examples/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/haze_preset_examples/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/magics_2t_flame_plume/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/ocean_styles_gallery/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/operational_temperature_animation/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/operational_weather_gallery/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/precipitation_animation/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/radar_satellite_gallery/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/scientific_colormaps_examples/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/scientific_colormaps_gallery/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/temperature_animation/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/presets/weather_styles_gallery/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/projection/projection_examples/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/reference/reference_examples/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/scatter_glyph/scatter_glyph_examples/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/statistics/statistics_examples/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/styles/styles_examples/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/notebooks/vector_glyph/vector_glyph_examples/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/reference/animation/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/reference/array-glyph/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/reference/colors-glyph/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/reference/config/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/reference/flow-glyph/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/reference/geo/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/reference/glyph/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/reference/histogram-glyph/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/reference/kde-glyph/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/reference/line-glyph/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/reference/mesh-glyph/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/reference/palettes/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/reference/perceptual/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/reference/polygon-glyph/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/reference/projection/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/reference/reference-data/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/reference/render-options/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/reference/scatter-glyph/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/reference/styles-glyph/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/reference/textured-globe-glyph/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/reference/tiles/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/reference/vector-glyph/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
     <url>
          <loc>https://serapeum-org.github.io/cleopatra/develop/reference/watermark/</loc>
-         <lastmod>2026-08-25</lastmod>
+         <lastmod>2026-08-29</lastmod>
     </url>
 </urlset>
