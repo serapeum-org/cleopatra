@@ -896,8 +896,10 @@ class MeshGlyph(GeoMixin, Glyph):
                 (location="face") or node count (location="node").
             location: Mesh element location: `"face"` or `"node"`.
                 Default is `"face"`.
-            ax: Axes to plot on. If None, uses stored axes or creates
-                new.
+            ax: Axes to plot on. If None, resolution priority is the axes
+                bound at construction > an axes derived from a figure bound
+                at construction (its first axes, or a fresh one) > a new
+                figure/axes.
             edgecolor: Edge color for face rendering. Default is
                 `"none"`.
             colorbar: Draw a colorbar, by default `True`. Accepts a typed
