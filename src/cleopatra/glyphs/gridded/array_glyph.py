@@ -1107,7 +1107,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 parameter — `plot` derives the figure from its axes). When
                 `ax` is given, `fig` is optional; if both are None a new
                 figure is created at render time. Passing `fig` alone (no
-                `ax`) draws into that figure — its current axes, or a fresh
+                `ax`) draws into that figure — its first axes, or a fresh
                 one if it has none.
             **kwargs: Additional keyword arguments for customizing the plot.
                 Supported arguments include:
@@ -2967,7 +2967,8 @@ class ArrayGlyph(GeoMixin, Glyph):
                 the plot is composed into this axes (and its parent
                 figure, via `ax.get_figure()`), mirroring the other
                 glyphs' `plot(ax=...)`. Resolution priority is
-                `plot(ax=)` > the axes bound at construction > a fresh
+                `plot(ax=)` > the axes bound at construction > an axes
+                derived from a figure bound at construction > a fresh
                 figure/axes. `fig` is intentionally not a parameter
                 here — it is a construction-time binding derived from
                 the axes.
@@ -3516,7 +3517,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             self.fig, self.ax = self.create_figure_axes()
         elif self.ax is None:
             # A figure was bound without an axes: draw into the caller's figure
-            # (its current axes, or a fresh one) rather than leaving self.ax None.
+            # (its first axes, or a fresh one) rather than leaving self.ax None.
             self.ax = self.fig.axes[0] if self.fig.axes else self.fig.add_subplot(111)
             self._auto_figure = False
             self._owns_figure = False
