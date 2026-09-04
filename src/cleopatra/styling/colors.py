@@ -905,7 +905,11 @@ def _warn_if_outside_fixed_range(data: np.ndarray, lo: float, hi: float) -> None
 
 
 def build_log_norm(
-    vmin: float | None, vmax: float | None, *, context: str
+    vmin: float | None,
+    vmax: float | None,
+    *,
+    context: str,
+    remedy: str = "use a symmetric-log scale",
 ) -> mcolors.LogNorm:
     """Validate a strictly-positive range and build a `matplotlib.colors.LogNorm`.
 
@@ -921,6 +925,9 @@ def build_log_norm(
             `vmin`.
         context: A short phrase naming the caller, used in the error message
             (e.g. ``"data style norm='log'"`` or ``"ColorScaling.log()"``).
+        remedy: The concrete alternative to name in the error message -- each
+            caller passes the keyword its own API uses (e.g. ``"use
+            norm='symlog'"`` or ``"use ColorScaling.sym_log()"``).
 
     Returns:
         matplotlib.colors.LogNorm: A log norm over ``[vmin, vmax]``.
@@ -938,10 +945,12 @@ def build_log_norm(
             ```
     """
     if vmin is None or vmax is None or vmin <= 0 or vmax <= 0 or vmin >= vmax:
+        lo = "None" if vmin is None else repr(float(vmin))
+        hi = "None" if vmax is None else repr(float(vmax))
         raise ValueError(
             f"{context} needs a strictly-positive, ascending value range "
-            f"(got vmin={vmin!r}, vmax={vmax!r}); use a symmetric-log scale "
-            "for data that spans zero or negative values."
+            f"(got vmin={lo}, vmax={hi}); {remedy} for data that spans zero "
+            "or negative values."
         )
     return mcolors.LogNorm(vmin=vmin, vmax=vmax)
 
@@ -1051,7 +1060,9 @@ def resolve_style_norm(
             if (vmin is not None and vmin > 0)
             else (float(positive.min()) if positive.size else None)
         )
-        norm = build_log_norm(lo, vmax, context="data style norm='log'")
+        norm = build_log_norm(
+            lo, vmax, context="data style norm='log'", remedy="use norm='symlog'"
+        )
         vmin = lo
     elif norm_kind == "symlog":
         norm = mcolors.SymLogNorm(

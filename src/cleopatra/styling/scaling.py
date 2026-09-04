@@ -412,7 +412,9 @@ class ColorScaling:
             # the data-style norm='log' path, which bumps vmax = vmin + 1.0.
             if hi == lo:
                 hi = lo + 1.0
-            norm = build_log_norm(lo, hi, context="ColorScaling.log()")
+            norm = build_log_norm(
+                lo, hi, context="ColorScaling.log()", remedy="use ColorScaling.sym_log()"
+            )
             cbar_kw = {"ticks": ticks, "format": LogFormatter(10, labelOnlyBase=False)}
         elif self.kind == ColorScale.BOUNDARY_NORM:
             norm, cbar_kw = self._boundary_norm(ticks, bounds_from_levels)
