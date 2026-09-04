@@ -2214,3 +2214,13 @@ class TestFigAxResolution:
         assert glyph.fig is fig0, "should reuse the bound empty figure"
         assert glyph.ax in fig0.axes, "should have added an axes to the empty figure"
         assert anim is not None, "should return an animation"
+
+    def test_animate_fig_and_ax_uses_bound_axes(self):
+        """animate() with both fig and ax uses the bound axes, not re-resolved."""
+        node_x, node_y, faces, data = self._mesh()
+        fig0, ax0 = plt.subplots()
+        glyph = MeshGlyph(node_x, node_y, faces, fig=fig0, ax=ax0)
+        anim = glyph.animate([data, data * 2.0], time=["t0", "t1"], location="face")
+        assert glyph.ax is ax0, "should use the bound axes"
+        assert glyph.fig is fig0, "should keep the bound figure"
+        assert anim is not None, "should return an animation"

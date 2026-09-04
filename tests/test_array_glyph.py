@@ -7866,5 +7866,16 @@ class TestFigAxResolution:
         assert glyph.ax in fig0.axes  # an axes was added to the caller's empty figure
         plt.close("all")
 
+    def test_animate_fig_and_ax_uses_bound_axes(self):
+        plt.close("all")
+        fig0, ax0 = plt.subplots()
+        stack = np.arange(2 * 3 * 3, dtype="float32").reshape(2, 3, 3)
+        glyph = ArrayGlyph(stack, fig=fig0, ax=ax0)
+        anim = glyph.animate([0, 1], interval=50)
+        assert isinstance(anim, FuncAnimation)
+        assert glyph.ax is ax0  # the bound axes is used, not re-resolved
+        assert glyph.fig is fig0  # and the bound figure is kept
+        plt.close("all")
+
     def test_clear_projection_frame_none_is_noop(self):
         assert _clear_projection_frame(None) is False
