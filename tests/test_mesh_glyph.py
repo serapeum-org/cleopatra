@@ -6,6 +6,7 @@ fan triangulation, face-to-triangle value mapping, and edge cases.
 
 from __future__ import annotations
 
+import inspect
 import re
 import time
 import warnings
@@ -20,6 +21,13 @@ from cleopatra.styling.colorbar import ColorBar
 from cleopatra.styling.params import Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
+
+
+@pytest.fixture(autouse=True)
+def _close_figures():
+    """Close every figure after each test so leaks never warn or accumulate."""
+    yield
+    plt.close("all")
 
 
 @pytest.fixture(scope="module")
@@ -1962,53 +1970,63 @@ class TestApplyStyleForwardsHillshade:
         plt.close("all")
 
 
+@pytest.fixture()
+def kwargs_mesh():
+    """A two-triangle mesh glyph for the render-kwarg routing tests.
+
+    Function-scoped because these tests mutate the glyph; the module-scoped
+    `triangle_glyph` fixture must not be shared with them.
+
+    Returns:
+        MeshGlyph: A fresh glyph over two face-centred triangles.
+    """
+    node_x = np.array([0.0, 1.0, 0.5, 1.5])
+    node_y = np.array([0.0, 0.0, 1.0, 1.0])
+    faces = np.array([[0, 1, 2], [1, 3, 2]])
+    return MeshGlyph(node_x, node_y, faces)
+
+
 class TestPlotSplitsRenderKwargs:
     """`MeshGlyph.plot` separates glyph options from matplotlib render kwargs."""
 
-    def test_unmodelled_kwarg_reaches_the_renderer(self):
+    @pytest.mark.parametrize(
+        "keyword, value, read_back",
+        [
+            ("alpha", 0.5, lambda im: im.get_alpha()),
+            ("zorder", 4.0, lambda im: im.get_zorder()),
+        ],
+    )
+    def test_unmodelled_kwarg_reaches_the_renderer(
+        self, kwargs_mesh, keyword, value, read_back
+    ):
         """A keyword the glyph does not model is forwarded to the mesh call.
 
         Test scenario:
-            `edgecolor` is not a `MESH_DEFAULT_OPTIONS` key, so it must be
-            routed to `tripcolor` instead of being swallowed as an option.
+            `plot(**kwargs)` splits its keywords into glyph options and
+            renderer keywords by testing membership of
+            `MESH_DEFAULT_OPTIONS`. Neither keyword here is a member, so each
+            must reach `tripcolor` and must not be written into the option
+            dict -- swallowing it would silently drop the caller's request.
         """
-        node_x = np.array([0.0, 1.0, 0.5, 1.5])
-        node_y = np.array([0.0, 0.0, 1.0, 1.0])
-        faces = np.array([[0, 1, 2], [1, 3, 2]])
-        glyph = MeshGlyph(node_x, node_y, faces)
+        kwargs_mesh.plot(np.array([1.0, 2.0]), **{keyword: value})
 
-        glyph.plot(np.array([1.0, 2.0]), edgecolor="k")
-
-        assert "edgecolor" not in glyph.default_options, (
-            "an unmodelled kwarg must not leak into the option dict"
+        assert read_back(kwargs_mesh.im) == value, (
+            f"{keyword} should have reached the mesh renderer"
         )
-        assert np.allclose(glyph.im.get_edgecolor(), to_rgba("k")), (
-            "edgecolor should have reached the mesh renderer"
+        assert keyword not in kwargs_mesh.default_options, (
+            f"{keyword} must not leak into the option dict"
         )
-        plt.close("all")
 
-
-class TestPlotForwardsMatplotlibKwargs:
-    """A keyword the glyph does not model is routed to the mesh renderer."""
-
-    def test_alpha_reaches_the_mappable(self):
-        """`alpha` is not a glyph option, so it must reach `tripcolor`.
+    def test_edgecolor_is_an_explicit_parameter(self, kwargs_mesh):
+        """`edgecolor` is a named `plot` parameter, not a `**kwargs` passthrough.
 
         Test scenario:
-            `plot(**kwargs)` splits its keywords into glyph options and
-            renderer keywords. `alpha` belongs to the renderer: it must show
-            up on the mappable and must not be written into
-            `default_options`.
+            It reaches the renderer like the keywords above, but by a
+            different route -- worth pinning separately so a refactor that
+            moved it into `**kwargs` (or dropped it) is visible.
         """
-        node_x = np.array([0.0, 1.0, 0.5, 1.5])
-        node_y = np.array([0.0, 0.0, 1.0, 1.0])
-        faces = np.array([[0, 1, 2], [1, 3, 2]])
-        glyph = MeshGlyph(node_x, node_y, faces)
+        assert "edgecolor" in inspect.signature(MeshGlyph.plot).parameters
 
-        glyph.plot(np.array([1.0, 2.0]), alpha=0.5)
+        kwargs_mesh.plot(np.array([1.0, 2.0]), edgecolor="k")
 
-        assert glyph.im.get_alpha() == 0.5, "alpha should reach the mappable"
-        assert "alpha" not in glyph.default_options, (
-            "a renderer keyword must not leak into the option dict"
-        )
-        plt.close("all")
+        assert np.allclose(kwargs_mesh.im.get_edgecolor(), to_rgba("k"))
