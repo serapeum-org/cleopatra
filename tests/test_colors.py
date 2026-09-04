@@ -1772,8 +1772,10 @@ class TestResolveStyleNormAllNaN:
             np.full((2, 2), np.nan), {"cmap": "viridis", "center": 0.0}
         )
 
-        assert (vmin, vmax) == (-1.0, 1.0)
-        assert norm.vmin == -1.0 and norm.vmax == 1.0
+        assert vmin == -1.0, f"vmin should be center - 1; got {vmin}"
+        assert vmax == 1.0, f"vmax should be center + 1; got {vmax}"
+        assert norm.vmin == -1.0, "the norm must carry the same lower bound"
+        assert norm.vmax == 1.0, "the norm must carry the same upper bound"
 
 
 class TestCurvilinearCategoricalStyle:

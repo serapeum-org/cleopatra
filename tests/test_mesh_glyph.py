@@ -1988,7 +1988,7 @@ class TestApplyStyleForwardsHillshade:
         plt.close("all")
 
 
-@pytest.fixture()
+@pytest.fixture
 def kwargs_mesh():
     """A two-triangle mesh glyph for the render-kwarg routing tests.
 

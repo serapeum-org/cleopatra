@@ -76,9 +76,10 @@ class TestUrlopenHttp:
         target = tmp_path / "local.txt"
         target.write_text("not reachable over http", encoding="utf-8")
         assert target.exists(), "the file must exist for the refusal to be meaningful"
+        uri = target.as_uri()
 
         with pytest.raises(urllib.error.URLError, match="unknown url type"):
-            urlopen_http(target.as_uri())
+            urlopen_http(uri)
 
     @pytest.mark.parametrize(
         "url",

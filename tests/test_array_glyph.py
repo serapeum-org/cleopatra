@@ -5884,7 +5884,8 @@ class TestAnimateBasemap:
             add_colorbar=False,
         )
         assert relief == [], "relief=False should draw no relief"
-        assert [args[0] for args, _ in features] == ["coastline"], "only coastline should be drawn"
+        drawn_layers = [args[0] for args, _ in features]
+        assert drawn_layers == ["coastline"], "only coastline should be drawn"
         plt.close("all")
 
     def test_basemap_relief_resolution_string(self, monkeypatch):
@@ -6756,7 +6757,8 @@ class TestColorBar:
         assert ColorBar().label_color is None, "label_color should default to None"
         assert ColorBar().tick_color is None, "tick_color should default to None"
         spec = ColorBar(label_color="black", tick_color="red")
-        assert (spec.label_color, spec.tick_color) == ("black", "red"), "colour fields should store verbatim"
+        colours = (spec.label_color, spec.tick_color)
+        assert colours == ("black", "red"), "colour fields should store verbatim"
 
     def test_caption_sizing_fields_default_none_and_store(self):
         """The caption/sizing fields default to `None` and store verbatim.
@@ -7548,8 +7550,10 @@ class TestStyledProjectionRequiresCoordinateVectors:
             np.random.default_rng(0).random((4, 5)) * 300.0, projection="globe"
         )
 
+        data_style = DataStyle(style="temperature_2m")
+
         with pytest.raises(ValueError, match=r"projection= with a style requires"):
-            glyph.plot(data_style=DataStyle(style="temperature_2m"))
+            glyph.plot(data_style=data_style)
 
 
 class TestProjectedRenderWithNonLinearScale:
@@ -7636,8 +7640,9 @@ class TestAnimateWithPoints:
         # callable `FuncAnimation` itself calls for every rendered frame.
         artists = glyph.anim._func(1)
 
-        assert [text.get_text() for text in labels] == ["A", "B"], (
-            "the frame update should restore each point's label"
+        restored = [text.get_text() for text in labels]
+        assert restored == ["A", "B"], (
+            f"the frame update should restore each point's label; got {restored}"
         )
         assert np.allclose(np.asarray(scatter.get_offsets(), dtype=float), [[1, 1], [2, 2]]), (
             f"the frame update should restore the offsets; got {scatter.get_offsets()}"

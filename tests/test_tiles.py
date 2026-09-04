@@ -1650,8 +1650,11 @@ class TestNonHttpTileUrl:
             `ValueError` rather than let the opener read a local path --
             the check runs before the retry loop, so no request is made.
         """
+        tile = Tile(0, 0, 0)
+        provider = _NonHttpProvider()
+
         with pytest.raises(ValueError, match="non-http"):
-            fetch_single_tile(Tile(0, 0, 0), _NonHttpProvider(), timeout=1, retries=0)
+            fetch_single_tile(tile, provider, timeout=1, retries=0)
 
 
 class TestAttributionWithoutMetadata:
