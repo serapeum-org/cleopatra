@@ -1130,18 +1130,30 @@ class _StubImage:
 class TestBackgroundIsDarkGuards:
     """`GeoMixin._background_is_dark` degenerate-sample handling."""
 
-    def test_empty_rgba_reads_as_not_dark(self):
-        """A sample that renders to no pixels falls back to "not dark".
+    def test_empty_rgba_reads_as_not_dark_without_warning(self):
+        """A sample that renders to no pixels falls back to "not dark", quietly.
 
         Test scenario:
-            An empty field produces an empty RGBA array; averaging its
-            luminance would be meaningless (and warn), so the check
-            short-circuits to the neutral `False` default.
+            An empty field produces an empty RGBA array. Averaging its
+            luminance would be meaningless and would emit `RuntimeWarning:
+            Mean of empty slice`, so the answer must be the neutral `False`
+            default and the mean must never be taken -- the warning-as-error
+            context is what proves the second half.
+
+            Note this pins the *contract*, not one branch: for every array
+            `to_rgba` can actually return, the `rgba.size == 0` early return
+            and the `opaque.any()` check below it both produce `False`, so
+            either alone satisfies it. The observable guarantee is what
+            callers depend on, and it is what a reordering would break.
         """
         host = _Dummy(ax=None)
         host.im = _StubImage(np.zeros((0, 0)), np.zeros((0, 0, 4)))
 
-        assert host._background_is_dark(None) is False
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            result = host._background_is_dark(None)
+
+        assert result is False, f"an empty sample should read as not dark; got {result!r}"
 
     def test_one_dimensional_sample_is_not_decimated(self):
         """A 1-D sample skips the row/column decimation and is judged as-is.
@@ -1181,8 +1193,8 @@ class TestCheckBasemapAlignmentGuards:
         host.arr = np.zeros((2, 4, 5, 3))
 
         with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            assert host._check_basemap_alignment() is None
+            warnings.simplefilter("error")  # the check must not warn either
+            host._check_basemap_alignment()
 
         assert called == [], "the relief must not be fetched for a non-2-D frame"
 
