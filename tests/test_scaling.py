@@ -96,6 +96,19 @@ class TestColorScalingBuildNorm:
         with pytest.raises(ValueError, match="strictly-positive"):
             ColorScaling.log().build_norm(np.array([0.0, 10.0, 100.0]))
 
+    def test_log_on_constant_positive_data_widens_the_range(self):
+        """A constant positive field (single tick) builds a LogNorm, not a crash.
+
+        Test scenario:
+            Uniform data yields one tick, so vmin == vmax. A log scale cannot
+            span a zero-width range; the branch widens it (like the data-style
+            path) rather than raising, matching the other scale kinds.
+        """
+        norm, _ = ColorScaling.log().build_norm(np.array([5.0]))
+        assert isinstance(norm, mcolors.LogNorm)
+        assert norm.vmin == 5.0, f"vmin should stay 5.0, got {norm.vmin}"
+        assert norm.vmax == 6.0, f"vmax should widen to 6.0, got {norm.vmax}"
+
     def test_log_options_round_trip(self):
         """`log()` emits `color_scale='lognorm'` and reconstructs to LOGNORM."""
         opts = ColorScaling.log().to_options()

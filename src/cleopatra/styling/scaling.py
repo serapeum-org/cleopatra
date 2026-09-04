@@ -406,7 +406,13 @@ class ColorScaling:
             )
             cbar_kw = {"ticks": ticks, "format": LogFormatter(10, labelOnlyBase=False)}
         elif self.kind == ColorScale.LOGNORM:
-            norm = build_log_norm(vmin, vmax, context="ColorScaling.log()")
+            lo, hi = float(vmin), float(vmax)
+            # A constant positive field yields a single tick (vmin == vmax); a
+            # log scale cannot span a zero-width range, so widen it -- matching
+            # the data-style norm='log' path, which bumps vmax = vmin + 1.0.
+            if hi == lo:
+                hi = lo + 1.0
+            norm = build_log_norm(lo, hi, context="ColorScaling.log()")
             cbar_kw = {"ticks": ticks, "format": LogFormatter(10, labelOnlyBase=False)}
         elif self.kind == ColorScale.BOUNDARY_NORM:
             norm, cbar_kw = self._boundary_norm(ticks, bounds_from_levels)
