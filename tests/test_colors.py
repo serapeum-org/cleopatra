@@ -1716,7 +1716,13 @@ class TestLoadPresetsMalformedAsset:
     REAL_ASSET = "builtin_presets.json"
 
     def test_the_chosen_asset_really_loads_unpatched(self):
-        """The asset used below is populated, so the patch below has to bite."""
+        """The asset used below is populated, so the patch below has to bite.
+
+        Test scenario:
+            A guard for the sibling test rather than a behaviour check: if
+            this asset ever stops loading presets, the malformed-asset test
+            silently stops discriminating and this fails first, naming why.
+        """
         assert _load_presets(self.REAL_ASSET), (
             f"{self.REAL_ASSET} should load presets; the malformed-asset test "
             "below is only meaningful if an unpatched call is non-empty"

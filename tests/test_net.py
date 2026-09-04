@@ -28,7 +28,13 @@ class TestOpenerComposition:
     """The opener is built with only the HTTP(S) handlers registered."""
 
     def test_http_handlers_are_present(self):
-        """`HTTPHandler` and `HTTPSHandler` are what claim a request."""
+        """`HTTPHandler` and `HTTPSHandler` are what claim a request.
+
+        Test scenario:
+            The permissive half of the guarantee. Asserting only that other
+            schemes are absent would also pass for an opener that can open
+            nothing at all.
+        """
         registered = {type(handler).__name__ for handler in _HTTP_ONLY_OPENER.handlers}
 
         assert {"HTTPHandler", "HTTPSHandler"} <= registered, (

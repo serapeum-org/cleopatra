@@ -31,8 +31,6 @@ from matplotlib.collections import LineCollection  # noqa: E402
 
 import cleopatra.basemap.reference as refmod  # noqa: E402
 import cleopatra.basemap.tiles as tilesmod  # noqa: E402
-from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph  # noqa: E402
-from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph  # noqa: E402
 from cleopatra.basemap.geo import (  # noqa: E402
     REFERENCE_MAP_STYLES,
     Basemap,
@@ -44,13 +42,15 @@ from cleopatra.basemap.geo import (  # noqa: E402
     add_point_labels,
     available_map_styles,
 )
-from cleopatra.glyphs.stats.kde_glyph import KDEGlyph  # noqa: E402
-from cleopatra.glyphs.primitives.line_glyph import LineGlyph  # noqa: E402
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph  # noqa: E402
 from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph  # noqa: E402
+from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph  # noqa: E402
+from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph  # noqa: E402
+from cleopatra.glyphs.primitives.line_glyph import LineGlyph  # noqa: E402
 from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph  # noqa: E402
 from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph  # noqa: E402
 from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph  # noqa: E402
-from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph  # noqa: E402
+from cleopatra.glyphs.stats.kde_glyph import KDEGlyph  # noqa: E402
 
 GEO_GLYPHS = [ArrayGlyph, MeshGlyph, VectorGlyph, FlowGlyph, PolygonGlyph, ScatterGlyph]
 NON_GEO_GLYPHS = [LineGlyph, HistogramGlyph, KDEGlyph]

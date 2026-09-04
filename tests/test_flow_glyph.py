@@ -17,9 +17,9 @@ from matplotlib.collections import LineCollection
 from matplotlib.legend import Legend
 
 from cleopatra.glyphs.primitives.flow_glyph import FLOW_DEFAULT_OPTIONS, FlowGlyph
+from cleopatra.styling.params import Contour
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import width_legend
-from cleopatra.styling.params import Contour
 
 
 @pytest.fixture(autouse=True)

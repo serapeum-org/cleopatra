@@ -223,7 +223,13 @@ class TestSetMatplotlibBackendInNotebook:
         return calls
 
     def test_defaults_to_inline_magic(self, monkeypatch):
-        """No backend + notebook -> `%matplotlib inline`."""
+        """No backend + notebook -> `%matplotlib inline`.
+
+        Test scenario:
+            Inside a kernel the magic is used rather than
+            `plt.switch_backend`, because it also installs IPython's inline
+            figure plumbing that a bare backend switch would skip.
+        """
         calls = self._fake_notebook(monkeypatch)
 
         Config.set_matplotlib_backend()
@@ -231,7 +237,12 @@ class TestSetMatplotlibBackendInNotebook:
         assert calls == [("matplotlib", "inline")], f"unexpected magics: {calls}"
 
     def test_interactive_selects_the_notebook_magic(self, monkeypatch):
-        """`interactive=True` + notebook -> `%matplotlib notebook`."""
+        """`interactive=True` + notebook -> `%matplotlib notebook`.
+
+        Test scenario:
+            The same notebook branch, selecting the interactive widget
+            backend instead of the static inline one.
+        """
         calls = self._fake_notebook(monkeypatch)
 
         Config.set_matplotlib_backend(interactive=True)

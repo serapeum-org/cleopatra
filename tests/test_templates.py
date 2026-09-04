@@ -1,4 +1,4 @@
-"""Tests for the one-call ``publication_map`` composer."""
+"""Tests for the one-call `publication_map` composer."""
 
 from __future__ import annotations
 
@@ -22,19 +22,19 @@ def field():
     """Provide a small temperature-like field.
 
     Returns:
-        numpy.ndarray: A ``(10, 12)`` array of values in a plausible degC range.
+        numpy.ndarray: A `(10, 12)` array of values in a plausible degC range.
     """
     return np.random.default_rng(0).random((10, 12)) * 30.0
 
 
 class TestPublicationMap:
-    """Tests for ``cleopatra.templates.publication_map``."""
+    """Tests for `cleopatra.templates.publication_map`."""
 
     def test_styled_field_sets_title_and_draws(self, field):
         """A styled call sets the title and draws the field.
 
         Test scenario:
-            ``style`` + ``title`` produce a titled axes carrying a mappable.
+            `style` + `title` produce a titled axes carrying a mappable.
         """
         fig, ax = publication_map(field, style="temperature_2m", title="2 m temperature")
         assert ax.get_title() == "2 m temperature", f"unexpected title: {ax.get_title()!r}"
@@ -57,7 +57,7 @@ class TestPublicationMap:
         """A `cmap` with a flat projection composes without a style.
 
         Test scenario:
-            Passing 1-D coords + ``projection='flat'`` + a plain ``cmap`` renders.
+            Passing 1-D coords + `projection='flat'` + a plain `cmap` renders.
         """
         lon = np.linspace(-10.0, 10.0, 12)
         lat = np.linspace(30.0, 50.0, 10)

@@ -1139,7 +1139,12 @@ class TestApplyProjectionStyleMesh:
     TRIANGLES = np.array([[0, 1, 2], [1, 3, 2]])
 
     def test_unknown_style_raises_key_error(self):
-        """An unregistered style name is rejected, listing the known ones."""
+        """An unregistered style name is rejected, listing the known ones.
+
+        Test scenario:
+            The available names are part of the error so a typo is
+            self-correcting, rather than surfacing as a bare KeyError.
+        """
         fig, ax = plt.subplots()
         with pytest.raises(KeyError, match="Unknown projection style"):
             projection_module.apply_projection_style_mesh(
@@ -1167,7 +1172,14 @@ class TestApplyProjectionStyleMesh:
         plt.close(fig)
 
     def test_draw_frame_false_leaves_the_axes_bare(self):
-        """`draw_frame=False` reprojects but adds no boundary or graticule."""
+        """`draw_frame=False` reprojects but adds no boundary or graticule.
+
+        Test scenario:
+            The reprojection and the decoration are separable: a caller
+            composing several meshes onto one globe wants the frame drawn
+            once, not per mesh. The node check confirms the reprojection
+            still happened.
+        """
         pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
         fig, ax = plt.subplots()
 

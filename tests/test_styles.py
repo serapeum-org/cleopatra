@@ -602,7 +602,12 @@ class TestGetLineStyleUnknownName:
         assert "solid" in printed, f"the available styles should be listed: {printed}"
 
     def test_known_name_still_resolves(self):
-        """A registered name resolves to its matplotlib dash spec."""
+        """A registered name resolves to its matplotlib dash spec.
+
+        Test scenario:
+            The positive counterpart to the unknown-name case, so that
+            returning `None` for everything would not satisfy both.
+        """
         assert Styles.get_line_style("solid") == Styles.line_styles["solid"]
 
 

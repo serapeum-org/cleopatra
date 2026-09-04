@@ -7482,7 +7482,13 @@ class TestTightenFigureGuards:
         plt.close(fig)
 
     def test_degenerate_content_bbox_is_a_no_op(self, monkeypatch):
-        """A zero-area content bbox cannot define a figure size, so it is skipped."""
+        """A zero-area content bbox cannot define a figure size, so it is skipped.
+
+        Test scenario:
+            Resizing to a degenerate bbox would produce a zero-width figure
+            that no backend can render, so the guard must leave the size
+            alone rather than apply it.
+        """
         glyph = ArrayGlyph(np.arange(12.0).reshape(3, 4))
         fig, _ = glyph.plot()
         before = tuple(fig.get_size_inches())
@@ -7500,13 +7506,25 @@ class TestStyleColorBarTicks:
     """`ArrayGlyph._style_cbar_kw` derives readable ticks from a preset norm."""
 
     def test_degenerate_range_defers_to_matplotlib(self):
-        """A norm with no span yields `{}` so matplotlib auto-ticks."""
+        """A norm with no span yields `{}` so matplotlib auto-ticks.
+
+        Test scenario:
+            An empty dict is the "no opinion" signal: deriving ticks across a
+            zero-width range would place them all at one value, so the choice
+            is handed back to matplotlib.
+        """
         glyph = ArrayGlyph(np.arange(12.0).reshape(3, 4))
 
         assert glyph._style_cbar_kw(Normalize(vmin=1.0, vmax=1.0)) == {}
 
     def test_finite_range_yields_ticks_inside_it(self):
-        """A real range yields ticks, all within `[vmin, vmax]`."""
+        """A real range yields ticks, all within `[vmin, vmax]`.
+
+        Test scenario:
+            The counterpart to the degenerate case: a preset's banded norm
+            would over-crowd the axis, so a readable set is derived -- and
+            none of it may fall outside the norm's own range.
+        """
         glyph = ArrayGlyph(np.arange(12.0).reshape(3, 4))
 
         ticks = glyph._style_cbar_kw(Normalize(vmin=0.0, vmax=10.0))["ticks"]
