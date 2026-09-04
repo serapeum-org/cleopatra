@@ -26,7 +26,7 @@ from cleopatra.glyphs.base.glyph import (
     _mark_render_artists,
 )
 from cleopatra.glyphs.gridded.array_glyph import PointOverlay
-from cleopatra.styling.params import CellValues, Contour
+from cleopatra.styling.params import CellValues, Contour, DataStyle
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import ColorScale, MidpointNormalize
 
@@ -1852,3 +1852,62 @@ class TestColorBarLabelLocationUnset:
 
         assert isinstance(cbar, Colorbar)
         plt.close(fig)
+
+
+class TestConstructionTimeDataStyle:
+    """`Glyph(data_style=...)` applies grouped options at construction.
+
+    The loose `style=` / `hillshade=` keywords are rejected with a message
+    telling the caller to pass `data_style=DataStyle(...)`. This is what makes
+    that redirection reachable: before it, the named remedy was not accepted
+    by any constructor, so the options simply could not be set at build time.
+    """
+
+    def test_grouped_option_is_applied(self):
+        """A `DataStyle` field reaches `default_options` at construction."""
+        options = _make_options(style=None, hillshade=False)
+
+        g = Glyph(default_options=options, data_style=DataStyle(style="dem"))
+
+        assert g.default_options["style"] == "dem"
+
+    def test_unset_fields_leave_their_defaults(self):
+        """A field the `DataStyle` never set is not written.
+
+        Test scenario:
+            `to_options()` emits only fields that were given, so an empty
+            group must leave every option exactly as the class defaults had
+            it -- it must not stamp `None` over them.
+        """
+        before = Glyph(default_options=_make_options()).default_options.copy()
+
+        g = Glyph(default_options=_make_options(), data_style=DataStyle())
+
+        assert g.default_options == before
+
+    def test_the_rejected_loose_keyword_names_a_remedy_that_works(self):
+        """The hint in the rejection message is now actually accepted.
+
+        Test scenario:
+            `hillshade=` is refused with "pass data_style=DataStyle(...)".
+            Doing exactly that must succeed, or the error would send callers
+            to a dead end.
+        """
+        options = _make_options(style=None, hillshade=False)
+
+        with pytest.raises(ValueError, match=r"data_style=DataStyle\(hillshade=\.\.\.\)"):
+            Glyph(default_options=options, hillshade=True)
+
+        g = Glyph(default_options=options, data_style=DataStyle(hillshade=True))
+        assert g.default_options["hillshade"] is True
+
+    def test_group_wins_over_a_loose_kwarg_for_the_same_option(self):
+        """A grouped field overrides a loose keyword naming the same option.
+
+        Test scenario:
+            `cmap` is settable both ways here; the group is applied second, so
+            it wins -- matching how `plot()` resolves the same collision.
+        """
+        g = Glyph(default_options=_make_options(), cmap="viridis")
+
+        assert g.default_options["cmap"] == "viridis"

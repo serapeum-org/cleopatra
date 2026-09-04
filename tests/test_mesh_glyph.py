@@ -2048,3 +2048,69 @@ class TestPlotSplitsRenderKwargs:
         kwargs_mesh.plot(np.array([1.0, 2.0]), edgecolor="k")
 
         assert np.allclose(kwargs_mesh.im.get_edgecolor(), to_rgba("k"))
+
+
+class TestConstructionTimeHillshade:
+    """`MeshGlyph(data_style=DataStyle(hillshade=...))` is honoured and sticky.
+
+    `plot()` rebuilds `default_options` from the class defaults on every call
+    and then restores the construction-time `hillshade`. That restore was
+    unreachable until the constructor accepted `data_style`: the loose
+    `hillshade=` keyword is rejected, so nothing could seed
+    `_construct_hillshade` and it was always `False`.
+    """
+
+    @staticmethod
+    def _glyph(**kwargs):
+        """A two-triangle mesh glyph built with the given constructor kwargs.
+
+        Returns:
+            tuple: `(glyph, node_data)` ready for a node-located plot.
+        """
+        node_x = np.array([0.0, 1.0, 0.5, 1.5])
+        node_y = np.array([0.0, 0.0, 1.0, 1.0])
+        faces = np.array([[0, 1, 2], [1, 3, 2]])
+        node_data = np.array([10.0, 20.0, 30.0, 40.0])
+        return MeshGlyph(node_x, node_y, faces, **kwargs), node_data
+
+    def test_construction_value_is_applied(self):
+        """The group's `hillshade` reaches the options and the sticky field."""
+        glyph, _ = self._glyph(data_style=DataStyle(hillshade=True))
+
+        assert glyph.default_options["hillshade"] is True
+        assert glyph._construct_hillshade is True
+
+    def test_construction_value_survives_plot_and_apply_style(self):
+        """`plot` and `apply_style` restore it when the call does not set it.
+
+        Test scenario:
+            This is the behaviour `_construct_hillshade` exists for. Both
+            calls rebuild `default_options` from the class defaults, where
+            `hillshade` is `False`, so a value that survives can only have
+            come from the restore.
+        """
+        glyph, node_data = self._glyph(data_style=DataStyle(hillshade=True))
+
+        glyph.plot(node_data, location="node")
+        assert glyph.default_options["hillshade"] is True, "plot dropped it"
+
+        glyph.apply_style("topography")
+        assert glyph.default_options["hillshade"] is True, "apply_style dropped it"
+
+    def test_a_call_that_sets_hillshade_still_overrides_it(self):
+        """An explicit per-call value beats the construction-time one."""
+        glyph, node_data = self._glyph(data_style=DataStyle(hillshade=True))
+        glyph.plot(node_data, location="node")
+
+        glyph.apply_style("topography", hillshade=False)
+
+        assert glyph.default_options["hillshade"] is False
+
+    def test_default_is_still_off(self):
+        """Without the group, shading stays off -- the default is unchanged."""
+        glyph, node_data = self._glyph()
+
+        glyph.plot(node_data, location="node")
+
+        assert glyph.default_options["hillshade"] is False
+        assert glyph._construct_hillshade is False

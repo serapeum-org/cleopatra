@@ -335,6 +335,13 @@ class Glyph:
             `ax` on its own is supported — its parent figure is derived
             automatically (the axes is no longer dropped when `fig` is
             omitted).
+        data_style: Grouped `style` / `hillshade` (and, for `ArrayGlyph`,
+            `bands` / `alpha` / `alpha_range`) options to apply at
+            construction. These moved onto `DataStyle` and are therefore
+            rejected as loose keywords; accepting the group here is what
+            makes that redirection reachable, so an option can be set once on
+            the glyph instead of on every `plot()` call. Only the fields the
+            `DataStyle` actually sets are applied.
         **kwargs: Override any key in `default_options`.
 
     Examples:
@@ -410,10 +417,17 @@ class Glyph:
         default_options: dict,
         fig: Figure | None = None,
         ax: Axes | None = None,
+        data_style: Any = None,
         **kwargs,
     ):
         self._default_options = default_options.copy()
         self._merge_kwargs(kwargs)
+        # Grouped options are applied after the loose ones so a construction
+        # kwarg and a `DataStyle` field naming the same option resolve the
+        # same way they do in `plot()`: the group wins.
+        if data_style is not None:
+            self._merge_group_params(data_style)
+            self._explicit_options |= set(data_style.to_options())
         self._vmin: float | None = None
         self._vmax: float | None = None
         self.ticks_spacing: float | None = None
