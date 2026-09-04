@@ -1959,14 +1959,32 @@ class TestApplyStyleForwardsHillshade:
         assert glyph.default_options["hillshade"] is True
         plt.close("all")
 
-    def test_omitting_hillshade_leaves_the_sticky_value(self):
-        """Without the kwarg the preset is applied and shading is left as-is."""
+    def test_omitting_hillshade_resets_it_to_the_default(self):
+        """Without the kwarg, shading returns to the glyph's baseline.
+
+        Test scenario:
+            Reading the value before and after and asserting it is unchanged
+            would compare `False` with `False` -- green even if `apply_style`
+            were a no-op. Turn shading *on* first, so the assertion has a real
+            state change to detect.
+
+            Note what this pins is the observable reset, not one mechanism:
+            `plot` rebuilds `default_options` from `MESH_DEFAULT_OPTIONS` on
+            every call, and separately restores `_construct_hillshade` when
+            the call carries no `hillshade`. Both yield `False`, so the test
+            cannot tell them apart -- what it does guarantee is the contract
+            callers see: `style` is sticky across calls, `hillshade` is not.
+        """
         glyph, _ = self._node_glyph()
-        before = glyph.default_options["hillshade"]
+        glyph.apply_style("topography", hillshade=True)
+        assert glyph.default_options["hillshade"] is True, (
+            "precondition: shading must be on before the reset can be observed"
+        )
 
         glyph.apply_style("topography")
 
-        assert glyph.default_options["hillshade"] == before
+        assert glyph.default_options["hillshade"] is False
+        assert glyph.style == "topography", "the preset itself is sticky"
         plt.close("all")
 
 
