@@ -16,6 +16,7 @@ from matplotlib.transforms import Bbox
 from PIL import Image
 
 import cleopatra.basemap.reference as refmod
+from cleopatra.glyphs.base.glyph import _clear_projection_frame
 from cleopatra.glyphs.gridded.array_glyph import (
     _COORD_DTYPE_MISMATCH,
     _COORD_SHAPE_MISMATCH,
@@ -7775,3 +7776,77 @@ class TestConstructionTimeStyle:
 
         assert glyph.default_options["style"] is None
         plt.close("all")
+
+
+class TestFigAxResolution:
+    """The four fig/ax construction forms all render (regression for #326).
+
+    `fig=` alone used to crash in `_clear_projection_frame` because the axes was
+    never derived from the supplied figure; the other three forms already worked.
+    """
+
+    @staticmethod
+    def _arr() -> np.ndarray:
+        return np.arange(9, dtype="float32").reshape(3, 3)
+
+    def test_neither_creates_own_figure(self):
+        plt.close("all")
+        existing, _ = plt.subplots()
+        fig, ax = ArrayGlyph(self._arr()).plot()
+        assert isinstance(fig, Figure)
+        assert fig is not existing  # a fresh figure, not the ambient one
+        plt.close("all")
+
+    def test_ax_only_adopts_axes(self):
+        plt.close("all")
+        fig0, ax0 = plt.subplots()
+        fig, ax = ArrayGlyph(self._arr(), ax=ax0).plot()
+        assert ax is ax0 and fig is fig0
+        plt.close("all")
+
+    def test_fig_only_draws_into_supplied_figure(self):
+        plt.close("all")
+        fig0, existing_ax = plt.subplots()
+        fig, ax = ArrayGlyph(self._arr(), fig=fig0).plot()
+        assert fig is fig0  # drew into the caller's figure, did not raise
+        assert ax is existing_ax  # reused the figure's existing axes
+        plt.close("all")
+
+    def test_fig_only_empty_figure_creates_axes(self):
+        plt.close("all")
+        fig0 = plt.figure()  # no axes yet
+        fig, ax = ArrayGlyph(self._arr(), fig=fig0).plot()
+        assert fig is fig0
+        assert ax in fig0.axes  # an axes was added to the caller's figure
+        plt.close("all")
+
+    def test_fig_and_ax_uses_axes(self):
+        plt.close("all")
+        fig0 = plt.figure()
+        ax0 = fig0.add_subplot()
+        fig, ax = ArrayGlyph(self._arr(), fig=fig0, ax=ax0).plot()
+        assert fig is fig0 and ax is ax0
+        plt.close("all")
+
+    def test_fig_bound_but_plot_ax_override_wins_without_stray_axes(self):
+        plt.close("all")
+        bound = plt.figure()
+        other_fig, other_ax = plt.subplots()
+        n_before = len(bound.axes)
+        fig, ax = ArrayGlyph(self._arr(), fig=bound).plot(ax=other_ax)
+        assert ax is other_ax  # the plot(ax=) override wins
+        assert len(bound.axes) == n_before  # no stray axes left on the bound figure
+        plt.close("all")
+
+    def test_animate_fig_only_draws_into_supplied_figure(self):
+        plt.close("all")
+        fig0, existing_ax = plt.subplots()
+        stack = np.arange(2 * 3 * 3, dtype="float32").reshape(2, 3, 3)
+        glyph = ArrayGlyph(stack, fig=fig0)
+        anim = glyph.animate([0, 1], interval=50)
+        assert isinstance(anim, FuncAnimation)
+        assert glyph.fig is fig0 and glyph.ax is existing_ax
+        plt.close("all")
+
+    def test_clear_projection_frame_none_is_noop(self):
+        assert _clear_projection_frame(None) is False
