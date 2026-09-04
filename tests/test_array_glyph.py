@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from matplotlib.animation import FuncAnimation
+from matplotlib.collections import PathCollection
 from matplotlib.colors import BoundaryNorm, Normalize, PowerNorm, to_rgba
 from matplotlib.figure import Figure
 from matplotlib.text import Text
@@ -7541,12 +7542,15 @@ class TestAnimateWithPoints:
     """`ArrayGlyph.animate(points=...)` re-labels the overlay every frame."""
 
     def test_frame_update_repositions_and_relabels_the_points(self):
-        """Each frame re-applies the overlay offsets and labels.
+        """Each frame re-applies the overlay offsets and labels, and returns them.
 
         Test scenario:
-            Driving the animation's frame function directly (as the writer
-            does) must leave the point labels on the axes -- the overlay is
-            part of the animated artist list, not a one-off decoration.
+            `PointOverlay.draw` already puts the markers and labels on the axes
+            during setup, so merely reading them back after a frame proves
+            nothing. The offsets and label texts are therefore cleared first:
+            only the per-frame update can restore them. The frame function's
+            return value is asserted too, because that -- not the axes -- is
+            what a blitting writer redraws.
         """
         frame = np.arange(12.0).reshape(3, 4)
         stack = np.stack([frame, frame + 1.0])
@@ -7554,10 +7558,32 @@ class TestAnimateWithPoints:
         points = PointOverlay(np.array([["A", 1, 1], ["B", 2, 2]], dtype=object))
 
         glyph.animate(list(range(2)), points=points)
-        glyph.anim._func(1)
+        scatter = next(
+            artist
+            for artist in glyph.ax.collections
+            if isinstance(artist, PathCollection)
+        )
+        labels = [text for text in glyph.ax.texts if text.get_text() in {"A", "B"}]
+        assert len(labels) == 2, "setup should have drawn one label per point"
+        for text in labels:
+            text.set_text("")
+        scatter.set_offsets(np.zeros((2, 2)))
 
-        labels = {t.get_text() for t in glyph.ax.texts}
-        assert {"A", "B"}.issubset(labels), f"point labels missing: {labels}"
+        # matplotlib exposes no public per-frame hook; `_func` is the frame
+        # callable `FuncAnimation` itself calls for every rendered frame.
+        artists = glyph.anim._func(1)
+
+        assert [text.get_text() for text in labels] == ["A", "B"], (
+            "the frame update should restore each point's label"
+        )
+        assert np.allclose(np.asarray(scatter.get_offsets(), dtype=float), [[1, 1], [2, 2]]), (
+            f"the frame update should restore the offsets; got {scatter.get_offsets()}"
+        )
+        assert scatter in artists, "the marker collection must be a redrawn artist"
+        assert all(text in artists for text in labels), (
+            "every point label must be a redrawn artist"
+        )
+        plt.close(glyph.fig)
 
 
 class TestStyleBackgroundBeforeDrawing:
