@@ -2168,3 +2168,34 @@ class TestConstructionTimeDataStyleAcrossGlyphs:
         """
         with pytest.raises(ValueError, match=r"data_style= does not apply"):
             build()
+
+    def test_an_empty_group_is_still_accepted_by_those_glyphs(self):
+        """A group that requests nothing is a no-op, not a refusal.
+
+        Test scenario:
+            The refusal keys off what the group *requests*, not off what the
+            glyph models -- otherwise a caller threading an optional
+            `DataStyle()` through generic code would hit an error on exactly
+            the glyphs where it was harmless. This is the boundary between
+            the two, on a glyph that models none of the options.
+        """
+        glyph = PolygonGlyph(self._polygons(), data_style=DataStyle())
+
+        assert glyph.default_options == PolygonGlyph.DEFAULT_OPTIONS
+
+    def test_the_refusal_names_the_glyph_and_the_options(self):
+        """The error is diagnosable without opening the source.
+
+        Test scenario:
+            The loose-keyword rejection it replaces names both the option and
+            the remedy, so this one has to be as useful: the class that
+            refused, and which options it does not have.
+        """
+        with pytest.raises(ValueError) as excinfo:
+            ScatterGlyph(
+                np.arange(3.0), np.arange(3.0), data_style=DataStyle(hillshade=True)
+            )
+
+        message = str(excinfo.value)
+        assert "ScatterGlyph" in message, f"the glyph should be named; got {message}"
+        assert "hillshade" in message, f"the options should be named; got {message}"
