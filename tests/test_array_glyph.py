@@ -7807,17 +7807,23 @@ class TestFigAxResolution:
     def test_fig_only_draws_into_supplied_figure(self):
         plt.close("all")
         fig0, existing_ax = plt.subplots()
-        fig, ax = ArrayGlyph(self._arr(), fig=fig0).plot()
+        glyph = ArrayGlyph(self._arr(), fig=fig0)
+        fig, ax = glyph.plot()
         assert fig is fig0  # drew into the caller's figure, did not raise
         assert ax is existing_ax  # reused the figure's existing axes
+        assert glyph.im is not None  # the array was actually drawn
+        # the caller owns the figure, so teardown must not tighten/repaint it
+        assert glyph._owns_figure is False and glyph._auto_figure is False
         plt.close("all")
 
     def test_fig_only_empty_figure_creates_axes(self):
         plt.close("all")
         fig0 = plt.figure()  # no axes yet
-        fig, ax = ArrayGlyph(self._arr(), fig=fig0).plot()
+        glyph = ArrayGlyph(self._arr(), fig=fig0)
+        fig, ax = glyph.plot()
         assert fig is fig0
         assert ax in fig0.axes  # an axes was added to the caller's figure
+        assert glyph.im is not None  # the array was actually drawn
         plt.close("all")
 
     def test_fig_and_ax_uses_axes(self):
@@ -7835,6 +7841,7 @@ class TestFigAxResolution:
         n_before = len(bound.axes)
         fig, ax = ArrayGlyph(self._arr(), fig=bound).plot(ax=other_ax)
         assert ax is other_ax  # the plot(ax=) override wins
+        assert fig is other_fig  # and the figure switches to the override's figure
         assert len(bound.axes) == n_before  # no stray axes left on the bound figure
         plt.close("all")
 
@@ -7846,6 +7853,17 @@ class TestFigAxResolution:
         anim = glyph.animate([0, 1], interval=50)
         assert isinstance(anim, FuncAnimation)
         assert glyph.fig is fig0 and glyph.ax is existing_ax
+        plt.close("all")
+
+    def test_animate_fig_only_empty_figure_creates_axes(self):
+        plt.close("all")
+        fig0 = plt.figure()  # no axes yet
+        stack = np.arange(2 * 3 * 3, dtype="float32").reshape(2, 3, 3)
+        glyph = ArrayGlyph(stack, fig=fig0)
+        anim = glyph.animate([0, 1], interval=50)
+        assert isinstance(anim, FuncAnimation)
+        assert glyph.fig is fig0
+        assert glyph.ax in fig0.axes  # an axes was added to the caller's empty figure
         plt.close("all")
 
     def test_clear_projection_frame_none_is_noop(self):
