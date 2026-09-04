@@ -566,6 +566,12 @@ class Glyph:
         the construction succeed instead of raising on an unknown key.
         Order and values are preserved; rejected keys are simply dropped.
 
+        Note that this filters *option* keys only. The grouped parameter
+        objects are not options and are dropped like any other unknown key,
+        so `data_style=` (and `plot()`'s `color=` / `contour=` / `cells=`)
+        must be passed separately rather than through this filter -- a
+        `data_style` in `kwargs` would otherwise be silently discarded.
+
         Args:
             kwargs: A mapping of candidate option keys to values.
 

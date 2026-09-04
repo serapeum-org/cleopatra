@@ -145,6 +145,30 @@ class MeshGlyph(GeoMixin, Glyph):
         ax=None,
         **kwargs,
     ):
+        """Build a mesh glyph from a node/face topology.
+
+        Args:
+            node_x: 1-D node x (or longitude) coordinates.
+            node_y: 1-D node y (or latitude) coordinates, paired with `node_x`.
+            face_node_connectivity: `(n_faces, max_nodes)` node indices per
+                face, padded with `fill_value` for faces with fewer nodes.
+            fill_value: Padding value in `face_node_connectivity`. Default -1.
+            edge_node_connectivity: Optional `(n_edges, 2)` node indices per
+                edge, used by the wireframe render. Default None.
+            fig: Pre-existing figure to bind. Default None.
+            ax: Pre-existing axes to bind. Default None.
+            data_style: Grouped `style` / `hillshade` options applied at
+                construction, e.g. `data_style=DataStyle(hillshade=True)`.
+                These are rejected as loose keywords, so the group is how they
+                are set here rather than on every `plot()` call; the value is
+                sticky across later calls (`plot()` restores it whenever the
+                call itself does not set one). Default None.
+            **kwargs: Override any key in `MESH_DEFAULT_OPTIONS`.
+
+        Raises:
+            ValueError: If the topology arrays are inconsistent, or if a
+                keyword argument is not a `MESH_DEFAULT_OPTIONS` key.
+        """
         super().__init__(default_options=MESH_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs)
         self._node_x = np.asarray(node_x, dtype=np.float64)
         self._node_y = np.asarray(node_y, dtype=np.float64)
