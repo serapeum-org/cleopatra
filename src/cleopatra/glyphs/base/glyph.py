@@ -432,6 +432,21 @@ class Glyph:
             'topography'
 
             ```
+        - A group that sets only options this glyph does not model is
+            refused, rather than accepted and dropped -- the four primitive
+            glyphs behave this way:
+            ```python
+            >>> from cleopatra.glyphs.base.glyph import Glyph
+            >>> from cleopatra.styling.params import DataStyle
+            >>> from cleopatra.styling.styles import DEFAULT_OPTIONS
+            >>> opts = DEFAULT_OPTIONS.copy()
+            >>> opts.update({"vmin": None, "vmax": None})
+            >>> Glyph(default_options=opts, data_style=DataStyle(style="topography"))
+            Traceback (most recent call last):
+                ...
+            ValueError: Glyph has no ['style'] option(s), so data_style= does not apply to it. ...
+
+            ```
 
     See Also:
         cleopatra.glyphs.gridded.array_glyph.ArrayGlyph: Glyph subclass for
