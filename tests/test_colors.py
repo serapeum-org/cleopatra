@@ -1648,9 +1648,30 @@ class TestNormaliseUnit:
         """An unrecognised unit is reported as unknown, not guessed at."""
         assert _normalise_unit("parsecs") is None
 
-    def test_alias_resolves_case_insensitively(self):
-        """Aliases resolve regardless of case and surrounding whitespace."""
-        assert _normalise_unit("  Celsius ") == _normalise_unit("celsius")
+    @pytest.mark.parametrize(
+        "spelling, canonical",
+        [
+            ("celsius", "celsius"),
+            ("  Celsius ", "celsius"),
+            ("degC", "celsius"),
+            ("C", "celsius"),
+            ("°C", "celsius"),
+            ("K", "kelvin"),
+            ("kelvin", "kelvin"),
+            ("degF", "fahrenheit"),
+            ("°f", "fahrenheit"),
+        ],
+    )
+    def test_alias_resolves_to_its_canonical_name(self, spelling, canonical):
+        """Every alias resolves to a named canonical unit, whatever its casing.
+
+        Test scenario:
+            Asserting against the literal canonical name is what pins the
+            alias table. Comparing two calls to `_normalise_unit` against each
+            other would agree just as well if the table were empty and both
+            sides returned `None`.
+        """
+        assert _normalise_unit(spelling) == canonical, spelling
 
 
 class TestConvertUnitsNoOps:
@@ -1668,16 +1689,38 @@ class TestConvertUnitsNoOps:
 
         assert convert_units(data, "Celsius", "celsius") is data
 
-    def test_missing_side_is_a_no_op(self):
-        """An unknown source or target unit leaves the data alone."""
+    @pytest.mark.parametrize(
+        "from_units, to_units",
+        [(None, "celsius"), ("celsius", None), (None, None)],
+        ids=["no-source", "no-target", "neither"],
+    )
+    def test_missing_side_is_a_no_op(self, from_units, to_units):
+        """A missing source or target unit leaves the data alone.
+
+        Test scenario:
+            A conversion needs both ends; with either absent there is nothing
+            to convert *between*, so the same array object comes back rather
+            than a silently unconverted copy.
+        """
         data = np.array([1.0, 2.0])
 
-        assert convert_units(data, None, "celsius") is data
-        assert convert_units(data, "celsius", None) is data
+        assert convert_units(data, from_units, to_units) is data
 
 
 class TestLoadPresetsMalformedAsset:
     """`_load_presets` degrades to `{}` instead of raising on a bad asset."""
+
+    #: A real, populated asset. Naming a *missing* file instead would make the
+    #: test pass through the `OSError` arm even with the patch inert, so it
+    #: could not tell the two failure modes apart.
+    REAL_ASSET = "builtin_presets.json"
+
+    def test_the_chosen_asset_really_loads_unpatched(self):
+        """The asset used below is populated, so the patch below has to bite."""
+        assert _load_presets(self.REAL_ASSET), (
+            f"{self.REAL_ASSET} should load presets; the malformed-asset test "
+            "below is only meaningful if an unpatched call is non-empty"
+        )
 
     def test_non_mapping_presets_yield_no_styles(self, monkeypatch):
         """A `presets` value that is not a mapping is rejected wholesale.
@@ -1685,11 +1728,16 @@ class TestLoadPresetsMalformedAsset:
         Test scenario:
             The asset parses as JSON but its `presets` key holds a list, so
             there is nothing to iterate as `name -> layers`; a partial or
-            corrupted install must still import cleanly.
+            corrupted install must still import cleanly. The stub stands in
+            for a real, populated asset (see `REAL_ASSET`) and records that it
+            was read, so an inert patch fails rather than passing through the
+            missing-file arm.
         """
+        reads: list[str] = []
 
         class _Resource:
             def joinpath(self, name):
+                reads.append(name)
                 return self
 
             def read_text(self, encoding="utf-8"):
@@ -1697,7 +1745,10 @@ class TestLoadPresetsMalformedAsset:
 
         monkeypatch.setattr(importlib.resources, "files", lambda package: _Resource())
 
-        assert _load_presets("anything.json") == {}
+        assert _load_presets(self.REAL_ASSET) == {}
+        assert reads == [self.REAL_ASSET], (
+            f"the stubbed asset should have been read once; got {reads}"
+        )
 
 
 class TestResolveStyleNormAllNaN:
