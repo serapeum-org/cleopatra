@@ -2,7 +2,7 @@
 
 The `MeshGlyph` class provides visualization for UGRID-style unstructured mesh data
 using matplotlib triangulation. It supports face-centered and node-centered plotting,
-wireframe rendering, all 5 color scale types, and time-series animation.
+wireframe rendering, all 6 color scale types, and time-series animation.
 
 ## Class Documentation
 

@@ -249,7 +249,7 @@ mg.save_animation("simulation.gif", fps=5)
 
 ## Color Scales
 
-`MeshGlyph` supports all 5 color scale types inherited from the
+`MeshGlyph` supports all 6 color scale types inherited from the
 `Glyph` base class:
 
 | Scale | Use case | Key parameters |
@@ -257,12 +257,14 @@ mg.save_animation("simulation.gif", fps=5)
 | `linear` | Default. Uniform mapping from data to color. | `vmin`, `vmax` |
 | `power` | Emphasize low or high values. | `gamma` (< 1 emphasizes low) |
 | `sym-lognorm` | Data spanning many orders of magnitude with a zero crossing. | `threshold`, `scale` |
+| `lognorm` | Strictly-positive data spanning many orders of magnitude (no zero crossing). | (positive `vmin`/`vmax`) |
 | `boundary-norm` | Discrete color bins at specific thresholds. | `bounds` (list of boundaries) |
 | `midpoint` | Split the colormap at a meaningful value (e.g., zero for difference plots). | `at` |
 
 Pick a scale by passing the matching `ColorScaling` factory as `color=`:
 `ColorScaling.power(gamma=...)`, `ColorScaling.sym_log(threshold=..., scale=...)`,
-`ColorScaling.boundary(bounds=[...])`, `ColorScaling.midpoint(at=...)`, or `ColorScaling.linear()`.
+`ColorScaling.log()`, `ColorScaling.boundary(bounds=[...])`, `ColorScaling.midpoint(at=...)`, or
+`ColorScaling.linear()`.
 
 ```python
 # Example: midpoint scale for a difference plot
