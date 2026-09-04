@@ -609,40 +609,71 @@ class TestGetLineStyleUnknownName:
 class TestScaleConstruction:
     """`Scale` is usable as an object even though its API is static."""
 
-    def test_instantiates(self):
-        """Constructing it takes no arguments and keeps the static helpers."""
-        scale = Scale()
+    def test_instance_dispatches_the_static_helpers(self):
+        """An instance reaches the same scaling as the class does.
 
-        assert isinstance(scale, Scale)
-        assert callable(scale.log_scale)
+        Test scenario:
+            `Scale()` exists only so the documented "not typically necessary"
+            construction keeps working. `isinstance(Scale(), Scale)` and
+            `callable(...)` are guaranteed by the language and could not fail,
+            so the assertion is on the scaling an instance actually computes.
+        """
+        assert Scale().log_scale(100.0) == pytest.approx(2.0)
+        assert Scale().power_scale(-10.0)(100.0) == pytest.approx(
+            Scale.power_scale(-10.0)(100.0)
+        ), "an instance must build the same scaling function as the class"
 
 
 class TestSwatchLegendBackingPanel:
     """`swatch_legend(box=...)` draws an opaque panel behind the swatch."""
 
     @staticmethod
-    def _swatch(box):
-        """Draw a swatch legend with the given `box` and return the figure."""
+    def _added_panel(box):
+        """Draw a swatch legend with `box` and return the one patch it added.
+
+        Args:
+            box: The `box=` argument under test (`True`, a colour, or a dict).
+
+        Returns:
+            tuple: `(figure, panel)` -- the figure to close and the single
+                patch the `box` argument put on the axes.
+        """
         fig, ax = plt.subplots()
+        before = set(map(id, ax.patches))
         swatch_legend(ax, "viridis", "label", vmin=0.0, vmax=1.0, box=box)
-        return fig, ax
+        added = [p for p in ax.patches if id(p) not in before]
+        assert len(added) == 1, f"box= should add exactly one panel; got {len(added)}"
+        return fig, added[0]
 
     def test_string_box_sets_the_panel_colour(self):
-        """A colour string is used as the panel's face colour."""
-        fig, ax = self._swatch("black")
+        """A colour string is used as the panel's face colour.
 
-        panels = [p for p in ax.patches if p.get_facecolor()[:3] == (0.0, 0.0, 0.0)]
-        assert panels, "a black backing panel should have been added"
+        Test scenario:
+            The panel is identified as the patch the call *added*, not by
+            searching the axes for one of the right colour -- otherwise any
+            unrelated black artist would satisfy the assertion.
+        """
+        fig, panel = self._added_panel("black")
+
+        assert panel.get_facecolor()[:3] == (0.0, 0.0, 0.0)
         plt.close(fig)
 
     def test_dict_box_overrides_the_panel_defaults(self):
-        """A dict is merged over the default panel style."""
-        fig, ax = self._swatch({"facecolor": "red", "linewidth": 2.5})
+        """A dict is merged over the default panel style.
 
-        panels = [p for p in ax.patches if p.get_linewidth() == 2.5]
-        assert panels, "the dict's linewidth should reach the backing panel"
-        assert panels[0].get_facecolor()[:3] == (1.0, 0.0, 0.0), (
+        Test scenario:
+            `facecolor` replaces the default white and `linewidth` replaces
+            the default 0.6, proving the dict is merged rather than used
+            wholesale or ignored.
+        """
+        fig, panel = self._added_panel({"facecolor": "red", "linewidth": 2.5})
+
+        assert panel.get_linewidth() == 2.5, "the dict's linewidth should be applied"
+        assert panel.get_facecolor()[:3] == (1.0, 0.0, 0.0), (
             "the dict's facecolor should override the default white"
+        )
+        assert panel.get_edgecolor()[:3] == pytest.approx((0.6, 0.6, 0.6)), (
+            "an unspecified key should keep its default, proving a merge"
         )
         plt.close(fig)
 
@@ -663,7 +694,7 @@ class TestCategoricalIsNullGuards:
             null and is carried through.
         """
 
-        def _raising_isna(value):
+        def _raising_isna(_value):
             raise ValueError("truth value of an array is ambiguous")
 
         assert _categorical_is_null(object(), _raising_isna) is False
@@ -677,3 +708,23 @@ class TestCategoricalIsNullGuards:
             "not null" rather than an error.
         """
         assert _categorical_is_null(object(), None) is False
+
+    @pytest.mark.parametrize(
+        "value", [np.datetime64("NaT"), np.timedelta64("NaT"), float("nan"), None]
+    )
+    def test_real_nulls_are_still_recognised_without_pandas(self, value):
+        """Every null flavour is dropped even when pandas is unavailable.
+
+        Test scenario:
+            The two tests above cover only the `except -> False` arms, which a
+            function answering `False` for everything would satisfy just as
+            well. These are the positive cases that rule that out.
+
+            Which numpy branch answers is deliberately not asserted: on numpy
+            2.4 `np.isnan` accepts datetime64/timedelta64 and returns `True`
+            for `NaT`, so the `np.isnat` fallback below it is unreachable
+            here -- it exists for builds whose `np.isnan` rejects those
+            dtypes. The contract (a `NaT` never becomes a category) is what
+            callers depend on and what holds across both.
+        """
+        assert _categorical_is_null(value, None) is True
