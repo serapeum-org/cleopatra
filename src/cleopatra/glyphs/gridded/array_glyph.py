@@ -4484,6 +4484,8 @@ class ArrayGlyph(GeoMixin, Glyph):
         elif self.ax is None:
             # A figure was bound without an axes: draw into the caller's figure.
             self.ax = self.fig.axes[0] if self.fig.axes else self.fig.add_subplot(111)
+            self._auto_figure = False
+            self._owns_figure = False
 
         fig, ax = self.fig, self.ax
 
