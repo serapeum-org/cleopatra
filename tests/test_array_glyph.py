@@ -3,6 +3,7 @@ import re
 import shutil
 import warnings
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
@@ -33,6 +34,18 @@ from cleopatra.glyphs.gridded.array_glyph import (
 from cleopatra.styling.params import CellValues, Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
+
+
+@pytest.fixture(autouse=True)
+def _close_figures():
+    """Close every figure after each test so leaks never warn or accumulate.
+
+    Module-wide: the suite already trips matplotlib's 20-open-figure warning
+    from this module, and a per-class fixture only protects the class it is
+    written in.
+    """
+    yield
+    plt.close("all")
 
 
 class TestProperties:
@@ -2823,12 +2836,6 @@ class TestFacetColorbar:
             list: The axes whose matplotlib label marks them as colorbars.
         """
         return [ax for ax in result.fig.axes if ax.get_label() == "<colorbar>"]
-
-    @pytest.fixture(autouse=True)
-    def _close_figures(self):
-        """Close every figure after each test so leaks never warn or accumulate."""
-        yield
-        plt.close("all")
 
     def test_facet_accepts_colorbar_spec(self):
         """`facet(colorbar=ColorBar(...))` is accepted and configures the shared bar.
@@ -7399,24 +7406,62 @@ class TestAutoFigsizeFallback:
             Non-numeric coordinate vectors make the range computation raise;
             sizing is a convenience, so the configured default `figsize` is
             returned instead of propagating the error.
+
+            `_coords` is assigned directly because `_validate_coords` rejects
+            this input at construction: the guard is defence-in-depth against
+            a hand-assigned value, not a state the public API can reach. The
+            data's own aspect is deliberately non-square, so the default is
+            not also what the successful path would have returned.
         """
         glyph = ArrayGlyph(np.arange(12.0).reshape(3, 4))
+        default = tuple(glyph.default_options["figsize"])
+        assert tuple(glyph._auto_figsize()) != default, (
+            "precondition: this array must size to something other than the "
+            "default, or the assertion below cannot detect the fallback"
+        )
         glyph._coords = (np.array(["a", "b"]), np.array(["c", "d"]))
 
-        assert tuple(glyph._auto_figsize()) == tuple(
-            glyph.default_options["figsize"]
-        ), "unmeasurable coords should keep the default figsize"
+        assert tuple(glyph._auto_figsize()) == default, (
+            "unmeasurable coords should fall back to the default figsize"
+        )
 
 
 class TestTightenFigureGuards:
     """`ArrayGlyph._tighten_figure` no-ops when there is nothing to tighten."""
 
     def test_no_figure_is_a_no_op(self):
-        """Tightening before anything is drawn returns without error."""
+        """Tightening before anything is drawn creates nothing and draws nothing.
+
+        Test scenario:
+            `_tighten_figure` returns `None` on every path, so asserting that
+            proves nothing. What the guard has to deliver is that no figure is
+            conjured -- neither on the glyph nor in pyplot's registry, which
+            is what a stray `plt.subplots` would leave behind.
+        """
+        plt.close("all")
         glyph = ArrayGlyph(np.arange(12.0).reshape(3, 4))
 
-        assert glyph._tighten_figure() is None
+        glyph._tighten_figure()
+
         assert glyph.fig is None, "tightening must not create a figure"
+        assert plt.get_fignums() == [], "no figure should be registered with pyplot"
+
+    def test_figure_without_axes_is_a_no_op(self):
+        """A figure carrying no axes has no content to measure, so it is left alone.
+
+        Test scenario:
+            The guard has two halves; this is the `not fig.axes` one. An empty
+            figure must keep its size rather than be resized to the bbox of
+            nothing.
+        """
+        glyph = ArrayGlyph(np.arange(12.0).reshape(3, 4))
+        glyph.fig = plt.figure(figsize=(4.0, 3.0))
+        before = tuple(glyph.fig.get_size_inches())
+
+        glyph._tighten_figure()
+
+        assert tuple(glyph.fig.get_size_inches()) == before
+        plt.close(glyph.fig)
 
     def test_unmeasurable_content_is_a_no_op(self, monkeypatch):
         """A renderer that reports no content bbox leaves the figure untouched.
@@ -7485,7 +7530,7 @@ class TestStyledProjectionRequiresCoordinateVectors:
             np.random.default_rng(0).random((4, 5)) * 300.0, projection="globe"
         )
 
-        with pytest.raises(ValueError, match="1-D lon/lat coordinate"):
+        with pytest.raises(ValueError, match=r"projection= with a style requires"):
             glyph.plot(data_style=DataStyle(style="temperature_2m"))
 
 
@@ -7594,14 +7639,24 @@ class TestStyleBackgroundBeforeDrawing:
 
         Test scenario:
             The canvas colour is scoped to this glyph's own figure/axes; with
-            neither created yet there is nothing to paint, and no global
-            `rcParams` may be touched as a substitute.
+            neither created yet there is nothing to paint. Asserting that
+            `ax`/`fig` are still `None` cannot fail (the method never assigns
+            them), so what is checked is the claim that matters: the colour is
+            not applied globally via `rcParams` as a substitute.
         """
         glyph = ArrayGlyph(np.arange(12.0).reshape(3, 4))
+        before = (
+            matplotlib.rcParams["axes.facecolor"],
+            matplotlib.rcParams["figure.facecolor"],
+        )
 
         glyph._apply_style_background({"background": "black"})
 
-        assert glyph.ax is None and glyph.fig is None
+        assert (
+            matplotlib.rcParams["axes.facecolor"],
+            matplotlib.rcParams["figure.facecolor"],
+        ) == before, "the preset background must not leak into global rcParams"
+        assert glyph.fig is None, "no figure should have been created"
 
 
 class TestAnimateStyleColorBarClearsStaleInsets:
