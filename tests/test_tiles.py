@@ -1621,3 +1621,50 @@ class TestWorldTexture:
         """A zoom outside 0..6 or a non-positive grid dimension raises `ValueError`."""
         with pytest.raises(ValueError):
             world_texture(**kwargs)
+
+
+class _NonHttpProvider:
+    """A provider whose URL template resolves to a non-http(s) scheme."""
+
+    def build_url(self, x: int, y: int, z: int) -> str:
+        """Return a `file://` URL for the requested tile."""
+        return f"file:///tiles/{z}/{x}/{y}.png"
+
+
+class _BareProvider:
+    """A provider carrying no attribution metadata at all."""
+
+    def build_url(self, x: int, y: int, z: int) -> str:
+        """Return an ordinary https URL for the requested tile."""
+        return f"https://tiles.invalid/{z}/{x}/{y}.png"
+
+
+class TestNonHttpTileUrl:
+    """`fetch_single_tile` refuses a provider URL that is not http(s)."""
+
+    def test_file_url_raises_before_any_request(self):
+        """A `file://` template is rejected up front, not fetched.
+
+        Test scenario:
+            A provider whose `build_url` yields `file:///...` must raise
+            `ValueError` rather than let the opener read a local path --
+            the check runs before the retry loop, so no request is made.
+        """
+        with pytest.raises(ValueError, match="non-http"):
+            fetch_single_tile(Tile(0, 0, 0), _NonHttpProvider(), timeout=1, retries=0)
+
+
+class TestAttributionWithoutMetadata:
+    """`attribution=True` on a provider that exposes no attribution text."""
+
+    def test_no_text_is_drawn(self, mock_ax, _patch_tiles):
+        """A provider with neither `attribution` nor `html_attribution` draws nothing.
+
+        Test scenario:
+            `attribution=True` asks for the provider's own credit line; when
+            the provider carries none, `add_tiles` must fall through to "no
+            text" instead of writing an empty label onto the axes.
+        """
+        add_tiles(mock_ax, crs=3857, source=_BareProvider(), attribution=True)
+
+        mock_ax.text.assert_not_called()

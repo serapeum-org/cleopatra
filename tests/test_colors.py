@@ -27,10 +27,12 @@ from cleopatra.styling.colors import (
     Colors,
     _category_boundaries,
     _load_presets,
+    _normalise_unit,
     _resolve_style_norm,
     alpha_scaled_image,
     alpha_scaled_mesh,
     apply_data_style,
+    convert_units,
 )
 from cleopatra.styling.perceptual import perceptual_uniformity
 
@@ -1633,3 +1635,147 @@ def test_to_hex():
     color = Colors(mixed_color)
     hex_colors = color.to_hex()
     assert hex_colors == ["#8033cc", "#23a9dd", "#8033cc"]
+
+
+class TestNormaliseUnit:
+    """`_normalise_unit` maps a unit spelling onto its canonical name."""
+
+    def test_none_stays_none(self):
+        """A missing unit has no canonical spelling."""
+        assert _normalise_unit(None) is None
+
+    def test_unknown_unit_is_none(self):
+        """An unrecognised unit is reported as unknown, not guessed at."""
+        assert _normalise_unit("parsecs") is None
+
+    def test_alias_resolves_case_insensitively(self):
+        """Aliases resolve regardless of case and surrounding whitespace."""
+        assert _normalise_unit("  Celsius ") == _normalise_unit("celsius")
+
+
+class TestConvertUnitsNoOps:
+    """`convert_units` returns the data untouched when there is nothing to do."""
+
+    def test_identical_spelling_is_a_no_op(self):
+        """Same unit, different case -> the original array is handed back.
+
+        Test scenario:
+            The string comparison runs before the alias table, so a unit
+            that is spelled differently but identical after casefolding must
+            short-circuit rather than look for a conversion pair.
+        """
+        data = np.array([1.0, 2.0])
+
+        assert convert_units(data, "Celsius", "celsius") is data
+
+    def test_missing_side_is_a_no_op(self):
+        """An unknown source or target unit leaves the data alone."""
+        data = np.array([1.0, 2.0])
+
+        assert convert_units(data, None, "celsius") is data
+        assert convert_units(data, "celsius", None) is data
+
+
+class TestLoadPresetsMalformedAsset:
+    """`_load_presets` degrades to `{}` instead of raising on a bad asset."""
+
+    def test_non_mapping_presets_yield_no_styles(self, monkeypatch):
+        """A `presets` value that is not a mapping is rejected wholesale.
+
+        Test scenario:
+            The asset parses as JSON but its `presets` key holds a list, so
+            there is nothing to iterate as `name -> layers`; a partial or
+            corrupted install must still import cleanly.
+        """
+
+        class _Resource:
+            def joinpath(self, name):
+                return self
+
+            def read_text(self, encoding="utf-8"):
+                return json.dumps({"version": 1, "presets": ["not", "a", "mapping"]})
+
+        monkeypatch.setattr(importlib.resources, "files", lambda package: _Resource())
+
+        assert _load_presets("anything.json") == {}
+
+
+class TestResolveStyleNormAllNaN:
+    """`resolve_style_norm` with a diverging `center` and no finite data."""
+
+    def test_unit_radius_is_used(self):
+        """An all-NaN layer cannot size the range, so a unit radius is used.
+
+        Test scenario:
+            A `center` with no finite values to measure against would give a
+            zero-width norm; the fallback keeps `center +/- 1` so the
+            colormap still spans a real interval.
+        """
+        norm, vmin, vmax = _resolve_style_norm(
+            np.full((2, 2), np.nan), {"cmap": "viridis", "center": 0.0}
+        )
+
+        assert (vmin, vmax) == (-1.0, 1.0)
+        assert norm.vmin == -1.0 and norm.vmax == 1.0
+
+
+class TestCurvilinearCategoricalStyle:
+    """A categorical preset drawn on a curvilinear grid uses the mesh path."""
+
+    def test_categories_render_as_a_quadmesh(self):
+        """`x`/`y` switch the categorical branch from `imshow` to `pcolormesh`.
+
+        Test scenario:
+            `flow_direction_d8` is a categorical preset; supplying
+            curvilinear coordinates must route it through
+            `alpha_scaled_mesh` so the classes land on the warped grid
+            rather than an axis-aligned image.
+        """
+        fig, ax = plt.subplots()
+        codes = np.array([[1.0, 2.0, 4.0], [8.0, 16.0, 32.0]])
+        y_grid, x_grid = np.mgrid[0:3, 0:4].astype(float)
+
+        images = apply_data_style(
+            ax,
+            {"flow_direction_d8": codes},
+            style="flow_direction_d8",
+            x=x_grid,
+            y=y_grid,
+        )
+
+        assert isinstance(images["flow_direction_d8"], QuadMesh), (
+            f"expected a QuadMesh, got {type(images['flow_direction_d8'])}"
+        )
+        plt.close(fig)
+
+
+class TestCreateFromImageInvalidFile:
+    """`Colors.create_from_image` rejects a file that is not an image."""
+
+    def test_non_image_file_raises_value_error(self, tmp_path):
+        """A readable but undecodable file gets a clear `ValueError`.
+
+        Test scenario:
+            The path exists (so the `FileNotFoundError` guard passes) but
+            Pillow cannot identify it; the failure must be reported as "not
+            a valid image", not as Pillow's internal error.
+        """
+        path = tmp_path / "not-an-image.png"
+        path.write_text("plain text, not PNG bytes", encoding="utf-8")
+
+        with pytest.raises(ValueError, match="not a valid image"):
+            Colors.create_from_image(path)
+
+
+class TestGetTypeUnrecognisedValue:
+    """`Colors.get_type` reports only the entries it can classify."""
+
+    def test_unclassifiable_entry_is_omitted(self):
+        """A string that is no known colour format contributes no type.
+
+        Test scenario:
+            `get_type` classifies each stored value independently; one that
+            matches none of the three formats is skipped rather than
+            labelled or raised on.
+        """
+        assert Colors("zzzzzz").get_type() == []

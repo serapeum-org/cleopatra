@@ -1754,3 +1754,88 @@ class TestSnapshotGroupOptions:
             glyph, Contour(levels=1), Contour(levels=2)
         )
         assert snap == {"levels": 7}, f"got {snap}"
+
+
+class TestClearProjectionFrameRemovalErrors:
+    """`_clear_projection_frame` survives an artist that cannot be removed."""
+
+    def test_failing_artist_is_skipped(self):
+        """A frame artist whose `remove()` raises does not break the teardown.
+
+        Test scenario:
+            A stashed frame artist may already be detached (or belong to a
+            closed figure) by the time the next render clears it. The
+            removal is best-effort: the error is swallowed and the frame is
+            still reported as having existed.
+        """
+
+        class _Undetachable:
+            def remove(self):
+                raise ValueError("already removed")
+
+        fig, ax = plt.subplots()
+        glyph_mod._stash_projection_frame(ax, [_Undetachable()])
+
+        assert glyph_mod._clear_projection_frame(ax) is True
+        assert glyph_mod._clear_projection_frame(ax) is False, (
+            "the frame record should be cleared even when removal failed"
+        )
+        plt.close(fig)
+
+
+class TestGetTicksDegenerateSpacing:
+    """`Glyph.get_ticks` when the spacing yields no tick inside the range."""
+
+    def test_falls_back_to_the_endpoints(self):
+        """No tick lands in `[vmin, vmax]` -> the two endpoints are used.
+
+        Test scenario:
+            A negative `ticks_spacing` makes the tick sequence empty (it
+            walks away from `vmax`). Rather than returning an empty
+            colorbar axis, the range's endpoints are used.
+        """
+        g = Glyph(
+            default_options=_make_options(vmin=0.0, vmax=10.0, ticks_spacing=-1.0)
+        )
+
+        assert g.get_ticks().tolist() == [0.0, 10.0]
+
+
+class TestMergeGroupParamsFiltersUnknownKeys:
+    """`Glyph._merge_group_params` only writes keys the glyph actually models."""
+
+    def test_unknown_option_is_ignored(self):
+        """A group emitting a key the glyph does not model leaves options alone.
+
+        Test scenario:
+            Grouped parameter objects are shared across glyph types, so one
+            may carry an option a given glyph has no slot for. Such a key
+            must be dropped rather than injected into `default_options`.
+        """
+
+        class _Group:
+            def to_options(self):
+                return {"vmin": 3.0, "not_a_glyph_option": "x"}
+
+        glyph = _FakeGlyph({"vmin": 0.0})
+
+        Glyph._merge_group_params(glyph, _Group(), None)
+
+        assert glyph.default_options == {"vmin": 3.0}, (
+            f"unknown keys must not be added; got {glyph.default_options}"
+        )
+
+
+class TestColorBarLabelLocationUnset:
+    """`create_color_bar` with `cbar_label_location=None`."""
+
+    def test_none_skips_validation_and_uses_the_matplotlib_default(self):
+        """`None` means "don't place the label", so no orientation check runs."""
+        g = Glyph(default_options=_make_options(cbar_label_location=None))
+        fig, ax = plt.subplots()
+        im = ax.imshow(np.arange(9).reshape(3, 3))
+
+        cbar = g.create_color_bar(ax, im, {"ticks": np.array([0, 4, 8])})
+
+        assert isinstance(cbar, Colorbar)
+        plt.close(fig)

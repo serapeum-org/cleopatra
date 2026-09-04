@@ -200,3 +200,25 @@ def test_line_default_options_extend_style_defaults():
     """
     assert "figsize" in LINE_DEFAULT_OPTIONS, "Should inherit base style keys"
     assert "linestyle" in LINE_DEFAULT_OPTIONS, "Should add line keys"
+
+
+class TestAxesReuseAcrossCalls:
+    """`LineGlyph` keeps drawing on the axes it created the first time."""
+
+    def test_second_call_without_ax_reuses_the_first_axes(self, xy):
+        """A second `line()` overlays the first instead of opening a figure.
+
+        Test scenario:
+            With no `ax` given and an axes already stored from an earlier
+            call, the glyph must reuse it -- otherwise each call would leak
+            a new figure and the series would not compose.
+        """
+        x, y = xy
+        glyph = LineGlyph(x, y)
+
+        glyph.line()
+        first_ax, first_fig = glyph.ax, glyph.fig
+        glyph.line()
+
+        assert glyph.ax is first_ax, "the stored axes should be reused"
+        assert glyph.fig is first_fig, "no new figure should be created"

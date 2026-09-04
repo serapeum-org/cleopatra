@@ -17,6 +17,7 @@ from matplotlib.collections import LineCollection
 from matplotlib.legend import Legend
 
 from cleopatra.glyphs.primitives.flow_glyph import FLOW_DEFAULT_OPTIONS, FlowGlyph
+from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import width_legend
 from cleopatra.styling.params import Contour
 
@@ -453,3 +454,27 @@ class TestFlowGlyphPlot:
         glyph = FlowGlyph(paths, ax=host_ax)
         _, out_ax, _ = glyph.plot()
         assert out_ax is host_ax, "plot() should reuse the construction axes"
+
+
+class TestGlowWithNonLinearScale:
+    """The glow halo shares the main collection's norm, limits included."""
+
+    def test_glow_layers_keep_the_resolved_norm(self, paths, values):
+        """A resolved norm carries its own limits, so no `clim` is forced on.
+
+        Test scenario:
+            With a `power` colour scale the mapping already knows its
+            range; every glow layer must reuse that norm untouched rather
+            than have tick-derived limits stamped over it, or the halo
+            would drift out of step with the line it surrounds.
+        """
+        glyph = FlowGlyph(paths, values=values, glow=True)
+
+        _, ax, lc = glyph.plot(color=ColorScaling.power(gamma=0.5))
+
+        glow_layers = [c for c in ax.collections if c is not lc]
+        assert glow_layers, "glow should add halo collections under the line"
+        assert all(c.norm is lc.norm for c in glow_layers), (
+            "every glow layer should share the main collection's norm"
+        )
+        assert all(c.get_clim() == lc.get_clim() for c in glow_layers)

@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
+import cleopatra.templates as templates_mod
 from cleopatra.styling.params import DataStyle
 from cleopatra.templates import publication_map
 
@@ -62,4 +63,81 @@ class TestPublicationMap:
         lat = np.linspace(30.0, 50.0, 10)
         fig, ax = publication_map(field, coords=(lon, lat), cmap="viridis", projection="flat")
         assert ax.collections, "a projected render should add a QuadMesh collection"
+        plt.close(fig)
+
+
+class TestPublicationMapFigsize:
+    """`publication_map(figsize=...)` reaches the underlying glyph."""
+
+    def test_explicit_figsize_is_honoured(self, field):
+        """An explicit size overrides the data-derived automatic one.
+
+        Test scenario:
+            `ArrayGlyph` sizes the figure from the data aspect when no
+            `figsize` is given; passing one must forward it through so the
+            caller's layout wins.
+        """
+        fig, ax = publication_map(field, cmap="viridis", figsize=(5.0, 3.0))
+
+        assert tuple(fig.get_size_inches()) == pytest.approx((5.0, 3.0))
+        plt.close(fig)
+
+
+class TestPublicationMapRelief:
+    """`publication_map(relief=True)` lays a shaded-relief basemap underneath."""
+
+    def test_relief_is_drawn_under_the_field(self, field, monkeypatch):
+        """The relief helper is called with the requested resolution, below the data.
+
+        Test scenario:
+            `add_relief` is spied on (it would otherwise fetch a reference
+            asset), so the test asserts the wiring: the composer's
+            `relief_resolution` reaches it and the image is placed behind
+            the field.
+        """
+        calls = []
+        monkeypatch.setattr(
+            templates_mod,
+            "add_relief",
+            lambda ax, **kwargs: calls.append((ax, kwargs)),
+        )
+
+        fig, ax = publication_map(
+            field, cmap="viridis", relief=True, relief_resolution="medium"
+        )
+
+        assert len(calls) == 1, f"add_relief should be called once; got {calls}"
+        called_ax, kwargs = calls[0]
+        assert called_ax is ax, "relief should be drawn on the composed axes"
+        assert kwargs["resolution"] == "medium"
+        assert kwargs["zorder"] == -1, "relief must sit under the field"
+        assert "extent" not in kwargs, (
+            "no extent is passed: add_relief places the global image and the "
+            "axes limits crop it"
+        )
+        plt.close(fig)
+
+    def test_relief_is_skipped_under_a_globe_projection(self, monkeypatch):
+        """`projection="globe"` warns and skips relief instead of misplacing it.
+
+        Test scenario:
+            The globe axes are in projected metres, so a lon/lat relief
+            image cannot be composed onto them; the composer warns and
+            leaves it out.
+        """
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        calls = []
+        monkeypatch.setattr(
+            templates_mod, "add_relief", lambda ax, **kwargs: calls.append(kwargs)
+        )
+        lon = np.linspace(-10.0, 10.0, 5)
+        lat = np.linspace(40.0, 60.0, 4)
+        data = np.random.default_rng(0).random((4, 5))
+
+        with pytest.warns(UserWarning, match="projection='globe'"):
+            fig, _ = publication_map(
+                data, coords=(lon, lat), projection="globe", relief=True
+            )
+
+        assert calls == [], "relief must not be drawn on a globe projection"
         plt.close(fig)

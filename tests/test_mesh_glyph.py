@@ -1916,3 +1916,99 @@ class TestMeshGlyphApplyStyle:
         g.apply_style("flow_accumulation", data=other)
         assert g.style == "flow_accumulation"
         plt.close("all")
+
+
+class TestApplyStyleForwardsHillshade:
+    """`MeshGlyph.apply_style` folds a forwarded `hillshade` into the style."""
+
+    @staticmethod
+    def _node_glyph():
+        """A two-triangle mesh carrying node-centred elevation.
+
+        Returns:
+            tuple: `(glyph, node_data)` already plotted at node location.
+        """
+        node_x = np.array([0.0, 1.0, 0.5, 1.5])
+        node_y = np.array([0.0, 0.0, 1.0, 1.0])
+        faces = np.array([[0, 1, 2], [1, 3, 2]])
+        node_data = np.array([10.0, 20.0, 30.0, 40.0])
+        glyph = MeshGlyph(node_x, node_y, faces)
+        glyph.plot(node_data, location="node")
+        return glyph, node_data
+
+    def test_hillshade_kwarg_is_applied_with_the_preset(self):
+        """`apply_style(style, hillshade=True)` turns shading on for that render.
+
+        Test scenario:
+            `hillshade` is a grouped render option, so it must travel with
+            the style rather than reaching `plot` as a stray keyword.
+        """
+        glyph, _ = self._node_glyph()
+
+        glyph.apply_style("topography", hillshade=True)
+
+        assert glyph.style == "topography"
+        assert glyph.default_options["hillshade"] is True
+        plt.close("all")
+
+    def test_omitting_hillshade_leaves_the_sticky_value(self):
+        """Without the kwarg the preset is applied and shading is left as-is."""
+        glyph, _ = self._node_glyph()
+        before = glyph.default_options["hillshade"]
+
+        glyph.apply_style("topography")
+
+        assert glyph.default_options["hillshade"] == before
+        plt.close("all")
+
+
+class TestPlotSplitsRenderKwargs:
+    """`MeshGlyph.plot` separates glyph options from matplotlib render kwargs."""
+
+    def test_unmodelled_kwarg_reaches_the_renderer(self):
+        """A keyword the glyph does not model is forwarded to the mesh call.
+
+        Test scenario:
+            `edgecolor` is not a `MESH_DEFAULT_OPTIONS` key, so it must be
+            routed to `tripcolor` instead of being swallowed as an option.
+        """
+        node_x = np.array([0.0, 1.0, 0.5, 1.5])
+        node_y = np.array([0.0, 0.0, 1.0, 1.0])
+        faces = np.array([[0, 1, 2], [1, 3, 2]])
+        glyph = MeshGlyph(node_x, node_y, faces)
+
+        glyph.plot(np.array([1.0, 2.0]), edgecolor="k")
+
+        assert "edgecolor" not in glyph.default_options, (
+            "an unmodelled kwarg must not leak into the option dict"
+        )
+        assert np.allclose(glyph.im.get_edgecolor(), to_rgba("k")), (
+            "edgecolor should have reached the mesh renderer"
+        )
+        plt.close("all")
+
+
+class TestPlotForwardsMatplotlibKwargs:
+    """A keyword the glyph does not model is routed to the mesh renderer."""
+
+    def test_alpha_reaches_the_mappable(self):
+        """`alpha` is not a glyph option, so it must reach `tripcolor`.
+
+        Test scenario:
+            `plot(**kwargs)` splits its keywords into glyph options and
+            renderer keywords. `alpha` belongs to the renderer: it must show
+            up on the mappable and must not be written into
+            `default_options`.
+        """
+        node_x = np.array([0.0, 1.0, 0.5, 1.5])
+        node_y = np.array([0.0, 0.0, 1.0, 1.0])
+        faces = np.array([[0, 1, 2], [1, 3, 2]])
+        glyph = MeshGlyph(node_x, node_y, faces)
+
+        glyph.plot(np.array([1.0, 2.0]), alpha=0.5)
+
+        assert glyph.im.get_alpha() == 0.5, "alpha should reach the mappable"
+        assert "alpha" not in glyph.default_options, (
+            "a renderer keyword must not leak into the option dict"
+        )
+        plt.close("all")

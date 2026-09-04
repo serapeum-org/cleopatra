@@ -1,10 +1,12 @@
 import inspect
+import sys
 from pathlib import Path
 
 import matplotlib
 import matplotlib.pyplot as plt
 import pytest
 
+import cleopatra.config as config_mod
 from cleopatra.config import Config, is_notebook
 
 
@@ -190,3 +192,83 @@ def test_is_notebook_false_in_terminal_shell(monkeypatch):
 
     monkeypatch.setattr(ipython, "get_ipython", lambda: TerminalInteractiveShell())
     assert not is_notebook()
+
+
+class TestSetMatplotlibBackendInNotebook:
+    """`Config.set_matplotlib_backend(None)` inside a Jupyter kernel.
+
+    With no explicit `backend`, the notebook path runs `%matplotlib` rather
+    than `plt.switch_backend`, so the inline/notebook figure plumbing IPython
+    installs is preserved. The shell is faked -- these tests never need a
+    live kernel.
+    """
+
+    @staticmethod
+    def _fake_notebook(monkeypatch):
+        """Pretend we are in a notebook and record the magics that are run.
+
+        Returns:
+            list: The `(magic, argument)` pairs `set_matplotlib_backend` ran.
+        """
+        calls: list[tuple[str, str]] = []
+
+        class _Shell:
+            def run_line_magic(self, magic, argument):
+                calls.append((magic, argument))
+
+        ipython = pytest.importorskip("IPython")
+        monkeypatch.setattr(config_mod, "is_notebook", lambda: True)
+        monkeypatch.setattr(ipython, "get_ipython", lambda: _Shell())
+        return calls
+
+    def test_defaults_to_inline_magic(self, monkeypatch):
+        """No backend + notebook -> `%matplotlib inline`."""
+        calls = self._fake_notebook(monkeypatch)
+
+        Config.set_matplotlib_backend()
+
+        assert calls == [("matplotlib", "inline")], f"unexpected magics: {calls}"
+
+    def test_interactive_selects_the_notebook_magic(self, monkeypatch):
+        """`interactive=True` + notebook -> `%matplotlib notebook`."""
+        calls = self._fake_notebook(monkeypatch)
+
+        Config.set_matplotlib_backend(interactive=True)
+
+        assert calls == [("matplotlib", "notebook")], f"unexpected magics: {calls}"
+
+    def test_explicit_backend_beats_the_notebook_default(self, monkeypatch):
+        """An explicit `backend` switches directly instead of running a magic.
+
+        Test scenario:
+            Even inside a notebook, `backend="Agg"` must take the
+            `plt.switch_backend` path -- the magic is only the *default*.
+            `get_ipython()` returns `None` here, so the notebook branch
+            would fail loudly if it were (wrongly) taken.
+        """
+        ipython = pytest.importorskip("IPython")
+        monkeypatch.setattr(config_mod, "is_notebook", lambda: True)
+        monkeypatch.setattr(ipython, "get_ipython", lambda: None)
+
+        assert Config.set_matplotlib_backend(backend="Agg").lower() == "agg"
+
+
+def test_is_notebook_false_without_ipython(monkeypatch):
+    """`is_notebook` returns False when IPython is not installed.
+
+    Test scenario:
+        A `sys.meta_path` finder makes `import IPython` raise
+        `ModuleNotFoundError`, standing in for an environment without
+        Jupyter -- the guard must swallow it rather than propagate.
+    """
+
+    class _BlockIPython:
+        def find_spec(self, name, path=None, target=None):
+            if name == "IPython" or name.startswith("IPython."):
+                raise ModuleNotFoundError(f"No module named {name!r}", name=name)
+            return None
+
+    monkeypatch.delitem(sys.modules, "IPython", raising=False)
+    monkeypatch.setattr(sys, "meta_path", [_BlockIPython(), *sys.meta_path])
+
+    assert is_notebook() is False

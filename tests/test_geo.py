@@ -1099,3 +1099,115 @@ class TestDrawBasemapRouting:
         (args, kwargs), = feats
         assert args[0] == "ocean", f"Got layer {args[0]!r}"
         assert kwargs["zorder"] == -2, f"Feature zorder should win, got {kwargs.get('zorder')}"
+
+
+class _StubImage:
+    """A minimal mappable stand-in for `_background_is_dark` sampling.
+
+    Real `AxesImage`s cannot hold a 0-sized or 1-D array, so the two guard
+    branches they would exercise are only reachable through a stub.
+
+    Args:
+        array: What `get_array` reports back.
+        rgba: What `to_rgba` returns for the (possibly decimated) array.
+    """
+
+    def __init__(self, array, rgba):
+        self._array = array
+        self._rgba = rgba
+        self.seen = None
+
+    def get_array(self):
+        """Return the stubbed data array."""
+        return self._array
+
+    def to_rgba(self, arr):
+        """Record the array actually sampled and return the stubbed RGBA."""
+        self.seen = arr
+        return self._rgba
+
+
+class TestBackgroundIsDarkGuards:
+    """`GeoMixin._background_is_dark` degenerate-sample handling."""
+
+    def test_empty_rgba_reads_as_not_dark(self):
+        """A sample that renders to no pixels falls back to "not dark".
+
+        Test scenario:
+            An empty field produces an empty RGBA array; averaging its
+            luminance would be meaningless (and warn), so the check
+            short-circuits to the neutral `False` default.
+        """
+        host = _Dummy(ax=None)
+        host.im = _StubImage(np.zeros((0, 0)), np.zeros((0, 0, 4)))
+
+        assert host._background_is_dark(None) is False
+
+    def test_one_dimensional_sample_is_not_decimated(self):
+        """A 1-D sample skips the row/column decimation and is judged as-is.
+
+        Test scenario:
+            Decimation indexes two axes, so it only applies to a 2-D (or
+            larger) array. A 1-D opaque black sample must reach the
+            luminance test untouched and read as dark.
+        """
+        sample = np.zeros(3)
+        rgba = np.zeros((3, 4))
+        rgba[:, 3] = 1.0  # fully opaque, black -> dark
+        host = _Dummy(ax=None)
+        host.im = _StubImage(sample, rgba)
+
+        assert host._background_is_dark(None) is True
+        assert host.im.seen is sample, "a 1-D sample must not be decimated"
+
+
+class TestCheckBasemapAlignmentGuards:
+    """`GeoMixin._check_basemap_alignment` no-ops when it cannot judge."""
+
+    def test_non_two_dimensional_frame_is_skipped(self, monkeypatch):
+        """A frame that is not 2-D has no land/sea mask to compare.
+
+        Test scenario:
+            A true-colour `(time, rows, cols, 3)` stack reduces to a 3-D
+            frame; the check must return before touching the relief rather
+            than misinterpreting the colour axis.
+        """
+        called = []
+        monkeypatch.setattr(
+            refmod, "relief", lambda *a, **k: called.append(a) or np.zeros((2, 2, 3))
+        )
+        host = _Dummy(ax=None)
+        host.extent = [-10.0, 40.0, 10.0, 60.0]
+        host.arr = np.zeros((2, 4, 5, 3))
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            assert host._check_basemap_alignment() is None
+
+        assert called == [], "the relief must not be fetched for a non-2-D frame"
+
+
+class TestReferenceMapExtentWithoutImage:
+    """`add_reference_map(extent=...)` on a glyph that has no image."""
+
+    def test_axis_limits_are_still_set(self):
+        """With `im=None` only the axis limits are set, and nothing raises.
+
+        Test scenario:
+            A glyph may carry a non-image mappable (or none yet) while
+            still knowing its extent; the image re-extent step is skipped
+            but the view must still be framed to the given extent.
+        """
+        fig, ax = plt.subplots()
+        host = _Dummy(ax=ax)
+        host.extent = None
+        host.im = None
+        host.crs = None
+        host.add_features = MagicMock(return_value=ax)
+        host.add_relief = MagicMock(return_value=ax)
+
+        host.add_reference_map("light", extent=[-100, 15, -40, 55])
+
+        assert ax.get_xlim() == (-100, -40)
+        assert ax.get_ylim() == (15, 55)
+        plt.close(fig)

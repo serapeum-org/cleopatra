@@ -1129,3 +1129,58 @@ class TestModuleDoctests:
             f"(attempted {results.attempted})"
         )
         assert results.attempted > 0, "Expected doctest examples to be collected"
+
+
+class TestApplyProjectionStyleMesh:
+    """`apply_projection_style_mesh` -- the unstructured-mesh reprojection."""
+
+    NODE_X = np.array([-10.0, 10.0, 0.0, 20.0])
+    NODE_Y = np.array([40.0, 40.0, 60.0, 60.0])
+    TRIANGLES = np.array([[0, 1, 2], [1, 3, 2]])
+
+    def test_unknown_style_raises_key_error(self):
+        """An unregistered style name is rejected, listing the known ones."""
+        fig, ax = plt.subplots()
+        with pytest.raises(KeyError, match="Unknown projection style"):
+            projection_module.apply_projection_style_mesh(
+                ax, self.NODE_X, self.NODE_Y, self.TRIANGLES, style="mercator"
+            )
+        plt.close(fig)
+
+    def test_flat_style_returns_the_unprojected_triangulation(self):
+        """`style="flat"` keeps lon/lat coordinates and draws no frame.
+
+        Test scenario:
+            The flat preset is the identity path -- it must return a
+            triangulation on the original node coordinates without needing
+            `pyproj` or touching the axes.
+        """
+        fig, ax = plt.subplots()
+
+        tri = projection_module.apply_projection_style_mesh(
+            ax, self.NODE_X, self.NODE_Y, self.TRIANGLES, style="flat"
+        )
+
+        assert np.allclose(tri.x, self.NODE_X), "flat must not reproject x"
+        assert np.allclose(tri.y, self.NODE_Y), "flat must not reproject y"
+        assert not ax.patches, "the flat preset draws no globe boundary"
+        plt.close(fig)
+
+    def test_draw_frame_false_leaves_the_axes_bare(self):
+        """`draw_frame=False` reprojects but adds no boundary or graticule."""
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        fig, ax = plt.subplots()
+
+        tri = projection_module.apply_projection_style_mesh(
+            ax,
+            self.NODE_X,
+            self.NODE_Y,
+            self.TRIANGLES,
+            style="globe",
+            draw_frame=False,
+        )
+
+        assert not ax.patches, "no globe boundary should be drawn"
+        assert not ax.lines, "no graticule should be drawn"
+        assert np.max(np.abs(tri.x)) > 1e3, "nodes should be in projected metres"
+        plt.close(fig)
