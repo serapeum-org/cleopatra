@@ -1905,9 +1905,67 @@ class TestConstructionTimeDataStyle:
         """A grouped field overrides a loose keyword naming the same option.
 
         Test scenario:
-            `cmap` is settable both ways here; the group is applied second, so
-            it wins -- matching how `plot()` resolves the same collision.
+            `alpha` is the one `DataStyle` field that is still a legitimate
+            loose option (it stayed loose on `LineGlyph` / `HistogramGlyph`),
+            so it is the only key that can collide here. The group is merged
+            after the loose kwargs, so it wins -- matching how `plot()`
+            resolves the same collision.
         """
-        g = Glyph(default_options=_make_options(), cmap="viridis")
+        options = _make_options(alpha=0.1)
 
-        assert g.default_options["cmap"] == "viridis"
+        g = Glyph(default_options=options, alpha=0.2, data_style=DataStyle(alpha=0.8))
+
+        assert g.default_options["alpha"] == 0.8, (
+            f"the group should win; got {g.default_options['alpha']}"
+        )
+
+    def test_explicitly_cleared_field_is_applied(self):
+        """A field set to `None` clears the option rather than being skipped.
+
+        Test scenario:
+            `DataStyle` distinguishes unset (omit the key) from explicit
+            `None` (emit it), which is how a sticky preset is cleared. The
+            constructor must honour the distinction, not treat `None` as
+            "nothing given".
+        """
+        options = _make_options(style="dem", hillshade=False)
+
+        g = Glyph(default_options=options, data_style=DataStyle(style=None))
+
+        assert g.default_options["style"] is None, "an explicit None must clear it"
+
+    def test_field_this_glyph_does_not_model_is_ignored(self):
+        """A grouped field with no matching option is dropped, not injected.
+
+        Test scenario:
+            `DataStyle` is shared across glyphs, so it can carry a field the
+            target does not model (`bands` here). The merge filters on the
+            option dict, so such a key must not appear -- injecting it would
+            corrupt `default_options` for every later lookup.
+        """
+        options = _make_options(style=None)
+
+        g = Glyph(default_options=options, data_style=DataStyle(style="dem", bands=6))
+
+        assert g.default_options["style"] == "dem"
+        assert "bands" not in g.default_options, "an unmodelled field must be dropped"
+
+    def test_grouped_keys_count_as_explicitly_passed(self):
+        """The group's keys land in `_explicit_options`, like loose kwargs.
+
+        Test scenario:
+            Subclasses branch on `_explicit_options` to tell an overridden
+            option from one left at its default (`ArrayGlyph` only auto-sizes
+            the figure when `figsize` was not passed). An option set through
+            the group has been passed just as explicitly as a loose one, so
+            it has to be recorded the same way.
+        """
+        options = _make_options(style=None, hillshade=False)
+
+        g = Glyph(
+            default_options=options, data_style=DataStyle(style="dem", hillshade=True)
+        )
+
+        assert {"style", "hillshade"} <= g._explicit_options, (
+            f"grouped keys should be recorded; got {g._explicit_options}"
+        )

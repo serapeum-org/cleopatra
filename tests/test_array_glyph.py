@@ -7701,3 +7701,50 @@ class TestAnimateStyleColorBarClearsStaleInsets:
         assert not ax.child_axes, "the stale inset should have been removed"
         assert glyph.cbar is not None, "a real colorbar should have been drawn"
         plt.close(fig)
+
+
+class TestConstructionTimeStyle:
+    """`ArrayGlyph(data_style=DataStyle(style=...))` sets the preset once."""
+
+    FIELD = np.random.default_rng(0).random((6, 7)) * 60.0 - 30.0
+
+    def test_style_is_applied_without_passing_it_to_plot(self):
+        """The preset set at construction renders without repeating it per call.
+
+        Test scenario:
+            Before the constructor accepted `data_style`, a preset had to be
+            passed to every `plot()` call: the loose `style=` keyword is
+            rejected and no other construction-time route existed.
+        """
+        glyph = ArrayGlyph(self.FIELD, data_style=DataStyle(style="temperature_2m"))
+
+        fig, ax = glyph.plot()
+
+        assert glyph.default_options["style"] == "temperature_2m"
+        assert ax.images or ax.collections, "the styled field should be drawn"
+        plt.close(fig)
+
+    def test_style_survives_a_later_plain_plot(self):
+        """The preset is sticky across calls, as a `plot(style=...)` one is.
+
+        Test scenario:
+            `plot()` rebuilds `default_options` from the class defaults each
+            call and restores the sticky preset afterwards, so a second bare
+            `plot()` must still be styled.
+        """
+        glyph = ArrayGlyph(self.FIELD, data_style=DataStyle(style="temperature_2m"))
+        glyph.plot()
+
+        glyph.plot()
+
+        assert glyph.default_options["style"] == "temperature_2m"
+        plt.close("all")
+
+    def test_a_later_call_can_clear_it(self):
+        """`plot(data_style=DataStyle(style=None))` clears the construction preset."""
+        glyph = ArrayGlyph(self.FIELD, data_style=DataStyle(style="temperature_2m"))
+
+        glyph.plot(data_style=DataStyle(style=None))
+
+        assert glyph.default_options["style"] is None
+        plt.close("all")
