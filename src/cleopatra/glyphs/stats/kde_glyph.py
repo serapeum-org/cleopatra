@@ -94,6 +94,11 @@ class KDEGlyph(Glyph):
             data coordinates. Default is None (no clipping).
         ax: Pre-existing axes to draw on. Default is None.
         fig: Pre-existing figure. Default is None.
+        data_style: Grouped `style` / `hillshade` options applied at
+            construction, e.g. `data_style=DataStyle(style="topography")`.
+            These are rejected as loose keywords, so the group is how they are
+            set here rather than on every `plot()` call; the value is sticky
+            across later calls. Default None.
         **kwargs: Construction-time overrides for the non-grouped
             `KDE_DEFAULT_OPTIONS`: `shade` (filled `contourf` vs line
             `contour`, default True), `bw_method` (None for Scott's rule,
@@ -102,11 +107,13 @@ class KDEGlyph(Glyph):
             colorbar options (`cmap`, `vmin`, `vmax`, `ticks_spacing`,
             `cbar_label`, `figsize`, `title`). Set `add_colorbar=False` to
             suppress the per-glyph colorbar (default True). The colour
-            scale, density `levels`, and preset / relief shading are no
-            longer construction kwargs -- pass them to `plot()` via
+            scale, density `levels`, and preset / relief shading are not
+            loose construction kwargs -- pass them as grouped objects via
             `color=ColorScaling(...)`, `contour=Contour(levels=...)`, and
             `data_style=DataStyle(...)` respectively (a loose `color_scale`
-            / `levels` / `style` keyword now raises).
+            / `levels` / `style` keyword raises). `color` and `contour` are
+            `plot()`-only; `data_style` may be given here as well, via the
+            parameter above.
 
     Raises:
         ValueError: If `x` and `y` have mismatched shapes, if fewer than

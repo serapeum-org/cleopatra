@@ -30,6 +30,7 @@ from cleopatra.glyphs.base.animation import (
 )
 from cleopatra.glyphs.base.animation import save_animation as _save_animation
 from cleopatra.styling.colors import resolve_colormap
+from cleopatra.styling.params import DataStyle
 from cleopatra.styling.scaling import (
     MAX_DISCRETE_LEVELS,  # noqa: F401  (re-export)
     ColorScaling,
@@ -335,7 +336,26 @@ class Glyph:
             `ax` on its own is supported — its parent figure is derived
             automatically (the axes is no longer dropped when `fig` is
             omitted).
+        data_style: Grouped `style` / `hillshade` (and, for `ArrayGlyph`,
+            `bands` / `alpha` / `alpha_range`) options to apply at
+            construction. These moved onto `DataStyle` and are therefore
+            rejected as loose keywords; accepting the group here is what
+            makes that redirection reachable, so an option can be set once on
+            the glyph instead of on every `plot()` call. Only the fields the
+            `DataStyle` actually sets are applied, and a field this glyph
+            does not model is dropped — but a group that applies to *nothing*
+            raises, rather than vanishing silently, so the four primitive
+            glyphs (`VectorGlyph`, `FlowGlyph`, `PolygonGlyph`,
+            `ScatterGlyph`) reject it outright. Where a field collides with a
+            loose keyword for the same option — only `alpha` can, since every
+            other `DataStyle` field is rejected as a loose keyword — the
+            group is merged second and wins.
         **kwargs: Override any key in `default_options`.
+
+    Raises:
+        TypeError: If `data_style` is given and is not a `DataStyle`.
+        ValueError: If `data_style` sets only options this glyph does not
+            model, or if a keyword argument is not a `default_options` key.
 
     Examples:
         - Create a Glyph and override the colormap:
@@ -382,6 +402,51 @@ class Glyph:
             True
 
             ```
+        - Set the grouped `style` / `hillshade` options at construction, so
+            they do not have to be repeated on every `plot()` call:
+            ```python
+            >>> from cleopatra.glyphs.base.glyph import Glyph
+            >>> from cleopatra.styling.params import DataStyle
+            >>> from cleopatra.styling.styles import DEFAULT_OPTIONS
+            >>> opts = DEFAULT_OPTIONS.copy()
+            >>> opts.update({"vmin": None, "vmax": None, "style": None, "hillshade": False})
+            >>> g = Glyph(
+            ...     default_options=opts, data_style=DataStyle(style="topography", hillshade=True)
+            ... )
+            >>> g.default_options["style"]
+            'topography'
+            >>> g.default_options["hillshade"]
+            True
+
+            ```
+        - Only the fields the `DataStyle` sets are applied, so an empty group
+            leaves every option at its default:
+            ```python
+            >>> from cleopatra.glyphs.base.glyph import Glyph
+            >>> from cleopatra.styling.params import DataStyle
+            >>> from cleopatra.styling.styles import DEFAULT_OPTIONS
+            >>> opts = DEFAULT_OPTIONS.copy()
+            >>> opts.update({"vmin": None, "vmax": None, "style": "topography"})
+            >>> g = Glyph(default_options=opts, data_style=DataStyle())
+            >>> g.default_options["style"]
+            'topography'
+
+            ```
+        - A group that sets only options this glyph does not model is
+            refused, rather than accepted and dropped -- the four primitive
+            glyphs behave this way:
+            ```python
+            >>> from cleopatra.glyphs.base.glyph import Glyph
+            >>> from cleopatra.styling.params import DataStyle
+            >>> from cleopatra.styling.styles import DEFAULT_OPTIONS
+            >>> opts = DEFAULT_OPTIONS.copy()
+            >>> opts.update({"vmin": None, "vmax": None})
+            >>> Glyph(default_options=opts, data_style=DataStyle(style="topography"))
+            Traceback (most recent call last):
+                ...
+            ValueError: Glyph has no ['style'] option(s), so data_style= does not apply to it. ...
+
+            ```
 
     See Also:
         cleopatra.glyphs.gridded.array_glyph.ArrayGlyph: Glyph subclass for
@@ -410,10 +475,16 @@ class Glyph:
         default_options: dict,
         fig: Figure | None = None,
         ax: Axes | None = None,
+        data_style: DataStyle | None = None,
         **kwargs,
     ):
         self._default_options = default_options.copy()
         self._merge_kwargs(kwargs)
+        # Grouped options are applied after the loose ones so a construction
+        # kwarg and a `DataStyle` field naming the same option resolve the
+        # same way they do in `plot()`: the group wins.
+        if data_style is not None:
+            self._apply_construction_data_style(data_style)
         self._vmin: float | None = None
         self._vmax: float | None = None
         self.ticks_spacing: float | None = None
@@ -510,6 +581,12 @@ class Glyph:
         the construction succeed instead of raising on an unknown key.
         Order and values are preserved; rejected keys are simply dropped.
 
+        Note that this filters *option* keys only. The grouped parameter
+        objects are not options and are dropped like any other unknown key,
+        so `data_style=` (and `plot()`'s `color=` / `contour=` / `cells=`)
+        must be passed separately rather than through this filter -- a
+        `data_style` in `kwargs` would otherwise be silently discarded.
+
         Args:
             kwargs: A mapping of candidate option keys to values.
 
@@ -566,6 +643,45 @@ class Glyph:
                 )
             else:
                 self._default_options[key] = val
+
+    def _apply_construction_data_style(self, data_style: DataStyle) -> None:
+        """Apply a constructor-supplied `DataStyle`, refusing one that cannot apply.
+
+        `_merge_group_params` drops keys the glyph does not model, which is the
+        right behaviour for `plot()` (one group object is shared across glyphs
+        with different option sets). At construction it would be a trap: the
+        four primitive glyphs model none of `DataStyle`'s options, so the whole
+        group would vanish silently -- and those are exactly the glyphs whose
+        loose `style=`/`hillshade=` rejection tells the caller to pass a
+        `data_style=` instead. Refusing outright keeps that redirection honest.
+
+        Args:
+            data_style: The group passed to `__init__`.
+
+        Raises:
+            TypeError: If `data_style` is not a `DataStyle`.
+            ValueError: If this glyph models none of the options it sets.
+        """
+        if not isinstance(data_style, DataStyle):
+            raise TypeError(
+                "data_style must be a DataStyle, got "
+                f"{type(data_style).__name__}; pass "
+                "data_style=DataStyle(style=..., hillshade=...)."
+            )
+        requested = data_style.to_options()
+        applicable = {key for key in requested if key in self._default_options}
+        if requested and not applicable:
+            raise ValueError(
+                f"{type(self).__name__} has no "
+                f"{sorted(requested)} option(s), so data_style= does not apply "
+                "to it. The grouped style options are honoured only by the "
+                "glyphs that model them (ArrayGlyph, MeshGlyph, KDEGlyph)."
+            )
+        self._merge_group_params(data_style)
+        # Only the keys that were actually merged count as explicitly passed;
+        # recording the dropped ones would make this disagree with
+        # `_merge_group_params` about what the glyph is carrying.
+        self._explicit_options |= applicable
 
     def _merge_group_params(self, *groups: Any) -> None:
         """Flatten grouped parameter objects into `default_options`.

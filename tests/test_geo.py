@@ -31,8 +31,6 @@ from matplotlib.collections import LineCollection  # noqa: E402
 
 import cleopatra.basemap.reference as refmod  # noqa: E402
 import cleopatra.basemap.tiles as tilesmod  # noqa: E402
-from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph  # noqa: E402
-from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph  # noqa: E402
 from cleopatra.basemap.geo import (  # noqa: E402
     REFERENCE_MAP_STYLES,
     Basemap,
@@ -44,13 +42,15 @@ from cleopatra.basemap.geo import (  # noqa: E402
     add_point_labels,
     available_map_styles,
 )
-from cleopatra.glyphs.stats.kde_glyph import KDEGlyph  # noqa: E402
-from cleopatra.glyphs.primitives.line_glyph import LineGlyph  # noqa: E402
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph  # noqa: E402
 from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph  # noqa: E402
+from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph  # noqa: E402
+from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph  # noqa: E402
+from cleopatra.glyphs.primitives.line_glyph import LineGlyph  # noqa: E402
 from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph  # noqa: E402
 from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph  # noqa: E402
 from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph  # noqa: E402
-from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph  # noqa: E402
+from cleopatra.glyphs.stats.kde_glyph import KDEGlyph  # noqa: E402
 
 GEO_GLYPHS = [ArrayGlyph, MeshGlyph, VectorGlyph, FlowGlyph, PolygonGlyph, ScatterGlyph]
 NON_GEO_GLYPHS = [LineGlyph, HistogramGlyph, KDEGlyph]
@@ -1099,3 +1099,185 @@ class TestDrawBasemapRouting:
         (args, kwargs), = feats
         assert args[0] == "ocean", f"Got layer {args[0]!r}"
         assert kwargs["zorder"] == -2, f"Feature zorder should win, got {kwargs.get('zorder')}"
+
+
+class _StubImage:
+    """A minimal mappable stand-in for `_background_is_dark` sampling.
+
+    Real `AxesImage`s cannot hold a 0-sized or 1-D array, so the two guard
+    branches they would exercise are only reachable through a stub.
+
+    Args:
+        array: What `get_array` reports back.
+        rgba: What `to_rgba` returns for the (possibly decimated) array.
+    """
+
+    def __init__(self, array, rgba):
+        self._array = array
+        self._rgba = rgba
+        self.seen = None
+
+    def get_array(self):
+        """Return the stubbed data array."""
+        return self._array
+
+    def to_rgba(self, arr):
+        """Record the array actually sampled and return the stubbed RGBA."""
+        self.seen = arr
+        return self._rgba
+
+
+class TestBackgroundIsDarkGuards:
+    """`GeoMixin._background_is_dark` degenerate-sample handling."""
+
+    def test_empty_rgba_reads_as_not_dark(self):
+        """A sample that renders to no pixels at all falls back to "not dark".
+
+        Test scenario:
+            An empty field renders to an empty RGBA array; averaging its
+            luminance would warn and mean nothing, so the answer is the
+            neutral default and the mean is never taken.
+
+            This pins the contract, not the `rgba.size == 0` branch: deleting
+            that early return leaves the test green, because `opaque.any()`
+            two lines below is `False` for the same input and returns `False`
+            too. The size guard is redundant for every array `to_rgba` can
+            produce -- it would only matter for a degenerate shape where
+            `rgba[..., 3]` raised, which nothing generates. It is left in
+            place as defence in depth and listed with the PR's other
+            unobservable branches rather than claimed as covered.
+        """
+        host = _Dummy(ax=None)
+        host.im = _StubImage(np.zeros((0, 0)), np.zeros((0, 0, 4)))
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")  # averaging an empty slice would warn
+            result = host._background_is_dark(None)
+
+        assert result is False, f"an empty sample should read as not dark; got {result!r}"
+
+    def test_fully_transparent_sample_reads_as_not_dark(self):
+        """Pixels that are all transparent carry no colour to judge.
+
+        Test scenario:
+            The `opaque.any()` guard. The RGBA array is non-empty and black,
+            so a check that ignored alpha would call it dark; every pixel has
+            zero alpha, so there is nothing displayed and the answer is the
+            neutral default.
+        """
+        rgba = np.zeros((4, 4, 4))  # black, alpha 0 everywhere
+        host = _Dummy(ax=None)
+        host.im = _StubImage(np.zeros((4, 4)), rgba)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            result = host._background_is_dark(None)
+
+        assert result is False, (
+            "a fully transparent sample has nothing opaque to judge; "
+            f"got {result!r}"
+        )
+
+    def test_one_dimensional_sample_is_not_decimated(self):
+        """A 1-D sample skips the row/column decimation and is judged as-is.
+
+        Test scenario:
+            Decimation indexes two axes, so it only applies to a 2-D (or
+            larger) array. A 1-D opaque black sample must reach the
+            luminance test untouched and read as dark.
+        """
+        sample = np.zeros(3)
+        rgba = np.zeros((3, 4))
+        rgba[:, 3] = 1.0  # fully opaque, black -> dark
+        host = _Dummy(ax=None)
+        host.im = _StubImage(sample, rgba)
+
+        assert host._background_is_dark(None) is True
+        assert host.im.seen is sample, "a 1-D sample must not be decimated"
+
+
+class TestCheckBasemapAlignmentGuards:
+    """`GeoMixin._check_basemap_alignment` no-ops when it cannot judge."""
+
+    @staticmethod
+    def _half_masked_stack():
+        """A `(2, 4, 5, 3)` stack whose every frame is ~50% NaN.
+
+        The land fraction sits inside the `0.05 < frac < 0.95` window, so the
+        guard *after* the `ndim` check cannot be what stops the comparison.
+
+        Returns:
+            numpy.ndarray: The stack, NaN over half its cells.
+        """
+        stack = np.zeros((2, 4, 5, 3))
+        stack[:, :2, :, :] = np.nan
+        return stack
+
+    def test_non_two_dimensional_frame_is_skipped(self, monkeypatch):
+        """A frame that is not 2-D has no land/sea mask to compare.
+
+        Test scenario:
+            A true-colour `(time, rows, cols, 3)` stack reduces to a 3-D
+            frame; the check must return before touching the relief rather
+            than misinterpreting the colour axis.
+        """
+        called = []
+        monkeypatch.setattr(
+            refmod, "relief", lambda *a, **k: called.append(a) or np.zeros((2, 2, 3))
+        )
+        host = _Dummy(ax=None)
+        host.extent = [-10.0, 40.0, 10.0, 60.0]
+        host.arr = self._half_masked_stack()
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")  # the check must not warn either
+            host._check_basemap_alignment()
+
+        assert called == [], "the relief must not be fetched for a non-2-D frame"
+
+    def test_two_dimensional_frame_is_compared(self, monkeypatch):
+        """The 2-D counterpart does reach the relief, proving the guard is the cause.
+
+        Test scenario:
+            Same land fraction, same extent -- only `ndim` differs. Without
+            this pair the sibling test above would pass for the wrong reason:
+            the land-fraction guard below would stop a fully-finite stack
+            anyway, so nothing would attribute the skip to the `ndim` check.
+        """
+        called = []
+        monkeypatch.setattr(
+            refmod, "relief", lambda *a, **k: called.append(a) or np.zeros((4, 5, 3))
+        )
+        host = _Dummy(ax=None)
+        host.extent = [-10.0, 40.0, 10.0, 60.0]
+        host.arr = self._half_masked_stack()[0, ..., 0]
+
+        host._check_basemap_alignment()
+
+        assert called, "a 2-D frame with a real land/sea split must fetch the relief"
+
+
+class TestReferenceMapExtentWithoutImage:
+    """`add_reference_map(extent=...)` on a glyph that has no image."""
+
+    def test_axis_limits_are_still_set(self):
+        """With `im=None` only the axis limits are set, and nothing raises.
+
+        Test scenario:
+            A glyph may carry a non-image mappable (or none yet) while
+            still knowing its extent; the image re-extent step is skipped
+            but the view must still be framed to the given extent.
+        """
+        fig, ax = plt.subplots()
+        host = _Dummy(ax=ax)
+        host.extent = None
+        host.im = None
+        host.crs = None
+        host.add_features = MagicMock(return_value=ax)
+        host.add_relief = MagicMock(return_value=ax)
+
+        host.add_reference_map("light", extent=[-100, 15, -40, 55])
+
+        assert ax.get_xlim() == (-100, -40)
+        assert ax.get_ylim() == (15, 55)
+        plt.close(fig)

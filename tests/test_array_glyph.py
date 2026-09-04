@@ -3,13 +3,16 @@ import re
 import shutil
 import warnings
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from matplotlib.animation import FuncAnimation
-from matplotlib.colors import BoundaryNorm, to_rgba
+from matplotlib.collections import PathCollection
+from matplotlib.colors import BoundaryNorm, Normalize, PowerNorm, to_rgba
 from matplotlib.figure import Figure
 from matplotlib.text import Text
+from matplotlib.transforms import Bbox
 from PIL import Image
 
 import cleopatra.basemap.reference as refmod
@@ -31,6 +34,18 @@ from cleopatra.glyphs.gridded.array_glyph import (
 from cleopatra.styling.params import CellValues, Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
+
+
+@pytest.fixture(autouse=True)
+def _close_figures():
+    """Close every figure after each test so leaks never warn or accumulate.
+
+    Module-wide: the suite already trips matplotlib's 20-open-figure warning
+    from this module, and a per-class fixture only protects the class it is
+    written in.
+    """
+    yield
+    plt.close("all")
 
 
 class TestProperties:
@@ -2821,12 +2836,6 @@ class TestFacetColorbar:
             list: The axes whose matplotlib label marks them as colorbars.
         """
         return [ax for ax in result.fig.axes if ax.get_label() == "<colorbar>"]
-
-    @pytest.fixture(autouse=True)
-    def _close_figures(self):
-        """Close every figure after each test so leaks never warn or accumulate."""
-        yield
-        plt.close("all")
 
     def test_facet_accepts_colorbar_spec(self):
         """`facet(colorbar=ColorBar(...))` is accepted and configures the shared bar.
@@ -5875,7 +5884,8 @@ class TestAnimateBasemap:
             add_colorbar=False,
         )
         assert relief == [], "relief=False should draw no relief"
-        assert [args[0] for args, _ in features] == ["coastline"], "only coastline should be drawn"
+        drawn_layers = [args[0] for args, _ in features]
+        assert drawn_layers == ["coastline"], "only coastline should be drawn"
         plt.close("all")
 
     def test_basemap_relief_resolution_string(self, monkeypatch):
@@ -6747,7 +6757,8 @@ class TestColorBar:
         assert ColorBar().label_color is None, "label_color should default to None"
         assert ColorBar().tick_color is None, "tick_color should default to None"
         spec = ColorBar(label_color="black", tick_color="red")
-        assert (spec.label_color, spec.tick_color) == ("black", "red"), "colour fields should store verbatim"
+        colours = (spec.label_color, spec.tick_color)
+        assert colours == ("black", "red"), "colour fields should store verbatim"
 
     def test_caption_sizing_fields_default_none_and_store(self):
         """The caption/sizing fields default to `None` and store verbatim.
@@ -7385,3 +7396,382 @@ class TestPanelLabelsMethods:
         labels = PanelLabels(col=["a", "b"], row=["x"])
         with pytest.raises(ValueError, match=r"labels\.row"):
             labels.validate(2, 2)
+
+
+class TestAutoFigsizeFallback:
+    """`ArrayGlyph._auto_figsize` degrades to the configured default."""
+
+    def test_unmeasurable_coords_fall_back_to_the_default(self):
+        """Coordinates that cannot be measured numerically keep the default size.
+
+        Test scenario:
+            Non-numeric coordinate vectors make the range computation raise;
+            sizing is a convenience, so the configured default `figsize` is
+            returned instead of propagating the error.
+
+            `_coords` is assigned directly because `_validate_coords` rejects
+            this input at construction: the guard is defence-in-depth against
+            a hand-assigned value, not a state the public API can reach. The
+            data's own aspect is deliberately non-square, so the default is
+            not also what the successful path would have returned.
+        """
+        glyph = ArrayGlyph(np.arange(12.0).reshape(3, 4))
+        default = tuple(glyph.default_options["figsize"])
+        assert tuple(glyph._auto_figsize()) != default, (
+            "precondition: this array must size to something other than the "
+            "default, or the assertion below cannot detect the fallback"
+        )
+        glyph._coords = (np.array(["a", "b"]), np.array(["c", "d"]))
+
+        assert tuple(glyph._auto_figsize()) == default, (
+            "unmeasurable coords should fall back to the default figsize"
+        )
+
+
+class TestTightenFigureGuards:
+    """`ArrayGlyph._tighten_figure` no-ops when there is nothing to tighten."""
+
+    def test_no_figure_is_a_no_op(self):
+        """Tightening before anything is drawn creates nothing and draws nothing.
+
+        Test scenario:
+            `_tighten_figure` returns `None` on every path, so asserting that
+            proves nothing. What the guard has to deliver is that no figure is
+            conjured -- neither on the glyph nor in pyplot's registry, which
+            is what a stray `plt.subplots` would leave behind.
+        """
+        plt.close("all")
+        glyph = ArrayGlyph(np.arange(12.0).reshape(3, 4))
+
+        glyph._tighten_figure()
+
+        assert glyph.fig is None, "tightening must not create a figure"
+        assert plt.get_fignums() == [], "no figure should be registered with pyplot"
+
+    def test_figure_without_axes_is_a_no_op(self):
+        """A figure carrying no axes has no content to measure, so it is left alone.
+
+        Test scenario:
+            The guard has two halves; this is the `not fig.axes` one. An empty
+            figure must keep its size rather than be resized to the bbox of
+            nothing.
+        """
+        glyph = ArrayGlyph(np.arange(12.0).reshape(3, 4))
+        glyph.fig = plt.figure(figsize=(4.0, 3.0))
+        before = tuple(glyph.fig.get_size_inches())
+
+        glyph._tighten_figure()
+
+        assert tuple(glyph.fig.get_size_inches()) == before
+        plt.close(glyph.fig)
+
+    def test_unmeasurable_content_is_a_no_op(self, monkeypatch):
+        """A renderer that reports no content bbox leaves the figure untouched.
+
+        Test scenario:
+            `get_tightbbox` can return `None` on backends that cannot
+            measure the drawn content; the size must then stay exactly as
+            it was.
+        """
+        glyph = ArrayGlyph(np.arange(12.0).reshape(3, 4))
+        fig, _ = glyph.plot()
+        before = tuple(fig.get_size_inches())
+        monkeypatch.setattr(fig, "get_tightbbox", lambda *a, **k: None)
+
+        glyph._tighten_figure()
+
+        assert tuple(fig.get_size_inches()) == before
+        plt.close(fig)
+
+    def test_degenerate_content_bbox_is_a_no_op(self, monkeypatch):
+        """A zero-area content bbox cannot define a figure size, so it is skipped.
+
+        Test scenario:
+            Resizing to a degenerate bbox would produce a zero-width figure
+            that no backend can render, so the guard must leave the size
+            alone rather than apply it.
+        """
+        glyph = ArrayGlyph(np.arange(12.0).reshape(3, 4))
+        fig, _ = glyph.plot()
+        before = tuple(fig.get_size_inches())
+        monkeypatch.setattr(
+            fig, "get_tightbbox", lambda *a, **k: Bbox.from_extents(0.0, 0.0, 0.0, 0.0)
+        )
+
+        glyph._tighten_figure(pad_inches=0.0)
+
+        assert tuple(fig.get_size_inches()) == before
+        plt.close(fig)
+
+
+class TestStyleColorBarTicks:
+    """`ArrayGlyph._style_cbar_kw` derives readable ticks from a preset norm."""
+
+    def test_degenerate_range_defers_to_matplotlib(self):
+        """A norm with no span yields `{}` so matplotlib auto-ticks.
+
+        Test scenario:
+            An empty dict is the "no opinion" signal: deriving ticks across a
+            zero-width range would place them all at one value, so the choice
+            is handed back to matplotlib.
+        """
+        glyph = ArrayGlyph(np.arange(12.0).reshape(3, 4))
+
+        assert glyph._style_cbar_kw(Normalize(vmin=1.0, vmax=1.0)) == {}
+
+    def test_finite_range_yields_ticks_inside_it(self):
+        """A real range yields ticks, all within `[vmin, vmax]`.
+
+        Test scenario:
+            The counterpart to the degenerate case: a preset's banded norm
+            would over-crowd the axis, so a readable set is derived -- and
+            none of it may fall outside the norm's own range.
+        """
+        glyph = ArrayGlyph(np.arange(12.0).reshape(3, 4))
+
+        ticks = glyph._style_cbar_kw(Normalize(vmin=0.0, vmax=10.0))["ticks"]
+
+        assert ticks, "a finite range should produce ticks"
+        assert all(0.0 <= t <= 10.0 for t in ticks), ticks
+
+
+class TestStyledProjectionRequiresCoordinateVectors:
+    """A `style` preset under `projection=` needs 1-D lon/lat vectors."""
+
+    def test_missing_coords_raise_a_clear_error(self):
+        """Without `coords`, the reprojection has nothing to project.
+
+        Test scenario:
+            `projection="globe"` with a preset but no coordinates must name
+            the fix (`coords=(lon, lat)`) rather than failing deep inside
+            the reprojection.
+        """
+        glyph = ArrayGlyph(
+            np.random.default_rng(0).random((4, 5)) * 300.0, projection="globe"
+        )
+
+        data_style = DataStyle(style="temperature_2m")
+
+        with pytest.raises(ValueError, match=r"projection= with a style requires"):
+            glyph.plot(data_style=data_style)
+
+
+class TestProjectedRenderWithNonLinearScale:
+    """The projected render honours a non-linear colour scale."""
+
+    def test_power_scale_drives_the_projected_mesh_norm(self):
+        """A `power` scale reaches the reprojected `pcolormesh` as its norm.
+
+        Test scenario:
+            The projected path builds its own mappable, so it must feed the
+            resolved norm through instead of falling back to plain
+            `vmin`/`vmax` limits.
+        """
+        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
+        lon = np.linspace(-10.0, 10.0, 5)
+        lat = np.linspace(40.0, 60.0, 4)
+        data = np.random.default_rng(0).random((4, 5)) + 1.0
+        glyph = ArrayGlyph(data, coords=(lon, lat), projection="globe")
+
+        fig, _ = glyph.plot(color=ColorScaling.power(gamma=0.5))
+
+        assert isinstance(glyph.im.norm, PowerNorm), (
+            f"expected a PowerNorm on the projected mesh, got {type(glyph.im.norm)}"
+        )
+        plt.close(fig)
+
+
+class TestFacetAutoRangeOnPlainArray:
+    """`facet` auto-ranges an unmasked array as well as a masked one."""
+
+    def test_plain_ndarray_shares_one_colour_scale(self):
+        """A plain `ndarray` stack still gets a single stack-wide vmin/vmax.
+
+        Test scenario:
+            `arr` is settable, so a caller may replace the masked array with
+            a plain one. The auto-range path must handle both, otherwise the
+            panels would silently fall back to per-panel scaling.
+        """
+        stack = np.random.default_rng(1).random((4, 6, 7))
+        glyph = ArrayGlyph(stack)
+        glyph.arr = np.asarray(stack)
+
+        result = glyph.facet(col="t")
+
+        assert isinstance(result, FacetGrid)
+        first = result.axes.ravel()[0].get_images()[0]
+        assert first.norm.vmin == pytest.approx(float(stack.min()))
+        assert first.norm.vmax == pytest.approx(float(stack.max()))
+        plt.close("all")
+
+
+class TestAnimateWithPoints:
+    """`ArrayGlyph.animate(points=...)` re-labels the overlay every frame."""
+
+    def test_frame_update_repositions_and_relabels_the_points(self):
+        """Each frame re-applies the overlay offsets and labels, and returns them.
+
+        Test scenario:
+            `PointOverlay.draw` already puts the markers and labels on the axes
+            during setup, so merely reading them back after a frame proves
+            nothing. The offsets and label texts are therefore cleared first:
+            only the per-frame update can restore them. The frame function's
+            return value is asserted too, because that -- not the axes -- is
+            what a blitting writer redraws.
+        """
+        frame = np.arange(12.0).reshape(3, 4)
+        stack = np.stack([frame, frame + 1.0])
+        glyph = ArrayGlyph(stack)
+        points = PointOverlay(np.array([["A", 1, 1], ["B", 2, 2]], dtype=object))
+
+        glyph.animate(list(range(2)), points=points)
+        scatter = next(
+            artist
+            for artist in glyph.ax.collections
+            if isinstance(artist, PathCollection)
+        )
+        labels = [text for text in glyph.ax.texts if text.get_text() in {"A", "B"}]
+        assert len(labels) == 2, "setup should have drawn one label per point"
+        for text in labels:
+            text.set_text("")
+        scatter.set_offsets(np.zeros((2, 2)))
+
+        # matplotlib exposes no public per-frame hook; `_func` is the frame
+        # callable `FuncAnimation` itself calls for every rendered frame.
+        artists = glyph.anim._func(1)
+
+        restored = [text.get_text() for text in labels]
+        assert restored == ["A", "B"], (
+            f"the frame update should restore each point's label; got {restored}"
+        )
+        offsets = np.asarray(scatter.get_offsets(), dtype=float)
+        assert np.allclose(offsets, [[1, 1], [2, 2]]), (
+            f"the frame update should restore the offsets; got {offsets}"
+        )
+        assert scatter in artists, "the marker collection must be a redrawn artist"
+        assert all(text in artists for text in labels), (
+            "every point label must be a redrawn artist"
+        )
+        plt.close(glyph.fig)
+
+
+class TestStyleBackgroundBeforeDrawing:
+    """`ArrayGlyph._apply_style_background` is safe before a figure exists."""
+
+    def test_no_axes_is_a_no_op(self):
+        """A preset background applied before drawing changes nothing.
+
+        Test scenario:
+            The canvas colour is scoped to this glyph's own figure/axes; with
+            neither created yet there is nothing to paint. Asserting that
+            `ax`/`fig` are still `None` cannot fail (the method never assigns
+            them), so what is checked is the claim that matters: the colour is
+            not applied globally via `rcParams` as a substitute.
+        """
+        glyph = ArrayGlyph(np.arange(12.0).reshape(3, 4))
+        before = (
+            matplotlib.rcParams["axes.facecolor"],
+            matplotlib.rcParams["figure.facecolor"],
+        )
+
+        glyph._apply_style_background({"background": "black"})
+
+        after = (
+            matplotlib.rcParams["axes.facecolor"],
+            matplotlib.rcParams["figure.facecolor"],
+        )
+        assert after == before, (
+            f"the preset background must not leak into global rcParams; "
+            f"{before} became {after}"
+        )
+        assert glyph.fig is None, "no figure should have been created"
+
+
+class TestAnimateStyleColorBarClearsStaleInsets:
+    """A preset colorbar in `animate` replaces any inset already on the axes."""
+
+    def test_pre_existing_inset_is_removed(self):
+        """Animating with `colorbar=True` clears leftover swatch insets.
+
+        Test scenario:
+            The animation may reuse an axes that already carries a swatch
+            legend (drawn as an inset axes) from an earlier render. Asking
+            for a real colorbar must remove those insets first, otherwise
+            the stale swatch would be baked into every frame.
+        """
+        fig, ax = plt.subplots()
+        ax.inset_axes([0.02, 0.92, 0.32, 0.06])
+        stack = np.random.default_rng(0).random((2, 6, 7)) * 60.0 - 30.0
+        glyph = ArrayGlyph(stack, fig=fig, ax=ax)
+
+        glyph.animate(
+            ["a", "b"], data_style=DataStyle(style="temperature_2m"), colorbar=True
+        )
+
+        assert not ax.child_axes, "the stale inset should have been removed"
+        assert glyph.cbar is not None, "a real colorbar should have been drawn"
+        plt.close(fig)
+
+
+class TestConstructionTimeStyle:
+    """`ArrayGlyph(data_style=DataStyle(style=...))` sets the preset once."""
+
+    @pytest.fixture
+    def field(self):
+        """A fresh temperature-like field per test.
+
+        `ArrayGlyph` wraps the array with `ma.array(...)`, which does not
+        copy, so a module-level constant would be aliased by every glyph
+        built from it.
+
+        Returns:
+            numpy.ndarray: A `(6, 7)` field spanning roughly -30..30.
+        """
+        return np.random.default_rng(0).random((6, 7)) * 60.0 - 30.0
+
+    def test_style_is_applied_without_passing_it_to_plot(self, field):
+        """The preset set at construction renders without repeating it per call.
+
+        Test scenario:
+            Before the constructor accepted `data_style`, a preset had to be
+            passed to every `plot()` call: the loose `style=` keyword is
+            rejected and no other construction-time route existed.
+        """
+        glyph = ArrayGlyph(field, data_style=DataStyle(style="temperature_2m"))
+
+        fig, ax = glyph.plot()
+
+        assert glyph.default_options["style"] == "temperature_2m"
+        assert ax.images or ax.collections, "the styled field should be drawn"
+        plt.close(fig)
+
+    def test_style_survives_a_later_plain_plot(self, field):
+        """The preset is sticky across calls, as a `plot(style=...)` one is.
+
+        Test scenario:
+            `plot()` rebuilds `default_options` from the class defaults each
+            call and restores the sticky preset afterwards, so a second bare
+            `plot()` must still be styled.
+        """
+        glyph = ArrayGlyph(field, data_style=DataStyle(style="temperature_2m"))
+        glyph.plot()
+
+        glyph.plot()
+
+        assert glyph.default_options["style"] == "temperature_2m"
+        plt.close("all")
+
+    def test_a_later_call_can_clear_it(self, field):
+        """`plot(data_style=DataStyle(style=None))` clears the construction preset.
+
+        Test scenario:
+            The construction-time preset is sticky, so there has to be a way
+            to drop it. An explicit `None` is that way -- distinct from an
+            unset field, which leaves the sticky value alone.
+        """
+        glyph = ArrayGlyph(field, data_style=DataStyle(style="temperature_2m"))
+
+        glyph.plot(data_style=DataStyle(style=None))
+
+        assert glyph.default_options["style"] is None
+        plt.close("all")

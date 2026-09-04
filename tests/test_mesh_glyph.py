@@ -6,6 +6,7 @@ fan triangulation, face-to-triangle value mapping, and edge cases.
 
 from __future__ import annotations
 
+import inspect
 import re
 import time
 import warnings
@@ -16,13 +17,20 @@ import pytest
 from matplotlib.colors import to_rgba
 from matplotlib.text import Text
 
+from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
 from cleopatra.styling.colorbar import ColorBar
 from cleopatra.styling.params import Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
-from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(autouse=True)
+def _close_figures():
+    """Close every figure after each test so leaks never warn or accumulate."""
+    yield
+    plt.close("all")
+
+
+@pytest.fixture
 def triangle_glyph():
     """MeshGlyph with 2 triangular faces.
 
@@ -38,7 +46,7 @@ def triangle_glyph():
     return MeshGlyph(node_x, node_y, faces)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def mixed_glyph():
     """MeshGlyph with 1 quad + 2 triangles (mixed mesh)."""
     node_x = np.array([0.0, 1.0, 2.0, 0.0, 1.0, 2.0])
@@ -53,7 +61,7 @@ def mixed_glyph():
     return MeshGlyph(node_x, node_y, faces, fill_value=-1)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def quad_with_edges():
     """MeshGlyph with 1 quad and explicit edge connectivity."""
     node_x = np.array([0.0, 1.0, 1.0, 0.0])
@@ -1208,7 +1216,7 @@ class TestPlotReuse:
         """Test that kwargs from one plot() call don't leak to the next.
 
         Regression test for H3: default_options must be reset on each
-        plot() call so module-scoped fixtures aren't polluted.
+        plot() call so a shared fixture glyph isn't polluted.
         """
         mg = _make_tri_mg()
         mg.plot(np.array([1.0, 2.0]), cmap="plasma")
@@ -1916,3 +1924,212 @@ class TestMeshGlyphApplyStyle:
         g.apply_style("flow_accumulation", data=other)
         assert g.style == "flow_accumulation"
         plt.close("all")
+
+
+class TestApplyStyleForwardsHillshade:
+    """`MeshGlyph.apply_style` folds a forwarded `hillshade` into the style."""
+
+    @staticmethod
+    def _node_glyph():
+        """A two-triangle mesh carrying node-centred elevation.
+
+        Returns:
+            tuple: `(glyph, node_data)` already plotted at node location.
+        """
+        node_x = np.array([0.0, 1.0, 0.5, 1.5])
+        node_y = np.array([0.0, 0.0, 1.0, 1.0])
+        faces = np.array([[0, 1, 2], [1, 3, 2]])
+        node_data = np.array([10.0, 20.0, 30.0, 40.0])
+        glyph = MeshGlyph(node_x, node_y, faces)
+        glyph.plot(node_data, location="node")
+        return glyph, node_data
+
+    def test_hillshade_kwarg_is_applied_with_the_preset(self):
+        """`apply_style(style, hillshade=True)` turns shading on for that render.
+
+        Test scenario:
+            `hillshade` is a grouped render option, so it must travel with
+            the style rather than reaching `plot` as a stray keyword.
+        """
+        glyph, _ = self._node_glyph()
+
+        glyph.apply_style("topography", hillshade=True)
+
+        assert glyph.style == "topography"
+        assert glyph.default_options["hillshade"] is True
+        plt.close("all")
+
+    def test_omitting_hillshade_resets_it_to_the_default(self):
+        """Without the kwarg, shading returns to the glyph's baseline.
+
+        Test scenario:
+            Reading the value before and after and asserting it is unchanged
+            would compare `False` with `False` -- green even if `apply_style`
+            were a no-op. Turn shading *on* first, so the assertion has a real
+            state change to detect.
+
+            Note what this pins is the observable reset, not one mechanism:
+            `plot` rebuilds `default_options` from `MESH_DEFAULT_OPTIONS` on
+            every call, and separately restores `_construct_hillshade` when
+            the call carries no `hillshade`. Both yield `False`, so the test
+            cannot tell them apart -- what it does guarantee is the contract
+            callers see: `style` is sticky across calls, `hillshade` is not.
+        """
+        glyph, _ = self._node_glyph()
+        glyph.apply_style("topography", hillshade=True)
+        assert glyph.default_options["hillshade"] is True, (
+            "precondition: shading must be on before the reset can be observed"
+        )
+
+        glyph.apply_style("topography")
+
+        assert glyph.default_options["hillshade"] is False
+        assert glyph.style == "topography", "the preset itself is sticky"
+        plt.close("all")
+
+
+@pytest.fixture
+def kwargs_mesh():
+    """A two-triangle mesh glyph for the render-kwarg routing tests.
+
+    Every glyph fixture in this file is function-scoped: these tests mutate
+    the glyph, and the autouse teardown closes its figure, so sharing one
+    across tests would hand the next test a mutated glyph bound to a closed
+    figure.
+
+    Returns:
+        MeshGlyph: A fresh glyph over two face-centred triangles.
+    """
+    node_x = np.array([0.0, 1.0, 0.5, 1.5])
+    node_y = np.array([0.0, 0.0, 1.0, 1.0])
+    faces = np.array([[0, 1, 2], [1, 3, 2]])
+    return MeshGlyph(node_x, node_y, faces)
+
+
+class TestPlotSplitsRenderKwargs:
+    """`MeshGlyph.plot` separates glyph options from matplotlib render kwargs."""
+
+    @pytest.mark.parametrize(
+        "keyword, value, read_back",
+        [
+            ("alpha", 0.5, lambda im: im.get_alpha()),
+            ("zorder", 4.0, lambda im: im.get_zorder()),
+        ],
+    )
+    def test_unmodelled_kwarg_reaches_the_renderer(
+        self, kwargs_mesh, keyword, value, read_back
+    ):
+        """A keyword the glyph does not model is forwarded to the mesh call.
+
+        Test scenario:
+            `plot(**kwargs)` splits its keywords into glyph options and
+            renderer keywords by testing membership of
+            `MESH_DEFAULT_OPTIONS`. Neither keyword here is a member, so each
+            must reach `tripcolor` and must not be written into the option
+            dict -- swallowing it would silently drop the caller's request.
+        """
+        kwargs_mesh.plot(np.array([1.0, 2.0]), **{keyword: value})
+
+        assert read_back(kwargs_mesh.im) == value, (
+            f"{keyword} should have reached the mesh renderer"
+        )
+        assert keyword not in kwargs_mesh.default_options, (
+            f"{keyword} must not leak into the option dict"
+        )
+
+    def test_edgecolor_is_an_explicit_parameter(self, kwargs_mesh):
+        """`edgecolor` is a named `plot` parameter, not a `**kwargs` passthrough.
+
+        Test scenario:
+            It reaches the renderer like the keywords above, but by a
+            different route -- worth pinning separately so a refactor that
+            moved it into `**kwargs` (or dropped it) is visible.
+        """
+        assert "edgecolor" in inspect.signature(MeshGlyph.plot).parameters
+
+        kwargs_mesh.plot(np.array([1.0, 2.0]), edgecolor="k")
+
+        assert np.allclose(kwargs_mesh.im.get_edgecolor(), to_rgba("k"))
+
+
+class TestConstructionTimeHillshade:
+    """`MeshGlyph(data_style=DataStyle(hillshade=...))` is honoured and sticky.
+
+    `plot()` rebuilds `default_options` from the class defaults on every call
+    and then restores the construction-time `hillshade`. That restore was
+    unreachable until the constructor accepted `data_style`: the loose
+    `hillshade=` keyword is rejected, so nothing could seed
+    `_construct_hillshade` and it was always `False`.
+    """
+
+    @staticmethod
+    def _glyph(**kwargs):
+        """A two-triangle mesh glyph built with the given constructor kwargs.
+
+        Returns:
+            tuple: `(glyph, node_data)` ready for a node-located plot.
+        """
+        node_x = np.array([0.0, 1.0, 0.5, 1.5])
+        node_y = np.array([0.0, 0.0, 1.0, 1.0])
+        faces = np.array([[0, 1, 2], [1, 3, 2]])
+        node_data = np.array([10.0, 20.0, 30.0, 40.0])
+        return MeshGlyph(node_x, node_y, faces, **kwargs), node_data
+
+    def test_construction_value_is_applied(self):
+        """The group's `hillshade` reaches the options and the sticky field.
+
+        Test scenario:
+            `_construct_hillshade` is captured from `default_options` right
+            after `super().__init__`, so it can only be seeded through the
+            constructor -- which is what this checks.
+        """
+        glyph, _ = self._glyph(data_style=DataStyle(hillshade=True))
+
+        assert glyph.default_options["hillshade"] is True
+        assert glyph._construct_hillshade is True
+
+    def test_construction_value_survives_plot_and_apply_style(self):
+        """`plot` and `apply_style` restore it when the call does not set it.
+
+        Test scenario:
+            This is the behaviour `_construct_hillshade` exists for. Both
+            calls rebuild `default_options` from the class defaults, where
+            `hillshade` is `False`, so a value that survives can only have
+            come from the restore.
+        """
+        glyph, node_data = self._glyph(data_style=DataStyle(hillshade=True))
+
+        glyph.plot(node_data, location="node")
+        assert glyph.default_options["hillshade"] is True, "plot dropped it"
+
+        glyph.apply_style("topography")
+        assert glyph.default_options["hillshade"] is True, "apply_style dropped it"
+
+    def test_a_call_that_sets_hillshade_still_overrides_it(self):
+        """An explicit per-call value beats the construction-time one.
+
+        Test scenario:
+            The restore only applies when a call carries no `hillshade`; one
+            that does must win, or the construction value could never be
+            turned off again.
+        """
+        glyph, node_data = self._glyph(data_style=DataStyle(hillshade=True))
+        glyph.plot(node_data, location="node")
+
+        glyph.apply_style("topography", hillshade=False)
+
+        assert glyph.default_options["hillshade"] is False
+
+    def test_default_is_still_off(self):
+        """Without the group, shading stays off -- the default is unchanged.
+
+        Test scenario:
+            The control case: the new constructor parameter must not turn
+            relief shading on for callers who never asked for it.
+        """
+        glyph, node_data = self._glyph()
+
+        glyph.plot(node_data, location="node")
+
+        assert glyph.default_options["hillshade"] is False
+        assert glyph._construct_hillshade is False

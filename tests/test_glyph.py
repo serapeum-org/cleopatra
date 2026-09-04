@@ -25,8 +25,14 @@ from cleopatra.glyphs.base.glyph import (
     _clear_prior_render_artists,
     _mark_render_artists,
 )
-from cleopatra.glyphs.gridded.array_glyph import PointOverlay
-from cleopatra.styling.params import CellValues, Contour
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph, PointOverlay
+from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
+from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
+from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
+from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
+from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
+from cleopatra.glyphs.stats.kde_glyph import KDEGlyph
+from cleopatra.styling.params import CellValues, Contour, DataStyle
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import ColorScale, MidpointNormalize
 
@@ -1754,3 +1760,450 @@ class TestSnapshotGroupOptions:
             glyph, Contour(levels=1), Contour(levels=2)
         )
         assert snap == {"levels": 7}, f"got {snap}"
+
+
+class TestClearProjectionFrameRemovalErrors:
+    """`_clear_projection_frame` survives an artist that cannot be removed."""
+
+    def test_failing_artist_is_skipped(self):
+        """A frame artist whose `remove()` raises does not break the teardown.
+
+        Test scenario:
+            A stashed frame artist may already be detached (or belong to a
+            closed figure) by the time the next render clears it. The
+            removal is best-effort: the error is swallowed and the frame is
+            still reported as having existed.
+        """
+
+        class _Undetachable:
+            def remove(self):
+                raise ValueError("already removed")
+
+        fig, ax = plt.subplots()
+        glyph_mod._stash_projection_frame(ax, [_Undetachable()])
+
+        assert glyph_mod._clear_projection_frame(ax) is True
+        assert glyph_mod._clear_projection_frame(ax) is False, (
+            "the frame record should be cleared even when removal failed"
+        )
+        plt.close(fig)
+
+
+class TestGetTicksDegenerateSpacing:
+    """`Glyph.get_ticks` when the spacing yields no tick inside the range."""
+
+    def test_falls_back_to_the_endpoints(self):
+        """No tick lands in `[vmin, vmax]` -> the two endpoints are used.
+
+        Test scenario:
+            A negative `ticks_spacing` makes the tick sequence empty (it
+            walks away from `vmax`). Rather than returning an empty
+            colorbar axis, the range's endpoints are used.
+        """
+        g = Glyph(
+            default_options=_make_options(vmin=0.0, vmax=10.0, ticks_spacing=-1.0)
+        )
+
+        assert g.get_ticks().tolist() == [0.0, 10.0]
+
+
+class TestMergeGroupParamsFiltersUnknownKeys:
+    """`Glyph._merge_group_params` only writes keys the glyph actually models."""
+
+    def test_unknown_option_is_ignored(self):
+        """A group emitting a key the glyph does not model leaves options alone.
+
+        Test scenario:
+            Grouped parameter objects are shared across glyph types, so one
+            may carry an option a given glyph has no slot for. Such a key
+            must be dropped rather than injected into `default_options`.
+        """
+
+        class _Group:
+            def to_options(self):
+                return {"vmin": 3.0, "not_a_glyph_option": "x"}
+
+        glyph = _FakeGlyph({"vmin": 0.0})
+
+        Glyph._merge_group_params(glyph, _Group(), None)
+
+        assert glyph.default_options == {"vmin": 3.0}, (
+            f"unknown keys must not be added; got {glyph.default_options}"
+        )
+
+
+class TestColorBarLabelLocationUnset:
+    """`create_color_bar` with `cbar_label_location=None`."""
+
+    def test_none_skips_the_orientation_validation(self):
+        """`None` means "don't place the label", so no orientation check runs.
+
+        Test scenario:
+            The contrast is the point: an invalid location is rejected for
+            this colorbar's orientation, while `None` sails past the same
+            check. Asserting only that a `Colorbar` came back would hold for
+            an implementation that validated `None` too, or that placed a
+            label anyway.
+        """
+        fig, ax = plt.subplots()
+        im = ax.imshow(np.arange(9).reshape(3, 3))
+        ticks = {"ticks": np.array([0, 4, 8])}
+
+        invalid = Glyph(default_options=_make_options(cbar_label_location="left"))
+        with pytest.raises(ValueError, match="is not valid for a"):
+            invalid.create_color_bar(ax, im, ticks)
+
+        unset = Glyph(default_options=_make_options(cbar_label_location=None))
+        cbar = unset.create_color_bar(ax, im, ticks)
+
+        assert isinstance(cbar, Colorbar)
+        plt.close(fig)
+
+
+class TestConstructionTimeDataStyle:
+    """`Glyph(data_style=...)` applies grouped options at construction.
+
+    The loose `style=` / `hillshade=` keywords are rejected with a message
+    telling the caller to pass `data_style=DataStyle(...)`. This is what makes
+    that redirection reachable: before it, the named remedy was not accepted
+    by any constructor, so the options simply could not be set at build time.
+    """
+
+    def test_grouped_option_is_applied(self):
+        """A `DataStyle` field reaches `default_options` at construction.
+
+        Test scenario:
+            The base case for the whole parameter: a field the glyph models
+            is applied, so it does not have to be repeated on every `plot()`.
+        """
+        options = _make_options(style=None, hillshade=False)
+
+        g = Glyph(default_options=options, data_style=DataStyle(style="topography"))
+
+        assert g.default_options["style"] == "topography"
+
+    def test_unset_fields_leave_their_defaults(self):
+        """A field the `DataStyle` never set is not written.
+
+        Test scenario:
+            `to_options()` emits only fields that were given, so an empty
+            group must leave every option exactly as the class defaults had
+            it -- it must not stamp `None` over them.
+        """
+        before = Glyph(default_options=_make_options()).default_options.copy()
+
+        g = Glyph(default_options=_make_options(), data_style=DataStyle())
+
+        assert g.default_options == before
+
+    def test_the_rejected_loose_keyword_names_a_remedy_that_works(self):
+        """The hint in the rejection message is now actually accepted.
+
+        Test scenario:
+            `hillshade=` is refused with "pass data_style=DataStyle(...)".
+            Doing exactly that must succeed, or the error would send callers
+            to a dead end.
+        """
+        options = _make_options(style=None, hillshade=False)
+
+        with pytest.raises(
+            ValueError, match=r"data_style=DataStyle\(hillshade=\.\.\.\)"
+        ):
+            Glyph(default_options=options, hillshade=True)
+
+        g = Glyph(default_options=options, data_style=DataStyle(hillshade=True))
+        assert g.default_options["hillshade"] is True
+
+    def test_group_wins_over_a_loose_kwarg_for_the_same_option(self):
+        """A grouped field overrides a loose keyword naming the same option.
+
+        Test scenario:
+            `alpha` is the one `DataStyle` field that is still a legitimate
+            loose option (it stayed loose on `LineGlyph` / `HistogramGlyph`),
+            so it is the only key that can collide here. The group is merged
+            after the loose kwargs, so it wins -- matching how `plot()`
+            resolves the same collision.
+        """
+        options = _make_options(alpha=0.1)
+
+        g = Glyph(default_options=options, alpha=0.2, data_style=DataStyle(alpha=0.8))
+
+        assert g.default_options["alpha"] == 0.8, (
+            f"the group should win; got {g.default_options['alpha']}"
+        )
+
+    def test_explicitly_cleared_field_is_applied(self):
+        """A field set to `None` clears the option rather than being skipped.
+
+        Test scenario:
+            `DataStyle` distinguishes unset (omit the key) from explicit
+            `None` (emit it), which is how a sticky preset is cleared. The
+            constructor must honour the distinction, not treat `None` as
+            "nothing given".
+        """
+        options = _make_options(style="topography", hillshade=False)
+
+        g = Glyph(default_options=options, data_style=DataStyle(style=None))
+
+        assert g.default_options["style"] is None, "an explicit None must clear it"
+
+    def test_field_this_glyph_does_not_model_is_ignored(self):
+        """A grouped field with no matching option is dropped, not injected.
+
+        Test scenario:
+            `DataStyle` is shared across glyphs, so it can carry a field the
+            target does not model (`bands` here). The merge filters on the
+            option dict, so such a key must not appear -- injecting it would
+            corrupt `default_options` for every later lookup.
+        """
+        options = _make_options(style=None)
+
+        g = Glyph(
+            default_options=options,
+            data_style=DataStyle(style="topography", bands=6),
+        )
+
+        assert g.default_options["style"] == "topography"
+        assert "bands" not in g.default_options, "an unmodelled field must be dropped"
+
+    def test_group_that_applies_to_nothing_is_refused(self):
+        """A group whose every field is unmodelled raises instead of vanishing.
+
+        Test scenario:
+            Dropping unmodelled keys is right for `plot()`, where one group is
+            shared across glyphs. At construction it would be a trap: a glyph
+            that models none of `DataStyle`'s options would accept the group
+            and apply nothing, which is exactly what the loose-keyword
+            rejection message sends the caller to do. The error names the
+            glyph and the options it does not have.
+        """
+        options = _make_options()
+        group = DataStyle(style="topography")
+
+        with pytest.raises(ValueError, match=r"data_style= does not apply"):
+            Glyph(default_options=options, data_style=group)
+
+    def test_empty_group_is_accepted_even_when_nothing_is_modelled(self):
+        """An empty group sets nothing, so there is nothing to refuse.
+
+        Test scenario:
+            The refusal keys off what the group *requests*; a `DataStyle()`
+            that requests nothing is a no-op on any glyph and must stay
+            constructible, so callers can pass one unconditionally.
+        """
+        g = Glyph(default_options=_make_options(), data_style=DataStyle())
+
+        assert g.default_options == _make_options()
+
+    def test_non_datastyle_argument_is_refused_by_type(self):
+        """A plain string gets a TypeError naming DataStyle, not an AttributeError.
+
+        Test scenario:
+            The rejection message shows `data_style=DataStyle(style=...)`, so
+            `data_style="topography"` is a likely slip. It must not surface as
+            `'str' object has no attribute 'to_options'` from deep inside the
+            merge.
+        """
+        options = _make_options(style=None)
+
+        with pytest.raises(TypeError, match="data_style must be a DataStyle"):
+            Glyph(default_options=options, data_style="topography")
+
+    def test_a_different_group_object_is_refused(self):
+        """Another grouped object is not silently accepted as a data_style.
+
+        Test scenario:
+            Every group exposes `to_options()`, so a duck-typed merge would
+            let `Contour(levels=5)` through and quietly set `levels`. The
+            parameter is typed to `DataStyle` and enforced.
+        """
+        options = _make_options()
+        wrong_group = Contour(levels=5)
+
+        with pytest.raises(TypeError, match="data_style must be a DataStyle"):
+            Glyph(default_options=options, data_style=wrong_group)
+
+    def test_grouped_keys_count_as_explicitly_passed(self):
+        """The group's keys land in `_explicit_options`, like loose kwargs.
+
+        Test scenario:
+            Subclasses branch on `_explicit_options` to tell an overridden
+            option from one left at its default (`ArrayGlyph` only auto-sizes
+            the figure when `figsize` was not passed). An option set through
+            the group has been passed just as explicitly as a loose one, so
+            it has to be recorded the same way.
+        """
+        options = _make_options(style=None, hillshade=False)
+
+        g = Glyph(
+            default_options=options,
+            data_style=DataStyle(style="topography", hillshade=True),
+        )
+
+        assert {"style", "hillshade"} <= g._explicit_options, (
+            f"grouped keys should be recorded; got {g._explicit_options}"
+        )
+
+
+class TestConstructionTimeDataStyleAcrossGlyphs:
+    """`data_style=` behaves consistently on every shipped glyph.
+
+    Ten classes forward `**kwargs` into `Glyph.__init__`, so the constructor
+    keyword reaches all of them. The three that model the grouped options
+    honour it; the four primitive glyphs, which model none of them, refuse it
+    rather than accepting a group they would silently drop.
+    """
+
+    @staticmethod
+    def _polygons():
+        """A single triangular polygon, enough to construct a PolygonGlyph."""
+        return [np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0]])]
+
+    @staticmethod
+    def _vector_field():
+        """A 3x3 vector field for VectorGlyph."""
+        x, y = np.meshgrid(np.arange(3.0), np.arange(3.0))
+        return x, y, np.full_like(x, 3.0), np.full_like(y, 4.0)
+
+    def test_array_glyph_honours_hillshade(self):
+        """`ArrayGlyph` models `hillshade`, so the group applies.
+
+        Test scenario:
+            One of the three glyphs the grouped options target; the loose
+            `hillshade=` keyword is rejected on it, so this is the only way
+            to set relief shading at construction.
+        """
+        glyph = ArrayGlyph(
+            np.arange(12.0).reshape(3, 4), data_style=DataStyle(hillshade=True)
+        )
+
+        assert glyph.default_options["hillshade"] is True
+
+    def test_array_glyph_honours_alpha(self):
+        """`alpha` moved onto the group for `ArrayGlyph`; construction sets it.
+
+        Test scenario:
+            A loose `alpha=` is rejected by `_reject_loose_alpha` with the
+            same "pass a DataStyle" redirection, so this is the path that
+            makes that message true at construction time.
+        """
+        glyph = ArrayGlyph(
+            np.arange(12.0).reshape(3, 4), data_style=DataStyle(alpha=0.25)
+        )
+
+        assert glyph.default_options["alpha"] == 0.25
+
+    def test_kde_glyph_honours_style(self):
+        """`KDEGlyph` is one of the three glyphs the grouped options target.
+
+        Test scenario:
+            It models `style`, so the group applies -- covering the third
+            glyph, which neither the ArrayGlyph nor the MeshGlyph cases
+            reach.
+        """
+        rng = np.random.default_rng(0)
+        glyph = KDEGlyph(
+            rng.normal(size=40),
+            rng.normal(size=40),
+            data_style=DataStyle(style="topography"),
+        )
+
+        assert glyph.default_options["style"] == "topography"
+
+    def test_mesh_glyph_construction_style_survives_plot(self):
+        """A `MeshGlyph` preset set at construction is sticky across a render.
+
+        Test scenario:
+            `plot()` rebuilds `default_options` from the class defaults, so a
+            preset that survives can only have come from the sticky state
+            seeded at construction.
+        """
+        node_x = np.array([0.0, 1.0, 0.5, 1.5])
+        node_y = np.array([0.0, 0.0, 1.0, 1.0])
+        faces = np.array([[0, 1, 2], [1, 3, 2]])
+        glyph = MeshGlyph(
+            node_x, node_y, faces, data_style=DataStyle(style="topography")
+        )
+
+        glyph.plot(np.array([10.0, 20.0, 30.0, 40.0]), location="node")
+
+        assert glyph.default_options["style"] == "topography"
+        plt.close("all")
+
+    @pytest.mark.parametrize(
+        "build",
+        [
+            pytest.param(
+                lambda: PolygonGlyph(
+                    TestConstructionTimeDataStyleAcrossGlyphs._polygons(),
+                    data_style=DataStyle(style="topography"),
+                ),
+                id="polygon",
+            ),
+            pytest.param(
+                lambda: ScatterGlyph(
+                    np.arange(3.0), np.arange(3.0), data_style=DataStyle(hillshade=True)
+                ),
+                id="scatter",
+            ),
+            pytest.param(
+                lambda: FlowGlyph(
+                    [np.array([[0.0, 0.0], [1.0, 1.0]])],
+                    data_style=DataStyle(style="topography"),
+                ),
+                id="flow",
+            ),
+            pytest.param(
+                lambda: VectorGlyph(
+                    *TestConstructionTimeDataStyleAcrossGlyphs._vector_field(),
+                    data_style=DataStyle(style="topography"),
+                ),
+                id="vector",
+            ),
+        ],
+    )
+    def test_primitive_glyphs_refuse_a_group_they_cannot_apply(self, build):
+        """The four glyphs modelling none of the options raise, not shrug.
+
+        Test scenario:
+            These glyphs still reject a loose `style=`/`hillshade=` by telling
+            the caller to pass `data_style=` instead. If the constructor then
+            accepted that group and dropped it, a caller following the
+            library's own instruction would get no error and an unstyled
+            plot -- the same failure the redirection exists to prevent.
+        """
+        with pytest.raises(ValueError, match=r"data_style= does not apply"):
+            build()
+
+    def test_an_empty_group_is_still_accepted_by_those_glyphs(self):
+        """A group that requests nothing is a no-op, not a refusal.
+
+        Test scenario:
+            The refusal keys off what the group *requests*, not off what the
+            glyph models -- otherwise a caller threading an optional
+            `DataStyle()` through generic code would hit an error on exactly
+            the glyphs where it was harmless. This is the boundary between
+            the two, on a glyph that models none of the options.
+        """
+        glyph = PolygonGlyph(self._polygons(), data_style=DataStyle())
+
+        assert glyph.default_options == PolygonGlyph.DEFAULT_OPTIONS
+
+    def test_the_refusal_names_the_glyph_and_the_options(self):
+        """The error is diagnosable without opening the source.
+
+        Test scenario:
+            The loose-keyword rejection it replaces names both the option and
+            the remedy, so this one has to be as useful: the class that
+            refused, and which options it does not have.
+        """
+        x = np.arange(3.0)
+        y = np.arange(3.0)
+        group = DataStyle(hillshade=True)
+
+        with pytest.raises(ValueError) as excinfo:
+            ScatterGlyph(x, y, data_style=group)
+
+        message = str(excinfo.value)
+        assert "ScatterGlyph" in message, f"the glyph should be named; got {message}"
+        assert "hillshade" in message, f"the options should be named; got {message}"

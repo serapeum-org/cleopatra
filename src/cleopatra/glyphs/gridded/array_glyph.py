@@ -1157,6 +1157,11 @@ class ArrayGlyph(GeoMixin, Glyph):
                         Extra keyword arguments forwarded to
                         `fig.colorbar`; user keys win over cleopatra's
                         defaults on collision. Default None.
+            data_style: Grouped `style` / `hillshade` / `bands` / `alpha` / `alpha_range` options applied at
+                construction, e.g. `data_style=DataStyle(style="topography")`.
+                These are rejected as loose keywords, so the group is how they
+                are set here rather than on every `plot()` call; the value is
+                sticky across later calls. Default None.
 
         Raises:
             ValueError: If an invalid keyword argument is provided.

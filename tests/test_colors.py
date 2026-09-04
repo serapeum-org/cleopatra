@@ -1,5 +1,6 @@
 import importlib.resources
 import json
+import warnings
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -27,10 +28,12 @@ from cleopatra.styling.colors import (
     Colors,
     _category_boundaries,
     _load_presets,
+    _normalise_unit,
     _resolve_style_norm,
     alpha_scaled_image,
     alpha_scaled_mesh,
     apply_data_style,
+    convert_units,
 )
 from cleopatra.styling.perceptual import perceptual_uniformity
 
@@ -1633,3 +1636,237 @@ def test_to_hex():
     color = Colors(mixed_color)
     hex_colors = color.to_hex()
     assert hex_colors == ["#8033cc", "#23a9dd", "#8033cc"]
+
+
+class TestNormaliseUnit:
+    """`_normalise_unit` maps a unit spelling onto its canonical name."""
+
+    def test_none_stays_none(self):
+        """A missing unit has no canonical spelling.
+
+        Test scenario:
+            `None` means "no unit given", which must stay distinguishable
+            from a unit that is given but unrecognised -- both answer `None`,
+            and the caller treats them the same, but only by going through
+            this function rather than by guessing.
+        """
+        assert _normalise_unit(None) is None
+
+    def test_unknown_unit_is_none(self):
+        """An unrecognised unit is reported as unknown, not guessed at.
+
+        Test scenario:
+            Silently inventing a canonical name would let a wrong conversion
+            through; `None` is what makes the caller warn instead.
+        """
+        assert _normalise_unit("parsecs") is None
+
+    @pytest.mark.parametrize(
+        "spelling, canonical",
+        [
+            ("celsius", "celsius"),
+            ("  Celsius ", "celsius"),
+            ("degC", "celsius"),
+            ("C", "celsius"),
+            ("°C", "celsius"),
+            ("K", "kelvin"),
+            ("kelvin", "kelvin"),
+            ("degF", "fahrenheit"),
+            ("°f", "fahrenheit"),
+        ],
+    )
+    def test_alias_resolves_to_its_canonical_name(self, spelling, canonical):
+        """Every alias resolves to a named canonical unit, whatever its casing.
+
+        Test scenario:
+            Asserting against the literal canonical name is what pins the
+            alias table. Comparing two calls to `_normalise_unit` against each
+            other would agree just as well if the table were empty and both
+            sides returned `None`.
+        """
+        assert _normalise_unit(spelling) == canonical, spelling
+
+
+class TestConvertUnitsNoOps:
+    """`convert_units` returns the data untouched when there is nothing to do."""
+
+    def test_identical_spelling_is_a_no_op(self):
+        """Same unit, different case -> the original array is handed back.
+
+        Test scenario:
+            An *unknown* unit is used deliberately. For a known one the alias
+            table resolves both spellings to the same canonical name and the
+            guard below returns the array anyway, so the casefold
+            short-circuit could be deleted without the assertion noticing.
+            Only an unrecognised unit reaches it alone -- and it must return
+            quietly, without the "no known unit conversion" warning the
+            fall-through would emit.
+        """
+        data = np.array([1.0, 2.0])
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            assert convert_units(data, "Parsecs", "parsecs") is data
+
+    def test_same_known_unit_in_two_spellings_is_a_no_op(self):
+        """Two aliases of one canonical unit convert to nothing.
+
+        Test scenario:
+            `degC` and `Celsius` normalise to the same canonical name, so
+            there is no conversion to apply and the array is handed back.
+        """
+        data = np.array([1.0, 2.0])
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            assert convert_units(data, "degC", "Celsius") is data
+
+    @pytest.mark.parametrize(
+        "from_units, to_units",
+        [(None, "celsius"), ("celsius", None), (None, None)],
+        ids=["no-source", "no-target", "neither"],
+    )
+    def test_missing_side_is_a_no_op(self, from_units, to_units):
+        """A missing source or target unit leaves the data alone.
+
+        Test scenario:
+            A conversion needs both ends; with either absent there is nothing
+            to convert *between*, so the same array object comes back rather
+            than a silently unconverted copy.
+        """
+        data = np.array([1.0, 2.0])
+
+        assert convert_units(data, from_units, to_units) is data
+
+
+class TestLoadPresetsMalformedAsset:
+    """`_load_presets` degrades to `{}` instead of raising on a bad asset."""
+
+    #: A real, populated asset. Naming a *missing* file instead would make the
+    #: test pass through the `OSError` arm even with the patch inert, so it
+    #: could not tell the two failure modes apart.
+    REAL_ASSET = "builtin_presets.json"
+
+    def test_the_chosen_asset_really_loads_unpatched(self):
+        """The asset used below is populated, so the patch below has to bite.
+
+        Test scenario:
+            A guard for the sibling test rather than a behaviour check: if
+            this asset ever stops loading presets, the malformed-asset test
+            silently stops discriminating and this fails first, naming why.
+        """
+        assert _load_presets(self.REAL_ASSET), (
+            f"{self.REAL_ASSET} should load presets; the malformed-asset test "
+            "below is only meaningful if an unpatched call is non-empty"
+        )
+
+    def test_non_mapping_presets_yield_no_styles(self, monkeypatch):
+        """A `presets` value that is not a mapping is rejected wholesale.
+
+        Test scenario:
+            The asset parses as JSON but its `presets` key holds a list, so
+            there is nothing to iterate as `name -> layers`; a partial or
+            corrupted install must still import cleanly. The stub stands in
+            for a real, populated asset (see `REAL_ASSET`) and records that it
+            was read, so an inert patch fails rather than passing through the
+            missing-file arm.
+        """
+        reads: list[str] = []
+
+        class _Resource:
+            def joinpath(self, name):
+                reads.append(name)
+                return self
+
+            def read_text(self, encoding="utf-8"):
+                return json.dumps({"version": 1, "presets": ["not", "a", "mapping"]})
+
+        monkeypatch.setattr(importlib.resources, "files", lambda package: _Resource())
+
+        assert _load_presets(self.REAL_ASSET) == {}
+        assert reads == [self.REAL_ASSET], (
+            f"the stubbed asset should have been read once; got {reads}"
+        )
+
+
+class TestResolveStyleNormAllNaN:
+    """`_resolve_style_norm` with a diverging `center` and no finite data."""
+
+    def test_unit_radius_is_used(self):
+        """An all-NaN layer cannot size the range, so a unit radius is used.
+
+        Test scenario:
+            A `center` with no finite values to measure against would give a
+            zero-width norm; the fallback keeps `center +/- 1` so the
+            colormap still spans a real interval.
+        """
+        norm, vmin, vmax = _resolve_style_norm(
+            np.full((2, 2), np.nan), {"cmap": "viridis", "center": 0.0}
+        )
+
+        assert vmin == -1.0, f"vmin should be center - 1; got {vmin}"
+        assert vmax == 1.0, f"vmax should be center + 1; got {vmax}"
+        assert norm.vmin == -1.0, "the norm must carry the same lower bound"
+        assert norm.vmax == 1.0, "the norm must carry the same upper bound"
+
+
+class TestCurvilinearCategoricalStyle:
+    """A categorical preset drawn on a curvilinear grid uses the mesh path."""
+
+    def test_categories_render_as_a_quadmesh(self):
+        """`x`/`y` switch the categorical branch from `imshow` to `pcolormesh`.
+
+        Test scenario:
+            `flow_direction_d8` is a categorical preset; supplying
+            curvilinear coordinates must route it through
+            `alpha_scaled_mesh` so the classes land on the warped grid
+            rather than an axis-aligned image.
+        """
+        fig, ax = plt.subplots()
+        codes = np.array([[1.0, 2.0, 4.0], [8.0, 16.0, 32.0]])
+        y_grid, x_grid = np.mgrid[0:3, 0:4].astype(float)
+
+        images = apply_data_style(
+            ax,
+            {"flow_direction_d8": codes},
+            style="flow_direction_d8",
+            x=x_grid,
+            y=y_grid,
+        )
+
+        assert isinstance(images["flow_direction_d8"], QuadMesh), (
+            f"expected a QuadMesh, got {type(images['flow_direction_d8'])}"
+        )
+        plt.close(fig)
+
+
+class TestCreateFromImageInvalidFile:
+    """`Colors.create_from_image` rejects a file that is not an image."""
+
+    def test_non_image_file_raises_value_error(self, tmp_path):
+        """A readable but undecodable file gets a clear `ValueError`.
+
+        Test scenario:
+            The path exists (so the `FileNotFoundError` guard passes) but
+            Pillow cannot identify it; the failure must be reported as "not
+            a valid image", not as Pillow's internal error.
+        """
+        path = tmp_path / "not-an-image.png"
+        path.write_text("plain text, not PNG bytes", encoding="utf-8")
+
+        with pytest.raises(ValueError, match="not a valid image"):
+            Colors.create_from_image(path)
+
+
+class TestGetTypeUnrecognisedValue:
+    """`Colors.get_type` reports only the entries it can classify."""
+
+    def test_unclassifiable_entry_is_omitted(self):
+        """A string that is no known colour format contributes no type.
+
+        Test scenario:
+            `get_type` classifies each stored value independently; one that
+            matches none of the three formats is skipped rather than
+            labelled or raised on.
+        """
+        assert Colors("zzzzzz").get_type() == []

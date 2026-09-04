@@ -15,7 +15,9 @@ from matplotlib.patches import Patch
 from cleopatra.styling.params import Contour
 from cleopatra.styling.styles import (
     ColorScale,
+    Scale,
     Styles,
+    _categorical_is_null,
     apply_blank_canvas,
     colorbar_legend,
     disjoint_legend,
@@ -580,3 +582,154 @@ class TestApplyBlankCanvas:
         img = ax.imshow([[0, 1], [1, 0]], cmap="gray")
         apply_blank_canvas(ax)
         assert img in ax.images, "pre-existing plot should be untouched"
+
+
+class TestGetLineStyleUnknownName:
+    """`Styles.get_line_style` with a name that is not registered."""
+
+    def test_unknown_name_returns_none_and_lists_the_options(self, capsys):
+        """An unknown style name prints the available names and returns `None`.
+
+        Test scenario:
+            The lookup is a convenience helper, so a typo reports the valid
+            choices on stdout rather than raising -- the caller gets `None`
+            and matplotlib's own default.
+        """
+        assert Styles.get_line_style("not-a-line-style") is None
+
+        printed = capsys.readouterr().out
+        assert "not-a-line-style" in printed, printed
+        assert "solid" in printed, f"the available styles should be listed: {printed}"
+
+    def test_known_name_still_resolves(self):
+        """A registered name resolves to its matplotlib dash spec.
+
+        Test scenario:
+            The positive counterpart to the unknown-name case, so that
+            returning `None` for everything would not satisfy both.
+        """
+        assert Styles.get_line_style("solid") == Styles.line_styles["solid"]
+
+
+class TestScaleConstruction:
+    """`Scale` is usable as an object even though its API is static."""
+
+    def test_instance_dispatches_the_static_helpers(self):
+        """An instance reaches the same scaling as the class does.
+
+        Test scenario:
+            `Scale()` exists only so the documented "not typically necessary"
+            construction keeps working. `isinstance(Scale(), Scale)` and
+            `callable(...)` are guaranteed by the language and could not fail,
+            so the assertion is on the scaling an instance actually computes.
+        """
+        assert Scale().log_scale(100.0) == pytest.approx(2.0)
+        assert Scale().power_scale(-10.0)(100.0) == pytest.approx(
+            Scale.power_scale(-10.0)(100.0)
+        ), "an instance must build the same scaling function as the class"
+
+
+class TestSwatchLegendBackingPanel:
+    """`swatch_legend(box=...)` draws an opaque panel behind the swatch."""
+
+    @staticmethod
+    def _added_panel(box):
+        """Draw a swatch legend with `box` and return the one patch it added.
+
+        Args:
+            box: The `box=` argument under test (`True`, a colour, or a dict).
+
+        Returns:
+            tuple: `(figure, panel)` -- the figure to close and the single
+                patch the `box` argument put on the axes.
+        """
+        fig, ax = plt.subplots()
+        before = set(map(id, ax.patches))
+        swatch_legend(ax, "viridis", "label", vmin=0.0, vmax=1.0, box=box)
+        added = [p for p in ax.patches if id(p) not in before]
+        assert len(added) == 1, f"box= should add exactly one panel; got {len(added)}"
+        return fig, added[0]
+
+    def test_string_box_sets_the_panel_colour(self):
+        """A colour string is used as the panel's face colour.
+
+        Test scenario:
+            The panel is identified as the patch the call *added*, not by
+            searching the axes for one of the right colour -- otherwise any
+            unrelated black artist would satisfy the assertion.
+        """
+        fig, panel = self._added_panel("black")
+
+        assert panel.get_facecolor()[:3] == (0.0, 0.0, 0.0)
+        plt.close(fig)
+
+    def test_dict_box_overrides_the_panel_defaults(self):
+        """A dict is merged over the default panel style.
+
+        Test scenario:
+            `facecolor` replaces the default white and `linewidth` replaces
+            the default 0.6, proving the dict is merged rather than used
+            wholesale or ignored.
+        """
+        fig, panel = self._added_panel({"facecolor": "red", "linewidth": 2.5})
+
+        assert panel.get_linewidth() == 2.5, "the dict's linewidth should be applied"
+        assert panel.get_facecolor()[:3] == (1.0, 0.0, 0.0), (
+            "the dict's facecolor should override the default white"
+        )
+        assert panel.get_edgecolor()[:3] == pytest.approx((0.6, 0.6, 0.6)), (
+            "an unspecified key should keep its default, proving a merge"
+        )
+        plt.close(fig)
+
+
+class TestCategoricalIsNullGuards:
+    """`_categorical_is_null` never lets a null-check raise through.
+
+    Both fallbacks are guarded because a container-like element makes the
+    null test return an array, whose truth value is ambiguous.
+    """
+
+    def test_pandas_check_failure_reads_as_not_null(self):
+        """A `pd.isna` that raises leaves the value classified as real.
+
+        Test scenario:
+            `pd.isna` returns an array for an array-like element, so
+            `bool(...)` raises `ValueError`; such a value is simply not
+            null and is carried through.
+        """
+
+        def _raising_isna(_value):
+            raise ValueError("truth value of an array is ambiguous")
+
+        assert _categorical_is_null(object(), _raising_isna) is False
+
+    def test_numpy_fallback_failure_reads_as_not_null(self):
+        """Without pandas, an unrecognised scalar is a real, colourable value.
+
+        Test scenario:
+            `pd_isna=None` (pandas absent) sends the value to `np.isnat`,
+            which rejects a non-datetime object; the guard turns that into
+            "not null" rather than an error.
+        """
+        assert _categorical_is_null(object(), None) is False
+
+    @pytest.mark.parametrize(
+        "value", [np.datetime64("NaT"), np.timedelta64("NaT"), float("nan"), None]
+    )
+    def test_real_nulls_are_still_recognised_without_pandas(self, value):
+        """Every null flavour is dropped even when pandas is unavailable.
+
+        Test scenario:
+            The two tests above cover only the `except -> False` arms, which a
+            function answering `False` for everything would satisfy just as
+            well. These are the positive cases that rule that out.
+
+            Which numpy branch answers is deliberately not asserted: on numpy
+            2.4 `np.isnan` accepts datetime64/timedelta64 and returns `True`
+            for `NaT`, so the `np.isnat` fallback below it is unreachable
+            here -- it exists for builds whose `np.isnan` rejects those
+            dtypes. The contract (a `NaT` never becomes a category) is what
+            callers depend on and what holds across both.
+        """
+        assert _categorical_is_null(value, None) is True

@@ -9,6 +9,7 @@ import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from matplotlib.axes import Axes
 from matplotlib.quiver import Barbs, Quiver, QuiverKey
 
 from cleopatra.glyphs.gridded.vector_glyph import VECTOR_DEFAULT_OPTIONS, VectorGlyph
@@ -477,4 +478,43 @@ class TestSharedAxesArtistCleanup:
         )
         assert len(fig.axes) == axes_count, (
             f"Expected {axes_count} axes preserved, got {len(fig.axes)}"
+        )
+
+
+class TestStreamplotArrayFallback:
+    """`VectorGlyph.plot(kind="streamplot")` guarantees a mapped line array.
+
+    `streamplot` is the only kind whose mappable is built by matplotlib
+    rather than by the glyph, and whether it carries the colour array on
+    `lines` has varied between matplotlib releases. The glyph fills it in
+    when it is missing so the colorbar always has data to map.
+    """
+
+    def test_missing_line_array_is_filled_from_the_magnitude(self, field, monkeypatch):
+        """When `streamplot` leaves `lines` unmapped, the glyph sets the array.
+
+        Test scenario:
+            `streamplot` is wrapped so the returned line collection comes
+            back with no array -- standing in for a matplotlib build that
+            does not set one. The glyph must repair it with the flattened
+            magnitude instead of handing an unmapped collection to the
+            colorbar.
+        """
+        original = Axes.streamplot
+
+        def _unmapped_streamplot(self, *args, **kwargs):
+            result = original(self, *args, **kwargs)
+            result.lines.set_array(None)
+            return result
+
+        monkeypatch.setattr(Axes, "streamplot", _unmapped_streamplot)
+        x, y, u, v = field
+        glyph = VectorGlyph(x, y, u, v)
+
+        glyph.plot(kind="streamplot")
+
+        array = glyph.im.get_array()
+        assert array is not None, "the line collection must end up mapped"
+        assert np.allclose(np.asarray(array), np.full(x.size, 5.0)), (
+            f"expected the |vec| = 5 magnitude field, got {np.asarray(array)}"
         )
