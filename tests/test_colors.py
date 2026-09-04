@@ -1,5 +1,6 @@
 import importlib.resources
 import json
+import warnings
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -1681,13 +1682,32 @@ class TestConvertUnitsNoOps:
         """Same unit, different case -> the original array is handed back.
 
         Test scenario:
-            The string comparison runs before the alias table, so a unit
-            that is spelled differently but identical after casefolding must
-            short-circuit rather than look for a conversion pair.
+            An *unknown* unit is used deliberately. For a known one the alias
+            table resolves both spellings to the same canonical name and the
+            guard below returns the array anyway, so the casefold
+            short-circuit could be deleted without the assertion noticing.
+            Only an unrecognised unit reaches it alone -- and it must return
+            quietly, without the "no known unit conversion" warning the
+            fall-through would emit.
         """
         data = np.array([1.0, 2.0])
 
-        assert convert_units(data, "Celsius", "celsius") is data
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            assert convert_units(data, "Parsecs", "parsecs") is data
+
+    def test_same_known_unit_in_two_spellings_is_a_no_op(self):
+        """Two aliases of one canonical unit convert to nothing.
+
+        Test scenario:
+            `degC` and `Celsius` normalise to the same canonical name, so
+            there is no conversion to apply and the array is handed back.
+        """
+        data = np.array([1.0, 2.0])
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            assert convert_units(data, "degC", "Celsius") is data
 
     @pytest.mark.parametrize(
         "from_units, to_units",

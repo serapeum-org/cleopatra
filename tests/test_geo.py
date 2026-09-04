@@ -1176,6 +1176,20 @@ class TestBackgroundIsDarkGuards:
 class TestCheckBasemapAlignmentGuards:
     """`GeoMixin._check_basemap_alignment` no-ops when it cannot judge."""
 
+    @staticmethod
+    def _half_masked_stack():
+        """A `(2, 4, 5, 3)` stack whose every frame is ~50% NaN.
+
+        The land fraction sits inside the `0.05 < frac < 0.95` window, so the
+        guard *after* the `ndim` check cannot be what stops the comparison.
+
+        Returns:
+            numpy.ndarray: The stack, NaN over half its cells.
+        """
+        stack = np.zeros((2, 4, 5, 3))
+        stack[:, :2, :, :] = np.nan
+        return stack
+
     def test_non_two_dimensional_frame_is_skipped(self, monkeypatch):
         """A frame that is not 2-D has no land/sea mask to compare.
 
@@ -1190,13 +1204,34 @@ class TestCheckBasemapAlignmentGuards:
         )
         host = _Dummy(ax=None)
         host.extent = [-10.0, 40.0, 10.0, 60.0]
-        host.arr = np.zeros((2, 4, 5, 3))
+        host.arr = self._half_masked_stack()
 
         with warnings.catch_warnings():
             warnings.simplefilter("error")  # the check must not warn either
             host._check_basemap_alignment()
 
         assert called == [], "the relief must not be fetched for a non-2-D frame"
+
+    def test_two_dimensional_frame_is_compared(self, monkeypatch):
+        """The 2-D counterpart does reach the relief, proving the guard is the cause.
+
+        Test scenario:
+            Same land fraction, same extent -- only `ndim` differs. Without
+            this pair the sibling test above would pass for the wrong reason:
+            the land-fraction guard below would stop a fully-finite stack
+            anyway, so nothing would attribute the skip to the `ndim` check.
+        """
+        called = []
+        monkeypatch.setattr(
+            refmod, "relief", lambda *a, **k: called.append(a) or np.zeros((4, 5, 3))
+        )
+        host = _Dummy(ax=None)
+        host.extent = [-10.0, 40.0, 10.0, 60.0]
+        host.arr = self._half_masked_stack()[0, ..., 0]
+
+        host._check_basemap_alignment()
+
+        assert called, "a 2-D frame with a real land/sea split must fetch the relief"
 
 
 class TestReferenceMapExtentWithoutImage:

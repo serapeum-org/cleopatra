@@ -456,17 +456,40 @@ class TestFlowGlyphPlot:
         assert out_ax is host_ax, "plot() should reuse the construction axes"
 
 
-class TestGlowWithNonLinearScale:
-    """The glow halo shares the main collection's norm, limits included."""
+class TestGlowColourLimits:
+    """The glow halo is mapped on the same colour limits as the line it traces.
 
-    def test_glow_layers_keep_the_resolved_norm(self, paths, values):
-        """A resolved norm carries its own limits, so no `clim` is forced on.
+    The halo layers carry the same value array as the main collection, so if
+    their limits ever diverged the halo would render in different colours
+    from the line underneath it.
+    """
+
+    def test_linear_scale_stamps_the_tick_limits_on_every_layer(self, paths, values):
+        """With no resolved norm, the tick range is applied to the glow layers.
 
         Test scenario:
-            With a `power` colour scale the mapping already knows its
-            range; every glow layer must reuse that norm untouched rather
-            than have tick-derived limits stamped over it, or the halo
-            would drift out of step with the line it surrounds.
+            `vmin`/`vmax` are set wider than the data on purpose. Without
+            them the collection's own autoscale lands on the data range,
+            which is exactly the tick range too, and the assertion could not
+            tell whether the limits were applied or merely defaulted.
+        """
+        glyph = FlowGlyph(paths, values=values, glow=True, vmin=0.0, vmax=10.0)
+
+        _, ax, lc = glyph.plot()
+
+        glow_layers = [c for c in ax.collections if c is not lc]
+        assert glow_layers, "glow should add halo collections under the line"
+        assert {c.get_clim() for c in glow_layers} == {(0.0, 10.0)}, (
+            "every glow layer should carry the tick limits, not the data range"
+        )
+
+    def test_resolved_norm_is_shared_by_every_layer(self, paths, values):
+        """With a `power` scale the halo reuses the main collection's norm.
+
+        Test scenario:
+            A non-linear scale resolves its own norm, and every glow layer is
+            built with that same object -- so the halo cannot drift out of
+            step with the line however the limits are later changed.
         """
         glyph = FlowGlyph(paths, values=values, glow=True)
 
@@ -475,6 +498,6 @@ class TestGlowWithNonLinearScale:
         glow_layers = [c for c in ax.collections if c is not lc]
         assert glow_layers, "glow should add halo collections under the line"
         assert all(c.norm is lc.norm for c in glow_layers), (
-            "every glow layer should share the main collection's norm"
+            "every glow layer should share the main collection's norm object"
         )
-        assert all(c.get_clim() == lc.get_clim() for c in glow_layers)
+        assert lc.get_clim() == (float(values.min()), float(values.max()))
