@@ -7676,10 +7676,14 @@ class TestStyleBackgroundBeforeDrawing:
 
         glyph._apply_style_background({"background": "black"})
 
-        assert (
+        after = (
             matplotlib.rcParams["axes.facecolor"],
             matplotlib.rcParams["figure.facecolor"],
-        ) == before, "the preset background must not leak into global rcParams"
+        )
+        assert after == before, (
+            f"the preset background must not leak into global rcParams; "
+            f"{before} became {after}"
+        )
         assert glyph.fig is None, "no figure should have been created"
 
 
