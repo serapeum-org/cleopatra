@@ -13,6 +13,7 @@ from matplotlib.container import BarContainer
 from matplotlib.lines import Line2D
 
 from cleopatra.glyphs.primitives.line_glyph import LINE_DEFAULT_OPTIONS, LineGlyph
+from cleopatra.styling.params import DataStyle
 
 
 @pytest.fixture(autouse=True)
@@ -222,3 +223,49 @@ class TestAxesReuseAcrossCalls:
 
         assert glyph.ax is first_ax, "the stored axes should be reused"
         assert glyph.fig is first_fig, "no new figure should be created"
+
+
+class TestConstructionTimeAlphaCollision:
+    """`alpha` is the one option settable both loosely and through the group.
+
+    Every other `DataStyle` field is rejected as a loose keyword, but `alpha`
+    stays legitimate on `LineGlyph` / `HistogramGlyph`, so those are the only
+    classes where a real collision can happen. The group is merged second and
+    wins; this pins that on the actual class rather than on a synthetic
+    option dict.
+    """
+
+    def test_group_wins_on_line_glyph(self, xy):
+        """A grouped `alpha` overrides a loose one on a real `LineGlyph`."""
+        x, y = xy
+
+        glyph = LineGlyph(x, y, alpha=0.9, data_style=DataStyle(alpha=0.3))
+
+        assert glyph.default_options["alpha"] == 0.3, (
+            f"the group should win; got {glyph.default_options['alpha']}"
+        )
+
+    def test_loose_alpha_alone_is_still_honoured(self, xy):
+        """Without a group, the loose keyword is untouched."""
+        x, y = xy
+
+        glyph = LineGlyph(x, y, alpha=0.9)
+
+        assert glyph.default_options["alpha"] == 0.9
+
+    def test_unmodelled_group_key_is_not_recorded_as_explicit(self, xy):
+        """`alpha_range` is dropped, so it must not appear in `_explicit_options`.
+
+        Test scenario:
+            `LineGlyph` has no `alpha_range` option, so the merge refuses to
+            write it. Recording it as explicitly passed anyway would make the
+            two mechanisms disagree about what the glyph is carrying.
+        """
+        x, y = xy
+
+        glyph = LineGlyph(x, y, data_style=DataStyle(alpha=0.3))
+
+        assert "alpha" in glyph._explicit_options
+        assert "alpha_range" not in glyph._explicit_options, (
+            f"a dropped key must not be recorded; got {sorted(glyph._explicit_options)}"
+        )
