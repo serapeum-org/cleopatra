@@ -93,8 +93,10 @@ class TestColorScalingBuildNorm:
 
     def test_log_on_non_positive_range_raises(self):
         """A log scale whose range starts at zero raises, steering at sym_log."""
+        scale = ColorScaling.log()
+        ticks = np.array([0.0, 10.0, 100.0])
         with pytest.raises(ValueError, match="strictly-positive"):
-            ColorScaling.log().build_norm(np.array([0.0, 10.0, 100.0]))
+            scale.build_norm(ticks)
 
     def test_log_on_constant_positive_data_widens_the_range(self):
         """A constant positive field (single tick) builds a LogNorm, not a crash.
@@ -117,8 +119,10 @@ class TestColorScalingBuildNorm:
             constants, so an all-negative field is not widened before the error
             is built -- the message reports the real value and steers at sym_log.
         """
+        scale = ColorScaling.log()
+        ticks = np.array([-5.0])
         with pytest.raises(ValueError, match=r"vmin=-5\.0, vmax=-5\.0"):
-            ColorScaling.log().build_norm(np.array([-5.0]))
+            scale.build_norm(ticks)
 
     def test_log_options_round_trip(self):
         """`log()` emits `color_scale='lognorm'` and reconstructs to LOGNORM."""
