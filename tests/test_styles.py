@@ -42,11 +42,12 @@ class TestColorScale:
         assert isinstance(ColorScale.MIDPOINT, str)
 
     def test_member_names_and_values(self):
-        """The enum covers exactly the five supported scales."""
+        """The enum covers exactly the six supported scales."""
         assert {m.value for m in ColorScale} == {
             "linear",
             "power",
             "sym-lognorm",
+            "lognorm",
             "boundary-norm",
             "midpoint",
         }
@@ -58,6 +59,7 @@ class TestColorScale:
             ("Linear", ColorScale.LINEAR),
             ("POWER", ColorScale.POWER),
             ("Sym-LogNorm", ColorScale.SYM_LOGNORM),
+            ("LogNorm", ColorScale.LOGNORM),
             ("BOUNDARY-norm", ColorScale.BOUNDARY_NORM),
             (ColorScale.MIDPOINT, ColorScale.MIDPOINT),
         ],
