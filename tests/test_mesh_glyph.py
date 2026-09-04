@@ -2133,3 +2133,84 @@ class TestConstructionTimeHillshade:
 
         assert glyph.default_options["hillshade"] is False
         assert glyph._construct_hillshade is False
+
+
+class TestFigAxResolution:
+    """Tests for how MeshGlyph resolves fig/ax across construction forms."""
+
+    @staticmethod
+    def _mesh():
+        """Return the node coords, faces, and face data for a 2-triangle mesh."""
+        node_x = np.array([0.0, 1.0, 0.5, 1.5])
+        node_y = np.array([0.0, 0.0, 1.0, 1.0])
+        faces = np.array([[0, 1, 2], [1, 3, 2]])
+        return node_x, node_y, faces, np.array([1.0, 2.0])
+
+    def test_neither_creates_own_figure(self):
+        """With neither fig nor ax, plot() creates and draws into its own figure."""
+        node_x, node_y, faces, data = self._mesh()
+        glyph = MeshGlyph(node_x, node_y, faces)
+        fig, ax = glyph.plot(data, location="face")
+        assert fig is not None and ax is not None, "should create a figure and axes"
+        assert glyph.im is not None, "should have drawn the mesh"
+
+    def test_ax_only_adopts_axes(self):
+        """With ax only, plot() draws into that axes and its parent figure."""
+        node_x, node_y, faces, data = self._mesh()
+        fig0, ax0 = plt.subplots()
+        glyph = MeshGlyph(node_x, node_y, faces, ax=ax0)
+        fig, ax = glyph.plot(data, location="face")
+        assert ax is ax0, f"should adopt the supplied axes, got {ax}"
+        assert fig is fig0, "should adopt the axes' parent figure"
+        assert glyph.im is not None, "should have drawn the mesh"
+
+    def test_fig_only_draws_into_supplied_figure(self):
+        """With fig only (regression #326/MeshGlyph), plot() draws into its first axes."""
+        node_x, node_y, faces, data = self._mesh()
+        fig0 = plt.figure()
+        ax0 = fig0.add_subplot(111)
+        glyph = MeshGlyph(node_x, node_y, faces, fig=fig0)
+        fig, ax = glyph.plot(data, location="face")
+        assert fig is fig0, "should reuse the bound figure"
+        assert ax is ax0, "should adopt the figure's first axes"
+        assert glyph.im is not None, "should have drawn the mesh"
+
+    def test_fig_only_empty_figure_creates_axes(self):
+        """With fig only and no axes, plot() adds an axes to the supplied figure."""
+        node_x, node_y, faces, data = self._mesh()
+        fig0 = plt.figure()
+        glyph = MeshGlyph(node_x, node_y, faces, fig=fig0)
+        fig, ax = glyph.plot(data, location="face")
+        assert fig is fig0, "should reuse the bound empty figure"
+        assert ax in fig0.axes, "should have added an axes to the empty figure"
+        assert glyph.im is not None, "should have drawn the mesh"
+
+    def test_fig_and_ax_uses_axes(self):
+        """With both fig and ax, plot() draws into the supplied axes."""
+        node_x, node_y, faces, data = self._mesh()
+        fig0, ax0 = plt.subplots()
+        glyph = MeshGlyph(node_x, node_y, faces, fig=fig0, ax=ax0)
+        fig, ax = glyph.plot(data, location="face")
+        assert ax is ax0, "should use the supplied axes"
+        assert glyph.im is not None, "should have drawn the mesh"
+
+    def test_animate_fig_only_draws_into_supplied_figure(self):
+        """animate() with fig only draws into the figure's first axes."""
+        node_x, node_y, faces, data = self._mesh()
+        fig0 = plt.figure()
+        ax0 = fig0.add_subplot(111)
+        glyph = MeshGlyph(node_x, node_y, faces, fig=fig0)
+        anim = glyph.animate([data, data * 2.0], time=["t0", "t1"], location="face")
+        assert glyph.fig is fig0, "should reuse the bound figure"
+        assert glyph.ax is ax0, "should adopt the figure's first axes"
+        assert anim is not None, "should return an animation"
+
+    def test_animate_fig_only_empty_figure_creates_axes(self):
+        """animate() with fig only and no axes adds an axes to the supplied figure."""
+        node_x, node_y, faces, data = self._mesh()
+        fig0 = plt.figure()
+        glyph = MeshGlyph(node_x, node_y, faces, fig=fig0)
+        anim = glyph.animate([data, data * 2.0], time=["t0", "t1"], location="face")
+        assert glyph.fig is fig0, "should reuse the bound empty figure"
+        assert glyph.ax in fig0.axes, "should have added an axes to the empty figure"
+        assert anim is not None, "should return an animation"
