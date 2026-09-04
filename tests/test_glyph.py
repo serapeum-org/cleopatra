@@ -1829,13 +1829,26 @@ class TestMergeGroupParamsFiltersUnknownKeys:
 class TestColorBarLabelLocationUnset:
     """`create_color_bar` with `cbar_label_location=None`."""
 
-    def test_none_skips_validation_and_uses_the_matplotlib_default(self):
-        """`None` means "don't place the label", so no orientation check runs."""
-        g = Glyph(default_options=_make_options(cbar_label_location=None))
+    def test_none_skips_the_orientation_validation(self):
+        """`None` means "don't place the label", so no orientation check runs.
+
+        Test scenario:
+            The contrast is the point: an invalid location is rejected for
+            this colorbar's orientation, while `None` sails past the same
+            check. Asserting only that a `Colorbar` came back would hold for
+            an implementation that validated `None` too, or that placed a
+            label anyway.
+        """
         fig, ax = plt.subplots()
         im = ax.imshow(np.arange(9).reshape(3, 3))
+        ticks = {"ticks": np.array([0, 4, 8])}
 
-        cbar = g.create_color_bar(ax, im, {"ticks": np.array([0, 4, 8])})
+        invalid = Glyph(default_options=_make_options(cbar_label_location="left"))
+        with pytest.raises(ValueError, match="is not valid for a"):
+            invalid.create_color_bar(ax, im, ticks)
+
+        unset = Glyph(default_options=_make_options(cbar_label_location=None))
+        cbar = unset.create_color_bar(ax, im, ticks)
 
         assert isinstance(cbar, Colorbar)
         plt.close(fig)
