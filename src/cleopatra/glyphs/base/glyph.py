@@ -389,6 +389,36 @@ class Glyph:
             True
 
             ```
+        - Set the grouped `style` / `hillshade` options at construction, so
+            they do not have to be repeated on every `plot()` call:
+            ```python
+            >>> from cleopatra.glyphs.base.glyph import Glyph
+            >>> from cleopatra.styling.params import DataStyle
+            >>> from cleopatra.styling.styles import DEFAULT_OPTIONS
+            >>> opts = DEFAULT_OPTIONS.copy()
+            >>> opts.update({"vmin": None, "vmax": None, "style": None, "hillshade": False})
+            >>> g = Glyph(
+            ...     default_options=opts, data_style=DataStyle(style="dem", hillshade=True)
+            ... )
+            >>> g.default_options["style"]
+            'dem'
+            >>> g.default_options["hillshade"]
+            True
+
+            ```
+        - Only the fields the `DataStyle` sets are applied, so an empty group
+            leaves every option at its default:
+            ```python
+            >>> from cleopatra.glyphs.base.glyph import Glyph
+            >>> from cleopatra.styling.params import DataStyle
+            >>> from cleopatra.styling.styles import DEFAULT_OPTIONS
+            >>> opts = DEFAULT_OPTIONS.copy()
+            >>> opts.update({"vmin": None, "vmax": None, "style": "dem"})
+            >>> g = Glyph(default_options=opts, data_style=DataStyle())
+            >>> g.default_options["style"]
+            'dem'
+
+            ```
 
     See Also:
         cleopatra.glyphs.gridded.array_glyph.ArrayGlyph: Glyph subclass for
