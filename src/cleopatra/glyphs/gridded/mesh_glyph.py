@@ -886,8 +886,8 @@ class MeshGlyph(GeoMixin, Glyph):
         contours, or `tricontour` for line contours when
         `filled=False`.
 
-        Supports all 5 color scale types from `default_options`:
-        linear, power, sym-lognorm, boundary-norm, and midpoint.
+        Supports all 6 color scale types from `default_options`:
+        linear, power, sym-lognorm, lognorm, boundary-norm, and midpoint.
 
         Args:
             data: 1D data array. Length must match face count

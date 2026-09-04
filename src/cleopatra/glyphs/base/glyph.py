@@ -876,7 +876,7 @@ class Glyph:
 
         Honours the `color_scale` option — a `cleopatra.styling.styles.ColorScale`
         member or its string value (case-insensitive): `linear` / `power` /
-        `sym-lognorm` / `boundary-norm` / `midpoint` — and the
+        `sym-lognorm` / `lognorm` / `boundary-norm` / `midpoint` — and the
         xarray-aligned `levels` and `extend` options when present in
         `default_options`. An unrecognised `color_scale` (including a
         non-string such as an int) raises `ValueError`.
