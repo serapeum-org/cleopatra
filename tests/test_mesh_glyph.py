@@ -2074,7 +2074,13 @@ class TestConstructionTimeHillshade:
         return MeshGlyph(node_x, node_y, faces, **kwargs), node_data
 
     def test_construction_value_is_applied(self):
-        """The group's `hillshade` reaches the options and the sticky field."""
+        """The group's `hillshade` reaches the options and the sticky field.
+
+        Test scenario:
+            `_construct_hillshade` is captured from `default_options` right
+            after `super().__init__`, so it can only be seeded through the
+            constructor -- which is what this checks.
+        """
         glyph, _ = self._glyph(data_style=DataStyle(hillshade=True))
 
         assert glyph.default_options["hillshade"] is True
@@ -2098,7 +2104,13 @@ class TestConstructionTimeHillshade:
         assert glyph.default_options["hillshade"] is True, "apply_style dropped it"
 
     def test_a_call_that_sets_hillshade_still_overrides_it(self):
-        """An explicit per-call value beats the construction-time one."""
+        """An explicit per-call value beats the construction-time one.
+
+        Test scenario:
+            The restore only applies when a call carries no `hillshade`; one
+            that does must win, or the construction value could never be
+            turned off again.
+        """
         glyph, node_data = self._glyph(data_style=DataStyle(hillshade=True))
         glyph.plot(node_data, location="node")
 
@@ -2107,7 +2119,12 @@ class TestConstructionTimeHillshade:
         assert glyph.default_options["hillshade"] is False
 
     def test_default_is_still_off(self):
-        """Without the group, shading stays off -- the default is unchanged."""
+        """Without the group, shading stays off -- the default is unchanged.
+
+        Test scenario:
+            The control case: the new constructor parameter must not turn
+            relief shading on for callers who never asked for it.
+        """
         glyph, node_data = self._glyph()
 
         glyph.plot(node_data, location="node")

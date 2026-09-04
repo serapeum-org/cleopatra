@@ -1686,7 +1686,9 @@ class TestAttributionWithoutMetadata:
             reaches the axes as readable plain text.
         """
         provider = _BareProvider()
-        provider.html_attribution = '<a href="https://example.invalid">Tiles &amp; data</a>'
+        provider.html_attribution = (
+            '<a href="https://example.invalid">Tiles &amp; data</a>'
+        )
 
         add_tiles(mock_ax, crs=3857, source=provider, attribution=True)
 

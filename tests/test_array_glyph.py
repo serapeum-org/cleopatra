@@ -7644,8 +7644,9 @@ class TestAnimateWithPoints:
         assert restored == ["A", "B"], (
             f"the frame update should restore each point's label; got {restored}"
         )
-        assert np.allclose(np.asarray(scatter.get_offsets(), dtype=float), [[1, 1], [2, 2]]), (
-            f"the frame update should restore the offsets; got {scatter.get_offsets()}"
+        offsets = np.asarray(scatter.get_offsets(), dtype=float)
+        assert np.allclose(offsets, [[1, 1], [2, 2]]), (
+            f"the frame update should restore the offsets; got {offsets}"
         )
         assert scatter in artists, "the marker collection must be a redrawn artist"
         assert all(text in artists for text in labels), (
@@ -7711,9 +7712,20 @@ class TestAnimateStyleColorBarClearsStaleInsets:
 class TestConstructionTimeStyle:
     """`ArrayGlyph(data_style=DataStyle(style=...))` sets the preset once."""
 
-    FIELD = np.random.default_rng(0).random((6, 7)) * 60.0 - 30.0
+    @pytest.fixture()
+    def field(self):
+        """A fresh temperature-like field per test.
 
-    def test_style_is_applied_without_passing_it_to_plot(self):
+        `ArrayGlyph` wraps the array with `ma.array(...)`, which does not
+        copy, so a module-level constant would be aliased by every glyph
+        built from it.
+
+        Returns:
+            numpy.ndarray: A `(6, 7)` field spanning roughly -30..30.
+        """
+        return np.random.default_rng(0).random((6, 7)) * 60.0 - 30.0
+
+    def test_style_is_applied_without_passing_it_to_plot(self, field):
         """The preset set at construction renders without repeating it per call.
 
         Test scenario:
@@ -7721,7 +7733,7 @@ class TestConstructionTimeStyle:
             passed to every `plot()` call: the loose `style=` keyword is
             rejected and no other construction-time route existed.
         """
-        glyph = ArrayGlyph(self.FIELD, data_style=DataStyle(style="temperature_2m"))
+        glyph = ArrayGlyph(field, data_style=DataStyle(style="temperature_2m"))
 
         fig, ax = glyph.plot()
 
@@ -7729,7 +7741,7 @@ class TestConstructionTimeStyle:
         assert ax.images or ax.collections, "the styled field should be drawn"
         plt.close(fig)
 
-    def test_style_survives_a_later_plain_plot(self):
+    def test_style_survives_a_later_plain_plot(self, field):
         """The preset is sticky across calls, as a `plot(style=...)` one is.
 
         Test scenario:
@@ -7737,7 +7749,7 @@ class TestConstructionTimeStyle:
             call and restores the sticky preset afterwards, so a second bare
             `plot()` must still be styled.
         """
-        glyph = ArrayGlyph(self.FIELD, data_style=DataStyle(style="temperature_2m"))
+        glyph = ArrayGlyph(field, data_style=DataStyle(style="temperature_2m"))
         glyph.plot()
 
         glyph.plot()
@@ -7745,9 +7757,15 @@ class TestConstructionTimeStyle:
         assert glyph.default_options["style"] == "temperature_2m"
         plt.close("all")
 
-    def test_a_later_call_can_clear_it(self):
-        """`plot(data_style=DataStyle(style=None))` clears the construction preset."""
-        glyph = ArrayGlyph(self.FIELD, data_style=DataStyle(style="temperature_2m"))
+    def test_a_later_call_can_clear_it(self, field):
+        """`plot(data_style=DataStyle(style=None))` clears the construction preset.
+
+        Test scenario:
+            The construction-time preset is sticky, so there has to be a way
+            to drop it. An explicit `None` is that way -- distinct from an
+            unset field, which leaves the sticky value alone.
+        """
+        glyph = ArrayGlyph(field, data_style=DataStyle(style="temperature_2m"))
 
         glyph.plot(data_style=DataStyle(style=None))
 

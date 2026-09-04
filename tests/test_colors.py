@@ -1642,11 +1642,23 @@ class TestNormaliseUnit:
     """`_normalise_unit` maps a unit spelling onto its canonical name."""
 
     def test_none_stays_none(self):
-        """A missing unit has no canonical spelling."""
+        """A missing unit has no canonical spelling.
+
+        Test scenario:
+            `None` means "no unit given", which must stay distinguishable
+            from a unit that is given but unrecognised -- both answer `None`,
+            and the caller treats them the same, but only by going through
+            this function rather than by guessing.
+        """
         assert _normalise_unit(None) is None
 
     def test_unknown_unit_is_none(self):
-        """An unrecognised unit is reported as unknown, not guessed at."""
+        """An unrecognised unit is reported as unknown, not guessed at.
+
+        Test scenario:
+            Silently inventing a canonical name would let a wrong conversion
+            through; `None` is what makes the caller warn instead.
+        """
         assert _normalise_unit("parsecs") is None
 
     @pytest.mark.parametrize(
@@ -1778,7 +1790,7 @@ class TestLoadPresetsMalformedAsset:
 
 
 class TestResolveStyleNormAllNaN:
-    """`resolve_style_norm` with a diverging `center` and no finite data."""
+    """`_resolve_style_norm` with a diverging `center` and no finite data."""
 
     def test_unit_radius_is_used(self):
         """An all-NaN layer cannot size the range, so a unit radius is used.

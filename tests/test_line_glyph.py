@@ -236,7 +236,13 @@ class TestConstructionTimeAlphaCollision:
     """
 
     def test_group_wins_on_line_glyph(self, xy):
-        """A grouped `alpha` overrides a loose one on a real `LineGlyph`."""
+        """A grouped `alpha` overrides a loose one on a real `LineGlyph`.
+
+        Test scenario:
+            The group is merged after the loose kwargs, so it wins. Pinned on
+            `LineGlyph` because the base `Glyph` option dict has no `alpha`
+            key at all -- the collision cannot occur there.
+        """
         x, y = xy
 
         glyph = LineGlyph(x, y, alpha=0.9, data_style=DataStyle(alpha=0.3))
@@ -246,7 +252,13 @@ class TestConstructionTimeAlphaCollision:
         )
 
     def test_loose_alpha_alone_is_still_honoured(self, xy):
-        """Without a group, the loose keyword is untouched."""
+        """Without a group, the loose keyword is untouched.
+
+        Test scenario:
+            The control for the collision case: `alpha` stays a legitimate
+            loose option on this glyph, so adding the group parameter must
+            not have changed the ordinary path.
+        """
         x, y = xy
 
         glyph = LineGlyph(x, y, alpha=0.9)

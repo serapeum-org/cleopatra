@@ -1130,30 +1130,53 @@ class _StubImage:
 class TestBackgroundIsDarkGuards:
     """`GeoMixin._background_is_dark` degenerate-sample handling."""
 
-    def test_empty_rgba_reads_as_not_dark_without_warning(self):
-        """A sample that renders to no pixels falls back to "not dark", quietly.
+    def test_empty_rgba_reads_as_not_dark(self):
+        """A sample that renders to no pixels at all falls back to "not dark".
 
         Test scenario:
-            An empty field produces an empty RGBA array. Averaging its
-            luminance would be meaningless and would emit `RuntimeWarning:
-            Mean of empty slice`, so the answer must be the neutral `False`
-            default and the mean must never be taken -- the warning-as-error
-            context is what proves the second half.
+            An empty field renders to an empty RGBA array; averaging its
+            luminance would warn and mean nothing, so the answer is the
+            neutral default and the mean is never taken.
 
-            Note this pins the *contract*, not one branch: for every array
-            `to_rgba` can actually return, the `rgba.size == 0` early return
-            and the `opaque.any()` check below it both produce `False`, so
-            either alone satisfies it. The observable guarantee is what
-            callers depend on, and it is what a reordering would break.
+            This pins the contract, not the `rgba.size == 0` branch: deleting
+            that early return leaves the test green, because `opaque.any()`
+            two lines below is `False` for the same input and returns `False`
+            too. The size guard is redundant for every array `to_rgba` can
+            produce -- it would only matter for a degenerate shape where
+            `rgba[..., 3]` raised, which nothing generates. It is left in
+            place as defence in depth and listed with the PR's other
+            unobservable branches rather than claimed as covered.
         """
         host = _Dummy(ax=None)
         host.im = _StubImage(np.zeros((0, 0)), np.zeros((0, 0, 4)))
 
         with warnings.catch_warnings():
-            warnings.simplefilter("error")
+            warnings.simplefilter("error")  # averaging an empty slice would warn
             result = host._background_is_dark(None)
 
         assert result is False, f"an empty sample should read as not dark; got {result!r}"
+
+    def test_fully_transparent_sample_reads_as_not_dark(self):
+        """Pixels that are all transparent carry no colour to judge.
+
+        Test scenario:
+            The `opaque.any()` guard. The RGBA array is non-empty and black,
+            so a check that ignored alpha would call it dark; every pixel has
+            zero alpha, so there is nothing displayed and the answer is the
+            neutral default.
+        """
+        rgba = np.zeros((4, 4, 4))  # black, alpha 0 everywhere
+        host = _Dummy(ax=None)
+        host.im = _StubImage(np.zeros((4, 4)), rgba)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            result = host._background_is_dark(None)
+
+        assert result is False, (
+            "a fully transparent sample has nothing opaque to judge; "
+            f"got {result!r}"
+        )
 
     def test_one_dimensional_sample_is_not_decimated(self):
         """A 1-D sample skips the row/column decimation and is judged as-is.

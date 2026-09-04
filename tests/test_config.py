@@ -270,7 +270,9 @@ class TestSetMatplotlibBackendInNotebook:
 
         assert switched == ["TkAgg"], f"expected a direct switch; got {switched}"
         assert magics == [], f"an explicit backend must run no magic; got {magics}"
-        assert matplotlib.get_backend() == before, "the active backend must be untouched"
+        assert matplotlib.get_backend() == before, (
+            "the active backend must be untouched"
+        )
 
 
 def test_is_notebook_false_without_ipython(monkeypatch):

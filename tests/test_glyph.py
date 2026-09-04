@@ -1870,7 +1870,12 @@ class TestConstructionTimeDataStyle:
     """
 
     def test_grouped_option_is_applied(self):
-        """A `DataStyle` field reaches `default_options` at construction."""
+        """A `DataStyle` field reaches `default_options` at construction.
+
+        Test scenario:
+            The base case for the whole parameter: a field the glyph models
+            is applied, so it does not have to be repeated on every `plot()`.
+        """
         options = _make_options(style=None, hillshade=False)
 
         g = Glyph(default_options=options, data_style=DataStyle(style="topography"))
@@ -1901,7 +1906,9 @@ class TestConstructionTimeDataStyle:
         """
         options = _make_options(style=None, hillshade=False)
 
-        with pytest.raises(ValueError, match=r"data_style=DataStyle\(hillshade=\.\.\.\)"):
+        with pytest.raises(
+            ValueError, match=r"data_style=DataStyle\(hillshade=\.\.\.\)"
+        ):
             Glyph(default_options=options, hillshade=True)
 
         g = Glyph(default_options=options, data_style=DataStyle(hillshade=True))
@@ -1951,7 +1958,10 @@ class TestConstructionTimeDataStyle:
         """
         options = _make_options(style=None)
 
-        g = Glyph(default_options=options, data_style=DataStyle(style="topography", bands=6))
+        g = Glyph(
+            default_options=options,
+            data_style=DataStyle(style="topography", bands=6),
+        )
 
         assert g.default_options["style"] == "topography"
         assert "bands" not in g.default_options, "an unmodelled field must be dropped"
@@ -2020,7 +2030,8 @@ class TestConstructionTimeDataStyle:
         options = _make_options(style=None, hillshade=False)
 
         g = Glyph(
-            default_options=options, data_style=DataStyle(style="topography", hillshade=True)
+            default_options=options,
+            data_style=DataStyle(style="topography", hillshade=True),
         )
 
         assert {"style", "hillshade"} <= g._explicit_options, (
@@ -2049,7 +2060,13 @@ class TestConstructionTimeDataStyleAcrossGlyphs:
         return x, y, np.full_like(x, 3.0), np.full_like(y, 4.0)
 
     def test_array_glyph_honours_hillshade(self):
-        """`ArrayGlyph` models `hillshade`, so the group applies."""
+        """`ArrayGlyph` models `hillshade`, so the group applies.
+
+        Test scenario:
+            One of the three glyphs the grouped options target; the loose
+            `hillshade=` keyword is rejected on it, so this is the only way
+            to set relief shading at construction.
+        """
         glyph = ArrayGlyph(
             np.arange(12.0).reshape(3, 4), data_style=DataStyle(hillshade=True)
         )
@@ -2071,7 +2088,13 @@ class TestConstructionTimeDataStyleAcrossGlyphs:
         assert glyph.default_options["alpha"] == 0.25
 
     def test_kde_glyph_honours_style(self):
-        """`KDEGlyph` is one of the three glyphs the grouped options target."""
+        """`KDEGlyph` is one of the three glyphs the grouped options target.
+
+        Test scenario:
+            It models `style`, so the group applies -- covering the third
+            glyph, which neither the ArrayGlyph nor the MeshGlyph cases
+            reach.
+        """
         rng = np.random.default_rng(0)
         glyph = KDEGlyph(
             rng.normal(size=40),

@@ -4,24 +4,37 @@ The shared opener is what makes the scheme restriction structural rather
 than a prefix check every call site has to remember: only the HTTP(S)
 handlers are registered, so no handler claims a `file://` / `ftp://` /
 `data:` request and `OpenerDirector.open` refuses it outright. These tests
-never touch the public internet: the refused schemes never reach a socket,
-and the one test that must get past the scheme gate connects to a closed
-port on the loopback interface. That address is a literal IP, so it is
-resolved locally without a DNS query -- no resolver can make the result
-vary, which a hostname (even a reserved one) would allow.
+never leave the loopback interface: the refused schemes never reach a
+socket, and the one test that must get past the scheme gate connects to a
+closed port on 127.0.0.1. That address is a literal IP, so it is resolved
+locally without a DNS query -- no resolver can make the result vary, which a
+hostname (even a reserved one) would allow.
 """
 
+import socket
 import urllib.error
 
 import pytest
 
 from cleopatra.basemap._net import _HTTP_ONLY_OPENER, urlopen_http
 
-# A port nothing listens on, addressed by literal IP so the request fails at
-# connect() rather than during resolution. A hostname -- even a reserved
-# `.invalid` one -- would leave the suite at the mercy of resolvers that hijack
-# NXDOMAIN and answer anything, turning the refusal into a live HTTP request.
-CLOSED_LOOPBACK_URL = "http://127.0.0.1:1/0/0/0.png"
+
+def _closed_loopback_url() -> str:
+    """Return an http URL for a loopback port that is guaranteed closed.
+
+    Binding port 0 lets the OS pick a free port; closing the socket
+    immediately leaves it unused, so a connect attempt is *refused* rather
+    than filtered. A hard-coded port such as 1 can be silently dropped by a
+    hardened container or an endpoint agent, which would hang for the whole
+    timeout and then raise `TimeoutError` instead of `ConnectionRefusedError`.
+
+    Returns:
+        str: An `http://127.0.0.1:<port>/...` URL nothing is listening on.
+    """
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+    return f"http://127.0.0.1:{port}/0/0/0.png"
 
 
 class TestOpenerComposition:
@@ -107,8 +120,10 @@ class TestUrlopenHttp:
             `ConnectionRefusedError` (rather than on the absence of a message)
             is what distinguishes the two.
         """
+        url = _closed_loopback_url()
+
         with pytest.raises(urllib.error.URLError) as excinfo:
-            urlopen_http(CLOSED_LOOPBACK_URL, timeout=5)
+            urlopen_http(url, timeout=5)
 
         assert isinstance(excinfo.value.reason, ConnectionRefusedError), (
             "an http URL must fail at the transport layer, not at the scheme "
