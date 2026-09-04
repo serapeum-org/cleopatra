@@ -2203,6 +2203,7 @@ class TestFigAxResolution:
         anim = glyph.animate([data, data * 2.0], time=["t0", "t1"], location="face")
         assert glyph.fig is fig0, "should reuse the bound figure"
         assert glyph.ax is ax0, "should adopt the figure's first axes"
+        assert glyph.im is not None, "should have drawn a frame"
         assert anim is not None, "should return an animation"
 
     def test_animate_fig_only_empty_figure_creates_axes(self):
@@ -2213,6 +2214,7 @@ class TestFigAxResolution:
         anim = glyph.animate([data, data * 2.0], time=["t0", "t1"], location="face")
         assert glyph.fig is fig0, "should reuse the bound empty figure"
         assert glyph.ax in fig0.axes, "should have added an axes to the empty figure"
+        assert glyph.im is not None, "should have drawn a frame"
         assert anim is not None, "should return an animation"
 
     def test_animate_fig_and_ax_uses_bound_axes(self):
@@ -2223,4 +2225,5 @@ class TestFigAxResolution:
         anim = glyph.animate([data, data * 2.0], time=["t0", "t1"], location="face")
         assert glyph.ax is ax0, "should use the bound axes"
         assert glyph.fig is fig0, "should keep the bound figure"
+        assert glyph.im is not None, "should have drawn a frame"
         assert anim is not None, "should return an animation"

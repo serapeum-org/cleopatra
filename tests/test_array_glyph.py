@@ -7853,6 +7853,8 @@ class TestFigAxResolution:
         anim = glyph.animate([0, 1], interval=50)
         assert isinstance(anim, FuncAnimation)
         assert glyph.fig is fig0 and glyph.ax is existing_ax
+        # the animate() branch resets ownership so teardown leaves the caller's figure alone
+        assert glyph._owns_figure is False and glyph._auto_figure is False
         plt.close("all")
 
     def test_animate_fig_only_empty_figure_creates_axes(self):
