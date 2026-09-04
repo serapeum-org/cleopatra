@@ -1978,9 +1978,10 @@ class TestConstructionTimeDataStyle:
             glyph and the options it does not have.
         """
         options = _make_options()
+        group = DataStyle(style="topography")
 
         with pytest.raises(ValueError, match=r"data_style= does not apply"):
-            Glyph(default_options=options, data_style=DataStyle(style="topography"))
+            Glyph(default_options=options, data_style=group)
 
     def test_empty_group_is_accepted_even_when_nothing_is_modelled(self):
         """An empty group sets nothing, so there is nothing to refuse.
@@ -2003,8 +2004,10 @@ class TestConstructionTimeDataStyle:
             `'str' object has no attribute 'to_options'` from deep inside the
             merge.
         """
+        options = _make_options(style=None)
+
         with pytest.raises(TypeError, match="data_style must be a DataStyle"):
-            Glyph(default_options=_make_options(style=None), data_style="topography")
+            Glyph(default_options=options, data_style="topography")
 
     def test_a_different_group_object_is_refused(self):
         """Another grouped object is not silently accepted as a data_style.
@@ -2014,8 +2017,11 @@ class TestConstructionTimeDataStyle:
             let `Contour(levels=5)` through and quietly set `levels`. The
             parameter is typed to `DataStyle` and enforced.
         """
+        options = _make_options()
+        wrong_group = Contour(levels=5)
+
         with pytest.raises(TypeError, match="data_style must be a DataStyle"):
-            Glyph(default_options=_make_options(), data_style=Contour(levels=5))
+            Glyph(default_options=options, data_style=wrong_group)
 
     def test_grouped_keys_count_as_explicitly_passed(self):
         """The group's keys land in `_explicit_options`, like loose kwargs.
@@ -2191,10 +2197,12 @@ class TestConstructionTimeDataStyleAcrossGlyphs:
             the remedy, so this one has to be as useful: the class that
             refused, and which options it does not have.
         """
+        x = np.arange(3.0)
+        y = np.arange(3.0)
+        group = DataStyle(hillshade=True)
+
         with pytest.raises(ValueError) as excinfo:
-            ScatterGlyph(
-                np.arange(3.0), np.arange(3.0), data_style=DataStyle(hillshade=True)
-            )
+            ScatterGlyph(x, y, data_style=group)
 
         message = str(excinfo.value)
         assert "ScatterGlyph" in message, f"the glyph should be named; got {message}"

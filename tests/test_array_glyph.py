@@ -7712,7 +7712,7 @@ class TestAnimateStyleColorBarClearsStaleInsets:
 class TestConstructionTimeStyle:
     """`ArrayGlyph(data_style=DataStyle(style=...))` sets the preset once."""
 
-    @pytest.fixture()
+    @pytest.fixture
     def field(self):
         """A fresh temperature-like field per test.
 
