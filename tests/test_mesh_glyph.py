@@ -30,7 +30,7 @@ def _close_figures():
     plt.close("all")
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def triangle_glyph():
     """MeshGlyph with 2 triangular faces.
 
@@ -46,7 +46,7 @@ def triangle_glyph():
     return MeshGlyph(node_x, node_y, faces)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def mixed_glyph():
     """MeshGlyph with 1 quad + 2 triangles (mixed mesh)."""
     node_x = np.array([0.0, 1.0, 2.0, 0.0, 1.0, 2.0])
@@ -61,7 +61,7 @@ def mixed_glyph():
     return MeshGlyph(node_x, node_y, faces, fill_value=-1)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def quad_with_edges():
     """MeshGlyph with 1 quad and explicit edge connectivity."""
     node_x = np.array([0.0, 1.0, 1.0, 0.0])
@@ -1216,7 +1216,7 @@ class TestPlotReuse:
         """Test that kwargs from one plot() call don't leak to the next.
 
         Regression test for H3: default_options must be reset on each
-        plot() call so module-scoped fixtures aren't polluted.
+        plot() call so a shared fixture glyph isn't polluted.
         """
         mg = _make_tri_mg()
         mg.plot(np.array([1.0, 2.0]), cmap="plasma")
@@ -1992,8 +1992,10 @@ class TestApplyStyleForwardsHillshade:
 def kwargs_mesh():
     """A two-triangle mesh glyph for the render-kwarg routing tests.
 
-    Function-scoped because these tests mutate the glyph; the module-scoped
-    `triangle_glyph` fixture must not be shared with them.
+    Every glyph fixture in this file is function-scoped: these tests mutate
+    the glyph, and the autouse teardown closes its figure, so sharing one
+    across tests would hand the next test a mutated glyph bound to a closed
+    figure.
 
     Returns:
         MeshGlyph: A fresh glyph over two face-centred triangles.
