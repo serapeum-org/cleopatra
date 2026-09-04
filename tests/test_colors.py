@@ -1401,12 +1401,12 @@ class TestStyleNormKinds:
         fail with an actionable message rather than building an invalid
         `LogNorm(vmin>vmax)` that crashes deep in matplotlib at draw time.
         """
-        with pytest.raises(ValueError, match="norm='log' needs positive data"):
+        with pytest.raises(ValueError, match="norm='log' needs a strictly-positive"):
             _resolve_style_norm(np.array([-5.0, -3.0, -1.0]), {"norm": "log"})
 
     def test_log_on_all_zero_data_raises_clearly(self):
         """`norm='log'` on all-zero data raises rather than a degenerate `LogNorm(1,1)`."""
-        with pytest.raises(ValueError, match="norm='log' needs positive data"):
+        with pytest.raises(ValueError, match="norm='log' needs a strictly-positive"):
             _resolve_style_norm(np.array([0.0, 0.0, 0.0]), {"norm": "log"})
 
     def test_log_on_single_positive_value_raises_clearly(self):
@@ -1416,7 +1416,7 @@ class TestStyleNormKinds:
         would let it build a degenerate `LogNorm(vmin==vmax)`, so the guard uses
         `>=` and fails clearly instead.
         """
-        with pytest.raises(ValueError, match="norm='log' needs positive data"):
+        with pytest.raises(ValueError, match="norm='log' needs a strictly-positive"):
             _resolve_style_norm(np.array([0.0, 5.0]), {"norm": "log"})
 
 

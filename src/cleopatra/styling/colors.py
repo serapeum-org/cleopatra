@@ -904,6 +904,48 @@ def _warn_if_outside_fixed_range(data: np.ndarray, lo: float, hi: float) -> None
         )
 
 
+def build_log_norm(
+    vmin: float | None, vmax: float | None, *, context: str
+) -> mcolors.LogNorm:
+    """Validate a strictly-positive range and build a `matplotlib.colors.LogNorm`.
+
+    Shared by the string-keyed data-style `norm="log"` path
+    (`resolve_style_norm`) and `cleopatra.styling.scaling.ColorScaling.log`, so
+    both agree on what a log scale requires: a strictly-positive, ascending
+    ``vmin``/``vmax``. Data that spans zero or negative values cannot be shown
+    on a log scale -- such callers are steered at a symmetric-log scale.
+
+    Args:
+        vmin: The lower bound; must be strictly positive.
+        vmax: The upper bound; must be strictly positive and greater than
+            `vmin`.
+        context: A short phrase naming the caller, used in the error message
+            (e.g. ``"data style norm='log'"`` or ``"ColorScaling.log()"``).
+
+    Returns:
+        matplotlib.colors.LogNorm: A log norm over ``[vmin, vmax]``.
+
+    Raises:
+        ValueError: If the range is not strictly positive and ascending.
+
+    Examples:
+        - A positive range builds a `LogNorm`:
+            ```python
+            >>> from cleopatra.styling.colors import build_log_norm
+            >>> build_log_norm(1.0, 1000.0, context="example").vmin
+            1.0
+
+            ```
+    """
+    if vmin is None or vmax is None or vmin <= 0 or vmax <= 0 or vmin >= vmax:
+        raise ValueError(
+            f"{context} needs a strictly-positive, ascending value range "
+            f"(got vmin={vmin!r}, vmax={vmax!r}); use a symmetric-log scale "
+            "for data that spans zero or negative values."
+        )
+    return mcolors.LogNorm(vmin=vmin, vmax=vmax)
+
+
 def resolve_style_norm(
     data: np.ndarray, cfg: dict[str, Any]
 ) -> tuple[mcolors.Normalize, float, float]:
@@ -1009,14 +1051,8 @@ def resolve_style_norm(
             if (vmin is not None and vmin > 0)
             else (float(positive.min()) if positive.size else None)
         )
-        if lo is None or vmax is None or vmax <= 0 or lo >= vmax:
-            raise ValueError(
-                "data style norm='log' needs positive data with a positive "
-                f"value range (resolved vmin={lo!r}, vmax={vmax!r}); use "
-                "norm='symlog' for data that spans zero or negative values."
-            )
+        norm = build_log_norm(lo, vmax, context="data style norm='log'")
         vmin = lo
-        norm = mcolors.LogNorm(vmin=lo, vmax=vmax)
     elif norm_kind == "symlog":
         norm = mcolors.SymLogNorm(
             linthresh=float(cfg.get("linthresh", 1.0)), vmin=vmin, vmax=vmax

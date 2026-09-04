@@ -9,8 +9,9 @@ norm plus colorbar keyword arguments.
 The flat options are mutually exclusive by scale kind -- `gamma` only
 applies to `power`, `line_threshold`/`line_scale` only to `sym-lognorm`,
 `bounds` only to `boundary-norm`, `midpoint` only to `midpoint`. The
-variant constructors (`ColorScaling.power`, `.sym_log`, `.boundary`,
-`.midpoint`, `.linear`) expose only the knobs each scale actually uses,
+variant constructors (`ColorScaling.power`, `.sym_log`, `.log`,
+`.boundary`, `.midpoint`, `.linear`) expose only the knobs each scale
+actually uses,
 so an invalid combination cannot be expressed.
 
 Examples:
@@ -35,6 +36,7 @@ import matplotlib.colors as colors
 import numpy as np
 from matplotlib.ticker import LogFormatter
 
+from cleopatra.styling.colors import build_log_norm
 from cleopatra.styling.styles import ColorScale, MidpointNormalize
 
 #: Upper bound on an integer `levels` count. A single edge cannot form a
@@ -118,7 +120,7 @@ def levels_to_bounds(
 class ColorScaling:
     """The colour-scale group: a scale kind plus its scale-specific knobs.
 
-    Prefer the variant constructors (`linear`, `power`, `sym_log`,
+    Prefer the variant constructors (`linear`, `power`, `sym_log`, `log`,
     `boundary`, `midpoint`) over the raw dataclass -- each exposes only
     the fields its scale uses, so nonsensical combinations (e.g. a
     `midpoint` on a `linear` scale) cannot be built.
@@ -195,6 +197,27 @@ class ColorScaling:
                 ```
         """
         return cls(kind=ColorScale.SYM_LOGNORM, line_threshold=threshold, line_scale=scale)
+
+    @classmethod
+    def log(cls) -> ColorScaling:
+        """A logarithmic (`LogNorm`) colour scale for strictly-positive data.
+
+        The plain-log counterpart of `sym_log`: `LogNorm` needs a positive
+        value range, so for data that spans zero or negative values use
+        `sym_log` (a symmetric-log scale) instead. Like `linear`, it carries
+        no extra knobs -- `vmin`/`vmax` come from the tick range at render
+        time.
+
+        Examples:
+            - The log scale exposes no extra knobs:
+                ```python
+                >>> from cleopatra.styling.scaling import ColorScaling
+                >>> ColorScaling.log().kind.value
+                'lognorm'
+
+                ```
+        """
+        return cls(kind=ColorScale.LOGNORM)
 
     @classmethod
     def boundary(cls, bounds: list[float] | None = None) -> ColorScaling:
@@ -381,6 +404,9 @@ class ColorScaling:
                 vmin=vmin,
                 vmax=vmax,
             )
+            cbar_kw = {"ticks": ticks, "format": LogFormatter(10, labelOnlyBase=False)}
+        elif self.kind == ColorScale.LOGNORM:
+            norm = build_log_norm(vmin, vmax, context="ColorScaling.log()")
             cbar_kw = {"ticks": ticks, "format": LogFormatter(10, labelOnlyBase=False)}
         elif self.kind == ColorScale.BOUNDARY_NORM:
             norm, cbar_kw = self._boundary_norm(ticks, bounds_from_levels)

@@ -39,6 +39,7 @@ class TestColorScalingToOptions:
             (ColorScaling.power(gamma=0.3), "color_scale"),
             (ColorScaling.boundary(bounds=[0, 1, 2]), "bounds"),
             (ColorScaling.sym_log(threshold=0.01, scale=0.1), "line_threshold"),
+            (ColorScaling.log(), "color_scale"),
         ],
     )
     def test_variant_emits_all_six_keys(self, scale, key):
@@ -80,6 +81,26 @@ class TestColorScalingBuildNorm:
         norm, _ = ColorScaling.power(gamma=0.5).build_norm(np.array([0.0, 10.0]))
         assert isinstance(norm, mcolors.PowerNorm)
         assert norm.gamma == 0.5
+
+    def test_log_builds_a_log_norm(self):
+        """The log scale builds a `LogNorm` over the positive tick range."""
+        norm, cbar_kw = ColorScaling.log().build_norm(np.array([1.0, 10.0, 100.0]))
+        assert isinstance(norm, mcolors.LogNorm)
+        assert (norm.vmin, norm.vmax) == (1.0, 100.0), (
+            f"LogNorm should span the ticks, got ({norm.vmin}, {norm.vmax})"
+        )
+        assert cbar_kw["extend"] == "neither"
+
+    def test_log_on_non_positive_range_raises(self):
+        """A log scale whose range starts at zero raises, steering at sym_log."""
+        with pytest.raises(ValueError, match="strictly-positive"):
+            ColorScaling.log().build_norm(np.array([0.0, 10.0, 100.0]))
+
+    def test_log_options_round_trip(self):
+        """`log()` emits `color_scale='lognorm'` and reconstructs to LOGNORM."""
+        opts = ColorScaling.log().to_options()
+        assert opts["color_scale"] == "lognorm"
+        assert ColorScaling.from_options(opts).kind.name == "LOGNORM"
 
 
 class TestParamGroupsEmitOnlySetFields:

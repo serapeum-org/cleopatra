@@ -90,7 +90,7 @@ graph TD
 ### `ArrayGlyph` — raster / array visualization
 
 - Plot 2-D and 3-D `numpy` arrays with automatic colorbars and selectable colour scales
-  (`linear`, `power`, `sym-lognorm`, `boundary-norm`, `midpoint`), rendered via `imshow`,
+  (`linear`, `power`, `sym-lognorm`, `lognorm`, `boundary-norm`, `midpoint`), rendered via `imshow`,
   `pcolormesh`, `contour`, or `contourf` (`plot(kind=...)`).
 - xarray-aligned colour options (still loose): `robust`, `center`, `extend`, `cbar_kwargs`
   (discrete `levels` moved onto `contour=Contour(levels=...)`).
