@@ -1,3 +1,4 @@
+import importlib
 import inspect
 import sys
 from pathlib import Path
@@ -241,28 +242,52 @@ class TestSetMatplotlibBackendInNotebook:
         """An explicit `backend` switches directly instead of running a magic.
 
         Test scenario:
-            Even inside a notebook, `backend="Agg"` must take the
-            `plt.switch_backend` path -- the magic is only the *default*.
-            `get_ipython()` returns `None` here, so the notebook branch
-            would fail loudly if it were (wrongly) taken.
+            Even inside a notebook, an explicit `backend` must take the
+            `plt.switch_backend` path -- the magic is only the *default*. The
+            switch is spied on rather than performed: really switching would
+            leave a global unrestored, and the method's own docstring warns
+            that it closes every open figure. A backend name that is not the
+            active one is used, so the assertion pins that the caller's choice
+            is forwarded rather than coinciding with the suite's Agg default.
         """
-        ipython = pytest.importorskip("IPython")
-        monkeypatch.setattr(config_mod, "is_notebook", lambda: True)
-        monkeypatch.setattr(ipython, "get_ipython", lambda: None)
+        switched: list[str] = []
+        monkeypatch.setattr(plt, "switch_backend", switched.append)
+        magics = self._fake_notebook(monkeypatch)
+        before = matplotlib.get_backend()
 
-        assert Config.set_matplotlib_backend(backend="Agg").lower() == "agg"
+        Config.set_matplotlib_backend(backend="TkAgg")
+
+        assert switched == ["TkAgg"], f"expected a direct switch; got {switched}"
+        assert magics == [], f"an explicit backend must run no magic; got {magics}"
+        assert matplotlib.get_backend() == before, "the active backend must be untouched"
 
 
 def test_is_notebook_false_without_ipython(monkeypatch):
     """`is_notebook` returns False when IPython is not installed.
 
     Test scenario:
-        A `sys.meta_path` finder makes `import IPython` raise
-        `ModuleNotFoundError`, standing in for an environment without
-        Jupyter -- the guard must swallow it rather than propagate.
+        A plain pytest run answers `False` anyway (`get_ipython()` returns
+        `None` outside a kernel), so a bare "is it False?" assertion cannot
+        tell the missing-IPython branch from the ordinary one -- and would
+        keep passing if the import blocker silently stopped working. The
+        ambient shell is therefore first made to report a notebook, and that
+        is asserted: from there, only the import failing can turn the answer
+        back to `False`. The blocker is checked directly too.
     """
+    ipython = pytest.importorskip("IPython")
+
+    class ZMQInteractiveShell:
+        pass
+
+    monkeypatch.setattr(ipython, "get_ipython", lambda: ZMQInteractiveShell())
+    assert is_notebook() is True, (
+        "precondition: with IPython importable and reporting a kernel shell, "
+        "is_notebook must be True -- otherwise the assertion below proves nothing"
+    )
 
     class _BlockIPython:
+        """A finder that makes `import IPython` fail, as if it were absent."""
+
         def find_spec(self, name, path=None, target=None):
             if name == "IPython" or name.startswith("IPython."):
                 raise ModuleNotFoundError(f"No module named {name!r}", name=name)
@@ -270,5 +295,7 @@ def test_is_notebook_false_without_ipython(monkeypatch):
 
     monkeypatch.delitem(sys.modules, "IPython", raising=False)
     monkeypatch.setattr(sys, "meta_path", [_BlockIPython(), *sys.meta_path])
+    with pytest.raises(ModuleNotFoundError):
+        importlib.import_module("IPython")
 
     assert is_notebook() is False
