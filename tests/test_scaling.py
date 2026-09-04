@@ -109,6 +109,17 @@ class TestColorScalingBuildNorm:
         assert norm.vmin == 5.0, f"vmin should stay 5.0, got {norm.vmin}"
         assert norm.vmax == 6.0, f"vmax should widen to 6.0, got {norm.vmax}"
 
+    def test_log_on_constant_negative_data_reports_real_bounds(self):
+        """A constant non-positive field raises with its real bound, not a widened one.
+
+        Test scenario:
+            The degenerate-range widening applies only to strictly-positive
+            constants, so an all-negative field is not widened before the error
+            is built -- the message reports the real value and steers at sym_log.
+        """
+        with pytest.raises(ValueError, match=r"vmin=-5\.0, vmax=-5\.0"):
+            ColorScaling.log().build_norm(np.array([-5.0]))
+
     def test_log_options_round_trip(self):
         """`log()` emits `color_scale='lognorm'` and reconstructs to LOGNORM."""
         opts = ColorScaling.log().to_options()
