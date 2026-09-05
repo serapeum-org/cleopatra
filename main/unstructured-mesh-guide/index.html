@@ -3035,7 +3035,7 @@ simulation), <code>animate()</code> creates a frame-by-frame animation:</p>
 <a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="n">mg</span><span class="o">.</span><span class="n">save_animation</span><span class="p">(</span><span class="s2">&quot;simulation.gif&quot;</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="color-scales"><a class="toclink" href="#color-scales">Color Scales</a><a class="headerlink" href="#color-scales" title="Permanent link">#</a></h2>
-<p><code>MeshGlyph</code> supports all 5 color scale types inherited from the
+<p><code>MeshGlyph</code> supports all 6 color scale types inherited from the
 <code>Glyph</code> base class:</p>
 <table>
 <thead>
@@ -3062,6 +3062,11 @@ simulation), <code>animate()</code> creates a frame-by-frame animation:</p>
 <td><code>threshold</code>, <code>scale</code></td>
 </tr>
 <tr>
+<td><code>lognorm</code></td>
+<td>Strictly-positive data spanning many orders of magnitude (no zero crossing).</td>
+<td>(positive <code>vmin</code>/<code>vmax</code>)</td>
+</tr>
+<tr>
 <td><code>boundary-norm</code></td>
 <td>Discrete color bins at specific thresholds.</td>
 <td><code>bounds</code> (list of boundaries)</td>
@@ -3075,7 +3080,8 @@ simulation), <code>animate()</code> creates a frame-by-frame animation:</p>
 </table>
 <p>Pick a scale by passing the matching <code>ColorScaling</code> factory as <code>color=</code>:
 <code>ColorScaling.power(gamma=...)</code>, <code>ColorScaling.sym_log(threshold=..., scale=...)</code>,
-<code>ColorScaling.boundary(bounds=[...])</code>, <code>ColorScaling.midpoint(at=...)</code>, or <code>ColorScaling.linear()</code>.</p>
+<code>ColorScaling.log()</code>, <code>ColorScaling.boundary(bounds=[...])</code>, <code>ColorScaling.midpoint(at=...)</code>, or
+<code>ColorScaling.linear()</code>.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># Example: midpoint scale for a difference plot</span>
 <a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styling.colorbar</span><span class="w"> </span><span class="kn">import</span> <span class="n">ColorBar</span>
 <a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styling.scaling</span><span class="w"> </span><span class="kn">import</span> <span class="n">ColorScaling</span>
