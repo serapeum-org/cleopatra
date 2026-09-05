@@ -184,10 +184,10 @@ class TexturedGlobeGlyph:
                 transparent if it spans none), so a feature narrower than one mesh face still paints instead of
                 falling between sample points. A cell counts once regardless of its alpha and the RGB mean is not
                 alpha-premultiplied, so a face over feathered/anti-aliased edges keeps their mean colour and a
-                mean alpha (below 1). Faces finer than a single texture cell fall back to point sampling. Both
-                modes keep the
-                sample-once/rotate-per-frame contract -- the reduction runs once in `_prepare`. Defaults to
-                `"point"`.
+                mean alpha (below 1). A face whose block holds no texture cell at all -- the mesh is finer than
+                the texture there -- falls back to point sampling, so a coarse texture never gains gaps. Both
+                modes keep the sample-once/rotate-per-frame contract -- the reduction runs once in `_prepare`.
+                Defaults to `"point"`.
             brightness: Multiplier applied to the RGB channels before clipping to `[0, 1]`. `< 1` darkens, `> 1`
                 brightens. Must be `>= 0`.
             sun: Light direction as a length-3 `(x, y, z)` vector in world space (the same frame the globe is drawn
@@ -223,9 +223,7 @@ class TexturedGlobeGlyph:
                 f"n_lon and n_lat must each be >= 2; got n_lon={n_lon}, n_lat={n_lat}."
             )
         if sampling not in ("point", "area"):
-            raise ValueError(
-                f'sampling must be "point" or "area"; got {sampling!r}.'
-            )
+            raise ValueError(f'sampling must be "point" or "area"; got {sampling!r}.')
         if brightness < 0:
             raise ValueError(f"brightness must be >= 0; got {brightness}.")
         if ax is not None and not isinstance(ax, Axes3D):
@@ -678,10 +676,10 @@ class TexturedGlobeGlyph:
 
     @property
     def face_colors(self) -> np.ndarray:
-        """The per-face RGBA colours the globe will paint, `(n_lat - 1, n_lon - 1, 4)` float in `[0, 1]`.
+        """The base per-face RGBA colours the mesh is filled with, `(n_lat - 1, n_lon - 1, 4)` float in `[0, 1]`.
 
-        These are the base sampled colours the mesh is filled with (before any per-frame directional
-        lighting), so a caller can check whether its data survived the texture sampling -- e.g. that a
+        These are the sampled colours before any per-frame directional lighting (which only scales RGB and
+        never touches alpha), so a caller can check whether its data survived the texture sampling -- e.g. that a
         small feature still lands on at least one face -- without a `draw()` and without reaching into
         private state. Reading it samples the texture once (the sample-once contract); a copy is returned,
         so mutating it never disturbs the glyph's cache.
