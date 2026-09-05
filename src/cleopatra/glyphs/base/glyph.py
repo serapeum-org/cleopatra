@@ -251,16 +251,19 @@ def _stash_projection_frame(ax: Axes, new_artists: Any) -> None:
     ax._cleo_projection_frame = list(new_artists)  # type: ignore[attr-defined]
 
 
-def _clear_projection_frame(ax: Axes) -> bool:
+def _clear_projection_frame(ax: Axes | None) -> bool:
     """Remove any projection frame recorded on `ax`; report whether one existed.
 
     Args:
-        ax: The axes to strip a prior projection frame from.
+        ax: The axes to strip a prior projection frame from. `None` is a no-op
+            (returns `False`), so callers need not guard a not-yet-resolved axes.
 
     Returns:
         bool: `True` if a frame was present (so the caller knows to restore the
             flat view with `_restore_flat_axes`), else `False`.
     """
+    if ax is None:
+        return False
     frame = getattr(ax, "_cleo_projection_frame", None)
     ax._cleo_projection_frame = None  # type: ignore[attr-defined]
     existed = bool(frame)

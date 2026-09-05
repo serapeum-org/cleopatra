@@ -155,7 +155,9 @@ class MeshGlyph(GeoMixin, Glyph):
             fill_value: Padding value in `face_node_connectivity`. Default -1.
             edge_node_connectivity: Optional `(n_edges, 2)` node indices per
                 edge, used by the wireframe render. Default None.
-            fig: Pre-existing figure to bind. Default None.
+            fig: Pre-existing figure to bind. Default None. Passing `fig`
+                alone (no `ax`) draws into that figure — its first axes, or
+                a fresh one if it has none.
             ax: Pre-existing axes to bind. Default None.
             data_style: Grouped `style` / `hillshade` options applied at
                 construction, e.g. `data_style=DataStyle(hillshade=True)`.
@@ -894,8 +896,10 @@ class MeshGlyph(GeoMixin, Glyph):
                 (location="face") or node count (location="node").
             location: Mesh element location: `"face"` or `"node"`.
                 Default is `"face"`.
-            ax: Axes to plot on. If None, uses stored axes or creates
-                new.
+            ax: Axes to plot on. If None, resolution priority is the axes
+                bound at construction > an axes derived from a figure bound
+                at construction (its first axes, or a fresh one) > a new
+                figure/axes.
             edgecolor: Edge color for face rendering. Default is
                 `"none"`.
             colorbar: Draw a colorbar, by default `True`. Accepts a typed
@@ -1118,6 +1122,10 @@ class MeshGlyph(GeoMixin, Glyph):
             self.fig = ax.get_figure()
         elif self.fig is None:
             self.fig, self.ax = self.create_figure_axes()
+        elif self.ax is None:
+            # A figure was bound without an axes: draw into the caller's figure
+            # (its first axes, or a fresh one) rather than leaving self.ax None.
+            self.ax = self.fig.axes[0] if self.fig.axes else self.fig.add_subplot(111)
 
         ticks = self.get_ticks()
         norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
@@ -1329,6 +1337,9 @@ class MeshGlyph(GeoMixin, Glyph):
 
         if self.fig is None:
             self.fig, self.ax = self.create_figure_axes()
+        elif self.ax is None:
+            # A figure was bound without an axes: draw into the caller's figure.
+            self.ax = self.fig.axes[0] if self.fig.axes else self.fig.add_subplot(111)
         fig, ax = self.fig, self.ax
 
         ticks = self.get_ticks()
