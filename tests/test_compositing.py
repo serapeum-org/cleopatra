@@ -169,6 +169,21 @@ class TestAlphaOver:
         assert np.array_equal(fg, fg_before), "Foreground array must not be mutated"
         assert np.array_equal(bg, bg_before), "Background array must not be mutated"
 
+    def test_does_not_mutate_rgb_background(self):
+        """The RGB-background path also leaves both inputs unchanged.
+
+        Test scenario:
+            The simpler 3-band branch is pure too -- neither the foreground nor
+            the RGB background array is modified in place by the blend.
+        """
+        fg = np.array([[[1.0, 0.0, 0.0, 0.5]]])
+        bg = np.array([[[0.0, 0.0, 1.0]]])
+        fg_before = fg.copy()
+        bg_before = bg.copy()
+        alpha_over(fg, bg)
+        assert np.array_equal(fg, fg_before), "Foreground must not be mutated on the RGB path"
+        assert np.array_equal(bg, bg_before), "RGB background must not be mutated"
+
     def test_accepts_array_like_inputs(self):
         """Nested Python lists are coerced to arrays before compositing.
 
