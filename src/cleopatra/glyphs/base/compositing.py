@@ -12,6 +12,11 @@ layout, and cleopatra's throughout. A caller that holds band-first ``(C, H, W)``
 rasters (the GDAL/rasterio convention) transposes at its own boundary, e.g.
 ``np.moveaxis(arr, 0, -1)``, before calling in.
 
+This module depends on nothing but NumPy, and must stay that way: keeping it
+free of any first-party `cleopatra` import is what lets both `styling` and
+`glyphs` use it without an import cycle (`styling.watermark` imports it, while
+`glyphs.base` already imports `styling`).
+
 Import from the submodule, matching the package convention (nothing is
 re-exported at the package roots): `from cleopatra.glyphs.base.compositing import
 alpha_over`.
@@ -32,7 +37,7 @@ def alpha_over(foreground: np.ndarray, background: np.ndarray) -> np.ndarray:
     background's channel count decides the result:
 
     - **RGB background** ``(H, W, 3)`` -- an opaque canvas; the result is a
-      3-band ``fg_rgb * fg_a + bg_rgb * (1 - fg_a)`` with no alpha channel.
+      3-band ``fg_rgb * fg_a + background * (1 - fg_a)`` with no alpha channel.
     - **RGBA background** ``(H, W, 4)`` -- the result is 4-band with
       ``out_a = fg_a + bg_a * (1 - fg_a)``; the blended colour is
       un-premultiplied by ``out_a``, guarded to stay black where nothing covers
@@ -52,6 +57,12 @@ def alpha_over(foreground: np.ndarray, background: np.ndarray) -> np.ndarray:
     Raises:
         ValueError: If the foreground is not ``(H, W, 4)``, the background is not
             ``(H, W, 3)`` or ``(H, W, 4)``, or the two differ in height or width.
+
+    Note:
+        The ``[0, 1]`` input range is a trusted precondition, not validated: the
+        divide-by-zero guard is sound only for non-negative alphas, where
+        ``out_a == 0`` implies both alphas are zero and the colour numerator is
+        zero too. Out-of-range inputs are neither rejected nor clamped.
 
     Examples:
         - Half-transparent red over an opaque blue canvas blends 50/50 and drops
@@ -85,10 +96,10 @@ def alpha_over(foreground: np.ndarray, background: np.ndarray) -> np.ndarray:
         - A background that is neither RGB nor RGBA is rejected:
             ```python
             >>> import numpy as np
-            >>> alpha_over(np.zeros((1, 1, 4)), np.zeros((1, 1, 2)))
+            >>> alpha_over(np.zeros((1, 1, 4)), np.zeros((1, 1, 2)))  # doctest: +ELLIPSIS
             Traceback (most recent call last):
                 ...
-            ValueError: alpha_over background must be an (H, W, 3) RGB or (H, W, 4) RGBA array, got shape (1, 1, 2).
+            ValueError: alpha_over background must be an (H, W, 3) RGB or (H, W, 4) RGBA array, got shape ...
 
             ```
     """
