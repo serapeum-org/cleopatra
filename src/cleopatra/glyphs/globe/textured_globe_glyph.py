@@ -84,6 +84,12 @@ GLOBE_DEFAULT_OPTIONS = {
 #: unlit (night) side keeps so it stays legible rather than going pure black.
 DEFAULT_AMBIENT = 0.13
 
+#: Valid `sampling` modes. `"point"` samples one texture cell at each face centre (cheap);
+#: `"area"` reduces the whole texture block a face covers (keeps sub-face detail).
+SAMPLING_POINT = "point"
+SAMPLING_AREA = "area"
+SAMPLING_MODES = (SAMPLING_POINT, SAMPLING_AREA)
+
 #: Sentinel for `draw`/`animate` lighting arguments meaning "inherit the instance default"
 #: (so an explicit `sun=None` can still turn lighting off for one call). Typed `Any` so it is a
 #: valid default for the `tuple | None` / `float` lighting parameters.
@@ -157,7 +163,7 @@ class TexturedGlobeGlyph:
         tilt_deg: float = EARTH_TILT_DEG,
         n_lon: int = 180,
         n_lat: int = 90,
-        sampling: str = "point",
+        sampling: str = SAMPLING_POINT,
         brightness: float = 1.0,
         sun: tuple[float, float, float] | None = None,
         ambient: float = DEFAULT_AMBIENT,
@@ -222,7 +228,7 @@ class TexturedGlobeGlyph:
             raise ValueError(
                 f"n_lon and n_lat must each be >= 2; got n_lon={n_lon}, n_lat={n_lat}."
             )
-        if sampling not in ("point", "area"):
+        if sampling not in SAMPLING_MODES:
             raise ValueError(f'sampling must be "point" or "area"; got {sampling!r}.')
         if brightness < 0:
             raise ValueError(f"brightness must be >= 0; got {brightness}.")
@@ -359,7 +365,7 @@ class TexturedGlobeGlyph:
         )
         row_idx, col_idx = np.meshgrid(rows, cols, indexing="ij")
         point_face = self._texture[row_idx, col_idx]
-        if self._sampling == "point":
+        if self._sampling == SAMPLING_POINT:
             return point_face
         return self._area_facecolors(point_face)
 
