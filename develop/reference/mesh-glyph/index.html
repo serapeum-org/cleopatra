@@ -3003,7 +3003,7 @@
 <h1 id="meshglyph-class"><a class="toclink" href="#meshglyph-class">MeshGlyph Class</a><a class="headerlink" href="#meshglyph-class" title="Permanent link">#</a></h1>
 <p>The <code>MeshGlyph</code> class provides visualization for UGRID-style unstructured mesh data
 using matplotlib triangulation. It supports face-centered and node-centered plotting,
-wireframe rendering, all 5 color scale types, and time-series animation.</p>
+wireframe rendering, all 6 color scale types, and time-series animation.</p>
 <h2 id="class-documentation"><a class="toclink" href="#class-documentation">Class Documentation</a><a class="headerlink" href="#class-documentation" title="Permanent link">#</a></h2>
 
 
@@ -5544,8 +5544,8 @@ no isolines (e.g. a constant-value field) yields an empty list.</p>
 <a id="__codelineno-0-888" name="__codelineno-0-888"></a><span class="sd">        contours, or `tricontour` for line contours when</span>
 <a id="__codelineno-0-889" name="__codelineno-0-889"></a><span class="sd">        `filled=False`.</span>
 <a id="__codelineno-0-890" name="__codelineno-0-890"></a>
-<a id="__codelineno-0-891" name="__codelineno-0-891"></a><span class="sd">        Supports all 5 color scale types from `default_options`:</span>
-<a id="__codelineno-0-892" name="__codelineno-0-892"></a><span class="sd">        linear, power, sym-lognorm, boundary-norm, and midpoint.</span>
+<a id="__codelineno-0-891" name="__codelineno-0-891"></a><span class="sd">        Supports all 6 color scale types from `default_options`:</span>
+<a id="__codelineno-0-892" name="__codelineno-0-892"></a><span class="sd">        linear, power, sym-lognorm, lognorm, boundary-norm, and midpoint.</span>
 <a id="__codelineno-0-893" name="__codelineno-0-893"></a>
 <a id="__codelineno-0-894" name="__codelineno-0-894"></a><span class="sd">        Args:</span>
 <a id="__codelineno-0-895" name="__codelineno-0-895"></a><span class="sd">            data: 1D data array. Length must match face count</span>
@@ -8043,8 +8043,8 @@ is colored by the value of its parent face. For node-centered
 data, uses <code>tricontourf</code> for smooth interpolated filled
 contours, or <code>tricontour</code> for line contours when
 <code>filled=False</code>.</p>
-<p>Supports all 5 color scale types from <code>default_options</code>:
-linear, power, sym-lognorm, boundary-norm, and midpoint.</p>
+<p>Supports all 6 color scale types from <code>default_options</code>:
+linear, power, sym-lognorm, lognorm, boundary-norm, and midpoint.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -8812,8 +8812,8 @@ dimension.</p>
 <a id="__codelineno-0-888" name="__codelineno-0-888"></a><span class="sd">    contours, or `tricontour` for line contours when</span>
 <a id="__codelineno-0-889" name="__codelineno-0-889"></a><span class="sd">    `filled=False`.</span>
 <a id="__codelineno-0-890" name="__codelineno-0-890"></a>
-<a id="__codelineno-0-891" name="__codelineno-0-891"></a><span class="sd">    Supports all 5 color scale types from `default_options`:</span>
-<a id="__codelineno-0-892" name="__codelineno-0-892"></a><span class="sd">    linear, power, sym-lognorm, boundary-norm, and midpoint.</span>
+<a id="__codelineno-0-891" name="__codelineno-0-891"></a><span class="sd">    Supports all 6 color scale types from `default_options`:</span>
+<a id="__codelineno-0-892" name="__codelineno-0-892"></a><span class="sd">    linear, power, sym-lognorm, lognorm, boundary-norm, and midpoint.</span>
 <a id="__codelineno-0-893" name="__codelineno-0-893"></a>
 <a id="__codelineno-0-894" name="__codelineno-0-894"></a><span class="sd">    Args:</span>
 <a id="__codelineno-0-895" name="__codelineno-0-895"></a><span class="sd">        data: 1D data array. Length must match face count</span>
