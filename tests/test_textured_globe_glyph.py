@@ -622,14 +622,44 @@ class TestAreaSampling:
             f"the reduced face should keep the opaque red patch, got {lit[0]}"
         )
 
+    def test_area_sampling_on_rgb_texture_is_opaque_and_reduces(self):
+        """A 3-channel RGB texture (the common basemap input) area-samples to opaque block means."""
+        rgb = np.zeros((100, 200, 3), dtype=np.uint8)
+        rgb[::2, :, :] = 255  # alternating white / black rows -- high frequency
+        area = TexturedGlobeGlyph(rgb, n_lon=20, n_lat=10, sampling="area").face_colors
+        point = TexturedGlobeGlyph(rgb, n_lon=20, n_lat=10, sampling="point").face_colors
+        assert np.all(area[..., 3] == 1.0), "an RGB texture has no transparency; every face stays opaque"
+        assert not np.allclose(area[..., 0], point[..., 0]), (
+            "block-averaging a high-frequency pattern must differ from centre sampling"
+        )
+        assert np.all(area[..., 0] > 0.1), "averaged faces sit above the black extreme"
+        assert np.all(area[..., 0] < 0.9), "averaged faces sit below the white extreme"
+
+    def test_area_sampling_averages_fractional_alpha(self):
+        """A cell with 0 < alpha < 1 contributes and leaves the face partially transparent."""
+        tex = np.zeros((120, 240, 4), dtype=np.uint8)
+        tex[40:43, 100:103] = (255, 0, 0, 128)  # a half-transparent red patch
+        glyph = TexturedGlobeGlyph(tex, n_lon=24, n_lat=12, sampling="area")
+        fc = glyph.face_colors
+        lit = fc[fc[..., 3] > 0]
+        assert lit.shape[0] >= 1, "the semi-transparent patch still paints a face"
+        assert np.isclose(lit[0, 3], 128 / 255, atol=1e-3), (
+            f"the face alpha should be the cell's own (~0.502), got {lit[0, 3]}"
+        )
+        assert np.allclose(lit[0, :3], [1.0, 0.0, 0.0], atol=1e-6), (
+            f"the face RGB should be the patch red, got {lit[0, :3]}"
+        )
+
     def test_area_matches_point_when_mesh_finer_than_texture(self):
-        """When the mesh is finer than the texture, area falls back to point (no gaps)."""
-        coarse = np.empty((4, 8, 4), dtype=np.uint8)
-        coarse[:] = (10, 20, 30, 255)
+        """When the mesh is finer than the texture, area falls back to point cell-for-cell (no gaps)."""
+        coarse = np.zeros((4, 8, 4), dtype=np.uint8)
+        coarse[..., 0] = np.arange(8, dtype=np.uint8)[None, :] * 30  # each column distinct
+        coarse[..., 1] = np.arange(4, dtype=np.uint8)[:, None] * 60  # each row distinct
+        coarse[..., 3] = 255
         point = TexturedGlobeGlyph(coarse, n_lon=40, n_lat=20, sampling="point")
         area = TexturedGlobeGlyph(coarse, n_lon=40, n_lat=20, sampling="area")
         assert np.allclose(point.face_colors, area.face_colors), (
-            "area must match point where the mesh is finer than the texture"
+            "area must pick the same cell as point where the mesh is finer than the texture"
         )
 
     def test_area_fully_transparent_texture_paints_nothing(self):
