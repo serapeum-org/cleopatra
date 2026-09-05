@@ -129,6 +129,44 @@ class TestAlphaOver:
         out = alpha_over(np.zeros((2, 2, 4)), np.ones((2, 2, 4)))
         assert out.dtype == np.dtype(float), f"RGBA result should be float, got {out.dtype}"
 
+    def test_opaque_foreground_over_rgba_reports_full_coverage(self):
+        """An opaque foreground over an RGBA canvas yields its colour at full alpha.
+
+        Test scenario:
+            Foreground alpha 1.0 over a partially transparent RGBA background gives
+            out_a == 1.0 and the foreground RGB, exercising the RGBA branch at the
+            alpha extreme where the background contributes nothing.
+        """
+        fg = np.array([[[0.2, 0.4, 0.6, 1.0]]])
+        bg = np.array([[[0.9, 0.9, 0.9, 0.3]]])
+        out = alpha_over(fg, bg)
+        assert np.allclose(out.ravel(), [0.2, 0.4, 0.6, 1.0]), f"Opaque fg over RGBA should win at alpha 1, got {out.ravel()}"
+
+    def test_does_not_mutate_inputs(self):
+        """Compositing leaves both input arrays unchanged.
+
+        Test scenario:
+            alpha_over is pure -- neither the foreground nor the background array
+            is modified in place by the blend.
+        """
+        fg = np.array([[[1.0, 0.0, 0.0, 0.5]]])
+        bg = np.array([[[0.0, 0.0, 1.0, 1.0]]])
+        fg_before = fg.copy()
+        bg_before = bg.copy()
+        alpha_over(fg, bg)
+        assert np.array_equal(fg, fg_before), "Foreground array must not be mutated"
+        assert np.array_equal(bg, bg_before), "Background array must not be mutated"
+
+    def test_accepts_array_like_inputs(self):
+        """Nested Python lists are coerced to arrays before compositing.
+
+        Test scenario:
+            Passing plain lists (not np.ndarray) is accepted via np.asarray and
+            produces the same blend as equivalent array inputs.
+        """
+        out = alpha_over([[[1.0, 0.0, 0.0, 0.5]]], [[[0.0, 0.0, 1.0]]])
+        assert np.allclose(out.ravel(), [0.5, 0.0, 0.5]), f"List inputs should blend like arrays, got {out.ravel()}"
+
     @pytest.mark.parametrize(
         "foreground, background, match",
         [
