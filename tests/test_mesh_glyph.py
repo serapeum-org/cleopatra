@@ -2151,7 +2151,8 @@ class TestFigAxResolution:
         node_x, node_y, faces, data = self._mesh()
         glyph = MeshGlyph(node_x, node_y, faces)
         fig, ax = glyph.plot(data, location="face")
-        assert fig is not None and ax is not None, "should create a figure and axes"
+        assert fig is not None, "should create a figure"
+        assert ax is not None, "should create an axes"
         assert glyph.im is not None, "should have drawn the mesh"
 
     def test_ax_only_adopts_axes(self):

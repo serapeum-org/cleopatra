@@ -7801,7 +7801,8 @@ class TestFigAxResolution:
         plt.close("all")
         fig0, ax0 = plt.subplots()
         fig, ax = ArrayGlyph(self._arr(), ax=ax0).plot()
-        assert ax is ax0 and fig is fig0
+        assert ax is ax0
+        assert fig is fig0
         plt.close("all")
 
     def test_fig_only_draws_into_supplied_figure(self):
@@ -7813,7 +7814,8 @@ class TestFigAxResolution:
         assert ax is existing_ax  # reused the figure's existing axes
         assert glyph.im is not None  # the array was actually drawn
         # the caller owns the figure, so teardown must not tighten/repaint it
-        assert glyph._owns_figure is False and glyph._auto_figure is False
+        assert glyph._owns_figure is False
+        assert glyph._auto_figure is False
         plt.close("all")
 
     def test_fig_only_empty_figure_creates_axes(self):
@@ -7831,7 +7833,8 @@ class TestFigAxResolution:
         fig0 = plt.figure()
         ax0 = fig0.add_subplot()
         fig, ax = ArrayGlyph(self._arr(), fig=fig0, ax=ax0).plot()
-        assert fig is fig0 and ax is ax0
+        assert fig is fig0
+        assert ax is ax0
         plt.close("all")
 
     def test_fig_bound_but_plot_ax_override_wins_without_stray_axes(self):
@@ -7852,9 +7855,11 @@ class TestFigAxResolution:
         glyph = ArrayGlyph(stack, fig=fig0)
         anim = glyph.animate([0, 1], interval=50)
         assert isinstance(anim, FuncAnimation)
-        assert glyph.fig is fig0 and glyph.ax is existing_ax
+        assert glyph.fig is fig0
+        assert glyph.ax is existing_ax
         # the animate() branch resets ownership so teardown leaves the caller's figure alone
-        assert glyph._owns_figure is False and glyph._auto_figure is False
+        assert glyph._owns_figure is False
+        assert glyph._auto_figure is False
         plt.close("all")
 
     def test_animate_fig_only_empty_figure_creates_axes(self):
