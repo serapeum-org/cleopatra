@@ -134,7 +134,8 @@ def alpha_over(foreground: np.ndarray, background: np.ndarray) -> np.ndarray:
 
     if background.shape[-1] == 3:
         # Opaque canvas: straight "over", no output alpha to carry.
-        return fg_rgb * fg_a + background * (1.0 - fg_a)
+        blended: np.ndarray = fg_rgb * fg_a + background * (1.0 - fg_a)
+        return blended
 
     bg_rgb = background[..., :3]
     bg_a = background[..., 3:4]
