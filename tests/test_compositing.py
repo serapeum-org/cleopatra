@@ -19,8 +19,12 @@ class TestAlphaOver:
         fg = np.array([[[1.0, 0.0, 0.0, 0.5]]])
         bg = np.array([[[0.0, 0.0, 1.0]]])
         out = alpha_over(fg, bg)
-        assert out.shape == (1, 1, 3), f"RGB background must give a 3-band result, got {out.shape}"
-        assert np.allclose(out.ravel(), [0.5, 0.0, 0.5]), f"Unexpected blend: {out.ravel()}"
+        assert out.shape == (1, 1, 3), (
+            f"RGB background must give a 3-band result, got {out.shape}"
+        )
+        assert np.allclose(out.ravel(), [0.5, 0.0, 0.5]), (
+            f"Unexpected blend: {out.ravel()}"
+        )
 
     def test_rgba_background_keeps_alpha(self):
         """The same mark over an RGBA canvas keeps a 4-band result with combined coverage.
@@ -32,8 +36,12 @@ class TestAlphaOver:
         fg = np.array([[[1.0, 0.0, 0.0, 0.5]]])
         bg = np.array([[[0.0, 0.0, 1.0, 1.0]]])
         out = alpha_over(fg, bg)
-        assert out.shape == (1, 1, 4), f"RGBA background must give a 4-band result, got {out.shape}"
-        assert np.allclose(out.ravel(), [0.5, 0.0, 0.5, 1.0]), f"Unexpected blend: {out.ravel()}"
+        assert out.shape == (1, 1, 4), (
+            f"RGBA background must give a 4-band result, got {out.shape}"
+        )
+        assert np.allclose(out.ravel(), [0.5, 0.0, 0.5, 1.0]), (
+            f"Unexpected blend: {out.ravel()}"
+        )
 
     def test_opaque_foreground_covers_background(self):
         """A fully opaque foreground reproduces its own colour, ignoring the background.
@@ -44,7 +52,9 @@ class TestAlphaOver:
         fg = np.array([[[0.2, 0.4, 0.6, 1.0]]])
         bg = np.array([[[1.0, 1.0, 1.0]]])
         out = alpha_over(fg, bg)
-        assert np.allclose(out.ravel(), [0.2, 0.4, 0.6]), f"Opaque foreground should win, got {out.ravel()}"
+        assert np.allclose(out.ravel(), [0.2, 0.4, 0.6]), (
+            f"Opaque foreground should win, got {out.ravel()}"
+        )
 
     def test_transparent_foreground_shows_background(self):
         """A fully transparent foreground leaves an RGB background untouched.
@@ -55,7 +65,9 @@ class TestAlphaOver:
         fg = np.array([[[1.0, 1.0, 1.0, 0.0]]])
         bg = np.array([[[0.1, 0.2, 0.3]]])
         out = alpha_over(fg, bg)
-        assert np.allclose(out.ravel(), [0.1, 0.2, 0.3]), f"Transparent foreground should reveal bg, got {out.ravel()}"
+        assert np.allclose(out.ravel(), [0.1, 0.2, 0.3]), (
+            f"Transparent foreground should reveal bg, got {out.ravel()}"
+        )
 
     def test_transparent_over_transparent_is_guarded(self):
         """Fully transparent over fully transparent stays black rather than dividing by zero.
@@ -65,8 +77,12 @@ class TestAlphaOver:
             pixel at all-zeros with no NaN.
         """
         out = alpha_over(np.zeros((1, 1, 4)), np.zeros((1, 1, 4)))
-        assert np.allclose(out.ravel(), [0.0, 0.0, 0.0, 0.0]), f"Zero-coverage pixel should stay zero, got {out.ravel()}"
-        assert not np.isnan(out).any(), "Guard must prevent NaN from a zero output alpha"
+        assert np.allclose(out.ravel(), [0.0, 0.0, 0.0, 0.0]), (
+            f"Zero-coverage pixel should stay zero, got {out.ravel()}"
+        )
+        assert not np.isnan(out).any(), (
+            "Guard must prevent NaN from a zero output alpha"
+        )
 
     def test_guard_only_touches_zero_coverage_pixels(self):
         """A mix of covered and uncovered pixels guards only the uncovered one.
@@ -78,8 +94,12 @@ class TestAlphaOver:
         fg = np.array([[[0.0, 0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.5]]])
         bg = np.array([[[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1.0, 1.0]]])
         out = alpha_over(fg, bg)
-        assert np.allclose(out[0, 0], [0.0, 0.0, 0.0, 0.0]), f"Uncovered pixel should stay zero, got {out[0, 0]}"
-        assert np.allclose(out[0, 1], [0.5, 0.0, 0.5, 1.0]), f"Covered pixel should blend, got {out[0, 1]}"
+        assert np.allclose(out[0, 0], [0.0, 0.0, 0.0, 0.0]), (
+            f"Uncovered pixel should stay zero, got {out[0, 0]}"
+        )
+        assert np.allclose(out[0, 1], [0.5, 0.0, 0.5, 1.0]), (
+            f"Covered pixel should blend, got {out[0, 1]}"
+        )
 
     def test_partial_over_partial_un_premultiplies(self):
         """A partial-alpha mark over a partial-alpha canvas un-premultiplies the colour.
@@ -91,7 +111,9 @@ class TestAlphaOver:
         fg = np.array([[[1.0, 0.0, 0.0, 0.5]]])
         bg = np.array([[[0.0, 1.0, 0.0, 0.5]]])
         out = alpha_over(fg, bg)
-        assert np.allclose(out.ravel(), [2 / 3, 1 / 3, 0.0, 0.75]), f"Un-premultiplied blend wrong: {out.ravel()}"
+        assert np.allclose(out.ravel(), [2 / 3, 1 / 3, 0.0, 0.75]), (
+            f"Un-premultiplied blend wrong: {out.ravel()}"
+        )
 
     def test_per_pixel_alpha_broadcasts_across_channels(self):
         """Different foreground alphas blend their own pixel across all three colours.
@@ -103,8 +125,12 @@ class TestAlphaOver:
         fg = np.array([[[1.0, 0.0, 0.0, 0.25], [0.0, 1.0, 0.0, 0.75]]])
         bg = np.array([[[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]])
         out = alpha_over(fg, bg)
-        assert np.allclose(out[0, 0], [0.25, 0.0, 0.0]), f"First pixel alpha misapplied: {out[0, 0]}"
-        assert np.allclose(out[0, 1], [0.0, 0.75, 0.0]), f"Second pixel alpha misapplied: {out[0, 1]}"
+        assert np.allclose(out[0, 0], [0.25, 0.0, 0.0]), (
+            f"First pixel alpha misapplied: {out[0, 0]}"
+        )
+        assert np.allclose(out[0, 1], [0.0, 0.75, 0.0]), (
+            f"Second pixel alpha misapplied: {out[0, 1]}"
+        )
 
     def test_integer_inputs_are_cast_to_float(self):
         """Integer arrays are accepted and produce a float result.
@@ -117,7 +143,9 @@ class TestAlphaOver:
         bg = np.array([[[0, 0, 1]]], dtype=int)
         out = alpha_over(fg, bg)
         assert out.dtype == np.dtype(float), f"Result should be float, got {out.dtype}"
-        assert np.allclose(out.ravel(), [1.0, 0.0, 0.0]), f"Integer opaque foreground should win, got {out.ravel()}"
+        assert np.allclose(out.ravel(), [1.0, 0.0, 0.0]), (
+            f"Integer opaque foreground should win, got {out.ravel()}"
+        )
 
     def test_rgba_result_is_float(self):
         """The RGBA path returns a float array.
@@ -127,7 +155,9 @@ class TestAlphaOver:
             of input dtype.
         """
         out = alpha_over(np.zeros((2, 2, 4)), np.ones((2, 2, 4)))
-        assert out.dtype == np.dtype(float), f"RGBA result should be float, got {out.dtype}"
+        assert out.dtype == np.dtype(float), (
+            f"RGBA result should be float, got {out.dtype}"
+        )
 
     def test_float32_inputs_preserve_precision(self):
         """A float32 foreground and background composite to a float32 result.
@@ -139,7 +169,9 @@ class TestAlphaOver:
         fg = np.zeros((2, 2, 4), dtype=np.float32)
         bg = np.ones((2, 2, 4), dtype=np.float32)
         out = alpha_over(fg, bg)
-        assert out.dtype == np.float32, f"float32 inputs should stay float32, got {out.dtype}"
+        assert out.dtype == np.float32, (
+            f"float32 inputs should stay float32, got {out.dtype}"
+        )
 
     def test_opaque_foreground_over_rgba_reports_full_coverage(self):
         """An opaque foreground over an RGBA canvas yields its colour at full alpha.
@@ -152,7 +184,9 @@ class TestAlphaOver:
         fg = np.array([[[0.2, 0.4, 0.6, 1.0]]])
         bg = np.array([[[0.9, 0.9, 0.9, 0.3]]])
         out = alpha_over(fg, bg)
-        assert np.allclose(out.ravel(), [0.2, 0.4, 0.6, 1.0]), f"Opaque fg over RGBA should win at alpha 1, got {out.ravel()}"
+        assert np.allclose(out.ravel(), [0.2, 0.4, 0.6, 1.0]), (
+            f"Opaque fg over RGBA should win at alpha 1, got {out.ravel()}"
+        )
 
     def test_does_not_mutate_inputs(self):
         """Compositing leaves both input arrays unchanged.
@@ -181,7 +215,9 @@ class TestAlphaOver:
         fg_before = fg.copy()
         bg_before = bg.copy()
         alpha_over(fg, bg)
-        assert np.array_equal(fg, fg_before), "Foreground must not be mutated on the RGB path"
+        assert np.array_equal(fg, fg_before), (
+            "Foreground must not be mutated on the RGB path"
+        )
         assert np.array_equal(bg, bg_before), "RGB background must not be mutated"
 
     def test_accepts_array_like_inputs(self):
@@ -192,7 +228,9 @@ class TestAlphaOver:
             produces the same blend as equivalent array inputs.
         """
         out = alpha_over([[[1.0, 0.0, 0.0, 0.5]]], [[[0.0, 0.0, 1.0]]])
-        assert np.allclose(out.ravel(), [0.5, 0.0, 0.5]), f"List inputs should blend like arrays, got {out.ravel()}"
+        assert np.allclose(out.ravel(), [0.5, 0.0, 0.5]), (
+            f"List inputs should blend like arrays, got {out.ravel()}"
+        )
 
     @pytest.mark.parametrize(
         "foreground, background, match",

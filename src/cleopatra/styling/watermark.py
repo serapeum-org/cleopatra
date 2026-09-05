@@ -58,15 +58,15 @@ _MARK_ZORDER = 1_000_001
 
 
 def stamp_mark(
-    fig: "Figure",
-    path: "str | os.PathLike | np.ndarray",
+    fig: Figure,
+    path: str | os.PathLike | np.ndarray,
     *,
     frac: float = 0.11,
     corner: str = "lower right",
-    margin: "float | tuple[float, float]" = 0.025,
+    margin: float | tuple[float, float] = 0.025,
     shadow: bool = True,
     blur: float = DEFAULT_BLUR,
-) -> "Axes":
+) -> Axes:
     """Stamp a logo / watermark image onto a figure, sized as a fraction of it.
 
     Places `path` in one corner of `fig` on a frameless inset axes in
@@ -258,7 +258,7 @@ def _float_to_uint8(arr: np.ndarray) -> np.ndarray:
     return (np.clip(arr, 0.0, 1.0) * 255).round().astype(np.uint8)
 
 
-def _as_rgba(path: "str | os.PathLike | np.ndarray") -> np.ndarray:
+def _as_rgba(path: str | os.PathLike | np.ndarray) -> np.ndarray:
     """Return the mark as an ``(H, W, 4)`` ``uint8`` RGBA array.
 
     Args:
@@ -298,7 +298,7 @@ def _as_rgba(path: "str | os.PathLike | np.ndarray") -> np.ndarray:
         return np.asarray(im.convert("RGBA"))
 
 
-def _as_margins(margin: "float | tuple[float, float]") -> tuple[float, float]:
+def _as_margins(margin: float | tuple[float, float]) -> tuple[float, float]:
     """Normalise `margin` to an ``(x, y)`` pair of figure fractions.
 
     Args:
