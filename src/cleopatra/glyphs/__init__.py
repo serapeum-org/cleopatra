@@ -7,7 +7,8 @@ glyph from its own submodule, e.g.
 
 Subpackages:
 
-- `base` -- shared foundation (`glyph` base class, `animation`, `hillshade`).
+- `base` -- shared foundation (`glyph` base class, `animation`, `hillshade`,
+  `compositing`).
 - `gridded` -- values sampled over a 2-D domain: `array_glyph`, `mesh_glyph`,
   `vector_glyph`.
 - `primitives` -- explicit geometry you pass in: `scatter_glyph`, `line_glyph`,

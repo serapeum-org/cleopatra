@@ -29,6 +29,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 from PIL import Image, ImageFilter
 
+from cleopatra.glyphs.base.compositing import alpha_over
+
 if TYPE_CHECKING:
     import os
 
@@ -353,38 +355,6 @@ def _corner_origin(
     return x0, y0
 
 
-def _alpha_over(foreground: np.ndarray, background: np.ndarray) -> np.ndarray:
-    """Composite RGBA over RGBA (Porter-Duff "over"), un-premultiplied.
-
-    The colour a pixel ends up with is the foreground's, weighted by its own
-    alpha, plus the background's weighted by whatever coverage the foreground
-    left over -- so the halo contributes black only where the mark does not
-    already cover, including partially across a soft edge.
-
-    Args:
-        foreground: An ``(H, W, 4)`` float array in ``[0, 1]``.
-        background: An ``(H, W, 4)`` float array in ``[0, 1]``, same shape.
-
-    Returns:
-        np.ndarray: The composited ``(H, W, 4)`` float array in ``[0, 1]``.
-
-    Notes:
-        This is the same operator issue #306 proposes to centralise as
-        `glyphs.base.compositing.alpha_over`; swap this private helper for it
-        once that lands rather than keeping two copies.
-    """
-    fg_a = foreground[..., 3:4]
-    bg_a = background[..., 3:4]
-    out_a = fg_a + bg_a * (1.0 - fg_a)
-    # Guard the un-premultiply where nothing covers at all; those pixels are
-    # fully transparent, so their colour is arbitrary -- keep it at zero.
-    safe = np.where(out_a > 0.0, out_a, 1.0)
-    rgb = (
-        foreground[..., :3] * fg_a + background[..., :3] * bg_a * (1.0 - fg_a)
-    ) / safe
-    return np.concatenate([np.where(out_a > 0.0, rgb, 0.0), out_a], axis=2)
-
-
 def _composite_halo(image: np.ndarray, blur: float) -> tuple[np.ndarray, float, float]:
     """Composite a mark over its own blurred halo, returning the growth factors.
 
@@ -419,6 +389,6 @@ def _composite_halo(image: np.ndarray, blur: float) -> tuple[np.ndarray, float, 
     mark = np.zeros_like(halo)
     mark[pad : pad + img_h, pad : pad + img_w] = image / 255.0
 
-    out = _alpha_over(mark, halo)
+    out = alpha_over(mark, halo)
     pad_h, pad_w = out.shape[:2]
     return (out * 255).round().astype(np.uint8), pad_w / img_w, pad_h / img_h
