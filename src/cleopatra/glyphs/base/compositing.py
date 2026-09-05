@@ -51,8 +51,10 @@ def alpha_over(foreground: np.ndarray, background: np.ndarray) -> np.ndarray:
     Returns:
         np.ndarray: The composited floating-point array -- ``(H, W, 3)`` when
         the background is RGB, ``(H, W, 4)`` when it is RGBA. Floating-point
-        inputs keep their precision (a ``float32`` pair yields a ``float32``
-        result); integer inputs are promoted to ``float64``.
+        inputs keep their own width -- they are never upcast, so a ``float32``
+        pair yields a ``float32`` result and a ``float16`` pair blends in
+        ``float16`` (at ``float16`` precision, not a promise of more); integer
+        and boolean inputs are promoted to ``float64``.
 
     Raises:
         ValueError: If the foreground is not ``(H, W, 4)``, the background is not
