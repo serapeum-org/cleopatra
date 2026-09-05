@@ -180,9 +180,12 @@ class TexturedGlobeGlyph:
             sampling: How each mesh face takes its colour from the texture. `"point"` (default) samples one
                 texture cell at the face centre -- cheap, and the right choice for a photographic basemap where
                 neighbouring cells are alike. `"area"` reduces the whole texture block a face covers,
-                alpha-aware: a face's colour is the mean of the opaque cells it spans (or transparent if it spans
-                none), so a feature narrower than one mesh face still paints instead of falling between sample
-                points. Faces finer than a single texture cell fall back to point sampling. Both modes keep the
+                alpha-aware: a face's colour is the mean of the non-transparent cells (`alpha > 0`) it spans (or
+                transparent if it spans none), so a feature narrower than one mesh face still paints instead of
+                falling between sample points. A cell counts once regardless of its alpha and the RGB mean is not
+                alpha-premultiplied, so a face over feathered/anti-aliased edges keeps their mean colour and a
+                mean alpha (below 1). Faces finer than a single texture cell fall back to point sampling. Both
+                modes keep the
                 sample-once/rotate-per-frame contract -- the reduction runs once in `_prepare`. Defaults to
                 `"point"`.
             brightness: Multiplier applied to the RGB channels before clipping to `[0, 1]`. `< 1` darkens, `> 1`
@@ -366,11 +369,13 @@ class TexturedGlobeGlyph:
         """Reduce the texture block each face covers, alpha-aware (the "area" mode).
 
         The texture pixel range is tiled into one contiguous block per face. A face's
-        colour is the mean of the *opaque* cells in its block (so a small feature is
-        kept visible rather than faded toward transparent by the empty cells around
-        it); a block with cells but none opaque renders transparent. Faces whose block
-        holds no texture cell at all -- the mesh is finer than the texture there -- fall
-        back to the point sample, so a coarse texture never gains gaps.
+        colour is the mean of the *non-transparent* cells (`alpha > 0`) in its block (so
+        a small feature is kept visible rather than faded toward transparent by the empty
+        cells around it); a block with cells but none painted renders transparent. Each
+        cell counts once regardless of its alpha and the RGB mean is un-premultiplied, so
+        a face over feathered edges keeps their mean colour and a mean alpha below 1.
+        Faces whose block holds no texture cell at all -- the mesh is finer than the
+        texture there -- fall back to the point sample, so a coarse texture never gains gaps.
 
         Args:
             point_face: The `(n_lat - 1, n_lon - 1, 4)` point-sampled colours, used as
@@ -392,26 +397,27 @@ class TexturedGlobeGlyph:
         # blocks, so this is derived from the bounds, not from a reduction).
         cell_count = np.diff(row_bounds)[:, None] * np.diff(col_bounds)[None, :]
 
-        opaque = self._texture[..., 3] > 0.0
-        masked = self._texture * opaque[..., None]
-        opaque_sum = np.add.reduceat(
+        # A cell contributes to the reduction when it is non-transparent (alpha > 0).
+        nontransparent = self._texture[..., 3] > 0.0
+        masked = self._texture * nontransparent[..., None]
+        nontransparent_sum = np.add.reduceat(
             np.add.reduceat(masked, row_starts, axis=0), col_starts, axis=1
         )
-        opaque_count = np.add.reduceat(
-            np.add.reduceat(opaque.astype(float), row_starts, axis=0),
+        nontransparent_count = np.add.reduceat(
+            np.add.reduceat(nontransparent.astype(float), row_starts, axis=0),
             col_starts,
             axis=1,
         )
 
         # Start from the point sample so empty-block faces keep it; overwrite every
         # face whose block has texture cells with the alpha-aware reduction (mean of
-        # the opaque cells, or fully transparent when the block has none).
+        # the non-transparent cells, or fully transparent when the block has none).
         face = point_face.copy()
         has_cells = cell_count > 0
         reduced = np.zeros_like(face)
-        has_opaque = opaque_count > 0
-        reduced[has_opaque] = (
-            opaque_sum[has_opaque] / opaque_count[has_opaque][:, None]
+        has_paint = nontransparent_count > 0
+        reduced[has_paint] = (
+            nontransparent_sum[has_paint] / nontransparent_count[has_paint][:, None]
         )
         face[has_cells] = reduced[has_cells]
         return face
