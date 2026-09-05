@@ -233,6 +233,43 @@ class TestAlphaOver:
         )
 
     @pytest.mark.parametrize(
+        "fg_dtype, bg_dtype, expected",
+        [
+            (np.float16, np.float16, np.float16),
+            (np.float32, np.float64, np.float64),
+            (bool, bool, np.float64),
+        ],
+    )
+    def test_dtype_promotion_matrix(self, fg_dtype, bg_dtype, expected):
+        """Floating widths are preserved; non-floating inputs promote to float64.
+
+        Args:
+            fg_dtype: The foreground array dtype.
+            bg_dtype: The background array dtype.
+            expected: The expected result dtype.
+
+        Test scenario:
+            A float16 pair stays float16, mixed float32/float64 resolves to
+            float64, and boolean inputs promote to float64.
+        """
+        fg = np.ones((2, 2, 4), dtype=fg_dtype)
+        bg = np.ones((2, 2, 4), dtype=bg_dtype)
+        out = alpha_over(fg, bg)
+        assert out.dtype == expected, f"Expected {expected} result, got {out.dtype}"
+
+    def test_empty_array_produces_empty_result(self):
+        """A zero-sized image composites to a matching empty array without error.
+
+        Test scenario:
+            An (0, 5, 4) foreground over an (0, 5, 4) background returns an empty
+            (0, 5, 4) array rather than raising or dividing by zero.
+        """
+        out = alpha_over(np.zeros((0, 5, 4)), np.zeros((0, 5, 4)))
+        assert out.shape == (0, 5, 4), (
+            f"Empty input should give an empty (0, 5, 4) result, got {out.shape}"
+        )
+
+    @pytest.mark.parametrize(
         "foreground, background, match",
         [
             (np.zeros((1, 1, 3)), np.zeros((1, 1, 3)), "foreground must be"),
