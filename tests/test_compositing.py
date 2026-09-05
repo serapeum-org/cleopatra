@@ -129,6 +129,18 @@ class TestAlphaOver:
         out = alpha_over(np.zeros((2, 2, 4)), np.ones((2, 2, 4)))
         assert out.dtype == np.dtype(float), f"RGBA result should be float, got {out.dtype}"
 
+    def test_float32_inputs_preserve_precision(self):
+        """A float32 foreground and background composite to a float32 result.
+
+        Test scenario:
+            Floating-point inputs keep their own width, so a float32 pair stays
+            float32 rather than being upcast to float64.
+        """
+        fg = np.zeros((2, 2, 4), dtype=np.float32)
+        bg = np.ones((2, 2, 4), dtype=np.float32)
+        out = alpha_over(fg, bg)
+        assert out.dtype == np.float32, f"float32 inputs should stay float32, got {out.dtype}"
+
     def test_opaque_foreground_over_rgba_reports_full_coverage(self):
         """An opaque foreground over an RGBA canvas yields its colour at full alpha.
 

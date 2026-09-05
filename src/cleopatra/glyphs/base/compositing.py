@@ -44,8 +44,10 @@ def alpha_over(foreground: np.ndarray, background: np.ndarray) -> np.ndarray:
             ``[0, 1]``, sharing the foreground's ``(H, W)``.
 
     Returns:
-        np.ndarray: The composited float array -- ``(H, W, 3)`` when the
-        background is RGB, ``(H, W, 4)`` when it is RGBA.
+        np.ndarray: The composited floating-point array -- ``(H, W, 3)`` when
+        the background is RGB, ``(H, W, 4)`` when it is RGBA. Floating-point
+        inputs keep their precision (a ``float32`` pair yields a ``float32``
+        result); integer inputs are promoted to ``float64``.
 
     Raises:
         ValueError: If the foreground is not ``(H, W, 4)``, the background is not
@@ -90,8 +92,15 @@ def alpha_over(foreground: np.ndarray, background: np.ndarray) -> np.ndarray:
 
             ```
     """
-    foreground = np.asarray(foreground, dtype=float)
-    background = np.asarray(background, dtype=float)
+    # Coerce to floating point for the division, but keep the caller's own float
+    # width -- a float32 raster stays float32 rather than doubling to float64.
+    # Only non-floating inputs (int, bool) are promoted, to float64.
+    foreground = np.asarray(foreground)
+    background = np.asarray(background)
+    if not np.issubdtype(foreground.dtype, np.floating):
+        foreground = foreground.astype(float)
+    if not np.issubdtype(background.dtype, np.floating):
+        background = background.astype(float)
 
     if foreground.ndim != 3 or foreground.shape[-1] != 4:
         raise ValueError(
