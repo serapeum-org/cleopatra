@@ -56,6 +56,7 @@ class ColorScale(StrEnum):
     LINEAR = "linear"
     POWER = "power"
     SYM_LOGNORM = "sym-lognorm"
+    LOGNORM = "lognorm"
     BOUNDARY_NORM = "boundary-norm"
     MIDPOINT = "midpoint"
 

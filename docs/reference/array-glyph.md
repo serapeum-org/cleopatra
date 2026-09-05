@@ -73,7 +73,8 @@ to title `facet` panels by coordinate.
   slab) instead of holding the whole stack in memory.
 - **The colour scale is chosen via the `ColorScaling` group object** —
   `plot(color=ColorScaling.power(gamma=...))`, `ColorScaling.sym_log(...)`,
-  `ColorScaling.midpoint(at=...)`, `ColorScaling.boundary(bounds=...)`, etc. (the loose
+  `ColorScaling.log()`, `ColorScaling.midpoint(at=...)`,
+  `ColorScaling.boundary(bounds=...)`, etc. (the loose
   `color_scale` keyword was removed and now raises).
 
 !!! note "Changes from earlier versions"

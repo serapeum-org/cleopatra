@@ -2186,8 +2186,8 @@ class ArrayGlyph(GeoMixin, Glyph):
         Builds the matplotlib norm from `default_options["color_scale"]`
         and dispatches to the requested `kind` of plot. All four kinds
         share the same norm/vmin/vmax resolution path so the existing
-        `color_scale` enum (linear/power/sym-lognorm/boundary-norm/
-        midpoint) works identically for every render kind.
+        `color_scale` enum (linear/power/sym-lognorm/lognorm/
+        boundary-norm/midpoint) works identically for every render kind.
 
         When `self._coords` is set (curvilinear / non-uniform grid),
         the `(x, y)` arrays are forwarded as the first positional

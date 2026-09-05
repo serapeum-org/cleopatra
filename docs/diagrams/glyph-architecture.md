@@ -214,6 +214,7 @@ classDiagram
         LINEAR
         POWER
         SYM_LOGNORM
+        LOGNORM
         BOUNDARY_NORM
         MIDPOINT
     }

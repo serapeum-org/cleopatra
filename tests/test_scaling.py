@@ -39,6 +39,7 @@ class TestColorScalingToOptions:
             (ColorScaling.power(gamma=0.3), "color_scale"),
             (ColorScaling.boundary(bounds=[0, 1, 2]), "bounds"),
             (ColorScaling.sym_log(threshold=0.01, scale=0.1), "line_threshold"),
+            (ColorScaling.log(), "color_scale"),
         ],
     )
     def test_variant_emits_all_six_keys(self, scale, key):
@@ -80,6 +81,54 @@ class TestColorScalingBuildNorm:
         norm, _ = ColorScaling.power(gamma=0.5).build_norm(np.array([0.0, 10.0]))
         assert isinstance(norm, mcolors.PowerNorm)
         assert norm.gamma == 0.5
+
+    def test_log_builds_a_log_norm(self):
+        """The log scale builds a `LogNorm` over the positive tick range."""
+        norm, cbar_kw = ColorScaling.log().build_norm(np.array([1.0, 10.0, 100.0]))
+        assert isinstance(norm, mcolors.LogNorm)
+        assert (norm.vmin, norm.vmax) == (1.0, 100.0), (
+            f"LogNorm should span the ticks, got ({norm.vmin}, {norm.vmax})"
+        )
+        assert cbar_kw["extend"] == "neither"
+
+    def test_log_on_non_positive_range_raises(self):
+        """A log scale whose range starts at zero raises, steering at sym_log."""
+        scale = ColorScaling.log()
+        ticks = np.array([0.0, 10.0, 100.0])
+        with pytest.raises(ValueError, match="strictly-positive"):
+            scale.build_norm(ticks)
+
+    def test_log_on_constant_positive_data_widens_the_range(self):
+        """A constant positive field (single tick) builds a LogNorm, not a crash.
+
+        Test scenario:
+            Uniform data yields one tick, so vmin == vmax. A log scale cannot
+            span a zero-width range; the branch widens it (like the data-style
+            path) rather than raising, matching the other scale kinds.
+        """
+        norm, _ = ColorScaling.log().build_norm(np.array([5.0]))
+        assert isinstance(norm, mcolors.LogNorm)
+        assert norm.vmin == 5.0, f"vmin should stay 5.0, got {norm.vmin}"
+        assert norm.vmax == 6.0, f"vmax should widen to 6.0, got {norm.vmax}"
+
+    def test_log_on_constant_negative_data_reports_real_bounds(self):
+        """A constant non-positive field raises with its real bound, not a widened one.
+
+        Test scenario:
+            The degenerate-range widening applies only to strictly-positive
+            constants, so an all-negative field is not widened before the error
+            is built -- the message reports the real value and steers at sym_log.
+        """
+        scale = ColorScaling.log()
+        ticks = np.array([-5.0])
+        with pytest.raises(ValueError, match=r"vmin=-5\.0, vmax=-5\.0"):
+            scale.build_norm(ticks)
+
+    def test_log_options_round_trip(self):
+        """`log()` emits `color_scale='lognorm'` and reconstructs to LOGNORM."""
+        opts = ColorScaling.log().to_options()
+        assert opts["color_scale"] == "lognorm"
+        assert ColorScaling.from_options(opts).kind.name == "LOGNORM"
 
 
 class TestParamGroupsEmitOnlySetFields:

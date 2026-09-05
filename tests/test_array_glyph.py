@@ -222,6 +222,17 @@ class TestPlotArray:
 
         assert isinstance(fig, Figure)
 
+    def test_plot_array_color_scale_log(self):
+        """`color=ColorScaling.log()` puts a `LogNorm` on the rendered image."""
+        array = ArrayGlyph(np.array([[1.0, 10.0], [100.0, 1000.0]]))
+        fig, ax = array.plot(color=ColorScaling.log(), cmap="Blues")
+        assert isinstance(fig, Figure)
+        assert type(array.im.norm).__name__ == "LogNorm", (
+            f"expected a LogNorm, got {type(array.im.norm).__name__}"
+        )
+        assert array.im.norm.vmin == 1.0, f"vmin should be 1.0, got {array.im.norm.vmin}"
+        assert array.im.norm.vmax == 1000.0, f"vmax should be 1000.0, got {array.im.norm.vmax}"
+
     def test_plot_array_display_cell_values(
         self,
         arr: np.ndarray,
