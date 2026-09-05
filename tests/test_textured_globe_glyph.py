@@ -650,6 +650,23 @@ class TestAreaSampling:
             f"the face RGB should be the patch red, got {lit[0, :3]}"
         )
 
+    def test_area_reduction_is_unweighted_across_differing_alpha(self):
+        """RGB averages unweighted across cells of differing alpha (not alpha-premultiplied)."""
+        tex = np.zeros((2, 2, 4), dtype=np.uint8)
+        tex[0, 0] = (255, 0, 0, 64)  # red, alpha ~0.251
+        tex[0, 1] = (0, 0, 255, 192)  # blue, alpha ~0.753
+        face = TexturedGlobeGlyph(tex, n_lon=2, n_lat=2, sampling="area").face_colors
+        rgba = face[0, 0]
+        assert np.isclose(rgba[0], 0.5, atol=2e-3), (
+            f"red should be the unweighted mean 0.5, not the alpha-weighted 0.25, got {rgba[0]}"
+        )
+        assert np.isclose(rgba[2], 0.5, atol=2e-3), (
+            f"blue should be the unweighted mean 0.5, got {rgba[2]}"
+        )
+        assert np.isclose(rgba[3], 128 / 255, atol=2e-3), (
+            f"alpha should be the mean of the two cell alphas, got {rgba[3]}"
+        )
+
     def test_area_matches_point_when_mesh_finer_than_texture(self):
         """When the mesh is finer than the texture, area falls back to point cell-for-cell (no gaps)."""
         coarse = np.zeros((4, 8, 4), dtype=np.uint8)
