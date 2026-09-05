@@ -112,6 +112,7 @@ class TexturedGlobeGlyph:
         tilt_deg: Axial tilt of the polar axis from vertical, in degrees.
         n_lon: Number of longitude samples in the sphere mesh.
         n_lat: Number of latitude samples in the sphere mesh.
+        sampling: How each face takes its colour from the texture (`"point"` or `"area"`).
         brightness: Multiplier applied to the RGB channels (clipped to `[0, 1]`).
         sun: The unit light direction in world space, or `None` for even lighting.
         ambient: The ambient floor (fraction) kept on the unlit side.
@@ -156,6 +157,7 @@ class TexturedGlobeGlyph:
         tilt_deg: float = EARTH_TILT_DEG,
         n_lon: int = 180,
         n_lat: int = 90,
+        sampling: str = "point",
         brightness: float = 1.0,
         sun: tuple[float, float, float] | None = None,
         ambient: float = DEFAULT_AMBIENT,
@@ -175,6 +177,14 @@ class TexturedGlobeGlyph:
             tilt_deg: Axial tilt of the polar axis from vertical, in degrees. Defaults to Earth's 23.44 deg.
             n_lon: Longitude samples in the sphere mesh (>= 2). Higher is sharper but quadratically slower to draw.
             n_lat: Latitude samples in the sphere mesh (>= 2). Higher is sharper but quadratically slower to draw.
+            sampling: How each mesh face takes its colour from the texture. `"point"` (default) samples one
+                texture cell at the face centre -- cheap, and the right choice for a photographic basemap where
+                neighbouring cells are alike. `"area"` reduces the whole texture block a face covers,
+                alpha-aware: a face's colour is the mean of the opaque cells it spans (or transparent if it spans
+                none), so a feature narrower than one mesh face still paints instead of falling between sample
+                points. Faces finer than a single texture cell fall back to point sampling. Both modes keep the
+                sample-once/rotate-per-frame contract -- the reduction runs once in `_prepare`. Defaults to
+                `"point"`.
             brightness: Multiplier applied to the RGB channels before clipping to `[0, 1]`. `< 1` darkens, `> 1`
                 brightens. Must be `>= 0`.
             sun: Light direction as a length-3 `(x, y, z)` vector in world space (the same frame the globe is drawn
@@ -191,9 +201,9 @@ class TexturedGlobeGlyph:
 
         Raises:
             ValueError: If `texture` is not an `(H, W, 3)`/`(H, W, 4)` array with `H, W >= 2`, if `n_lon`/`n_lat` are
-                `< 2`, if `brightness` is negative, if `sun` is not a length-3 finite non-zero vector (or `None`), if
-                `ambient` is outside `[0, 1]`, if `ax` is given but is not a 3-D axes, or if an unknown render option
-                is passed.
+                `< 2`, if `sampling` is not `"point"` or `"area"`, if `brightness` is negative, if `sun` is not a
+                length-3 finite non-zero vector (or `None`), if `ambient` is outside `[0, 1]`, if `ax` is given but
+                is not a 3-D axes, or if an unknown render option is passed.
 
         Examples:
             ```python
@@ -209,6 +219,10 @@ class TexturedGlobeGlyph:
             raise ValueError(
                 f"n_lon and n_lat must each be >= 2; got n_lon={n_lon}, n_lat={n_lat}."
             )
+        if sampling not in ("point", "area"):
+            raise ValueError(
+                f'sampling must be "point" or "area"; got {sampling!r}.'
+            )
         if brightness < 0:
             raise ValueError(f"brightness must be >= 0; got {brightness}.")
         if ax is not None and not isinstance(ax, Axes3D):
@@ -221,6 +235,7 @@ class TexturedGlobeGlyph:
         self._tilt_deg = float(tilt_deg)
         self._n_lon = int(n_lon)
         self._n_lat = int(n_lat)
+        self._sampling = sampling
         self._sun = self._normalize_sun(sun)
         self._ambient = self._validate_ambient(ambient)
         self._fig = fig
@@ -295,8 +310,8 @@ class TexturedGlobeGlyph:
         """Sample the texture and build the base sphere mesh once, caching the results on the instance.
 
         Computes and caches the un-spun vertex coordinates `(3, n_lat * n_lon)` and the per-face `facecolors`
-        `(n_lat - 1, n_lon - 1, 4)` sampled at face centres. Idempotent: repeated calls (e.g. one per animation
-        frame) return immediately.
+        `(n_lat - 1, n_lon - 1, 4)`, coloured per the `sampling` mode. Idempotent: repeated calls (e.g. one per
+        animation frame) return immediately.
         """
         if self._base_xyz is not None:
             return
@@ -309,10 +324,28 @@ class TexturedGlobeGlyph:
         z = np.sin(lat_grid)
         self._base_xyz = np.stack([x.ravel(), y.ravel(), z.ravel()])
 
-        # Sample the texture at each face centre -> (n_lat - 1, n_lon - 1, 4).
+        # Colour each face from the texture -> (n_lat - 1, n_lon - 1, 4): a point
+        # sample at the face centre, or (sampling="area") an alpha-aware reduction
+        # of the whole texture block the face covers.
+        self._facecolors = self._sample_facecolors(lat_edges, lon_edges)
+
+    def _sample_facecolors(
+        self, lat_edges: np.ndarray, lon_edges: np.ndarray
+    ) -> np.ndarray:
+        """Colour every mesh face from the texture, per the `sampling` mode.
+
+        Args:
+            lat_edges: The `(n_lat,)` latitude mesh edges, north (+90) to south (-90).
+            lon_edges: The `(n_lon,)` longitude mesh edges, west (-180) to east (+180).
+
+        Returns:
+            numpy.ndarray: An `(n_lat - 1, n_lon - 1, 4)` float RGBA array in `[0, 1]`.
+        """
+        height, width = self._texture.shape[:2]
+        # Point sample at each face centre. This is the "point" result outright, and
+        # the fallback in "area" mode for faces finer than a single texture cell.
         lat_centers = 0.5 * (lat_edges[:-1] + lat_edges[1:])
         lon_centers = 0.5 * (lon_edges[:-1] + lon_edges[1:])
-        height, width = self._texture.shape[:2]
         rows = np.clip(
             np.round((90.0 - lat_centers) / 180.0 * (height - 1)).astype(int),
             0,
@@ -324,7 +357,64 @@ class TexturedGlobeGlyph:
             width - 1,
         )
         row_idx, col_idx = np.meshgrid(rows, cols, indexing="ij")
-        self._facecolors = self._texture[row_idx, col_idx]
+        point_face = self._texture[row_idx, col_idx]
+        if self._sampling == "point":
+            return point_face
+        return self._area_facecolors(point_face)
+
+    def _area_facecolors(self, point_face: np.ndarray) -> np.ndarray:
+        """Reduce the texture block each face covers, alpha-aware (the "area" mode).
+
+        The texture pixel range is tiled into one contiguous block per face. A face's
+        colour is the mean of the *opaque* cells in its block (so a small feature is
+        kept visible rather than faded toward transparent by the empty cells around
+        it); a block with cells but none opaque renders transparent. Faces whose block
+        holds no texture cell at all -- the mesh is finer than the texture there -- fall
+        back to the point sample, so a coarse texture never gains gaps.
+
+        Args:
+            point_face: The `(n_lat - 1, n_lon - 1, 4)` point-sampled colours, used as
+                the fallback for faces finer than one texture cell.
+
+        Returns:
+            numpy.ndarray: An `(n_lat - 1, n_lon - 1, 4)` float RGBA array in `[0, 1]`.
+        """
+        height, width = self._texture.shape[:2]
+        # Integer block boundaries tiling [0, H] x [0, W] with no gaps or overlaps;
+        # face (i, j) spans rows [row_bounds[i], row_bounds[i+1]) x the col analog.
+        row_bounds = np.round(np.linspace(0, height, self._n_lat)).astype(int)
+        col_bounds = np.round(np.linspace(0, width, self._n_lon)).astype(int)
+        # np.add.reduceat needs start indices in [0, len); the trailing block runs to
+        # the array end, which equals H/W by construction, so the tiling stays exact.
+        row_starts = np.clip(row_bounds[:-1], 0, height - 1)
+        col_starts = np.clip(col_bounds[:-1], 0, width - 1)
+        # Exact per-face cell count from the block sizes (reduceat mis-handles empty
+        # blocks, so this is derived from the bounds, not from a reduction).
+        cell_count = np.diff(row_bounds)[:, None] * np.diff(col_bounds)[None, :]
+
+        opaque = self._texture[..., 3] > 0.0
+        masked = self._texture * opaque[..., None]
+        opaque_sum = np.add.reduceat(
+            np.add.reduceat(masked, row_starts, axis=0), col_starts, axis=1
+        )
+        opaque_count = np.add.reduceat(
+            np.add.reduceat(opaque.astype(float), row_starts, axis=0),
+            col_starts,
+            axis=1,
+        )
+
+        # Start from the point sample so empty-block faces keep it; overwrite every
+        # face whose block has texture cells with the alpha-aware reduction (mean of
+        # the opaque cells, or fully transparent when the block has none).
+        face = point_face.copy()
+        has_cells = cell_count > 0
+        reduced = np.zeros_like(face)
+        has_opaque = opaque_count > 0
+        reduced[has_opaque] = (
+            opaque_sum[has_opaque] / opaque_count[has_opaque][:, None]
+        )
+        face[has_cells] = reduced[has_cells]
+        return face
 
     @staticmethod
     def _rotation_x(deg: float) -> np.ndarray:
@@ -556,6 +646,11 @@ class TexturedGlobeGlyph:
         return self._n_lat
 
     @property
+    def sampling(self) -> str:
+        """How each face takes its colour from the texture (`"point"` or `"area"`)."""
+        return self._sampling
+
+    @property
     def brightness(self) -> float:
         """The brightness multiplier applied to the RGB channels."""
         return self._brightness
@@ -574,6 +669,35 @@ class TexturedGlobeGlyph:
     def default_options(self) -> dict:
         """The resolved render options (`figsize`, `elev`, `azim`, `background`)."""
         return self._default_options
+
+    @property
+    def face_colors(self) -> np.ndarray:
+        """The per-face RGBA colours the globe will paint, `(n_lat - 1, n_lon - 1, 4)` float in `[0, 1]`.
+
+        These are the base sampled colours the mesh is filled with (before any per-frame directional
+        lighting), so a caller can check whether its data survived the texture sampling -- e.g. that a
+        small feature still lands on at least one face -- without a `draw()` and without reaching into
+        private state. Reading it samples the texture once (the sample-once contract); a copy is returned,
+        so mutating it never disturbs the glyph's cache.
+
+        Examples:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph
+            >>> texture = np.zeros((90, 180, 4), dtype=np.uint8)
+            >>> texture[10:14, 20:24] = (255, 0, 0, 255)  # a small opaque patch
+            >>> globe = TexturedGlobeGlyph(texture, n_lon=90, n_lat=45, sampling="area")
+            >>> painted = globe.face_colors
+            >>> painted.shape
+            (44, 89, 4)
+            >>> int((painted[..., 3] > 0).sum()) > 0  # the patch survived
+            True
+
+            ```
+        """
+        self._prepare()
+        assert self._facecolors is not None  # populated by _prepare()
+        return self._facecolors.copy()
 
     @classmethod
     def option_keys(cls) -> set[str]:

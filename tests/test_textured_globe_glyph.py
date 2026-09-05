@@ -577,6 +577,106 @@ class TestTiltTransform:
         assert inp[0] == 1.0  # the returned array does not alias the input
 
 
+class TestAreaSampling:
+    """Tests for the sampling="area" reduction mode (issue #325)."""
+
+    @staticmethod
+    def _subface_patch() -> np.ndarray:
+        """A 120x240 RGBA texture with one 3x3 opaque red patch narrower than a mesh face."""
+        tex = np.zeros((120, 240, 4), dtype=np.uint8)
+        tex[40:43, 100:103] = (255, 0, 0, 255)
+        return tex
+
+    @staticmethod
+    def _painted(glyph) -> int:
+        """Return how many faces the glyph would paint (alpha > 0), without drawing."""
+        return int((glyph.face_colors[..., 3] > 0).sum())
+
+    def test_default_sampling_is_point(self, texture):
+        """The sampling mode defaults to the cheap point lookup."""
+        assert TexturedGlobeGlyph(texture).sampling == "point", "default should be 'point'"
+
+    def test_point_sampling_drops_a_subface_feature(self):
+        """Point sampling misses a feature narrower than one mesh face -- the #325 gap."""
+        glyph = TexturedGlobeGlyph(
+            self._subface_patch(), n_lon=24, n_lat=12, sampling="point"
+        )
+        assert self._painted(glyph) == 0, "point sampling should drop the sub-face patch"
+
+    def test_area_sampling_keeps_a_subface_feature(self):
+        """Area sampling reduces the covered block, so the sub-face feature still paints."""
+        glyph = TexturedGlobeGlyph(
+            self._subface_patch(), n_lon=24, n_lat=12, sampling="area"
+        )
+        assert self._painted(glyph) > 0, "area sampling should keep the sub-face patch"
+
+    def test_area_reduction_is_alpha_aware(self):
+        """A face over a mostly-transparent block takes the opaque cells' colour, not a faded average."""
+        glyph = TexturedGlobeGlyph(
+            self._subface_patch(), n_lon=24, n_lat=12, sampling="area"
+        )
+        fc = glyph.face_colors
+        lit = fc[fc[..., 3] > 0]
+        assert lit.shape[0] >= 1, "at least one face must be painted"
+        assert np.allclose(lit[0], [1.0, 0.0, 0.0, 1.0]), (
+            f"the reduced face should keep the opaque red patch, got {lit[0]}"
+        )
+
+    def test_area_matches_point_when_mesh_finer_than_texture(self):
+        """When the mesh is finer than the texture, area falls back to point (no gaps)."""
+        coarse = np.empty((4, 8, 4), dtype=np.uint8)
+        coarse[:] = (10, 20, 30, 255)
+        point = TexturedGlobeGlyph(coarse, n_lon=40, n_lat=20, sampling="point")
+        area = TexturedGlobeGlyph(coarse, n_lon=40, n_lat=20, sampling="area")
+        assert np.allclose(point.face_colors, area.face_colors), (
+            "area must match point where the mesh is finer than the texture"
+        )
+
+    def test_area_fully_transparent_texture_paints_nothing(self):
+        """A fully transparent texture reduces to nothing under area sampling."""
+        clear = np.zeros((60, 120, 4), dtype=np.uint8)  # alpha all zero
+        glyph = TexturedGlobeGlyph(clear, n_lon=30, n_lat=15, sampling="area")
+        assert self._painted(glyph) == 0, "a transparent texture must paint no faces"
+
+    def test_invalid_sampling_raises(self, texture):
+        """An unknown sampling mode is rejected at construction."""
+        with pytest.raises(ValueError, match=r"sampling must be"):
+            TexturedGlobeGlyph(texture, sampling="bilinear")
+
+
+class TestFaceColors:
+    """Tests for the public face_colors accessor (issue #325)."""
+
+    def test_shape_matches_mesh(self, texture):
+        """face_colors is one RGBA row per mesh face: (n_lat - 1, n_lon - 1, 4)."""
+        glyph = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12)
+        assert glyph.face_colors.shape == (11, 23, 4), "one RGBA per face expected"
+
+    def test_available_without_draw(self, texture):
+        """Reading face_colors samples the texture without needing a draw()."""
+        glyph = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12)
+        fc = glyph.face_colors  # no draw() called
+        assert np.issubdtype(fc.dtype, np.floating), "colours are float RGBA in [0, 1]"
+
+    def test_returns_a_copy(self, texture):
+        """Mutating the returned array does not disturb the glyph's cache."""
+        glyph = TexturedGlobeGlyph(texture, n_lon=24, n_lat=12)
+        first = glyph.face_colors
+        first[:] = 0.0
+        assert glyph.face_colors.max() > 0.0, (
+            "the cache must be unaffected by mutating the returned copy"
+        )
+
+    def test_reflects_the_sampling_mode(self):
+        """face_colors reports the area-reduced colours when sampling='area'."""
+        tex = np.zeros((120, 240, 4), dtype=np.uint8)
+        tex[40:43, 100:103] = (255, 0, 0, 255)
+        point = TexturedGlobeGlyph(tex, n_lon=24, n_lat=12, sampling="point")
+        area = TexturedGlobeGlyph(tex, n_lon=24, n_lat=12, sampling="area")
+        assert int((point.face_colors[..., 3] > 0).sum()) == 0, "point drops the patch"
+        assert int((area.face_colors[..., 3] > 0).sum()) > 0, "area keeps the patch"
+
+
 def test_no_new_dependency():
     """The globe uses mpl_toolkits.mplot3d, which ships with matplotlib -- no new dependency."""
     import mpl_toolkits.mplot3d as m3d
