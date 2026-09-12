@@ -421,6 +421,13 @@ class TestColorScalingEqualize:
         with pytest.raises(ValueError, match="needs the data values"):
             ColorScaling.equalize().build_norm(np.array([0.0, 1.0]))
 
+    def test_all_non_finite_values_raise(self):
+        """A field with no finite values raises rather than ranking an empty set."""
+        with pytest.raises(ValueError, match="no finite values"):
+            ColorScaling.equalize().build_norm(
+                np.array([0.0, 1.0]), values=np.array([np.nan, np.inf, -np.inf])
+            )
+
     def test_samples_round_trips_through_options(self):
         """`samples` survives the flat-options round-trip."""
         restored = ColorScaling.from_options(
