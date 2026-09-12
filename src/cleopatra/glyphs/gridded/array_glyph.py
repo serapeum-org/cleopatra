@@ -267,12 +267,16 @@ class XarrayColourOptions(TypedDict, total=False):
         extend: Colorbar arrow extension, by default `None` (auto-resolve).
         cbar_kwargs: Extra keyword arguments forwarded to `fig.colorbar`,
             by default `None`.
+        norm: A pre-built `matplotlib.colors.Normalize` to render with directly
+            (the escape hatch for any norm not covered by a `ColorScaling`
+            variant), by default `None`. Equivalent to `plot(color=my_norm)`.
     """
 
     robust: bool
     center: float | None
     extend: Literal["neither", "both", "min", "max"] | None
     cbar_kwargs: dict[str, Any] | None
+    norm: Normalize | None
 
 
 class AnimateCellValueOptions(TypedDict, total=False):
@@ -1403,21 +1407,24 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         self._arr = value
 
-    def _scale_values(self) -> np.ndarray | None:
+    def _scale_values(self) -> np.ndarray:
         """The array's valid, finite cells, for a data-driven scale (`equalize`).
 
         Drops masked (out-of-domain) cells and any non-finite values, and
-        flattens to 1-D, so `ColorScaling.equalize()` can build its quantile
-        table from the real distribution.
+        flattens the whole stored array to 1-D -- so for a 3-D stack /
+        animation the empirical CDF is built once from *all* frames, giving a
+        single scale consistent across them rather than a per-frame one.
+
+        Always returns an array (never `None`): an all-non-finite field yields
+        an empty array, so `equalize` reports the accurate "no finite values"
+        error rather than the base glyph's "no value array" message.
 
         Returns:
-            np.ndarray or None: A 1-D array of finite in-domain values, or
-                `None` when the array has no such value to rank.
+            np.ndarray: A 1-D array of finite in-domain values (empty if none).
         """
         arr = ma.asarray(self.arr)
         values = np.asarray(arr.compressed(), dtype=float).ravel()
-        values = values[np.isfinite(values)]
-        return values if values.size else None
+        return values[np.isfinite(values)]
 
     def prepare_array(
         self,
