@@ -61,6 +61,7 @@ _GROUPED_KWARG_HINTS: dict[str, str] = {
     "line_scale": "color=ColorScaling.sym_log(threshold=..., scale=...)",
     "bounds": "color=ColorScaling.boundary(bounds=...)",
     "midpoint": "color=ColorScaling.midpoint(at=...)",
+    "samples": "color=ColorScaling.equalize(samples=...)",
     "levels": "contour=Contour(levels=...)",
     "labels": "contour=Contour(labels=True, label_kw=...)",
     "label_kw": "contour=Contour(labels=True, label_kw=...)",
@@ -879,7 +880,9 @@ class Glyph:
 
         Honours the `color_scale` option — a `cleopatra.styling.styles.ColorScale`
         member or its string value (case-insensitive): `linear` / `power` /
-        `sym-lognorm` / `lognorm` / `boundary-norm` / `midpoint` — and the
+        `sym-lognorm` / `lognorm` / `boundary-norm` / `midpoint` / `equalize`
+        (the last is data-driven and honoured only by glyphs that expose their
+        values, e.g. `ArrayGlyph`) — and the
         xarray-aligned `levels` and `extend` options when present in
         `default_options`. An unrecognised `color_scale` (including a
         non-string such as an int) raises `ValueError`.
@@ -964,7 +967,22 @@ class Glyph:
             ticks,
             levels=self.default_options.get("levels"),
             extend=self.default_options.get("extend"),
+            values=self._scale_values(),
         )
+
+    def _scale_values(self) -> np.ndarray | None:
+        """The data values a data-driven colour scale needs, or `None`.
+
+        Only the `equalize` scale reads this -- it builds its quantile table
+        from the data itself, not just the tick range. The base glyph exposes
+        nothing (returns `None`); a glyph that carries a value array (e.g.
+        `ArrayGlyph`) overrides this to return its valid, finite cells.
+
+        Returns:
+            np.ndarray or None: A 1-D array of finite data values, or `None`
+                when the glyph has no value array to equalise over.
+        """
+        return None
 
     @staticmethod
     def _levels_to_bounds(

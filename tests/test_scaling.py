@@ -13,6 +13,7 @@ from cleopatra.styling.scaling import (
     _log_tick_positions,
     _symlog_tick_positions,
 )
+from cleopatra.styling.styles import ColorScale
 
 
 class TestColorScalingToOptions:
@@ -45,10 +46,11 @@ class TestColorScalingToOptions:
             (ColorScaling.boundary(bounds=[0, 1, 2]), "bounds"),
             (ColorScaling.sym_log(threshold=0.01, scale=0.1), "line_threshold"),
             (ColorScaling.log(), "color_scale"),
+            (ColorScaling.equalize(samples=256), "samples"),
         ],
     )
-    def test_variant_emits_all_six_keys(self, scale, key):
-        """Every variant emits the full six-key option dict (full-scale reset).
+    def test_variant_emits_all_seven_keys(self, scale, key):
+        """Every variant emits the full seven-key option dict (full-scale reset).
 
         Args:
             scale: A `ColorScaling` variant.
@@ -62,7 +64,8 @@ class TestColorScalingToOptions:
             "line_scale",
             "bounds",
             "midpoint",
-        }, f"expected all six keys, got {set(options)}"
+            "samples",
+        }, f"expected all seven keys, got {set(options)}"
         assert key in options
 
 
@@ -355,6 +358,75 @@ class TestColorScalingBuildNorm:
         assert 2 <= ticks.size <= 30, f"decade set should stay bounded, got {ticks.size}"
         decades = np.log10(ticks)
         assert np.allclose(decades, np.round(decades)), f"non-decade ticks: {ticks.tolist()}"
+
+
+class TestColorScalingEqualize:
+    """Tests for the continuous rank-equalising (`equalize`) colour scale."""
+
+    @staticmethod
+    def _skewed() -> np.ndarray:
+        """A deep bulk plus a thin shallow tail, like bathymetry (seeded)."""
+        rng = np.random.default_rng(0)
+        return np.concatenate(
+            [rng.normal(-3000, 400, 90_000), rng.normal(-300, 200, 10_000)]
+        )
+
+    def test_factory_carries_kind_and_samples(self):
+        """`equalize()` sets the EQUALIZE kind and records its sample count."""
+        scale = ColorScaling.equalize(samples=256)
+        assert scale.kind is ColorScale.EQUALIZE, f"wrong kind: {scale.kind}"
+        assert scale.samples == 256, f"wrong samples: {scale.samples}"
+
+    def test_factory_rejects_too_few_samples(self):
+        """`equalize(samples<2)` raises, since a CDF table needs two points."""
+        with pytest.raises(ValueError, match="samples >= 2"):
+            ColorScaling.equalize(samples=1)
+
+    def test_every_decile_gets_an_even_share_of_the_ramp(self):
+        """A skewed field's every decile receives ~10% of the colour ramp."""
+        data = self._skewed()
+        edges = np.percentile(data, np.arange(0, 101, 10))
+        ticks = np.linspace(data.min(), data.max(), 8)
+        norm, _ = ColorScaling.equalize().build_norm(ticks, values=data)
+        shares = np.diff(norm(edges)) * 100
+        assert np.allclose(shares, 10.0, atol=0.5), f"uneven ramp shares: {shares}"
+
+    def test_colorbar_ticks_are_placed_at_quantiles(self):
+        """The colour bar's ticks sit at the data's quantiles, not linearly."""
+        data = self._skewed()
+        ticks = np.linspace(data.min(), data.max(), 8)
+        _, cbar_kw = ColorScaling.equalize().build_norm(ticks, values=data)
+        expected = np.unique(np.quantile(data, np.linspace(0.0, 1.0, len(ticks))))
+        assert np.allclose(cbar_kw["ticks"], expected), (
+            f"ticks not at quantiles: {cbar_kw['ticks']}"
+        )
+        spacings = np.diff(cbar_kw["ticks"])
+        assert spacings.std() > 0.0, "quantile ticks should not be evenly spaced"
+
+    def test_constant_field_does_not_raise(self):
+        """A constant field yields a degenerate linear norm instead of raising."""
+        norm, _ = ColorScaling.equalize().build_norm(
+            np.array([5.0]), values=np.full(100, 5.0)
+        )
+        assert isinstance(norm, mcolors.Normalize), f"unexpected norm: {norm!r}"
+
+    def test_heavily_tied_field_does_not_raise(self):
+        """A field that is almost all one value still builds a norm without error."""
+        tied = np.array([0.0] * 95 + [1.0] * 5, dtype=float)
+        norm, _ = ColorScaling.equalize().build_norm(np.array([0.0, 1.0]), values=tied)
+        assert isinstance(norm, mcolors.Normalize), f"unexpected norm: {norm!r}"
+
+    def test_missing_values_raise_a_clear_error(self):
+        """Building the equalize norm without the data raises an actionable error."""
+        with pytest.raises(ValueError, match="needs the data values"):
+            ColorScaling.equalize().build_norm(np.array([0.0, 1.0]))
+
+    def test_samples_round_trips_through_options(self):
+        """`samples` survives the flat-options round-trip."""
+        restored = ColorScaling.from_options(
+            ColorScaling.equalize(samples=256).to_options()
+        )
+        assert restored.samples == 256, f"samples lost: {restored.samples}"
 
 
 class TestParamGroupsEmitOnlySetFields:

@@ -42,7 +42,7 @@ class TestColorScale:
         assert isinstance(ColorScale.MIDPOINT, str)
 
     def test_member_names_and_values(self):
-        """The enum covers exactly the six supported scales."""
+        """The enum covers exactly the seven supported scales."""
         assert {m.value for m in ColorScale} == {
             "linear",
             "power",
@@ -50,6 +50,7 @@ class TestColorScale:
             "lognorm",
             "boundary-norm",
             "midpoint",
+            "equalize",
         }
 
     @pytest.mark.parametrize(
@@ -62,6 +63,7 @@ class TestColorScale:
             ("LogNorm", ColorScale.LOGNORM),
             ("BOUNDARY-norm", ColorScale.BOUNDARY_NORM),
             (ColorScale.MIDPOINT, ColorScale.MIDPOINT),
+            ("Equalize", ColorScale.EQUALIZE),
         ],
     )
     def test_construction_is_case_insensitive(self, given, expected):

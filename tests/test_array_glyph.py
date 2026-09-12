@@ -234,6 +234,33 @@ class TestPlotArray:
         assert array.im.norm.vmin == 1.0, f"vmin should be 1.0, got {array.im.norm.vmin}"
         assert array.im.norm.vmax == 1000.0, f"vmax should be 1000.0, got {array.im.norm.vmax}"
 
+    def test_plot_array_color_scale_equalize(self):
+        """`color=ColorScaling.equalize()` puts a continuous `FuncNorm` on the image.
+
+        The empirical CDF spreads a skewed field so every decile gets ~10% of
+        the ramp, unlike the linear norm that flattens the bulk into one tone.
+        """
+        rng = np.random.default_rng(0)
+        data = np.concatenate(
+            [rng.normal(-3000, 400, 5_000), rng.normal(-300, 200, 500)]
+        ).reshape(55, 100)
+        array = ArrayGlyph(data)
+        fig, ax = array.plot(color=ColorScaling.equalize(), cmap="Blues_r")
+        assert isinstance(fig, Figure)
+        assert type(array.im.norm).__name__ == "FuncNorm", (
+            f"expected a FuncNorm, got {type(array.im.norm).__name__}"
+        )
+        edges = np.percentile(data, np.arange(0, 101, 10))
+        shares = np.diff(array.im.norm(edges)) * 100
+        assert np.allclose(shares, 10.0, atol=1.5), f"uneven ramp shares: {shares}"
+
+    def test_scale_values_drops_masked_and_non_finite(self):
+        """`_scale_values` returns only the valid, finite cells for equalization."""
+        glyph = ArrayGlyph(np.array([[1.0, np.nan], [3.0, 4.0]]))
+        vals = glyph._scale_values()
+        assert set(np.round(vals, 1)) == {1.0, 3.0, 4.0}, f"unexpected values: {vals}"
+        assert np.isfinite(vals).all(), "values must all be finite"
+
     @staticmethod
     def _terrain_like() -> np.ndarray:
         """A signed, long-tailed terrain-like array (most cells near 0, tail to ~740)."""

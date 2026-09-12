@@ -59,6 +59,7 @@ class ColorScale(StrEnum):
     LOGNORM = "lognorm"
     BOUNDARY_NORM = "boundary-norm"
     MIDPOINT = "midpoint"
+    EQUALIZE = "equalize"
 
     @classmethod
     def _missing_(cls, value: object) -> ColorScale | None:
@@ -114,6 +115,7 @@ DEFAULT_OPTIONS: dict[str, Any] = {
     "line_threshold": None,
     "bounds": None,
     "midpoint": 0,
+    "samples": 512,
     "grid_alpha": 0.75,
 }
 

@@ -1403,6 +1403,22 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         self._arr = value
 
+    def _scale_values(self) -> np.ndarray | None:
+        """The array's valid, finite cells, for a data-driven scale (`equalize`).
+
+        Drops masked (out-of-domain) cells and any non-finite values, and
+        flattens to 1-D, so `ColorScaling.equalize()` can build its quantile
+        table from the real distribution.
+
+        Returns:
+            np.ndarray or None: A 1-D array of finite in-domain values, or
+                `None` when the array has no such value to rank.
+        """
+        arr = ma.asarray(self.arr)
+        values = np.asarray(arr.compressed(), dtype=float).ravel()
+        values = values[np.isfinite(values)]
+        return values if values.size else None
+
     def prepare_array(
         self,
         array: np.ndarray,
@@ -2309,7 +2325,8 @@ class ArrayGlyph(GeoMixin, Glyph):
         and dispatches to the requested `kind` of plot. All four kinds
         share the same norm/vmin/vmax resolution path so the existing
         `color_scale` enum (linear/power/sym-lognorm/lognorm/
-        boundary-norm/midpoint) works identically for every render kind.
+        boundary-norm/midpoint/equalize) works identically for every render
+        kind.
 
         When `self._coords` is set (curvilinear / non-uniform grid),
         the `(x, y)` arrays are forwarded as the first positional

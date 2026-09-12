@@ -157,7 +157,7 @@ flowchart TD
 
     D -- "no" --> H["get_ticks()"]
     H --> I["_create_norm_and_cbar_kw(ticks)"]
-    I --> J["norm (linear / power / sym-log /\nboundary / midpoint) or None"]
+    I --> J["norm (linear / power / sym-log /\nboundary / midpoint / equalize) or None"]
     J --> K
 
     subgraph bypass["ArrayGlyph / MeshGlyph (bypass)"]
@@ -217,6 +217,7 @@ classDiagram
         LOGNORM
         BOUNDARY_NORM
         MIDPOINT
+        EQUALIZE
     }
     class CLASSIFY_OPTIONS {
         <<dict>>
