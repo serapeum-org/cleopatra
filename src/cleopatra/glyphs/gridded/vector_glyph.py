@@ -28,6 +28,7 @@ Examples:
 
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 import numpy as np
@@ -72,6 +73,33 @@ VECTOR_DEFAULT_OPTIONS = {
     "add_colorbar": True,
 }
 VECTOR_DEFAULT_OPTIONS = STYLE_DEFAULTS | CLASSIFY_OPTIONS | VECTOR_DEFAULT_OPTIONS
+
+
+def _validate_thin(thin: Any, kind: str) -> None:
+    """Check `thin` before a render starts.
+
+    Args:
+        thin: The subsampling step from the options.
+        kind: The vector kind being drawn.
+
+    Raises:
+        ValueError: If `thin` is not a positive integer.
+
+    Warns:
+        UserWarning: If a thinning step is set for `"streamplot"`, which places
+            its own seed points and has no per-grid-point arrow to drop -- use
+            `density` there instead. Silently ignoring it would leave a caller
+            believing a 45,000-arrow figure had been thinned.
+    """
+    if not isinstance(thin, (int, np.integer)) or isinstance(thin, bool) or thin < 1:
+        raise ValueError(f"thin must be a positive integer, got {thin!r}.")
+    if thin > 1 and kind == "streamplot":
+        warnings.warn(
+            "thin has no effect on kind='streamplot', which seeds its own "
+            "streamlines; use density= to control how many are drawn.",
+            UserWarning,
+            stacklevel=3,
+        )
 
 
 class VectorGlyph(GeoMixin, Glyph):
@@ -169,15 +197,10 @@ class VectorGlyph(GeoMixin, Glyph):
         Returns:
             tuple: `(x, y, u, v, magnitude)`, each subsampled.
 
-        Raises:
-            ValueError: If `thin` is not a positive integer.
+        `thin` is validated by `_validate_thin` before the render begins, so
+        that an invalid value never reaches the point where artists have already
+        been cleared.
         """
-        if (
-            not isinstance(thin, (int, np.integer))
-            or isinstance(thin, bool)
-            or thin < 1
-        ):
-            raise ValueError(f"thin must be a positive integer, got {thin!r}.")
         if thin == 1:
             return self.x, self.y, self.u, self.v, np.asarray(mag)
         # 1-D coordinate vectors index on their only axis; a meshgrid indexes on
@@ -296,6 +319,9 @@ class VectorGlyph(GeoMixin, Glyph):
             cmap = resolve_colormap(opts["cmap"])
             clim = {} if norm else {"clim": (ticks[0], ticks[-1])}
 
+            # Validate before clearing: a bad `thin` used to raise only once the
+            # host's artists were already gone, leaving a wiped axes behind.
+            _validate_thin(opts["thin"], kind)
             _clear_prior_render_artists(ax, self, compose=compose)
             self.im = None
             self.cbar = None

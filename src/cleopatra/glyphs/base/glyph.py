@@ -10,6 +10,7 @@ from __future__ import annotations
 import inspect
 import itertools
 import os
+import weakref
 import warnings
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -287,10 +288,17 @@ def apply_axis_style(
     def wanted(*keys: str) -> bool:
         return apply_defaults or any(key in explicit for key in keys)
 
-    if wanted("xlabel", "xlabel_font_size"):
+    # Setting only the font size resizes the label in place. Re-setting the text
+    # too would overwrite a label the caller put on the axes themselves with this
+    # glyph's own (empty) default.
+    if apply_defaults or "xlabel" in explicit:
         ax.set_xlabel(options["xlabel"], fontsize=options["xlabel_font_size"])
-    if wanted("ylabel", "ylabel_font_size"):
+    elif "xlabel_font_size" in explicit:
+        ax.xaxis.label.set_fontsize(options["xlabel_font_size"])
+    if apply_defaults or "ylabel" in explicit:
         ax.set_ylabel(options["ylabel"], fontsize=options["ylabel_font_size"])
+    elif "ylabel_font_size" in explicit:
+        ax.yaxis.label.set_fontsize(options["ylabel_font_size"])
     if wanted("xtick_font_size"):
         ax.tick_params(axis="x", labelsize=options["xtick_font_size"])
     if wanted("ytick_font_size"):
@@ -404,6 +412,14 @@ def multiline_title_pad(ax: Axes, title: Any, fontsize: Any) -> float | None:
 #: `SomeGlyph(...).plot(ax=ax)` leaves one collectable immediately.
 _render_owner_counter = itertools.count()
 
+#: Maps a glyph to its render-ownership token. Held weakly and keyed by identity
+#: rather than stamped on the glyph, so a `copy`/`deepcopy`/unpickle of a glyph
+#: is a *new* owner -- an attribute would travel with the clone and let it clear
+#: the original's artists -- and a collected glyph drops out on its own.
+_render_owner_tokens: "weakref.WeakKeyDictionary[Any, int]" = (
+    weakref.WeakKeyDictionary()
+)
+
 
 def _render_owner_token(owner: Any) -> int:
     """Return `owner`'s render-ownership token, assigning one on first use.
@@ -417,14 +433,10 @@ def _render_owner_token(owner: Any) -> int:
     """
     if owner is None:
         return 0
-    token = getattr(owner, "_cleo_owner_token", None)
-    if token is None:
-        token = next(_render_owner_counter) + 1
-        try:
-            owner._cleo_owner_token = token
-        except AttributeError:  # pragma: no cover - a slotted glyph
-            return 0
-    return token
+    try:
+        return _render_owner_tokens.setdefault(owner, next(_render_owner_counter) + 1)
+    except TypeError:  # pragma: no cover - an unhashable or non-weakrefable glyph
+        return 0
 
 
 def _entry_is_detached(group: list) -> bool:

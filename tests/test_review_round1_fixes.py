@@ -13,6 +13,8 @@ import matplotlib
 
 matplotlib.use("Agg")
 
+import copy
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
@@ -20,11 +22,15 @@ import pytest
 from cleopatra.glyphs.base.glyph import (
     _entry_is_detached,
     _mark_render_artists,
+    _render_owner_token,
+    apply_axis_style,
     multiline_title_pad,
 )
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
 from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph
 from cleopatra.styling.params import DataStyle
+from cleopatra.styling.styles import DEFAULT_OPTIONS
 
 
 @pytest.fixture
@@ -242,3 +248,113 @@ class TestRegistryKeepsLiveEntries:
 
         assert _entry_is_detached([_NoAxes()]) is False
         assert _entry_is_detached([]) is False, "an empty entry is not proof of death"
+
+
+class TestLabelTextPreserved:
+    """M1 -- resizing a label must not blank one the caller set."""
+
+    def test_font_size_alone_keeps_the_caller_label(self):
+        """Passing only `xlabel_font_size` resizes without retitling.
+
+        Test scenario:
+            The helper re-set the label text alongside the size, so a caller who
+            had labelled the axes themselves and only wanted a bigger font got a
+            blank label instead.
+        """
+        fig, ax = plt.subplots()
+        ax.set_xlabel("CALLER SET THIS")
+        apply_axis_style(ax, DEFAULT_OPTIONS, {"xlabel_font_size"})
+        assert ax.get_xlabel() == "CALLER SET THIS", (
+            "the caller's label was overwritten"
+        )
+        assert ax.xaxis.label.get_fontsize() == DEFAULT_OPTIONS["xlabel_font_size"]
+        plt.close(fig)
+
+    def test_explicit_label_still_wins(self):
+        """An explicitly passed label replaces whatever was there.
+
+        Test scenario:
+            Preserving the caller's text must not stop the glyph's own label
+            from applying when it was actually asked for.
+        """
+        fig, ax = plt.subplots()
+        ax.set_xlabel("CALLER SET THIS")
+        apply_axis_style(ax, dict(DEFAULT_OPTIONS, xlabel="MINE"), {"xlabel"})
+        assert ax.get_xlabel() == "MINE"
+        plt.close(fig)
+
+
+class TestThinValidationOrder:
+    """M4/L2 -- `thin` is checked before drawing, and flagged where it is inert."""
+
+    def test_invalid_thin_leaves_the_axes_untouched(self):
+        """A bad `thin` raises without having cleared the host first.
+
+        Test scenario:
+            Validation sat inside the subsampling helper, which runs after the
+            clear -- so an invalid value wiped the axes and then raised, leaving
+            the caller with neither their old figure nor a new one.
+        """
+        x, y = np.meshgrid(np.arange(30), np.arange(20))
+        rng = np.random.default_rng(0)
+        fig, ax = plt.subplots()
+        ArrayGlyph(rng.random((20, 30))).plot(ax=ax)
+        with pytest.raises(ValueError, match="thin must be a positive integer"):
+            VectorGlyph(
+                x,
+                y,
+                rng.random((20, 30)),
+                rng.random((20, 30)),
+                thin=0,
+                add_colorbar=False,
+            ).plot(kind="quiver", ax=ax)
+        assert len(ax.images) == 1, "the host layer was cleared before the error"
+        plt.close(fig)
+
+    def test_thin_on_streamplot_warns(self):
+        """`thin` with `streamplot` says it does nothing rather than ignoring it.
+
+        Test scenario:
+            Streamplot seeds its own lines, so there is no per-grid-point arrow
+            to drop. Silently accepting the option left a caller believing a
+            dense figure had been thinned.
+        """
+        x, y = np.meshgrid(np.arange(30), np.arange(20))
+        rng = np.random.default_rng(0)
+        fig, ax = plt.subplots()
+        with pytest.warns(UserWarning, match="no effect on kind='streamplot'"):
+            VectorGlyph(
+                x,
+                y,
+                rng.random((20, 30)),
+                rng.random((20, 30)),
+                thin=5,
+                add_colorbar=False,
+            ).plot(kind="streamplot", ax=ax)
+        plt.close(fig)
+
+
+class TestOwnerTokenIdentity:
+    """M5 -- a copied glyph is a different owner."""
+
+    def test_deepcopy_is_a_distinct_owner(self):
+        """A `deepcopy` of a glyph does not inherit its ownership token.
+
+        Test scenario:
+            The token was stamped on the glyph as an attribute, so it travelled
+            with a clone -- and the clone would then clear the original's
+            artists, which is the collision the token exists to prevent.
+        """
+        glyph = ArrayGlyph(np.random.default_rng(0).random((20, 30)))
+        original = _render_owner_token(glyph)
+        clone = copy.deepcopy(glyph)
+        assert _render_owner_token(clone) != original, "the clone reused the token"
+
+    def test_same_glyph_keeps_its_token(self):
+        """Repeated lookups for one glyph return the same token.
+
+        Test scenario:
+            Stability is what lets a glyph replace its own artists across calls.
+        """
+        glyph = ArrayGlyph(np.random.default_rng(0).random((20, 30)))
+        assert _render_owner_token(glyph) == _render_owner_token(glyph)
