@@ -55,9 +55,13 @@ def _collisions(arr, title, figsize=(8, 6), title_size=15):
         tuple: The overlapping tick label texts, and whether the y-axis offset
         text is overlapped.
     """
-    glyph = ArrayGlyph(
-        arr, title=title, extent=list(EXTENT), figsize=figsize, title_size=title_size
-    )
+    options = {"title": title, "extent": list(EXTENT), "title_size": title_size}
+    if figsize is not None:
+        # Passing `figsize=None` would still count as explicit and switch the
+        # auto-sizing off, which is the very path the `figsize=None` case exists
+        # to exercise.
+        options["figsize"] = figsize
+    glyph = ArrayGlyph(arr, **options)
     fig, ax = glyph.plot(cmap="gray")
     fig.canvas.draw()
     renderer = fig.canvas.get_renderer()
@@ -134,8 +138,17 @@ class TestMultiLineTitleClearsTickLabels:
 
         Test scenario:
             It was already clear, so the pad must not push the title into
-            anything else.
+            anything else. `figsize` is omitted rather than passed as `None`,
+            since passing it at all marks it explicit and turns the auto-sizing
+            off -- which would quietly test the wrong path.
         """
+        glyph = ArrayGlyph(arr, title=TWO_LINE, extent=list(EXTENT))
+        fig, ax = glyph.plot(cmap="gray")
+        assert fig.get_size_inches().tolist() != [8.0, 6.0], (
+            "precondition: the figure was auto-sized, not left at the default"
+        )
+        plt.close(fig)
+
         labels, offset_hit = _collisions(arr, TWO_LINE, figsize=None)
         assert not labels and not offset_hit
 
@@ -181,7 +194,23 @@ class TestMultilineTitlePad:
         """
         fig, ax = plt.subplots()
         ax.matshow(np.zeros((4, 4)))
+        one_line = multiline_title_pad(ax, "x", size) or plt.rcParams["axes.titlepad"]
         title = "\n".join("x" for _ in range(lines))
-        expected = plt.rcParams["axes.titlepad"] + (lines - 1) * size * 1.2
-        assert multiline_title_pad(ax, title, size) == pytest.approx(expected)
+        pad = multiline_title_pad(ax, title, size)
+
+        # Assert the property rather than the formula: the pad must cover the
+        # rendered height of the lines that hang below the anchor. Restating
+        # `(lines - 1) * size * 1.2` here could not catch a wrong formula.
+        text = ax.text(0, 0, title, fontsize=size)
+        fig.canvas.draw()
+        height_px = text.get_window_extent(fig.canvas.get_renderer()).height
+        text.remove()
+        # The pad is in points and the rendered height in pixels, so one has to
+        # be converted before they can be compared at all.
+        height_points = height_px * 72.0 / fig.dpi
+        needed = height_points * (lines - 1) / lines
+        assert pad - one_line >= needed * 0.9, (
+            f"pad {pad} adds {pad - one_line:.1f}pt for {lines} lines, short of "
+            f"the {needed:.1f}pt those extra lines occupy"
+        )
         plt.close(fig)

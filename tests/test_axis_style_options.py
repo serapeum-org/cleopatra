@@ -19,7 +19,10 @@ import pytest
 from cleopatra.glyphs.base.glyph import apply_axis_style
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 from cleopatra.glyphs.primitives.line_glyph import LineGlyph
+from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
+from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
 from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph
+from cleopatra.glyphs.stats.kde_glyph import KDEGlyph
 from cleopatra.styling.styles import DEFAULT_OPTIONS
 
 #: The options this issue is about: advertised by the validator on every glyph.
@@ -32,6 +35,45 @@ AXIS_OPTIONS = (
     "ytick_font_size",
     "grid_alpha",
 )
+
+_RNG = np.random.default_rng(0)
+_GRID_X, _GRID_Y = np.meshgrid(np.arange(20), np.arange(15))
+
+#: One construct/render pair per glyph that advertises the axis options, so the
+#: cross-glyph tests stay a table rather than a copy per class.
+GLYPH_CASES = {
+    "array": (
+        lambda **kw: ArrayGlyph(_RNG.random((15, 20)), extent=[0, 0, 10, 10], **kw),
+        lambda g: g.plot(),
+    ),
+    "line": (
+        lambda **kw: LineGlyph(np.arange(5.0), np.arange(5.0), **kw),
+        lambda g: g.line(),
+    ),
+    "histogram": (
+        lambda **kw: HistogramGlyph(_RNG.normal(size=200), **kw),
+        lambda g: g.histogram(),
+    ),
+    "vector": (
+        lambda **kw: VectorGlyph(
+            _GRID_X,
+            _GRID_Y,
+            _RNG.random((15, 20)),
+            _RNG.random((15, 20)),
+            add_colorbar=False,
+            **kw,
+        ),
+        lambda g: g.plot(kind="quiver"),
+    ),
+    "scatter": (
+        lambda **kw: ScatterGlyph(_RNG.random(20), _RNG.random(20), **kw),
+        lambda g: g.plot(),
+    ),
+    "kde": (
+        lambda **kw: KDEGlyph(_RNG.random(60), _RNG.random(60), **kw),
+        lambda g: g.plot(),
+    ),
+}
 
 
 @pytest.fixture
@@ -154,6 +196,52 @@ class TestAdvertisedOptionsAreApplied:
             value = 12
         fig, ax, _ = LineGlyph(x, y, **{option: value}).line()
         plt.close(fig)
+
+
+class TestEveryGlyphHonoursTheOptions:
+    """The validator advertises these on every glyph, so every glyph applies them."""
+
+    @pytest.mark.parametrize("name", sorted(GLYPH_CASES))
+    def test_xlabel_reaches_the_axes(self, name):
+        """Each glyph renders the `xlabel` it was constructed with.
+
+        Args:
+            name: The glyph under test.
+
+        Test scenario:
+            The first fix wired only the line, array and histogram glyphs, while
+            the validator advertises the options on all of them -- so the rest
+            still accepted `xlabel` and dropped it.
+        """
+        build, render = GLYPH_CASES[name]
+        glyph = build(xlabel="TIME", ylabel="VALUE")
+        render(glyph)
+        ax = plt.gcf().axes[0]
+        assert ax.get_xlabel() == "TIME", f"{name}: xlabel not applied"
+        assert ax.get_ylabel() == "VALUE", f"{name}: ylabel not applied"
+        plt.close("all")
+
+    @pytest.mark.parametrize("name", sorted(GLYPH_CASES))
+    def test_untouched_glyph_is_not_restyled(self, name):
+        """A glyph asked for none of them keeps matplotlib's tick size.
+
+        Args:
+            name: The glyph under test.
+
+        Test scenario:
+            The no-silent-restyle guarantee has to hold for every glyph, not
+            only the three the first fix reached.
+        """
+        build, render = GLYPH_CASES[name]
+        render(build())
+        ax = plt.gcf().axes[0]
+        # HistogramGlyph is the documented exception: it has always rendered the
+        # declared defaults (ticks at 11) and opts into them explicitly.
+        expected = DEFAULT_OPTIONS["xtick_font_size"] if name == "histogram" else 10.0
+        assert ax.get_xticklabels()[0].get_fontsize() == expected, (
+            f"{name}: tick size changed without being asked"
+        )
+        plt.close("all")
 
 
 class TestUnaskedGlyphsAreUnchanged:
