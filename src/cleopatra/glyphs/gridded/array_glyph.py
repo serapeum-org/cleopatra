@@ -2585,9 +2585,12 @@ class ArrayGlyph(GeoMixin, Glyph):
         layer, style_cfg = resolve_single_layer_style(style)
         _clear_prior_render_artists(self.ax, self, compose=compose)
         self._apply_style_background(style_cfg)
-        self._sync_projection_frame(
-            projection_draws_frame(self.default_options.get("projection"))
-        )
+        # Composing draws over a host that owns its own projection frame; tearing
+        # that down would strip the graticule the host put there.
+        if not compose:
+            self._sync_projection_frame(
+                projection_draws_frame(self.default_options.get("projection"))
+            )
         data = np.asarray(
             ma.filled(ma.asarray(self.arr).astype(float), np.nan), dtype=float
         )
@@ -2609,15 +2612,16 @@ class ArrayGlyph(GeoMixin, Glyph):
             self.ax.set_yticklabels([])
             self.ax.set_xticks([])
             self.ax.set_yticks([])
-        self.ax.set_title(
-            self.default_options["title"],
-            fontsize=self.default_options["title_size"],
-            pad=multiline_title_pad(
-                self.ax,
+        if not compose or self.default_options["title"]:
+            self.ax.set_title(
                 self.default_options["title"],
-                self.default_options["title_size"],
-            ),
-        )
+                fontsize=self.default_options["title_size"],
+                pad=multiline_title_pad(
+                    self.ax,
+                    self.default_options["title"],
+                    self.default_options["title_size"],
+                ),
+            )
         self._apply_axis_style(self.ax)
         _mark_render_artists(self.ax, self, self.cbar, self.im)
         return cast(Figure, self.fig), self.ax
@@ -3801,7 +3805,8 @@ class ArrayGlyph(GeoMixin, Glyph):
                     "2-D-coordinate array cannot be reprojected."
                 )
             _clear_prior_render_artists(ax, self, compose=compose)
-            self._sync_projection_frame(projection_draws_frame(projection))
+            if not compose:
+                self._sync_projection_frame(projection_draws_frame(projection))
             if projection:
                 if points is not None or self.default_options.get("display_cell_value"):
                     warnings.warn(
@@ -3839,13 +3844,19 @@ class ArrayGlyph(GeoMixin, Glyph):
                 else:
                     self.cbar = self.create_color_bar(ax, im, cbar_kw)
 
-        ax.set_title(
-            self.default_options["title"],
-            fontsize=self.default_options["title_size"],
-            pad=multiline_title_pad(
-                ax, self.default_options["title"], self.default_options["title_size"]
-            ),
-        )
+        # A composed overlay must not retitle the host. This glyph's title is
+        # empty unless it was given one, and setting that over the host's would
+        # blank a caption the host put there.
+        if not compose or self.default_options["title"]:
+            ax.set_title(
+                self.default_options["title"],
+                fontsize=self.default_options["title_size"],
+                pad=multiline_title_pad(
+                    ax,
+                    self.default_options["title"],
+                    self.default_options["title_size"],
+                ),
+            )
         self._apply_axis_style(ax)
 
         if self.extent is None and effective_kind == "imshow":

@@ -297,3 +297,46 @@ class TestGroupedParameterTypeError:
                 kind="quiver", color="black"
             )
         plt.close("all")
+
+
+class TestComposeLeavesHostChromeAlone:
+    """M2/M3 -- composing draws over the host without restyling its axes."""
+
+    def test_untitled_overlay_keeps_the_host_title(self, scalar):
+        """An overlay with no title of its own does not blank the host's.
+
+        Test scenario:
+            `ArrayGlyph` sets the title unconditionally, and its default is
+            empty -- so composing an untitled overlay wiped the caption the host
+            had put there.
+        """
+        fig, ax = plt.subplots()
+        ArrayGlyph(scalar, title="HOST TITLE").plot(ax=ax)
+        ArrayGlyph(scalar).plot(ax=ax, compose=True)
+        assert ax.get_title() == "HOST TITLE", "the overlay blanked the host's title"
+        plt.close(fig)
+
+    def test_titled_overlay_still_sets_its_title(self, scalar):
+        """An overlay that has a title still applies it.
+
+        Test scenario:
+            Preserving the host's caption must not stop an overlay that
+            genuinely wants to retitle the axes.
+        """
+        fig, ax = plt.subplots()
+        ArrayGlyph(scalar, title="HOST").plot(ax=ax)
+        ArrayGlyph(scalar, title="OVERLAY").plot(ax=ax, compose=True)
+        assert ax.get_title() == "OVERLAY"
+        plt.close(fig)
+
+    def test_replacing_render_still_retitles(self, scalar):
+        """Without `compose` the title behaves exactly as before.
+
+        Test scenario:
+            A replacing render owns the axes, so its (empty) title applies.
+        """
+        fig, ax = plt.subplots()
+        ArrayGlyph(scalar, title="HOST").plot(ax=ax)
+        ArrayGlyph(scalar).plot(ax=ax)
+        assert ax.get_title() == ""
+        plt.close(fig)
