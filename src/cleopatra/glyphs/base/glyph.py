@@ -221,7 +221,13 @@ def apply_axis_style(
             doing so.
         grid_axis: Which gridlines `grid_alpha` draws -- `"both"`, `"x"` or
             `"y"`. `None` leaves the grid untouched, for a caller that draws its
-            own.
+            own. Checked before anything is applied. It used to travel straight
+            to `Axes.grid(axis=...)`, so a typo surfaced as a matplotlib
+            complaint about `axis` -- a parameter the caller never passed -- and
+            only after the labels and tick sizes had already been set.
+
+    Raises:
+        ValueError: If `grid_axis` is not `"both"`, `"x"`, `"y"` or `None`.
 
     Examples:
         - Only the options named in `explicit` reach the axes, so an untouched
@@ -277,6 +283,27 @@ def apply_axis_style(
             >>> apply_axis_style(ax, options, set(), apply_defaults=True)
             >>> ax.get_xlabel(), ax.get_ylabel()
             ('time', 'value')
+            >>> plt.close(fig)
+
+            ```
+        - An unrecognised `grid_axis` is rejected in the helper's own vocabulary,
+          before any option reaches the axes:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.glyphs.base.glyph import apply_axis_style
+            >>> options = {"xlabel": "time", "ylabel": "value",
+            ...            "xlabel_font_size": 11, "ylabel_font_size": 11,
+            ...            "xtick_font_size": 20, "ytick_font_size": 11,
+            ...            "grid_alpha": 0.5}
+            >>> fig, ax = plt.subplots()
+            >>> apply_axis_style(ax, options, {"xlabel"}, grid_axis="horizontal")
+            Traceback (most recent call last):
+                ...
+            ValueError: grid_axis must be one of 'both', 'x', 'y' or None, got 'horizontal'.
+            >>> ax.get_xlabel()
+            ''
             >>> plt.close(fig)
 
             ```
@@ -491,7 +518,7 @@ def _render_owner_token(owner: Any) -> int:
         return token
     try:
         finalizer = weakref.finalize(owner, _forget_render_owner, key)
-    except TypeError:  # pragma: no cover - a glyph that cannot be weak-referenced
+    except TypeError:  # a glyph that cannot be weak-referenced
         return 0
     # The finalizer registers itself in weakref's own table, which keeps it alive
     # until it fires; there is nothing worth doing at interpreter shutdown.

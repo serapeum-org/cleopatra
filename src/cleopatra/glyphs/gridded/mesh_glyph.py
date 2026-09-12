@@ -940,6 +940,15 @@ class MeshGlyph(GeoMixin, Glyph):
                 `data_style=` group objects above; passing any of them as a
                 loose keyword now raises.
 
+                Every call rebuilds `default_options` from
+                `MESH_DEFAULT_OPTIONS`, so an option passed here applies to
+                this render only and does not leak into the next one. The
+                axis-styling keys (`xlabel`, `ylabel`, their font sizes, the
+                tick label sizes and `grid_alpha`) are the exception: those
+                given to the constructor are carried back across the reset, so
+                `MeshGlyph(..., xlabel="x")` keeps labelling every render. A key
+                passed here wins over the constructor's for this call.
+
                 One relief option is honoured **only** for node data
                 (`location="node"`):
 
@@ -1268,6 +1277,12 @@ class MeshGlyph(GeoMixin, Glyph):
                 vmin, vmax, color_scale, gamma, midpoint, figsize,
                 title, etc.). The loose `ticks_spacing` / `cbar_*` keys
                 still work, but prefer `colorbar=ColorBar(...)`.
+                As in `plot`, the call rebuilds `default_options` from
+                `MESH_DEFAULT_OPTIONS` first, so an option passed here applies
+                to this animation only -- except the axis-styling keys
+                (`xlabel`, `ylabel`, their font sizes, the tick label sizes and
+                `grid_alpha`), whose construction-time values are carried back
+                across the reset unless this call passes the same key.
 
         Returns:
             FuncAnimation: The animation object. Use

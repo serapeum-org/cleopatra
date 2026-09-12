@@ -120,11 +120,13 @@ class VectorGlyph(GeoMixin, Glyph):
             (e.g. `density`, `scale`, `cmap`, `vmin`, `vmax`, `levels`,
             `color_scale`, `ticks_spacing`, `cbar_label`, `figsize`,
             `title`). Set `add_colorbar=False` to suppress the per-glyph
-            colorbar (default True) for shared-axes composition where the
-            host owns a single aggregated colorbar -- pair it with
-            `plot(compose=True)` so the host's own layers survive. Set
-            `thin=n` to draw every nth grid point for `quiver`/`barbs`,
-            which a real grid needs (see `VectorGlyph._thinned`).
+            colorbar (default True) where the host owns a single aggregated
+            colorbar; `plot(compose=True)`, which keeps the host's own
+            layers, already suppresses it by default, and
+            `add_colorbar=True` here is how a composed overlay asks for one
+            back. Set `thin=n` to draw every nth grid point for
+            `quiver`/`barbs`, which a real grid needs (see
+            `VectorGlyph._thinned`).
 
     Examples:
         - Build a field and inspect the stored magnitude:
@@ -252,20 +254,30 @@ class VectorGlyph(GeoMixin, Glyph):
             title: Plot title. Overrides `default_options["title"]`
                 when given.
             add_colorbar: Override the `add_colorbar` option for this call
-                — True draws the colorbar, False suppresses it (for
-                shared-axes composition). Defaults to None, which keeps the
-                value set at construction.
+                — True draws the colorbar, False suppresses it. Defaults to
+                None, which leaves the decision to the `add_colorbar` option
+                (set at construction, `True` by default) -- except under
+                `compose=True`, where that default flips off unless the caller
+                asked for a bar through `colorbar=` or a construction-time
+                `add_colorbar=`.
             colorbar: Typed `ColorBar` spec (or `True`/`False`/`None`) for the
                 colorbar's placement, caption, and sizing; resolved into the
                 `cbar_*` options. A `ColorBar`/`True` also enables the bar and is
                 **sticky** -- it persists into later plots, overriding a
                 construction-time `add_colorbar=False`; an explicit
-                `add_colorbar=` argument still wins the on/off decision.
+                `add_colorbar=` argument still wins the on/off decision. Under
+                `compose=True`, anything but `None` here counts as asking for
+                the overlay's own colorbar, which is otherwise off.
             compose: Draw *over* whatever is already on `ax` instead of
                 replacing it, leaving another glyph's layers and colorbar
                 intact. Off by default, where a render replaces every glyph's
                 artists on the axes (see issue #210). Turn it on to lay one
-                field over another -- arrows on a scalar background.
+                field over another -- arrows on a scalar background. The arrows
+                then bring **no colorbar of their own** by default: the bar
+                would take its space from the host axes, shrinking the raster it
+                is drawn over. Ask for one with `add_colorbar=True`, `colorbar=`
+                or a construction-time `add_colorbar=True` if the overlay's
+                magnitude needs its own scale.
 
         Returns:
             tuple[Figure, Axes, Any]: The figure, the axes, and the
@@ -291,6 +303,49 @@ class VectorGlyph(GeoMixin, Glyph):
                 >>> fig, ax, im = glyph.plot(kind="barbs")
                 >>> float(im.get_array().max())
                 2.0
+
+                ```
+            - Arrows composed over a host raster draw on the host's own axes and
+                add no colorbar, so the figure keeps the one axes it had:
+                ```python
+                >>> import matplotlib
+                >>> matplotlib.use("Agg")
+                >>> import matplotlib.pyplot as plt
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
+                >>> host_fig, host_ax = plt.subplots()
+                >>> _ = host_ax.imshow(np.arange(9.0).reshape(3, 3), extent=[0, 2, 0, 2])
+                >>> x, y = np.meshgrid(np.arange(3), np.arange(3))
+                >>> u = np.full_like(x, 1.0, dtype=float)
+                >>> v = np.full_like(y, 1.0, dtype=float)
+                >>> fig, ax, im = VectorGlyph(x, y, u, v).plot(
+                ...     kind="quiver", ax=host_ax, compose=True
+                ... )
+                >>> len(fig.axes)
+                1
+                >>> ax is host_ax
+                True
+                >>> plt.close(host_fig)
+
+                ```
+            - Asking for the overlay's colorbar brings it back:
+                ```python
+                >>> import matplotlib
+                >>> matplotlib.use("Agg")
+                >>> import matplotlib.pyplot as plt
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
+                >>> host_fig, host_ax = plt.subplots()
+                >>> _ = host_ax.imshow(np.arange(9.0).reshape(3, 3), extent=[0, 2, 0, 2])
+                >>> x, y = np.meshgrid(np.arange(3), np.arange(3))
+                >>> u = np.full_like(x, 1.0, dtype=float)
+                >>> v = np.full_like(y, 1.0, dtype=float)
+                >>> fig, ax, im = VectorGlyph(x, y, u, v).plot(
+                ...     kind="quiver", ax=host_ax, compose=True, add_colorbar=True
+                ... )
+                >>> len(fig.axes)
+                2
+                >>> plt.close(host_fig)
 
                 ```
             - An unknown kind raises ValueError:

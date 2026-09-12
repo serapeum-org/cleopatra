@@ -2459,14 +2459,21 @@ class ArrayGlyph(GeoMixin, Glyph):
         Args:
             style: A `cleopatra.styling.colors.DATA_STYLES` preset name (see
                 `sorted(cleopatra.styling.colors.DATA_STYLES)`).
-            **kwargs: Forwarded to `plot` (e.g. `hillshade`).
+            **kwargs: Forwarded to `plot` (e.g. `hillshade`). `compose=True` is
+                the one keyword `plot` accepts that this method cannot: it
+                clears the axes before redrawing, so composing onto what is
+                already there is a contradiction and is rejected rather than
+                silently dropped.
 
         Returns:
             tuple[Figure, Axes]: The figure and axes drawn on.
 
         Raises:
             ValueError: If `style` is unknown or names a multi-layer preset
-                (raised by `plot`).
+                (raised by `plot`), or if `compose=True` is passed -- with a
+                message pointing at the `plot(data_style=DataStyle(style=...),
+                ax=..., compose=True)` call that does draw a styled layer over
+                an existing axes.
 
         Examples:
             - Restyle a rendered glyph by name:
@@ -2478,6 +2485,22 @@ class ArrayGlyph(GeoMixin, Glyph):
                 >>> glyph = ArrayGlyph(np.arange(60.0).reshape(6, 10))
                 >>> _ = glyph.plot()
                 >>> _ = glyph.apply_style("topography")
+                >>> glyph.style
+                'topography'
+
+                ```
+            - `compose=True` is refused, and the glyph keeps the style it had:
+                ```python
+                >>> import matplotlib
+                >>> matplotlib.use("Agg")
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+                >>> glyph = ArrayGlyph(np.arange(60.0).reshape(6, 10))
+                >>> _ = glyph.apply_style("topography")
+                >>> glyph.apply_style("bathymetry", compose=True)
+                Traceback (most recent call last):
+                    ...
+                ValueError: apply_style() re-renders in place and clears the axes first, ...
                 >>> glyph.style
                 'topography'
 
@@ -2578,13 +2601,19 @@ class ArrayGlyph(GeoMixin, Glyph):
         transparent nodata, optional alpha glow, and — for categorical presets
         — the discrete `disjoint_legend` are reproduced exactly. The preset's
         swatch / categorical legend stands in for the colorbar, so `self.cbar`
-        is left `None`. `add_colorbar=False` suppresses that legend.
+        is left `None`. `add_colorbar=False` suppresses that legend, and so does
+        `compose=True` on its own -- see `Glyph._draws_own_colorbar`.
 
         Args:
             style: A `DATA_STYLES` name (see `_resolve_style_layer`).
             compose: Draw over what is already on the axes rather than replacing
                 it. Forwarded from `plot`, which would otherwise honour it on
-                its own render paths and silently ignore it on this one.
+                its own render paths and silently ignore it on this one. Beyond
+                keeping the prior artists, it leaves the host's canvas colour,
+                projection frame, empty title and pixel-space tick labels alone
+                -- a preset's dark background belongs to the figure it was drawn
+                for -- and defaults the swatch / legend off. A placement-bearing
+                `colorbar=` still draws a real bar over the swatch.
 
         Returns:
             tuple[Figure, Axes]: The figure and axes drawn on.
@@ -2993,6 +3022,13 @@ class ArrayGlyph(GeoMixin, Glyph):
         `True`) draws a real colorbar over a preset's swatch, while a spec
         carrying only colours/box styles the swatch in place.
 
+        It also records `_render_explicit_options`: the constructor's explicit
+        keys plus this call's, which `Glyph._apply_axis_style` honours in place
+        of `_explicit_options` and `Glyph._draws_own_colorbar` reads to tell an
+        asked-for colorbar from the default one. Rebuilt per call rather than
+        accumulated, and kept separate from `_explicit_options`, for the reasons
+        set out at the assignment.
+
         Args:
             colorbar: The `colorbar=` argument (`bool`, `ColorBar`, or `None`).
             kwargs: The remaining `plot` / `animate` keyword arguments.
@@ -3219,17 +3255,27 @@ class ArrayGlyph(GeoMixin, Glyph):
                 match the data. Drawing the relief needs the `[tiles]` extra
                 (Pillow, and pyproj for a non-4326 `crs`).
             compose: Draw *over* whatever is already on `ax` instead of
-                replacing it, leaving another glyph's layers and colorbar
-                intact. Off by default, where a render replaces every glyph's
-                artists on the axes (see issue #210). Turn it on to lay one
-                field over another.
+                replacing it, leaving another glyph's layers, colorbar and ticks
+                intact, along with the host's title unless this glyph carries
+                one of its own -- and, on a `style=` preset, the host's canvas
+                colour and projection frame too. Off by default, where a render
+                replaces every glyph's artists on the axes (see issue #210).
+                Turn it on to lay one field over another. An overlay also draws
+                **no colorbar of its own** by default: `fig.colorbar()` takes
+                its space from the host axes, so a stack of overlays would
+                re-lay-out the host once per layer. Pass `colorbar=` or
+                `add_colorbar=True` (at construction or on the call) to get one
+                anyway.
             colorbar: Colorbar presence and placement. `None` (default) keeps
                 matplotlib's placement (honouring the legacy `add_colorbar`);
-                `False` draws no colorbar; `True` a default one. Pass a
-                `ColorBar` for control -- an edge (`location`), an `inside`
-                inset that tracks `full_bleed`, a backing `box` (defaulted on
-                for an inset), and text colours (`label_color` for the title,
-                `tick_color` for the tick numbers). Same flag as `animate(colorbar=)`.
+                `False` draws no colorbar; `True` a default one. Under
+                `compose=True`, passing anything but `None` here also counts as
+                asking for the overlay's own colorbar, which is otherwise off.
+                Pass a `ColorBar` for control -- an edge (`location`), an
+                `inside` inset that tracks `full_bleed`, a backing `box`
+                (defaulted on for an inset), and text colours (`label_color` for
+                the title, `tick_color` for the tick numbers). Same flag as
+                `animate(colorbar=)`.
                 On a `style=` preset, a placement `ColorBar` (or `True`) overrides
                 the swatch with a real colorbar; a colours-only `ColorBar` styles
                 the swatch in place (defaults < preset < explicit).
@@ -3256,11 +3302,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                 Color bar options:
                     add_colorbar : bool, optional
                         Whether to draw the glyph's own color bar, by
-                        default True. Set to False for shared-axes
-                        composition, where the host owns a single
-                        aggregated color bar; then `self.cbar` stays
-                        None and no axes space is taken by a color bar.
-                        The mappable is still reachable via `self.im`.
+                        default True -- except under `compose=True`, which
+                        defaults it off so an overlay does not take space
+                        from the host axes; passing it there (`True` or
+                        `False`) still decides the matter. With it off
+                        `self.cbar` stays None, no axes space is taken by a
+                        color bar, and the mappable is still reachable via
+                        `self.im`.
                         Note: for a constant-value field rendered as line
                         `contour` there are no contour lines to map, so the
                         color bar is skipped (with a warning) even when
@@ -4429,8 +4477,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                 replacing it, leaving another glyph's layers, colorbar, title
                 and ticks intact. Off by default, where a render replaces every
                 glyph's artists on the axes (see issue #210). Same flag as
-                `plot(compose=)`; pair it with `add_colorbar=False` unless the
-                animation should add a second colorbar to the host.
+                `plot(compose=)`, including the colorbar default: a composed
+                animation draws none of its own unless the caller asks with
+                `colorbar=` or `add_colorbar=True`, so the host keeps the
+                geometry it had.
             **kwargs: Additional keyword arguments for customizing the animation.
 
                 Plot appearance:
@@ -4454,11 +4504,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                 Color bar options:
                     add_colorbar : bool, optional
                         Whether to draw the glyph's own color bar, by
-                        default True. Set to False for shared-axes
-                        composition, where the host owns a single
-                        aggregated color bar; then `self.cbar` stays
-                        None and no axes space is taken by a color bar.
-                        The mappable is still reachable via `self.im`.
+                        default True -- except under `compose=True`, which
+                        defaults it off so the animation does not take space
+                        from the host axes; passing it there (`True` or
+                        `False`) still decides the matter. With it off
+                        `self.cbar` stays None, no axes space is taken by a
+                        color bar, and the mappable is still reachable via
+                        `self.im`.
                     cbar_orientation : str, optional
                         Prefer `colorbar=ColorBar(orientation=...)`.
                         Orientation of the color bar, by default 'vertical'.
