@@ -61,9 +61,9 @@ VECTOR_KINDS = ("quiver", "barbs", "streamplot")
 #: `_prepare_scalar_mapping` helper auto-derives it from the magnitude.
 VECTOR_DEFAULT_OPTIONS = {
     "density": 1.0,
-    # thin: draw every nth grid point for quiver/barbs. One arrow per cell is
-    # unreadable and slow on a real grid -- a 141x321 window is 45,261 arrows --
-    # and density is a streamplot concept that does not apply to them.
+    # thin: draw every nth grid point for quiver/barbs -- see
+    # VectorGlyph._thinned for why a real grid needs it. density is a
+    # streamplot concept and does not apply to them.
     "thin": 1,
     "scale": None,
     "vmin": None,
@@ -124,8 +124,7 @@ class VectorGlyph(GeoMixin, Glyph):
             host owns a single aggregated colorbar -- pair it with
             `plot(compose=True)` so the host's own layers survive. Set
             `thin=n` to draw every nth grid point for `quiver`/`barbs`,
-            which a real grid needs: one arrow per cell is 45,261 on a
-            141x321 window.
+            which a real grid needs (see `VectorGlyph._thinned`).
 
     Examples:
         - Build a field and inspect the stored magnitude:
