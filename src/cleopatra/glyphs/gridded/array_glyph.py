@@ -2993,11 +2993,6 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         _reject_grouped_kwargs(kwargs)
         _reject_loose_alpha(kwargs)
-        # A key passed here is as explicit as one passed to the constructor.
-        # `_apply_axis_style` only applies options the caller actually asked for,
-        # so without this `plot(xlabel=...)` would be accepted and dropped while
-        # `ArrayGlyph(xlabel=...)` worked.
-        self._explicit_options = getattr(self, "_explicit_options", set()) | set(kwargs)
         for key, val in kwargs.items():
             if key not in self.default_options.keys():
                 raise ValueError(
@@ -3006,6 +3001,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                 )
             else:
                 self.default_options[key] = val
+        # A key passed here is as explicit as one passed to the constructor:
+        # `_apply_axis_style` only applies options the caller actually asked for,
+        # so without this `plot(xlabel=...)` would be accepted and dropped while
+        # `ArrayGlyph(xlabel=...)` worked. Recorded only once every key has
+        # validated, so a call that raises part-way leaves nothing behind for the
+        # next one to pick up.
+        self._explicit_options = getattr(self, "_explicit_options", set()) | set(kwargs)
         resolved_colorbar = _resolve_colorbar(colorbar)
         self.default_options.update(resolved_colorbar)
         for key in _STYLE_OVERRIDE_KEYS:
