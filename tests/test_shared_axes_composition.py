@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
+from cleopatra.glyphs.base.glyph import _mark_render_artists, _render_owner_token
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
 
@@ -150,6 +151,61 @@ class TestDefaultStillReplaces:
         ArrayGlyph(scalar).plot(ax=ax)
         VectorGlyph(x, y, u, v, ax=ax, add_colorbar=False).plot(kind="quiver", ax=ax)
         assert len(ax.images) == 0, "default behaviour changed; issue #210 may regress"
+        plt.close(fig)
+
+
+class TestRenderArtistRegistry:
+    """Direct tests for the ownership bookkeeping."""
+
+    def test_no_owner_uses_a_shared_bucket(self):
+        """`None` maps to a single reserved token, not a per-call one.
+
+        Test scenario:
+            A caller with no glyph to attribute artists to still needs a stable
+            bucket to mark and clear under.
+        """
+        assert _render_owner_token(None) == 0
+        assert _render_owner_token(None) == 0, "the unowned bucket must be stable"
+
+    def test_each_owner_gets_its_own_token(self):
+        """Two glyphs never share a token.
+
+        Test scenario:
+            Sharing one would let either clear the other's artists, which is the
+            defect this keying exists to prevent.
+        """
+
+        class _Owner:
+            pass
+
+        first, second = _Owner(), _Owner()
+        assert _render_owner_token(first) != _render_owner_token(second)
+        assert _render_owner_token(first) == _render_owner_token(first), (
+            "token must be stable"
+        )
+
+    def test_stale_entries_are_pruned_on_the_next_mark(self):
+        """A throwaway glyph's detached artists do not accumulate.
+
+        Test scenario:
+            `SomeGlyph(...).plot(ax=ax)` never comes back to clear its own
+            entry, so without pruning the registry would grow by one per such
+            call for the life of the axes.
+        """
+
+        class _Owner:
+            pass
+
+        fig, ax = plt.subplots()
+        gone = ax.plot([0, 1], [0, 1])[0]
+        _mark_render_artists(ax, _Owner(), gone)
+        assert len(ax._cleo_render_artists) == 1, "precondition: one entry recorded"
+
+        gone.remove()  # the artist is detached, but its entry lingers
+        _mark_render_artists(ax, _Owner(), ax.plot([0, 1], [1, 0])[0])
+        assert len(ax._cleo_render_artists) == 1, (
+            f"stale entry not pruned: {ax._cleo_render_artists}"
+        )
         plt.close(fig)
 
 
