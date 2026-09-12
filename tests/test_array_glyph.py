@@ -310,9 +310,10 @@ class TestPlotArray:
         """Passing both a ColorScaling and a raw norm warns exactly once; the norm renders."""
         arr = np.arange(100, dtype=float).reshape(10, 10)
         caller_norm = PowerNorm(gamma=0.4, vmin=0, vmax=99)
+        scale = ColorScaling.equalize()
         glyph = ArrayGlyph(arr)
         with pytest.warns(UserWarning, match="color scale is ignored") as record:
-            glyph.plot(color=ColorScaling.equalize(), norm=caller_norm, cmap="Blues")
+            glyph.plot(color=scale, norm=caller_norm, cmap="Blues")
         conflict = [w for w in record if "color scale is ignored" in str(w.message)]
         assert len(conflict) == 1, f"expected exactly one conflict warning, got {len(conflict)}"
         assert glyph.im.norm is caller_norm, "the caller norm should win the conflict"
@@ -333,9 +334,8 @@ class TestPlotArray:
         glyph = ArrayGlyph(np.arange(100, dtype=float).reshape(10, 10))
         _, cbar_kw = glyph._caller_norm_and_cbar_kw(norm, np.array([0.0, 50.0, 99.0]))
         ticks = np.asarray(cbar_kw["ticks"])
-        assert ticks.min() >= 0.0 and ticks.max() <= 50.0, (
-            f"ticks should stay within the norm range [0, 50], got {ticks}"
-        )
+        assert ticks.min() >= 0.0, f"ticks below the norm range: {ticks}"
+        assert ticks.max() <= 50.0, f"ticks above the norm range: {ticks}"
 
     def test_all_non_finite_array_reports_no_finite_values(self):
         """Equalize on an all-non-finite ArrayGlyph reports the real cause, not 'pass values='."""
