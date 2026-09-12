@@ -327,8 +327,9 @@ class TestHistogramGlyphBehaviourPreserved:
             "histogram tick size changed"
         )
         ygrid = ax.get_ygridlines()
-        assert ygrid and ygrid[0].get_alpha() == DEFAULT_OPTIONS["grid_alpha"], (
-            "histogram y grid changed"
+        assert ygrid, "the histogram drew no y gridlines"
+        assert ygrid[0].get_alpha() == DEFAULT_OPTIONS["grid_alpha"], (
+            f"histogram y grid alpha changed to {ygrid[0].get_alpha()}"
         )
         plt.close(fig)
 

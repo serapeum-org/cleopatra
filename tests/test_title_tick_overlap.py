@@ -150,7 +150,8 @@ class TestMultiLineTitleClearsTickLabels:
         plt.close(fig)
 
         labels, offset_hit = _collisions(arr, TWO_LINE, figsize=None)
-        assert not labels and not offset_hit
+        assert not labels, f"the title overlaps {len(labels)} tick label(s)"
+        assert not offset_hit, "the title overlaps the axis offset text"
 
 
 class TestMultilineTitlePad:

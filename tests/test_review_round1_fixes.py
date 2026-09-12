@@ -126,7 +126,8 @@ class TestNonNumericTitleSize:
         fig, ax = plt.subplots()
         ax.matshow(np.zeros((4, 4)))
         pad = multiline_title_pad(ax, "a\nb", size)
-        assert isinstance(pad, float) and pad > 0, f"pad was {pad!r}"
+        assert isinstance(pad, float), f"pad was {pad!r}, not a float"
+        assert pad > 0, f"pad was {pad!r}, not a positive number of points"
         plt.close(fig)
 
 
@@ -299,15 +300,16 @@ class TestThinValidationOrder:
         rng = np.random.default_rng(0)
         fig, ax = plt.subplots()
         ArrayGlyph(rng.random((20, 30))).plot(ax=ax)
+        glyph = VectorGlyph(
+            x,
+            y,
+            rng.random((20, 30)),
+            rng.random((20, 30)),
+            thin=0,
+            add_colorbar=False,
+        )
         with pytest.raises(ValueError, match="thin must be a positive integer"):
-            VectorGlyph(
-                x,
-                y,
-                rng.random((20, 30)),
-                rng.random((20, 30)),
-                thin=0,
-                add_colorbar=False,
-            ).plot(kind="quiver", ax=ax)
+            glyph.plot(kind="quiver", ax=ax)
         assert len(ax.images) == 1, "the host layer was cleared before the error"
         plt.close(fig)
 
@@ -322,15 +324,16 @@ class TestThinValidationOrder:
         x, y = np.meshgrid(np.arange(30), np.arange(20))
         rng = np.random.default_rng(0)
         fig, ax = plt.subplots()
+        glyph = VectorGlyph(
+            x,
+            y,
+            rng.random((20, 30)),
+            rng.random((20, 30)),
+            thin=5,
+            add_colorbar=False,
+        )
         with pytest.warns(UserWarning, match="no effect on kind='streamplot'"):
-            VectorGlyph(
-                x,
-                y,
-                rng.random((20, 30)),
-                rng.random((20, 30)),
-                thin=5,
-                add_colorbar=False,
-            ).plot(kind="streamplot", ax=ax)
+            glyph.plot(kind="streamplot", ax=ax)
         plt.close(fig)
 
 
@@ -357,4 +360,7 @@ class TestOwnerTokenIdentity:
             Stability is what lets a glyph replace its own artists across calls.
         """
         glyph = ArrayGlyph(np.random.default_rng(0).random((20, 30)))
-        assert _render_owner_token(glyph) == _render_owner_token(glyph)
+        first_lookup = _render_owner_token(glyph)
+        assert _render_owner_token(glyph) == first_lookup, (
+            "a second lookup handed the same glyph a different token"
+        )

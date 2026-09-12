@@ -181,9 +181,12 @@ class TestRenderArtistRegistry:
             pass
 
         first, second = _Owner(), _Owner()
-        assert _render_owner_token(first) != _render_owner_token(second)
-        assert _render_owner_token(first) == _render_owner_token(first), (
-            "token must be stable"
+        first_token = _render_owner_token(first)
+        assert first_token != _render_owner_token(second), (
+            "two distinct owners shared a token"
+        )
+        assert _render_owner_token(first) == first_token, (
+            "a second lookup handed the same owner a different token"
         )
 
     def test_stale_entries_are_pruned_on_the_next_mark(self):
@@ -291,8 +294,9 @@ class TestArrowThinning:
             rejected on the same terms as `quiver`.
         """
         x, y, u, v = field
+        glyph = VectorGlyph(x, y, u, v, thin=bad, add_colorbar=False)
         with pytest.raises(ValueError, match="thin must be a positive integer"):
-            VectorGlyph(x, y, u, v, thin=bad, add_colorbar=False).plot(kind=kind)
+            glyph.plot(kind=kind)
         plt.close("all")
 
 
@@ -307,10 +311,9 @@ class TestGroupedParameterTypeError:
             named neither the parameter nor what it expected.
         """
         x, y, u, v = field
+        glyph = VectorGlyph(x, y, u, v, add_colorbar=False)
         with pytest.raises(TypeError, match="grouped parameter object"):
-            VectorGlyph(x, y, u, v, add_colorbar=False).plot(
-                kind="quiver", color="black"
-            )
+            glyph.plot(kind="quiver", color="black")
         plt.close("all")
 
     def test_error_mentions_a_concrete_type(self, field):
@@ -321,10 +324,9 @@ class TestGroupedParameterTypeError:
             what to pass instead.
         """
         x, y, u, v = field
+        glyph = VectorGlyph(x, y, u, v, add_colorbar=False)
         with pytest.raises(TypeError, match="ColorScaling"):
-            VectorGlyph(x, y, u, v, add_colorbar=False).plot(
-                kind="quiver", color="black"
-            )
+            glyph.plot(kind="quiver", color="black")
         plt.close("all")
 
 
