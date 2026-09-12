@@ -9176,20 +9176,23 @@ unset field at the existing default.</p>
 before it. That is deliberate: a second glyph bound to an existing axes would
 otherwise leave the first one's artists attached and driven by nothing, which is
 what once froze an animation at its first frame.</p>
-<p>Pass <code>compose=True</code> to <code>plot()</code> or <code>animate()</code> to draw <em>over</em> what is already
-there instead — the classic scalar field with wind arrows on top:</p>
+<p>Pass <code>compose=True</code> to draw <em>over</em> what is already there instead — the classic
+scalar field with wind arrows on top:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">temperature</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">colorbar</span><span class="o">=</span><span class="n">ColorBar</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">"500 hPa T [C]"</span><span class="p">))</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">VectorGlyph</span><span class="p">(</span><span class="n">xx</span><span class="p">,</span> <span class="n">yy</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">add_colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">thin</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">kind</span><span class="o">=</span><span class="s2">"quiver"</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">compose</span><span class="o">=</span><span class="kc">True</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">VectorGlyph</span><span class="p">(</span><span class="n">xx</span><span class="p">,</span> <span class="n">yy</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">thin</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">"quiver"</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">compose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
+<p>Three methods accept it: <code>ArrayGlyph.plot</code>, <code>ArrayGlyph.animate</code> and
+<code>VectorGlyph.plot</code>. Every other glyph replaces unconditionally, so passing
+<code>compose=</code> to one of them is a <code>TypeError</code>.</p>
 <p>A composing render clears only the artists it put there itself, so the host's
-layers, colorbar, title and projection frame all survive. A glyph replotting
-onto its own axes still replaces its own artists either way, so nothing is
-orphaned.</p>
-<p>Pair it with <code>add_colorbar=False</code> on the overlay when the host owns the single
-shared colorbar.</p>
+layers, colorbar, title, ticks and projection frame all survive. A glyph
+replotting onto its own axes still replaces its own artists either way, so
+nothing is orphaned.</p>
+<p>The overlay also draws no colorbar of its own, since a second colorbar would
+take its space from the host axes and re-lay it out on every overlay. Pass
+<code>add_colorbar=True</code> (or a <code>colorbar=</code> spec) if the overlay should have one
+anyway.</p>
 <h2 id="thinning-a-vector-field-thin"><a class="toclink" href="#thinning-a-vector-field-thin">Thinning a vector field (<code>thin=</code>)</a><a class="headerlink" href="#thinning-a-vector-field-thin" title="Permanent link">#</a></h2>
 <p><code>quiver</code> and <code>barbs</code> draw one arrow per grid point, which on a real grid is both
 unreadable and slow — a 141x321 window is 45,261 arrows. <code>thin=n</code> draws every
