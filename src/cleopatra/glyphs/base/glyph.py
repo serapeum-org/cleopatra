@@ -2141,6 +2141,13 @@ class Glyph:
         Thin wrapper over `apply_axis_style`; see it for what is applied and
         why only explicitly-passed options are honoured by default.
 
+        A render method that accepts these options as keyword arguments sets
+        `_render_explicit_options` to the constructor's keys plus its own, and
+        that set wins here. It is rebuilt on every call rather than accumulated,
+        so an option the caller drops on a later call stops being re-applied --
+        and it is kept apart from `_explicit_options`, which `create_figure_axes`
+        reads to decide whether to auto-size the figure.
+
         Args:
             ax: The axes to style.
             apply_defaults: Apply every option, not only the explicitly-passed
@@ -2148,10 +2155,13 @@ class Glyph:
             grid_axis: Which gridlines `grid_alpha` draws; `None` leaves the
                 grid untouched.
         """
+        explicit = getattr(self, "_render_explicit_options", None)
+        if explicit is None:
+            explicit = getattr(self, "_explicit_options", set())
         apply_axis_style(
             ax,
             self.default_options,
-            getattr(self, "_explicit_options", set()),
+            explicit,
             apply_defaults=apply_defaults,
             grid_axis=grid_axis,
         )
