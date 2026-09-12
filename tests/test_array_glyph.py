@@ -286,7 +286,9 @@ class TestPlotArray:
         bounds = np.array([0.0, 25.0, 50.0, 75.0, 100.0])
         norm = BoundaryNorm(bounds, ncolors=256)
         glyph = ArrayGlyph(np.arange(100, dtype=float).reshape(10, 10))
-        out_norm, cbar_kw = glyph._caller_norm_and_cbar_kw(norm, np.array([0.0, 50.0, 100.0]))
+        out_norm, cbar_kw = glyph._caller_norm_and_cbar_kw(
+            norm, np.array([0.0, 50.0, 100.0])
+        )
         assert out_norm is norm, "should return the caller's norm unchanged"
         assert np.array_equal(cbar_kw["ticks"], bounds), (
             f"BoundaryNorm bar ticks should be its boundaries, got {cbar_kw['ticks']}"
