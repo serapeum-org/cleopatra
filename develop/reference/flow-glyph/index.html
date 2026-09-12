@@ -3173,8 +3173,7 @@ cleopatra.glyphs.gridded.vector_glyph.VectorGlyph: Magnitude-coloured vector fie
 <span class="normal"><a href="#__codelineno-0-424">424</a></span>
 <span class="normal"><a href="#__codelineno-0-425">425</a></span>
 <span class="normal"><a href="#__codelineno-0-426">426</a></span>
-<span class="normal"><a href="#__codelineno-0-427">427</a></span>
-<span class="normal"><a href="#__codelineno-0-428">428</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="k">class</span><span class="w"> </span><span class="nc">FlowGlyph</span><span class="p">(</span><span class="n">GeoMixin</span><span class="p">,</span> <span class="n">Glyph</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-427">427</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="k">class</span><span class="w"> </span><span class="nc">FlowGlyph</span><span class="p">(</span><span class="n">GeoMixin</span><span class="p">,</span> <span class="n">Glyph</span><span class="p">):</span>
 <a id="__codelineno-0-80" name="__codelineno-0-80"></a><span class="w">    </span><span class="sd">"""Visualization class for magnitude-coloured, width-scaled flow paths.</span>
 <a id="__codelineno-0-81" name="__codelineno-0-81"></a>
 <a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="sd">    Renders a sequence of polylines as a `LineCollection`. With a per-path</span>
@@ -3521,9 +3520,8 @@ cleopatra.glyphs.gridded.vector_glyph.VectorGlyph: Magnitude-coloured vector fie
 <a id="__codelineno-0-423" name="__codelineno-0-423"></a>
 <a id="__codelineno-0-424" name="__codelineno-0-424"></a>            <span class="k">if</span> <span class="n">opts</span><span class="p">[</span><span class="s2">"title"</span><span class="p">]:</span>
 <a id="__codelineno-0-425" name="__codelineno-0-425"></a>                <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">"title"</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">"title_size"</span><span class="p">])</span>
-<a id="__codelineno-0-426" name="__codelineno-0-426"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_apply_axis_style</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
-<a id="__codelineno-0-427" name="__codelineno-0-427"></a>
-<a id="__codelineno-0-428" name="__codelineno-0-428"></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">lc</span>
+<a id="__codelineno-0-426" name="__codelineno-0-426"></a>
+<a id="__codelineno-0-427" name="__codelineno-0-427"></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">lc</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -3935,8 +3933,7 @@ when coloured).</p>
 <span class="normal"><a href="#__codelineno-0-424">424</a></span>
 <span class="normal"><a href="#__codelineno-0-425">425</a></span>
 <span class="normal"><a href="#__codelineno-0-426">426</a></span>
-<span class="normal"><a href="#__codelineno-0-427">427</a></span>
-<span class="normal"><a href="#__codelineno-0-428">428</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-240" name="__codelineno-0-240"></a><span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-427">427</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-240" name="__codelineno-0-240"></a><span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span>
 <a id="__codelineno-0-241" name="__codelineno-0-241"></a>    <span class="bp">self</span><span class="p">,</span>
 <a id="__codelineno-0-242" name="__codelineno-0-242"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-243" name="__codelineno-0-243"></a>    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4122,9 +4119,8 @@ when coloured).</p>
 <a id="__codelineno-0-423" name="__codelineno-0-423"></a>
 <a id="__codelineno-0-424" name="__codelineno-0-424"></a>        <span class="k">if</span> <span class="n">opts</span><span class="p">[</span><span class="s2">"title"</span><span class="p">]:</span>
 <a id="__codelineno-0-425" name="__codelineno-0-425"></a>            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">"title"</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">"title_size"</span><span class="p">])</span>
-<a id="__codelineno-0-426" name="__codelineno-0-426"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_apply_axis_style</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
-<a id="__codelineno-0-427" name="__codelineno-0-427"></a>
-<a id="__codelineno-0-428" name="__codelineno-0-428"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">lc</span>
+<a id="__codelineno-0-426" name="__codelineno-0-426"></a>
+<a id="__codelineno-0-427" name="__codelineno-0-427"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">lc</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
