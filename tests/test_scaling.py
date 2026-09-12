@@ -453,6 +453,24 @@ class TestColorScalingEqualize:
             f"FuncNorm vmax should honour the [0, 100] window, got {norm.vmax}"
         )
 
+    def test_window_excluding_all_cells_falls_back_to_full_field(self):
+        """A window that excludes every cell falls back to ranking the whole field."""
+        data = np.linspace(0.0, 10.0, 100)
+        norm, _ = ColorScaling.equalize().build_norm(
+            np.array([100.0, 200.0]), values=data
+        )
+        assert norm.vmin == pytest.approx(0.0), (
+            f"the fallback should rank the full field, got vmin={norm.vmin}"
+        )
+
+    def test_degenerate_window_bounds_skip_the_clip(self):
+        """Equal window bounds skip the clip and rank the full field."""
+        data = np.linspace(0.0, 10.0, 100)
+        norm, _ = ColorScaling.equalize().build_norm(np.array([5.0, 5.0]), values=data)
+        assert norm.vmax == pytest.approx(10.0), (
+            f"a degenerate window should not clip, got vmax={norm.vmax}"
+        )
+
 
 class TestParamGroupsEmitOnlySetFields:
     """`Contour`/`CellValues`/`DataStyle`/`Classify` emit only the fields set."""
