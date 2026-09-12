@@ -182,6 +182,59 @@ def _immediate_figure(ax: Axes) -> Figure | SubFigure:
     return fig
 
 
+def apply_axis_style(
+    ax: Axes,
+    options: dict,
+    explicit: set[str] | None = None,
+    *,
+    apply_defaults: bool = False,
+    grid_axis: str = "both",
+) -> None:
+    """Apply the shared axis-styling options to `ax`.
+
+    `DEFAULT_OPTIONS` advertises `xlabel`, `ylabel`, their font sizes, the tick
+    label sizes and `grid_alpha`, and the option validator accepts all of them
+    -- so a caller passing any is told the key is supported. This is what makes
+    them reach the axes.
+
+    Only options the caller passed explicitly are applied by default. The
+    package's declared defaults differ from matplotlib's (tick labels at 11
+    against matplotlib's 10, `grid_alpha` at 0.75), so applying them
+    unconditionally would restyle every figure the package has ever drawn.
+    `apply_defaults=True` opts into that, for a glyph whose current output
+    already reflects the declared defaults.
+
+    A module-level function rather than a `Glyph` method because `HistogramGlyph`
+    does not inherit from `Glyph` and needs the same behaviour.
+
+    Args:
+        ax: The axes to style.
+        options: The glyph's resolved options (its `default_options`).
+        explicit: The option keys the caller passed explicitly. `None` is
+            treated as none of them.
+        apply_defaults: Apply every option, not only the explicitly-passed ones.
+            For a glyph that already renders the declared defaults and must keep
+            doing so.
+        grid_axis: Which gridlines `grid_alpha` draws -- `"both"`, `"x"` or
+            `"y"`.
+    """
+    explicit = explicit or set()
+
+    def wanted(*keys: str) -> bool:
+        return apply_defaults or any(key in explicit for key in keys)
+
+    if wanted("xlabel", "xlabel_font_size"):
+        ax.set_xlabel(options["xlabel"], fontsize=options["xlabel_font_size"])
+    if wanted("ylabel", "ylabel_font_size"):
+        ax.set_ylabel(options["ylabel"], fontsize=options["ylabel_font_size"])
+    if wanted("xtick_font_size"):
+        ax.tick_params(axis="x", labelsize=options["xtick_font_size"])
+    if wanted("ytick_font_size"):
+        ax.tick_params(axis="y", labelsize=options["ytick_font_size"])
+    if wanted("grid_alpha"):
+        ax.grid(axis=grid_axis, alpha=options["grid_alpha"])
+
+
 def _clear_prior_render_artists(ax: Axes) -> None:
     """Remove a prior render call's tracked artists from `ax`.
 
@@ -1796,6 +1849,32 @@ class Glyph:
             **kw,
         )
         ax.add_patch(rect)
+
+    def _apply_axis_style(
+        self,
+        ax: Axes,
+        *,
+        apply_defaults: bool = False,
+        grid_axis: str = "both",
+    ) -> None:
+        """Apply this glyph's axis-styling options to `ax`.
+
+        Thin wrapper over `apply_axis_style`; see it for what is applied and
+        why only explicitly-passed options are honoured by default.
+
+        Args:
+            ax: The axes to style.
+            apply_defaults: Apply every option, not only the explicitly-passed
+                ones.
+            grid_axis: Which gridlines `grid_alpha` draws.
+        """
+        apply_axis_style(
+            ax,
+            self.default_options,
+            getattr(self, "_explicit_options", set()),
+            apply_defaults=apply_defaults,
+            grid_axis=grid_axis,
+        )
 
     def adjust_ticks(
         self,

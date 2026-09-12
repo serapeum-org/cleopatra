@@ -813,8 +813,7 @@ class RgbBands:
         """
         if array.shape[0] < 3:
             raise ValueError(
-                f"RgbBands needs an array with at least 3 bands, "
-                f"got {array.shape[0]}."
+                f"RgbBands needs an array with at least 3 bands, got {array.shape[0]}."
             )
 
     def prepare(self, array: np.ndarray) -> np.ndarray:
@@ -1064,9 +1063,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             int: The number of in-domain cells on the counted frame.
         """
         first_frame = array if (is_rgb or array.ndim < 3) else array[0]
-        in_domain = ~(
-            ma.getmaskarray(first_frame) | np.isnan(ma.getdata(first_frame))
-        )
+        in_domain = ~(ma.getmaskarray(first_frame) | np.isnan(ma.getdata(first_frame)))
         return int(np.count_nonzero(in_domain))
 
     def __init__(
@@ -1696,7 +1693,10 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         default = tuple(self.default_options["figsize"])
         if self.default_options.get("projection") == "globe":
-            return (7.5, 6.5)  # the orthographic disc is ~square, not the lon/lat aspect
+            return (
+                7.5,
+                6.5,
+            )  # the orthographic disc is ~square, not the lon/lat aspect
         try:
             if self.extent is not None:
                 xmin, xmax, ymin, ymax = (float(v) for v in self.extent)
@@ -1716,12 +1716,14 @@ class ArrayGlyph(GeoMixin, Glyph):
         if not (width > 0 and height > 0):
             return default
         aspect = width / height
-        plot_height = 6.0        # target plot height (inches)
-        cbar_pad = 1.8           # room for the colorbar + its labels
+        plot_height = 6.0  # target plot height (inches)
+        cbar_pad = 1.8  # room for the colorbar + its labels
         max_width = 14.0
         fig_w = plot_height * aspect + cbar_pad
         fig_h = plot_height
-        if fig_w > max_width:    # very wide field: cap width, shrink height to keep the aspect
+        if (
+            fig_w > max_width
+        ):  # very wide field: cap width, shrink height to keep the aspect
             fig_w = max_width
             fig_h = max(3.5, (max_width - cbar_pad) / aspect)
         fig_w = max(5.0, fig_w)
@@ -2485,7 +2487,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         # Fold style (and an optional forwarded hillshade) into the grouped
         # data_style object; leaving hillshade unset keeps any sticky value.
         if "hillshade" in kwargs:
-            data_style = DataStyle.for_apply_style(style, hillshade=kwargs.pop("hillshade"))
+            data_style = DataStyle.for_apply_style(
+                style, hillshade=kwargs.pop("hillshade")
+            )
         else:
             data_style = DataStyle.for_apply_style(style)
         return self.plot(data_style=data_style, ax=self.ax, **kwargs)
@@ -2602,6 +2606,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         self.ax.set_title(
             self.default_options["title"], fontsize=self.default_options["title_size"]
         )
+        self._apply_axis_style(self.ax)
         _mark_render_artists(self.ax, self.cbar, self.im)
         return cast(Figure, self.fig), self.ax
 
@@ -2622,7 +2627,12 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         if self._coords is not None:
             x, y = self._coords
-            return float(np.min(x)), float(np.max(x)), float(np.min(y)), float(np.max(y))
+            return (
+                float(np.min(x)),
+                float(np.max(x)),
+                float(np.min(y)),
+                float(np.max(y)),
+            )
         if self.extent is not None:
             x0, x1, y0, y1 = self.extent
             return float(x0), float(x1), float(y0), float(y1)
@@ -2685,21 +2695,37 @@ class ArrayGlyph(GeoMixin, Glyph):
                 [a for a in (*self.ax.patches, *self.ax.lines) if id(a) not in before],
             )
             images = apply_data_style(
-                self.ax, {layer: masked}, style=style, x=x_edges, y=y_edges,
-                shading="flat", **swatch_kw, **override,
+                self.ax,
+                {layer: masked},
+                style=style,
+                x=x_edges,
+                y=y_edges,
+                shading="flat",
+                **swatch_kw,
+                **override,
             )
         elif coords is not None:
             images = apply_data_style(
-                self.ax, {layer: data}, style=style, x=coords[0], y=coords[1],
-                shading="nearest", **swatch_kw, **override,
+                self.ax,
+                {layer: data},
+                style=style,
+                x=coords[0],
+                y=coords[1],
+                shading="nearest",
+                **swatch_kw,
+                **override,
             )
         else:
             render_kwargs: dict[str, Any] = (
                 {"extent": self.extent} if self.extent is not None else {}
             )
             images = apply_data_style(
-                self.ax, {layer: data}, style=style, **swatch_kw,
-                **render_kwargs, **override,
+                self.ax,
+                {layer: data},
+                style=style,
+                **swatch_kw,
+                **render_kwargs,
+                **override,
             )
         return images[layer]
 
@@ -2713,9 +2739,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         hillshade = resolve_hillshade(self.default_options.get("hillshade"))
         if hillshade is None:
             return
-        categorical = (
-            resolve_single_layer_style(style)[1].get("categories") is not None
-        )
+        categorical = resolve_single_layer_style(style)[1].get("categories") is not None
         if categorical or self._coords is not None:
             kind = "categorical" if categorical else "curvilinear"
             warnings.warn(
@@ -2735,11 +2759,11 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         cbar_cfg = {**style_cfg, **resolve_style_overrides(self._style_color_overrides)}
         cbar_norm, _lo, _hi = resolve_style_norm(data, cbar_cfg)
-        mappable = ScalarMappable(norm=cbar_norm, cmap=resolve_colormap(cbar_cfg["cmap"]))
-        mappable.set_array([])
-        return self.create_color_bar(
-            self.ax, mappable, self._style_cbar_kw(cbar_norm)
+        mappable = ScalarMappable(
+            norm=cbar_norm, cmap=resolve_colormap(cbar_cfg["cmap"])
         )
+        mappable.set_array([])
+        return self.create_color_bar(self.ax, mappable, self._style_cbar_kw(cbar_norm))
 
     def apply_colormap(self, cmap: Colormap | str) -> np.ndarray:
         """Apply a matplotlib colormap to an array.
@@ -3025,8 +3049,13 @@ class ArrayGlyph(GeoMixin, Glyph):
         )
         if norm is None:
             im = ax.pcolormesh(
-                x_edges, y_edges, masked, cmap=cmap,
-                vmin=ticks[0], vmax=ticks[-1], shading="flat",
+                x_edges,
+                y_edges,
+                masked,
+                cmap=cmap,
+                vmin=ticks[0],
+                vmax=ticks[-1],
+                shading="flat",
             )
         else:
             im = ax.pcolormesh(
@@ -3678,7 +3707,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                 if basemap is not None:
                     self._draw_basemap(basemap)
                 if full_bleed:
-                    self._apply_full_bleed(facecolor=full_bleed if isinstance(full_bleed, str) else None)
+                    self._apply_full_bleed(
+                        facecolor=full_bleed if isinstance(full_bleed, str) else None
+                    )
                 elif getattr(self, "_auto_figure", False):
                     self._tighten_figure()
                 return self.fig, self.ax
@@ -3708,7 +3739,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                 )
                 self._vmin = vmin_final
                 self._vmax = vmax_final
-                if "ticks_spacing" not in kwargs and "ticks_spacing" not in resolved_colorbar:
+                if (
+                    "ticks_spacing" not in kwargs
+                    and "ticks_spacing" not in resolved_colorbar
+                ):
                     self.ticks_spacing = (vmax_final - vmin_final) / 10 or 1.0
                     self.default_options["ticks_spacing"] = self.ticks_spacing
 
@@ -3725,8 +3759,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 self.vmin,
                 vmin_pinned=self._vmin_explicit,
                 ticks_spacing_pinned=(
-                    "ticks_spacing" in kwargs
-                    or "ticks_spacing" in resolved_colorbar
+                    "ticks_spacing" in kwargs or "ticks_spacing" in resolved_colorbar
                 ),
             )
             self.default_options["vmax"] = self.vmax
@@ -3786,6 +3819,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         ax.set_title(
             self.default_options["title"], fontsize=self.default_options["title_size"]
         )
+        self._apply_axis_style(ax)
 
         if self.extent is None and effective_kind == "imshow":
             ax.set_xticklabels([])
@@ -3817,7 +3851,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         if basemap is not None:
             self._draw_basemap(basemap)
         if full_bleed:
-            self._apply_full_bleed(facecolor=full_bleed if isinstance(full_bleed, str) else None)
+            self._apply_full_bleed(
+                facecolor=full_bleed if isinstance(full_bleed, str) else None
+            )
         elif getattr(self, "_auto_figure", False):
             self._tighten_figure()
         return fig, ax
@@ -4744,9 +4780,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                             vmax_prefix=vmax_prefix,
                             bounds=(0.02, 0.92, 0.32, 0.06),
                             text_color=self.default_options.get("cbar_label_color")
-                            or _swatch_text_default(self.default_options.get("cbar_box")),
+                            or _swatch_text_default(
+                                self.default_options.get("cbar_box")
+                            ),
                             value_color=self.default_options.get("cbar_tick_color")
-                            or _swatch_text_default(self.default_options.get("cbar_box")),
+                            or _swatch_text_default(
+                                self.default_options.get("cbar_box")
+                            ),
                             box=self.default_options.get("cbar_box"),
                         )
                     alpha_vmin = cfg.get("alpha_vmin")
@@ -4767,6 +4807,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         ax.set_title(
             self.default_options["title"], fontsize=self.default_options["title_size"]
         )
+        self._apply_axis_style(ax)
         ax.set_xticklabels([])
         ax.set_yticklabels([])
 
@@ -4928,7 +4969,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         if basemap is not None:
             self._draw_basemap(basemap)
         if full_bleed:
-            self._apply_full_bleed(facecolor=full_bleed if isinstance(full_bleed, str) else None)
+            self._apply_full_bleed(
+                facecolor=full_bleed if isinstance(full_bleed, str) else None
+            )
         else:
             plt.tight_layout()
             if getattr(self, "_auto_figure", False):
@@ -4952,4 +4995,3 @@ class ArrayGlyph(GeoMixin, Glyph):
             *cell_text_value,
         )
         return anim
-

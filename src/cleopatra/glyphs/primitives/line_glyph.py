@@ -126,7 +126,12 @@ class LineGlyph(Glyph):
         return self.ax
 
     def _apply_title(self, ax: Axes, title: str | None) -> None:
-        """Apply a title override (or the option default) to `ax`."""
+        """Apply a title override (or the option default) and the axis styling.
+
+        The axis options travel with the title because they are declared in the
+        same `DEFAULT_OPTIONS` block and validated together -- applying one set
+        without the other is what made `xlabel` and friends silently dead.
+        """
         if title is not None:
             self.default_options["title"] = title
         if self.default_options["title"]:
@@ -134,6 +139,7 @@ class LineGlyph(Glyph):
                 self.default_options["title"],
                 fontsize=self.default_options["title_size"],
             )
+        self._apply_axis_style(ax)
 
     def line(
         self,

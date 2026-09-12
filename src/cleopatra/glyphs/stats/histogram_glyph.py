@@ -70,6 +70,7 @@ from cleopatra.styling.colors import resolve_colormap
 from cleopatra.glyphs.base.glyph import (
     _clear_prior_render_artists,
     _mark_render_artists,
+    apply_axis_style,
     _root_figure,
 )
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
@@ -562,17 +563,7 @@ class HistogramGlyph:
             bins.append(bins_i)
             patches.append(patches_i)
 
-        ax.grid(axis="y", alpha=self.default_options["grid_alpha"])
-        ax.set_xlabel(
-            self.default_options["xlabel"],
-            fontsize=self.default_options["xlabel_font_size"],
-        )
-        ax.set_ylabel(
-            self.default_options["ylabel"],
-            fontsize=self.default_options["ylabel_font_size"],
-        )
-        ax.tick_params(axis="x", labelsize=self.default_options["xtick_font_size"])
-        ax.tick_params(axis="y", labelsize=self.default_options["ytick_font_size"])
+        apply_axis_style(ax, self.default_options, apply_defaults=True, grid_axis="y")
         hist = {"n": n, "bins": bins, "patches": patches}
         _mark_render_artists(ax, *patches)
         return fig, ax, hist
@@ -683,12 +674,13 @@ class HistogramGlyph:
         return [values[:, i] for i in range(values.shape[1])]
 
     def _apply_axis_labels(self, ax: Axes) -> None:
-        """Apply the styled x/y axis labels from default_options to `ax`."""
-        opts = self.default_options
-        ax.set_xlabel(opts["xlabel"], fontsize=opts["xlabel_font_size"])
-        ax.set_ylabel(opts["ylabel"], fontsize=opts["ylabel_font_size"])
-        ax.tick_params(axis="x", labelsize=opts["xtick_font_size"])
-        ax.tick_params(axis="y", labelsize=opts["ytick_font_size"])
+        """Apply the styled x/y axis labels and tick sizes to `ax`.
+
+        Delegates to the shared `apply_axis_style`. `apply_defaults` is
+        on because this glyph has always rendered the declared defaults (tick
+        labels at 11, not matplotlib's 10) and must keep doing so.
+        """
+        apply_axis_style(ax, self.default_options, apply_defaults=True)
 
     def boxplot(
         self,
