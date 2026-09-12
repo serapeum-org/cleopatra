@@ -80,8 +80,8 @@ there instead — the classic scalar field with wind arrows on top:
 ```python
 fig, ax = plt.subplots()
 temperature.plot(ax=ax, colorbar=ColorBar(label="500 hPa T [C]"))
-VectorGlyph(xx, yy, u, v, ax=ax, add_colorbar=False).plot(
-    kind="quiver", ax=ax, compose=True, thin=4
+VectorGlyph(xx, yy, u, v, ax=ax, add_colorbar=False, thin=4).plot(
+    kind="quiver", ax=ax, compose=True
 )
 ```
 
@@ -102,6 +102,9 @@ nth point along each axis:
 ```python
 VectorGlyph(xx, yy, u, v, thin=4).plot(kind="quiver")
 ```
+
+`thin` is a construction-time option like `density` and `scale`, not a `plot()`
+argument.
 
 It applies to `quiver` and `barbs`. `streamplot` seeds its own lines and has no
 per-point arrow to drop, so `thin` warns there — use `density=` instead.
