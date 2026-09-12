@@ -4418,6 +4418,12 @@ class ArrayGlyph(GeoMixin, Glyph):
                 On a `style=` preset, a placement `ColorBar` (or `True`) overrides
                 the swatch with a real colorbar; a colours-only `ColorBar` styles
                 the swatch in place (defaults < preset < explicit).
+            compose: Draw *over* whatever is already on `ax` instead of
+                replacing it, leaving another glyph's layers, colorbar, title
+                and ticks intact. Off by default, where a render replaces every
+                glyph's artists on the axes (see issue #210). Same flag as
+                `plot(compose=)`; pair it with `add_colorbar=False` unless the
+                animation should add a second colorbar to the host.
             **kwargs: Additional keyword arguments for customizing the animation.
 
                 Plot appearance:
@@ -4876,13 +4882,19 @@ class ArrayGlyph(GeoMixin, Glyph):
                     self.default_options["title_size"],
                 ),
             )
-        self._apply_axis_style(ax)
-        if not compose:
+        # Row/column indices are meaningless axis labels, so a pixel-space
+        # animation hides them -- the same rule `plot` applies. An animation
+        # given an `extent` has real coordinates to show, and until now had them
+        # blanked anyway, which quietly made `xtick_font_size` and
+        # `ytick_font_size` inert on this path.
+        if not compose and self.extent is None:
             ax.set_xticklabels([])
             ax.set_yticklabels([])
 
             ax.set_xticks([])
             ax.set_yticks([])
+
+        self._apply_axis_style(ax)
 
         cell_text_value: list = []
         if show_cell_value:

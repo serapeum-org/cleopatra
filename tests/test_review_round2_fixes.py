@@ -494,3 +494,55 @@ class TestApplyAxisStyleRejectsABadGridAxis:
         fig, ax = plt.subplots()
         apply_axis_style(ax, {"grid_alpha": 0.5}, {"grid_alpha"}, grid_axis=good)
         plt.close(fig)
+
+
+class TestAnimateHonoursTheTickOptions:
+    """`animate` applies the tick sizes it accepts, as `plot` does."""
+
+    def test_an_animation_with_an_extent_keeps_its_ticks(self, frames):
+        """Real coordinates are not blanked just because this is an animation.
+
+        Args:
+            frames: The frame-stack fixture.
+
+        Test scenario:
+            `animate` cleared the tick labels and locators unconditionally,
+            unlike `plot`, which only does it for a pixel-space render. So an
+            animation given an `extent` lost the axis it had coordinates for.
+        """
+        glyph = ArrayGlyph(frames, extent=[0, 0, 10, 10], add_colorbar=False)
+        glyph.animate(list(range(3)))
+        assert glyph.ax.get_xticks().size, "an extent-bearing animation lost its ticks"
+
+    def test_xtick_font_size_reaches_an_animation(self, frames):
+        """`animate(xtick_font_size=...)` is no longer accepted and dropped.
+
+        Args:
+            frames: The frame-stack fixture.
+
+        Test scenario:
+            The styling ran and the labels were deleted immediately after, so
+            the option had no visible effect -- the same class of defect this
+            branch exists to fix.
+        """
+        glyph = ArrayGlyph(frames, extent=[0, 0, 10, 10], add_colorbar=False)
+        glyph.animate(list(range(3)), xtick_font_size=20)
+        assert glyph.ax.get_xticklabels()[0].get_fontsize() == 20.0, (
+            "animate dropped xtick_font_size"
+        )
+
+    def test_a_pixel_space_animation_still_hides_its_indices(self, frames):
+        """Without an `extent` the indices are still hidden.
+
+        Args:
+            frames: The frame-stack fixture.
+
+        Test scenario:
+            Row/column numbers are meaningless labels; narrowing the rule must
+            not start showing them.
+        """
+        glyph = ArrayGlyph(frames, add_colorbar=False)
+        glyph.animate(list(range(3)))
+        assert not glyph.ax.get_xticks().size, (
+            "a pixel-space animation showed its row/column indices"
+        )
