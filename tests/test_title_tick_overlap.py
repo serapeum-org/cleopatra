@@ -201,16 +201,18 @@ class TestMultilineTitlePad:
         # Assert the property rather than the formula: the pad must cover the
         # rendered height of the lines that hang below the anchor. Restating
         # `(lines - 1) * size * 1.2` here could not catch a wrong formula.
-        text = ax.text(0, 0, title, fontsize=size)
+        # Measured on the axes' own title after a real draw, so the assertion
+        # uses the same `Text` -- same font, same line spacing -- that the pad
+        # was computed for, rather than a stand-in that could differ.
+        ax.set_title(title, fontsize=size)
         fig.canvas.draw()
-        height_px = text.get_window_extent(fig.canvas.get_renderer()).height
-        text.remove()
+        height_px = ax.title.get_window_extent(fig.canvas.get_renderer()).height
         # The pad is in points and the rendered height in pixels, so one has to
         # be converted before they can be compared at all.
         height_points = height_px * 72.0 / fig.dpi
         needed = height_points * (lines - 1) / lines
-        assert pad - one_line >= needed * 0.9, (
-            f"pad {pad} adds {pad - one_line:.1f}pt for {lines} lines, short of "
-            f"the {needed:.1f}pt those extra lines occupy"
+        assert pad - one_line == pytest.approx(needed, rel=1e-3), (
+            f"pad {pad} adds {pad - one_line:.2f}pt for {lines} lines, against "
+            f"the {needed:.2f}pt those extra lines actually occupy"
         )
         plt.close(fig)
