@@ -688,7 +688,8 @@ def save_animation(
     full-range (0-255) by construction, so the export keeps their full contrast
     instead of being squeezed into ffmpeg's limited/broadcast default (16-235),
     which visibly washes the video out; pass `extra_args=["-color_range", "tv"]`
-    for the old limited-range behaviour. By default no fixed bitrate is
+    for the old limited-range behaviour, which the few players that ignore the
+    full-range flag render more predictably. By default no fixed bitrate is
     requested (unlike older versions, which forced 1800 kbit/s), so libx264
     uses its constant-quality default of roughly CRF 23 — pass `crf` or
     `bitrate` to trade size against quality. GIF output is written with
