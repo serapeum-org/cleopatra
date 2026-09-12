@@ -81,6 +81,7 @@ MESH_DEFAULT_OPTIONS = {
 }
 MESH_DEFAULT_OPTIONS = STYLE_DEFAULTS | MESH_DEFAULT_OPTIONS
 
+
 class MeshGlyph(GeoMixin, Glyph):
     """Visualization class for unstructured mesh data.
 
@@ -859,7 +860,9 @@ class MeshGlyph(GeoMixin, Glyph):
         # Fold style (and an optional forwarded hillshade) into the grouped
         # data_style object; leaving hillshade unset keeps any sticky value.
         if "hillshade" in kwargs:
-            data_style = DataStyle.for_apply_style(style, hillshade=kwargs.pop("hillshade"))
+            data_style = DataStyle.for_apply_style(
+                style, hillshade=kwargs.pop("hillshade")
+            )
         else:
             data_style = DataStyle.for_apply_style(style)
         return self.plot(
@@ -1169,7 +1172,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 raise ValueError(
                     "hillshade needs node-centered elevation; pass location='node'"
                 )
-            _clear_prior_render_artists(self.ax)
+            _clear_prior_render_artists(self.ax, self)
             self.im = None
             self._cbar = None
             self._apply_projection()
@@ -1177,7 +1180,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 self.ax, data, edgecolor, norm, hillshade, **render_kwargs
             )
         else:
-            _clear_prior_render_artists(self.ax)
+            _clear_prior_render_artists(self.ax, self)
             self.im = None
             self._cbar = None
             self._apply_projection()
@@ -1222,7 +1225,7 @@ class MeshGlyph(GeoMixin, Glyph):
             )
         self.ax.set_aspect("equal")
 
-        _mark_render_artists(self.ax, self._cbar, self.im)
+        _mark_render_artists(self.ax, self, self._cbar, self.im)
         return self.fig, self.ax
 
     def animate(
@@ -1347,7 +1350,7 @@ class MeshGlyph(GeoMixin, Glyph):
 
         self.contour_labels = None
 
-        _clear_prior_render_artists(ax)
+        _clear_prior_render_artists(ax, self)
         self.im = None
         self._cbar = None
 
@@ -1379,7 +1382,7 @@ class MeshGlyph(GeoMixin, Glyph):
         self._day_text = day_text
 
         current_mappable = [tpc]
-        _mark_render_artists(ax, self._cbar, self.im, self._day_text)
+        _mark_render_artists(ax, self, self._cbar, self.im, self._day_text)
 
         def _update(i):
             """Update the plot for frame i."""
@@ -1398,7 +1401,7 @@ class MeshGlyph(GeoMixin, Glyph):
             )
             day_text.set_text(str(time[i]))
             self.im = current_mappable[0]
-            _mark_render_artists(ax, self._cbar, self.im, self._day_text)
+            _mark_render_artists(ax, self, self._cbar, self.im, self._day_text)
 
         plt.tight_layout()
         anim = FuncAnimation(
@@ -1464,7 +1467,7 @@ class MeshGlyph(GeoMixin, Glyph):
         elif self.fig is None:
             self.fig, self.ax = plt.subplots(1, 1, figsize=figsize)
 
-        _clear_prior_render_artists(self.ax)
+        _clear_prior_render_artists(self.ax, self)
         self.im = None
         self._cbar = None
 
@@ -1477,7 +1480,7 @@ class MeshGlyph(GeoMixin, Glyph):
         self.ax.autoscale()
         self.ax.set_aspect("equal")
 
-        _mark_render_artists(self.ax, lc)
+        _mark_render_artists(self.ax, self, lc)
 
         return self.fig, self.ax
 

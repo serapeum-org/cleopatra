@@ -8,6 +8,7 @@ colorbar creation, tick management, point overlays, and animation.
 from __future__ import annotations
 
 import inspect
+import itertools
 import os
 import warnings
 from collections.abc import Iterator
@@ -235,44 +236,93 @@ def apply_axis_style(
         ax.grid(axis=grid_axis, alpha=options["grid_alpha"])
 
 
-def _clear_prior_render_artists(ax: Axes) -> None:
-    """Remove a prior render call's tracked artists from `ax`.
+#: Hands out render-ownership tokens. A counter rather than `id()` because ids
+#: are reused as soon as a glyph is collected, and the common
+#: `SomeGlyph(...).plot(ax=ax)` leaves one collectable immediately.
+_render_owner_counter = itertools.count()
 
-    Every glyph's `plot`/`animate`-style method creates a fresh set of
-    drawing artists (an image, a colorbar, a frame-label `Text`, a line
-    collection, ...) on every call rather than reusing one -- matplotlib
-    has no "replace the previous artist" primitive for `ax.imshow()`,
-    `fig.colorbar()`, `ax.add_collection()`, etc.; each call always adds a
-    new artist. Calling the method again on the same `Axes` -- from the
-    same glyph instance, or a *different* one sharing it via
-    `SomeGlyph(ax=..., fig=...)` (e.g. the `ax=`/`fig=` passthrough
-    `pyramids`' `Dataset`/`NetCDF`/`Analysis`/`UgridDataset`.plot(ax=...,
-    fig=...) expose) -- would otherwise leave the previous call's artists
-    orphaned: still attached to the `Axes`/`Figure`, and driven by nothing
-    once the owning glyph's own attributes move on to the new call's
-    objects. Ownership is tracked on `ax` itself (not on any glyph
-    instance) via a private marker, precisely so this catches both cases.
-    Must be called before creating this call's own artists.
+
+def _render_owner_token(owner: Any) -> int:
+    """Return `owner`'s render-ownership token, assigning one on first use.
+
+    Args:
+        owner: The glyph rendering onto an axes, or `None` for the unowned
+            bucket.
+
+    Returns:
+        int: A token unique to this owner for the life of the process.
+    """
+    if owner is None:
+        return 0
+    token = getattr(owner, "_cleo_owner_token", None)
+    if token is None:
+        token = next(_render_owner_counter) + 1
+        try:
+            owner._cleo_owner_token = token
+        except AttributeError:  # pragma: no cover - a slotted glyph
+            return 0
+    return token
+
+
+def _clear_prior_render_artists(
+    ax: Axes, owner: Any = None, *, compose: bool = False
+) -> None:
+    """Remove `owner`'s previous render artists from `ax`.
+
+    Every glyph's `plot`/`animate`-style method creates a fresh set of drawing
+    artists (an image, a colorbar, a frame-label `Text`, a line collection, ...)
+    on every call rather than reusing one -- matplotlib has no "replace the
+    previous artist" primitive for `ax.imshow()`, `fig.colorbar()`,
+    `ax.add_collection()`, etc.; each call always adds a new artist. Calling the
+    method again would otherwise leave the previous call's artists orphaned:
+    still attached to the `Axes`/`Figure`, and driven by nothing once the glyph's
+    own attributes move on to the new call's objects.
+
+    By default a render clears **every** glyph's artists on the axes. That is
+    what issue #210 needs: a second glyph bound to an existing axes replaces the
+    first, rather than leaving its artists attached but driven by nothing -- the
+    orphaned mappable that froze an animation at frame 0.
+
+    `compose=True` narrows it to the caller's own artists, so a glyph can be
+    drawn *over* what is already there -- a scalar field with wind arrows on top,
+    the composition `VectorGlyph` documents. It is opt-in because the two are
+    genuinely incompatible: replacing and overlaying cannot both be the default
+    for the same call.
+
+    Artists are tracked per owning glyph, keyed by a monotonic token stamped on
+    the glyph rather than by `id(owner)`: the idiomatic
+    `SomeGlyph(...).plot(ax=ax)` leaves the glyph unreferenced and collectable
+    the moment it returns, so CPython readily hands its id to the next glyph
+    allocated -- which would then be mistaken for the first.
 
     Args:
         ax: The axes a render call is about to draw onto.
+        owner: The glyph doing the rendering. `None` addresses the unowned
+            bucket, which is only reachable from a caller that also marked with
+            `owner=None`.
+        compose: Clear only `owner`'s own artists, leaving any other glyph's in
+            place.
     """
-    prior = getattr(ax, "_cleo_render_artists", None)
-    if prior is None:
+    registry = getattr(ax, "_cleo_render_artists", None)
+    if not isinstance(registry, dict):
         return
-    for artist in prior:
-        try:
-            artist.remove()
-        except (KeyError, NotImplementedError, AttributeError):
-            pass
-    ax._cleo_render_artists = None  # type: ignore[attr-defined]
+    tokens = [_render_owner_token(owner)] if compose else list(registry)
+    for token in tokens:
+        for artist in registry.pop(token, ()):
+            try:
+                artist.remove()
+            except (KeyError, NotImplementedError, AttributeError):
+                pass
+    if not registry:
+        ax._cleo_render_artists = None  # type: ignore[attr-defined]
 
 
-def _mark_render_artists(ax: Axes, *artists: Any) -> None:
-    """Record this render call's artists on `ax` for the next call's cleanup.
+def _mark_render_artists(ax: Axes, owner: Any, *artists: Any) -> None:
+    """Record this render call's artists on `ax`, under `owner`.
 
     Args:
         ax: The axes this call rendered onto.
+        owner: The glyph that created them; only this glyph will clear them.
         *artists: The artists this call created, in the order they must be
             removed on the next call (e.g. a colorbar before the image it
             is attached to -- `Colorbar.remove()` reads
@@ -282,9 +332,20 @@ def _mark_render_artists(ax: Axes, *artists: Any) -> None:
             create, e.g. no colorbar when `add_colorbar=False`) are
             dropped.
     """
-    ax._cleo_render_artists = [  # type: ignore[attr-defined]
-        a for a in artists if a is not None
-    ]
+    registry = getattr(ax, "_cleo_render_artists", None)
+    if not isinstance(registry, dict):
+        registry = {}
+        ax._cleo_render_artists = registry  # type: ignore[attr-defined]
+    # Drop entries whose artists are all detached already: a throwaway glyph
+    # (`SomeGlyph(...).plot(ax=ax)`) never comes back to clear its own, so
+    # without this the registry would grow once per such call.
+    for token in [
+        t
+        for t, group in registry.items()
+        if all(getattr(a, "axes", None) is None for a in group)
+    ]:
+        del registry[token]
+    registry[_render_owner_token(owner)] = [a for a in artists if a is not None]
 
 
 def _stash_projection_frame(ax: Axes, new_artists: Any) -> None:
@@ -762,10 +823,26 @@ class Glyph:
             *groups: Grouped parameter objects (or `None` for an omitted
                 group). Anything `None` is skipped; each other object must
                 expose a `to_options()` returning a dict.
+
+        Raises:
+            TypeError: If a group is not a grouped parameter object. These
+                parameters are easy to mistake for their loose predecessors --
+                `color=` takes a `ColorScaling`, not a colour string -- and
+                without this the caller got `'str' object has no attribute
+                'to_options'`, which names neither the parameter nor what it
+                wanted.
         """
         for group in groups:
             if group is None:
                 continue
+            if not hasattr(group, "to_options"):
+                raise TypeError(
+                    f"expected a grouped parameter object (one exposing "
+                    f"to_options(), e.g. ColorScaling, Contour, Classify, "
+                    f"CellValues, DataStyle), got {type(group).__name__} "
+                    f"{group!r}. A colour string belongs on the underlying "
+                    f"matplotlib call, not on these typed style parameters."
+                )
             for key, val in group.to_options().items():
                 if key in self.default_options:
                     self.default_options[key] = val

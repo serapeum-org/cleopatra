@@ -2577,7 +2577,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             tuple[Figure, Axes]: The figure and axes drawn on.
         """
         layer, style_cfg = resolve_single_layer_style(style)
-        _clear_prior_render_artists(self.ax)
+        _clear_prior_render_artists(self.ax, self)
         self._apply_style_background(style_cfg)
         self._sync_projection_frame(
             projection_draws_frame(self.default_options.get("projection"))
@@ -2607,7 +2607,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             self.default_options["title"], fontsize=self.default_options["title_size"]
         )
         self._apply_axis_style(self.ax)
-        _mark_render_artists(self.ax, self.cbar, self.im)
+        _mark_render_artists(self.ax, self, self.cbar, self.im)
         return cast(Figure, self.fig), self.ax
 
     def _flat_axis_bounds(self) -> tuple[float, float, float, float]:
@@ -3076,6 +3076,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         full_bleed: bool | str = False,
         basemap: bool | dict | Basemap | Callable[[Any], None] | None = None,
         colorbar: bool | ColorBar | None = None,
+        compose: bool = False,
         **kwargs: Unpack[PlotKwargs],
     ) -> tuple[Figure, Axes]:
         """Plot the array with customizable visualization options.
@@ -3174,6 +3175,11 @@ class ArrayGlyph(GeoMixin, Glyph):
                 projected axis, set `self.crs` first so the relief is warped to
                 match the data. Drawing the relief needs the `[tiles]` extra
                 (Pillow, and pyproj for a non-4326 `crs`).
+            compose: Draw *over* whatever is already on `ax` instead of
+                replacing it, leaving another glyph's layers and colorbar
+                intact. Off by default, where a render replaces every glyph's
+                artists on the axes (see issue #210). Turn it on to lay one
+                field over another.
             colorbar: Colorbar presence and placement. `None` (default) keeps
                 matplotlib's placement (honouring the legacy `add_colorbar`);
                 `False` draws no colorbar; `True` a default one. Pass a
@@ -3715,7 +3721,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 return self.fig, self.ax
 
         if self.rgb:
-            _clear_prior_render_artists(ax)
+            _clear_prior_render_artists(ax, self, compose=compose)
             extent = tuple(self.extent) if self.extent is not None else None
             self.im = ax.imshow(arr, extent=extent)
             self.cbar = None
@@ -3777,7 +3783,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     "the glyph with coords=(lon, lat)); an extent-only or "
                     "2-D-coordinate array cannot be reprojected."
                 )
-            _clear_prior_render_artists(ax)
+            _clear_prior_render_artists(ax, self, compose=compose)
             self._sync_projection_frame(projection_draws_frame(projection))
             if projection:
                 if points is not None or self.default_options.get("display_cell_value"):
@@ -3842,6 +3848,7 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         _mark_render_artists(
             ax,
+            self,
             self.cbar,
             self.im,
             optional_display.get("points_scatter"),
@@ -4668,14 +4675,14 @@ class ArrayGlyph(GeoMixin, Glyph):
         style_categorical = False
 
         if rgb_frames:
-            _clear_prior_render_artists(ax)
+            _clear_prior_render_artists(ax, self)
             im = ax.imshow(frame_0, extent=self.extent)
             self.im = im
             self.cbar = None
         else:
             ticks = self.get_ticks()
             self._create_norm_and_cbar_kw(ticks)
-            _clear_prior_render_artists(ax)
+            _clear_prior_render_artists(ax, self)
             im, cbar_kw = self._plot_im_get_cbar_kw(ax, frame_0, ticks)
             self.im = im
 
@@ -4987,6 +4994,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         self._anim = anim
         _mark_render_artists(
             ax,
+            self,
             self.cbar,
             self.im,
             self._day_text,

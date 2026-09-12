@@ -544,7 +544,7 @@ class HistogramGlyph:
         else:
             num_samples = 1
 
-        _clear_prior_render_artists(ax)
+        _clear_prior_render_artists(ax, self)
 
         for i in range(num_samples):
             if self.values.ndim == 1:
@@ -565,7 +565,7 @@ class HistogramGlyph:
 
         apply_axis_style(ax, self.default_options, apply_defaults=True, grid_axis="y")
         hist = {"n": n, "bins": bins, "patches": patches}
-        _mark_render_artists(ax, *patches)
+        _mark_render_artists(ax, self, *patches)
         return fig, ax, hist
 
     def _apply_options(self, kwargs: dict) -> None:
@@ -732,7 +732,7 @@ class HistogramGlyph:
         """
         self._reject_fig_kwarg(kwargs)
         fig, ax = self._resolve_fig_ax(ax)
-        _clear_prior_render_artists(ax)
+        _clear_prior_render_artists(ax, self)
         columns = self._columns()
         tick_labels = (
             list(labels)
@@ -755,7 +755,7 @@ class HistogramGlyph:
             box.set_alpha(self.default_options["alpha"])
         ax.grid(axis="y", alpha=self.default_options["grid_alpha"])
         self._apply_axis_labels(ax)
-        _mark_render_artists(ax, *(a for artists in bp.values() for a in artists))
+        _mark_render_artists(ax, self, *(a for artists in bp.values() for a in artists))
         return fig, ax, bp
 
     def multiboxplot(
@@ -829,7 +829,7 @@ class HistogramGlyph:
             )
 
         fig, ax = self._resolve_fig_ax(ax)
-        _clear_prior_render_artists(ax)
+        _clear_prior_render_artists(ax, self)
         bp = ax.boxplot(
             columns,
             positions=list(positions),
@@ -847,7 +847,7 @@ class HistogramGlyph:
         )
         ax.grid(axis="y", alpha=self.default_options["grid_alpha"])
         self._apply_axis_labels(ax)
-        _mark_render_artists(ax, *(a for artists in bp.values() for a in artists))
+        _mark_render_artists(ax, self, *(a for artists in bp.values() for a in artists))
         return fig, ax, bp
 
     def stripes(
@@ -901,7 +901,7 @@ class HistogramGlyph:
         if values.ndim != 1:
             raise ValueError(f"stripes requires 1D values; got {values.ndim}D.")
         fig, ax = self._resolve_fig_ax(ax)
-        _clear_prior_render_artists(ax)
+        _clear_prior_render_artists(ax, self)
         cmap = cmap if cmap is not None else self.default_options["cmap"]
         cmap_obj = resolve_colormap(cmap)
         lo = float(np.nanmin(values)) if vmin is None else vmin
@@ -918,5 +918,5 @@ class HistogramGlyph:
         ax.set_yticks([])
         ax.set_xlim(-0.5, values.size - 0.5)
         self._apply_axis_labels(ax)
-        _mark_render_artists(ax, bars)
+        _mark_render_artists(ax, self, bars)
         return fig, ax, bars

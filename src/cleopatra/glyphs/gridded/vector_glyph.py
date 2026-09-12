@@ -60,6 +60,10 @@ VECTOR_KINDS = ("quiver", "barbs", "streamplot")
 #: `_prepare_scalar_mapping` helper auto-derives it from the magnitude.
 VECTOR_DEFAULT_OPTIONS = {
     "density": 1.0,
+    #: Draw every nth grid point for `quiver`/`barbs`. One arrow per cell is
+    #: unreadable and slow on a real grid -- a 141x321 window is 45,261 arrows --
+    #: and `density` is a `streamplot` concept that does not apply to them.
+    "thin": 1,
     "scale": None,
     "vmin": None,
     "vmax": None,
@@ -143,6 +147,42 @@ class VectorGlyph(GeoMixin, Glyph):
         """Per-vector magnitude `hypot(u, v)` used for colour mapping."""
         return np.asarray(np.hypot(self.u, self.v))
 
+    def _thinned(
+        self, thin: int, mag: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Return the field subsampled to every `thin`th grid point.
+
+        `quiver` and `barbs` draw one arrow per point, which on a real grid is
+        both unreadable and slow -- a 141x321 window is 45,261 arrows. Thinning
+        here means a caller does not have to subsample the data and rebuild a
+        coarser grid themselves.
+
+        Args:
+            thin: Keep every `thin`th point along each axis. `1` keeps all.
+            mag: The magnitude array, thinned alongside so the colours still
+                line up with the arrows.
+
+        Returns:
+            tuple: `(x, y, u, v, magnitude)`, each subsampled.
+
+        Raises:
+            ValueError: If `thin` is not a positive integer.
+        """
+        if (
+            not isinstance(thin, (int, np.integer))
+            or isinstance(thin, bool)
+            or thin < 1
+        ):
+            raise ValueError(f"thin must be a positive integer, got {thin!r}.")
+        if thin == 1:
+            return self.x, self.y, self.u, self.v, np.asarray(mag)
+        # 1-D coordinate vectors index on their only axis; a meshgrid indexes on
+        # both, so slice by the array's own dimensionality rather than assuming.
+        cut = (slice(None, None, thin),)
+        grid = (slice(None, None, thin), slice(None, None, thin))
+        take = lambda a: np.asarray(a)[cut if np.asarray(a).ndim == 1 else grid]  # noqa: E731
+        return take(self.x), take(self.y), take(self.u), take(self.v), take(mag)
+
     def plot(
         self,
         kind: str = "quiver",
@@ -153,6 +193,7 @@ class VectorGlyph(GeoMixin, Glyph):
         color: ColorScaling | None = None,
         contour: Contour | None = None,
         classify: Classify | None = None,
+        compose: bool = False,
     ):
         """Render the vector field, coloured by magnitude.
 
@@ -177,6 +218,11 @@ class VectorGlyph(GeoMixin, Glyph):
                 **sticky** -- it persists into later plots, overriding a
                 construction-time `add_colorbar=False`; an explicit
                 `add_colorbar=` argument still wins the on/off decision.
+            compose: Draw *over* whatever is already on `ax` instead of
+                replacing it, leaving another glyph's layers and colorbar
+                intact. Off by default, where a render replaces every glyph's
+                artists on the axes (see issue #210). Turn it on to lay one
+                field over another -- arrows on a scalar background.
 
         Returns:
             tuple[Figure, Axes, Any]: The figure, the axes, and the
@@ -237,26 +283,30 @@ class VectorGlyph(GeoMixin, Glyph):
             if title is not None:
                 opts["title"] = title
             opts.update(_resolve_colorbar(colorbar))
-            draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
+            draw_colorbar = (
+                opts["add_colorbar"] if add_colorbar is None else add_colorbar
+            )
 
             mag = self.magnitude
             norm, cbar_kw, ticks = self._prepare_scalar_mapping(mag)
             cmap = resolve_colormap(opts["cmap"])
             clim = {} if norm else {"clim": (ticks[0], ticks[-1])}
 
-            _clear_prior_render_artists(ax)
+            _clear_prior_render_artists(ax, self, compose=compose)
             self.im = None
             self.cbar = None
 
             arrow_patches: tuple = ()
             im: Any
+            if kind in ("quiver", "barbs"):
+                x, y, u, v, arrow_mag = self._thinned(opts["thin"], mag)
             if kind == "quiver":
                 im = ax.quiver(
-                    self.x,
-                    self.y,
-                    self.u,
-                    self.v,
-                    mag,
+                    x,
+                    y,
+                    u,
+                    v,
+                    arrow_mag,
                     cmap=cmap,
                     norm=norm,
                     scale=opts["scale"],
@@ -264,11 +314,11 @@ class VectorGlyph(GeoMixin, Glyph):
                 )
             elif kind == "barbs":
                 im = ax.barbs(
-                    self.x,
-                    self.y,
-                    self.u,
-                    self.v,
-                    mag,
+                    x,
+                    y,
+                    u,
+                    v,
+                    arrow_mag,
                     cmap=cmap,
                     norm=norm,
                     **clim,
@@ -299,7 +349,7 @@ class VectorGlyph(GeoMixin, Glyph):
             if opts["title"]:
                 ax.set_title(opts["title"], fontsize=opts["title_size"])
 
-            _mark_render_artists(ax, self.cbar, self.im, *arrow_patches)
+            _mark_render_artists(ax, self, self.cbar, self.im, *arrow_patches)
             return self.fig, ax, im
 
     def add_key(
