@@ -4846,19 +4846,25 @@ class ArrayGlyph(GeoMixin, Glyph):
                         cfg.get("alpha"),
                     )
 
-        ax.set_title(
-            self.default_options["title"],
-            fontsize=self.default_options["title_size"],
-            pad=multiline_title_pad(
-                ax, self.default_options["title"], self.default_options["title_size"]
-            ),
-        )
+        # A composed animation adds a layer to someone else's axes: retitling it
+        # or stripping its ticks is the host's business, not ours.
+        if not compose or self.default_options["title"]:
+            ax.set_title(
+                self.default_options["title"],
+                fontsize=self.default_options["title_size"],
+                pad=multiline_title_pad(
+                    ax,
+                    self.default_options["title"],
+                    self.default_options["title_size"],
+                ),
+            )
         self._apply_axis_style(ax)
-        ax.set_xticklabels([])
-        ax.set_yticklabels([])
+        if not compose:
+            ax.set_xticklabels([])
+            ax.set_yticklabels([])
 
-        ax.set_xticks([])
-        ax.set_yticks([])
+            ax.set_xticks([])
+            ax.set_yticks([])
 
         cell_text_value: list = []
         if show_cell_value:
