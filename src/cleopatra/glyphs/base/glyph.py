@@ -23,6 +23,7 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.axes import Axes
 from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure, SubFigure
+from matplotlib.font_manager import FontProperties
 from matplotlib.legend import Legend
 from matplotlib.patches import Rectangle
 
@@ -189,7 +190,7 @@ def apply_axis_style(
     explicit: set[str] | None = None,
     *,
     apply_defaults: bool = False,
-    grid_axis: str = "both",
+    grid_axis: str | None = "both",
 ) -> None:
     """Apply the shared axis-styling options to `ax`.
 
@@ -217,7 +218,8 @@ def apply_axis_style(
             For a glyph that already renders the declared defaults and must keep
             doing so.
         grid_axis: Which gridlines `grid_alpha` draws -- `"both"`, `"x"` or
-            `"y"`.
+            `"y"`. `None` leaves the grid untouched, for a caller that draws its
+            own.
 
     Examples:
         - Only the options named in `explicit` reach the axes, so an untouched
@@ -293,7 +295,7 @@ def apply_axis_style(
         ax.tick_params(axis="x", labelsize=options["xtick_font_size"])
     if wanted("ytick_font_size"):
         ax.tick_params(axis="y", labelsize=options["ytick_font_size"])
-    if wanted("grid_alpha"):
+    if grid_axis is not None and wanted("grid_alpha"):
         ax.grid(axis=grid_axis, alpha=options["grid_alpha"])
 
 
@@ -302,7 +304,27 @@ def apply_axis_style(
 _TITLE_LINESPACING = 1.2
 
 
-def multiline_title_pad(ax: Axes, title: Any, fontsize: float) -> float | None:
+def _title_points(fontsize: Any) -> float:
+    """Resolve a title font size to points.
+
+    `title_size` is passed straight to `set_title(fontsize=...)`, so it accepts
+    everything matplotlib does: a number, one of the relative names
+    (`"large"`, `"xx-small"`, ...), or `None` for the `axes.titlesize` default.
+    The pad arithmetic needs a number, and multiplying a string by a float is a
+    `TypeError`.
+
+    Args:
+        fontsize: The title font size in any form `set_title` accepts.
+
+    Returns:
+        float: The size in points.
+    """
+    if fontsize is None:
+        fontsize = plt.rcParams["axes.titlesize"]
+    return FontProperties(size=fontsize).get_size_in_points()
+
+
+def multiline_title_pad(ax: Axes, title: Any, fontsize: Any) -> float | None:
     """Return the title pad that keeps a multi-line title clear of top tick labels.
 
     Matplotlib already raises a title above x tick labels drawn on the top spine
@@ -318,7 +340,8 @@ def multiline_title_pad(ax: Axes, title: Any, fontsize: float) -> float | None:
         ax: The axes whose title is being set. Its x tick labels must already be
             positioned, since whether they are on top decides if a pad is needed.
         title: The title text; only its line count matters.
-        fontsize: The title's font size in points.
+        fontsize: The title's font size, in any form `set_title` accepts -- a
+            number, a relative name such as `"large"`, or `None`.
 
     Returns:
         float | None: The pad in points, or `None` to leave matplotlib's default
@@ -373,7 +396,7 @@ def multiline_title_pad(ax: Axes, title: Any, fontsize: float) -> float | None:
     if not on_top:
         return None
     pad = plt.rcParams["axes.titlepad"]
-    return pad + extra_lines * fontsize * _TITLE_LINESPACING
+    return pad + extra_lines * _title_points(fontsize) * _TITLE_LINESPACING
 
 
 #: Hands out render-ownership tokens. A counter rather than `id()` because ids
@@ -402,6 +425,31 @@ def _render_owner_token(owner: Any) -> int:
         except AttributeError:  # pragma: no cover - a slotted glyph
             return 0
     return token
+
+
+def _entry_is_detached(group: list) -> bool:
+    """Whether every artist in a registry entry has left its axes.
+
+    Used to drop a throwaway glyph's entry -- `SomeGlyph(...).plot(ax=ax)` never
+    comes back to clear its own -- without ever dropping a live one.
+
+    Deadness has to be *proven*, not assumed from a missing attribute. A
+    matplotlib `Container` (`BarContainer` from `ax.bar`, `ax.hist`) and a
+    `Colorbar` expose no `.axes` at all, so treating "no `.axes`" as "detached"
+    evicted live `HistogramGlyph` entries the moment another glyph rendered onto
+    the same axes -- orphaning their artists permanently, which is the very
+    defect the tracking exists to prevent.
+
+    Args:
+        group: The artists recorded under one owner.
+
+    Returns:
+        bool: `True` only when the entry holds at least one artist that reports
+        an axes, and every such artist reports `None`. An entry of artists that
+        cannot report is kept.
+    """
+    reporting = [a for a in group if hasattr(a, "axes")]
+    return bool(reporting) and all(a.axes is None for a in reporting)
 
 
 def _clear_prior_render_artists(
@@ -476,14 +524,7 @@ def _mark_render_artists(ax: Axes, owner: Any, *artists: Any) -> None:
     if not isinstance(registry, dict):
         registry = {}
         ax._cleo_render_artists = registry  # type: ignore[attr-defined]
-    # Drop entries whose artists are all detached already: a throwaway glyph
-    # (`SomeGlyph(...).plot(ax=ax)`) never comes back to clear its own, so
-    # without this the registry would grow once per such call.
-    for token in [
-        t
-        for t, group in registry.items()
-        if all(getattr(a, "axes", None) is None for a in group)
-    ]:
+    for token in [t for t, group in registry.items() if _entry_is_detached(group)]:
         del registry[token]
     registry[_render_owner_token(owner)] = [a for a in artists if a is not None]
 
@@ -2072,7 +2113,7 @@ class Glyph:
         ax: Axes,
         *,
         apply_defaults: bool = False,
-        grid_axis: str = "both",
+        grid_axis: str | None = "both",
     ) -> None:
         """Apply this glyph's axis-styling options to `ax`.
 
@@ -2083,7 +2124,8 @@ class Glyph:
             ax: The axes to style.
             apply_defaults: Apply every option, not only the explicitly-passed
                 ones.
-            grid_axis: Which gridlines `grid_alpha` draws.
+            grid_axis: Which gridlines `grid_alpha` draws; `None` leaves the
+                grid untouched.
         """
         apply_axis_style(
             ax,

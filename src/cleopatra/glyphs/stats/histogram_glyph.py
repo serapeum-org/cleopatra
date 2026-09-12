@@ -676,11 +676,16 @@ class HistogramGlyph:
     def _apply_axis_labels(self, ax: Axes) -> None:
         """Apply the styled x/y axis labels and tick sizes to `ax`.
 
-        Delegates to the shared `apply_axis_style`. `apply_defaults` is
-        on because this glyph has always rendered the declared defaults (tick
+        Delegates to the shared `apply_axis_style`. `apply_defaults` is on
+        because this glyph has always rendered the declared defaults (tick
         labels at 11, not matplotlib's 10) and must keep doing so.
+
+        The grid is left alone: `boxplot` and `multiboxplot` draw their own
+        y-only grid before calling this, and `stripes` draws none. Letting the
+        helper's default `grid_axis="both"` run here would add x gridlines all
+        three have never had.
         """
-        apply_axis_style(ax, self.default_options, apply_defaults=True)
+        apply_axis_style(ax, self.default_options, apply_defaults=True, grid_axis=None)
 
     def boxplot(
         self,
