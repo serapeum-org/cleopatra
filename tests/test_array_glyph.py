@@ -294,6 +294,43 @@ class TestPlotArray:
             f"BoundaryNorm bar ticks should be its boundaries, got {cbar_kw['ticks']}"
         )
 
+    def test_a_later_color_scale_clears_a_sticky_caller_norm(self):
+        """Reusing a glyph with color=ColorScaling.* clears a prior plot(norm=...)."""
+        arr = np.arange(100, dtype=float).reshape(10, 10)
+        caller_norm = PowerNorm(gamma=0.4, vmin=0, vmax=99)
+        glyph = ArrayGlyph(arr)
+        glyph.plot(norm=caller_norm, cmap="Blues")
+        glyph.plot(color=ColorScaling.power(gamma=2.0), cmap="Blues")
+        assert glyph.im.norm is not caller_norm, "the stale caller norm must be cleared"
+        assert glyph.im.norm.gamma == 2.0, (
+            f"the later ColorScaling should apply, got {glyph.im.norm!r}"
+        )
+
+    def test_same_call_color_and_norm_warns_and_norm_wins(self):
+        """Passing both a ColorScaling and a raw norm warns; the raw norm renders."""
+        arr = np.arange(100, dtype=float).reshape(10, 10)
+        caller_norm = PowerNorm(gamma=0.4, vmin=0, vmax=99)
+        glyph = ArrayGlyph(arr)
+        with pytest.warns(UserWarning, match="color_scale="):
+            glyph.plot(color=ColorScaling.equalize(), norm=caller_norm, cmap="Blues")
+        assert glyph.im.norm is caller_norm, "the caller norm should win the conflict"
+
+    def test_caller_norm_bar_ticks_span_the_norm_range(self):
+        """A caller norm with its own vmin/vmax gets bar ticks inside that range."""
+        norm = PowerNorm(gamma=0.4, vmin=0.0, vmax=50.0)
+        glyph = ArrayGlyph(np.arange(100, dtype=float).reshape(10, 10))
+        _, cbar_kw = glyph._caller_norm_and_cbar_kw(norm, np.array([0.0, 50.0, 99.0]))
+        ticks = np.asarray(cbar_kw["ticks"])
+        assert ticks.min() >= 0.0 and ticks.max() <= 50.0, (
+            f"ticks should stay within the norm range [0, 50], got {ticks}"
+        )
+
+    def test_all_non_finite_array_reports_no_finite_values(self):
+        """Equalize on an all-non-finite ArrayGlyph reports the real cause, not 'pass values='."""
+        glyph = ArrayGlyph(np.full((4, 4), np.nan), vmin=0.0, vmax=1.0)
+        with pytest.raises(ValueError, match="no finite values"):
+            glyph.plot(color=ColorScaling.equalize())
+
     @staticmethod
     def _terrain_like() -> np.ndarray:
         """A signed, long-tailed terrain-like array (most cells near 0, tail to ~740)."""

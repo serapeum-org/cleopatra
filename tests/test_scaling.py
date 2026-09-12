@@ -49,8 +49,8 @@ class TestColorScalingToOptions:
             (ColorScaling.equalize(samples=256), "samples"),
         ],
     )
-    def test_variant_emits_all_seven_keys(self, scale, key):
-        """Every variant emits the full seven-key option dict (full-scale reset).
+    def test_variant_emits_all_eight_keys(self, scale, key):
+        """Every variant emits the full eight-key option dict (full-scale reset).
 
         Args:
             scale: A `ColorScaling` variant.
@@ -65,8 +65,15 @@ class TestColorScalingToOptions:
             "bounds",
             "midpoint",
             "samples",
-        }, f"expected all seven keys, got {set(options)}"
+            "norm",
+        }, f"expected all eight keys, got {set(options)}"
         assert key in options
+
+    def test_a_scale_clears_a_raw_norm_override(self):
+        """Applying any variant resets `norm` to None (the full-scale reset)."""
+        assert ColorScaling.power(gamma=0.7).to_options()["norm"] is None, (
+            "a ColorScaling must clear a sticky caller norm"
+        )
 
 
 class TestColorScalingBuildNorm:
@@ -418,15 +425,16 @@ class TestColorScalingEqualize:
 
     def test_missing_values_raise_a_clear_error(self):
         """Building the equalize norm without the data raises an actionable error."""
+        scale = ColorScaling.equalize()
         with pytest.raises(ValueError, match="needs the data values"):
-            ColorScaling.equalize().build_norm(np.array([0.0, 1.0]))
+            scale.build_norm(np.array([0.0, 1.0]))
 
     def test_all_non_finite_values_raise(self):
         """A field with no finite values raises rather than ranking an empty set."""
+        scale = ColorScaling.equalize()
+        non_finite = np.array([np.nan, np.inf, -np.inf])
         with pytest.raises(ValueError, match="no finite values"):
-            ColorScaling.equalize().build_norm(
-                np.array([0.0, 1.0]), values=np.array([np.nan, np.inf, -np.inf])
-            )
+            scale.build_norm(np.array([0.0, 1.0]), values=non_finite)
 
     def test_samples_round_trips_through_options(self):
         """`samples` survives the flat-options round-trip."""
