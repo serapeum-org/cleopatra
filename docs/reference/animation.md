@@ -126,6 +126,13 @@ embed_gif(anim, fps=3)                     # inline in a notebook cell
     called; if IPython is absent it raises a `ModuleNotFoundError` with a `pip install
     ipython` hint (use `to_gif` to avoid IPython).
 
+!!! note "Full colour range by default"
+    The FFmpeg export (`mov`/`avi`/`mp4`) is tagged full colour range (`-color_range pc`) so the
+    computer-generated, full-range (0-255) matplotlib figure keeps its contrast instead of being
+    squeezed into FFmpeg's limited/broadcast default (16-235), which visibly washes it out. Pass
+    `extra_args=["-color_range", "tv"]` to restore the old limited/broadcast-range behaviour — the
+    most predictable option for the minority of players that ignore the full-range flag.
+
 ## Module Documentation
 
 ::: cleopatra.glyphs.base.animation
