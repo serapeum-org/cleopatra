@@ -6,8 +6,9 @@ positions as **arrows** (`quiver`), **wind barbs** (`barbs`), or **streamlines**
 `hypot(u, v)` through the shared scalar-mapping pipeline, with a matching
 colorbar.
 
-`thin=n` draws every nth grid point for `quiver` / `barbs`, and `plot(compose=True)` lays the arrows
-over an existing layer instead of replacing it — see [Render options](render-options.md).
+`VectorGlyph(..., thin=n)` draws every nth grid point for `quiver` / `barbs`, and
+`plot(compose=True)` lays the arrows over an existing layer instead of replacing it — see
+[Render options](render-options.md).
 
 ## Class Documentation
 
