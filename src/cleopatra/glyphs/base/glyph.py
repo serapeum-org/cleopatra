@@ -87,11 +87,13 @@ def _group_option_items(group: Any) -> dict:
     """The flat option keys a group contributes; a raw `Normalize` maps to `norm`.
 
     Grouped parameter objects (`ColorScaling`, `Contour`, ...) expose
-    `to_options()`. A caller may instead hand in a pre-built
-    `matplotlib.colors.Normalize` (e.g. `plot(color=my_func_norm)` or
-    `plot(norm=my_func_norm)`), which has none -- so treat it as setting the
+    `to_options()`. A caller may instead hand a pre-built
+    `matplotlib.colors.Normalize` in as the `color=` group (e.g.
+    `plot(color=my_func_norm)`), which has none -- so treat it as setting the
     `norm` option directly. That is the escape hatch that makes any matplotlib
-    norm reachable without a dedicated `ColorScaling` variant.
+    norm reachable without a dedicated `ColorScaling` variant. (The loose
+    `plot(norm=...)` keyword reaches `default_options["norm"]` on its own and
+    does not pass through here.)
 
     Args:
         group: A `to_options()`-bearing group object, or a
@@ -986,6 +988,13 @@ class Glyph:
         # arrow extension), passed in rather than owned by the scale.
         caller_norm = self.default_options.get("norm")
         if caller_norm is not None:
+            scale = self.default_options.get("color_scale", "linear")
+            if scale != "linear":
+                warnings.warn(
+                    f"norm= is set, so color_scale={scale!r} is ignored "
+                    "(the caller-supplied norm renders directly).",
+                    stacklevel=2,
+                )
             return self._caller_norm_and_cbar_kw(caller_norm, ticks)
         scaling = ColorScaling.from_options(self.default_options)
         return scaling.build_norm(
@@ -1004,8 +1013,10 @@ class Glyph:
         caller's own norm renders as given, bypassing the `color_scale` path so
         any matplotlib norm (`FuncNorm`, `AsinhNorm`, a custom subclass) is
         reachable without a dedicated `ColorScaling` variant. A `BoundaryNorm`
-        bar takes its own boundaries as ticks; every other norm keeps the
-        linear tick ladder.
+        bar takes its own boundaries as ticks; a norm carrying its own
+        `vmin`/`vmax` gets a ladder spanning *that* range (the incoming ticks
+        come off the data range, which can differ and would place ticks off
+        the bar); otherwise the incoming ladder is kept.
 
         Args:
             norm: The caller-supplied norm; must be a
@@ -1024,7 +1035,13 @@ class Glyph:
                 f"{type(norm).__name__}."
             )
         extend = self.default_options.get("extend") or "neither"
-        bar_ticks = norm.boundaries if isinstance(norm, colors.BoundaryNorm) else ticks
+        n_ticks = len(ticks) if ticks is not None and len(ticks) >= 2 else 8
+        if isinstance(norm, colors.BoundaryNorm):
+            bar_ticks = norm.boundaries
+        elif norm.vmin is not None and norm.vmax is not None:
+            bar_ticks = np.linspace(float(norm.vmin), float(norm.vmax), n_ticks)
+        else:
+            bar_ticks = ticks
         return norm, {"ticks": bar_ticks, "extend": extend}
 
     def _scale_values(self) -> np.ndarray | None:
