@@ -537,8 +537,9 @@ class ColorScaling:
         """Flatten back to the `default_options` keys the engine reads.
 
         Returns:
-            dict: The six colour-scale keys, with `color_scale` as the
-                plain string value.
+            dict: The colour-scale keys, with `color_scale` as the plain
+                string value and `norm` reset to `None` (a scale clears any
+                raw-norm escape hatch).
 
         Examples:
             - Emits the flat keys a glyph merges into `default_options`:
@@ -557,6 +558,10 @@ class ColorScaling:
             "bounds": self.bounds,
             "midpoint": self.center,
             "samples": self.samples,
+            # A scale is a full reset: choosing one clears any raw-norm escape
+            # hatch (`plot(norm=...)`) so a later `color=ColorScaling.*` is not
+            # silently shadowed by a sticky caller norm.
+            "norm": None,
         }
 
     def build_norm(
@@ -766,5 +771,8 @@ class ColorScaling:
             vmax=hi,
         )
         n_ticks = len(ticks) if ticks is not None and len(ticks) >= 2 else 8
-        tick_vals = np.unique(np.quantile(data, np.linspace(0.0, 1.0, n_ticks)))
-        return norm, {"ticks": tick_vals}
+        # Reuse the CDF table (qv) rather than a second np.quantile sort of the
+        # full field; interpolating it at the tick quantiles gives the same
+        # quantile-spaced positions.
+        tick_vals = np.unique(np.interp(np.linspace(0.0, 1.0, n_ticks), q, qv))
+        return norm, {"ticks": tick_vals, "format": _plain_tick_formatter()}
