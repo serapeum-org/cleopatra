@@ -481,6 +481,81 @@ class _OptimizedPillowWriter(PillowWriter):
 #: libx264 refuses odd dimensions, so this is always applied to video output.
 _EVEN_PAD_FILTER = "pad=ceil(iw/2)*2:ceil(ih/2)*2"
 
+#: Maps each planar YUV pixel format to its full-range (``yuvj*``) variant. The
+#: range is carried by the format itself, so the RGB->YUV conversion maps to the
+#: full 0-255 range on every ffmpeg build -- unlike a ``-color_range pc`` tag,
+#: which some builds (e.g. imageio-ffmpeg's bundled binary) honour only as a
+#: label and not as an actual luma remap. Formats without a full-range variant
+#: (10-bit, packed, RGB) are left unchanged.
+_FULL_RANGE_PIX_FMT = {
+    "yuv420p": "yuvj420p",
+    "yuv422p": "yuvj422p",
+    "yuv444p": "yuvj444p",
+    "yuv440p": "yuvj440p",
+    "yuv411p": "yuvj411p",
+}
+
+
+def _split_ffmpeg_extra_args(
+    extra_args: list[str] | None,
+) -> tuple[list[str], list[str], str | None, str | None]:
+    """Partition caller `extra_args` into the pieces the builder recombines.
+
+    Walks the caller's raw ffmpeg flags once, pulling out every `-vf` filter and
+    the values of the two override flags (`-pix_fmt`, `-color_range`) and leaving
+    everything else untouched, so `_build_ffmpeg_extra_args` can merge the pad
+    filter and apply the defaults without re-parsing.
+
+    Args:
+        extra_args: The caller's ffmpeg flags, or `None`.
+
+    Returns:
+        A 4-tuple `(vf_filters, passthrough, caller_pix_fmt, caller_color_range)`:
+        the `-vf` filter strings in order, the flags to pass through unchanged,
+        and the caller's `-pix_fmt` / `-color_range` values (`None` when absent).
+
+    Raises:
+        ValueError: If a `-vf`, `-pix_fmt`, or `-color_range` flag is the last
+            token with no value following it.
+
+    Examples:
+        - A caller filter and an override are separated from passthrough flags:
+            ```python
+            >>> from cleopatra.glyphs.base.animation import _split_ffmpeg_extra_args
+            >>> _split_ffmpeg_extra_args(["-vf", "scale=320:-1", "-color_range", "tv", "-tune", "film"])
+            (['scale=320:-1'], ['-tune', 'film'], None, 'tv')
+
+            ```
+        - `None` yields empty collections and no overrides:
+            ```python
+            >>> from cleopatra.glyphs.base.animation import _split_ffmpeg_extra_args
+            >>> _split_ffmpeg_extra_args(None)
+            ([], [], None, None)
+
+            ```
+    """
+    user_args = list(extra_args) if extra_args else []
+    vf_filters: list[str] = []
+    passthrough: list[str] = []
+    overrides: dict[str, str | None] = {"-pix_fmt": None, "-color_range": None}
+    i = 0
+    while i < len(user_args):
+        arg = user_args[i]
+        if arg not in ("-vf", "-pix_fmt", "-color_range"):
+            passthrough.append(arg)
+            i += 1
+            continue
+        if i + 1 >= len(user_args):
+            raise ValueError(
+                f"Malformed extra_args: {arg!r} must be followed by a value."
+            )
+        if arg == "-vf":
+            vf_filters.append(user_args[i + 1])
+        else:
+            overrides[arg] = user_args[i + 1]
+        i += 2
+    return vf_filters, passthrough, overrides["-pix_fmt"], overrides["-color_range"]
+
 
 def _build_ffmpeg_extra_args(
     pix_fmt: str,
@@ -490,40 +565,53 @@ def _build_ffmpeg_extra_args(
 ) -> list[str]:
     """Assemble the ffmpeg `extra_args` list for a video export.
 
-    Combines the mandatory even-dimension pad filter with an explicit pixel
-    format and any caller-supplied CRF, preset, or raw ffmpeg flags. A caller
-    `-vf` filter is merged into a single chain — ffmpeg honours only the last
-    `-vf` — with the pad applied last so the frame ends up even whatever the
-    caller's filters produce.
+    Combines the mandatory even-dimension pad filter with a full-range pixel
+    format, a matching colour-range tag, and any caller-supplied CRF, preset, or
+    raw ffmpeg flags. A caller `-vf` filter is merged into a single chain — ffmpeg
+    honours only the last `-vf` — with the pad applied last so the frame ends up
+    even whatever the caller's filters produce.
+
+    The colour range defaults to full. ffmpeg's own default is limited/broadcast
+    range (16-235), which squeezes the contrast of the full-range (0-255) figures
+    matplotlib produces. To force full range on every ffmpeg build the planar YUV
+    `pix_fmt` is swapped for its full-range `yuvj*` variant (e.g. `yuv420p` →
+    `yuvj420p`): the range is carried by the format, so the RGB→YUV conversion
+    maps to 0-255 even on builds that honour a `-color_range pc` tag only as a
+    label and not as a remap. A caller who passes their own `-color_range`
+    overrides this — the pixel format is left as-is — so pass `-color_range tv`
+    to restore the old limited/broadcast-range behaviour.
 
     Args:
-        pix_fmt: Pixel format passed as `-pix_fmt` (e.g. `"yuv420p"`).
+        pix_fmt: Pixel format passed as `-pix_fmt` (e.g. `"yuv420p"`). Swapped
+            for its `yuvj*` full-range variant unless the caller sets
+            `-color_range`; a format with no such variant is passed unchanged.
         crf: Constant Rate Factor; appended as `-crf` when not `None`.
         preset: libx264 speed/size preset; appended as `-preset` when set.
         extra_args: Extra ffmpeg flags. A `-vf` pair here is merged into the
-            pad chain and a `-pix_fmt` pair overrides `pix_fmt` (rather than
+            pad chain, a `-pix_fmt` pair overrides `pix_fmt`, and a
+            `-color_range` pair overrides the full-range default (rather than
             duplicating the flag); everything else is passed through unchanged.
 
     Returns:
         The assembled argument list, always starting with the merged `-vf`
-        chain followed by a single `-pix_fmt`.
+        chain followed by a single `-pix_fmt` and a single `-color_range`.
 
     Raises:
-        ValueError: If `extra_args` ends with a valueless `-vf` or
-            `-pix_fmt` flag.
+        ValueError: If `extra_args` ends with a valueless `-vf`, `-pix_fmt`,
+            or `-color_range` flag.
 
     Examples:
-        - Defaults produce just the pad filter and pixel format:
+        - Defaults use the full-range `yuvj420p` format and a matching `pc` tag:
             ```python
             >>> from cleopatra.glyphs.base.animation import _build_ffmpeg_extra_args
             >>> _build_ffmpeg_extra_args("yuv420p", None, None, None)
-            ['-vf', 'pad=ceil(iw/2)*2:ceil(ih/2)*2', '-pix_fmt', 'yuv420p']
+            ['-vf', 'pad=ceil(iw/2)*2:ceil(ih/2)*2', '-pix_fmt', 'yuvj420p', '-color_range', 'pc']
 
             ```
-        - A CRF and preset are appended after the pixel format:
+        - A CRF and preset are appended after the pixel format and colour range:
             ```python
             >>> from cleopatra.glyphs.base.animation import _build_ffmpeg_extra_args
-            >>> _build_ffmpeg_extra_args("yuv420p", 26, "slow", None)[4:]
+            >>> _build_ffmpeg_extra_args("yuv420p", 26, "slow", None)[6:]
             ['-crf', '26', '-preset', 'slow']
 
             ```
@@ -534,31 +622,39 @@ def _build_ffmpeg_extra_args(
             ['-vf', 'scale=320:-1,pad=ceil(iw/2)*2:ceil(ih/2)*2']
 
             ```
-    """
-    user_args = list(extra_args) if extra_args else []
-    vf_filters: list[str] = []
-    passthrough: list[str] = []
-    caller_pix_fmt: str | None = None
-    i = 0
-    while i < len(user_args):
-        arg = user_args[i]
-        if arg in ("-vf", "-pix_fmt"):
-            if i + 1 >= len(user_args):
-                raise ValueError(
-                    f"Malformed extra_args: {arg!r} must be followed by a value."
-                )
-            if arg == "-vf":
-                vf_filters.append(user_args[i + 1])
-            else:
-                caller_pix_fmt = user_args[i + 1]
-            i += 2
-        else:
-            passthrough.append(arg)
-            i += 1
-    vf_filters.append(_EVEN_PAD_FILTER)
+        - A caller `-color_range` overrides the full-range default:
+            ```python
+            >>> from cleopatra.glyphs.base.animation import _build_ffmpeg_extra_args
+            >>> _build_ffmpeg_extra_args("yuv420p", None, None, ["-color_range", "tv"])[-2:]
+            ['-color_range', 'tv']
 
+            ```
+    """
+    vf_filters, passthrough, caller_pix_fmt, caller_color_range = (
+        _split_ffmpeg_extra_args(extra_args)
+    )
+
+    vf_filters.append(_EVEN_PAD_FILTER)
     chosen_pix_fmt = caller_pix_fmt if caller_pix_fmt is not None else pix_fmt
-    built = ["-vf", ",".join(vf_filters), "-pix_fmt", chosen_pix_fmt]
+    # Full range unless the caller overrides it: matplotlib figures are
+    # computer-generated and full-range (0-255), but ffmpeg defaults to
+    # limited/broadcast range (16-235) and would visibly wash them out. Encode
+    # with the full-range (yuvj*) pixel format so the RGB->YUV conversion maps to
+    # 0-255 on every ffmpeg build -- a `-color_range pc` tag alone is honoured
+    # only as a label (not a remap) by some builds, leaving the luma squeezed.
+    if caller_color_range is not None:
+        chosen_color_range = caller_color_range
+    else:
+        chosen_pix_fmt = _FULL_RANGE_PIX_FMT.get(chosen_pix_fmt, chosen_pix_fmt)
+        chosen_color_range = "pc"
+    built = [
+        "-vf",
+        ",".join(vf_filters),
+        "-pix_fmt",
+        chosen_pix_fmt,
+        "-color_range",
+        chosen_color_range,
+    ]
     if crf is not None:
         built += ["-crf", str(crf)]
     if preset is not None:
@@ -653,8 +749,15 @@ def save_animation(
     matplotlib animation in the same process.
 
     For the FFmpeg formats the frame is automatically padded up to an even
-    width/height (libx264 rejects odd dimensions) and encoded with
-    `pix_fmt=yuv420p` for universal playback. By default no fixed bitrate is
+    width/height (libx264 rejects odd dimensions) and encoded full colour range:
+    the `pix_fmt` is swapped for its full-range `yuvj*` variant (so `yuv420p`
+    becomes `yuvj420p`), which carries the range in the format itself and so maps
+    to full 0-255 on every ffmpeg build. matplotlib figures are computer-generated
+    and full-range (0-255) by construction, so this keeps their full contrast
+    instead of squeezing it into ffmpeg's limited/broadcast default (16-235),
+    which visibly washes the video out; pass `extra_args=["-color_range", "tv"]`
+    for the old limited-range behaviour, which the few players that ignore the
+    full-range flag render more predictably. By default no fixed bitrate is
     requested (unlike older versions, which forced 1800 kbit/s), so libx264
     uses its constant-quality default of roughly CRF 23 — pass `crf` or
     `bitrate` to trade size against quality. GIF output is written with
@@ -679,7 +782,9 @@ def save_animation(
         preset: libx264/libx265 speed/size preset (e.g. `"slow"`); ignored by
             codecs that don't accept it. Ignored for GIF/WebP.
         pix_fmt: Pixel format for the ffmpeg formats. Defaults to
-            `"yuv420p"` for universal playback. Ignored for GIF/WebP.
+            `"yuv420p"` for universal playback; unless a caller `-color_range`
+            says otherwise it is swapped for its full-range `yuvj*` variant (see
+            `extra_args`). Ignored for GIF/WebP.
         dpi: Resolution in dots per inch. `None` uses the figure's dpi.
         optimize: GIF only — run Pillow's palette optimisation pass (a no-op
             for WebP, whose encoder ignores it). Default `True`.
@@ -692,10 +797,12 @@ def save_animation(
             palette is built from each colour once, so they weight by distinct
             colours rather than by area.
         extra_args: Extra ffmpeg flags. A `-vf` filter here is merged with
-            the automatic even-dimension pad and a `-pix_fmt` overrides
-            `pix_fmt`. Note these flags bypass the `crf`/`bitrate`
-            exclusivity check, so don't smuggle a conflicting `-b:v`/`-crf`
-            through here. Ignored for GIF/WebP.
+            the automatic even-dimension pad, a `-pix_fmt` overrides
+            `pix_fmt`, and a `-color_range` overrides the full-range default
+            (pass `["-color_range", "tv"]` for limited/broadcast range). Note
+            these flags bypass the `crf`/`bitrate` exclusivity check, so don't
+            smuggle a conflicting `-b:v`/`-crf` through here. Ignored for
+            GIF/WebP.
 
     Returns:
         The output path as a `str` (the `os.fspath` of `path`),
