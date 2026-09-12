@@ -345,9 +345,7 @@ class TestRegistryProvesDeathBeforeEvicting:
         glyph.plot(ax=ax)
         group = [glyph.cbar, glyph.im]
         group[1].remove()
-        assert not _entry_is_detached(group), (
-            "a live colorbar was read as a dead entry"
-        )
+        assert not _entry_is_detached(group), "a live colorbar was read as a dead entry"
         plt.close(fig)
 
     def test_an_entry_whose_artists_all_left_is_evicted(self, arr):
@@ -378,9 +376,7 @@ class TestRegistryProvesDeathBeforeEvicting:
             about -- guessing wrong orphans live artists.
         """
         assert not _entry_is_detached([]), "an empty entry was read as dead"
-        assert not _entry_is_detached([object()]), (
-            "an unaskable entry was read as dead"
-        )
+        assert not _entry_is_detached([object()]), "an unaskable entry was read as dead"
 
 
 class _PlainOwner:
@@ -457,9 +453,7 @@ class TestOwnershipTokensAreKeyedByIdentity:
         assert key in _render_owner_tokens, "precondition: the owner was tracked"
         del owner
         gc.collect()
-        assert key not in _render_owner_tokens, (
-            "a collected owner's token survived it"
-        )
+        assert key not in _render_owner_tokens, "a collected owner's token survived it"
 
 
 class TestApplyAxisStyleRejectsABadGridAxis:

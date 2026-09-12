@@ -19,10 +19,10 @@ import pytest
 from cleopatra.glyphs.base.glyph import apply_axis_style
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
-from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
-from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
-from cleopatra.glyphs.primitives.line_glyph import LineGlyph
 from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
+from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
+from cleopatra.glyphs.primitives.line_glyph import LineGlyph
+from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
 from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
 from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph
 from cleopatra.glyphs.stats.kde_glyph import KDEGlyph

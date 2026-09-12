@@ -3025,9 +3025,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         # `plot(figsize=...)` does; and a set that only grew would keep
         # re-applying an option on later calls that did not pass it, overwriting
         # whatever the caller had since set on the axes themselves.
-        self._render_explicit_options = getattr(
-            self, "_explicit_options", set()
-        ) | set(kwargs)
+        self._render_explicit_options = getattr(self, "_explicit_options", set()) | set(
+            kwargs
+        )
         resolved_colorbar = _resolve_colorbar(colorbar)
         self.default_options.update(resolved_colorbar)
         for key in _STYLE_OVERRIDE_KEYS:
