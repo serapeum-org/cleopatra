@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from cleopatra.glyphs.base.glyph import apply_axis_style
+from cleopatra.glyphs.base.glyph import _apply_axis_options
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
 from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
@@ -361,7 +361,7 @@ class TestApplyAxisStyle:
             This is what protects existing figures from a silent restyle.
         """
         fig, ax = plt.subplots()
-        apply_axis_style(ax, DEFAULT_OPTIONS, set())
+        _apply_axis_options(ax, DEFAULT_OPTIONS, set())
         assert ax.get_xlabel() == ""
         assert ax.get_xticklabels()[0].get_fontsize() == 10.0
         plt.close(fig)
@@ -373,7 +373,7 @@ class TestApplyAxisStyle:
             The opt-in `HistogramGlyph` uses to keep its historical output.
         """
         fig, ax = plt.subplots()
-        apply_axis_style(ax, DEFAULT_OPTIONS, set(), apply_defaults=True)
+        _apply_axis_options(ax, DEFAULT_OPTIONS, set(), apply_defaults=True)
         assert (
             ax.get_xticklabels()[0].get_fontsize() == DEFAULT_OPTIONS["xtick_font_size"]
         )
@@ -393,7 +393,7 @@ class TestApplyAxisStyle:
             The histogram draws a y-only grid, so the helper has to express it.
         """
         fig, ax = plt.subplots()
-        apply_axis_style(ax, DEFAULT_OPTIONS, {"grid_alpha"}, grid_axis=grid_axis)
+        _apply_axis_options(ax, DEFAULT_OPTIONS, {"grid_alpha"}, grid_axis=grid_axis)
         assert getattr(ax, getter)()[0].get_visible(), f"{grid_axis} grid not drawn"
         other = "get_ygridlines" if grid_axis == "x" else "get_xgridlines"
         assert not getattr(ax, other)()[0].get_visible(), (
@@ -408,6 +408,6 @@ class TestApplyAxisStyle:
             The parameter is optional, so a caller with no tracking can omit it.
         """
         fig, ax = plt.subplots()
-        apply_axis_style(ax, DEFAULT_OPTIONS, None)
+        _apply_axis_options(ax, DEFAULT_OPTIONS, None)
         assert ax.get_xlabel() == ""
         plt.close(fig)

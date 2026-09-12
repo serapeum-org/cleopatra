@@ -20,11 +20,11 @@ import numpy as np
 import pytest
 
 from cleopatra.glyphs.base.glyph import (
+    _apply_axis_options,
     _entry_is_detached,
     _mark_render_artists,
+    _multiline_title_pad,
     _render_owner_token,
-    apply_axis_style,
-    multiline_title_pad,
 )
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
@@ -125,7 +125,7 @@ class TestNonNumericTitleSize:
         """
         fig, ax = plt.subplots()
         ax.matshow(np.zeros((4, 4)))
-        pad = multiline_title_pad(ax, "a\nb", size)
+        pad = _multiline_title_pad(ax, "a\nb", size)
         assert isinstance(pad, float), f"pad was {pad!r}, not a float"
         assert pad > 0, f"pad was {pad!r}, not a positive number of points"
         plt.close(fig)
@@ -264,7 +264,7 @@ class TestLabelTextPreserved:
         """
         fig, ax = plt.subplots()
         ax.set_xlabel("CALLER SET THIS")
-        apply_axis_style(ax, DEFAULT_OPTIONS, {"xlabel_font_size"})
+        _apply_axis_options(ax, DEFAULT_OPTIONS, {"xlabel_font_size"})
         assert ax.get_xlabel() == "CALLER SET THIS", (
             "the caller's label was overwritten"
         )
@@ -280,7 +280,7 @@ class TestLabelTextPreserved:
         """
         fig, ax = plt.subplots()
         ax.set_xlabel("CALLER SET THIS")
-        apply_axis_style(ax, dict(DEFAULT_OPTIONS, xlabel="MINE"), {"xlabel"})
+        _apply_axis_options(ax, dict(DEFAULT_OPTIONS, xlabel="MINE"), {"xlabel"})
         assert ax.get_xlabel() == "MINE"
         plt.close(fig)
 

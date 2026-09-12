@@ -52,11 +52,11 @@ from cleopatra.glyphs.base.glyph import (
     _clear_prior_render_artists,
     _clear_projection_frame,
     _mark_render_artists,
+    _multiline_title_pad,
     _reject_grouped_kwargs,
     _restore_flat_axes,
     _root_figure,
     _stash_projection_frame,
-    multiline_title_pad,
 )
 from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_grid, shade_rgb
 from cleopatra.styling.colorbar import (
@@ -2655,7 +2655,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             self.ax.set_title(
                 self.default_options["title"],
                 fontsize=self.default_options["title_size"],
-                pad=multiline_title_pad(
+                pad=_multiline_title_pad(
                     self.ax,
                     self.default_options["title"],
                     self.default_options["title_size"],
@@ -3921,7 +3921,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             ax.set_title(
                 self.default_options["title"],
                 fontsize=self.default_options["title_size"],
-                pad=multiline_title_pad(
+                pad=_multiline_title_pad(
                     ax,
                     self.default_options["title"],
                     self.default_options["title_size"],
@@ -4935,7 +4935,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             ax.set_title(
                 self.default_options["title"],
                 fontsize=self.default_options["title_size"],
-                pad=multiline_title_pad(
+                pad=_multiline_title_pad(
                     ax,
                     self.default_options["title"],
                     self.default_options["title_size"],

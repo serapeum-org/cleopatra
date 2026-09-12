@@ -68,9 +68,9 @@ from matplotlib.figure import Figure
 
 from cleopatra.styling.colors import resolve_colormap
 from cleopatra.glyphs.base.glyph import (
+    _apply_axis_options,
     _clear_prior_render_artists,
     _mark_render_artists,
-    apply_axis_style,
     _root_figure,
 )
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
@@ -563,7 +563,9 @@ class HistogramGlyph:
             bins.append(bins_i)
             patches.append(patches_i)
 
-        apply_axis_style(ax, self.default_options, apply_defaults=True, grid_axis="y")
+        _apply_axis_options(
+            ax, self.default_options, apply_defaults=True, grid_axis="y"
+        )
         hist = {"n": n, "bins": bins, "patches": patches}
         _mark_render_artists(ax, self, *patches)
         return fig, ax, hist
@@ -676,7 +678,7 @@ class HistogramGlyph:
     def _apply_axis_labels(self, ax: Axes) -> None:
         """Apply the styled x/y axis labels and tick sizes to `ax`.
 
-        Delegates to the shared `apply_axis_style`. `apply_defaults` is on
+        Delegates to the shared `_apply_axis_options`. `apply_defaults` is on
         because this glyph has always rendered the declared defaults (tick
         labels at 11, not matplotlib's 10) and must keep doing so.
 
@@ -685,7 +687,9 @@ class HistogramGlyph:
         helper's default `grid_axis="both"` run here would add x gridlines all
         three have never had.
         """
-        apply_axis_style(ax, self.default_options, apply_defaults=True, grid_axis=None)
+        _apply_axis_options(
+            ax, self.default_options, apply_defaults=True, grid_axis=None
+        )
 
     def boxplot(
         self,

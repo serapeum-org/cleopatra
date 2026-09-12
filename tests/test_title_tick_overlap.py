@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from cleopatra.glyphs.base.glyph import multiline_title_pad
+from cleopatra.glyphs.base.glyph import _multiline_title_pad
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 
 #: A UTM window, so the y axis carries a `1e6` offset text like a real granule.
@@ -166,7 +166,7 @@ class TestMultilineTitlePad:
         """
         fig, ax = plt.subplots()
         ax.matshow(np.zeros((4, 4)))
-        assert multiline_title_pad(ax, "one line", 15) is None
+        assert _multiline_title_pad(ax, "one line", 15) is None
         plt.close(fig)
 
     def test_no_pad_when_labels_are_not_on_top(self):
@@ -178,7 +178,7 @@ class TestMultilineTitlePad:
         """
         fig, ax = plt.subplots()
         ax.imshow(np.zeros((4, 4)))  # imshow leaves the labels on the bottom
-        assert multiline_title_pad(ax, "two\nlines", 15) is None
+        assert _multiline_title_pad(ax, "two\nlines", 15) is None
         plt.close(fig)
 
     @pytest.mark.parametrize("lines, size", [(2, 15), (3, 15), (2, 26), (5, 10)])
@@ -195,9 +195,9 @@ class TestMultilineTitlePad:
         """
         fig, ax = plt.subplots()
         ax.matshow(np.zeros((4, 4)))
-        one_line = multiline_title_pad(ax, "x", size) or plt.rcParams["axes.titlepad"]
+        one_line = _multiline_title_pad(ax, "x", size) or plt.rcParams["axes.titlepad"]
         title = "\n".join("x" for _ in range(lines))
-        pad = multiline_title_pad(ax, title, size)
+        pad = _multiline_title_pad(ax, title, size)
 
         # Assert the property rather than the formula: the pad must cover the
         # rendered height of the lines that hang below the anchor. Restating

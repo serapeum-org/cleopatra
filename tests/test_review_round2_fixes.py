@@ -26,11 +26,11 @@ import numpy as np
 import pytest
 
 from cleopatra.glyphs.base.glyph import (
+    _apply_axis_options,
     _artist_is_attached,
     _entry_is_detached,
     _render_owner_token,
     _render_owner_tokens,
-    apply_axis_style,
 )
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
@@ -620,7 +620,7 @@ class TestApplyAxisStyleRejectsABadGridAxis:
         """
         fig, ax = plt.subplots()
         with pytest.raises(ValueError, match="grid_axis must be one of"):
-            apply_axis_style(ax, {"grid_alpha": 0.5}, {"grid_alpha"}, grid_axis=bad)
+            _apply_axis_options(ax, {"grid_alpha": 0.5}, {"grid_alpha"}, grid_axis=bad)
         plt.close(fig)
 
     @pytest.mark.parametrize("good", ["both", "x", "y", None])
@@ -634,7 +634,7 @@ class TestApplyAxisStyleRejectsABadGridAxis:
             The guard must not narrow the helper's own contract.
         """
         fig, ax = plt.subplots()
-        apply_axis_style(ax, {"grid_alpha": 0.5}, {"grid_alpha"}, grid_axis=good)
+        _apply_axis_options(ax, {"grid_alpha": 0.5}, {"grid_alpha"}, grid_axis=good)
         plt.close(fig)
 
 

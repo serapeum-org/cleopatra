@@ -186,7 +186,7 @@ def _immediate_figure(ax: Axes) -> Figure | SubFigure:
     return fig
 
 
-def apply_axis_style(
+def _apply_axis_options(
     ax: Axes,
     options: dict,
     explicit: set[str] | None = None,
@@ -236,13 +236,13 @@ def apply_axis_style(
             >>> import matplotlib
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.glyphs.base.glyph import apply_axis_style
+            >>> from cleopatra.glyphs.base.glyph import _apply_axis_options
             >>> options = {"xlabel": "time", "ylabel": "value",
             ...            "xlabel_font_size": 11, "ylabel_font_size": 11,
             ...            "xtick_font_size": 20, "ytick_font_size": 11,
             ...            "grid_alpha": 0.5}
             >>> fig, ax = plt.subplots()
-            >>> apply_axis_style(ax, options, {"xlabel"})
+            >>> _apply_axis_options(ax, options, {"xlabel"})
             >>> ax.get_xlabel()
             'time'
             >>> ax.get_ylabel()
@@ -255,13 +255,13 @@ def apply_axis_style(
             >>> import matplotlib
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.glyphs.base.glyph import apply_axis_style
+            >>> from cleopatra.glyphs.base.glyph import _apply_axis_options
             >>> options = {"xlabel": "time", "ylabel": "value",
             ...            "xlabel_font_size": 11, "ylabel_font_size": 11,
             ...            "xtick_font_size": 20, "ytick_font_size": 11,
             ...            "grid_alpha": 0.5}
             >>> fig, ax = plt.subplots()
-            >>> apply_axis_style(ax, options, {"xtick_font_size"})
+            >>> _apply_axis_options(ax, options, {"xtick_font_size"})
             >>> ax.get_xticklabels()[0].get_fontsize()
             20.0
             >>> ax.get_xlabel()
@@ -274,13 +274,13 @@ def apply_axis_style(
             >>> import matplotlib
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.glyphs.base.glyph import apply_axis_style
+            >>> from cleopatra.glyphs.base.glyph import _apply_axis_options
             >>> options = {"xlabel": "time", "ylabel": "value",
             ...            "xlabel_font_size": 11, "ylabel_font_size": 11,
             ...            "xtick_font_size": 20, "ytick_font_size": 11,
             ...            "grid_alpha": 0.5}
             >>> fig, ax = plt.subplots()
-            >>> apply_axis_style(ax, options, set(), apply_defaults=True)
+            >>> _apply_axis_options(ax, options, set(), apply_defaults=True)
             >>> ax.get_xlabel(), ax.get_ylabel()
             ('time', 'value')
             >>> plt.close(fig)
@@ -292,13 +292,13 @@ def apply_axis_style(
             >>> import matplotlib
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.glyphs.base.glyph import apply_axis_style
+            >>> from cleopatra.glyphs.base.glyph import _apply_axis_options
             >>> options = {"xlabel": "time", "ylabel": "value",
             ...            "xlabel_font_size": 11, "ylabel_font_size": 11,
             ...            "xtick_font_size": 20, "ytick_font_size": 11,
             ...            "grid_alpha": 0.5}
             >>> fig, ax = plt.subplots()
-            >>> apply_axis_style(ax, options, {"xlabel"}, grid_axis="horizontal")
+            >>> _apply_axis_options(ax, options, {"xlabel"}, grid_axis="horizontal")
             Traceback (most recent call last):
                 ...
             ValueError: grid_axis must be one of 'both', 'x', 'y' or None, got 'horizontal'.
@@ -348,10 +348,10 @@ def apply_axis_style(
         ax.grid(axis=grid_axis, alpha=options["grid_alpha"])
 
 
-#: The options `apply_axis_style` applies. Named here so a glyph that resets
+#: The options `_apply_axis_options` applies. Named here so a glyph that resets
 #: its `default_options` between calls can carry the construction-time ones
 #: across (see `Glyph._restore_construction_axis_style`).
-AXIS_STYLE_KEYS = (
+_AXIS_STYLE_KEYS = (
     "xlabel",
     "ylabel",
     "xlabel_font_size",
@@ -388,7 +388,7 @@ def _title_points(fontsize: Any) -> float:
     return FontProperties(size=fontsize).get_size_in_points()
 
 
-def multiline_title_pad(ax: Axes, title: Any, fontsize: Any) -> float | None:
+def _multiline_title_pad(ax: Axes, title: Any, fontsize: Any) -> float | None:
     """Return the title pad that keeps a multi-line title clear of top tick labels.
 
     Matplotlib already raises a title above x tick labels drawn on the top spine
@@ -417,10 +417,10 @@ def multiline_title_pad(ax: Axes, title: Any, fontsize: Any) -> float | None:
             >>> import matplotlib
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt, numpy as np
-            >>> from cleopatra.glyphs.base.glyph import multiline_title_pad
+            >>> from cleopatra.glyphs.base.glyph import _multiline_title_pad
             >>> fig, ax = plt.subplots()
             >>> _ = ax.matshow(np.zeros((4, 4)))
-            >>> print(multiline_title_pad(ax, "one line", 15))
+            >>> print(_multiline_title_pad(ax, "one line", 15))
             None
             >>> plt.close(fig)
 
@@ -430,10 +430,10 @@ def multiline_title_pad(ax: Axes, title: Any, fontsize: Any) -> float | None:
             >>> import matplotlib
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt, numpy as np
-            >>> from cleopatra.glyphs.base.glyph import multiline_title_pad
+            >>> from cleopatra.glyphs.base.glyph import _multiline_title_pad
             >>> fig, ax = plt.subplots()
             >>> _ = ax.matshow(np.zeros((4, 4)))
-            >>> multiline_title_pad(ax, "first\\nsecond", 15)
+            >>> _multiline_title_pad(ax, "first\\nsecond", 15)
             24.0
             >>> plt.close(fig)
 
@@ -444,10 +444,10 @@ def multiline_title_pad(ax: Axes, title: Any, fontsize: Any) -> float | None:
             >>> import matplotlib
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt, numpy as np
-            >>> from cleopatra.glyphs.base.glyph import multiline_title_pad
+            >>> from cleopatra.glyphs.base.glyph import _multiline_title_pad
             >>> fig, ax = plt.subplots()
             >>> _ = ax.imshow(np.zeros((4, 4)))
-            >>> print(multiline_title_pad(ax, "first\\nsecond", 15))
+            >>> print(_multiline_title_pad(ax, "first\\nsecond", 15))
             None
             >>> plt.close(fig)
 
@@ -918,7 +918,7 @@ class Glyph:
         #: so `MeshGlyph(xlabel=...)` would be accepted and never drawn.
         self._construction_axis_style = {
             key: self._default_options[key]
-            for key in AXIS_STYLE_KEYS
+            for key in _AXIS_STYLE_KEYS
             if key in self._explicit_options
         }
         # Grouped options are applied after the loose ones so a construction
@@ -2304,7 +2304,7 @@ class Glyph:
     ) -> None:
         """Apply this glyph's axis-styling options to `ax`.
 
-        Thin wrapper over `apply_axis_style`; see it for what is applied and
+        Thin wrapper over `_apply_axis_options`; see it for what is applied and
         why only explicitly-passed options are honoured by default.
 
         A render method that accepts these options as keyword arguments sets
@@ -2324,7 +2324,7 @@ class Glyph:
         explicit = getattr(self, "_render_explicit_options", None)
         if explicit is None:
             explicit = getattr(self, "_explicit_options", set())
-        apply_axis_style(
+        _apply_axis_options(
             ax,
             self.default_options,
             explicit,
