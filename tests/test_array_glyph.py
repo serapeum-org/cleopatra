@@ -306,14 +306,26 @@ class TestPlotArray:
             f"the later ColorScaling should apply, got {glyph.im.norm!r}"
         )
 
-    def test_same_call_color_and_norm_warns_and_norm_wins(self):
-        """Passing both a ColorScaling and a raw norm warns; the raw norm renders."""
+    def test_same_call_color_and_norm_warns_once_and_norm_wins(self):
+        """Passing both a ColorScaling and a raw norm warns exactly once; the norm renders."""
         arr = np.arange(100, dtype=float).reshape(10, 10)
         caller_norm = PowerNorm(gamma=0.4, vmin=0, vmax=99)
         glyph = ArrayGlyph(arr)
-        with pytest.warns(UserWarning, match="color_scale="):
+        with pytest.warns(UserWarning, match="color scale is ignored") as record:
             glyph.plot(color=ColorScaling.equalize(), norm=caller_norm, cmap="Blues")
+        conflict = [w for w in record if "color scale is ignored" in str(w.message)]
+        assert len(conflict) == 1, f"expected exactly one conflict warning, got {len(conflict)}"
         assert glyph.im.norm is caller_norm, "the caller norm should win the conflict"
+
+    def test_reused_glyph_norm_does_not_warn_about_sticky_scale(self, recwarn):
+        """A plain plot(norm=...) after a prior ColorScaling does not misfire the warning."""
+        arr = np.arange(100, dtype=float).reshape(10, 10)
+        glyph = ArrayGlyph(arr)
+        glyph.plot(color=ColorScaling.power(gamma=2.0), cmap="Blues")
+        recwarn.clear()
+        glyph.plot(norm=PowerNorm(gamma=0.4, vmin=0, vmax=99), cmap="Blues")
+        conflict = [w for w in recwarn if "color scale is ignored" in str(w.message)]
+        assert not conflict, f"no conflict warning expected, got {[str(w.message) for w in conflict]}"
 
     def test_caller_norm_bar_ticks_span_the_norm_range(self):
         """A caller norm with its own vmin/vmax gets bar ticks inside that range."""
@@ -338,6 +350,20 @@ class TestPlotArray:
         _, cbar_kw = glyph._caller_norm_and_cbar_kw(Normalize(), ticks)
         assert np.array_equal(cbar_kw["ticks"], ticks), (
             f"a limit-less norm should keep the incoming ticks, got {cbar_kw['ticks']}"
+        )
+
+    def test_equalize_honours_robust_limits(self):
+        """robust=True clips the outlier tail before equalize ranks (FuncNorm range shrinks)."""
+        rng = np.random.default_rng(0)
+        data = np.concatenate(
+            [rng.normal(0.0, 1.0, 9800), rng.uniform(500.0, 1000.0, 200)]
+        ).reshape(100, 100)
+        plain = ArrayGlyph(data)
+        plain.plot(color=ColorScaling.equalize())
+        robust = ArrayGlyph(data)
+        robust.plot(color=ColorScaling.equalize(), robust=True)
+        assert robust.im.norm.vmax < plain.im.norm.vmax, (
+            "robust should clip the outlier tail before ranking"
         )
 
     @staticmethod

@@ -443,6 +443,16 @@ class TestColorScalingEqualize:
         )
         assert restored.samples == 256, f"samples lost: {restored.samples}"
 
+    def test_ranks_within_the_resolved_window(self):
+        """An explicit [vmin, vmax] window clips outliers before ranking."""
+        data = np.concatenate([np.zeros(50), np.linspace(0.0, 1000.0, 50)])
+        norm, _ = ColorScaling.equalize().build_norm(
+            np.array([0.0, 100.0]), values=data
+        )
+        assert norm.vmax <= 100.0, (
+            f"FuncNorm vmax should honour the [0, 100] window, got {norm.vmax}"
+        )
+
 
 class TestParamGroupsEmitOnlySetFields:
     """`Contour`/`CellValues`/`DataStyle`/`Classify` emit only the fields set."""
