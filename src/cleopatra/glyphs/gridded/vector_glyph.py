@@ -347,6 +347,11 @@ class VectorGlyph(GeoMixin, Glyph):
 
             arrow_patches: tuple = ()
             im: Any
+            # Seeded with the full field so the five names are bound on every
+            # path. Binding them inside one `if` and reading them inside
+            # another is correct only while the two conditions stay equivalent,
+            # which a fourth `kind` would quietly end.
+            x, y, u, v, arrow_mag = self.x, self.y, self.u, self.v, mag
             if kind in ("quiver", "barbs"):
                 x, y, u, v, arrow_mag = self._thinned(opts["thin"], mag)
             if kind == "quiver":
