@@ -83,6 +83,28 @@ _GROUPED_KWARG_HINTS: dict[str, str] = {
 }
 
 
+def _group_option_items(group: Any) -> dict:
+    """The flat option keys a group contributes; a raw `Normalize` maps to `norm`.
+
+    Grouped parameter objects (`ColorScaling`, `Contour`, ...) expose
+    `to_options()`. A caller may instead hand in a pre-built
+    `matplotlib.colors.Normalize` (e.g. `plot(color=my_func_norm)` or
+    `plot(norm=my_func_norm)`), which has none -- so treat it as setting the
+    `norm` option directly. That is the escape hatch that makes any matplotlib
+    norm reachable without a dedicated `ColorScaling` variant.
+
+    Args:
+        group: A `to_options()`-bearing group object, or a
+            `matplotlib.colors.Normalize` instance.
+
+    Returns:
+        dict: The flat option keys the group contributes.
+    """
+    if isinstance(group, colors.Normalize):
+        return {"norm": group}
+    return group.to_options()
+
+
 def _reject_grouped_kwargs(keys: Any) -> None:
     """Raise if any key now belongs to a grouped parameter object.
 
@@ -714,7 +736,7 @@ class Glyph:
         for group in groups:
             if group is None:
                 continue
-            for key, val in group.to_options().items():
+            for key, val in _group_option_items(group).items():
                 if key in self.default_options:
                     self.default_options[key] = val
 
@@ -740,7 +762,7 @@ class Glyph:
         for group in groups:
             if group is None:
                 continue
-            for key in group.to_options():
+            for key in _group_option_items(group):
                 if key in self.default_options and key not in snapshot:
                     snapshot[key] = self.default_options[key]
         return snapshot
@@ -962,6 +984,9 @@ class Glyph:
         # the flat `default_options` storage to that object. `levels` and
         # `extend` are cross-group inputs (contour discretisation / colorbar
         # arrow extension), passed in rather than owned by the scale.
+        caller_norm = self.default_options.get("norm")
+        if caller_norm is not None:
+            return self._caller_norm_and_cbar_kw(caller_norm, ticks)
         scaling = ColorScaling.from_options(self.default_options)
         return scaling.build_norm(
             ticks,
@@ -969,6 +994,38 @@ class Glyph:
             extend=self.default_options.get("extend"),
             values=self._scale_values(),
         )
+
+    def _caller_norm_and_cbar_kw(
+        self, norm: object, ticks: np.ndarray
+    ) -> tuple[colors.Normalize, dict]:
+        """Use a caller-supplied matplotlib `Normalize` directly.
+
+        The escape hatch for `plot(color=my_norm)` / `plot(norm=my_norm)`: the
+        caller's own norm renders as given, bypassing the `color_scale` path so
+        any matplotlib norm (`FuncNorm`, `AsinhNorm`, a custom subclass) is
+        reachable without a dedicated `ColorScaling` variant. A `BoundaryNorm`
+        bar takes its own boundaries as ticks; every other norm keeps the
+        linear tick ladder.
+
+        Args:
+            norm: The caller-supplied norm; must be a
+                `matplotlib.colors.Normalize`.
+            ticks: The colorbar tick ladder to fall back on.
+
+        Returns:
+            tuple[Normalize, dict]: The norm and its colorbar keyword arguments.
+
+        Raises:
+            TypeError: If `norm` is not a `matplotlib.colors.Normalize`.
+        """
+        if not isinstance(norm, colors.Normalize):
+            raise TypeError(
+                "norm= must be a matplotlib.colors.Normalize instance, got "
+                f"{type(norm).__name__}."
+            )
+        extend = self.default_options.get("extend") or "neither"
+        bar_ticks = norm.boundaries if isinstance(norm, colors.BoundaryNorm) else ticks
+        return norm, {"ticks": bar_ticks, "extend": extend}
 
     def _scale_values(self) -> np.ndarray | None:
         """The data values a data-driven colour scale needs, or `None`.

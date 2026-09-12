@@ -116,6 +116,7 @@ DEFAULT_OPTIONS: dict[str, Any] = {
     "bounds": None,
     "midpoint": 0,
     "samples": 512,
+    "norm": None,
     "grid_alpha": 0.75,
 }
 

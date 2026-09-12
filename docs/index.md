@@ -91,7 +91,8 @@ graph TD
 
 - Plot 2-D and 3-D `numpy` arrays with automatic colorbars and selectable colour scales
   (`linear`, `power`, `sym-lognorm`, `lognorm`, `boundary-norm`, `midpoint`, `equalize`), rendered via `imshow`,
-  `pcolormesh`, `contour`, or `contourf` (`plot(kind=...)`).
+  `pcolormesh`, `contour`, or `contourf` (`plot(kind=...)`) — or pass your own matplotlib norm directly with
+  `plot(norm=my_norm)` (equivalently `plot(color=my_norm)`) for any scale the built-ins don't cover.
 - xarray-aligned colour options (still loose): `robust`, `center`, `extend`, `cbar_kwargs`
   (discrete `levels` moved onto `contour=Contour(levels=...)`).
 - Curvilinear / non-uniform grids with `coords=(x, y)`; faceted grids of subplots with

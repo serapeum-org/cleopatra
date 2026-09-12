@@ -261,6 +261,26 @@ class TestPlotArray:
         assert set(np.round(vals, 1)) == {1.0, 3.0, 4.0}, f"unexpected values: {vals}"
         assert np.isfinite(vals).all(), "values must all be finite"
 
+    def test_plot_accepts_caller_norm_via_color(self):
+        """A raw matplotlib Normalize passed as `color=` renders unchanged (escape hatch)."""
+        norm = PowerNorm(gamma=0.4, vmin=0, vmax=99)
+        array = ArrayGlyph(np.arange(100, dtype=float).reshape(10, 10))
+        array.plot(color=norm, cmap="Blues")
+        assert array.im.norm is norm, "the caller's own norm should be used as-is"
+
+    def test_plot_accepts_caller_norm_via_norm_kwarg(self):
+        """A raw matplotlib Normalize passed as `norm=` renders unchanged (escape hatch)."""
+        norm = PowerNorm(gamma=0.4, vmin=0, vmax=99)
+        array = ArrayGlyph(np.arange(100, dtype=float).reshape(10, 10))
+        array.plot(norm=norm, cmap="Blues")
+        assert array.im.norm is norm, "the caller's own norm should be used as-is"
+
+    def test_plot_rejects_non_normalize_norm(self):
+        """A `norm=` that is not a matplotlib Normalize raises a clear TypeError."""
+        array = ArrayGlyph(np.arange(100, dtype=float).reshape(10, 10))
+        with pytest.raises(TypeError, match="must be a matplotlib.colors.Normalize"):
+            array.plot(norm="not-a-norm")
+
     @staticmethod
     def _terrain_like() -> np.ndarray:
         """A signed, long-tailed terrain-like array (most cells near 0, tail to ~740)."""
