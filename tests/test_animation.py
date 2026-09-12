@@ -151,7 +151,7 @@ class TestSaveAnimation:
             fps=5,
             extra_args=[
                 "-vf",
-                "pad=ceil(iw/2)*2:ceil(ih/2)*2",
+                "scale=out_range=full,pad=ceil(iw/2)*2:ceil(ih/2)*2",
                 "-pix_fmt",
                 "yuv420p",
                 "-color_range",
@@ -585,8 +585,11 @@ class TestFullRangeExport:
         plt.close(fig)
 
         lo, hi = _encoded_y_plane_span(str(out))
-        assert lo <= 2, f"luma floor {lo} is not full-range (limited would be ~16)"
-        assert hi >= 252, f"luma ceiling {hi} is not full-range (limited would be ~235)"
+        # Full range reaches the extremes (~0-255); limited/broadcast clamps to
+        # ~16-235. Margins absorb encoder rounding that varies across ffmpeg
+        # builds without blurring the full-vs-limited distinction.
+        assert lo <= 4, f"luma floor {lo} is not full-range (limited would be ~16)"
+        assert hi >= 250, f"luma ceiling {hi} is not full-range (limited would be ~235)"
 
     def test_color_range_override_restores_limited(self, tmp_path):
         """Passing ``-color_range tv`` opts back into limited/broadcast range.
@@ -1031,8 +1034,9 @@ class TestQualityControls:
 
         Test scenario:
             ``extra_args=["-vf", "scale=320:-1", "-tune", "film"]`` yields a
-            single ``-vf scale=320:-1,pad=...`` chain and preserves the other
-            flags.
+            single ``-vf`` chain of ``scale=out_range=full,scale=320:-1,pad=...``
+            (full-range scale first, caller filter next, pad last) and preserves
+            the other flags.
         """
         ffmpeg = self._mock_ffmpeg(monkeypatch)
 
@@ -1045,9 +1049,9 @@ class TestQualityControls:
         _, kwargs = ffmpeg.call_args
         args = kwargs["extra_args"]
         assert args[0] == "-vf", f"first flag should be -vf: {args}"
-        assert args[1] == "scale=320:-1,pad=ceil(iw/2)*2:ceil(ih/2)*2", (
-            f"caller filter not merged with pad: {args}"
-        )
+        assert (
+            args[1] == "scale=out_range=full,scale=320:-1,pad=ceil(iw/2)*2:ceil(ih/2)*2"
+        ), f"caller filter not merged into the range+pad chain: {args}"
         assert args[-2:] == ["-tune", "film"], f"passthrough flags lost: {args}"
 
     def test_custom_pix_fmt_reaches_writer(self, monkeypatch):

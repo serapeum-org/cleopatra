@@ -552,16 +552,18 @@ def _build_ffmpeg_extra_args(
     """Assemble the ffmpeg `extra_args` list for a video export.
 
     Combines the mandatory even-dimension pad filter with an explicit pixel
-    format, a full-range colour tag, and any caller-supplied CRF, preset, or raw
-    ffmpeg flags. A caller `-vf` filter is merged into a single chain — ffmpeg
-    honours only the last `-vf` — with the pad applied last so the frame ends up
-    even whatever the caller's filters produce.
+    format, a full-range colour conversion and tag, and any caller-supplied CRF,
+    preset, or raw ffmpeg flags. A caller `-vf` filter is merged into a single
+    chain — ffmpeg honours only the last `-vf` — with the pad applied last so the
+    frame ends up even whatever the caller's filters produce.
 
-    The colour range defaults to full/`pc` (`-color_range pc`). ffmpeg's own
-    default is limited/broadcast range (16-235), which squeezes the contrast of
-    the full-range (0-255) figures matplotlib produces; tagging the output full
-    range makes the encoder both remap the luma and label the stream as such. A
-    caller who passes their own `-color_range` overrides this — pass
+    The colour range defaults to full: the chain both forces the swscale
+    conversion to full range (`scale=out_range=full`) and tags the stream
+    (`-color_range pc`), because some ffmpeg builds honour the tag as a remap and
+    others only as a label. ffmpeg's own default is limited/broadcast range
+    (16-235), which squeezes the contrast of the full-range (0-255) figures
+    matplotlib produces. A caller who passes their own `-color_range` overrides
+    this — both the forced conversion and the tag are dropped — so pass
     `-color_range tv` to restore the old limited/broadcast-range behaviour.
 
     Args:
@@ -582,11 +584,11 @@ def _build_ffmpeg_extra_args(
             or `-color_range` flag.
 
     Examples:
-        - Defaults produce the pad filter, pixel format, and a full-range tag:
+        - Defaults force full range (scale + tag) with the pad applied last:
             ```python
             >>> from cleopatra.glyphs.base.animation import _build_ffmpeg_extra_args
             >>> _build_ffmpeg_extra_args("yuv420p", None, None, None)
-            ['-vf', 'pad=ceil(iw/2)*2:ceil(ih/2)*2', '-pix_fmt', 'yuv420p', '-color_range', 'pc']
+            ['-vf', 'scale=out_range=full,pad=ceil(iw/2)*2:ceil(ih/2)*2', '-pix_fmt', 'yuv420p', '-color_range', 'pc']
 
             ```
         - A CRF and preset are appended after the pixel format and colour range:
@@ -596,11 +598,12 @@ def _build_ffmpeg_extra_args(
             ['-crf', '26', '-preset', 'slow']
 
             ```
-        - A caller `-vf` is merged into one chain with the pad applied last:
+        - A caller `-vf` is merged into the chain, after the range scale and
+          before the pad:
             ```python
             >>> from cleopatra.glyphs.base.animation import _build_ffmpeg_extra_args
             >>> _build_ffmpeg_extra_args("yuv420p", None, None, ["-vf", "scale=320:-1"])[:2]
-            ['-vf', 'scale=320:-1,pad=ceil(iw/2)*2:ceil(ih/2)*2']
+            ['-vf', 'scale=out_range=full,scale=320:-1,pad=ceil(iw/2)*2:ceil(ih/2)*2']
 
             ```
         - A caller `-color_range` overrides the full-range default:
@@ -614,16 +617,24 @@ def _build_ffmpeg_extra_args(
     vf_filters, passthrough, caller_pix_fmt, caller_color_range = (
         _split_ffmpeg_extra_args(extra_args)
     )
-    vf_filters.append(_EVEN_PAD_FILTER)
 
     chosen_pix_fmt = caller_pix_fmt if caller_pix_fmt is not None else pix_fmt
     # Full range unless the caller overrides it: matplotlib figures are
     # computer-generated and full-range (0-255), but ffmpeg defaults to
-    # limited/broadcast range (16-235) and would visibly wash them out.
-    chosen_color_range = caller_color_range if caller_color_range is not None else "pc"
+    # limited/broadcast range (16-235) and would visibly wash them out. Force the
+    # swscale conversion to full range as well as tagging the stream: some ffmpeg
+    # builds honour `-color_range pc` as a remap and others only as a label, so
+    # `scale=out_range=full` is what actually moves the luma on every build.
+    if caller_color_range is not None:
+        chosen_color_range = caller_color_range
+        range_filters: list[str] = []
+    else:
+        chosen_color_range = "pc"
+        range_filters = ["scale=out_range=full"]
+    vf_chain = range_filters + vf_filters + [_EVEN_PAD_FILTER]
     built = [
         "-vf",
-        ",".join(vf_filters),
+        ",".join(vf_chain),
         "-pix_fmt",
         chosen_pix_fmt,
         "-color_range",
@@ -724,9 +735,10 @@ def save_animation(
 
     For the FFmpeg formats the frame is automatically padded up to an even
     width/height (libx264 rejects odd dimensions), encoded with
-    `pix_fmt=yuv420p` for universal playback, and tagged full colour range
-    (`-color_range pc`). matplotlib figures are computer-generated and
-    full-range (0-255) by construction, so the export keeps their full contrast
+    `pix_fmt=yuv420p` for universal playback, and converted to full colour range
+    (`scale=out_range=full` plus a `-color_range pc` tag). matplotlib figures are
+    computer-generated and full-range (0-255) by construction, so the export
+    keeps their full contrast
     instead of being squeezed into ffmpeg's limited/broadcast default (16-235),
     which visibly washes the video out; pass `extra_args=["-color_range", "tv"]`
     for the old limited-range behaviour, which the few players that ignore the
@@ -755,7 +767,7 @@ def save_animation(
         preset: libx264/libx265 speed/size preset (e.g. `"slow"`); ignored by
             codecs that don't accept it. Ignored for GIF/WebP.
         pix_fmt: Pixel format for the ffmpeg formats. Defaults to
-            `"yuv420p"` for universal playback; the output is tagged full
+            `"yuv420p"` for universal playback; the output is converted to full
             colour range regardless (see `extra_args`). Ignored for GIF/WebP.
         dpi: Resolution in dots per inch. `None` uses the figure's dpi.
         optimize: GIF only — run Pillow's palette optimisation pass (a no-op
