@@ -10,11 +10,11 @@ from __future__ import annotations
 import inspect
 import itertools
 import os
-import weakref
-from numbers import Real
 import warnings
+import weakref
 from collections.abc import Iterator
 from contextlib import contextmanager
+from numbers import Real
 from typing import Any, cast
 
 import matplotlib.colors as colors
@@ -427,9 +427,7 @@ _render_owner_counter = itertools.count()
 #: rather than stamped on the glyph, so a `copy`/`deepcopy`/unpickle of a glyph
 #: is a *new* owner -- an attribute would travel with the clone and let it clear
 #: the original's artists -- and a collected glyph drops out on its own.
-_render_owner_tokens: "weakref.WeakKeyDictionary[Any, int]" = (
-    weakref.WeakKeyDictionary()
-)
+_render_owner_tokens: weakref.WeakKeyDictionary[Any, int] = weakref.WeakKeyDictionary()
 
 
 def _render_owner_token(owner: Any) -> int:

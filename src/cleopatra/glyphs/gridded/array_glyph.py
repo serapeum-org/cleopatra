@@ -4284,6 +4284,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         full_bleed: bool | str = False,
         basemap: bool | dict | Basemap | Callable[[Any], None] | None = None,
         colorbar: bool | ColorBar | None = None,
+        compose: bool = False,
         **kwargs: Unpack[AnimateKwargs],
     ) -> FuncAnimation:
         """Create an animation from a single-band or true-colour stack.
@@ -4707,14 +4708,14 @@ class ArrayGlyph(GeoMixin, Glyph):
         style_categorical = False
 
         if rgb_frames:
-            _clear_prior_render_artists(ax, self)
+            _clear_prior_render_artists(ax, self, compose=compose)
             im = ax.imshow(frame_0, extent=self.extent)
             self.im = im
             self.cbar = None
         else:
             ticks = self.get_ticks()
             self._create_norm_and_cbar_kw(ticks)
-            _clear_prior_render_artists(ax, self)
+            _clear_prior_render_artists(ax, self, compose=compose)
             im, cbar_kw = self._plot_im_get_cbar_kw(ax, frame_0, ticks)
             self.im = im
 
