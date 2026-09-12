@@ -2595,7 +2595,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         data = np.asarray(
             ma.filled(ma.asarray(self.arr).astype(float), np.nan), dtype=float
         )
-        legend = bool(self.default_options.get("add_colorbar", True))
+        legend = self._draws_own_colorbar(compose)
         override_colorbar = (
             self._style_wants_colorbar and style_cfg.get("categories") is None
         )
@@ -3849,7 +3849,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             degenerate_contour = (
                 effective_kind == "contour" and self._vmax == self._vmin
             )
-            if self.default_options["add_colorbar"]:
+            if self._draws_own_colorbar(compose, colorbar):
                 if degenerate_contour:
                     warnings.warn(
                         "Constant-value field has no contour lines; skipping "
@@ -4746,7 +4746,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             self.im = im
 
             self.cbar = None
-            if self.default_options["add_colorbar"]:
+            if self._draws_own_colorbar(compose, colorbar):
                 self.cbar = self.create_color_bar(ax, im, cbar_kw)
 
             frame_0_scalar = np.asarray(
@@ -4796,7 +4796,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     im.set_data(frame_0_scalar)
                     im.set_cmap(cat_cmap)
                     im.set_norm(cat_norm)
-                    if self.default_options["add_colorbar"]:
+                    if self._draws_own_colorbar(compose, colorbar):
                         disjoint_legend(
                             ax,
                             cat_colors,
@@ -4830,7 +4830,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                         self.cbar = self.create_color_bar(
                             ax, mappable, self._style_cbar_kw(style_norm)
                         )
-                    elif self.default_options["add_colorbar"]:
+                    elif self._draws_own_colorbar(compose, colorbar):
                         insets = list(ax.child_axes)
                         for _inset in insets:
                             _inset.remove()

@@ -2224,6 +2224,30 @@ class Glyph:
         )
         ax.add_patch(rect)
 
+    def _draws_own_colorbar(self, compose: bool, colorbar: Any = None) -> bool:
+        """Whether this render should draw a colorbar of its own.
+
+        `fig.colorbar()` takes its space from the axes the mappable is on, so an
+        overlay that adds one re-lays-out the host -- on every overlay, since
+        composing is the case where the axes already belongs to someone else.
+        Composing therefore defaults the colorbar off. Only the default: a
+        caller who asks for one, at construction or on the call, still gets it.
+
+        Args:
+            compose: Whether this render is composing onto an existing axes.
+            colorbar: The render's `colorbar=` argument, if it has one. Anything
+                but `None` counts as asking.
+
+        Returns:
+            bool: `True` when a colorbar should be drawn.
+        """
+        wanted = bool(self.default_options.get("add_colorbar", True))
+        if not compose or not wanted:
+            return wanted
+        return colorbar is not None or "add_colorbar" in getattr(
+            self, "_render_explicit_options", getattr(self, "_explicit_options", set())
+        )
+
     def _restore_construction_axis_style(self, call_keys: Iterable[str]) -> None:
         """Carry construction-time axis options across a `default_options` reset.
 

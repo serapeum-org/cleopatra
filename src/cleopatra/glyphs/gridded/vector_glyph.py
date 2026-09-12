@@ -328,7 +328,9 @@ class VectorGlyph(GeoMixin, Glyph):
                 opts["title"] = title
             opts.update(_resolve_colorbar(colorbar))
             draw_colorbar = (
-                opts["add_colorbar"] if add_colorbar is None else add_colorbar
+                self._draws_own_colorbar(compose, colorbar)
+                if add_colorbar is None
+                else add_colorbar
             )
 
             mag = self.magnitude

@@ -546,3 +546,89 @@ class TestAnimateHonoursTheTickOptions:
         assert not glyph.ax.get_xticks().size, (
             "a pixel-space animation showed its row/column indices"
         )
+
+
+class TestAComposedOverlayDoesNotAddAColorbar:
+    """A colorbar takes its space from the host axes, so composing defaults it off."""
+
+    def test_repeated_overlays_leave_the_host_geometry_alone(self, arr, host):
+        """Five overlays neither shrink the host nor add five colorbars.
+
+        Args:
+            arr: The array fixture.
+            host: The pre-rendered host axes.
+
+        Test scenario:
+            `add_colorbar` defaults to `True` and `fig.colorbar()` steals space
+            from the axes it is attached to, so every composed overlay
+            re-laid-out the host and left another colorbar axes behind.
+        """
+        figure = host.get_figure()
+        axes_before = len(figure.axes)
+        bounds_before = host.get_position().bounds
+        for _ in range(5):
+            ArrayGlyph(arr, extent=[0, 0, 10, 10]).plot(ax=host, compose=True)
+        assert len(figure.axes) == axes_before, (
+            f"composed overlays added colorbar axes: {len(figure.axes)}"
+        )
+        assert host.get_position().bounds == bounds_before, (
+            f"composed overlays re-laid-out the host: {host.get_position().bounds}"
+        )
+
+    @pytest.mark.parametrize("ask", ["constructor", "call"])
+    def test_an_explicitly_requested_colorbar_is_still_drawn(self, arr, host, ask):
+        """Composing defaults the colorbar off, it does not forbid it.
+
+        Args:
+            arr: The array fixture.
+            host: The pre-rendered host axes.
+            ask: Whether the colorbar is asked for at construction or on the call.
+
+        Test scenario:
+            A caller who wants a second colorbar on the host must still get one.
+        """
+        figure = host.get_figure()
+        axes_before = len(figure.axes)
+        if ask == "constructor":
+            ArrayGlyph(arr, extent=[0, 0, 10, 10], add_colorbar=True).plot(
+                ax=host, compose=True
+            )
+        else:
+            ArrayGlyph(arr, extent=[0, 0, 10, 10]).plot(
+                ax=host, compose=True, colorbar=True
+            )
+        assert len(figure.axes) == axes_before + 1, (
+            f"an explicitly requested colorbar was suppressed: {len(figure.axes)}"
+        )
+
+    def test_a_composed_animation_adds_no_colorbar(self, frames, host):
+        """The same default applies to `animate`.
+
+        Args:
+            frames: The frame-stack fixture.
+            host: The pre-rendered host axes.
+
+        Test scenario:
+            `animate` reads the same option and draws on the same host.
+        """
+        figure = host.get_figure()
+        axes_before = len(figure.axes)
+        ArrayGlyph(frames, ax=host, extent=[0, 0, 10, 10]).animate(
+            list(range(3)), compose=True
+        )
+        assert len(figure.axes) == axes_before, (
+            f"a composed animation added a colorbar: {len(figure.axes)}"
+        )
+
+    def test_a_solo_render_still_draws_its_colorbar(self, arr):
+        """Without `compose` the default is unchanged.
+
+        Args:
+            arr: The array fixture.
+
+        Test scenario:
+            The narrowing must apply only to the composing case.
+        """
+        fig, _ = ArrayGlyph(arr, extent=[0, 0, 10, 10]).plot()
+        assert len(fig.axes) == 2, f"a solo render lost its colorbar: {len(fig.axes)}"
+        plt.close(fig)
