@@ -502,11 +502,18 @@ class TestOddDimensionAutoPad:
 
 
 def _encoded_y_plane_span(path: str) -> tuple[int, int]:
-    """Decode a video's first frame and return its luma (Y) min/max.
+    """Decode a video's first frame and return its stored luma (Y) min/max.
 
     Reads the raw Y plane straight off the file with the bundled ffmpeg, the
     same way issue #344's reproduction did, so the assertion is about the
     encoded pixel bytes rather than the stream's colour-range tag.
+
+    The decode maps range identically (`scale=in_range=full:out_range=full`) so
+    swscale passes the stored luma through untouched. Without it, decoding a
+    full-range source to a plain (limited) `yuv444p` output makes some ffmpeg
+    builds squeeze it back into 16-235 on the way out -- reporting limited range
+    for a file that is genuinely full -- which is a decode artefact, not the
+    encoded content this helper is meant to measure.
     """
     exe = imageio_ffmpeg.get_ffmpeg_exe()
     # `ffmpeg -i <file>` with no output legitimately exits non-zero ("At least one
@@ -525,6 +532,8 @@ def _encoded_y_plane_span(path: str) -> tuple[int, int]:
             path,
             "-vframes",
             "1",
+            "-vf",
+            "scale=in_range=full:out_range=full",
             "-f",
             "rawvideo",
             "-pix_fmt",
