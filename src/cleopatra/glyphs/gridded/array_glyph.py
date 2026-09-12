@@ -2584,10 +2584,11 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         layer, style_cfg = resolve_single_layer_style(style)
         _clear_prior_render_artists(self.ax, self, compose=compose)
-        self._apply_style_background(style_cfg)
-        # Composing draws over a host that owns its own projection frame; tearing
-        # that down would strip the graticule the host put there.
+        # A composed overlay owns neither the canvas nor the frame. A preset's
+        # dark background belongs to the figure it was drawn for, and tearing
+        # down the projection frame would strip the graticule the host put there.
         if not compose:
+            self._apply_style_background(style_cfg)
             self._sync_projection_frame(
                 projection_draws_frame(self.default_options.get("projection"))
             )
@@ -2607,7 +2608,9 @@ class ArrayGlyph(GeoMixin, Glyph):
             if override_colorbar
             else None
         )
-        if self.extent is None and self._coords is None:
+        # See `plot`: a pixel-space render hides its indices, but never on a
+        # host's axes it is only composing onto.
+        if not compose and self.extent is None and self._coords is None:
             self.ax.set_xticklabels([])
             self.ax.set_yticklabels([])
             self.ax.set_xticks([])
@@ -3869,13 +3872,18 @@ class ArrayGlyph(GeoMixin, Glyph):
                     self.default_options["title_size"],
                 ),
             )
-        self._apply_axis_style(ax)
-
-        if self.extent is None and effective_kind == "imshow":
+        # Row/column indices are meaningless axis labels, so a pixel-space
+        # render hides them -- but only on an axes it owns. Composed onto a
+        # host, stripping the host's ticks is not this overlay's call. Runs
+        # before the axis styling so a caller's `xtick_font_size` is not applied
+        # to ticks that are about to be deleted.
+        if not compose and self.extent is None and effective_kind == "imshow":
             ax.set_xticklabels([])
             ax.set_yticklabels([])
             ax.set_xticks([])
             ax.set_yticks([])
+
+        self._apply_axis_style(ax)
 
         supports_overlay = effective_kind in ("imshow", "pcolormesh")
         optional_display: dict[str, Any] = {}

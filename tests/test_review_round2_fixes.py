@@ -1,10 +1,10 @@
 """Regression cover for the round-2 review findings on PR #350.
 
 Each test here corresponds to a defect the second review round found in the
-round-1 fixes themselves -- render kwargs bleeding into the set that decides
-figure sizing, the `compose=` contract leaking on `animate`, on the extent-less
-path and under a styled preset, and the ownership registry evicting an entry
-whose only *reporting* artist had gone.
+round-1 fixes themselves -- the `compose=` contract leaking on `animate`, on the
+extent-less path and under a styled preset, render kwargs bleeding into the set
+that decides figure sizing, and the ownership registry evicting an entry whose
+only *reporting* artist had gone.
 """
 
 from __future__ import annotations
@@ -18,6 +18,7 @@ import numpy as np
 import pytest
 
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+from cleopatra.styling.params import DataStyle
 
 
 @pytest.fixture
@@ -28,6 +29,32 @@ def arr():
         np.ndarray: A 20x30 array of values in [0, 1).
     """
     return np.random.default_rng(0).random((20, 30))
+
+
+@pytest.fixture
+def frames():
+    """Provide a small deterministic frame stack to animate.
+
+    Returns:
+        np.ndarray: Three 20x30 frames of values in [0, 1).
+    """
+    return np.random.default_rng(1).random((3, 20, 30))
+
+
+@pytest.fixture
+def host(arr):
+    """Provide an axes with a titled, extent-bearing glyph already on it.
+
+    Args:
+        arr: The array fixture.
+
+    Yields:
+        matplotlib.axes.Axes: The host axes.
+    """
+    fig, ax = plt.subplots(figsize=(6, 4))
+    ArrayGlyph(arr, title="HOST", extent=[0, 0, 10, 10]).plot(ax=ax)
+    yield ax
+    plt.close("all")
 
 
 class TestRenderKwargsDoNotResizeTheFigure:
@@ -155,5 +182,136 @@ class TestDroppedOptionsStopBeingApplied:
         assert ax.get_xlabel() == "PLOTX", f"render xlabel dropped: {ax.get_xlabel()!r}"
         assert ax.get_xticklabels()[0].get_fontsize() == 20.0, (
             "render xtick_font_size dropped"
+        )
+        plt.close(fig)
+
+
+class TestComposeLeavesTheHostChromeAlone:
+    """Every line that touches shared axes chrome honours `compose=`."""
+
+    def test_animate_keeps_the_host_title(self, frames, host):
+        """An untitled composed animation does not blank the host's title.
+
+        Args:
+            frames: The frame-stack fixture.
+            host: The pre-rendered host axes.
+
+        Test scenario:
+            `animate` set the title unconditionally, so an overlay with no title
+            of its own wrote its empty default over the host's caption.
+        """
+        ArrayGlyph(frames, ax=host, add_colorbar=False).animate(
+            list(range(3)), compose=True
+        )
+        assert host.get_title() == "HOST", (
+            f"composed animation blanked the host title: {host.get_title()!r}"
+        )
+
+    def test_animate_keeps_the_host_tick_labels(self, frames, host):
+        """A composed animation does not strip the host's ticks.
+
+        Args:
+            frames: The frame-stack fixture.
+            host: The pre-rendered host axes.
+
+        Test scenario:
+            `animate` called `set_xticklabels([])` and `set_xticks([])` on the
+            host's axes regardless of `compose`.
+        """
+        ArrayGlyph(frames, ax=host, add_colorbar=False).animate(
+            list(range(3)), compose=True
+        )
+        assert host.get_xticks().size, "composed animation removed the host's x ticks"
+        assert host.get_yticks().size, "composed animation removed the host's y ticks"
+
+    def test_animate_without_compose_still_replaces(self, frames, host):
+        """The default `animate` still owns the axes outright.
+
+        Args:
+            frames: The frame-stack fixture.
+            host: The pre-rendered host axes.
+
+        Test scenario:
+            Issue #210's replace-by-default contract must survive the guard.
+        """
+        ArrayGlyph(frames, ax=host, title="OVERLAY", add_colorbar=False).animate(
+            list(range(3))
+        )
+        assert host.get_title() == "OVERLAY", (
+            f"a plain animate no longer retitles: {host.get_title()!r}"
+        )
+        assert not host.get_xticks().size, "a plain animate no longer blanks the ticks"
+
+    def test_an_extentless_overlay_keeps_the_host_ticks(self, arr, host):
+        """An overlay built without an `extent` leaves the host's ticks alone.
+
+        Args:
+            arr: The array fixture.
+            host: The pre-rendered host axes.
+
+        Test scenario:
+            The `extent is None and kind == "imshow"` branch blanked the ticks
+            unconditionally, so the idiomatic bare `ArrayGlyph(arr)` overlay
+            stripped the host's axes. The tick *values* legitimately move -- an
+            extent-less overlay draws in pixel coordinates and widens the data
+            limits -- so what is pinned here is that ticks and their labels
+            still exist at all.
+        """
+        ArrayGlyph(arr, add_colorbar=False).plot(ax=host, compose=True)
+        assert host.get_xticks().size, "extent-less overlay removed the host's x ticks"
+        assert host.get_yticks().size, "extent-less overlay removed the host's y ticks"
+        assert any(label.get_text() for label in host.get_xticklabels()), (
+            "extent-less overlay blanked the host's tick labels"
+        )
+
+    def test_an_extentless_solo_render_still_blanks_its_ticks(self, arr):
+        """Without `compose` a pixel-space render still hides its ticks.
+
+        Args:
+            arr: The array fixture.
+
+        Test scenario:
+            Row/column indices are meaningless axis labels; the guard must be
+            compose-only, not a change to the solo path.
+        """
+        fig, ax = ArrayGlyph(arr).plot()
+        assert not ax.get_xticks().size, "a solo extent-less render kept its ticks"
+        plt.close(fig)
+
+    def test_a_styled_overlay_keeps_the_host_background(self, arr, host):
+        """A preset overlay does not repaint the host's axes facecolor.
+
+        Args:
+            arr: The array fixture.
+            host: The pre-rendered host axes.
+
+        Test scenario:
+            `_apply_style_background` ran before the `compose` guard, so a
+            dark-canvas preset blackened a light host.
+        """
+        before = host.get_facecolor()
+        ArrayGlyph(arr, add_colorbar=False).plot(
+            ax=host, compose=True, data_style=DataStyle(style="temperature_flame")
+        )
+        assert host.get_facecolor() == before, (
+            f"composed preset repainted the host: {host.get_facecolor()}"
+        )
+
+    def test_a_solo_styled_render_still_paints_its_background(self, arr):
+        """Without `compose` a dark preset still owns the canvas.
+
+        Args:
+            arr: The array fixture.
+
+        Test scenario:
+            The guard must not cost the preset its background on the path it
+            does own.
+        """
+        fig, ax = plt.subplots()
+        ArrayGlyph(arr, add_colorbar=False).plot(
+            ax=ax, data_style=DataStyle(style="temperature_flame")
+        )
+        assert ax.get_facecolor()[:3] == (0.0, 0.0, 0.0), (
+            f"the solo styled render lost its background: {ax.get_facecolor()}"
         )
         plt.close(fig)
