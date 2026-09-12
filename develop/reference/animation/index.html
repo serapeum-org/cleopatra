@@ -2816,6 +2816,14 @@ an unsupported extension raises a <code>ValueError</code>. <code>embed_gif</code
 called; if IPython is absent it raises a <code>ModuleNotFoundError</code> with a <code>pip install
 ipython</code> hint (use <code>to_gif</code> to avoid IPython).</p>
 </div>
+<div class="admonition note">
+<p class="admonition-title">Full colour range by default</p>
+<p>The FFmpeg export (<code>mov</code>/<code>avi</code>/<code>mp4</code>) is tagged full colour range (<code>-color_range pc</code>) so the
+computer-generated, full-range (0-255) matplotlib figure keeps its contrast instead of being
+squeezed into FFmpeg's limited/broadcast default (16-235), which visibly washes it out. Pass
+<code>extra_args=["-color_range", "tv"]</code> to restore the old limited/broadcast-range behaviour — the
+most predictable option for the minority of players that ignore the full-range flag.</p>
+</div>
 <h2 id="module-documentation"><a class="toclink" href="#module-documentation">Module Documentation</a><a class="headerlink" href="#module-documentation" title="Permanent link">#</a></h2>
 
 
