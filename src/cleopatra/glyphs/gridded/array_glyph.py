@@ -2369,7 +2369,10 @@ class ArrayGlyph(GeoMixin, Glyph):
         self.contour_labels = None
 
         plot_arr = arr
-        if self.default_options["color_scale"].lower() == "midpoint":
+        if (
+            self.default_options.get("norm") is None
+            and self.default_options["color_scale"].lower() == "midpoint"
+        ):
             plot_arr = ma.filled(arr, np.nan)
 
         levels = self.default_options.get("levels")
@@ -3064,7 +3067,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         kind: str = "auto",
         ax: Axes | None = None,
         title: str | None = None,
-        color: ColorScaling | None = None,
+        color: ColorScaling | Normalize | None = None,
         contour: Contour | None = None,
         cells: CellValues | None = None,
         data_style: DataStyle | None = None,
@@ -3641,6 +3644,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         # will touch, so an invalid `style` (validated below) can roll back the
         # WHOLE merge -- not just `style` -- and a co-passed color=/contour=/cells=
         # cannot leak into a later plain plot() on this (sticky-options) glyph.
+        self._warn_norm_shadows_scale(color, kwargs.get("norm"))
         pre_group_opts = self._snapshot_group_options(color, contour, cells, data_style)
         self._merge_group_params(color, contour, cells, data_style)
         resolved_colorbar = self._apply_kwargs_and_colorbar(colorbar, kwargs)  # type: ignore[arg-type]
@@ -3857,7 +3861,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         figure_size: tuple[float, float] | None = None,
         extents: Sequence[Sequence[float]] | None = None,
         colorbar: bool | ColorBar | None = None,
-        color: ColorScaling | None = None,
+        color: ColorScaling | Normalize | None = None,
         contour: Contour | None = None,
         cells: CellValues | None = None,
         data_style: DataStyle | None = None,
@@ -4225,7 +4229,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         interval: int = 200,
         frame_label: FrameLabel | None = None,
         *,
-        color: ColorScaling | None = None,
+        color: ColorScaling | Normalize | None = None,
         contour: Contour | None = None,
         cells: CellValues | None = None,
         data_style: DataStyle | None = None,
@@ -4580,6 +4584,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         frame_label = frame_label or FrameLabel()
 
+        self._warn_norm_shadows_scale(color, kwargs.get("norm"))
         self._merge_group_params(color, contour, cells, data_style)
         resolved_colorbar = self._apply_kwargs_and_colorbar(colorbar, kwargs)  # type: ignore[arg-type]
 
