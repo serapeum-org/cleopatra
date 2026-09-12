@@ -501,7 +501,7 @@ def _build_ffmpeg_extra_args(
     the full-range (0-255) figures matplotlib produces; tagging the output full
     range makes the encoder both remap the luma and label the stream as such. A
     caller who passes their own `-color_range` overrides this — pass
-    `-color_range tv` to get ffmpeg's limited-range default back.
+    `-color_range tv` to restore the old limited/broadcast-range behaviour.
 
     Args:
         pix_fmt: Pixel format passed as `-pix_fmt` (e.g. `"yuv420p"`).
