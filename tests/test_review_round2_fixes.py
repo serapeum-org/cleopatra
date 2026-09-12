@@ -17,6 +17,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
+from cleopatra.glyphs.base.glyph import (
+    _entry_is_detached,
+    _render_owner_token,
+    _render_owner_tokens,
+    apply_axis_style,
+)
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 from cleopatra.styling.params import DataStyle
 
@@ -315,3 +321,61 @@ class TestComposeLeavesTheHostChromeAlone:
             f"the solo styled render lost its background: {ax.get_facecolor()}"
         )
         plt.close(fig)
+
+
+class TestRegistryProvesDeathBeforeEvicting:
+    """An entry is dropped only when every artist in it has actually gone."""
+
+    def test_a_colorbar_outliving_its_image_keeps_the_entry(self, arr):
+        """A live colorbar is not evicted because its image was removed.
+
+        Args:
+            arr: The array fixture.
+
+        Test scenario:
+            Deadness was read off the artists that expose `.axes` and the rest
+            were ignored, so an entry of `[Colorbar, AxesImage]` reported
+            detached the moment the image went -- dropping the still-live
+            colorbar from the registry, where no later render could clear it.
+        """
+        fig, ax = plt.subplots()
+        glyph = ArrayGlyph(arr, extent=[0, 0, 10, 10])
+        glyph.plot(ax=ax)
+        group = [glyph.cbar, glyph.im]
+        group[1].remove()
+        assert not _entry_is_detached(group), (
+            "a live colorbar was read as a dead entry"
+        )
+        plt.close(fig)
+
+    def test_an_entry_whose_artists_all_left_is_evicted(self, arr):
+        """A genuinely dead entry is still pruned.
+
+        Args:
+            arr: The array fixture.
+
+        Test scenario:
+            Proving life must not become never proving death -- a throwaway
+            glyph's entry has to go, or the registry only grows.
+        """
+        fig, ax = plt.subplots()
+        glyph = ArrayGlyph(arr, extent=[0, 0, 10, 10])
+        glyph.plot(ax=ax)
+        group = [glyph.cbar, glyph.im]
+        group[0].remove()
+        group[1].remove()
+        assert _entry_is_detached(group), "a dead entry was kept"
+        plt.close(fig)
+
+    def test_an_entry_nothing_can_be_asked_about_is_kept(self):
+        """An entry of artists that cannot report is not assumed dead.
+
+        Test scenario:
+            An empty entry, or one holding only objects that answer neither
+            `.axes` nor `.ax` nor indexing, is cheaper to keep than to guess
+            about -- guessing wrong orphans live artists.
+        """
+        assert not _entry_is_detached([]), "an empty entry was read as dead"
+        assert not _entry_is_detached([object()]), (
+            "an unaskable entry was read as dead"
+        )

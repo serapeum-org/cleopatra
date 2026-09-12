@@ -462,29 +462,63 @@ def _render_owner_token(owner: Any) -> int:
         return 0
 
 
+def _artist_is_attached(artist: Any) -> bool | None:
+    """Whether one tracked artist is still on an axes.
+
+    Args:
+        artist: An artist, `Container` or `Colorbar` from a registry entry.
+
+    Returns:
+        bool | None: `True` or `False` when the artist can be asked, `None` when
+        nothing about it can be established.
+    """
+    if hasattr(artist, "axes"):
+        return artist.axes is not None
+    # A `Colorbar` has no `.axes`; it lives on its own `.ax`, which `remove()`
+    # takes off the figure.
+    own_ax = getattr(artist, "ax", None)
+    if isinstance(own_ax, Axes):
+        figure = own_ax.get_figure()
+        return figure is not None and own_ax in figure.axes
+    # A `Container` (`BarContainer` from `ax.bar` / `ax.hist`) has no `.axes`
+    # either, but its children do.
+    try:
+        child = artist[0]
+    except (TypeError, IndexError, KeyError):
+        return None
+    return child.axes is not None if hasattr(child, "axes") else None
+
+
 def _entry_is_detached(group: list) -> bool:
     """Whether every artist in a registry entry has left its axes.
 
     Used to drop a throwaway glyph's entry -- `SomeGlyph(...).plot(ax=ax)` never
     comes back to clear its own -- without ever dropping a live one.
 
-    Deadness has to be *proven*, not assumed from a missing attribute. A
-    matplotlib `Container` (`BarContainer` from `ax.bar`, `ax.hist`) and a
-    `Colorbar` expose no `.axes` at all, so treating "no `.axes`" as "detached"
-    evicted live `HistogramGlyph` entries the moment another glyph rendered onto
-    the same axes -- orphaning their artists permanently, which is the very
-    defect the tracking exists to prevent.
+    Deadness has to be *proven*, not assumed from a missing attribute, and it
+    has to be proven for **every** artist in the entry. A matplotlib `Container`
+    (`BarContainer` from `ax.bar`, `ax.hist`) and a `Colorbar` expose no `.axes`
+    at all: reading that as "detached" evicted live `HistogramGlyph` entries the
+    moment another glyph rendered onto the same axes, and reading it as "cannot
+    tell, so ignore it" evicted an entry whose colorbar outlived its image.
+    Either way the artists are orphaned permanently, which is the defect the
+    tracking exists to prevent. `_artist_is_attached` asks each kind in its own
+    terms.
+
+    An entry holding nothing, or nothing that can be asked, is kept: a render
+    that produced no trackable artist leaves a permanent empty list in the
+    per-axes registry, which is cheaper than guessing that it is dead.
 
     Args:
         group: The artists recorded under one owner.
 
     Returns:
-        bool: `True` only when the entry holds at least one artist that reports
-        an axes, and every such artist reports `None`. An entry of artists that
-        cannot report is kept.
+        bool: `True` only when at least one artist could be asked and every one
+        of them has left its axes.
     """
-    reporting = [a for a in group if hasattr(a, "axes")]
-    return bool(reporting) and all(a.axes is None for a in reporting)
+    answers = [_artist_is_attached(artist) for artist in group]
+    known = [answer for answer in answers if answer is not None]
+    return bool(known) and not any(known)
 
 
 def _clear_prior_render_artists(
