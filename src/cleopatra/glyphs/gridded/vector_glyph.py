@@ -399,56 +399,7 @@ class VectorGlyph(GeoMixin, Glyph):
             self.im = None
             self.cbar = None
 
-            arrow_patches: tuple = ()
-            im: Any
-            # Seeded with the full field so the five names are bound on every
-            # path. Binding them inside one `if` and reading them inside
-            # another is correct only while the two conditions stay equivalent,
-            # which a fourth `kind` would quietly end.
-            x, y, u, v, arrow_mag = self.x, self.y, self.u, self.v, mag
-            if kind in ("quiver", "barbs"):
-                x, y, u, v, arrow_mag = self._thinned(opts["thin"], mag)
-            if kind == "quiver":
-                im = ax.quiver(
-                    x,
-                    y,
-                    u,
-                    v,
-                    arrow_mag,
-                    cmap=cmap,
-                    norm=norm,
-                    scale=opts["scale"],
-                    **clim,
-                )
-            elif kind == "barbs":
-                im = ax.barbs(
-                    x,
-                    y,
-                    u,
-                    v,
-                    arrow_mag,
-                    cmap=cmap,
-                    norm=norm,
-                    **clim,
-                )
-            else:  # streamplot
-                patches_before = set(ax.patches)
-                stream = ax.streamplot(
-                    self.x,
-                    self.y,
-                    self.u,
-                    self.v,
-                    color=mag,
-                    cmap=cmap,
-                    norm=norm,
-                    density=opts["density"],
-                )
-                arrow_patches = tuple(set(ax.patches) - patches_before)
-                im = stream.lines
-                if im.get_array() is None:
-                    im.set_array(np.asarray(mag).ravel())
-                if norm is None:
-                    im.set_clim(ticks[0], ticks[-1])
+            im, arrow_patches = self._draw_field(ax, kind, mag, cmap, norm, ticks, clim)
 
             self.im = im
             if draw_colorbar:
@@ -460,6 +411,81 @@ class VectorGlyph(GeoMixin, Glyph):
 
             _mark_render_artists(ax, self, self.cbar, self.im, *arrow_patches)
             return self.fig, ax, im
+
+    def _draw_field(
+        self,
+        ax: Axes,
+        kind: str,
+        mag: np.ndarray,
+        cmap: Any,
+        norm: Any,
+        ticks: np.ndarray,
+        clim: dict,
+    ) -> tuple[Any, tuple]:
+        """Create the artists for one `kind` and return them.
+
+        Split out of `plot` so that method reads as the option-resolution and
+        bookkeeping it mostly is, with the three matplotlib calls -- and the two
+        `streamplot`-only fix-ups -- in one place.
+
+        Args:
+            ax: The axes to draw on.
+            kind: One of `"quiver"`, `"barbs"` or `"streamplot"`; already
+                validated by the caller.
+            mag: The per-vector magnitude the artist is coloured by.
+            cmap: The resolved colormap.
+            norm: The resolved norm, or `None` when the caller passes an
+                explicit `clim` instead.
+            ticks: The colorbar tick positions, used for that explicit `clim`.
+            clim: `{"clim": (low, high)}` when there is no norm, else `{}`.
+
+        Returns:
+            tuple[Any, tuple]: The mappable to hand the colorbar, and the arrow
+            patches `streamplot` adds directly to the axes (empty for the other
+            two kinds, which return a single artist).
+        """
+        opts = self.default_options
+        if kind == "streamplot":
+            patches_before = set(ax.patches)
+            stream = ax.streamplot(
+                self.x,
+                self.y,
+                self.u,
+                self.v,
+                color=mag,
+                cmap=cmap,
+                norm=norm,
+                density=opts["density"],
+            )
+            im = stream.lines
+            # `streamplot` colours its own segments and does not always leave an
+            # array behind for the colorbar to read.
+            if im.get_array() is None:
+                im.set_array(np.asarray(mag).ravel())
+            if norm is None:
+                im.set_clim(ticks[0], ticks[-1])
+            return im, tuple(set(ax.patches) - patches_before)
+
+        x, y, u, v, arrow_mag = self._thinned(opts["thin"], mag)
+        if kind == "quiver":
+            return (
+                ax.quiver(
+                    x,
+                    y,
+                    u,
+                    v,
+                    arrow_mag,
+                    cmap=cmap,
+                    norm=norm,
+                    scale=opts["scale"],
+                    **clim,
+                ),
+                (),
+            )
+        return (
+            ax.barbs(x, y, u, v, arrow_mag, cmap=cmap, norm=norm, **clim),
+            (),
+        )
 
     def add_key(
         self,
