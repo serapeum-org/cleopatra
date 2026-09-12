@@ -2561,7 +2561,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         if self.fig is not None and getattr(self, "_owns_figure", False):
             self.fig.patch.set_facecolor(background)
 
-    def _plot_with_style(self, style: str) -> tuple[Figure, Axes]:
+    def _plot_with_style(
+        self, style: str, compose: bool = False
+    ) -> tuple[Figure, Axes]:
         """Render the array with a named `DATA_STYLES` preset.
 
         Delegates the drawing to `cleopatra.styling.colors.apply_data_style` so the
@@ -2573,12 +2575,15 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         Args:
             style: A `DATA_STYLES` name (see `_resolve_style_layer`).
+            compose: Draw over what is already on the axes rather than replacing
+                it. Forwarded from `plot`, which would otherwise honour it on
+                its own render paths and silently ignore it on this one.
 
         Returns:
             tuple[Figure, Axes]: The figure and axes drawn on.
         """
         layer, style_cfg = resolve_single_layer_style(style)
-        _clear_prior_render_artists(self.ax, self)
+        _clear_prior_render_artists(self.ax, self, compose=compose)
         self._apply_style_background(style_cfg)
         self._sync_projection_frame(
             projection_draws_frame(self.default_options.get("projection"))
@@ -2984,6 +2989,11 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         _reject_grouped_kwargs(kwargs)
         _reject_loose_alpha(kwargs)
+        # A key passed here is as explicit as one passed to the constructor.
+        # `_apply_axis_style` only applies options the caller actually asked for,
+        # so without this `plot(xlabel=...)` would be accepted and dropped while
+        # `ArrayGlyph(xlabel=...)` worked.
+        self._explicit_options = getattr(self, "_explicit_options", set()) | set(kwargs)
         for key, val in kwargs.items():
             if key not in self.default_options.keys():
                 raise ValueError(
@@ -3716,7 +3726,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                         "'points' and 'display_cell_value' are ignored with 'style'.",
                         stacklevel=2,
                     )
-                self._plot_with_style(style)
+                self._plot_with_style(style, compose=compose)
                 if basemap is not None:
                     self._draw_basemap(basemap)
                 if full_bleed:
