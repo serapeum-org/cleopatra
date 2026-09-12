@@ -267,12 +267,16 @@ class XarrayColourOptions(TypedDict, total=False):
         extend: Colorbar arrow extension, by default `None` (auto-resolve).
         cbar_kwargs: Extra keyword arguments forwarded to `fig.colorbar`,
             by default `None`.
+        norm: A pre-built `matplotlib.colors.Normalize` to render with directly
+            (the escape hatch for any norm not covered by a `ColorScaling`
+            variant), by default `None`. Equivalent to `plot(color=my_norm)`.
     """
 
     robust: bool
     center: float | None
     extend: Literal["neither", "both", "min", "max"] | None
     cbar_kwargs: dict[str, Any] | None
+    norm: Normalize | None
 
 
 class AnimateCellValueOptions(TypedDict, total=False):
@@ -1403,6 +1407,25 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         self._arr = value
 
+    def _scale_values(self) -> np.ndarray:
+        """The array's valid, finite cells, for a data-driven scale (`equalize`).
+
+        Drops masked (out-of-domain) cells and any non-finite values, and
+        flattens the whole stored array to 1-D -- so for a 3-D stack /
+        animation the empirical CDF is built once from *all* frames, giving a
+        single scale consistent across them rather than a per-frame one.
+
+        Always returns an array (never `None`): an all-non-finite field yields
+        an empty array, so `equalize` reports the accurate "no finite values"
+        error rather than the base glyph's "no value array" message.
+
+        Returns:
+            np.ndarray: A 1-D array of finite in-domain values (empty if none).
+        """
+        arr = ma.asarray(self.arr)
+        values = np.asarray(arr.compressed(), dtype=float).ravel()
+        return values[np.isfinite(values)]
+
     def prepare_array(
         self,
         array: np.ndarray,
@@ -2309,7 +2332,8 @@ class ArrayGlyph(GeoMixin, Glyph):
         and dispatches to the requested `kind` of plot. All four kinds
         share the same norm/vmin/vmax resolution path so the existing
         `color_scale` enum (linear/power/sym-lognorm/lognorm/
-        boundary-norm/midpoint) works identically for every render kind.
+        boundary-norm/midpoint/equalize) works identically for every render
+        kind.
 
         When `self._coords` is set (curvilinear / non-uniform grid),
         the `(x, y)` arrays are forwarded as the first positional
@@ -2345,7 +2369,10 @@ class ArrayGlyph(GeoMixin, Glyph):
         self.contour_labels = None
 
         plot_arr = arr
-        if self.default_options["color_scale"].lower() == "midpoint":
+        if (
+            self.default_options.get("norm") is None
+            and self.default_options["color_scale"].lower() == "midpoint"
+        ):
             plot_arr = ma.filled(arr, np.nan)
 
         levels = self.default_options.get("levels")
@@ -3040,7 +3067,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         kind: str = "auto",
         ax: Axes | None = None,
         title: str | None = None,
-        color: ColorScaling | None = None,
+        color: ColorScaling | Normalize | None = None,
         contour: Contour | None = None,
         cells: CellValues | None = None,
         data_style: DataStyle | None = None,
@@ -3617,6 +3644,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         # will touch, so an invalid `style` (validated below) can roll back the
         # WHOLE merge -- not just `style` -- and a co-passed color=/contour=/cells=
         # cannot leak into a later plain plot() on this (sticky-options) glyph.
+        self._warn_norm_shadows_scale(color, kwargs.get("norm"))
         pre_group_opts = self._snapshot_group_options(color, contour, cells, data_style)
         self._merge_group_params(color, contour, cells, data_style)
         resolved_colorbar = self._apply_kwargs_and_colorbar(colorbar, kwargs)  # type: ignore[arg-type]
@@ -3833,7 +3861,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         figure_size: tuple[float, float] | None = None,
         extents: Sequence[Sequence[float]] | None = None,
         colorbar: bool | ColorBar | None = None,
-        color: ColorScaling | None = None,
+        color: ColorScaling | Normalize | None = None,
         contour: Contour | None = None,
         cells: CellValues | None = None,
         data_style: DataStyle | None = None,
@@ -4201,7 +4229,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         interval: int = 200,
         frame_label: FrameLabel | None = None,
         *,
-        color: ColorScaling | None = None,
+        color: ColorScaling | Normalize | None = None,
         contour: Contour | None = None,
         cells: CellValues | None = None,
         data_style: DataStyle | None = None,
@@ -4556,6 +4584,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         frame_label = frame_label or FrameLabel()
 
+        self._warn_norm_shadows_scale(color, kwargs.get("norm"))
         self._merge_group_params(color, contour, cells, data_style)
         resolved_colorbar = self._apply_kwargs_and_colorbar(colorbar, kwargs)  # type: ignore[arg-type]
 

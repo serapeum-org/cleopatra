@@ -234,6 +234,138 @@ class TestPlotArray:
         assert array.im.norm.vmin == 1.0, f"vmin should be 1.0, got {array.im.norm.vmin}"
         assert array.im.norm.vmax == 1000.0, f"vmax should be 1000.0, got {array.im.norm.vmax}"
 
+    def test_plot_array_color_scale_equalize(self):
+        """`color=ColorScaling.equalize()` puts a continuous `FuncNorm` on the image.
+
+        The empirical CDF spreads a skewed field so every decile gets ~10% of
+        the ramp, unlike the linear norm that flattens the bulk into one tone.
+        """
+        rng = np.random.default_rng(0)
+        data = np.concatenate(
+            [rng.normal(-3000, 400, 5_000), rng.normal(-300, 200, 500)]
+        ).reshape(55, 100)
+        array = ArrayGlyph(data)
+        fig, ax = array.plot(color=ColorScaling.equalize(), cmap="Blues_r")
+        assert isinstance(fig, Figure)
+        assert type(array.im.norm).__name__ == "FuncNorm", (
+            f"expected a FuncNorm, got {type(array.im.norm).__name__}"
+        )
+        edges = np.percentile(data, np.arange(0, 101, 10))
+        shares = np.diff(array.im.norm(edges)) * 100
+        assert np.allclose(shares, 10.0, atol=1.5), f"uneven ramp shares: {shares}"
+
+    def test_scale_values_drops_masked_and_non_finite(self):
+        """`_scale_values` returns only the valid, finite cells for equalization."""
+        glyph = ArrayGlyph(np.array([[1.0, np.nan], [3.0, 4.0]]))
+        vals = glyph._scale_values()
+        assert set(np.round(vals, 1)) == {1.0, 3.0, 4.0}, f"unexpected values: {vals}"
+        assert np.isfinite(vals).all(), "values must all be finite"
+
+    def test_plot_accepts_caller_norm_via_color(self):
+        """A raw matplotlib Normalize passed as `color=` renders unchanged (escape hatch)."""
+        norm = PowerNorm(gamma=0.4, vmin=0, vmax=99)
+        array = ArrayGlyph(np.arange(100, dtype=float).reshape(10, 10))
+        array.plot(color=norm, cmap="Blues")
+        assert array.im.norm is norm, "the caller's own norm should be used as-is"
+
+    def test_plot_accepts_caller_norm_via_norm_kwarg(self):
+        """A raw matplotlib Normalize passed as `norm=` renders unchanged (escape hatch)."""
+        norm = PowerNorm(gamma=0.4, vmin=0, vmax=99)
+        array = ArrayGlyph(np.arange(100, dtype=float).reshape(10, 10))
+        array.plot(norm=norm, cmap="Blues")
+        assert array.im.norm is norm, "the caller's own norm should be used as-is"
+
+    def test_plot_rejects_non_normalize_norm(self):
+        """A `norm=` that is not a matplotlib Normalize raises a clear TypeError."""
+        array = ArrayGlyph(np.arange(100, dtype=float).reshape(10, 10))
+        with pytest.raises(TypeError, match="must be a matplotlib.colors.Normalize"):
+            array.plot(norm="not-a-norm")
+
+    def test_caller_boundary_norm_bar_ticks_are_its_boundaries(self):
+        """A caller BoundaryNorm renders as-is and its bar ticks are its own boundaries."""
+        bounds = np.array([0.0, 25.0, 50.0, 75.0, 100.0])
+        norm = BoundaryNorm(bounds, ncolors=256)
+        glyph = ArrayGlyph(np.arange(100, dtype=float).reshape(10, 10))
+        out_norm, cbar_kw = glyph._caller_norm_and_cbar_kw(
+            norm, np.array([0.0, 50.0, 100.0])
+        )
+        assert out_norm is norm, "should return the caller's norm unchanged"
+        assert np.array_equal(cbar_kw["ticks"], bounds), (
+            f"BoundaryNorm bar ticks should be its boundaries, got {cbar_kw['ticks']}"
+        )
+
+    def test_a_later_color_scale_clears_a_sticky_caller_norm(self):
+        """Reusing a glyph with color=ColorScaling.* clears a prior plot(norm=...)."""
+        arr = np.arange(100, dtype=float).reshape(10, 10)
+        caller_norm = PowerNorm(gamma=0.4, vmin=0, vmax=99)
+        glyph = ArrayGlyph(arr)
+        glyph.plot(norm=caller_norm, cmap="Blues")
+        glyph.plot(color=ColorScaling.power(gamma=2.0), cmap="Blues")
+        assert glyph.im.norm is not caller_norm, "the stale caller norm must be cleared"
+        assert glyph.im.norm.gamma == 2.0, (
+            f"the later ColorScaling should apply, got {glyph.im.norm!r}"
+        )
+
+    def test_same_call_color_and_norm_warns_once_and_norm_wins(self):
+        """Passing both a ColorScaling and a raw norm warns exactly once; the norm renders."""
+        arr = np.arange(100, dtype=float).reshape(10, 10)
+        caller_norm = PowerNorm(gamma=0.4, vmin=0, vmax=99)
+        scale = ColorScaling.equalize()
+        glyph = ArrayGlyph(arr)
+        with pytest.warns(UserWarning, match="color scale is ignored") as record:
+            glyph.plot(color=scale, norm=caller_norm, cmap="Blues")
+        conflict = [w for w in record if "color scale is ignored" in str(w.message)]
+        assert len(conflict) == 1, f"expected exactly one conflict warning, got {len(conflict)}"
+        assert glyph.im.norm is caller_norm, "the caller norm should win the conflict"
+
+    def test_reused_glyph_norm_does_not_warn_about_sticky_scale(self, recwarn):
+        """A plain plot(norm=...) after a prior ColorScaling does not misfire the warning."""
+        arr = np.arange(100, dtype=float).reshape(10, 10)
+        glyph = ArrayGlyph(arr)
+        glyph.plot(color=ColorScaling.power(gamma=2.0), cmap="Blues")
+        recwarn.clear()
+        glyph.plot(norm=PowerNorm(gamma=0.4, vmin=0, vmax=99), cmap="Blues")
+        conflict = [w for w in recwarn if "color scale is ignored" in str(w.message)]
+        assert not conflict, f"no conflict warning expected, got {[str(w.message) for w in conflict]}"
+
+    def test_caller_norm_bar_ticks_span_the_norm_range(self):
+        """A caller norm with its own vmin/vmax gets bar ticks inside that range."""
+        norm = PowerNorm(gamma=0.4, vmin=0.0, vmax=50.0)
+        glyph = ArrayGlyph(np.arange(100, dtype=float).reshape(10, 10))
+        _, cbar_kw = glyph._caller_norm_and_cbar_kw(norm, np.array([0.0, 50.0, 99.0]))
+        ticks = np.asarray(cbar_kw["ticks"])
+        assert ticks.min() >= 0.0, f"ticks below the norm range: {ticks}"
+        assert ticks.max() <= 50.0, f"ticks above the norm range: {ticks}"
+
+    def test_all_non_finite_array_reports_no_finite_values(self):
+        """Equalize on an all-non-finite ArrayGlyph reports the real cause, not 'pass values='."""
+        glyph = ArrayGlyph(np.full((4, 4), np.nan), vmin=0.0, vmax=1.0)
+        with pytest.raises(ValueError, match="no finite values"):
+            glyph.plot(color=ColorScaling.equalize())
+
+    def test_caller_norm_without_limits_keeps_the_tick_ladder(self):
+        """A caller norm with no vmin/vmax falls back to the incoming tick ladder."""
+        ticks = np.array([0.0, 50.0, 99.0])
+        glyph = ArrayGlyph(np.arange(100, dtype=float).reshape(10, 10))
+        _, cbar_kw = glyph._caller_norm_and_cbar_kw(Normalize(), ticks)
+        assert np.array_equal(cbar_kw["ticks"], ticks), (
+            f"a limit-less norm should keep the incoming ticks, got {cbar_kw['ticks']}"
+        )
+
+    def test_equalize_honours_robust_limits(self):
+        """robust=True clips the outlier tail before equalize ranks (FuncNorm range shrinks)."""
+        rng = np.random.default_rng(0)
+        data = np.concatenate(
+            [rng.normal(0.0, 1.0, 9800), rng.uniform(500.0, 1000.0, 200)]
+        ).reshape(100, 100)
+        plain = ArrayGlyph(data)
+        plain.plot(color=ColorScaling.equalize())
+        robust = ArrayGlyph(data)
+        robust.plot(color=ColorScaling.equalize(), robust=True)
+        assert robust.im.norm.vmax < plain.im.norm.vmax, (
+            "robust should clip the outlier tail before ranking"
+        )
+
     @staticmethod
     def _terrain_like() -> np.ndarray:
         """A signed, long-tailed terrain-like array (most cells near 0, tail to ~740)."""

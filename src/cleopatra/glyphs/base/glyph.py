@@ -61,6 +61,7 @@ _GROUPED_KWARG_HINTS: dict[str, str] = {
     "line_scale": "color=ColorScaling.sym_log(threshold=..., scale=...)",
     "bounds": "color=ColorScaling.boundary(bounds=...)",
     "midpoint": "color=ColorScaling.midpoint(at=...)",
+    "samples": "color=ColorScaling.equalize(samples=...)",
     "levels": "contour=Contour(levels=...)",
     "labels": "contour=Contour(labels=True, label_kw=...)",
     "label_kw": "contour=Contour(labels=True, label_kw=...)",
@@ -80,6 +81,30 @@ _GROUPED_KWARG_HINTS: dict[str, str] = {
     # (this hint map gates every glyph's construction). `ArrayGlyph` rejects a
     # loose `alpha=` locally instead (see its `_reject_loose_alpha`).
 }
+
+
+def _group_option_items(group: Any) -> dict:
+    """The flat option keys a group contributes; a raw `Normalize` maps to `norm`.
+
+    Grouped parameter objects (`ColorScaling`, `Contour`, ...) expose
+    `to_options()`. A caller may instead hand a pre-built
+    `matplotlib.colors.Normalize` in as the `color=` group (e.g.
+    `plot(color=my_func_norm)`), which has none -- so treat it as setting the
+    `norm` option directly. That is the escape hatch that makes any matplotlib
+    norm reachable without a dedicated `ColorScaling` variant. (The loose
+    `plot(norm=...)` keyword reaches `default_options["norm"]` on its own and
+    does not pass through here.)
+
+    Args:
+        group: A `to_options()`-bearing group object, or a
+            `matplotlib.colors.Normalize` instance.
+
+    Returns:
+        dict: The flat option keys the group contributes.
+    """
+    if isinstance(group, colors.Normalize):
+        return {"norm": group}
+    return group.to_options()
 
 
 def _reject_grouped_kwargs(keys: Any) -> None:
@@ -713,7 +738,7 @@ class Glyph:
         for group in groups:
             if group is None:
                 continue
-            for key, val in group.to_options().items():
+            for key, val in _group_option_items(group).items():
                 if key in self.default_options:
                     self.default_options[key] = val
 
@@ -739,7 +764,7 @@ class Glyph:
         for group in groups:
             if group is None:
                 continue
-            for key in group.to_options():
+            for key in _group_option_items(group):
                 if key in self.default_options and key not in snapshot:
                     snapshot[key] = self.default_options[key]
         return snapshot
@@ -879,7 +904,9 @@ class Glyph:
 
         Honours the `color_scale` option — a `cleopatra.styling.styles.ColorScale`
         member or its string value (case-insensitive): `linear` / `power` /
-        `sym-lognorm` / `lognorm` / `boundary-norm` / `midpoint` — and the
+        `sym-lognorm` / `lognorm` / `boundary-norm` / `midpoint` / `equalize`
+        (the last is data-driven and honoured only by glyphs that expose their
+        values, e.g. `ArrayGlyph`) — and the
         xarray-aligned `levels` and `extend` options when present in
         `default_options`. An unrecognised `color_scale` (including a
         non-string such as an int) raises `ValueError`.
@@ -959,12 +986,105 @@ class Glyph:
         # the flat `default_options` storage to that object. `levels` and
         # `extend` are cross-group inputs (contour discretisation / colorbar
         # arrow extension), passed in rather than owned by the scale.
+        caller_norm = self.default_options.get("norm")
+        if caller_norm is not None:
+            return self._caller_norm_and_cbar_kw(caller_norm, ticks)
         scaling = ColorScaling.from_options(self.default_options)
+        # Only the equalize scale reads the data itself; skip the O(n) scan for
+        # every other scale (this method is also invoked more than once/render).
+        values = (
+            self._scale_values()
+            if self.default_options.get("color_scale") == "equalize"
+            else None
+        )
         return scaling.build_norm(
             ticks,
             levels=self.default_options.get("levels"),
             extend=self.default_options.get("extend"),
+            values=values,
         )
+
+    def _caller_norm_and_cbar_kw(
+        self, norm: object, ticks: np.ndarray
+    ) -> tuple[colors.Normalize, dict]:
+        """Use a caller-supplied matplotlib `Normalize` directly.
+
+        The escape hatch for `plot(color=my_norm)` / `plot(norm=my_norm)`: the
+        caller's own norm renders as given, bypassing the `color_scale` path so
+        any matplotlib norm (`FuncNorm`, `AsinhNorm`, a custom subclass) is
+        reachable without a dedicated `ColorScaling` variant. A `BoundaryNorm`
+        bar takes its own boundaries as ticks; a norm carrying its own
+        `vmin`/`vmax` gets a ladder spanning *that* range (the incoming ticks
+        come off the data range, which can differ and would place ticks off
+        the bar); otherwise the incoming ladder is kept.
+
+        Args:
+            norm: The caller-supplied norm; must be a
+                `matplotlib.colors.Normalize`.
+            ticks: The colorbar tick ladder to fall back on.
+
+        Returns:
+            tuple[Normalize, dict]: The norm and its colorbar keyword arguments.
+
+        Raises:
+            TypeError: If `norm` is not a `matplotlib.colors.Normalize`.
+        """
+        if not isinstance(norm, colors.Normalize):
+            raise TypeError(
+                "norm= must be a matplotlib.colors.Normalize instance, got "
+                f"{type(norm).__name__}."
+            )
+        extend = self.default_options.get("extend") or "neither"
+        n_ticks = len(ticks) if ticks is not None and len(ticks) >= 2 else 8
+        if isinstance(norm, colors.BoundaryNorm):
+            bar_ticks = norm.boundaries
+        elif norm.vmin is not None and norm.vmax is not None:
+            # Place ticks evenly along the bar in the norm's own space (via its
+            # inverse), so a log/asinh caller norm gets sensibly spread ticks
+            # rather than a linear ladder crammed into one end.
+            try:
+                bar_ticks = np.asarray(
+                    norm.inverse(np.linspace(0.0, 1.0, n_ticks)), dtype=float
+                )
+            except (ValueError, TypeError):
+                bar_ticks = np.linspace(float(norm.vmin), float(norm.vmax), n_ticks)
+        else:
+            bar_ticks = ticks
+        return norm, {"ticks": bar_ticks, "extend": extend}
+
+    def _warn_norm_shadows_scale(self, color: Any, norm: Any) -> None:
+        """Warn when one call passes both a `ColorScaling` and a raw `norm=`.
+
+        The raw norm renders directly and the scale is dropped; surfacing the
+        contradiction (like the `scheme` vs `color_scale` warning) beats
+        silently ignoring the `ColorScaling`. Detected from the call's own
+        arguments, so it fires exactly once and never on a sticky scale left by
+        an earlier call.
+
+        Args:
+            color: The `color=` argument of this `plot`/`animate` call.
+            norm: The `norm=` argument of this call (or `None`).
+        """
+        if isinstance(color, ColorScaling) and norm is not None:
+            warnings.warn(
+                f"both color=ColorScaling.{color.kind.value} and norm= were "
+                "given; the norm renders directly and the color scale is ignored.",
+                stacklevel=3,
+            )
+
+    def _scale_values(self) -> np.ndarray | None:
+        """The data values a data-driven colour scale needs, or `None`.
+
+        Only the `equalize` scale reads this -- it builds its quantile table
+        from the data itself, not just the tick range. The base glyph exposes
+        nothing (returns `None`); a glyph that carries a value array (e.g.
+        `ArrayGlyph`) overrides this to return its valid, finite cells.
+
+        Returns:
+            np.ndarray or None: A 1-D array of finite data values, or `None`
+                when the glyph has no value array to equalise over.
+        """
+        return None
 
     @staticmethod
     def _levels_to_bounds(
