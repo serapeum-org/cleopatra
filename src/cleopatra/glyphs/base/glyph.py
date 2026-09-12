@@ -12,7 +12,7 @@ import itertools
 import os
 import warnings
 import weakref
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
 from numbers import Real
 from typing import Any, cast
@@ -306,6 +306,20 @@ def apply_axis_style(
         ax.tick_params(axis="y", labelsize=options["ytick_font_size"])
     if grid_axis is not None and wanted("grid_alpha"):
         ax.grid(axis=grid_axis, alpha=options["grid_alpha"])
+
+
+#: The options `apply_axis_style` applies. Named here so a glyph that resets
+#: its `default_options` between calls can carry the construction-time ones
+#: across (see `Glyph._restore_construction_axis_style`).
+AXIS_STYLE_KEYS = (
+    "xlabel",
+    "ylabel",
+    "xlabel_font_size",
+    "ylabel_font_size",
+    "xtick_font_size",
+    "ytick_font_size",
+    "grid_alpha",
+)
 
 
 #: Fallback line spacing, as a multiple of the font size, for the rare case
@@ -799,6 +813,14 @@ class Glyph:
     ):
         self._default_options = default_options.copy()
         self._merge_kwargs(kwargs)
+        #: Axis-styling options set at construction. A glyph whose `plot()`
+        #: resets `default_options` (`MeshGlyph`) would otherwise discard them,
+        #: so `MeshGlyph(xlabel=...)` would be accepted and never drawn.
+        self._construction_axis_style = {
+            key: self._default_options[key]
+            for key in AXIS_STYLE_KEYS
+            if key in self._explicit_options
+        }
         # Grouped options are applied after the loose ones so a construction
         # kwarg and a `DataStyle` field naming the same option resolve the
         # same way they do in `plot()`: the group wins.
@@ -2128,6 +2150,26 @@ class Glyph:
             **kw,
         )
         ax.add_patch(rect)
+
+    def _restore_construction_axis_style(self, call_keys: Iterable[str]) -> None:
+        """Carry construction-time axis options across a `default_options` reset.
+
+        `MeshGlyph.plot`/`animate` rebuild `default_options` from the module
+        defaults on every call, so that a per-call option cannot leak into the
+        next render. That is deliberate, but it also threw away the axis options
+        the constructor was given -- `MeshGlyph(xlabel=...)` rendered no label at
+        all. This puts them back, without overriding a key this call passed, and
+        records the combined set for `_apply_axis_style`.
+
+        Args:
+            call_keys: The option keys this render call passed; these win over
+                the construction-time values.
+        """
+        call_keys = set(call_keys)
+        for key, value in self._construction_axis_style.items():
+            if key not in call_keys:
+                self._default_options[key] = value
+        self._render_explicit_options = set(self._construction_axis_style) | call_keys
 
     def _apply_axis_style(
         self,

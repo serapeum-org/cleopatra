@@ -1067,6 +1067,7 @@ class MeshGlyph(GeoMixin, Glyph):
             else:
                 render_kwargs[key] = val
         self._merge_kwargs(option_kwargs)
+        self._restore_construction_axis_style(option_kwargs)
         self._merge_group_params(color, contour, data_style)
         resolved_colorbar = (
             _resolve_colorbar(colorbar) if isinstance(colorbar, ColorBar) else {}
@@ -1319,6 +1320,7 @@ class MeshGlyph(GeoMixin, Glyph):
 
         self._default_options = MESH_DEFAULT_OPTIONS.copy()
         self._merge_kwargs(kwargs)
+        self._restore_construction_axis_style(kwargs)
         self._merge_group_params(color, contour, data_style)
         resolved_colorbar = (
             _resolve_colorbar(colorbar) if isinstance(colorbar, ColorBar) else {}

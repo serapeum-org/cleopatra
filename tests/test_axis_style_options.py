@@ -18,6 +18,9 @@ import pytest
 
 from cleopatra.glyphs.base.glyph import apply_axis_style
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
+from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
+from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
 from cleopatra.glyphs.primitives.line_glyph import LineGlyph
 from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
 from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
@@ -36,14 +39,41 @@ AXIS_OPTIONS = (
     "grid_alpha",
 )
 
+#: Fixed arrays rather than draws from a shared generator, so a case gets the
+#: same data whatever else ran first -- a `-k` selection or a different
+#: collection order must not change what a test renders.
 _RNG = np.random.default_rng(0)
 _GRID_X, _GRID_Y = np.meshgrid(np.arange(20), np.arange(15))
+_FIELD_U = _RNG.random((15, 20))
+_FIELD_V = _RNG.random((15, 20))
+_SCALAR = _RNG.random((15, 20))
+_NORMAL = _RNG.normal(size=200)
+_POINTS_X = _RNG.random(20)
+_POINTS_Y = _RNG.random(20)
+_KDE_X = _RNG.random(60)
+_KDE_Y = _RNG.random(60)
+
+#: A two-cell quad mesh: six nodes in a 3x2 lattice, two faces, one value each.
+_MESH_NODE_X = np.array([0.0, 1.0, 2.0, 0.0, 1.0, 2.0])
+_MESH_NODE_Y = np.array([0.0, 0.0, 0.0, 1.0, 1.0, 1.0])
+_MESH_FACES = np.array([[0, 1, 4, 3], [1, 2, 5, 4]])
+_MESH_DATA = np.array([1.0, 2.0])
+
+#: Two open paths for `FlowGlyph` and two closed rings for `PolygonGlyph`.
+_PATHS = [
+    np.array([[0.0, 0.0], [1.0, 1.0], [2.0, 1.5]]),
+    np.array([[0.0, 2.0], [1.0, 2.5], [2.0, 2.0]]),
+]
+_POLYGONS = [
+    np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]]),
+    np.array([[2.0, 0.0], [3.0, 0.0], [3.0, 1.0], [2.0, 1.0]]),
+]
 
 #: One construct/render pair per glyph that advertises the axis options, so the
 #: cross-glyph tests stay a table rather than a copy per class.
 GLYPH_CASES = {
     "array": (
-        lambda **kw: ArrayGlyph(_RNG.random((15, 20)), extent=[0, 0, 10, 10], **kw),
+        lambda **kw: ArrayGlyph(_SCALAR, extent=[0, 0, 10, 10], **kw),
         lambda g: g.plot(),
     ),
     "line": (
@@ -51,27 +81,39 @@ GLYPH_CASES = {
         lambda g: g.line(),
     ),
     "histogram": (
-        lambda **kw: HistogramGlyph(_RNG.normal(size=200), **kw),
+        lambda **kw: HistogramGlyph(_NORMAL, **kw),
         lambda g: g.histogram(),
     ),
     "vector": (
         lambda **kw: VectorGlyph(
             _GRID_X,
             _GRID_Y,
-            _RNG.random((15, 20)),
-            _RNG.random((15, 20)),
+            _FIELD_U,
+            _FIELD_V,
             add_colorbar=False,
             **kw,
         ),
         lambda g: g.plot(kind="quiver"),
     ),
     "scatter": (
-        lambda **kw: ScatterGlyph(_RNG.random(20), _RNG.random(20), **kw),
+        lambda **kw: ScatterGlyph(_POINTS_X, _POINTS_Y, **kw),
         lambda g: g.plot(),
     ),
     "kde": (
-        lambda **kw: KDEGlyph(_RNG.random(60), _RNG.random(60), **kw),
+        lambda **kw: KDEGlyph(_KDE_X, _KDE_Y, **kw),
         lambda g: g.plot(),
+    ),
+    "mesh": (
+        lambda **kw: MeshGlyph(_MESH_NODE_X, _MESH_NODE_Y, _MESH_FACES, **kw),
+        lambda g: g.plot(_MESH_DATA, colorbar=False),
+    ),
+    "flow": (
+        lambda **kw: FlowGlyph(_PATHS, values=np.array([1.0, 2.0]), **kw),
+        lambda g: g.plot(add_colorbar=False),
+    ),
+    "polygon": (
+        lambda **kw: PolygonGlyph(_POLYGONS, np.array([1.0, 2.0]), **kw),
+        lambda g: g.plot(add_colorbar=False),
     ),
 }
 
