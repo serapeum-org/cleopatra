@@ -4890,7 +4890,7 @@ cleopatra.glyphs.gridded.mesh_glyph.MeshGlyph: Glyph subclass for
 <a id="__codelineno-0-918" name="__codelineno-0-918"></a>        <span class="c1">#: so `MeshGlyph(xlabel=...)` would be accepted and never drawn.</span>
 <a id="__codelineno-0-919" name="__codelineno-0-919"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_construction_axis_style</span> <span class="o">=</span> <span class="p">{</span>
 <a id="__codelineno-0-920" name="__codelineno-0-920"></a>            <span class="n">key</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_options</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
-<a id="__codelineno-0-921" name="__codelineno-0-921"></a>            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">AXIS_STYLE_KEYS</span>
+<a id="__codelineno-0-921" name="__codelineno-0-921"></a>            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">_AXIS_STYLE_KEYS</span>
 <a id="__codelineno-0-922" name="__codelineno-0-922"></a>            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_explicit_options</span>
 <a id="__codelineno-0-923" name="__codelineno-0-923"></a>        <span class="p">}</span>
 <a id="__codelineno-0-924" name="__codelineno-0-924"></a>        <span class="c1"># Grouped options are applied after the loose ones so a construction</span>
@@ -6276,7 +6276,7 @@ cleopatra.glyphs.gridded.mesh_glyph.MeshGlyph: Glyph subclass for
 <a id="__codelineno-0-2304" name="__codelineno-0-2304"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <a id="__codelineno-0-2305" name="__codelineno-0-2305"></a><span class="w">        </span><span class="sd">"""Apply this glyph's axis-styling options to `ax`.</span>
 <a id="__codelineno-0-2306" name="__codelineno-0-2306"></a>
-<a id="__codelineno-0-2307" name="__codelineno-0-2307"></a><span class="sd">        Thin wrapper over `apply_axis_style`; see it for what is applied and</span>
+<a id="__codelineno-0-2307" name="__codelineno-0-2307"></a><span class="sd">        Thin wrapper over `_apply_axis_options`; see it for what is applied and</span>
 <a id="__codelineno-0-2308" name="__codelineno-0-2308"></a><span class="sd">        why only explicitly-passed options are honoured by default.</span>
 <a id="__codelineno-0-2309" name="__codelineno-0-2309"></a>
 <a id="__codelineno-0-2310" name="__codelineno-0-2310"></a><span class="sd">        A render method that accepts these options as keyword arguments sets</span>
@@ -6296,7 +6296,7 @@ cleopatra.glyphs.gridded.mesh_glyph.MeshGlyph: Glyph subclass for
 <a id="__codelineno-0-2324" name="__codelineno-0-2324"></a>        <span class="n">explicit</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"_render_explicit_options"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 <a id="__codelineno-0-2325" name="__codelineno-0-2325"></a>        <span class="k">if</span> <span class="n">explicit</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
 <a id="__codelineno-0-2326" name="__codelineno-0-2326"></a>            <span class="n">explicit</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"_explicit_options"</span><span class="p">,</span> <span class="nb">set</span><span class="p">())</span>
-<a id="__codelineno-0-2327" name="__codelineno-0-2327"></a>        <span class="n">apply_axis_style</span><span class="p">(</span>
+<a id="__codelineno-0-2327" name="__codelineno-0-2327"></a>        <span class="n">_apply_axis_options</span><span class="p">(</span>
 <a id="__codelineno-0-2328" name="__codelineno-0-2328"></a>            <span class="n">ax</span><span class="p">,</span>
 <a id="__codelineno-0-2329" name="__codelineno-0-2329"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">,</span>
 <a id="__codelineno-0-2330" name="__codelineno-0-2330"></a>            <span class="n">explicit</span><span class="p">,</span>
