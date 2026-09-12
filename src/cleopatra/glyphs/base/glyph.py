@@ -218,6 +218,67 @@ def apply_axis_style(
             doing so.
         grid_axis: Which gridlines `grid_alpha` draws -- `"both"`, `"x"` or
             `"y"`.
+
+    Examples:
+        - Only the options named in `explicit` reach the axes, so an untouched
+          axes keeps matplotlib's own defaults:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.glyphs.base.glyph import apply_axis_style
+            >>> options = {"xlabel": "time", "ylabel": "value",
+            ...            "xlabel_font_size": 11, "ylabel_font_size": 11,
+            ...            "xtick_font_size": 20, "ytick_font_size": 11,
+            ...            "grid_alpha": 0.5}
+            >>> fig, ax = plt.subplots()
+            >>> apply_axis_style(ax, options, {"xlabel"})
+            >>> ax.get_xlabel()
+            'time'
+            >>> ax.get_ylabel()
+            ''
+            >>> plt.close(fig)
+
+            ```
+        - Passing the tick size applies it, leaving the labels alone:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.glyphs.base.glyph import apply_axis_style
+            >>> options = {"xlabel": "time", "ylabel": "value",
+            ...            "xlabel_font_size": 11, "ylabel_font_size": 11,
+            ...            "xtick_font_size": 20, "ytick_font_size": 11,
+            ...            "grid_alpha": 0.5}
+            >>> fig, ax = plt.subplots()
+            >>> apply_axis_style(ax, options, {"xtick_font_size"})
+            >>> ax.get_xticklabels()[0].get_fontsize()
+            20.0
+            >>> ax.get_xlabel()
+            ''
+            >>> plt.close(fig)
+
+            ```
+        - `apply_defaults` applies every option regardless of `explicit`:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.glyphs.base.glyph import apply_axis_style
+            >>> options = {"xlabel": "time", "ylabel": "value",
+            ...            "xlabel_font_size": 11, "ylabel_font_size": 11,
+            ...            "xtick_font_size": 20, "ytick_font_size": 11,
+            ...            "grid_alpha": 0.5}
+            >>> fig, ax = plt.subplots()
+            >>> apply_axis_style(ax, options, set(), apply_defaults=True)
+            >>> ax.get_xlabel(), ax.get_ylabel()
+            ('time', 'value')
+            >>> plt.close(fig)
+
+            ```
+
+    See Also:
+        Glyph._apply_axis_style: The method wrapper each glyph calls.
     """
     explicit = explicit or set()
 
@@ -262,6 +323,48 @@ def multiline_title_pad(ax: Axes, title: Any, fontsize: float) -> float | None:
     Returns:
         float | None: The pad in points, or `None` to leave matplotlib's default
         -- for a single-line title, or when no tick labels sit on the top spine.
+
+    Examples:
+        - A single-line title needs no extra room, so the default pad stands:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt, numpy as np
+            >>> from cleopatra.glyphs.base.glyph import multiline_title_pad
+            >>> fig, ax = plt.subplots()
+            >>> _ = ax.matshow(np.zeros((4, 4)))
+            >>> print(multiline_title_pad(ax, "one line", 15))
+            None
+            >>> plt.close(fig)
+
+            ```
+        - A two-line title adds one line height to matplotlib's default of 6:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt, numpy as np
+            >>> from cleopatra.glyphs.base.glyph import multiline_title_pad
+            >>> fig, ax = plt.subplots()
+            >>> _ = ax.matshow(np.zeros((4, 4)))
+            >>> multiline_title_pad(ax, "first\\nsecond", 15)
+            24.0
+            >>> plt.close(fig)
+
+            ```
+        - With the labels on the bottom, matplotlib's own raise is already
+          right and nothing is added:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt, numpy as np
+            >>> from cleopatra.glyphs.base.glyph import multiline_title_pad
+            >>> fig, ax = plt.subplots()
+            >>> _ = ax.imshow(np.zeros((4, 4)))
+            >>> print(multiline_title_pad(ax, "first\\nsecond", 15))
+            None
+            >>> plt.close(fig)
+
+            ```
     """
     extra_lines = str(title).count("\n")
     if not extra_lines:

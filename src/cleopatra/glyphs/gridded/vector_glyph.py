@@ -93,7 +93,11 @@ class VectorGlyph(GeoMixin, Glyph):
             `color_scale`, `ticks_spacing`, `cbar_label`, `figsize`,
             `title`). Set `add_colorbar=False` to suppress the per-glyph
             colorbar (default True) for shared-axes composition where the
-            host owns a single aggregated colorbar.
+            host owns a single aggregated colorbar -- pair it with
+            `plot(compose=True)` so the host's own layers survive. Set
+            `thin=n` to draw every nth grid point for `quiver`/`barbs`,
+            which a real grid needs: one arrow per cell is 45,261 on a
+            141x321 window.
 
     Examples:
         - Build a field and inspect the stored magnitude:
