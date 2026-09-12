@@ -1133,7 +1133,9 @@ class TestQualityControls:
         )
 
         args = ffmpeg.call_args.kwargs["extra_args"]
-        assert args.count("-color_range") == 1, f"duplicate -color_range emitted: {args}"
+        assert args.count("-color_range") == 1, (
+            f"duplicate -color_range emitted: {args}"
+        )
         assert args[args.index("-color_range") + 1] == "tv", f"override lost: {args}"
 
     @pytest.mark.parametrize(
