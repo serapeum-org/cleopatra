@@ -293,7 +293,9 @@ class TestGetTicks:
         g._default_options["vmax"] = 31.295
         g._default_options["ticks_spacing"] = (31.295 - 2.82) / 10
         ticks = g.get_ticks()
-        assert float(ticks[-1]) <= 31.295 + 1e-6, f"top tick {ticks[-1]} overshoots vmax 31.295"
+        assert float(ticks[-1]) <= 31.295 + 1e-6, (
+            f"top tick {ticks[-1]} overshoots vmax 31.295"
+        )
 
     def test_no_near_duplicate_top_tick(self):
         """The two topmost ticks are not near-coincident (labels would overprint).
@@ -307,7 +309,9 @@ class TestGetTicks:
         g._default_options["ticks_spacing"] = (31.295 - 2.82) / 10
         ticks = g.get_ticks()
         gap = float(ticks[-1]) - float(ticks[-2])
-        assert gap > 0.04 * (31.295 - 2.82), f"top two ticks too close ({gap:.4f}); labels overprint"
+        assert gap > 0.04 * (31.295 - 2.82), (
+            f"top two ticks too close ({gap:.4f}); labels overprint"
+        )
 
 
 class TestCreateNormAndCbarKw:
@@ -1167,11 +1171,31 @@ class TestOptionKeysAndFilterKwargs:
         "import_path, class_name, const_name",
         [
             ("cleopatra.glyphs.gridded.array_glyph", "ArrayGlyph", "DEFAULT_OPTIONS"),
-            ("cleopatra.glyphs.primitives.scatter_glyph", "ScatterGlyph", "SCATTER_DEFAULT_OPTIONS"),
-            ("cleopatra.glyphs.primitives.polygon_glyph", "PolygonGlyph", "POLYGON_DEFAULT_OPTIONS"),
-            ("cleopatra.glyphs.gridded.vector_glyph", "VectorGlyph", "VECTOR_DEFAULT_OPTIONS"),
-            ("cleopatra.glyphs.primitives.line_glyph", "LineGlyph", "LINE_DEFAULT_OPTIONS"),
-            ("cleopatra.glyphs.gridded.mesh_glyph", "MeshGlyph", "MESH_DEFAULT_OPTIONS"),
+            (
+                "cleopatra.glyphs.primitives.scatter_glyph",
+                "ScatterGlyph",
+                "SCATTER_DEFAULT_OPTIONS",
+            ),
+            (
+                "cleopatra.glyphs.primitives.polygon_glyph",
+                "PolygonGlyph",
+                "POLYGON_DEFAULT_OPTIONS",
+            ),
+            (
+                "cleopatra.glyphs.gridded.vector_glyph",
+                "VectorGlyph",
+                "VECTOR_DEFAULT_OPTIONS",
+            ),
+            (
+                "cleopatra.glyphs.primitives.line_glyph",
+                "LineGlyph",
+                "LINE_DEFAULT_OPTIONS",
+            ),
+            (
+                "cleopatra.glyphs.gridded.mesh_glyph",
+                "MeshGlyph",
+                "MESH_DEFAULT_OPTIONS",
+            ),
         ],
     )
     def test_subclass_keys_match_their_option_dict(
@@ -1415,9 +1439,9 @@ class TestDefaultOptionsAlias:
         assert sg.HistogramGlyph.DEFAULT_OPTIONS is sg.STATISTICAL_DEFAULT_OPTIONS, (
             "class attr mismatch"
         )
-        assert sg.HistogramGlyph.option_keys() == set(
-            sg.STATISTICAL_DEFAULT_OPTIONS
-        ), "keys mismatch"
+        assert sg.HistogramGlyph.option_keys() == set(sg.STATISTICAL_DEFAULT_OPTIONS), (
+            "keys mismatch"
+        )
 
 
 class TestSubFigureFigureResolution:
@@ -1613,6 +1637,19 @@ class TestClearAndMarkRenderArtists:
     """
 
     @staticmethod
+    def _owner():
+        """Build a stand-in glyph to own marked artists.
+
+        Returns:
+            object: An empty instance the tracker can stamp a token onto.
+        """
+
+        class _Owner:
+            pass
+
+        return _Owner()
+
+    @staticmethod
     def _dummy_artist(remove_error: type[Exception] | None = None):
         """Build a bare object with a `.remove()` that succeeds or raises `remove_error`."""
 
@@ -1640,9 +1677,10 @@ class TestClearAndMarkRenderArtists:
         """`_mark_render_artists` stores the given artists, dropping `None` entries."""
         fig, ax = plt.subplots()
         try:
+            owner = self._owner()
             a1, a2 = self._dummy_artist(), self._dummy_artist()
-            _mark_render_artists(ax, a1, None, a2)
-            assert ax._cleo_render_artists == [a1, a2]
+            _mark_render_artists(ax, owner, a1, None, a2)
+            assert list(ax._cleo_render_artists.values()) == [[a1, a2]]
         finally:
             plt.close(fig)
 
@@ -1650,9 +1688,10 @@ class TestClearAndMarkRenderArtists:
         """`_clear_prior_render_artists` removes every marked artist and clears the marker."""
         fig, ax = plt.subplots()
         try:
+            owner = self._owner()
             a1, a2 = self._dummy_artist(), self._dummy_artist()
-            _mark_render_artists(ax, a1, a2)
-            _clear_prior_render_artists(ax)
+            _mark_render_artists(ax, owner, a1, a2)
+            _clear_prior_render_artists(ax, owner)
             assert a1.removed and a2.removed, "both artists must be removed"
             assert ax._cleo_render_artists is None
         finally:
@@ -1673,10 +1712,11 @@ class TestClearAndMarkRenderArtists:
         """
         fig, ax = plt.subplots()
         try:
+            owner = self._owner()
             bad = self._dummy_artist(remove_error=error)
             good = self._dummy_artist()
-            _mark_render_artists(ax, bad, good)
-            _clear_prior_render_artists(ax)
+            _mark_render_artists(ax, owner, bad, good)
+            _clear_prior_render_artists(ax, owner)
             assert good.removed, "the other artist must still be removed"
             assert ax._cleo_render_artists is None
         finally:
@@ -1692,9 +1732,12 @@ class TestClearAndMarkRenderArtists:
         """
         fig, ax = plt.subplots()
         try:
-            _mark_render_artists(ax, self._dummy_artist(remove_error=RuntimeError))
+            owner = self._owner()
+            _mark_render_artists(
+                ax, owner, self._dummy_artist(remove_error=RuntimeError)
+            )
             with pytest.raises(RuntimeError):
-                _clear_prior_render_artists(ax)
+                _clear_prior_render_artists(ax, owner)
         finally:
             plt.close(fig)
 

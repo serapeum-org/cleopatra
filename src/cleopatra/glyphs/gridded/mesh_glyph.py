@@ -81,6 +81,7 @@ MESH_DEFAULT_OPTIONS = {
 }
 MESH_DEFAULT_OPTIONS = STYLE_DEFAULTS | MESH_DEFAULT_OPTIONS
 
+
 class MeshGlyph(GeoMixin, Glyph):
     """Visualization class for unstructured mesh data.
 
@@ -859,7 +860,9 @@ class MeshGlyph(GeoMixin, Glyph):
         # Fold style (and an optional forwarded hillshade) into the grouped
         # data_style object; leaving hillshade unset keeps any sticky value.
         if "hillshade" in kwargs:
-            data_style = DataStyle.for_apply_style(style, hillshade=kwargs.pop("hillshade"))
+            data_style = DataStyle.for_apply_style(
+                style, hillshade=kwargs.pop("hillshade")
+            )
         else:
             data_style = DataStyle.for_apply_style(style)
         return self.plot(
@@ -936,6 +939,15 @@ class MeshGlyph(GeoMixin, Glyph):
                 preset/relief options moved onto the `color=` / `contour=` /
                 `data_style=` group objects above; passing any of them as a
                 loose keyword now raises.
+
+                Every call rebuilds `default_options` from
+                `MESH_DEFAULT_OPTIONS`, so an option passed here applies to
+                this render only and does not leak into the next one. The
+                axis-styling keys (`xlabel`, `ylabel`, their font sizes, the
+                tick label sizes and `grid_alpha`) are the exception: those
+                given to the constructor are carried back across the reset, so
+                `MeshGlyph(..., xlabel="x")` keeps labelling every render. A key
+                passed here wins over the constructor's for this call.
 
                 One relief option is honoured **only** for node data
                 (`location="node"`):
@@ -1064,6 +1076,7 @@ class MeshGlyph(GeoMixin, Glyph):
             else:
                 render_kwargs[key] = val
         self._merge_kwargs(option_kwargs)
+        self._restore_construction_axis_style(option_kwargs)
         self._merge_group_params(color, contour, data_style)
         resolved_colorbar = (
             _resolve_colorbar(colorbar) if isinstance(colorbar, ColorBar) else {}
@@ -1169,7 +1182,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 raise ValueError(
                     "hillshade needs node-centered elevation; pass location='node'"
                 )
-            _clear_prior_render_artists(self.ax)
+            _clear_prior_render_artists(self.ax, self)
             self.im = None
             self._cbar = None
             self._apply_projection()
@@ -1177,7 +1190,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 self.ax, data, edgecolor, norm, hillshade, **render_kwargs
             )
         else:
-            _clear_prior_render_artists(self.ax)
+            _clear_prior_render_artists(self.ax, self)
             self.im = None
             self._cbar = None
             self._apply_projection()
@@ -1220,9 +1233,10 @@ class MeshGlyph(GeoMixin, Glyph):
                 self.default_options["title"],
                 fontsize=self.default_options["title_size"],
             )
+        self._apply_axis_style(self.ax)
         self.ax.set_aspect("equal")
 
-        _mark_render_artists(self.ax, self._cbar, self.im)
+        _mark_render_artists(self.ax, self, self._cbar, self.im)
         return self.fig, self.ax
 
     def animate(
@@ -1263,6 +1277,12 @@ class MeshGlyph(GeoMixin, Glyph):
                 vmin, vmax, color_scale, gamma, midpoint, figsize,
                 title, etc.). The loose `ticks_spacing` / `cbar_*` keys
                 still work, but prefer `colorbar=ColorBar(...)`.
+                As in `plot`, the call rebuilds `default_options` from
+                `MESH_DEFAULT_OPTIONS` first, so an option passed here applies
+                to this animation only -- except the axis-styling keys
+                (`xlabel`, `ylabel`, their font sizes, the tick label sizes and
+                `grid_alpha`), whose construction-time values are carried back
+                across the reset unless this call passes the same key.
 
         Returns:
             FuncAnimation: The animation object. Use
@@ -1315,6 +1335,7 @@ class MeshGlyph(GeoMixin, Glyph):
 
         self._default_options = MESH_DEFAULT_OPTIONS.copy()
         self._merge_kwargs(kwargs)
+        self._restore_construction_axis_style(kwargs)
         self._merge_group_params(color, contour, data_style)
         resolved_colorbar = (
             _resolve_colorbar(colorbar) if isinstance(colorbar, ColorBar) else {}
@@ -1347,7 +1368,7 @@ class MeshGlyph(GeoMixin, Glyph):
 
         self.contour_labels = None
 
-        _clear_prior_render_artists(ax)
+        _clear_prior_render_artists(ax, self)
         self.im = None
         self._cbar = None
 
@@ -1367,6 +1388,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 self.default_options["title"],
                 fontsize=self.default_options["title_size"],
             )
+        self._apply_axis_style(ax)
         ax.set_aspect("equal")
 
         day_text = ax.text(
@@ -1379,7 +1401,7 @@ class MeshGlyph(GeoMixin, Glyph):
         self._day_text = day_text
 
         current_mappable = [tpc]
-        _mark_render_artists(ax, self._cbar, self.im, self._day_text)
+        _mark_render_artists(ax, self, self._cbar, self.im, self._day_text)
 
         def _update(i):
             """Update the plot for frame i."""
@@ -1398,7 +1420,7 @@ class MeshGlyph(GeoMixin, Glyph):
             )
             day_text.set_text(str(time[i]))
             self.im = current_mappable[0]
-            _mark_render_artists(ax, self._cbar, self.im, self._day_text)
+            _mark_render_artists(ax, self, self._cbar, self.im, self._day_text)
 
         plt.tight_layout()
         anim = FuncAnimation(
@@ -1464,7 +1486,7 @@ class MeshGlyph(GeoMixin, Glyph):
         elif self.fig is None:
             self.fig, self.ax = plt.subplots(1, 1, figsize=figsize)
 
-        _clear_prior_render_artists(self.ax)
+        _clear_prior_render_artists(self.ax, self)
         self.im = None
         self._cbar = None
 
@@ -1477,7 +1499,7 @@ class MeshGlyph(GeoMixin, Glyph):
         self.ax.autoscale()
         self.ax.set_aspect("equal")
 
-        _mark_render_artists(self.ax, lc)
+        _mark_render_artists(self.ax, self, lc)
 
         return self.fig, self.ax
 

@@ -293,5 +293,6 @@ class PolygonGlyph(GeoMixin, Glyph):
 
             if opts["title"]:
                 ax.set_title(opts["title"], fontsize=opts["title_size"])
+            self._apply_axis_style(ax)
 
             return self.fig, ax, pc

@@ -8,10 +8,13 @@ colorbar creation, tick management, point overlays, and animation.
 from __future__ import annotations
 
 import inspect
+import itertools
 import os
 import warnings
-from collections.abc import Iterator
+import weakref
+from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
+from numbers import Real
 from typing import Any, cast
 
 import matplotlib.colors as colors
@@ -22,6 +25,7 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.axes import Axes
 from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure, SubFigure
+from matplotlib.font_manager import FontProperties
 from matplotlib.legend import Legend
 from matplotlib.patches import Rectangle
 
@@ -182,44 +186,466 @@ def _immediate_figure(ax: Axes) -> Figure | SubFigure:
     return fig
 
 
-def _clear_prior_render_artists(ax: Axes) -> None:
-    """Remove a prior render call's tracked artists from `ax`.
+def _apply_axis_options(
+    ax: Axes,
+    options: dict,
+    explicit: set[str] | None = None,
+    *,
+    apply_defaults: bool = False,
+    grid_axis: str | None = "both",
+) -> None:
+    """Apply the shared axis-styling options to `ax`.
 
-    Every glyph's `plot`/`animate`-style method creates a fresh set of
-    drawing artists (an image, a colorbar, a frame-label `Text`, a line
-    collection, ...) on every call rather than reusing one -- matplotlib
-    has no "replace the previous artist" primitive for `ax.imshow()`,
-    `fig.colorbar()`, `ax.add_collection()`, etc.; each call always adds a
-    new artist. Calling the method again on the same `Axes` -- from the
-    same glyph instance, or a *different* one sharing it via
-    `SomeGlyph(ax=..., fig=...)` (e.g. the `ax=`/`fig=` passthrough
-    `pyramids`' `Dataset`/`NetCDF`/`Analysis`/`UgridDataset`.plot(ax=...,
-    fig=...) expose) -- would otherwise leave the previous call's artists
-    orphaned: still attached to the `Axes`/`Figure`, and driven by nothing
-    once the owning glyph's own attributes move on to the new call's
-    objects. Ownership is tracked on `ax` itself (not on any glyph
-    instance) via a private marker, precisely so this catches both cases.
-    Must be called before creating this call's own artists.
+    `DEFAULT_OPTIONS` advertises `xlabel`, `ylabel`, their font sizes, the tick
+    label sizes and `grid_alpha`, and the option validator accepts all of them
+    -- so a caller passing any is told the key is supported. This is what makes
+    them reach the axes.
+
+    Only options the caller passed explicitly are applied by default. The
+    package's declared defaults differ from matplotlib's (tick labels at 11
+    against matplotlib's 10, `grid_alpha` at 0.75), so applying them
+    unconditionally would restyle every figure the package has ever drawn.
+    `apply_defaults=True` opts into that, for a glyph whose current output
+    already reflects the declared defaults.
+
+    A module-level function rather than a `Glyph` method because `HistogramGlyph`
+    does not inherit from `Glyph` and needs the same behaviour.
+
+    Args:
+        ax: The axes to style.
+        options: The glyph's resolved options (its `default_options`).
+        explicit: The option keys the caller passed explicitly. `None` is
+            treated as none of them.
+        apply_defaults: Apply every option, not only the explicitly-passed ones.
+            For a glyph that already renders the declared defaults and must keep
+            doing so.
+        grid_axis: Which gridlines `grid_alpha` draws -- `"both"`, `"x"` or
+            `"y"`. `None` leaves the grid untouched, for a caller that draws its
+            own. Checked before anything is applied. It used to travel straight
+            to `Axes.grid(axis=...)`, so a typo surfaced as a matplotlib
+            complaint about `axis` -- a parameter the caller never passed -- and
+            only after the labels and tick sizes had already been set.
+
+    Raises:
+        ValueError: If `grid_axis` is not `"both"`, `"x"`, `"y"` or `None`.
+
+    Examples:
+        - Only the options named in `explicit` reach the axes, so an untouched
+          axes keeps matplotlib's own defaults:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.glyphs.base.glyph import _apply_axis_options
+            >>> options = {"xlabel": "time", "ylabel": "value",
+            ...            "xlabel_font_size": 11, "ylabel_font_size": 11,
+            ...            "xtick_font_size": 20, "ytick_font_size": 11,
+            ...            "grid_alpha": 0.5}
+            >>> fig, ax = plt.subplots()
+            >>> _apply_axis_options(ax, options, {"xlabel"})
+            >>> ax.get_xlabel()
+            'time'
+            >>> ax.get_ylabel()
+            ''
+            >>> plt.close(fig)
+
+            ```
+        - Passing the tick size applies it, leaving the labels alone:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.glyphs.base.glyph import _apply_axis_options
+            >>> options = {"xlabel": "time", "ylabel": "value",
+            ...            "xlabel_font_size": 11, "ylabel_font_size": 11,
+            ...            "xtick_font_size": 20, "ytick_font_size": 11,
+            ...            "grid_alpha": 0.5}
+            >>> fig, ax = plt.subplots()
+            >>> _apply_axis_options(ax, options, {"xtick_font_size"})
+            >>> ax.get_xticklabels()[0].get_fontsize()
+            20.0
+            >>> ax.get_xlabel()
+            ''
+            >>> plt.close(fig)
+
+            ```
+        - `apply_defaults` applies every option regardless of `explicit`:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.glyphs.base.glyph import _apply_axis_options
+            >>> options = {"xlabel": "time", "ylabel": "value",
+            ...            "xlabel_font_size": 11, "ylabel_font_size": 11,
+            ...            "xtick_font_size": 20, "ytick_font_size": 11,
+            ...            "grid_alpha": 0.5}
+            >>> fig, ax = plt.subplots()
+            >>> _apply_axis_options(ax, options, set(), apply_defaults=True)
+            >>> ax.get_xlabel(), ax.get_ylabel()
+            ('time', 'value')
+            >>> plt.close(fig)
+
+            ```
+        - An unrecognised `grid_axis` is rejected in the helper's own vocabulary,
+          before any option reaches the axes:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.glyphs.base.glyph import _apply_axis_options
+            >>> options = {"xlabel": "time", "ylabel": "value",
+            ...            "xlabel_font_size": 11, "ylabel_font_size": 11,
+            ...            "xtick_font_size": 20, "ytick_font_size": 11,
+            ...            "grid_alpha": 0.5}
+            >>> fig, ax = plt.subplots()
+            >>> _apply_axis_options(ax, options, {"xlabel"}, grid_axis="horizontal")
+            Traceback (most recent call last):
+                ...
+            ValueError: grid_axis must be one of 'both', 'x', 'y' or None, got 'horizontal'.
+            >>> ax.get_xlabel()
+            ''
+            >>> plt.close(fig)
+
+            ```
+
+    See Also:
+        Glyph._apply_axis_style: The method wrapper each glyph calls.
+    """
+    if grid_axis not in (None, "both", "x", "y"):
+        raise ValueError(
+            f"grid_axis must be one of 'both', 'x', 'y' or None, got {grid_axis!r}."
+        )
+    explicit = explicit or set()
+
+    def wanted(key: str) -> bool:
+        """Whether `key` should be applied to the axes.
+
+        Args:
+            key: The option name.
+
+        Returns:
+            bool: `True` when the caller asked for it, or when every option is
+            being applied.
+        """
+        return apply_defaults or key in explicit
+
+    # Setting only the font size resizes the label in place. Re-setting the text
+    # too would overwrite a label the caller put on the axes themselves with this
+    # glyph's own (empty) default.
+    if wanted("xlabel"):
+        ax.set_xlabel(options["xlabel"], fontsize=options["xlabel_font_size"])
+    elif wanted("xlabel_font_size"):
+        ax.xaxis.label.set_fontsize(options["xlabel_font_size"])
+    if wanted("ylabel"):
+        ax.set_ylabel(options["ylabel"], fontsize=options["ylabel_font_size"])
+    elif wanted("ylabel_font_size"):
+        ax.yaxis.label.set_fontsize(options["ylabel_font_size"])
+    if wanted("xtick_font_size"):
+        ax.tick_params(axis="x", labelsize=options["xtick_font_size"])
+    if wanted("ytick_font_size"):
+        ax.tick_params(axis="y", labelsize=options["ytick_font_size"])
+    if grid_axis is not None and wanted("grid_alpha"):
+        ax.grid(axis=grid_axis, alpha=options["grid_alpha"])
+
+
+#: The options `_apply_axis_options` applies. Named here so a glyph that resets
+#: its `default_options` between calls can carry the construction-time ones
+#: across (see `Glyph._restore_construction_axis_style`).
+_AXIS_STYLE_KEYS = (
+    "xlabel",
+    "ylabel",
+    "xlabel_font_size",
+    "ylabel_font_size",
+    "xtick_font_size",
+    "ytick_font_size",
+    "grid_alpha",
+)
+
+
+#: Fallback line spacing, as a multiple of the font size, for the rare case
+#: where the axes has no title `Text` to read one from. Matches matplotlib's
+#: own `Text` default.
+_TITLE_LINESPACING = 1.2
+
+
+def _title_points(fontsize: Any) -> float:
+    """Resolve a title font size to points.
+
+    `title_size` is passed straight to `set_title(fontsize=...)`, so it accepts
+    everything matplotlib does: a number, one of the relative names
+    (`"large"`, `"xx-small"`, ...), or `None` for the `axes.titlesize` default.
+    The pad arithmetic needs a number, and multiplying a string by a float is a
+    `TypeError`.
+
+    Args:
+        fontsize: The title font size in any form `set_title` accepts.
+
+    Returns:
+        float: The size in points.
+    """
+    if fontsize is None:
+        fontsize = plt.rcParams["axes.titlesize"]
+    return FontProperties(size=fontsize).get_size_in_points()
+
+
+def _multiline_title_pad(ax: Axes, title: Any, fontsize: Any) -> float | None:
+    """Return the title pad that keeps a multi-line title clear of top tick labels.
+
+    Matplotlib already raises a title above x tick labels drawn on the top spine
+    (`_update_title_position`), but it anchors the text's *first* line: every
+    further line is drawn downward, back through the labels it just cleared. A
+    single-line title therefore clears them and a two-line one does not, which is
+    only visible once an explicit `figsize` shrinks the axes.
+
+    The deficit is exactly the height of the lines after the first, so that is
+    what is added to the default pad.
+
+    Args:
+        ax: The axes whose title is being set. Its x tick labels must already be
+            positioned, since whether they are on top decides if a pad is needed.
+        title: The title text; only its line count matters.
+        fontsize: The title's font size, in any form `set_title` accepts -- a
+            number, a relative name such as `"large"`, or `None`.
+
+    Returns:
+        float | None: The pad in points, or `None` to leave matplotlib's default
+        -- for a single-line title, or when no tick labels sit on the top spine.
+
+    Examples:
+        - A single-line title needs no extra room, so the default pad stands:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt, numpy as np
+            >>> from cleopatra.glyphs.base.glyph import _multiline_title_pad
+            >>> fig, ax = plt.subplots()
+            >>> _ = ax.matshow(np.zeros((4, 4)))
+            >>> print(_multiline_title_pad(ax, "one line", 15))
+            None
+            >>> plt.close(fig)
+
+            ```
+        - A two-line title adds one line height to matplotlib's default of 6:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt, numpy as np
+            >>> from cleopatra.glyphs.base.glyph import _multiline_title_pad
+            >>> fig, ax = plt.subplots()
+            >>> _ = ax.matshow(np.zeros((4, 4)))
+            >>> _multiline_title_pad(ax, "first\\nsecond", 15)
+            24.0
+            >>> plt.close(fig)
+
+            ```
+        - With the labels on the bottom, matplotlib's own raise is already
+          right and nothing is added:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt, numpy as np
+            >>> from cleopatra.glyphs.base.glyph import _multiline_title_pad
+            >>> fig, ax = plt.subplots()
+            >>> _ = ax.imshow(np.zeros((4, 4)))
+            >>> print(_multiline_title_pad(ax, "first\\nsecond", 15))
+            None
+            >>> plt.close(fig)
+
+            ```
+    """
+    # A non-string title has no lines to hang below the anchor; `str()` on one
+    # would invent them (`str(None)` has none, but a list's repr might).
+    if not isinstance(title, str):
+        return None
+    extra_lines = title.count("\n")
+    if not extra_lines:
+        return None
+    on_top = any(tick.label2.get_visible() for tick in ax.xaxis.majorTicks)
+    if not on_top:
+        return None
+    # Prefer the spacing the title actually carries, so a caller who set
+    # `linespacing` gets a pad matching what is drawn. It is only usable when
+    # numeric -- matplotlib reports the unset default as the string `"normal"`.
+    spacing = getattr(ax.title, "get_linespacing", lambda: None)()
+    linespacing = spacing if isinstance(spacing, Real) else _TITLE_LINESPACING
+    pad = plt.rcParams["axes.titlepad"]
+    return pad + extra_lines * _title_points(fontsize) * linespacing
+
+
+#: Hands out render-ownership tokens. A counter rather than `id()` because ids
+#: are reused as soon as a glyph is collected, and the common
+#: `SomeGlyph(...).plot(ax=ax)` leaves one collectable immediately.
+_render_owner_counter = itertools.count()
+
+#: Maps a glyph's `id()` to its render-ownership token. Keyed by identity, not
+#: by equality: a `WeakKeyDictionary` keys on `__hash__`/`__eq__`, so two
+#: equal-but-distinct glyphs would share a token and clear each other's artists
+#: even under `compose=True`. Not stamped on the glyph either, so a
+#: `copy`/`deepcopy`/unpickle is a *new* owner -- an attribute would travel with
+#: the clone and let it clear the original's artists. Each entry is dropped when
+#: its glyph is collected (see `_forget_render_owner`), so a later glyph handed
+#: the same `id()` is assigned its own token. Like the rendering stack it serves,
+#: it assumes a single thread.
+_render_owner_tokens: dict[int, int] = {}
+
+
+def _forget_render_owner(key: int) -> None:
+    """Drop a collected glyph's token so its `id()` can be safely reused.
+
+    Args:
+        key: The `id()` the glyph had while it was alive.
+    """
+    _render_owner_tokens.pop(key, None)
+
+
+def _render_owner_token(owner: Any) -> int:
+    """Return `owner`'s render-ownership token, assigning one on first use.
+
+    Args:
+        owner: The glyph rendering onto an axes, or `None` for the unowned
+            bucket.
+
+    Returns:
+        int: A token unique to this owner for as long as it lives. `0` is the
+        unowned bucket, shared by `owner=None` and by any glyph that cannot be
+        weak-referenced, and so cannot be tracked individually.
+    """
+    if owner is None:
+        return 0
+    key = id(owner)
+    token = _render_owner_tokens.get(key)
+    if token is not None:
+        return token
+    try:
+        finalizer = weakref.finalize(owner, _forget_render_owner, key)
+    except TypeError:  # a glyph that cannot be weak-referenced
+        return 0
+    # The finalizer registers itself in weakref's own table, which keeps it alive
+    # until it fires; there is nothing worth doing at interpreter shutdown.
+    finalizer.atexit = False
+    token = next(_render_owner_counter) + 1
+    _render_owner_tokens[key] = token
+    return token
+
+
+def _artist_is_attached(artist: Any) -> bool | None:
+    """Whether one tracked artist is still on an axes.
+
+    Args:
+        artist: An artist, `Container` or `Colorbar` from a registry entry.
+
+    Returns:
+        bool | None: `True` or `False` when the artist can be asked, `None` when
+        nothing about it can be established.
+    """
+    if hasattr(artist, "axes"):
+        return artist.axes is not None
+    # A `Colorbar` has no `.axes`; it lives on its own `.ax`, which `remove()`
+    # takes off the figure.
+    own_ax = getattr(artist, "ax", None)
+    if isinstance(own_ax, Axes):
+        figure = own_ax.get_figure()
+        return figure is not None and own_ax in figure.axes
+    # A `Container` (`BarContainer` from `ax.bar` / `ax.hist`) has no `.axes`
+    # either, but its children do.
+    try:
+        child = artist[0]
+    except (TypeError, IndexError, KeyError):
+        return None
+    return child.axes is not None if hasattr(child, "axes") else None
+
+
+def _entry_is_detached(group: list) -> bool:
+    """Whether every artist in a registry entry has left its axes.
+
+    Used to drop a throwaway glyph's entry -- `SomeGlyph(...).plot(ax=ax)` never
+    comes back to clear its own -- without ever dropping a live one.
+
+    Deadness has to be *proven*, not assumed from a missing attribute, and it
+    has to be proven for **every** artist in the entry. A matplotlib `Container`
+    (`BarContainer` from `ax.bar`, `ax.hist`) and a `Colorbar` expose no `.axes`
+    at all: reading that as "detached" evicted live `HistogramGlyph` entries the
+    moment another glyph rendered onto the same axes, and reading it as "cannot
+    tell, so ignore it" evicted an entry whose colorbar outlived its image.
+    Either way the artists are orphaned permanently, which is the defect the
+    tracking exists to prevent. `_artist_is_attached` asks each kind in its own
+    terms.
+
+    An entry holding nothing, or nothing that can be asked, is kept: a render
+    that produced no trackable artist leaves a permanent empty list in the
+    per-axes registry, which is cheaper than guessing that it is dead.
+
+    Args:
+        group: The artists recorded under one owner.
+
+    Returns:
+        bool: `True` only when at least one artist could be asked and every one
+        of them has left its axes.
+    """
+    answers = [_artist_is_attached(artist) for artist in group]
+    known = [answer for answer in answers if answer is not None]
+    return bool(known) and not any(known)
+
+
+def _clear_prior_render_artists(
+    ax: Axes, owner: Any = None, *, compose: bool = False
+) -> None:
+    """Remove `owner`'s previous render artists from `ax`.
+
+    Every glyph's `plot`/`animate`-style method creates a fresh set of drawing
+    artists (an image, a colorbar, a frame-label `Text`, a line collection, ...)
+    on every call rather than reusing one -- matplotlib has no "replace the
+    previous artist" primitive for `ax.imshow()`, `fig.colorbar()`,
+    `ax.add_collection()`, etc.; each call always adds a new artist. Calling the
+    method again would otherwise leave the previous call's artists orphaned:
+    still attached to the `Axes`/`Figure`, and driven by nothing once the glyph's
+    own attributes move on to the new call's objects.
+
+    By default a render clears **every** glyph's artists on the axes. That is
+    what issue #210 needs: a second glyph bound to an existing axes replaces the
+    first, rather than leaving its artists attached but driven by nothing -- the
+    orphaned mappable that froze an animation at frame 0.
+
+    `compose=True` narrows it to the caller's own artists, so a glyph can be
+    drawn *over* what is already there -- a scalar field with wind arrows on top,
+    the composition `VectorGlyph` documents. It is opt-in because the two are
+    genuinely incompatible: replacing and overlaying cannot both be the default
+    for the same call.
+
+    Artists are tracked per owning glyph, keyed by a monotonic token stamped on
+    the glyph rather than by `id(owner)`: the idiomatic
+    `SomeGlyph(...).plot(ax=ax)` leaves the glyph unreferenced and collectable
+    the moment it returns, so CPython readily hands its id to the next glyph
+    allocated -- which would then be mistaken for the first.
 
     Args:
         ax: The axes a render call is about to draw onto.
+        owner: The glyph doing the rendering. `None` addresses the unowned
+            bucket, which is only reachable from a caller that also marked with
+            `owner=None`.
+        compose: Clear only `owner`'s own artists, leaving any other glyph's in
+            place.
     """
-    prior = getattr(ax, "_cleo_render_artists", None)
-    if prior is None:
+    registry = getattr(ax, "_cleo_render_artists", None)
+    if not isinstance(registry, dict):
         return
-    for artist in prior:
-        try:
-            artist.remove()
-        except (KeyError, NotImplementedError, AttributeError):
-            pass
-    ax._cleo_render_artists = None  # type: ignore[attr-defined]
+    tokens = [_render_owner_token(owner)] if compose else list(registry)
+    for token in tokens:
+        for artist in registry.pop(token, ()):
+            try:
+                artist.remove()
+            except (KeyError, NotImplementedError, AttributeError):
+                pass
+    if not registry:
+        ax._cleo_render_artists = None  # type: ignore[attr-defined]
 
 
-def _mark_render_artists(ax: Axes, *artists: Any) -> None:
-    """Record this render call's artists on `ax` for the next call's cleanup.
+def _mark_render_artists(ax: Axes, owner: Any, *artists: Any) -> None:
+    """Record this render call's artists on `ax`, under `owner`.
 
     Args:
         ax: The axes this call rendered onto.
+        owner: The glyph that created them; only this glyph will clear them.
         *artists: The artists this call created, in the order they must be
             removed on the next call (e.g. a colorbar before the image it
             is attached to -- `Colorbar.remove()` reads
@@ -229,9 +655,13 @@ def _mark_render_artists(ax: Axes, *artists: Any) -> None:
             create, e.g. no colorbar when `add_colorbar=False`) are
             dropped.
     """
-    ax._cleo_render_artists = [  # type: ignore[attr-defined]
-        a for a in artists if a is not None
-    ]
+    registry = getattr(ax, "_cleo_render_artists", None)
+    if not isinstance(registry, dict):
+        registry = {}
+        ax._cleo_render_artists = registry  # type: ignore[attr-defined]
+    for token in [t for t, group in registry.items() if _entry_is_detached(group)]:
+        del registry[token]
+    registry[_render_owner_token(owner)] = [a for a in artists if a is not None]
 
 
 def _stash_projection_frame(ax: Axes, new_artists: Any) -> None:
@@ -483,6 +913,14 @@ class Glyph:
     ):
         self._default_options = default_options.copy()
         self._merge_kwargs(kwargs)
+        #: Axis-styling options set at construction. A glyph whose `plot()`
+        #: resets `default_options` (`MeshGlyph`) would otherwise discard them,
+        #: so `MeshGlyph(xlabel=...)` would be accepted and never drawn.
+        self._construction_axis_style = {
+            key: self._default_options[key]
+            for key in _AXIS_STYLE_KEYS
+            if key in self._explicit_options
+        }
         # Grouped options are applied after the loose ones so a construction
         # kwarg and a `DataStyle` field naming the same option resolve the
         # same way they do in `plot()`: the group wins.
@@ -709,10 +1147,26 @@ class Glyph:
             *groups: Grouped parameter objects (or `None` for an omitted
                 group). Anything `None` is skipped; each other object must
                 expose a `to_options()` returning a dict.
+
+        Raises:
+            TypeError: If a group is not a grouped parameter object. These
+                parameters are easy to mistake for their loose predecessors --
+                `color=` takes a `ColorScaling`, not a colour string -- and
+                without this the caller got `'str' object has no attribute
+                'to_options'`, which names neither the parameter nor what it
+                wanted.
         """
         for group in groups:
             if group is None:
                 continue
+            if not hasattr(group, "to_options"):
+                raise TypeError(
+                    f"expected a grouped parameter object -- one exposing "
+                    f"to_options(), such as ColorScaling, Contour, Classify, "
+                    f"CellValues or DataStyle -- got {type(group).__name__} "
+                    f"{group!r}. These parameters take a typed style object, "
+                    f"not the loose value the option they replaced accepted."
+                )
             for key, val in group.to_options().items():
                 if key in self.default_options:
                     self.default_options[key] = val
@@ -1796,6 +2250,87 @@ class Glyph:
             **kw,
         )
         ax.add_patch(rect)
+
+    def _draws_own_colorbar(self, compose: bool, colorbar: Any = None) -> bool:
+        """Whether this render should draw a colorbar of its own.
+
+        `fig.colorbar()` takes its space from the axes the mappable is on, so an
+        overlay that adds one re-lays-out the host -- on every overlay, since
+        composing is the case where the axes already belongs to someone else.
+        Composing therefore defaults the colorbar off. Only the default: a
+        caller who asks for one, at construction or on the call, still gets it.
+
+        Args:
+            compose: Whether this render is composing onto an existing axes.
+            colorbar: The render's `colorbar=` argument, if it has one. Anything
+                but `None` counts as asking.
+
+        Returns:
+            bool: `True` when a colorbar should be drawn.
+        """
+        wanted = bool(self.default_options.get("add_colorbar", True))
+        if not compose or not wanted:
+            return wanted
+        return colorbar is not None or "add_colorbar" in getattr(
+            self, "_render_explicit_options", getattr(self, "_explicit_options", set())
+        )
+
+    def _restore_construction_axis_style(self, call_keys: Iterable[str]) -> None:
+        """Carry construction-time axis options across a `default_options` reset.
+
+        `MeshGlyph.plot`/`animate` rebuild `default_options` from the module
+        defaults on every call, so that a per-call option cannot leak into the
+        next render. That is deliberate, but it also threw away the axis options
+        the constructor was given -- `MeshGlyph(xlabel=...)` rendered no label at
+        all. This puts them back, without overriding a key this call passed, and
+        records the combined set for `_apply_axis_style`.
+
+        Args:
+            call_keys: The option keys this render call passed; these win over
+                the construction-time values.
+        """
+        call_keys = set(call_keys)
+        for key, value in self._construction_axis_style.items():
+            if key not in call_keys:
+                self._default_options[key] = value
+        self._render_explicit_options = set(self._construction_axis_style) | call_keys
+
+    def _apply_axis_style(
+        self,
+        ax: Axes,
+        *,
+        apply_defaults: bool = False,
+        grid_axis: str | None = "both",
+    ) -> None:
+        """Apply this glyph's axis-styling options to `ax`.
+
+        Thin wrapper over `_apply_axis_options`; see it for what is applied and
+        why only explicitly-passed options are honoured by default.
+
+        A render method that accepts these options as keyword arguments sets
+        `_render_explicit_options` to the constructor's keys plus its own, and
+        that set wins here. It is rebuilt on every call rather than accumulated,
+        so an option the caller drops on a later call stops being re-applied --
+        and it is kept apart from `_explicit_options`, which `create_figure_axes`
+        reads to decide whether to auto-size the figure.
+
+        Args:
+            ax: The axes to style.
+            apply_defaults: Apply every option, not only the explicitly-passed
+                ones.
+            grid_axis: Which gridlines `grid_alpha` draws; `None` leaves the
+                grid untouched.
+        """
+        explicit = getattr(self, "_render_explicit_options", None)
+        if explicit is None:
+            explicit = getattr(self, "_explicit_options", set())
+        _apply_axis_options(
+            ax,
+            self.default_options,
+            explicit,
+            apply_defaults=apply_defaults,
+            grid_axis=grid_axis,
+        )
 
     def adjust_ticks(
         self,

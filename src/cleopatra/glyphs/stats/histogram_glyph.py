@@ -68,6 +68,7 @@ from matplotlib.figure import Figure
 
 from cleopatra.styling.colors import resolve_colormap
 from cleopatra.glyphs.base.glyph import (
+    _apply_axis_options,
     _clear_prior_render_artists,
     _mark_render_artists,
     _root_figure,
@@ -543,7 +544,7 @@ class HistogramGlyph:
         else:
             num_samples = 1
 
-        _clear_prior_render_artists(ax)
+        _clear_prior_render_artists(ax, self)
 
         for i in range(num_samples):
             if self.values.ndim == 1:
@@ -562,19 +563,11 @@ class HistogramGlyph:
             bins.append(bins_i)
             patches.append(patches_i)
 
-        ax.grid(axis="y", alpha=self.default_options["grid_alpha"])
-        ax.set_xlabel(
-            self.default_options["xlabel"],
-            fontsize=self.default_options["xlabel_font_size"],
+        _apply_axis_options(
+            ax, self.default_options, apply_defaults=True, grid_axis="y"
         )
-        ax.set_ylabel(
-            self.default_options["ylabel"],
-            fontsize=self.default_options["ylabel_font_size"],
-        )
-        ax.tick_params(axis="x", labelsize=self.default_options["xtick_font_size"])
-        ax.tick_params(axis="y", labelsize=self.default_options["ytick_font_size"])
         hist = {"n": n, "bins": bins, "patches": patches}
-        _mark_render_artists(ax, *patches)
+        _mark_render_artists(ax, self, *patches)
         return fig, ax, hist
 
     def _apply_options(self, kwargs: dict) -> None:
@@ -683,12 +676,20 @@ class HistogramGlyph:
         return [values[:, i] for i in range(values.shape[1])]
 
     def _apply_axis_labels(self, ax: Axes) -> None:
-        """Apply the styled x/y axis labels from default_options to `ax`."""
-        opts = self.default_options
-        ax.set_xlabel(opts["xlabel"], fontsize=opts["xlabel_font_size"])
-        ax.set_ylabel(opts["ylabel"], fontsize=opts["ylabel_font_size"])
-        ax.tick_params(axis="x", labelsize=opts["xtick_font_size"])
-        ax.tick_params(axis="y", labelsize=opts["ytick_font_size"])
+        """Apply the styled x/y axis labels and tick sizes to `ax`.
+
+        Delegates to the shared `_apply_axis_options`. `apply_defaults` is on
+        because this glyph has always rendered the declared defaults (tick
+        labels at 11, not matplotlib's 10) and must keep doing so.
+
+        The grid is left alone: `boxplot` and `multiboxplot` draw their own
+        y-only grid before calling this, and `stripes` draws none. Letting the
+        helper's default `grid_axis="both"` run here would add x gridlines all
+        three have never had.
+        """
+        _apply_axis_options(
+            ax, self.default_options, apply_defaults=True, grid_axis=None
+        )
 
     def boxplot(
         self,
@@ -740,7 +741,7 @@ class HistogramGlyph:
         """
         self._reject_fig_kwarg(kwargs)
         fig, ax = self._resolve_fig_ax(ax)
-        _clear_prior_render_artists(ax)
+        _clear_prior_render_artists(ax, self)
         columns = self._columns()
         tick_labels = (
             list(labels)
@@ -763,7 +764,7 @@ class HistogramGlyph:
             box.set_alpha(self.default_options["alpha"])
         ax.grid(axis="y", alpha=self.default_options["grid_alpha"])
         self._apply_axis_labels(ax)
-        _mark_render_artists(ax, *(a for artists in bp.values() for a in artists))
+        _mark_render_artists(ax, self, *(a for artists in bp.values() for a in artists))
         return fig, ax, bp
 
     def multiboxplot(
@@ -837,7 +838,7 @@ class HistogramGlyph:
             )
 
         fig, ax = self._resolve_fig_ax(ax)
-        _clear_prior_render_artists(ax)
+        _clear_prior_render_artists(ax, self)
         bp = ax.boxplot(
             columns,
             positions=list(positions),
@@ -855,7 +856,7 @@ class HistogramGlyph:
         )
         ax.grid(axis="y", alpha=self.default_options["grid_alpha"])
         self._apply_axis_labels(ax)
-        _mark_render_artists(ax, *(a for artists in bp.values() for a in artists))
+        _mark_render_artists(ax, self, *(a for artists in bp.values() for a in artists))
         return fig, ax, bp
 
     def stripes(
@@ -909,7 +910,7 @@ class HistogramGlyph:
         if values.ndim != 1:
             raise ValueError(f"stripes requires 1D values; got {values.ndim}D.")
         fig, ax = self._resolve_fig_ax(ax)
-        _clear_prior_render_artists(ax)
+        _clear_prior_render_artists(ax, self)
         cmap = cmap if cmap is not None else self.default_options["cmap"]
         cmap_obj = resolve_colormap(cmap)
         lo = float(np.nanmin(values)) if vmin is None else vmin
@@ -926,5 +927,5 @@ class HistogramGlyph:
         ax.set_yticks([])
         ax.set_xlim(-0.5, values.size - 0.5)
         self._apply_axis_labels(ax)
-        _mark_render_artists(ax, bars)
+        _mark_render_artists(ax, self, bars)
         return fig, ax, bars
