@@ -632,3 +632,37 @@ class TestAComposedOverlayDoesNotAddAColorbar:
         fig, _ = ArrayGlyph(arr, extent=[0, 0, 10, 10]).plot()
         assert len(fig.axes) == 2, f"a solo render lost its colorbar: {len(fig.axes)}"
         plt.close(fig)
+
+
+class TestApplyStyleRefusesToCompose:
+    """`apply_style` owns the axes outright, so it cannot honour `compose`."""
+
+    def test_compose_is_rejected_with_a_pointer_to_plot(self, arr):
+        """`apply_style(..., compose=True)` raises instead of being swallowed.
+
+        Args:
+            arr: The array fixture.
+
+        Test scenario:
+            `apply_style` clears the axes before forwarding to `plot`, so the
+            flag was accepted, silently defeated, and the host wiped anyway.
+        """
+        glyph = ArrayGlyph(arr, extent=[0, 0, 10, 10])
+        with pytest.raises(ValueError, match="compose=True cannot be honoured"):
+            glyph.apply_style("elevation", compose=True)
+        plt.close("all")
+
+    def test_apply_style_without_compose_is_unaffected(self, arr):
+        """The guard does not disturb the ordinary call.
+
+        Args:
+            arr: The array fixture.
+
+        Test scenario:
+            Only a truthy `compose` is refused; everything else still forwards.
+        """
+        glyph = ArrayGlyph(arr, extent=[0, 0, 10, 10])
+        _, ax = glyph.apply_style("elevation")
+        assert glyph.style == "elevation", f"the style did not apply: {glyph.style}"
+        assert ax.images, "apply_style rendered nothing"
+        plt.close("all")

@@ -2484,6 +2484,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                 ```
         """
         resolve_single_layer_style(style)
+        if kwargs.get("compose"):
+            raise ValueError(
+                "apply_style() re-renders in place and clears the axes first, so "
+                "compose=True cannot be honoured here. To draw a styled layer "
+                "over what is already on an axes, call "
+                "plot(data_style=DataStyle(style=...), ax=..., compose=True)."
+            )
         self._reset_axes_for_restyle()
         # Fold style (and an optional forwarded hillshade) into the grouped
         # data_style object; leaving hillshade unset keeps any sticky value.
