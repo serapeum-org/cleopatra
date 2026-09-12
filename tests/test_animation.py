@@ -545,6 +545,19 @@ def _encoded_y_plane_span(path: str) -> tuple[int, int]:
 class TestFullRangeExport:
     """Regression tests for washed-out limited-range mp4 export (issue #344)."""
 
+    @pytest.fixture(autouse=True)
+    def _pin_bundled_ffmpeg(self, monkeypatch):
+        """Encode with the same bundled ffmpeg the decode helper reads back.
+
+        Otherwise the encode uses whatever `_ensure_ffmpeg_available` selects (a
+        system ffmpeg on PATH, else the bundled one) while the decode always uses
+        the bundled binary, coupling the assertions to two binaries agreeing.
+        Pinning the rcParam to the bundled exe makes the test hermetic.
+        """
+        monkeypatch.setitem(
+            mpl.rcParams, "animation.ffmpeg_path", imageio_ffmpeg.get_ffmpeg_exe()
+        )
+
     @staticmethod
     def _gradient_anim():
         """A 2-frame full-range (0-255) black-to-white gradient animation."""
