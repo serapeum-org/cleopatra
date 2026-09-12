@@ -331,6 +331,15 @@ class TestPlotArray:
         with pytest.raises(ValueError, match="no finite values"):
             glyph.plot(color=ColorScaling.equalize())
 
+    def test_caller_norm_without_limits_keeps_the_tick_ladder(self):
+        """A caller norm with no vmin/vmax falls back to the incoming tick ladder."""
+        ticks = np.array([0.0, 50.0, 99.0])
+        glyph = ArrayGlyph(np.arange(100, dtype=float).reshape(10, 10))
+        _, cbar_kw = glyph._caller_norm_and_cbar_kw(Normalize(), ticks)
+        assert np.array_equal(cbar_kw["ticks"], ticks), (
+            f"a limit-less norm should keep the incoming ticks, got {cbar_kw['ticks']}"
+        )
+
     @staticmethod
     def _terrain_like() -> np.ndarray:
         """A signed, long-tailed terrain-like array (most cells near 0, tail to ~740)."""
