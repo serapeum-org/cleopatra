@@ -236,6 +236,43 @@ def apply_axis_style(
         ax.grid(axis=grid_axis, alpha=options["grid_alpha"])
 
 
+#: Matplotlib's default `Text` line spacing, as a multiple of the font size.
+#: Used to size the extra room a multi-line title needs.
+_TITLE_LINESPACING = 1.2
+
+
+def multiline_title_pad(ax: Axes, title: Any, fontsize: float) -> float | None:
+    """Return the title pad that keeps a multi-line title clear of top tick labels.
+
+    Matplotlib already raises a title above x tick labels drawn on the top spine
+    (`_update_title_position`), but it anchors the text's *first* line: every
+    further line is drawn downward, back through the labels it just cleared. A
+    single-line title therefore clears them and a two-line one does not, which is
+    only visible once an explicit `figsize` shrinks the axes.
+
+    The deficit is exactly the height of the lines after the first, so that is
+    what is added to the default pad.
+
+    Args:
+        ax: The axes whose title is being set. Its x tick labels must already be
+            positioned, since whether they are on top decides if a pad is needed.
+        title: The title text; only its line count matters.
+        fontsize: The title's font size in points.
+
+    Returns:
+        float | None: The pad in points, or `None` to leave matplotlib's default
+        -- for a single-line title, or when no tick labels sit on the top spine.
+    """
+    extra_lines = str(title).count("\n")
+    if not extra_lines:
+        return None
+    on_top = any(tick.label2.get_visible() for tick in ax.xaxis.majorTicks)
+    if not on_top:
+        return None
+    pad = plt.rcParams["axes.titlepad"]
+    return pad + extra_lines * fontsize * _TITLE_LINESPACING
+
+
 #: Hands out render-ownership tokens. A counter rather than `id()` because ids
 #: are reused as soon as a glyph is collected, and the common
 #: `SomeGlyph(...).plot(ax=ax)` leaves one collectable immediately.

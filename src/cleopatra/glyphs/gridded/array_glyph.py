@@ -56,6 +56,7 @@ from cleopatra.glyphs.base.glyph import (
     _restore_flat_axes,
     _root_figure,
     _stash_projection_frame,
+    multiline_title_pad,
 )
 from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_grid, shade_rgb
 from cleopatra.styling.colorbar import (
@@ -2604,7 +2605,13 @@ class ArrayGlyph(GeoMixin, Glyph):
             self.ax.set_xticks([])
             self.ax.set_yticks([])
         self.ax.set_title(
-            self.default_options["title"], fontsize=self.default_options["title_size"]
+            self.default_options["title"],
+            fontsize=self.default_options["title_size"],
+            pad=multiline_title_pad(
+                self.ax,
+                self.default_options["title"],
+                self.default_options["title_size"],
+            ),
         )
         self._apply_axis_style(self.ax)
         _mark_render_artists(self.ax, self, self.cbar, self.im)
@@ -3823,7 +3830,11 @@ class ArrayGlyph(GeoMixin, Glyph):
                     self.cbar = self.create_color_bar(ax, im, cbar_kw)
 
         ax.set_title(
-            self.default_options["title"], fontsize=self.default_options["title_size"]
+            self.default_options["title"],
+            fontsize=self.default_options["title_size"],
+            pad=multiline_title_pad(
+                ax, self.default_options["title"], self.default_options["title_size"]
+            ),
         )
         self._apply_axis_style(ax)
 
@@ -4812,7 +4823,11 @@ class ArrayGlyph(GeoMixin, Glyph):
                     )
 
         ax.set_title(
-            self.default_options["title"], fontsize=self.default_options["title_size"]
+            self.default_options["title"],
+            fontsize=self.default_options["title_size"],
+            pad=multiline_title_pad(
+                ax, self.default_options["title"], self.default_options["title_size"]
+            ),
         )
         self._apply_axis_style(ax)
         ax.set_xticklabels([])
