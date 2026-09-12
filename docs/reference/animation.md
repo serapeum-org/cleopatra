@@ -127,11 +127,12 @@ embed_gif(anim, fps=3)                     # inline in a notebook cell
     ipython` hint (use `to_gif` to avoid IPython).
 
 !!! note "Full colour range by default"
-    The FFmpeg export (`mov`/`avi`/`mp4`) is tagged full colour range (`-color_range pc`) so the
-    computer-generated, full-range (0-255) matplotlib figure keeps its contrast instead of being
-    squeezed into FFmpeg's limited/broadcast default (16-235), which visibly washes it out. Pass
-    `extra_args=["-color_range", "tv"]` to restore the old limited/broadcast-range behaviour — the
-    most predictable option for the minority of players that ignore the full-range flag.
+    The FFmpeg export (`mov`/`avi`/`mp4`) is encoded full colour range — the pixel format is swapped
+    for its full-range `yuvj*` variant (`yuv420p` becomes `yuvj420p`) so it maps to the true 0-255
+    range on every FFmpeg build. The computer-generated, full-range matplotlib figure then keeps its
+    contrast instead of being squeezed into FFmpeg's limited/broadcast default (16-235), which visibly
+    washes it out. Pass `extra_args=["-color_range", "tv"]` to restore the old limited/broadcast-range
+    behaviour — the most predictable option for the minority of players that ignore the full-range flag.
 
 ## Module Documentation
 

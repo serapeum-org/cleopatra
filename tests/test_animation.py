@@ -134,8 +134,8 @@ class TestSaveAnimation:
         Test scenario:
             For each video extension the else-branch is taken, ffmpeg
             availability is resolved, the writer is constructed with the
-            expected ``fps``/``bitrate`` plus the odd-dimension pad filter, an
-            explicit ``yuv420p`` pixel format, and the full-range colour tag,
+            expected ``fps``/``bitrate`` plus the odd-dimension pad filter, the
+            full-range ``yuvj420p`` pixel format, and the ``pc`` colour tag,
             ``anim.save`` is invoked with it, and the written path is returned.
             Exercises the video success path without requiring a real FFmpeg run.
         """
@@ -151,9 +151,9 @@ class TestSaveAnimation:
             fps=5,
             extra_args=[
                 "-vf",
-                "scale=out_range=full,pad=ceil(iw/2)*2:ceil(ih/2)*2",
+                "pad=ceil(iw/2)*2:ceil(ih/2)*2",
                 "-pix_fmt",
-                "yuv420p",
+                "yuvj420p",
                 "-color_range",
                 "pc",
             ],
@@ -1034,9 +1034,8 @@ class TestQualityControls:
 
         Test scenario:
             ``extra_args=["-vf", "scale=320:-1", "-tune", "film"]`` yields a
-            single ``-vf`` chain of ``scale=out_range=full,scale=320:-1,pad=...``
-            (full-range scale first, caller filter next, pad last) and preserves
-            the other flags.
+            single ``-vf scale=320:-1,pad=...`` chain and preserves the other
+            flags.
         """
         ffmpeg = self._mock_ffmpeg(monkeypatch)
 
@@ -1049,16 +1048,18 @@ class TestQualityControls:
         _, kwargs = ffmpeg.call_args
         args = kwargs["extra_args"]
         assert args[0] == "-vf", f"first flag should be -vf: {args}"
-        assert (
-            args[1] == "scale=out_range=full,scale=320:-1,pad=ceil(iw/2)*2:ceil(ih/2)*2"
-        ), f"caller filter not merged into the range+pad chain: {args}"
+        assert args[1] == "scale=320:-1,pad=ceil(iw/2)*2:ceil(ih/2)*2", (
+            f"caller filter not merged with pad: {args}"
+        )
         assert args[-2:] == ["-tune", "film"], f"passthrough flags lost: {args}"
 
     def test_custom_pix_fmt_reaches_writer(self, monkeypatch):
         """A custom ``pix_fmt`` param replaces the default in the writer args.
 
         Test scenario:
-            ``pix_fmt="yuv444p"`` is emitted as the single ``-pix_fmt`` value.
+            ``pix_fmt="yuv444p"`` reaches the writer as its full-range variant
+            ``yuvj444p`` (the full-range default maps the chosen planar format),
+            as the single ``-pix_fmt`` value.
         """
         ffmpeg = self._mock_ffmpeg(monkeypatch)
 
@@ -1066,7 +1067,7 @@ class TestQualityControls:
 
         args = ffmpeg.call_args.kwargs["extra_args"]
         assert args.count("-pix_fmt") == 1, f"expected one -pix_fmt: {args}"
-        assert args[args.index("-pix_fmt") + 1] == "yuv444p", f"pix_fmt wrong: {args}"
+        assert args[args.index("-pix_fmt") + 1] == "yuvj444p", f"pix_fmt wrong: {args}"
 
     def test_caller_pix_fmt_in_extra_args_overrides_default(self, monkeypatch):
         """A ``-pix_fmt`` in ``extra_args`` overrides the default without duplication.
@@ -1102,22 +1103,28 @@ class TestQualityControls:
         args = ffmpeg.call_args.kwargs["extra_args"]
         assert args[args.index("-pix_fmt") + 1] == "", f"empty override dropped: {args}"
 
-    def test_default_color_range_is_full(self, monkeypatch):
-        """The default ffmpeg export tags full colour range (issue #344).
+    def test_default_is_full_range(self, monkeypatch):
+        """The default ffmpeg export encodes full colour range (issue #344).
 
         Test scenario:
-            With no ``-color_range`` in ``extra_args`` the writer receives
-            exactly one ``-color_range`` equal to ``pc``, so a computer-generated
-            full-range figure is not squeezed into limited/broadcast range.
+            With no ``-color_range`` in ``extra_args`` the writer receives the
+            full-range ``yuvj420p`` pixel format (the format is what forces the
+            luma remap on every ffmpeg build) plus a matching single
+            ``-color_range pc`` tag, so a computer-generated full-range figure is
+            not squeezed into limited/broadcast range.
         """
         ffmpeg = self._mock_ffmpeg(monkeypatch)
 
         save_animation(MagicMock(spec=FuncAnimation), "clip.mp4")
 
         args = ffmpeg.call_args.kwargs["extra_args"]
+        assert args.count("-pix_fmt") == 1, f"expected one -pix_fmt: {args}"
+        assert args[args.index("-pix_fmt") + 1] == "yuvj420p", (
+            f"default pixel format should be full-range yuvj420p: {args}"
+        )
         assert args.count("-color_range") == 1, f"expected one -color_range: {args}"
         assert args[args.index("-color_range") + 1] == "pc", (
-            f"default colour range should be full/pc: {args}"
+            f"default colour range tag should be pc: {args}"
         )
 
     def test_caller_color_range_overrides_default(self, monkeypatch):
@@ -1126,7 +1133,9 @@ class TestQualityControls:
         Test scenario:
             ``extra_args=["-color_range", "tv"]`` yields exactly one
             ``-color_range`` equal to ``tv`` (the forced ``pc`` is not also
-            emitted), so a caller can opt back into limited/broadcast range.
+            emitted) and leaves the pixel format as plain ``yuv420p`` (the
+            full-range ``yuvj`` swap is dropped), so a caller can opt back into
+            limited/broadcast range.
         """
         ffmpeg = self._mock_ffmpeg(monkeypatch)
 
@@ -1141,6 +1150,9 @@ class TestQualityControls:
             f"duplicate -color_range emitted: {args}"
         )
         assert args[args.index("-color_range") + 1] == "tv", f"override lost: {args}"
+        assert args[args.index("-pix_fmt") + 1] == "yuv420p", (
+            f"pixel format should stay limited-range yuv420p on override: {args}"
+        )
 
     @pytest.mark.parametrize(
         "bad", [["-vf"], ["-crf", "20", "-pix_fmt"], ["-color_range"]]
