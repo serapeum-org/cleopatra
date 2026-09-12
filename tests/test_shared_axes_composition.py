@@ -16,6 +16,8 @@ import matplotlib
 
 matplotlib.use("Agg")
 
+import warnings
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
@@ -209,30 +211,53 @@ class TestRenderArtistRegistry:
         plt.close(fig)
 
 
-class TestQuiverThinning:
-    """A quiver can be thinned through the API -- one arrow per cell is unusable."""
+class TestArrowThinning:
+    """`quiver` and `barbs` can both be thinned -- one arrow per cell is unusable."""
 
+    @pytest.mark.parametrize("kind", ["quiver", "barbs"])
     @pytest.mark.parametrize("thin, expected", [(1, 600), (2, 150), (5, 24)])
-    def test_thin_subsamples_the_grid(self, field, thin, expected):
-        """`thin=n` draws every nth point along each axis.
+    def test_thin_subsamples_the_grid(self, field, kind, thin, expected):
+        """`thin=n` draws every nth point along each axis, for either arrow kind.
 
         Args:
             field: The vector-field fixture.
+            kind: The per-grid-point vector kind under test.
             thin: The subsampling step.
             expected: The arrow count it should leave from a 20x30 grid.
 
         Test scenario:
             A 141x321 window is 45,261 arrows, so callers had to subsample the
-            data and rebuild a coarser grid themselves.
+            data and rebuild a coarser grid themselves. `barbs` draws one glyph
+            per point exactly as `quiver` does and `_thinned` handles both, so
+            the option cannot be quiver-only.
         """
         x, y, u, v = field
         fig, ax = plt.subplots()
-        VectorGlyph(x, y, u, v, thin=thin, add_colorbar=False).plot(
-            kind="quiver", ax=ax
-        )
+        VectorGlyph(x, y, u, v, thin=thin, add_colorbar=False).plot(kind=kind, ax=ax)
         assert len(ax.collections[0].get_offsets()) == expected, (
-            f"thin={thin} gave {len(ax.collections[0].get_offsets())} arrows"
+            f"{kind} thin={thin} gave {len(ax.collections[0].get_offsets())} arrows"
         )
+        plt.close(fig)
+
+    def test_thin_on_barbs_does_not_warn(self, field):
+        """`barbs` thins silently; only `streamplot` is told the option is inert.
+
+        Args:
+            field: The vector-field fixture.
+
+        Test scenario:
+            `_validate_thin` warns for `streamplot`, which seeds its own lines.
+            `barbs` has a glyph per grid point to drop, so warning there would
+            tell a caller their thinning did nothing when it had just worked.
+        """
+        x, y, u, v = field
+        fig, ax = plt.subplots()
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", UserWarning)
+            VectorGlyph(x, y, u, v, thin=5, add_colorbar=False).plot(
+                kind="barbs", ax=ax
+            )
+        assert len(ax.collections[0].get_offsets()) == 24, "barbs were not thinned"
         plt.close(fig)
 
     def test_thin_accepts_one_dimensional_coordinates(self, field):
@@ -250,20 +275,24 @@ class TestQuiverThinning:
         assert len(ax.collections) == 1, "1-D coordinates failed to thin"
         plt.close(fig)
 
+    @pytest.mark.parametrize("kind", ["quiver", "barbs"])
     @pytest.mark.parametrize("bad", [0, -1, 2.5, "2", True])
-    def test_invalid_thin_raises(self, field, bad):
-        """A non-positive-integer `thin` raises `ValueError`.
+    def test_invalid_thin_raises(self, field, kind, bad):
+        """A non-positive-integer `thin` raises `ValueError` for either kind.
 
         Args:
             field: The vector-field fixture.
+            kind: The per-grid-point vector kind under test.
             bad: The invalid step under test.
 
         Test scenario:
-            A float or a bool would silently misindex rather than fail.
+            A float or a bool would silently misindex rather than fail, and the
+            check runs before any kind-specific branch, so `barbs` must be
+            rejected on the same terms as `quiver`.
         """
         x, y, u, v = field
         with pytest.raises(ValueError, match="thin must be a positive integer"):
-            VectorGlyph(x, y, u, v, thin=bad, add_colorbar=False).plot(kind="quiver")
+            VectorGlyph(x, y, u, v, thin=bad, add_colorbar=False).plot(kind=kind)
         plt.close("all")
 
 

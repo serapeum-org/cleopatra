@@ -5,6 +5,12 @@ round-1 fixes themselves -- the `compose=` contract leaking on `animate`, on the
 extent-less path and under a styled preset, render kwargs bleeding into the set
 that decides figure sizing, and the ownership registry evicting an entry whose
 only *reporting* artist had gone.
+
+It also covers the helpers the round-2 fixes introduced on their own terms:
+`_artist_is_attached` asking each kind of tracked artist in its own vocabulary,
+`_render_owner_token` for an owner it cannot weakly reference, `MeshGlyph`
+carrying its construction-time axis options across the plot-time reset, and
+`VectorGlyph` honouring the composed-overlay colorbar default.
 """
 
 from __future__ import annotations
@@ -20,12 +26,16 @@ import numpy as np
 import pytest
 
 from cleopatra.glyphs.base.glyph import (
+    _artist_is_attached,
     _entry_is_detached,
     _render_owner_token,
     _render_owner_tokens,
     apply_axis_style,
 )
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
+from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
+from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph
 from cleopatra.styling.params import DataStyle
 
 
@@ -47,6 +57,42 @@ def frames():
         np.ndarray: Three 20x30 frames of values in [0, 1).
     """
     return np.random.default_rng(1).random((3, 20, 30))
+
+
+@pytest.fixture
+def field():
+    """Provide a small deterministic vector field on a 20x30 grid.
+
+    Returns:
+        tuple: `(x, y, u, v)` -- meshgrid coordinates and components.
+    """
+    grid_x, grid_y = np.meshgrid(np.arange(30), np.arange(20))
+    rng = np.random.default_rng(2)
+    return grid_x, grid_y, rng.random((20, 30)), rng.random((20, 30))
+
+
+@pytest.fixture
+def mesh():
+    """Provide a two-cell quad mesh and one value per face.
+
+    Returns:
+        tuple: `(node_x, node_y, faces, data)` -- six nodes in a 3x2 lattice,
+        two quad faces, and a value for each.
+    """
+    node_x = np.array([0.0, 1.0, 2.0, 0.0, 1.0, 2.0])
+    node_y = np.array([0.0, 0.0, 0.0, 1.0, 1.0, 1.0])
+    faces = np.array([[0, 1, 4, 3], [1, 2, 5, 4]])
+    return node_x, node_y, faces, np.array([1.0, 2.0])
+
+
+@pytest.fixture
+def samples():
+    """Provide a deterministic sample for the histogram glyph.
+
+    Returns:
+        np.ndarray: 200 normal deviates.
+    """
+    return np.random.default_rng(3).normal(size=200)
 
 
 @pytest.fixture
@@ -378,9 +424,74 @@ class TestRegistryProvesDeathBeforeEvicting:
         assert not _entry_is_detached([]), "an empty entry was read as dead"
         assert not _entry_is_detached([object()]), "an unaskable entry was read as dead"
 
+    def test_a_bar_container_is_asked_through_its_children(self, samples):
+        """A `BarContainer` answers through the bars it holds.
+
+        Args:
+            samples: The histogram-sample fixture.
+
+        Test scenario:
+            A `Container` exposes neither `.axes` nor `.ax`, which is what made
+            "no `.axes`" read as "detached" and evicted live `HistogramGlyph`
+            entries. `_artist_is_attached` indexes into it and asks a bar
+            instead, so the container reports attached while its bars are on the
+            axes and detached once they have all been removed.
+        """
+        fig, ax, _ = HistogramGlyph(samples).histogram()
+        container = ax.containers[0]
+        assert _artist_is_attached(container) is True, (
+            "a live bar container was not recognised as attached"
+        )
+        for bar in list(container):
+            bar.remove()
+        assert _artist_is_attached(container) is False, (
+            "a bar container whose bars had all gone still reported attached"
+        )
+        plt.close(fig)
+
+    def test_an_artist_that_answers_nothing_is_unknown(self):
+        """An object with no axes, no `.ax` and no children answers `None`.
+
+        Test scenario:
+            `None` is a third answer, distinct from `False`: it means the artist
+            could not be asked, so `_entry_is_detached` discounts it rather than
+            counting it as proof of death.
+        """
+        assert _artist_is_attached(object()) is None, (
+            "an unaskable artist claimed to know whether it was attached"
+        )
+
+    def test_a_colorbar_is_asked_through_its_own_axes(self, arr):
+        """A `Colorbar` answers through the `.ax` it lives on.
+
+        Args:
+            arr: The array fixture.
+
+        Test scenario:
+            A `Colorbar` has no `.axes` either; `remove()` takes its own axes
+            off the figure, which is the only signal there is.
+        """
+        fig, ax = plt.subplots()
+        glyph = ArrayGlyph(arr, extent=[0, 0, 10, 10])
+        glyph.plot(ax=ax)
+        assert _artist_is_attached(glyph.cbar) is True, (
+            "a live colorbar was not recognised as attached"
+        )
+        glyph.cbar.remove()
+        assert _artist_is_attached(glyph.cbar) is False, (
+            "a removed colorbar still reported attached"
+        )
+        plt.close(fig)
+
 
 class _PlainOwner:
     """A stand-in glyph with no equality of its own."""
+
+
+class _SlotsOwner:
+    """A stand-in glyph that cannot be weak-referenced."""
+
+    __slots__ = ()
 
 
 class _EqualOwner:
@@ -454,6 +565,43 @@ class TestOwnershipTokensAreKeyedByIdentity:
         del owner
         gc.collect()
         assert key not in _render_owner_tokens, "a collected owner's token survived it"
+
+    def test_an_owner_that_cannot_be_weak_referenced_is_not_tracked(self):
+        """A glyph with no weak-reference support falls back to bucket `0`.
+
+        Test scenario:
+            The registry is keyed by `id()` and pruned from a `weakref.finalize`
+            callback, so an owner that cannot be weak-referenced has no way to
+            be forgotten -- recording one would hand its artists to whatever
+            object is allocated at that address next. It shares the unowned
+            bucket with `owner=None` instead, and leaves no entry behind.
+        """
+        owner = _SlotsOwner()
+        assert _render_owner_token(owner) == 0, (
+            "a non-weak-referenceable owner was given a private token"
+        )
+        assert id(owner) not in _render_owner_tokens, (
+            "a non-weak-referenceable owner was recorded in the registry"
+        )
+        assert _render_owner_token(None) == 0, "the unowned bucket is no longer token 0"
+
+    def test_an_untracked_owner_does_not_burn_a_token(self, arr):
+        """Falling back to bucket `0` leaves the counter where it was.
+
+        Args:
+            arr: The array fixture.
+
+        Test scenario:
+            The fallback returns before `next(_render_owner_counter)`, so a
+            stream of untrackable owners cannot quietly advance the tokens
+            handed to the trackable ones.
+        """
+        before = _render_owner_token(ArrayGlyph(arr))
+        for _ in range(3):
+            _render_owner_token(_SlotsOwner())
+        assert _render_owner_token(ArrayGlyph(arr)) == before + 1, (
+            "an untrackable owner advanced the token counter"
+        )
 
 
 class TestApplyAxisStyleRejectsABadGridAxis:
@@ -626,6 +774,153 @@ class TestAComposedOverlayDoesNotAddAColorbar:
         fig, _ = ArrayGlyph(arr, extent=[0, 0, 10, 10]).plot()
         assert len(fig.axes) == 2, f"a solo render lost its colorbar: {len(fig.axes)}"
         plt.close(fig)
+
+    def test_a_composed_vector_overlay_adds_no_colorbar(self, field, host):
+        """Arrows drawn over a raster bring no colorbar of their own.
+
+        Args:
+            field: The vector-field fixture.
+            host: The pre-rendered host axes.
+
+        Test scenario:
+            The scalar-field-plus-wind-arrows figure is the whole point of
+            composing, and `VectorGlyph` defaults `add_colorbar` on -- so the
+            overlay added a second colorbar and stole the host's width to make
+            room for it. Counted rather than measured: an overlay legitimately
+            moves the host's box by widening the data limits, so only the extra
+            axes is proof of a colorbar.
+        """
+        x, y, u, v = field
+        figure = host.get_figure()
+        axes_before = len(figure.axes)
+        VectorGlyph(x, y, u, v).plot(kind="quiver", ax=host, compose=True)
+        assert len(figure.axes) == axes_before, (
+            f"a composed vector overlay added a colorbar: {len(figure.axes)}"
+        )
+
+    @pytest.mark.parametrize("ask", ["constructor", "call", "add_colorbar"])
+    def test_an_explicitly_requested_vector_colorbar_is_still_drawn(
+        self, field, host, ask
+    ):
+        """A vector overlay that asks for a colorbar still gets one.
+
+        Args:
+            field: The vector-field fixture.
+            host: The pre-rendered host axes.
+            ask: Which of the three ways of asking is used.
+
+        Test scenario:
+            `VectorGlyph.plot` takes `add_colorbar=` as a parameter of its own
+            as well as reading the option, so all three routes have to survive
+            the composed default.
+        """
+        x, y, u, v = field
+        figure = host.get_figure()
+        axes_before = len(figure.axes)
+        if ask == "constructor":
+            VectorGlyph(x, y, u, v, add_colorbar=True).plot(
+                kind="quiver", ax=host, compose=True
+            )
+        elif ask == "call":
+            VectorGlyph(x, y, u, v).plot(
+                kind="quiver", ax=host, compose=True, colorbar=True
+            )
+        else:
+            VectorGlyph(x, y, u, v).plot(
+                kind="quiver", ax=host, compose=True, add_colorbar=True
+            )
+        assert len(figure.axes) == axes_before + 1, (
+            f"an explicitly requested vector colorbar was suppressed: "
+            f"{len(figure.axes)}"
+        )
+
+    def test_a_solo_vector_render_still_draws_its_colorbar(self, field):
+        """Without `compose` a vector render keeps its colorbar.
+
+        Args:
+            field: The vector-field fixture.
+
+        Test scenario:
+            The narrowing is for the composing case only, here as on the array
+            path.
+        """
+        x, y, u, v = field
+        fig, ax = plt.subplots()
+        VectorGlyph(x, y, u, v).plot(kind="quiver", ax=ax)
+        assert len(fig.axes) == 2, (
+            f"a solo vector render lost its colorbar: {len(fig.axes)}"
+        )
+        plt.close(fig)
+
+
+class TestMeshCarriesItsConstructionAxisStyle:
+    """`MeshGlyph` resets `default_options` per render without losing the ctor's."""
+
+    def test_a_call_option_overrides_the_construction_one(self, mesh):
+        """The key this call passes wins over the one the constructor set.
+
+        Args:
+            mesh: The mesh fixture.
+
+        Test scenario:
+            The restore runs after the per-call merge, so it has to skip every
+            key the call supplied. Writing the construction value back over it
+            would make `plot(xlabel=...)` inert on exactly the glyph the restore
+            was added for.
+        """
+        node_x, node_y, faces, data = mesh
+        glyph = MeshGlyph(node_x, node_y, faces, xlabel="CTOR", ylabel="CTORY")
+        _, ax = glyph.plot(data, colorbar=False, xlabel="CALL")
+        assert ax.get_xlabel() == "CALL", (
+            f"the construction value overwrote the call's: {ax.get_xlabel()!r}"
+        )
+        assert ax.get_ylabel() == "CTORY", (
+            f"a construction option the call did not pass was dropped: "
+            f"{ax.get_ylabel()!r}"
+        )
+        plt.close("all")
+
+    def test_a_call_option_does_not_leak_into_the_next_render(self, mesh):
+        """A later render without the key falls back to the construction value.
+
+        Args:
+            mesh: The mesh fixture.
+
+        Test scenario:
+            Rebuilding `default_options` per call is what stops a per-call
+            option becoming sticky; restoring the construction options must not
+            restore the previous call's alongside them.
+        """
+        node_x, node_y, faces, data = mesh
+        glyph = MeshGlyph(node_x, node_y, faces, xlabel="CTOR")
+        glyph.plot(data, colorbar=False, xlabel="CALL")
+        _, ax = glyph.plot(data, colorbar=False)
+        assert ax.get_xlabel() == "CTOR", (
+            f"the previous call's xlabel became sticky: {ax.get_xlabel()!r}"
+        )
+        plt.close("all")
+
+    def test_animate_keeps_the_construction_axis_style(self, mesh):
+        """`animate` resets `default_options` too, and restores the same keys.
+
+        Args:
+            mesh: The mesh fixture.
+
+        Test scenario:
+            Both render entry points rebuild the options from the module
+            defaults, so `MeshGlyph(xlabel=...).animate(...)` lost the label the
+            same way `plot` did.
+        """
+        node_x, node_y, faces, _ = mesh
+        glyph = MeshGlyph(node_x, node_y, faces, xlabel="CTOR", ylabel="CTORY")
+        glyph.animate(np.array([[1.0, 2.0], [2.0, 3.0]]), ["t0", "t1"], colorbar=False)
+        assert glyph.ax.get_xlabel() == "CTOR", (
+            f"animate dropped the construction xlabel: {glyph.ax.get_xlabel()!r}"
+        )
+        assert glyph.ax.get_ylabel() == "CTORY", (
+            f"animate dropped the construction ylabel: {glyph.ax.get_ylabel()!r}"
+        )
+        plt.close("all")
 
 
 class TestApplyStyleRefusesToCompose:
