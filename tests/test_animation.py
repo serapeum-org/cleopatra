@@ -10,6 +10,8 @@ from __future__ import annotations
 import builtins
 import doctest
 import os
+import re
+import subprocess
 import warnings
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -132,10 +134,10 @@ class TestSaveAnimation:
         Test scenario:
             For each video extension the else-branch is taken, ffmpeg
             availability is resolved, the writer is constructed with the
-            expected ``fps``/``bitrate`` plus the odd-dimension pad filter and
-            an explicit ``yuv420p`` pixel format, ``anim.save`` is invoked with
-            it, and the written path is returned. Exercises the video success
-            path without requiring a real FFmpeg run.
+            expected ``fps``/``bitrate`` plus the odd-dimension pad filter, an
+            explicit ``yuv420p`` pixel format, and the full-range colour tag,
+            ``anim.save`` is invoked with it, and the written path is returned.
+            Exercises the video success path without requiring a real FFmpeg run.
         """
 
         anim = MagicMock(spec=FuncAnimation)
@@ -147,7 +149,14 @@ class TestSaveAnimation:
 
         ffmpeg.assert_called_once_with(
             fps=5,
-            extra_args=["-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2", "-pix_fmt", "yuv420p"],
+            extra_args=[
+                "-vf",
+                "pad=ceil(iw/2)*2:ceil(ih/2)*2",
+                "-pix_fmt",
+                "yuv420p",
+                "-color_range",
+                "pc",
+            ],
         )
         anim.save.assert_called_once_with(f"clip.{ext}", writer=ffmpeg.return_value)
         assert result == f"clip.{ext}", f"should return the path, got {result!r}"
@@ -490,6 +499,82 @@ class TestOddDimensionAutoPad:
 
         assert out.exists(), "odd-dimension mp4 was not written"
         assert out.stat().st_size > 0, "odd-dimension mp4 is empty"
+
+
+def _encoded_y_plane_span(path: str) -> tuple[int, int]:
+    """Decode a video's first frame and return its luma (Y) min/max.
+
+    Reads the raw Y plane straight off the file with the bundled ffmpeg, the
+    same way issue #344's reproduction did, so the assertion is about the
+    encoded pixel bytes rather than the stream's colour-range tag.
+    """
+    exe = imageio_ffmpeg.get_ffmpeg_exe()
+    banner = subprocess.run([exe, "-i", path], capture_output=True, text=True).stderr
+    video_line = next((ln for ln in banner.splitlines() if "Video:" in ln), "")
+    # The resolution is a space-delimited "WxH" token (e.g. " 400x200,"); anchor
+    # on the surrounding space/comma so the stream id "[0x1]" isn't mistaken for it.
+    match = re.search(r" (\d+)x(\d+)[, ]", video_line)
+    assert match, f"could not read frame size from ffmpeg banner: {banner!r}"
+    width, height = int(match.group(1)), int(match.group(2))
+    raw = subprocess.run(
+        [exe, "-i", path, "-vframes", "1", "-f", "rawvideo", "-pix_fmt", "yuv444p", "-"],
+        capture_output=True,
+    ).stdout
+    y_plane = np.frombuffer(raw[: width * height], dtype=np.uint8)
+    assert y_plane.size, f"decoded an empty Y plane from {path!r}"
+    return int(y_plane.min()), int(y_plane.max())
+
+
+class TestFullRangeExport:
+    """Regression tests for washed-out limited-range mp4 export (issue #344)."""
+
+    @staticmethod
+    def _gradient_anim():
+        """A 2-frame full-range (0-255) black-to-white gradient animation."""
+        fig, ax = plt.subplots(figsize=(4, 2))
+        ax.axis("off")
+        fig.patch.set_facecolor("black")
+        gradient = np.tile(np.linspace(0, 255, 256, dtype=np.uint8), (50, 1))
+        ax.imshow(gradient, cmap="gray", vmin=0, vmax=255, aspect="auto")
+        im = ax.get_images()[0]
+        return fig, FuncAnimation(fig, lambda i: (im,), frames=2)
+
+    def test_default_mp4_export_is_full_range(self, tmp_path):
+        """The default mp4 export keeps the source's full 0-255 luma range.
+
+        Test scenario:
+            A 0-255 gradient encoded with all defaults decodes back to a luma
+            range that reaches the extremes; limited/broadcast range would clamp
+            it to roughly 16-235. Proves the full-range default remaps the actual
+            pixel bytes, not just the metadata tag.
+        """
+        fig, anim = self._gradient_anim()
+        out = tmp_path / "full.mp4"
+
+        save_animation(anim, str(out), fps=2)
+        plt.close(fig)
+
+        lo, hi = _encoded_y_plane_span(str(out))
+        assert lo <= 2, f"luma floor {lo} is not full-range (limited would be ~16)"
+        assert hi >= 252, f"luma ceiling {hi} is not full-range (limited would be ~235)"
+
+    def test_color_range_override_restores_limited(self, tmp_path):
+        """Passing ``-color_range tv`` opts back into limited/broadcast range.
+
+        Test scenario:
+            The same gradient with ``extra_args=["-color_range", "tv"]`` decodes
+            to a clamped ~16-235 luma range, confirming the full-range default is
+            an overridable choice rather than a hard-coded remap.
+        """
+        fig, anim = self._gradient_anim()
+        out = tmp_path / "limited.mp4"
+
+        save_animation(anim, str(out), fps=2, extra_args=["-color_range", "tv"])
+        plt.close(fig)
+
+        lo, hi = _encoded_y_plane_span(str(out))
+        assert lo >= 10, f"luma floor {lo} is not limited-range (full would be ~0)"
+        assert hi <= 240, f"luma ceiling {hi} is not limited-range (full would be ~255)"
 
 
 class TestWebP:
@@ -983,9 +1068,49 @@ class TestQualityControls:
         args = ffmpeg.call_args.kwargs["extra_args"]
         assert args[args.index("-pix_fmt") + 1] == "", f"empty override dropped: {args}"
 
-    @pytest.mark.parametrize("bad", [["-vf"], ["-crf", "20", "-pix_fmt"]])
+    def test_default_color_range_is_full(self, monkeypatch):
+        """The default ffmpeg export tags full colour range (issue #344).
+
+        Test scenario:
+            With no ``-color_range`` in ``extra_args`` the writer receives
+            exactly one ``-color_range`` equal to ``pc``, so a computer-generated
+            full-range figure is not squeezed into limited/broadcast range.
+        """
+        ffmpeg = self._mock_ffmpeg(monkeypatch)
+
+        save_animation(MagicMock(spec=FuncAnimation), "clip.mp4")
+
+        args = ffmpeg.call_args.kwargs["extra_args"]
+        assert args.count("-color_range") == 1, f"expected one -color_range: {args}"
+        assert args[args.index("-color_range") + 1] == "pc", (
+            f"default colour range should be full/pc: {args}"
+        )
+
+    def test_caller_color_range_overrides_default(self, monkeypatch):
+        """A ``-color_range`` in ``extra_args`` overrides the full-range default.
+
+        Test scenario:
+            ``extra_args=["-color_range", "tv"]`` yields exactly one
+            ``-color_range`` equal to ``tv`` (the forced ``pc`` is not also
+            emitted), so a caller can opt back into limited/broadcast range.
+        """
+        ffmpeg = self._mock_ffmpeg(monkeypatch)
+
+        save_animation(
+            MagicMock(spec=FuncAnimation),
+            "clip.mp4",
+            extra_args=["-color_range", "tv"],
+        )
+
+        args = ffmpeg.call_args.kwargs["extra_args"]
+        assert args.count("-color_range") == 1, f"duplicate -color_range emitted: {args}"
+        assert args[args.index("-color_range") + 1] == "tv", f"override lost: {args}"
+
+    @pytest.mark.parametrize(
+        "bad", [["-vf"], ["-crf", "20", "-pix_fmt"], ["-color_range"]]
+    )
     def test_dangling_flag_in_extra_args_raises(self, bad, monkeypatch):
-        """A trailing valueless ``-vf``/``-pix_fmt`` raises instead of corrupting args.
+        """A trailing valueless ``-vf``/``-pix_fmt``/``-color_range`` raises.
 
         Args:
             bad: An ``extra_args`` list ending in a flag with no value.
