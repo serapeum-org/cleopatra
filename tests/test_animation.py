@@ -509,6 +509,8 @@ def _encoded_y_plane_span(path: str) -> tuple[int, int]:
     encoded pixel bytes rather than the stream's colour-range tag.
     """
     exe = imageio_ffmpeg.get_ffmpeg_exe()
+    # `ffmpeg -i <file>` with no output legitimately exits non-zero ("At least one
+    # output file"), so the banner is read off stderr without checking the code.
     banner = subprocess.run([exe, "-i", path], capture_output=True, text=True).stderr
     video_line = next((ln for ln in banner.splitlines() if "Video:" in ln), "")
     # The resolution is a space-delimited "WxH" token (e.g. " 400x200,"); anchor
@@ -516,11 +518,26 @@ def _encoded_y_plane_span(path: str) -> tuple[int, int]:
     match = re.search(r" (\d+)x(\d+)[, ]", video_line)
     assert match, f"could not read frame size from ffmpeg banner: {banner!r}"
     width, height = int(match.group(1)), int(match.group(2))
-    raw = subprocess.run(
-        [exe, "-i", path, "-vframes", "1", "-f", "rawvideo", "-pix_fmt", "yuv444p", "-"],
+    decoded = subprocess.run(
+        [
+            exe,
+            "-i",
+            path,
+            "-vframes",
+            "1",
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "yuv444p",
+            "-",
+        ],
         capture_output=True,
-    ).stdout
-    y_plane = np.frombuffer(raw[: width * height], dtype=np.uint8)
+    )
+    assert decoded.returncode == 0, (
+        f"ffmpeg decode failed ({decoded.returncode}): "
+        f"{decoded.stderr.decode(errors='replace')}"
+    )
+    y_plane = np.frombuffer(decoded.stdout[: width * height], dtype=np.uint8)
     assert y_plane.size, f"decoded an empty Y plane from {path!r}"
     return int(y_plane.min()), int(y_plane.max())
 
