@@ -482,6 +482,67 @@ class _OptimizedPillowWriter(PillowWriter):
 _EVEN_PAD_FILTER = "pad=ceil(iw/2)*2:ceil(ih/2)*2"
 
 
+def _split_ffmpeg_extra_args(
+    extra_args: list[str] | None,
+) -> tuple[list[str], list[str], str | None, str | None]:
+    """Partition caller `extra_args` into the pieces the builder recombines.
+
+    Walks the caller's raw ffmpeg flags once, pulling out every `-vf` filter and
+    the values of the two override flags (`-pix_fmt`, `-color_range`) and leaving
+    everything else untouched, so `_build_ffmpeg_extra_args` can merge the pad
+    filter and apply the defaults without re-parsing.
+
+    Args:
+        extra_args: The caller's ffmpeg flags, or `None`.
+
+    Returns:
+        A 4-tuple `(vf_filters, passthrough, caller_pix_fmt, caller_color_range)`:
+        the `-vf` filter strings in order, the flags to pass through unchanged,
+        and the caller's `-pix_fmt` / `-color_range` values (`None` when absent).
+
+    Raises:
+        ValueError: If a `-vf`, `-pix_fmt`, or `-color_range` flag is the last
+            token with no value following it.
+
+    Examples:
+        - A caller filter and an override are separated from passthrough flags:
+            ```python
+            >>> from cleopatra.glyphs.base.animation import _split_ffmpeg_extra_args
+            >>> _split_ffmpeg_extra_args(["-vf", "scale=320:-1", "-color_range", "tv", "-tune", "film"])
+            (['scale=320:-1'], ['-tune', 'film'], None, 'tv')
+
+            ```
+        - `None` yields empty collections and no overrides:
+            ```python
+            >>> from cleopatra.glyphs.base.animation import _split_ffmpeg_extra_args
+            >>> _split_ffmpeg_extra_args(None)
+            ([], [], None, None)
+
+            ```
+    """
+    user_args = list(extra_args) if extra_args else []
+    vf_filters: list[str] = []
+    passthrough: list[str] = []
+    overrides: dict[str, str | None] = {"-pix_fmt": None, "-color_range": None}
+    i = 0
+    while i < len(user_args):
+        arg = user_args[i]
+        if arg not in ("-vf", "-pix_fmt", "-color_range"):
+            passthrough.append(arg)
+            i += 1
+            continue
+        if i + 1 >= len(user_args):
+            raise ValueError(
+                f"Malformed extra_args: {arg!r} must be followed by a value."
+            )
+        if arg == "-vf":
+            vf_filters.append(user_args[i + 1])
+        else:
+            overrides[arg] = user_args[i + 1]
+        i += 2
+    return vf_filters, passthrough, overrides["-pix_fmt"], overrides["-color_range"]
+
+
 def _build_ffmpeg_extra_args(
     pix_fmt: str,
     crf: int | None,
@@ -550,29 +611,9 @@ def _build_ffmpeg_extra_args(
 
             ```
     """
-    user_args = list(extra_args) if extra_args else []
-    vf_filters: list[str] = []
-    passthrough: list[str] = []
-    caller_pix_fmt: str | None = None
-    caller_color_range: str | None = None
-    i = 0
-    while i < len(user_args):
-        arg = user_args[i]
-        if arg in ("-vf", "-pix_fmt", "-color_range"):
-            if i + 1 >= len(user_args):
-                raise ValueError(
-                    f"Malformed extra_args: {arg!r} must be followed by a value."
-                )
-            if arg == "-vf":
-                vf_filters.append(user_args[i + 1])
-            elif arg == "-pix_fmt":
-                caller_pix_fmt = user_args[i + 1]
-            else:
-                caller_color_range = user_args[i + 1]
-            i += 2
-        else:
-            passthrough.append(arg)
-            i += 1
+    vf_filters, passthrough, caller_pix_fmt, caller_color_range = (
+        _split_ffmpeg_extra_args(extra_args)
+    )
     vf_filters.append(_EVEN_PAD_FILTER)
 
     chosen_pix_fmt = caller_pix_fmt if caller_pix_fmt is not None else pix_fmt
