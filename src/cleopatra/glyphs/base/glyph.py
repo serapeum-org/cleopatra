@@ -284,21 +284,34 @@ def apply_axis_style(
     See Also:
         Glyph._apply_axis_style: The method wrapper each glyph calls.
     """
+    if grid_axis not in (None, "both", "x", "y"):
+        raise ValueError(
+            f"grid_axis must be one of 'both', 'x', 'y' or None, got {grid_axis!r}."
+        )
     explicit = explicit or set()
 
-    def wanted(*keys: str) -> bool:
-        return apply_defaults or any(key in explicit for key in keys)
+    def wanted(key: str) -> bool:
+        """Whether `key` should be applied to the axes.
+
+        Args:
+            key: The option name.
+
+        Returns:
+            bool: `True` when the caller asked for it, or when every option is
+            being applied.
+        """
+        return apply_defaults or key in explicit
 
     # Setting only the font size resizes the label in place. Re-setting the text
     # too would overwrite a label the caller put on the axes themselves with this
     # glyph's own (empty) default.
-    if apply_defaults or "xlabel" in explicit:
+    if wanted("xlabel"):
         ax.set_xlabel(options["xlabel"], fontsize=options["xlabel_font_size"])
-    elif "xlabel_font_size" in explicit:
+    elif wanted("xlabel_font_size"):
         ax.xaxis.label.set_fontsize(options["xlabel_font_size"])
-    if apply_defaults or "ylabel" in explicit:
+    if wanted("ylabel"):
         ax.set_ylabel(options["ylabel"], fontsize=options["ylabel_font_size"])
-    elif "ylabel_font_size" in explicit:
+    elif wanted("ylabel_font_size"):
         ax.yaxis.label.set_fontsize(options["ylabel_font_size"])
     if wanted("xtick_font_size"):
         ax.tick_params(axis="x", labelsize=options["xtick_font_size"])
@@ -437,11 +450,25 @@ def multiline_title_pad(ax: Axes, title: Any, fontsize: Any) -> float | None:
 #: `SomeGlyph(...).plot(ax=ax)` leaves one collectable immediately.
 _render_owner_counter = itertools.count()
 
-#: Maps a glyph to its render-ownership token. Held weakly and keyed by identity
-#: rather than stamped on the glyph, so a `copy`/`deepcopy`/unpickle of a glyph
-#: is a *new* owner -- an attribute would travel with the clone and let it clear
-#: the original's artists -- and a collected glyph drops out on its own.
-_render_owner_tokens: weakref.WeakKeyDictionary[Any, int] = weakref.WeakKeyDictionary()
+#: Maps a glyph's `id()` to its render-ownership token. Keyed by identity, not
+#: by equality: a `WeakKeyDictionary` keys on `__hash__`/`__eq__`, so two
+#: equal-but-distinct glyphs would share a token and clear each other's artists
+#: even under `compose=True`. Not stamped on the glyph either, so a
+#: `copy`/`deepcopy`/unpickle is a *new* owner -- an attribute would travel with
+#: the clone and let it clear the original's artists. Each entry is dropped when
+#: its glyph is collected (see `_forget_render_owner`), so a later glyph handed
+#: the same `id()` is assigned its own token. Like the rendering stack it serves,
+#: it assumes a single thread.
+_render_owner_tokens: dict[int, int] = {}
+
+
+def _forget_render_owner(key: int) -> None:
+    """Drop a collected glyph's token so its `id()` can be safely reused.
+
+    Args:
+        key: The `id()` the glyph had while it was alive.
+    """
+    _render_owner_tokens.pop(key, None)
 
 
 def _render_owner_token(owner: Any) -> int:
@@ -452,14 +479,26 @@ def _render_owner_token(owner: Any) -> int:
             bucket.
 
     Returns:
-        int: A token unique to this owner for the life of the process.
+        int: A token unique to this owner for as long as it lives. `0` is the
+        unowned bucket, shared by `owner=None` and by any glyph that cannot be
+        weak-referenced, and so cannot be tracked individually.
     """
     if owner is None:
         return 0
+    key = id(owner)
+    token = _render_owner_tokens.get(key)
+    if token is not None:
+        return token
     try:
-        return _render_owner_tokens.setdefault(owner, next(_render_owner_counter) + 1)
-    except TypeError:  # pragma: no cover - an unhashable or non-weakrefable glyph
+        finalizer = weakref.finalize(owner, _forget_render_owner, key)
+    except TypeError:  # pragma: no cover - a glyph that cannot be weak-referenced
         return 0
+    # The finalizer registers itself in weakref's own table, which keeps it alive
+    # until it fires; there is nothing worth doing at interpreter shutdown.
+    finalizer.atexit = False
+    token = next(_render_owner_counter) + 1
+    _render_owner_tokens[key] = token
+    return token
 
 
 def _artist_is_attached(artist: Any) -> bool | None:

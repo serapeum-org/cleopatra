@@ -13,6 +13,8 @@ import matplotlib
 
 matplotlib.use("Agg")
 
+import gc
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
@@ -379,3 +381,116 @@ class TestRegistryProvesDeathBeforeEvicting:
         assert not _entry_is_detached([object()]), (
             "an unaskable entry was read as dead"
         )
+
+
+class _PlainOwner:
+    """A stand-in glyph with no equality of its own."""
+
+
+class _EqualOwner:
+    """A stand-in glyph that compares equal to every other of its kind."""
+
+    def __eq__(self, other):
+        """Compare equal to any other `_EqualOwner`.
+
+        Args:
+            other: The object to compare against.
+
+        Returns:
+            bool: `True` for any other `_EqualOwner`.
+        """
+        return isinstance(other, _EqualOwner)
+
+    def __hash__(self):
+        """Hash to one bucket, so equality decides dictionary identity.
+
+        Returns:
+            int: A constant.
+        """
+        return 7
+
+
+class TestOwnershipTokensAreKeyedByIdentity:
+    """Two distinct glyphs never share a token, however they compare."""
+
+    def test_equal_but_distinct_owners_get_distinct_tokens(self):
+        """Value equality does not merge two owners.
+
+        Test scenario:
+            A `WeakKeyDictionary` keys on `__hash__`/`__eq__`, so the day a
+            glyph defines value equality, two equal glyphs would have cleared
+            each other's artists even under `compose=True`.
+        """
+        first, second = _EqualOwner(), _EqualOwner()
+        assert first == second, "precondition: the two owners compare equal"
+        assert _render_owner_token(first) != _render_owner_token(second), (
+            "two equal-but-distinct owners shared a render token"
+        )
+
+    def test_a_repeat_lookup_does_not_assign_a_new_token(self):
+        """Looking a token up neither changes it nor burns the counter.
+
+        Test scenario:
+            `setdefault(owner, next(counter) + 1)` evaluated `next()` eagerly,
+            so every lookup advanced the counter -- harmless, but it
+            contradicted the docstring and made the tokens unreadable.
+        """
+        owner = _PlainOwner()
+        first = _render_owner_token(owner)
+        for _ in range(5):
+            assert _render_owner_token(owner) == first, "the token changed"
+        assert _render_owner_token(_PlainOwner()) == first + 1, (
+            "repeat lookups advanced the token counter"
+        )
+
+    def test_a_collected_owner_is_forgotten(self):
+        """A glyph's entry goes when the glyph does, so its `id()` is reusable.
+
+        Test scenario:
+            Keying by `id()` is only safe while a collected owner's entry is
+            dropped -- otherwise the next object handed that address inherits
+            its artists.
+        """
+        owner = _PlainOwner()
+        key = id(owner)
+        _render_owner_token(owner)
+        assert key in _render_owner_tokens, "precondition: the owner was tracked"
+        del owner
+        gc.collect()
+        assert key not in _render_owner_tokens, (
+            "a collected owner's token survived it"
+        )
+
+
+class TestApplyAxisStyleRejectsABadGridAxis:
+    """The helper validates `grid_axis` in its own vocabulary."""
+
+    @pytest.mark.parametrize("bad", ["nope", "xy", "BOTH"])
+    def test_an_unknown_grid_axis_raises(self, bad):
+        """An unknown `grid_axis` names the glyph's parameter, not matplotlib's.
+
+        Args:
+            bad: The rejected value.
+
+        Test scenario:
+            The value went straight to `ax.grid(axis=...)`, so the caller got a
+            matplotlib error about a parameter they had not passed.
+        """
+        fig, ax = plt.subplots()
+        with pytest.raises(ValueError, match="grid_axis must be one of"):
+            apply_axis_style(ax, {"grid_alpha": 0.5}, {"grid_alpha"}, grid_axis=bad)
+        plt.close(fig)
+
+    @pytest.mark.parametrize("good", ["both", "x", "y", None])
+    def test_every_documented_grid_axis_is_accepted(self, good):
+        """The four documented values still work.
+
+        Args:
+            good: The accepted value.
+
+        Test scenario:
+            The guard must not narrow the helper's own contract.
+        """
+        fig, ax = plt.subplots()
+        apply_axis_style(ax, {"grid_alpha": 0.5}, {"grid_alpha"}, grid_axis=good)
+        plt.close(fig)
