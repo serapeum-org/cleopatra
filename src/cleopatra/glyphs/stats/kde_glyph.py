@@ -531,6 +531,7 @@ class KDEGlyph(Glyph):
                 self.cbar = self.create_color_bar(ax, proxy, cbar_kw)
             if opts["title"]:
                 ax.set_title(opts["title"], fontsize=opts["title_size"])
+            self._apply_axis_style(ax)
             return self.fig, ax, mappable
 
         render = ax.contourf if opts["shade"] else ax.contour
@@ -543,5 +544,6 @@ class KDEGlyph(Glyph):
 
         if opts["title"]:
             ax.set_title(opts["title"], fontsize=opts["title_size"])
+        self._apply_axis_style(ax)
 
         return self.fig, ax, contour_set

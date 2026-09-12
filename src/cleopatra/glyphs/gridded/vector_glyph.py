@@ -378,6 +378,7 @@ class VectorGlyph(GeoMixin, Glyph):
 
             if opts["title"]:
                 ax.set_title(opts["title"], fontsize=opts["title_size"])
+            self._apply_axis_style(ax)
 
             _mark_render_artists(ax, self, self.cbar, self.im, *arrow_patches)
             return self.fig, ax, im

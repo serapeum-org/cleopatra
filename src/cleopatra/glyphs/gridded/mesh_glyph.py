@@ -1223,6 +1223,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 self.default_options["title"],
                 fontsize=self.default_options["title_size"],
             )
+        self._apply_axis_style(self.ax)
         self.ax.set_aspect("equal")
 
         _mark_render_artists(self.ax, self, self._cbar, self.im)
@@ -1370,6 +1371,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 self.default_options["title"],
                 fontsize=self.default_options["title_size"],
             )
+        self._apply_axis_style(ax)
         ax.set_aspect("equal")
 
         day_text = ax.text(
