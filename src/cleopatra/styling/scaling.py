@@ -459,6 +459,10 @@ class ColorScaling:
         backed by a `matplotlib.colors.FuncNorm` built from the data's own
         empirical CDF at render time.
 
+        It ranks within the resolved display window, so `vmin`/`vmax` and
+        `robust=True` clip the field before ranking (handy for taming outliers
+        on a skewed surface); with no limits it ranks the whole field.
+
         The scale is data-driven, so it is wired for `ArrayGlyph` (which can
         supply its cell values); using it where the values are unavailable
         raises a clear error rather than guessing.
@@ -738,6 +742,12 @@ class ColorScaling:
         just the tick range), so `values` is required; the colour bar's ticks
         are placed at the data's quantiles rather than linearly, so they sit
         evenly on the equalised axis instead of implying a linear one.
+
+        Ranks within the resolved display window `[ticks[0], ticks[-1]]`, so an
+        explicit `vmin`/`vmax` or `robust=True` clips the field before ranking
+        (out-of-window outliers then take the end colours rather than flattening
+        the in-window distribution). The default window is the data range, so it
+        keeps every cell.
         """
         if values is None:
             raise ValueError(
@@ -749,6 +759,12 @@ class ColorScaling:
         data = data[np.isfinite(data)]
         if data.size == 0:
             raise ValueError("ColorScaling.equalize() got no finite values to rank.")
+        if ticks is not None and len(ticks) >= 2:
+            lo_lim, hi_lim = float(ticks[0]), float(ticks[-1])
+            if hi_lim > lo_lim:
+                in_window = data[(data >= lo_lim) & (data <= hi_lim)]
+                if in_window.size:
+                    data = in_window
         q = np.linspace(0.0, 1.0, self.samples)
         qv = np.quantile(data, q)
         # A flat plateau repeats a data value across several quantiles, giving
