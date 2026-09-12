@@ -11,6 +11,7 @@ import inspect
 import itertools
 import os
 import weakref
+from numbers import Real
 import warnings
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -307,8 +308,9 @@ def apply_axis_style(
         ax.grid(axis=grid_axis, alpha=options["grid_alpha"])
 
 
-#: Matplotlib's default `Text` line spacing, as a multiple of the font size.
-#: Used to size the extra room a multi-line title needs.
+#: Fallback line spacing, as a multiple of the font size, for the rare case
+#: where the axes has no title `Text` to read one from. Matches matplotlib's
+#: own `Text` default.
 _TITLE_LINESPACING = 1.2
 
 
@@ -397,14 +399,23 @@ def multiline_title_pad(ax: Axes, title: Any, fontsize: Any) -> float | None:
 
             ```
     """
-    extra_lines = str(title).count("\n")
+    # A non-string title has no lines to hang below the anchor; `str()` on one
+    # would invent them (`str(None)` has none, but a list's repr might).
+    if not isinstance(title, str):
+        return None
+    extra_lines = title.count("\n")
     if not extra_lines:
         return None
     on_top = any(tick.label2.get_visible() for tick in ax.xaxis.majorTicks)
     if not on_top:
         return None
+    # Prefer the spacing the title actually carries, so a caller who set
+    # `linespacing` gets a pad matching what is drawn. It is only usable when
+    # numeric -- matplotlib reports the unset default as the string `"normal"`.
+    spacing = getattr(ax.title, "get_linespacing", lambda: None)()
+    linespacing = spacing if isinstance(spacing, Real) else _TITLE_LINESPACING
     pad = plt.rcParams["axes.titlepad"]
-    return pad + extra_lines * _title_points(fontsize) * _TITLE_LINESPACING
+    return pad + extra_lines * _title_points(fontsize) * linespacing
 
 
 #: Hands out render-ownership tokens. A counter rather than `id()` because ids
@@ -1030,11 +1041,11 @@ class Glyph:
                 continue
             if not hasattr(group, "to_options"):
                 raise TypeError(
-                    f"expected a grouped parameter object (one exposing "
-                    f"to_options(), e.g. ColorScaling, Contour, Classify, "
-                    f"CellValues, DataStyle), got {type(group).__name__} "
-                    f"{group!r}. A colour string belongs on the underlying "
-                    f"matplotlib call, not on these typed style parameters."
+                    f"expected a grouped parameter object -- one exposing "
+                    f"to_options(), such as ColorScaling, Contour, Classify, "
+                    f"CellValues or DataStyle -- got {type(group).__name__} "
+                    f"{group!r}. These parameters take a typed style object, "
+                    f"not the loose value the option they replaced accepted."
                 )
             for key, val in group.to_options().items():
                 if key in self.default_options:

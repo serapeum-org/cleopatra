@@ -61,9 +61,9 @@ VECTOR_KINDS = ("quiver", "barbs", "streamplot")
 #: `_prepare_scalar_mapping` helper auto-derives it from the magnitude.
 VECTOR_DEFAULT_OPTIONS = {
     "density": 1.0,
-    #: Draw every nth grid point for `quiver`/`barbs`. One arrow per cell is
-    #: unreadable and slow on a real grid -- a 141x321 window is 45,261 arrows --
-    #: and `density` is a `streamplot` concept that does not apply to them.
+    # thin: draw every nth grid point for quiver/barbs. One arrow per cell is
+    # unreadable and slow on a real grid -- a 141x321 window is 45,261 arrows --
+    # and density is a streamplot concept that does not apply to them.
     "thin": 1,
     "scale": None,
     "vmin": None,
@@ -201,14 +201,31 @@ class VectorGlyph(GeoMixin, Glyph):
         that an invalid value never reaches the point where artists have already
         been cleared.
         """
-        if thin == 1:
-            return self.x, self.y, self.u, self.v, np.asarray(mag)
-        # 1-D coordinate vectors index on their only axis; a meshgrid indexes on
-        # both, so slice by the array's own dimensionality rather than assuming.
-        cut = (slice(None, None, thin),)
-        grid = (slice(None, None, thin), slice(None, None, thin))
-        take = lambda a: np.asarray(a)[cut if np.asarray(a).ndim == 1 else grid]  # noqa: E731
-        return take(self.x), take(self.y), take(self.u), take(self.v), take(mag)
+
+        def take(array: np.ndarray) -> np.ndarray:
+            """Subsample one array along however many axes it has.
+
+            1-D coordinate vectors index on their only axis; a meshgrid indexes
+            on both, so the slice is built from the array's own dimensionality
+            rather than assumed.
+
+            Args:
+                array: The array to subsample.
+
+            Returns:
+                np.ndarray: Every `thin`th element along each axis.
+            """
+            values = np.asarray(array)
+            step = (slice(None, None, thin),) * values.ndim
+            return values[step]
+
+        return (
+            take(self.x),
+            take(self.y),
+            take(self.u),
+            take(self.v),
+            take(mag),
+        )
 
     def plot(
         self,
