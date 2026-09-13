@@ -51,8 +51,12 @@ Named preset, relief shading, and per-call preset overrides:
 
 ## Classify
 
-Categorical / classed colour schemes on the scatter / vector / flow / polygon glyphs:
-`plot(classify=Classify(scheme="categorical", k=5))`.
+Classed colour schemes on the scatter / vector / flow / polygon glyphs and on the raster
+`ArrayGlyph` (`plot` / `facet` / `animate`): `plot(classify=Classify(scheme="quantiles", k=5))`.
+`ArrayGlyph` bins its 2-D field into the same discrete classes with a stepped colorbar — a named
+scheme, or explicit edges `Classify(scheme=[0, 10, 50, 100, 500])` — resolving the classes once over
+the whole stack when faceting / animating. Its `scheme="categorical"` is rejected (a raster's cells
+are a continuous field, not nominal labels).
 
 ::: cleopatra.styling.params.Classify
     options:

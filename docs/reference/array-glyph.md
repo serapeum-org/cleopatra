@@ -29,8 +29,9 @@ animations exported to GIF / MP4 / MOV / AVI.
 `ArrayGlyph`'s `plot()` / `animate()` / `facet()` accept these typed objects (importable from
 `cleopatra.glyphs.gridded.array_glyph`) in place of the loose keyword arguments they replaced:
 `rgb_bands=RgbBands(...)` for RGB compositing, `points=PointOverlay(...)` for a point overlay,
-`frame_label=FrameLabel(...)` for the per-frame `animate` label, and `labels=PanelLabels(...)`
-to title `facet` panels by coordinate.
+`playback=Animation(...)` for the `animate` playback settings (frame `interval`, the
+`frame_label=FrameLabel(...)` time label, `cell_value_text_colors`, and the lazy `data_getter`),
+and `labels=PanelLabels(...)` to title `facet` panels by coordinate.
 
 ::: cleopatra.glyphs.gridded.array_glyph.RgbBands
     options:
@@ -43,6 +44,11 @@ to title `facet` panels by coordinate.
       heading_level: 3
 
 ::: cleopatra.glyphs.gridded.array_glyph.FrameLabel
+    options:
+      show_root_heading: true
+      heading_level: 3
+
+::: cleopatra.glyphs.gridded.array_glyph.Animation
     options:
       show_root_heading: true
       heading_level: 3
@@ -62,19 +68,28 @@ to title `facet` panels by coordinate.
   `RdBu_r`), `extend` (colorbar arrows), `cbar_kwargs` (forwarded to `fig.colorbar`). Discrete
   colour bins / contour edges moved onto the `Contour` group object — pass
   `contour=Contour(levels=...)`.
+- **`plot(classify=Classify(scheme=..., k=...))`** — colour the raster by discrete data classes
+  (a choropleth for grids) with a stepped colorbar, using the same `Classify` object the
+  scatter / vector / flow / polygon glyphs take. Named schemes (`"quantiles"`,
+  `"equal_interval"`, `"percentiles"`, `"std_mean"`, `"natural_breaks"` / `"fisher_jenks"`) or
+  explicit edges (`Classify(scheme=[0, 10, 50, 100, 500])`), numpy only. `facet` / `animate`
+  take the same `classify=` and resolve the classes once over the whole stack so every panel /
+  frame shares them. `scheme="categorical"` is rejected for a raster.
 - **`ArrayGlyph(..., coords=(x, y))`** — plot curvilinear / non-uniform grids (1-D cell
   centres or 2-D meshgrids); with `kind="auto"` this routes to `pcolormesh`. Mutually
   exclusive with `extent`.
 - **`ArrayGlyph.facet(FacetLayout(col=, row=, col_wrap=, labels=, figure_size=, axes=, extents=),
-  *, kind=, colorbar=, color=, contour=, cells=, data_style=, compose=)`** — a grid of subplots
+  *, kind=, colorbar=, color=, contour=, cells=, classify=, data_style=, compose=)`** — a grid of subplots
   from a 3-D `(N, H, W)` or 4-D `(N, M, H, W)` stack with one shared colour scale and colorbar.
   The grid layout (which dimension(s) to facet, wrapping, panel labels, per-panel extents, and
   the target figure/axes) is bundled into a `FacetLayout`; per-panel render options stay as
   `facet` keywords. Pass `labels=PanelLabels(col=..., row=...)` on the `FacetLayout` to title
   panels by coordinate value instead of the integer slice index, and `axes=` to draw the panels
   into axes you already created (see the `axes=` reference below).
-- **`animate(..., data_getter=callable)`** — supply each frame lazily (e.g. a NetCDF time
-  slab) instead of holding the whole stack in memory.
+- **`animate(..., playback=Animation(data_getter=callable))`** — the `Animation` object bundles
+  the playback settings (`interval`, `frame_label`, `cell_value_text_colors`, `data_getter`);
+  `data_getter` supplies each frame lazily (e.g. a NetCDF time slab) instead of holding the whole
+  stack in memory.
 - **The colour scale is chosen via the `ColorScaling` group object** —
   `plot(color=ColorScaling.power(gamma=...))`, `ColorScaling.sym_log(...)`,
   `ColorScaling.log()`, `ColorScaling.midpoint(at=...)`,
@@ -140,6 +155,25 @@ fig, ax = ArrayGlyph(data).plot(kind="contourf", contour=Contour(levels=6), exte
 fig, ax = ArrayGlyph(data).plot(center=0.0, robust=True)
 ```
 
+### Classified raster (choropleth)
+
+```python
+import numpy as np
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+from cleopatra.styling.params import Classify
+
+field = np.arange(100.0).reshape(10, 10)
+
+# five equal-count classes with a stepped colorbar
+fig, ax = ArrayGlyph(field).plot(classify=Classify(scheme="quantiles", k=5))
+
+# native Fisher-Jenks natural breaks (numpy only, no mapclassify)
+fig, ax = ArrayGlyph(field).plot(classify=Classify(scheme="natural_breaks", k=7))
+
+# explicit class edges (e.g. hazard bands), used verbatim
+fig, ax = ArrayGlyph(field).plot(classify=Classify(scheme=[0, 10, 50, 100, 500]))
+```
+
 ### Curvilinear coordinates (pcolormesh)
 
 ```python
@@ -181,7 +215,7 @@ assert g.fig is fig and g.axes[0, 0] is axs[0, 0]
 
 ```python
 import numpy as np
-from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph, Animation
 
 time_series = np.stack([np.random.default_rng(i).random((10, 10)) for i in range(5)])
 time_labels = ["t1", "t2", "t3", "t4", "t5"]
@@ -190,10 +224,10 @@ glyph = ArrayGlyph(time_series)
 anim = glyph.animate(time=time_labels)
 glyph.save_animation("animation.gif", fps=2)
 
-# lazy frames: only frame i is materialised, on demand
+# lazy frames: only frame i is materialised, on demand (playback bundles the settings)
 template = np.empty((10, 10))                       # shape template only
 glyph = ArrayGlyph(template)
-glyph.animate(time=time_labels, data_getter=lambda i: time_series[i])
+glyph.animate(time=time_labels, playback=Animation(data_getter=lambda i: time_series[i]))
 ```
 
 ![Animation Example](../images/array_glyph/animated_array.gif)

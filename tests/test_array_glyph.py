@@ -23,6 +23,7 @@ from cleopatra.glyphs.gridded.array_glyph import (
     _COORD_DTYPE_MISMATCH,
     _COORD_SHAPE_MISMATCH,
     AnimateKwargs,
+    Animation,
     ArrayGlyph,
     ColorBar,
     FacetGrid,
@@ -802,7 +803,7 @@ class TestKwargsTypedDicts:
         array.animate(
             list(range(2)),
             cells=CellValues(show=True, background_threshold=0.5),
-            cell_value_text_colors=("yellow", "blue"),
+            playback=Animation(cell_value_text_colors=("yellow", "blue")),
         )
         array.anim._func(0)
         colors = {to_rgba(t.get_color()) for t in array.ax.texts if t.get_text()}
@@ -995,7 +996,7 @@ class TestAnimateRGB:
         def get_rgb(i):
             return np.full((8, 8, 3), i / 3.0)
 
-        anim = glyph.animate(self._LABELS, data_getter=get_rgb)
+        anim = glyph.animate(self._LABELS, playback=Animation(data_getter=get_rgb))
         assert isinstance(anim, FuncAnimation), (
             f"expected FuncAnimation, got {type(anim).__name__}"
         )
@@ -1019,7 +1020,7 @@ class TestAnimateRGB:
         def get_rgb(i):
             return np.full((8, 8, 3), (i + 1) / 4.0)
 
-        glyph.animate(self._LABELS, data_getter=get_rgb)
+        glyph.animate(self._LABELS, playback=Animation(data_getter=get_rgb))
         out = tmp_path / "rgb_lazy.gif"
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -1035,8 +1036,9 @@ class TestAnimateRGB:
             `ValueError` mentioning that the spatial dims do not match.
         """
         glyph = ArrayGlyph(np.zeros((8, 8)))
+        playback = Animation(data_getter=lambda i: np.zeros((5, 5, 3)))
         with pytest.raises(ValueError, match="do not match") as exc:
-            glyph.animate(self._LABELS, data_getter=lambda i: np.zeros((5, 5, 3)))
+            glyph.animate(self._LABELS, playback=playback)
         assert "do not match" in str(exc.value), (
             f"unexpected error message: {exc.value}"
         )
@@ -1860,8 +1862,11 @@ class TestPlotImGetCbarKwInvalidKind:
             glyph.default_options["vmax"] = 24.0
             glyph.default_options["ticks_spacing"] = 5.0
             ticks = glyph.get_ticks()
+            norm, cbar_kw, ticks = glyph._norm_cbar_and_ticks(ticks)
             with pytest.raises(ValueError, match="Invalid kind"):
-                glyph._plot_im_get_cbar_kw(ax, glyph.arr, ticks, kind="banana")
+                glyph._plot_im_get_cbar_kw(
+                    ax, glyph.arr, norm, cbar_kw, ticks, kind="banana"
+                )
         finally:
             plt.close(fig)
 
@@ -2511,7 +2516,9 @@ class TestAnimateEdgeCases:
             text 21 pt, independent of ``cbar_label_size``.
         """
         glyph = ArrayGlyph(coello_data)
-        glyph.animate(animate_time_list, frame_label=FrameLabel(size=21))
+        glyph.animate(
+            animate_time_list, playback=Animation(frame_label=FrameLabel(size=21))
+        )
         assert glyph._day_text.get_fontsize() == 21, (
             f"Expected frame-label fontsize 21, got {glyph._day_text.get_fontsize()}"
         )
@@ -2528,8 +2535,8 @@ class TestAnimateEdgeCases:
         glyph = ArrayGlyph(coello_data)
         glyph.animate(
             animate_time_list,
-            frame_label=FrameLabel(),
             colorbar=ColorBar(label_size=17),
+            playback=Animation(frame_label=FrameLabel()),
         )
         assert glyph._day_text.get_fontsize() == 17, (
             f"Expected inherited fontsize 17, got {glyph._day_text.get_fontsize()}"
@@ -3703,8 +3710,7 @@ class TestAnimateDataGetter:
         template = stack[0]
         glyph = ArrayGlyph(template)
         anim = glyph.animate(
-            time=list(range(4)),
-            data_getter=lambda i: stack[i],
+            time=list(range(4)), playback=Animation(data_getter=lambda i: stack[i])
         )
         assert isinstance(anim, FuncAnimation)
 
@@ -3713,11 +3719,9 @@ class TestAnimateDataGetter:
         stack = self._stack(n=4)
         template = stack[0]
         glyph = ArrayGlyph(template)
+        playback = Animation(data_getter=lambda i: np.zeros((99, 99)))
         with pytest.raises(ValueError, match="do not match"):
-            glyph.animate(
-                time=list(range(4)),
-                data_getter=lambda i: np.zeros((99, 99)),
-            )
+            glyph.animate(time=list(range(4)), playback=playback)
 
     def test_data_getter_none_falls_back_to_self_arr(
         self,
@@ -3727,7 +3731,7 @@ class TestAnimateDataGetter:
     ):
         """`data_getter=None` preserves the existing 3-D arr path."""
         glyph = ArrayGlyph(coello_data, exclude_value=[no_data_value])
-        anim = glyph.animate(animate_time_list, data_getter=None)
+        anim = glyph.animate(animate_time_list, playback=Animation(data_getter=None))
         assert isinstance(anim, FuncAnimation)
 
     def test_2d_arr_without_data_getter_raises(self):
@@ -3752,8 +3756,7 @@ class TestAnimateDataGetter:
             return stack[i]
 
         anim = glyph.animate(
-            time=list(range(4)),
-            data_getter=getter,
+            time=list(range(4)), playback=Animation(data_getter=getter)
         )
         out = tmp_path / "anim.gif"
         try:
@@ -4626,7 +4629,9 @@ class TestAnimateDataGetterEdgeCases:
             return stack[i]
 
         glyph = ArrayGlyph(stack[0])
-        anim = glyph.animate(time=list(range(3)), data_getter=getter)
+        anim = glyph.animate(
+            time=list(range(3)), playback=Animation(data_getter=getter)
+        )
         try:
             assert isinstance(anim, FuncAnimation), "animate must return FuncAnimation"
             assert observed, "getter must be invoked at least once during init"
@@ -4652,7 +4657,9 @@ class TestAnimateDataGetterEdgeCases:
             return np.ma.array(stack[i], mask=mask)
 
         glyph = ArrayGlyph(stack[0])
-        anim = glyph.animate(time=list(range(3)), data_getter=getter)
+        anim = glyph.animate(
+            time=list(range(3)), playback=Animation(data_getter=getter)
+        )
         try:
             assert isinstance(anim, FuncAnimation), "masked-array frames must animate"
         finally:
@@ -4669,7 +4676,9 @@ class TestAnimateDataGetterEdgeCases:
             return frame
 
         glyph = ArrayGlyph(stack[0])
-        anim = glyph.animate(time=list(range(3)), data_getter=getter)
+        anim = glyph.animate(
+            time=list(range(3)), playback=Animation(data_getter=getter)
+        )
         try:
             assert isinstance(anim, FuncAnimation), "NaN frames must animate"
         finally:
@@ -4691,8 +4700,9 @@ class TestAnimateDataGetterEdgeCases:
         def bad_getter(i):
             raise RuntimeError(f"boom at i={i}")
 
+        playback = Animation(data_getter=bad_getter)
         with pytest.raises(RuntimeError, match="boom at i=0"):
-            glyph.animate(time=list(range(3)), data_getter=bad_getter)
+            glyph.animate(time=list(range(3)), playback=playback)
 
     def test_data_getter_called_per_time_entry(self, tmp_path) -> None:
         """`n_frames` equals `len(time)` when `data_getter` is set.
@@ -4713,7 +4723,9 @@ class TestAnimateDataGetterEdgeCases:
             return stack[i % stack.shape[0]]
 
         glyph = ArrayGlyph(stack[0])
-        anim = glyph.animate(time=list(range(6)), data_getter=getter)
+        anim = glyph.animate(
+            time=list(range(6)), playback=Animation(data_getter=getter)
+        )
         out = tmp_path / "long_time.gif"
         try:
             glyph.save_animation(str(out), fps=2)
@@ -4738,7 +4750,9 @@ class TestAnimateDataGetterEdgeCases:
             return stack[i].astype(np.float32)
 
         glyph = ArrayGlyph(stack[0])
-        anim = glyph.animate(time=list(range(3)), data_getter=getter)
+        anim = glyph.animate(
+            time=list(range(3)), playback=Animation(data_getter=getter)
+        )
         try:
             assert isinstance(anim, FuncAnimation), "dtype mismatch must not raise"
         finally:
@@ -4756,8 +4770,8 @@ class TestAnimateDataGetterEdgeCases:
         glyph = ArrayGlyph(stack[0])
         anim = glyph.animate(
             time=list(range(3)),
-            data_getter=lambda i: stack[i],
             cells=CellValues(show=False),
+            playback=Animation(data_getter=lambda i: stack[i]),
         )
         try:
             assert isinstance(anim, FuncAnimation), (
@@ -4772,9 +4786,9 @@ class TestAnimateDataGetterEdgeCases:
         glyph = ArrayGlyph(stack[0])
         anim = glyph.animate(
             time=list(range(3)),
-            data_getter=lambda i: stack[i],
             vmin=-0.5,
             vmax=1.5,
+            playback=Animation(data_getter=lambda i: stack[i]),
         )
         try:
             assert glyph.default_options["vmin"] == -0.5, (
@@ -4806,7 +4820,9 @@ class TestAnimateDataGetterEdgeCases:
                 return stack[0]
             return np.zeros((99, 99))
 
-        anim = glyph.animate(time=list(range(3)), data_getter=getter)
+        anim = glyph.animate(
+            time=list(range(3)), playback=Animation(data_getter=getter)
+        )
         out = tmp_path / "bad_shape.gif"
         try:
             with pytest.raises(ValueError, match="data_getter` returned shape"):
@@ -4827,8 +4843,10 @@ class TestAnimateDataGetterEdgeCases:
         glyph = ArrayGlyph(stack[0])
         anim = glyph.animate(
             time=list(range(3)),
-            data_getter=lambda i: stack[i],
-            frame_label=FrameLabel(location=[0.05, 0.05]),
+            playback=Animation(
+                data_getter=lambda i: stack[i],
+                frame_label=FrameLabel(location=[0.05, 0.05]),
+            ),
         )
         try:
             assert isinstance(anim, FuncAnimation), (
@@ -4858,7 +4876,9 @@ class TestAnimateDataGetterEdgeCases:
             arr = np.zeros(shape)
             glyph = ArrayGlyph(arr, figsize=(4, 4))
             try:
-                glyph.animate(time=list(range(shape[0])), interval=150)
+                glyph.animate(
+                    time=list(range(shape[0])), playback=Animation(interval=150)
+                )
                 glyph._day_text.set_text("Date = 2024-01-01")
                 glyph.fig.canvas.draw()
                 renderer = glyph.fig.canvas.get_renderer()
@@ -4892,8 +4912,8 @@ class TestAnimateDataGetterEdgeCases:
         glyph = ArrayGlyph(stack[0])
         anim = glyph.animate(
             time=list(range(3)),
-            data_getter=lambda i: stack[i],
             cells=CellValues(background_threshold=0.5),
+            playback=Animation(data_getter=lambda i: stack[i]),
         )
         try:
             assert isinstance(anim, FuncAnimation), (
@@ -6024,7 +6044,7 @@ class TestArrayGlyphShadedAnimate:
         anim = g.animate(
             data_style=DataStyle(hillshade=True),
             time=list(range(3)),
-            data_getter=getter,
+            playback=Animation(data_getter=getter),
         )
         anim._func(1)  # integer masked frame through _display_frame's hillshade branch
         assert np.asarray(g.im.get_array()).shape[-1] == 4
@@ -8863,7 +8883,7 @@ class TestFigAxResolution:
         fig0, existing_ax = plt.subplots()
         stack = np.arange(2 * 3 * 3, dtype="float32").reshape(2, 3, 3)
         glyph = ArrayGlyph(stack, fig=fig0)
-        anim = glyph.animate([0, 1], interval=50)
+        anim = glyph.animate([0, 1], playback=Animation(interval=50))
         assert isinstance(anim, FuncAnimation)
         assert glyph.fig is fig0
         assert glyph.ax is existing_ax
@@ -8877,7 +8897,7 @@ class TestFigAxResolution:
         fig0 = plt.figure()  # no axes yet
         stack = np.arange(2 * 3 * 3, dtype="float32").reshape(2, 3, 3)
         glyph = ArrayGlyph(stack, fig=fig0)
-        anim = glyph.animate([0, 1], interval=50)
+        anim = glyph.animate([0, 1], playback=Animation(interval=50))
         assert isinstance(anim, FuncAnimation)
         assert glyph.fig is fig0
         assert glyph.ax in fig0.axes  # an axes was added to the caller's empty figure
@@ -8888,7 +8908,7 @@ class TestFigAxResolution:
         fig0, ax0 = plt.subplots()
         stack = np.arange(2 * 3 * 3, dtype="float32").reshape(2, 3, 3)
         glyph = ArrayGlyph(stack, fig=fig0, ax=ax0)
-        anim = glyph.animate([0, 1], interval=50)
+        anim = glyph.animate([0, 1], playback=Animation(interval=50))
         assert isinstance(anim, FuncAnimation)
         assert glyph.ax is ax0  # the bound axes is used, not re-resolved
         assert glyph.fig is fig0  # and the bound figure is kept
