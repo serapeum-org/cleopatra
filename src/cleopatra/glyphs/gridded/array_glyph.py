@@ -2517,17 +2517,20 @@ class ArrayGlyph(GeoMixin, Glyph):
         self,
         ax: Axes,
         arr: np.ndarray,
+        norm: Normalize | None,
+        cbar_kw: dict,
         ticks: np.ndarray,
         kind: str = "imshow",
     ) -> tuple[Any, dict[str, str]]:
         """Render the array on `ax` and return the artist plus cbar kwargs.
 
-        Builds the matplotlib norm from `default_options["color_scale"]`
-        and dispatches to the requested `kind` of plot. All four kinds
-        share the same norm/vmin/vmax resolution path so the existing
-        `color_scale` enum (linear/power/sym-lognorm/lognorm/
-        boundary-norm/midpoint/equalize) works identically for every render
-        kind.
+        Takes the `(norm, cbar_kw, ticks)` triple already resolved by
+        `_norm_cbar_and_ticks` (once per `plot` / `animate`, so classification
+        and its conflict warning happen a single time) and dispatches to the
+        requested `kind` of plot. All four kinds share that norm, so the
+        `color_scale` enum (linear/power/sym-lognorm/lognorm/boundary-norm/
+        midpoint/equalize) and the classified `BoundaryNorm` work identically
+        for every render kind.
 
         When `self._coords` is set (curvilinear / non-uniform grid),
         the `(x, y)` arrays are forwarded as the first positional
@@ -2538,7 +2541,11 @@ class ArrayGlyph(GeoMixin, Glyph):
         Args:
             ax: matplotlib figure axes.
             arr: numpy (masked) array.
-            ticks: color bar ticks.
+            norm: The resolved matplotlib norm (`None` for a plain linear
+                scale, a `BoundaryNorm` when a scheme is set).
+            cbar_kw: The resolved colorbar keyword-argument dict.
+            ticks: The resolved colorbar ticks (the class edges when a scheme
+                is set); `ticks[0]`/`ticks[-1]` drive `vmin`/`vmax`.
             kind: render kind. One of `"imshow"`, `"pcolormesh"`,
                 `"contour"`, `"contourf"`. Default is `"imshow"`
                 (preserves the historical animate/legacy call path).
@@ -2555,7 +2562,6 @@ class ArrayGlyph(GeoMixin, Glyph):
                 is set (incompatible combination), or if `kind` is not
                 one of the recognised values in `VALID_PLOT_KINDS`.
         """
-        norm, cbar_kw, ticks = self._norm_cbar_and_ticks(ticks)
         cmap = resolve_colormap(self.default_options["cmap"])
         vmin = ticks[0]
         vmax = ticks[-1]
@@ -3312,7 +3318,12 @@ class ArrayGlyph(GeoMixin, Glyph):
         return resolved_colorbar
 
     def _plot_projected(
-        self, ax: Axes, arr: np.ndarray, ticks: np.ndarray
+        self,
+        ax: Axes,
+        arr: np.ndarray,
+        norm: Normalize | None,
+        cbar_kw: dict,
+        ticks: np.ndarray,
     ) -> tuple[Any, dict[str, str]]:
         """Render the array through a projection preset (`"globe"` / `"flat"`).
 
@@ -3327,14 +3338,16 @@ class ArrayGlyph(GeoMixin, Glyph):
         Args:
             ax: Axes to draw on.
             arr: The (masked) 2-D data array.
-            ticks: Colorbar ticks; drive `vmin`/`vmax` when the norm is linear.
+            norm: The resolved matplotlib norm (`None` for a plain linear scale).
+            cbar_kw: The resolved colorbar keyword-argument dict.
+            ticks: The resolved colorbar ticks; drive `vmin`/`vmax` when the
+                norm is linear.
 
         Returns:
             tuple: `(QuadMesh, cbar_kw)` -- the mappable and its colorbar kwargs.
         """
         projection = self.default_options["projection"]
         lon, lat = self._coords
-        norm, cbar_kw, ticks = self._norm_cbar_and_ticks(ticks)
         cmap = resolve_colormap(self.default_options["cmap"])
         plot_arr = (
             ma.filled(ma.asarray(arr).astype(float), np.nan)
@@ -4098,15 +4111,15 @@ class ArrayGlyph(GeoMixin, Glyph):
             self.default_options["vmax"] = self.vmax
 
             ticks = self.get_ticks()
-            # Eagerly resolve the norm to surface a bad `color_scale` / `scheme`
-            # before any axes mutation, rolling the whole group merge back so a
-            # failed classified plot leaves no half-applied option on this
-            # (sticky-options) glyph. The render site re-resolves and emits any
-            # scheme/scale conflict warning exactly once.
+            # Resolve the norm ONCE here, before any axes mutation: it surfaces a
+            # bad `color_scale` / `scheme` (rolling the whole group merge back so
+            # a failed classified plot leaves no half-applied option on this
+            # sticky-options glyph), emits any scheme/scale conflict warning
+            # exactly once with the caller's `plot(...)` as the attributed frame,
+            # and is handed to the render site so classification (incl. the Jenks
+            # DP) is not recomputed.
             try:
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    self._norm_cbar_and_ticks(ticks)
+                norm, cbar_kw, ticks = self._norm_cbar_and_ticks(ticks)
             except (ValueError, TypeError):
                 for key, value in pre_group_opts.items():
                     self.default_options[key] = value
@@ -4141,10 +4154,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                         "'kind' and 'hillshade'.",
                         stacklevel=2,
                     )
-                im, cbar_kw = self._plot_projected(ax, arr, ticks)
+                im, cbar_kw = self._plot_projected(ax, arr, norm, cbar_kw, ticks)
             else:
                 im, cbar_kw = self._plot_im_get_cbar_kw(
-                    ax, arr, ticks, kind=effective_kind
+                    ax, arr, norm, cbar_kw, ticks, kind=effective_kind
                 )
             self.im = im
 
@@ -5338,22 +5351,21 @@ class ArrayGlyph(GeoMixin, Glyph):
             self.cbar = None
         else:
             ticks = self.get_ticks()
-            # Eagerly resolve the norm to surface a bad `color_scale` / `scheme`
-            # before any axes mutation, rolling the group merge back so a failed
-            # classified animation leaves no half-applied option; the render site
-            # re-resolves and emits any scheme/scale conflict warning once. A
-            # named scheme bins the whole stack (`_scale_values`), so every frame
-            # shares one set of classes.
+            # Resolve the norm ONCE here, before any axes mutation: it surfaces a
+            # bad `color_scale` / `scheme` (rolling the group merge back so a
+            # failed classified animation leaves no half-applied option), emits
+            # any scheme/scale conflict warning exactly once attributed to the
+            # caller's `animate(...)`, and is handed to the render site so
+            # classification is not recomputed. A named scheme bins the whole
+            # stack (`_scale_values`), so every frame shares one set of classes.
             try:
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    self._norm_cbar_and_ticks(ticks)
+                norm, cbar_kw, ticks = self._norm_cbar_and_ticks(ticks)
             except (ValueError, TypeError):
                 for key, value in pre_group_opts.items():
                     self.default_options[key] = value
                 raise
             _clear_prior_render_artists(ax, self, compose=compose)
-            im, cbar_kw = self._plot_im_get_cbar_kw(ax, frame_0, ticks)
+            im, cbar_kw = self._plot_im_get_cbar_kw(ax, frame_0, norm, cbar_kw, ticks)
             self.im = im
 
             self.cbar = None

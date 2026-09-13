@@ -13,6 +13,8 @@ Covers:
 
 from __future__ import annotations
 
+import warnings
+
 import matplotlib
 
 matplotlib.use("Agg")
@@ -839,6 +841,29 @@ class TestArrayGlyphScheme:
         glyph = ArrayGlyph(ramp)
         with pytest.raises(ValueError, match="categorical"):
             glyph.plot(classify=Classify(scheme="categorical"))
+
+    def test_conflict_warning_attributed_to_caller(self, ramp):
+        """The scheme/scale conflict warning points at the caller, not internals.
+
+        Test scenario:
+            A classified `ArrayGlyph.plot` with a conflicting `color_scale`
+            warns once, and the warning's filename is this test module (the
+            caller), not `array_glyph.py` -- the raster path resolves the norm
+            at `plot` depth, so the shared `stacklevel` attributes correctly.
+        """
+        glyph = ArrayGlyph(ramp + 1.0)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            glyph.plot(
+                classify=Classify(scheme="quantiles", k=4), color=ColorScaling.log()
+            )
+        conflict = [w for w in caught if "color_scale" in str(w.message)]
+        assert len(conflict) == 1, (
+            f"expected exactly one conflict warning, got {caught}"
+        )
+        assert conflict[0].filename == __file__, (
+            f"warning attributed to {conflict[0].filename}, not the caller {__file__}"
+        )
 
     def test_bad_scheme_rolls_back(self, ramp):
         """An unknown scheme leaves no half-applied option on the glyph.

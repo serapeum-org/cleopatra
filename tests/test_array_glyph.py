@@ -1737,8 +1737,11 @@ class TestPlotImGetCbarKwInvalidKind:
             glyph.default_options["vmax"] = 24.0
             glyph.default_options["ticks_spacing"] = 5.0
             ticks = glyph.get_ticks()
+            norm, cbar_kw, ticks = glyph._norm_cbar_and_ticks(ticks)
             with pytest.raises(ValueError, match="Invalid kind"):
-                glyph._plot_im_get_cbar_kw(ax, glyph.arr, ticks, kind="banana")
+                glyph._plot_im_get_cbar_kw(
+                    ax, glyph.arr, norm, cbar_kw, ticks, kind="banana"
+                )
         finally:
             plt.close(fig)
 
