@@ -197,7 +197,7 @@ class TestDisjointLegend:
 class TestHatchLegend:
     """Tests for cleopatra.styling.styles.hatch_legend."""
 
-    @pytest.fixture()
+    @pytest.fixture
     def ax(self):
         """A fresh axes, closed after the test to bound figure count."""
         fig, ax = plt.subplots()

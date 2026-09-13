@@ -97,10 +97,9 @@ def test_failed_array_plot_rolls_back_co_passed_hatch_keys():
     """A failed ArrayGlyph plot must not leak co-passed Contour hatch keys."""
     glyph = ArrayGlyph(np.arange(100, dtype=float).reshape(10, 10))
     hatched = Contour(hatches=["///"], fill=False, hatch_color="0.2")
+    bad_style = DataStyle(style="not_a_preset")
     with pytest.raises(ValueError):
-        glyph.plot(
-            kind="contourf", contour=hatched, data_style=DataStyle(style="not_a_preset")
-        )
+        glyph.plot(kind="contourf", contour=hatched, data_style=bad_style)
     assert glyph.default_options["hatches"] is None, "hatches must roll back to None"
     assert glyph.default_options["fill"] is None, "fill must roll back to None"
     assert glyph.default_options["hatch_color"] is None, "hatch_color must roll back"
