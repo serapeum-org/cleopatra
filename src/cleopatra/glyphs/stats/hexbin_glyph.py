@@ -116,7 +116,8 @@ class HexbinGlyph(GeoMixin, Glyph):
         **kwargs: Override any key in `HEXBIN_DEFAULT_OPTIONS`: `gridsize`
             (int, or an `(nx, ny)` pair, default 50), `reduce`
             (`"count"` / `"mean"` / `"sum"` / `"min"` / `"max"` / `"std"`,
-            or a callable; default `"mean"`), `min_count` (drop bins with
+            or a callable; default `"mean"`; has no effect in counts mode,
+            i.e. when no `values` are given), `min_count` (drop bins with
             fewer than this many points; matplotlib's `mincnt`, default
             `None`), `extent` (`(xmin, xmax, ymin, ymax)` binning window),
             `edge_color` (default `"face"`), `line_width` (bin edge width,
@@ -138,10 +139,10 @@ class HexbinGlyph(GeoMixin, Glyph):
         cell.
 
     Raises:
-        ValueError: If `x` / `y` are not 1-D or have mismatched lengths, if
-            `values` (when given) does not match, if `x` is empty, or if the
-            binning leaves no cells to draw (an `extent` excluding the data or
-            a `min_count` above the densest cell).
+        ValueError: At construction, if `x` / `y` are not 1-D or have
+            mismatched lengths, if `values` (when given) does not match, or if
+            `x` is empty. (`plot()` raises separately when the binning leaves no
+            cells to draw -- see `plot`.)
 
     Examples:
         - Read the per-bin counts back off the drawn collection:
@@ -353,6 +354,14 @@ class HexbinGlyph(GeoMixin, Glyph):
         Returns:
             tuple[Figure, Axes, PolyCollection]: the figure, the axes, and
                 the `PolyCollection` returned by `hexbin` (the mappable).
+
+        Raises:
+            ValueError: If the binning leaves no cells to draw (an `extent`
+                excluding the data or a `min_count` above the densest cell);
+                if `classify` uses a categorical scheme (a per-bin aggregate is
+                continuous, so `_SUPPORTS_CATEGORICAL_SCHEME` is `False`); or if
+                the `reduce` option is neither a known name nor a callable
+                (validated here, at render time).
 
         Examples:
             - A classified hexbin steps the colorbar and still returns the
